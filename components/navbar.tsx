@@ -93,7 +93,7 @@ export function Navbar() {
               "flex flex-col transition-all duration-300",
               scrolled ? "scale-90 origin-left" : ""
             )}>
-              <span className="hidden font-bold sm:inline-block text-xl logoText">Utilitek Solutions</span>
+              <span className="hidden font-bold sm:inline-block text-3xl logoText">Utilitek Solutions</span>
               <span className={cn(
                 "text-sm text-gray-500 transition-opacity duration-300",
                 scrolled ? "opacity-0 h-0" : "opacity-100"
