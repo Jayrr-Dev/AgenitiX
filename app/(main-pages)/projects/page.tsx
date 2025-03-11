@@ -35,7 +35,7 @@ export default function ProjectsPage() {
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 Modernization of a critical 138kV substation serving Edmonton's growing eastern district.
               </p>
-              <Link href="/projects/edmonton-substation">
+              <Link href="/projects/1">
                 <Button variant="outline" className="w-full">View Project</Button>
               </Link>
             </div>
@@ -59,7 +59,7 @@ export default function ProjectsPage() {
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 Design and implementation of a resilient distribution network for Calgary's new industrial park.
               </p>
-              <Link href="/projects/calgary-distribution">
+              <Link href="/projects/2">
                 <Button variant="outline" className="w-full">View Project</Button>
               </Link>
             </div>
@@ -83,7 +83,7 @@ export default function ProjectsPage() {
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 Innovative microgrid solution providing reliable power to remote industrial facilities.
               </p>
-              <Link href="/projects/fort-mcmurray-microgrid">
+              <Link href="/projects/3">
                 <Button variant="outline" className="w-full">View Project</Button>
               </Link>
             </div>
