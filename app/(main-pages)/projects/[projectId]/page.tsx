@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { use } from 'react';
 
-// Mock data for development
+// Mock data development
 const projects = [
   {
     id: "1",
@@ -98,17 +99,21 @@ const projects = [
   }
 ];
 
-
 // Function to get project by ID
 const getProjectById = (id: string) => {
   return projects.find(project => project.id === id);
 };
 
-type Params = {
-  projectId: string;
+// Update the Params type to match Next.js 15 format
+type PageProps = {
+  params: Promise<{
+    projectId: string;
+  }>;
 };
 
-export default async function PostPage({ params }: { params: Params }) { 
+export default function ProjectPage(props: PageProps) { 
+  // Use the `use` hook to unwrap the Promise
+  const params = use(props.params);
   const projectId = params.projectId;
   const project = getProjectById(projectId);
   
