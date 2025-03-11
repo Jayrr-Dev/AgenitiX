@@ -57,7 +57,7 @@ export default function RootLayout({
                     <div className="space-y-4">
                       <div className="pt-2 flex items-center">
                         <img src="/logo.png" alt="Utilitek Logo" className="h-10 mr-2" />
-                      <div className="text-2 font-semibold text-gray-800 dark:text-gray-200 logoText">Utilitek Solutions</div>
+                      <div className="text-xl font-semibold text-gray-800 dark:text-gray-200 logoText">Utilitek Solutions</div>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         Utilitek Solutions provides innovative engineering solutions for utility and infrastructure projects across Canada.

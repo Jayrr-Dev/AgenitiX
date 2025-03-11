@@ -230,18 +230,21 @@ export default function Main() {
           >
             {[
               {
+                id: "1",
                 title: "Edmonton Substation",
                 description: "High-voltage substation design and implementation for Edmonton's growing industrial sector.",
                 image: "https://placehold.co/600x400",
                 link: "/projects/edmonton-substation"
               },
               {
+                id: "2",
                 title: "Calgary Distribution",
                 description: "Modernization of power distribution network for Calgary's downtown commercial district.",
                 image: "https://placehold.co/600x400",
                 link: "/projects/calgary-distribution"
               },
               {
+                id: "3",
                 title: "Fort McMurray Microgrid",
                 description: "Innovative microgrid solution with renewable integration for remote industrial operations.",
                 image: "https://placehold.co/600x400",
@@ -249,7 +252,7 @@ export default function Main() {
               }
             ].map((project, index) => (
               <motion.div
-                key={index}
+                key={project.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={projectsInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -271,7 +274,7 @@ export default function Main() {
                     <CardDescription className="text-base">{project.description}</CardDescription>
                   </CardContent>
                   <CardFooter>
-                    <Link href={project.link}>
+                    <Link href={`/projects/${project.id}`}>
                       <Button variant="outline" className="group-hover:bg-primary group-hover:text-white transition-colors duration-300">
                         View Project <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
