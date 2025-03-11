@@ -4,31 +4,32 @@
 
 @layer base {
   :root {
+    /* Modified to match Utilitek color scheme */
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
+    --primary: 16 85% 40%; /* Primary red/orange from logo */
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
+    --secondary: 28 80% 52%; /* Golden accent color */
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
     --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
+    --accent: 45 70% 50%; /* Light golden accent */
     --accent-foreground: 0 0% 9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --border: 16 45% 90%; /* Light orange border */
+    --input: 16 45% 90%;
+    --ring: 16 85% 40%;
     --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --chart-1: 16 85% 40%; /* Primary orange/red */
+    --chart-2: 28 80% 52%; /* Golden accent */
+    --chart-3: 352 70% 30%; /* Dark burgundy from logo */
+    --chart-4: 45 70% 50%; /* Light golden */
+    --chart-5: 0 0% 20%; /* Dark gray / nearly black */
   }
 
   .dark {
@@ -38,25 +39,61 @@
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
+    --primary: 16 85% 45%; /* Brighter in dark mode */
+    --primary-foreground: 0 0% 98%;
+    --secondary: 28 80% 52%;
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 14.9%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
+    --accent: 45 70% 50%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
+    --border: 16 45% 35%;
     --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --ring: 16 85% 45%;
+    --chart-1: 16 85% 45%; /* Primary orange/red */
+    --chart-2: 28 80% 52%; /* Golden accent */
+    --chart-3: 352 70% 40%; /* Dark burgundy from logo - brighter in dark mode */
+    --chart-4: 45 70% 50%; /* Light golden */
+    --chart-5: 0 0% 80%; /* Light gray in dark mode */
   }
+}
+
+.logoText {
+  font-family: Arial, sans-serif;
+  font-weight: normal;
+  font-size: 2rem;
+  letter-spacing: 0.5px;
+  color: #fe975c;
+  text-shadow: 
+    0.5px 0.5px 0 #fe975c,
+    1px 1px 0 #901c16,
+    1.2px 1.2px 0 #7b0000,
+    2px 2px 3px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(to bottom, #fe975c 0%, #901c16 50%, #7b0000 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.custom-shape-divider-bottom-1741703122 {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.custom-shape-divider-bottom-1741703122 svg {
+  position: relative;
+  display: block;
+  width: calc(100% + 1.3px);
+  height: 100px;
+}
+
+.custom-shape-divider-bottom-1741703122 .shape-fill {
+  fill: #FFFFFF;
 }
 
 @layer base {
