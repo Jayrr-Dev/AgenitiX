@@ -102,7 +102,7 @@ const getProjectById = (id: string) => {
   return projects.find(project => project.id === id);
 };
 
-export default async function ProjectPage({ params }: { params: { projectId: string } }) {
+export default function ProjectPage({ params }: { params: { projectId: string } }) {
   const projectId = params.projectId;
   const project = getProjectById(projectId);
   
