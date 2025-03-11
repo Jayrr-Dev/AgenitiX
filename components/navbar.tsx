@@ -142,16 +142,19 @@ function DesktopNav() {
             <NavigationMenuLink className={navigationMenuTriggerStyle()}>Projects</NavigationMenuLink>
           </Link>
         </NavigationMenuItem>
-        <NavigationMenuItem>
-          <Link href="/contact" legacyBehavior passHref>
-            <NavigationMenuLink className={navigationMenuTriggerStyle()}>Contact</NavigationMenuLink>
-          </Link>
-        </NavigationMenuItem>
+       
         <NavigationMenuItem>
           <Link href="/careers" legacyBehavior passHref>
             <NavigationMenuLink className={navigationMenuTriggerStyle()}>Careers</NavigationMenuLink>
           </Link>
         </NavigationMenuItem>
+
+        <NavigationMenuItem>
+          <Link href="/contact" legacyBehavior passHref>
+            <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "text-[#f6733c] border-2 border-solid border-[#f6733c] font-medium")}>Contact</NavigationMenuLink>
+          </Link>
+        </NavigationMenuItem>
+
       </NavigationMenuList>
     </NavigationMenu>
   )
