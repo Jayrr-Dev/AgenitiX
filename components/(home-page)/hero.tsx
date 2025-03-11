@@ -21,9 +21,9 @@ export default function Header() {
           <Image src="/epcor-logo.png" alt="epcor-logo" width={150} height={150} />
         </a>
         <span className="border-l rotate-45 h-6" />
-        <a href="https://fortisbc.com/" target="_blank" rel="noreferrer">
+        {/* <a href="https://fortisbc.com/" target="_blank" rel="noreferrer">
           <FortisLogo width={150} height={150} />
-        </a>
+        </a> */}
       </div>
       <div className="text-center text-lg text-gray-800 dark:text-gray-200">Trusted by Utilities Across Canada</div>
       <div className="w-full p-[1px] bg-gradient-to-r from-transparent via-foreground/10 to-transparent" />
