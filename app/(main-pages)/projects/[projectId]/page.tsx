@@ -1,8 +1,8 @@
+'use client'
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Metadata } from 'next';
 
 // Mock data for development
 const projects = [
@@ -98,17 +98,13 @@ const projects = [
   }
 ];
 
-type Props = {
-  params: {
-    projectId: string;
-  };
-};
+
 // Function to get project by ID
 const getProjectById = (id: string) => {
   return projects.find(project => project.id === id);
 };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export default async function PostPage({ params }: { params: { projectId: string } }) { 
   const projectId = params.projectId;
   const project = getProjectById(projectId);
   
@@ -116,31 +112,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     notFound();
   }
   
-  return {
-    title: project.title,
-    description: project.description,
-    openGraph: {
-      title: project.title,
-      description: project.description,
-      images: [
-        {
-          url: project.imageUrl,
-          width: 1200,
-          height: 630
-        }
-      ]
-    }
-  };
-}
-
-export default async function ProjectPage({ params }: Props) {
-  const projectId = params.projectId;
-  const project = getProjectById(projectId);
-
-  if (!project) {
-    notFound();
-  }
-
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="mb-8">
