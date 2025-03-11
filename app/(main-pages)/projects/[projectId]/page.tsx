@@ -1,12 +1,14 @@
 import { notFound } from "next/navigation";
 
-// Remove the FC generic type and simply define the props interface
-interface ProjectPageProps {
-  params: { projectId: string };
+// Define the props interface for Next.js page component
+interface PageProps {
+  params: {
+    projectId: string;
+  };
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
-// Define as a regular function component without FC<>
-export default function ProjectPage({ params }: ProjectPageProps) {
+export default function ProjectPage({ params }: PageProps) {
   const { projectId } = params;
 
   // Example: Handle non-existent projects
