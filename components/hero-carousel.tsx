@@ -1,8 +1,8 @@
-"use client"
+"use client";
 import * as React from "react";
-import { useState, useEffect } from "react";
-import Image from "next/image";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Carousel,
   CarouselContent,
@@ -11,9 +11,81 @@ import {
   CarouselPrevious,
   CarouselDots,
 } from "@/components/ui/carousel";
+import { motion, AnimatePresence } from "framer-motion";
+import useEmblaCarousel from "embla-carousel-react";
 
 export function HeroCarousel() {
   const [scrollY, setScrollY] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
+  
+  // Slide content with unique messages and CTAs
+  const slides = [
+    {
+      type: "video",
+      src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxS5sxJF7h0jeaV8R3woxgAG7Lr6ib5TOkcHXC",
+      message: "Experience the future of design",
+      ctaText: "Watch Demo",
+      ctaLink: "/demo"
+    },
+    {
+      type: "image",
+      src: "https://placehold.co/600x400",
+      message: "Innovative solutions for modern problems",
+      ctaText: "Explore Solutions",
+      ctaLink: "/solutions"
+    },
+    {
+      type: "image",
+      src: "https://placehold.co/600x400",
+      message: "Join our community of creators",
+      ctaText: "Sign Up Today",
+      ctaLink: "/signup"
+    },
+    {
+      type: "image",
+      src: "https://placehold.co/600x400",
+      message: "Award-winning designs that inspire",
+      ctaText: "View Portfolio",
+      ctaLink: "/portfolio"
+    },
+    {
+      type: "image",
+      src: "https://placehold.co/600x400",
+      message: "Trusted by industry leaders worldwide",
+      ctaText: "See Testimonials",
+      ctaLink: "/testimonials"
+    }
+  ];
+
+  // Track embla carousel's active index
+  useEffect(() => {
+    if (!emblaApi) return;
+
+    const onSelect = () => {
+      setActiveIndex(emblaApi.selectedScrollSnap());
+    };
+
+    emblaApi.on("select", onSelect);
+    // Initial call to set the active index on mount
+    onSelect();
+
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi]);
+
+  // Auto-scroll carousel
+  useEffect(() => {
+    if (!emblaApi) return;
+    
+    const interval = setInterval(() => {
+      emblaApi.scrollNext();
+      }, 9000); // Change slide every 20 seconds
+    
+    return () => clearInterval(interval);
+  }, [emblaApi]);
 
   // Update scrollY value on scroll for parallax effect
   useEffect(() => {
@@ -22,42 +94,158 @@ export function HeroCarousel() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Handle video loading and autoplay
+  useEffect(() => {
+    if (videoRef.current) {
+      // Preload video data
+      videoRef.current.preload = "auto";
+      
+      // Force play when component mounts
+      const playVideo = async () => {
+        try {
+          if (videoRef.current) {
+            await videoRef.current.play();
+          }
+        } catch (error) {
+          console.log("Autoplay prevented:", error);
+        }
+      };
+      
+      playVideo();
+    }
+  }, []);
+
+  // Animation variants for the message card
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.6, ease: "easeOut" }
+    },
+    exit: { 
+      opacity: 0, 
+      y: -20,
+      transition: { duration: 0.3, ease: "easeIn" }
+    }
+  };
+
+  // Animation variants for the button
+  const buttonVariants = {
+    hidden: { opacity: 0, scale: 0.9 },
+    visible: { 
+      opacity: 1, 
+      scale: 1,
+      transition: { delay: 0.3, duration: 0.5, ease: "easeOut" }
+    },
+    exit: { 
+      opacity: 0, 
+      scale: 0.9,
+      transition: { duration: 0.2, ease: "easeIn" }
+    }
+  };
+
   return (
     <div className="relative overflow-hidden">
-      <Carousel className="w-full z-10 relative" opts={{ loop: true }}>
-        <CarouselContent>
-          {Array.from({ length: 5 }).map((_, index) => (
-            <CarouselItem key={index} className="h-full">
-              <div className="p-0">
-                <Card className="rounded-none">
-                  <CardContent className="flex items-center justify-center m-0 p-0 overflow-hidden">
-                    {/* Image with subtle parallax effect */}
+      <div ref={emblaRef} className="w-full z-10 relative overflow-hidden">
+        <div className="flex">
+          {slides.map((slide, index) => (
+            <div 
+              key={index} 
+              className="relative flex-[0_0_100%] min-w-0"
+              style={{ overflow: "hidden" }}
+            >
+              <Card className="rounded-none">
+                <CardContent className="flex items-center justify-center m-0 p-0 overflow-hidden">
+                  {slide.type === "video" ? (
+                    <video
+                      ref={videoRef}
+                      src={slide.src}
+                      autoPlay
+                      muted
+                      playsInline
+                      loop
+                      className="w-full h-full object-cover"
+                      style={{ height: "calc(90vh - 112px)" }}
+                    />
+                  ) : (
                     <img
-                      src="https://placehold.co/600x400"
+                      src={slide.src}
                       alt={`hero-carousel-${index + 1}`}
+                      loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-300"
                       style={{
                         height: "calc(90vh - 112px)",
-                        transform: `translateY(${scrollY * 0.1}px)`, // Subtle parallax effect
+                        transform: `translateY(${scrollY * 0.1}px)`,
                       }}
                     />
-                  </CardContent>
-                </Card>
-              </div>
-            </CarouselItem>
+                  )}
+                  
+                  {/* Animated Message Card with CTA */}
+                  <AnimatePresence mode="wait">
+                    {activeIndex === index && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <motion.div
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                          variants={cardVariants}
+                          key={`card-${index}`}
+                          className="w-full max-w-md mx-4"
+                        >
+                              <motion.div variants={buttonVariants}>
+                          <Card className="bg-black/10 text- backdrop-blur-sm border border-white/10 shadow-xl">
+                            <CardContent className="flex flex-col items-center text-center gap-6 p-8">
+                              <h2 className="text-3xl font-bold">{slide.message}</h2>
+                                <Button 
+                                  size="lg" 
+                                  className="bg-white text-black hover:bg-white/90 font-semibold px-8 py-6"
+                                  onClick={() => window.location.href = slide.ctaLink}
+                                >
+                                  {slide.ctaText}
+                                </Button>
+                            </CardContent>
+                          </Card>
+                              </motion.div>
+                        </motion.div>
+                      </div>
+                    )}
+                  </AnimatePresence>
+                </CardContent>
+              </Card>
+            </div>
           ))}
-        </CarouselContent>
-
-        {/* Navigation buttons with gradient fade */}
-        <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2 rounded-none h-full w-1/3 
-      bg-gradient-to-l from-transparent to-black/50 opacity-0 transition-opacity duration-500 hover:opacity-100" />
-        <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2 rounded-none h-full w-1/3 
-      bg-gradient-to-r from-transparent to-black/50 opacity-0 transition-opacity duration-500 hover:opacity-100" />
-
-        <CarouselDots />
-
+        </div>
+        
+        {/* Navigation buttons */}
+        <button 
+          className="absolute left-0 top-1/2 -translate-y-1/2 rounded-none h-full w-1/3 
+            bg-gradient-to-l from-transparent to-black/50 opacity-0 transition-opacity duration-500 hover:opacity-100 z-10"
+          onClick={() => emblaApi?.scrollPrev()}
+        />
+        <button 
+          className="absolute right-0 top-1/2 -translate-y-1/2 rounded-none h-full w-1/3 
+            bg-gradient-to-r from-transparent to-black/50 opacity-0 transition-opacity duration-500 hover:opacity-100 z-10"
+          onClick={() => emblaApi?.scrollNext()}
+        />
+        
+        {/* Dots */}
+        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-50">
+          {slides.map((_, index) => (
+            <button
+              key={`dot-${index}`}
+              className={`w-3 h-3 rounded-full transition-all ${
+                activeIndex === index 
+                  ? "bg-primary scale-100" 
+                  : "bg-primary/30 scale-90"
+              }`}
+              onClick={() => emblaApi?.scrollTo(index)}
+            />
+          ))}
+        </div>
+        
         {/* Decorative Shape Divider */}
-        <div className="custom-shape-divider-bottom-1741703122">
+        <div className="custom-shape-divider-bottom-1741703122 absolute bottom-0 left-0 right-0 z-20">
           <svg
             data-name="Layer 1"
             xmlns="http://www.w3.org/2000/svg"
@@ -71,7 +259,7 @@ export function HeroCarousel() {
             ></path>
           </svg>
         </div>
-      </Carousel>
+      </div>
     </div>
   );
 }
