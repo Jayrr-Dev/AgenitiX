@@ -17,7 +17,7 @@ interface ContactFormData {
 // Create a rate limiter for the contact form
 const rateLimiter = createRateLimiter(rateLimitPresets.moderate);
 
-export async function POST(request: NextRequest, response: NextResponse) {
+export async function POST(request: NextRequest) {
   try {
     // Apply rate limiting
     const rateLimiterResponse = rateLimiter(request);
@@ -48,19 +48,17 @@ export async function POST(request: NextRequest, response: NextResponse) {
     const turnstileResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
-      body: new URLSearchParams({
-        secret: process.env.TURNSTILE_SECRET_KEY || '',
+      body: JSON.stringify({
+        secret: process.env.TURNSTILE_SECRET_KEY,
         response: formData.token,
-        remoteip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '',
-      }).toString(),
+      }),
     });
     
     const turnstileData = await turnstileResponse.json();
     
     if (!turnstileData.success) {
-      console.error('Turnstile verification failed:', turnstileData);
       return NextResponse.json(
         { success: false, message: 'CAPTCHA verification failed' },
         { status: 400 }
@@ -94,7 +92,7 @@ export async function POST(request: NextRequest, response: NextResponse) {
     // Send email
     await transporter.sendMail({
       from: process.env.EMAIL_FROM as string,
-      to: process.env.CONTACT_EMAIL || 'svsoriano@utiliteksolutions.ca',
+      to: 'svsoriano@utiliteksolutions.ca', // Your recipient email
       subject: `Contact Form: ${formData.subject}`,
       text: emailContent,
     });
