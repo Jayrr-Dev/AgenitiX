@@ -93,7 +93,12 @@ export function Navbar() {
                 alt="logo" 
                 width={scrolled ? 100 : 150} 
                 height={scrolled ? 100 : 150}
-                className="transition-all duration-300 h-12 sm:h-16 md:h-20 lg:h-24 xl:h-28 w-auto" 
+                className={cn(
+                  "transition-all duration-300 w-auto",
+                  scrolled 
+                    ? "h-10 sm:h-10 md:h-12 lg:h-12 xl:h-12" 
+                    : "h-12 sm:h-16 md:h-20 lg:h-24 xl:h-28"
+                )} 
               />
               <div className={cn(
                 "flex flex-col transition-all duration-300",
