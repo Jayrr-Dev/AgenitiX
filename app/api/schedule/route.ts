@@ -50,8 +50,7 @@ function createEventTimes(date: string, time: string) {
   
   return { startDate, endDate };
 }
-
-export async function POST(request: NextRequest, response: NextResponse) {
+export async function POST(request: NextRequest) {
   try {
     // Apply rate limiting
     const rateLimiterResponse = rateLimiter(request);
