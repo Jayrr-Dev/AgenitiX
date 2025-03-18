@@ -25,37 +25,37 @@ export function HeroCarousel() {
     {
       type: "video",
       src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxS5sxJF7h0jeaV8R3woxgAG7Lr6ib5TOkcHXC",
-      message: "Experience the future of design",
-      ctaText: "Watch Demo",
-      ctaLink: "/demo"
+      message: "Transforming utility management with innovation",
+      ctaText: "Discover How",
+      ctaLink: "/about"
     },
     {
       type: "video",
       src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOox2bSnnjhI5vdYi6q1rEpygWQ4G3zfKUxeusR7",
-      message: "Innovative solutions for modern problems",
-      ctaText: "Explore Solutions",
-      ctaLink: "/solutions"
+      message: "Empowering utilities across Canada",
+      ctaText: "Our Impact",
+      ctaLink: "/about"
     },
     {
       type: "video",
       src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxAAk0Hu3HqjTl9NXwnEZku5Jao6813Kd7LUiM",
-      message: "Join our community of creators",
-      ctaText: "Sign Up Today",
-      ctaLink: "/signup"
+      message: "Streamline operations with expert solutions",
+      ctaText: "Explore Services",
+      ctaLink: "/services"
     },
     {
       type: "video",
       src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxkIIrjof2IctWSx5udkeCYzHQF1w0norGhilm",
-      message: "Trusted by industry leaders worldwide",
-      ctaText: "See Testimonials",
-      ctaLink: "/testimonials"
+      message: "Cutting-edge technology for utility excellence",
+      ctaText: "See Solutions",
+      ctaLink: "/services"
     },
     {
       type: "video",
       src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxU1NtRfVEzhbKyMT2ALI95efgRZFtW68dpsxO",
-      message: "Award-winning designs that inspire",
-      ctaText: "View Portfolio",
-      ctaLink: "/portfolio"
+      message: "Building stronger utility infrastructure together",
+      ctaText: "Get Started",
+      ctaLink: "/contact"
     }
   ];
 
@@ -191,15 +191,15 @@ export function HeroCarousel() {
                           exit="exit"
                           variants={cardVariants}
                           key={`card-${index}`}
-                          className="w-full max-w-md mx-4"
+                          className="w-full max-w-7xl mx-4"
                         >
                               <motion.div variants={buttonVariants}>
-                          <Card className="bg-black/10 text- backdrop-blur-sm border border-white/10 shadow-xl">
+                          <Card className="bg-transparent border-none">
                             <CardContent className="flex flex-col items-center text-center gap-6 p-8">
-                              <h2 className="text-3xl font-bold">{slide.message}</h2>
+                              <h2 className="lg:text-6xl text-4xl text-white/95 font-['Impact'] italic drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] ">{slide.message.toUpperCase()}</h2>
                                 <Button 
                                   size="lg" 
-                                  className="bg-white text-black hover:bg-white/90 font-semibold px-8 py-6"
+                                  className="bg-black/80 hover:bg-black/40 font-semibold mt-12 px-16 py-0 text-shadow-[0_0_1px_#000,0_0_1px_#000,0_0_1px_#000,0_0_1px_#000]  border-none text-lg text-white rounded-none  "
                                   onClick={() => window.location.href = slide.ctaLink}
                                 >
                                   {slide.ctaText}
