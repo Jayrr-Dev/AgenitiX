@@ -13,7 +13,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CalendarDays, Clock, User, Mail, Phone, MessageSquare, CheckCircle2, AlertCircle, Building2, Briefcase } from "lucide-react";
-
+import Turnstile from "@/components/turnstile"; 
 // Define available time slots
 const timeSlots = [
   "9:00 AM", "10:00 AM", "11:00 AM", 
@@ -51,6 +51,7 @@ const formatDateForDisplay = (dateString: string): string => {
 };
 
 export default function ScheduleConsultation() {
+  const [token, setToken] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -83,12 +84,21 @@ export default function ScheduleConsultation() {
     }));
   };
 
+  const handleVerify = (token: string) => {
+    setToken(token);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMessage("");
 
     try {
+      // Validate Turnstile token
+      if (!token) {
+        throw new Error('Please complete the CAPTCHA verification');
+      }
+
       // Prepare the data to send to the API
       const consultationData = {
         name: formData.name,
@@ -99,7 +109,8 @@ export default function ScheduleConsultation() {
         date: selectedDate,
         time: selectedTime,
         topic: formData.topic,
-        message: formData.message
+        message: formData.message,
+        token: token // Include the Turnstile token
       };
       
       // Send the data to our API endpoint
@@ -140,6 +151,7 @@ export default function ScheduleConsultation() {
       });
       setSelectedDate("");
       setSelectedTime("");
+      setToken(null);
     } catch (error) {
       console.error("Error submitting consultation request:", error);
       setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.');
@@ -154,6 +166,7 @@ export default function ScheduleConsultation() {
       setIsSubmitted(false);
     }
     setErrorMessage("");
+    setToken(null); // Reset Turnstile token when dialog closes
   };
   
   // Success screen component
@@ -368,9 +381,10 @@ export default function ScheduleConsultation() {
                   className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
-              
+              <Turnstile siteKey="0x4AAAAAABBaVePB9txPEfir" onVerify={handleVerify} />
+
               <DialogFooter>
-                <Button type="submit" className="bg-[#f6733c] hover:bg-[#e45f2d]" disabled={isSubmitting}>
+                <Button type="submit" className="bg-[#f6733c] hover:bg-[#e45f2d]" disabled={isSubmitting || !token || !formData.name || !formData.email || !formData.phone || !formData.company || !formData.role || !formData.topic || !formData.message}>
                   {isSubmitting ? "Submitting..." : "Schedule Consultation"}
                 </Button>
               </DialogFooter>

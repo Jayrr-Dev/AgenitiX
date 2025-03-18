@@ -12,7 +12,7 @@ interface JobApplicationData {
   jobTitle: string;
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest, response: NextResponse) {
   try {
     // Parse the multipart form data
     const formData = await request.formData();
@@ -31,6 +31,9 @@ export async function POST(request: NextRequest) {
     // Get resume file
     const resumeFile = formData.get('resume') as File | null;
     
+    // Get Turnstile token
+    const token = formData.get('token') as string;
+    
     // Validate the required fields
     if (!applicationData.firstName || !applicationData.lastName || !applicationData.email || !applicationData.phone || !applicationData.jobId || !applicationData.jobTitle) {
       return NextResponse.json(
@@ -43,6 +46,37 @@ export async function POST(request: NextRequest) {
     if (!resumeFile) {
       return NextResponse.json(
         { success: false, message: 'Resume file is required' },
+        { status: 400 }
+      );
+    }
+    console.log(token);
+    // Validate Turnstile token
+    if (!token) {
+      return NextResponse.json(
+        { success: false, message: 'CAPTCHA verification failed' },
+        { status: 400 }
+      );
+    }
+    
+    // Verify Turnstile token with Cloudflare
+    const turnstileResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        secret: process.env.TURNSTILE_SECRET_KEY || '',
+        response: token,
+        remoteip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '',
+      }).toString(),
+    });
+    
+    const turnstileData = await turnstileResponse.json();
+    
+    if (!turnstileData.success) {
+      console.error('Turnstile verification failed:', turnstileData);
+      return NextResponse.json(
+        { success: false, message: 'CAPTCHA verification failed' },
         { status: 400 }
       );
     }

@@ -10,6 +10,7 @@ interface ContactFormData {
   subject: string;
   message: string;
   consent: boolean;
+  token: string; // Turnstile token
 }
 
 export async function POST(request: NextRequest) {
@@ -17,10 +18,39 @@ export async function POST(request: NextRequest) {
     // Parse the request body
     const formData: ContactFormData = await request.json();
     
-      // Validate the required fields
+    // Validate the required fields
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.subject || !formData.message || !formData.consent) {
       return NextResponse.json(
         { success: false, message: 'Missing required fields' }, 
+        { status: 400 }
+      );
+    }
+    
+    // Validate Turnstile token
+    if (!formData.token) {
+      return NextResponse.json(
+        { success: false, message: 'CAPTCHA verification failed' },
+        { status: 400 }
+      );
+    }
+    
+    // Verify Turnstile token with Cloudflare
+    const turnstileResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        secret: process.env.TURNSTILE_SECRET_KEY,
+        response: formData.token,
+      }),
+    });
+    
+    const turnstileData = await turnstileResponse.json();
+    
+    if (!turnstileData.success) {
+      return NextResponse.json(
+        { success: false, message: 'CAPTCHA verification failed' },
         { status: 400 }
       );
     }

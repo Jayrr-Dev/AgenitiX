@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, ChangeEvent, FormEvent } from "react";
 import ScheduleConsultation from "@/components/schedule-consultation";
-
+import Turnstile from "@/components/turnstile";
 // Define interfaces for type safety
 interface FormData {
   firstName: string;
@@ -14,6 +14,7 @@ interface FormData {
   subject: string;
   message: string;
   consent: boolean;
+  token: string; // Turnstile token
 }
 
 interface FormStatus {
@@ -24,6 +25,16 @@ interface FormStatus {
 }
 
 export default function ContactPage() {
+  const [token, setToken] = useState<string | null>(null);
+
+  const handleVerify = (token: string) => {
+    setToken(token);
+    setFormData(prev => ({
+      ...prev,
+      token: token
+    }));
+  };
+
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
     lastName: "",
@@ -31,7 +42,8 @@ export default function ContactPage() {
     phone: "",
     subject: "",
     message: "",
-    consent: false
+    consent: false,
+    token: ""
   });
   
   const [formStatus, setFormStatus] = useState<FormStatus>({
@@ -55,12 +67,12 @@ export default function ContactPage() {
     e.preventDefault();
     
     // Validate the form
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.subject || !formData.message || !formData.consent) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.subject || !formData.message || !formData.consent || !formData.token) {
       setFormStatus({
         isSubmitting: false,
         isSubmitted: false,
         isError: true,
-        message: "Please fill in all required fields."
+        message: !formData.token ? "Please complete the CAPTCHA verification." : "Please fill in all required fields."
       });
       return;
     }
@@ -100,8 +112,12 @@ export default function ContactPage() {
           phone: "",
           subject: "",
           message: "",
-          consent: false
+          consent: false,
+          token: ""
         });
+        
+        // Reset Turnstile
+        setToken(null);
       } else {
         // API error
         setFormStatus({
@@ -153,7 +169,6 @@ export default function ContactPage() {
                   <p className="text-red-800 dark:text-red-200">{formStatus.message}</p>
                 </div>
               )}
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -252,13 +267,23 @@ export default function ContactPage() {
                   I consent to having this website store my submitted information so they can respond to my inquiry.*
                 </label>
               </div>
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Verification*
+                </label>
+                <Turnstile siteKey="0x4AAAAAABBaVePB9txPEfir" onVerify={handleVerify} />
+                {!token && formStatus.isError && (
+                  <p className="text-sm text-red-600 mt-1">Please complete the verification</p>
+                )}
+              </div>
               <Button 
                 type="submit" 
                 className="w-full bg-[#f6733c] hover:bg-[#e45f2d]"
-                disabled={formStatus.isSubmitting}
+                disabled={formStatus.isSubmitting || !token}
               >
                 {formStatus.isSubmitting ? "Sending..." : "Submit Message"}
               </Button>
+
             </form>
           )}
         </div>

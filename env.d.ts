@@ -8,5 +8,16 @@ declare namespace NodeJS {
       EMAIL_PASSWORD: string;
       EMAIL_FROM: string;
       NODE_ENV: 'development' | 'production' | 'test';
+      CLOUDFLARE_SECRET_KEY: string;
     }
   }
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: HTMLElement, options: any) => string;
+      reset: (widgetId: string) => void;
+      remove: (widgetId: string) => void;
+    };
+  }
+}

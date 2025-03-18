@@ -3,8 +3,12 @@ import { useState, FormEvent, ChangeEvent, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-
+import Turnstile from "@/components/turnstile";
 export default function CareerApplicationPage({ params }: { params: Promise<{ apply: string }> }) {
+  const [token, setToken] = useState<string | null>(null);
+  const handleVerify = (token: string) => {
+    setToken(token);
+  };
   // Mock job data - in a real app, this would come from an API or database
   const jobs = [
     {
@@ -137,13 +141,18 @@ export default function CareerApplicationPage({ params }: { params: Promise<{ ap
   
   // Form submission
   const handleSubmit = async (e: FormEvent) => {
+    
     e.preventDefault();
     
     if (!resumeFile) {
       alert('Please upload your resume/CV');
       return;
     }
-    
+    if (!token) {
+      alert('Please verify the captcha');
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitResult(null);
     
@@ -163,12 +172,16 @@ export default function CareerApplicationPage({ params }: { params: Promise<{ ap
       // Add resume file
       submission.append('resume', resumeFile);
       
+      // Add token to submission
+      submission.append('token', token);
+      
       // Send the form data to the API
       const response = await fetch('/api/careers', {
         method: 'POST',
         body: submission
       });
       
+
       const result = await response.json();
       
       setSubmitResult(result);
@@ -183,6 +196,7 @@ export default function CareerApplicationPage({ params }: { params: Promise<{ ap
           coverLetter: ""
         });
         setResumeFile(null);
+        setToken(null);
         
         // Reset file input
         const fileInput = document.getElementById('resume') as HTMLInputElement;
@@ -362,10 +376,11 @@ export default function CareerApplicationPage({ params }: { params: Promise<{ ap
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800"
                 ></textarea>
               </div>
+              <Turnstile siteKey="0x4AAAAAABBaVePB9txPEfir" onVerify={handleVerify} />
               <Button 
                 type="submit" 
                 className="w-full bg-[#f6733c] hover:bg-[#e45f2d]"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !token}
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Application'}
               </Button>

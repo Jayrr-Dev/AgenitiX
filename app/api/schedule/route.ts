@@ -13,6 +13,7 @@ interface ConsultationRequest {
   time: string;
   topic: string;
   message?: string;
+  token: string; // Turnstile token
 }
 
 // Convert 12-hour time format (e.g., "9:00 AM") to 24-hour format (e.g., "09:00:00")
@@ -58,6 +59,37 @@ export async function POST(request: NextRequest) {
         !consultationData.date || !consultationData.time || !consultationData.topic) {
       return NextResponse.json(
         { success: false, message: 'Missing required fields' }, 
+        { status: 400 }
+      );
+    }
+    
+    // Validate Turnstile token
+    if (!consultationData.token) {
+      return NextResponse.json(
+        { success: false, message: 'CAPTCHA verification failed' },
+        { status: 400 }
+      );
+    }
+    
+    // Verify Turnstile token with Cloudflare
+    const turnstileResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        secret: process.env.TURNSTILE_SECRET_KEY || '',
+        response: consultationData.token,
+        remoteip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '',
+      }).toString(),
+    });
+    
+    const turnstileData = await turnstileResponse.json();
+    
+    if (!turnstileData.success) {
+      console.error('Turnstile verification failed:', turnstileData);
+      return NextResponse.json(
+        { success: false, message: 'CAPTCHA verification failed' },
         { status: 400 }
       );
     }

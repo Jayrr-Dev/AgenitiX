@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "cloudflare-turnstile": "https://esm.sh/cloudflare-turnstile@0.1.0"
+  }
+}
