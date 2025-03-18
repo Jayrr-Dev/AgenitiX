@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { CalendarDays, Clock, User, Mail, Phone, MessageSquare, CheckCircle2, AlertCircle, Building2, Briefcase } from "lucide-react";
+import { CalendarDays, Clock, User, Mail, Phone, MessageSquare, CheckCircle2, AlertCircle, Building2, Briefcase, Lightbulb } from "lucide-react";
 import Turnstile from "@/components/turnstile"; 
 // Define available time slots
 const timeSlots = [
@@ -348,7 +348,9 @@ export default function ScheduleConsultation() {
                 
                 {/* Topic */}
                 <div className="space-y-2">
-                  <Label htmlFor="topic">Consultation Topic</Label>
+                    <Label htmlFor="topic" className="flex items-center gap-2">
+                    <Lightbulb className="h-4 w-4" /> Consultation Topic
+                  </Label>
                   <select
                     id="topic"
                     name="topic"

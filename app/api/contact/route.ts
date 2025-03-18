@@ -17,7 +17,7 @@ interface ContactFormData {
 // Create a rate limiter for the contact form
 const rateLimiter = createRateLimiter(rateLimitPresets.moderate);
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest, response: NextResponse) {
   try {
     // Apply rate limiting
     const rateLimiterResponse = rateLimiter(request);
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Parse the request body
-      const formData: ContactFormData = await request.json();
+    const formData: ContactFormData = await request.json();
     
     // Validate the required fields
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.subject || !formData.message || !formData.consent) {
@@ -48,17 +48,19 @@ export async function POST(request: NextRequest) {
     const turnstileResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify({
-        secret: process.env.TURNSTILE_SECRET_KEY,
+      body: new URLSearchParams({
+        secret: process.env.TURNSTILE_SECRET_KEY || '',
         response: formData.token,
-      }),
+        remoteip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '',
+      }).toString(),
     });
     
     const turnstileData = await turnstileResponse.json();
     
     if (!turnstileData.success) {
+      console.error('Turnstile verification failed:', turnstileData);
       return NextResponse.json(
         { success: false, message: 'CAPTCHA verification failed' },
         { status: 400 }
@@ -92,7 +94,7 @@ export async function POST(request: NextRequest) {
     // Send email
     await transporter.sendMail({
       from: process.env.EMAIL_FROM as string,
-      to: 'svsoriano@utiliteksolutions.ca', // Your recipient email
+      to: process.env.CONTACT_EMAIL || 'svsoriano@utiliteksolutions.ca',
       subject: `Contact Form: ${formData.subject}`,
       text: emailContent,
     });

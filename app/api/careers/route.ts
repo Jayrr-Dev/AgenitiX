@@ -17,7 +17,7 @@ interface JobApplicationData {
 // Create a rate limiter for the contact form
 const rateLimiter = createRateLimiter(rateLimitPresets.moderate);
 
-export async function POST(request: NextRequest, response: NextResponse) {
+export async function POST(request: NextRequest) {
   // Apply rate limiting
   const rateLimiterResponse = rateLimiter(request);
   if (rateLimiterResponse) {

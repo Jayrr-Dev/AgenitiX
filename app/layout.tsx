@@ -16,8 +16,8 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: "Utilitek Solutions",
+  description: "Utilitek Solutions is a electrical engineering consulting company in Edmonton, Alberta, Canada that provides solutions to businesses in the utility industry",
 };
 
 const geistSans = Geist({
