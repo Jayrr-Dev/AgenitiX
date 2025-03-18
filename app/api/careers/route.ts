@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { createRateLimiter, rateLimitPresets } from '@/utils/rate-limiter';
 
 // Define the application data interface
 interface JobApplicationData {
@@ -12,7 +13,17 @@ interface JobApplicationData {
   jobTitle: string;
 }
 
+// Define rate limit configuration
+// Create a rate limiter for the contact form
+const rateLimiter = createRateLimiter(rateLimitPresets.moderate);
+
 export async function POST(request: NextRequest, response: NextResponse) {
+  // Apply rate limiting
+  const rateLimiterResponse = rateLimiter(request);
+  if (rateLimiterResponse) {
+    return rateLimiterResponse;
+  }
+  
   try {
     // Parse the multipart form data
     const formData = await request.formData();

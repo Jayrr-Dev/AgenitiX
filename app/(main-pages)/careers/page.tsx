@@ -141,7 +141,7 @@ export default function CareersPage() {
             <div className="flex items-center mb-4">
               <div className="relative w-12 h-12 rounded-full overflow-hidden mr-4">
                 <Image
-                  src="/employee-1.jpg"
+                  src="https://placehold.co/48x48.png"
                   alt="Employee portrait"
                   fill
                   className="object-cover"
@@ -160,7 +160,7 @@ export default function CareersPage() {
             <div className="flex items-center mb-4">
               <div className="relative w-12 h-12 rounded-full overflow-hidden mr-4">
                 <Image
-                  src="/employee-2.jpg"
+                  src="https://placehold.co/48x48.png"
                   alt="Employee portrait"
                   fill
                   className="object-cover"

@@ -11,7 +11,7 @@ const projects = [
     id: "1",
     title: "Edmonton Substation Upgrade",
     description: "Complete overhaul of a critical 138kV substation serving Edmonton's growing eastern district.",
-    imageUrl: "/projects/edmonton-substation.jpg",
+    imageUrl: "https://placehold.co/660x768.png",
     category: "Substation Engineering",
     year: "2023",
     details: "<p>This comprehensive modernization project involved replacing outdated equipment with state-of-the-art digital systems, implementing advanced protection schemes, and integrating renewable energy sources.</p><p>The project was completed in phases to minimize service disruption while maintaining grid reliability throughout the transition.</p>",
@@ -27,13 +27,13 @@ const projects = [
         id: "2",
         title: "Calgary Distribution Network",
         category: "Distribution Systems",
-        imageUrl: "/projects/calgary-distribution.jpg"
+        imageUrl: "https://placehold.co/435x200.png"
       },
       {
         id: "3",
         title: "Fort McMurray Microgrid",
         category: "Microgrid Design",
-        imageUrl: "/projects/fort-mcmurray-microgrid.jpg"
+        imageUrl: "https://placehold.co/435x200.png"
       }
     ]
   },
@@ -41,7 +41,7 @@ const projects = [
     id: "2",
     title: "Calgary Distribution Network",
     description: "Design and implementation of a resilient distribution network for Calgary's new industrial park.",
-    imageUrl: "/projects/calgary-distribution.jpg",
+    imageUrl: "https://placehold.co/660x768.png",
     category: "Distribution Systems",
     year: "2022",
     details: "<p>This project focused on creating a more efficient and reliable distribution network to support Calgary's expanding industrial sector.</p><p>The network was designed to handle the increased demand for power, while also incorporating renewable energy sources and smart grid technologies.</p>",
@@ -57,13 +57,13 @@ const projects = [
         id: "1",
         title: "Edmonton Substation Upgrade",
         category: "Substation Engineering",
-        imageUrl: "/projects/edmonton-substation.jpg"
+        imageUrl: "https://placehold.co/435x200.png"
       },
       {
         id: "3",
         title: "Fort McMurray Microgrid",
         category: "Microgrid Design",
-        imageUrl: "/projects/fort-mcmurray-microgrid.jpg"
+        imageUrl: "https://placehold.co/435x200.png"
       }
     ]
   },
@@ -71,7 +71,7 @@ const projects = [
     id: "3",
     title: "Fort McMurray Microgrid",
     description: "Innovative microgrid solution providing reliable power to remote industrial facilities.",
-    imageUrl: "/projects/fort-mcmurray-microgrid.jpg",
+    imageUrl: "https://placehold.co/660x768.png",
     category: "Microgrid Design",
     year: "2021",
     details: "<p>This project focused on creating a more efficient and reliable distribution network to support Calgary's expanding industrial sector.</p><p>The network was designed to handle the increased demand for power, while also incorporating renewable energy sources and smart grid technologies.</p>",  
@@ -87,13 +87,13 @@ const projects = [
         id: "1",
         title: "Edmonton Substation Upgrade",
         category: "Substation Engineering",
-        imageUrl: "/projects/edmonton-substation.jpg"
+        imageUrl: "https://placehold.co/435x200.png"
       },
       {
         id: "2",
         title: "Calgary Distribution Network",
         category: "Distribution Systems",
-        imageUrl: "/projects/calgary-distribution.jpg"
+        imageUrl: "https://placehold.co/435x200.png"
       }
     ]
   }
@@ -130,11 +130,12 @@ export default function ProjectPage(props: PageProps) {
       </div>
       
       <div className="grid md:grid-cols-2 gap-12 items-start">
-        <div className="relative h-[400px] rounded-xl overflow-hidden">
+        <div className="relative h-[768px] rounded-xl overflow-hidden">
           <Image
-            src={project.imageUrl || "/project-placeholder.jpg"}
+            src={project.imageUrl || "https://placehold.co/660x400.png"}
             alt={project.title}
-            fill
+            width={660}
+            height={768}
             className="object-cover"
             priority
           />

@@ -27,8 +27,8 @@ export default function SitemapPage() {
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="hover:text-[#f6733c] transition-colors">
-                  Contact
+                <Link href="/expertise" className="hover:text-[#f6733c] transition-colors">
+                  Expertise
                 </Link>
               </li>
               <li>
@@ -36,34 +36,70 @@ export default function SitemapPage() {
                   Projects
                 </Link>
               </li>
+              <li>
+                <Link href="/careers" className="hover:text-[#f6733c] transition-colors">
+                  Careers
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact" className="hover:text-[#f6733c] transition-colors">
+                  Contact
+                </Link>
+              </li>
             </ul>
           </div>
-
+{/* 
           <div>
-            <h2 className="text-2xl font-semibold mb-4 text-[#f6733c]">Services</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-[#f6733c]">Expertise</h2>
             <ul className="space-y-2 text-gray-700 dark:text-gray-300">
               <li>
-                <Link href="/services/distribution" className="hover:text-[#f6733c] transition-colors">
+                <Link href="/expertise/distribution" className="hover:text-[#f6733c] transition-colors">
                   Distribution System Design
                 </Link>
               </li>
               <li>
-                <Link href="/services/substation" className="hover:text-[#f6733c] transition-colors">
+                <Link href="/expertise/substation" className="hover:text-[#f6733c] transition-colors">
                   Substation Engineering
                 </Link>
               </li>
               <li>
-                <Link href="/services/renewable" className="hover:text-[#f6733c] transition-colors">
+                <Link href="/expertise/renewable" className="hover:text-[#f6733c] transition-colors">
                   Renewable Energy Integration
                 </Link>
               </li>
               <li>
-                <Link href="/services/smart-grid" className="hover:text-[#f6733c] transition-colors">
+                <Link href="/expertise/smart-grid" className="hover:text-[#f6733c] transition-colors">
                   Smart Grid Solutions
                 </Link>
               </li>
             </ul>
-          </div>
+          </div> */}
+
+          {/* <div>
+            <h2 className="text-2xl font-semibold mb-4 text-[#f6733c]">Careers</h2>
+            <ul className="space-y-2 text-gray-700 dark:text-gray-300">
+              <li>
+                <Link href="/careers" className="hover:text-[#f6733c] transition-colors">
+                  Careers Overview
+                </Link>
+              </li>
+              <li>
+                <Link href="/careers/1" className="hover:text-[#f6733c] transition-colors">
+                  Senior Electrical Engineer
+                </Link>
+              </li>
+              <li>
+                <Link href="/careers/2" className="hover:text-[#f6733c] transition-colors">
+                  Project Manager
+                </Link>
+              </li>
+              <li>
+                <Link href="/careers/3" className="hover:text-[#f6733c] transition-colors">
+                  Civil Engineer (EIT)
+                </Link>
+              </li>
+            </ul>
+          </div> */}
 
           <div>
             <h2 className="text-2xl font-semibold mb-4 text-[#f6733c]">Legal</h2>
@@ -81,6 +117,22 @@ export default function SitemapPage() {
               <li>
                 <Link href="/sitemap" className="hover:text-[#f6733c] transition-colors">
                   Sitemap
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-semibold mb-4 text-[#f6733c]">Resources</h2>
+            <ul className="space-y-2 text-gray-700 dark:text-gray-300">
+              <li>
+                <Link href="/blog" className="hover:text-[#f6733c] transition-colors">
+                  Blog
+                </Link>
+              </li>
+              <li>
+                <Link href="/faq" className="hover:text-[#f6733c] transition-colors">
+                  FAQ
                 </Link>
               </li>
             </ul>

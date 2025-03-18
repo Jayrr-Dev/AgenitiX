@@ -21,7 +21,7 @@ export default function ExpertisePage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md">
             <div className="relative h-56">
               <Image 
-                src="/api/placeholder/800/600" 
+                src="https://placehold.co/435x224.png" 
                 alt="Distribution System Design" 
                 fill 
                 className="object-cover"
@@ -59,7 +59,7 @@ export default function ExpertisePage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md">
             <div className="relative h-56">
               <Image 
-                src="/api/placeholder/800/600" 
+                src="https://placehold.co/435x224.png" 
                 alt="Substation Engineering" 
                 fill 
                 className="object-cover"
@@ -97,7 +97,7 @@ export default function ExpertisePage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md">
             <div className="relative h-56">
               <Image 
-                src="/api/placeholder/800/600" 
+                src="https://placehold.co/435x224.png" 
                 alt="Renewable Integration" 
                 fill 
                 className="object-cover"

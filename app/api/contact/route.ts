@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { createRateLimiter, rateLimitPresets } from '@/utils/rate-limiter';
 
 // Define the form data interface
 interface ContactFormData {
@@ -13,10 +14,19 @@ interface ContactFormData {
   token: string; // Turnstile token
 }
 
+// Create a rate limiter for the contact form
+const rateLimiter = createRateLimiter(rateLimitPresets.moderate);
+
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimiterResponse = rateLimiter(request);
+    if (rateLimiterResponse) {
+      return rateLimiterResponse;
+    }
+    
     // Parse the request body
-    const formData: ContactFormData = await request.json();
+      const formData: ContactFormData = await request.json();
     
     // Validate the required fields
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.subject || !formData.message || !formData.consent) {

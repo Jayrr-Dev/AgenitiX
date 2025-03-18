@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import ical, { ICalAttendeeRole, ICalAttendeeStatus } from 'ical-generator';
-
+import { createRateLimiter, rateLimitPresets } from '@/utils/rate-limiter';
 // Define the consultation request data interface
 interface ConsultationRequest {
   name: string;
@@ -15,6 +15,9 @@ interface ConsultationRequest {
   message?: string;
   token: string; // Turnstile token
 }
+
+// Create a rate limiter for the schedule consultation form
+const rateLimiter = createRateLimiter(rateLimitPresets.moderate);
 
 // Convert 12-hour time format (e.g., "9:00 AM") to 24-hour format (e.g., "09:00:00")
 function convertTo24Hour(time12h: string): string {
@@ -50,6 +53,12 @@ function createEventTimes(date: string, time: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimiterResponse = rateLimiter(request);
+    if (rateLimiterResponse) {
+      return rateLimiterResponse;
+    }
+    
     // Parse the request body
     const consultationData: ConsultationRequest = await request.json();
     

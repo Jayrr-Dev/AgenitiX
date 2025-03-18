@@ -21,7 +21,7 @@ export default function ProjectsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md transition-transform hover:scale-[1.02]">
             <div className="relative h-64">
               <Image 
-                src="/api/placeholder/800/600" 
+                src="https://placehold.co/435x256.png" 
                 alt="Edmonton Substation Upgrade" 
                 fill 
                 className="object-cover"
@@ -45,7 +45,7 @@ export default function ProjectsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md transition-transform hover:scale-[1.02]">
             <div className="relative h-64">
               <Image 
-                src="/api/placeholder/800/600" 
+                src="https://placehold.co/435x256.png" 
                 alt="Calgary Distribution Network" 
                 fill 
                 className="object-cover"
@@ -69,7 +69,7 @@ export default function ProjectsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md transition-transform hover:scale-[1.02]">
             <div className="relative h-64">
               <Image 
-                src="/api/placeholder/800/600" 
+                src="https://placehold.co/435x256.png" 
                 alt="Fort McMurray Microgrid" 
                 fill 
                 className="object-cover"
@@ -149,7 +149,7 @@ export default function ProjectsPage() {
           {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
             <div key={item} className="relative h-48 md:h-64 rounded-lg overflow-hidden">
               <Image 
-                src={`/api/placeholder/400/300?text=Project+${item}`} 
+                src="https://placehold.co/330x256.png" 
                 alt={`Project image ${item}`} 
                 fill 
                 className="object-cover hover:scale-110 transition-transform duration-300"

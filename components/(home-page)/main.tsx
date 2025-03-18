@@ -148,25 +148,25 @@ export default function Main() {
                 name: "Sarah Johnson",
                 title: "Chief Executive Officer",
                 bio: "With over 20 years of experience in electrical engineering and business leadership.",
-                image: "https://placehold.co/400x500"
+                image: "https://placehold.co/314x256.png"
               },
               {
                 name: "Michael Chen",
                 title: "Chief Technical Officer",
                 bio: "Expert in power systems with a background in renewable energy integration.",
-                image: "https://placehold.co/400x500"
+                image: "https://placehold.co/314x256.png"
               },
               {
                 name: "Priya Patel",
                 title: "Director of Operations",
                 bio: "Specializes in optimizing project delivery and operational excellence.",
-                image: "https://placehold.co/400x500"
+                image: "https://placehold.co/314x256.png"
               },
               {
                 name: "Robert Wilson",
                 title: "Director of Engineering",
                 bio: "Leads our technical teams with expertise in substation and distribution systems.",
-                image: "https://placehold.co/400x500"
+                image: "https://placehold.co/314x256.png"
               }
             ].map((member, index) => (
               <motion.div
@@ -233,21 +233,21 @@ export default function Main() {
                 id: "1",
                 title: "Edmonton Substation",
                 description: "High-voltage substation design and implementation for Edmonton's growing industrial sector.",
-                image: "https://placehold.co/600x400",
+                image: "https://placehold.co/422x192.png",
                 link: "/projects/edmonton-substation"
               },
               {
                 id: "2",
                 title: "Calgary Distribution",
                 description: "Modernization of power distribution network for Calgary's downtown commercial district.",
-                image: "https://placehold.co/600x400",
+                image: "https://placehold.co/422x192.png",
                 link: "/projects/calgary-distribution"
               },
               {
                 id: "3",
                 title: "Fort McMurray Microgrid",
                 description: "Innovative microgrid solution with renewable integration for remote industrial operations.",
-                image: "https://placehold.co/600x400",
+                image: "https://placehold.co/422x192.png",
                 link: "/projects/fort-mcmurray-microgrid"
               }
             ].map((project, index) => (

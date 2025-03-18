@@ -227,7 +227,7 @@ export default function CareerApplicationPage({ params }: { params: Promise<{ ap
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         <div className="relative h-64">
           <Image 
-            src="/career-banner.jpg" 
+            src="https://placehold.co/1368x256.png" 
             alt="Career opportunity" 
             fill 
             className="object-cover"

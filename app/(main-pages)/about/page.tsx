@@ -56,33 +56,37 @@ export default function AboutPage() {
         <div className="grid grid-cols-2 gap-4">
           <div className="relative h-[250px]">
             <Image
-              src="/substation-engineer.jpg"
+              src="https://placehold.co/322x250.png"
               alt="Engineer at substation"
-              fill
+              width={322}
+              height={250}
               className="object-cover rounded-lg"
             />
           </div>
           <div className="relative h-[250px]">
             <Image
-              src="/distribution-design.jpg"
+              src="https://placehold.co/322x250.png"
               alt="Distribution system design"
-              fill
+              width={322}
+              height={250}
               className="object-cover rounded-lg"
             />
           </div>
-          <div className="relative h-[250px]">
-            <Image
-              src="/team-meeting.jpg"
+            <div className="relative h-[250px]">
+              <Image
+              src="https://placehold.co/322x250.png"
               alt="Engineering team meeting"
-              fill
+              width={322}
+              height={250}
               className="object-cover rounded-lg"
             />
           </div>
           <div className="relative h-[250px]">
             <Image
-              src="/field-work.jpg"
+              src="https://placehold.co/322x250.png"
               alt="Field engineering work"
-              fill
+              width={322}
+              height={250}
               className="object-cover rounded-lg"
             />
           </div>
@@ -203,9 +207,10 @@ export default function AboutPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md">
             <div className="relative h-[300px]">
               <Image
-                src="/team-lead-1.jpg"
+                src="https://placehold.co/435x300.png"
                 alt="Sarah Johnson - Principal Engineer"
-                fill
+                width={435}
+                height={300}
                 className="object-cover"
               />
             </div>
@@ -220,9 +225,10 @@ export default function AboutPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md">
             <div className="relative h-[300px]">
               <Image
-                src="/team-lead-2.jpg"
+                src="https://placehold.co/435x300.png"
                 alt="Michael Chen - Technical Director"
-                fill
+                width={435}
+                height={300}
                 className="object-cover"
               />
             </div>
@@ -237,9 +243,10 @@ export default function AboutPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md">
             <div className="relative h-[300px]">
               <Image
-                src="/team-lead-3.jpg"
+                src="https://placehold.co/435x300.png"
                 alt="David Rodriguez - Innovation Lead"
-                fill
+                width={435}
+                height={300}
                 className="object-cover"
               />
             </div>

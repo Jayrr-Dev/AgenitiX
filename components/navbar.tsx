@@ -16,6 +16,12 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu } from "lucide-react"
 import Image from "next/image"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const components: { title: string; href: string; description: string }[] = [
   {
@@ -80,44 +86,47 @@ export function Navbar() {
         "container flex items-center h-full",
         scrolled ? "py-2" : "py-4"
       )}>
-        <div className="mr-4 hidden md:flex">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
-            <Image 
-              src="/logo.png" 
-              alt="logo" 
-              width={scrolled ? 100 : 150} 
-              height={scrolled ? 100 : 150}
-              className="transition-all duration-300" 
-            />
-            <div className={cn(
-              "flex flex-col transition-all duration-300",
-              scrolled ? "scale-90 origin-left" : ""
-            )}>
-              <span className="hidden font-bold sm:inline-block text-3xl logoText">Utilitek Solutions</span>
-              <span className={cn(
-                "text-sm text-gray-500 transition-opacity duration-300",
-                scrolled ? "opacity-0 h-0" : "opacity-100"
-              )}>Our expertise is your success</span>
+          <div className="flex items-center w-full">
+            <Link href="/" className="mr-6 flex items-center justify-start min-w-[250px] ">
+              <Image 
+                src="/logo.png" 
+                alt="logo" 
+                width={scrolled ? 100 : 150} 
+                height={scrolled ? 100 : 150}
+                className="transition-all duration-300 h-12 sm:h-16 md:h-20 lg:h-24 xl:h-28 w-auto" 
+              />
+              <div className={cn(
+                "flex flex-col transition-all duration-300",
+                scrolled ? "scale-90 origin-left" : ""
+              )}>
+              
+                <span className="font-bold block sm:hidden lg:block text-2xl lg:text-3xl logoText whitespace-nowrap sm:whitespace-normal">Utilitek Solutions</span>
+                <span className={cn(
+                  "text-sm text-gray-500 transition-opacity duration-300 hidden lg:block",
+                  scrolled ? "opacity-0 h-0" : "opacity-100"
+                )}>Our expertise is your success</span>
             </div>
           </Link>
+            <div className=" md:hidden w-full flex items-center justify-end ">
+               <MobileNav />
+            </div>
         </div>
-        
-        {/* Mobile Logo */}
-        <div className="flex items-center md:hidden">
-          <Link href="/" className="flex items-center space-x-2">
-            <Image src="/logo.png" alt="logo" width={80} height={80} className="h-10 w-auto" />
-            <span className="font-bold text-sm">UTILITEK</span>
-          </Link>
-        </div>
-
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <div className="w-full flex-1 md:w-auto md:flex-none">
-            <MobileNav />
+          <div className="hidden md:block w-full flex-1 md:w-auto md:flex-none">
+            <DesktopNav />
           </div>
 
-          {/* Desktop Navigation */}
-          <DesktopNav />
+          
+
         </div>
+        {/* Mobile Logo */}
+        {/* <div className="flex items-center md:hidden">
+          <Link href="/" className="flex items-center space-x-2">
+            <Image src="/logo.png" alt="logo" width={80} height={80} className="h-10 w-auto" />
+          </Link>
+        </div> */}
+
+      
       </div>
     </header>
   )
@@ -126,7 +135,7 @@ export function Navbar() {
 function DesktopNav() {
   return (
     <NavigationMenu>
-      <NavigationMenuList>
+      <NavigationMenuList className="flex flex-row flex-wrap">
         <NavigationMenuItem>
           <Link href="/about" legacyBehavior passHref>
             <NavigationMenuLink className={navigationMenuTriggerStyle()}>About Us</NavigationMenuLink>
@@ -162,37 +171,56 @@ function DesktopNav() {
 
 function MobileNav() {
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="ghost" className="px-0 text-base md:hidden">
-          <Menu className="h-5 w-5" />
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button 
+          variant="link" 
+          className="px-0 text-2xl md:hidden hover:border-b-2 t data-[state=open]:border-b-2 data-[state=open]:border-[#f6733c] data-[state=open]:text-[#f6733c]"
+          onClick={(e) => {
+            e.currentTarget.classList.add('border-b-2', 'border-[#f6733c]', 'text-[#f6733c]');
+            setTimeout(() => {
+              e.currentTarget.classList.remove('border-b-2', 'border-[#f6733c]', 'text-[#f6733c]');
+            }, 300);
+          }}
+        >
+          <Menu className="h-10 w-10" />
           <span className="sr-only">Toggle menu</span>
         </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="pr-0">
-        <MobileLink href="/" className="flex items-center" onOpenChange={() => {}}>
-          <Image src="/logo.png" alt="logo" width={100} height={100} className="h-12 w-auto mr-2" />
-          <span className="font-bold">UTILITEK SOLUTIONS</span>
-        </MobileLink>
-        <div className="flex flex-col space-y-4 pt-6">
-          <MobileLink href="/docs" onOpenChange={() => {}}>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-[85vw] px-8 text-xl">
+        <DropdownMenuItem asChild>
+          <Link href="/" className="flex items-center w-full">
+            {/* <Image src="/logo.png" alt="logo" width={24} height={24} className="h-5 w-auto mr-2" /> */}
+            <span className="font-medium">Home</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/about" className="w-full">
             About Us
-          </MobileLink>
-          <MobileLink href="/components" onOpenChange={() => {}}>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/expertise" className="w-full">
             Expertise
-          </MobileLink>
-          <MobileLink href="/examples" onOpenChange={() => {}}>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/projects" className="w-full">
             Projects
-          </MobileLink>
-          <MobileLink href="/about" onOpenChange={() => {}}>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/contact" className="w-full">
             Contact
-          </MobileLink>
-          <MobileLink href="/about" onOpenChange={() => {}}>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/careers" className="w-full">
             Careers
-          </MobileLink>
-        </div>
-      </SheetContent>
-    </Sheet>
+          </Link>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
