@@ -1,18 +1,66 @@
+"use client";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import GeneralApplication from "@/components/general-application";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { useState } from "react";
+
+interface GeneralApplicationProps {
+  onSubmitSuccess: () => void;
+}
 
 export default function CareersPage() {
+
+  //current openings
+  const currentOpenings = [
+    {
+      id: "1",
+      title: "Senior Electrical Engineer",
+      location: "Edmonton, AB",
+      description: "Lead electrical design for utility and infrastructure projects, mentor junior engineers, and collaborate with multidisciplinary teams."
+    },
+    {
+      id: "2",
+      title: "Project Manager",
+      location: "Calgary, AB",
+      description: "Oversee engineering projects from inception to completion, manage client relationships, and ensure timely delivery within budget."
+    },
+    {
+      id: "3",
+      title: "Civil Engineer (EIT)",
+      location: "Edmonton, AB",
+      description: "Support civil engineering design for infrastructure projects, perform calculations, and assist with field inspections."
+    }
+  ];  
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleDialogOpen = () => {
+    setIsDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setIsDialogOpen(false);
+  };
+    
   return (
     <div className="container mx-auto px-4 py-12">
       {/* Hero Section */}
       <div className="relative h-[300px] md:h-[400px] mb-16 rounded-lg overflow-hidden">
-        <Image
-          src="/engineering-team-working.jpg"
-          alt="Engineering team collaborating"
-          fill
-          className="object-cover"
-          priority
+        <video
+          src="https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOox6N8iRQTaxACzFgUNuTPJ7VWMRB9s0cS8dnvE"
+          autoPlay
+          muted
+          loop
+          className="object-cover h-full w-full absolute inset-0"
         />
         <div className="absolute inset-0 bg-black/50 flex flex-col justify-center items-center text-white p-6 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Join Our Team</h1>
@@ -66,50 +114,22 @@ export default function CareersPage() {
       <div className="mb-16">
         <h2 className="text-3xl font-semibold mb-8 text-center">Current Openings</h2>
         <div className="space-y-6">
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-shadow">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center">
-              <div>
-                <h3 className="text-xl font-semibold mb-2">Senior Electrical Engineer</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">Edmonton, AB | Full-time</p>
-                <p className="text-gray-700 dark:text-gray-300 mb-4">
-                  Lead electrical design for utility and infrastructure projects, mentor junior engineers, and collaborate with multidisciplinary teams.
-                </p>
+          {currentOpenings.map((opening, index) => (
+            <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-shadow">
+              <div className="flex flex-col md:flex-row md:justify-between md:items-center">
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">{opening.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">{opening.location} | Full-time</p>
+                </div>
+                <Link href={`/careers/${opening.id}`} className="self-start md:self-center mt-4 md:mt-0">
+                  <Button variant="default">
+                    Apply Now
+                  </Button> 
+                </Link>
               </div>
-              <Button className="self-start md:self-center mt-4 md:mt-0">
-                Apply Now
-              </Button>
             </div>
-          </div>
+          ))}
 
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-shadow">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center">
-              <div>
-                <h3 className="text-xl font-semibold mb-2">Project Manager</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">Calgary, AB | Full-time</p>
-                <p className="text-gray-700 dark:text-gray-300 mb-4">
-                  Oversee engineering projects from inception to completion, manage client relationships, and ensure timely delivery within budget.
-                </p>
-              </div>
-              <Button className="self-start md:self-center mt-4 md:mt-0">
-                Apply Now
-              </Button>
-            </div>
-          </div>
-
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-shadow">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center">
-              <div>
-                <h3 className="text-xl font-semibold mb-2">Civil Engineer (EIT)</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">Edmonton, AB | Full-time</p>
-                <p className="text-gray-700 dark:text-gray-300 mb-4">
-                  Support civil engineering design for infrastructure projects, perform calculations, and assist with field inspections.
-                </p>
-              </div>
-              <Button className="self-start md:self-center mt-4 md:mt-0">
-                Apply Now
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -207,9 +227,20 @@ export default function CareersPage() {
         <p className="text-gray-700 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
           We're always looking for talented individuals to join our team. Submit your resume for future opportunities.
         </p>
-        <Button size="lg">
-          Submit General Application
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button size="lg">Submit General Application</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>General Application</DialogTitle>
+              <DialogDescription>
+                Submit your information for consideration for future opportunities.
+              </DialogDescription>
+            </DialogHeader>
+            <GeneralApplication onSubmitSuccess={handleDialogClose} />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

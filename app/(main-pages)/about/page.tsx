@@ -13,13 +13,13 @@ export default function AboutPage() {
       {/* Hero Section with Parallax Effect */}
       <div className="relative h-[500px] mb-20 overflow-hidden rounded-xl">
         <div className="absolute inset-0">
-          <Image
-            src="/engineering-team.jpg"
-            alt="Utilitek engineering team"
-            fill
-            className="object-cover"
-            priority
-          />
+        <video
+          src="https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxH05YgpZDmQiWokPRKAqj60Eh4sDU81tNyJpf"
+          autoPlay
+          muted
+          loop
+          className="object-cover h-full w-full absolute inset-0"
+        />
         </div>
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-center">
           <div className="text-white max-w-xl p-12">

@@ -1,7 +1,125 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import { useState, ChangeEvent, FormEvent } from "react";
+
+// Define interfaces for type safety
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+  consent: boolean;
+}
+
+interface FormStatus {
+  isSubmitting: boolean;
+  isSubmitted: boolean;
+  isError: boolean;
+  message: string;
+}
 
 export default function ContactPage() {
+  const [formData, setFormData] = useState<FormData>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    subject: "",
+    message: "",
+    consent: false
+  });
+  
+  const [formStatus, setFormStatus] = useState<FormStatus>({
+    isSubmitting: false,
+    isSubmitted: false,
+    isError: false,
+    message: ""
+  });
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { id, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    
+    setFormData(prev => ({
+      ...prev,
+      [id]: type === "checkbox" ? checked : value
+    }));
+  };
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    // Validate the form
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.subject || !formData.message || !formData.consent) {
+      setFormStatus({
+        isSubmitting: false,
+        isSubmitted: false,
+        isError: true,
+        message: "Please fill in all required fields."
+      });
+      return;
+    }
+    
+    setFormStatus({
+      isSubmitting: true,
+      isSubmitted: false,
+      isError: false,
+      message: ""
+    });
+    
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        // Success
+        setFormStatus({
+          isSubmitting: false,
+          isSubmitted: true,
+          isError: false,
+          message: result.message
+        });
+        
+        // Reset form
+        setFormData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          phone: "",
+          subject: "",
+          message: "",
+          consent: false
+        });
+      } else {
+        // API error
+        setFormStatus({
+          isSubmitting: false,
+          isSubmitted: false,
+          isError: true,
+          message: result.message || "Something went wrong. Please try again."
+        });
+      }
+    } catch (error) {
+      // Network error
+      setFormStatus({
+        isSubmitting: false,
+        isSubmitted: false,
+        isError: true,
+        message: "Failed to submit form. Please check your connection and try again."
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-16">
@@ -15,95 +133,132 @@ export default function ContactPage() {
         {/* Contact Form */}
         <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
           <h2 className="text-2xl font-semibold mb-6">Send Us a Message</h2>
-          <form className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  First Name
-                </label>
-                <input
-                  type="text"
-                  id="firstName"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  id="lastName"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-            <div>
-              <label htmlFor="subject" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Subject
-              </label>
-              <select
-                id="subject"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                required
+          
+          {formStatus.isSubmitted ? (
+            <div className="bg-green-50 dark:bg-green-900 p-4 rounded-md mb-6">
+              <p className="text-green-800 dark:text-green-200">{formStatus.message}</p>
+              <Button 
+                className="mt-4 bg-[#f6733c] hover:bg-[#e45f2d]"
+                onClick={() => setFormStatus(prev => ({ ...prev, isSubmitted: false }))}
               >
-                <option value="">Select a subject</option>
-                <option value="general">General Inquiry</option>
-                <option value="project">Project Consultation</option>
-                <option value="quote">Request a Quote</option>
-                <option value="support">Technical Support</option>
-                <option value="other">Other</option>
-              </select>
+                Send Another Message
+              </Button>
             </div>
-            <div>
-              <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Message
-              </label>
-              <textarea
-                id="message"
-                rows={5}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                required
-              ></textarea>
-            </div>
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="consent"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                required
-              />
-              <label htmlFor="consent" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                I consent to having this website store my submitted information so they can respond to my inquiry.
-              </label>
-            </div>
-            <Button type="submit" className="w-full bg-[#f6733c] hover:bg-[#e45f2d]">
-              Submit Message
-            </Button>
-          </form>
+          ) : (
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              {formStatus.isError && (
+                <div className="bg-red-50 dark:bg-red-900 p-4 rounded-md">
+                  <p className="text-red-800 dark:text-red-200">{formStatus.message}</p>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    First Name*
+                  </label>
+                  <input
+                    type="text"
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Last Name*
+                  </label>
+                  <input
+                    type="text"
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Email Address*
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+              <div>
+                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Subject*
+                </label>
+                <select
+                  id="subject"
+                  value={formData.subject}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  required
+                >
+                  <option value="">Select a subject</option>
+                  <option value="General Inquiry">General Inquiry</option>
+                  <option value="Project Consultation">Project Consultation</option>
+                  <option value="Request a Quote">Request a Quote</option>
+                  <option value="Technical Support">Technical Support</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Message*
+                </label>
+                <textarea
+                  id="message"
+                  rows={5}
+                  value={formData.message}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  required
+                ></textarea>
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="consent"
+                  checked={formData.consent}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  required
+                />
+                <label htmlFor="consent" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  I consent to having this website store my submitted information so they can respond to my inquiry.*
+                </label>
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full bg-[#f6733c] hover:bg-[#e45f2d]"
+                disabled={formStatus.isSubmitting}
+              >
+                {formStatus.isSubmitting ? "Sending..." : "Submit Message"}
+              </Button>
+            </form>
+          )}
         </div>
 
         {/* Contact Information */}
@@ -122,7 +277,7 @@ export default function ContactPage() {
                 </div>
                 <div className="ml-4">
                   <h3 className="text-lg font-medium">Address</h3>
-                  <p className="text-gray-600 dark:text-gray-400">123 Engineering Drive<br />Edmonton, AB T5J 2R4<br />Canada</p>
+                  <p className="text-gray-600 dark:text-gray-400">17815 106 Ave NW<br />Edmonton, AB T5S 2H1<br />Canada</p>
                 </div>
               </div>
               <div className="flex items-start">
@@ -148,7 +303,7 @@ export default function ContactPage() {
                 </div>
                 <div className="ml-4">
                   <h3 className="text-lg font-medium">Email</h3>
-                  <p className="text-gray-600 dark:text-gray-400">info@utilitek.ca</p>
+                  <p className="text-gray-600 dark:text-gray-400">admin@utilitek.ca</p>
                 </div>
               </div>
               <div className="flex items-start">
@@ -168,14 +323,22 @@ export default function ContactPage() {
           </div>
 
           <div className="relative h-[300px] rounded-lg overflow-hidden">
-            <Image
-              src="/map-placeholder.jpg"
-              alt="Office Location Map"
-              fill
-              className="object-cover"
-            />
+            <iframe 
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4740.865762019465!2d-113.6282313971037!3d53.55003963821127!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x53a020de2b7f18eb%3A0x9daaf7881e0edc24!2s17815%20106%20Ave%20NW%2C%20Edmonton%2C%20AB%20T5S%202H1!5e0!3m2!1sen!2sca!4v1742248049622!5m2!1sen!2sca" 
+              width="600" 
+              height="450" 
+              style={{ border: 0 }} 
+              allowFullScreen={true} 
+              loading="lazy" 
+              referrerPolicy="no-referrer-when-downgrade"
+              className="absolute inset-0 w-full h-full"
+            />  
             <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
-              <Button variant="outline" className="bg-white hover:bg-gray-100 text-gray-800">
+              <Button 
+                variant="outline" 
+                className="bg-white hover:bg-gray-100 text-gray-800"
+                onClick={() => window.open("https://www.google.com/maps/place/17815+106+Ave+NW,+Edmonton,+AB+T5S+2H1,+Canada/@53.5500396,-113.6282314,17z/data=!3m1!4b1!4m6!3m5!1s0x53a020de2b7f18eb:0x9daaf7881e0edc24!8m2!3d53.5500396!4d-113.6282314!16s%2Fg%2F11c1z0_0_9", "_blank")}
+              >
                 View Larger Map
               </Button>
             </div>

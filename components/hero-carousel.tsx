@@ -30,32 +30,32 @@ export function HeroCarousel() {
       ctaLink: "/demo"
     },
     {
-      type: "image",
-      src: "https://placehold.co/600x400",
+      type: "video",
+      src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOox2bSnnjhI5vdYi6q1rEpygWQ4G3zfKUxeusR7",
       message: "Innovative solutions for modern problems",
       ctaText: "Explore Solutions",
       ctaLink: "/solutions"
     },
     {
-      type: "image",
-      src: "https://placehold.co/600x400",
+      type: "video",
+      src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxAAk0Hu3HqjTl9NXwnEZku5Jao6813Kd7LUiM",
       message: "Join our community of creators",
       ctaText: "Sign Up Today",
       ctaLink: "/signup"
     },
     {
-      type: "image",
-      src: "https://placehold.co/600x400",
-      message: "Award-winning designs that inspire",
-      ctaText: "View Portfolio",
-      ctaLink: "/portfolio"
-    },
-    {
-      type: "image",
-      src: "https://placehold.co/600x400",
+      type: "video",
+      src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxkIIrjof2IctWSx5udkeCYzHQF1w0norGhilm",
       message: "Trusted by industry leaders worldwide",
       ctaText: "See Testimonials",
       ctaLink: "/testimonials"
+    },
+    {
+      type: "video",
+      src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxU1NtRfVEzhbKyMT2ALI95efgRZFtW68dpsxO",
+      message: "Award-winning designs that inspire",
+      ctaText: "View Portfolio",
+      ctaLink: "/portfolio"
     }
   ];
 
@@ -82,7 +82,7 @@ export function HeroCarousel() {
     
     const interval = setInterval(() => {
       emblaApi.scrollNext();
-      }, 9000); // Change slide every 20 seconds
+      }, 9500); // Change slide every x seconds
     
     return () => clearInterval(interval);
   }, [emblaApi]);
