@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
     // Parse the request body
     const formData: ContactFormData = await request.json();
     
-    // Validate the required fields
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.subject || !formData.message) {
+      // Validate the required fields
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.subject || !formData.message || !formData.consent) {
       return NextResponse.json(
         { success: false, message: 'Missing required fields' }, 
         { status: 400 }
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     // Send email
     await transporter.sendMail({
       from: process.env.EMAIL_FROM as string,
-      to: 'admin@company.com', // Your recipient email
+      to: 'svsoriano@utiliteksolutions.ca', // Your recipient email
       subject: `Contact Form: ${formData.subject}`,
       text: emailContent,
     });

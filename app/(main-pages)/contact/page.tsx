@@ -1,7 +1,9 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import Link from "next/link";
 import { useState, ChangeEvent, FormEvent } from "react";
+import ScheduleConsultation from "@/components/schedule-consultation";
 
 // Define interfaces for type safety
 interface FormData {
@@ -384,13 +386,13 @@ export default function ContactPage() {
           Our team of experienced engineers is ready to help you bring your vision to life. Contact us today to schedule a consultation.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg" className="bg-[#f6733c] hover:bg-[#e45f2d]">
-            Schedule a Consultation
-          </Button>
-          <Button size="lg" variant="outline" className="border-[#f6733c] text-[#f6733c] hover:bg-[#f6733c] hover:text-white">
-            View Our Projects
-          </Button>
-        </div>
+          <ScheduleConsultation />
+          <Link href="/projects">
+            <Button size="lg" variant="outline" className="border-[#f6733c] text-[#f6733c] hover:bg-[#f6733c] hover:text-white">
+              View Our Projects
+            </Button>
+          </Link>
+        </div>  
       </div>
     </div>
   );
