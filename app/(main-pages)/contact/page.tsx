@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, ChangeEvent, FormEvent } from "react";
-import ScheduleConsultation from "@/components/schedule-consultation";
+import ScheduleConsultation from "@/features/contact/components/schedule-consultation";
 import Turnstile from "@/components/turnstile";
 // Define interfaces for type safety
 interface FormData {

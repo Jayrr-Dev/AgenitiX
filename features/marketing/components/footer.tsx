@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { CookiePolicy } from "@/components/cookies";
+import { CookiePolicy } from "@/features/cookies";
 
 export default function Footer() {
   return (

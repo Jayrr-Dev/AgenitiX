@@ -1,8 +1,7 @@
-import NextLogo from "../next-logo";
-import SupabaseLogo from "../supabase-logo";
-import { HeroCarousel } from "../hero-carousel";
+
+import { HeroCarousel } from "./hero-carousel";
 import Image from "next/image";
-import FortisLogo from "../svg/fortis-logo";
+
 export default function Header() {
   return (
     <>
