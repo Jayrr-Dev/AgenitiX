@@ -23,6 +23,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+import { useUserStore } from "@/store/userStore"
+
 const components: { title: string; href: string; description: string }[] = [
   {
     title: "Alert Dialog",
@@ -59,7 +61,7 @@ const components: { title: string; href: string; description: string }[] = [
 
 export function Navbar() {
   const [scrolled, setScrolled] = React.useState(false);
-  
+  const userRole = useUserStore((state) => state.userRole);
   React.useEffect(() => {
     const handleScroll = () => {
       const isScrolled = window.scrollY > 10;
@@ -138,8 +140,11 @@ export function Navbar() {
 }
 
 function DesktopNav() {
+  const userRole = useUserStore((state) => state.userRole);
+  console.log(userRole,"userRole");
   return (
     <NavigationMenu>
+      {userRole}
       <NavigationMenuList className="flex flex-row flex-wrap">
         <NavigationMenuItem>
           <Link href="/about" legacyBehavior passHref>
@@ -175,6 +180,7 @@ function DesktopNav() {
 }
 
 function MobileNav() {
+  const userRole = useUserStore((state) => state.userRole);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

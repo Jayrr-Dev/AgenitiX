@@ -1,10 +1,14 @@
-import React from 'react'
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { Navbar } from "@/features/marketing/components/navbar";
 import { CookieConsent } from "@/features/cookies";
 import Footer from "@/features/marketing/components/footer";
+import { UserRoleInitializer } from "@/app/components/UserRoleIntitalizer";
+import { getUserRole, getCustomClaims } from "@/utils/auth-utils";
+import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
+
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
   : "http://localhost:3000";
@@ -20,11 +24,26 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-export default function RootLayout({
+
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  // if (!user) {
+  //   return redirect("/");
+  // }
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  const userRole = await getUserRole(session);
+
   return (
     <html lang="en" className={geistSans.className} suppressHydrationWarning>
       <body className="bg-background text-foreground">
@@ -35,12 +54,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <main className="min-h-screen flex flex-col items-center">
+          <UserRoleInitializer userRole={userRole} />
             <div className="flex-1 w-full flex flex-col items-center">
-
+            
               {/* Navbar */}
               <Navbar />
 
-
+              
               {/* Main Content */}
               <div className="w-full">
                 {children}
