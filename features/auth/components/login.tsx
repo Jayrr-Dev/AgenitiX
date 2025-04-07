@@ -61,7 +61,20 @@ export default function Login() {
       setError(err instanceof Error ? err.message : "Invalid email or password");
       console.error(err);
       // Reset Turnstile if there's an error
+      // We're setting the token to null, but keeping the isLoading to false
       setToken(null);
+      
+      // Force refresh the Turnstile component
+      // This will create a new instance of the Turnstile widget
+      const turnstileContainer = document.getElementById('turnstile-container');
+      if (turnstileContainer) {
+        turnstileContainer.innerHTML = '';
+        (window as any).turnstile?.render('#turnstile-container', {
+          sitekey: '0x4AAAAAABBaVePB9txPEfir',
+          callback: handleVerify,
+          theme: 'light'
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -137,7 +150,7 @@ export default function Login() {
               </div>
               
               {/* Turnstile CAPTCHA */}
-              <div className="my-4">
+              <div className="my-4 h-50" id="turnstile-container">
                 <Turnstile 
                   siteKey="0x4AAAAAABBaVePB9txPEfir" 
                   onVerify={handleVerify}
@@ -151,7 +164,7 @@ export default function Login() {
               <Button 
                 type="submit" 
                 className="w-full bg-[#f6733c] hover:bg-[#e45f2d]" 
-                disabled={isLoading || !token}
+                disabled={isLoading}
               >
                 {isLoading ? "Signing in..." : "Sign in"}
               </Button>

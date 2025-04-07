@@ -1,7 +1,7 @@
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
-import { Navbar } from "@/features/marketing/components/navbar";
+import { Navbar } from "@/components/navbar";
 import { CookieConsent } from "@/features/cookies";
 import Footer from "@/features/marketing/components/footer";
 import { UserRoleInitializer } from "@/app/components/UserRoleIntitalizer";
@@ -36,12 +36,12 @@ export default async function RootLayout({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  // if (!user) {
-  //   return redirect("/");
-  // }
+ 
   const {
     data: { session },
   } = await supabase.auth.getSession()
+
+  
   const userRole = await getUserRole(session);
 
   return (
@@ -54,11 +54,10 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <main className="min-h-screen flex flex-col items-center">
-          <UserRoleInitializer userRole={userRole} />
             <div className="flex-1 w-full flex flex-col items-center">
             
               {/* Navbar */}
-              <Navbar />
+              <Navbar userRole={userRole} session={session} />
 
               
               {/* Main Content */}
