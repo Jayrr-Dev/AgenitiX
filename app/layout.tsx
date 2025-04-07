@@ -4,10 +4,8 @@ import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { CookieConsent } from "@/features/cookies";
 import Footer from "@/features/marketing/components/footer";
-import { UserRoleInitializer } from "@/app/components/UserRoleIntitalizer";
-import { getUserRole, getCustomClaims } from "@/utils/auth-utils";
+import { getUserRole } from "@/utils/auth-utils";
 import { createClient } from "@/utils/supabase/server";
-import { redirect } from "next/navigation";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`

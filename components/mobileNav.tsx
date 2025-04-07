@@ -9,7 +9,8 @@ import Link from "next/link";
 import { Menu } from "lucide-react";  
 import React from "react";
 import { cn } from "@/lib/utils";
-
+import LogoutButton from "@/features/auth/components/logoutButton";
+import { navigationMenuTriggerStyle } from "./ui/navigation-menu";
 export function MobileNav({userRole, session}: { userRole: string | null, session: any}) {
     return (
       <DropdownMenu>
@@ -28,6 +29,9 @@ export function MobileNav({userRole, session}: { userRole: string | null, sessio
             <span className="sr-only">Toggle menu</span>
           </Button>
         </DropdownMenuTrigger>
+
+        {/* If user is not logged in, show the navigation menu */}
+        {userRole == null && (
         <DropdownMenuContent align="end" className="w-[85vw] px-8 text-xl">
           <DropdownMenuItem asChild>
             <Link href="/" className="flex items-center w-full">
@@ -61,6 +65,26 @@ export function MobileNav({userRole, session}: { userRole: string | null, sessio
             </Link>
           </DropdownMenuItem>
         </DropdownMenuContent>
+        )}
+
+        {/* If user is logged in, show the navigation menu */}
+        {userRole !== null && (
+        <DropdownMenuContent align="end" className="w-[85vw] px-8 text-xl">
+          <DropdownMenuItem asChild>
+            <Link href="./employee_dashboard" legacyBehavior passHref>
+          Employee Dashboard
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="./timesheet" legacyBehavior passHref>
+              Timesheet
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <LogoutButton className="w-full border-2 border-solid border-[#f6733c] text-[#f6733c] font-medium" />
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+        )}
       </DropdownMenu>
     )
   }

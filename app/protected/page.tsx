@@ -6,24 +6,27 @@ import { InfoIcon } from "lucide-react";
 import { redirect } from "next/navigation";
 
 export default async function ProtectedPage() {
+  
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) {
-    return redirect("/");
-  }
+
   const {
     data: { session },
   } = await supabase.auth.getSession()
   const userRole = await getUserRole(session);
   const customClaims = await getCustomClaims(session);
 
+  // If user is not logged in, redirect to the home page
+  if (!user) {
+    return redirect("/");
+  }
 
   
   return (
     <div className="flex-1 w-full flex flex-col gap-12">
-      <div className="w-full">
+      {/* <div className="w-full">
 
         <div>
           <h1>User Role: {userRole}</h1>
@@ -52,7 +55,7 @@ export default async function ProtectedPage() {
       <div>
         <h2 className="font-bold text-2xl mb-4">Next steps</h2>
         <FetchDataSteps />
-      </div>
+      </div> */}
     </div>
   );
 }

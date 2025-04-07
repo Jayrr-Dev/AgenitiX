@@ -3,14 +3,8 @@
 import * as React from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu } from "lucide-react"
 import Image from "next/image"
 
-import LogoutButton from "@/features/auth/components/logoutButton"
-import { useUserStore } from "@/store/userStore"
 import { MobileNav } from "./mobileNav"
 import { DesktopNav } from "./desktopNav"
 
@@ -110,9 +104,6 @@ export function Navbar({userRole, session}: { userRole: string | null, session: 
           <div className="hidden md:block w-full flex-1 md:w-auto md:flex-none">
             <DesktopNav userRole={userRole} session={session} />
           </div>
-
-          
-
         </div>
         {/* Mobile Logo */}
         {/* <div className="flex items-center md:hidden">

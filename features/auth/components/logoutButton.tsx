@@ -19,7 +19,7 @@ export default function LogoutButton({
 }: LogoutButtonProps) {
   return (
       <Button 
-        type="submit" 
+        type="button" 
         variant={variant} 
         size={size}
         className={className}

@@ -54,7 +54,7 @@ export default function Login() {
       
       if (data?.user) {
         // Successful login
-        router.push("/protected"); // or your default authenticated route
+        router.push("./employee_dashboard"); // or your default authenticated route
         router.refresh(); // Refresh the page to update auth state
       }
     } catch (err) {
