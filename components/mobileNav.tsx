@@ -6,7 +6,7 @@ import {
   } from "@/components/ui/dropdown-menu"
 import { Button } from "./ui/button";
 import Link from "next/link";
-import { Menu } from "lucide-react";  
+import { Clock, Menu, User, Calendar } from "lucide-react";  
 import React from "react";
 import { cn } from "@/lib/utils";
 import LogoutButton from "@/features/auth/components/logoutButton";
@@ -69,15 +69,30 @@ export function MobileNav({userRole, session}: { userRole: string | null, sessio
 
         {/* If user is logged in, show the navigation menu */}
         {userRole !== null && (
-        <DropdownMenuContent align="end" className="w-[85vw] px-8 text-xl">
+        <DropdownMenuContent align="end" className="w-[85vw] px-8 text-xl grid grid-cols-1 gap-4">
           <DropdownMenuItem asChild>
             <Link href="./employee_dashboard" legacyBehavior passHref>
-          Employee Dashboard
+            <button className="flex items-center gap-2 py-2 border-b-2 border-solid border-[#f6733c] hover:bg-[#f6733c] hover:text-white rounded-md">
+              <User className="h-5 w-5" />
+              <span className="font-medium">Employee Dashboard</span>
+            </button>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="./timesheet" legacyBehavior passHref>
-              Timesheet
+              <button className="flex items-center gap-2 py-2 border-b-2 border-solid border-[#f6733c] hover:bg-[#f6733c] hover:text-white rounded-md">
+                <Clock className="h-5 w-5" />
+                <span className="font-medium">Timesheet</span>
+              </button>
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem asChild>  
+            <Link href="./vacations" legacyBehavior passHref>
+              <button className="flex items-center gap-2 py-2 border-b-2 border-solid border-[#f6733c] hover:bg-[#f6733c] hover:text-white rounded-md">
+                <Calendar className="h-5 w-5" />
+                <span className="font-medium">Vacations</span>
+              </button>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>

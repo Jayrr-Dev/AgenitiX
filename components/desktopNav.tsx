@@ -61,6 +61,11 @@ export function DesktopNav({userRole, session}: { userRole: string | null, sessi
                         <NavigationMenuLink className={navigationMenuTriggerStyle()}>Timesheet</NavigationMenuLink>
                     </Link>
                 </NavigationMenuItem>
+                <NavigationMenuItem>
+                    <Link href="./vacations" legacyBehavior passHref>
+                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>Vacations</NavigationMenuLink>
+                    </Link>
+                </NavigationMenuItem>
                 <NavigationMenuItem> 
                     <LogoutButton />
                 </NavigationMenuItem>

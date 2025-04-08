@@ -71,7 +71,7 @@ export function Navbar({userRole, session}: { userRole: string | null, session: 
         scrolled ? "py-2" : "py-4"
       )}>
           <div className="flex items-center w-full">
-            <Link href="/" className="mr-6 flex items-center justify-start min-w-[250px] ">
+            <Link href="/" className="mr-6 flex items-center justify-start min-w-[250px] cursor-pointer">
               <Image 
                 src="/logo.png" 
                 alt="logo" 
