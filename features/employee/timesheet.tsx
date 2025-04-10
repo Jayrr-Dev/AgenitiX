@@ -20,7 +20,8 @@ import { selectColumn } from './selectColumn'
 import { Project } from '@/store/projectStore'
 import { TimesheetEntry, EmployeeData } from './types/timesheetTypes'
 import { formatNumber } from './utils/formatNumber'
-export default function Timesheet({ employeeData, authID }: { employeeData: EmployeeData[], authID: string }) {
+import { redirect } from 'next/navigation'
+export default function Timesheet({ employeeData, authID, userRole }: { employeeData: EmployeeData[], authID: string, userRole: string }) {
     // State variables
     const { period, setPeriod } = usePeriodStore();
     const [timesheetEntries, setTimesheetEntries] = useState<TimesheetEntry[]>([]);
@@ -56,7 +57,17 @@ export default function Timesheet({ employeeData, authID }: { employeeData: Empl
         handleRedo,
         resetStore
     } = useTimesheetStore();
+
+    //use auth ide to redirect to login page if not logged in for security
+    useEffect(() => {
+        if (!authID) {
+            redirect('/');
+        }
+    }, [authID]);
     
+    // if (userRole !== "employee" && userRole !== "admin" && userRole !== "manager") {
+    //     redirect('/');
+    // }
     // Function to fetch projects from Supabase
     const fetchProjects = async (forceRefresh = false) => {
         try {

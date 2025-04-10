@@ -7,7 +7,7 @@ import EmployeeDashboard from "@/features/employee/employee_dashboard";
 import Timesheet from "@/features/employee/timesheet";
 import Vacations from "@/features/employee/vacations";
 import { getEmployeeData } from "@/utils/supabaseUtils";
-
+import { getUserRole } from "@/utils/auth-utils";
   
 
 interface PageProps {
@@ -16,29 +16,37 @@ interface PageProps {
   }>;
 }
 
-
+ 
 
 
 export default async function ProtectedPage({params}: PageProps) {
   const supabase = await createClient();
   const { data: user, error } = await supabase.auth.getUser()
+  const { data: sessions } = await supabase.auth.getSession()
+  const userRole = await getUserRole(sessions);
   const { page = '' } = await params;
+
+  // Redirect to login if not an authorized role
+  // if (!userRole || (userRole !== "employee" && userRole !== "admin" && userRole !== "manager")) {
+  //   redirect('/');
+  // }
+
   const viewComponents = {
     'login': () => {
       if (session) {
         redirect("./employee_dashboard");
       }
-      return <Login />
+      return <Login  />
     },
     'employee_dashboard': () => {
-      return <EmployeeDashboard />
+      return <EmployeeDashboard authID={user?.user?.id || ""} userRole={userRole || ""}  />
     },
     'timesheet': async () => {
       const employeeData = await getEmployeeData(user?.user?.id || "");
-      return <Timesheet employeeData={employeeData || []} authID={user?.user?.id || ""} />
+      return <Timesheet employeeData={employeeData || []} authID={user?.user?.id || ""} userRole={userRole || ""} />
     },
     'vacations': () => {
-      return <Vacations />
+      return <Vacations authID={user?.user?.id || ""} userRole={userRole || ""} />
     }
   }
 
