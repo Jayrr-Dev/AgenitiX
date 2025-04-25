@@ -10,16 +10,87 @@ import { Providers } from '@/app/provider';
 import { Suspense } from "react";
 import Loading from "./loading";
 import { Analytics } from "@vercel/analytics/react"
+import Script from "next/script";
+import { Metadata } from "next";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
   : "http://localhost:3000";
 
-export const metadata = {
-  metadataBase: new URL(defaultUrl),
-  title: "Utilitek Solutions",
-  description: "Utilitek Solutions is a electrical engineering consulting company in Edmonton, Alberta, Canada that provides solutions to businesses in the utility industry",
-};
+  export const metadata: Metadata = {
+    metadataBase: new URL(defaultUrl),
+    title: {
+      default: 'Utilitek Solutions',
+      template: '%s | Utilitek Solutions',
+    },
+    description: 'Utilitek Solutions is an electrical engineering consulting company in Edmonton, Alberta, Canada that provides solutions to businesses in the utility industry.',
+    keywords: [
+      'Utilitek Solutions',
+      'Electrical Engineering',
+      'Utility Industry',
+      'Consulting',
+      'Edmonton',
+      'Alberta',
+      'Canada',
+    ],
+    authors: [
+      {
+        name: 'Utilitek Solutions Inc.',
+        url: defaultUrl,
+      },
+    ],
+    creator: 'Utilitek Solutions Inc.',
+    publisher: 'Utilitek Solutions Inc.',
+    openGraph: {
+      title: 'Utilitek Solutions',
+      description: 'Electrical engineering consulting services for the utility industry in Edmonton, Alberta, Canada.',
+      url: defaultUrl,
+      siteName: 'Utilitek Solutions',
+      images: [
+        {
+          url: `${defaultUrl}/cover.jpg`,
+          width: 1200,
+          height: 630,
+          alt: 'Utilitek Solutions Cover Image',
+        },
+      ],
+      locale: 'en_CA',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Utilitek Solutions',
+      description: 'Electrical engineering consulting services for the utility industry in Edmonton, Alberta, Canada.',
+      creator: '@UtilitekSolutions',
+      images: [`${defaultUrl}/cover.jpg`],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      nocache: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        noimageindex: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
+    alternates: {
+      canonical: defaultUrl,
+      languages: {
+        'en-CA': '/',
+      },
+    },
+    icons: {
+      icon: '/logo.png',
+      shortcut: '/logo.png',
+      apple: '/logo.png',
+    },
+    manifest: '/site.webmanifest',
+    category: 'technology',
+  };
 
 const geistSans = Geist({
   display: "swap",
@@ -45,6 +116,25 @@ export default async function RootLayout({
 
   
   const userRole = await getUserRole(session);
+
+<Script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{
+    __html: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'Utilitek Solutions Inc.',
+      url: defaultUrl,
+      logo: `https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxJ1e43nvrKN08PwisukcGDYCdEBQlfXvLFg73`,
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'Customer Service',
+        areaServed: 'CA',
+        availableLanguage: 'English',
+      },
+    }),
+  }}
+/>
 
   return (
     <html lang="en" className={geistSans.className}>
