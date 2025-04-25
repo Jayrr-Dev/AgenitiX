@@ -48,7 +48,7 @@ const defaultUrl = process.env.VERCEL_URL
       siteName: 'Utilitek Solutions',
       images: [
         {
-          url: `${defaultUrl}/cover.jpg`,
+          url: `${defaultUrl}/cover.png`,
           width: 1200,
           height: 630,
           alt: 'Utilitek Solutions Cover Image',
@@ -62,7 +62,7 @@ const defaultUrl = process.env.VERCEL_URL
       title: 'Utilitek Solutions',
       description: 'Electrical engineering consulting services for the utility industry in Edmonton, Alberta, Canada.',
       creator: '@UtilitekSolutions',
-      images: [`${defaultUrl}/cover.jpg`],
+      images: [`${defaultUrl}/cover.png`],
     },
     robots: {
       index: true,
