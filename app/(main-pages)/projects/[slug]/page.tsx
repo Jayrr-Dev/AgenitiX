@@ -5,11 +5,11 @@ import { getProjectShowcaseById } from '@/features/projects/lib/api/getProjectSh
 import ClientProjectPage from './ClientProjectPage';
 import type { PageProps } from '@/types/page';
 import { notFound } from 'next/navigation';
-
+import { use } from 'react';
 export const revalidate = 60;
 
-export default async function ProjectPage({ params }: PageProps) {
-  const slug = await params.slug;
+export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
 
   // 1. Fetch the project by its slugified title
   const project = await getProjectShowcaseBySlugTitle(slug);
