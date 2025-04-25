@@ -23,7 +23,7 @@ export default function AboutPage() {
         </div>
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-center">
           <div className="text-white max-w-xl p-12">
-            <h2 className="text-4xl font-bold mb-4">Transforming Power Distribution</h2>
+            <h2 className="text-4xl font-bold mb-4">Transforming Distribution Design</h2>
             <p className="text-xl mb-6">
               Since 2014, we've been engineering the future of electrical distribution systems across Canada.
             </p>
