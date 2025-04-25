@@ -48,7 +48,7 @@ const defaultUrl = process.env.VERCEL_URL
       siteName: 'Utilitek Solutions',
       images: [
         {
-          url: `${defaultUrl}/cover.png`,
+          url: `https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxmx8fO2EvrwqgHICeFRAkyXLoZEczbxh82KiQ`,
           width: 1200,
           height: 630,
           alt: 'Utilitek Solutions Cover Image',
@@ -62,7 +62,7 @@ const defaultUrl = process.env.VERCEL_URL
       title: 'Utilitek Solutions',
       description: 'Electrical engineering consulting services for the utility industry in Edmonton, Alberta, Canada.',
       creator: '@UtilitekSolutions',
-      images: [`${defaultUrl}/cover.png`],
+      images: [`https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxmx8fO2EvrwqgHICeFRAkyXLoZEczbxh82KiQ`],
     },
     robots: {
       index: true,
@@ -84,9 +84,9 @@ const defaultUrl = process.env.VERCEL_URL
       },
     },
     icons: {
-      icon: '/logo.png',
-      shortcut: '/logo.png',
-      apple: '/logo.png',
+      icon: 'https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxJ1e43nvrKN08PwisukcGDYCdEBQlfXvLFg73',
+      shortcut: 'https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxJ1e43nvrKN08PwisukcGDYCdEBQlfXvLFg73',
+      apple: 'https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxJ1e43nvrKN08PwisukcGDYCdEBQlfXvLFg73',
     },
     manifest: '/site.webmanifest',
     category: 'technology',
