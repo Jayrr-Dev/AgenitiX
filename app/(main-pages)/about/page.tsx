@@ -41,8 +41,8 @@ export default function AboutPage() {
         <div>
           <h2 className="text-3xl font-semibold mb-6">Our Story</h2>
           <p className="text-gray-700 dark:text-gray-300 mb-4">
-            Founded in 2014 by Samuel Soriano a former senior engineer in EPCOR. Utilitek Solutions Inc. emerged from a passion for engineering and a vision to provide the best electrical distribution engineering services in Canada. 
-            What began as a small team of passionate engineers has grown into Alberta's premier consulting firm for utility infrastructure.
+            Founded in 2014 by Sam a former manager in Capital Engineering. Utilitek Solutions Inc. emerged from a passion for engineering and a vision to provide the best electrical distribution engineering services in Canada. 
+            What began as a small team of passionate engineers has grown into one of Edmonton's most reliable and reputable consulting firms for utility infrastructure.
           </p>
           <p className="text-gray-700 dark:text-gray-300 mb-4">
             Our specialized focus on distribution systems and engineering design has allowed us to develop unparalleled expertise in grid modernization, 
@@ -50,7 +50,7 @@ export default function AboutPage() {
           </p>
           <p className="text-gray-700 dark:text-gray-300">
             Today, our specialized teams of engineers and technical experts brings decades of combined experience, 
-            having successfully delivered over 300+ distribution projects in the Edmonton area and across Alberta.
+            having successfully delivered over 1000 distribution projects in the Edmonton area and across Alberta.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-4">
