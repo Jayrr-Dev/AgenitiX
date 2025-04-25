@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    console.log(token);
+    // console.log(token);
     // Validate Turnstile token
     if (!token) {
       return NextResponse.json(

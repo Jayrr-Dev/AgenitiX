@@ -13,28 +13,34 @@ export type Database = {
         Row: {
           active: boolean | null
           authID: string | null
+          eid: number
           email: string | null
-          id: number
+          epcor_title: string | null
           name: string | null
           name_code: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
           title: string | null
         }
         Insert: {
           active?: boolean | null
           authID?: string | null
+          eid: number
           email?: string | null
-          id: number
+          epcor_title?: string | null
           name?: string | null
           name_code?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
           title?: string | null
         }
         Update: {
           active?: boolean | null
           authID?: string | null
+          eid?: number
           email?: string | null
-          id?: number
+          epcor_title?: string | null
           name?: string | null
           name_code?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
           title?: string | null
         }
         Relationships: [
@@ -47,8 +53,111 @@ export type Database = {
           },
         ]
       }
+      project_related_links: {
+        Row: {
+          id: string
+          project_id: string
+          related_project_id: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          related_project_id: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          related_project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_related_links_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_showcase"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_related_links_related_project_id_fkey"
+            columns: ["related_project_id"]
+            isOneToOne: false
+            referencedRelation: "project_showcase"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_showcase: {
+        Row: {
+          contact_info: string | null
+          description: string | null
+          details: string | null
+          id: string
+          image_carousel: Json | null
+          image_url: string | null
+          outcomes: Json | null
+          project_link: string | null
+          title: string | null
+          year: string | null
+        }
+        Insert: {
+          contact_info?: string | null
+          description?: string | null
+          details?: string | null
+          id?: string
+          image_carousel?: Json | null
+          image_url?: string | null
+          outcomes?: Json | null
+          project_link?: string | null
+          title?: string | null
+          year?: string | null
+        }
+        Update: {
+          contact_info?: string | null
+          description?: string | null
+          details?: string | null
+          id?: string
+          image_carousel?: Json | null
+          image_url?: string | null
+          outcomes?: Json | null
+          project_link?: string | null
+          title?: string | null
+          year?: string | null
+        }
+        Relationships: []
+      }
+      project_tags: {
+        Row: {
+          project_id: string
+          tags_id: string
+        }
+        Insert: {
+          project_id: string
+          tags_id: string
+        }
+        Update: {
+          project_id?: string
+          tags_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_categories_category_id_fkey"
+            columns: ["tags_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["tag_id"]
+          },
+          {
+            foreignKeyName: "project_categories_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_showcase"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
+          assigned: string | null
           company: string | null
           created_at: string
           department: string | null
@@ -58,9 +167,11 @@ export type Database = {
           project: string | null
           task: number | null
           type: string | null
-          wo: string | null
+          wo: number | null
+          wr: number | null
         }
         Insert: {
+          assigned?: string | null
           company?: string | null
           created_at?: string
           department?: string | null
@@ -70,9 +181,11 @@ export type Database = {
           project?: string | null
           task?: number | null
           type?: string | null
-          wo?: string | null
+          wo?: number | null
+          wr?: number | null
         }
         Update: {
+          assigned?: string | null
           company?: string | null
           created_at?: string
           department?: string | null
@@ -82,9 +195,18 @@ export type Database = {
           project?: string | null
           task?: number | null
           type?: string | null
-          wo?: string | null
+          wo?: number | null
+          wr?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_assigned_fkey"
+            columns: ["assigned"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["name"]
+          },
+        ]
       }
       role_permissions: {
         Row: {
@@ -104,6 +226,36 @@ export type Database = {
         }
         Relationships: []
       }
+      showcase: {
+        Row: {
+          created_at: string
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          tag_id: string
+          tags: string
+        }
+        Insert: {
+          tag_id?: string
+          tags: string
+        }
+        Update: {
+          tag_id?: string
+          tags?: string
+        }
+        Relationships: []
+      }
       timesheet_entries: {
         Row: {
           authID: string | null
@@ -119,7 +271,7 @@ export type Database = {
           km: number | null
           name_code: string | null
           ot: number | null
-          pay_period: string | null
+          pay_period: number | null
           project: string | null
           project_id: number | null
           rt: number | null
@@ -148,7 +300,7 @@ export type Database = {
           km?: number | null
           name_code?: string | null
           ot?: number | null
-          pay_period?: string | null
+          pay_period?: number | null
           project?: string | null
           project_id?: number | null
           rt?: number | null
@@ -177,7 +329,7 @@ export type Database = {
           km?: number | null
           name_code?: string | null
           ot?: number | null
-          pay_period?: string | null
+          pay_period?: number | null
           project?: string | null
           project_id?: number | null
           rt?: number | null
@@ -205,7 +357,7 @@ export type Database = {
             columns: ["eid"]
             isOneToOne: false
             referencedRelation: "employees"
-            referencedColumns: ["id"]
+            referencedColumns: ["eid"]
           },
           {
             foreignKeyName: "timesheet_entries_project_id_fkey"
@@ -250,7 +402,7 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: true
             referencedRelation: "employees"
-            referencedColumns: ["id"]
+            referencedColumns: ["eid"]
           },
         ]
       }

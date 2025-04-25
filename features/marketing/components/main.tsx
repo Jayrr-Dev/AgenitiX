@@ -6,8 +6,15 @@ import { motion, useInView } from "framer-motion";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Zap, Shield, Award, Users, BarChart, Linkedin } from "lucide-react";
+// import ProjectGallery from "@/features/projects/components/ProjectGallery";
+
+import { useQuery } from "@tanstack/react-query";
+import ProjectFeatured from "@/features/projects/components/ProjectFeatured";
+import CurrentOpenings from "@/features/careers/components/currentOpenings";
+import { createClient } from "@/utils/supabase/client";
 
 export default function Main() {
+  const supabase = createClient();
   const servicesRef = useRef(null);
   const statsRef = useRef(null);
   const projectsRef = useRef(null);
@@ -17,6 +24,42 @@ export default function Main() {
   const statsInView = useInView(statsRef, { once: true, amount: 0.3 });
   const projectsInView = useInView(projectsRef, { once: true, amount: 0.3 });
   const teamInView = useInView(teamRef, { once: true, amount: 0.3 });
+   
+  const getTags = async () => {
+    const { data, error } = await supabase.from("tags").select("tag, definitions");
+    if (error) throw error;
+    return data;
+  };  
+
+  // create table public.tags (
+  //   tag_id uuid not null default gen_random_uuid (),
+  //   tag text not null,
+  //   category text null,
+  //   definitions text null,
+  //   constraint categories_pkey primary key (tag_id),
+  //   constraint categories_name_key unique (tag)
+  // ) TABLESPACE pg_default;
+
+
+  type Tag = {  
+    tag: string;
+    definitions: string;
+  };
+
+  const targetTag = [
+    "Utility Design",
+    "Residential Development Support",
+    "Protection & Control",
+    "Infrastructure Upgrade",
+    "Three-Phase Distribution",
+    "Transformer Installation Design"
+  ];
+  const { data: tags, isLoading: tagsLoading } = useQuery<Tag[]>({
+    queryKey: ["tags"],
+    queryFn: () => getTags(),
+  }); 
+
+  const filteredTags = tags?.filter((tag) => targetTag.includes(tag.tag));
 
   return (
     <div className="w-full">
@@ -39,33 +82,33 @@ export default function Main() {
           >
             {[
               {
-                title: "Power Distribution",
-                description: "Design and implementation of reliable power distribution systems for commercial and industrial facilities.",
+                title: filteredTags?.[0]?.tag,
+                description: filteredTags?.[0]?.definitions,
                 icon: <Zap className="h-10 w-10 text-primary" />
               },
               {
-                title: "Substation Engineering",
-                description: "Expert planning, design and construction of electrical substations with cutting-edge technology.",
+                title: filteredTags?.[1]?.tag,
+                description: filteredTags?.[1]?.definitions,
                 icon: <Shield className="h-10 w-10 text-primary" />
               },
               {
-                title: "Renewable Integration",
-                description: "Seamless integration of renewable energy sources into existing power infrastructure.",
+                title: filteredTags?.[2]?.tag,
+                description: filteredTags?.[2]?.definitions,
                 icon: <Award className="h-10 w-10 text-primary" />
               },
               {
-                title: "Industrial Automation",
-                description: "Advanced control systems and automation solutions for improved efficiency and productivity.",
+                title: filteredTags?.[3]?.tag,
+                description: filteredTags?.[3]?.definitions,
                 icon: <BarChart className="h-10 w-10 text-primary" />
               },
               {
-                title: "Electrical Maintenance",
-                description: "Comprehensive maintenance services to ensure optimal performance and longevity of electrical systems.",
+                title: filteredTags?.[4]?.tag,
+                description: filteredTags?.[4]?.definitions,
                 icon: <Users className="h-10 w-10 text-primary" />
               },
               {
-                title: "Energy Management",
-                description: "Strategic energy management solutions to optimize consumption and reduce operational costs.",
+                title: filteredTags?.[5]?.tag,
+                description: filteredTags?.[5]?.definitions,
                 icon: <Zap className="h-10 w-10 text-primary" />
               }
             ].map((service, index) => (
@@ -109,7 +152,7 @@ export default function Main() {
               { value: "25+", label: "Years Experience" },
               { value: "500+", label: "Projects Completed" },
               { value: "98%", label: "Client Satisfaction" },
-              { value: "150+", label: "Team Members" }
+              { value: "50+", label: "Current Projects" }
             ].map((stat, index) => (
               <motion.div 
                 key={index}
@@ -127,7 +170,8 @@ export default function Main() {
       </section>
 
       {/* Team Section */}
-      <section className="py-16 bg-gradient-to-b from-background to-muted/30">
+      {/* todo: add team section */}
+      {/* <section className="py-16 bg-gradient-to-b from-background to-muted/30">
         <div className="container">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Leadership Team</h2>
@@ -145,7 +189,7 @@ export default function Main() {
           >
             {[
               {
-                name: "Sarah Johnson",
+                name: "Dan Busilian",
                 title: "Chief Executive Officer",
                 bio: "With over 20 years of experience in electrical engineering and business leadership.",
                 image: "https://placehold.co/314x256.png"
@@ -209,11 +253,20 @@ export default function Main() {
             </Link>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Featured Projects */}
-      <section className="py-16">
+      <section className="pt-16">
         <div className="container">
+        <div className="text-center mb-12">
+        <h2 className="text-3xl md:text-4xl font-bold mb-4">Featured Projects</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Explore our portfolio of successful electrical engineering projects across various industries.
+            </p> 
+        </div>
+        <ProjectFeatured />
+        </div>
+        {/* <div className="container">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Featured Projects</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -292,9 +345,19 @@ export default function Main() {
               </Button>
             </Link>
           </div>
+        </div> */}
+      </section>
+      
+      {/* Careers Section */}
+      <section className="pb-16 bg-gradient-to-b from-background to-muted/30">
+        <div className="container">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Careers</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto"> Join our team of experienced professionals and contribute to the success of our projects. </p>
+          </div>
+        <CurrentOpenings />
         </div>
       </section>
-
       {/* CTA Section */}
       <section className="py-16 bg-primary text-primary-foreground">
         <div className="container">

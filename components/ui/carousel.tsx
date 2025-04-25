@@ -131,7 +131,7 @@ const CarouselContent = React.forwardRef<
 >(({ className, ...props }, ref) => {
   const { carouselRef, orientation } = useCarousel()
   return (
-    <div ref={carouselRef} className="overflow-hidden ">
+    <div ref={carouselRef} className="overflow-hidden rounded-lg">
       <div
         ref={ref}
         className={cn("flex", orientation === "horizontal" ? "-ml-4" : "-mt-4 flex-col", className)}
@@ -219,10 +219,10 @@ const CarouselNext = React.forwardRef<
 })
 CarouselNext.displayName = "CarouselNext"
 
-const CarouselDots = () => {
+const CarouselDots = ({className}: {className?: string} ) => {
   const { selectedIndex, totalSlides, scrollTo } = useCarousel()
   return (
-    <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2 z-10">
+    <div className= {cn("absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2 z-10", className)}>
       {Array.from({ length: totalSlides }).map((_, index) => (
         <button
           key={index}

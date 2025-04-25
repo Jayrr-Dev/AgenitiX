@@ -294,7 +294,7 @@ export default function ContactPage() {
             <h2 className="text-2xl font-semibold mb-6">Contact Information</h2>
             <div className="space-y-4">
               <div className="flex items-start">
-                <div className="flex-shrink-0 mt-1">
+                {/* <div className="flex-shrink-0 mt-1">
                   <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
                     <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -305,9 +305,9 @@ export default function ContactPage() {
                 <div className="ml-4">
                   <h3 className="text-lg font-medium">Address</h3>
                   <p className="text-gray-600 dark:text-gray-400">17815 106 Ave NW<br />Edmonton, AB T5S 2H1<br />Canada</p>
-                </div>
+                </div> */}
               </div>
-              <div className="flex items-start">
+              {/* <div className="flex items-start">
                 <div className="flex-shrink-0 mt-1">
                   <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
                     <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -319,7 +319,7 @@ export default function ContactPage() {
                   <h3 className="text-lg font-medium">Phone</h3>
                   <p className="text-gray-600 dark:text-gray-400">(780) 555-0123</p>
                 </div>
-              </div>
+              </div> */}
               <div className="flex items-start">
                 <div className="flex-shrink-0 mt-1">
                   <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
@@ -330,7 +330,7 @@ export default function ContactPage() {
                 </div>
                 <div className="ml-4">
                   <h3 className="text-lg font-medium">Email</h3>
-                  <p className="text-gray-600 dark:text-gray-400">admin@utilitek.ca</p>
+                  <p className="text-gray-600 dark:text-gray-400">admin2@utiliteksolutions.ca</p>
                 </div>
               </div>
               <div className="flex items-start">
@@ -350,21 +350,12 @@ export default function ContactPage() {
           </div>
 
           <div className="relative h-[300px] rounded-lg overflow-hidden">
-            <iframe 
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4740.865762019465!2d-113.6282313971037!3d53.55003963821127!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x53a020de2b7f18eb%3A0x9daaf7881e0edc24!2s17815%20106%20Ave%20NW%2C%20Edmonton%2C%20AB%20T5S%202H1!5e0!3m2!1sen!2sca!4v1742248049622!5m2!1sen!2sca" 
-              width="600" 
-              height="450" 
-              style={{ border: 0 }} 
-              allowFullScreen={true} 
-              loading="lazy" 
-              referrerPolicy="no-referrer-when-downgrade"
-              className="absolute inset-0 w-full h-full"
-            />  
+          <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4740.956036094691!2d-113.63212153915934!3d53.54923380401824!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x53a020de2209832f%3A0xebd2b79d62c20f2d!2sEdmonton%2C%20AB%20T5S%202H1!5e0!3m2!1sen!2sca!4v1745604616646!5m2!1sen!2sca" width="600" height="450" style={{border:0}} allowFullScreen={true} loading="lazy" referrerPolicy="no-referrer-when-downgrade"></iframe>
             <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
               <Button 
                 variant="outline" 
                 className="bg-white hover:bg-gray-100 text-gray-800"
-                onClick={() => window.open("https://www.google.com/maps/place/17815+106+Ave+NW,+Edmonton,+AB+T5S+2H1,+Canada/@53.5500396,-113.6282314,17z/data=!3m1!4b1!4m6!3m5!1s0x53a020de2b7f18eb:0x9daaf7881e0edc24!8m2!3d53.5500396!4d-113.6282314!16s%2Fg%2F11c1z0_0_9", "_blank")}
+                onClick={() => window.open("https://maps.app.goo.gl/dbwzuiiJpVGo2HNF9", "_blank")}
               >
                 View Larger Map
               </Button>

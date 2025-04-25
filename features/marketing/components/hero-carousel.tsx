@@ -1,18 +1,13 @@
 "use client";
+import dynamic from "next/dynamic";
 import * as React from "react";
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-// import {
-//   Carousel,
-//   CarouselContent,
-//   CarouselItem,
-//   CarouselNext,
-//   CarouselPrevious,
-//   CarouselDots,
-// } from "@/components/ui/carousel";
 import { motion, AnimatePresence } from "framer-motion";
 import useEmblaCarousel from "embla-carousel-react";
+// import LoadingCarousel from "./loading-carousel"; 
+// const VideoCarousel = dynamic(() => import("./video-carousel").then(mod => mod.videoCarousel), { ssr: false, loading: () => <LoadingCarousel/> });
 
 export function HeroCarousel() {
   const [scrollY, setScrollY] = useState(0);
@@ -25,7 +20,7 @@ export function HeroCarousel() {
     {
       type: "video",
       src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxS5sxJF7h0jeaV8R3woxgAG7Lr6ib5TOkcHXC",
-      message: "Transforming utility management with innovation",
+      message: "Proven Solutions for Utility Excellence",
       ctaText: "Discover How",
       ctaLink: "/about"
     },
@@ -94,26 +89,7 @@ export function HeroCarousel() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Handle video loading and autoplay
-  useEffect(() => {
-    if (videoRef.current) {
-      // Preload video data
-      videoRef.current.preload = "auto";
-      
-      // Force play when component mounts
-      const playVideo = async () => {
-        try {
-          if (videoRef.current) {
-            await videoRef.current.play();
-          }
-        } catch (error) {
-          console.log("Autoplay prevented:", error);
-        }
-      };
-      
-      playVideo();
-    }
-  }, []);
+
 
   // Animation variants for the message card
   const cardVariants = {
@@ -158,6 +134,7 @@ export function HeroCarousel() {
               <Card className="rounded-none">
                 <CardContent className="flex items-center justify-center m-0 p-0 overflow-hidden">
                   {slide.type === "video" ? (
+                    // <VideoCarousel src={slide.src} /> 
                     <video
                       ref={videoRef}
                       src={slide.src}

@@ -25,7 +25,7 @@ export default function AboutPage() {
           <div className="text-white max-w-xl p-12">
             <h2 className="text-4xl font-bold mb-4">Transforming Power Distribution</h2>
             <p className="text-xl mb-6">
-              Since 2015, we've been engineering the future of electrical distribution systems across Canada.
+              Since 2014, we've been engineering the future of electrical distribution systems across Canada.
             </p>
             <Link href="/contact">
               <Button size="lg" className="bg-[#f6733c] hover:bg-[#e45f2d]">
@@ -41,31 +41,23 @@ export default function AboutPage() {
         <div>
           <h2 className="text-3xl font-semibold mb-6">Our Story</h2>
           <p className="text-gray-700 dark:text-gray-300 mb-4">
-            Founded in 2015, Utilitek Solutions emerged from a vision to revolutionize electrical distribution engineering. 
+            Founded in 2014 by Samuel Soriano a former senior engineer in EPCOR. Utilitek Solutions Inc. emerged from a passion for engineering and a vision to provide the best electrical distribution engineering services in Canada. 
             What began as a small team of passionate engineers has grown into Alberta's premier consulting firm for utility infrastructure.
           </p>
           <p className="text-gray-700 dark:text-gray-300 mb-4">
-            Our specialized focus on distribution systems has allowed us to develop unparalleled expertise in grid modernization, 
-            renewable integration, and smart distribution technologies that are reshaping Canada's energy landscape.
+            Our specialized focus on distribution systems and engineering design has allowed us to develop unparalleled expertise in grid modernization, 
+            system integration, overhead design and underground design that are reshaping Canada's energy landscape.
           </p>
           <p className="text-gray-700 dark:text-gray-300">
-            Today, our team of 45+ engineers and technical experts brings decades of combined experience, 
-            having successfully delivered over 200 distribution projects across all Canadian provinces.
+            Today, our specialized teams of engineers and technical experts brings decades of combined experience, 
+            having successfully delivered over 300+ distribution projects in the Edmonton area and across Alberta.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-4">
+        
           <div className="relative h-[250px]">
             <Image
-              src="https://placehold.co/322x250.png"
-              alt="Engineer at substation"
-              width={322}
-              height={250}
-              className="object-cover rounded-lg"
-            />
-          </div>
-          <div className="relative h-[250px]">
-            <Image
-              src="https://placehold.co/322x250.png"
+              src="https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOox42jQAr8nPtB3eX0cQGN5Ij6nKH2MDUhYxZky"
               alt="Distribution system design"
               width={322}
               height={250}
@@ -74,7 +66,7 @@ export default function AboutPage() {
           </div>
             <div className="relative h-[250px]">
               <Image
-              src="https://placehold.co/322x250.png"
+              src="https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxPW8DnxMlzkoUqx0D9mWuO1tfBwvhINKda4V5"
               alt="Engineering team meeting"
               width={322}
               height={250}
@@ -83,8 +75,17 @@ export default function AboutPage() {
           </div>
           <div className="relative h-[250px]">
             <Image
-              src="https://placehold.co/322x250.png"
+              src="https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxvcyRXxZV7rebhwyJS6CM3imHpQXk8AoYz0It"
               alt="Field engineering work"
+              width={322}
+              height={250}
+              className="object-cover rounded-lg"
+            />
+          </div>
+          <div className="relative h-[250px]">
+            <Image
+              src="https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxzpmR54G6HPwEbQftyznjY5hcBd8GoNkeKMav"
+              alt="Engineer at substation"
               width={322}
               height={250}
               className="object-cover rounded-lg"
@@ -146,9 +147,9 @@ export default function AboutPage() {
               </div>
             </div>
             <div>
-              <h3 className="text-xl font-semibold mb-2">Substation Design & Modernization</h3>
+              <h3 className="text-xl font-semibold mb-2">Distribution Systems and Modernization</h3>
               <p className="text-gray-700 dark:text-gray-300">
-                Comprehensive engineering for new substations and retrofitting aging infrastructure with modern technology.
+              Design and optimization of electrical distribution networks for urban and rural areas.
               </p>
             </div>
           </div>
@@ -161,10 +162,11 @@ export default function AboutPage() {
               </div>
             </div>
             <div>
-              <h3 className="text-xl font-semibold mb-2">Smart Grid Integration</h3>
+              <h3 className="text-xl font-semibold mb-2">Urban Infrastructure Design</h3>
               <p className="text-gray-700 dark:text-gray-300">
-                Advanced solutions for monitoring, automation, and control systems that enhance grid reliability and efficiency.
-              </p>
+              Design and implementation of smart city solutions, including street lighting, traffic control, and public safety systems.
+
+</p>
             </div>
           </div>
           <div className="flex gap-6">
@@ -176,9 +178,9 @@ export default function AboutPage() {
               </div>
             </div>
             <div>
-              <h3 className="text-xl font-semibold mb-2">Renewable Integration</h3>
+              <h3 className="text-xl font-semibold mb-2">Power Systems Expertise</h3>
               <p className="text-gray-700 dark:text-gray-300">
-                Specialized engineering for connecting solar, wind, and other renewable sources to distribution networks.
+              Design and implementation of power systems for a wide range of applications, from small residential systems to large industrial complexes.
               </p>
             </div>
           </div>
@@ -191,9 +193,9 @@ export default function AboutPage() {
               </div>
             </div>
             <div>
-              <h3 className="text-xl font-semibold mb-2">Protection & Control Systems</h3>
+              <h3 className="text-xl font-semibold mb-2">Safety, Standards & Compliance</h3>
               <p className="text-gray-700 dark:text-gray-300">
-                Cutting-edge protection schemes and control systems that safeguard distribution infrastructure.
+              Implementation of safety protocols and compliance standards for all projects.
               </p>
             </div>
           </div>
@@ -201,21 +203,22 @@ export default function AboutPage() {
       </div>
 
       {/* Team Section */}
-      <div className="mb-20">
+      {/* TODO: Add team section */}
+      {/* <div className="mb-20">
         <h2 className="text-3xl font-semibold mb-8 text-center">Our Leadership Team</h2>
         <div className="grid md:grid-cols-3 gap-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md">
             <div className="relative h-[300px]">
               <Image
                 src="https://placehold.co/435x300.png"
-                alt="Sarah Johnson - Principal Engineer"
+                alt="Dan Busilian - Principal Engineer"
                 width={435}
                 height={300}
                 className="object-cover"
               />
             </div>
             <div className="p-6">
-              <h3 className="text-xl font-semibold mb-1">Sarah Johnson, P.Eng</h3>
+              <h3 className="text-xl font-semibold mb-1">Dan Busilian, P.Eng</h3>
               <p className="text-[#f6733c] mb-3">Principal Engineer, Distribution Systems</p>
               <p className="text-gray-700 dark:text-gray-300">
                 15+ years specializing in substation design and protection systems for major utilities across Western Canada.
@@ -259,7 +262,7 @@ export default function AboutPage() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* CTA Section */}
       <div className="bg-blue-50 dark:bg-blue-900 p-8 rounded-lg text-center">

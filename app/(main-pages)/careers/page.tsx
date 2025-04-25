@@ -11,36 +11,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { useState } from "react";
-
-interface GeneralApplicationProps {
-  onSubmitSuccess: () => void;
-}
+import { useEffect, useState } from "react";
+import { getAllJobOpenings } from "@/features/careers/lib/api/jobOpenings";
+import { JobOpening } from "@/features/careers/lib/api/jobOpenings";
+import { useQuery } from "@tanstack/react-query";
 
 export default function CareersPage() {
-
-  //current openings
-  const currentOpenings = [
-    {
-      id: "1",
-      title: "Senior Electrical Engineer",
-      location: "Edmonton, AB",
-      description: "Lead electrical design for utility and infrastructure projects, mentor junior engineers, and collaborate with multidisciplinary teams."
-    },
-    {
-      id: "2",
-      title: "Project Manager",
-      location: "Calgary, AB",
-      description: "Oversee engineering projects from inception to completion, manage client relationships, and ensure timely delivery within budget."
-    },
-    {
-      id: "3",
-      title: "Civil Engineer (EIT)",
-      location: "Edmonton, AB",
-      description: "Support civil engineering design for infrastructure projects, perform calculations, and assist with field inspections."
-    }
-  ];  
-
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleDialogOpen = () => {
@@ -50,7 +27,16 @@ export default function CareersPage() {
   const handleDialogClose = () => {
     setIsDialogOpen(false);
   };
-    
+
+
+  const { data: jobOpenings, isLoading, isError } = useQuery({
+    queryKey: ['jobOpenings'],
+    queryFn: getAllJobOpenings,
+  });
+
+  if (isLoading) return <div className="p-10 text-center">Loading job openings...</div>;
+  if (isError || !jobOpenings) return <div className="p-10 text-center text-red-600">Failed to load job openings.</div>;
+
   return (
     <div className="container mx-auto px-4 py-12">
       {/* Hero Section */}
@@ -60,6 +46,7 @@ export default function CareersPage() {
           autoPlay
           muted
           loop
+          suppressHydrationWarning
           className="object-cover h-full w-full absolute inset-0"
         />
         <div className="absolute inset-0 bg-black/50 flex flex-col justify-center items-center text-white p-6 text-center">
@@ -114,12 +101,13 @@ export default function CareersPage() {
       <div className="mb-16">
         <h2 className="text-3xl font-semibold mb-8 text-center">Current Openings</h2>
         <div className="space-y-6">
-          {currentOpenings.map((opening, index) => (
+            {jobOpenings.map((opening, index) => (
             <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-shadow">
               <div className="flex flex-col md:flex-row md:justify-between md:items-center">
                 <div>
                   <h3 className="text-xl font-semibold mb-2">{opening.title}</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">{opening.location} | Full-time</p>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">{opening.description}</p>
                 </div>
                 <Link href={`/careers/${opening.id}`} className="self-start md:self-center mt-4 md:mt-0">
                   <Button variant="default">
@@ -129,7 +117,6 @@ export default function CareersPage() {
               </div>
             </div>
           ))}
-
         </div>
       </div>
 
@@ -140,16 +127,12 @@ export default function CareersPage() {
           <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
             <div className="flex items-center mb-4">
               <div className="relative w-12 h-12 rounded-full overflow-hidden mr-4">
-                <Image
-                  src="https://placehold.co/48x48.png"
-                  alt="Employee portrait"
-                  fill
-                  className="object-cover"
-                />
+               
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"><path fill="currentColor" d="M12 15c-4.42 0-8 1.79-8 4v2h16v-2c0-2.21-3.58-4-8-4M8 9a4 4 0 0 0 4 4a4 4 0 0 0 4-4m-4.5-7c-.3 0-.5.21-.5.5v3h-1V3s-2.25.86-2.25 3.75c0 0-.75.14-.75 1.25h10c-.05-1.11-.75-1.25-.75-1.25C16.25 3.86 14 3 14 3v2.5h-1v-3c0-.29-.19-.5-.5-.5z"/></svg>
               </div>
               <div>
-                <h3 className="font-semibold">Sarah Johnson</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Senior Mechanical Engineer, 5 years</p>
+                <h3 className="font-semibold">Dan Busilian</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Senior Electrical Engineer, 2 years</p>
               </div>
             </div>
             <p className="text-gray-700 dark:text-gray-300 italic">
@@ -159,21 +142,28 @@ export default function CareersPage() {
           <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
             <div className="flex items-center mb-4">
               <div className="relative w-12 h-12 rounded-full overflow-hidden mr-4">
-                <Image
-                  src="https://placehold.co/48x48.png"
-                  alt="Employee portrait"
-                  fill
-                  className="object-cover"
-                />
+           
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"><path fill="currentColor" d="M16 9c0 5.33-8 5.33-8 0h2c0 2.67 4 2.67 4 0m6 9v3H4v-3c0-2.67 5.33-4 8-4s8 1.33 8 4m-1.9 0c0-.64-3.13-2.1-6.1-2.1S5.9 17.36 5.9 18v1.1h12.2M12.5 2c.28 0 .5.22.5.5v3h1V3a3.89 3.89 0 0 1 2.25 3.75s.7.14.75 1.25H7c0-1.11.75-1.25.75-1.25A3.89 3.89 0 0 1 10 3v2.5h1v-3c0-.28.22-.5.5-.5"/></svg>
               </div>
               <div>
-                <h3 className="font-semibold">Michael Chen</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Project Manager, 3 years</p>
+                <h3 className="font-semibold">Full Time Intern</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Design Engineer (EIT), 1 year</p>
               </div>
             </div>
-            <p className="text-gray-700 dark:text-gray-300 italic">
-              "The collaborative culture at Utilitek encourages innovation and excellence. I've had the opportunity to work on impactful projects while maintaining a healthy work-life balance."
-            </p>
+            <div className="flex flex-col">
+              {/* 5 stars rating */}
+              <div className="flex flex-row">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <svg className="text-yellow-500" key={index} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2L9.19 8.63L2 9.24l5.46 4.73L5.82 21z"/></svg>
+                ))}
+              </div>
+              <div className="font-bold">
+              Great Experience
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 italic">
+                "Learned lots of things regarding the design of power lines and the management was great. The management provided me with adequate training to complete my job."
+              </p>
+            </div>
           </div>
         </div>
       </div>

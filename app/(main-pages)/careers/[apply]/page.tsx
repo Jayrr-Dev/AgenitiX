@@ -4,90 +4,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Turnstile from "@/components/turnstile";
+import { getJobOpeningById, JobOpening } from "@/features/careers/lib/api/jobOpenings";
+import { useQuery } from "@tanstack/react-query";
+
 export default function CareerApplicationPage({ params }: { params: Promise<{ apply: string }> }) {
+  const { apply } = use(params);
+  const {data: job, isLoading, error} = useQuery({
+    queryKey: ["job", apply], 
+    queryFn: () => getJobOpeningById(apply)
+  })
   const [token, setToken] = useState<string | null>(null);
   const handleVerify = (token: string) => {
     setToken(token);
   };
-  // Mock job data - in a real app, this would come from an API or database
-  const jobs = [
-    {
-      id: "1",
-      title: "Senior Electrical Engineer",
-      location: "Edmonton, Alberta",
-      type: "Full-time",
-      description: "We are seeking an experienced Electrical Distribution Engineer to join our team in Edmonton. The ideal candidate will have expertise in designing and optimizing electrical distribution systems for urban and rural areas.",
-      requirements: [
-        "Bachelor's degree in Electrical Engineering",
-        "5+ years of experience in electrical distribution design",
-        "Professional Engineer (P.Eng) designation",
-        "Experience with AutoCAD and power system modeling software",
-        "Strong understanding of Canadian Electrical Code"
-      ],
-      responsibilities: [
-        "Design electrical distribution systems for utility clients",
-        "Perform load flow analysis and short circuit studies",
-        "Develop technical specifications for equipment procurement",
-        "Coordinate with clients, contractors, and regulatory authorities",
-        "Provide technical guidance to junior engineers and technologists"
-      ],
-    },
-    {
-      id: "2",
-      title: "Project Manager",
-      location: "Calgary, Alberta",
-      type: "Full-time",
-      description: "We are seeking a Project Manager to oversee our engineering projects from inception to completion. The ideal candidate will have a strong background in managing utility and infrastructure projects with excellent client communication skills.",
-      requirements: [
-        "Bachelor's degree in Engineering, Construction Management, or related field",
-        "PMP certification preferred",
-        "7+ years of experience managing engineering or construction projects",
-        "Strong understanding of project management methodologies",
-        "Experience with project management software and MS Office suite",
-        "Excellent communication and leadership skills" 
-      ],
-      responsibilities: [
-        "Lead project planning, execution, monitoring, and closure",
-        "Develop and maintain project schedules, budgets, and resource allocations",
-        "Coordinate with clients, contractors, and internal engineering teams",
-        "Identify and mitigate project risks and issues",   
-        "Ensure projects meet quality standards and are delivered on time and within budget",
-        "Prepare and present project status reports to stakeholders"
-      ],
-    },
-    {
-      id: "3",
-      title: "Civil Engineer (EIT)",
-      location: "Edmonton, Alberta",
-      type: "Full-time",
-      description: "We are seeking a Civil Engineer with a passion for infrastructure development. The ideal candidate will have a strong background in civil engineering design and construction management.",
-      requirements: [
-        "Bachelor's degree in Civil Engineering",
-        "EIT certification preferred",
-        "3+ years of experience in civil engineering design and construction management",
-        "Strong understanding of civil engineering principles and practices",
-        "Experience with civil engineering software and MS Office suite",
-        "Excellent communication and teamwork skills"
-      ],
-      responsibilities: [   
-        "Design and analyze civil engineering structures",
-        "Prepare construction drawings and specifications",
-        "Conduct site assessments and soil investigations",
-        "Coordinate with clients, contractors, and regulatory authorities",
-        "Provide technical support to project teams and clients"
-      ],    
-    },
-    // Other job listings...
-  ];
 
-  // Unwrap params using React.use() to fix the console error
-  const unwrappedParams = use(params);
-  
-  // Find the job with the matching ID
-  const jobId = unwrappedParams.apply;
-  const job = jobs.find(job => job.id === jobId) || jobs[0];
-  
-  // Form state
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -95,7 +26,7 @@ export default function CareerApplicationPage({ params }: { params: Promise<{ ap
     phone: "",
     coverLetter: ""
   });
-  
+
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<{
@@ -141,7 +72,6 @@ export default function CareerApplicationPage({ params }: { params: Promise<{ ap
   
   // Form submission
   const handleSubmit = async (e: FormEvent) => {
-    
     e.preventDefault();
     
     if (!resumeFile) {
@@ -150,6 +80,10 @@ export default function CareerApplicationPage({ params }: { params: Promise<{ ap
     }
     if (!token) {
       alert('Please verify the captcha');
+      return;
+    }
+    if (!job) {
+      alert('Job details not loaded');
       return;
     }
 
@@ -213,6 +147,14 @@ export default function CareerApplicationPage({ params }: { params: Promise<{ ap
     }
   };
 
+  if (!job) {
+    return (
+      <div className="container mx-auto px-4 py-12 flex justify-center items-center h-screen">
+        <div className="text-center">Loading job details...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="mb-8">
@@ -226,21 +168,20 @@ export default function CareerApplicationPage({ params }: { params: Promise<{ ap
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         <div className="relative h-64">
-          <Image 
-            src="https://placehold.co/1368x256.png" 
-            alt="Career opportunity" 
-            fill 
-            className="object-cover"
-          />
+          {job.image && (
+            <Image 
+              src={job.image} 
+              alt="Career opportunity" 
+              fill 
+              className="object-cover"
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-center">
             <div className="text-white p-8">
               <h1 className="text-3xl md:text-4xl font-bold mb-2">{job.title}</h1>
               <div className="flex flex-wrap gap-3 mt-4">
                 <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium">
                   {job.location}
-                </span>
-                <span className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-3 py-1 rounded-full text-sm font-medium">
-                  {job.type}
                 </span>
               </div>
             </div>
@@ -251,7 +192,7 @@ export default function CareerApplicationPage({ params }: { params: Promise<{ ap
           {/* Job details sections remain the same */}
           <div className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">Job Description</h2>
-            <p className="text-gray-700 dark:text-gray-300">{job.description}</p>
+            <p className="text-gray-700 dark:text-gray-300">{job.fullDescription}</p>
           </div>
 
           <div className="mb-8">

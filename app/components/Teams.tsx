@@ -15,7 +15,7 @@ const teamMembers: TeamMember[] = [
     bio: "20+ years of experience in utility infrastructure",
   },
   {
-    name: "Sarah Johnson",
+    name: "Dan Busilian",
     role: "Chief Technology Officer",
     image: "/team/placeholder.jpg",
     bio: "Expert in smart grid technologies and renewable integration",

@@ -6,6 +6,9 @@ import { CookieConsent } from "@/features/cookies";
 import Footer from "@/features/marketing/components/footer";
 import { getUserRole } from "@/utils/auth-utils";
 import { createClient } from "@/utils/supabase/server";
+import { Providers } from '@/app/provider';
+import { Suspense } from "react";
+import Loading from "./loading";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -60,7 +63,11 @@ export default async function RootLayout({
               
               {/* Main Content */}
               <div className="w-full">
-                {children}
+                <Providers>
+                  <Suspense fallback={<Loading />}>
+                    {children}
+                  </Suspense>
+                </Providers>
 
                 {/* Cookie Consent */}
                 <CookieConsent />

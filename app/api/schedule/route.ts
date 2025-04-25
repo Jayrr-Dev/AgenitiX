@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     // For development/testing purposes, log the data
-    console.log('Consultation request:', consultationData);
+    // console.log('Consultation request:', consultationData);
     
     // Get event start and end times
     const { startDate, endDate } = createEventTimes(consultationData.date, consultationData.time);
