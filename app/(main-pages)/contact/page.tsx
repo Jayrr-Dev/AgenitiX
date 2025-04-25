@@ -147,9 +147,10 @@ export default function ContactPage() {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-12 mb-16">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
         {/* Contact Form */}
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
+
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md ">
           <h2 className="text-2xl font-semibold mb-6">Send Us a Message</h2>
           
           {formStatus.isSubmitted ? (
