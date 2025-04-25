@@ -372,13 +372,15 @@ export default function ContactPage() {
           <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
             <h3 className="text-xl font-medium mb-3">What services does Utilitek Solutions offer?</h3>
             <p className="text-gray-700 dark:text-gray-300">
-              We provide comprehensive engineering consulting services for utility and infrastructure projects, including electrical, mechanical, and civil engineering solutions.
+              We provide comprehensive engineering consulting services for utility and infrastructure projects, including electrical utility design, servicing projects, and general distribution design.
             </p>
           </div>
           <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
             <h3 className="text-xl font-medium mb-3">Do you work on projects outside of Alberta?</h3>
             <p className="text-gray-700 dark:text-gray-300">
-              Yes, while our headquarters is in Edmonton, we work on projects throughout Canada and have experience with regulatory requirements in multiple provinces.
+              Yes, while our headquarters is in Edmonton, but we are open to expanding our opportunities.
+
+
             </p>
           </div>
           <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">

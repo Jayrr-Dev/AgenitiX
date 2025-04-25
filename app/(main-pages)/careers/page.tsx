@@ -132,7 +132,7 @@ export default function CareersPage() {
               </div>
               <div>
                 <h3 className="font-semibold">Dan Busilian</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Senior Electrical Engineer, 2 years</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Design Lead Engineer, 2 years</p>
               </div>
             </div>
             <p className="text-gray-700 dark:text-gray-300 italic">

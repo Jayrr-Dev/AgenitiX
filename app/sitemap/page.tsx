@@ -85,7 +85,7 @@ export default function SitemapPage() {
               </li>
               <li>
                 <Link href="/careers/1" className="hover:text-[#f6733c] transition-colors">
-                  Senior Electrical Engineer
+                  Design Lead Engineer
                 </Link>
               </li>
               <li>
