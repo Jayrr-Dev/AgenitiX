@@ -36,7 +36,7 @@ export default function ClientProjectsPage() {
       <div className="text-center mb-16">
         <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Projects</h1>
         <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-          Delivering innovative electrical distribution solutions across Canada with expertise and precision. Handing over <span className="font-bold">500+ projects annually</span> on time and on budget. 
+          Delivering innovative electrical distribution solutions across Canada with expertise and precision. Handing over <span className="font-bold">200+ projects annually</span> on time and on budget. 
         </p>
       </div>
 
