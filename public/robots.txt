@@ -1,0 +1,44 @@
+# robots.txt for Utilitek Solutions
+# Author: Utilitek Solutions Inc.
+# Created: 2025-04-25
+
+# ========================
+# GENERAL RULES
+# ========================
+
+# Allow all search engines to crawl everything
+User-agent: *
+Allow: /
+
+# ========================
+# SPECIFIC DISALLOWS
+# ========================
+
+# Block internal API routes (if using Next.js API routes)
+Disallow: /_next/
+Disallow: /api/
+
+# Block Next.js internal paths (if public-facing)
+Disallow: /_next/
+Disallow: /server/
+Disallow: /static/
+
+# Block drafts, staging pages, or other temp folders (adjust based on your project)
+Disallow: /drafts/
+Disallow: /private/
+Disallow: /hidden/
+Disallow: /protected/
+
+# ========================
+# CRAWL-OPTIMIZATION
+# ========================
+
+# Specify crawl-delay for aggressive bots (optional, adjust if needed)
+# Crawl-delay: 10
+
+# ========================
+# SITEMAP
+# ========================
+
+# Help search engines find your sitemap automatically
+Sitemap: https://utiliteksolutions.ca/sitemap.xml
