@@ -12,6 +12,7 @@ type Props = {
 };
 
 export default function ClientProjectPage({ projectId }: Props) {
+   
   const { data: project, isLoading, isError } = useProjectShowcase(projectId);
 
   if (isLoading) return <div className="p-10 text-center">Loading...</div>;

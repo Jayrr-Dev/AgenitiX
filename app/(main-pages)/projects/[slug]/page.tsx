@@ -8,8 +8,14 @@ import { notFound } from 'next/navigation';
 import { use } from 'react';
 export const revalidate = 60;
 
-export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params);
+type Params = { 
+  params: Promise<{
+    slug: string;
+  }>;
+}
+
+export default async function ProjectPage({ params }: Params) {
+  const { slug } = await params;
 
   // 1. Fetch the project by its slugified title
   const project = await getProjectShowcaseBySlugTitle(slug);
@@ -24,6 +30,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   });
 
   return (
+   
     <HydrationBoundary state={dehydrate(queryClient)}>
       <ClientProjectPage projectId={project.project_id} />
     </HydrationBoundary>
