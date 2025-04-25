@@ -9,6 +9,7 @@ import { createClient } from "@/utils/supabase/server";
 import { Providers } from '@/app/provider';
 import { Suspense } from "react";
 import Loading from "./loading";
+import { Analytics } from "@vercel/analytics/react"
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -75,8 +76,9 @@ export default async function RootLayout({
 
               {/* Footer */}
               <Footer />
-            </div>
+              </div>
           </main>
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>
