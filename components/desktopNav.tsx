@@ -17,7 +17,7 @@ export function DesktopNav({userRole, session}: { userRole: string | null, sessi
 
         {/* If user is not logged in, show the navigation menu */}
         {userRole == null && (
-        <NavigationMenuList className="flex flex-row flex-wrap">
+        <NavigationMenuList className="flex flex-row gap-1 flex-wrap">
           <NavigationMenuItem>
             <Link href="/about" legacyBehavior passHref>
               <NavigationMenuLink className={navigationMenuTriggerStyle()}>About Us</NavigationMenuLink>

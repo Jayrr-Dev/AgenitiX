@@ -20,37 +20,37 @@ export function HeroCarousel() {
     {
       type: "video",
       src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxS5sxJF7h0jeaV8R3woxgAG7Lr6ib5TOkcHXC",
-      message: "Proven Solutions for Utility Excellence",
+      message: "Proven Solutions for Design Excellence",
       ctaText: "Discover How",
       ctaLink: "/about"
     },
     {
       type: "video",
       src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOox2bSnnjhI5vdYi6q1rEpygWQ4G3zfKUxeusR7",
-      message: "Empowering utilities across Canada",
+      message: "Empowering utilities across Alberta",
       ctaText: "Our Impact",
-      ctaLink: "/about"
-    },
-    {
-      type: "video",
-      src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxAAk0Hu3HqjTl9NXwnEZku5Jao6813Kd7LUiM",
-      message: "Streamline operations with expert solutions",
-      ctaText: "Explore Services",
-      ctaLink: "/services"
+      ctaLink: "/projects"
     },
     {
       type: "video",
       src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxkIIrjof2IctWSx5udkeCYzHQF1w0norGhilm",
-      message: "Cutting-edge technology for utility excellence",
+      message: "Applying Cutting-edge technology for service excellence",
       ctaText: "See Solutions",
-      ctaLink: "/services"
+      ctaLink: "/expertise"
+    },
+    {
+      type: "video",
+      src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxAAk0Hu3HqjTl9NXwnEZku5Jao6813Kd7LUiM",
+      message: "Streamline projects with expert solutions",
+      ctaText: "Explore Services",
+      ctaLink: "/expertise"
     },
     {
       type: "video",
       src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxU1NtRfVEzhbKyMT2ALI95efgRZFtW68dpsxO",
-      message: "Building stronger utility infrastructure together",
+      message: "Recuiting the best in Engineering Design",
       ctaText: "Get Started",
-      ctaLink: "/contact"
+      ctaLink: "/careers"
     }
   ];
 

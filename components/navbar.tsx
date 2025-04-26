@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
-
+import { ThemeSwitcher } from "./theme-switcher"
 import { MobileNav } from "./mobileNav"
 import { DesktopNav } from "./desktopNav"
 
@@ -78,7 +78,7 @@ export function Navbar({userRole, session}: { userRole: string | null, session: 
                 width={scrolled ? 100 : 150} 
                 height={scrolled ? 100 : 150}
                 className={cn(
-                  "transition-all duration-300 w-auto",
+                  "transition-all duration-300 w-auto dark:brightness-125",
                   scrolled 
                     ? "h-10 sm:h-10 md:h-12 lg:h-12 xl:h-12" 
                     : "h-12 sm:h-16 md:h-20 lg:h-24 xl:h-28"
@@ -100,7 +100,7 @@ export function Navbar({userRole, session}: { userRole: string | null, session: 
                <MobileNav userRole={userRole} session={session} />
             </div>
         </div>
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
+        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end ">
           <div className="hidden md:block w-full flex-1 md:w-auto md:flex-none">
             <DesktopNav userRole={userRole} session={session} />
           </div>
@@ -111,8 +111,9 @@ export function Navbar({userRole, session}: { userRole: string | null, session: 
             <Image src="/logo.png" alt="logo" width={80} height={80} className="h-10 w-auto" />
           </Link>
         </div> */}
-
-      
+        <div className="ml-2">
+            <ThemeSwitcher />
+        </div>
       </div>
     </header>
   )
