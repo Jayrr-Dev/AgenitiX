@@ -57,7 +57,7 @@ export default function AboutPage() {
         
           <div className="relative h-[250px]">
             <Image
-              src="https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOox42jQAr8nPtB3eX0cQGN5Ij6nKH2MDUhYxZky"
+              src="https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxciIfXXyC1qNbBviJKaG6rtSPTL0zY8eFWxmn"
               alt="Distribution system design"
               width={322}
               height={250}
@@ -66,7 +66,7 @@ export default function AboutPage() {
           </div>
             <div className="relative h-[250px]">
               <Image
-              src="https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxPW8DnxMlzkoUqx0D9mWuO1tfBwvhINKda4V5"
+              src="https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxYEk7l8SPc2WTjCtBSanVlQZJRuyDso4mv96p"
               alt="Engineering team meeting"
               width={322}
               height={250}
