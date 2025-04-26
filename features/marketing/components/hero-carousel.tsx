@@ -20,7 +20,7 @@ export function HeroCarousel() {
     {
       type: "video",
       src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxS5sxJF7h0jeaV8R3woxgAG7Lr6ib5TOkcHXC",
-      message: "Proven Solutions for Design Excellence",
+      message: "Proven Solutions for Engineering Reliability",
       ctaText: "Discover How",
       ctaLink: "/about"
     },
@@ -48,7 +48,7 @@ export function HeroCarousel() {
     {
       type: "video",
       src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxU1NtRfVEzhbKyMT2ALI95efgRZFtW68dpsxO",
-      message: "Recuiting the best in Engineering Design",
+      message: "Recuiting the best in Electrical Engineering Design",
       ctaText: "Get Started",
       ctaLink: "/careers"
     }
