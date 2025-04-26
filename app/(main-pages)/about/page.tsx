@@ -25,7 +25,7 @@ export default function AboutPage() {
           <div className="text-white max-w-xl p-12">
             <h2 className="text-4xl font-bold mb-4">Transforming Distribution Design</h2>
             <p className="text-xl mb-6">
-              Since 2014, we've been engineering the future of electrical distribution systems across Canada.
+              Since 2014, we've been engineering the future of electrical distribution systems across Alberta.
             </p>
             <Link href="/contact">
               <Button size="lg" className="bg-[#f6733c] hover:bg-[#e45f2d]">
