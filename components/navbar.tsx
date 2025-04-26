@@ -5,8 +5,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 import { ThemeSwitcher } from "./theme-switcher"
-import { MobileNav } from "./mobileNav"
-import { DesktopNav } from "./desktopNav"
+
 
 const components: { title: string; href: string; description: string }[] = [
   {
@@ -42,7 +41,7 @@ const components: { title: string; href: string; description: string }[] = [
   },
 ]
 
-export function Navbar({userRole, session}: { userRole: string | null, session: any}) {
+export function Navbar() {
   const [scrolled, setScrolled] = React.useState(false);
   React.useEffect(() => {
     const handleScroll = () => {
@@ -96,14 +95,9 @@ export function Navbar({userRole, session}: { userRole: string | null, session: 
                 )}>Our expertise is your success</span>
             </div>
           </Link>
-            <div className=" md:hidden w-full flex items-center justify-end ">
-               <MobileNav userRole={userRole} session={session} />
-            </div>
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end ">
-          <div className="hidden md:block w-full flex-1 md:w-auto md:flex-none">
-            <DesktopNav userRole={userRole} session={session} />
-          </div>
+      
         </div>
         {/* Mobile Logo */}
         {/* <div className="flex items-center md:hidden">

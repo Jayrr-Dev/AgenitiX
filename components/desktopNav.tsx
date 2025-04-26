@@ -9,7 +9,6 @@ import {
   } from "@/components/ui/navigation-menu"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import LogoutButton from "@/features/auth/components/logoutButton"
 
 export function DesktopNav({userRole, session}: { userRole: string | null, session: any}) {
     return (
@@ -67,7 +66,6 @@ export function DesktopNav({userRole, session}: { userRole: string | null, sessi
                     </Link>
                 </NavigationMenuItem>
                 <NavigationMenuItem> 
-                    <LogoutButton />
                 </NavigationMenuItem>
             </NavigationMenuList>
         )}

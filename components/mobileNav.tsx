@@ -8,9 +8,7 @@ import { Button } from "./ui/button";
 import Link from "next/link";
 import { Clock, Menu, User, Calendar } from "lucide-react";  
 import React from "react";
-import { cn } from "@/lib/utils";
-import LogoutButton from "@/features/auth/components/logoutButton";
-import { navigationMenuTriggerStyle } from "./ui/navigation-menu";
+
 export function MobileNav({userRole, session}: { userRole: string | null, session: any}) {
     return (
       <DropdownMenu>
@@ -96,7 +94,6 @@ export function MobileNav({userRole, session}: { userRole: string | null, sessio
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <LogoutButton className="w-full border-2 border-solid border-[#f6733c] text-[#f6733c] font-medium" />
           </DropdownMenuItem>
         </DropdownMenuContent>
         )}

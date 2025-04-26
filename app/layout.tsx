@@ -4,8 +4,6 @@ import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { CookieConsent } from "@/features/cookies";
 import Footer from "@/features/marketing/components/footer";
-import { getUserRole } from "@/utils/auth-utils";
-import { createClient } from "@/utils/supabase/server";
 import { Providers } from '@/app/provider';
 import { Suspense } from "react";
 import Loading from "./loading";
@@ -105,17 +103,6 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
- 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
-  
-  const userRole = await getUserRole(session);
 
 <Script
   type="application/ld+json"
@@ -149,7 +136,7 @@ export default async function RootLayout({
             <div className="flex-1 w-full flex flex-col items-center">
             
               {/* Navbar */}
-              <Navbar userRole={userRole} session={session} />
+              <Navbar />
 
               
               {/* Main Content */}
