@@ -1,9 +1,48 @@
-export function BrandWordmark() {
-    return (
-      <div className="border-b-1 rounded-xl p-2 border-transparent bg-fill-content hover:animate-fill-transparency">
-        <span className="text-[32px] font-semibold leading-none tracking-tight">
-          AgenitiX
-        </span>
-      </div>
-    );
-  }
+'use client';
+
+import React from 'react';
+import clsx from 'clsx';
+
+/* ---------------------------------------------------------------------
+   Types
+   ------------------------------------------------------------------ */
+export interface BrandWordmarkProps {
+  /** Extra Tailwind / CVA classes to merge in (optional). */
+  className?: string;
+}
+
+/* ---------------------------------------------------------------------
+   Component
+   ------------------------------------------------------------------ */
+/**
+ * Branded word-mark (“AgenitiX”) with animated conic border.
+ *
+ * - Uses `bg-fill-content` to paint the conic gradient border layers
+ * - `hover:animate-fill-transparency` triggers the left+right sweeps
+ *   defined in globals.css.
+ */
+export const BrandWordmark: React.FC<BrandWordmarkProps> = ({
+  className = '',
+}) => (
+  <div
+    className={clsx(
+      /* base paint stack + layout */
+      'inline-block rounded-xl border border-transparent bg-fill-content p-2',
+
+      /* smooth colour transition when theme toggles */
+      'transition-[background] duration-300 ease-out',
+
+      /* animated sweep on hover */
+      'hover:animate-fill-transparency',
+
+      /* caller-supplied overrides */
+      className,
+    )}
+  >
+    <span className="font-brand text-[32px] font-semibold leading-none tracking-tight">
+      AgenitiX
+    </span>
+  </div>
+);
+
+export default BrandWordmark;
