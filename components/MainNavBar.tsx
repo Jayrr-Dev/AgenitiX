@@ -36,20 +36,20 @@ export default function MainNavBar() {
         scrolled ? "h-16" : "md:h-28 h-16",
       )}
     >
-      <nav id="main-nav" className="w-full h-full xdebug-red ">
+      <nav id="main-nav" className="xdebug-red w-full h-full  ">
         <div id="scroll-effect" className={cn(   
             " h-full grid grid-cols-12  w-full",
-            scrolled ? "py-2" : "py-4",
+            scrolled ? "py-2" : "py-2",
           )}
         >
-          <div id="logo" className="xdebug-green col-span-4 sm:col-span-2 self-center justify-self-center ">
+          <div id="logo" className="xdebug-green col-span-4 md:col-span-2 self-center justify-self-center border-b border-transparent  bg-fill-border hover:animate-fill-transparency">
             <Link
               href="/"
               className=" flex flex-row items-center justify-center cursor-pointer  "
             >
               <LogomarkLight
                 className={cn(
-                  "transition-all duration-300",
+                  "transition-all duration-300 pl-2",
                   scrolled ? "scale-90 origin-left" : "",
                 )}
               />
@@ -65,10 +65,10 @@ export default function MainNavBar() {
               </div>
             </Link>
           </div>
-          <div id="desktop-nav" className="col-span-8 self-center xdebug-blue hidden md:block justify-self-center">
+          <div id="desktop-nav" className="xdebug-blue col-span-8 self-center  hidden md:block justify-self-center">
             <MainDesktopNav />
         </div>
-          <div id="mobile-nav" className=" md:hidden w-full flex items-center justify-end xdebug-yellow col-span-6">
+          <div id="mobile-nav" className="xdebug-yellow md:hidden w-full flex items-center justify-end col-span-6">
             <MainMobileNav />
           </div>
         
