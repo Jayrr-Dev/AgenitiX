@@ -176,7 +176,7 @@ export default function CareerApplicationPage({ params }: { params: Promise<{ ap
               className="object-cover"
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-center">
+          <div className="absolute inset-0 bg-linear-to-r from-black/70 to-transparent flex items-center">
             <div className="text-white p-8">
               <h1 className="text-3xl md:text-4xl font-bold mb-2">{job.title}</h1>
               <div className="flex flex-wrap gap-3 mt-4">

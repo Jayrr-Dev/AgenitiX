@@ -25,7 +25,7 @@ export default function Header() {
         </a> */}
       </div>
       <div className="text-center text-lg text-gray-800 dark:text-gray-200">Trusted by Utilities Across Canada</div>
-      <div className="w-full p-[1px] bg-gradient-to-r from-transparent via-foreground/10 to-transparent" />
+      <div className="w-full p-[1px] bg-linear-to-r from-transparent via-foreground/10 to-transparent" />
     </div>
     </>
   );

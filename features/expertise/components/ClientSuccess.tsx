@@ -8,7 +8,7 @@ export default function ClientSuccess() {
     return (
       <div className="mb-20">
         <h2 className="text-3xl font-semibold mb-8">Your Success Is Our Priority</h2>
-        <div className="bg-gradient-to-r from-blue-50 to-orange-50 dark:from-gray-800 dark:to-gray-700 p-8 rounded-lg shadow-md">
+        <div className="bg-linear-to-r from-blue-50 to-orange-50 dark:from-gray-800 dark:to-gray-700 p-8 rounded-lg shadow-md">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
               <h3 className="text-2xl font-semibold mb-4 text-[#f6733c]">Proven Results</h3>
@@ -33,7 +33,7 @@ export default function ClientSuccess() {
             <div>
 
               {/* TODO: Add client testimonial */}
-              {/* <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+              {/* <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xs">
                 <h4 className="text-lg font-semibold mb-3">Client Testimonial</h4>
                 <blockquote className="italic text-gray-600 dark:text-gray-400 mb-4">
                   "Their expertise in distribution system design transformed our aging infrastructure into a modern, efficient network. The team's technical knowledge and commitment to excellence made all the difference in our project's success."
