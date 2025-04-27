@@ -8,12 +8,13 @@ layer(utilities);
 
 @theme {
   --radius-lg: var(--radius);
-
+  /* Font */
   --font-sans: var(--font-sans);
   --font-ui: var(--font-ui);
   --font-serif: var(--font-serif);
   --font-brand: var(--font-sans);
 
+  /* Colors */
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-primary: hsl(var(--primary));
@@ -28,7 +29,100 @@ layer(utilities);
   --color-ring: hsl(var(--ring));
   --color-destructive: hsl(var(--destructive));
   --color-destructive-fg: hsl(var(--destructive-foreground));
+
+  /* Animation */
+
+ 
+    --animate-fill-transparency: fill-transparency 2s forwards;
+    @keyframes fill-transparency {
+      0%   { --fill-transparency-left: 0%; }
+      100% { --fill-transparency-left: 100%; }
+      0%   { --fill-transparency-right: 100%; }
+      100% { --fill-transparency-right: 0%; }
+    };
+
+  --animate-rotate-border: rotate-border 3s linear infinite;
+  @keyframes rotate-border {
+    0%   { --angle: 0deg; }s
+    100% { --angle: 360deg; }
+  };
+
+  --animate-fill-left-border: fill-left-border 1s linear forwards;
+  @keyframes fill-left-border {
+    0%   { --fill-angle: 180deg; }
+    100% { --fill-angle: 0deg; }
+  };
+
+  --animate-fill-right-border: fill-right-border 1s linear forwards;
+  @keyframes fill-right-border {
+    0%   { --fill-angle: 0deg; }
+    100% { --fill-angle: 180deg; }
+  };
+ 
 }
+
+  @property --fill-transparency-left {
+    /* syntax: '<percentage>'; */
+    syntax: '<percentage>';
+    inherits: true;
+    initial-value: 0%;
+  }
+
+  @property --fill-transparency-right {
+    /* syntax: '<percentage>'; */
+    syntax: '<percentage>';
+    inherits: true;
+    initial-value: 100%;
+  }
+
+
+  @property --fill-angle-right {
+    syntax: '<angle>';
+    inherits: true;
+    initial-value: 180deg;
+  }
+
+  @property --fill-angle-left {
+    syntax: '<angle>';
+    inherits: true;
+    initial-value: 180deg;
+  }
+
+
+@property --angle {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+
+@utility bg-spinning-border {
+  background:
+    conic-gradient(from var(--angle), #213, #112 5%, #112 60%, #213 95%) padding-box,
+    conic-gradient(from var(--angle), transparent 25%, #08f, #f03 95%, transparent) border-box,
+    conic-gradient(from var(--angle), #213, #112 5%, #112 60%, #213 95%) border-box;
+}
+
+@utility bg-fill-border {
+  background:
+    linear-gradient(background, background) padding-box,
+   
+    conic-gradient(from var(--fill-angle-right), transparent var(--fill-transparency-right), #08f, #f03 100%, transparent) border-box,
+   
+    conic-gradient(from var(--fill-angle-left), #f03, #08f,  transparent var(--fill-transparency-left)) border-box,
+     
+    conic-gradient(from var(--fill-angle-left), #213, #112 5%, #112 60%, #213 95%) border-box;
+}
+
+@utility bg-fill-content {
+  background:
+   
+    conic-gradient(from var(--fill-angle-right), transparent var(--fill-transparency-right), #08f, #f03 100%, transparent) border-box,
+   
+    conic-gradient(from var(--fill-angle-left), #f03, #08f,  transparent var(--fill-transparency-left)) border-box,
+     
+    conic-gradient(from var(--fill-angle-left), #213, #112 5%, #112 60%, #213 95%) border-box;
+}
+
 
 @utility container {
   margin-inline: auto;
