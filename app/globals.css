@@ -34,12 +34,17 @@ layer(utilities);
 
  
     --animate-fill-transparency: fill-transparency 2s forwards;
+    /* Put this OUTSIDE @theme – @theme is only for tokens */
     @keyframes fill-transparency {
-      0%   { --fill-transparency-left: 0%; }
-      100% { --fill-transparency-left: 100%; }
-      0%   { --fill-transparency-right: 100%; }
-      100% { --fill-transparency-right: 0%; }
-    };
+      0% {
+        --fill-transparency-left: 0%;
+        --fill-transparency-right: 100%;
+      }
+      100% {
+        --fill-transparency-left: 100%;
+        --fill-transparency-right: 0%;
+      }
+    }
 
   --animate-rotate-border: rotate-border 3s linear infinite;
   @keyframes rotate-border {
