@@ -45,7 +45,7 @@ const components: { title: string; href: string; description: string }[] = [
   },
 ]
 
-export function Navbar() {
+export default function Navbar() {
   const [scrolled, setScrolled] = React.useState(false);
   React.useEffect(() => {
     const handleScroll = () => {

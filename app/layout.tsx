@@ -10,6 +10,7 @@ import Loading from "./loading";
 import { Analytics } from "@vercel/analytics/react"
 import Script from "next/script";
 import { Metadata } from "next";
+import Navbar from "@/components/Navbar";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -136,7 +137,7 @@ export default async function RootLayout({
             <div className="flex-1 w-full flex flex-col items-center">
             
               {/* Navbar */}
-              {/* <Navbar /> */}
+              <Navbar />
 
               
               {/* Main Content */}
