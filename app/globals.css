@@ -80,14 +80,18 @@
 @utility bg-fill-border {
   background:
     linear-gradient(background, background) padding-box,
+
     conic-gradient( /* right sweep */
       from var(--fill-angle-right),
       transparent var(--fill-transparency-right),
       #08f, #f03 100%, transparent) border-box,
+
     conic-gradient( /* left sweep */
       from var(--fill-angle-left),
       #f03, #08f,
-      transparent var(--fill-transparency-left)) border-box,
+      transparent var(--fill-transparency-left),
+      transparent 101%) border-box
+      
     conic-gradient( /* static texture */
       from var(--fill-angle-left),
       #213, #112 5%, #112 60%, #213 95%) border-box;
@@ -102,7 +106,7 @@
     conic-gradient(
       from var(--fill-angle-left),
       #f03, #08f,
-      transparent var(--fill-transparency-left)) border-box,
+      transparent var(--fill-transparency-left),transparent 101%) border-box,
     conic-gradient(
       from var(--fill-angle-left),
       #213, #112 5%, #112 60%, #213 95%) border-box;
