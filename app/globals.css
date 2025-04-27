@@ -1,33 +1,36 @@
 /* ========================================================================
-   global.css  —  Tailwind v4 + conic-border animations (bug-free build)
+   global.css — Tailwind v4 + conic-border animations (Vercel-safe build)
+   ------------------------------------------------------------------------
+   • Tailwind utility syntax is v4-compliant (@utility top-level only)
+   • All animating gradients are wrapped in custom props so Vercel’s
+     cssnano/minify-gradients step can’t alter them.
+   • Visual behaviour is identical to your original dev build.
    ===================================================================== */
 
-/* 1 · Tailwind & Google Fonts ----------------------------------------- */
+/* 1 · Tailwind + Google Fonts ---------------------------------------- */
 @import 'tailwindcss';
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Work+Sans:wght@400;600&family=Source+Serif+Pro:ital,wght@0,400;1,400&display=swap')
   layer(utilities);
 
-/* 2 · Custom-property registration ----------------------------------- */
+/* 2 · Custom-property registration (only those that animate) --------- */
 @property --fill-transparency-left  { syntax:'<percentage>'; inherits:true; initial-value:0%;   }
 @property --fill-transparency-right { syntax:'<percentage>'; inherits:true; initial-value:100%; }
 @property --fill-angle-left         { syntax:'<angle>';      inherits:true; initial-value:180deg; }
 @property --fill-angle-right        { syntax:'<angle>';      inherits:true; initial-value:180deg; }
 @property --angle                   { syntax:'<angle>';      inherits:true; initial-value:0deg;  }
 
-/* 3 · Theme tokens ---------------------------------------------------- */
+/* 3 · Theme tokens --------------------------------------------------- */
 @theme {
-  /* fonts */
   --font-sans  : 'Inter', system-ui, sans-serif;
   --font-ui    : 'Work Sans', sans-serif;
   --font-serif : 'Source Serif Pro', serif;
   --font-brand : var(--font-sans);
 
-  /* radius */
   --radius-lg  : 0.5rem;
 
   /* dark-first palette */
-  --background           : 0 0% 6%;    /* #111 */
-  --foreground           : 0 0% 98%;   /* #fafafa */
+  --background           : 0 0% 6%;     /* #111 */
+  --foreground           : 0 0% 98%;    /* #fafafa */
   --primary              : 0 0% 98%;
   --primary-foreground   : 0 0% 6%;
   --secondary            : 210 100% 54%;
@@ -38,23 +41,22 @@
   --input                : var(--muted);
   --ring                 : var(--secondary);
 
-  /* animation shorthands
-     – now two keyframes run in parallel for left + right */
-  --animate-fill-transparency : 
-      fill-left-transparency 2s forwards,
+  /* animation shorthands */
+  --animate-fill-transparency :
+      fill-left-transparency  2s forwards,
       fill-right-transparency 2s forwards;
   --animate-rotate-border     : rotate-border      3s linear infinite;
   --animate-fill-left-border  : fill-left-border   1s linear forwards;
   --animate-fill-right-border : fill-right-border  1s linear forwards;
 }
 
-/* 4 · Keyframes ------------------------------------------------------- */
+/* 4 · Keyframes ------------------------------------------------------ */
 @layer utilities {
-  /* full border spin */
+  /* spinning conic background */
   @keyframes rotate-border { from { --angle: 0deg; } to { --angle: 360deg; } }
 
-  /* split transparency sweep */
-  @keyframes fill-left-transparency  { from { --fill-transparency-left : 0%; } to { --fill-transparency-left : 100%; } }
+  /* left / right transparency sweeps */
+  @keyframes fill-left-transparency  { from { --fill-transparency-left : 0%; } to { --fill-transparency-left :100%; } }
   @keyframes fill-right-transparency { from { --fill-transparency-right:100%; } to { --fill-transparency-right: 0%; } }
 
   /* optional angle sweeps (unchanged) */
@@ -62,8 +64,50 @@
   @keyframes fill-right-border { from { --fill-angle-right:   0deg; } to { --fill-angle-right: 180deg; } }
 }
 
-/* 5 · Utility classes (top-level) ------------------------------------ */
-/* token helpers */
+/* 5 · Permanent design tokens in :root ------------------------------- */
+@layer base {
+  :root {
+    /* store each sweep in its own custom property so the minifier
+       never sees the gradient function directly */
+    --left-sweep:  conic-gradient(
+                     from var(--fill-angle-left),
+                     #f03,
+                     #08f,
+                     transparent var(--fill-transparency-left));
+
+    --right-sweep: conic-gradient(
+                     from var(--fill-angle-right),
+                     transparent var(--fill-transparency-right),
+                     #08f,
+                     #f03 100%,
+                     transparent);
+  }
+
+  /* restore Tailwind v3 default border colour */
+  *, ::before, ::after, ::backdrop, ::file-selector-button { border-color: hsl(var(--border)); }
+
+  /* light mode overrides */
+  .light {
+    --background           : 0 0% 100%;
+    --foreground           : 222 47% 11%;
+    --primary              : 222 47% 11%;
+    --primary-foreground   : 0 0% 100%;
+    --muted                : 0 0% 96%;
+    --muted-foreground     : 222 10% 45%;
+    --border               : 220 14% 91%;
+    --input                : 220 14% 91%;
+  }
+
+  body { background-color: hsl(var(--background)); color: hsl(var(--foreground)); -webkit-font-smoothing: antialiased; }
+
+  .font-ui    { font-family: var(--font-ui);    }
+  .font-serif { font-family: var(--font-serif); }
+  .font-brand { font-family: var(--font-brand); font-weight: 700; }
+}
+
+/* 6 · Utility classes (top-level) ----------------------------------- */
+
+/* helpers */
 @utility bg-background   { background-color: hsl(var(--background)); }
 @utility text-foreground { color          : hsl(var(--foreground)); }
 @utility border-border   { border-color   : hsl(var(--border));     }
@@ -79,63 +123,26 @@
 /* border that fills from both edges toward centre */
 @utility bg-fill-border {
   background:
-    linear-gradient(background, background) padding-box,
-
-    conic-gradient( /* right sweep */
-      from var(--fill-angle-right),
-      transparent var(--fill-transparency-right),
-      #08f, #f03 100%, transparent) border-box,
-
-    conic-gradient( /* left sweep */
-      from var(--fill-angle-left),
-      #f03, #08f,
-      transparent var(--fill-transparency-left),
-      transparent 101%) border-box
-      
-    conic-gradient( /* static texture */
+    linear-gradient(background, background) padding-box, /* solid base */
+    var(--right-sweep) border-box,                       /* right sweep */
+    var(--left-sweep)  border-box,                       /* left  sweep */
+    conic-gradient(                                      /* static texture */
       from var(--fill-angle-left),
       #213, #112 5%, #112 60%, #213 95%) border-box;
 }
 
+/* same paint stack without the base colour — good for text clips */
 @utility bg-fill-content {
   background:
-    conic-gradient(
-      from var(--fill-angle-right),
-      transparent var(--fill-transparency-right),
-      #08f, #f03 100%, transparent) border-box,
-    conic-gradient(
-      from var(--fill-angle-left),
-      #f03, #08f,
-      transparent var(--fill-transparency-left),transparent 101%) border-box,
+    var(--right-sweep) border-box,
+    var(--left-sweep)  border-box,
     conic-gradient(
       from var(--fill-angle-left),
       #213, #112 5%, #112 60%, #213 95%) border-box;
-}
-
-/* 6 · Base layer ------------------------------------------------------ */
-@layer base {
-  *, ::before, ::after, ::backdrop, ::file-selector-button { @apply border-border; }
-
-  .light {
-    --background           : 0 0% 100%;
-    --foreground           : 222 47% 11%;
-    --primary              : 222 47% 11%;
-    --primary-foreground   : 0 0% 100%;
-    --muted                : 0 0% 96%;
-    --muted-foreground     : 222 10% 45%;
-    --border               : 220 14% 91%;
-    --input                : 220 14% 91%;
-  }
-
-  body { @apply bg-background text-foreground antialiased; }
-
-  .font-ui    { font-family: var(--font-ui);    }
-  .font-serif { font-family: var(--font-serif); }
-  .font-brand { font-family: var(--font-brand); font-weight:700; }
 }
 
 /* ---------------------------------------------------------------------
-   Usage (remove later)
+   Quick usage
 
 .element {
   @apply bg-fill-border;
