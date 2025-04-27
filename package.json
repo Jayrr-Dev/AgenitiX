@@ -45,6 +45,7 @@
     "@types/nodemailer": "^6.4.17",
     "@types/react": "^19.0.2",
     "@types/react-dom": "19.0.2",
+    "cssnano": "^6",
     "postcss": "8.4.49",
     "tailwind-merge": "^2.5.2",
     "tailwindcss": "4.1.4",
