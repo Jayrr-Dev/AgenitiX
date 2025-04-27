@@ -89,12 +89,7 @@
       #f03,
       #08f,
       transparent calc(var(--fill-transparency-left) - 1%),
-      rgba(0,0,0,0) 100%) border-box,
-
-    /* static inner texture */
-    conic-gradient(
-      from var(--fill-angle-left),
-      #213, #112 5%, #112 60%, #213 95%) border-box;
+      rgba(0,0,0,0) 100%) border-box;
 }
 
 /* same stack without base colour — good for text clips */
@@ -112,10 +107,7 @@
       #f03,
       #08f,
       transparent calc(var(--fill-transparency-left) - 1%),
-      rgba(0,0,0,0) 100%) border-box,
-    conic-gradient(
-      from var(--fill-angle-left),
-      #213, #112 5%, #112 60%, #213 95%) border-box;
+      rgba(0,0,0,0) 100%) border-box;
 }
 
 /* 6 · Base layer ---------------------------------------------------- */

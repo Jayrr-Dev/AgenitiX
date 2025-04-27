@@ -19,7 +19,7 @@ export default function MainNavBar() {
         setScrolled(isScrolled);
       }
     }
-    // Add scroll event listener
+    //Add scroll event listener
     window.addEventListener("scroll", handleScroll);
     // Remove event listener on cleanup
     return () => {
@@ -39,7 +39,7 @@ export default function MainNavBar() {
         scrolled ? "py-2" : "py-4"
       )}>
         {/* LOGO SECTION */}
-        <div className="flex items-center w-full">
+        <div id="logo" className="flex items-center w-full">
           <Link href="/" className="mr-6 flex items-center justify-start min-w-[250px] cursor-pointer">
             <LogomarkLight 
               className={cn(
