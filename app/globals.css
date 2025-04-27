@@ -1,105 +1,70 @@
+/* ========================================================================
+   global.css  —  Tailwind v4 + conic-border animations
+   ===================================================================== */
+
+/* 1 · Tailwind & Google Fonts  ---------------------------------------- */
 @import 'tailwindcss';
-
-/* === Google Fonts === */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Work+Sans:wght@400;600&family=Source+Serif+Pro:ital,wght@0,400;1,400&display=swap')
-layer(utilities);
+  layer(utilities);
 
-@custom-variant dark (&:is(.dark *));
+/* 2 · Custom-property registration  ----------------------------------- */
+/* 180 deg on both edges means the border starts “empty” on load,
+   then sweeps inwards as the two keyframes run. */
+@property --fill-transparency-left  { syntax:'<percentage>'; inherits:true; initial-value:0%;   }
+@property --fill-transparency-right { syntax:'<percentage>'; inherits:true; initial-value:100%; }
+@property --fill-angle-left         { syntax:'<angle>';      inherits:true; initial-value:180deg; }
+@property --fill-angle-right        { syntax:'<angle>';      inherits:true; initial-value:180deg; }  /* ← reverted */
+@property --angle                   { syntax:'<angle>';      inherits:true; initial-value:0deg;  }
 
+/* 3 · Theme tokens (design system)  ----------------------------------- */
 @theme {
-  --radius-lg: var(--radius);
-  /* Font */
-  --font-sans: var(--font-sans);
-  --font-ui: var(--font-ui);
-  --font-serif: var(--font-serif);
-  --font-brand: var(--font-sans);
+  /* fonts */
+  --font-sans  : 'Inter', system-ui, sans-serif;
+  --font-ui    : 'Work Sans', sans-serif;
+  --font-serif : 'Source Serif Pro', serif;
+  --font-brand : var(--font-sans);
 
-  /* Colors */
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-fg: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-fg: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-fg: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-fg: hsl(var(--accent-foreground));
-  --color-border: hsl(var(--border));
-  --color-ring: hsl(var(--ring));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-fg: hsl(var(--destructive-foreground));
+  /* radius */
+  --radius-lg  : 0.5rem;
 
-  /* Animation */
+  /* dark-first palette */
+  --background           : 0 0% 6%;    /* #111 */
+  --foreground           : 0 0% 98%;   /* #fafafa */
+  --primary              : 0 0% 98%;
+  --primary-foreground   : 0 0% 6%;
+  --secondary            : 210 100% 54%;
+  --secondary-foreground : 0 0% 100%;
+  --muted                : 0 0% 18%;
+  --muted-foreground     : 0 0% 70%;
+  --border               : var(--muted);
+  --input                : var(--muted);
+  --ring                 : var(--secondary);
 
- 
-    --animate-fill-transparency: fill-transparency 2s forwards;
-    /* Put this OUTSIDE @theme – @theme is only for tokens */
-    @keyframes fill-transparency {
-      0% {
-        --fill-transparency-left: 0%;
-        --fill-transparency-right: 100%;
-      }
-      100% {
-        --fill-transparency-left: 100%;
-        --fill-transparency-right: 0%;
-      }
-    }
-
-  --animate-rotate-border: rotate-border 3s linear infinite;
-  @keyframes rotate-border {
-    0%   { --angle: 0deg; }s
-    100% { --angle: 360deg; }
-  };
-
-  --animate-fill-left-border: fill-left-border 1s linear forwards;
-  @keyframes fill-left-border {
-    0%   { --fill-angle: 180deg; }
-    100% { --fill-angle: 0deg; }
-  };
-
-  --animate-fill-right-border: fill-right-border 1s linear forwards;
-  @keyframes fill-right-border {
-    0%   { --fill-angle: 0deg; }
-    100% { --fill-angle: 180deg; }
-  };
- 
+  /* animation shorthands */
+  --animate-fill-transparency : fill-transparency 2s forwards;
+  --animate-rotate-border     : rotate-border 3s linear infinite;
+  --animate-fill-left-border  : fill-left-border 1s linear forwards;
+  --animate-fill-right-border : fill-right-border 1s linear forwards;
 }
 
-  @property --fill-transparency-left {
-    /* syntax: '<percentage>'; */
-    syntax: '<percentage>';
-    inherits: true;
-    initial-value: 0%;
+/* 4 · Keyframes (utilities layer)  ------------------------------------ */
+@layer utilities {
+  @keyframes rotate-border      { from { --angle: 0deg; } to { --angle: 360deg; } }
+  @keyframes fill-transparency  {
+    from { --fill-transparency-left:0%;  --fill-transparency-right:100%; }
+    to   { --fill-transparency-left:100%; --fill-transparency-right:0%;  }
   }
-
-  @property --fill-transparency-right {
-    /* syntax: '<percentage>'; */
-    syntax: '<percentage>';
-    inherits: true;
-    initial-value: 100%;
-  }
-
-
-  @property --fill-angle-right {
-    syntax: '<angle>';
-    inherits: true;
-    initial-value: 180deg;
-  }
-
-  @property --fill-angle-left {
-    syntax: '<angle>';
-    inherits: true;
-    initial-value: 180deg;
-  }
-
-
-@property --angle {
-  syntax: '<angle>';
-  inherits: true;
-  initial-value: 0deg;
+  @keyframes fill-left-border   { from { --fill-angle-left : 180deg; } to { --fill-angle-left : 0deg;   } }
+  @keyframes fill-right-border  { from { --fill-angle-right:   0deg; } to { --fill-angle-right: 180deg; } }
 }
 
+/* 5 · Utility classes (top-level, Tailwind v4-safe)  ------------------ */
+/* Token helpers */
+@utility bg-background   { background-color: hsl(var(--background)); }
+@utility text-foreground { color          : hsl(var(--foreground)); }
+@utility border-border   { border-color   : hsl(var(--border));     }
+
+/* Constantly rotating conic border */
 @utility bg-spinning-border {
   background:
     conic-gradient(from var(--angle), #213, #112 5%, #112 60%, #213 95%) padding-box,
@@ -107,107 +72,68 @@ layer(utilities);
     conic-gradient(from var(--angle), #213, #112 5%, #112 60%, #213 95%) border-box;
 }
 
+/* Border that fills from both edges toward centre */
 @utility bg-fill-border {
   background:
-    linear-gradient(background, background) padding-box,
-   
-    conic-gradient(from var(--fill-angle-right), transparent var(--fill-transparency-right), #08f, #f03 100%, transparent) border-box,
-   
-    conic-gradient(from var(--fill-angle-left), #f03, #08f,  transparent var(--fill-transparency-left)) border-box,
-     
-    conic-gradient(from var(--fill-angle-left), #213, #112 5%, #112 60%, #213 95%) border-box;
+    linear-gradient(background, background) padding-box,              /* solid base */
+    conic-gradient(                                                   /* right sweep */
+      from var(--fill-angle-right),
+      transparent var(--fill-transparency-right),
+      #08f, #f03 100%, transparent) border-box,
+    conic-gradient(                                                   /* left sweep */
+      from var(--fill-angle-left),
+      #f03, #08f,
+      transparent var(--fill-transparency-left)) border-box,
+    conic-gradient(                                                   /* static texture */
+      from var(--fill-angle-left),
+      #213, #112 5%, #112 60%, #213 95%) border-box;
 }
 
+/* Same paint stack but for clipped content (no base colour) */
 @utility bg-fill-content {
   background:
-   
-    conic-gradient(from var(--fill-angle-right), transparent var(--fill-transparency-right), #08f, #f03 100%, transparent) border-box,
-   
-    conic-gradient(from var(--fill-angle-left), #f03, #08f,  transparent var(--fill-transparency-left)) border-box,
-     
-    conic-gradient(from var(--fill-angle-left), #213, #112 5%, #112 60%, #213 95%) border-box;
+    conic-gradient(
+      from var(--fill-angle-right),
+      transparent var(--fill-transparency-right),
+      #08f, #f03 100%, transparent) border-box,
+    conic-gradient(
+      from var(--fill-angle-left),
+      #f03, #08f,
+      transparent var(--fill-transparency-left)) border-box,
+    conic-gradient(
+      from var(--fill-angle-left),
+      #213, #112 5%, #112 60%, #213 95%) border-box;
 }
 
-
-@utility container {
-  margin-inline: auto;
-  padding-inline: 2rem;
-  @media (width >= --theme(--breakpoint-sm)) {
-    max-width: none;
-  }
-  @media (width >= 1400px) {
-    max-width: 1400px;
-  }
-}
-
-/*
-  The default border color has changed to `currentcolor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
+/* 6 · Base layer ------------------------------------------------------ */
 @layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
-  }
-}
+  /* v3 border-colour fallback */
+  *, ::before, ::after, ::backdrop, ::file-selector-button { @apply border-border; }
 
-/* === Design Tokens (dark-first, lighter black) === */
-@layer base {
-  :root {         /* default = dark */
-    --font-sans : 'Inter', system-ui, sans-serif;
-    --font-ui   : 'Work Sans', sans-serif;
-    --font-serif: 'Source Serif Pro', serif;
-
-    /* lighter “Vercel black” */
-    --background: 0 0% 6%;    /* #111 */
-    --foreground: 0 0% 98%;   /* #fafafa */
-
-    --primary          : 0 0% 98%;
-    --primary-foreground: 0 0% 6%;
-
-    --secondary          : 210 100% 54%;   /* electric blue */
-    --secondary-foreground: 0 0% 100%;
-
-    --muted : 0 0% 18%;   /* #2e2e2e for cards */
-    --muted-foreground: 0 0% 70%;
-
-    --border : var(--muted);
-    --input  : var(--muted);
-    --ring   : var(--secondary);
-
-    --radius : 0.5rem;
-  }
-
-  /* light override */
+  /* light-mode overrides */
   .light {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
-    --primary   : 222 47% 11%;
-    --primary-foreground: 0 0% 100%;
-
-    --muted : 0 0% 96%;
-    --muted-foreground: 222 10% 45%;
-    --border: 220 14% 91%;
-    --input : 220 14% 91%;
+    --background           : 0 0% 100%;
+    --foreground           : 222 47% 11%;
+    --primary              : 222 47% 11%;
+    --primary-foreground   : 0 0% 100%;
+    --muted                : 0 0% 96%;
+    --muted-foreground     : 222 10% 45%;
+    --border               : 220 14% 91%;
+    --input                : 220 14% 91%;
   }
 
-  *    { @apply border-border; }
   body { @apply bg-background text-foreground antialiased; }
 
-  .font-ui    { font-family: var(--font-ui); }
+  .font-ui    { font-family: var(--font-ui);    }
   .font-serif { font-family: var(--font-serif); }
-  .font-brand { font-family: var(--font-sans); font-weight:700; }
+  .font-brand { font-family: var(--font-brand); font-weight:700; }
 }
 
-/* @layer utilities {
-  .text-brand {
-    @apply tex bg-clip-text text-transparent;
-  }
-} */
+/* ---------------------------------------------------------------------
+   Quick sample (delete later)
+
+.boxThatFills {
+  @apply bg-fill-border;
+  animation: var(--animate-fill-transparency);
+}
+--------------------------------------------------------------------- */
