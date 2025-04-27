@@ -1,22 +1,20 @@
 /* ========================================================================
-   global.css  —  Tailwind v4 + conic-border animations
+   global.css  —  Tailwind v4 + conic-border animations (bug-free build)
    ===================================================================== */
 
-/* 1 · Tailwind & Google Fonts  ---------------------------------------- */
+/* 1 · Tailwind & Google Fonts ----------------------------------------- */
 @import 'tailwindcss';
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Work+Sans:wght@400;600&family=Source+Serif+Pro:ital,wght@0,400;1,400&display=swap')
   layer(utilities);
 
-/* 2 · Custom-property registration  ----------------------------------- */
-/* 180 deg on both edges means the border starts “empty” on load,
-   then sweeps inwards as the two keyframes run. */
+/* 2 · Custom-property registration ----------------------------------- */
 @property --fill-transparency-left  { syntax:'<percentage>'; inherits:true; initial-value:0%;   }
 @property --fill-transparency-right { syntax:'<percentage>'; inherits:true; initial-value:100%; }
 @property --fill-angle-left         { syntax:'<angle>';      inherits:true; initial-value:180deg; }
-@property --fill-angle-right        { syntax:'<angle>';      inherits:true; initial-value:180deg; }  /* ← reverted */
+@property --fill-angle-right        { syntax:'<angle>';      inherits:true; initial-value:180deg; }
 @property --angle                   { syntax:'<angle>';      inherits:true; initial-value:0deg;  }
 
-/* 3 · Theme tokens (design system)  ----------------------------------- */
+/* 3 · Theme tokens ---------------------------------------------------- */
 @theme {
   /* fonts */
   --font-sans  : 'Inter', system-ui, sans-serif;
@@ -40,31 +38,37 @@
   --input                : var(--muted);
   --ring                 : var(--secondary);
 
-  /* animation shorthands */
-  --animate-fill-transparency : fill-transparency 2s forwards;
-  --animate-rotate-border     : rotate-border 3s linear infinite;
-  --animate-fill-left-border  : fill-left-border 1s linear forwards;
-  --animate-fill-right-border : fill-right-border 1s linear forwards;
+  /* animation shorthands
+     – now two keyframes run in parallel for left + right */
+  --animate-fill-transparency : 
+      fill-left-transparency 2s forwards,
+      fill-right-transparency 2s forwards;
+  --animate-rotate-border     : rotate-border      3s linear infinite;
+  --animate-fill-left-border  : fill-left-border   1s linear forwards;
+  --animate-fill-right-border : fill-right-border  1s linear forwards;
 }
 
-/* 4 · Keyframes (utilities layer)  ------------------------------------ */
+/* 4 · Keyframes ------------------------------------------------------- */
 @layer utilities {
-  @keyframes rotate-border      { from { --angle: 0deg; } to { --angle: 360deg; } }
-  @keyframes fill-transparency  {
-    from { --fill-transparency-left:0%;  --fill-transparency-right:100%; }
-    to   { --fill-transparency-left:100%; --fill-transparency-right:0%;  }
-  }
-  @keyframes fill-left-border   { from { --fill-angle-left : 180deg; } to { --fill-angle-left : 0deg;   } }
-  @keyframes fill-right-border  { from { --fill-angle-right:   0deg; } to { --fill-angle-right: 180deg; } }
+  /* full border spin */
+  @keyframes rotate-border { from { --angle: 0deg; } to { --angle: 360deg; } }
+
+  /* split transparency sweep */
+  @keyframes fill-left-transparency  { from { --fill-transparency-left : 0%; } to { --fill-transparency-left : 100%; } }
+  @keyframes fill-right-transparency { from { --fill-transparency-right:100%; } to { --fill-transparency-right: 0%; } }
+
+  /* optional angle sweeps (unchanged) */
+  @keyframes fill-left-border  { from { --fill-angle-left : 180deg; } to { --fill-angle-left :   0deg; } }
+  @keyframes fill-right-border { from { --fill-angle-right:   0deg; } to { --fill-angle-right: 180deg; } }
 }
 
-/* 5 · Utility classes (top-level, Tailwind v4-safe)  ------------------ */
-/* Token helpers */
+/* 5 · Utility classes (top-level) ------------------------------------ */
+/* token helpers */
 @utility bg-background   { background-color: hsl(var(--background)); }
 @utility text-foreground { color          : hsl(var(--foreground)); }
 @utility border-border   { border-color   : hsl(var(--border));     }
 
-/* Constantly rotating conic border */
+/* constantly rotating conic border */
 @utility bg-spinning-border {
   background:
     conic-gradient(from var(--angle), #213, #112 5%, #112 60%, #213 95%) padding-box,
@@ -72,24 +76,23 @@
     conic-gradient(from var(--angle), #213, #112 5%, #112 60%, #213 95%) border-box;
 }
 
-/* Border that fills from both edges toward centre */
+/* border that fills from both edges toward centre */
 @utility bg-fill-border {
   background:
-    linear-gradient(background, background) padding-box,              /* solid base */
-    conic-gradient(                                                   /* right sweep */
+    linear-gradient(background, background) padding-box,
+    conic-gradient( /* right sweep */
       from var(--fill-angle-right),
       transparent var(--fill-transparency-right),
       #08f, #f03 100%, transparent) border-box,
-    conic-gradient(                                                   /* left sweep */
+    conic-gradient( /* left sweep */
       from var(--fill-angle-left),
       #f03, #08f,
       transparent var(--fill-transparency-left)) border-box,
-    conic-gradient(                                                   /* static texture */
+    conic-gradient( /* static texture */
       from var(--fill-angle-left),
       #213, #112 5%, #112 60%, #213 95%) border-box;
 }
 
-/* Same paint stack but for clipped content (no base colour) */
 @utility bg-fill-content {
   background:
     conic-gradient(
@@ -107,10 +110,8 @@
 
 /* 6 · Base layer ------------------------------------------------------ */
 @layer base {
-  /* v3 border-colour fallback */
   *, ::before, ::after, ::backdrop, ::file-selector-button { @apply border-border; }
 
-  /* light-mode overrides */
   .light {
     --background           : 0 0% 100%;
     --foreground           : 222 47% 11%;
@@ -130,9 +131,9 @@
 }
 
 /* ---------------------------------------------------------------------
-   Quick sample (delete later)
+   Usage (remove later)
 
-.boxThatFills {
+.element {
   @apply bg-fill-border;
   animation: var(--animate-fill-transparency);
 }
