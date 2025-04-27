@@ -9,7 +9,7 @@
 
 /* 2 · Custom-property registration (only animating vars) ------------ */
 /* 0.0000001% FUCK THIS BUG */
-@property --fill-transparency-left  { syntax:'<percentage>'; inherits:true; initial-value:0.0000001%;   }
+@property --fill-transparency-left  { syntax:'<percentage>'; inherits:true; initial-value:1%;}
 @property --fill-transparency-right { syntax:'<percentage>'; inherits:true; initial-value:100%; }
 @property --fill-angle-left         { syntax:'<angle>';      inherits:true; initial-value:180deg; }
 @property --fill-angle-right        { syntax:'<angle>';      inherits:true; initial-value:180deg; }
@@ -88,7 +88,7 @@
       from var(--fill-angle-left),
       #f03,
       #08f,
-      transparent var(--fill-transparency-left),
+      transparent calc(var(--fill-transparency-left) - 1%),
       rgba(0,0,0,0) 101%) border-box,
 
     /* static inner texture */
@@ -111,7 +111,7 @@
       from var(--fill-angle-left),
       #f03,
       #08f,
-      transparent var(--fill-transparency-left),
+      transparent calc(var(--fill-transparency-left) - 1%),
       rgba(0,0,0,0) 101%) border-box,
     conic-gradient(
       from var(--fill-angle-left),
