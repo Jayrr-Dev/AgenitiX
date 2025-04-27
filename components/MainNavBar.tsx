@@ -7,8 +7,8 @@ import Image from "next/image"
 import { ThemeSwitcher } from "./theme-switcher"
 import { LogomarkLight } from "@/branding/logomark-svg"
 import { useTheme } from "next-themes";
-import MainDesktopNav from "./DesktopNav"
-import MobileNav from "./MobileNav"
+import MainDesktopNav from "./MainDesktopNav"
+import MainMobileNav from "./MainMobileNav"
 
 export default function MainNavBar() {
   const [scrolled, setScrolled] = React.useState(false);
@@ -57,7 +57,7 @@ export default function MainNavBar() {
             </div>
           </Link>
           <div className=" md:hidden w-full flex items-center justify-end ">
-              <MobileNav />
+              <MainMobileNav />
           </div>
         </div>
         
