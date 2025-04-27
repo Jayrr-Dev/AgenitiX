@@ -81,7 +81,7 @@
       #08f,
       #f03 100%,
       transparent,
-      rgba(0,0,0,0) 101%) border-box,
+      rgba(0,0,0,0) 100%) border-box,
 
     /* left sweep (same pattern) */
     conic-gradient(
@@ -89,7 +89,7 @@
       #f03,
       #08f,
       transparent calc(var(--fill-transparency-left) - 1%),
-      rgba(0,0,0,0) 101%) border-box,
+      rgba(0,0,0,0) 100%) border-box,
 
     /* static inner texture */
     conic-gradient(
@@ -106,13 +106,13 @@
       #08f,
       #f03 100%,
       transparent,
-      rgba(0,0,0,0) 101%) border-box,
+      rgba(0,0,0,0) 100%) border-box,
     conic-gradient(
       from var(--fill-angle-left),
       #f03,
       #08f,
       transparent calc(var(--fill-transparency-left) - 1%),
-      rgba(0,0,0,0) 101%) border-box,
+      rgba(0,0,0,0) 100%) border-box,
     conic-gradient(
       from var(--fill-angle-left),
       #213, #112 5%, #112 60%, #213 95%) border-box;
