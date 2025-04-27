@@ -8,7 +8,8 @@
   layer(utilities);
 
 /* 2 · Custom-property registration (only animating vars) ------------ */
-@property --fill-transparency-left  { syntax:'<percentage>'; inherits:true; initial-value:1%;   }
+/* calc(0%) FUCK THIS BUG */
+@property --fill-transparency-left  { syntax:'<percentage>'; inherits:true; initial-value:calc(0%);   }
 @property --fill-transparency-right { syntax:'<percentage>'; inherits:true; initial-value:100%; }
 @property --fill-angle-left         { syntax:'<angle>';      inherits:true; initial-value:180deg; }
 @property --fill-angle-right        { syntax:'<angle>';      inherits:true; initial-value:180deg; }
