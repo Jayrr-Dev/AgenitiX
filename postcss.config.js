@@ -1,9 +1,6 @@
-// postcss.config.js
 module.exports = {
   plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-    // Production-only tweaks
+    '@tailwindcss/postcss': {},
     ...(process.env.NODE_ENV === 'production' && {
       cssnano: ['cssnano', {
         preset: ['default', {
@@ -12,5 +9,5 @@ module.exports = {
         }]
       }]
     })
-  }
+  },
 };
