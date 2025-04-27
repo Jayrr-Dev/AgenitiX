@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 
 const navItemStyle = "border-b-1 rounded-lg p-2 border-transparent bg-fill-border hover:animate-fill-transparency font-thin text-lg"
 
-export function DesktopNav() {
+export default function MainDesktopNav() {
     return (
       <NavigationMenu>
         <NavigationMenuList className="flex flex-row gap-1 flex-wrap">

@@ -7,8 +7,8 @@ import Image from "next/image"
 import { ThemeSwitcher } from "./theme-switcher"
 import { LogomarkLight } from "@/branding/logomark-svg"
 import { useTheme } from "next-themes";
-import { DesktopNav } from "./DesktopNav"
-import { MobileNav } from "./MobileNav"
+import MainDesktopNav from "./DesktopNav"
+import MobileNav from "./MobileNav"
 
 
 const components: { title: string; href: string; description: string }[] = [
@@ -99,7 +99,7 @@ export default function MainNavBar() {
           {/* NAVIGATION SECTION */}
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end ">
             <div className="hidden md:block w-full flex-1 md:w-auto md:flex-none flex-row gap-1 flex-wrap">
-              <DesktopNav />
+              <MainDesktopNav />
             </div>
         </div>
           

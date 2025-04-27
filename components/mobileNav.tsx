@@ -7,9 +7,8 @@ import {
 import { Button } from "./ui/button";
 import Link from "next/link";
 import { Menu } from "lucide-react";  
-import React from "react";
 
-export function MobileNav() {
+export default function MobileNav() {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
