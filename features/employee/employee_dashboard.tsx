@@ -1,7 +1,6 @@
 'use client'
 import { redirect } from "next/navigation";
-import { getUserRole } from "@/utils/auth-utils";
-import { getCustomClaims } from "@/utils/auth-utils";
+
 import { useEffect } from "react";
 export default  function EmployeeDashboard( {authID, userRole}: {authID: string, userRole: string} ) {
     
