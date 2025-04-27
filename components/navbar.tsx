@@ -5,6 +5,10 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 import { ThemeSwitcher } from "./theme-switcher"
+import { LogomarkLight } from "@/branding/logomark-svg"
+import { useTheme } from "next-themes";
+import { DesktopNav } from "./DesktopNav"
+import { MobileNav } from "./MobileNav"
 
 
 const components: { title: string; href: string; description: string }[] = [
@@ -49,17 +53,17 @@ export function Navbar() {
       if (isScrolled !== scrolled) {
         setScrolled(isScrolled);
       }
-    };
-
+    }
     // Add scroll event listener
     window.addEventListener("scroll", handleScroll);
-    
     // Remove event listener on cleanup
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
   }, [scrolled]);
 
+  const { theme } = useTheme();
+  // Render the navigation bar with responsive behavior based on scroll position
   return (
     <header className={cn(
       "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300",
@@ -69,47 +73,41 @@ export function Navbar() {
         "container flex items-center h-full",
         scrolled ? "py-2" : "py-4"
       )}>
-          <div className="flex items-center w-full">
-            <Link href="/" className="mr-6 flex items-center justify-start min-w-[250px] cursor-pointer">
-              <Image 
-                src="/logo.png" 
-                alt="logo" 
-                width={scrolled ? 100 : 150} 
-                height={scrolled ? 100 : 150}
-                className={cn(
-                  "transition-all duration-300 w-auto dark:brightness-125",
-                  scrolled 
-                    ? "h-10 sm:h-10 md:h-12 lg:h-12 xl:h-12" 
-                    : "h-12 sm:h-16 md:h-20 lg:h-24 xl:h-28"
-                )} 
-              />
-              <div className={cn(
-                "flex flex-col transition-all duration-300",
+        {/* LOGO SECTION */}
+        <div className="flex items-center w-full">
+          <Link href="/" className="mr-6 flex items-center justify-start min-w-[250px] cursor-pointer">
+            <LogomarkLight 
+              className={cn(
+                "transition-all duration-300",
                 scrolled ? "scale-90 origin-left" : ""
-              )}>
-              
-                <span className="font-bold block sm:hidden lg:block text-2xl lg:text-3xl logoText whitespace-nowrap sm:whitespace-normal">Utilitek Solutions</span>
-                <span className={cn(
-                  "text-sm text-gray-500 transition-opacity duration-300 hidden lg:block",
-                  scrolled ? "opacity-0 h-0" : "opacity-100"
-                )}>Our expertise is your success</span>
+              )} 
+            />
+            <div className={cn(
+              "flex flex-col transition-all duration-300",
+              scrolled ? "scale-90 origin-left" : ""
+            )}>
+              <span className="font-bold block sm:hidden lg:block text-2xl lg:text-xl logoText whitespace-nowrap sm:whitespace-normal ml-4">
+                AgenitiX
+              </span>
             </div>
           </Link>
+          <div className=" md:hidden w-full flex items-center justify-end ">
+              <MobileNav />
+          </div>
         </div>
+        
+          {/* NAVIGATION SECTION */}
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end ">
-      
+            <div className="hidden md:block w-full flex-1 md:w-auto md:flex-none flex-row gap-1 flex-wrap">
+              <DesktopNav />
+            </div>
         </div>
-        {/* Mobile Logo */}
-        {/* <div className="flex items-center md:hidden">
-          <Link href="/" className="flex items-center space-x-2">
-            <Image src="/logo.png" alt="logo" width={80} height={80} className="h-10 w-auto" />
-          </Link>
-        </div> */}
-        <div className="ml-2">
+          
+          {/* THEME SWITCHER */}
+          <div className="ml-2">
             <ThemeSwitcher />
-        </div>
+          </div>
       </div>
     </header>
   )
 }
-

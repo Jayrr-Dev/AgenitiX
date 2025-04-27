@@ -1,7 +1,7 @@
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
-import { Navbar } from "@/components/navbar";
+import { Navbar } from "@/components/Navbar";
 import { CookieConsent } from "@/features/cookies";
 import Footer from "@/features/marketing/components/footer";
 import { Providers } from '@/app/provider';

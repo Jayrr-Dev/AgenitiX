@@ -1,81 +1,66 @@
-import type { Config } from "tailwindcss";
+// tailwind.config.ts
+import type { Config } from 'tailwindcss';
 
-const config = {
-  darkMode: ["class"],
+const config: Config = {
+  darkMode: ['class'],              // <html class="dark"> by default
   content: [
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./features/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './features/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
   ],
-  prefix: "",
+  prefix: '',
   theme: {
+    /* 1. container helper — unchanged */
     container: {
       center: true,
-      padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
+      padding: '2rem',
+      screens: { '2xl': '1400px' },
     },
+
+    /* 2. core design-token hook-ups */
     extend: {
+      /* radius pulled from CSS custom prop */
+      borderRadius: { lg: 'var(--radius)' },
+
+      /* fonts point at the variables we set in theme.css */
+      fontFamily: {
+        sans  : ['var(--font-sans)'],
+        ui    : ['var(--font-ui)'],
+        serif : ['var(--font-serif)'],
+        brand : ['var(--font-sans)'],
+      },
+
+      /* colour utilities -> HSL custom props (includes a few extras) */
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
-        },
-      },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-      },
-      keyframes: {
-        "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
-        },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
-        },
-      },
-      animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
+        /* surfaces & text */
+        background : 'hsl(var(--background) / <alpha-value>)',
+        foreground : 'hsl(var(--foreground) / <alpha-value>)',
+
+        /* brand colours */
+        primary    : 'hsl(var(--primary) / <alpha-value>)',
+        primaryFg  : 'hsl(var(--primary-foreground) / <alpha-value>)',
+        secondary  : 'hsl(var(--secondary) / <alpha-value>)',
+        secondaryFg: 'hsl(var(--secondary-foreground) / <alpha-value>)',
+
+        /* UI utility colours */
+        muted      : 'hsl(var(--muted) / <alpha-value>)',
+        mutedFg    : 'hsl(var(--muted-foreground) / <alpha-value>)',
+        accent     : 'hsl(var(--accent) / <alpha-value>)',
+        accentFg   : 'hsl(var(--accent-foreground) / <alpha-value>)',
+        border     : 'hsl(var(--border) / <alpha-value>)',
+        ring       : 'hsl(var(--ring) / <alpha-value>)',
+
+        /* state colours */
+        destructive: 'hsl(var(--destructive) / <alpha-value>)',
+        destructiveFg: 'hsl(var(--destructive-foreground) / <alpha-value>)',
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
-} satisfies Config;
+
+  /* 3. plugins — keep your animation helpers */
+  plugins: [require('tailwindcss-animate')],
+};
 
 export default config;

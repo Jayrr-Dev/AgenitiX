@@ -1,19 +1,9 @@
 'use client';
 import { ProjectCarousel } from "@/features/projects/components/ProjectCarousel";
-import { getAllProjectShowcases } from "@/features/projects/lib/api/getProjectShowcases";
 import { useQuery } from "@tanstack/react-query";
 
 export default function ClientSuccess() {
-    const { data: projectsData } = useQuery({
-        queryKey: ['projects'],
-        queryFn: () => getAllProjectShowcases(),
-    });
-    const projects = projectsData?.map(project => ({
-        id: project.project_id,
-        title: project.title,
-        description: project.description,
-        image: project.imageUrl,
-    }));  
+    
     
     return (
       <div className="mb-20">
@@ -41,7 +31,7 @@ export default function ClientSuccess() {
               </ul>
             </div>
             <div>
-              <ProjectCarousel projects={projects || []} />
+
               {/* TODO: Add client testimonial */}
               {/* <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
                 <h4 className="text-lg font-semibold mb-3">Client Testimonial</h4>

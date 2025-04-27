@@ -2,105 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
+/* === Google Fonts === */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Work+Sans:wght@400;600&family=Source+Serif+Pro:ital,wght@0,400;1,400&display=swap');
+
+/* === Design Tokens (dark-first, lighter black) === */
 @layer base {
-  :root {
-    /* Modified to match Utilitek color scheme */
+  :root {         /* default = dark */
+    --font-sans : 'Inter', system-ui, sans-serif;
+    --font-ui   : 'Work Sans', sans-serif;
+    --font-serif: 'Source Serif Pro', serif;
+
+    /* lighter “Vercel black” */
+    --background: 0 0% 6%;    /* #111 */
+    --foreground: 0 0% 98%;   /* #fafafa */
+
+    --primary          : 0 0% 98%;
+    --primary-foreground: 0 0% 6%;
+
+    --secondary          : 210 100% 54%;   /* electric blue */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted : 0 0% 18%;   /* #2e2e2e for cards */
+    --muted-foreground: 0 0% 70%;
+
+    --border : var(--muted);
+    --input  : var(--muted);
+    --ring   : var(--secondary);
+
+    --radius : 0.5rem;
+  }
+
+  /* light override */
+  .light {
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 16 85% 40%; /* Primary red/orange from logo */
-    --primary-foreground: 0 0% 98%;
-    --secondary: 28 80% 52%; /* Golden accent color */
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 45 70% 50%; /* Light golden accent */
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 16 45% 90%; /* Light orange border */
-    --input: 16 45% 90%;
-    --ring: 16 85% 40%;
-    --radius: 0.5rem;
-    --chart-1: 16 85% 40%; /* Primary orange/red */
-    --chart-2: 28 80% 52%; /* Golden accent */
-    --chart-3: 352 70% 30%; /* Dark burgundy from logo */
-    --chart-4: 45 70% 50%; /* Light golden */
-    --chart-5: 0 0% 20%; /* Dark gray / nearly black */
+    --foreground: 222 47% 11%;
+    --primary   : 222 47% 11%;
+    --primary-foreground: 0 0% 100%;
+
+    --muted : 0 0% 96%;
+    --muted-foreground: 222 10% 45%;
+    --border: 220 14% 91%;
+    --input : 220 14% 91%;
   }
 
-  .dark {
-    --background: 225, 40%, 11%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 16 85% 45%; /* Brighter in dark mode */
-    --primary-foreground: 0 0% 98%;
-    --secondary: 28 80% 52%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 45 70% 50%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 16 45% 35%;
-    --input: 0 0% 14.9%;
-    --ring: 16 85% 45%;
-    --chart-1: 16 85% 45%; /* Primary orange/red */
-    --chart-2: 28 80% 52%; /* Golden accent */
-    --chart-3: 352 70% 40%; /* Dark burgundy from logo - brighter in dark mode */
-    --chart-4: 45 70% 50%; /* Light golden */
-    --chart-5: 0 0% 80%; /* Light gray in dark mode */
+  *    { @apply border-border; }
+  body { @apply bg-background text-foreground antialiased; }
+
+  .font-ui    { font-family: var(--font-ui); }
+  .font-serif { font-family: var(--font-serif); }
+  .font-brand { font-family: var(--font-sans); font-weight:700; }
+}
+
+/* @layer utilities {
+  .text-brand {
+    @apply tex bg-clip-text text-transparent;
   }
-}
-
-.logoText {
-  font-family: Arial, sans-serif;
-  font-weight: normal;
-  letter-spacing: 0.5px;
-  color: #fe975c;
-  text-shadow: 
-    0.5px 0.5px 0 #fe975c,
-    1px 1px 0 #901c16,
-    1.2px 1.2px 0 #7b0000,
-    2px 2px 3px rgba(0, 0, 0, 0.3);
-  background: linear-gradient(to bottom, #fe975c 0%, #901c16 50%, #7b0000 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.custom-shape-divider-bottom-1741703122 {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  overflow: hidden;
-  line-height: 0;
-}
-
-.custom-shape-divider-bottom-1741703122 svg {
-  position: relative;
-  display: block;
-  width: calc(100% + 1.3px);
-  height: 100px;
-}
-
-/* .custom-shape-divider-bottom-1741703122 .shape-fill {
-  fill: #FFFFFF;
 } */
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
-

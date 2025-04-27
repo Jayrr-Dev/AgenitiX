@@ -2,7 +2,6 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { getAllProjectShowcases } from '@/features/projects/lib/api/getProjectShowcases';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -22,15 +21,7 @@ const featuredProjects = [
 ]
 
 export default function ClientProjectsPage() {
-  const { data: showcaseProjects, isLoading, isError } = useQuery({
-    queryKey: ['projects'],
-    queryFn: getAllProjectShowcases,
-    staleTime: 1000 * 60,
-  });
-
-  if (isLoading) return <div className="p-10 text-center">Loading projects...</div>;
-  if (isError || !showcaseProjects) return <div className="p-10 text-center text-red-600">Failed to load projects.</div>;
-
+  
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-16">
