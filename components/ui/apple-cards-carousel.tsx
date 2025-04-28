@@ -135,14 +135,14 @@ export const Carousel = ({ items, initialScroll = 0 }: CarouselProps) => {
         </div>
         <div className="mr-10 flex justify-end gap-2">
           <button
-            className="relative z-40 flex h-10 w-10 items-center justify-center rounded-full  bg-gray-100 disabled:opacity-50 hover:border border-transparent bg-fill-border hover:animate-fill-transparency"
+            className="relative z-40 flex h-10 w-10 items-center justify-center rounded-full  bg-gray-100 disabled:opacity-0 transition-all duration-300 hover:border border-transparent bg-fill-border hover:animate-fill-transparency"
             onClick={scrollLeft}
             disabled={!canScrollLeft}
           >
             <IconArrowNarrowLeft className="h-6 w-6 text-gray-500" />
           </button>
           <button
-            className="relative z-40 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 disabled:opacity-50 hover:border hover:border-transparent bg-fill-border hover:animate-fill-transparency"
+            className="relative z-40 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 disabled:opacity-0 transition-all duration-300 hover:border hover:border-transparent bg-fill-border hover:animate-fill-transparency"
             onClick={scrollRight}
             disabled={!canScrollRight}
           >
