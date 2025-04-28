@@ -3,12 +3,26 @@ import Main from "@/features/marketing/components/main";
 import { BrandWordmark } from "@/branding/brand-wordmark";
 import { AppleCardsCarouselDemo } from "@/features/marketing/components/apple-carousel";
 import { Card, CardContent } from "@/components/ui/card";
+import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
+import { testimonials } from "@/features/marketing/data/data";
+import { GoogleGeminiEffectDemo } from "@/features/marketing/components/google-effect";
+import FeaturesSectionDemo from "@/components/features-section-demo-1";
+import FeaturesSectionDemo2 from "@/components/features-section-demo-2";
+import FeaturesSectionDemo3 from "@/components/features-section-demo-3";
 export default async function Home() {
+  await import("@/features/marketing/components/google-effect");
+  await import("@/components/features-section-demo-1");
+  await import("@/components/features-section-demo-2");
+  await import("@/components/features-section-demo-3");
+  await import("@/components/ui/infinite-moving-cards");
+  await import("@/components/ui/card");
   return (
     <main className="grid grid-cols-12">
-      <div className="w-full h-full col-span-12">
+      {/* Hero */}
+      <div id="hero" className="w-full h-full col-span-12">
         <Hero />
       </div>
+      {/* Apple Carousel */}
       <div id="apple-carousel" className="w-full h-full col-span-8 col-start-3 ">
         <Card className="w-full h-full ">
           <CardContent className="w-full h-full border border-transparent bg-fill-border hover:animate-fill-transparency rounded-sm">
@@ -17,8 +31,30 @@ export default async function Home() {
           
         </Card>
       </div>
+      {/* Infinite Moving Cards */}
+      <div id="infinite-moving-cards" className="w-full h-full col-span-8 col-start-3 ">
+        <InfiniteMovingCards items={testimonials} direction="right" speed="slow" />
+      </div>
+      {/* Google Gemini Effect */}
+      <div id="google-gemini-effect" className="w-full h-full col-span-8 col-start-3 ">
+        <GoogleGeminiEffectDemo />
+      </div>
       {/* <Main /> */}
       {/* <BrandWordmark/> */}
+      {/* Features Section */}
+      <div id="features-section" className="w-full h-full col-span-8 col-start-3 ">
+        <FeaturesSectionDemo />
+      </div>
+      {/* Features Section 2 */}
+      <div id="features-section-2" className="w-full h-full col-span-8 col-start-3 ">
+        <FeaturesSectionDemo2 />
+      </div>
+      {/* Features Section 3 */}
+      <div id="features-section-3" className="w-full h-full col-span-8 col-start-3 ">
+        <FeaturesSectionDemo3 />
+      </div>
+      
+      
     </main>
   );
 }

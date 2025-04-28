@@ -2,7 +2,7 @@ export type slide = {
   type: "video" | "image" | "component";
   src: string;
   heading: string;
-  title: string;
+  title: string | React.ReactNode;
   message: string;
   ctaText: string;
   ctaLink: string;

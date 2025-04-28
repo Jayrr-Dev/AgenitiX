@@ -40,11 +40,22 @@
       fill-left-transparency  2s forwards,
       fill-right-transparency 2s forwards;
   --animate-rotate-border     : rotate-border 3s linear infinite;
+  --animate-scroll: scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite;
 }
+
+
 
 /* 4 · Keyframes ----------------------------------------------------- */
 @layer utilities {
   @keyframes rotate-border { from { --angle: 0deg; } to { --angle: 360deg; } }
+
+  @keyframes scroll {
+    to {
+      transform: translate(calc(-50% - 0.5rem));
+    }
+  }
+
+
 
   @keyframes fill-left-transparency  { from { --fill-transparency-left : 0%; } to { --fill-transparency-left :100%; } }
   @keyframes fill-right-transparency { from { --fill-transparency-right:100%; } to { --fill-transparency-right: 0%; } }

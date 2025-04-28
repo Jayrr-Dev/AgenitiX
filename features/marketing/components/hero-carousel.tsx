@@ -12,6 +12,7 @@ import { ThreeDMarquee } from "@/components/ui/3d-marquee";
 import { useTheme } from "next-themes";
 import { imagesMarquee } from "@/features/marketing/data/data";
 import type { slide } from "@/features/marketing/types/marketing-types";
+import { FlipWords } from "@/components/ui/flip-words";
 
 
 
@@ -24,6 +25,7 @@ export function HeroCarousel() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const images = imagesMarquee;
+  const words = ["better", "cute", "beautiful", "modern"];
 
   // Slide content with unique messages and CTAs
 
@@ -33,7 +35,7 @@ export function HeroCarousel() {
       src:"",
       component: <ThreeDMarquee images={images} />,   
       heading: "talent acquisition in engineering",
-      title: "Join our expert team",
+      title: <div className="flex flex-row gap-2 uppercase"> <span className="text-white/95 "> <span className="text-white/95">testing is</span><FlipWords words={words} /></span>  </div>,
       message: "We're constantly looking for talented professionals in Electrical Engineering Design to join our innovative team and help shape the future of technology solutions.",
       ctaText: "Get Started",
       ctaLink: "/careers"
@@ -173,7 +175,7 @@ export function HeroCarousel() {
                               {/* Subheading */}
                               <h2 className="text-xl text-white/95 font-extralight drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] ">{slide.heading.toUpperCase()}</h2>
                               {/* Heading */}
-                              <h2 className="lg:text-5xl text-4xl text-white/95 font-sans font-bold drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] ">{slide.title.toUpperCase()}</h2>
+                              <h2 className="lg:text-5xl text-4xl text-white/95 font-sans font-bold drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] ">{slide.title}</h2>
                                 {/* Message */}
                                 <p className="hidden lg:block text-white/95 text-lg font-brand font-extralight ] ">{slide.message}</p>
                                 <div className="xdebug-green flex justify-center w-full   self-center">
