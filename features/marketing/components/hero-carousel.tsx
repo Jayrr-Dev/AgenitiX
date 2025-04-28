@@ -8,50 +8,36 @@ import { motion, AnimatePresence } from "framer-motion";
 import useEmblaCarousel from "embla-carousel-react";
 // import LoadingCarousel from "./loading-carousel"; 
 // const VideoCarousel = dynamic(() => import("./video-carousel").then(mod => mod.videoCarousel), { ssr: false, loading: () => <LoadingCarousel/> });
+import { ThreeDMarquee } from "@/components/ui/3d-marquee";
+import { useTheme } from "next-themes";
+import { imagesMarquee } from "@/features/marketing/data/data";
+import type { slide } from "@/features/marketing/types/marketing-types";
+
+
+
 
 export function HeroCarousel() {
   const [scrollY, setScrollY] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
-  
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const images = imagesMarquee;
+
   // Slide content with unique messages and CTAs
-  const slides = [
+
+  const slides: slide[] = [
     {
-      type: "video",
-      src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxS5sxJF7h0jeaV8R3woxgAG7Lr6ib5TOkcHXC",
-      message: "Proven Solutions for Engineering Reliability",
-      ctaText: "Discover How",
-      ctaLink: "/about"
-    },
-    {
-      type: "video",
-      src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOox2bSnnjhI5vdYi6q1rEpygWQ4G3zfKUxeusR7",
-      message: "Empowering utilities across Alberta",
-      ctaText: "Our Impact",
-      ctaLink: "/projects"
-    },
-    {
-      type: "video",
-      src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxkIIrjof2IctWSx5udkeCYzHQF1w0norGhilm",
-      message: "Applying Cutting-edge technology for service excellence",
-      ctaText: "See Solutions",
-      ctaLink: "/expertise"
-    },
-    {
-      type: "video",
-      src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxAAk0Hu3HqjTl9NXwnEZku5Jao6813Kd7LUiM",
-      message: "Streamline projects with expert solutions",
-      ctaText: "Explore Services",
-      ctaLink: "/expertise"
-    },
-    {
-      type: "video",
-      src: "https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxU1NtRfVEzhbKyMT2ALI95efgRZFtW68dpsxO",
-      message: "Recuiting the best in Electrical Engineering Design",
+      type: "component",
+      src:"",
+      component: <ThreeDMarquee images={images} />,   
+      heading: "talent acquisition in engineering",
+      title: "Join our expert team",
+      message: "We're constantly looking for talented professionals in Electrical Engineering Design to join our innovative team and help shape the future of technology solutions.",
       ctaText: "Get Started",
       ctaLink: "/careers"
-    }
+    },
   ];
 
   // Track embla carousel's active index
@@ -77,7 +63,7 @@ export function HeroCarousel() {
     
     const interval = setInterval(() => {
       emblaApi.scrollNext();
-      }, 9500); // Change slide every x seconds
+      }, 20000); // Change slide every x seconds
     
     return () => clearInterval(interval);
   }, [emblaApi]);
@@ -91,18 +77,19 @@ export function HeroCarousel() {
 
 
 
-  // Animation variants for the message card
+  // ANIMATION VARIANTS
+  // Animation variants for the message card with slide-in effect from left
   const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, x: -1000 },
     visible: { 
       opacity: 1, 
-      y: 0,
-      transition: { duration: 0.6, ease: "easeOut" }
+      x: 0,
+      transition: { duration: 1, ease: "easeOut" }
     },
     exit: { 
       opacity: 0, 
-      y: -20,
-      transition: { duration: 0.3, ease: "easeIn" }
+      x: 100,
+      transition: { duration: 0.5, ease: "easeIn" }
     }
   };
 
@@ -122,9 +109,12 @@ export function HeroCarousel() {
   };
 
   return (
-    <div className="relative overflow-hidden">
-      <div ref={emblaRef} className="w-full z-10 relative overflow-hidden">
-        <div className="flex">
+    <div className="xdebug-blue relative overflow-hidden w-full">
+      <div ref={emblaRef} className=" w-full z-10 relative overflow-hidden">
+         {/* Navigation buttons */}
+        
+
+        <div className="xdebug-green lg:mx-20  flex">
           {slides.map((slide, index) => (
             <div 
               key={index} 
@@ -132,9 +122,9 @@ export function HeroCarousel() {
               style={{ overflow: "hidden" }}
             >
               <Card className="rounded-none">
-                <CardContent className="flex items-center justify-center m-0 p-0 overflow-hidden">
+                <CardContent className="flex items-center justify-center m-0 p-0 overflow-hidden ">
                   {slide.type === "video" ? (
-                    // <VideoCarousel src={slide.src} /> 
+                    // VIDEO CAROUSEL
                     <video
                       ref={videoRef}
                       src={slide.src}
@@ -142,45 +132,62 @@ export function HeroCarousel() {
                       muted
                       playsInline
                       loop
-                      className="w-full h-full object-cover"
-                      style={{ height: "calc(90vh - 112px)" }}
+                      className="w-full object-cover brightness-[0.7]"
+                      style={{ height: "calc(100vh - 96px)" }}
                     />
-                  ) : (
+                  ) : slide.type === "image" ?   (
+                    // IMAGE CAROUSEL
                     <img
                       src={slide.src}
                       alt={`hero-carousel-${index + 1}`}
                       loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-300"
                       style={{
-                        height: "calc(90vh - 112px)",
+                        height: "calc(100vh - 96px)",
                         transform: `translateY(${scrollY * 0.1}px)`,
                       }}
                     />
-                  )}
+                  ) : slide.type === "component" ? (
+                    // COMPONENT CAROUSEL
+                    <div className="w-full h-full">
+                      {slide.component} 
+                    </div>
+                  ) : null}
                   
                   {/* Animated Message Card with CTA */}
                   <AnimatePresence mode="wait">
                     {activeIndex === index && (
-                      <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="xdebug-green absolute inset-0 flex items-center">
                         <motion.div
                           initial="hidden"
                           animate="visible"
                           exit="exit"
                           variants={cardVariants}
                           key={`card-${index}`}
-                          className="w-full max-w-7xl mx-4"
+                          className="w-full max-w-7xl "
                         >
-                              <motion.div variants={buttonVariants}>
-                          <Card className="bg-transparent border-none">
-                            <CardContent className="flex flex-col items-center text-center gap-6 p-8">
-                              <h2 className="lg:text-6xl text-4xl text-white/95 font-['Impact'] italic drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] ">{slide.message.toUpperCase()}</h2>
+                        <motion.div variants={buttonVariants}>
+                          {/* Message Card */}
+                          <Card className="xdebug-red bg-transparent border-none  md:pl-16 lg:pl-32 mb-52">
+                            <CardContent className="flex flex-col w-3/5 gap-8">
+                              {/* Subheading */}
+                              <h2 className="text-xl text-white/95 font-extralight drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] ">{slide.heading.toUpperCase()}</h2>
+                              {/* Heading */}
+                              <h2 className="lg:text-5xl text-4xl text-white/95 font-sans font-bold drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] ">{slide.title.toUpperCase()}</h2>
+                                {/* Message */}
+                                <p className="hidden lg:block text-white/95 text-lg font-brand font-extralight ] ">{slide.message}</p>
+                                <div className="xdebug-green flex justify-center w-full   self-center">
                                 <Button 
                                   size="lg" 
-                                  className="bg-black/80 hover:bg-black/40 font-semibold mt-12 px-16 py-0 text-shadow-[0_0_1px_#000,0_0_1px_#000,0_0_1px_#000,0_0_1px_#000]  border-none text-lg text-white rounded-none  "
+                                  className="xdebug-red  border-2 border-transparent w-full group/cta bg-fill-border hover:animate-fill-transparency"
                                   onClick={() => window.location.href = slide.ctaLink}
                                 >
-                                  {slide.ctaText}
+                                  <div className="flex flex-row gap-2 ">
+                                    {slide.ctaText}
+                                    <svg className="group-hover/cta:block opacity-0 group-hover/cta:opacity-100 transition-opacity duration-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M5.536 21.886a1 1 0 0 0 1.033-.064l13-9a1 1 0 0 0 0-1.644l-13-9A1 1 0 0 0 5 3v18a1 1 0 0 0 .536.886"/></svg>
+                                  </div>
                                 </Button>
+                                </div>
                             </CardContent>
                           </Card>
                               </motion.div>
@@ -194,19 +201,18 @@ export function HeroCarousel() {
           ))}
         </div>
         
-        {/* Navigation buttons */}
         <button 
-          className="absolute left-0 top-1/2 -translate-y-1/2 rounded-none h-full w-1/3 
+          className="absolute left-0 top-1/2 -translate-y-1/2 rounded-none h-full w-1/5 
             bg-linear-to-l from-transparent to-black/50 opacity-0 transition-opacity duration-500 hover:opacity-100 z-10"
           onClick={() => emblaApi?.scrollPrev()}
         />
         <button 
-          className="absolute right-0 top-1/2 -translate-y-1/2 rounded-none h-full w-1/3 
+          className="absolute right-0 top-1/2 -translate-y-1/2 rounded-none h-full w-1/5 
             bg-linear-to-r from-transparent to-black/50 opacity-0 transition-opacity duration-500 hover:opacity-100 z-10"
           onClick={() => emblaApi?.scrollNext()}
         />
-        
-        {/* Dots */}
+
+            {/* Carousel Dots */}
         <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-50">
           {slides.map((_, index) => (
             <button
@@ -220,22 +226,16 @@ export function HeroCarousel() {
             />
           ))}
         </div>
-        
         {/* Decorative Shape Divider */}
         <div className="custom-shape-divider-bottom-1741703122 absolute bottom-0 left-0 right-0 z-20">
-          <svg
-            data-name="Layer 1"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 1200 120"
-            preserveAspectRatio="none"
-            className="fill-background"
-          >
-            <path
-              d="M600,112.77C268.63,112.77,0,65.52,0,7.23V120H1200V7.23C1200,65.52,931.37,112.77,600,112.77Z"
-              className="shape-fill"
-            ></path>
-          </svg>
+        <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none"  fill="background">
+        <path d="M598.97 114.72L0 0 0 120 1200 120 1200 0 598.97 114.72z" ></path>
+    </svg>
         </div>
+
+        <div className="custom-shape-divider-top-1745800192 absolute bottom-0 left-0 right-0 z-20">
+    
+</div>
       </div>
     </div>
   );

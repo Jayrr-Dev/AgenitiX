@@ -72,7 +72,7 @@
 /* border that fills from both edges toward centre */
 @utility bg-fill-border {
   background:
-    linear-gradient(background, background) padding-box,
+    linear-gradient(360deg, background, background) padding-box,
 
     /* right sweep (sentinel stop so var() isn’t last) */
     conic-gradient(

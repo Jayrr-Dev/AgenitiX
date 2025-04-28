@@ -32,8 +32,8 @@ export default function MainNavBar() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 transition-all duration-300",
-        scrolled ? "h-16" : "md:h-28 h-16",
+        "sticky top-0 z-50 w-full border-b bg-fill-border opacity-95 backdrop-blur-lg supports-backdrop-filter:bg-background/60 transition-all duration-300",
+        scrolled ? "h-16" : "md:h-24 h-16",
       )}
     >
       <nav id="main-nav" className="xdebug-red w-full h-full  ">
@@ -42,7 +42,7 @@ export default function MainNavBar() {
             scrolled ? "py-2" : "py-2",
           )}
         >
-          <div id="logo" className="xdebug-green col-span-4 md:col-span-2 self-center justify-self-center border-b border-transparent  bg-fill-border hover:animate-fill-transparency">
+          <div id="logo" className="xdebug-green col-span-4 md:col-span-2 self-center justify-self-center border-b border-transparent   bg-fill-border hover:animate-fill-transparency">
             <Link
               href="/"
               className=" flex flex-row items-center justify-center cursor-pointer  "

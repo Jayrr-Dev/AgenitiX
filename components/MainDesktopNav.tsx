@@ -8,12 +8,12 @@ import {
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 
-const navItemStyle = "border-b-1 rounded-lg p-2 border-transparent bg-fill-border hover:animate-fill-transparency font-thin text-lg"
+const navItemStyle = "bg-green border-b-1 rounded-lg p-2 border-transparent bg-fill-border hover:animate-fill-transparency font-thin text-xl"
 
 export default function MainDesktopNav() {
     return (
       <NavigationMenu>
-        <NavigationMenuList className="flex flex-row gap-1 flex-wrap">
+        <NavigationMenuList className="flex flex-row gap-4 flex-wrap">
           <NavigationMenuItem>
             <Link href="/about" legacyBehavior passHref>
               <NavigationMenuLink className={navItemStyle}>About Us</NavigationMenuLink>
