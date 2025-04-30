@@ -189,16 +189,113 @@ export const testimonials = [
   {
     "name": "website-image-reviews-DwainBrowne.webp",
     "key": "EORhWwIHc4gy3T0B6JpG2P9iDeUKc1SVQsxBIfFg4znpZ8at",
-    "customId": null,
     "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gy3T0B6JpG2P9iDeUKc1SVQsxBIfFg4znpZ8at",
     "size": 5220,
-
     "uploadedAt": "2025-04-29T14:17:05.000Z",
-    "review": "We needed a comprehensive solution for our business operations. AgenitiX delivered with their no-code tools, simplifying our processes and improving productivity. Their dedication is evident.",
-    "profile-name": "DwainBrowne",
-    "profile-designation": "Founder of SnapSuite.io",
-    "profile-location": "Toronto, ON"
+    "review": "Working with AgenitiX was seamless. Their platform helped our startup increase client engagement by 40%.",
+    "profile-name": "Dwain Browne",
+    "profile-designation": "Startup Founder",
+    "location": "Calgary, AB"
   },
+  {
+    "name": "website-image-reviews-ShannonPestun.webp",
+    "key": "EORhWwIHc4gyNrSegAwqWAQhwEkv7eIrm6Y54UsFblpTVyLK",
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyNrSegAwqWAQhwEkv7eIrm6Y54UsFblpTVyLK",
+    "size": 7670,
+    "uploadedAt": "2025-04-29T14:17:05.000Z",
+    "review": "AgenitiX's AI tools have been a game-changer for our financial consultancy. They've automated routine tasks, allowing us to focus more on client relationships. Their support is top-notch.",
+    "profile-name": "Shannon Pestun",
+    "profile-designation": "Financial Consultant",
+    "location": "Toronto, ON"
+  },
+  {
+    "name": "website-image-reviews-LisaHordijczuk.webp",
+    "key": "EORhWwIHc4gyKj8IPadMOypjis8ChVKlLPvU93kW5uFo1cRA",
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyKj8IPadMOypjis8ChVKlLPvU93kW5uFo1cRA",
+    "size": 5532,
+    "uploadedAt": "2025-04-29T14:17:05.000Z",
+    "review": "The platform helped streamline our online campaigns and provided insights we hadn't considered before. Worth every penny.",
+    "profile-name": "Lisa Hordijczuk",
+    "profile-designation": "Digital Strategist",
+    "location": "Vancouver, BC"
+  },
+  {
+    "name": "website-image-reviews-JoyleneBayley.webp",
+    "key": "EORhWwIHc4gyMauW38DmtZCA3ligS4Xe65pWhyx7cFNRaw0j",
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyMauW38DmtZCA3ligS4Xe65pWhyx7cFNRaw0j",
+    "size": 5414,
+    "uploadedAt": "2025-04-29T14:17:05.000Z",
+    "review": "Thanks to AgenitiX, we were able to scale our marketing operations quickly. I appreciate the detailed analytics the most.",
+    "profile-name": "Joylene Bayley",
+    "profile-designation": "Marketing Director",
+    "location": "Edmonton, AB"
+  },
+  {
+    "name": "website-image-reviews-DerekLowry.webp",
+    "key": "EORhWwIHc4gyhJ7knWjTi9nytRfNODo5bvlYAumJ1MsS64XU",
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyhJ7knWjTi9nytRfNODo5bvlYAumJ1MsS64XU",
+    "size": 5414,
+    "uploadedAt": "2025-04-29T14:17:05.000Z",
+    "review": "Their automation tools are intuitive and powerful. We saved over 30 hours a month in manual work.",
+    "profile-name": "Derek Lowry",
+    "profile-designation": "Operations Lead",
+    "location": "Montreal, QC"
+  },
+  {
+    "name": "website-image-reviews-RicardoBargayo.webp",
+    "key": "EORhWwIHc4gyiRR35DiZWJtENGUafYMuHF6ilZB7pXbk1PCO",
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyiRR35DiZWJtENGUafYMuHF6ilZB7pXbk1PCO",
+    "size": 4730,
+    "uploadedAt": "2025-04-29T14:17:05.000Z",
+    "review": "We were skeptical at first, but AgenitiX delivered. Our team's efficiency skyrocketed.",
+    "profile-name": "Ricardo Bargayo",
+    "profile-designation": "Team Lead",
+    "location": "Ottawa, ON"
+  },
+  {
+    "name": "website-image-reviews-ChristineIsted.webp",
+    "key": "EORhWwIHc4gyCpLP1LU4ea5RlzPBHvOUT7ydpV6njYcuMmiw",
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyCpLP1LU4ea5RlzPBHvOUT7ydpV6njYcuMmiw",
+    "size": 5786,
+    "uploadedAt": "2025-04-29T14:17:05.000Z",
+    "review": "The customer service alone deserves 5 stars. Whenever we had questions, their team was right there.",
+    "profile-name": "Christine Isted",
+    "profile-designation": "Business Owner",
+    "location": "Halifax, NS"
+  },
+  {
+    "name": "website-image-reviews-MichelleFournier.webp",
+    "key": "EORhWwIHc4gyMivGbHmDmtZCA3ligS4Xe65pWhyx7cFNRaw0",
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyMivGbHmDmtZCA3ligS4Xe65pWhyx7cFNRaw0",
+    "size": 5128,
+    "uploadedAt": "2025-04-29T14:17:05.000Z",
+    "review": "Their system helped organize our outreach efforts and increased conversion by 20%.",
+    "profile-name": "Michelle Fournier",
+    "profile-designation": "Sales Manager",
+    "location": "Winnipeg, MB"
+  },
+  {
+    "name": "website-image-reviews-JodyMcInnes.webp",
+    "key": "EORhWwIHc4gyUhSYXRF8yXYueB3Wh6qCdgoQGtSmvE4i0Olc",
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyUhSYXRF8yXYueB3Wh6qCdgoQGtSmvE4i0Olc",
+    "size": 5400,
+    "uploadedAt": "2025-04-29T14:17:05.000Z",
+    "review": "The visual reports helped us secure buy-in from executives faster than before.",
+    "profile-name": "Jody McInnes",
+    "profile-designation": "Data Analyst",
+    "location": "Saskatoon, SK"
+  },
+  {
+    "name": "website-image-reviews-BarbaraMowat.webp",
+    "key": "EORhWwIHc4gyAuyFovriAFB1X920YCPRzM3QGNVEU85cIJkK",
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyAuyFovriAFB1X920YCPRzM3QGNVEU85cIJkK",
+    "size": 5636,
+    "uploadedAt": "2025-04-29T14:17:05.000Z",
+    "review": "What stood out was how easy it was to onboard new team members using their dashboard.",
+    "profile-name": "Barbara Mowat",
+    "profile-designation": "HR Consultant",
+    "location": "Victoria, BC"
+  }
 ]
 
 /**
