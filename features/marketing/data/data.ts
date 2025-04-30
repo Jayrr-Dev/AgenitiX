@@ -1,65 +1,419 @@
+/**
+ * MARQUEE IMAGES
+ * Array of image URLs for the marketing marquee display
+ */
 export const imagesMarquee = [
-    "https://assets.aceternity.com/cloudinary_bkp/3d-card.png",
-    "https://assets.aceternity.com/animated-modal.png",
-    "https://assets.aceternity.com/animated-testimonials.webp",
-    "https://assets.aceternity.com/cloudinary_bkp/Tooltip_luwy44.png",
-    "https://assets.aceternity.com/github-globe.png",
-    "https://assets.aceternity.com/glare-card.png",
-    "https://assets.aceternity.com/layout-grid.png",
-    "https://assets.aceternity.com/flip-text.png",
-    "https://assets.aceternity.com/hero-highlight.png",
-    "https://assets.aceternity.com/carousel.webp",
-    "https://assets.aceternity.com/placeholders-and-vanish-input.png",
-    "https://assets.aceternity.com/shooting-stars-and-stars-background.png",
-    "https://assets.aceternity.com/signup-form.png",
-    "https://assets.aceternity.com/cloudinary_bkp/stars_sxle3d.png",
-    "https://assets.aceternity.com/spotlight-new.webp",
-    "https://assets.aceternity.com/cloudinary_bkp/Spotlight_ar5jpr.png",
-    "https://assets.aceternity.com/cloudinary_bkp/Parallax_Scroll_pzlatw_anfkh7.png",
-    "https://assets.aceternity.com/tabs.png",
-    "https://assets.aceternity.com/cloudinary_bkp/Tracing_Beam_npujte.png",
-    "https://assets.aceternity.com/cloudinary_bkp/typewriter-effect.png",
-    "https://assets.aceternity.com/glowing-effect.webp",
-    "https://assets.aceternity.com/hover-border-gradient.png",
-    "https://assets.aceternity.com/cloudinary_bkp/Infinite_Moving_Cards_evhzur.png",
-    "https://assets.aceternity.com/cloudinary_bkp/Lamp_hlq3ln.png",
-    "https://assets.aceternity.com/macbook-scroll.png",
-    "https://assets.aceternity.com/cloudinary_bkp/Meteors_fye3ys.png",
-    "https://assets.aceternity.com/cloudinary_bkp/Moving_Border_yn78lv.png",
-    "https://assets.aceternity.com/multi-step-loader.png",
-    "https://assets.aceternity.com/vortex.png",
-    "https://assets.aceternity.com/wobble-card.png",
-    "https://assets.aceternity.com/world-map.webp",
-  ];
+  {
+    "name": "website-3dmarquee-images-UI10.webp",
+    "key": "EORhWwIHc4gyDIh5vutMucJXVHPGAnvdeZ6bop2jyCIiDx7g",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyDIh5vutMucJXVHPGAnvdeZ6bop2jyCIiDx7g",
+    "size": 11714,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-UI13.webp",
+    "key": "EORhWwIHc4gyH5fdwmD7N4UkvDziRpT3BxWoA1rZjt90wbeE",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyH5fdwmD7N4UkvDziRpT3BxWoA1rZjt90wbeE",
+    "size": 18606,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-UI1.webp",
+    "key": "EORhWwIHc4gyGB9tuq0uc4YR8oQZEx2Dz9JArqb0wjKGv6TP",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyGB9tuq0uc4YR8oQZEx2Dz9JArqb0wjKGv6TP",
+    "size": 22732,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-diagram4.webp",
+    "key": "EORhWwIHc4gyPMZH3dgla6DpN2H1Jr9WZqFCVlzBY78inewE",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyPMZH3dgla6DpN2H1Jr9WZqFCVlzBY78inewE",
+    "size": 5670,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-UI8.webp",
+    "key": "EORhWwIHc4gypakItjKufhT4L2c5iHObMjYnNp9KyxoZXRPk",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gypakItjKufhT4L2c5iHObMjYnNp9KyxoZXRPk",
+    "size": 26992,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-UI7.webp",
+    "key": "EORhWwIHc4gyN5BKGMqWAQhwEkv7eIrm6Y54UsFblpTVyLKj",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyN5BKGMqWAQhwEkv7eIrm6Y54UsFblpTVyLKj",
+    "size": 26878,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-diagram2.webp",
+    "key": "EORhWwIHc4gyvGbbWBRwQmfsiAOb0r2BCudKTGk8ga5q6cxM",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyvGbbWBRwQmfsiAOb0r2BCudKTGk8ga5q6cxM",
+    "size": 11732,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-why.webp",
+    "key": "EORhWwIHc4gyCAw5TIU4ea5RlzPBHvOUT7ydpV6njYcuMmiw",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyCAw5TIU4ea5RlzPBHvOUT7ydpV6njYcuMmiw",
+    "size": 13664,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-promotion.webp",
+    "key": "EORhWwIHc4gyRuPh3BNEVBIxwvUK5fCci1472ygqapJu6HXk",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyRuPh3BNEVBIxwvUK5fCci1472ygqapJu6HXk",
+    "size": 23806,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-UI2.webp",
+    "key": "EORhWwIHc4gyxHDBqy40plPXFhxq1ojsY2KVT7ticAEu6mvz",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyxHDBqy40plPXFhxq1ojsY2KVT7ticAEu6mvz",
+    "size": 11766,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-UI12.webp",
+    "key": "EORhWwIHc4gyxeNjJz40plPXFhxq1ojsY2KVT7ticAEu6mvz",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyxeNjJz40plPXFhxq1ojsY2KVT7ticAEu6mvz",
+    "size": 11710,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-diagram1.webp",
+    "key": "EORhWwIHc4gylDcC1WC2HKfpMqcECx0SmFrysdTIjOYlVthJ",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gylDcC1WC2HKfpMqcECx0SmFrysdTIjOYlVthJ",
+    "size": 7610,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-diagram5.webp",
+    "key": "EORhWwIHc4gyngIHAwoKQPH0X5ltL8A97B1hJdpTUemjG3Mi",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyngIHAwoKQPH0X5ltL8A97B1hJdpTUemjG3Mi",
+    "size": 8666,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-UI6.webp",
+    "key": "EORhWwIHc4gyBgm7pjkJ4OiWC9STILu6zjVxUPpeNHYXRd2Z",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyBgm7pjkJ4OiWC9STILu6zjVxUPpeNHYXRd2Z",
+    "size": 16620,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-UI11.webp",
+    "key": "EORhWwIHc4gyijuMwnZWJtENGUafYMuHF6ilZB7pXbk1PCOj",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyijuMwnZWJtENGUafYMuHF6ilZB7pXbk1PCOj",
+    "size": 18370,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-diagram3.webp",
+    "key": "EORhWwIHc4gy1Hs58HaPOj0w2vc5WzsXeJUgRYpaE89fmDnr",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gy1Hs58HaPOj0w2vc5WzsXeJUgRYpaE89fmDnr",
+    "size": 7668,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-UI9.webp",
+    "key": "EORhWwIHc4gytgQ92IiLlRschKQv5IeoAF41WmCzTj7GZUXE",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gytgQ92IiLlRschKQv5IeoAF41WmCzTj7GZUXE",
+    "size": 19760,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-UI4.webp",
+    "key": "EORhWwIHc4gyDZNuEnDtMucJXVHPGAnvdeZ6bop2jyCIiDx7",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyDZNuEnDtMucJXVHPGAnvdeZ6bop2jyCIiDx7",
+    "size": 11218,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-diagram6.webp",
+    "key": "EORhWwIHc4gy1Yfn1zaPOj0w2vc5WzsXeJUgRYpaE89fmDnr",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gy1Yfn1zaPOj0w2vc5WzsXeJUgRYpaE89fmDnr",
+    "size": 6942,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-UI3.webp",
+    "key": "EORhWwIHc4gyG3uuLI0uc4YR8oQZEx2Dz9JArqb0wjKGv6TP",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyG3uuLI0uc4YR8oQZEx2Dz9JArqb0wjKGv6TP",
+    "size": 22274,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-UI5.webp",
+    "key": "EORhWwIHc4gykGFvadwcjghOHFYtxLdZq9wiNVrDJ5Xb7Skl",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gykGFvadwcjghOHFYtxLdZq9wiNVrDJ5Xb7Skl",
+    "size": 18068,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  },
+  {
+    "name": "website-3dmarquee-images-logodarkbg.webp",
+    "key": "EORhWwIHc4gy8gbpLePA3FeuKCEH7JWmsjRTrcI4X9Qp6Vtz",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gy8gbpLePA3FeuKCEH7JWmsjRTrcI4X9Qp6Vtz",
+    "size": 4124,
+    "uploadedAt": "2025-04-28T15:52:12.000Z"
+  }
+]
 
-  export const testimonials = [
-    {
-      quote:
-        "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity, it was the season of Light, it was the season of Darkness, it was the spring of hope, it was the winter of despair.",
-      name: "Charles Dickens",
-      title: "A Tale of Two Cities",
-    },
-    {
-      quote:
-        "To be, or not to be, that is the question: Whether 'tis nobler in the mind to suffer The slings and arrows of outrageous fortune, Or to take Arms against a Sea of troubles, And by opposing end them: to die, to sleep.",
-      name: "William Shakespeare",
-      title: "Hamlet",
-    },
-    {
-      quote: "All that we see or seem is but a dream within a dream.",
-      name: "Edgar Allan Poe",
-      title: "A Dream Within a Dream",
-    },
-    {
-      quote:
-        "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.",
-      name: "Jane Austen",
-      title: "Pride and Prejudice",
-    },
-    {
-      quote:
-        "Call me Ishmael. Some years ago—never mind how long precisely—having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world.",
-      name: "Herman Melville",
-      title: "Moby-Dick",
-    },
-  ];
+/**
+ * TESTIMONIALS
+ * Collection of quotes and attributions for marketing display
+ */
+export const testimonials = [
+  {
+    "name": "website-image-reviews-DwainBrowne.webp",
+    "key": "EORhWwIHc4gy3T0B6JpG2P9iDeUKc1SVQsxBIfFg4znpZ8at",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gy3T0B6JpG2P9iDeUKc1SVQsxBIfFg4znpZ8at",
+    "size": 5220,
+
+    "uploadedAt": "2025-04-29T14:17:05.000Z",
+    "review": "We needed a comprehensive solution for our business operations. AgenitiX delivered with their no-code tools, simplifying our processes and improving productivity. Their dedication is evident.",
+    "profile-name": "DwainBrowne",
+    "profile-designation": "Founder of SnapSuite.io",
+    "profile-location": "Toronto, ON"
+  },
+]
+
+/**
+ * LOGOS
+ * Array of logo objects for the marketing logo ticker
+ */
+export const logos = [
+  {
+    "name": "website-component-images-shitthatiknit.webp",
+    "key": "EORhWwIHc4gytssuBWiLlRschKQv5IeoAF41WmCzTj7GZUXE",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gytssuBWiLlRschKQv5IeoAF41WmCzTj7GZUXE",
+    "size": 3240,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-shopify.webp",
+    "key": "EORhWwIHc4gyUp0tsE6F8yXYueB3Wh6qCdgoQGtSmvE4i0Ol",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyUp0tsE6F8yXYueB3Wh6qCdgoQGtSmvE4i0Ol",
+    "size": 4934,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-madebymary.webp",
+    "key": "EORhWwIHc4gymv5j3OEuBMdLGxIojUmh1vbe5DOYqysEk8tw",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gymv5j3OEuBMdLGxIojUmh1vbe5DOYqysEk8tw",
+    "size": 2608,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-juniper.webp",
+    "key": "EORhWwIHc4gydJv8VEBKqAFMpwy1sTYaZEP2SrbClvm8j0o5",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gydJv8VEBKqAFMpwy1sTYaZEP2SrbClvm8j0o5",
+    "size": 1590,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-ramotion.webp",
+    "key": "EORhWwIHc4gyds7PGhBKqAFMpwy1sTYaZEP2SrbClvm8j0o5",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyds7PGhBKqAFMpwy1sTYaZEP2SrbClvm8j0o5",
+    "size": 1734,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-inpost.webp",
+    "key": "EORhWwIHc4gyH58L3mN7N4UkvDziRpT3BxWoA1rZjt90wbeE",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyH58L3mN7N4UkvDziRpT3BxWoA1rZjt90wbeE",
+    "size": 3868,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-fedex.webp",
+    "key": "EORhWwIHc4gy2FUxODM6VaRfclr9EJsbQqhAKi2wLgUCzpxk",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gy2FUxODM6VaRfclr9EJsbQqhAKi2wLgUCzpxk",
+    "size": 3806,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-existgreen.webp",
+    "key": "EORhWwIHc4gyDYOgVhtMucJXVHPGAnvdeZ6bop2jyCIiDx7g",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyDYOgVhtMucJXVHPGAnvdeZ6bop2jyCIiDx7g",
+    "size": 1422,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-intuit.webp",
+    "key": "EORhWwIHc4gyKuROKtdMOypjis8ChVKlLPvU93kW5uFo1cRA",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyKuROKtdMOypjis8ChVKlLPvU93kW5uFo1cRA",
+    "size": 3032,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-moonstruck.webp",
+    "key": "EORhWwIHc4gyCDp1k6U4ea5RlzPBHvOUT7ydpV6njYcuMmiw",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyCDp1k6U4ea5RlzPBHvOUT7ydpV6njYcuMmiw",
+    "size": 3700,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-morningtide.webp",
+    "key": "EORhWwIHc4gyTZ8qWTHfx6EnDrMdLVkYS3lz1Z7UebNTopB4",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyTZ8qWTHfx6EnDrMdLVkYS3lz1Z7UebNTopB4",
+    "size": 3652,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-opera.webp",
+    "key": "EORhWwIHc4gyKhCnZOdMOypjis8ChVKlLPvU93kW5uFo1cRA",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyKhCnZOdMOypjis8ChVKlLPvU93kW5uFo1cRA",
+    "size": 4336,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-base.webp",
+    "key": "EORhWwIHc4gypBHDyi3KufhT4L2c5iHObMjYnNp9KyxoZXRP",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gypBHDyi3KufhT4L2c5iHObMjYnNp9KyxoZXRP",
+    "size": 1964,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-whites.webp",
+    "key": "EORhWwIHc4gy3dHZr8VpG2P9iDeUKc1SVQsxBIfFg4znpZ8a",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gy3dHZr8VpG2P9iDeUKc1SVQsxBIfFg4znpZ8a",
+    "size": 4964,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-druthers.webp",
+    "key": "EORhWwIHc4gy1262ufaPOj0w2vc5WzsXeJUgRYpaE89fmDnr",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gy1262ufaPOj0w2vc5WzsXeJUgRYpaE89fmDnr",
+    "size": 1402,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-literati.webp",
+    "key": "EORhWwIHc4gyvZy2VMRwQmfsiAOb0r2BCudKTGk8ga5q6cxM",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyvZy2VMRwQmfsiAOb0r2BCudKTGk8ga5q6cxM",
+    "size": 1890,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-bolt.webp",
+    "key": "EORhWwIHc4gypCtbIRKufhT4L2c5iHObMjYnNp9KyxoZXRPk",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gypCtbIRKufhT4L2c5iHObMjYnNp9KyxoZXRPk",
+    "size": 3124,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-jasper.webp",
+    "key": "EORhWwIHc4gyR66Yf1NEVBIxwvUK5fCci1472ygqapJu6HXk",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyR66Yf1NEVBIxwvUK5fCci1472ygqapJu6HXk",
+    "size": 2472,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-clickup.webp",
+    "key": "EORhWwIHc4gyCYCQ8nU4ea5RlzPBHvOUT7ydpV6njYcuMmiw",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyCYCQ8nU4ea5RlzPBHvOUT7ydpV6njYcuMmiw",
+    "size": 4362,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-square.webp",
+    "key": "EORhWwIHc4gyv5U8xwRwQmfsiAOb0r2BCudKTGk8ga5q6cxM",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyv5U8xwRwQmfsiAOb0r2BCudKTGk8ga5q6cxM",
+    "size": 3312,
+    "uploadedAt": "2025-04-29T13:16:55.000Z",
+    "width": 180,
+    "height": 60
+  },
+  {
+    "name": "website-component-images-agenitiX.webp",
+    "key": "EORhWwIHc4gy98vCVQXnvd0FBAOChWPpUI7LwlytcoN5fm4Q",
+    "customId": null,
+    "url": "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gy98vCVQXnvd0FBAOChWPpUI7LwlytcoN5fm4Q",
+    "size": 3174,
+    "uploadedAt": "2025-04-29T13:16:54.000Z",
+    "width": 180,
+    "height": 60
+  }
+]

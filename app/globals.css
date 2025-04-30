@@ -40,7 +40,13 @@
       fill-left-transparency  2s forwards,
       fill-right-transparency 2s forwards;
   --animate-rotate-border     : rotate-border 3s linear infinite;
+  
+  --animate-scroll-x: scroll-x var(--ticker-duration, 40s) linear infinite;
+
+  --animate-scroll-x-rewind: scroll-x-rewind var(--ticker-duration, 40s ) linear infinite;
+
   --animate-scroll: scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite;
+
 }
 
 
@@ -48,13 +54,34 @@
 /* 4 · Keyframes ----------------------------------------------------- */
 @layer utilities {
   @keyframes rotate-border { from { --angle: 0deg; } to { --angle: 360deg; } }
+  @keyframes scroll-x {
+    0%   { transform: translateX(0) }
+    100% { transform: translateX(-50%) }
+  }
+
+  @keyframes scroll-x-loop {
+    from { transform: translateX(0)     }
+    to   { transform: translateX(-50%) } /* exactly half width */
+  }
 
   @keyframes scroll {
     to {
       transform: translate(calc(-50% - 0.5rem));
     }
   }
+  
 
+  @keyframes scroll-x-rewind {
+    0%   { transform: translateX(0) }      /* logos start flush left */
+    98%  { transform: translateX(-50%) }   /* just before the end       */
+    99%  { transform: translateX(-50%) }   /* hold for one frame        */
+    100% { transform: translateX(0) }      /* snap back to beginning    */
+  }
+
+  @keyframes scroll-x {
+    0%   { transform: translateX(0) }
+    100% { transform: translateX(-50%) }
+  }
 
 
   @keyframes fill-left-transparency  { from { --fill-transparency-left : 0%; } to { --fill-transparency-left :100%; } }
@@ -70,6 +97,10 @@
 /* trigger the twin transparency sweeps */
 @utility animate-fill-transparency {
   animation: var(--animate-fill-transparency);
+}
+
+@utility animate-scroll-x-loop {
+  animation: scroll-x-loop var(--ticker-duration) linear infinite;
 }
 
 /* rotating border (unchanged) */

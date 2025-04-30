@@ -15,7 +15,10 @@ import type { slide } from "@/features/marketing/types/marketing-types";
 import { FlipWords } from "@/components/ui/flip-words";
 
 
-
+interface ImageItem {
+  key: string;
+  url: string;
+}
 
 export function HeroCarousel() {
   const [scrollY, setScrollY] = useState(0);
@@ -24,18 +27,21 @@ export function HeroCarousel() {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  const images = imagesMarquee;
+  const images: ImageItem[] = imagesMarquee.map((image) => ({
+    key: image.key,
+    url: image.url,
+  }));
   const words = ["better", "cute", "beautiful", "modern"];
 
   // Slide content with unique messages and CTAs
 
-  const slides: slide[] = [
+  const slides: slide[] = [   
     {
       type: "component",
       src:"",
-      component: <ThreeDMarquee images={images} />,   
+      component: <ThreeDMarquee images={images.map((img) => img.url)} className="brightness-[0.5] blur-xs bg-linear-to-r from-red-500 to-blue-500" />,        
       heading: "talent acquisition in engineering",
-      title: <div className="flex flex-row gap-2 uppercase"> <span className="text-white/95 "> <span className="text-white/95">testing is</span><FlipWords words={words} /></span>  </div>,
+      title: <div className="flex flex-row gap-2 uppercase"> <span className="text-white/95 "> <span className="text-white/95">testing is </span><FlipWords words={words} /></span>  </div>,
       message: "We're constantly looking for talented professionals in Electrical Engineering Design to join our innovative team and help shape the future of technology solutions.",
       ctaText: "Get Started",
       ctaLink: "/careers"
@@ -177,7 +183,7 @@ export function HeroCarousel() {
                               {/* Heading */}
                               <h2 className="lg:text-5xl text-4xl text-white/95 font-sans font-bold drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] ">{slide.title}</h2>
                                 {/* Message */}
-                                <p className="hidden lg:block text-white/95 text-lg font-brand font-extralight ] ">{slide.message}</p>
+                                <p className="hidden lg:block text-white/95 text-lg font-brand font-extralight drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] ">{slide.message}</p>
                                 <div className="xdebug-green flex justify-center w-full   self-center">
                                 <Button 
                                   size="lg" 
@@ -242,3 +248,4 @@ export function HeroCarousel() {
     </div>
   );
 }
+

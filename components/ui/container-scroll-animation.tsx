@@ -1,7 +1,21 @@
 "use client";
 import React, { useRef } from "react";
-import { useScroll, useTransform, motion, MotionValue } from "motion/react";
+import { useScroll, useTransform, motion, MotionValue,} from "motion/react";
+import { animate, inView } from "motion" 
+// inView("#carousel li", (element) => {
+//   animate(element, { opacity: 1 })
+// })
 
+{/* <motion.div
+className="scroll-section"
+initial={{ y: 0 }}
+animate={{ y: -1000 }}
+transition={{ duration: 10 }}
+
+> */}
+inView( ".scroll-section", (element) => {
+  animate(element, { opacity: 1 })
+})
 export const ContainerScroll = ({
   titleComponent,
   children,
@@ -47,7 +61,16 @@ export const ContainerScroll = ({
       >
         <Header translate={translate} titleComponent={titleComponent} />
         <Card rotate={rotate} translate={translate} scale={scale}>
-          {children}
+          
+          <motion.div
+            className="scroll-section"
+            initial={{ y: 0 }}
+            animate={{ y: -1000 }}
+            transition={{ duration: 10 }}
+            
+          >
+            {children}
+          </motion.div>
         </Card>
       </div>
     </div>
@@ -79,6 +102,7 @@ export const Card = ({
 }) => {
   return (
     <motion.div
+
       style={{
         rotateX: rotate,
         scale,
@@ -88,7 +112,10 @@ export const Card = ({
       className="max-w-5xl -mt-12 mx-auto h-[30rem] md:h-[40rem] w-full border-4 border-[#6C6C6C] p-2 md:p-6 bg-[#222222] rounded-[30px] shadow-2xl"
     >
       <div className=" h-full w-full  overflow-hidden rounded-2xl bg-gray-100 dark:bg-zinc-900 md:rounded-2xl md:p-4 ">
-        {children}
+       
+      
+          {children}
+      
       </div>
     </motion.div>
   );

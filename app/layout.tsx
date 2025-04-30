@@ -87,7 +87,7 @@ const defaultUrl = process.env.VERCEL_URL
       shortcut: 'https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxJ1e43nvrKN08PwisukcGDYCdEBQlfXvLFg73',
       apple: 'https://d63wj7axnd.ufs.sh/f/7P3qnKUtDOoxJ1e43nvrKN08PwisukcGDYCdEBQlfXvLFg73',
     },
-    manifest: '/site.webmanifest',
+    // manifest: '/site.webmanifest',
     category: 'technology',
   };
 
