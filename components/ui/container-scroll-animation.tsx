@@ -5,10 +5,11 @@ import {
   useScroll,
   useTransform,
   motion,
-  useAnimation,
   useInView,
   MotionValue,
+  useAnimate,
 } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 /* ================================
    Main Scroll Container Component
@@ -21,87 +22,151 @@ export const ContainerScroll = ({
   children: React.ReactNode;
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const sectionRef = useRef<HTMLDivElement>(null);
-
-  // Framer's scroll tracking hook
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start end", "end start"],
+    
   });
+  const [isMobile, setIsMobile] = React.useState(false);
 
-  // Detect if section is in view
-  const isInView = useInView(sectionRef, { once: true, margin: "-20%" });
-
-  // Mobile check
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
     checkMobile();
     window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    return () => {
+      window.removeEventListener("resize", checkMobile);
+    };
   }, []);
-
-  const scaleDimensions = () => (isMobile ? [0.7, 0.9] : [1.05, 1]);
-
+ 
+  const scaleDimensions = () => {
+    return isMobile ? [0.7, 0.9] : [1.05, 1];
+  };
+ 
   const rotate = useTransform(scrollYProgress, [0, 1], [20, 0]);
   const scale = useTransform(scrollYProgress, [0, 1], scaleDimensions());
   const translate = useTransform(scrollYProgress, [0, 1], [0, -100]);
 
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const isInView = useInView(sectionRef, { once: true, margin: "-20%" });
+
   return (
     <div
-      ref={containerRef}
       className="h-[60rem] md:h-[80rem] flex items-center justify-center relative p-2 md:p-20"
+      ref={containerRef}
     >
-      <div className="py-10 md:py-40 w-full relative" style={{ perspective: "1000px" }}>
+      <div
+        className="py-10 md:py-40 w-full relative"
+        style={{
+          perspective: "1000px",
+        }}
+      >
         <Header translate={translate} titleComponent={titleComponent} />
-        <Card rotate={rotate} scale={scale} translate={translate}>
-          <InfiniteScrollContent isInView={isInView} sectionRef={sectionRef as React.RefObject<HTMLDivElement>}>
-            {children}
+        <Card rotate={rotate} translate={translate} scale={scale}>
+          <InfiniteScrollContent isInView={isInView} sectionRef={sectionRef as React.RefObject<HTMLDivElement>} speed="normal">
+          {children}
           </InfiniteScrollContent>
         </Card>
       </div>
     </div>
   );
 };
+ 
+
 
 /* ================================
    Infinite Scroll Duplicated Loop
 ================================== */
-const InfiniteScrollContent = ({
+export const InfiniteScrollContent = ({
   isInView,
   sectionRef,
   children,
+  speed = "fast",
+  pauseOnHover = true,
+  className = "",
 }: {
   isInView: boolean;
   sectionRef: React.RefObject<HTMLDivElement>;
   children: React.ReactNode;
+  speed?: "fast" | "normal" | "slow";
+  pauseOnHover?: boolean;
+  className?: string;
 }) => {
+  // ANIMATION STATE AND REFS
+  const [scope, animate] = useAnimate();
+  const [animation, setAnimation] = useState<Animation | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Convert speed to duration  
+  const getDuration = () => {
+    return speed === "fast" ? 20000 : speed === "normal" ? 40000 : 80000;
+  };
+
+  // Start animation once in view
+  useEffect(() => {
+    if (!isInView || animation) return;
+
+    const animateScroll = async () => {
+      // Wait until children are rendered
+      await new Promise((res) => setTimeout(res, 0));
+
+      const scroller = scope.current?.querySelector(".scroller-inner") as HTMLElement;
+      if (!scroller) return;
+
+      // Duplicate content for infinite scroll
+      scroller.innerHTML += scroller.innerHTML;
+
+      // Manual animation using Web Animations API via useAnimate
+      const anim = scroller.animate(
+        [{ transform: "translateY(0%)" }, { transform: "translateY(-50%)" }],
+        {
+          duration: getDuration(),
+          iterations: Infinity,
+          easing: "linear",
+        }
+      );
+
+      setAnimation(anim);
+    };
+
+    animateScroll();
+  }, [isInView, scope, animation]);
+
+  // Pause/resume on hover
+  useEffect(() => {
+    const node = wrapperRef.current;
+    if (!node || !pauseOnHover || !animation) return;
+
+    const handleEnter = () => animation.pause();
+    const handleLeave = () => animation.play();
+
+    node.addEventListener("mouseenter", handleEnter);
+    node.addEventListener("mouseleave", handleLeave);
+
+    return () => {
+      node.removeEventListener("mouseenter", handleEnter);
+      node.removeEventListener("mouseleave", handleLeave);
+    };
+  }, [animation, pauseOnHover]);
+
   return (
-    <div ref={sectionRef} className="relative h-full overflow-hidden">
-      {isInView && (
-        <motion.div
-          className="absolute top-0 left-0 w-full"
-          initial={{ y: 0 }}
-          animate={{
-            y: ["0%", "-50%"],
-          }}
-          transition={{
-            duration: 12,
-            ease: "linear",
-            repeat: Infinity,
-          }}
-        >
-          <div className="flex flex-col">
+    <div
+      ref={sectionRef}
+      className={cn("relative h-full overflow-hidden", className)}
+    >
+      <div
+        ref={wrapperRef}
+        className="absolute top-0 left-0 w-full"
+      >
+        <div ref={scope}>
+          <div className="scroller-inner flex flex-col">
             {children}
-            {children /* duplicated for seamless scroll */}
           </div>
-        </motion.div>
-      )}
+        </div>
+      </div>
     </div>
   );
 };
-
 /* ===========================
    Header Component
 ============================= */

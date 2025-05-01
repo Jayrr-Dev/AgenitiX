@@ -45,7 +45,9 @@
 
   --animate-scroll-x-rewind: scroll-x-rewind var(--ticker-duration, 40s ) linear infinite;
 
-  --animate-scroll: scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite;
+  --animate-scroll: scroll var(--animation-duration, 80s) var(--animation-direction, forwards) linear infinite;
+
+  --animate-vert-scroll: vert-scroll var(--animation-duration, 80s) var(--animation-direction, forwards) linear infinite;
 
 }
 
@@ -70,7 +72,11 @@
     }
   }
   
-
+  @keyframes vert-scroll {
+    0%   { transform: translateY(0%);   }
+    100% { transform: translateY(-50%); }
+  }
+  
   @keyframes scroll-x-rewind {
     0%   { transform: translateX(0) }      /* logos start flush left */
     98%  { transform: translateX(-50%) }   /* just before the end       */

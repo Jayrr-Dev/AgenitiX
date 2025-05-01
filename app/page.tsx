@@ -14,6 +14,7 @@ import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { AnimatedTestimonialsDemo } from "@/features/marketing/components/AnimatedTestimonials";
 import { CanvasRevealEffectDemo } from "@/features/marketing/components/CanvasRevealEffect";
 import FAQ07 from "@/components/faq-07";
+import Image from "next/image";
 export default async function Home() {
   await import("@/features/marketing/components/google-effect");
   await import("@/components/features-section-demo-1");
@@ -48,12 +49,12 @@ export default async function Home() {
           </>
         }
       >
-        <img
-          src={`/n8n-fullpage.png`}
+        <Image
+          src={`https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyl8dd352HKfpMqcECx0SmFrysdTIjOYlVthJ8`}
           alt="hero"
-          height={720}
-          width={1400}
-          className="mx-auto rounded-2xl object-cover h-full object-left-top"
+          height={4638}
+          width={1024}
+          className=""
           draggable={false}
         />
       </ContainerScroll>      
