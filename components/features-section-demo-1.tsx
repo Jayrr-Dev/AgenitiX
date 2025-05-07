@@ -2,21 +2,14 @@
 
 import React, { useId, useMemo } from "react";
 
-/* ---------------------------------------------------------------------- */
 /* ✨ Types */
-/* ---------------------------------------------------------------------- */
-
 interface Feature {
-  /** Headline shown in the card */
   title: string;
-  /** Short text under the headline */
   description: string;
 }
 
 interface GridProps {
-  /** Custom pattern - omit to let the component generate one */
   pattern?: [number, number][];
-  /** Grid-cell size in px (both width & height) */
   size?: number;
 }
 
@@ -25,14 +18,10 @@ interface GridPatternProps extends React.SVGProps<SVGSVGElement> {
   height: number;
   x: number;
   y: number;
-  /** List of “accent squares” expressed as [col,row] */
   squares?: [number, number][];
 }
 
-/* ---------------------------------------------------------------------- */
 /* 🏷️ Feature list */
-/* ---------------------------------------------------------------------- */
-
 const features: Feature[] = [
   {
     title: "HIPAA and SOC2 Compliant",
@@ -76,20 +65,17 @@ const features: Feature[] = [
   },
 ];
 
-/* ---------------------------------------------------------------------- */
-/* 📦 Main section */
-/* ---------------------------------------------------------------------- */
-
+/* 📦 Main Section */
 export default function FeaturesSectionDemo() {
   return (
     <section className="py-20 lg:py-40">
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-3 md:gap-2 lg:grid-cols-4">
-        {features.map((feature) => (
+        {features.map((feature, index) => (
           <article
             key={feature.title}
             className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-neutral-100 to-white p-6 dark:from-neutral-900 dark:to-neutral-950"
           >
-            <Grid size={20} />
+            <Grid size={20} pattern={generateDeterministicPattern(index)} />
             <h3 className="relative z-20 text-base font-bold text-neutral-800 dark:text-white">
               {feature.title}
             </h3>
@@ -103,37 +89,8 @@ export default function FeaturesSectionDemo() {
   );
 }
 
-/* ---------------------------------------------------------------------- */
-/* 🟩 Grid overlay */
-/* ---------------------------------------------------------------------- */
-
-/**
- * Adds a subtle dotted-grid background to its parent (absolute-positioned).
- * If no `pattern` prop is supplied, it creates five random, **unique**
- * “accent” squares.
- */
-export const Grid: React.FC<GridProps> = ({ pattern, size = 20 }) => {
-  // Generate a *stable* pattern for this component instance.
-  const memoizedPattern = useMemo<[number, number][]>(() => {
-    if (pattern) return pattern;
-
-    const uniquePoints: [number, number][] = [];
-    const seen = new Set<string>();
-
-    while (uniquePoints.length < 5) {
-      const x = Math.floor(Math.random() * 4) + 7; // 7-10
-      const y = Math.floor(Math.random() * 6) + 1; // 1-6
-      const key = `${x}-${y}`;
-
-      if (!seen.has(key)) {
-        seen.add(key);
-        uniquePoints.push([x, y]);
-      }
-    }
-
-    return uniquePoints;
-  }, [pattern]);
-
+/* 🟩 Grid Overlay */
+const Grid: React.FC<GridProps> = ({ pattern, size = 20 }) => {
   return (
     <div className="pointer-events-none absolute inset-0 -top-2 left-1/2 -translate-x-1/2 h-full w-full [mask-image:linear-gradient(white,transparent)]">
       <div className="absolute inset-0 opacity-100 bg-gradient-to-r from-zinc-100/30 to-zinc-300/30 dark:from-zinc-900/30 dark:to-zinc-900/30 [mask-image:radial-gradient(farthest-side_at_top,white,transparent)]">
@@ -142,7 +99,7 @@ export const Grid: React.FC<GridProps> = ({ pattern, size = 20 }) => {
           height={size}
           x={-12}
           y={4}
-          squares={memoizedPattern}
+          squares={pattern}
           className="absolute inset-0 h-full w-full fill-black/10 stroke-black/10 mix-blend-overlay dark:fill-white/10 dark:stroke-white/10"
         />
       </div>
@@ -150,11 +107,8 @@ export const Grid: React.FC<GridProps> = ({ pattern, size = 20 }) => {
   );
 };
 
-/* ---------------------------------------------------------------------- */
-/* 🖼️ SVG pattern */
-/* ---------------------------------------------------------------------- */
-
-export const GridPattern: React.FC<GridPatternProps> = ({
+/* 🖼️ SVG Pattern */
+const GridPattern: React.FC<GridPatternProps> = ({
   width,
   height,
   x,
@@ -162,11 +116,10 @@ export const GridPattern: React.FC<GridPatternProps> = ({
   squares,
   ...props
 }) => {
-  const patternId = useId(); // Guarantees uniqueness across the DOM
+  const patternId = useId();
 
   return (
     <svg aria-hidden="true" {...props}>
-      {/* Basic dot grid definition */}
       <defs>
         <pattern
           id={patternId}
@@ -180,15 +133,12 @@ export const GridPattern: React.FC<GridPatternProps> = ({
         </pattern>
       </defs>
 
-      {/* Fill the viewbox with the pattern */}
       <rect width="100%" height="100%" fill={`url(#${patternId})`} />
 
-      {/* Accent squares (optional) */}
       {squares && (
         <svg x={x} y={y} className="overflow-visible">
           {squares.map(([sx, sy], idx) => (
             <rect
-              /* key derived from coordinate - duplicates can no longer occur */
               key={`${sx}-${sy}`}
               width={width + 1}
               height={height + 1}
@@ -201,3 +151,14 @@ export const GridPattern: React.FC<GridPatternProps> = ({
     </svg>
   );
 };
+
+/* 🧠 Deterministic Pattern Generator (hydration-safe) */
+function generateDeterministicPattern(seed: number): [number, number][] {
+  const pattern: [number, number][] = [];
+  for (let i = 0; i < 5; i++) {
+    const x = ((seed + i * 13) % 4) + 7; // 7-10
+    const y = ((seed + i * 17) % 6) + 1; // 1-6
+    pattern.push([x, y]);
+  }
+  return pattern;
+}

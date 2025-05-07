@@ -160,28 +160,21 @@ export const SkeletonTwo = () => {
   ];
 
   const imageVariants = {
-    whileHover: {
-      scale: 1.1,
-      rotate: 0,
-      zIndex: 100,
-    },
-    whileTap: {
-      scale: 1.1,
-      rotate: 0,
-      zIndex: 100,
-    },
+    whileHover: { scale: 1.1, rotate: 0, zIndex: 100 },
+    whileTap: { scale: 1.1, rotate: 0, zIndex: 100 },
   };
+
+  // 👇 Safe deterministic angle using index
+  const getRotation = (i: number) => ((i * 13) % 21) - 10;
+
   return (
     <div className="relative flex flex-col items-start p-8 gap-10 h-full overflow-hidden">
-      {/* TODO */}
       <div className="flex flex-row -ml-20">
         {images.map((image, idx) => (
           <motion.div
             variants={imageVariants}
             key={"images-first" + idx}
-            style={{
-              rotate: Math.random() * 20 - 10,
-            }}
+            style={{ rotate: getRotation(idx) }}
             whileHover="whileHover"
             whileTap="whileTap"
             className="rounded-xl -mr-4 mt-4 p-1 bg-white dark:bg-neutral-800 dark:border-neutral-700 border border-neutral-100 shrink-0 overflow-hidden"
@@ -200,9 +193,7 @@ export const SkeletonTwo = () => {
         {images.map((image, idx) => (
           <motion.div
             key={"images-second" + idx}
-            style={{
-              rotate: Math.random() * 20 - 10,
-            }}
+            style={{ rotate: getRotation(idx + 10) }} // ✅ different index offset
             variants={imageVariants}
             whileHover="whileHover"
             whileTap="whileTap"
@@ -219,8 +210,8 @@ export const SkeletonTwo = () => {
         ))}
       </div>
 
-      <div className="absolute left-0 z-[100] inset-y-0 w-20 bg-gradient-to-r from-white dark:from-black to-transparent  h-full pointer-events-none" />
-      <div className="absolute right-0 z-[100] inset-y-0 w-20 bg-gradient-to-l from-white dark:from-black  to-transparent h-full pointer-events-none" />
+      <div className="absolute left-0 z-[100] inset-y-0 w-20 bg-gradient-to-r from-white dark:from-black to-transparent h-full pointer-events-none" />
+      <div className="absolute right-0 z-[100] inset-y-0 w-20 bg-gradient-to-l from-white dark:from-black to-transparent h-full pointer-events-none" />
     </div>
   );
 };

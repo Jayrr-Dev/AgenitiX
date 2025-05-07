@@ -1,4 +1,5 @@
 import Hero from "@/features/marketing/components/hero";
+import { DigitalSolutions } from "@/features/marketing/components/digital-solutions";
 import Main from "@/features/marketing/components/main";
 import { BrandWordmark } from "@/branding/brand-wordmark";
 import { AppleCardsCarouselDemo } from "@/features/marketing/components/apple-carousel";
@@ -15,6 +16,9 @@ import { AnimatedTestimonialsDemo } from "@/features/marketing/components/Animat
 import { CanvasRevealEffectDemo } from "@/features/marketing/components/CanvasRevealEffect";
 import FAQ07 from "@/components/faq-07";
 import Image from "next/image";
+import { Revealer } from "@/features/marketing/components/revealer";
+import { Testimonials } from "@/features/marketing/components/testimonials";
+import { FeaturesA } from "@/features/marketing/components/features-a";
 export default async function Home() {
   await import("@/features/marketing/components/google-effect");
   await import("@/components/features-section-demo-1");
@@ -30,40 +34,27 @@ export default async function Home() {
       </div>
 
       {/* Trust Us */}
-      <div id="trust-us" className="w-full h-full col-span-8 col-start-3">
+      <div id="trust-us" className="w-full h-full col-span-8 col-start-3 pt-20 pb-40">
         <TrustUs />
+      </div>
+      <div className="flex flex-col w-full h-full col-span-12 pb-40" >
+        <DigitalSolutions />
       </div>
 
       {/* Container Scroll */}
       <div id="container-scroll" className="w-full h-full col-span-8 col-start-3 ">
-      <div className="flex flex-col overflow-hidden">
-      <ContainerScroll
-        titleComponent={
-          <>
-            <h1 className="text-4xl font-semibold text-black dark:text-white">
-            Impactful and Modern <br />
-              <span className="text-4xl md:text-[6rem] font-bold mt-1 leading-none">
-               Digital Solutions
-              </span>
-            </h1> 
-          </>
-        }
-      >
-        <Image
-          src={`https://86apvmagmm.ufs.sh/f/EORhWwIHc4gyl8dd352HKfpMqcECx0SmFrysdTIjOYlVthJ8`}
-          alt="hero"
-          height={4638}
-          width={1024}
-          className=""
-          draggable={false}
-        />
-      </ContainerScroll>      
+
+         {/* Features Bento */}     
+      <div id="features-bento" className=" col-span-8 col-start-3 ">
+        <FeaturesSectionDemo3 />
+      </div>
+
+        {/* Infinite Moving Cards */}
+      <div id="infinite-moving-cards" className="w-full h-full col-span-8 col-start-3 ">
+        <Testimonials />
       </div>
       </div>
-      {/* Canvas Reveal Effect */}
-      <div id="canvas-reveal-effect" className="w-full h-full col-span-8 col-start-3 ">
-        <CanvasRevealEffectDemo />
-      </div>
+     
       {/* Apple Carousel */}
       {/* <div id="apple-carousel" className="w-full h-full col-span-8 col-start-3 ">
         <Card className="w-full h-full ">
@@ -73,10 +64,7 @@ export default async function Home() {
           
         </Card>
       </div> */}
-      {/* Infinite Moving Cards */}
-      <div id="infinite-moving-cards" className="w-full h-full col-span-8 col-start-3 ">
-        <InfiniteMovingCards items={testimonials} direction="right" speed="slow" />
-      </div>
+    
       {/* Google Gemini Effect */}
       <div id="google-gemini-effect" className="w-full h-full col-span-8 col-start-3 ">
         <GoogleGeminiEffectDemo />
@@ -85,7 +73,7 @@ export default async function Home() {
       {/* <BrandWordmark/> */}
       {/* Features Section */}
       <div id="features-section" className="w-full h-full col-span-8 col-start-3 ">
-        <FeaturesSectionDemo />
+        <FeaturesA />
       </div>
 
       {/* Animated Testimonials */}
@@ -97,15 +85,18 @@ export default async function Home() {
       <div id="features-section-2" className="w-full h-full col-span-8 col-start-3 ">
         <FeaturesSectionDemo2 />
       </div>
-      {/* Features Section 3 */}
-      <div id="features-section-3" className="w-full h-full col-span-8 col-start-3 ">
-        <FeaturesSectionDemo3 />
+   
+       {/* Canvas Reveal Effect */}
+       <div id="canvas-reveal-effect" className="w-full h-full col-span-8 col-start-3 ">
+        <Revealer />
       </div>
+
       {/* FAQ */}
       <div id="faq" className="w-full h-full col-span-8 col-start-3 ">
         <FAQ07 />
       </div>
       {/* Footer */}
+
     </main>
   );
 }
