@@ -5,41 +5,24 @@ import createGlobe from "cobe";
 import { useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { IconBrandYoutubeFilled } from "@tabler/icons-react";
+import { typeFeatureBoxesBento } from "../types";
 
 
-export default function FeaturesSectionDemo() {
-  const features = [
-    {
-      title: "Track issues effectively",
-      description:
-        "Track and manage your project issues with ease using our intuitive interface.",
-      skeleton: <SkeletonOne />,
-      className:
-        "col-span-1 lg:col-span-4 border-b lg:border-r dark:border-neutral-800",
-    },
-    {
-      title: "Capture pictures with AI",
-      description:
-        "Capture stunning photos effortlessly using our advanced AI technology.",
-      skeleton: <SkeletonTwo />,
-      className: "border-b col-span-1 lg:col-span-2 dark:border-neutral-800",
-    },
-    {
-      title: "Watch our AI on YouTube",
-      description:
-        "Whether its you or Tyler Durden, you can get to know about our product on YouTube",
-      skeleton: <SkeletonThree />,
-      className:
-        "col-span-1 lg:col-span-3 lg:border-r  dark:border-neutral-800",
-    },
-    {
-      title: "Deploy in seconds",
-      description:
-        "With our blazing fast, state of the art, cutting edge, we are so back cloud servies (read AWS) - you can deploy your model in seconds.",
-      skeleton: <SkeletonFour />,
-      className: "col-span-1 lg:col-span-3 border-b lg:border-none",
-    },
-  ];
+export default function FeatureBoxesBento( {features}: {features: typeFeatureBoxesBento[]}) {
+  const getSkeleton = (type: typeFeatureBoxesBento['skeleton']) => {
+    switch (type) {
+      case 'SkeletonOne':
+        return <SkeletonOne />;
+      case 'SkeletonTwo':
+        return <SkeletonTwo />;
+      case 'SkeletonThree':
+        return <SkeletonThree />;
+      case 'SkeletonFour':
+        return <SkeletonFour />;
+      default:
+        return null;
+    }
+  };
   return (
     <div className="relative z-20 py-10 lg:py-40 max-w-7xl mx-auto">
       <div className="px-8">
@@ -59,7 +42,7 @@ export default function FeaturesSectionDemo() {
             <FeatureCard key={feature.title} className={feature.className}>
               <FeatureTitle>{feature.title}</FeatureTitle>
               <FeatureDescription>{feature.description}</FeatureDescription>
-              <div className=" h-full w-full">{feature.skeleton}</div>
+              <div className="h-full w-full">{getSkeleton(feature.skeleton)}</div>
             </FeatureCard>
           ))}
         </div>

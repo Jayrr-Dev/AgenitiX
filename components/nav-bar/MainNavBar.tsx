@@ -4,11 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { ThemeSwitcher } from "./theme-switcher";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { LogomarkLight } from "@/branding/logomark-svg";
 import { useTheme } from "next-themes";
-import MainDesktopNav from "./MainDesktopNav";
-import MainMobileNav from "./MainMobileNav";
+import MainDesktopNav from "@/components/nav-bar/MainDesktopNav";
+import MainMobileNav from "@/components/nav-bar/MainMobileNav";
 
 export default function MainNavBar() {
   const [scrolled, setScrolled] = React.useState(false);

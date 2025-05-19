@@ -1,6 +1,5 @@
 
-import { HeroCarousel } from "@/features/marketing/components/hero-carousel";
-import Image from "next/image"; 
+import { HeroCarousel } from "@/features/home-page/components/HeroCaroussel";
 
 export default function Header() {
   return (

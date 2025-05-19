@@ -1,12 +1,9 @@
 "use client";
 
 import React, { useId, useMemo } from "react";
+import { typeFeatureBoxesPlain } from "../types";
 
 /* ✨ Types */
-interface Feature {
-  title: string;
-  description: string;
-}
 
 interface GridProps {
   pattern?: [number, number][];
@@ -21,52 +18,9 @@ interface GridPatternProps extends React.SVGProps<SVGSVGElement> {
   squares?: [number, number][];
 }
 
-/* 🏷️ Feature list */
-const features: Feature[] = [
-  {
-    title: "HIPAA and SOC2 Compliant",
-    description:
-      "Our applications are HIPAA and SOC2 compliant, your data is safe with us, always.",
-  },
-  {
-    title: "Automated Social Media Posting",
-    description:
-      "Schedule and automate your social media posts across multiple platforms to save time and maintain a consistent online presence.",
-  },
-  {
-    title: "Advanced Analytics",
-    description:
-      "Gain insights into your social media performance with detailed analytics and reporting tools to measure engagement and ROI.",
-  },
-  {
-    title: "Content Calendar",
-    description:
-      "Plan and organize your social media content with an intuitive calendar view, ensuring you never miss a post.",
-  },
-  {
-    title: "Audience Targeting",
-    description:
-      "Reach the right audience with advanced targeting options, including demographics, interests, and behaviors.",
-  },
-  {
-    title: "Social Listening",
-    description:
-      "Monitor social media conversations and trends to stay informed about what your audience is saying and respond in real-time.",
-  },
-  {
-    title: "Customizable Templates",
-    description:
-      "Create stunning social media posts with our customizable templates, designed to fit your brand's unique style and voice.",
-  },
-  {
-    title: "Collaboration Tools",
-    description:
-      "Work seamlessly with your team using our collaboration tools, allowing you to assign tasks, share drafts, and provide feedback in real-time.",
-  },
-];
 
 /* 📦 Main Section */
-export default function FeaturesSectionDemo() {
+export default function FeaturesBoxesPlain({ features }: { features: typeFeatureBoxesPlain[] }) {
   return (
     <section className="py-20 lg:py-40">
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-3 md:gap-2 lg:grid-cols-4">

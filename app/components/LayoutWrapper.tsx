@@ -2,8 +2,8 @@
 
 import { usePathname } from 'next/navigation';
 import { ReactNode } from 'react';
-import MainNavBar from '@/components/MainNavBar';
-import Footer from '@/features/marketing/components/footer';
+import MainNavBar from '@/components/nav-bar/MainNavBar'; 
+import Footer from '@/components/nav-bar/MainFooter';
 import { CookieConsent } from '@/features/cookies';
 
 interface LayoutWrapperProps {

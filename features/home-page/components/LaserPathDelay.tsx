@@ -3,7 +3,7 @@ import { useScroll, useTransform } from "motion/react";
 import React from "react";
 import { GoogleGeminiEffect } from "@/components/ui/google-gemini-effect";
  
-export function GoogleGeminiEffectDemo() {
+export function LaserPathDelay() {
   const ref = React.useRef(null);
   const { scrollYProgress } = useScroll({
     target: ref,

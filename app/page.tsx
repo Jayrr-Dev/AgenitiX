@@ -1,31 +1,26 @@
-import Hero from "@/features/marketing/components/hero";
-import { DigitalSolutions } from "@/features/marketing/components/digital-solutions";
-import Main from "@/features/marketing/components/main";
-import { BrandWordmark } from "@/branding/brand-wordmark";
-import { AppleCardsCarouselDemo } from "@/features/marketing/components/apple-carousel";
-import { Card, CardContent } from "@/components/ui/card";
-import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
-import { testimonials } from "@/features/marketing/data/data";
-import { GoogleGeminiEffectDemo } from "@/features/marketing/components/google-effect";
-import FeaturesSectionDemo from "@/components/features-section-demo-1";
-import FeaturesSectionDemo2 from "@/components/features-section-demo-2";
-import FeaturesSectionDemo3 from "@/components/features-section-demo-3";
-import { TrustUs } from "@/features/marketing/components/trust-us";
-import { ContainerScroll } from "@/components/ui/container-scroll-animation";
-import { AnimatedTestimonialsDemo } from "@/features/marketing/components/AnimatedTestimonials";
-import { CanvasRevealEffectDemo } from "@/features/marketing/components/CanvasRevealEffect";
-import FAQ07 from "@/components/faq-07";
-import Image from "next/image";
-import { Revealer } from "@/features/marketing/components/revealer";
-import { Testimonials } from "@/features/marketing/components/testimonials";
-import { FeaturesA } from "@/features/marketing/components/features-a";
+import Hero from "@/features/home-page/components/HeroSection";
+import { TabletScroller } from "@/features/home-page/components/TabletScroller";
+import { LaserPathDelay } from "@/features/home-page/components/LaserPathDelay";
+import FeatureBoxesIconed from "@/features/home-page/components/FeatureBoxesIconed";
+import FeatureBoxesBento from "@/features/home-page/components/FeatureBoxesBento";
+import { InfiniteLogoTicker } from "@/features/home-page/components/LogoTicker";
+import { AnimatedTestimonialsDemo } from "@/features/home-page/components/TestimonialsSlides";
+import FAQ from "@/features/home-page/components/FAQ";
+import { Revealer } from "@/features/home-page/components/HoverRevealer";
+import { Testimonials } from "@/features/home-page/components/TestimonialsTicker";
+import FeaturesBoxesPlain from "@/features/home-page/components/FeatureBoxesPlain";
+import { featureBoxesBento, featureBoxesIconed, featureBoxesPlain } from "@/features/home-page/data";
+
 export default async function Home() {
-  await import("@/features/marketing/components/google-effect");
-  await import("@/components/features-section-demo-1");
-  await import("@/components/features-section-demo-2");
-  await import("@/components/features-section-demo-3");
+  await import("@/features/home-page/components/LaserPathDelay");
+  await import("@/features/home-page/components/FeatureBoxesPlain");
+  await import("@/features/home-page/components/FeatureBoxesIconed");
+  await import("@/features/home-page/components/FeatureBoxesBento");
   await import("@/components/ui/infinite-moving-cards");
   await import("@/components/ui/card");
+  
+  //Data
+  const faqData = await import("@/features/home-page/data");  
   return (
     <main className="grid grid-cols-12">
       {/* Hero */}
@@ -35,10 +30,10 @@ export default async function Home() {
 
       {/* Trust Us */}
       <div id="trust-us" className="w-full h-full col-span-8 col-start-3 pt-20 pb-40">
-        <TrustUs />
+        <InfiniteLogoTicker />
       </div>
       <div className="flex flex-col w-full h-full col-span-12 pb-40" >
-        <DigitalSolutions />
+        <TabletScroller />
       </div>
 
       {/* Container Scroll */}
@@ -46,7 +41,7 @@ export default async function Home() {
 
          {/* Features Bento */}     
       <div id="features-bento" className=" col-span-8 col-start-3 ">
-        <FeaturesSectionDemo3 />
+        <FeatureBoxesBento features={featureBoxesBento} />   
       </div>
 
         {/* Infinite Moving Cards */}
@@ -65,15 +60,15 @@ export default async function Home() {
         </Card>
       </div> */}
     
-      {/* Google Gemini Effect */}
-      <div id="google-gemini-effect" className="w-full h-full col-span-8 col-start-3 ">
-        <GoogleGeminiEffectDemo />
-      </div>
+      {/* Laser Path Delay */}
+      {/* <div id="laser-path-delay" className="w-full h-full col-span-8 col-start-3 ">
+        <LaserPathDelay />
+      </div> */}
       {/* <Main /> */}
       {/* <BrandWordmark/> */}
       {/* Features Section */}
       <div id="features-section" className="w-full h-full col-span-8 col-start-3 ">
-        <FeaturesA />
+        <FeaturesBoxesPlain features={featureBoxesPlain} />
       </div>
 
       {/* Animated Testimonials */}
@@ -83,7 +78,7 @@ export default async function Home() {
 
       {/* Features Section 2 */}
       <div id="features-section-2" className="w-full h-full col-span-8 col-start-3 ">
-        <FeaturesSectionDemo2 />
+        <FeatureBoxesIconed features={featureBoxesIconed} />
       </div>
    
        {/* Canvas Reveal Effect */}
@@ -93,7 +88,7 @@ export default async function Home() {
 
       {/* FAQ */}
       <div id="faq" className="w-full h-full col-span-8 col-start-3 ">
-        <FAQ07 />
+        <FAQ faq={faqData.faq} />
       </div>
       {/* Footer */}
 

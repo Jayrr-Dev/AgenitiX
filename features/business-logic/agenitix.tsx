@@ -14,13 +14,15 @@ import {
   ReactFlowInstance,
   addEdge,
   Position,
+  Connection,
 } from '@xyflow/react';
 import { useTheme } from 'next-themes';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import '@xyflow/react/dist/style.css';
 import { useIsTouchDevice } from '@/hooks/useIsTouchDevice';
 import TextUpdaterNode from './nodes/TextUpdaterNode';
-
+import CustomEdge from './edges/StraightPath';
+import StepEdge from './edges/StepEdge';
 const initialNodes: Node[] = [
   {
     id: 'node-1',
@@ -45,8 +47,8 @@ const initialNodes: Node[] = [
 ];
  
 const initialEdges = [
-  { id: 'edge-1', source: 'node-1', target: 'node-2', sourceHandle: 'a' },
-  { id: 'edge-2', source: 'node-1', target: 'node-3', sourceHandle: 'b' },
+  { id: 'edge-1', source: 'node-1', target: 'node-2', sourceHandle: 'a', type: 'custom' },
+  { id: 'edge-2', source: 'node-1', target: 'node-3', sourceHandle: 'b', type: 'step' },
 ];
  
 
@@ -63,13 +65,16 @@ const nodeTypes = useMemo(() => ({
  
   // panOnDrag: only enable full drag on touch, mouse gets [1, 2]
   const panOnDrag = isTouch ? true : [1, 2];
-
+    
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
 
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
 
- 
+  const edgeTypes = useMemo(() => ({
+    custom: CustomEdge,
+    step: StepEdge,
+  }), []);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -82,8 +87,11 @@ const nodeTypes = useMemo(() => ({
   );
 
   const onConnect = useCallback(
-    (params: any) => setEdges((eds) => addEdge(params, eds)),
-    []
+    (connection: Connection) => {
+      const edge = { ...connection, type: 'custom' };
+      setEdges((eds) => addEdge(edge, eds));
+    },
+    [setEdges],
   );
 
   // Mobile: handle double-tap reset
@@ -106,6 +114,7 @@ const nodeTypes = useMemo(() => ({
     return () => wrapper.removeEventListener('touchend', handleTouchEnd);
   }, [isTouch]);
 
+  
 
   //stops hydration errors
   useEffect(() => {
@@ -113,14 +122,17 @@ const nodeTypes = useMemo(() => ({
   }, []);
 
   if (!mounted) return null;
-
+  const proOptions = { hideAttribution: true };
+  
   return (
     <div
       id="flow-wrapper"
       className="flex flex-col h-screen w-screen touch-manipulation overflow-hidden"
     >
       <ReactFlow
+        proOptions={proOptions}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}

@@ -1,4 +1,4 @@
-import { logos } from "@/features/marketing/data/data";
+import { logos } from "@/features/home-page/data";
 import dynamic from "next/dynamic";
 
 // Dynamically import the LogoTicker component
@@ -18,7 +18,7 @@ interface Logo {
   height: number;
 }
 
-const logosArray: Logo[] = logos.map((logo) => ({
+const logosArray: Logo[] = logos.map((logo)  => ({
   name: logo.name,
   key: logo.key,
   customId: logo.customId,
@@ -29,7 +29,7 @@ const logosArray: Logo[] = logos.map((logo) => ({
 }));
 
 
-export const TrustUs = () => {
+export const InfiniteLogoTicker = () => {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center">
       <h3 className="text-4xl font-bold text-center w-2/3">Trusted by 150,000+ Content</h3>

@@ -5,7 +5,7 @@ const ContainerScroll = dynamic(() => import("@/components/ui/container-scroll-a
 });
 import Image from "next/image";
 
-export const DigitalSolutions = () => {
+export const TabletScroller = () => {
   return (
     <ContainerScroll
       titleComponent={
