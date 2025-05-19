@@ -33,9 +33,42 @@ export type typeLogo = {
     height: number;
 }
 
-export type typeTestimonials = {
+export type typeTestimonialsTicker = {
+    name: string;
+    key: string;
+    customId: string | null;
+    url: string;
+    size: number;
+    uploadedAt: string;
+    review: string;
+    "profile-name": string;
+    "profile-designation": string;
+    location: string;
+}
+
+export type typeTestimonialsSlides = {
     quote: string;
     name: string;
     designation: string;
     src: string;
+}
+
+export type typeMarqueeImages = {
+    name: string;
+    key: string;
+    customId: string | null;
+    url: string;
+    size: number;
+    uploadedAt: string;
+}
+
+export type typeSlides = {
+    type: "component" | "image" | "video",
+    src:"",
+    component: React.ReactNode,        
+    heading: string,
+    title: React.ReactNode,
+    message: string,
+    ctaText: string,
+    ctaLink: string
 }

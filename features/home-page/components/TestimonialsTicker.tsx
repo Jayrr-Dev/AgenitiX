@@ -1,5 +1,5 @@
 import dynamic from "next/dynamic"; 
-import { testimonials } from "@/features/marketing/data/data";
+import { testimonials } from "@/features/home-page/data";
 const InfiniteMovingCards = dynamic(() => import("@/components/ui/infinite-moving-cards").then(mod => mod.InfiniteMovingCards) , {
   loading: () => <div>Loading...</div>
 });

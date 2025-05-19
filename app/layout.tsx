@@ -7,7 +7,7 @@ import Loading from './loading';
 import { Analytics } from '@vercel/analytics/react';
 import Script from 'next/script';
 import type { Metadata } from 'next';
-import LayoutWrapper from '@/app/components/LayoutWrapper';
+import LayoutWrapper from '@/app/wrapper/LayoutWrapper';
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`

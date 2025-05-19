@@ -10,7 +10,7 @@ interface LayoutWrapperProps {
   children: ReactNode;
 }
 
-const HIDE_UI_PATHS = ['/logic']; // Add any routes that should hide UI
+const HIDE_UI_PATHS = ['/matrix']; // Add any routes that should hide UI
 
 export default function LayoutWrapper({ children }: LayoutWrapperProps) {
   const pathname = usePathname();

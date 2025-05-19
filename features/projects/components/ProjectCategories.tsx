@@ -1,9 +1,9 @@
 // components/ProjectCategories.tsx
 'use client';
-import PowerLine from '../../svg/powerline';
-import UrbanInfra from '../../svg/urban-infra';
-import Safety from '../../svg/safety';
-import Electric from '../../svg/electric';
+import PowerLine from '../../../public/svg/powerline';
+import UrbanInfra from '../../../public/svg/urban-infra';
+import Safety from '../../../public/svg/safety';
+import Electric from '../../../public/svg/electric';
 
 export default function ProjectCategories() {
   return (

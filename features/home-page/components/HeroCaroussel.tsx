@@ -10,8 +10,8 @@ import useEmblaCarousel from "embla-carousel-react";
 // const VideoCarousel = dynamic(() => import("./video-carousel").then(mod => mod.videoCarousel), { ssr: false, loading: () => <LoadingCarousel/> });
 import { ThreeDMarquee } from "@/components/ui/3d-marquee";
 import { useTheme } from "next-themes";
-import { imagesMarquee } from "@/features/marketing/data/data";
-import type { slide } from "@/features/marketing/types/marketing-types";
+import { imagesMarquee } from "@/features/home-page/data";
+import type { typeMarqueeImages, typeSlides } from "@/features/home-page/types";
 import { FlipWords } from "@/components/ui/flip-words";
 
 
@@ -27,15 +27,14 @@ export function HeroCarousel() {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  const images: ImageItem[] = imagesMarquee.map((image) => ({
+  const images: ImageItem[] = imagesMarquee.map((image: typeMarqueeImages) => ({
     key: image.key,
     url: image.url,
   }));
   const words = ["better", "cute", "beautiful", "modern"];
 
   // Slide content with unique messages and CTAs
-
-  const slides: slide[] = [   
+  const slides: typeSlides[] = [   
     {
       type: "component",
       src:"",
