@@ -9,12 +9,12 @@ export default function CTASection() {
         Our team of experienced electrical engineers is ready to help you bring your distribution project to life. Contact us today to discuss your requirements.
       </p>
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Link href="/contact">
+        <Link href="/contact" legacyBehavior>
           <Button size="lg" className="bg-[#f6733c] hover:bg-[#e45f2d]">
             Contact Our Engineers
           </Button>
         </Link>
-        <Link href="/projects">
+        <Link href="/projects" legacyBehavior>
           <Button
             size="lg"
             variant="outline"

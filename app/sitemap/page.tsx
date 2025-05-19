@@ -10,7 +10,6 @@ export default function SitemapPage() {
           Find all the pages on our website organized in one place.
         </p>
       </div>
-
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-16">
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           <div>
@@ -139,7 +138,6 @@ export default function SitemapPage() {
           </div>
         </div>
       </div>
-
       {/* CTA Section */}
       <div className="bg-blue-50 dark:bg-blue-900 p-8 rounded-lg text-center">
         <h2 className="text-2xl font-semibold mb-4">Can't find what you're looking for?</h2>
@@ -147,7 +145,7 @@ export default function SitemapPage() {
           Our team is here to help you navigate our services and find the information you need.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/contact">
+          <Link href="/contact" legacyBehavior>
             <Button size="lg" className="bg-[#f6733c] hover:bg-[#e45f2d]">
               Contact Us
             </Button>

@@ -63,7 +63,7 @@ export function ProjectCarousel({ projects }: ProjectCarouselProps) {
                     lower: true,
                     strict: true,
                   })}`}
-                >
+                  legacyBehavior>
                   <Button
                     variant="outline"
                     className="relative z-20 w-full group hover:bg-primary hover:text-white transition-colors duration-300"
@@ -79,11 +79,9 @@ export function ProjectCarousel({ projects }: ProjectCarouselProps) {
           </CarouselItem>
         ))}
       </CarouselContent>
-
       {/* lower the nav overlays just one layer */}
       <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-1/4 rounded-lg hover:bg-linear-to-l from-transparent to-black/10 text-white z-0" />
       <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2 h-full w-1/4 rounded-lg hover:bg-linear-to-r from-transparent to-black/10 text-white z-0" />
-
       <CarouselDots className="p-6 translate-y-full" />
     </Carousel>
   );

@@ -12,10 +12,10 @@ export default function ProjectCTA() {
         Our team of experienced electrical engineers is ready to help you bring your distribution project to life. Contact us today to discuss your requirements.
       </p>
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Link href="/contact">
+        <Link href="/contact" legacyBehavior>
           <Button size="lg" className="bg-[#f6733c] hover:bg-[#e45f2d]">Contact Us</Button>
         </Link>
-        <Link href="/expertise">
+        <Link href="/expertise" legacyBehavior>
           <Button size="lg" variant="outline" className="border-[#f6733c] text-[#f6733c] hover:bg-[#f6733c] hover:text-white">
             Learn More About Our Services
           </Button>

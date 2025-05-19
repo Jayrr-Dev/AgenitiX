@@ -132,7 +132,7 @@ export function HeroCarousel() {
                 <CardContent className="flex items-center justify-center m-0 p-0 overflow-hidden ">
                   {slide.type === "video" ? (
                     // VIDEO CAROUSEL
-                    <video
+                    (<video
                       ref={videoRef}
                       src={slide.src}
                       autoPlay
@@ -141,10 +141,10 @@ export function HeroCarousel() {
                       loop
                       className="w-full object-cover brightness-[0.7]"
                       style={{ height: "calc(100vh - 96px)" }}
-                    />
+                    />)
                   ) : slide.type === "image" ?   (
                     // IMAGE CAROUSEL
-                    <img
+                    (<img
                       src={slide.src}
                       alt={`hero-carousel-${index + 1}`}
                       loading="lazy"
@@ -153,12 +153,12 @@ export function HeroCarousel() {
                         height: "calc(100vh - 96px)",
                         transform: `translateY(${scrollY * 0.1}px)`,
                       }}
-                    />
+                    />)
                   ) : slide.type === "component" ? (
                     // COMPONENT CAROUSEL
-                    <div className="w-full h-full">
-                      {slide.component} 
-                    </div>
+                    (<div className="w-full h-full">
+                      {slide.component}
+                    </div>)
                   ) : null}
                   
                   {/* Animated Message Card with CTA */}

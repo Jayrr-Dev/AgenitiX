@@ -9,7 +9,6 @@ export default function AboutPage() {
         <h1 className="text-4xl font-bold mb-4">About Utilitek Solutions</h1>
         <p className="text-xl text-gray-600 dark:text-gray-400">Powering Innovation in Electrical Distribution</p>
       </div>
-
       {/* Hero Section with Parallax Effect */}
       <div className="relative h-[500px] mb-20 overflow-hidden rounded-xl">
         <div className="absolute inset-0">
@@ -27,7 +26,7 @@ export default function AboutPage() {
             <p className="text-xl mb-6">
               Since 2014, we've been engineering the future of electrical distribution systems across Alberta.
             </p>
-            <Link href="/contact">
+            <Link href="/contact" legacyBehavior>
               <Button size="lg" className="bg-[#f6733c] hover:bg-[#e45f2d]">
                 Connect With Our Engineers
               </Button>
@@ -35,7 +34,6 @@ export default function AboutPage() {
           </div>
         </div>
       </div>
-
       {/* Our Story Section */}
       <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
         <div>
@@ -93,7 +91,6 @@ export default function AboutPage() {
           </div>
         </div>
       </div>
-
       {/* Core Values Section */}
       <div className="mb-20">
         <h2 className="text-3xl font-semibold mb-8 text-center">Our Core Values</h2>
@@ -133,7 +130,6 @@ export default function AboutPage() {
           </div>
         </div>
       </div>
-
       {/* Expertise Showcase */}
       <div className="bg-gray-50 dark:bg-gray-800 p-10 rounded-xl mb-20">
         <h2 className="text-3xl font-semibold mb-8 text-center">Our Distribution Expertise</h2>
@@ -201,7 +197,6 @@ export default function AboutPage() {
           </div>
         </div>
       </div>
-
       {/* Team Section */}
       {/* TODO: Add team section */}
       {/* <div className="mb-20">
@@ -263,7 +258,6 @@ export default function AboutPage() {
           </div>
         </div>
       </div> */}
-
       {/* CTA Section */}
       <div className="bg-blue-50 dark:bg-blue-900 p-8 rounded-lg text-center">
         <h2 className="text-2xl font-semibold mb-4">Ready to transform your distribution infrastructure?</h2>
@@ -271,12 +265,12 @@ export default function AboutPage() {
           Our team of specialized electrical engineers is ready to help you design, upgrade, or optimize your distribution systems.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/contact">
+          <Link href="/contact" legacyBehavior>
             <Button size="lg" className="bg-[#f6733c] hover:bg-[#e45f2d]">
               Schedule a Consultation
             </Button>
           </Link>
-          <Link href="/projects">
+          <Link href="/projects" legacyBehavior>
             <Button size="lg" variant="outline" className="border-[#f6733c] text-[#f6733c] hover:bg-[#f6733c] hover:text-white">
               View Our Distribution Projects
             </Button>

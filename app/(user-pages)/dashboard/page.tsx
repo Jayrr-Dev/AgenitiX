@@ -31,13 +31,15 @@ export default function DashboardPage() {
       <h1 className="text-2xl font-bold mb-6">My Flows</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* New Flow card */}
-        <Link href="/build/new">
-          <a className="group border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center hover:bg-gray-50 transition">
-            <IconPlus size={32} className="text-gray-400 mb-2 group-hover:text-gray-600" />
-            <span className="text-lg font-medium text-gray-700 group-hover:text-gray-900">
-              New Flow
-            </span>
-          </a>
+        <Link
+          href="/build/new"
+          className="group border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center hover:bg-gray-50 transition">
+
+          <IconPlus size={32} className="text-gray-400 mb-2 group-hover:text-gray-600" />
+          <span className="text-lg font-medium text-gray-700 group-hover:text-gray-900">
+            New Flow
+          </span>
+
         </Link>
 
         {/* Existing Flows */}
@@ -56,14 +58,16 @@ export default function DashboardPage() {
               <h2 className="text-lg font-semibold">{flow.name}</h2>
             </div>
 
-            <Link href={`/build/${flow.id}`}>
-              <a className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+            <Link
+              href={`/build/${flow.id}`}
+              className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+              
                 Open
-              </a>
+              
             </Link>
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 }

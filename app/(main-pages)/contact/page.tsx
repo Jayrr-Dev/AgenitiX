@@ -146,7 +146,6 @@ export default function ContactPage() {
           Have a question or need assistance with your project? Our team is here to help.
         </p>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
         {/* Contact Form */}
 
@@ -364,7 +363,6 @@ export default function ContactPage() {
           </div>
         </div>
       </div>
-
       {/* FAQ Section */}
       <div className="mb-16">
         <h2 className="text-3xl font-semibold mb-8 text-center">Frequently Asked Questions</h2>
@@ -397,7 +395,6 @@ export default function ContactPage() {
           </div>
         </div>
       </div>
-
       {/* CTA Section */}
       <div className="bg-blue-50 dark:bg-blue-900 p-8 rounded-lg text-center">
         <h2 className="text-2xl font-semibold mb-4">Ready to discuss your project?</h2>
@@ -406,7 +403,7 @@ export default function ContactPage() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <ScheduleConsultation />
-          <Link href="/projects">
+          <Link href="/projects" legacyBehavior>
             <Button size="lg" variant="outline" className="border-[#f6733c] text-[#f6733c] hover:bg-[#f6733c] hover:text-white">
               View Our Projects
             </Button>

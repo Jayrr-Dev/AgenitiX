@@ -26,11 +26,10 @@ export default function MobileNav() {
             <span className="sr-only">Toggle menu</span>
           </Button>
         </DropdownMenuTrigger>
-
         {/* If user is not logged in, show the navigation menu */}
         <DropdownMenuContent align="end" className="w-[85vw] px-8 text-xl">
           <DropdownMenuItem asChild>
-            <Link href="/" className="flex items-center w-full">
+            <Link href="/" className="flex items-center w-full" legacyBehavior>
               {/* <Image src="/logo.png" alt="logo" width={24} height={24} className="h-5 w-auto mr-2" /> */}
               <span className="font-medium">Home</span>
             </Link>
@@ -62,6 +61,6 @@ export default function MobileNav() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    )
+    );
   }
   

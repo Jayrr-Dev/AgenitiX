@@ -46,7 +46,7 @@ export default function MainNavBar() {
             <Link
               href="/"
               className=" flex flex-row items-center justify-center cursor-pointer  "
-            >
+              legacyBehavior>
               <LogomarkLight
                 className={cn(
                   "transition-all duration-300 pl-2",

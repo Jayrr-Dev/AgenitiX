@@ -10,7 +10,6 @@ export default function PrivacyPage() {
           At Utilitek Solutions, we take your privacy seriously. This policy outlines how we collect, use, and protect your information.
         </p>
       </div>
-
       <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md mb-16">
         <div className="space-y-8">
           <section>
@@ -93,7 +92,6 @@ export default function PrivacyPage() {
           </section>
         </div>
       </div>
-
       {/* CTA Section */}
       <div className="bg-blue-50 dark:bg-blue-900 p-8 rounded-lg text-center">
         <h2 className="text-2xl font-semibold mb-4">Have questions about our privacy practices?</h2>
@@ -101,7 +99,7 @@ export default function PrivacyPage() {
           Our team is committed to transparency and protecting your information. Contact us if you need more information.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/contact">
+          <Link href="/contact" legacyBehavior>
             <Button size="lg" className="bg-[#f6733c] hover:bg-[#e45f2d]">
               Contact Us
             </Button>
