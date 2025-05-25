@@ -20,7 +20,7 @@ import { useTheme } from 'next-themes';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import '@xyflow/react/dist/style.css';
 import { useIsTouchDevice } from '@/hooks/useIsTouchDevice';
-import TextUpdaterNode from './nodes/TextUpdaterNode';
+import TextUpdaterNode from './nodes/main/TextUpdaterNode';
 import CustomEdge from './edges/StraightPath';
 import StepEdge from './edges/StepEdge';
 const initialNodes: Node[] = [
@@ -50,10 +50,8 @@ const initialEdges = [
   { id: 'edge-1', source: 'node-1', target: 'node-2', sourceHandle: 'a', type: 'custom' },
   { id: 'edge-2', source: 'node-1', target: 'node-3', sourceHandle: 'b', type: 'step' },
 ];
- 
 
-
-export default function Logic() {
+export default function Agenitix() {
 const nodeTypes = useMemo(() => ({
     textUpdater: TextUpdaterNode,
   }), []);

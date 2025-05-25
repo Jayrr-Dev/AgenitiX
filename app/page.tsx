@@ -1,6 +1,5 @@
 import Hero from "@/features/home-page/components/HeroSection";
 import { TabletScroller } from "@/features/home-page/components/TabletScroller";
-import { LaserPathDelay } from "@/features/home-page/components/LaserPathDelay";
 import FeatureBoxesIconed from "@/features/home-page/components/FeatureBoxesIconed";
 import FeatureBoxesBento from "@/features/home-page/components/FeatureBoxesBento";
 import { InfiniteLogoTicker } from "@/features/home-page/components/LogoTicker";

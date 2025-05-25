@@ -1,8 +1,10 @@
 // app/api/flows/route.ts
 
 import { NextResponse } from 'next/server'
-import { dummyFlows as flows } from '@/features/business-logic/data'
+import type { Flow } from '@/features/business-logic/types'
+import { dummyFlows } from '@/features/business-logic/data'
 
-export async function GET() {
-  return NextResponse.json(flows)
+
+export function GET() {
+  return NextResponse.json(dummyFlows)
 }

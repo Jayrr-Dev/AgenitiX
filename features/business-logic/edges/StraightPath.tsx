@@ -29,7 +29,7 @@ import {
               setEdges((es) => es.filter((e) => e.id !== id));
             }}
           >
-            Hi there
+            x
           </button>
         </EdgeLabelRenderer>
       </>

@@ -43,10 +43,10 @@ export default function MainNavBar() {
           )}
         >
           <div id="logo" className="xdebug-green col-span-4 md:col-span-2 self-center justify-self-center border-b border-transparent   bg-fill-border hover:animate-fill-transparency">
-            <Link
+            <a
               href="/"
-              className=" flex flex-row items-center justify-center cursor-pointer  "
-              legacyBehavior>
+              className=" flex flex-row items-center justify-center cursor-pointer "
+              >
               <LogomarkLight
                 className={cn(
                   "transition-all duration-300 pl-2",
@@ -63,7 +63,7 @@ export default function MainNavBar() {
                   AgenitiX
                 </span>
               </div>
-            </Link>
+            </a>
           </div>
           <div id="desktop-nav" className="xdebug-blue col-span-8 self-center  hidden md:block justify-self-center">
             <MainDesktopNav />
