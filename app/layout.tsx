@@ -8,6 +8,7 @@ import { Analytics } from '@vercel/analytics/react';
 import Script from 'next/script';
 import type { Metadata } from 'next';
 import LayoutWrapper from '@/app/wrapper/LayoutWrapper';
+import { Toaster } from 'sonner';
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -53,6 +54,7 @@ export default function RootLayout({
               </Providers>
             </div>
           </main>
+          <Toaster position="top-right" />
 
           <Analytics />
 

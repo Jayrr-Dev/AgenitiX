@@ -1,11 +1,11 @@
 import {
   BaseEdge,
   EdgeLabelRenderer,
-  getStraightPath,
+  getBezierPath,
   useReactFlow,
 } from '@xyflow/react';
 
-export default function CustomEdge({
+export default function BezierEdge({
   id,
   sourceX,
   sourceY,
@@ -20,13 +20,15 @@ export default function CustomEdge({
 }) {
   const { setEdges } = useReactFlow();
 
-  const [edgePath, labelX, labelY] = getStraightPath({
+  // Calculate bezier curve path and label position
+  const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
     targetX,
     targetY,
   });
 
+  // Delete edge handler
   const handleDelete = () => {
     setEdges((es) => es.filter((e) => e.id !== id));
   };

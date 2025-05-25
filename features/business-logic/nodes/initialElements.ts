@@ -1,5 +1,5 @@
 // nodes/initialElements.ts
-import { Node } from '@xyflow/react'
+import { Node, NodeToolbar } from '@xyflow/react'
 
 /* ------------------------------------------------------------------ */
 /*  DATA SHAPES                                                       */
