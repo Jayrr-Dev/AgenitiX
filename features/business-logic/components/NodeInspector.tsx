@@ -18,11 +18,11 @@ interface NodeInspectorProps {
 
 /* -------------------------------- Component ------------------------------- */
 
-const NodeInspector: React.FC<NodeInspectorProps> = ({
+const NodeInspector = React.memo(function NodeInspector({
   node,
   updateNodeData,
   output,
-}) => {
+}: NodeInspectorProps) {
   if (!node) {
     return (
       <p className="text-xs italic text-neutral-500">
@@ -32,17 +32,7 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
   }
 
   /* ---------- convenience render helpers -------------------------------- */
-  const renderTextUpdaterControls = () => (
-    <label className="block text-xs">
-      Value:
-      <input
-        type="number"
-        className="mt-1 w-full rounded border px-1 text-xs"
-        value={node.data.value as number}
-        onChange={(e) => updateNodeData(node.id, { value: Number(e.target.value) })}
-      />
-    </label>
-  );
+
 
   const renderTextNodeControls = () => (
     <div className="flex flex-col gap-2">
@@ -74,22 +64,50 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
     </div>
   );
 
-  const renderTriggerOnPulseControls = () => (
-    <label className="block text-xs">
-      <div className="flex flex-row gap-2 items-center">
-        <span className="py-1">Pulse Duration:</span>
-        <input
-          type="number"
-          min={50}
-          step={50}
-          className="w-16 rounded border px-1 py-1 text-xs"
-          value={typeof node.data.duration === 'number' ? node.data.duration : 500}
-          onChange={(e) => updateNodeData(node.id, { duration: Number(e.target.value) })}
-        />
-        <span className="text-xs">ms</span>
-      </div>
-    </label>
-  );
+  const renderTriggerOnPulseControls = () => {
+    // Robust duration input state for NodeInspector
+    const [durationInput, setDurationInput] = React.useState(
+      typeof node.data.duration === 'number' ? node.data.duration.toString() : '500'
+    )
+    // Keep local input in sync with node.data.duration
+    React.useEffect(() => {
+      setDurationInput(typeof node.data.duration === 'number' ? node.data.duration.toString() : '500')
+    }, [node.data.duration])
+    // Handler: input change (digits only)
+    const handleDurationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const digits = e.target.value.replace(/\D/g, '')
+      setDurationInput(digits)
+    }
+    // Handler: commit input on blur/Enter
+    const commitDurationInput = () => {
+      let value = Number(durationInput)
+      if (isNaN(value) || value < 50) value = 50
+      updateNodeData(node.id, { duration: value })
+      setDurationInput(value.toString())
+    }
+    const handleDurationInputBlur = () => { commitDurationInput() }
+    const handleDurationInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') commitDurationInput()
+    }
+    return (
+      <label className="block text-xs">
+        <div className="flex flex-row gap-2 items-center">
+          <span className="py-1">Pulse Duration:</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            className="w-16 rounded border px-1 py-1 text-xs"
+            value={durationInput}
+            onChange={handleDurationInputChange}
+            onBlur={handleDurationInputBlur}
+            onKeyDown={handleDurationInputKeyDown}
+          />
+          <span className="text-xs">ms</span>
+        </div>
+      </label>
+    )
+  };
 
   const renderNodeOutput = () => (
     <div className="text-xs space-y-1">
@@ -113,7 +131,10 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
         </h3>
 
         <pre className="whitespace-pre-wrap break-words text-xs">
-          {JSON.stringify(node.data, null, 2)}
+          {JSON.stringify(node.data, (key, value) =>
+            typeof value === 'bigint' ? value.toString() + 'n' : value,
+            2
+          )}
         </pre>
 
         {/* Show output for nodes that have output */}
@@ -127,13 +148,14 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
 
       {/* right column – type-specific inputs */}
       <div id="node-inputs" className="flex flex-col gap-2">
-        {node.type === 'textUpdater' && renderTextUpdaterControls()}
         {node.type === 'textNode' && renderTextNodeControls()}
         {node.type === 'triggerOnPulse' && renderTriggerOnPulseControls()}
         {/* Add more cases here as new node types become editable */}
       </div>
     </div>
   );
-};
+});
+
+NodeInspector.displayName = 'NodeInspector';
 
 export default NodeInspector;

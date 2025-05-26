@@ -1,11 +1,9 @@
-// nodes/UppercaseNode.tsx
+// nodes/TextUppercaseNode.tsx
 'use client'
 
 /* -------------------------------------------------------------------------- */
-/*  UppercaseNode                                                              */
-/*  – Listens to any connected TextNodes, concatenates & upper-cases their     */
-/*    `data.text` values, then exposes the result through its own `text` field */
-/*    (so other nodes can read it)                                            */
+/*  TextUppercaseNode                                                         */
+/*  – Converts input text to UPPERCASE                                        */
 /* -------------------------------------------------------------------------- */
 
 import { memo, useMemo, useEffect } from 'react'
@@ -22,13 +20,16 @@ import {
 import {
   MyNode,
   TextNodeData,
-  UppercaseNodeData,
   isTextNode,
 } from '../initialElements'
 
 import CustomHandle from '../../handles/CustomHandle'
 
-function UppercaseNode({ id, data }: NodeProps<Node<UppercaseNodeData & Record<string, unknown>>>) {
+interface TextUppercaseNodeData {
+  text: string;
+}
+
+function TextUppercaseNode({ id, data }: NodeProps<Node<TextUppercaseNodeData & Record<string, unknown>>>) {
   const { updateNodeData } = useReactFlow()
 
   /* -------------------------------------------------------------- */
@@ -46,10 +47,9 @@ function UppercaseNode({ id, data }: NodeProps<Node<UppercaseNodeData & Record<s
   /* 3️⃣  Derive the transformed text                                */
   /* -------------------------------------------------------------- */
   const transformed = useMemo(() => {
-    // Filter for text nodes and get their text content
+    // Accept any connected node with a text property
     const texts = nodesData
-      .filter((n): n is MyNode & { type: 'textNode' } => n.type === 'textNode')
-      .map((n) => (n.data as TextNodeData).text)
+      .map((n) => n.data?.text)
       .filter((text): text is string => Boolean(text))
 
     // If no valid text nodes are connected, return empty string
@@ -112,4 +112,4 @@ function UppercaseNode({ id, data }: NodeProps<Node<UppercaseNodeData & Record<s
   )
 }
 
-export default memo(UppercaseNode)
+export default memo(TextUppercaseNode)

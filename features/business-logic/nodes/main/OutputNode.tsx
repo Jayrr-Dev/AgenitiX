@@ -14,13 +14,13 @@ import {
   MyNode,
   isTextNode,
   TextNodeData,
-  UppercaseNodeData,
+  TextUppercaseNodeData,
 } from '../initialElements'
 import CustomHandle from '../../handles/CustomHandle'
 
 /* -------------------------------------------------------------------------- */
 /*  OUTPUT NODE                                                               */
-/*  – Displays text from both TextNodes and UppercaseNodes                    */
+/*  – Displays text from both TextNodes and TextUppercaseNodes                    */
 /* -------------------------------------------------------------------------- */
 
 function OutputNode() {
@@ -38,24 +38,12 @@ function OutputNode() {
   /* -------------------------------------------------------------- */
   /*  3. Extract text content from connected nodes                   */
   /* -------------------------------------------------------------- */
-  const texts = nodesData.map((node) => {
-    if (node.type === 'textNode') {
-      return {
-        type: 'text',
-        content: (node.data as TextNodeData).text,
-        id: node.id
-      }
-    } else if (node.type === 'uppercaseNode') {
-      return {
-        type: 'uppercase',
-        content: (node.data as UppercaseNodeData).text,
-        id: node.id
-      }
-    }
-    return null
-  }).filter((item): item is { type: 'text' | 'uppercase', content: string, id: string } => 
-    item !== null && Boolean(item.content)
-  )
+  const texts = nodesData
+    .map((node) => ({
+      type: node.type,
+      content: node.data?.text,
+      id: node.id
+    }));
 
   /* -------------------------------------------------------------- */
   /*  4. Render                                                     */
@@ -87,11 +75,9 @@ function OutputNode() {
             {texts.map((item) => (
               <div 
                 key={item.id}
-                className={`text-sm font-mono break-all bg-white/50 dark:bg-black/20 rounded px-2 py-1 ${
-                  item.type === 'uppercase' ? 'text-sky-600 dark:text-sky-400' : ''
-                }`}
+                className={`text-sm font-mono break-all bg-white/50 dark:bg-black/20 rounded px-2 py-1`}
               >
-                {item.content}
+                {item.content !== undefined && item.content !== null ? String(item.content) : <span className="text-neutral-400 italic">No output</span>}
               </div>
             ))}
           </div>

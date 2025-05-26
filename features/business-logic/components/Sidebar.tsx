@@ -88,20 +88,41 @@ type TabKey<V extends SidebarVariant> =
 
 /* --------------------- sample stencil data (trim as needed) --------------- */
 
+const nodeGroups = [
+  {
+    id: 'a-main',
+    label: 'Main',
+    nodes: [
+      { id: 'a-main-1', nodeType: 'textNode', label: 'Text', description: 'A simple text input node.' },
+      { id: 'a-main-2', nodeType: 'uppercaseNode', label: 'Uppercase', description: 'Converts text to UPPERCASE.' },
+      { id: 'a-main-3', nodeType: 'output', label: 'Output', description: 'Displays the output of connected nodes.' },
+    ],
+  },
+  // ... rest of the groups ...
+];
+
 const DEFAULT_STENCILS_A: Record<TabKeyA, NodeStencil[]> = {
   main: [
-    { id: 'a-main-1', nodeType: 'textUpdater',  label: 'Text',      description: 'Editable text input.' },
-    { id: 'a-main-2', nodeType: 'textNode',     label: 'Text',      description: 'Static text display.' },
-    { id: 'a-main-3', nodeType: 'uppercaseNode',label: 'Uppercase', description: 'Converts text to UPPERCASE.' },
-    { id: 'a-main-4', nodeType: 'output',       label: 'Output',    description: 'Shows the final result.' },
-    { id: 'a-main-5', nodeType: 'triggerOnClick', label: 'Trigger', description: 'Blocks data flow until clicked, then allows data to pass.' },
-    { id: 'a-main-6', nodeType: 'triggerOnPulse', label: 'Pulse Trigger', description: 'Sends a one-shot trigger pulse when clicked.' },
-    { id: 'a-main-7', nodeType: 'triggerOnPulseCycle', label: 'Pulse Cycle Trigger', description: 'Flexible pulse trigger on a cycle.' },
-    { id: 'a-main-8', nodeType: 'triggerOnToggle', label: 'Toggle Trigger', description: 'Simple boolean toggle trigger.' },
+    { id: 'main-text-1', nodeType: 'textNode',     label: 'Text',      description: 'Static text display.' },
+    { id: 'main-upper-1', nodeType: 'uppercaseNode',label: 'Uppercase', description: 'Converts text to UPPERCASE.' },
+    { id: 'main-output-1', nodeType: 'output',       label: 'Output',    description: 'Shows the final result.' },
+    { id: 'main-trigger-1', nodeType: 'triggerOnClick', label: 'Trigger', description: 'Blocks data flow until clicked, then allows data to pass.' },
+    { id: 'main-pulse-1', nodeType: 'triggerOnPulse', label: 'Pulse Trigger', description: 'Sends a one-shot trigger pulse when clicked.' },
+    { id: 'main-cycle-1', nodeType: 'triggerOnPulseCycle', label: 'Pulse Cycle', description: 'Flexible pulse trigger on a cycle.' },
+    { id: 'main-toggle-1', nodeType: 'triggerOnToggle', label: 'Toggle Trigger', description: 'Simple boolean toggle trigger.' },
+    { id: 'main-toggle-cycle-1', nodeType: 'triggerOnToggleCycle', label: 'Toggle Cycle', description: 'Cycles between ON/OFF states with customizable durations.' },
+    { id: 'main-and-1', nodeType: 'logicAnd', label: 'AND (⋀)', description: 'Logical AND gate (customizable inputs).' },
+    { id: 'main-or-1', nodeType: 'logicOr', label: 'OR (⋁)', description: 'Logical OR gate (customizable inputs).' },
+    { id: 'main-not-1', nodeType: 'logicNot', label: 'NOT (¬)', description: 'Logical NOT gate (negates input).' },
+    { id: 'main-text-converter-1', nodeType: 'textConverterNode', label: 'Text Converter', description: 'Converts any input to text.' },
+    { id: 'main-boolean-converter-1', nodeType: 'booleanConverterNode', label: 'Boolean Converter', description: 'Converts any input to a boolean.' },
+    { id: 'main-input-tester-1', nodeType: 'inputTesterNode', label: 'Input Tester', description: 'Select and output a test value.' },
+    { id: 'main-object-editor-1', nodeType: 'objectEditorNode', label: 'Object Editor', description: 'Edit and test object values.' },
+    { id: 'main-array-editor-1', nodeType: 'arrayEditorNode', label: 'Array Editor', description: 'Edit and test arrays (including arrays of objects).' },
   ],
-  marketing : [{ id: 'a-mkt-1', nodeType: 'mkCampaign', label: 'Campaign', description: 'Marketing campaign.' }],
-  sales     : [{ id: 'a-sale-1',nodeType: 'salesLead',  label: 'Lead',     description: 'Sales lead tracker.' }],
-  operations: [{ id: 'a-ops-1', nodeType: 'opsTask',    label: 'Task',     description: 'Operational task.' }],
+  marketing : [{ id: 'mkt-campaign-1', nodeType: 'mkCampaign', label: 'Campaign', description: 'Marketing campaign.' }],
+  sales     : [{ id: 'sales-lead-1',nodeType: 'salesLead',  label: 'Lead',     description: 'Sales lead tracker.' }],
+  operations: [{ id: 'ops-task-1', nodeType: 'opsTask',    label: 'Task',     description: 'Operational task.' }],
 };
 
 const DEFAULT_STENCILS_B: Record<TabKeyB, NodeStencil[]> = {
@@ -194,7 +215,7 @@ const SortableStencil: React.FC<SortableStencilProps> = React.memo(
       <div
         ref={setNodeRef}
         style={style}
-        className="relative flex h-[70px] w-[70px] select-none items-center justify-center rounded border bg-background text-xs hover:bg-stone-900"
+        className="relative flex h-[70px] w-[70px] select-none items-center justify-center rounded border bg-background text-xs hover:bg-stone-900 "
         onDoubleClick={() => onDoubleClickCreate(stencil.nodeType)}
         onMouseEnter={() => setHovered(stencil)}
         onMouseLeave={() => setHovered(null)}
@@ -259,7 +280,7 @@ function StencilGrid({
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={ids} strategy={rectSortingStrategy}>
-        <div className="grid grid-cols-5 grid-rows-2 gap-2">
+        <div className="grid grid-cols-5 grid-rows-2 gap-2 ">
           {stencils.map((s) => (
             <SortableStencil
               key={s.id}
@@ -310,7 +331,7 @@ function SidebarTabs<V extends SidebarVariant>({
   return (
     <Tabs value={activeTab} onValueChange={(v) => onTabChange(v as TabKey<V>)}>
       <aside
-        className={`absolute bottom-0 right-0 z-30 h-[225px] w-[440px] border bg-background pl-6 pr-5 pt-2 ${
+        className={`absolute bottom-0 right-0 z-30 h-[225px] w-[450px] border bg-background pl-6 pr-5 pt-2 ${
           hide ? 'hidden' : ''
         }`}
       >
@@ -330,29 +351,31 @@ function SidebarTabs<V extends SidebarVariant>({
           ))}
         </TabsList>
 
-        {/*  Per-tab stencil grids  */}
-        {tabs.map(({ key }) => {
-          const [stencils, setStencils] = useStencilStorage(
-            variant,
-            key as TabKey<V>,
-            defaults[key as keyof typeof defaults],
-          );
-          return (
-            <TabsContent key={key} value={key}>
-              <StencilGrid
-                stencils={stencils}
-                setStencils={setStencils}
-                onNativeDragStart={handleNativeDragStart}
-                onDoubleClickCreate={onDoubleClickCreate}
-                setHovered={setHovered}
-              />
-            </TabsContent>
-          );
-        })}
+        {/*  Per-tab stencil grids  */}  
+        <div className="max-h-[180px] overflow-y-auto scrollbar *:scrollbar-thumb-gray-400 *:scrollbar-track-transparent *:scrollbar-arrow-hidden pb-2">
+          {tabs.map(({ key }) => {
+            const [stencils, setStencils] = useStencilStorage(
+              variant,
+              key as TabKey<V>,
+              defaults[key as keyof typeof defaults],
+            );
+            return (
+              <TabsContent key={key} value={key}>
+                <StencilGrid
+                  stencils={stencils}
+                  setStencils={setStencils}
+                  onNativeDragStart={handleNativeDragStart}
+                  onDoubleClickCreate={onDoubleClickCreate}
+                  setHovered={setHovered}
+                />
+              </TabsContent>
+            );
+          })}
+        </div>
       </aside>
 
       {/*  Hide-toggle  */}
-      <button onClick={toggleHide} className="absolute bottom-0.5 right-1 z-40">
+      <button onClick={toggleHide} className="absolute bottom-0.5 right-1 z-40 cursor-pointer">
         {hide ? '⦾' : '⦿'}
       </button>
     </Tabs>

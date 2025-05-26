@@ -5,7 +5,7 @@ import { Node, NodeToolbar } from '@xyflow/react'
 /*  DATA SHAPES                                                       */
 /* ------------------------------------------------------------------ */
 export interface TextNodeData { text: string }
-export interface UppercaseNodeData { text: string }
+export interface TextUppercaseNodeData { text: string }
 export interface ResultNodeData {}          // no extra data yet
 
 /* ------------------------------------------------------------------ */
@@ -13,7 +13,7 @@ export interface ResultNodeData {}          // no extra data yet
 /* ------------------------------------------------------------------ */
 export type MyNode =
   | (Node<TextNodeData & Record<string, unknown>>      & { type: 'textNode' })
-  | (Node<UppercaseNodeData & Record<string, unknown>> & { type: 'uppercaseNode' })
+  | (Node<TextUppercaseNodeData & Record<string, unknown>> & { type: 'uppercaseNode' })
   | (Node<ResultNodeData & Record<string, unknown>>    & { type: 'resultNode' })
 
 /* ------------------------------------------------------------------ */

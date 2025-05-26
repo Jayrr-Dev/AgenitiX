@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react'
 import { Handle, type HandleProps, Position, Connection, useReactFlow } from '@xyflow/react'
-import { toast } from "sonner";
 
 // TYPE LEGEND & COLORS
 const typeMap: Record<string, { label: string; color: string }> = {
@@ -17,9 +16,10 @@ const typeMap: Record<string, { label: string; color: string }> = {
   '∅': { label: '∅', color: '#ef4444' },    // null - red
 }
 
-interface CustomHandleProps extends Omit<HandleProps, 'className'> {
+interface CustomHandleProps extends Omit<HandleProps, 'className' | 'isConnectable'> {
   dataType: keyof typeof typeMap
   className?: string
+  isConnectable?: boolean | number | ((connection: any, context: any) => boolean)
 }
 
 // Type guard for Connection
@@ -30,13 +30,23 @@ function hasSourceHandle(obj: any): obj is { source: string; sourceHandle: strin
 // Helper: parse union type string (e.g., 's|n')
 export function parseTypes(typeStr?: string | null): string[] {
   if (!typeStr) return []
-  return typeStr.split('|').map(t => t.trim())
+  return typeStr.split('|').map(t => t.trim()).map(t => t.startsWith('b') ? 'b' : t)
 }
 
-const CustomHandle: React.FC<CustomHandleProps> = ({ dataType, className = '', position, id, ...props }) => {
+const CustomHandle: React.FC<CustomHandleProps> = ({ dataType, className = '', position, id, isConnectable = true, ...props }) => {
   const { label, color } = typeMap[dataType] || { label: '?', color: '#6b7280' }
   const reactFlow = useReactFlow();
   const [invalid, setInvalid] = useState(false)
+
+  // Compose isConnectable logic for max connections
+  let handleIsConnectable: any = isConnectable;
+  if (typeof isConnectable === 'number') {
+    handleIsConnectable = () => {
+      const edges = reactFlow.getEdges?.() || [];
+      const existingConnections = edges.filter(e => e.targetHandle === id).length;
+      return existingConnections < isConnectable;
+    };
+  }
 
   // Robust type-safe connection logic
   const isValidConnection = (connection: Connection | { source?: string; sourceHandle?: string | null }) => {
@@ -70,6 +80,7 @@ const CustomHandle: React.FC<CustomHandleProps> = ({ dataType, className = '', p
       id={id}
       position={position}
       isValidConnection={isValidConnection}
+      isConnectable={handleIsConnectable}
       className={`w-5 h-5 flex items-center justify-center bg-black/20 border-[0.5px] border-white rounded-full p-1 shadow ${invalid ? 'ring-2 ring-red-500' : ''} ${className}`}
       style={{ background: color, color: '#fff', ...props.style }}
       title={tooltip}
