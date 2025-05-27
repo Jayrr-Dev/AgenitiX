@@ -2,15 +2,22 @@
 import { notFound } from 'next/navigation'
 import { dummyFlows } from '@/features/business-logic/data'
 import FlowEditor from '@/features/business-logic/FlowEditor'
+
+// TYPES
 interface FlowPageProps {
-  params: { flowId: string }
+  params: {
+    flowId: string
+  }
+  searchParams: { [key: string]: string | string[] | undefined }
 }
 
 /**
  * Server component that looks up a Flow by ID from dummy data.
+ * @param params - Contains the flowId from the URL
+ * @param searchParams - Contains any query parameters
  */
-export default async function FlowPage({ params }: FlowPageProps) {
-  const { flowId } = await params
+export default function FlowPage({ params }: FlowPageProps) {
+  const { flowId } = params
 
   // find in our dummy array
   const flow = dummyFlows.find((f) => f.id === flowId)
@@ -19,12 +26,6 @@ export default async function FlowPage({ params }: FlowPageProps) {
   return (
     <div className="h-[100vh] w-[100vw]">
       <FlowEditor />
-      </div>
-    // <div className="p-8">
-    //   {/* <h1 className="text-2xl font-bold mb-4 absolute top-0 left-0">{flow.name}</h1> */}
-
-    //   {/* your editor will live here */}
-      
-    // </div>
+    </div>
   )
 }
