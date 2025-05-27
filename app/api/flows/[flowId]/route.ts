@@ -1,12 +1,15 @@
 // app/api/flows/[flowId]/route.ts
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import type { Flow } from '@/features/business-logic/types'
 import { dummyFlows } from '@/features/business-logic/data'
 
-
-export function GET({ params }: { params: { flowId: string } }) {
-  const flow = dummyFlows.find((f) => f.id === params.flowId)
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ flowId: string }> }
+) {
+  const { flowId } = await params
+  const flow = dummyFlows.find((f) => f.id === flowId)
   if (!flow) return NextResponse.json({ error: 'Flow not found' }, { status: 404 })
   return NextResponse.json(flow)
 }
