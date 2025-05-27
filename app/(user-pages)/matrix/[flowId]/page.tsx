@@ -8,7 +8,7 @@ type PageProps = {
   params: Promise<{
     flowId: string
   }>
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 /**
@@ -16,8 +16,8 @@ type PageProps = {
  * @param params - Contains the flowId from the URL
  * @param searchParams - Contains any query parameters
  */
-export default async function FlowPage({ params }: PageProps) {
-  const { flowId } = await params
+export default async function FlowPage({ params, searchParams }: PageProps) {
+  const [{ flowId }, search] = await Promise.all([params, searchParams])
 
   // find in our dummy array
   const flow = dummyFlows.find((f) => f.id === flowId)
