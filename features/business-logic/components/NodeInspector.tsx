@@ -716,6 +716,45 @@ const NodeInspector = React.memo(function NodeInspector({
           Reset to 0
         </button>
 
+        {/* Auto Counter Controls */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id={`inspector-auto-count-${node.id}`}
+              checked={Boolean(node.data.autoCount)}
+              onChange={(e) => updateNodeData(node.id, { autoCount: e.target.checked })}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+            />
+            <label htmlFor={`inspector-auto-count-${node.id}`} className="text-xs cursor-pointer">
+              Auto Count
+            </label>
+            {Boolean(node.data.autoCount) && (
+              <span className="text-xs text-green-600 dark:text-green-400">● Active</span>
+            )}
+          </div>
+          
+          <label className="block text-xs">
+            <div className="flex flex-row gap-2">
+              <span className="py-1">Speed (ms):</span>
+              <input
+                type="number"
+                min="100"
+                step="100"
+                className="w-full rounded border px-1 py-1 text-xs"
+                value={typeof node.data.countSpeed === 'number' ? node.data.countSpeed : 1000}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value)
+                  if (!isNaN(value) && value > 0) {
+                    updateNodeData(node.id, { countSpeed: value })
+                  }
+                }}
+                placeholder="1000"
+              />
+            </div>
+          </label>
+        </div>
+
         {/* Status Display */}
         <div className="text-xs space-y-1">
           <div className="flex items-center gap-2">
@@ -730,6 +769,14 @@ const NodeInspector = React.memo(function NodeInspector({
               {typeof node.data.multiplier === 'number' ? node.data.multiplier : 1}
             </span>
           </div>
+          {Boolean(node.data.autoCount) && (
+            <div className="flex items-center gap-2">
+              <span>Auto Speed:</span>
+              <span className="font-mono font-bold text-purple-600 dark:text-purple-400">
+                {typeof node.data.countSpeed === 'number' ? node.data.countSpeed : 1000}ms
+              </span>
+            </div>
+          )}
         </div>
       </div>
     )

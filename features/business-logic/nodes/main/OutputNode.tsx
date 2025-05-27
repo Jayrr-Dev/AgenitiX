@@ -17,6 +17,7 @@ import {
   TextUppercaseNodeData,
 } from '../initialElements'
 import CustomHandle from '../../handles/CustomHandle'
+import { extractNodeValue, safeStringify } from '../utils/nodeUtils'
 
 /* -------------------------------------------------------------------------- */
 /*  OUTPUT NODE                                                               */
@@ -36,54 +37,69 @@ function OutputNode() {
   const nodesData = useNodesData<MyNode>(sourceIds)
 
   /* -------------------------------------------------------------- */
-  /*  3. Extract text content from connected nodes                   */
+  /*  3. Extract values from connected nodes using safe extraction   */
   /* -------------------------------------------------------------- */
-  const texts = nodesData
-    .map((node) => ({
-      type: node.type,
-      content: node.data?.text,
-      id: node.id
-    }));
+  const values = nodesData
+    .map((node) => {
+      const extractedValue = extractNodeValue(node.data)
+      return {
+        type: node.type,
+        content: extractedValue,
+        id: node.id
+      }
+    })
+    .filter(item => item.content !== undefined && item.content !== null);
 
   /* -------------------------------------------------------------- */
   /*  4. Render                                                     */
   /* -------------------------------------------------------------- */
   return (
     <div className="px-4 py-3 rounded-lg bg-amber-100 dark:bg-amber-900 shadow-sm border border-amber-200 dark:border-amber-800">
-      {/* INPUT HANDLE (left, string, id and dataType = 's') */}
+      {/* INPUT HANDLE (left, any type, id and dataType = 'x') */}
       <CustomHandle 
         type="target" 
         position={Position.Left}
-        id="s"
-        dataType="s"
+        id="x"
+        dataType="x"
       />
-      {/* Example for union: id="s|n" dataType="s" */}
-      {/* <CustomHandle type="target" position={Position.Left} id="s|n" dataType="s" /> */}
-      {/* Example for any: id="x" dataType="x" /> */}
-      {/* Example for custom: id="customType" dataType="customType" /> */}
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="text-sm font-semibold text-amber-900 dark:text-amber-100">Output</div>
           <div className="text-xs text-amber-600 dark:text-amber-400">
-            {texts.length} input{texts.length !== 1 ? 's' : ''}
+            {values.length} input{values.length !== 1 ? 's' : ''}
           </div>
         </div>
 
-        {texts.length ? (
+        {values.length ? (
           <div className="space-y-2">
-            {texts.map((item) => (
+            {values.map((item) => (
               <div 
                 key={item.id}
                 className={`text-sm font-mono break-all bg-white/50 dark:bg-black/20 rounded px-2 py-1`}
               >
-                {item.content !== undefined && item.content !== null ? String(item.content) : <span className="text-neutral-400 italic">No output</span>}
+                {(() => {
+                  const content = item.content;
+                  if (typeof content === 'string') return content;
+                  if (typeof content === 'number') {
+                    if (Number.isNaN(content)) return 'NaN';
+                    if (!Number.isFinite(content)) return content > 0 ? 'Infinity' : '-Infinity';
+                    return content.toString();
+                  }
+                  if (typeof content === 'boolean') return content ? 'true' : 'false';
+                  if (typeof content === 'bigint') return content.toString() + 'n';
+                  try {
+                    return safeStringify(content);
+                  } catch {
+                    return String(content);
+                  }
+                })()}
               </div>
             ))}
           </div>
         ) : (
           <div className="text-xs italic text-neutral-500">
-            Connect text or uppercase nodes
+            Connect any node with output
           </div>
         )}
       </div>

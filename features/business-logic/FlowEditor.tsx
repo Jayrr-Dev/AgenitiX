@@ -70,6 +70,7 @@ import ObjectEditorNode from './nodes/main/ObjectEditorNode';
 import ArrayEditorNode from './nodes/main/ArrayEditorNode';
 import CounterNode from './nodes/main/CounterNode';
 import DelayNode from './nodes/main/DelayNode';
+import { extractNodeValue, safeStringify } from './nodes/utils/nodeUtils';
 
 /* -------  Custom edges --------------------------------------------------- */
 import CustomEdge from './edges/StraightPath';
@@ -220,37 +221,54 @@ export default function FlowEditor() {
     allNodes: AgenNode[],
     allEdges: AgenEdge[]
   ): string | null => {
-    if (node.type === 'textNode')          return node.data.text;
-    if (node.type === 'uppercaseNode')     return node.data.text;
-    if (node.type === 'triggerOnClick')    return node.data.triggered ? 'Triggered' : 'Not Triggered';
-    if (node.type === 'counterNode')      return node.data.count.toString();
-    if (node.type === 'delayNode')         return (typeof node.data.text === 'string' ? node.data.text : null) || (node.data.outputValue ? String(node.data.outputValue) : null);
+    // Use extractNodeValue for consistent value extraction
+    const extractedValue = extractNodeValue(node.data);
+    
     if (node.type === 'output') {
       const incoming = allEdges
         .filter((e) => e.target === node.id)
         .map((e) => allNodes.find((n) => n.id === e.source))
         .filter(Boolean) as AgenNode[];
   
-      const texts = incoming.map((n) => {
-        if (n.type === 'textNode') {
-          return {
-            type: 'text',
-            content: n.data.text
-          };
-        } else if (n.type === 'uppercaseNode') {
-          return {
-            type: 'uppercase',
-            content: n.data.text
-          };
-        }
-        return null;
-      }).filter((item): item is { type: 'text' | 'uppercase', content: string } => 
-        item !== null && Boolean(item.content)
-      );
+      const values = incoming.map((n) => {
+        const value = extractNodeValue(n.data);
+        return value !== undefined && value !== null ? value : null;
+      }).filter(value => value !== null);
   
-      return texts.map(t => t.content).join(', ');
+      return values.map(value => {
+        if (typeof value === 'string') return value;
+        if (typeof value === 'number') {
+          if (Number.isNaN(value)) return 'NaN';
+          if (!Number.isFinite(value)) return value > 0 ? 'Infinity' : '-Infinity';
+          return value.toString();
+        }
+        if (typeof value === 'boolean') return value ? 'true' : 'false';
+        if (typeof value === 'bigint') return value.toString() + 'n';
+        try {
+          return safeStringify(value);
+        } catch {
+          return String(value);
+        }
+      }).join(', ');
     }
-    return null;
+    
+    // For all other node types, format the extracted value
+    if (extractedValue === undefined || extractedValue === null) return null;
+    
+    if (typeof extractedValue === 'string') return extractedValue;
+    if (typeof extractedValue === 'number') {
+      if (Number.isNaN(extractedValue)) return 'NaN';
+      if (!Number.isFinite(extractedValue)) return extractedValue > 0 ? 'Infinity' : '-Infinity';
+      return extractedValue.toString();
+    }
+    if (typeof extractedValue === 'boolean') return extractedValue ? 'true' : 'false';
+    if (typeof extractedValue === 'bigint') return extractedValue.toString() + 'n';
+    
+    try {
+      return safeStringify(extractedValue);
+    } catch {
+      return String(extractedValue);
+    }
   };
   const selectedOutput = selectedNode
     ? getNodeOutput( selectedNode, nodes, edges)

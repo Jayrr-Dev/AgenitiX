@@ -9,6 +9,8 @@ interface CounterNodeData {
   count: number
   multiplier: number
   lastInputValues?: Record<string, unknown> // Track multiple inputs by node ID
+  autoCount?: boolean // Auto counting enabled/disabled
+  countSpeed?: number // Speed in milliseconds between counts
 }
 
 // UTILITY FUNCTIONS (outside component to prevent recreation)
@@ -135,6 +137,9 @@ const CounterNode: React.FC<NodeProps<Node<CounterNodeData & Record<string, unkn
   const [multiplier, setMultiplier] = useState(data.multiplier ?? 1)
   const [showUI, setShowUI] = useState(false)
   const [localMultiplierInput, setLocalMultiplierInput] = useState(multiplier.toString())
+  const [autoCount, setAutoCount] = useState(data.autoCount ?? false)
+  const [countSpeed, setCountSpeed] = useState(data.countSpeed ?? 1000) // Default 1 second
+  const [localSpeedInput, setLocalSpeedInput] = useState(countSpeed.toString())
   
   // REFS FOR TRACKING CHANGES (with cleanup)
   const prevInputValues = useRef<Record<string, unknown>>(data.lastInputValues ?? {})
@@ -142,15 +147,23 @@ const CounterNode: React.FC<NodeProps<Node<CounterNodeData & Record<string, unkn
   const lastSyncedCount = useRef(data.count ?? 0)
   const lastSyncedMultiplier = useRef(data.multiplier ?? 1)
   const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const autoCountIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // CLEANUP: Clear timeout on unmount
+  // CLEANUP: Clear timeouts and intervals on unmount
   useEffect(() => {
     return () => {
       if (updateTimeoutRef.current) {
         clearTimeout(updateTimeoutRef.current)
       }
+      if (autoCountIntervalRef.current) {
+        clearInterval(autoCountIntervalRef.current)
+      }
     }
   }, [])
+
+  // REFS FOR TRACKING SYNCED VALUES
+  const lastSyncedAutoCount = useRef(data.autoCount ?? false)
+  const lastSyncedCountSpeed = useRef(data.countSpeed ?? 1000)
 
   // OPTIMIZED: Consolidated sync effect to reduce re-renders
   useEffect(() => {
@@ -170,7 +183,21 @@ const CounterNode: React.FC<NodeProps<Node<CounterNodeData & Record<string, unkn
       lastSyncedMultiplier.current = data.multiplier
       hasChanges = true
     }
-  }, [data.count, data.multiplier, count, multiplier])
+    
+    // Sync auto count settings - only if they're different from what we last synced
+    if (typeof data.autoCount === 'boolean' && data.autoCount !== autoCount && data.autoCount !== lastSyncedAutoCount.current) {
+      setAutoCount(data.autoCount)
+      lastSyncedAutoCount.current = data.autoCount
+      hasChanges = true
+    }
+    
+    if (typeof data.countSpeed === 'number' && data.countSpeed !== countSpeed && data.countSpeed !== lastSyncedCountSpeed.current) {
+      setCountSpeed(data.countSpeed)
+      setLocalSpeedInput(data.countSpeed.toString())
+      lastSyncedCountSpeed.current = data.countSpeed
+      hasChanges = true
+    }
+  }, [data.count, data.multiplier, data.autoCount, data.countSpeed, count, multiplier, autoCount, countSpeed])
 
   // OPTIMIZED: Debounced input change detection with memory cleanup
   useEffect(() => {
@@ -218,6 +245,30 @@ const CounterNode: React.FC<NodeProps<Node<CounterNodeData & Record<string, unkn
     }
   }, [currentInputValues, multiplier, inputConnections.length])
 
+  // AUTO COUNTER EFFECT
+  useEffect(() => {
+    // Clear existing interval
+    if (autoCountIntervalRef.current) {
+      clearInterval(autoCountIntervalRef.current)
+      autoCountIntervalRef.current = null
+    }
+
+    // Start new interval if auto count is enabled
+    if (autoCount && countSpeed > 0) {
+      autoCountIntervalRef.current = setInterval(() => {
+        setCount(prev => prev + multiplier)
+      }, countSpeed)
+    }
+
+    // Cleanup function
+    return () => {
+      if (autoCountIntervalRef.current) {
+        clearInterval(autoCountIntervalRef.current)
+        autoCountIntervalRef.current = null
+      }
+    }
+  }, [autoCount, countSpeed, multiplier])
+
   // MANUAL CONTROL HANDLERS (memoized to prevent re-renders)
   const handleCountUp = useCallback(() => {
     setCount(prev => prev + multiplier)
@@ -252,6 +303,31 @@ const CounterNode: React.FC<NodeProps<Node<CounterNodeData & Record<string, unkn
     }
   }, [commitMultiplierInput])
 
+  // AUTO COUNT HANDLERS (memoized)
+  const handleAutoCountToggle = useCallback(() => {
+    setAutoCount(prev => !prev)
+  }, [])
+
+  const handleSpeedInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalSpeedInput(e.target.value)
+  }, [])
+
+  const commitSpeedInput = useCallback(() => {
+    const value = parseInt(localSpeedInput)
+    if (!isNaN(value) && value > 0) {
+      setCountSpeed(value)
+      setLocalSpeedInput(value.toString())
+    } else {
+      setLocalSpeedInput(countSpeed.toString())
+    }
+  }, [localSpeedInput, countSpeed])
+
+  const handleSpeedKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      commitSpeedInput()
+    }
+  }, [commitSpeedInput])
+
   // OPTIMIZED: Debounced sync with proper cleanup
   useEffect(() => {
     // Clear previous timeout
@@ -263,11 +339,15 @@ const CounterNode: React.FC<NodeProps<Node<CounterNodeData & Record<string, unkn
       updateNodeData(id, { 
         count, 
         multiplier, 
+        autoCount,
+        countSpeed,
         lastInputValues: prevInputValues.current // Use ref value to avoid stale closures
       })
       // Update tracking refs to prevent circular updates
       lastSyncedCount.current = count
       lastSyncedMultiplier.current = multiplier
+      lastSyncedAutoCount.current = autoCount
+      lastSyncedCountSpeed.current = countSpeed
     }, 16) // 16ms debounce (one frame) for better performance
     
     return () => {
@@ -275,7 +355,7 @@ const CounterNode: React.FC<NodeProps<Node<CounterNodeData & Record<string, unkn
         clearTimeout(updateTimeoutRef.current)
       }
     }
-  }, [count, multiplier, updateNodeData, id])
+  }, [count, multiplier, autoCount, countSpeed, updateNodeData, id])
 
   // RENDER
   return (
@@ -303,6 +383,11 @@ const CounterNode: React.FC<NodeProps<Node<CounterNodeData & Record<string, unkn
           <div className="text-xs text-blue-600 dark:text-blue-400">
             Counter
           </div>
+          {autoCount && (
+            <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+              ● Auto
+            </div>
+          )}
         </div>
       )}
 
@@ -335,6 +420,45 @@ const CounterNode: React.FC<NodeProps<Node<CounterNodeData & Record<string, unkn
               onBlur={commitMultiplierInput}
               onKeyDown={handleMultiplierKeyDown}
             />
+          </div>
+
+          {/* AUTO COUNTER CONTROLS */}
+          <div className="flex flex-col gap-2 mb-3 w-full">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id={`auto-count-${id}`}
+                checked={autoCount}
+                onChange={handleAutoCountToggle}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+              />
+              <label htmlFor={`auto-count-${id}`} className="text-xs text-blue-700 dark:text-blue-300 cursor-pointer">
+                Auto Count
+              </label>
+              {autoCount && (
+                <span className="text-xs text-green-600 dark:text-green-400">● Active</span>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-blue-700 dark:text-blue-300">
+                Speed (ms):
+              </label>
+              <input
+                type="number"
+                min="100"
+                step="100"
+                className="flex-1 px-2 py-1 text-xs rounded border border-blue-300 dark:border-blue-700 bg-white dark:bg-gray-800"
+                value={localSpeedInput}
+                onChange={handleSpeedInputChange}
+                onBlur={commitSpeedInput}
+                onKeyDown={handleSpeedKeyDown}
+                placeholder="1000"
+              />
+              {!autoCount && (
+                <span className="text-xs text-gray-500 dark:text-gray-400">(ready)</span>
+              )}
+            </div>
           </div>
 
           {/* CONTROL BUTTONS */}

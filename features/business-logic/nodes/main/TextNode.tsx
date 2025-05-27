@@ -16,7 +16,7 @@ import { getSingleInputValue, isTruthyValue } from '../utils/nodeUtils'
 
 function TextNode({ id, data }: NodeProps<Node<TextNodeData & Record<string, unknown>>>) {
   const { updateNodeData } = useReactFlow()
-  const [showUI, setShowUI] = useState(true) // Start expanded for text editing
+  const [showUI, setShowUI] = useState(false) // Start collapsed as icon
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // --- TRIGGER HANDLE LOGIC ---
