@@ -4,10 +4,10 @@ import { dummyFlows } from '@/features/business-logic/data'
 import FlowEditor from '@/features/business-logic/FlowEditor'
 
 // TYPES
-interface FlowPageProps {
-  params: {
+type PageProps = {
+  params: Promise<{
     flowId: string
-  }
+  }>
   searchParams: { [key: string]: string | string[] | undefined }
 }
 
@@ -16,8 +16,8 @@ interface FlowPageProps {
  * @param params - Contains the flowId from the URL
  * @param searchParams - Contains any query parameters
  */
-export default function FlowPage({ params }: FlowPageProps) {
-  const { flowId } = params
+export default async function FlowPage({ params }: PageProps) {
+  const { flowId } = await params
 
   // find in our dummy array
   const flow = dummyFlows.find((f) => f.id === flowId)
