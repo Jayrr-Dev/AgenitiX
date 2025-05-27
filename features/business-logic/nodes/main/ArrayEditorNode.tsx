@@ -39,9 +39,11 @@ const ArrayEditorField: React.FC<ArrayEditorFieldProps> = ({ path, value, onChan
                 />
                 <button
                   type="button"
-                  className="text-xs text-red-500 px-1"
+                  className="text-xs text-red-500 px-1 hover:bg-red-100 dark:hover:bg-red-900 rounded"
                   title="Remove item"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     const arr = [...value];
                     arr.splice(idx, 1);
                     onChange(path, arr);
@@ -54,9 +56,11 @@ const ArrayEditorField: React.FC<ArrayEditorFieldProps> = ({ path, value, onChan
           ))}
           <button
             type="button"
-            className="text-xs text-blue-600 px-1 mt-1 border border-blue-400 rounded"
+            className="text-xs text-blue-600 px-1 mt-1 border border-blue-400 rounded hover:bg-blue-100 dark:hover:bg-blue-900"
             title="Add item"
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               const newItem = isObjectArray ? {} : '';
               onChange(path, [...value, newItem]);
             }}
@@ -143,26 +147,36 @@ const ArrayEditorNode: React.FC<NodeProps<Node<ArrayEditorNodeData & Record<stri
   // Handler for editing values (deep update, supports arrays/objects)
   const handleChange = (path: string[], value: unknown) => {
     setLocalArr((prev) => {
+      // Handle root array case (empty path)
+      if (path.length === 0) {
+        return Array.isArray(value) ? [...value] : prev;
+      }
+
       const clone = JSON.parse(JSON.stringify(prev));
       let curr: any = clone;
+      
+      // Navigate to the parent of the target
       for (let i = 0; i < path.length - 1; i++) {
         const key = path[i];
-        const nextKey = path[i + 1];
         if (Array.isArray(curr)) {
           curr = curr[Number(key)];
         } else {
+          const nextKey = path[i + 1];
           if (typeof curr[key] !== 'object' || curr[key] === null) {
             curr[key] = !isNaN(Number(nextKey)) ? [] : {};
           }
           curr = curr[key];
         }
       }
+      
+      // Set the final value
       const lastKey = path[path.length - 1];
       if (Array.isArray(curr) && !isNaN(Number(lastKey))) {
         curr[Number(lastKey)] = value;
       } else {
         curr[lastKey] = value;
       }
+      
       return clone;
     });
   };

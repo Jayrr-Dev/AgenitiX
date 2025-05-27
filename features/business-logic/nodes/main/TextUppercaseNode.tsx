@@ -17,11 +17,7 @@ import {
   type Node,
 } from '@xyflow/react'
 
-import {
-  MyNode,
-  TextNodeData,
-  isTextNode,
-} from '../initialElements'
+import type { AgenNode } from '../../FlowEditor'
 
 import CustomHandle from '../../handles/CustomHandle'
 
@@ -41,15 +37,27 @@ function TextUppercaseNode({ id, data }: NodeProps<Node<TextUppercaseNodeData & 
   /* -------------------------------------------------------------- */
   /* 2️⃣  Subscribe to all connected source nodes                    */
   /* -------------------------------------------------------------- */
-  const nodesData = useNodesData<MyNode>(sourceIds)
+  const nodesData = useNodesData<AgenNode>(sourceIds)
 
   /* -------------------------------------------------------------- */
   /* 3️⃣  Derive the transformed text                                */
   /* -------------------------------------------------------------- */
   const transformed = useMemo(() => {
-    // Accept any connected node with a text property
+    // Accept any connected node with a text property or DelayNode with outputValue
     const texts = nodesData
-      .map((n) => n.data?.text)
+      .map((n) => {
+        // Handle DelayNode specifically
+        if (n.type === 'delayNode') {
+          // Check text property first (for string outputs), then outputValue
+          if (typeof n.data?.text === 'string') {
+            return n.data.text
+          }
+          const output = n.data?.outputValue
+          return typeof output === 'string' ? output : null
+        }
+        // Handle other nodes with text property
+        return n.data?.text
+      })
       .filter((text): text is string => Boolean(text))
 
     // If no valid text nodes are connected, return empty string

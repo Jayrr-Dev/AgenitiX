@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { Position, useNodeConnections, useNodesData, useReactFlow, type NodeProps, type Node } from '@xyflow/react';
 import CustomHandle from '../../handles/CustomHandle';
+import { getSingleInputValue, safeStringify } from '../utils/nodeUtils';
 
 // ---------------------- TYPES ----------------------
 interface TextConverterNodeData {
@@ -16,26 +17,16 @@ const TextConverterNode: React.FC<NodeProps<Node<TextConverterNodeData & Record<
   const inputConn = connections.find(c => c.targetHandle === 'x');
   const inputNodeId = inputConn?.source;
   const inputNodesData = useNodesData(inputNodeId ? [inputNodeId] : []);
-  // Try to get a value from common data keys
-  const inputValue = inputNodesData.length > 0
-    ? (
-        inputNodesData[0].data?.value !== undefined
-          ? inputNodesData[0].data?.value
-          : (inputNodesData[0].data?.text !== undefined
-              ? inputNodesData[0].data?.text
-              : inputNodesData[0].data?.triggered)
-      )
-    : undefined;
+  
+  // Extract input value using safe utility
+  const inputValue = getSingleInputValue(inputNodesData);
 
-  // Convert any input to string (stringify objects/arrays)
+  // Convert any input to string with safe serialization
   let stringValue = '';
   if (inputValue !== undefined) {
     if (typeof inputValue === 'object' && inputValue !== null) {
-      try {
-        stringValue = JSON.stringify(inputValue);
-      } catch {
-        stringValue = '[object]';
-      }
+      stringValue = safeStringify(inputValue);
+      if (stringValue === 'null') stringValue = '[object]';
     } else {
       stringValue = String(inputValue);
     }

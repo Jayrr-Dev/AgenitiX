@@ -146,6 +146,31 @@ const TriggerOnPulseCycle: React.FC<NodeProps<Node<TriggerOnPulseCycleData & Rec
   useEffect(() => { setCycleDurationInput(cycleDuration.toString()) }, [cycleDuration])
   useEffect(() => { setPulseDurationInput(pulseDuration.toString()) }, [pulseDuration])
 
+  // Sync local state with data changes from NodeInspector
+  useEffect(() => {
+    if (data.infinite !== undefined && data.infinite !== infinite) {
+      setInfinite(data.infinite)
+    }
+  }, [data.infinite, infinite])
+
+  useEffect(() => {
+    if (data.initialState !== undefined && data.initialState !== initialState) {
+      setInitialState(data.initialState)
+    }
+  }, [data.initialState, initialState])
+
+  useEffect(() => {
+    if (data.cycleDuration !== undefined && data.cycleDuration !== cycleDuration) {
+      setCycleDuration(data.cycleDuration)
+    }
+  }, [data.cycleDuration, cycleDuration])
+
+  useEffect(() => {
+    if (data.pulseDuration !== undefined && data.pulseDuration !== pulseDuration) {
+      setPulseDuration(data.pulseDuration)
+    }
+  }, [data.pulseDuration, pulseDuration])
+
   // Handlers
   const handleToggle = () => {
     if (!hasExternalTrigger) {

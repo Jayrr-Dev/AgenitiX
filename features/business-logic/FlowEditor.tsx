@@ -44,6 +44,10 @@ import { toast } from 'sonner';
 import Sidebar   from './components/Sidebar';
 import DebugTool from './components/DebugTool';
 import NodeInspector from './components/NodeInspector';
+import UndoRedoManager, { ActionHistoryEntry, ActionType } from './components/UndoRedoManager';
+import HistoryPanel from './components/HistoryPanel';
+import UndoRedoToolbar from './components/UndoRedoToolbar';
+import { UndoRedoProvider } from './components/UndoRedoContext';
 /* -------  Custom nodes --------------------------------------------------- */
 import TextNode        from './nodes/main/TextNode';
 import TextUppercaseNode   from './nodes/main/TextUppercaseNode';
@@ -56,12 +60,16 @@ import TriggerOnToggleCycle from './nodes/main/TriggerOnToggleCycle';
 import LogicAnd from './nodes/main/LogicAnd';
 import LogicOr from './nodes/main/LogicOr';
 import LogicNot from './nodes/main/LogicNot'
+import LogicXor from './nodes/main/LogicXor'
+import LogicXnor from './nodes/main/LogicXnor'
 import { parseTypes } from './handles/CustomHandle'; // Reuse parseTypes for type logic
 import TextConverterNode from './nodes/main/TextConverterNode';
 import BooleanConverterNode from './nodes/main/BooleanConverterNode';
 import InputTesterNode from './nodes/main/InputTesterNode';
 import ObjectEditorNode from './nodes/main/ObjectEditorNode';
 import ArrayEditorNode from './nodes/main/ArrayEditorNode';
+import CounterNode from './nodes/main/CounterNode';
+import DelayNode from './nodes/main/DelayNode';
 
 /* -------  Custom edges --------------------------------------------------- */
 import CustomEdge from './edges/StraightPath';
@@ -98,11 +106,15 @@ interface LogicOrData { value: boolean; inputCount?: number }
 interface LogicNotData {
   value: boolean;
 }
+interface LogicXorData { value: boolean }
+interface LogicXnorData { value: boolean }
 interface TextConverterNodeData { value?: unknown }
 interface BooleanConverterNodeData { value?: unknown; triggered?: boolean }
 interface InputTesterNodeData { value?: unknown }
 interface ObjectEditorNodeData { value?: Record<string, unknown> }
 interface ArrayEditorNodeData { value?: unknown[] }
+interface CounterNodeData { count: number; multiplier: number; lastInputValues?: Record<string, unknown> }
+interface DelayNodeData { delay: number; lastInputValue?: unknown; isProcessing?: boolean; outputValue?: unknown; queueLength?: number; queueItems?: unknown[] }
 
 export type AgenNode =
   | (Node<TextNodeData        & Record<string, unknown>> & { type: 'textNode' })
@@ -116,11 +128,15 @@ export type AgenNode =
   | (Node<LogicAndData & Record<string, unknown>> & { type: 'logicAnd' })
   | (Node<LogicOrData & Record<string, unknown>> & { type: 'logicOr' })
   | (Node<LogicNotData & Record<string, unknown>> & { type: 'logicNot' })
+  | (Node<LogicXorData & Record<string, unknown>> & { type: 'logicXor' })
+  | (Node<LogicXnorData & Record<string, unknown>> & { type: 'logicXnor' })
   | (Node<TextConverterNodeData & Record<string, unknown>> & { type: 'textConverterNode' })
   | (Node<BooleanConverterNodeData & Record<string, unknown>> & { type: 'booleanConverterNode' })
   | (Node<InputTesterNodeData & Record<string, unknown>> & { type: 'inputTesterNode' })
   | (Node<ObjectEditorNodeData & Record<string, unknown>> & { type: 'objectEditorNode' })
-  | (Node<ArrayEditorNodeData & Record<string, unknown>> & { type: 'arrayEditorNode' });
+  | (Node<ArrayEditorNodeData & Record<string, unknown>> & { type: 'arrayEditorNode' })
+  | (Node<CounterNodeData & Record<string, unknown>> & { type: 'counterNode' })
+  | (Node<DelayNodeData & Record<string, unknown>> & { type: 'delayNode' });
 
 export type AgenEdge = Edge & {
   sourceHandle?: string | null;
@@ -182,6 +198,19 @@ export default function FlowEditor() {
   const [copiedNodes, setCopiedNodes] = useState<AgenNode[]>([]);
   const [copiedEdges, setCopiedEdges] = useState<AgenEdge[]>([]);
 
+  // --- ERROR LOGGING STATE ---
+  const [nodeErrors, setNodeErrors] = useState<Record<string, Array<{
+    timestamp: number;
+    message: string;
+    type: 'error' | 'warning' | 'info';
+    source?: string;
+  }>>>({});
+
+  // --- UNDO/REDO STATE ---
+  const [actionHistory, setActionHistory] = useState<ActionHistoryEntry[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+
   const selectedNode = useMemo(
     () => (selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) ?? null : null),
     [nodes, selectedNodeId]
@@ -194,6 +223,8 @@ export default function FlowEditor() {
     if (node.type === 'textNode')          return node.data.text;
     if (node.type === 'uppercaseNode')     return node.data.text;
     if (node.type === 'triggerOnClick')    return node.data.triggered ? 'Triggered' : 'Not Triggered';
+    if (node.type === 'counterNode')      return node.data.count.toString();
+    if (node.type === 'delayNode')         return (typeof node.data.text === 'string' ? node.data.text : null) || (node.data.outputValue ? String(node.data.outputValue) : null);
     if (node.type === 'output') {
       const incoming = allEdges
         .filter((e) => e.target === node.id)
@@ -224,6 +255,68 @@ export default function FlowEditor() {
   const selectedOutput = selectedNode
     ? getNodeOutput( selectedNode, nodes, edges)
     : null;
+
+  /* ------------- ERROR LOGGING FUNCTIONS ------------------------------- */
+  const logNodeError = useCallback((nodeId: string, message: string, type: 'error' | 'warning' | 'info' = 'error', source?: string) => {
+    const errorEntry = {
+      timestamp: Date.now(),
+      message,
+      type,
+      source
+    };
+    
+    setNodeErrors(prev => ({
+      ...prev,
+      [nodeId]: [...(prev[nodeId] || []), errorEntry].slice(-10) // Keep last 10 errors per node
+    }));
+  }, []);
+
+  const clearNodeErrors = useCallback((nodeId: string) => {
+    setNodeErrors(prev => ({
+      ...prev,
+      [nodeId]: []
+    }));
+  }, []);
+
+  // Console capture for error logging (selective to avoid React internals)
+  useEffect(() => {
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    console.error = (...args) => {
+      originalError(...args);
+      
+      // Only log user errors, not React internal errors
+      const message = args.join(' ');
+      const isReactInternal = message.includes('React') || 
+                             message.includes('static flag') || 
+                             message.includes('Expected') ||
+                             message.includes('Internal React error');
+      
+      if (selectedNodeId && !isReactInternal) {
+        logNodeError(selectedNodeId, message, 'error', 'console.error');
+      }
+    };
+
+    console.warn = (...args) => {
+      originalWarn(...args);
+      
+      // Only log user warnings, not React internal warnings
+      const message = args.join(' ');
+      const isReactInternal = message.includes('React') || 
+                             message.includes('Warning:') ||
+                             message.includes('validateDOMNesting');
+      
+      if (selectedNodeId && !isReactInternal) {
+        logNodeError(selectedNodeId, message, 'warning', 'console.warn');
+      }
+    };
+
+    return () => {
+      console.error = originalError;
+      console.warn = originalWarn;
+    };
+  }, [selectedNodeId, logNodeError]);
 
   /* ------------- CALLBACKS – generic RF handlers ------------------------ */
   const onReconnectStart = useCallback(() => {
@@ -256,6 +349,20 @@ export default function FlowEditor() {
       setEdges((eds) => applyEdgeChanges(changes, eds) as AgenEdge[]),
     []
   );
+
+  // UNDO/REDO HANDLERS
+  const handleHistoryChange = useCallback((history: ActionHistoryEntry[], currentIndex: number) => {
+    setActionHistory(history);
+    setHistoryIndex(currentIndex);
+  }, []);
+
+  const handleNodesChangeWithHistory = useCallback((newNodes: Node[]) => {
+    setNodes(newNodes as AgenNode[]);
+  }, []);
+
+  const handleEdgesChangeWithHistory = useCallback((newEdges: Edge[]) => {
+    setEdges(newEdges as AgenEdge[]);
+  }, []);
 
   const onConnect: OnConnect = useCallback(
     (connection: Connection) => {
@@ -324,11 +431,15 @@ export default function FlowEditor() {
       logicAnd: LogicAnd,
       logicOr: LogicOr,
       logicNot: LogicNot,
+      logicXor: LogicXor,
+      logicXnor: LogicXnor,
       textConverterNode: TextConverterNode,
       booleanConverterNode: BooleanConverterNode,
       inputTesterNode: InputTesterNode,
       objectEditorNode: ObjectEditorNode,
       arrayEditorNode: ArrayEditorNode,
+      counterNode: CounterNode,
+      delayNode: DelayNode,
     }),
     []
   );
@@ -363,17 +474,21 @@ export default function FlowEditor() {
         type === 'uppercaseNode' ? { text: '' } :
         type === 'triggerOnClick' ? { triggered: false } :
         type === 'triggerOnPulse' ? { triggered: false } :
-        type === 'triggerOnPulseCycle' ? { triggered: false } :
+        type === 'triggerOnPulseCycle' ? { triggered: false, initialState: false, cycleDuration: 2000, pulseDuration: 500, infinite: true } :
         type === 'triggerOnToggle' ? { triggered: false } :
         type === 'triggerOnToggleCycle' ? { triggered: false, initialState: false, onDuration: 4000, offDuration: 4000, infinite: true } :
         type === 'logicAnd' ? { value: false, inputCount: 2 } :
         type === 'logicOr' ? { value: false, inputCount: 2 } :
         type === 'logicNot' ? { value: false } :
+        type === 'logicXor' ? { value: false } :
+        type === 'logicXnor' ? { value: false } :
         type === 'textConverterNode' ? { value: '' } :
         type === 'booleanConverterNode' ? { value: '', triggered: false } :
         type === 'inputTesterNode' ? { value: undefined } :
         type === 'objectEditorNode' ? { value: {} } :
         type === 'arrayEditorNode' ? { value: [] } :
+        type === 'counterNode' ? { count: 0, multiplier: 1 } :
+        type === 'delayNode' ? { delay: 1000, isProcessing: false } :
                                    { label: `${type} node` },
       ...(type === 'output' ? { targetPosition: Position.Top } : {}),
     } as AgenNode;
@@ -386,6 +501,13 @@ export default function FlowEditor() {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const ctrl = isMac ? e.metaKey : e.ctrlKey;
+      // --- TOGGLE HISTORY PANEL ---
+      if (ctrl && e.key.toLowerCase() === 'h') {
+        setShowHistoryPanel(prev => !prev);
+        e.preventDefault();
+        return;
+      }
+      
       // --- COPY ---
       if (ctrl && e.key.toLowerCase() === 'c') {
         const selected = nodes.filter(n => n.selected);
@@ -457,6 +579,23 @@ export default function FlowEditor() {
             };
           } else if (n.type === 'logicNot') {
             newData = { value: (n.data as any).value ?? false };
+          } else if (n.type === 'logicXor') {
+            newData = { value: (n.data as any).value ?? false };
+          } else if (n.type === 'logicXnor') {
+            newData = { value: (n.data as any).value ?? false };
+          } else if (n.type === 'counterNode') {
+            newData = {
+              count: (n.data as any).count ?? 0,
+              multiplier: (n.data as any).multiplier ?? 1,
+              lastInputValues: (n.data as any).lastInputValues,
+            };
+          } else if (n.type === 'delayNode') {
+            newData = {
+              delay: (n.data as any).delay ?? 1000,
+              isProcessing: false, // Reset processing state on copy
+              outputValue: (n.data as any).outputValue,
+              lastInputValue: (n.data as any).lastInputValue,
+            };
           }
           return {
             ...n,
@@ -494,10 +633,13 @@ export default function FlowEditor() {
 
   /* ------------- RENDER ------------------------------------------------- */
   return (
-    <ReactFlowProvider>
-      <div className="flex h-full w-full">
+    <UndoRedoProvider>
+      <ReactFlowProvider>
+        <div className="flex h-full w-full">
         <Sidebar />
         <DebugTool />
+
+
 
         <div
           ref={wrapperRef}
@@ -527,22 +669,61 @@ export default function FlowEditor() {
           >
             <Panel
               position="bottom-center"
-              className="rounded bg-white/90 dark:bg-zinc-800/90 p-4 shadow max-w-xs"
+              className="rounded bg-white/90 dark:bg-zinc-800/90 p-4 shadow max-w-4xl max-h-[225px] overflow-y-auto scrollbar *:scrollbar-thumb-gray-400 *:scrollbar-track-transparent *:scrollbar-arrow-hidden"
             >
-              {selectedNode && (
-                <NodeInspector 
-                  node={selectedNode} 
-                  updateNodeData={updateNodeData} 
-                  output={selectedOutput} 
-                />
-              )}
+              <NodeInspector 
+                node={selectedNode} 
+                updateNodeData={updateNodeData} 
+                output={selectedOutput}
+                errors={selectedNode ? nodeErrors[selectedNode.id] || [] : []}
+                onClearErrors={selectedNode ? () => clearNodeErrors(selectedNode.id) : undefined}
+                onLogError={logNodeError}
+              />
             </Panel>
             <MiniMap position="bottom-left" />
             <Controls position="top-left" showInteractive={false} />
             <Background gap={12} size={1} color="#aaa" />
+            
+            {/* UNDO/REDO TOOLBAR */}
+            <Panel position="top-right" className="m-2">
+              <UndoRedoToolbar
+                showHistoryPanel={showHistoryPanel}
+                onToggleHistory={() => setShowHistoryPanel(prev => !prev)}
+              />
+            </Panel>
+
+            {/* FLOATING HISTORY PANEL */}
+            {showHistoryPanel && (
+              <Panel position="top-right" className="mr-2" style={{ marginTop: '70px' }}>
+                <div className="w-80 max-h-96">
+                  <HistoryPanel
+                    history={actionHistory}
+                    currentIndex={historyIndex}
+                    className="shadow-lg"
+                  />
+                </div>
+              </Panel>
+            )}
           </ReactFlow>
+
+          {/* UNDO/REDO MANAGER */}
+          <UndoRedoManager
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={handleNodesChangeWithHistory}
+            onEdgesChange={handleEdgesChangeWithHistory}
+            onHistoryChange={handleHistoryChange}
+            config={{
+              maxHistorySize: 100,
+              debounceMs: 300,
+              enableViewportTracking: false,
+              enableAutoSave: true,
+              compressionThreshold: 50
+            }}
+          />
         </div>
       </div>
-    </ReactFlowProvider>
+      </ReactFlowProvider>
+    </UndoRedoProvider>
   );
 }

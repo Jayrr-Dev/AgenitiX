@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { Position, useNodeConnections, useNodesData, useReactFlow, type NodeProps, type Node } from '@xyflow/react';
 import CustomHandle from '../../handles/CustomHandle';
+import { getSingleInputValue, isTruthyValue } from '../utils/nodeUtils';
 
 // ---------------------- TYPES ----------------------
 interface BooleanConverterNodeData {
@@ -17,19 +18,12 @@ const BooleanConverterNode: React.FC<NodeProps<Node<BooleanConverterNodeData & R
   const inputConn = connections.find(c => c.targetHandle === 'x');
   const inputNodeId = inputConn?.source;
   const inputNodesData = useNodesData(inputNodeId ? [inputNodeId] : []);
-  // Try to get a value from common data keys
-  const inputValue = inputNodesData.length > 0
-    ? (
-        inputNodesData[0].data?.value !== undefined
-          ? inputNodesData[0].data?.value
-          : (inputNodesData[0].data?.text !== undefined
-              ? inputNodesData[0].data?.text
-              : inputNodesData[0].data?.triggered)
-      )
-    : undefined;
+  
+  // Extract input value using safe utility
+  const inputValue = getSingleInputValue(inputNodesData);
 
-  // Convert any input to boolean
-  const boolValue = Boolean(inputValue);
+  // Convert any input to boolean using safe truthy check
+  const boolValue = isTruthyValue(inputValue);
 
   // Update node data for downstream nodes (set both value and triggered)
   const { updateNodeData } = useReactFlow();

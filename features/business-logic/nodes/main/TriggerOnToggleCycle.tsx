@@ -142,6 +142,31 @@ const TriggerOnToggleCycle: React.FC<NodeProps<Node<TriggerOnToggleCycleData & R
   useEffect(() => { setOnDurationInput(onDuration.toString()) }, [onDuration])
   useEffect(() => { setOffDurationInput(offDuration.toString()) }, [offDuration])
 
+  // Sync local state with data changes from NodeInspector
+  useEffect(() => {
+    if (data.infinite !== undefined && data.infinite !== infinite) {
+      setInfinite(data.infinite)
+    }
+  }, [data.infinite, infinite])
+
+  useEffect(() => {
+    if (data.initialState !== undefined && data.initialState !== initialState) {
+      setInitialState(data.initialState)
+    }
+  }, [data.initialState, initialState])
+
+  useEffect(() => {
+    if (data.onDuration !== undefined && data.onDuration !== onDuration) {
+      setOnDuration(data.onDuration)
+    }
+  }, [data.onDuration, onDuration])
+
+  useEffect(() => {
+    if (data.offDuration !== undefined && data.offDuration !== offDuration) {
+      setOffDuration(data.offDuration)
+    }
+  }, [data.offDuration, offDuration])
+
   // Handlers
   const handleStartStop = () => {
     if (!hasExternalTrigger) {

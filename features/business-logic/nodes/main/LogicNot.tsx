@@ -6,6 +6,7 @@ import { Position, useNodeConnections, useNodesData, useReactFlow, type NodeProp
 import CustomHandle from '../../handles/CustomHandle'
 import { useStore } from '@xyflow/react'
 import IconForNot from '../node-icons/IconForNot'
+import { getSingleInputValue, isTruthyValue } from '../utils/nodeUtils'
 
 // -----------------------------------------------------------------------------
 // TYPES
@@ -24,10 +25,13 @@ const LogicNot: React.FC<NodeProps<Node<LogicNotData & Record<string, unknown>>>
   const boolInputConnections = connections.filter(c => c.targetHandle === 'b')
   const boolInputSourceId = boolInputConnections[0]?.source // Only use first connection
   const boolInputNodesData = useNodesData(boolInputSourceId ? [boolInputSourceId] : [])
-  // Input value: true if connected and input is true, else false
-  const inputValue = boolInputNodesData.length > 0 ? !!boolInputNodesData[0].data.triggered : false
+  
+  // Extract input value using safe utility
+  const inputValue = getSingleInputValue(boolInputNodesData)
+  const isTruthy = isTruthyValue(inputValue)
+  
   // Negate the input value
-  const negated = !inputValue
+  const negated = !isTruthy
 
   // Add showUI state
   const [showUI, setShowUI] = React.useState(false)
@@ -78,7 +82,7 @@ const LogicNot: React.FC<NodeProps<Node<LogicNotData & Record<string, unknown>>>
       {!showUI && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-16 h-16 flex items-center justify-center">
-            <IconForNot active={inputValue} />
+            <IconForNot active={isTruthy} />
           </div>
         </div>
       )}
