@@ -76,7 +76,8 @@ export default function FlowEditor() {
     edges: flowState.edges,
     setNodes: flowState.setNodes,
     setEdges: flowState.setEdges,
-    onSelectionChange: flowState.selectNode
+    onSelectionChange: flowState.selectNode,
+    onEdgeSelectionChange: flowState.selectEdge
   });
 
   // ============================================================================
@@ -98,6 +99,41 @@ export default function FlowEditor() {
     onPaste: flowState.pasteNodes,
     onToggleHistory: flowState.toggleHistoryPanel
   });
+
+  // ============================================================================
+  // NODE ACTIONS
+  // ============================================================================
+  
+  const handleDeleteNode = useCallback((nodeId: string) => {
+    flowState.removeNode(nodeId);
+    // Clear selection if the deleted node was selected
+    if (flowState.selectedNodeId === nodeId) {
+      flowState.clearSelection();
+    }
+  }, [flowState]);
+
+  const handleDuplicateNode = useCallback((nodeId: string) => {
+    const nodeToDuplicate = flowState.nodes.find(n => n.id === nodeId);
+    if (!nodeToDuplicate) return;
+
+    // Create a new node with a unique ID and offset position
+    const newId = `${nodeId}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const newNode = {
+      ...nodeToDuplicate,
+      id: newId,
+      position: { 
+        x: nodeToDuplicate.position.x + 40, 
+        y: nodeToDuplicate.position.y + 40 
+      },
+      selected: false,
+      data: { ...nodeToDuplicate.data }
+    } as AgenNode;
+
+    flowState.addNode(newNode);
+    
+    // Select the new duplicated node
+    flowState.selectNode(newId);
+  }, [flowState]);
 
   // ============================================================================
   // UNDO/REDO HANDLERS
@@ -182,6 +218,7 @@ export default function FlowEditor() {
             nodes={flowState.nodes}
             edges={flowState.edges}
             selectedNode={flowState.selectedNode}
+            selectedEdge={flowState.selectedEdge}
             selectedOutput={flowState.selectedOutput}
             nodeErrors={flowState.nodeErrors}
             showHistoryPanel={flowState.showHistoryPanel}
@@ -195,6 +232,9 @@ export default function FlowEditor() {
             onToggleHistory={flowState.toggleHistoryPanel}
             onDragOver={dragAndDrop.onDragOver}
             onDrop={dragAndDrop.onDrop}
+            onDeleteNode={handleDeleteNode}
+            onDuplicateNode={handleDuplicateNode}
+            onDeleteEdge={flowState.removeEdge}
             reactFlowHandlers={reactFlowHandlers}
           />
 

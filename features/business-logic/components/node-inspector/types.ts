@@ -1,8 +1,12 @@
-import type { AgenNode } from '../../FlowEditor';
+import type { AgenNode, AgenEdge } from '../../FlowEditor';
 
 export interface NodeInspectorProps {
   /** The currently selected node (or null if none) */
   node: AgenNode | null;
+  /** The currently selected edge (or null if none) */
+  selectedEdge: AgenEdge | null;
+  /** All nodes in the flow (needed for edge source/target info) */
+  allNodes: AgenNode[];
   /** Helper that mutates node.data; same fn you already have in FlowEditor */
   updateNodeData: (id: string, patch: Record<string, unknown>) => void;
   /** Computed output string (optional) */
@@ -15,6 +19,12 @@ export interface NodeInspectorProps {
   onLogError: (nodeId: string, message: string, type?: ErrorType, source?: string) => void;
   /** Function to update node ID (optional) */
   onUpdateNodeId?: (oldId: string, newId: string) => void;
+  /** Function to delete the current node (optional) */
+  onDeleteNode?: (nodeId: string) => void;
+  /** Function to duplicate the current node (optional) */
+  onDuplicateNode?: (nodeId: string) => void;
+  /** Function to delete the current edge (optional) */
+  onDeleteEdge?: (edgeId: string) => void;
 }
 
 export interface NodeError {

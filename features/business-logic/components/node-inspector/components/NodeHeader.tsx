@@ -6,9 +6,11 @@ import { useNodeDisplay } from '../../../flow-editor/contexts/NodeDisplayContext
 interface NodeHeaderProps {
   node: AgenNode;
   onUpdateNodeId?: (oldId: string, newId: string) => void;
+  onDeleteNode?: (nodeId: string) => void;
+  onDuplicateNode?: (nodeId: string) => void;
 }
 
-export const NodeHeader: React.FC<NodeHeaderProps> = ({ node, onUpdateNodeId }) => {
+export const NodeHeader: React.FC<NodeHeaderProps> = ({ node, onUpdateNodeId, onDeleteNode, onDuplicateNode }) => {
   const nodeConfig = NODE_TYPE_CONFIG[node.type];
   const [isEditingId, setIsEditingId] = useState(false);
   const [editingId, setEditingId] = useState(node.id);
@@ -105,15 +107,15 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({ node, onUpdateNodeId }) 
       </div>
       
       {/* Show Node IDs Setting */}
-      <div className="mt-2">
-        <label className="flex items-center gap-2 text-xs">
+      <div className="mt-0">
+        <label className="flex items-center gap-2 text-[10px]">
+          <span className="text-gray-500 dark:text-gray-400">Show Node IDs</span>
           <input
             type="checkbox"
             checked={showNodeIds}
             onChange={(e) => setShowNodeIds(e.target.checked)}
             className="w-3 h-3"
           />
-          <span className="text-gray-700 dark:text-gray-300">Show Node IDs</span>
         </label>
       </div>
     </div>

@@ -22,6 +22,7 @@ interface ReactFlowHandlersProps {
   setNodes: (nodes: AgenNode[] | ((prev: AgenNode[]) => AgenNode[])) => void;
   setEdges: (edges: AgenEdge[] | ((prev: AgenEdge[]) => AgenEdge[])) => void;
   onSelectionChange: (nodeId: string | null) => void;
+  onEdgeSelectionChange: (edgeId: string | null) => void;
 }
 
 export function useReactFlowHandlers({
@@ -29,7 +30,8 @@ export function useReactFlowHandlers({
   edges,
   setNodes,
   setEdges,
-  onSelectionChange
+  onSelectionChange,
+  onEdgeSelectionChange
 }: ReactFlowHandlersProps) {
   // ============================================================================
   // REFS
@@ -111,11 +113,18 @@ export function useReactFlowHandlers({
   // ============================================================================
   
   const onSelectionChangeHandler: OnSelectionChangeFunc<AgenNode, AgenEdge> = useCallback(
-    ({ nodes: selectedNodes }) => {
+    ({ nodes: selectedNodes, edges: selectedEdges }) => {
+      // Handle node selection first
       const nodeId = selectedNodes.length > 0 ? selectedNodes[0].id : null;
       onSelectionChange(nodeId);
+      
+      // Only handle edge selection if NO nodes are selected
+      if (selectedNodes.length === 0) {
+        const edgeId = selectedEdges.length > 0 ? selectedEdges[0].id : null;
+        onEdgeSelectionChange(edgeId);
+      }
     },
-    [onSelectionChange]
+    [onSelectionChange, onEdgeSelectionChange]
   );
 
   // ============================================================================

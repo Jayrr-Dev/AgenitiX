@@ -11,6 +11,7 @@ export function useFlowEditorState() {
   const [nodes, setNodes] = useState<AgenNode[]>(INITIAL_NODES);
   const [edges, setEdges] = useState<AgenEdge[]>(INITIAL_EDGES);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [copiedNodes, setCopiedNodes] = useState<AgenNode[]>([]);
   const [copiedEdges, setCopiedEdges] = useState<AgenEdge[]>([]);
   const [nodeErrors, setNodeErrors] = useState<Record<string, NodeError[]>>({});
@@ -21,8 +22,16 @@ export function useFlowEditorState() {
   // ============================================================================
   
   const selectedNode = useMemo(
-    () => (selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) ?? null : null),
+    () => {
+      const result = selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) ?? null : null;
+      return result;
+    },
     [nodes, selectedNodeId]
+  );
+
+  const selectedEdge = useMemo(
+    () => (selectedEdgeId ? edges.find((e) => e.id === selectedEdgeId) ?? null : null),
+    [edges, selectedEdgeId]
   );
 
   const selectedOutput = useMemo(
@@ -58,7 +67,6 @@ export function useFlowEditorState() {
     // Check if new ID already exists
     const existingNode = nodes.find(n => n.id === newId);
     if (existingNode) {
-      console.warn(`Node with ID "${newId}" already exists. ID change cancelled.`);
       return false;
     }
 
@@ -193,10 +201,20 @@ export function useFlowEditorState() {
   
   const selectNode = useCallback((nodeId: string | null) => {
     setSelectedNodeId(nodeId);
+    setSelectedEdgeId(null); // Clear edge selection when selecting a node
+  }, []);
+
+  const selectEdge = useCallback((edgeId: string | null) => {
+    setSelectedEdgeId(edgeId);
+    // Only clear node selection if we're actually selecting an edge
+    if (edgeId !== null) {
+      setSelectedNodeId(null); // Clear node selection when selecting an edge
+    }
   }, []);
 
   const clearSelection = useCallback(() => {
     setSelectedNodeId(null);
+    setSelectedEdgeId(null);
   }, []);
 
   // ============================================================================
@@ -216,7 +234,9 @@ export function useFlowEditorState() {
     nodes,
     edges,
     selectedNodeId,
+    selectedEdgeId,
     selectedNode,
+    selectedEdge,
     selectedOutput,
     copiedNodes,
     copiedEdges,
@@ -245,6 +265,7 @@ export function useFlowEditorState() {
     
     // Selection
     selectNode,
+    selectEdge,
     clearSelection,
     
     // History

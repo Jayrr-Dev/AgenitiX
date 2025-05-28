@@ -12,6 +12,13 @@ export function useInspectorState(node: AgenNode | null) {
   const isEditingCount = useRef(false);
   const isEditingMultiplier = useRef(false);
 
+  // Reset locked state when node changes
+  useEffect(() => {
+    if (node) {
+      setLocked(false); // Ensure inspector is unlocked when a node is selected
+    }
+  }, [node?.id]);
+
   // Sync states when node changes
   useEffect(() => {
     if (!node) return;

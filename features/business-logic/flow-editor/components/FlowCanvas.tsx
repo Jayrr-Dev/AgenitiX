@@ -43,6 +43,7 @@ interface FlowCanvasProps {
   nodes: AgenNode[];
   edges: AgenEdge[];
   selectedNode: AgenNode | null;
+  selectedEdge: AgenEdge | null;
   selectedOutput: string | null;
   nodeErrors: Record<string, any[]>;
   showHistoryPanel: boolean;
@@ -56,6 +57,9 @@ interface FlowCanvasProps {
   onToggleHistory: () => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
+  onDeleteNode?: (nodeId: string) => void;
+  onDuplicateNode?: (nodeId: string) => void;
+  onDeleteEdge?: (edgeId: string) => void;
   reactFlowHandlers: {
     onReconnectStart: () => void;
     onReconnect: (oldEdge: any, newConn: any) => void;
@@ -72,6 +76,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   nodes,
   edges,
   selectedNode,
+  selectedEdge,
   selectedOutput,
   nodeErrors,
   showHistoryPanel,
@@ -85,6 +90,9 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   onToggleHistory,
   onDragOver,
   onDrop,
+  onDeleteNode,
+  onDuplicateNode,
+  onDeleteEdge,
   reactFlowHandlers
 }) => {
   const { resolvedTheme } = useTheme();
@@ -159,12 +167,17 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         >
           <NodeInspector 
             node={selectedNode} 
+            selectedEdge={selectedEdge}
+            allNodes={nodes}
             updateNodeData={updateNodeData} 
             output={selectedOutput}
             errors={selectedNode ? nodeErrors[selectedNode.id] || [] : []}
             onClearErrors={selectedNode ? () => clearNodeErrors(selectedNode.id) : undefined}
             onLogError={logNodeError}
             onUpdateNodeId={updateNodeId}
+            onDeleteNode={onDeleteNode}
+            onDuplicateNode={onDuplicateNode}
+            onDeleteEdge={onDeleteEdge}
           />
         </Panel>
 
