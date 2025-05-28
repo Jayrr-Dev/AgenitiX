@@ -12,7 +12,7 @@ export function getNodeOutput(
   // Use extractNodeValue for consistent value extraction
   const extractedValue = extractNodeValue(node.data);
   
-  if (node.type === 'output') {
+  if (node.type === 'outputnode') {
     const incoming = allEdges
       .filter((e) => e.target === node.id)
       .map((e) => allNodes.find((n) => n.id === e.source))
