@@ -163,7 +163,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         {/* NODE INSPECTOR PANEL */}
         <Panel
           position="bottom-center"
-          className="rounded bg-white/90 dark:bg-zinc-800/90 p-4 shadow max-w-4xl max-h-[250px] overflow-y-auto scrollbar-none"
+          className="hidden md:block rounded bg-white/90 dark:bg-zinc-800/90 p-4 shadow max-w-4xl max-h-[250px] overflow-y-auto scrollbar-none"
         >
           <NodeInspector 
             node={selectedNode} 
@@ -182,7 +182,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         </Panel>
 
         {/* MINIMAP */}
-        <MiniMap position="bottom-left" />
+        <MiniMap position="bottom-left" className="hidden md:block" />
         
         {/* CONTROLS */}
         <Controls position="top-left" showInteractive={false} />
