@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Handle, Position, useReactFlow, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
 import CustomHandle from '../../handles/CustomHandle'
+import IconForPulse from '../node-icons/IconForPulse'
 
 // TYPES
 interface TriggerOnPulseData {
@@ -79,34 +80,61 @@ const TriggerOnPulse: React.FC<NodeProps<Node<TriggerOnPulseData & Record<string
     }
   }
 
+  const [showUI, setShowUI] = useState(false)
+
   // RENDER
   return (
-    <div className={`px-4 py-3 rounded-lg bg-amber-100 dark:bg-amber-900 shadow border border-amber-300 dark:border-amber-800 flex flex-col items-center`}>
+    <div className={`relative ${showUI ? 'px-4 py-3 min-w-[180px] min-h-[120px]' : 'w-[60px] h-[60px] flex items-center justify-center'} rounded-lg bg-amber-100 dark:bg-amber-900 shadow border border-amber-300 dark:border-amber-800`}>
+      {/* TOGGLE BUTTON (top-left) */}
+      <button
+        aria-label={showUI ? 'Collapse node' : 'Expand node'}
+        title={showUI ? 'Collapse' : 'Expand'}
+        onClick={() => setShowUI((v) => !v)}
+        className="absolute top-1 left-1 cursor-pointer z-10 w-2 h-2 flex items-center justify-center rounded-full bg-white/80 dark:bg-black/40 border border-amber-300 dark:border-amber-800 text-xs hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors shadow"
+        type="button"
+      >
+        {showUI ? '⦿' : '⦾'}
+      </button>
       {/* INPUT HANDLE (left, boolean, can externally trigger this node) */}
       <CustomHandle type="target" position={Position.Left} id="b" dataType="b" />
-      <div className="font-semibold text-amber-900 dark:text-amber-100 mb-2">Pulse Trigger</div>
-      <div className="flex items-center gap-2 mb-2">
-        <label htmlFor="pulse-duration" className="text-xs text-amber-700 dark:text-amber-200">Duration:</label>
-        <input
-          id="pulse-duration"
-          type="text"
-          inputMode="numeric"
-          min={50}
-          step={50}
-          value={durationInput}
-          onChange={handleDurationChange}
-          onBlur={handleDurationBlur}
-          className="w-16 rounded border px-1 text-xs bg-white dark:bg-black"
-        />
-        <span className="text-xs text-amber-700 dark:text-amber-200">ms</span>
-      </div>
-      <button
-        className={`px-3 py-1 rounded bg-amber-500 text-white font-bold shadow transition-colors ${pulsing ? 'bg-amber-700' : 'hover:bg-amber-600'}`}
-        onClick={handlePulse}
-        disabled={pulsing}
-      >
-        {pulsing ? 'Pulsed!' : 'Pulse Trigger'}
-      </button>
+      {/* COLLAPSED: Only Icon */}
+      {!showUI && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <IconForPulse
+            isPulsing={pulsing}
+            onClick={handlePulse}
+            size={40}
+            disabled={pulsing}
+          />
+        </div>
+      )}
+      {/* EXPANDED: Full UI */}
+      {showUI && (
+        <div className="flex flex-col items-center">
+          <div className="font-semibold text-amber-900 dark:text-amber-100 mb-2">Pulse Trigger</div>
+          <div className="flex items-center gap-2 mb-2">
+            <label htmlFor="pulse-duration" className="text-xs text-amber-700 dark:text-amber-200">Duration:</label>
+            <input
+              id="pulse-duration"
+              type="text"
+              inputMode="numeric"
+              min={50}
+              step={50}
+              value={durationInput}
+              onChange={handleDurationChange}
+              onBlur={handleDurationBlur}
+              className="w-16 rounded border px-1 text-xs bg-white dark:bg-black"
+            />
+            <span className="text-xs text-amber-700 dark:text-amber-200">ms</span>
+          </div>
+          <IconForPulse
+            isPulsing={pulsing}
+            onClick={handlePulse}
+            size={48}
+            disabled={pulsing}
+          />
+        </div>
+      )}
       {/* OUTPUT HANDLE (right, boolean, id and dataType = 'b') */}
       <CustomHandle type="source" position={Position.Right} id="b" dataType="b" />
       {/* Example for union: id="b|n" dataType="b" */}

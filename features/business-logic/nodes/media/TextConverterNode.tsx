@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { Position, useNodeConnections, useNodesData, useReactFlow, type NodeProps, type Node } from '@xyflow/react';
 import CustomHandle from '../../handles/CustomHandle';
-import { getSingleInputValue, safeStringify } from '../utils/nodeUtils';
+import { getSingleInputValue, safeStringify, extractNodeValue } from '../utils/nodeUtils';
 
 // ---------------------- TYPES ----------------------
 interface TextConverterNodeData {
@@ -18,16 +18,67 @@ const TextConverterNode: React.FC<NodeProps<Node<TextConverterNodeData & Record<
   const inputNodeId = inputConn?.source;
   const inputNodesData = useNodesData(inputNodeId ? [inputNodeId] : []);
   
-  // Extract input value using safe utility
-  const inputValue = getSingleInputValue(inputNodesData);
+  // Extract input value using robust utility
+  let inputValue = undefined;
+  if (inputNodesData.length > 0) {
+    inputValue = extractNodeValue(inputNodesData[0]?.data);
+  }
 
   // Convert any input to string with safe serialization
   let stringValue = '';
   if (inputValue !== undefined) {
-    if (typeof inputValue === 'object' && inputValue !== null) {
-      stringValue = safeStringify(inputValue);
-      if (stringValue === 'null') stringValue = '[object]';
-    } else {
+    // Handle special number values
+    if (typeof inputValue === 'number') {
+      if (Number.isNaN(inputValue)) {
+        stringValue = 'NaN';
+      } else if (!Number.isFinite(inputValue)) {
+        stringValue = inputValue > 0 ? 'Infinity' : '-Infinity';
+      } else {
+        stringValue = String(inputValue);
+      }
+    }
+    // Handle objects (including arrays)
+    else if (typeof inputValue === 'object' && inputValue !== null) {
+      try {
+        // Try to stringify with proper formatting
+        stringValue = JSON.stringify(inputValue, (key, value) => {
+          // Handle BigInt
+          if (typeof value === 'bigint') {
+            return value.toString() + 'n';
+          }
+          // Handle Date objects
+          if (value instanceof Date) {
+            return value.toISOString();
+          }
+          // Handle RegExp objects
+          if (value instanceof RegExp) {
+            return value.toString();
+          }
+          // Handle Error objects
+          if (value instanceof Error) {
+            return {
+              name: value.name,
+              message: value.message,
+              stack: value.stack
+            };
+          }
+          return value;
+        }, 2);
+      } catch (error) {
+        // If JSON.stringify fails (e.g., circular reference), use a fallback
+        if (error instanceof Error && error.message.includes('circular')) {
+          stringValue = '[Circular Object]';
+        } else {
+          stringValue = '[Complex Object]';
+        }
+      }
+    }
+    // Handle null
+    else if (inputValue === null) {
+      stringValue = 'null';
+    }
+    // Handle all other primitive types
+    else {
       stringValue = String(inputValue);
     }
   }

@@ -326,6 +326,13 @@ const DelayNode: React.FC<DelayNodeProps> = ({ id, data, selected }) => {
     return () => { mountedRef.current = false }
   }, [id, updateNodeData, outputMode])
 
+  // Sync outputMode with data.outputMode (for inspector changes)
+  useEffect(() => {
+    if (data.outputMode && data.outputMode !== outputMode) {
+      setOutputMode(data.outputMode);
+    }
+  }, [data.outputMode, outputMode]);
+
   /* ---------------------------------------------------------------------- */
   /* EVENT HANDLERS (UI)                                                     */
   /* ---------------------------------------------------------------------- */
@@ -365,102 +372,69 @@ const DelayNode: React.FC<DelayNodeProps> = ({ id, data, selected }) => {
   /* ---------------------------------------------------------------------- */
 
   return (
-    <div
-      className={`
-        relative
-        ${collapsed ? 'w-[60px] h-[60px] flex items-center justify-center'
-                    : 'px-4 py-3 min-w-[200px] min-h-[180px]'}
-        bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-200 dark:border-orange-800
-        rounded-lg shadow-sm transition-all duration-200 hover:shadow-md
-        ${selected ? 'ring-2 ring-orange-400 dark:ring-orange-600' : ''}
-        ${error ? 'border-red-500 dark:border-red-400' : ''}
-      `}
-    >
-      {/* collapse / expand */}
+    <div className={`relative ${collapsed ? 'w-[60px] h-[60px] flex items-center justify-center' : 'px-4 py-3 min-w-[200px] min-h-[180px]'} rounded-lg shadow border bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-800`}>
+      {/* TOGGLE BUTTON (top-left) */}
       <button
         onClick={toggleCollapse}
         aria-label={collapsed ? 'Expand node' : 'Collapse node'}
-        className="absolute top-1 left-1 w-2 h-2 flex items-center justify-center rounded-full bg-white/80 dark:bg-black/40 border text-xs"
+        className="absolute top-1 left-1 cursor-pointer z-10 w-3 h-3 flex items-center justify-center rounded-full bg-white/80 dark:bg-black/40 border border-blue-300 dark:border-blue-800 text-xs hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors shadow"
+        type="button"
       >
         {collapsed ? '⦾' : '⦿'}
       </button>
-
       {/* queue badge */}
       {snap.len > 0 && (
-        <div
-          className={`
-            absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full text-white text-xs font-bold
-            ${snap.full ? 'bg-red-500' : 'bg-orange-500'}
-          `}
-        >
-          {snap.len}
-        </div>
+        <div className={`absolute scale-75 z-10 top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full text-white text-xs font-bold ${snap.full ? 'bg-red-500' : 'bg-blue-500'}`}>{snap.len}</div>
       )}
-
-      {/* --- COLLAPSED ICON ------------------------------------------------ */}
+      {/* COLLAPSED: Only Icon */}
       {collapsed ? (
         <div className="relative">
-          <IconForDelay progress={progress} size={24} color={error ? '#ef4444' : '#ea580c'} />
-          {processing && <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-orange-500 rounded-full animate-pulse" />}
+          <IconForDelay progress={progress} size={24} color={error ? '#ef4444' : '#3b82f6'} />
+          {/* {processing && <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />} */}
         </div>
       ) : (
-        /* --- EXPANDED BODY ------------------------------------------------ */
         <>
-          {/* header */}
-          <div className="flex items-center justify-between p-3 border-b border-orange-200 dark:border-orange-700">
-            <div className="flex items-center gap-2">
-              <IconForDelay progress={progress} size={16} color={error ? '#ef4444' : '#ea580c'} />
-              <span className="text-sm font-medium text-orange-800 dark:text-orange-200">Delay</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {processing && <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />}
-              {snap.len > 0 && (
-                <>
-                  <button
-                    onClick={forceProcess}
-                    className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300"
-                  >
-                    Force
-                  </button>
-                  <button
-                    onClick={clearQueue}
-                    className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 dark:bg-red-900 dark:text-red-300"
-                  >
-                    Clear
-                  </button>
-                </>
-              )}
+          {/* HEADER */}
+          <div className="flex items-center justify-center w-full mb-2">
+            <div className="font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
+              <IconForDelay progress={progress} size={20} color={error ? '#ef4444' : '#3b82f6'} />
+              Delay
             </div>
           </div>
-
-          {/* controls */}
-          <div className="p-3 space-y-3">
-            {error && (
-              <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-200 dark:border-red-800">
-                {error}
+          <div className="flex flex-row gap-4 mb-3">
+          {/* INPUTS & QUEUE: Two Columns */}         
+         
+          {/* CONTROLS */}
+          <div className="flex flex-col gap-3">
+            {/* Inputs Column */}
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-semibold text-blue-700 dark:text-blue-200 mb-1">Inputs</div>
+              <div className="bg-white/60 dark:bg-gray-900 rounded p-2 border border-blue-200 dark:border-blue-800 min-h-[40px]">
+                {inputsData && inputsData.length > 0 ? (
+                  inputsData.map((n, i) => (
+                    <div key={n.id || i} className="flex items-center gap-2 text-xs text-blue-900 dark:text-blue-100 mb-1">
+                      <span className="font-mono truncate max-w-[80px]">{JSON.stringify(n.data?.outputValue ?? n.data?.value ?? n.data?.text ?? n.data?.count ?? n.data?.triggered ?? n.data)}</span>
+                      <span className="text-[10px] text-blue-400 dark:text-blue-500">[{n.id}]</span>
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-xs text-gray-400 italic">No input</span>
+                )}
               </div>
-            )}
-
-            {/* delay input */}
+            </div>
             <div>
-              <label className="block text-xs font-medium text-orange-700 dark:text-orange-300 mb-1">
-                Delay&nbsp;(ms)
-              </label>
+              <label className="block text-xs font-medium text-blue-700 dark:text-blue-200 mb-1">Delay (ms)</label>
               <input
                 type="number"
                 value={delayMs}
                 min={0}
                 step={100}
                 onChange={e => handleDelayChange(Number(e.target.value))}
-                className="w-full px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800"
+                className="w-full px-2 py-1 text-xs border rounded bg-gray-900 text-white dark:bg-gray-800 border-blue-300 dark:border-blue-700"
               />
             </div>
-
-            {/* output mode */}
             <div>
-              <label className="block text-xs font-medium text-orange-700 dark:text-orange-300 mb-1">
-                Output&nbsp;Mode
-              </label>
+              <label className="block text-xs font-medium text-blue-700 dark:text-blue-200 mb-1">Output Mode</label>
               <select
                 value={outputMode}
                 onChange={e => {
@@ -469,19 +443,15 @@ const DelayNode: React.FC<DelayNodeProps> = ({ id, data, selected }) => {
                     handleOutputModeChange(value);
                   }
                 }}
-                className="w-full px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800"
+                className="w-full px-2 py-1 text-xs border rounded bg-gray-900 text-white dark:bg-gray-800 border-blue-300 dark:border-blue-700"
               >
-                <option value="passthrough">Pass&nbsp;Through</option>
-                <option value="boolean">Boolean&nbsp;Pulse</option>
-                <option value="trigger">Timestamp&nbsp;Trigger</option>
+                <option value="passthrough">Pass Through</option>
+                <option value="boolean">Boolean Pulse</option>
+                <option value="trigger">Timestamp Trigger</option>
               </select>
             </div>
-
-            {/* edge mode */}
             <div>
-              <label className="block text-xs font-medium text-orange-700 dark:text-orange-300 mb-1">
-                Input&nbsp;Edge&nbsp;Mode
-              </label>
+              <label className="block text-xs font-medium text-blue-700 dark:text-blue-200 mb-1">Input Edge Mode</label>
               <select
                 value={edgeMode}
                 onChange={e => {
@@ -490,74 +460,70 @@ const DelayNode: React.FC<DelayNodeProps> = ({ id, data, selected }) => {
                     handleEdgeModeChange(value);
                   }
                 }}
-                className="w-full px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800"
+                className="w-full px-2 py-1 text-xs border rounded bg-gray-900 text-white dark:bg-gray-800 border-blue-300 dark:border-blue-700"
               >
-                <option value="level">Level&nbsp;(Any&nbsp;Change)</option>
-                <option value="rising">Rising&nbsp;Edge&nbsp;(False→True)</option>
-                <option value="falling">Falling&nbsp;Edge&nbsp;(True→False)</option>
-                <option value="both">Both&nbsp;Edges</option>
+                <option value="level">Level (Any Change)</option>
+                <option value="rising">Rising Edge (False→True)</option>
+                <option value="falling">Falling Edge (True→False)</option>
+                <option value="both">Both Edges</option>
               </select>
             </div>
-
-            {/* status */}
-            <div className="text-xs text-orange-600 dark:text-orange-400">
+            <div className="text-xs text-blue-300 dark:text-blue-200">
               {processing ? (
                 <span className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-                  Processing&nbsp;({Math.round(progress * 100)}%)
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                  Processing ({Math.round(progress * 100)}%)
                 </span>
               ) : (
-                <span>Ready&nbsp;({delayMs}&nbsp;ms)</span>
+                <span>Ready ({delayMs} ms)</span>
               )}
             </div>
-
-            {/* queue snapshot */}
-            {snap.len > 0 && (
-              <div
-                className={`flex items-center justify-between p-2 rounded border ${
-                  snap.full
-                    ? 'bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-700'
-                    : 'bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-700'
-                }`}
-              >
-                <span className="text-xs font-medium">
-                  Queue&nbsp;{snap.full && '(Full)'}
-                </span>
-                <span className="text-xs">{snap.len}/{MAX_QUEUE_SIZE}</span>
-              </div>
-            )}
-
-            {/* output preview */}
             <div className="text-xs">
-              <span className="font-medium">Output:&nbsp;</span>
+              <span className="font-medium">Output: </span>
               {output !== undefined ? (
-                <span
-                  className={`font-mono px-2 py-1 rounded text-white text-xs ${
-                    outputMode === 'boolean'
-                      ? output
-                        ? 'bg-green-600'
-                        : 'bg-gray-500'
-                      : 'bg-blue-600'
-                  }`}
-                >
-                  {outputMode === 'boolean'
-                    ? output
-                      ? 'TRUE'
-                      : 'FALSE'
-                    : outputMode === 'trigger'
-                    ? `#${String(output).slice(-6)}`
-                    : typeof output === 'string'
-                    ? `"${output}"`
-                    : JSON.stringify(output)}
+                <span className={`font-mono px-2 py-1 rounded text-white text-xs ${outputMode === 'boolean' ? output ? 'bg-green-600' : 'bg-gray-500' : 'bg-blue-600'}`}>
+                  {outputMode === 'boolean' ? output ? 'TRUE' : 'FALSE' : outputMode === 'trigger' ? `#${String(output).slice(-6)}` : typeof output === 'string' ? `"${output}"` : JSON.stringify(output, (key, value) => typeof value === 'bigint' ? value.toString() + 'n' : value)}
                 </span>
               ) : (
                 <span className="text-gray-400 italic">undefined</span>
               )}
             </div>
+            </div>
+                {/* Queue Column */}
+              <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="text-xs font-semibold text-blue-700 dark:text-blue-200">Queue</div>
+                <span className={`min-w-[18px] h-4 px-1 flex items-center justify-center rounded-full text-white text-xs font-bold ${snap.full ? 'bg-red-500' : 'bg-blue-500'}`}>{snap.len}</span>
+              </div>
+              <div className="bg-white/60 dark:bg-gray-900 rounded p-2 border border-blue-200 dark:border-blue-800 min-h-[40px] min-w-[120px] overflow-x-auto">
+                {snap.preview && snap.preview.length > 0 ? (
+                  snap.preview.map((item, i) => (
+                    <div key={i} className="font-mono text-xs text-blue-900 dark:text-blue-100 truncate max-w-[120px]">{JSON.stringify(item)}</div>
+                  ))
+                ) : (
+                  <span className="text-xs text-gray-400 italic">Queue empty</span>
+                )}
+              </div>
+            </div>
           </div>
+          <div className="flex gap-2 mt-2">
+              <button
+                onClick={forceProcess}
+                className="flex-1 text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 shadow"
+                disabled={processing || snap.len === 0}
+              >
+                Force
+              </button>
+              <button
+                onClick={clearQueue}
+                className="flex-1 text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800 shadow"
+                disabled={snap.len === 0}
+              >
+                Clear
+              </button>
+            </div>
         </>
       )}
-
       {/* -------- HANDLES --------------------------------------------------- */}
       <CustomHandle type="target" position={Position.Left} id="x" dataType="x" />
       {/* <CustomHandle type="target" position={Position.Left} id="b" dataType="b" style={{ top: '70%' }} /> */}

@@ -18,13 +18,14 @@ import {
 } from '../initialElements'
 import CustomHandle from '../../handles/CustomHandle'
 import { extractNodeValue, safeStringify } from '../utils/nodeUtils'
+import { FloatingNodeId } from '../components/FloatingNodeId'
 
 /* -------------------------------------------------------------------------- */
 /*  OUTPUT NODE                                                               */
 /*  – Displays text from both TextNodes and TextUppercaseNodes                    */
 /* -------------------------------------------------------------------------- */
 
-function OutputNode() {
+function OutputNode({ id }: { id: string }) {
   /* -------------------------------------------------------------- */
   /*  1. Which edges arrive at *this* node?                         */
   /* -------------------------------------------------------------- */
@@ -54,7 +55,9 @@ function OutputNode() {
   /*  4. Render                                                     */
   /* -------------------------------------------------------------- */
   return (
-    <div className="px-4 py-3 rounded-lg bg-amber-100 dark:bg-amber-900 shadow-sm border border-amber-200 dark:border-amber-800">
+    <div className="relative px-4 py-3 rounded-lg bg-amber-100 dark:bg-amber-900 shadow-sm border border-amber-200 dark:border-amber-800">
+      {/* Floating Node ID */}
+      <FloatingNodeId nodeId={id} />
       {/* INPUT HANDLE (left, any type, id and dataType = 'x') */}
       <CustomHandle 
         type="target" 

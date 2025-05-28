@@ -1,0 +1,13 @@
+---
+description: 
+globs: *node*
+alwaysApply: false
+---
+The new nodes must have a toggle button and Icon. After Creating a new node you must REGISTER the NODE in FlowEditor.tsx , then add the NODE to the Sidebar.tsx then finally add to NodeInspector.tsx. There's a common issue with the Nodeinspector where you need to use UseEffect to SYNC the inputs to the NODES local storage.
+
+Nodes have two state 1. ICON state and EXPANDED State
+The Toggle button is {showUI ? '⦿' : '⦾'} when press expands the nodes. The default state is the ICON state. 
+
+ICON node always have a width of 60px and height of 60px. Unless its a text based node it has a width of 120px - height of 60. 
+EXPANDED nodes are 120px by 120px unless otherwise stated
+

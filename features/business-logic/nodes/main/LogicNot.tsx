@@ -7,6 +7,7 @@ import CustomHandle from '../../handles/CustomHandle'
 import { useStore } from '@xyflow/react'
 import IconForNot from '../node-icons/IconForNot'
 import { getSingleInputValue, isTruthyValue } from '../utils/nodeUtils'
+import { FloatingNodeId } from '../components/FloatingNodeId'
 
 // -----------------------------------------------------------------------------
 // TYPES
@@ -58,6 +59,8 @@ const LogicNot: React.FC<NodeProps<Node<LogicNotData & Record<string, unknown>>>
   // RENDER
   return (
     <div className={`relative ${showUI ? 'px-4 py-3 min-w-[120px] min-h-[120px]' : 'w-[60px] h-[60px] flex items-center justify-center'} rounded-lg bg-yellow-100 dark:bg-yellow-900 shadow border border-yellow-300 dark:border-yellow-800`}>
+      {/* Floating Node ID */}
+      <FloatingNodeId nodeId={id} />
       {/* TOGGLE BUTTON (top-left) */}
       <button
         aria-label={showUI ? 'Collapse node' : 'Expand node'}

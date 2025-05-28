@@ -4,6 +4,7 @@ import React from 'react'
 import { Position, useNodeConnections, useNodesData, useReactFlow, type NodeProps, type Node } from '@xyflow/react'
 import CustomHandle from '../../handles/CustomHandle'
 import { getInputValues, isTruthyValue } from '../utils/nodeUtils'
+import { FloatingNodeId } from '../components/FloatingNodeId'
 
 // -----------------------------------------------------------------------------
 // TYPES
@@ -45,6 +46,8 @@ const LogicAnd: React.FC<NodeProps<Node<LogicAndData & Record<string, unknown>>>
   // RENDER
   return (
     <div className={`relative ${showUI ? 'px-4 py-3 min-w-[120px] min-h-[120px]' : 'w-[60px] h-[60px] flex items-center justify-center'} rounded-lg bg-lime-100 dark:bg-lime-900 shadow border border-lime-300 dark:border-lime-800`}>
+      {/* Floating Node ID */}
+      <FloatingNodeId nodeId={id} />
       {/* TOGGLE BUTTON (top-left) */}
       <button
         aria-label={showUI ? 'Collapse node' : 'Expand node'}

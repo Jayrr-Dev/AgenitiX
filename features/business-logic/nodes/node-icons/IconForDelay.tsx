@@ -1,6 +1,8 @@
 'use client'
 
 import React from 'react'
+import { RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts'
+import { PiClockClockwiseFill } from "react-icons/pi";
 
 /* -------------------------------------------------------------------------- */
 /* TYPES                                                                      */
@@ -22,57 +24,40 @@ const IconForDelay: React.FC<IconForDelayProps> = React.memo(
     /* PROGRESS CALCULATION ------------------------------------------------- */
     const pct = Math.max(0, Math.min(1, progress))
     
-    /* SVG CALCULATIONS ----------------------------------------------------- */
-    const chartSize = size
+    /* CHART CALCULATIONS --------------------------------------------------- */
+    const chartSize = size * 2.1
     const center = chartSize / 2
     const radius = chartSize * 0.35
-    const strokeWidth = Math.max(2, size * 0.08) // Responsive stroke width
-    const circumference = 2 * Math.PI * radius
+    const iconSize = chartSize * 0.5
     
-    // For countdown: when pct=1 (full delay), show full ring (offset=0)
-    // when pct=0 (finished), show no ring (offset=circumference)
-    const strokeDashoffset = circumference - (pct * circumference)
+    // Chart data for radial - progress represents remaining delay
+    const data = [{ name: 'delay', value: pct * 100 }]
     
-    const iconSize = chartSize * 0.4
-
     return (
       <div className="relative flex items-center justify-center" style={{ width: chartSize, height: chartSize }}>
-        {/* SVG COUNTDOWN RING */}
-        <svg 
-          width={chartSize} 
-          height={chartSize} 
-          style={{ position: 'absolute', left: 0, top: 0, zIndex: 1 }}
-        >
-          {/* Background circle */}
-          <circle 
-            cx={center} 
-            cy={center} 
-            r={radius} 
-            fill="none" 
-            stroke="#e5e7eb" 
-            strokeWidth={strokeWidth}
-          />
-          
-          {/* Progress circle */}
-          {pct > 0 && (
-            <circle 
-              cx={center} 
-              cy={center} 
-              r={radius} 
-              fill="none" 
-              stroke={color} 
-              strokeWidth={strokeWidth}
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
-              style={{
-                transform: 'rotate(-90deg)',
-                transformOrigin: '50% 50%',
-                transition: 'stroke-dashoffset 0.1s ease-out'
-              }}
+        {/* RADIAL BAR CHART */}
+        <div style={{ position: 'absolute', left: 0, top: 0, zIndex: 1, width: chartSize, height: chartSize, pointerEvents: 'none' }}>
+          <RadialBarChart
+            width={chartSize}
+            height={chartSize}
+            cx={center}
+            cy={center}
+            innerRadius={radius - 1}
+            outerRadius={radius + 1}
+            barSize={2}
+            data={data}
+            startAngle={90}
+            endAngle={-270}
+          >
+            <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+            <RadialBar
+              background={{ fill: '#e5e7eb' }}
+              dataKey="value"
+              fill="red"
+              cornerRadius={2}
             />
-          )}
-        </svg>
+          </RadialBarChart>
+        </div>
 
         {/* CENTER CLOCK ICON */}
         <div 
@@ -86,12 +71,15 @@ const IconForDelay: React.FC<IconForDelayProps> = React.memo(
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: iconSize * 0.6,
-            color: pct > 0 ? color : '#9ca3af',
-            transition: 'color 0.2s ease-out'
+            fontSize: iconSize * 0.8,
+            color: pct > 0 ? "red" : 'white',
+            transition: 'color 0.2s ease-out',
+            fontWeight: 'bold',
+        
           }}
         >
-          ⏱
+          <PiClockClockwiseFill />
+
         </div>
       </div>
     )

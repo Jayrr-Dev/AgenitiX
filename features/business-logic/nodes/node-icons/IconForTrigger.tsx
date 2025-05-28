@@ -1,13 +1,13 @@
 import React from 'react'
 
-interface IconForToggleProps {
+interface IconForTriggerProps {
   isOn: boolean
   onClick: () => void
   size?: number
   disabled?: boolean
 }
 
-const IconForToggle: React.FC<IconForToggleProps> = ({ 
+const IconForTrigger: React.FC<IconForTriggerProps> = ({ 
   isOn, 
   onClick, 
   size = 32, 
@@ -24,7 +24,8 @@ const IconForToggle: React.FC<IconForToggleProps> = ({
       className={`
         flex items-center justify-center rounded-full border-2 transition-all duration-150
         shadow-md focus:outline-none
-        ${isOn ? 'bg-green-500 border-green-600 shadow-inner' : 'bg-gray-200 border-gray-400'}
+        ${isOn ? 'bg-green-600' : 'bg-gray-300'}
+        ${isOn ? 'border-green-500' : 'border-gray-400'}
         ${!disabled && 'active:scale-95 active:shadow-inner'}
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'}
       `}
@@ -33,20 +34,15 @@ const IconForToggle: React.FC<IconForToggleProps> = ({
     >
       {/* Inner circle for depth */}
       <div
-        className={`rounded-full flex items-center justify-center transition-all duration-150
-          ${isOn ? 'bg-green-400' : 'bg-white'}
-        `}
-        style={{ width: circleSize * 0.7, height: circleSize * 0.7, boxShadow: isOn ? '0 0 8px 2px rgba(34,197,94,0.3)' : '0 1px 2px rgba(0,0,0,0.08)' }}
+        className={`rounded-full flex items-center justify-center transition-all duration-150 bg-gray-100`}
+        style={{ width: circleSize * 0.7, height: circleSize * 0.7, boxShadow: '0 1px 2px rgba(0,0,0,0.08)' }}
       >
-        <span
-          className={`font-bold select-none text-xs ${isOn ? 'text-white' : 'text-gray-700'}`}
-          style={{ fontSize: Math.max(10, circleSize * 0.28) }}
-        >
-          {isOn ? 'ON' : 'OFF'}
-        </span>
+        <svg width={circleSize * 0.5} height={circleSize * 0.5} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill={isOn ? '#22c55e' : '#d1d5db'} />
+        </svg>
       </div>
     </button>
   )
 }
 
-export default IconForToggle 
+export default IconForTrigger 

@@ -13,6 +13,7 @@ import {
 import { TextNodeData } from '../initialElements'
 import CustomHandle from '../../handles/CustomHandle'
 import { getSingleInputValue, isTruthyValue } from '../utils/nodeUtils'
+import { FloatingNodeId } from '../components/FloatingNodeId'
 
 function TextNode({ id, data }: NodeProps<Node<TextNodeData & Record<string, unknown>>>) {
   const { updateNodeData } = useReactFlow()
@@ -63,6 +64,8 @@ function TextNode({ id, data }: NodeProps<Node<TextNodeData & Record<string, unk
 
   return (
     <div className={`relative ${showUI ? 'px-4 py-3 min-w-[200px]' : 'w-[120px] h-[60px] flex items-center justify-center'} rounded-lg bg-blue-50 dark:bg-blue-900 shadow border border-blue-300 dark:border-blue-800`}>
+      {/* Floating Node ID */}
+      <FloatingNodeId nodeId={id} />
       {/* TOGGLE BUTTON (top-left) */}
       <button
         aria-label={showUI ? 'Collapse node' : 'Expand node'}
