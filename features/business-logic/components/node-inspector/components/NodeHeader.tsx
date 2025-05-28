@@ -8,9 +8,19 @@ interface NodeHeaderProps {
   onUpdateNodeId?: (oldId: string, newId: string) => void;
   onDeleteNode?: (nodeId: string) => void;
   onDuplicateNode?: (nodeId: string) => void;
+  inspectorState: {
+    locked: boolean;
+    setLocked: (locked: boolean) => void;
+  };
 }
 
-export const NodeHeader: React.FC<NodeHeaderProps> = ({ node, onUpdateNodeId, onDeleteNode, onDuplicateNode }) => {
+export const NodeHeader: React.FC<NodeHeaderProps> = ({ 
+  node, 
+  onUpdateNodeId, 
+  onDeleteNode, 
+  onDuplicateNode,
+  inspectorState 
+}) => {
   const nodeConfig = NODE_TYPE_CONFIG[node.type];
   const [isEditingId, setIsEditingId] = useState(false);
   const [editingId, setEditingId] = useState(node.id);
@@ -54,9 +64,11 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({ node, onUpdateNodeId, on
 
   return (
     <div className="border-b border-gray-200 dark:border-gray-700 pb-2">
-      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-        {nodeConfig.displayName}
-      </h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          {nodeConfig.displayName}
+        </h3>
+      </div>
       
       <div className="flex items-center gap-2 mt-1">
         <span className="text-[10px] text-gray-500 dark:text-gray-400">

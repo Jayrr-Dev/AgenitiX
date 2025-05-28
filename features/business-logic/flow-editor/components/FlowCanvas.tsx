@@ -61,6 +61,8 @@ interface FlowCanvasProps {
   onDeleteNode?: (nodeId: string) => void;
   onDuplicateNode?: (nodeId: string) => void;
   onDeleteEdge?: (edgeId: string) => void;
+  inspectorLocked: boolean;
+  setInspectorLocked: (locked: boolean) => void;
   reactFlowHandlers: {
     onReconnectStart: () => void;
     onReconnect: (oldEdge: any, newConn: any) => void;
@@ -94,6 +96,8 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   onDeleteNode,
   onDuplicateNode,
   onDeleteEdge,
+  inspectorLocked,
+  setInspectorLocked,
   reactFlowHandlers
 }) => {
   const { resolvedTheme } = useTheme();
@@ -217,6 +221,8 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
             onDeleteNode={onDeleteNode}
             onDuplicateNode={onDuplicateNode}
             onDeleteEdge={onDeleteEdge}
+            inspectorLocked={inspectorLocked}
+            setInspectorLocked={setInspectorLocked}
           />
         </Panel>
 

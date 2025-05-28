@@ -3,7 +3,6 @@ import type { AgenNode } from '../../../FlowEditor';
 import { DEFAULT_VALUES } from '../constants';
 
 export function useInspectorState(node: AgenNode | null) {
-  const [locked, setLocked] = useState(false);
   const [durationInput, setDurationInput] = useState<string>(DEFAULT_VALUES.DURATION);
   const [countInput, setCountInput] = useState<string>(DEFAULT_VALUES.COUNT);
   const [multiplierInput, setMultiplierInput] = useState<string>(DEFAULT_VALUES.MULTIPLIER);
@@ -12,12 +11,8 @@ export function useInspectorState(node: AgenNode | null) {
   const isEditingCount = useRef(false);
   const isEditingMultiplier = useRef(false);
 
-  // Reset locked state when node changes
-  useEffect(() => {
-    if (node) {
-      setLocked(false); // Ensure inspector is unlocked when a node is selected
-    }
-  }, [node?.id]);
+  // Note: Removed automatic unlock when node changes to allow persistent locking
+  // The inspector will now stay locked when switching between nodes until manually unlocked
 
   // Sync states when node changes
   useEffect(() => {
@@ -63,8 +58,6 @@ export function useInspectorState(node: AgenNode | null) {
   }, [node?.data, node?.type, node?.id]);
 
   return {
-    locked,
-    setLocked,
     durationInput,
     setDurationInput,
     countInput,

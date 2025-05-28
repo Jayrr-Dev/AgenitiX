@@ -236,6 +236,8 @@ export default function FlowEditor() {
             onDuplicateNode={handleDuplicateNode}
             onDeleteEdge={flowState.removeEdge}
             reactFlowHandlers={reactFlowHandlers}
+            inspectorLocked={flowState.inspectorLocked}
+            setInspectorLocked={flowState.setInspectorLocked}
           />
 
           {/* UNDO/REDO MANAGER */}

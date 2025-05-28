@@ -16,6 +16,7 @@ export function useFlowEditorState() {
   const [copiedEdges, setCopiedEdges] = useState<AgenEdge[]>([]);
   const [nodeErrors, setNodeErrors] = useState<Record<string, NodeError[]>>({});
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [inspectorLocked, setInspectorLocked] = useState(false);
 
   // ============================================================================
   // COMPUTED VALUES
@@ -200,22 +201,34 @@ export function useFlowEditorState() {
   // ============================================================================
   
   const selectNode = useCallback((nodeId: string | null) => {
+    // Don't change selection if inspector is locked
+    if (inspectorLocked) {
+      return;
+    }
     setSelectedNodeId(nodeId);
     setSelectedEdgeId(null); // Clear edge selection when selecting a node
-  }, []);
+  }, [inspectorLocked]);
 
   const selectEdge = useCallback((edgeId: string | null) => {
+    // Don't change selection if inspector is locked
+    if (inspectorLocked) {
+      return;
+    }
     setSelectedEdgeId(edgeId);
     // Only clear node selection if we're actually selecting an edge
     if (edgeId !== null) {
       setSelectedNodeId(null); // Clear node selection when selecting an edge
     }
-  }, []);
+  }, [inspectorLocked]);
 
   const clearSelection = useCallback(() => {
+    // Don't change selection if inspector is locked
+    if (inspectorLocked) {
+      return;
+    }
     setSelectedNodeId(null);
     setSelectedEdgeId(null);
-  }, []);
+  }, [inspectorLocked]);
 
   // ============================================================================
   // HISTORY PANEL
@@ -242,6 +255,7 @@ export function useFlowEditorState() {
     copiedEdges,
     nodeErrors,
     showHistoryPanel,
+    inspectorLocked,
     
     // Node operations
     setNodes,
@@ -267,6 +281,9 @@ export function useFlowEditorState() {
     selectNode,
     selectEdge,
     clearSelection,
+    
+    // Inspector lock
+    setInspectorLocked,
     
     // History
     toggleHistoryPanel,

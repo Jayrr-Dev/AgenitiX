@@ -25,6 +25,10 @@ export interface NodeInspectorProps {
   onDuplicateNode?: (nodeId: string) => void;
   /** Function to delete the current edge (optional) */
   onDeleteEdge?: (edgeId: string) => void;
+  /** Whether the inspector is locked */
+  inspectorLocked: boolean;
+  /** Function to set the inspector lock state */
+  setInspectorLocked: (locked: boolean) => void;
 }
 
 export interface NodeError {
@@ -51,7 +55,6 @@ export interface NodeControlsProps extends BaseControlProps {
 }
 
 export interface InspectorState {
-  locked: boolean;
   durationInput: string;
   countInput: string;
   multiplierInput: string;
