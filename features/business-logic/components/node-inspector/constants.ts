@@ -1,20 +1,20 @@
 import { NodeType, NodeTypeConfig } from './types';
 
 export const NODE_TYPE_CONFIG: Record<NodeType, NodeTypeConfig> = {
-  textNode: {
+  createText: {
     hasOutput: true,
     hasControls: true,
-    displayName: 'Text Node'
+    displayName: 'Create Text'
   },
-  uppercaseNode: {
+  turnToUppercase: {
     hasOutput: true,
     hasControls: false,
-    displayName: 'Uppercase Node'
+    displayName: 'Turn To Uppercase'
   },
-  outputnode: {
+  viewOutput: {
     hasOutput: true,
     hasControls: true,
-    displayName: 'Output Node'
+    displayName: 'View Output'
   },
   triggerOnClick: {
     hasOutput: false,
@@ -26,20 +26,20 @@ export const NODE_TYPE_CONFIG: Record<NodeType, NodeTypeConfig> = {
     hasControls: true,
     displayName: 'Trigger On Pulse'
   },
-  triggerOnPulseCycle: {
+  cyclePulse: {
     hasOutput: false,
     hasControls: true,
-    displayName: 'Trigger On Pulse Cycle'
+    displayName: 'Cycle Pulse'
   },
   triggerOnToggle: {
     hasOutput: false,
     hasControls: true,
     displayName: 'Trigger On Toggle'
   },
-  triggerOnToggleCycle: {
+  cycleToggle: {
     hasOutput: false,
     hasControls: true,
-    displayName: 'Trigger On Toggle Cycle'
+    displayName: 'Cycle Toggle'
   },
   logicAnd: {
     hasOutput: false,
@@ -66,40 +66,40 @@ export const NODE_TYPE_CONFIG: Record<NodeType, NodeTypeConfig> = {
     hasControls: true,
     displayName: 'Logic XNOR'
   },
-  textConverterNode: {
+  turnToText: {
     hasOutput: false,
     hasControls: true,
-    displayName: 'Text Converter'
+    displayName: 'Turn To Text'
   },
-  booleanConverterNode: {
+  turnToBoolean: {
     hasOutput: false,
     hasControls: true,
-    displayName: 'Boolean Converter'
+    displayName: 'Turn To Boolean'
   },
-  inputTesterNode: {
+  testInput: {
     hasOutput: false,
     hasControls: true,
-    displayName: 'Input Tester'
+    displayName: 'Test Input'
   },
-  objectEditorNode: {
+  editObject: {
     hasOutput: false,
     hasControls: true,
-    displayName: 'Object Editor'
+    displayName: 'Edit Object'
   },
-  arrayEditorNode: {
+  editArray: {
     hasOutput: false,
     hasControls: true,
-    displayName: 'Array Editor'
+    displayName: 'Edit Array'
   },
-  counterNode: {
+  countInput: {
     hasOutput: true,
     hasControls: true,
-    displayName: 'Counter Node'
+    displayName: 'Count Input'
   },
-  delayNode: {
+  delayInput: {
     hasOutput: true,
     hasControls: true,
-    displayName: 'Delay Node'
+    displayName: 'Delay Input'
   }
 };
 

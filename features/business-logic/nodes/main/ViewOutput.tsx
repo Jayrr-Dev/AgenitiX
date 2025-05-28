@@ -39,9 +39,9 @@ function OutputNode({ id }: { id: string }) {
   /* -------------------------------------------------------------- */
   const values = nodesData
     .map((node) => {
-      // Special handling for InputTester nodes - use 'value' property directly
+      // Special handling for TestInput nodes - use 'value' property directly
       let extractedValue;
-      if (node.type === 'inputTesterNode') {
+      if (node.type === 'testInput') {
         extractedValue = node.data?.value;
       } else {
         extractedValue = extractNodeValue(node.data);

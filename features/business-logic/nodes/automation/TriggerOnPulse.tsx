@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Handle, Position, useReactFlow, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
+import { Handle, Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
 import CustomHandle from '../../handles/CustomHandle'
 import IconForPulse from '../node-icons/IconForPulse'
+import { useFlowStore } from '../../stores/flowStore'
 
 // TYPES
 interface TriggerOnPulseData {
@@ -13,7 +14,7 @@ interface TriggerOnPulseData {
 
 // TRIGGER ON PULSE NODE COMPONENT
 const TriggerOnPulse: React.FC<NodeProps<Node<TriggerOnPulseData & Record<string, unknown>>>> = ({ id, data }) => {
-  const { updateNodeData } = useReactFlow()
+  const updateNodeData = useFlowStore((state) => state.updateNodeData)
   const isTriggered = !!data.triggered
   const [pulsing, setPulsing] = useState(false)
   const duration = typeof data.duration === 'number' ? data.duration : 500

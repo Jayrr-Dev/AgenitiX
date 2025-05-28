@@ -1,14 +1,16 @@
 // TEXT CONVERTER NODE COMPONENT
 // Converts any input to a string and outputs it
 import React, { useEffect } from 'react';
-import { Position, useNodeConnections, useNodesData, useReactFlow, type NodeProps, type Node } from '@xyflow/react';
+import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react';
 import CustomHandle from '../../handles/CustomHandle';
 import { getSingleInputValue, safeStringify, extractNodeValue } from '../utils/nodeUtils';
-import type { AgenNode } from '../../FlowEditor';
+import type { AgenNode } from '../../flow-editor/types';
+import { useFlowStore } from '../../stores/flowStore';
 
 // ---------------------- TYPES ----------------------
 interface TextConverterNodeData {
   value?: unknown;
+  text?: string;
 }
 
 // ------------------- COMPONENT --------------------
@@ -17,24 +19,14 @@ const TextConverterNode: React.FC<NodeProps<Node<TextConverterNodeData & Record<
   const connections = useNodeConnections({ handleType: 'target' });
   const inputConn = connections.find(c => c.targetHandle === 'x');
   const inputNodeId = inputConn?.source;
-  const inputNodesData = useNodesData<AgenNode>(inputNodeId ? [inputNodeId] : []);
+  const inputNodesData = useNodesData(inputNodeId ? [inputNodeId] : []);
   
-  // Extract input value using robust utility
-  let inputValue = undefined;
-  if (inputNodesData.length > 0) {
-    const node = inputNodesData[0];
-    
-    // Special handling for InputTester nodes - use 'value' property directly
-    if (node.type === 'inputTesterNode') {
-      inputValue = node.data?.value;
-    } else {
-      // Use extractNodeValue for other node types
-      inputValue = extractNodeValue(node.data);
-    }
-  }
+  // Extract input value using safe utility
+  const inputValue = getSingleInputValue(inputNodesData);
 
-  // Convert any input to string with safe serialization
+  // Convert any input to string
   let stringValue = '';
+  
   if (inputValue !== undefined) {
     // Handle special number values
     if (typeof inputValue === 'number') {
@@ -93,18 +85,20 @@ const TextConverterNode: React.FC<NodeProps<Node<TextConverterNodeData & Record<
   }
 
   // Update node data for downstream nodes (set both value and text)
-  const { updateNodeData } = useReactFlow();
+  const updateNodeData = useFlowStore((state) => state.updateNodeData);
   useEffect(() => {
-    updateNodeData(id, { value: stringValue, text: stringValue });
-  }, [id, stringValue, updateNodeData]);
+    updateNodeData(id, { value: inputValue, text: stringValue });
+  }, [id, inputValue, stringValue, updateNodeData]);
 
   // UI
   return (
-    <div className="px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-900 shadow border border-blue-300 dark:border-blue-800 flex flex-col items-center min-w-[120px]">
+    <div className="px-4 py-3 rounded-lg bg-purple-50 dark:bg-purple-900 shadow border border-purple-300 dark:border-purple-800 flex flex-col items-center min-w-[120px]">
       {/* INPUT HANDLE (left, any type) */}
       <CustomHandle type="target" position={Position.Left} id="x" dataType="x" />
-      <div className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Text Converter</div>
-      <div className="text-xs text-blue-800 dark:text-blue-200 mb-2">Output: <span className="font-mono">{stringValue}</span></div>
+      <div className="font-semibold text-purple-900 dark:text-purple-100 mb-2">Text Converter</div>
+      <div className="text-xs text-purple-800 dark:text-purple-200 mb-2 text-center break-words max-w-[100px]">
+        {stringValue || 'No input'}
+      </div>
       {/* OUTPUT HANDLE (right, string) */}
       <CustomHandle type="source" position={Position.Right} id="s" dataType="s" />
     </div>

@@ -2,12 +2,13 @@
 'use client'
 
 import React, { useEffect } from 'react'
-import { Position, useNodeConnections, useNodesData, useReactFlow, type NodeProps, type Node } from '@xyflow/react'
+import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
 import CustomHandle from '../../handles/CustomHandle'
 import { useStore } from '@xyflow/react'
 import IconForNot from '../node-icons/IconForNot'
 import { getSingleInputValue, isTruthyValue } from '../utils/nodeUtils'
 import { FloatingNodeId } from '../components/FloatingNodeId'
+import { useFlowStore } from '../../stores/flowStore'
 
 // -----------------------------------------------------------------------------
 // TYPES
@@ -38,16 +39,18 @@ const LogicNot: React.FC<NodeProps<Node<LogicNotData & Record<string, unknown>>>
   const [showUI, setShowUI] = React.useState(false)
 
   // Set output value and input count in node data for downstream nodes
-  const { updateNodeData, deleteElements } = useReactFlow()
+  const updateNodeData = useFlowStore((state) => state.updateNodeData)
+  const removeEdge = useFlowStore((state) => state.removeEdge)
   const edges = useStore(state => state.edges)
+  
   React.useEffect(() => {
     // Prune extra input connections to this NOT node
     const incoming = edges.filter(e => e.target === id && e.targetHandle === 'b')
     if (incoming.length > 1) {
-      const toRemove = incoming.slice(1).map(e => ({ id: e.id }))
-      deleteElements({ edges: toRemove })
+      const toRemove = incoming.slice(1)
+      toRemove.forEach(edge => removeEdge(edge.id))
     }
-  }, [edges, id, deleteElements])
+  }, [edges, id, removeEdge])
 
   React.useEffect(() => {
     updateNodeData(id, { 

@@ -84,16 +84,29 @@ const IconForPulseCycles: React.FC<IconForPulseCyclesProps> = ({ progress, onTog
           }}
           aria-label={isRunning ? 'Stop cycle' : 'Start cycle'}
         >
-              {/* {isRunning ? '■' : '▶'} */}
-                {isRunning ? (
-                    <span className="text-xs font-bold flex items-center justify-center leading-none pl-0 pb-0.5" style={{fontSize: size * 0.18}}>
-                    ■
-                    </span>
-                ) : (
-                    <span className="text-xs font-bold flex items-center justify-center leading-none pl-1" style={{fontSize: size * 0.18}}>
-                    ▶
-                    </span>
-                )}
+          {isRunning ? (
+            // Pause SVG icon
+            <svg 
+              width={size * 0.18} 
+              height={size * 0.18} 
+              viewBox="0 0 24 24" 
+              fill="currentColor"
+  
+            >
+              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+            </svg>
+          ) : (
+            // Play SVG icon
+            <svg 
+              width={size * 0.24} 
+              height={size * 0.24} 
+              viewBox="0 0 24 24" 
+              fill="currentColor"
+              className="mr-0"
+            >
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          )}
         </button>
       </div>
       {/* LABEL */}
@@ -101,5 +114,6 @@ const IconForPulseCycles: React.FC<IconForPulseCyclesProps> = ({ progress, onTog
     </div>
   )
 }
+
 
 export default IconForPulseCycles

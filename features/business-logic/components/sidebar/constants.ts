@@ -23,30 +23,30 @@ export const STORAGE_PREFIX = 'sidebar-stencil-order';
 
 export const AVAILABLE_NODES = {
   // Main folder nodes
-  'OutputNode': { nodeType: 'outputnode', folder: 'main', label: 'Output Node', description: 'Display the final result of your flow. Connect any node to see its output value in a clean, readable format.' },
+  'ViewOutput': { nodeType: 'viewOutput', folder: 'main', label: 'View Output', description: 'Display the final result of your flow. Connect any node to see its output value in a clean, readable format.' },
   'LogicAnd': { nodeType: 'logicAnd', folder: 'main', label: 'AND (⋀)', description: 'Only outputs TRUE when ALL connected inputs are true. Like saying "I need this AND that AND the other thing to proceed."' },
   'LogicOr': { nodeType: 'logicOr', folder: 'main', label: 'OR (⋁)', description: 'Outputs TRUE when ANY connected input is true. Like saying "I need this OR that OR any of these options to proceed."' },
   'LogicNot': { nodeType: 'logicNot', folder: 'main', label: 'NOT (¬)', description: 'Flips the input - turns TRUE into FALSE and FALSE into TRUE. Perfect for creating opposite conditions.' },
   'LogicXor': { nodeType: 'logicXor', folder: 'main', label: 'XOR (⊕)', description: 'Only TRUE when exactly one input is true. Like an "either/or" choice - you can have one thing OR another, but not both.' },
   'LogicXnor': { nodeType: 'logicXnor', folder: 'main', label: 'XNOR (⊙)', description: 'TRUE when all inputs match (all true OR all false). Perfect for checking if things are "in sync" with each other.' },
-  'InputTesterNode': { nodeType: 'inputTesterNode', folder: 'main', label: 'Input Tester', description: 'Create test values to experiment with your flow. Type in any value and see how it affects connected nodes.' },
-  'ObjectEditorNode': { nodeType: 'objectEditorNode', folder: 'main', label: 'Object Editor', description: 'Create and edit complex data objects with multiple properties. Perfect for structured data like user profiles or settings.' },
-  'ArrayEditorNode': { nodeType: 'arrayEditorNode', folder: 'main', label: 'Array Editor', description: 'Create and edit lists of items. Great for managing collections like shopping lists, user groups, or data sets.' },
+  'TestInput': { nodeType: 'testInput', folder: 'main', label: 'Test Input', description: 'Create test values to experiment with your flow. Type in any value and see how it affects connected nodes.' },
+  'EditObject': { nodeType: 'editObject', folder: 'main', label: 'Edit Object', description: 'Create and edit complex data objects with multiple properties. Perfect for structured data like user profiles or settings.' },
+  'EditArray': { nodeType: 'editArray', folder: 'main', label: 'Edit Array', description: 'Create and edit lists of items. Great for managing collections like shopping lists, user groups, or data sets.' },
   
   // Media folder nodes
-  'TextNode': { nodeType: 'textNode', folder: 'media', label: 'Text', description: 'Create and edit text content. Use the textarea to type your message, then connect to other nodes to pass the text along.' },
-  'TextUppercaseNode': { nodeType: 'uppercaseNode', folder: 'media', label: 'Uppercase', description: 'Takes any text input and converts it to ALL CAPITAL LETTERS. Perfect for making text stand out or formatting headers.' },
-  'TextConverterNode': { nodeType: 'textConverterNode', folder: 'media', label: 'Text Converter', description: 'Converts any input (numbers, objects, etc.) into readable text. Great for displaying complex data as simple text.' },
+  'CreateText': { nodeType: 'createText', folder: 'media', label: 'Create Text', description: 'Create and edit text content. Use the textarea to type your message, then connect to other nodes to pass the text along.' },
+  'TurnToUppercase': { nodeType: 'turnToUppercase', folder: 'media', label: 'Turn To Uppercase', description: 'Takes any text input and converts it to ALL CAPITAL LETTERS. Perfect for making text stand out or formatting headers.' },
+  'TurnToText': { nodeType: 'turnToText', folder: 'media', label: 'Turn To Text', description: 'Converts any input (numbers, objects, etc.) into readable text. Great for displaying complex data as simple text.' },
   
   // Automation folder nodes
   'TriggerOnClick': { nodeType: 'triggerOnClick', folder: 'automation', label: 'Trigger', description: 'Acts like a gate - click the button to allow data to flow through. Great for controlling when things happen in your flow.' },
   'TriggerOnPulse': { nodeType: 'triggerOnPulse', folder: 'automation', label: 'Pulse Trigger', description: 'Sends a quick "pulse" signal when clicked. Like pressing a doorbell - one click sends one signal to connected nodes.' },
   'TriggerOnToggle': { nodeType: 'triggerOnToggle', folder: 'automation', label: 'Toggle Trigger', description: 'A simple ON/OFF switch. Click to toggle between true and false states. Perfect for enabling/disabling parts of your flow.' },
-  'TriggerOnPulseCycle': { nodeType: 'triggerOnPulseCycle', folder: 'automation', label: 'Pulse Cycle', description: 'Automatically sends repeated pulses at timed intervals. Set how often and how many times to create automated sequences.' },
-  'TriggerOnToggleCycle': { nodeType: 'triggerOnToggleCycle', folder: 'automation', label: 'Toggle Cycle', description: 'Automatically switches between ON and OFF states. Set custom durations for each state to create blinking or cycling patterns.' },
-  'BooleanConverterNode': { nodeType: 'booleanConverterNode', folder: 'automation', label: 'Boolean Converter', description: 'Converts any input into TRUE or FALSE. Numbers become false if zero, text becomes false if empty, etc.' },
-  'CounterNode': { nodeType: 'counterNode', folder: 'automation', label: 'Counter', description: 'Counts up or down automatically. Set the starting number and step size. Counts each time it receives an input signal.' },
-  'DelayNode': { nodeType: 'delayNode', folder: 'automation', label: 'Delay', description: 'Adds a time delay to your flow. Data goes in, waits for the specified time, then comes out. Perfect for creating timed sequences.' },
+  'CyclePulse': { nodeType: 'cyclePulse', folder: 'automation', label: 'Cycle Pulse', description: 'Automatically sends repeated pulses at timed intervals. Set how often and how many times to create automated sequences.' },
+  'CycleToggle': { nodeType: 'cycleToggle', folder: 'automation', label: 'Cycle Toggle', description: 'Automatically switches between ON and OFF states. Set custom durations for each state to create blinking or cycling patterns.' },
+  'TurnToBoolean': { nodeType: 'turnToBoolean', folder: 'automation', label: 'Turn To Boolean', description: 'Converts any input into TRUE or FALSE. Numbers become false if zero, text becomes false if empty, etc.' },
+  'CountInput': { nodeType: 'countInput', folder: 'automation', label: 'Count Input', description: 'Counts up or down automatically. Set the starting number and step size. Counts each time it receives an input signal.' },
+  'DelayInput': { nodeType: 'delayInput', folder: 'automation', label: 'Delay Input', description: 'Adds a time delay to your flow. Data goes in, waits for the specified time, then comes out. Perfect for creating timed sequences.' },
   
   // Integrations folder nodes (empty for now)
   // Add new integration nodes here as they're created
@@ -81,26 +81,26 @@ export const createStencils = (filenames: (keyof typeof AVAILABLE_NODES)[], pref
 // Variant A: Core, Logic, Stores, Testing, Time
 export const DEFAULT_STENCILS_A: Record<TabKeyA, NodeStencil[]> = {
   core: createStencils([
-    'TextNode', 
-    'OutputNode', 
-    'InputTesterNode', 
-    'TextUppercaseNode', 
-    'TextConverterNode', 
-    'BooleanConverterNode',
+    'CreateText', 
+    'ViewOutput', 
+    'TestInput', 
+    'TurnToUppercase', 
+    'TurnToText', 
+    'TurnToBoolean',
     'LogicAnd', 
     'LogicOr', 
     'LogicNot', 
     'LogicXor', 
     'LogicXnor',
-    'ObjectEditorNode', 
-    'ArrayEditorNode',
+    'EditObject', 
+    'EditArray',
     'TriggerOnClick', 
     'TriggerOnPulse', 
     'TriggerOnToggle',
-    'TriggerOnPulseCycle', 
-    'TriggerOnToggleCycle',
-    'CounterNode',
-    'DelayNode'
+    'CyclePulse', 
+    'CycleToggle',
+    'CountInput',
+    'DelayInput'
   ], 'core'),
   logic: [
     // Logic nodes moved to core for testing
@@ -160,7 +160,7 @@ export const DEFAULT_STENCILS_D: Record<TabKeyD, NodeStencil[]> = {
   flow: [
     // Flow control nodes
   ],
-  cyclers: createStencils(['TriggerOnPulseCycle', 'TriggerOnToggleCycle'], 'cyclers'),
+  cyclers: createStencils(['CyclePulse', 'CycleToggle'], 'cyclers'),
   smart: [
     // Smart automation nodes
   ],
@@ -174,7 +174,7 @@ export const DEFAULT_STENCILS_E: Record<TabKeyE, NodeStencil[]> = {
   special: [
     // Special purpose nodes
   ],
-  math: createStencils(['CounterNode'], 'math'),
+  math: createStencils(['CountInput'], 'math'),
   stuff: [
     // General stuff nodes
   ],

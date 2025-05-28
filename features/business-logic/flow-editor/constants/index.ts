@@ -24,13 +24,13 @@ export const TYPE_MAP: TypeMap = {
 // ============================================================================
 
 export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
-  textNode: {
+  createText: {
     defaultData: { text: '', heldText: '' }
   },
-  uppercaseNode: {
+  turnToUppercase: {
     defaultData: { text: '' }
   },
-  outputnode: {
+  viewOutput: {
     defaultData: { label: 'Result' },
     hasTargetPosition: true,
     targetPosition: Position.Top
@@ -41,25 +41,29 @@ export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
   triggerOnPulse: {
     defaultData: { triggered: false, duration: 500 }
   },
-  triggerOnPulseCycle: {
+  cyclePulse: {
     defaultData: {
       triggered: false,
+      isRunning: false,
       initialState: false,
       cycleDuration: 2000,
       pulseDuration: 500,
-      infinite: true
+      infinite: true,
+      maxCycles: 1
     }
   },
   triggerOnToggle: {
     defaultData: { triggered: false }
   },
-  triggerOnToggleCycle: {
+  cycleToggle: {
     defaultData: {
       triggered: false,
+      isRunning: false,
       initialState: false,
       onDuration: 4000,
       offDuration: 4000,
-      infinite: true
+      infinite: true,
+      maxCycles: 1
     }
   },
   logicAnd: {
@@ -77,25 +81,25 @@ export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
   logicXnor: {
     defaultData: { value: false }
   },
-  textConverterNode: {
+  turnToText: {
     defaultData: { value: '' }
   },
-  booleanConverterNode: {
+  turnToBoolean: {
     defaultData: { value: '', triggered: false }
   },
-  inputTesterNode: {
+  testInput: {
     defaultData: { value: undefined }
   },
-  objectEditorNode: {
+  editObject: {
     defaultData: { value: {} }
   },
-  arrayEditorNode: {
+  editArray: {
     defaultData: { value: [] }
   },
-  counterNode: {
+  countInput: {
     defaultData: { count: 0, multiplier: 1 }
   },
-  delayNode: {
+  delayInput: {
     defaultData: { delay: 1000, isProcessing: false }
   }
 };
@@ -107,27 +111,31 @@ export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
 export const INITIAL_NODES: AgenNode[] = [
   {
     id: '1',
-    type: 'textNode',
+    type: 'createText',
     position: { x: -100, y: -50 },
+    deletable: true,
     data: { text: 'hello', heldText: 'hello', defaultText: 'hello' }
   },
   {
     id: '2',
-    type: 'textNode',
+    type: 'createText',
     position: { x: 0, y: 100 },
+    deletable: true,
     data: { text: 'world', heldText: 'world', defaultText: 'world' }
   },
   {
     id: '3',
-    type: 'uppercaseNode',
+    type: 'turnToUppercase',
     position: { x: 100, y: -100 },
+    deletable: true,
     data: { text: '' }
   },
   {
     id: '4',
-    type: 'outputnode',
+    type: 'viewOutput',
     position: { x: 300, y: -75 },
     targetPosition: Position.Top,
+    deletable: true,
     data: { label: 'Result' }
   }
 ];
@@ -137,21 +145,33 @@ export const INITIAL_EDGES: AgenEdge[] = [
     id: 'e1-3',
     source: '1',
     target: '3',
+    sourceHandle: 's',
+    targetHandle: 's',
     type: 'default',
+    deletable: true,
+    focusable: true,
     style: { stroke: TYPE_MAP['s'].color, strokeWidth: 2 }
   },
   {
     id: 'e3-4',
     source: '3',
     target: '4',
+    sourceHandle: 's',
+    targetHandle: 'x',
     type: 'default',
+    deletable: true,
+    focusable: true,
     style: { stroke: TYPE_MAP['s'].color, strokeWidth: 2 }
   },
   {
     id: 'e2-4',
     source: '2',
     target: '4',
+    sourceHandle: 's',
+    targetHandle: 'x',
     type: 'default',
+    deletable: true,
+    focusable: true,
     style: { stroke: TYPE_MAP['s'].color, strokeWidth: 2 }
   }
 ];

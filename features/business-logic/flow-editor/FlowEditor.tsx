@@ -12,34 +12,30 @@ import { UndoRedoProvider } from '../components/UndoRedoContext';
 import { FlowCanvas } from './components/FlowCanvas';
 import { NodeDisplayProvider } from './contexts/NodeDisplayContext';
 
-// Import hooks
-import { useFlowEditorState } from './hooks/useFlowEditorState';
-import { useReactFlowHandlers } from './hooks/useReactFlowHandlers';
+// Import Zustand store
+import { useFlowStore } from '../stores/flowStore';
+
+// Import hooks (only the ones we still need)
 import { useDragAndDrop } from './hooks/useDragAndDrop';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 // Import types
 import type { Node, Edge } from '@xyflow/react';
 import type { AgenNode, AgenEdge } from './types';
+import { getNodeOutput } from './utils/outputUtils';
 
 /**
  * FlowEditor - Main component for the visual flow editor
  * 
- * This component has been refactored from a monolithic 748-line file into a modular
- * architecture with clear separation of concerns:
- * 
- * - State management: useFlowEditorState hook
- * - ReactFlow handlers: useReactFlowHandlers hook  
- * - Drag & drop: useDragAndDrop hook
- * - Keyboard shortcuts: useKeyboardShortcuts hook
- * - UI rendering: FlowCanvas component
+ * This component has been refactored to use Zustand for state management,
+ * providing a single source of truth and eliminating synchronization issues.
  * 
  * Benefits:
- * - Much easier to test individual pieces
- * - Clear separation of concerns
- * - Reusable hooks
- * - Better performance with targeted re-renders
- * - Easier to extend and maintain
+ * - Centralized state management with Zustand
+ * - Automatic reactivity across components
+ * - No more manual state synchronization
+ * - Better performance with optimized re-renders
+ * - Easier debugging with Zustand DevTools
  */
 export default function FlowEditor() {
   // ============================================================================
@@ -53,15 +49,65 @@ export default function FlowEditor() {
   // ============================================================================
   
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const flowInstanceRef = useRef<any>(null);
 
   // ============================================================================
-  // STATE MANAGEMENT
+  // ZUSTAND STORE
   // ============================================================================
   
-  const flowState = useFlowEditorState();
+  const {
+    // State
+    nodes,
+    edges,
+    selectedNodeId,
+    selectedEdgeId,
+    showHistoryPanel,
+    inspectorLocked,
+    nodeErrors,
+    
+    // Actions
+    updateNodeData,
+    addNode,
+    removeNode,
+    updateNodePosition,
+    addEdge,
+    removeEdge,
+    selectNode,
+    selectEdge,
+    clearSelection,
+    toggleHistoryPanel,
+    setInspectorLocked,
+    logNodeError,
+    clearNodeErrors,
+    copySelectedNodes,
+    pasteNodes,
+    setNodes,
+    setEdges,
+    forceReset,
+  } = useFlowStore();
 
   // ============================================================================
-  // UNDO/REDO STATE
+  // DERIVED STATE
+  // ============================================================================
+  
+  const selectedNode = selectedNodeId ? nodes.find(n => n.id === selectedNodeId) || null : null;
+  const selectedEdge = selectedEdgeId ? edges.find(e => e.id === selectedEdgeId) || null : null;
+  const selectedOutput = selectedNode ? getNodeOutput(selectedNode, nodes, edges) : null;
+  const errors = selectedNodeId ? nodeErrors[selectedNodeId] || [] : [];
+
+  // Sync ReactFlow's selection system with our custom selection state
+  const nodesWithSelection = nodes.map(node => ({
+    ...node,
+    selected: node.id === selectedNodeId
+  }));
+
+  const edgesWithSelection = edges.map(edge => ({
+    ...edge,
+    selected: edge.id === selectedEdgeId
+  }));
+
+  // ============================================================================
+  // UNDO/REDO STATE (keeping for now, can be moved to Zustand later)
   // ============================================================================
   
   const [actionHistory, setActionHistory] = useState<ActionHistoryEntry[]>([]);
@@ -71,33 +117,119 @@ export default function FlowEditor() {
   // REACTFLOW HANDLERS
   // ============================================================================
   
-  const reactFlowHandlers = useReactFlowHandlers({
-    nodes: flowState.nodes,
-    edges: flowState.edges,
-    setNodes: flowState.setNodes,
-    setEdges: flowState.setEdges,
-    onSelectionChange: flowState.selectNode,
-    onEdgeSelectionChange: flowState.selectEdge
-  });
+  const handleConnect = useCallback((connection: any) => {
+    const newEdge: AgenEdge = {
+      id: `edge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      source: connection.source,
+      target: connection.target,
+      sourceHandle: connection.sourceHandle,
+      targetHandle: connection.targetHandle,
+      type: 'default',
+      deletable: true,
+      focusable: true,
+      style: { strokeWidth: 2, stroke: '#3b82f6' }
+    };
+    addEdge(newEdge);
+  }, [addEdge]);
+
+  const handleNodesChange = useCallback((changes: any[]) => {
+    changes.forEach(change => {
+      if (change.type === 'position' && change.position) {
+        updateNodePosition(change.id, change.position);
+      } else if (change.type === 'remove') {
+        removeNode(change.id);
+      } else if (change.type === 'select') {
+        if (change.selected) {
+          selectNode(change.id);
+        }
+      }
+    });
+  }, [updateNodePosition, removeNode, selectNode]);
+
+  const handleEdgesChange = useCallback((changes: any[]) => {
+    changes.forEach(change => {
+      if (change.type === 'remove') {
+        removeEdge(change.id);
+      } else if (change.type === 'select') {
+        if (change.selected) {
+          selectEdge(change.id);
+        }
+      }
+    });
+  }, [removeEdge, selectEdge]);
+
+  const handleSelectionChange = useCallback((selection: any) => {
+    if (selection.nodes.length > 0) {
+      selectNode(selection.nodes[0].id);
+    } else if (selection.edges.length > 0) {
+      selectEdge(selection.edges[0].id);
+    } else {
+      clearSelection();
+    }
+  }, [selectNode, selectEdge, clearSelection]);
+
+  const handleInit = useCallback((instance: any) => {
+    flowInstanceRef.current = instance;
+  }, []);
+
+  // ============================================================================
+  // EDGE RECONNECTION HANDLERS
+  // ============================================================================
+  
+  const edgeReconnectSuccessful = useRef(true);
+
+  const handleReconnectStart = useCallback(() => {
+    edgeReconnectSuccessful.current = false;
+  }, []);
+
+  const handleReconnect = useCallback((oldEdge: any, newConnection: any) => {
+    edgeReconnectSuccessful.current = true;
+    
+    // Remove the old edge and add a new one with the new connection
+    removeEdge(oldEdge.id);
+    
+    const newEdge: AgenEdge = {
+      id: `edge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      source: newConnection.source,
+      target: newConnection.target,
+      sourceHandle: newConnection.sourceHandle,
+      targetHandle: newConnection.targetHandle,
+      type: oldEdge.type || 'default',
+      deletable: true,
+      focusable: true,
+      style: oldEdge.style || { strokeWidth: 2, stroke: '#3b82f6' }
+    };
+    
+    addEdge(newEdge);
+  }, [removeEdge, addEdge]);
+
+  const handleReconnectEnd = useCallback((_: any, edge: any) => {
+    if (!edgeReconnectSuccessful.current) {
+      // If reconnection was not successful, remove the edge
+      removeEdge(edge.id);
+    }
+    edgeReconnectSuccessful.current = true;
+  }, [removeEdge]);
+
+  const reactFlowHandlers = {
+    onConnect: handleConnect,
+    onNodesChange: handleNodesChange,
+    onEdgesChange: handleEdgesChange,
+    onSelectionChange: handleSelectionChange,
+    onInit: handleInit,
+    onReconnectStart: handleReconnectStart,
+    onReconnect: handleReconnect,
+    onReconnectEnd: handleReconnectEnd,
+  };
 
   // ============================================================================
   // DRAG AND DROP
   // ============================================================================
   
   const dragAndDrop = useDragAndDrop({
-    flowInstance: reactFlowHandlers.flowInstance,
+    flowInstance: flowInstanceRef,
     wrapperRef,
-    onNodeAdd: flowState.addNode
-  });
-
-  // ============================================================================
-  // KEYBOARD SHORTCUTS
-  // ============================================================================
-  
-  useKeyboardShortcuts({
-    onCopy: flowState.copySelectedNodes,
-    onPaste: flowState.pasteNodes,
-    onToggleHistory: flowState.toggleHistoryPanel
+    onNodeAdd: addNode
   });
 
   // ============================================================================
@@ -105,15 +237,15 @@ export default function FlowEditor() {
   // ============================================================================
   
   const handleDeleteNode = useCallback((nodeId: string) => {
-    flowState.removeNode(nodeId);
+    removeNode(nodeId);
     // Clear selection if the deleted node was selected
-    if (flowState.selectedNodeId === nodeId) {
-      flowState.clearSelection();
+    if (selectedNodeId === nodeId) {
+      clearSelection();
     }
-  }, [flowState]);
+  }, [removeNode, selectedNodeId, clearSelection]);
 
   const handleDuplicateNode = useCallback((nodeId: string) => {
-    const nodeToDuplicate = flowState.nodes.find(n => n.id === nodeId);
+    const nodeToDuplicate = nodes.find(n => n.id === nodeId);
     if (!nodeToDuplicate) return;
 
     // Create a new node with a unique ID and offset position
@@ -129,11 +261,29 @@ export default function FlowEditor() {
       data: { ...nodeToDuplicate.data }
     } as AgenNode;
 
-    flowState.addNode(newNode);
+    addNode(newNode);
     
     // Select the new duplicated node
-    flowState.selectNode(newId);
-  }, [flowState]);
+    selectNode(newId);
+  }, [nodes, addNode, selectNode]);
+
+  const handleUpdateNodeId = useCallback((oldId: string, newId: string) => {
+    // For now, we'll keep the old ID (this feature can be implemented later if needed)
+    console.log('Update node ID not implemented yet:', oldId, newId);
+  }, []);
+
+  // ============================================================================
+  // KEYBOARD SHORTCUTS
+  // ============================================================================
+  
+  // Using ReactFlow's built-in delete functionality (deleteKeyCode prop)
+  // instead of custom delete handlers for better reliability
+  useKeyboardShortcuts({
+    onCopy: copySelectedNodes,
+    onPaste: pasteNodes,
+    onToggleHistory: toggleHistoryPanel
+    // Removed onDelete - using ReactFlow's built-in delete functionality
+  });
 
   // ============================================================================
   // UNDO/REDO HANDLERS
@@ -145,12 +295,12 @@ export default function FlowEditor() {
   }, []);
 
   const handleNodesChangeWithHistory = useCallback((newNodes: Node[]) => {
-    flowState.setNodes(newNodes as AgenNode[]);
-  }, [flowState]);
+    setNodes(newNodes as AgenNode[]);
+  }, [setNodes]);
 
   const handleEdgesChangeWithHistory = useCallback((newEdges: Edge[]) => {
-    flowState.setEdges(newEdges as AgenEdge[]);
-  }, [flowState]);
+    setEdges(newEdges as AgenEdge[]);
+  }, [setEdges]);
 
   // ============================================================================
   // ERROR LOGGING SETUP
@@ -170,8 +320,8 @@ export default function FlowEditor() {
                              message.includes('Expected') ||
                              message.includes('Internal React error');
       
-      if (flowState.selectedNodeId && !isReactInternal) {
-        flowState.logNodeError(flowState.selectedNodeId, message, 'error', 'console.error');
+      if (selectedNodeId && !isReactInternal) {
+        logNodeError(selectedNodeId, message, 'error', 'console.error');
       }
     };
 
@@ -184,8 +334,8 @@ export default function FlowEditor() {
                              message.includes('Warning:') ||
                              message.includes('validateDOMNesting');
       
-      if (flowState.selectedNodeId && !isReactInternal) {
-        flowState.logNodeError(flowState.selectedNodeId, message, 'warning', 'console.warn');
+      if (selectedNodeId && !isReactInternal) {
+        logNodeError(selectedNodeId, message, 'warning', 'console.warn');
       }
     };
 
@@ -193,71 +343,91 @@ export default function FlowEditor() {
       console.error = originalError;
       console.warn = originalWarn;
     };
-  }, [flowState.selectedNodeId, flowState.logNodeError]);
+  }, [selectedNodeId, logNodeError]);
 
   // ============================================================================
   // MOUNT EFFECT
   // ============================================================================
   
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // ============================================================================
   // RENDER
   // ============================================================================
   
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg">Loading Flow Editor...</div>
+      </div>
+    );
+  }
+
   return (
-    <NodeDisplayProvider>
+    <ReactFlowProvider>
       <UndoRedoProvider>
-        <ReactFlowProvider>
-        <div className="flex h-full w-full">
-          <Sidebar />
-          <DebugTool />
-
-          <FlowCanvas
-            nodes={flowState.nodes}
-            edges={flowState.edges}
-            selectedNode={flowState.selectedNode}
-            selectedEdge={flowState.selectedEdge}
-            selectedOutput={flowState.selectedOutput}
-            nodeErrors={flowState.nodeErrors}
-            showHistoryPanel={flowState.showHistoryPanel}
-            actionHistory={actionHistory}
-            historyIndex={historyIndex}
-            wrapperRef={wrapperRef}
-            updateNodeData={flowState.updateNodeData}
-            updateNodeId={flowState.updateNodeId}
-            logNodeError={flowState.logNodeError}
-            clearNodeErrors={flowState.clearNodeErrors}
-            onToggleHistory={flowState.toggleHistoryPanel}
-            onDragOver={dragAndDrop.onDragOver}
-            onDrop={dragAndDrop.onDrop}
-            onDeleteNode={handleDeleteNode}
-            onDuplicateNode={handleDuplicateNode}
-            onDeleteEdge={flowState.removeEdge}
-            reactFlowHandlers={reactFlowHandlers}
-            inspectorLocked={flowState.inspectorLocked}
-            setInspectorLocked={flowState.setInspectorLocked}
-          />
-
-          {/* UNDO/REDO MANAGER */}
-          <UndoRedoManager
-            nodes={flowState.nodes}
-            edges={flowState.edges}
-            onNodesChange={handleNodesChangeWithHistory}
-            onEdgesChange={handleEdgesChangeWithHistory}
-            onHistoryChange={handleHistoryChange}
-            config={{
-              maxHistorySize: 100,
-              debounceMs: 300,
-              enableViewportTracking: false,
-              enableAutoSave: true,
-              compressionThreshold: 50
-            }}
-          />
-        </div>
-        </ReactFlowProvider>
+        <NodeDisplayProvider>
+          <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+            {/* SIDEBAR */}
+            <Sidebar />
+            
+            {/* MAIN CONTENT */}
+            <div className="flex-1 flex flex-col">
+              {/* TEMPORARY RESET BUTTON */}
+              <div className="absolute top-4 left-4 z-50">
+                <button
+                  onClick={forceReset}
+                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+                  title="Reset to initial state (clears localStorage)"
+                >
+                  🔄 Reset Flow
+                </button>
+              </div>
+              
+              {/* UNDO/REDO TOOLBAR */}
+              <UndoRedoManager
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={handleNodesChangeWithHistory}
+                onEdgesChange={handleEdgesChangeWithHistory}
+                onHistoryChange={handleHistoryChange}
+              />
+              
+              {/* FLOW CANVAS */}
+              <FlowCanvas
+                nodes={nodesWithSelection}
+                edges={edgesWithSelection}
+                selectedNode={selectedNode}
+                selectedEdge={selectedEdge}
+                selectedOutput={selectedOutput}
+                nodeErrors={nodeErrors}
+                showHistoryPanel={showHistoryPanel}
+                actionHistory={actionHistory}
+                historyIndex={historyIndex}
+                wrapperRef={wrapperRef}
+                updateNodeData={updateNodeData}
+                updateNodeId={handleUpdateNodeId}
+                logNodeError={logNodeError}
+                clearNodeErrors={clearNodeErrors}
+                onToggleHistory={toggleHistoryPanel}
+                onDragOver={dragAndDrop.onDragOver}
+                onDrop={dragAndDrop.onDrop}
+                onDeleteNode={handleDeleteNode}
+                onDuplicateNode={handleDuplicateNode}
+                onDeleteEdge={removeEdge}
+                inspectorLocked={inspectorLocked}
+                setInspectorLocked={setInspectorLocked}
+                reactFlowHandlers={reactFlowHandlers}
+              />
+              
+              {/* DEBUG TOOL */}
+              <DebugTool />
+            </div>
+          </div>
+        </NodeDisplayProvider>
       </UndoRedoProvider>
-    </NodeDisplayProvider>
+    </ReactFlowProvider>
   );
 } 

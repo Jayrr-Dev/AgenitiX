@@ -1,8 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { FaSearch, FaLock, FaLockOpen } from 'react-icons/fa';
-import { NodeInspectorProps } from './types';
 import { NODE_TYPE_CONFIG } from './constants';
 import { useInspectorState } from './hooks/useInspectorState';
 import { JsonHighlighter } from './utils/JsonHighlighter';
@@ -11,31 +10,96 @@ import { NodeOutput } from './components/NodeOutput';
 import { NodeControls } from './components/NodeControls';
 import { ErrorLog } from './components/ErrorLog';
 import { EdgeInspector } from './components/EdgeInspector';
+import { useFlowStore, useSelectedNode, useSelectedEdge, useNodeErrors } from '../../stores/flowStore';
+import type { AgenNode } from '../../flow-editor/types';
+import { getNodeOutput } from '../../flow-editor/utils/outputUtils';
 
-const NodeInspector = React.memo<NodeInspectorProps>(function NodeInspector({
-  node,
-  selectedEdge,
-  allNodes,
-  updateNodeData,
-  output,
-  errors,
-  onClearErrors,
-  onLogError,
-  onUpdateNodeId,
-  onDeleteNode,
-  onDuplicateNode,
-  onDeleteEdge,
-  inspectorLocked,
-  setInspectorLocked,
-}) {
-  const inspectorState = useInspectorState(node);
+const NodeInspector = React.memo(function NodeInspector() {
+  // Get state from Zustand store
+  const {
+    nodes,
+    edges,
+    selectedNodeId,
+    selectedEdgeId,
+    inspectorLocked,
+    setInspectorLocked,
+    updateNodeData,
+    updateNodeId,
+    logNodeError,
+    clearNodeErrors,
+    removeNode,
+    removeEdge,
+    addNode,
+    selectNode,
+  } = useFlowStore();
 
-  // Create combined inspector state with lock from props
-  const combinedInspectorState = {
+  // Get selected items using selectors
+  const selectedNode = useSelectedNode();
+  const selectedEdge = useSelectedEdge();
+  // Always call useNodeErrors to avoid conditional hook usage
+  const errors = useNodeErrors(selectedNodeId);
+
+  // Get output for selected node
+  const output = useMemo(() => {
+    if (!selectedNode) return null;
+    return getNodeOutput(selectedNode, nodes, edges);
+  }, [selectedNode, nodes, edges]);
+
+  const inspectorState = useInspectorState(selectedNode);
+
+  // Create combined inspector state with lock from store
+  const combinedInspectorState = useMemo(() => ({
     ...inspectorState,
     locked: inspectorLocked,
     setLocked: setInspectorLocked,
-  };
+  }), [inspectorState, inspectorLocked, setInspectorLocked]);
+
+  // Node action handlers
+  const handleUpdateNodeId = useCallback((oldId: string, newId: string) => {
+    const success = updateNodeId(oldId, newId);
+    if (!success) {
+      console.warn(`Failed to update node ID from "${oldId}" to "${newId}" - ID might already exist`);
+    }
+    return success;
+  }, [updateNodeId]);
+
+  const handleDeleteNode = useCallback((nodeId: string) => {
+    removeNode(nodeId);
+  }, [removeNode]);
+
+  const handleDuplicateNode = useCallback((nodeId: string) => {
+    const nodeToDuplicate = nodes.find(n => n.id === nodeId);
+    if (!nodeToDuplicate) return;
+
+    // Create a new node with a unique ID and offset position
+    const newId = `${nodeId}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const newNode = {
+      ...nodeToDuplicate,
+      id: newId,
+      position: { 
+        x: nodeToDuplicate.position.x + 40, 
+        y: nodeToDuplicate.position.y + 40 
+      },
+      selected: false,
+      data: { ...nodeToDuplicate.data }
+    } as AgenNode;
+
+    // Add the new node using the Zustand store
+    addNode(newNode);
+    
+    // Select the new duplicated node
+    selectNode(newId);
+  }, [nodes, addNode, selectNode]);
+
+  const handleDeleteEdge = useCallback((edgeId: string) => {
+    removeEdge(edgeId);
+  }, [removeEdge]);
+
+  const handleClearErrors = useCallback(() => {
+    if (selectedNodeId) {
+      clearNodeErrors(selectedNodeId);
+    }
+  }, [selectedNodeId, clearNodeErrors]);
 
   // Early return for locked state
   if (inspectorLocked) {
@@ -54,8 +118,8 @@ const NodeInspector = React.memo<NodeInspectorProps>(function NodeInspector({
   }
 
   // Show node inspector if node is selected (prioritize nodes over edges)
-  if (node) {
-    const nodeConfig = NODE_TYPE_CONFIG[node.type];
+  if (selectedNode) {
+    const nodeConfig = NODE_TYPE_CONFIG[selectedNode.type];
     const hasRightColumn = nodeConfig.hasOutput || nodeConfig.hasControls;
 
     return (
@@ -63,10 +127,10 @@ const NodeInspector = React.memo<NodeInspectorProps>(function NodeInspector({
         {/* COLUMN 1: NODE LABEL + NODE DATA */}
         <div className="flex-1 flex flex-col gap-3 min-w-0 w-full">
           <NodeHeader 
-            node={node} 
-            onUpdateNodeId={onUpdateNodeId} 
-            onDeleteNode={onDeleteNode} 
-            onDuplicateNode={onDuplicateNode}
+            node={selectedNode} 
+            onUpdateNodeId={handleUpdateNodeId} 
+            onDeleteNode={handleDeleteNode} 
+            onDuplicateNode={handleDuplicateNode}
             inspectorState={combinedInspectorState}
           />
           
@@ -76,7 +140,7 @@ const NodeInspector = React.memo<NodeInspectorProps>(function NodeInspector({
               Node Data:
             </h4>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-md border p-3 overflow-y-auto overflow-x-auto flex-1 min-w-0 w-full">
-              <JsonHighlighter data={node.data} className="w-full min-w-0 flex-1" />
+              <JsonHighlighter data={selectedNode.data} className="w-full min-w-0 flex-1" />
             </div>
           </div>
         </div>
@@ -99,40 +163,36 @@ const NodeInspector = React.memo<NodeInspectorProps>(function NodeInspector({
                 )}
               </button>
               
-              {onDuplicateNode && (
-                <button
-                  onClick={() => onDuplicateNode(node.id)}
-                  className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
-                  title="Duplicate Node"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </button>
-              )}
+              <button
+                onClick={() => handleDuplicateNode(selectedNode.id)}
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                title="Duplicate Node"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </button>
               
-              {onDeleteNode && (
-                <button
-                  onClick={() => onDeleteNode(node.id)}
-                  className="flex items-center gap-1 px-2 py-1 text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
-                  title="Delete Node"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              )}
+              <button
+                onClick={() => handleDeleteNode(selectedNode.id)}
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
+                title="Delete Node"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
             </div>
 
             {nodeConfig.hasOutput && (
-              <NodeOutput output={output} nodeType={node.type} />
+              <NodeOutput output={output} nodeType={selectedNode.type} />
             )}
 
             {nodeConfig.hasControls && (
               <NodeControls
-                node={node}
+                node={selectedNode}
                 updateNodeData={updateNodeData}
-                onLogError={onLogError}
+                onLogError={logNodeError}
                 inspectorState={combinedInspectorState}
               />
             )}
@@ -144,7 +204,7 @@ const NodeInspector = React.memo<NodeInspectorProps>(function NodeInspector({
           <div className="flex-1 flex flex-col gap-3">
             <ErrorLog 
               errors={errors} 
-              onClearErrors={onClearErrors} 
+              onClearErrors={handleClearErrors} 
             />
           </div>
         )}
@@ -153,14 +213,14 @@ const NodeInspector = React.memo<NodeInspectorProps>(function NodeInspector({
   }
 
   // Show edge inspector if edge is selected (only when no node is selected)
-  if (selectedEdge && allNodes) {
+  if (selectedEdge && nodes) {
     return (
       <div id="edge-info-container" className="flex gap-3">
         <div className="flex-1 flex flex-col gap-3 min-w-0 w-full">
           <EdgeInspector 
             edge={selectedEdge} 
-            allNodes={allNodes} 
-            onDeleteEdge={onDeleteEdge} 
+            allNodes={nodes} 
+            onDeleteEdge={handleDeleteEdge} 
           />
         </div>
       </div>

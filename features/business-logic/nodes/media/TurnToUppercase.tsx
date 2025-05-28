@@ -1,8 +1,8 @@
-// nodes/TextUppercaseNode.tsx
+// nodes/TurnToUppercase.tsx
 'use client'
 
 /* -------------------------------------------------------------------------- */
-/*  TextUppercaseNode                                                         */
+/*  TurnToUppercase                                                           */
 /*  – Converts input text to UPPERCASE                                        */
 /* -------------------------------------------------------------------------- */
 
@@ -10,32 +10,39 @@ import { memo, useEffect, useState } from 'react'
 import {
   Handle,
   Position,
-  useReactFlow,
   useNodeConnections,
   useNodesData,
   type NodeProps,
   type Node,
 } from '@xyflow/react'
 
-import type { AgenNode } from '../../FlowEditor'
+import type { AgenNode } from '../../flow-editor/types'
+import { useFlowStore } from '../../stores/flowStore'
 
 import CustomHandle from '../../handles/CustomHandle'
 import { FloatingNodeId } from '../components/FloatingNodeId'
 import { extractNodeValue } from '../utils/nodeUtils'
 
-interface TextUppercaseNodeData {
+interface TurnToUppercaseData {
   text: string;
 }
 
-function TextUppercaseNode({ id, data }: NodeProps<Node<TextUppercaseNodeData & Record<string, unknown>>>) {
-  const { updateNodeData } = useReactFlow()
+function TurnToUppercase({ id, data }: NodeProps<Node<TurnToUppercaseData & Record<string, unknown>>>) {
+  const updateNodeData = useFlowStore((state) => state.updateNodeData)
   const [showUI, setShowUI] = useState(false)
 
   /* -------------------------------------------------------------- */
   /* 1️⃣  Which edges enter THIS node?                               */
   /* -------------------------------------------------------------- */
   const connections = useNodeConnections({ handleType: 'target' })
-  const sourceIds = connections.map((c) => c.source)
+  // Filter for connections to our string input handle ('s') or default connections
+  const stringConnections = connections.filter(c => 
+    c.targetHandle === 's' || 
+    c.targetHandle === null || 
+    c.targetHandle === undefined ||
+    !c.targetHandle
+  )
+  const sourceIds = stringConnections.map((c) => c.source)
 
   /* -------------------------------------------------------------- */
   /* 2️⃣  Subscribe to all connected source nodes                    */
@@ -48,8 +55,8 @@ function TextUppercaseNode({ id, data }: NodeProps<Node<TextUppercaseNodeData & 
   // Remove useMemo to prevent stale cached values
   const texts = nodesData
     .map((node) => {
-      // Special handling for InputTester nodes - use 'value' property directly
-      if (node.type === 'inputTesterNode') {
+      // Special handling for testInput nodes - use 'value' property directly
+      if (node.type === 'testInput') {
         const value = node.data?.value
         return typeof value === 'string' ? value : String(value ?? '')
       }
@@ -141,4 +148,4 @@ function TextUppercaseNode({ id, data }: NodeProps<Node<TextUppercaseNodeData & 
   )
 }
 
-export default memo(TextUppercaseNode)
+export default memo(TurnToUppercase)

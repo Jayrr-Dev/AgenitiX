@@ -1,9 +1,10 @@
 // BOOLEAN CONVERTER NODE COMPONENT
 // Converts any input to a boolean (truthy/falsy)
 import React, { useEffect } from 'react';
-import { Position, useNodeConnections, useNodesData, useReactFlow, type NodeProps, type Node } from '@xyflow/react';
+import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react';
 import CustomHandle from '../../handles/CustomHandle';
 import { getSingleInputValue, isTruthyValue } from '../utils/nodeUtils';
+import { useFlowStore } from '../../stores/flowStore';
 
 // ---------------------- TYPES ----------------------
 interface BooleanConverterNodeData {
@@ -26,7 +27,7 @@ const BooleanConverterNode: React.FC<NodeProps<Node<BooleanConverterNodeData & R
   const boolValue = isTruthyValue(inputValue);
 
   // Update node data for downstream nodes (set both value and triggered)
-  const { updateNodeData } = useReactFlow();
+  const updateNodeData = useFlowStore((state) => state.updateNodeData);
   useEffect(() => {
     updateNodeData(id, { value: inputValue, triggered: boolValue });
   }, [id, inputValue, boolValue, updateNodeData]);

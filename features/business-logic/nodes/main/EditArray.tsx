@@ -1,8 +1,9 @@
 // ARRAY EDITOR NODE COMPONENT
 // Takes an array as input, allows editing items (including objects), and outputs the array
 import React, { useEffect, useState } from 'react';
-import { Position, useNodeConnections, useNodesData, useReactFlow, type NodeProps, type Node } from '@xyflow/react';
+import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react';
 import CustomHandle from '../../handles/CustomHandle';
+import { useFlowStore } from '../../stores/flowStore';
 
 // ---------------------- TYPES ----------------------
 interface ArrayEditorNodeData {
@@ -137,7 +138,7 @@ const ArrayEditorNode: React.FC<NodeProps<Node<ArrayEditorNodeData & Record<stri
   }, [inputValue]);
 
   // Update node data for downstream nodes
-  const { updateNodeData } = useReactFlow();
+  const updateNodeData = useFlowStore((state) => state.updateNodeData);
   useEffect(() => {
     if (JSON.stringify(localArr) !== JSON.stringify(data.value)) {
       updateNodeData(id, { value: localArr });

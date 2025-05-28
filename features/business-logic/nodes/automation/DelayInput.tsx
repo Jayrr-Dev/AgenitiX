@@ -14,7 +14,6 @@ import React, {
 } from 'react'
 import {
   Position,
-  useReactFlow,
   useNodeConnections,
   useNodesData,
   type NodeProps,
@@ -22,6 +21,7 @@ import {
 } from '@xyflow/react'
 import CustomHandle from '../../handles/CustomHandle'
 import IconForDelay from '../node-icons/IconForDelay'
+import { useFlowStore } from '../../stores/flowStore'
 
 /* -------------------------------------------------------------------------- */
 /* CONSTANTS & TYPES                                                          */
@@ -134,7 +134,7 @@ const isValid = (x: unknown): boolean => {
 
 const DelayNode: React.FC<DelayNodeProps> = ({ id, data, selected }) => {
   /* ------------- React-Flow helpers ------------------------------------ */
-  const { updateNodeData } = useReactFlow()
+  const updateNodeData = useFlowStore((state) => state.updateNodeData)
 
   /* ------------- Runtime refs ------------------------------------------ */
   const queueRef      = useRef<unknown[]>([])            // FIFO

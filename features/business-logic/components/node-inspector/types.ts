@@ -1,4 +1,4 @@
-import type { AgenNode, AgenEdge } from '../../FlowEditor';
+import type { AgenNode, AgenEdge } from '../../flow-editor/types';
 
 export interface NodeInspectorProps {
   /** The currently selected node (or null if none) */

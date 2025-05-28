@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trash2, ArrowRight, Zap } from 'lucide-react';
-import type { AgenEdge, AgenNode } from '../../../FlowEditor';
+import type { AgenEdge, AgenNode } from '../../../flow-editor/types';
 import { JsonHighlighter } from '../utils/JsonHighlighter';
 
 interface EdgeInspectorProps {

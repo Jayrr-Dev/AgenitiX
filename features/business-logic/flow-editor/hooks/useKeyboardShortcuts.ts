@@ -17,8 +17,6 @@ export function useKeyboardShortcuts({
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const ctrl = isMac ? e.metaKey : e.ctrlKey;
       
-      if (!ctrl) return;
-      
       // Check if user is currently focused on an input field
       const activeElement = document.activeElement;
       const isInputFocused = activeElement && (
@@ -29,6 +27,11 @@ export function useKeyboardShortcuts({
       );
       
       const key = e.key.toLowerCase();
+      
+      // ReactFlow handles delete keys natively, so we don't need custom handling
+      
+      // Handle Ctrl-based shortcuts
+      if (!ctrl) return;
       
       switch (key) {
         case KEYBOARD_SHORTCUTS.TOGGLE_HISTORY:

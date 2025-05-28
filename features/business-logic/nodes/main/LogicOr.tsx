@@ -3,9 +3,9 @@
 import React from 'react'
 import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
 import CustomHandle from '../../handles/CustomHandle'
-import { useReactFlow } from '@xyflow/react'
 import { getInputValues, isTruthyValue } from '../utils/nodeUtils'
 import { FloatingNodeId } from '../components/FloatingNodeId'
+import { useFlowStore } from '../../stores/flowStore'
 
 // -----------------------------------------------------------------------------
 // TYPES
@@ -35,7 +35,7 @@ const LogicOr: React.FC<NodeProps<Node<LogicOrData & Record<string, unknown>>>> 
   const [showUI, setShowUI] = React.useState(false)
 
   // Set output value and input count in node data for downstream nodes
-  const { updateNodeData } = useReactFlow()
+  const updateNodeData = useFlowStore((state) => state.updateNodeData)
   React.useEffect(() => {
     updateNodeData(id, { 
       triggered: orResult,

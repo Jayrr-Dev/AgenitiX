@@ -198,10 +198,10 @@ export const DEFAULT_STENCILS_A: Record<TabKeyA, NodeStencil[]> = {
   // For other categories:
   marketing: [
     { 
-      id: 'mkt-your-node-1', 
+      id: 'your-node-marketing-1', 
       nodeType: 'yourNodeType', 
-      label: 'Marketing Node', 
-      description: 'Marketing-specific version of your node.' 
+      label: 'Your Node', 
+      description: 'Category-specific description for marketing use cases.' 
     },
     // ... existing marketing stencils
   ],
@@ -209,171 +209,195 @@ export const DEFAULT_STENCILS_A: Record<TabKeyA, NodeStencil[]> = {
 };
 ```
 
-### Step 6: Add Controls to NodeInspector
+### Step 6: Add Node Controls
 
-Update `components/node-inspector/components/NodeControls.tsx`:
-
-```typescript
-// Import your control component (create if needed)
-import YourNodeControl from '../controls/YourNodeControl';
-
-const renderControls = () => {
-  switch (node.type) {
-    case 'yourNodeType':
-      return <YourNodeControl node={node} updateNodeData={updateNodeData} />;
-    
-    case 'textNode':
-      return <TextNodeControl node={node} updateNodeData={updateNodeData} />;
-    
-    // ... existing cases
-    
-    default:
-      return <div>No controls available for this node type.</div>;
-  }
-};
-```
-
-### Step 6b: Create Node Control Component (if needed)
-
-Create `components/node-inspector/controls/YourNodeControl.tsx`:
+Create `components/node-inspector/controls/YourNodeControls.tsx`:
 
 ```typescript
 import React from 'react';
-import { BaseControl } from './BaseControl';
-import type { AgenNode } from '../../../flow-editor/types';
+import { ControlPanelProps } from '../types';
 
-interface YourNodeControlProps {
-  node: AgenNode & { type: 'yourNodeType' };
-  updateNodeData: (id: string, patch: Record<string, unknown>) => void;
-}
-
-export function YourNodeControl({ node, updateNodeData }: YourNodeControlProps) {
-  const handlePropertyChange = (value: string) => {
-    updateNodeData(node.id, { yourProperty: value });
-  };
+export default function YourNodeControls({ nodeId, nodeData, updateNodeData }: ControlPanelProps) {
+  const data = nodeData as { yourProperty: string; anotherProperty?: number };
 
   return (
-    <BaseControl title="Your Node Settings">
-      <div className="space-y-3">
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Your Property
-          </label>
-          <input
-            type="text"
-            value={node.data.yourProperty || ''}
-            onChange={(e) => handlePropertyChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 
-                       rounded-md bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100"
-            placeholder="Enter value..."
-          />
-        </div>
-        
-        {/* Add more controls as needed */}
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium mb-1">Your Property</label>
+        <input
+          type="text"
+          value={data.yourProperty || ''}
+          onChange={(e) => updateNodeData(nodeId, { yourProperty: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+          placeholder="Enter value..."
+        />
       </div>
-    </BaseControl>
+      
+      <div>
+        <label className="block text-sm font-medium mb-1">Another Property</label>
+        <input
+          type="number"
+          value={data.anotherProperty || 0}
+          onChange={(e) => updateNodeData(nodeId, { anotherProperty: parseInt(e.target.value) })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+          placeholder="Enter number..."
+        />
+      </div>
+    </div>
   );
 }
-
-export default YourNodeControl;
 ```
 
-## 🎯 Handle Types Reference
-
-Choose the appropriate handle types for your inputs and outputs:
+Then register it in `components/node-inspector/components/NodeControls.tsx`:
 
 ```typescript
-// String data
-<CustomHandle type="target" position={Position.Left} id="input" dataType="s" />
+// Add import
+import YourNodeControls from '../controls/YourNodeControls';
 
-// Number data  
-<CustomHandle type="target" position={Position.Left} id="input" dataType="n" />
-
-// Boolean data
-<CustomHandle type="target" position={Position.Left} id="input" dataType="b" />
-
-// JSON/Object data
-<CustomHandle type="target" position={Position.Left} id="input" dataType="j" />
-
-// Array data
-<CustomHandle type="target" position={Position.Left} id="input" dataType="a" />
-
-// Any type
-<CustomHandle type="target" position={Position.Left} id="input" dataType="x" />
+// Add to the switch statement
+case 'yourNodeType':
+  return <YourNodeControls nodeId={nodeId} nodeData={nodeData} updateNodeData={updateNodeData} />;
 ```
 
-## 🔧 Common Patterns
+## 🎯 Node Categories
 
-### Multiple Inputs:
+Organize nodes into logical categories:
+
+### `nodes/main/` - Core Logic Nodes
+- Logic operations (AND, OR, NOT, XOR, XNOR)
+- Mathematical functions
+- Data transformations
+- Core building blocks
+
+### `nodes/media/` - Text & Media Processing
+- Text manipulation (CreateText, TurnToUppercase, TurnToText)
+- File processing
+- Image/video operations
+- Content generation
+
+### `nodes/automation/` - Automation & Control
+- Triggers (TriggerOnClick, TriggerPulse, TriggerToggle)
+- Timers and delays
+- Counters and loops
+- Flow control
+
+### `nodes/integrations/` - API & External Services
+- HTTP requests
+- Database connections
+- Third-party APIs
+- External system integrations
+
+### `nodes/misc/` - Utility & Helper Nodes
+- Debug tools (ViewOutput, TestInput)
+- Data structures (EditObject, EditArray)
+- General utilities
+- Development helpers
+
+## 🎨 UI Patterns & Styling
+
+### Handle Positioning Guidelines:
+- **Input handles**: `style={{ left: -6 }}` (6px outside left edge)
+- **Output handles**: `style={{ right: -6 }}` (6px outside right edge)
+- **Top handles**: `style={{ top: -6 }}` (6px above top edge)
+- **Bottom handles**: `style={{ bottom: -6 }}` (6px below bottom edge)
+
+### Data Type Color Coding:
+- **String (`s`)**: Blue `#3b82f6`
+- **Number (`n`)**: Orange `#f59e42`
+- **Boolean (`b`)**: Green `#10b981`
+- **JSON (`j`)**: Indigo `#6366f1`
+- **Array (`a`)**: Pink `#f472b6`
+- **Any (`x`)**: Gray `#6b7280`
+
+### Size Standards:
+- **Icon mode**: 60x60px (default collapsed state)
+- **Expanded mode**: 120x120px (when showUI is true)
+- **Text nodes icon**: 120x60px (wider for readability)
+- **Toggle button**: 16x16px positioned top-right
+
+## ⚡ Development Tips
+
+### 1. Use Input Utilities
 ```typescript
-// In your node component
-const input1 = getSingleInputValue(connections, nodesData, 'input1');
-const input2 = getSingleInputValue(connections, nodesData, 'input2');
+import { getSingleInputValue, getMultipleInputValues, isTruthyValue } from '../../utils/nodeUtils';
 
-// Multiple handles
-<CustomHandle type="target" position={Position.Left} id="input1" dataType="s" style={{ top: 20 }} />
-<CustomHandle type="target" position={Position.Left} id="input2" dataType="n" style={{ top: 40 }} />
+// Get single input value
+const inputValue = getSingleInputValue(connections, nodesData, 'input');
+
+// Get multiple inputs
+const inputs = getMultipleInputValues(connections, nodesData, ['input1', 'input2']);
+
+// Check if value is truthy
+const isValid = isTruthyValue(inputValue);
 ```
 
-### Conditional Outputs:
+### 2. State Management Patterns
 ```typescript
-// Only show output handle when node has data
-{data.yourProperty && (
-  <CustomHandle type="source" position={Position.Right} id="output" dataType="s" />
+// For simple internal state
+const [showUI, setShowUI] = useState(false);
+const [localValue, setLocalValue] = useState('');
+
+// For persistent node data
+const { updateNodeData } = useReactFlow();
+updateNodeData(id, { yourProperty: newValue });
+
+// For reactive processing
+useEffect(() => {
+  // Process inputs and update outputs
+  const result = processInputs();
+  updateNodeData(id, { output: result });
+}, [connections, nodesData, id]);
+```
+
+### 3. Error Handling
+```typescript
+const [error, setError] = useState<string | null>(null);
+
+const processInput = (input: unknown) => {
+  try {
+    // Your processing logic
+    setError(null);
+    return result;
+  } catch (err) {
+    setError(err.message);
+    return null;
+  }
+};
+
+// Show error in UI
+{error && (
+  <div className="text-xs text-red-600 mt-1">
+    {error}
+  </div>
 )}
 ```
 
-### Error Handling:
-```typescript
-// In your useEffect
-try {
-  const result = processInput(inputValue);
-  updateNodeData(id, { yourProperty: result });
-} catch (error) {
-  console.error(`Error in ${id}:`, error);
-  // Error will be caught by the global error handler
-}
-```
+### 4. Testing Checklist
+- [ ] Node renders correctly in both icon and expanded modes
+- [ ] Input handles connect properly
+- [ ] Output values update when inputs change
+- [ ] Node controls appear in inspector
+- [ ] Node appears in sidebar stencils
+- [ ] Data persists when saving/loading flows
+- [ ] Error states are handled gracefully
 
-## ✅ Testing Your Node
+## 📚 Related Documentation
 
-1. **Create the node** - Drag from sidebar to canvas
-2. **Test expansion** - Click toggle button
-3. **Test inputs** - Connect other nodes to inputs
-4. **Test outputs** - Connect outputs to other nodes
-5. **Test controls** - Use node inspector controls
-6. **Test persistence** - Refresh page, check data persists
+- **Node Styling Guide**: `docs/node-styling-guide.md` - Comprehensive styling system
+- **Node Reference**: `docs/node-guide.md` - Complete catalog of all nodes
+- **Architecture Overview**: `docs/documentation.md` - System architecture and patterns
 
-## 🚨 Common Issues
+## ✅ Completion Checklist
 
-### Node not appearing in sidebar:
-- Check `constants.ts` stencil configuration
-- Verify `nodeType` matches exactly
-- Check for typos in node type string
+After creating your node, verify:
 
-### Drag and drop not working:
-- Verify `FlowCanvas.tsx` registration
-- Check import path is correct
-- Ensure node type is in `NODE_TYPE_CONFIG`
+- [ ] **Component created** in correct category folder
+- [ ] **Types added** to `flow-editor/types/index.ts`
+- [ ] **Config registered** in `flow-editor/constants/index.ts`
+- [ ] **Node registered** in `FlowCanvas.tsx`
+- [ ] **Stencil added** to sidebar constants
+- [ ] **Controls created** and registered
+- [ ] **Node tested** in flow editor
+- [ ] **Documentation updated** if needed
 
-### Type errors:
-- Update `types/index.ts` with your interface
-- Add to `AgenNode` union type
-- Check all property names match
-
-### Controls not showing:
-- Add case to `NodeControls.tsx` switch statement
-- Create control component if needed
-- Check node type string matches exactly
-
-## 📚 Examples
-
-Look at existing nodes for reference:
-- **Simple node**: `TextNode.tsx`
-- **Logic node**: `LogicAnd.tsx` 
-- **Trigger node**: `TriggerOnClick.tsx`
-- **Complex node**: `DelayNode.tsx`
-
----
-
-Following this guide ensures your new node integrates seamlessly with the modular architecture and maintains consistency with existing nodes. 
+Your node is now ready to use in the visual flow editor! 🎉 

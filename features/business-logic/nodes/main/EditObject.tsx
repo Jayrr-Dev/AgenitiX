@@ -1,8 +1,9 @@
 // OBJECT EDITOR NODE COMPONENT
 // Takes a JSON object as input, mirrors the keys, and allows editing the values
 import React, { useEffect, useState } from 'react';
-import { Position, useNodeConnections, useNodesData, useReactFlow, type NodeProps, type Node } from '@xyflow/react';
+import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react';
 import CustomHandle from '../../handles/CustomHandle';
+import { useFlowStore } from '../../stores/flowStore';
 
 // ---------------------- TYPES ----------------------
 interface ObjectEditorNodeData {
@@ -145,7 +146,7 @@ const ObjectEditorNode: React.FC<NodeProps<Node<ObjectEditorNodeData & Record<st
   }, [inputValue]);
 
   // Update node data for downstream nodes
-  const { updateNodeData } = useReactFlow();
+  const updateNodeData = useFlowStore((state) => state.updateNodeData);
   useEffect(() => {
     // Only update if localObj is different from data.value
     if (JSON.stringify(localObj) !== JSON.stringify(data.value)) {

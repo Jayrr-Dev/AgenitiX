@@ -1,8 +1,8 @@
 import React from 'react';
-import type { AgenNode } from '../../../FlowEditor';
+import type { AgenNode } from '../../../flow-editor/types';
 import { ErrorType } from '../types';
 import { TextNodeControl } from '../controls/TextNodeControl';
-import { TriggerOnClickControl, TriggerOnToggleControl, TriggerOnPulseControl } from '../controls/TriggerControls';
+import { TriggerOnClickControl, TriggerOnToggleControl, TriggerOnPulseControl, CyclePulseControl, CycleToggleControl } from '../controls/TriggerControls';
 
 interface NodeControlsProps {
   node: AgenNode;
@@ -30,10 +30,10 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
     const baseProps = { node, updateNodeData };
 
     switch (node.type) {
-      case 'textNode':
+      case 'createText':
         return <TextNodeControl {...baseProps} />;
       
-      case 'outputnode':
+      case 'viewOutput':
         return (
           <div className="flex flex-col gap-2">
             <label className="block text-xs">
@@ -65,7 +65,22 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
           />
         );
       
-      // Add more cases as needed
+      case 'cyclePulse':
+        return <CyclePulseControl {...baseProps} />;
+      
+      case 'cycleToggle':
+        return <CycleToggleControl {...baseProps} />;
+      
+      // Add more cases as needed for other node types:
+      // case 'turnToUppercase':
+      // case 'turnToText':
+      // case 'turnToBoolean':
+      // case 'testInput':
+      // case 'editObject':
+      // case 'editArray':
+      // case 'countInput':
+      // case 'delayInput':
+      
       default:
         return (
           <div className="text-xs text-gray-500 italic">

@@ -52,16 +52,24 @@ const CustomHandle: React.FC<CustomHandleProps> = ({ dataType, className = '', p
   const isValidConnection = (connection: Connection | { source?: string; sourceHandle?: string | null }) => {
     if (hasSourceHandle(connection)) {
       const { source, sourceHandle } = connection;
-      if (!source || !sourceHandle) return false;
+      if (!source) return false;
+      
       // Find the source node
       const nodes = reactFlow.getNodes?.() || [];
       const sourceNode = nodes.find(n => n.id === source);
       if (!sourceNode) return false;
+      
+      // If sourceHandle is null/undefined, treat as 'x' (any type) for compatibility
+      const actualSourceHandle = sourceHandle || 'x';
+      const actualTargetHandle = id || 'x';
+      
       // Get types from handle ids (support union, any, custom)
-      const sourceTypes = parseTypes(sourceHandle)
-      const targetTypes = parseTypes(id)
+      const sourceTypes = parseTypes(actualSourceHandle)
+      const targetTypes = parseTypes(actualTargetHandle)
+      
       // Allow if either side is 'x' (any)
       if (sourceTypes.includes('x') || targetTypes.includes('x')) return true
+      
       // Allow if any type in source matches any in target
       const match = sourceTypes.some(st => targetTypes.includes(st))
       setInvalid(!match)

@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useEffect } from 'react'
-import { Position, useNodeConnections, useNodesData, useReactFlow, type NodeProps, type Node } from '@xyflow/react'
+import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
 import CustomHandle from '../../handles/CustomHandle'
 import { getInputValues, isTruthyValue } from '../utils/nodeUtils'
+import { useFlowStore } from '../../stores/flowStore'
 
 // -----------------------------------------------------------------------------
 // TYPES
@@ -34,7 +35,7 @@ const LogicXnor: React.FC<NodeProps<Node<LogicXnorData & Record<string, unknown>
   const [showUI, setShowUI] = React.useState(false)
 
   // Set output value in node data for downstream nodes
-  const { updateNodeData } = useReactFlow()
+  const updateNodeData = useFlowStore((state) => state.updateNodeData)
   React.useEffect(() => {
     updateNodeData(id, { 
       triggered: xnorResult,

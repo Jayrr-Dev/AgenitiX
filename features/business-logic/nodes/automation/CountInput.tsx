@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { Position, useReactFlow, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
+import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
 import CustomHandle from '../../handles/CustomHandle'
+import { useFlowStore } from '../../stores/flowStore'
 
 // TYPES
 interface CounterNodeData {
@@ -85,7 +86,7 @@ const hasInputChanged = (prev: unknown, current: unknown): boolean => {
 
 // COUNTER NODE COMPONENT
 const CounterNode: React.FC<NodeProps<Node<CounterNodeData & Record<string, unknown>>>> = ({ id, data }) => {
-  const { updateNodeData } = useReactFlow()
+  const updateNodeData = useFlowStore((state) => state.updateNodeData)
   const connections = useNodeConnections({ handleType: 'target' })
   
   // INPUT CONNECTIONS

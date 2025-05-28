@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { AgenNode } from '../../../FlowEditor';
+import type { AgenNode } from '../../../flow-editor/types';
 import { DEFAULT_VALUES } from '../constants';
 
 export function useInspectorState(node: AgenNode | null) {
@@ -27,7 +27,7 @@ export function useInspectorState(node: AgenNode | null) {
     }
 
     // Sync counter inputs (only when not actively editing)
-    if (node.type === 'counterNode') {
+    if (node.type === 'countInput') {
       if (!isEditingCount.current) {
         const newCountValue = typeof node.data.count === 'number' 
           ? node.data.count.toString() 
@@ -43,7 +43,7 @@ export function useInspectorState(node: AgenNode | null) {
     }
 
     // Sync delay input
-    if (node.type === 'delayNode') {
+    if (node.type === 'delayInput') {
       const newDelayValue = typeof node.data.delay === 'number' 
         ? node.data.delay.toString() 
         : DEFAULT_VALUES.DELAY;
@@ -51,7 +51,7 @@ export function useInspectorState(node: AgenNode | null) {
     }
 
     // Reset editing flags when switching nodes
-    if (node.type !== 'counterNode') {
+    if (node.type !== 'countInput') {
       isEditingCount.current = false;
       isEditingMultiplier.current = false;
     }

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import type { AgenNode } from '../../../FlowEditor';
+import type { AgenNode } from '../../../flow-editor/types';
 import { NODE_TYPE_CONFIG } from '../constants';
 import { useNodeDisplay } from '../../../flow-editor/contexts/NodeDisplayContext';
 

@@ -1,9 +1,10 @@
 // INPUT TESTER NODE COMPONENT
 // Lets user select a test value to output (undefined, null, string, array, object, etc.)
 import React, { useState, useEffect } from 'react';
-import { Position, useNodeConnections, useNodesData, useReactFlow, type NodeProps, type Node } from '@xyflow/react';
+import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react';
 import CustomHandle from '../../handles/CustomHandle';
 import { FloatingNodeId } from '../components/FloatingNodeId';
+import { useFlowStore } from '../../stores/flowStore';
 
 // ---------------------- TYPES ----------------------
 interface InputTesterNodeData {
@@ -125,7 +126,7 @@ const InputTesterNode: React.FC<NodeProps<Node<InputTesterNodeData & Record<stri
   const boolInput = boolInputNodesData.length > 0 ? boolInputNodesData[0].data?.triggered : undefined;
 
   // Update node data for downstream nodes
-  const { updateNodeData } = useReactFlow();
+  const updateNodeData = useFlowStore((state) => state.updateNodeData);
   useEffect(() => {
     let outputValue;
     if (typeof boolInput === 'boolean') {

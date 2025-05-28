@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Handle, Position, useReactFlow, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
+import { Handle, Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
 import CustomHandle from '../../handles/CustomHandle'
 import IconForTrigger from '../node-icons/IconForTrigger'
 import { FloatingNodeId } from '../components/FloatingNodeId'
+import { useFlowStore } from '../../stores/flowStore'
 
 // TYPES
 interface TriggerOnClickData {
@@ -13,7 +14,7 @@ interface TriggerOnClickData {
 
 // TRIGGER ON CLICK NODE COMPONENT
 const TriggerOnClick: React.FC<NodeProps<Node<TriggerOnClickData & Record<string, unknown>>>> = ({ id, data }) => {
-  const { updateNodeData } = useReactFlow()
+  const updateNodeData = useFlowStore((state) => state.updateNodeData)
   const isTriggered = data.triggered === true
 
   // Boolean input handle logic
@@ -46,7 +47,7 @@ const TriggerOnClick: React.FC<NodeProps<Node<TriggerOnClickData & Record<string
   }, [externalTrigger, isTriggered, updateNodeData, id, boolInputConnections.length])
 
   // Expand/collapse UI state
-  const [showUI, setShowUI] = useState(false)
+  const [showUI, setShowUI] = useState<boolean | undefined>(undefined)
 
   // RENDER
   return (

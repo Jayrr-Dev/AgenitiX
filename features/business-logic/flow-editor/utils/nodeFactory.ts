@@ -16,6 +16,7 @@ export function createNode(
     id,
     type,
     position,
+    deletable: true,
     data: { ...config.defaultData, ...customData }
   };
 

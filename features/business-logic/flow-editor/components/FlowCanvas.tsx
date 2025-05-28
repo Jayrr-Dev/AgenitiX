@@ -7,32 +7,33 @@ import {
   Panel,
   SelectionMode,
   ColorMode,
-  PanOnScrollMode
+  PanOnScrollMode,
+  ConnectionMode
 } from '@xyflow/react';
 import { useTheme } from 'next-themes';
 import type { AgenNode, AgenEdge } from '../types';
 
 // Import node components
-import TextNode from '../../nodes/media/TextNode';
-import TextUppercaseNode from '../../nodes/media/TextUppercaseNode';
-import OutputNode from '../../nodes/main/OutputNode';
+import CreateText from '../../nodes/media/CreateText';
+import TurnToUppercase from '../../nodes/media/TurnToUppercase';
+import ViewOutput from '../../nodes/main/ViewOutput';
 import TriggerOnClick from '../../nodes/automation/TriggerOnClick';
 import TriggerOnPulse from '../../nodes/automation/TriggerOnPulse';
-import TriggerOnPulseCycle from '../../nodes/automation/TriggerOnPulseCycle';
+import CyclePulse from '../../nodes/automation/CyclePulse';
 import TriggerOnToggle from '../../nodes/automation/TriggerOnToggle';
-import TriggerOnToggleCycle from '../../nodes/automation/TriggerOnToggleCycle';
+import CycleToggle from '../../nodes/automation/CycleToggle';
 import LogicAnd from '../../nodes/main/LogicAnd';
 import LogicOr from '../../nodes/main/LogicOr';
 import LogicNot from '../../nodes/main/LogicNot';
 import LogicXor from '../../nodes/main/LogicXor';
 import LogicXnor from '../../nodes/main/LogicXnor';
-import TextConverterNode from '../../nodes/media/TextConverterNode';
-import BooleanConverterNode from '../../nodes/automation/BooleanConverterNode';
-import InputTesterNode from '../../nodes/main/InputTesterNode';
-import ObjectEditorNode from '../../nodes/main/ObjectEditorNode';
-import ArrayEditorNode from '../../nodes/main/ArrayEditorNode';
-import CounterNode from '../../nodes/automation/CounterNode';
-import DelayNode from '../../nodes/automation/DelayNode';
+import TurnToText from '../../nodes/media/TurnToText';
+import TurnToBoolean from '../../nodes/automation/TurnToBoolean';
+import TestInput from '../../nodes/main/TestInput';
+import EditObject from '../../nodes/main/EditObject';
+import EditArray from '../../nodes/main/EditArray';
+import CountInput from '../../nodes/automation/CountInput';
+import DelayInput from '../../nodes/automation/DelayInput';
 
 // Import components
 import NodeInspector from '../../components/NodeInspector';
@@ -136,26 +137,26 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   
   const nodeTypes = useMemo(
     () => ({
-      textNode: TextNode,
-      uppercaseNode: TextUppercaseNode,
-      outputnode: OutputNode,
+      createText: CreateText,
+      turnToUppercase: TurnToUppercase,
+      viewOutput: ViewOutput,
       triggerOnClick: TriggerOnClick,
       triggerOnPulse: TriggerOnPulse,
-      triggerOnPulseCycle: TriggerOnPulseCycle,
+      cyclePulse: CyclePulse,
       triggerOnToggle: TriggerOnToggle,
-      triggerOnToggleCycle: TriggerOnToggleCycle,
+      cycleToggle: CycleToggle,
       logicAnd: LogicAnd,
       logicOr: LogicOr,
       logicNot: LogicNot,
       logicXor: LogicXor,
       logicXnor: LogicXnor,
-      textConverterNode: TextConverterNode,
-      booleanConverterNode: BooleanConverterNode,
-      inputTesterNode: InputTesterNode,
-      objectEditorNode: ObjectEditorNode,
-      arrayEditorNode: ArrayEditorNode,
-      counterNode: CounterNode,
-      delayNode: DelayNode,
+      turnToText: TurnToText,
+      turnToBoolean: TurnToBoolean,
+      testInput: TestInput,
+      editObject: EditObject,
+      editArray: EditArray,
+      countInput: CountInput,
+      delayInput: DelayInput,
     }),
     []
   );
@@ -202,28 +203,21 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         nodesDraggable={true}
         nodesConnectable={true}
         elementsSelectable={true}
+        edgesReconnectable={true}
+        connectionMode={ConnectionMode.Loose}
+        defaultEdgeOptions={{
+          type: 'default',
+          deletable: true,
+          focusable: true,
+          style: { strokeWidth: 2, stroke: '#3b82f6' }
+        }}
       >
         {/* NODE INSPECTOR PANEL */}
         <Panel
           position="bottom-center"
           className="hidden md:block rounded bg-white/90 dark:bg-zinc-800/90 p-4 shadow max-w-4xl max-h-[250px] overflow-y-auto scrollbar-none"
         >
-          <NodeInspector 
-            node={selectedNode} 
-            selectedEdge={selectedEdge}
-            allNodes={nodes}
-            updateNodeData={updateNodeData} 
-            output={selectedOutput}
-            errors={selectedNode ? nodeErrors[selectedNode.id] || [] : []}
-            onClearErrors={selectedNode ? () => clearNodeErrors(selectedNode.id) : undefined}
-            onLogError={logNodeError}
-            onUpdateNodeId={updateNodeId}
-            onDeleteNode={onDeleteNode}
-            onDuplicateNode={onDuplicateNode}
-            onDeleteEdge={onDeleteEdge}
-            inspectorLocked={inspectorLocked}
-            setInspectorLocked={setInspectorLocked}
-          />
+          <NodeInspector />
         </Panel>
 
         {/* MINIMAP */}

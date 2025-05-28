@@ -2,10 +2,11 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Position, useReactFlow, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
+import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
 import CustomHandle from '../../handles/CustomHandle'
 import { getInputValues, isTruthyValue, hasValueChanged } from '../utils/nodeUtils'
 import IconForToggle from '../node-icons/IconForToggle'
+import { useFlowStore } from '../../stores/flowStore'
 
 // TYPES
 interface TriggerOnToggleData {
@@ -14,7 +15,7 @@ interface TriggerOnToggleData {
 
 // TRIGGER ON TOGGLE NODE COMPONENT
 const TriggerOnToggle: React.FC<NodeProps<Node<TriggerOnToggleData & Record<string, unknown>>>> = ({ id, data }) => {
-  const { updateNodeData } = useReactFlow()
+  const updateNodeData = useFlowStore((state) => state.updateNodeData)
   const connections = useNodeConnections({ handleType: 'target' })
   const boolInputConnections = connections.filter(c => c.targetHandle === 'b')
   const boolInputSourceIds = boolInputConnections.map((c) => c.source)

@@ -4,16 +4,16 @@ import type { Node, Edge, Position } from '@xyflow/react';
 // NODE DATA INTERFACES
 // ============================================================================
 
-export interface TextNodeData {
+export interface CreateTextData {
   text: string;
   heldText?: string;
 }
 
-export interface TextUppercaseNodeData {
+export interface TurnToUppercaseData {
   text: string;
 }
 
-export interface OutputNodeData {
+export interface ViewOutputData {
   label: string;
 }
 
@@ -26,24 +26,28 @@ export interface TriggerOnPulseData {
   duration?: number;
 }
 
-export interface TriggerOnPulseCycleData {
+export interface CyclePulseData {
   triggered: boolean;
+  isRunning?: boolean;
   initialState?: boolean;
   cycleDuration?: number;
   pulseDuration?: number;
   infinite?: boolean;
+  maxCycles?: number;
 }
 
 export interface TriggerOnToggleData {
   triggered: boolean;
 }
 
-export interface TriggerOnToggleCycleData {
+export interface CycleToggleData {
   triggered: boolean;
+  isRunning?: boolean;
   initialState?: boolean;
   onDuration?: number;
   offDuration?: number;
   infinite?: boolean;
+  maxCycles?: number;
 }
 
 export interface LogicAndData {
@@ -68,34 +72,34 @@ export interface LogicXnorData {
   value: boolean;
 }
 
-export interface TextConverterNodeData {
+export interface TurnToTextData {
   value?: unknown;
 }
 
-export interface BooleanConverterNodeData {
+export interface TurnToBooleanData {
   value?: unknown;
   triggered?: boolean;
 }
 
-export interface InputTesterNodeData {
+export interface TestInputData {
   value?: unknown;
 }
 
-export interface ObjectEditorNodeData {
+export interface EditObjectData {
   value?: Record<string, unknown>;
 }
 
-export interface ArrayEditorNodeData {
+export interface EditArrayData {
   value?: unknown[];
 }
 
-export interface CounterNodeData {
+export interface CountInputData {
   count: number;
   multiplier: number;
   lastInputValues?: Record<string, unknown>;
 }
 
-export interface DelayNodeData {
+export interface DelayInputData {
   delay: number;
   lastInputValue?: unknown;
   isProcessing?: boolean;
@@ -109,26 +113,26 @@ export interface DelayNodeData {
 // ============================================================================
 
 export type AgenNode =
-  | (Node<TextNodeData & Record<string, unknown>> & { type: 'textNode' })
-  | (Node<TextUppercaseNodeData & Record<string, unknown>> & { type: 'uppercaseNode' })
-  | (Node<OutputNodeData & Record<string, unknown>> & { type: 'outputnode'; targetPosition: Position })
+  | (Node<CreateTextData & Record<string, unknown>> & { type: 'createText' })
+  | (Node<TurnToUppercaseData & Record<string, unknown>> & { type: 'turnToUppercase' })
+  | (Node<ViewOutputData & Record<string, unknown>> & { type: 'viewOutput'; targetPosition: Position })
   | (Node<TriggerOnClickData & Record<string, unknown>> & { type: 'triggerOnClick' })
   | (Node<TriggerOnPulseData & Record<string, unknown>> & { type: 'triggerOnPulse' })
-  | (Node<TriggerOnPulseCycleData & Record<string, unknown>> & { type: 'triggerOnPulseCycle' })
+  | (Node<CyclePulseData & Record<string, unknown>> & { type: 'cyclePulse' })
   | (Node<TriggerOnToggleData & Record<string, unknown>> & { type: 'triggerOnToggle' })
-  | (Node<TriggerOnToggleCycleData & Record<string, unknown>> & { type: 'triggerOnToggleCycle' })
+  | (Node<CycleToggleData & Record<string, unknown>> & { type: 'cycleToggle' })
   | (Node<LogicAndData & Record<string, unknown>> & { type: 'logicAnd' })
   | (Node<LogicOrData & Record<string, unknown>> & { type: 'logicOr' })
   | (Node<LogicNotData & Record<string, unknown>> & { type: 'logicNot' })
   | (Node<LogicXorData & Record<string, unknown>> & { type: 'logicXor' })
   | (Node<LogicXnorData & Record<string, unknown>> & { type: 'logicXnor' })
-  | (Node<TextConverterNodeData & Record<string, unknown>> & { type: 'textConverterNode' })
-  | (Node<BooleanConverterNodeData & Record<string, unknown>> & { type: 'booleanConverterNode' })
-  | (Node<InputTesterNodeData & Record<string, unknown>> & { type: 'inputTesterNode' })
-  | (Node<ObjectEditorNodeData & Record<string, unknown>> & { type: 'objectEditorNode' })
-  | (Node<ArrayEditorNodeData & Record<string, unknown>> & { type: 'arrayEditorNode' })
-  | (Node<CounterNodeData & Record<string, unknown>> & { type: 'counterNode' })
-  | (Node<DelayNodeData & Record<string, unknown>> & { type: 'delayNode' });
+  | (Node<TurnToTextData & Record<string, unknown>> & { type: 'turnToText' })
+  | (Node<TurnToBooleanData & Record<string, unknown>> & { type: 'turnToBoolean' })
+  | (Node<TestInputData & Record<string, unknown>> & { type: 'testInput' })
+  | (Node<EditObjectData & Record<string, unknown>> & { type: 'editObject' })
+  | (Node<EditArrayData & Record<string, unknown>> & { type: 'editArray' })
+  | (Node<CountInputData & Record<string, unknown>> & { type: 'countInput' })
+  | (Node<DelayInputData & Record<string, unknown>> & { type: 'delayInput' });
 
 export type AgenEdge = Edge & {
   sourceHandle?: string | null;

@@ -1,10 +1,11 @@
 'use client'
 
 import React from 'react'
-import { Position, useNodeConnections, useNodesData, useReactFlow, type NodeProps, type Node } from '@xyflow/react'
+import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
 import CustomHandle from '../../handles/CustomHandle'
 import { getInputValues, isTruthyValue } from '../utils/nodeUtils'
 import { FloatingNodeId } from '../components/FloatingNodeId'
+import { useFlowStore } from '../../stores/flowStore'
 
 // -----------------------------------------------------------------------------
 // TYPES
@@ -34,7 +35,7 @@ const LogicAnd: React.FC<NodeProps<Node<LogicAndData & Record<string, unknown>>>
   const [showUI, setShowUI] = React.useState(false)
 
   // Set output value and input count in node data for downstream nodes
-  const { updateNodeData } = useReactFlow()
+  const updateNodeData = useFlowStore((state) => state.updateNodeData)
   React.useEffect(() => {
     updateNodeData(id, { 
       triggered: andResult,
