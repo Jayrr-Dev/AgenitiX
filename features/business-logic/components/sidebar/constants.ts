@@ -23,7 +23,7 @@ export const STORAGE_PREFIX = 'sidebar-stencil-order';
 
 export const AVAILABLE_NODES = {
   // Main folder nodes
-  'OutputNode': { nodeType: 'output', folder: 'main', label: 'Output', description: 'Display the final result of your flow. Connect any node to see its output value in a clean, readable format.' },
+  'OutputNode': { nodeType: 'outputnode', folder: 'main', label: 'Output Node', description: 'Display the final result of your flow. Connect any node to see its output value in a clean, readable format.' },
   'LogicAnd': { nodeType: 'logicAnd', folder: 'main', label: 'AND (⋀)', description: 'Only outputs TRUE when ALL connected inputs are true. Like saying "I need this AND that AND the other thing to proceed."' },
   'LogicOr': { nodeType: 'logicOr', folder: 'main', label: 'OR (⋁)', description: 'Outputs TRUE when ANY connected input is true. Like saying "I need this OR that OR any of these options to proceed."' },
   'LogicNot': { nodeType: 'logicNot', folder: 'main', label: 'NOT (¬)', description: 'Flips the input - turns TRUE into FALSE and FALSE into TRUE. Perfect for creating opposite conditions.' },
@@ -80,13 +80,40 @@ export const createStencils = (filenames: (keyof typeof AVAILABLE_NODES)[], pref
 
 // Variant A: Core, Logic, Stores, Testing, Time
 export const DEFAULT_STENCILS_A: Record<TabKeyA, NodeStencil[]> = {
-  core: createStencils(['TextNode', 'OutputNode', 'InputTesterNode', 'TextUppercaseNode', 'TextConverterNode', 'BooleanConverterNode'], 'core'),
-  logic: createStencils(['LogicAnd', 'LogicOr', 'LogicNot', 'LogicXor', 'LogicXnor'], 'logic'),
-  stores: createStencils(['ObjectEditorNode', 'ArrayEditorNode'], 'stores'),
+  core: createStencils([
+    'TextNode', 
+    'OutputNode', 
+    'InputTesterNode', 
+    'TextUppercaseNode', 
+    'TextConverterNode', 
+    'BooleanConverterNode',
+    'LogicAnd', 
+    'LogicOr', 
+    'LogicNot', 
+    'LogicXor', 
+    'LogicXnor',
+    'ObjectEditorNode', 
+    'ArrayEditorNode',
+    'TriggerOnClick', 
+    'TriggerOnPulse', 
+    'TriggerOnToggle',
+    'TriggerOnPulseCycle', 
+    'TriggerOnToggleCycle',
+    'CounterNode',
+    'DelayNode'
+  ], 'core'),
+  logic: [
+    // Logic nodes moved to core for testing
+  ],
+  stores: [
+    // Store nodes moved to core for testing
+  ],
   testing: [
     // Testing and debugging nodes will go here
   ],
-  time: createStencils(['DelayNode'], 'time'),
+  time: [
+    // Time nodes moved to core for testing
+  ],
 };
 
 // Variant B: Images, Audio, Text, Interface, Transform

@@ -25,12 +25,12 @@ export const TYPE_MAP: TypeMap = {
 
 export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
   textNode: {
-    defaultData: { text: '', heldText: '', defaultText: '' }
+    defaultData: { text: '', heldText: '' }
   },
   uppercaseNode: {
     defaultData: { text: '' }
   },
-  output: {
+  outputnode: {
     defaultData: { label: 'Result' },
     hasTargetPosition: true,
     targetPosition: Position.Top
@@ -125,7 +125,7 @@ export const INITIAL_NODES: AgenNode[] = [
   },
   {
     id: '4',
-    type: 'output',
+    type: 'outputnode',
     position: { x: 300, y: -75 },
     targetPosition: Position.Top,
     data: { label: 'Result' }

@@ -97,7 +97,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     () => ({
       textNode: TextNode,
       uppercaseNode: TextUppercaseNode,
-      output: OutputNode,
+      outputnode: OutputNode,
       triggerOnClick: TriggerOnClick,
       triggerOnPulse: TriggerOnPulse,
       triggerOnPulseCycle: TriggerOnPulseCycle,
@@ -155,7 +155,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         {/* NODE INSPECTOR PANEL */}
         <Panel
           position="bottom-center"
-          className="rounded bg-white/90 dark:bg-zinc-800/90 p-4 shadow max-w-4xl max-h-[225px] overflow-y-auto scrollbar *:scrollbar-thumb-gray-400 *:scrollbar-track-transparent *:scrollbar-arrow-hidden"
+          className="rounded bg-white/90 dark:bg-zinc-800/90 p-4 shadow max-w-4xl max-h-[250px] overflow-y-auto scrollbar-none"
         >
           <NodeInspector 
             node={selectedNode} 

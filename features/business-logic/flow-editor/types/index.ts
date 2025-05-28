@@ -7,7 +7,6 @@ import type { Node, Edge, Position } from '@xyflow/react';
 export interface TextNodeData {
   text: string;
   heldText?: string;
-  defaultText?: string;
 }
 
 export interface TextUppercaseNodeData {
@@ -112,7 +111,7 @@ export interface DelayNodeData {
 export type AgenNode =
   | (Node<TextNodeData & Record<string, unknown>> & { type: 'textNode' })
   | (Node<TextUppercaseNodeData & Record<string, unknown>> & { type: 'uppercaseNode' })
-  | (Node<OutputNodeData & Record<string, unknown>> & { type: 'output'; targetPosition: Position })
+  | (Node<OutputNodeData & Record<string, unknown>> & { type: 'outputnode'; targetPosition: Position })
   | (Node<TriggerOnClickData & Record<string, unknown>> & { type: 'triggerOnClick' })
   | (Node<TriggerOnPulseData & Record<string, unknown>> & { type: 'triggerOnPulse' })
   | (Node<TriggerOnPulseCycleData & Record<string, unknown>> & { type: 'triggerOnPulseCycle' })

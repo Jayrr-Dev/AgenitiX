@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { Position, useNodeConnections, useNodesData, useReactFlow, type NodeProps, type Node } from '@xyflow/react';
 import CustomHandle from '../../handles/CustomHandle';
 import { getSingleInputValue, safeStringify, extractNodeValue } from '../utils/nodeUtils';
+import type { AgenNode } from '../../FlowEditor';
 
 // ---------------------- TYPES ----------------------
 interface TextConverterNodeData {
@@ -16,12 +17,20 @@ const TextConverterNode: React.FC<NodeProps<Node<TextConverterNodeData & Record<
   const connections = useNodeConnections({ handleType: 'target' });
   const inputConn = connections.find(c => c.targetHandle === 'x');
   const inputNodeId = inputConn?.source;
-  const inputNodesData = useNodesData(inputNodeId ? [inputNodeId] : []);
+  const inputNodesData = useNodesData<AgenNode>(inputNodeId ? [inputNodeId] : []);
   
   // Extract input value using robust utility
   let inputValue = undefined;
   if (inputNodesData.length > 0) {
-    inputValue = extractNodeValue(inputNodesData[0]?.data);
+    const node = inputNodesData[0];
+    
+    // Special handling for InputTester nodes - use 'value' property directly
+    if (node.type === 'inputTesterNode') {
+      inputValue = node.data?.value;
+    } else {
+      // Use extractNodeValue for other node types
+      inputValue = extractNodeValue(node.data);
+    }
   }
 
   // Convert any input to string with safe serialization

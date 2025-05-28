@@ -33,7 +33,7 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
       case 'textNode':
         return <TextNodeControl {...baseProps} />;
       
-      case 'output':
+      case 'outputnode':
         return (
           <div className="flex flex-col gap-2">
             <label className="block text-xs">

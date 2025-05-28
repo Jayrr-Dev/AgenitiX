@@ -19,6 +19,15 @@ export function useKeyboardShortcuts({
       
       if (!ctrl) return;
       
+      // Check if user is currently focused on an input field
+      const activeElement = document.activeElement;
+      const isInputFocused = activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        (activeElement as HTMLElement).contentEditable === 'true' ||
+        activeElement.hasAttribute('contenteditable')
+      );
+      
       const key = e.key.toLowerCase();
       
       switch (key) {
@@ -28,13 +37,19 @@ export function useKeyboardShortcuts({
           break;
           
         case KEYBOARD_SHORTCUTS.COPY:
-          onCopy();
-          e.preventDefault();
+          // Only prevent default if not in an input field
+          if (!isInputFocused) {
+            onCopy();
+            e.preventDefault();
+          }
           break;
           
         case KEYBOARD_SHORTCUTS.PASTE:
-          onPaste();
-          e.preventDefault();
+          // Only prevent default if not in an input field
+          if (!isInputFocused) {
+            onPaste();
+            e.preventDefault();
+          }
           break;
       }
     };

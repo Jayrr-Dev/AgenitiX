@@ -29,41 +29,23 @@ function TextNode({ id, data }: NodeProps<Node<TextNodeData & Record<string, unk
   const triggerValue = getSingleInputValue(triggerNodesData)
   const isTriggered = isTruthyValue(triggerValue)
 
-  // --- Set heldText to defaultText on mount if not set ---
-  useEffect(() => {
-    if (typeof data.heldText !== 'string' && typeof data.defaultText === 'string') {
-      updateNodeData(id, { heldText: data.defaultText })
-    }
-  }, [data.heldText, data.defaultText, id, updateNodeData])
+  // No auto-resize - let user manually resize the textarea
 
-  // Auto-resize textarea based on content
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = `${Math.max(60, textareaRef.current.scrollHeight)}px`
-    }
-  }, [data.heldText])
-
-  // Only output value when triggered, otherwise output empty string
+  // Simplified output logic - only output the text value
   useEffect(() => {
     const outputText = typeof data.heldText === 'string' ? data.heldText : ''
-    const nodeData = {
-      text: triggerSourceIds.length === 0 || isTriggered ? outputText : '',
-      value: outputText,
-      outputValue: outputText,
-      type: 'TextNode',
-      label: 'Text Node',
-      isTriggered,
-      hasExternalTrigger: triggerSourceIds.length > 0
-    }
-    updateNodeData(id, nodeData)
+    const finalOutput = triggerSourceIds.length === 0 || isTriggered ? outputText : ''
+    
+    updateNodeData(id, { 
+      text: finalOutput
+    })
   }, [isTriggered, triggerSourceIds.length, data.heldText, id, updateNodeData])
 
   const currentText = typeof data.heldText === 'string' ? data.heldText : ''
   const previewText = currentText.length > 20 ? currentText.substring(0, 20) + '...' : currentText
 
   return (
-    <div className={`relative ${showUI ? 'px-4 py-3 min-w-[200px]' : 'w-[120px] h-[60px] flex items-center justify-center'} rounded-lg bg-blue-50 dark:bg-blue-900 shadow border border-blue-300 dark:border-blue-800`}>
+    <div className={`relative ${showUI ? 'px-4 py-3 min-w-[120px]' : 'w-[120px] h-[60px] flex items-center justify-center'} rounded-lg bg-blue-50 dark:bg-blue-900 shadow border border-blue-300 dark:border-blue-800`}>
       {/* Floating Node ID */}
       <FloatingNodeId nodeId={id} />
       {/* TOGGLE BUTTON (top-left) */}
@@ -88,14 +70,14 @@ function TextNode({ id, data }: NodeProps<Node<TextNodeData & Record<string, unk
             {currentText ? `"${previewText}"` : 'Empty'}
           </div>
           {isTriggered && (
-            <div className="text-xs text-green-600 dark:text-green-400 mt-1">●</div>
+            <div className="text-xs absolute bottom-0 right-1 text-green-600 dark:text-green-400 mt-1 animate-pulse">●</div>
           )}
         </div>
       )}
 
       {/* EXPANDED: Full editing UI */}
       {showUI && (
-        <div className="flex flex-col w-full">
+        <div className="flex text-xs flex-col w-auto debug-red">
           <div className="font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center justify-between">
             <span>Text Node</span>
             {isTriggered && (
@@ -103,27 +85,32 @@ function TextNode({ id, data }: NodeProps<Node<TextNodeData & Record<string, unk
             )}
           </div>
           
-          <textarea
-            ref={textareaRef}
-            className="w-full min-h-[60px] max-h-[200px] px-3 py-2 rounded border border-blue-300 dark:border-blue-700 bg-white dark:bg-blue-800 text-blue-900 dark:text-blue-100 placeholder-blue-400 dark:placeholder-blue-500 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={currentText}
-            onChange={(e) => updateNodeData(id, { heldText: e.target.value })}
-            placeholder="Enter your text here..."
-            style={{ 
-              fontSize: '14px',
-              lineHeight: '1.4',
-              fontFamily: 'inherit'
-            }}
-          />
+          <div 
+            className="nodrag"
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+          >
+            <textarea
+              ref={textareaRef}
+              className="w-full min-h-[60px] px-3 py-2 rounded border border-blue-300 dark:border-blue-700 bg-white dark:bg-blue-800 text-blue-900 dark:text-blue-100 placeholder-blue-400 dark:placeholder-blue-500 resize-both focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={currentText}
+              onChange={(e) => updateNodeData(id, { heldText: e.target.value })}
+              placeholder="Enter your text here..."
+              style={{ 
+                lineHeight: '1.4',
+                fontFamily: 'inherit'
+              }}
+            />
+          </div>
           
-          <div className="flex justify-between items-center mt-2 text-xs text-blue-700 dark:text-blue-300">
+          {/* <div className="flex justify-between items-center mt-2 text-xs text-blue-700 dark:text-blue-300">
             <span>{currentText.length} characters</span>
             {triggerSourceIds.length > 0 && (
               <span className={isTriggered ? 'text-green-600' : 'text-gray-500'}>
                 {isTriggered ? 'Outputting' : 'Waiting for trigger'}
               </span>
             )}
-          </div>
+          </div> */}
         </div>
       )}
 

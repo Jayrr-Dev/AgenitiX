@@ -11,7 +11,7 @@ export const NODE_TYPE_CONFIG: Record<NodeType, NodeTypeConfig> = {
     hasControls: false,
     displayName: 'Uppercase Node'
   },
-  output: {
+  outputnode: {
     hasOutput: true,
     hasControls: true,
     displayName: 'Output Node'

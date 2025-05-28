@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Position, useNodeConnections, useNodesData, useReactFlow, type NodeProps, type Node } from '@xyflow/react';
 import CustomHandle from '../../handles/CustomHandle';
+import { FloatingNodeId } from '../components/FloatingNodeId';
 
 // ---------------------- TYPES ----------------------
 interface InputTesterNodeData {
@@ -112,7 +113,7 @@ const TEST_VALUES = [
 
 // ------------------- COMPONENT --------------------
 const InputTesterNode: React.FC<NodeProps<Node<InputTesterNodeData & Record<string, unknown>>>> = ({ id, data }) => {
-  // State for selected test value index
+  const [showUI, setShowUI] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const selected = TEST_VALUES[selectedIdx];
 
@@ -122,9 +123,6 @@ const InputTesterNode: React.FC<NodeProps<Node<InputTesterNodeData & Record<stri
   const boolInputNodeId = boolConn?.source;
   const boolInputNodesData = useNodesData(boolInputNodeId ? [boolInputNodeId] : []);
   const boolInput = boolInputNodesData.length > 0 ? boolInputNodesData[0].data?.triggered : undefined;
-
-  // Output: use boolean input if present, else selected test value
-  const outputValue = typeof boolInput === 'boolean' ? boolInput : selected.value;
 
   // Update node data for downstream nodes
   const { updateNodeData } = useReactFlow();
@@ -153,59 +151,111 @@ const InputTesterNode: React.FC<NodeProps<Node<InputTesterNodeData & Record<stri
     updateNodeData(id, patch);
   }, [id, selected, boolInput, boolInputNodesData, updateNodeData]);
 
-  // Split test values into two columns
+  // Split test values into two columns for expanded state
   const midpoint = Math.ceil(TEST_VALUES.length / 2);
   const leftColumn = TEST_VALUES.slice(0, midpoint);
   const rightColumn = TEST_VALUES.slice(midpoint);
 
-  // UI
   return (
-    <div className="px-2 py-2 rounded bg-gray-50 dark:bg-gray-900 shadow border border-gray-300 dark:border-gray-800 flex flex-col items-center min-w-[220px] w-[240px]">
+    <div className={`relative ${showUI ? 'px-2 py-2 min-w-[220px] w-[240px]' : 'w-[120px] h-[60px] flex items-center justify-center'} rounded-lg bg-gray-50 dark:bg-gray-900 shadow border border-gray-300 dark:border-gray-800`}>
+      {/* Floating Node ID */}
+      <FloatingNodeId nodeId={id} />
+      
+      {/* TOGGLE BUTTON (top-left) */}
+      <button
+        aria-label={showUI ? 'Collapse node' : 'Expand node'}
+        title={showUI ? 'Collapse' : 'Expand'}
+        onClick={() => setShowUI((v) => !v)}
+        className="absolute top-1 left-1 cursor-pointer z-10 w-2 h-2 flex items-center justify-center rounded-full bg-white/80 dark:bg-black/40 border border-gray-300 dark:border-gray-800 text-xs hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors shadow"
+        type="button"
+      >
+        {showUI ? '⦿' : '⦾'}
+      </button>
+
       {/* INPUT HANDLE (left, boolean) */}
       <CustomHandle type="target" position={Position.Left} id="b" dataType="b" />
+
+      {/* COLLAPSED: Show dropdown in ICON form (120x60px) */}
+      {!showUI && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-2">
+          <div className="text-xs font-semibold text-gray-900 dark:text-gray-100 mb-1">Input Tester</div>
+          <div 
+            className="nodrag w-full"
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+          >
+            <select
+              className="w-full px-1 py-0.5 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              value={selectedIdx}
+              onChange={(e) => setSelectedIdx(parseInt(e.target.value))}
+            >
+              {TEST_VALUES.map((item, idx) => (
+                <option key={idx} value={idx}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {typeof boolInput === 'boolean' && (
+            <div className="text-xs absolute bottom-0 right-1 text-green-600 dark:text-green-400 mt-1 animate-pulse">●</div>
+          )}
+        </div>
+      )}
+
+      {/* EXPANDED: Full radio button UI */}
+      {showUI && (
+        <div className="flex flex-col items-center w-full">
+          <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1 text-xs flex items-center justify-between w-full">
+            <span>Input Tester</span>
+            {typeof boolInput === 'boolean' && (
+              <span className="text-xs text-green-600 dark:text-green-400">● Active</span>
+            )}
+          </div>
+          
+          {/* TWO COLUMN LAYOUT */}
+          <div className="flex gap-2 w-full">
+            {/* LEFT COLUMN */}
+            <div className="flex flex-col gap-0.5 flex-1">
+              {leftColumn.map((item, idx) => (
+                <label key={item.label} className="flex items-center gap-1 cursor-pointer text-[10px] px-1 py-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-800">
+                  <input
+                    type="radio"
+                    name={`input-tester-${id}`}
+                    checked={selectedIdx === idx}
+                    onChange={() => setSelectedIdx(idx)}
+                    className="accent-blue-500 h-3 w-3 flex-shrink-0"
+                  />
+                  <span className="font-mono truncate">{item.label}</span>
+                  {selectedIdx === idx && <span className="text-green-600 text-xs flex-shrink-0">✔</span>}
+                </label>
+              ))}
+            </div>
+            
+            {/* RIGHT COLUMN */}
+            <div className="flex flex-col gap-0.5 flex-1">
+              {rightColumn.map((item, idx) => {
+                const actualIdx = idx + midpoint;
+                return (
+                  <label key={item.label} className="flex items-center gap-1 cursor-pointer text-[10px] px-1 py-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-800">
+                    <input
+                      type="radio"
+                      name={`input-tester-${id}`}
+                      checked={selectedIdx === actualIdx}
+                      onChange={() => setSelectedIdx(actualIdx)}
+                      className="accent-blue-500 h-3 w-3 flex-shrink-0"
+                    />
+                    <span className="font-mono truncate">{item.label}</span>
+                    {selectedIdx === actualIdx && <span className="text-green-600 text-xs flex-shrink-0">✔</span>}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* OUTPUT HANDLE (right, any type) */}
       <CustomHandle type="source" position={Position.Right} id="x" dataType="x" />
-      <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1 text-xs">Input Tester</div>
-      
-      {/* TWO COLUMN LAYOUT */}
-      <div className="flex gap-2 w-full">
-        {/* LEFT COLUMN */}
-        <div className="flex flex-col gap-0.5 flex-1">
-          {leftColumn.map((item, idx) => (
-            <label key={item.label} className="flex items-center gap-1 cursor-pointer text-[10px] px-1 py-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-800">
-              <input
-                type="radio"
-                name={`input-tester-${id}`}
-                checked={selectedIdx === idx}
-                onChange={() => setSelectedIdx(idx)}
-                className="accent-blue-500 h-3 w-3 flex-shrink-0"
-              />
-              <span className="font-mono truncate">{item.label}</span>
-              {selectedIdx === idx && <span className="text-green-600 text-xs flex-shrink-0">✔</span>}
-            </label>
-          ))}
-        </div>
-        
-        {/* RIGHT COLUMN */}
-        <div className="flex flex-col gap-0.5 flex-1">
-          {rightColumn.map((item, idx) => {
-            const actualIdx = idx + midpoint;
-            return (
-              <label key={item.label} className="flex items-center gap-1 cursor-pointer text-[10px] px-1 py-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-800">
-                <input
-                  type="radio"
-                  name={`input-tester-${id}`}
-                  checked={selectedIdx === actualIdx}
-                  onChange={() => setSelectedIdx(actualIdx)}
-                  className="accent-blue-500 h-3 w-3 flex-shrink-0"
-                />
-                <span className="font-mono truncate">{item.label}</span>
-                {selectedIdx === actualIdx && <span className="text-green-600 text-xs flex-shrink-0">✔</span>}
-              </label>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 };
