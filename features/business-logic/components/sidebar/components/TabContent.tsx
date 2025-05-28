@@ -82,7 +82,7 @@ export function TabContent({
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={nodeIds} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-5 grid-rows-2 gap-2">
+            <div className="flex flex-wrap justify-evenly gap-2 sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center sm:mx-auto">
               {/* Add Node Button as first item in grid */}
               <div className="flex items-center justify-center">
                 <AddNodeButton onClick={onAddCustomNode || (() => {})} />

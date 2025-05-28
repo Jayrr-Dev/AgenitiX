@@ -65,7 +65,7 @@ export function SidebarTabs({
 
   return (
     <Tabs value={activeTab} onValueChange={onTabChange}>
-      <aside className="absolute bottom-0 right-0 z-30 h-[280px] w-[450px] border bg-background pl-6 pr-5 pt-2 rounded-lg">
+      <aside className="absolute bottom-0 right-0 z-30 h-[200px] sm:h-[280px] w-full sm:w-[400px] lg:w-[450px] border bg-background pl-3 sm:pl-6 pr-3 sm:pr-5 pt-2 rounded-lg sm:rounded-lg rounded-b-none">
         <StencilInfoPanel stencil={hovered} />
 
         <TabsList className="bg-background  items-stretch justify-between w-full gap-1 ">
@@ -91,7 +91,7 @@ export function SidebarTabs({
           </button>
         </TabsList>
 
-        <div className="max-h-[230px] overflow-y-auto scrollbar *:scrollbar-thumb-gray-400 *:scrollbar-track-transparent *:scrollbar-arrow-hidden pb-2">
+        <div className="max-h-[150px] sm:max-h-[230px] overflow-y-auto scrollbar *:scrollbar-thumb-gray-400 *:scrollbar-track-transparent *:scrollbar-arrow-hidden pb-2">
           {tabs.map(({ key }) => {
             const isCustomTab = variant === 'e' && key === 'custom';
             

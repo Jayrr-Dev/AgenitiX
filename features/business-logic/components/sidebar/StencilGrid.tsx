@@ -47,7 +47,7 @@ export function StencilGrid({
       onDragEnd={handleDragEnd}
     >
       <SortableContext items={ids} strategy={rectSortingStrategy}>
-        <div className="grid grid-cols-5 grid-rows-2 gap-2">
+        <div className="flex flex-wrap justify-evenly gap-2 sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center sm:mx-auto">
           {stencils.map((stencil) => (
             <SortableStencil
               key={stencil.id}
