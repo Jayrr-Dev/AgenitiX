@@ -6,9 +6,11 @@ import { Suspense } from 'react';
 import Loading from './loading';
 import { Analytics } from '@vercel/analytics/react';
 import Script from 'next/script';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import LayoutWrapper from '@/app/wrapper/LayoutWrapper';
 import { Toaster } from 'sonner';
+import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import PWAStatus from '@/components/PWAStatus';
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -22,7 +24,52 @@ export const metadata: Metadata = {
   },
   description:
     'AgenitiX is a digital technology agency specializing in n8n automation workflows...',
-  // ... rest of metadata unchanged
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'AgenitiX Flow Editor',
+    startupImage: [
+      '/icons/icon-192x192.png',
+      '/icons/icon-512x512.png'
+    ]
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'AgenitiX',
+    title: {
+      default: 'AgenitiX',
+      template: '%s | AgenitiX - Digital Automation Solutions',
+    },
+    description: 'Visual flow editor for creating and managing node-based workflows',
+  },
+  twitter: {
+    card: 'summary',
+    title: {
+      default: 'AgenitiX',
+      template: '%s | AgenitiX - Digital Automation Solutions',
+    },
+    description: 'Visual flow editor for creating and managing node-based workflows',
+  },
+  icons: {
+    icon: '/icons/icon-192x192.png',
+    shortcut: '/icons/icon-192x192.png',
+    apple: '/icons/icon-192x192.png',
+  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#3b82f6' },
+    { media: '(prefers-color-scheme: dark)', color: '#3b82f6' }
+  ],
 };
 
 const geistSans = Geist({
@@ -55,6 +102,8 @@ export default function RootLayout({
             </div>
           </main>
           <Toaster position="top-right" />
+          <PWAInstallPrompt />
+          <PWAStatus />
 
           <Analytics />
 
