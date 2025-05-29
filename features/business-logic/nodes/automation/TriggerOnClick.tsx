@@ -74,7 +74,7 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
 
   // Collapsed state rendering - just the trigger icon
   renderCollapsed: ({ data, error, updateNodeData, id }) => {
-    const isTriggered = data.triggered === true;
+    const isActive = data.triggered === true;
     
     const handleTrigger = () => {
       updateNodeData(id, { triggered: true });
@@ -92,8 +92,8 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
           </div>
         ) : (
           <IconForTrigger 
-            isOn={isTriggered} 
-            onClick={isTriggered ? handleReset : handleTrigger} 
+            isOn={isActive} 
+            onClick={isActive ? handleReset : handleTrigger} 
             size={40} 
           />
         )}
@@ -103,7 +103,7 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
 
   // Expanded state rendering - full UI with buttons
   renderExpanded: ({ data, error, categoryTextTheme, updateNodeData, id }) => {
-    const isTriggered = data.triggered === true;
+    const isActive = data.triggered === true;
     
     const handleTrigger = () => {
       updateNodeData(id, { triggered: true });
@@ -132,8 +132,8 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
         <div className="flex-1 flex flex-col items-center justify-center space-y-2">
           {/* Icon */}
           <IconForTrigger 
-            isOn={isTriggered} 
-            onClick={isTriggered ? handleReset : handleTrigger} 
+            isOn={isActive} 
+            onClick={isActive ? handleReset : handleTrigger} 
             size={24} 
           />
           
@@ -143,7 +143,7 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
           >
-          {isTriggered ? (
+          {isActive ? (
             <button
                 className="px-2 py-1 rounded bg-yellow-600 hover:bg-yellow-700 text-white font-bold shadow transition-colors text-xs"
               onClick={handleReset}
@@ -164,7 +164,7 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
           
           {/* Compact status indicator */}
           <div className={`text-xs ${categoryTextTheme.secondary}`}>
-            {isTriggered ? 
+            {isActive ? 
               <span className="text-yellow-600 dark:text-yellow-400 font-semibold">ON</span> : 
               <span className="text-gray-500">Ready</span>
             }

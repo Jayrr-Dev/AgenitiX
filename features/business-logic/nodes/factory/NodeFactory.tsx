@@ -5,6 +5,7 @@ import {
   useNodesData,
   type NodeProps,
   type Node,
+  type Connection,
 } from '@xyflow/react';
 
 // Store and utilities
@@ -35,6 +36,7 @@ import {
 
 export interface BaseNodeData {
   error?: string;
+  isActive?: boolean; // Single source of truth: node should pass data
   [key: string]: any;
 }
 
@@ -380,10 +382,48 @@ export function createNodeComponent<T extends BaseNodeData>(
           return outputValue !== undefined && outputValue !== null && outputValue !== '';
         })();
 
-        setIsActive(hasOutputData);
+        // Compute final active state: has meaningful output AND trigger allows data
+        const triggerInfo = (() => {
+          // Import here to avoid circular dependency
+          const { getSingleInputValue, isTruthyValue } = require('../utils/nodeUtils');
+          
+          // Filter for trigger connections (boolean handle 'b')
+          const triggerConnections = memoizedConnections.filter(c => c.targetHandle === 'b');
+          const hasTrigger = triggerConnections.length > 0;
+          
+          if (!hasTrigger) {
+            return true; // No trigger = always allow data
+          }
+          
+          // Get the source node IDs for trigger connections
+          const triggerSourceIds = triggerConnections.map(c => c.source);
+          
+          // Filter nodesData to only include nodes connected to the trigger handle
+          const triggerNodesData = memoizedNodesData.filter(node => triggerSourceIds.includes(node.id));
+          
+          // Get trigger value from connected trigger nodes
+          const triggerValue = getSingleInputValue(triggerNodesData);
+          return isTruthyValue(triggerValue);
+        })();
+
+        // Final isActive state: has meaningful output AND trigger allows data
+        const finalIsActive = hasOutputData && triggerInfo;
+        setIsActive(finalIsActive);
+        
+        // Update the state in the node data
+        if ((data as any)?.isActive !== finalIsActive) {
+          console.log(`Factory ${enhancedConfig.nodeType} ${id}: Setting isActive to ${finalIsActive} (hasOutput: ${hasOutputData}, triggerAllows: ${triggerInfo})`);
+          updateNodeData(id, { isActive: finalIsActive } as Partial<Record<string, unknown>>);
+        }
         
       } catch (processingError) {
         setIsActive(false); // Clear active state on error
+        
+        // Clear isActive state in node data on error
+        if ((data as any)?.isActive === true) {
+          updateNodeData(id, { isActive: false } as Partial<Record<string, unknown>>);
+        }
+        
         console.error(`${enhancedConfig.nodeType} ${id} - Processing error:`, processingError);
         const errorMessage = processingError instanceof Error 
           ? processingError.message 
@@ -427,7 +467,8 @@ export function createNodeComponent<T extends BaseNodeData>(
         const recoveryData = {
           ...enhancedConfig.defaultData,
           ...enhancedConfig.errorRecoveryData,
-          error: null
+          error: null,
+          isActive: false
         };
         
         updateNodeData(id, recoveryData);
@@ -771,34 +812,37 @@ export const addTriggerSupport = <T extends BaseNodeData>(
 };
 
 /**
- * Check if a node should be active based on trigger connections
+ * Check if a node should be triggered based on trigger connections
  * Returns true if no trigger is connected OR if trigger is active
  */
 export const shouldNodeBeActive = (
-  connections: any[],
-  nodesData: any[],
-  triggerHandleId: string = 'b'
+  connections: Connection[],
+  nodesData: Record<string, any>
 ): boolean => {
-  // Import here to avoid circular dependency
-  const { getSingleInputValue, isTruthyValue } = require('../utils/nodeUtils');
+  // Get trigger connections (connections to trigger handles)
+  const triggerConnections = connections.filter(conn => 
+    conn.targetHandle === 'trigger'
+  );
   
-  // Filter for trigger connections (boolean handle)
-  const triggerConnections = connections.filter(c => c.targetHandle === triggerHandleId);
-  
-  // If no trigger connected, node is always active
+  // No trigger connections means node should be active
   if (triggerConnections.length === 0) {
     return true;
   }
   
-  // Get the source node IDs for trigger connections
-  const triggerSourceIds = triggerConnections.map(c => c.source);
-  
-  // Filter nodesData to only include nodes connected to the trigger handle
-  const triggerNodesData = nodesData.filter(node => triggerSourceIds.includes(node.id));
-  
-  // Get trigger value from connected trigger nodes
-  const triggerValue = getSingleInputValue(triggerNodesData);
-  return isTruthyValue(triggerValue);
+  // Check if any connected trigger node is active
+  return triggerConnections.some(conn => {
+    const sourceNode = nodesData[conn.source];
+    if (!sourceNode) return false;
+    
+    // For trigger nodes, check their 'triggered' state
+    if (sourceNode.type?.includes('trigger') || sourceNode.type?.includes('pulse') || sourceNode.type?.includes('toggle')) {
+      return Boolean(sourceNode.data?.triggered);
+    }
+    
+    // For other nodes, check if they have meaningful output
+    const outputValue = sourceNode.data?.text || sourceNode.data?.value || sourceNode.data?.output;
+    return Boolean(outputValue);
+  });
 };
 
 /**
@@ -826,7 +870,7 @@ export const withTriggerSupport = <T extends BaseNodeData>(
   }) => {
     const { connections, nodesData, updateNodeData, id } = props;
     
-    // Check if node should be active based on trigger
+    // Check if node should be triggered based on connections
     const isActive = shouldNodeBeActive(connections, nodesData);
     
     if (!isActive) {
@@ -866,7 +910,7 @@ export const withTriggerSupport = <T extends BaseNodeData>(
       return;
     }
     
-    // Node is active - run original processing logic
+    // Node is triggered - run original processing logic
     originalProcessLogic(props);
   };
 };
@@ -937,4 +981,10 @@ const UppercaseNode = createNodeComponent<UppercaseNodeData>({
 });
 
 export default UppercaseNode;
+
+// Usage: Check if node should pass data
+if (node.data.isActive) {
+  // Node is triggered and should pass data to connected nodes
+  const outputData = node.data.text || node.data.value || node.data.output;
+}
 */ 

@@ -51,7 +51,7 @@ const CreateText = createNodeComponent<CreateTextData>({
       
       // Get trigger value from connected trigger nodes
       const triggerValue = getSingleInputValue(nodesData);
-      const isTriggered = isTruthyValue(triggerValue);
+      const isActive = isTruthyValue(triggerValue);
       
       // Get the held text (what user has typed or received via JSON in Vibe Mode)
       const outputText = typeof data.heldText === 'string' ? data.heldText : '';
@@ -62,7 +62,7 @@ const CreateText = createNodeComponent<CreateTextData>({
       }
       
       // Output logic: output text if no trigger connected OR trigger is active
-      const finalOutput = triggerConnections.length === 0 || isTriggered ? outputText : '';
+      const finalOutput = triggerConnections.length === 0 || isActive ? outputText : '';
       
       updateNodeData(id, { 
         text: finalOutput

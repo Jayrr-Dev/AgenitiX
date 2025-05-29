@@ -25,16 +25,16 @@ export const TYPE_MAP: TypeMap = {
 
 export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
   createText: {
-    defaultData: { text: '', heldText: '' },
+    defaultData: { text: '', heldText: '', isActive: false },
     hasControls: true,
     displayName: 'Create Text'
   },
   turnToUppercase: {
-    defaultData: { text: '' },
+    defaultData: { text: '', isActive: false },
     displayName: 'Turn To Uppercase'
   },
   viewOutput: {
-    defaultData: { label: 'Result' },
+    defaultData: { label: 'Result', isActive: false },
     hasTargetPosition: true,
     targetPosition: Position.Top,
     hasOutput: true,
@@ -42,12 +42,12 @@ export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
     displayName: 'View Output'
   },
   triggerOnClick: {
-    defaultData: { triggered: false },
+    defaultData: { triggered: false, isActive: false },
     hasControls: true,
     displayName: 'Trigger On Click'
   },
   triggerOnPulse: {
-    defaultData: { triggered: false, duration: 500 },
+    defaultData: { triggered: false, duration: 500, isActive: false },
     hasControls: true,
     displayName: 'Trigger On Pulse'
   },
@@ -59,13 +59,14 @@ export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
       cycleDuration: 2000,
       pulseDuration: 500,
       infinite: true,
-      maxCycles: 1
+      maxCycles: 1,
+      isActive: false
     },
     hasControls: true,
     displayName: 'Cycle Pulse'
   },
   triggerOnToggle: {
-    defaultData: { triggered: false },
+    defaultData: { triggered: false, isActive: false },
     hasControls: true,
     displayName: 'Trigger On Toggle'
   },
@@ -77,57 +78,58 @@ export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
       onDuration: 4000,
       offDuration: 4000,
       infinite: true,
-      maxCycles: 1
+      maxCycles: 1,
+      isActive: false
     },
     hasControls: true,
     displayName: 'Cycle Toggle'
   },
   logicAnd: {
-    defaultData: { value: false, inputCount: 2 },
+    defaultData: { value: false, inputCount: 2, isActive: false },
     displayName: 'Logic AND'
   },
   logicOr: {
-    defaultData: { value: false, inputCount: 2 },
+    defaultData: { value: false, inputCount: 2, isActive: false },
     displayName: 'Logic OR'
   },
   logicNot: {
-    defaultData: { value: false },
+    defaultData: { value: false, isActive: false },
     displayName: 'Logic NOT'
   },
   logicXor: {
-    defaultData: { value: false },
+    defaultData: { value: false, isActive: false },
     displayName: 'Logic XOR'
   },
   logicXnor: {
-    defaultData: { value: false },
+    defaultData: { value: false, isActive: false },
     displayName: 'Logic XNOR'
   },
   turnToText: {
-    defaultData: { value: '' },
+    defaultData: { text: '', originalValue: undefined, isActive: false },
     displayName: 'Turn To Text'
   },
   turnToBoolean: {
-    defaultData: { value: '', triggered: false },
+    defaultData: { value: '', triggered: false, isActive: false },
     displayName: 'Turn To Boolean'
   },
   testInput: {
-    defaultData: { value: undefined },
+    defaultData: { value: undefined, isActive: false },
     displayName: 'Test Input'
   },
   editObject: {
-    defaultData: { value: {} },
+    defaultData: { value: {}, isActive: false },
     displayName: 'Edit Object'
   },
   editArray: {
-    defaultData: { value: [] },
+    defaultData: { value: [], isActive: false },
     displayName: 'Edit Array'
   },
   countInput: {
-    defaultData: { count: 0, multiplier: 1 },
+    defaultData: { count: 0, multiplier: 1, isActive: false },
     displayName: 'Count Input'
   },
   delayInput: {
-    defaultData: { delay: 1000, isProcessing: false },
+    defaultData: { delay: 1000, isProcessing: false, isActive: false },
     displayName: 'Delay Input'
   },
   testError: {
@@ -137,7 +139,8 @@ export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
       triggerMode: 'trigger_on',
       isGeneratingError: false,
       text: '',
-      json: ''
+      json: '',
+      isActive: false
     },
     hasControls: true,
     displayName: 'Error Generator'
@@ -147,7 +150,8 @@ export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
       jsonText: '{"example": "value"}',
       parsedJson: null,
       parseError: null,
-      json: null
+      json: null,
+      isActive: false
     },
     hasControls: true,
     displayName: 'Test JSON'
@@ -164,21 +168,21 @@ export const INITIAL_NODES: AgenNode[] = [
     type: 'createText',
     position: { x: -100, y: -50 },
     deletable: true,
-    data: { text: 'hello', heldText: 'hello', defaultText: 'hello' }
+    data: { text: 'hello', heldText: 'hello', defaultText: 'hello', isActive: true }
   },
   {
     id: '2',
     type: 'createText',
     position: { x: 0, y: 100 },
     deletable: true,
-    data: { text: 'world', heldText: 'world', defaultText: 'world' }
+    data: { text: 'world', heldText: 'world', defaultText: 'world', isActive: true }
   },
   {
     id: '3',
     type: 'turnToUppercase',
     position: { x: 100, y: -100 },
     deletable: true,
-    data: { text: '' }
+    data: { text: 'HELLO', isActive: true }
   },
   {
     id: '4',
@@ -186,7 +190,7 @@ export const INITIAL_NODES: AgenNode[] = [
     position: { x: 300, y: -75 },
     targetPosition: Position.Top,
     deletable: true,
-    data: { label: 'Result' }
+    data: { label: 'Result', isActive: true }
   }
 ];
 

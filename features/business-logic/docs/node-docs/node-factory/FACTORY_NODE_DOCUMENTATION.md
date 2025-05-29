@@ -203,12 +203,11 @@ processLogic: ({ id, data, connections, nodesData, updateNodeData, setError }) =
       .map(node => node.data?.triggered || node.data?.value || false);
     
     // Check if node should be active
-    const isTriggered = triggerConnections.length === 0 || 
-                       triggers.some(t => Boolean(t));
-    
-    if (!isTriggered) {
-      updateNodeData(id, { outputText: '' });
-      return;
+    const isActive = triggerConnections.length === 0 ||
+      getSingleInputValue(nodesData, { includeTriggerNodes: false })
+
+    if (!isActive) {
+      return ''; // Node is disabled
     }
     
     // Process the input
@@ -857,11 +856,16 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
   },
   
   renderCollapsed: ({ data, error, updateNodeData, id }) => {
-    const isTriggered = data.triggered === true;
+    const isActive = data.triggered === true;
     
-    const handleTrigger = () => updateNodeData(id, { triggered: true });
-    const handleReset = () => updateNodeData(id, { triggered: false });
-    
+    const handleTrigger = () => {
+      updateNodeData(id, { triggered: true });
+    };
+
+    const handleReset = () => {
+      updateNodeData(id, { triggered: false });
+    };
+
     return (
       <div className="absolute inset-0 flex items-center justify-center">
         {error ? (
@@ -870,8 +874,8 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
           </div>
         ) : (
           <IconForTrigger 
-            isOn={isTriggered} 
-            onClick={isTriggered ? handleReset : handleTrigger} 
+            isOn={isActive} 
+            onClick={isActive ? handleReset : handleTrigger} 
             size={40} 
           />
         )}
@@ -880,11 +884,16 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
   },
   
   renderExpanded: ({ data, error, categoryTextTheme, updateNodeData, id }) => {
-    const isTriggered = data.triggered === true;
+    const isActive = data.triggered === true;
     
-    const handleTrigger = () => updateNodeData(id, { triggered: true });
-    const handleReset = () => updateNodeData(id, { triggered: false });
-    
+    const handleTrigger = () => {
+      updateNodeData(id, { triggered: true });
+    };
+
+    const handleReset = () => {
+      updateNodeData(id, { triggered: false });
+    };
+
     return (
       <div className="flex text-xs flex-col w-auto">
         <div className={`font-semibold mb-2 ${categoryTextTheme.primary}`}>
@@ -898,7 +907,7 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
           >
-            {isTriggered ? (
+            {isActive ? (
               <button
                 className="px-3 py-2 rounded bg-yellow-600 hover:bg-yellow-700 text-white font-bold shadow transition-colors text-xs"
                 onClick={handleReset}
@@ -919,7 +928,7 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
           
           {/* Status indicator */}
           <div className={`text-xs ${categoryTextTheme.secondary}`}>
-            Status: {isTriggered ? 
+            Status: {isActive ? 
               <span className="text-yellow-600 font-semibold">TRIGGERED</span> : 
               <span className="text-gray-500">Ready</span>
             }

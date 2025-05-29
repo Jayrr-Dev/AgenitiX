@@ -92,7 +92,7 @@ The architecture includes a comprehensive styling system for hundreds of nodes:
 // Apply category-aware styling
 const categoryBase = useNodeCategoryBaseClasses('createText')
 const categoryButton = useNodeCategoryButtonTheme('createText', !!error, isActive)
-const categoryText = useNodeCategoryTextTheme('createText', !!error)
+const textTheme = useNodeTextTheme(!!error)
 const styleClasses = useNodeStyleClasses(!!selected, !!error, isActive)
 ```
 

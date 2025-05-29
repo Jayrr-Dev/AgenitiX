@@ -15,7 +15,7 @@ interface TriggerOnPulseData {
 // TRIGGER ON PULSE NODE COMPONENT
 const TriggerOnPulse: React.FC<NodeProps<Node<TriggerOnPulseData & Record<string, unknown>>>> = ({ id, data }) => {
   const updateNodeData = useFlowStore((state) => state.updateNodeData)
-  const isTriggered = !!data.triggered
+  const isActive = !!data.triggered
   const [pulsing, setPulsing] = useState(false)
   const duration = typeof data.duration === 'number' ? data.duration : 500
 

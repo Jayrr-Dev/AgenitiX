@@ -29,7 +29,7 @@ type NodeCategory = 'create' | 'logic' | 'trigger' | 'test' | 'turn' | 'count' |
 
 // Auto-styling hooks
 const categoryBaseClasses = useNodeCategoryBaseClasses('createText')
-const categoryButtonTheme = useNodeCategoryButtonTheme('createText', !!error, isTriggered)
+const categoryButtonTheme = useNodeCategoryButtonTheme('createText', !!error, isActive)
 const categoryTextTheme = useNodeCategoryTextTheme('createText', !!error)
 ```
 
@@ -128,7 +128,7 @@ import { ExpandCollapseButton } from '../components/ExpandCollapseButton'
 <ExpandCollapseButton
   showUI={showUI}
   onToggle={() => setShowUI((v) => !v)}
-  className={`${error ? buttonTheme : isTriggered ? buttonTheme : categoryButtonTheme}`}
+  className={`${error ? buttonTheme : isActive ? buttonTheme : categoryButtonTheme}`}
 />
 ```
 
@@ -248,7 +248,7 @@ function YourNode({ id, data, selected }: NodeProps<Node<YourNodeData & Record<s
       <ExpandCollapseButton
         showUI={showUI}
         onToggle={() => setShowUI((v) => !v)}
-        className={`${error ? buttonTheme : categoryButtonTheme}`}
+        className={`${error ? buttonTheme : isActive ? buttonTheme : categoryButtonTheme}`}
       />
 
       {/* Handles */}
