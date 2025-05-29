@@ -25,6 +25,7 @@ interface CyclePulseData extends BaseNodeData {
   progress: number;
   // Timer tracking
   cycleStartTime?: number;
+  output?: string;
 }
 
 // ============================================================================
@@ -241,7 +242,8 @@ const CyclePulse = createNodeComponent<CyclePulseData>({
     pulsing: false,
     cycleCount: 0,
     progress: 0,
-    cycleStartTime: undefined
+    cycleStartTime: undefined,
+    output: undefined
   },
   
   // Custom sizing: 120x120 collapsed, 180x180 expanded
@@ -274,7 +276,8 @@ const CyclePulse = createNodeComponent<CyclePulseData>({
           isRunning: false,
           progress: 0,
           pulsing: false,
-          triggered: false
+          triggered: false,
+          output: undefined
         });
         stopSimpleCycle(id);
         return;
@@ -291,7 +294,8 @@ const CyclePulse = createNodeComponent<CyclePulseData>({
             cycleCount: 0,
             progress: 0,
             pulsing: false,
-            triggered: false
+            triggered: false,
+            output: 'CYCLING' // Set output for active state detection
           });
           startSimpleCycle(id, updateNodeData, data.cycleDuration || 2000, data.pulseDuration || 500);
         } else if (!data.isRunning && data.isOn) {
@@ -300,7 +304,8 @@ const CyclePulse = createNodeComponent<CyclePulseData>({
             isOn: false,
             progress: 0,
             pulsing: false,
-            triggered: false
+            triggered: false,
+            output: undefined // Clear output to deactivate glow
           });
           stopSimpleCycle(id);
         }
@@ -319,11 +324,11 @@ const CyclePulse = createNodeComponent<CyclePulseData>({
         // Only handle external triggers if they change state
         if (externalTrigger && !data.isOn) {
           console.log(`CyclePulse ${id}: External trigger ON`);
-          updateNodeData(id, { isOn: true, isRunning: true });
+          updateNodeData(id, { isOn: true, isRunning: true, output: 'CYCLING' });
           startSimpleCycle(id, updateNodeData, data.cycleDuration || 2000, data.pulseDuration || 500);
         } else if (!externalTrigger && data.isOn) {
           console.log(`CyclePulse ${id}: External trigger OFF`);
-          updateNodeData(id, { isOn: false, isRunning: false, pulsing: false, triggered: false });
+          updateNodeData(id, { isOn: false, isRunning: false, pulsing: false, triggered: false, output: undefined });
           stopSimpleCycle(id);
         }
       }
@@ -354,7 +359,8 @@ const CyclePulse = createNodeComponent<CyclePulseData>({
           cycleCount: 0,
           progress: 0,
           pulsing: false,
-          triggered: false
+          triggered: false,
+          output: 'CYCLING'
         });
         startSimpleCycle(id, updateNodeData, data.cycleDuration || 2000, data.pulseDuration || 500);
       } else {
@@ -364,7 +370,8 @@ const CyclePulse = createNodeComponent<CyclePulseData>({
           isRunning: false,
           progress: 0,
           pulsing: false,
-          triggered: false
+          triggered: false,
+          output: undefined
         });
         stopSimpleCycle(id);
       }
@@ -411,10 +418,10 @@ const CyclePulse = createNodeComponent<CyclePulseData>({
         {/* Cycle Duration */}
         <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
           <label className="text-xs w-12 shrink-0">Cycle:</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
             value={data.cycleDuration || 2000}
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, ''); // Only allow digits
@@ -425,15 +432,15 @@ const CyclePulse = createNodeComponent<CyclePulseData>({
             disabled={!!error}
           />
           <span className="text-xs w-6 shrink-0">ms</span>
-        </div>
-        
+      </div>
+      
         {/* Pulse Duration */}
         <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
           <label className="text-xs w-12 shrink-0">Pulse:</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
             value={data.pulseDuration || 500}
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, ''); // Only allow digits
@@ -444,28 +451,28 @@ const CyclePulse = createNodeComponent<CyclePulseData>({
             disabled={!!error}
           />
           <span className="text-xs w-6 shrink-0">ms</span>
-        </div>
-        
+      </div>
+      
         {/* Infinite checkbox */}
         <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
-          <input 
-            type="checkbox" 
+        <input 
+          type="checkbox" 
             checked={data.infinite ?? true}
             onChange={(e) => updateNodeData(id, { infinite: e.target.checked })}
             disabled={!!error}
             className="shrink-0"
           />
           <label className="text-xs">Infinite cycles</label>
-        </div>
-        
+      </div>
+      
         {/* Max Cycles (when not infinite) */}
         {!data.infinite && (
           <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
             <label className="text-xs w-12 shrink-0">Max:</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
               value={data.maxCycles || 1}
               onChange={(e) => {
                 const value = e.target.value.replace(/\D/g, ''); // Only allow digits
@@ -511,7 +518,8 @@ const CyclePulse = createNodeComponent<CyclePulseData>({
                 isOn: newIsOn, 
                 isRunning: newIsOn,
                 cycleCount: newIsOn ? 0 : (data.cycleCount || 0),
-                progress: 0
+                progress: 0,
+                output: newIsOn ? 'CYCLING' : undefined
               });
             }}
             disabled={!!error}

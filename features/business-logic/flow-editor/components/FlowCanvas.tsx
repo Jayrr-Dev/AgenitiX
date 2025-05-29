@@ -29,16 +29,16 @@ import LogicXor from '../../nodes/main/LogicXor';
 import LogicXnor from '../../nodes/main/LogicXnor';
 import TurnToText from '../../nodes/media/TurnToText';
 import TurnToBoolean from '../../nodes/automation/TurnToBoolean';
-import TestInput from '../../nodes/main/TestInput';
 import EditObject from '../../nodes/main/EditObject';
 import EditArray from '../../nodes/main/EditArray';
 import CountInput from '../../nodes/automation/CountInput';
 import DelayInput from '../../nodes/automation/DelayInput';
 import TestError from '../../nodes/test/TestError';
-
+import TestJson from '../../nodes/test/TestJson';
+import TestInput from '../../nodes/test/TestInput';
 // Import components
 import NodeInspector from '../../components/NodeInspector';
-import UndoRedoToolbar from '../../components/UndoRedoToolbar';
+import ActionToolbar from '../../components/ActionToolbar';
 import HistoryPanel from '../../components/HistoryPanel';
 import { ActionHistoryEntry } from '../../components/UndoRedoManager';
 
@@ -159,6 +159,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       countInput: CountInput,
       delayInput: DelayInput,
       testError: TestError,
+      testJson: TestJson,
     }),
     []
   );
@@ -263,9 +264,9 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         {/* BACKGROUND */}
         <Background gap={12} size={1} color="#aaa" />
         
-        {/* UNDO/REDO TOOLBAR */}
+        {/* ACTION TOOLBAR */}
         <Panel position="top-right" className="m-2">
-          <UndoRedoToolbar
+          <ActionToolbar
             showHistoryPanel={showHistoryPanel}
             onToggleHistory={onToggleHistory}
           />

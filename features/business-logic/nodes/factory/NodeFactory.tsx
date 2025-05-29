@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState, ReactNode } from 'react';
+import React, { memo, useEffect, useState, ReactNode, useMemo } from 'react';
 import {
   Position,
   useNodeConnections,
@@ -9,6 +9,7 @@ import {
 
 // Store and utilities
 import { useFlowStore } from '../../stores/flowStore';
+import { useVibeModeStore } from '../../stores/vibeModeStore';
 import CustomHandle from '../../handles/CustomHandle';
 import { FloatingNodeId } from '../components/FloatingNodeId';
 import { ExpandCollapseButton } from '../components/ExpandCollapseButton';
@@ -186,6 +187,12 @@ export function createNodeComponent<T extends BaseNodeData>(
     registerNodeInspectorControls(config.nodeType, config.renderInspectorControls);
   }
 
+  // Automatically add JSON input support to all factory nodes
+  const enhancedConfig = {
+    ...config,
+    handles: addJsonInputSupport(config.handles)
+  };
+
   const NodeComponent = ({ id, data, selected }: NodeProps<Node<T & Record<string, unknown>>>) => {
     // ============================================================================
     // STATE MANAGEMENT
@@ -196,17 +203,106 @@ export function createNodeComponent<T extends BaseNodeData>(
     const [error, setError] = useState<string | null>(null);
     const [isRecovering, setIsRecovering] = useState(false);
     const [isActive, setIsActive] = useState(false);
+    
+    // Vibe Mode state
+    const { isVibeModeActive } = useVibeModeStore();
 
     // ============================================================================
     // CONNECTION HANDLING
     // ============================================================================
     
     const connections = useNodeConnections({ handleType: 'target' });
-    const inputHandles = config.handles.filter(h => h.type === 'target');
+    const inputHandles = enhancedConfig.handles.filter(h => h.type === 'target');
+    
     const sourceIds = connections
       .filter(c => inputHandles.some(h => h.id === c.targetHandle))
       .map(c => c.source);
     const nodesData = useNodesData(sourceIds);
+
+    // Memoize connection and node data to prevent unnecessary effect triggers
+    const memoizedConnections = useMemo(() => connections, [JSON.stringify(connections)]);
+    const memoizedNodesData = useMemo(() => nodesData, [JSON.stringify(nodesData)]);
+
+    // ============================================================================
+    // VIBE MODE PROCESSING (SEPARATE EFFECT)
+    // ============================================================================
+    
+    useEffect(() => {
+      if (!isVibeModeActive) return;
+      
+      // Find all JSON input handles that can be used for Vibe Mode
+      const jsonHandles = enhancedConfig.handles.filter(h => h.type === 'target' && h.dataType === 'j');
+      const jsonHandleIds = jsonHandles.map(h => h.id);
+      
+      // Add the Vibe Mode handle ID if no existing JSON handles
+      const allJsonHandleIds = jsonHandleIds.length > 0 ? jsonHandleIds : ['j'];
+      
+      // Look for connections to any JSON input handles
+      const vibeConnections = memoizedConnections.filter(c => allJsonHandleIds.includes(c.targetHandle || ''));
+      if (vibeConnections.length === 0) return;
+      
+      // Get JSON data from connected nodes
+      const jsonInputs = memoizedNodesData
+        .filter(node => vibeConnections.some(c => c.source === node.id))
+        .map(node => {
+          // Try to extract JSON from various node data properties
+          const nodeData = node.data;
+          return nodeData?.json || nodeData?.text || nodeData?.value || nodeData?.output || nodeData?.result;
+        })
+        .filter(input => input !== undefined && input !== null && input !== '');
+      
+      if (jsonInputs.length === 0) return;
+      
+      // Process each JSON input
+      jsonInputs.forEach(jsonInput => {
+        try {
+          let parsedData;
+          
+          // If it's already an object, use it directly
+          if (typeof jsonInput === 'object') {
+            parsedData = jsonInput;
+          } else if (typeof jsonInput === 'string') {
+            // Try to parse as JSON string
+            parsedData = JSON.parse(jsonInput);
+          } else {
+            console.warn(`VibeMode ${id}: Invalid JSON input type:`, typeof jsonInput);
+            return;
+          }
+          
+          // Validate that it's an object
+          if (typeof parsedData !== 'object' || parsedData === null || Array.isArray(parsedData)) {
+            console.warn(`VibeMode ${id}: JSON input must be an object, got:`, typeof parsedData);
+            return;
+          }
+          
+          // Filter out properties that shouldn't be overridden
+          const { error: _, ...safeData } = parsedData;
+          
+          // Check if any data would actually change to prevent infinite loops
+          const currentData = data as T;
+          const hasChanges = Object.keys(safeData).some(key => {
+            const newValue = safeData[key];
+            const currentValue = currentData[key];
+            
+            // Deep comparison for objects, strict comparison for primitives
+            if (typeof newValue === 'object' && typeof currentValue === 'object') {
+              return JSON.stringify(newValue) !== JSON.stringify(currentValue);
+            }
+            return newValue !== currentValue;
+          });
+          
+          // Only update if there are actual changes
+          if (hasChanges) {
+            console.log(`VibeMode ${id}: Applying JSON data:`, safeData);
+            updateNodeData(id, safeData);
+          }
+          
+        } catch (parseError) {
+          console.error(`VibeMode ${id}: Failed to parse JSON:`, parseError);
+          // Don't set error state for Vibe Mode parsing failures to avoid disrupting normal operation
+        }
+      });
+    }, [isVibeModeActive, memoizedConnections, memoizedNodesData, id]); // Use memoized versions
 
     // ============================================================================
     // DATA PROCESSING
@@ -214,11 +310,12 @@ export function createNodeComponent<T extends BaseNodeData>(
     
     useEffect(() => {
       try {
-        config.processLogic({
+        // Process regular node logic (Vibe Mode is handled separately)
+        enhancedConfig.processLogic({
           id,
           data: data as T,
-          connections,
-          nodesData,
+          connections: memoizedConnections,
+          nodesData: memoizedNodesData,
           updateNodeData: (nodeId: string, updates: Partial<T>) => 
             updateNodeData(nodeId, updates as Partial<Record<string, unknown>>),
           setError
@@ -228,8 +325,17 @@ export function createNodeComponent<T extends BaseNodeData>(
         const hasOutputData = (() => {
           const currentData = data as T;
           
+          // Special handling for TestJson nodes
+          if (enhancedConfig.nodeType === 'testJson') {
+            const testJsonData = currentData as any;
+            // Active when there's valid parsed JSON (no parse error and parsedJson exists)
+            return testJsonData?.parsedJson !== null && 
+                   testJsonData?.parsedJson !== undefined && 
+                   testJsonData?.parseError === null;
+          }
+          
           // Special handling for ViewOutput nodes
-          if (config.nodeType === 'viewOutput') {
+          if (enhancedConfig.nodeType === 'viewOutput') {
             const displayedValues = (currentData as any)?.displayedValues;
             if (!Array.isArray(displayedValues) || displayedValues.length === 0) {
               return false;
@@ -264,34 +370,52 @@ export function createNodeComponent<T extends BaseNodeData>(
           }
           
           // Check for meaningful output data in this node
-          const outputValue = currentData?.text || currentData?.value || currentData?.output || currentData?.result;
+          const outputValue = currentData?.text !== undefined ? currentData.text :
+                             currentData?.value !== undefined ? currentData.value :
+                             currentData?.output !== undefined ? currentData.output :
+                             currentData?.result !== undefined ? currentData.result :
+                             undefined;
           
           // Only activate if there's actual meaningful output
           return outputValue !== undefined && outputValue !== null && outputValue !== '';
         })();
-        
+
         setIsActive(hasOutputData);
         
       } catch (processingError) {
         setIsActive(false); // Clear active state on error
-        console.error(`${config.nodeType} ${id} - Processing error:`, processingError);
+        console.error(`${enhancedConfig.nodeType} ${id} - Processing error:`, processingError);
         const errorMessage = processingError instanceof Error 
           ? processingError.message 
           : 'Processing error';
         setError(errorMessage);
       }
-    }, [id, data, connections, nodesData, updateNodeData]);
+    }, [
+      id, 
+      memoizedConnections, 
+      memoizedNodesData, 
+      enhancedConfig.nodeType,
+      // Add specific data properties that should trigger processing
+      (data as any)?.isManuallyActivated,
+      (data as any)?.triggerMode,
+      (data as any)?.errorType,
+      (data as any)?.errorMessage
+    ]);
 
     // ============================================================================
     // ERROR RECOVERY EFFECT (separate to avoid circular dependencies)
     // ============================================================================
     
     useEffect(() => {
-      // Clear error on successful processing (only if not currently recovering)
-      if (error && !isRecovering && data && !data.error) {
-        setError(null);
+      // Clear error on successful processing only for non-TestJson nodes
+      // TestJson nodes manage their own error state through their data.error property
+      if (error && !isRecovering && enhancedConfig.nodeType !== 'testJson' && enhancedConfig.nodeType !== 'testError') {
+        // Only clear if the node doesn't have an error in its data
+        if (!data?.error) {
+          setError(null);
+        }
       }
-    }, [error, isRecovering, data]);
+    }, [error, isRecovering, enhancedConfig.nodeType]); // Remove data.error dependency to prevent loops
 
     // Recovery function
     const recoverFromError = () => {
@@ -301,15 +425,15 @@ export function createNodeComponent<T extends BaseNodeData>(
         
         // Reset to safe defaults
         const recoveryData = {
-          ...config.defaultData,
-          ...config.errorRecoveryData,
+          ...enhancedConfig.defaultData,
+          ...enhancedConfig.errorRecoveryData,
           error: null
         };
         
         updateNodeData(id, recoveryData);
         setTimeout(() => setIsRecovering(false), 1000);
       } catch (recoveryError) {
-        console.error(`${config.nodeType} ${id} - Recovery failed:`, recoveryError);
+        console.error(`${enhancedConfig.nodeType} ${id} - Recovery failed:`, recoveryError);
         setError('Recovery failed. Please refresh.');
         setIsRecovering(false);
       }
@@ -319,13 +443,23 @@ export function createNodeComponent<T extends BaseNodeData>(
     // STYLING
     // ============================================================================
     
-    const nodeSize = config.size || DEFAULT_TEXT_NODE_SIZE;
-    const nodeStyleClasses = useNodeStyleClasses(!!selected, !!error, isActive);
-    const buttonTheme = useNodeButtonTheme(!!error, isActive);
-    const textTheme = useNodeTextTheme(!!error);
-    const categoryBaseClasses = useNodeCategoryBaseClasses(config.nodeType);
-    const categoryButtonTheme = useNodeCategoryButtonTheme(config.nodeType, !!error, isActive);
-    const categoryTextTheme = useNodeCategoryTextTheme(config.nodeType, !!error);
+    const nodeSize = enhancedConfig.size || DEFAULT_TEXT_NODE_SIZE;
+    
+    // Check for Vibe Mode injected error state - only for nodes that support error injection
+    const supportsErrorInjection = ['createText', 'testJson', 'viewOutput'].includes(enhancedConfig.nodeType);
+    const hasVibeError = supportsErrorInjection && (data as any)?.isErrorState === true;
+    const vibeErrorType = (data as any)?.errorType || 'error';
+    
+    // Determine final error state for styling (local error takes precedence)
+    const finalErrorForStyling = error || hasVibeError;
+    const finalErrorType = error ? 'local' : vibeErrorType;
+    
+    const nodeStyleClasses = useNodeStyleClasses(!!selected, !!finalErrorForStyling, isActive);
+    const buttonTheme = useNodeButtonTheme(!!finalErrorForStyling, isActive);
+    const textTheme = useNodeTextTheme(!!finalErrorForStyling);
+    const categoryBaseClasses = useNodeCategoryBaseClasses(enhancedConfig.nodeType);
+    const categoryButtonTheme = useNodeCategoryButtonTheme(enhancedConfig.nodeType, !!finalErrorForStyling, isActive);
+    const categoryTextTheme = useNodeCategoryTextTheme(enhancedConfig.nodeType, !!finalErrorForStyling);
 
     // ============================================================================
     // RENDER
@@ -338,19 +472,6 @@ export function createNodeComponent<T extends BaseNodeData>(
           : `${nodeSize.collapsed.width} ${nodeSize.collapsed.height} flex items-center justify-center`
       } rounded-lg ${categoryBaseClasses.background} shadow border ${categoryBaseClasses.border} ${nodeStyleClasses}`}>
         
-        {/* Error Recovery Button */}
-        {error && (
-          <button
-            onClick={recoverFromError}
-            disabled={isRecovering}
-            className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-xs rounded-full flex items-center justify-center shadow-lg transition-colors z-20"
-            title={`Error: ${error}. Click to recover.`}
-            aria-label="Recover from error"
-          >
-            {isRecovering ? '⟳' : '!'}
-          </button>
-        )}
-        
         {/* Floating Node ID */}
         <FloatingNodeId nodeId={id} />
         
@@ -358,36 +479,54 @@ export function createNodeComponent<T extends BaseNodeData>(
         <ExpandCollapseButton
           showUI={showUI}
           onToggle={() => setShowUI((v) => !v)}
-          className={`${error ? buttonTheme : categoryButtonTheme}`}
+          className={`${finalErrorForStyling ? buttonTheme : categoryButtonTheme}`}
         />
 
         {/* Input Handles */}
-        {config.handles
+        {enhancedConfig.handles
           .filter(handle => handle.type === 'target')
-          .map(handle => (
-            <CustomHandle
-              key={handle.id}
-              type="target"
-              position={handle.position}
-              id={handle.id}
-              dataType={handle.dataType}
-            />
-          ))}
+          .filter(handle => {
+            // Hide JSON handles when Vibe Mode is off
+            if (handle.dataType === 'j') {
+              return isVibeModeActive;
+            }
+            return true;
+          })
+          .map(handle => {
+            // Enhanced styling for JSON handles when visible
+            const isJsonHandle = handle.dataType === 'j';
+            const jsonStyle = isJsonHandle ? {
+              // background: '#8b5cf6', // Purple when visible (Vibe Mode active)
+              // border: '2px solid #7c3aed',
+              // boxShadow: '0 0 8px rgba(139, 92, 246, 0.6)',
+            } : undefined;
+            
+            return (
+              <CustomHandle
+                key={handle.id}
+                type="target"
+                position={handle.position}
+                id={handle.id}
+                dataType={handle.dataType}
+                style={jsonStyle}
+              />
+            );
+          })}
         
         {/* Collapsed State */}
-        {!showUI && config.renderCollapsed({
+        {!showUI && enhancedConfig.renderCollapsed({
           data: data as T,
-          error,
-          nodeType: config.nodeType,
+          error: supportsErrorInjection && finalErrorForStyling ? (error || (data as any)?.error || 'Error state active') : error,
+          nodeType: enhancedConfig.nodeType,
           updateNodeData,
           id
         })}
 
         {/* Expanded State */}
-        {showUI && config.renderExpanded({
+        {showUI && enhancedConfig.renderExpanded({
           data: data as T,
-          error,
-          nodeType: config.nodeType,
+          error: supportsErrorInjection && finalErrorForStyling ? (error || (data as any)?.error || 'Error state active') : error,
+          nodeType: enhancedConfig.nodeType,
           categoryTextTheme,
           textTheme,
           updateNodeData,
@@ -395,7 +534,7 @@ export function createNodeComponent<T extends BaseNodeData>(
         })}
 
         {/* Output Handles */}
-        {config.handles
+        {enhancedConfig.handles
           .filter(handle => handle.type === 'source')
           .map(handle => (
             <CustomHandle
@@ -411,7 +550,7 @@ export function createNodeComponent<T extends BaseNodeData>(
   };
 
   // Add display name for debugging
-  NodeComponent.displayName = config.displayName;
+  NodeComponent.displayName = enhancedConfig.displayName;
 
   return memo(NodeComponent);
 }
@@ -510,6 +649,242 @@ export const createCheckboxControl = (
     </label>
   </div>
 );
+
+// ============================================================================
+// UNIVERSAL JSON HELPERS FOR VIBE MODE
+// ============================================================================
+
+/**
+ * Universal helper to add JSON input support to any node
+ * This allows nodes to be programmatically updated via JSON data
+ */
+export const addJsonInputSupport = <T extends BaseNodeData>(
+  handles: HandleConfig[]
+): HandleConfig[] => {
+  // Check if node already has a JSON input handle
+  const hasJsonInput = handles.some(h => h.type === 'target' && h.dataType === 'j');
+  
+  if (!hasJsonInput) {
+    // Add a JSON input handle positioned at the top center
+    return [
+      ...handles,
+      { id: 'j', dataType: 'j', position: Position.Top, type: 'target' }
+    ];
+  }
+  
+  return handles;
+};
+
+/**
+ * Process JSON input and update node data safely
+ * This is automatically handled by the factory, but can be used manually if needed
+ */
+export const processJsonInput = <T extends BaseNodeData>(
+  jsonData: any,
+  currentData: T,
+  updateNodeData: (id: string, updates: Partial<T>) => void,
+  nodeId: string
+): boolean => {
+  try {
+    let parsedData;
+    
+    // Handle different JSON input types
+    if (typeof jsonData === 'object' && jsonData !== null && !Array.isArray(jsonData)) {
+      parsedData = jsonData;
+    } else if (typeof jsonData === 'string') {
+      parsedData = JSON.parse(jsonData);
+    } else {
+      console.warn(`processJsonInput ${nodeId}: Invalid JSON input type:`, typeof jsonData);
+      return false;
+    }
+    
+    // Validate object structure
+    if (typeof parsedData !== 'object' || parsedData === null || Array.isArray(parsedData)) {
+      console.warn(`processJsonInput ${nodeId}: JSON input must be an object, got:`, typeof parsedData);
+      return false;
+    }
+    
+    // Filter out unsafe properties
+    const { error: _, ...safeData } = parsedData;
+    
+    // Check for meaningful changes
+    const hasChanges = Object.keys(safeData).some(key => {
+      const newValue = safeData[key];
+      const currentValue = currentData[key];
+      
+      if (typeof newValue === 'object' && typeof currentValue === 'object') {
+        return JSON.stringify(newValue) !== JSON.stringify(currentValue);
+      }
+      return newValue !== currentValue;
+    });
+    
+    if (hasChanges) {
+      console.log(`processJsonInput ${nodeId}: Applying JSON data:`, safeData);
+      updateNodeData(nodeId, safeData as Partial<T>);
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error(`processJsonInput ${nodeId}: Failed to process JSON:`, error);
+    return false;
+  }
+};
+
+/**
+ * Create a node configuration with automatic JSON input support
+ * This is a convenience wrapper that automatically adds JSON input handling
+ */
+export const createUniversalNodeConfig = <T extends BaseNodeData>(
+  config: NodeFactoryConfig<T>
+): NodeFactoryConfig<T> => {
+  return {
+    ...config,
+    handles: addJsonInputSupport(config.handles),
+    // Note: JSON processing is automatically handled by the factory's Vibe Mode system
+  };
+};
+
+// ============================================================================
+// UNIVERSAL TRIGGER SUPPORT FOR FACTORY NODES
+// ============================================================================
+
+/**
+ * Universal helper to add boolean trigger support to any node
+ * This allows nodes to be turned on/off via boolean connections
+ */
+export const addTriggerSupport = <T extends BaseNodeData>(
+  handles: HandleConfig[]
+): HandleConfig[] => {
+  // Check if node already has a boolean trigger input handle
+  const hasTriggerInput = handles.some(h => h.type === 'target' && h.dataType === 'b');
+  
+  if (!hasTriggerInput) {
+    // Add a boolean trigger input handle positioned at the left
+    return [
+      { id: 'b', dataType: 'b', position: Position.Left, type: 'target' },
+      ...handles
+    ];
+  }
+  
+  return handles;
+};
+
+/**
+ * Check if a node should be active based on trigger connections
+ * Returns true if no trigger is connected OR if trigger is active
+ */
+export const shouldNodeBeActive = (
+  connections: any[],
+  nodesData: any[],
+  triggerHandleId: string = 'b'
+): boolean => {
+  // Import here to avoid circular dependency
+  const { getSingleInputValue, isTruthyValue } = require('../utils/nodeUtils');
+  
+  // Filter for trigger connections (boolean handle)
+  const triggerConnections = connections.filter(c => c.targetHandle === triggerHandleId);
+  
+  // If no trigger connected, node is always active
+  if (triggerConnections.length === 0) {
+    return true;
+  }
+  
+  // Get the source node IDs for trigger connections
+  const triggerSourceIds = triggerConnections.map(c => c.source);
+  
+  // Filter nodesData to only include nodes connected to the trigger handle
+  const triggerNodesData = nodesData.filter(node => triggerSourceIds.includes(node.id));
+  
+  // Get trigger value from connected trigger nodes
+  const triggerValue = getSingleInputValue(triggerNodesData);
+  return isTruthyValue(triggerValue);
+};
+
+/**
+ * Create a process logic wrapper that respects trigger state
+ * Wraps existing processing logic with trigger checking
+ */
+export const withTriggerSupport = <T extends BaseNodeData>(
+  originalProcessLogic: (props: {
+    id: string;
+    data: T;
+    connections: any[];
+    nodesData: any[];
+    updateNodeData: (id: string, data: Partial<T>) => void;
+    setError: (error: string | null) => void;
+  }) => void,
+  inactiveOutputValue?: any
+) => {
+  return (props: {
+    id: string;
+    data: T;
+    connections: any[];
+    nodesData: any[];
+    updateNodeData: (id: string, data: Partial<T>) => void;
+    setError: (error: string | null) => void;
+  }) => {
+    const { connections, nodesData, updateNodeData, id } = props;
+    
+    // Check if node should be active based on trigger
+    const isActive = shouldNodeBeActive(connections, nodesData);
+    
+    if (!isActive) {
+      // Node is disabled by trigger - clear outputs or set to inactive state
+      if (inactiveOutputValue !== undefined) {
+        // Set specific inactive output value
+        updateNodeData(id, { output: inactiveOutputValue } as unknown as Partial<T>);
+      } else {
+        // Default behavior: clear common output properties
+        const clearOutputs: Partial<T> = {};
+        
+        // Clear common output properties
+        const outputKeys = ['text', 'value', 'output', 'result'];
+        outputKeys.forEach(key => {
+          if (key in props.data) {
+            (clearOutputs as any)[key] = '';
+          }
+        });
+        
+        // Special handling for JSON properties
+        if ('json' in props.data) {
+          (clearOutputs as any)['json'] = '';
+        }
+        
+        // Special handling for parsedJson properties  
+        if ('parsedJson' in props.data) {
+          (clearOutputs as any)['parsedJson'] = null;
+        }
+        
+        if (Object.keys(clearOutputs).length > 0) {
+          updateNodeData(id, clearOutputs);
+        }
+      }
+      
+      // Clear any existing errors when inactive
+      props.setError(null);
+      return;
+    }
+    
+    // Node is active - run original processing logic
+    originalProcessLogic(props);
+  };
+};
+
+/**
+ * Create a node configuration with automatic trigger support
+ * This is a convenience wrapper that automatically adds trigger handling
+ */
+export const createTriggeredNodeConfig = <T extends BaseNodeData>(
+  config: NodeFactoryConfig<T>,
+  inactiveOutputValue?: any
+): NodeFactoryConfig<T> => {
+  return {
+    ...config,
+    handles: addTriggerSupport(config.handles),
+    processLogic: withTriggerSupport(config.processLogic, inactiveOutputValue),
+  };
+};
 
 // ============================================================================
 // EXAMPLE USAGE

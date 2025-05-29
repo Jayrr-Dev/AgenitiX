@@ -131,9 +131,26 @@ export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
     displayName: 'Delay Input'
   },
   testError: {
-    defaultData: { text: 'Test Error Node', label: 'Error Test' },
+    defaultData: { 
+      errorMessage: 'Custom error message',
+      errorType: 'error',
+      triggerMode: 'trigger_on',
+      isGeneratingError: false,
+      text: '',
+      json: ''
+    },
     hasControls: true,
-    displayName: 'Test Error'
+    displayName: 'Error Generator'
+  },
+  testJson: {
+    defaultData: { 
+      jsonText: '{"example": "value"}',
+      parsedJson: null,
+      parseError: null,
+      json: null
+    },
+    hasControls: true,
+    displayName: 'Test JSON'
   }
 };
 

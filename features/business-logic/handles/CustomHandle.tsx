@@ -89,13 +89,13 @@ const CustomHandle: React.FC<CustomHandleProps> = ({ dataType, className = '', p
       position={position}
       isValidConnection={isValidConnection}
       isConnectable={handleIsConnectable}
-      className={`w-5 h-5 flex items-center justify-center bg-black/20 border-[0.5px] border-white rounded-full p-1 shadow ${invalid ? 'ring-2 ring-red-500' : ''} ${className}`}
+      className={`w-8 h-8 flex items-center justify-center bg-black/20 border-[0.5px] border-white rounded-full p-1 shadow ${invalid ? 'ring-2 ring-red-500' : ''} ${className}`}
       style={{ background: color, color: '#fff', ...props.style }}
       title={tooltip}
     >
       <span
         style={{
-          fontSize: '12px',
+          fontSize: '8px',
           fontWeight: 200,
           lineHeight: 1,
           pointerEvents: 'none',

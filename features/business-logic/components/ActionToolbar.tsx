@@ -1,16 +1,17 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { RotateCcw, RotateCw, History, Maximize, Minimize } from 'lucide-react'
+import { RotateCcw, RotateCw, History, Maximize, Minimize, X } from 'lucide-react'
 import { useUndoRedo } from './UndoRedoContext'
+import { useVibeModeStore } from '../stores/vibeModeStore'
 
-interface UndoRedoToolbarProps {
+interface ActionToolbarProps {
   showHistoryPanel: boolean
   onToggleHistory: () => void
   className?: string
 }
 
-const UndoRedoToolbar: React.FC<UndoRedoToolbarProps> = ({
+const ActionToolbar: React.FC<ActionToolbarProps> = ({
   showHistoryPanel,
   onToggleHistory,
   className = ''
@@ -18,6 +19,9 @@ const UndoRedoToolbar: React.FC<UndoRedoToolbarProps> = ({
   const { undo, redo, getHistory } = useUndoRedo()
   const { canUndo, canRedo } = getHistory()
   const [isFullscreen, setIsFullscreen] = useState(false)
+  
+  // Vibe Mode state
+  const { isVibeModeActive, toggleVibeMode } = useVibeModeStore()
 
   // Check fullscreen state on mount and listen for changes
   useEffect(() => {
@@ -100,8 +104,22 @@ const UndoRedoToolbar: React.FC<UndoRedoToolbarProps> = ({
       >
         {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
       </button>
+      
+      <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1" />
+      
+      <button
+        onClick={toggleVibeMode}
+        className={`p-2 rounded transition-colors ${
+          isVibeModeActive 
+            ? 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 ring-2 ring-purple-300 dark:ring-purple-700' 
+            : 'hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400'
+        }`}
+        title={isVibeModeActive ? "Exit Vibe Mode" : "Enter Vibe Mode"}
+      >
+        <X className={`w-4 h-4 ${isVibeModeActive ? 'animate-pulse' : ''}`} />
+      </button>
     </div>
   )
 }
 
-export default UndoRedoToolbar 
+export default ActionToolbar 

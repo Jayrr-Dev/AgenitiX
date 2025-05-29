@@ -109,8 +109,19 @@ export interface DelayInputData {
 }
 
 export interface TestErrorData {
+  errorMessage: string;
+  errorType: 'warning' | 'error' | 'critical';
+  triggerMode: 'always' | 'trigger_on' | 'trigger_off';
+  isGeneratingError: boolean;
   text: string;
-  label: string;
+  json: any;
+}
+
+export interface TestJsonData {
+  jsonText: string;
+  parsedJson: any;
+  parseError: string | null;
+  json: any;
 }
 
 // ============================================================================
@@ -138,7 +149,8 @@ export type AgenNode =
   | (Node<EditArrayData & Record<string, unknown>> & { type: 'editArray' })
   | (Node<CountInputData & Record<string, unknown>> & { type: 'countInput' })
   | (Node<DelayInputData & Record<string, unknown>> & { type: 'delayInput' })
-  | (Node<TestErrorData & Record<string, unknown>> & { type: 'testError' });
+  | (Node<TestErrorData & Record<string, unknown>> & { type: 'testError' })
+  | (Node<TestJsonData & Record<string, unknown>> & { type: 'testJson' });
 
 export type AgenEdge = Edge & {
   sourceHandle?: string | null;

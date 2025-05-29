@@ -24,6 +24,7 @@ interface CycleToggleData extends BaseNodeData {
   progress: number;
   // Timer tracking
   phaseStartTime?: number;
+  output?: string;
 }
 
 // ============================================================================
@@ -207,7 +208,8 @@ const CycleToggle = createNodeComponent<CycleToggleData>({
     phase: false,
     cycleCount: 0,
     progress: 0,
-    phaseStartTime: undefined
+    phaseStartTime: undefined,
+    output: undefined
   },
   
   // Custom sizing: 120x120 collapsed, 180x180 expanded
@@ -240,7 +242,8 @@ const CycleToggle = createNodeComponent<CycleToggleData>({
           isRunning: false,
           progress: 0,
           phase: false,
-          triggered: false
+          triggered: false,
+          output: undefined
         });
         stopToggleCycle(id);
         return;
@@ -257,7 +260,8 @@ const CycleToggle = createNodeComponent<CycleToggleData>({
             cycleCount: 0,
             progress: 0,
             phase: data.initialState || false,
-            triggered: data.initialState || false
+            triggered: data.initialState || false,
+            output: 'TOGGLING'
           });
           startToggleCycle(id, updateNodeData, data.onDuration || 4000, data.offDuration || 4000, data.initialState || false);
         } else if (!data.isRunning && data.isOn) {
@@ -266,7 +270,8 @@ const CycleToggle = createNodeComponent<CycleToggleData>({
             isOn: false,
             progress: 0,
             phase: false,
-            triggered: false
+            triggered: false,
+            output: undefined
           });
           stopToggleCycle(id);
         }
@@ -285,11 +290,11 @@ const CycleToggle = createNodeComponent<CycleToggleData>({
         // Only handle external triggers if they change state
         if (externalTrigger && !data.isOn) {
           console.log(`CycleToggle ${id}: External trigger ON`);
-          updateNodeData(id, { isOn: true, isRunning: true });
+          updateNodeData(id, { isOn: true, isRunning: true, output: 'TOGGLING' });
           startToggleCycle(id, updateNodeData, data.onDuration || 4000, data.offDuration || 4000, data.initialState || false);
         } else if (!externalTrigger && data.isOn) {
           console.log(`CycleToggle ${id}: External trigger OFF`);
-          updateNodeData(id, { isOn: false, isRunning: false, phase: false, triggered: false });
+          updateNodeData(id, { isOn: false, isRunning: false, phase: false, triggered: false, output: undefined });
           stopToggleCycle(id);
         }
       }
@@ -320,7 +325,8 @@ const CycleToggle = createNodeComponent<CycleToggleData>({
           cycleCount: 0,
           progress: 0,
           phase: data.initialState || false,
-          triggered: data.initialState || false
+          triggered: data.initialState || false,
+          output: 'TOGGLING'
         });
         startToggleCycle(id, updateNodeData, data.onDuration || 4000, data.offDuration || 4000, data.initialState || false);
       } else {
@@ -330,13 +336,14 @@ const CycleToggle = createNodeComponent<CycleToggleData>({
           isRunning: false,
           progress: 0,
           phase: false,
-          triggered: false
+          triggered: false,
+          output: undefined
         });
         stopToggleCycle(id);
       }
     };
 
-    return (
+  return (
       <div className="absolute inset-0 flex items-center justify-center">
         {error ? (
           <div className="text-xs text-center text-red-600 break-words p-2">
@@ -377,10 +384,10 @@ const CycleToggle = createNodeComponent<CycleToggleData>({
         {/* ON Duration */}
         <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
           <label className="text-xs w-10 shrink-0">ON:</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
             value={data.onDuration || 4000}
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, ''); // Only allow digits
@@ -391,15 +398,15 @@ const CycleToggle = createNodeComponent<CycleToggleData>({
             disabled={!!error}
           />
           <span className="text-xs w-6 shrink-0">ms</span>
-        </div>
-        
+      </div>
+      
         {/* OFF Duration */}
         <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
           <label className="text-xs w-10 shrink-0">OFF:</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
             value={data.offDuration || 4000}
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, ''); // Only allow digits
@@ -410,28 +417,28 @@ const CycleToggle = createNodeComponent<CycleToggleData>({
             disabled={!!error}
           />
           <span className="text-xs w-6 shrink-0">ms</span>
-        </div>
-        
+      </div>
+      
         {/* Infinite checkbox */}
         <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
-          <input 
-            type="checkbox" 
+        <input 
+          type="checkbox" 
             checked={data.infinite ?? true}
             onChange={(e) => updateNodeData(id, { infinite: e.target.checked })}
             disabled={!!error}
             className="shrink-0"
           />
           <label className="text-xs">Infinite cycles</label>
-        </div>
-        
+      </div>
+      
         {/* Max Cycles (when not infinite) */}
         {!data.infinite && (
           <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
             <label className="text-xs w-10 shrink-0">Max:</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
               value={data.maxCycles || 1}
               onChange={(e) => {
                 const value = e.target.value.replace(/\D/g, ''); // Only allow digits
@@ -474,12 +481,12 @@ const CycleToggle = createNodeComponent<CycleToggleData>({
           onMouseDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
         >
-          <button
+      <button
             className={`px-3 py-1 rounded text-white font-bold shadow transition-colors text-xs ${
               data.phase 
                 ? 'bg-blue-500 hover:bg-blue-600' 
                 : data.isOn 
-                  ? 'bg-red-500 hover:bg-red-600' 
+            ? 'bg-red-500 hover:bg-red-600' 
                   : 'bg-yellow-500 hover:bg-yellow-600'
             }`} // Reduce button padding from px-4 py-2 to px-3 py-1
             onClick={() => {
@@ -489,13 +496,14 @@ const CycleToggle = createNodeComponent<CycleToggleData>({
                 isOn: newIsOn, 
                 isRunning: newIsOn,
                 cycleCount: newIsOn ? 0 : (data.cycleCount || 0),
-                progress: 0
+                progress: 0,
+                output: newIsOn ? 'TOGGLING' : undefined
               });
             }}
             disabled={!!error}
           >
             {data.isOn ? 'Stop' : 'Start'}
-          </button>
+      </button>
         </div>
       </div>
     </div>
@@ -514,7 +522,8 @@ const CycleToggle = createNodeComponent<CycleToggleData>({
     phase: false,
     cycleCount: 0,
     progress: 0,
-    phaseStartTime: undefined
+    phaseStartTime: undefined,
+    output: undefined
   }
 });
 

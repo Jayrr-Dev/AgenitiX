@@ -49,7 +49,8 @@ export const AVAILABLE_NODES = {
   'DelayInput': { nodeType: 'delayInput', folder: 'automation', label: 'Delay Input', description: 'Adds a time delay to your flow. Data goes in, waits for the specified time, then comes out. Perfect for creating timed sequences.' },
   
   // Test folder nodes
-  'TestError': { nodeType: 'testError', folder: 'test', label: 'Test Error', description: 'A simple test node for debugging the node factory system. Shows basic text/label functionality.' },
+  'TestError': { nodeType: 'testError', folder: 'test', label: 'Error Generator', description: 'Generate errors with custom messages and trigger conditions. Outputs JSON for Vibe Mode to set error states on connected nodes. Supports warning/error/critical levels.' },
+  'TestJson': { nodeType: 'testJson', folder: 'test', label: 'Test JSON', description: 'Create and test JSON data for Vibe Mode. Parse JSON text and output valid JSON objects for programmatic node manipulation.' },
   
   // Integrations folder nodes (empty for now)
   // Add new integration nodes here as they're created
@@ -113,7 +114,8 @@ export const DEFAULT_STENCILS_A: Record<TabKeyA, NodeStencil[]> = {
   ],
   testing: [
     // Testing and debugging nodes will go here
-    createStencil('TestError', 'testing')
+    createStencil('TestError', 'testing'),
+    createStencil('TestJson', 'testing', 2)
   ],
   time: [
     // Time nodes moved to core for testing

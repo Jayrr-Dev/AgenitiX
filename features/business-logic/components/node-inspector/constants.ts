@@ -105,6 +105,11 @@ export const NODE_TYPE_CONFIG: Record<NodeType, NodeTypeConfig> = {
     hasOutput: false,
     hasControls: true,
     displayName: 'Test Error'
+  },
+  testJson: {
+    hasOutput: true,
+    hasControls: true,
+    displayName: 'Test JSON'
   }
 };
 

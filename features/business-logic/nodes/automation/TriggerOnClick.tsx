@@ -49,7 +49,7 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
       const boolInputConnections = connections.filter(c => c.targetHandle === 'b');
       
       // If there are external boolean inputs, check if any are triggered
-      if (boolInputConnections.length > 0) {
+    if (boolInputConnections.length > 0) {
         const externalTrigger = nodesData.some(node => {
           // Check various trigger properties that might indicate an active trigger
           return node.data?.triggered === true || 
@@ -60,7 +60,7 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
         // Only trigger if not already triggered (prevent spam)
         if (externalTrigger && !data.triggered) {
           updateNodeData(id, { triggered: true });
-        }
+      }
         // Note: We don't auto-reset when external trigger goes false
         // This preserves the manual trigger behavior
       }
@@ -84,8 +84,8 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
       updateNodeData(id, { triggered: false });
     };
 
-    return (
-      <div className="absolute inset-0 flex items-center justify-center">
+  return (
+        <div className="absolute inset-0 flex items-center justify-center">
         {error ? (
           <div className="text-xs text-center text-red-600 break-words">
             {error}
@@ -143,23 +143,23 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
           >
-            {isTriggered ? (
-              <button
+          {isTriggered ? (
+            <button
                 className="px-2 py-1 rounded bg-yellow-600 hover:bg-yellow-700 text-white font-bold shadow transition-colors text-xs"
-                onClick={handleReset}
+              onClick={handleReset}
                 disabled={!!error}
-              >
-                Reset
-              </button>
-            ) : (
-              <button
+            >
+              Reset
+            </button>
+          ) : (
+            <button
                 className="px-2 py-1 rounded bg-yellow-500 hover:bg-yellow-600 text-white font-bold shadow transition-colors text-xs"
-                onClick={handleTrigger}
+              onClick={handleTrigger}
                 disabled={!!error}
-              >
+            >
                 Trigger
-              </button>
-            )}
+            </button>
+          )}
           </div>
           
           {/* Compact status indicator */}
@@ -170,14 +170,14 @@ const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
             }
           </div>
         </div>
-      </div>
+    </div>
     );
   },
 
   // Error recovery data
   errorRecoveryData: {
     triggered: false
-  }
+}
 });
 
 export default TriggerOnClick;

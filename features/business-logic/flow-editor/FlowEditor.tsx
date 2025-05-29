@@ -325,7 +325,7 @@ export default function FlowEditor() {
       console.error = originalError;
       console.warn = originalWarn;
     };
-  }, [selectedNodeId, logNodeError]);
+  }, [selectedNodeId]);
 
   // ============================================================================
   // MOUNT EFFECT
