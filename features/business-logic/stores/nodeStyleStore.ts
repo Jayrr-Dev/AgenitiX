@@ -24,6 +24,7 @@ export const NODE_CATEGORY_MAPPING: Record<string, NodeCategory> = {
   
   // Test category
   'testInput': 'test',
+  'testError': 'test',
   
   // Turn category
   'turnToText': 'turn',
@@ -304,7 +305,7 @@ const defaultStyles: NodeStyleState = {
     transition: 'transition-all duration-200'
   },
   categoryTheming: {
-    enabled: false,
+    enabled: true,
     customOverrides: {}
   }
 }

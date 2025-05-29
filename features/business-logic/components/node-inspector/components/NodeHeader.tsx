@@ -66,7 +66,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
     <div className="border-b border-gray-200 dark:border-gray-700 pb-2">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          {nodeConfig.displayName}
+          {nodeConfig?.displayName || node.type}
         </h3>
       </div>
       

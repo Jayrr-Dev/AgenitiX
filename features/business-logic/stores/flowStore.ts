@@ -27,6 +27,9 @@ interface FlowState {
   // Copy/Paste State
   copiedNodes: AgenNode[];
   copiedEdges: AgenEdge[];
+
+  // Hydration State
+  _hasHydrated: boolean;
 }
 
 interface FlowActions {
@@ -68,6 +71,9 @@ interface FlowActions {
 
   // Force reset to initial state (clears localStorage)
   forceReset: () => void;
+
+  // Hydration
+  setHasHydrated: (hasHydrated: boolean) => void;
 }
 
 type FlowStore = FlowState & FlowActions;
@@ -86,6 +92,7 @@ const initialState: FlowState = {
   nodeErrors: {},
   copiedNodes: [],
   copiedEdges: [],
+  _hasHydrated: false,
 };
 
 // ============================================================================
@@ -375,6 +382,13 @@ export const useFlowStore = create<FlowStore>()(
           // Reset to initial state
           set(() => ({ ...initialState }));
         },
+
+        // Hydration
+        setHasHydrated: (hasHydrated: boolean) => {
+          set((state) => {
+            state._hasHydrated = hasHydrated;
+          });
+        },
       })),
       {
         name: 'flow-editor-storage',
@@ -383,6 +397,11 @@ export const useFlowStore = create<FlowStore>()(
           nodes: state.nodes,
           edges: state.edges,
         }),
+        onRehydrateStorage: () => (state) => {
+          if (state) {
+            state.setHasHydrated(true);
+          }
+        },
       }
     ),
     {

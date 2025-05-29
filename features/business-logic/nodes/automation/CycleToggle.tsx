@@ -56,7 +56,12 @@ const CycleToggle: React.FC<NodeProps<Node<CycleToggleData & Record<string, unkn
   const boolInputSourceIds = boolInputConnections.map((c) => c.source)
   const boolInputNodesData = useNodesData(boolInputSourceIds)
   const hasExternalTrigger = boolInputSourceIds.length > 0
-  const externalTrigger = boolInputNodesData.some((n) => n.data.triggered)
+  
+  // Check for any truthy value from connected input nodes
+  const externalTrigger = boolInputNodesData.some((n) => {
+    const data = n.data
+    return !!(data.triggered || data.value || data.text || data.output)
+  })
 
   // INSPECTOR CONTROLS - Use separate control property to avoid feedback loop
   const prevIsRunningRef = useRef(data.isRunning)
@@ -77,13 +82,17 @@ const CycleToggle: React.FC<NodeProps<Node<CycleToggleData & Record<string, unkn
   useEffect(() => {
     if (hasExternalTrigger) {
       if (externalTrigger) {
-        setPhase(initialState) // Always start with initialState
-        setIsRunning(true)
+        // Only start if not already running, otherwise keep going
+        if (!isRunning) {
+          setPhase(initialState) // Start with initial state
+          setIsRunning(true)
+        }
       } else {
+        // Stop when trigger is false
         setIsRunning(false)
       }
     }
-  }, [externalTrigger, hasExternalTrigger, initialState])
+  }, [externalTrigger, hasExternalTrigger, isRunning, initialState])
 
   // Start/stop cycle
   useEffect(() => {
@@ -165,11 +174,12 @@ const CycleToggle: React.FC<NodeProps<Node<CycleToggleData & Record<string, unkn
 
   // Handlers
   const handleStartStop = () => {
-    if (!hasExternalTrigger) {
+    // Allow manual control when not connected OR when connected and input is true
+    if (!hasExternalTrigger || externalTrigger) {
       const newIsRunning = !isRunning
       setPhase(initialState) // Always start with initialState
       setIsRunning(newIsRunning)
-      // Don't update triggered here - let the inspector controls manage that
+      updateNodeData(id, { isRunning: newIsRunning })
     }
   }
 
@@ -288,6 +298,7 @@ const CycleToggle: React.FC<NodeProps<Node<CycleToggleData & Record<string, unkn
           cycleCount={cycleCount}
           phase={phase}
           hasExternalTrigger={hasExternalTrigger}
+          externalTrigger={externalTrigger}
           onOnDurationChange={handleOnDurationChange}
           onOffDurationChange={handleOffDurationChange}
           onInfiniteChange={handleInfiniteChange}
@@ -311,6 +322,7 @@ interface CycleToggleExpandedUIProps {
   cycleCount: number
   phase: boolean
   hasExternalTrigger: boolean
+  externalTrigger: boolean
   onOnDurationChange: (value: number) => void
   onOffDurationChange: (value: number) => void
   onInfiniteChange: (value: boolean) => void
@@ -329,6 +341,7 @@ const CycleToggleExpandedUI: React.FC<CycleToggleExpandedUIProps> = ({
   cycleCount,
   phase,
   hasExternalTrigger,
+  externalTrigger,
   onOnDurationChange,
   onOffDurationChange,
   onInfiniteChange,
@@ -473,9 +486,9 @@ const CycleToggleExpandedUI: React.FC<CycleToggleExpandedUIProps> = ({
           isRunning 
             ? 'bg-red-500 hover:bg-red-600' 
             : 'bg-purple-500 hover:bg-purple-600'
-        } ${hasExternalTrigger ? 'opacity-50 cursor-not-allowed' : ''}`}
+        } ${(hasExternalTrigger && !externalTrigger) ? 'opacity-50 cursor-not-allowed' : ''}`}
         onClick={onStartStop}
-        disabled={hasExternalTrigger}
+        disabled={hasExternalTrigger && !externalTrigger}
       >
         {isRunning ? 'Stop Cycle' : 'Start Cycle'}
       </button>

@@ -3,6 +3,7 @@ import type { AgenNode } from '../../../flow-editor/types';
 import { ErrorType } from '../types';
 import { TextNodeControl } from '../controls/TextNodeControl';
 import { TriggerOnClickControl, TriggerOnToggleControl, TriggerOnPulseControl, CyclePulseControl, CycleToggleControl } from '../controls/TriggerControls';
+import { hasFactoryInspectorControls, getNodeInspectorControls } from '../../../nodes/factory/NodeFactory';
 
 interface NodeControlsProps {
   node: AgenNode;
@@ -27,28 +28,27 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
   inspectorState 
 }) => {
   const renderControlsForNodeType = () => {
+    // First check if this node was created with the NodeFactory
+    if (hasFactoryInspectorControls(node.type)) {
+      const FactoryControlsComponent = getNodeInspectorControls(node.type);
+      if (FactoryControlsComponent) {
+        return (
+          <FactoryControlsComponent
+            node={node}
+            updateNodeData={updateNodeData}
+            onLogError={onLogError}
+            inspectorState={inspectorState}
+          />
+        );
+      }
+    }
+
+    // Fall back to legacy switch statement for manually registered nodes
     const baseProps = { node, updateNodeData };
 
     switch (node.type) {
       case 'createText':
         return <TextNodeControl {...baseProps} />;
-      
-      case 'viewOutput':
-        return (
-          <div className="flex flex-col gap-2">
-            <label className="block text-xs">
-              <div className="flex flex-row gap-2">
-                <span className="py-1">Label:</span>
-                <input
-                  type="text"
-                  className="w-full rounded border px-1 py-1 text-xs"
-                  value={typeof node.data.label === 'string' ? node.data.label : ''}
-                  onChange={(e) => updateNodeData(node.id, { label: e.target.value })}
-                />
-              </div>
-            </label>
-          </div>
-        );
       
       case 'triggerOnClick':
         return <TriggerOnClickControl {...baseProps} />;

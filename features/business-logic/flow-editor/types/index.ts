@@ -108,6 +108,11 @@ export interface DelayInputData {
   queueItems?: unknown[];
 }
 
+export interface TestErrorData {
+  text: string;
+  label: string;
+}
+
 // ============================================================================
 // UNION TYPES
 // ============================================================================
@@ -132,7 +137,8 @@ export type AgenNode =
   | (Node<EditObjectData & Record<string, unknown>> & { type: 'editObject' })
   | (Node<EditArrayData & Record<string, unknown>> & { type: 'editArray' })
   | (Node<CountInputData & Record<string, unknown>> & { type: 'countInput' })
-  | (Node<DelayInputData & Record<string, unknown>> & { type: 'delayInput' });
+  | (Node<DelayInputData & Record<string, unknown>> & { type: 'delayInput' })
+  | (Node<TestErrorData & Record<string, unknown>> & { type: 'testError' });
 
 export type AgenEdge = Edge & {
   sourceHandle?: string | null;
@@ -193,6 +199,9 @@ export interface NodeTypeConfig {
   defaultData: NodeDefaultData;
   hasTargetPosition?: boolean;
   targetPosition?: Position;
+  hasOutput?: boolean;
+  hasControls?: boolean;
+  displayName?: string;
 }
 
 export type NodeTypeConfigMap = Record<NodeType, NodeTypeConfig>; 

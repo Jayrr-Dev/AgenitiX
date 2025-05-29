@@ -25,21 +25,31 @@ export const TYPE_MAP: TypeMap = {
 
 export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
   createText: {
-    defaultData: { text: '', heldText: '' }
+    defaultData: { text: '', heldText: '' },
+    hasControls: true,
+    displayName: 'Create Text'
   },
   turnToUppercase: {
-    defaultData: { text: '' }
+    defaultData: { text: '' },
+    displayName: 'Turn To Uppercase'
   },
   viewOutput: {
     defaultData: { label: 'Result' },
     hasTargetPosition: true,
-    targetPosition: Position.Top
+    targetPosition: Position.Top,
+    hasOutput: true,
+    hasControls: true,
+    displayName: 'View Output'
   },
   triggerOnClick: {
-    defaultData: { triggered: false }
+    defaultData: { triggered: false },
+    hasControls: true,
+    displayName: 'Trigger On Click'
   },
   triggerOnPulse: {
-    defaultData: { triggered: false, duration: 500 }
+    defaultData: { triggered: false, duration: 500 },
+    hasControls: true,
+    displayName: 'Trigger On Pulse'
   },
   cyclePulse: {
     defaultData: {
@@ -50,10 +60,14 @@ export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
       pulseDuration: 500,
       infinite: true,
       maxCycles: 1
-    }
+    },
+    hasControls: true,
+    displayName: 'Cycle Pulse'
   },
   triggerOnToggle: {
-    defaultData: { triggered: false }
+    defaultData: { triggered: false },
+    hasControls: true,
+    displayName: 'Trigger On Toggle'
   },
   cycleToggle: {
     defaultData: {
@@ -64,43 +78,62 @@ export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
       offDuration: 4000,
       infinite: true,
       maxCycles: 1
-    }
+    },
+    hasControls: true,
+    displayName: 'Cycle Toggle'
   },
   logicAnd: {
-    defaultData: { value: false, inputCount: 2 }
+    defaultData: { value: false, inputCount: 2 },
+    displayName: 'Logic AND'
   },
   logicOr: {
-    defaultData: { value: false, inputCount: 2 }
+    defaultData: { value: false, inputCount: 2 },
+    displayName: 'Logic OR'
   },
   logicNot: {
-    defaultData: { value: false }
+    defaultData: { value: false },
+    displayName: 'Logic NOT'
   },
   logicXor: {
-    defaultData: { value: false }
+    defaultData: { value: false },
+    displayName: 'Logic XOR'
   },
   logicXnor: {
-    defaultData: { value: false }
+    defaultData: { value: false },
+    displayName: 'Logic XNOR'
   },
   turnToText: {
-    defaultData: { value: '' }
+    defaultData: { value: '' },
+    displayName: 'Turn To Text'
   },
   turnToBoolean: {
-    defaultData: { value: '', triggered: false }
+    defaultData: { value: '', triggered: false },
+    displayName: 'Turn To Boolean'
   },
   testInput: {
-    defaultData: { value: undefined }
+    defaultData: { value: undefined },
+    displayName: 'Test Input'
   },
   editObject: {
-    defaultData: { value: {} }
+    defaultData: { value: {} },
+    displayName: 'Edit Object'
   },
   editArray: {
-    defaultData: { value: [] }
+    defaultData: { value: [] },
+    displayName: 'Edit Array'
   },
   countInput: {
-    defaultData: { count: 0, multiplier: 1 }
+    defaultData: { count: 0, multiplier: 1 },
+    displayName: 'Count Input'
   },
   delayInput: {
-    defaultData: { delay: 1000, isProcessing: false }
+    defaultData: { delay: 1000, isProcessing: false },
+    displayName: 'Delay Input'
+  },
+  testError: {
+    defaultData: { text: 'Test Error Node', label: 'Error Test' },
+    hasControls: true,
+    displayName: 'Test Error'
   }
 };
 

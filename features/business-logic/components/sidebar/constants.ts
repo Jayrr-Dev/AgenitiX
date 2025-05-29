@@ -48,6 +48,9 @@ export const AVAILABLE_NODES = {
   'CountInput': { nodeType: 'countInput', folder: 'automation', label: 'Count Input', description: 'Counts up or down automatically. Set the starting number and step size. Counts each time it receives an input signal.' },
   'DelayInput': { nodeType: 'delayInput', folder: 'automation', label: 'Delay Input', description: 'Adds a time delay to your flow. Data goes in, waits for the specified time, then comes out. Perfect for creating timed sequences.' },
   
+  // Test folder nodes
+  'TestError': { nodeType: 'testError', folder: 'test', label: 'Test Error', description: 'A simple test node for debugging the node factory system. Shows basic text/label functionality.' },
+  
   // Integrations folder nodes (empty for now)
   // Add new integration nodes here as they're created
   
@@ -110,6 +113,7 @@ export const DEFAULT_STENCILS_A: Record<TabKeyA, NodeStencil[]> = {
   ],
   testing: [
     // Testing and debugging nodes will go here
+    createStencil('TestError', 'testing')
   ],
   time: [
     // Time nodes moved to core for testing

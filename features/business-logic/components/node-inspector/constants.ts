@@ -13,7 +13,7 @@ export const NODE_TYPE_CONFIG: Record<NodeType, NodeTypeConfig> = {
   },
   viewOutput: {
     hasOutput: true,
-    hasControls: true,
+    hasControls: false,
     displayName: 'View Output'
   },
   triggerOnClick: {
@@ -100,6 +100,11 @@ export const NODE_TYPE_CONFIG: Record<NodeType, NodeTypeConfig> = {
     hasOutput: true,
     hasControls: true,
     displayName: 'Delay Input'
+  },
+  testError: {
+    hasOutput: false,
+    hasControls: true,
+    displayName: 'Test Error'
   }
 };
 

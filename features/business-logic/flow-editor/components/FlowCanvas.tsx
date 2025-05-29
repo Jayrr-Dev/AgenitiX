@@ -34,6 +34,7 @@ import EditObject from '../../nodes/main/EditObject';
 import EditArray from '../../nodes/main/EditArray';
 import CountInput from '../../nodes/automation/CountInput';
 import DelayInput from '../../nodes/automation/DelayInput';
+import TestError from '../../nodes/test/TestError';
 
 // Import components
 import NodeInspector from '../../components/NodeInspector';
@@ -157,11 +158,27 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       editArray: EditArray,
       countInput: CountInput,
       delayInput: DelayInput,
+      testError: TestError,
     }),
     []
   );
 
   const edgeTypes = useMemo(() => ({}), []);
+
+  // ============================================================================
+  // PREPARE NODES WITH DIMENSIONS FOR MINIMAP
+  // ============================================================================
+  
+  const nodesWithDimensions = useMemo(() => {
+    return nodes.map(node => ({
+      ...node,
+      // Add explicit dimensions for MiniMap - these match your NodeFactory sizes
+      width: node.type === 'createText' || node.type === 'turnToUppercase' || node.type === 'turnToText' ? 120 : 
+             node.type === 'viewOutput' ? 120 : 60,
+      height: node.type === 'viewOutput' ? 120 : 
+              node.type === 'createText' || node.type === 'turnToUppercase' ? 60 : 60,
+    }));
+  }, [nodes]);
 
   // ============================================================================
   // RENDER
@@ -176,7 +193,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       style={{ touchAction: 'none' }}
     >
       <ReactFlow
-        nodes={nodes}
+        nodes={nodesWithDimensions}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -221,7 +238,10 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         </Panel>
 
         {/* MINIMAP */}
-        <MiniMap position="bottom-left" className="hidden md:block" />
+        <MiniMap 
+          position="bottom-left" 
+          className="hidden md:block"
+        />
         
         {/* CONTROLS */}
         <Controls position={controlsPosition} showInteractive={false} className={controlsClassName} />

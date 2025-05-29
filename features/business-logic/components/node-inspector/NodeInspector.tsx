@@ -120,7 +120,7 @@ const NodeInspector = React.memo(function NodeInspector() {
   // Show node inspector if node is selected (prioritize nodes over edges)
   if (selectedNode) {
     const nodeConfig = NODE_TYPE_CONFIG[selectedNode.type];
-    const hasRightColumn = nodeConfig.hasOutput || nodeConfig.hasControls;
+    const hasRightColumn = (nodeConfig?.hasOutput || nodeConfig?.hasControls) ?? false;
 
     return (
       <div id="node-info-container" className="flex gap-3">
@@ -184,11 +184,11 @@ const NodeInspector = React.memo(function NodeInspector() {
               </button>
             </div>
 
-            {nodeConfig.hasOutput && (
+            {nodeConfig?.hasOutput && (
               <NodeOutput output={output} nodeType={selectedNode.type} />
             )}
 
-            {nodeConfig.hasControls && (
+            {nodeConfig?.hasControls && (
               <NodeControls
                 node={selectedNode}
                 updateNodeData={updateNodeData}

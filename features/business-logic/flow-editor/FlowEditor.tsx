@@ -18,6 +18,7 @@ import { useFlowStore } from '../stores/flowStore';
 // Import hooks (only the ones we still need)
 import { useDragAndDrop } from './hooks/useDragAndDrop';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useReactFlowHandlers } from './hooks/useReactFlowHandlers';
 
 // Import types
 import type { Node, Edge } from '@xyflow/react';
@@ -64,6 +65,7 @@ export default function FlowEditor() {
     showHistoryPanel,
     inspectorLocked,
     nodeErrors,
+    _hasHydrated,
     
     // Actions
     updateNodeData,
@@ -117,21 +119,39 @@ export default function FlowEditor() {
   // REACTFLOW HANDLERS
   // ============================================================================
   
-  const handleConnect = useCallback((connection: any) => {
-    const newEdge: AgenEdge = {
-      id: `edge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      source: connection.source,
-      target: connection.target,
-      sourceHandle: connection.sourceHandle,
-      targetHandle: connection.targetHandle,
-      type: 'default',
-      deletable: true,
-      focusable: true,
-      style: { strokeWidth: 2, stroke: '#3b82f6' }
-    };
-    addEdge(newEdge);
-  }, [addEdge]);
+  // Wrapper functions to match useReactFlowHandlers interface
+  const setNodesWrapper = useCallback((nodesOrFn: AgenNode[] | ((prev: AgenNode[]) => AgenNode[])) => {
+    if (typeof nodesOrFn === 'function') {
+      setNodes(nodesOrFn(nodes));
+    } else {
+      setNodes(nodesOrFn);
+    }
+  }, [nodes, setNodes]);
 
+  const setEdgesWrapper = useCallback((edgesOrFn: AgenEdge[] | ((prev: AgenEdge[]) => AgenEdge[])) => {
+    if (typeof edgesOrFn === 'function') {
+      setEdges(edgesOrFn(edges));
+    } else {
+      setEdges(edgesOrFn);
+    }
+  }, [edges, setEdges]);
+  
+  // Get the color-coded connection handlers from useReactFlowHandlers
+  const { 
+    onConnect: colorCodedOnConnect,
+    onReconnectStart,
+    onReconnect,
+    onReconnectEnd
+  } = useReactFlowHandlers({
+    nodes,
+    edges,
+    setNodes: setNodesWrapper,
+    setEdges: setEdgesWrapper,
+    onSelectionChange: selectNode,
+    onEdgeSelectionChange: selectEdge
+  });
+
+  // Original handlers for nodes and edges to preserve drag and drop
   const handleNodesChange = useCallback((changes: any[]) => {
     changes.forEach(change => {
       if (change.type === 'position' && change.position) {
@@ -172,54 +192,16 @@ export default function FlowEditor() {
     flowInstanceRef.current = instance;
   }, []);
 
-  // ============================================================================
-  // EDGE RECONNECTION HANDLERS
-  // ============================================================================
-  
-  const edgeReconnectSuccessful = useRef(true);
-
-  const handleReconnectStart = useCallback(() => {
-    edgeReconnectSuccessful.current = false;
-  }, []);
-
-  const handleReconnect = useCallback((oldEdge: any, newConnection: any) => {
-    edgeReconnectSuccessful.current = true;
-    
-    // Remove the old edge and add a new one with the new connection
-    removeEdge(oldEdge.id);
-    
-    const newEdge: AgenEdge = {
-      id: `edge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      source: newConnection.source,
-      target: newConnection.target,
-      sourceHandle: newConnection.sourceHandle,
-      targetHandle: newConnection.targetHandle,
-      type: oldEdge.type || 'default',
-      deletable: true,
-      focusable: true,
-      style: oldEdge.style || { strokeWidth: 2, stroke: '#3b82f6' }
-    };
-    
-    addEdge(newEdge);
-  }, [removeEdge, addEdge]);
-
-  const handleReconnectEnd = useCallback((_: any, edge: any) => {
-    if (!edgeReconnectSuccessful.current) {
-      // If reconnection was not successful, remove the edge
-      removeEdge(edge.id);
-    }
-    edgeReconnectSuccessful.current = true;
-  }, [removeEdge]);
-
+  // Combine handlers - use color-coded handlers from useReactFlowHandlers but original node/edge change handlers
   const reactFlowHandlers = {
-    onConnect: handleConnect,
-    onNodesChange: handleNodesChange,
-    onEdgesChange: handleEdgesChange,
+    onConnect: colorCodedOnConnect, // Color-coded from useReactFlowHandlers
+    onReconnectStart, // From useReactFlowHandlers for edge dragging
+    onReconnect, // From useReactFlowHandlers for edge reconnection
+    onReconnectEnd, // From useReactFlowHandlers for edge disconnection
+    onNodesChange: handleNodesChange, // Original to preserve drag and drop
+    onEdgesChange: handleEdgesChange, // Original to preserve drag and drop
     onSelectionChange: handleSelectionChange,
     onInit: handleInit,
-    onReconnectStart: handleReconnectStart,
-    onReconnect: handleReconnect,
-    onReconnectEnd: handleReconnectEnd,
   };
 
   // ============================================================================
@@ -357,10 +339,12 @@ export default function FlowEditor() {
   // RENDER
   // ============================================================================
   
-  if (!mounted) {
+  if (!mounted || !_hasHydrated) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-lg">Loading Flow Editor...</div>
+        <div className="text-lg">
+          {!mounted ? 'Loading Flow Editor...' : 'Loading saved data...'}
+        </div>
       </div>
     );
   }
@@ -375,17 +359,6 @@ export default function FlowEditor() {
             
             {/* MAIN CONTENT */}
             <div className="flex-1 flex flex-col">
-              {/* TEMPORARY RESET BUTTON */}
-              <div className="absolute top-4 left-4 z-50">
-                <button
-                  onClick={forceReset}
-                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
-                  title="Reset to initial state (clears localStorage)"
-                >
-                  🔄 Reset Flow
-                </button>
-              </div>
-              
               {/* UNDO/REDO TOOLBAR */}
               <UndoRedoManager
                 nodes={nodes}

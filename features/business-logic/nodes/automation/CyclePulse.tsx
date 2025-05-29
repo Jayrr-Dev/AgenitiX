@@ -36,7 +36,12 @@ const CyclePulse: React.FC<NodeProps<Node<CyclePulseData & Record<string, unknow
   const boolInputSourceIds = boolInputConnections.map((c) => c.source)
   const boolInputNodesData = useNodesData(boolInputSourceIds)
   const hasExternalTrigger = boolInputSourceIds.length > 0
-  const externalTrigger = boolInputNodesData.some((n) => n.data.triggered)
+  
+  // Check for any truthy value from connected input nodes
+  const externalTrigger = boolInputNodesData.some((n) => {
+    const data = n.data
+    return !!(data.triggered || data.value || data.text || data.output)
+  })
 
   // INSPECTOR CONTROLS - Use separate control property to avoid feedback loop
   const prevIsRunningRef = useRef(data.isRunning)
@@ -54,12 +59,16 @@ const CyclePulse: React.FC<NodeProps<Node<CyclePulseData & Record<string, unknow
   useEffect(() => {
     if (hasExternalTrigger) {
       if (externalTrigger) {
-        setIsOn(initialState) // Always start with initialState
+        // Only start if not already running, otherwise keep going
+        if (!isOn) {
+          setIsOn(true)
+        }
       } else {
+        // Stop when trigger is false
         setIsOn(false)
       }
     }
-  }, [externalTrigger, hasExternalTrigger, initialState])
+  }, [externalTrigger, hasExternalTrigger, isOn])
 
   // Start/stop cycle
   useEffect(() => {
@@ -143,10 +152,11 @@ const CyclePulse: React.FC<NodeProps<Node<CyclePulseData & Record<string, unknow
 
   // Handlers
   const handleToggle = () => {
-    if (!hasExternalTrigger) {
+    // Allow manual control when not connected OR when connected and input is true
+    if (!hasExternalTrigger || externalTrigger) {
       const newIsOn = !isOn
       setIsOn(newIsOn)
-      // Don't update triggered here - let the inspector controls manage that
+      updateNodeData(id, { isRunning: newIsOn })
     }
   }
 
@@ -214,6 +224,7 @@ const CyclePulse: React.FC<NodeProps<Node<CyclePulseData & Record<string, unknow
           cycleCount={cycleCount}
           pulsing={pulsing}
           hasExternalTrigger={hasExternalTrigger}
+          externalTrigger={externalTrigger}
           onCycleDurationChange={handleCycleDurationChange}
           onPulseDurationChange={handlePulseDurationChange}
           onInfiniteChange={handleInfiniteChange}
@@ -237,6 +248,7 @@ interface CyclePulseExpandedUIProps {
   cycleCount: number
   pulsing: boolean
   hasExternalTrigger: boolean
+  externalTrigger: boolean
   onCycleDurationChange: (value: number) => void
   onPulseDurationChange: (value: number) => void
   onInfiniteChange: (value: boolean) => void
@@ -255,6 +267,7 @@ const CyclePulseExpandedUI: React.FC<CyclePulseExpandedUIProps> = ({
   cycleCount,
   pulsing,
   hasExternalTrigger,
+  externalTrigger,
   onCycleDurationChange,
   onPulseDurationChange,
   onInfiniteChange,
@@ -374,9 +387,9 @@ const CyclePulseExpandedUI: React.FC<CyclePulseExpandedUIProps> = ({
             : isOn 
               ? 'bg-emerald-700' 
               : 'bg-emerald-500 hover:bg-emerald-600'
-        } ${hasExternalTrigger ? 'opacity-50 cursor-not-allowed' : ''}`}
+        } ${(hasExternalTrigger && !externalTrigger) ? 'opacity-50 cursor-not-allowed' : ''}`}
         onClick={onToggle}
-        disabled={hasExternalTrigger}
+        disabled={hasExternalTrigger && !externalTrigger}
       >
         {isOn ? (infinite ? 'Cycling...' : 'Cycle Once') : 'Start Cycle'}
       </button>
