@@ -70,7 +70,7 @@ const CreateText = createNodeComponent<CreateTextData>({
       setError(errorMessage);
       
       // Try to update with error state
-      updateNodeData(id, { 
+        updateNodeData(id, { 
         text: ''
       });
     }
@@ -80,11 +80,11 @@ const CreateText = createNodeComponent<CreateTextData>({
   renderCollapsed: ({ data, error, updateNodeData, id }) => {
     const currentText = typeof data.heldText === 'string' ? data.heldText : '';
     const previewText = currentText.length > 20 ? currentText.substring(0, 20) + '...' : currentText;
-    
-    return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center px-2">
+
+  return (
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-2">
         <div className="text-xs font-semibold mt-1 mb-1">
-          {error ? 'Error' : 'Create Text'}
+            {error ? 'Error' : 'Create Text'}
         </div>
         {error ? (
           <div className="text-xs text-center break-words">
@@ -99,7 +99,7 @@ const CreateText = createNodeComponent<CreateTextData>({
             <CreateTextInput data={data} updateNodeData={updateNodeData} id={id} />
           </div>
         )}
-      </div>
+        </div>
     );
   },
 
@@ -107,24 +107,24 @@ const CreateText = createNodeComponent<CreateTextData>({
   renderExpanded: ({ data, error, categoryTextTheme, updateNodeData, id }) => (
     <div className="flex text-xs flex-col w-auto">
       <div className={`font-semibold mb-2 flex items-center justify-between ${categoryTextTheme.primary}`}>
-        <span>{error ? 'Error' : 'Create Text'}</span>
-        {error && (
-          <span className="text-xs text-red-600 dark:text-red-400">● {error}</span>
-        )}
-      </div>
-      
-      {error && (
-        <div className="mb-2 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-300">
-          <div className="font-semibold mb-1">Error Details:</div>
-          <div className="mb-2">{error}</div>
-        </div>
-      )}
-      
-      <div 
+            <span>{error ? 'Error' : 'Create Text'}</span>
+            {error && (
+              <span className="text-xs text-red-600 dark:text-red-400">● {error}</span>
+            )}
+          </div>
+          
+          {error && (
+            <div className="mb-2 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-300">
+              <div className="font-semibold mb-1">Error Details:</div>
+              <div className="mb-2">{error}</div>
+            </div>
+          )}
+          
+          <div 
         className="nodrag nowheel"
-        onMouseDown={(e) => e.stopPropagation()}
-        onTouchStart={(e) => e.stopPropagation()}
-      >
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+          >
         <CreateTextExpanded data={data} error={error} categoryTextTheme={categoryTextTheme} updateNodeData={updateNodeData} id={id} />
       </div>
     </div>
@@ -209,22 +209,22 @@ const CreateTextExpanded = ({ data, error, categoryTextTheme, updateNodeData, id
   };
 
   return (
-    <textarea
-      ref={textareaRef}
+            <textarea
+              ref={textareaRef}
       className={`w-full text-xs min-h-[65px] px-3 py-2 rounded border bg-white dark:bg-blue-800 placeholder-blue-400 dark:placeholder-blue-500 resize-both focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
-        error 
+                error 
           ? 'border-red-300 dark:border-red-700 text-red-900 dark:text-red-100 focus:ring-red-500'
-          : `${categoryTextTheme.border} ${categoryTextTheme.primary} ${categoryTextTheme.focus}`
-      }`}
-      value={currentText}
-      onChange={handleTextChange}
-      placeholder={error ? "Fix error to continue editing..." : "Enter your text here..."}
-      disabled={!!error}
-      style={{ 
-        lineHeight: '1.4',
-        fontFamily: 'inherit'
-      }}
-    />
+                  : `${categoryTextTheme.border} ${categoryTextTheme.primary} ${categoryTextTheme.focus}`
+              }`}
+              value={currentText}
+              onChange={handleTextChange}
+              placeholder={error ? "Fix error to continue editing..." : "Enter your text here..."}
+              disabled={!!error}
+              style={{ 
+                lineHeight: '1.4',
+                fontFamily: 'inherit'
+              }}
+            />
   );
 };
 

@@ -169,16 +169,30 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   // PREPARE NODES WITH DIMENSIONS FOR MINIMAP
   // ============================================================================
   
+  // Create a stable reference for node dimensions to prevent infinite loops
+  const nodeIds = useMemo(() => nodes.map(n => n.id).join(','), [nodes]);
+  
   const nodesWithDimensions = useMemo(() => {
-    return nodes.map(node => ({
-      ...node,
-      // Add explicit dimensions for MiniMap - these match your NodeFactory sizes
-      width: node.type === 'createText' || node.type === 'turnToUppercase' || node.type === 'turnToText' ? 120 : 
-             node.type === 'viewOutput' ? 120 : 60,
-      height: node.type === 'viewOutput' ? 120 : 
-              node.type === 'createText' || node.type === 'turnToUppercase' ? 60 : 60,
-    }));
-  }, [nodes]);
+    return nodes.map(node => {
+      // Calculate dimensions based on node type
+      let width = 60;
+      let height = 60;
+      
+      if (node.type === 'createText' || node.type === 'turnToUppercase' || node.type === 'turnToText') {
+        width = 120;
+        height = 60;
+      } else if (node.type === 'viewOutput') {
+        width = 120;
+        height = 120;
+      }
+      
+      return {
+        ...node,
+        width,
+        height
+      };
+    });
+  }, [nodeIds, nodes]);
 
   // ============================================================================
   // RENDER

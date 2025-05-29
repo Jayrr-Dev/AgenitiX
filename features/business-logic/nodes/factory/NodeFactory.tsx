@@ -198,31 +198,6 @@ export function createNodeComponent<T extends BaseNodeData>(
     const [isActive, setIsActive] = useState(false);
 
     // ============================================================================
-    // ERROR RECOVERY
-    // ============================================================================
-    
-    const recoverFromError = () => {
-      try {
-        setIsRecovering(true);
-        setError(null);
-        
-        // Reset to safe defaults
-        const recoveryData = {
-          ...config.defaultData,
-          ...config.errorRecoveryData,
-          error: null
-        };
-        
-        updateNodeData(id, recoveryData);
-        setTimeout(() => setIsRecovering(false), 1000);
-      } catch (recoveryError) {
-        console.error(`${config.nodeType} ${id} - Recovery failed:`, recoveryError);
-        setError('Recovery failed. Please refresh.');
-        setIsRecovering(false);
-      }
-    };
-
-    // ============================================================================
     // CONNECTION HANDLING
     // ============================================================================
     
@@ -249,14 +224,44 @@ export function createNodeComponent<T extends BaseNodeData>(
           setError
         });
         
-        // Clear error on successful processing
-        if (error && !isRecovering) {
-          setError(null);
-        }
-        
         // Check if this node has produced meaningful output after processing
         const hasOutputData = (() => {
           const currentData = data as T;
+          
+          // Special handling for ViewOutput nodes
+          if (config.nodeType === 'viewOutput') {
+            const displayedValues = (currentData as any)?.displayedValues;
+            if (!Array.isArray(displayedValues) || displayedValues.length === 0) {
+              return false;
+            }
+            
+            // Check if any displayed value has meaningful content
+            return displayedValues.some(item => {
+              const content = item.content;
+              
+              // Exclude meaningless values
+              if (content === undefined || content === null || content === '') {
+                return false;
+              }
+              
+              // For strings, check if they're not just whitespace
+              if (typeof content === 'string' && content.trim() === '') {
+                return false;
+              }
+              
+              // For objects/arrays, check if they have meaningful data
+              if (typeof content === 'object') {
+                if (Array.isArray(content)) {
+                  return content.length > 0;
+                }
+                // For objects, check if they have enumerable properties
+                return Object.keys(content).length > 0;
+              }
+              
+              // Numbers (including 0), booleans (including false), and other types are meaningful
+              return true;
+            });
+          }
           
           // Check for meaningful output data in this node
           const outputValue = currentData?.text || currentData?.value || currentData?.output || currentData?.result;
@@ -275,7 +280,40 @@ export function createNodeComponent<T extends BaseNodeData>(
           : 'Processing error';
         setError(errorMessage);
       }
-    }, [id, data, connections, nodesData, updateNodeData, error, isRecovering]);
+    }, [id, data, connections, nodesData, updateNodeData]);
+
+    // ============================================================================
+    // ERROR RECOVERY EFFECT (separate to avoid circular dependencies)
+    // ============================================================================
+    
+    useEffect(() => {
+      // Clear error on successful processing (only if not currently recovering)
+      if (error && !isRecovering && data && !data.error) {
+        setError(null);
+      }
+    }, [error, isRecovering, data]);
+
+    // Recovery function
+    const recoverFromError = () => {
+      try {
+        setIsRecovering(true);
+        setError(null);
+        
+        // Reset to safe defaults
+        const recoveryData = {
+          ...config.defaultData,
+          ...config.errorRecoveryData,
+          error: null
+        };
+        
+        updateNodeData(id, recoveryData);
+        setTimeout(() => setIsRecovering(false), 1000);
+      } catch (recoveryError) {
+        console.error(`${config.nodeType} ${id} - Recovery failed:`, recoveryError);
+        setError('Recovery failed. Please refresh.');
+        setIsRecovering(false);
+      }
+    };
 
     // ============================================================================
     // STYLING

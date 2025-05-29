@@ -107,14 +107,48 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
           };
         })
         .filter(item => {
-          // Allow all values except undefined and null
-          // This ensures false, 0, empty string, etc. are all displayed
-          return item.content !== undefined && item.content !== null;
+          // Filter out truly meaningless values
+          const content = item.content;
+          
+          // Exclude undefined and null
+          if (content === undefined || content === null) {
+            return false;
+          }
+          
+          // For strings, exclude empty or whitespace-only strings
+          if (typeof content === 'string' && content.trim() === '') {
+            return false;
+          }
+          
+          // For objects/arrays, exclude empty ones
+          if (typeof content === 'object') {
+            if (Array.isArray(content)) {
+              return content.length > 0;
+            }
+            // For objects, check if they have enumerable properties
+            return Object.keys(content).length > 0;
+          }
+          
+          // Include meaningful values: numbers (including 0), booleans (including false), etc.
+          return true;
         });
 
-      updateNodeData(id, { 
-        displayedValues: values
-      });
+      // Only update if the values have actually changed
+      const currentValues = data.displayedValues || [];
+      const hasChanged = values.length !== currentValues.length ||
+        values.some((value, index) => {
+          const current = currentValues[index];
+          return !current || 
+                 current.id !== value.id || 
+                 current.type !== value.type || 
+                 current.content !== value.content;
+        });
+
+      if (hasChanged) {
+        updateNodeData(id, { 
+          displayedValues: values
+        });
+      }
       
     } catch (updateError) {
       console.error(`ViewOutput ${id} - Update error:`, updateError);
@@ -175,7 +209,7 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
     const values = data.displayedValues || [];
     
     return (
-      <div className="flex text-xs flex-col w-full h-[180px] overflow-hidden">
+      <div className="flex text-xs flex-col w-full h-[156px] overflow-hidden">
         <div className={`font-semibold mb-2 flex items-center justify-between ${categoryTextTheme.primary}`}>
           <span>{error ? 'Error' : 'View Output'}</span>
           {error ? (
@@ -196,11 +230,8 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
 
         {values.length ? (
           <div 
-            className="nodrag space-y-2 flex-1 overflow-y-auto max-h-[140px] pr-1"
-            onWheel={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-            }}
+            className="nodrag nowheel space-y-2 flex-1 overflow-y-auto max-h-[120px] pr-1"
+            onWheel={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
             onTouchMove={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}

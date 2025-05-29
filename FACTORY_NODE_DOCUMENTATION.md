@@ -15,6 +15,8 @@ The Factory Node System is a powerful abstraction layer for creating consistent,
 7. [Error Handling](#error-handling)
 8. [Examples](#examples)
 9. [Best Practices](#best-practices)
+10. [Real-World Example: Converting ViewOutput Node](#real-world-example-converting-viewoutput-node)
+11. [Advanced Features](#advanced-features)
 
 ---
 
@@ -816,6 +818,242 @@ const TimerNode = createNodeComponent<TimerNodeData>({
 });
 ```
 
+### Interactive Trigger Node
+
+For nodes that require user interaction (buttons, clicking), use the nodrag pattern and proper event handling:
+
+```typescript
+interface TriggerOnClickData extends BaseNodeData {
+  triggered: boolean;
+}
+
+const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
+  nodeType: 'triggerOnClick',
+  category: 'trigger',
+  displayName: 'Trigger On Click',
+  defaultData: { triggered: false },
+  
+  handles: [
+    { id: 'b', dataType: 'b', position: Position.Left, type: 'target' },
+    { id: 'b', dataType: 'b', position: Position.Right, type: 'source' }
+  ],
+  
+  processLogic: ({ data, connections, nodesData, updateNodeData, id }) => {
+    // Handle external trigger input
+    const boolInputConnections = connections.filter(c => c.targetHandle === 'b');
+    
+    if (boolInputConnections.length > 0) {
+      const externalTrigger = nodesData.some(node => {
+        return node.data?.triggered === true || 
+               node.data?.value === true || 
+               node.data?.output === true;
+      });
+      
+      // Only trigger if not already triggered (prevent spam)
+      if (externalTrigger && !data.triggered) {
+        updateNodeData(id, { triggered: true });
+      }
+    }
+  },
+  
+  renderCollapsed: ({ data, error, updateNodeData, id }) => {
+    const isTriggered = data.triggered === true;
+    
+    const handleTrigger = () => updateNodeData(id, { triggered: true });
+    const handleReset = () => updateNodeData(id, { triggered: false });
+    
+    return (
+      <div className="absolute inset-0 flex items-center justify-center">
+        {error ? (
+          <div className="text-xs text-center text-red-600 break-words">
+            {error}
+          </div>
+        ) : (
+          <IconForTrigger 
+            isOn={isTriggered} 
+            onClick={isTriggered ? handleReset : handleTrigger} 
+            size={40} 
+          />
+        )}
+      </div>
+    );
+  },
+  
+  renderExpanded: ({ data, error, categoryTextTheme, updateNodeData, id }) => {
+    const isTriggered = data.triggered === true;
+    
+    const handleTrigger = () => updateNodeData(id, { triggered: true });
+    const handleReset = () => updateNodeData(id, { triggered: false });
+    
+    return (
+      <div className="flex text-xs flex-col w-auto">
+        <div className={`font-semibold mb-2 ${categoryTextTheme.primary}`}>
+          Trigger On Click
+        </div>
+        
+        <div className="flex flex-col items-center space-y-3">
+          {/* Interactive button with proper event handling */}
+          <div 
+            className="nodrag nowheel"
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+          >
+            {isTriggered ? (
+              <button
+                className="px-3 py-2 rounded bg-yellow-600 hover:bg-yellow-700 text-white font-bold shadow transition-colors text-xs"
+                onClick={handleReset}
+                disabled={!!error}
+              >
+                Reset
+              </button>
+            ) : (
+              <button
+                className="px-3 py-2 rounded bg-yellow-500 hover:bg-yellow-600 text-white font-bold shadow transition-colors text-xs"
+                onClick={handleTrigger}
+                disabled={!!error}
+              >
+                Click to Trigger
+              </button>
+            )}
+          </div>
+          
+          {/* Status indicator */}
+          <div className={`text-xs ${categoryTextTheme.secondary}`}>
+            Status: {isTriggered ? 
+              <span className="text-yellow-600 font-semibold">TRIGGERED</span> : 
+              <span className="text-gray-500">Ready</span>
+            }
+          </div>
+        </div>
+      </div>
+    );
+  },
+  
+  errorRecoveryData: { triggered: false }
+});
+```
+
+**Key Points for Interactive Nodes:**
+- Use `nodrag nowheel` classes on interactive elements
+- Add `onMouseDown/onTouchStart` with `stopPropagation()` 
+- Handle both external triggering and manual user actions
+- Provide clear visual feedback for state changes
+- Disable interactions during error states
+
+### Logic Gate with Connection Limiting
+
+For logic gates that need to limit input connections and provide visual feedback:
+
+```typescript
+interface LogicNotData extends BaseNodeData {
+  value: boolean;
+  inputCount: number;
+  triggered: boolean;
+}
+
+const LogicNot = createNodeComponent<LogicNotData>({
+  nodeType: 'logicNot',
+  category: 'logic', // Purple theme for logic nodes
+  displayName: 'Logic NOT',
+  defaultData: { 
+    value: false,
+    inputCount: 0,
+    triggered: false
+  },
+  
+  // Logic node size (60x60 collapsed, 120x120 expanded)
+  size: {
+    collapsed: { width: 'w-[60px]', height: 'h-[60px]' },
+    expanded: { width: 'w-[120px]' }
+  },
+  
+  handles: [
+    { id: 'b', dataType: 'b', position: Position.Left, type: 'target' },
+    { id: 'b', dataType: 'b', position: Position.Right, type: 'source' }
+  ],
+  
+  processLogic: ({ data, connections, nodesData, updateNodeData, id, setError }) => {
+    try {
+      // Logic processing for NOT gate
+      const boolInputConnections = connections.filter(c => c.targetHandle === 'b');
+      const inputValue = getSingleInputValue(nodesData);
+      const isTruthy = isTruthyValue(inputValue);
+      const negated = !isTruthy; // NOT logic
+      
+      updateNodeData(id, { 
+        value: negated,
+        triggered: negated,
+        inputCount: boolInputConnections.length
+      });
+      
+    } catch (error) {
+      setError('Logic processing failed');
+      updateNodeData(id, { value: false, triggered: false, inputCount: 0 });
+    }
+  },
+  
+  renderCollapsed: ({ data, error }) => {
+    // Use current data state for visual feedback
+    const inputCount = data.inputCount || 0;
+    const hasInput = inputCount > 0;
+    
+    return (
+      <div className="absolute inset-0 flex items-center justify-center">
+        {error ? (
+          <div className="text-xs text-center text-red-600">{error}</div>
+        ) : (
+          <div className="w-16 h-16 flex items-center justify-center">
+            <IconForNot active={hasInput} />
+          </div>
+        )}
+      </div>
+    );
+  },
+  
+  renderExpanded: ({ data, error, categoryTextTheme }) => (
+    <div className="flex text-xs flex-col w-full h-[96px] px-1">
+      <div className={`font-semibold mb-2 text-center ${categoryTextTheme.primary}`}>
+        {error ? 'Error' : 'NOT Gate'}
+      </div>
+      
+      <div className="flex-1 flex flex-col items-center justify-center space-y-2">
+        {/* Output display */}
+        <div className={`text-xs ${categoryTextTheme.primary}`}>
+          Output: <span className="font-mono font-bold">{String(data.value)}</span>
+        </div>
+        
+        {/* Connection status */}
+        <div className={`text-xs ${categoryTextTheme.secondary}`}>
+          Input: {data.inputCount}/1
+        </div>
+        
+        {/* Status indicator */}
+        <div className={`text-xs ${categoryTextTheme.secondary}`}>
+          {data.inputCount === 0 ? (
+            <span className="text-gray-500">No input</span>
+          ) : data.inputCount === 1 ? (
+            <span className="text-green-600">Connected</span>
+          ) : (
+            <span className="text-yellow-600">Pruning...</span>
+          )}
+        </div>
+      </div>
+    </div>
+  ),
+  
+  errorRecoveryData: { value: false, triggered: false, inputCount: 0 }
+});
+```
+
+**Key Points for Logic Gates:**
+- Track input connections and provide feedback in UI
+- Use visual icons that reflect the logic state
+- Display both input/output status clearly
+- Provide connection status feedback
+- Use appropriate logic node sizing (60x60 → 120x120)
+- Handle edge cases (no input, multiple inputs, etc.)
+- Note: Connection pruning should be handled at a higher level, not in processLogic
+
 ---
 
 ## Best Practices
@@ -882,6 +1120,215 @@ interface BadNodeData extends BaseNodeData {
 - Document expected input/output formats
 - Include performance considerations
 
+### 7. Active State Detection
+
+The factory automatically determines if a node should show a green "active" glow based on meaningful output data. The default logic checks for:
+
+```typescript
+// Default active state detection
+const outputValue = data?.text || data?.value || data?.output || data?.result;
+return outputValue !== undefined && outputValue !== null && outputValue !== '';
+```
+
+**For custom data structures**, add special handling in the factory:
+
+```typescript
+// Example: Custom active state for display nodes
+if (config.nodeType === 'viewOutput') {
+  const displayedValues = (currentData as any)?.displayedValues;
+  return Array.isArray(displayedValues) && displayedValues.length > 0;
+}
+```
+
+#### Meaningful Content Detection for Display Nodes
+
+For display nodes like ViewOutput, simple length checks can be misleading. Here's how to implement proper meaningful content detection:
+
+```typescript
+// ❌ PROBLEMATIC: Shows active for empty/meaningless data
+if (config.nodeType === 'viewOutput') {
+  const displayedValues = (currentData as any)?.displayedValues;
+  return Array.isArray(displayedValues) && displayedValues.length > 0; // Too permissive!
+}
+
+// ✅ IMPROVED: Only shows active for truly meaningful content
+if (config.nodeType === 'viewOutput') {
+  const displayedValues = (currentData as any)?.displayedValues;
+  if (!Array.isArray(displayedValues) || displayedValues.length === 0) {
+    return false;
+  }
+  
+  // Check if any displayed value has meaningful content
+  return displayedValues.some(item => {
+    const content = item.content;
+    
+    // Exclude meaningless values
+    if (content === undefined || content === null || content === '') {
+      return false;
+    }
+    
+    // For strings, check if they're not just whitespace
+    if (typeof content === 'string' && content.trim() === '') {
+      return false;
+    }
+    
+    // For objects/arrays, check if they have meaningful data
+    if (typeof content === 'object') {
+      if (Array.isArray(content)) {
+        return content.length > 0;
+      }
+      // For objects, check if they have enumerable properties
+      return Object.keys(content).length > 0;
+    }
+    
+    // Numbers (including 0), booleans (including false), and other types are meaningful
+    return true;
+  });
+}
+```
+
+**Match this logic in your processLogic filtering:**
+
+```typescript
+// Filter in processLogic should match factory active state detection
+.filter(item => {
+  // Filter out truly meaningless values
+  const content = item.content;
+  
+  // Exclude undefined and null
+  if (content === undefined || content === null) {
+    return false;
+  }
+  
+  // For strings, exclude empty or whitespace-only strings
+  if (typeof content === 'string' && content.trim() === '') {
+    return false;
+  }
+  
+  // For objects/arrays, exclude empty ones
+  if (typeof content === 'object') {
+    if (Array.isArray(content)) {
+      return content.length > 0;
+    }
+    return Object.keys(content).length > 0;
+  }
+  
+  // Include meaningful values: numbers (including 0), booleans (including false), etc.
+  return true;
+});
+```
+
+**Why This Matters:**
+- **User Experience**: Node only glows when actually useful
+- **Performance**: Avoids unnecessary active states
+- **Consistency**: Active state matches visible content
+- **Debugging**: Clearer indication of meaningful data flow
+
+**Values Considered Meaningful:**
+- Numbers including `0`
+- Booleans including `false` 
+- Non-empty, non-whitespace strings
+- Arrays/objects with content
+
+**Values Filtered Out:**
+- `undefined` and `null`
+- Empty strings `""`
+- Whitespace-only strings `"   "`
+- Empty arrays `[]`
+- Empty objects `{}`
+
+### 8. Sizing with Factory Padding
+
+The factory wrapper adds `px-4 py-3` (16px horizontal, 24px vertical padding) to expanded nodes. Account for this in your content sizing:
+
+```typescript
+// For 180px total height node:
+// Content height = 180px - 24px (factory padding) = 156px
+renderExpanded: ({ data }) => (
+  <div className="h-[156px] overflow-hidden"> {/* Not h-[180px]! */}
+    {/* Your content */}
+  </div>
+)
+```
+
+### 9. Avoiding Infinite Loops
+
+**Common Pitfall**: Including state that changes during processing in useEffect dependencies:
+
+```typescript
+// ❌ BAD: Can cause infinite loops
+}, [id, data, connections, nodesData, updateNodeData, error, isRecovering]);
+
+// ✅ GOOD: Stable dependencies only
+}, [id, data, connections, nodesData, updateNodeData]);
+```
+
+**Use separate effects for error recovery:**
+
+```typescript
+// Separate error recovery to avoid circular dependencies
+useEffect(() => {
+  if (error && !isRecovering && data && !data.error) {
+    setError(null);
+  }
+}, [error, isRecovering, data]);
+```
+
+### 10. Change Detection for Performance
+
+For nodes that process arrays or complex data, implement change detection to avoid unnecessary updates:
+
+```typescript
+// Only update if data actually changed
+const hasChanged = values.length !== currentValues.length ||
+  values.some((value, index) => {
+    const current = currentValues[index];
+    return !current || 
+           current.id !== value.id || 
+           current.content !== value.content;
+  });
+
+if (hasChanged) {
+  updateNodeData(id, { displayedValues: values });
+}
+```
+
+### 11. Scroll Prevention for Interactive Elements
+
+When nodes contain scrollable areas or input elements, prevent scroll events from propagating to the canvas:
+
+```typescript
+// Pattern for scrollable areas within nodes
+<div 
+  className="nodrag nowheel space-y-2 flex-1 overflow-y-auto max-h-[120px] pr-1"
+  onWheel={(e) => e.stopPropagation()}
+  onTouchStart={(e) => e.stopPropagation()}
+  onTouchMove={(e) => e.stopPropagation()}
+  onMouseDown={(e) => e.stopPropagation()}
+  style={{ touchAction: 'pan-y' }}
+>
+  {/* Scrollable content */}
+</div>
+
+// Pattern for input elements
+<textarea
+  className="w-full text-xs min-h-[65px] px-3 py-2 rounded border"
+  onWheel={(e) => e.stopPropagation()}
+  onMouseDown={(e) => e.stopPropagation()}
+  onTouchStart={(e) => e.stopPropagation()}
+  // ... other props
+/>
+```
+
+**Key Elements for Scroll Prevention:**
+- `nodrag nowheel` CSS classes prevent dragging and default wheel behavior
+- `onWheel={(e) => e.stopPropagation()}` stops wheel events from bubbling to canvas
+- `onMouseDown/onTouchStart` with `stopPropagation()` prevents gesture conflicts
+- `touchAction: 'pan-y'` allows vertical scrolling on touch devices
+- `onTouchMove` handling for mobile scroll gestures
+
+**Without this pattern**, scrolling within node content will move the entire canvas, creating poor UX.
+
 ---
 
 ## Registration Process
@@ -918,3 +1365,162 @@ NODE_INSPECTOR_REGISTRY.set(nodeType, renderInspectorControls);
 ```
 
 This automatic registration ensures your factory nodes integrate seamlessly with the existing node inspector system and flow editor. 
+
+---
+
+## Real-World Example: Converting ViewOutput Node
+
+Here's a complete example of converting a legacy node to factory architecture, based on the actual ViewOutput conversion:
+
+### Legacy Implementation (Before)
+```typescript
+// ViewOutput.tsx - 241 lines of manual state management
+const ViewOutput = ({ id, data, selected }: NodeProps<Node>) => {
+  const updateNodeData = useFlowStore((state) => state.updateNodeData);
+  const [displayedValues, setDisplayedValues] = useState([]);
+  const [showUI, setShowUI] = useState(false);
+  // ... 200+ more lines of manual React component logic
+};
+```
+
+### Factory Implementation (After)
+```typescript
+// ViewOutput.tsx - Clean factory implementation
+import { createNodeComponent, BaseNodeData } from '../factory/NodeFactory';
+
+interface ViewOutputData extends BaseNodeData {
+  displayedValues: Array<{
+    type: string;
+    content: string;
+    id: string;
+  }>;
+}
+
+const ViewOutput = createNodeComponent<ViewOutputData>({
+  nodeType: 'viewOutput',
+  category: 'test', // Gray theme
+  displayName: 'ViewOutput',
+  
+  // Custom sizing for ViewOutput
+  size: {
+    collapsed: { width: 'w-[120px]', height: 'h-[120px]' },
+    expanded: { width: 'w-[180px]' }
+  },
+  
+  handles: [
+    { id: 'input', dataType: 'u', position: Position.Left, type: 'target' }
+  ],
+  
+  defaultData: {
+    displayedValues: []
+  },
+  
+  // Process logic with change detection
+  processLogic: ({ data, nodesData, updateNodeData, id }) => {
+    const values = nodesData
+      .filter(node => node?.data)
+      .map(node => ({
+        type: getDataTypeInfo(node.data).type,
+        content: formatContent(node.data),
+        id: node.id
+      }));
+
+    // Only update if data actually changed (prevents infinite loops)
+    const currentValues = data.displayedValues || [];
+    const hasChanged = values.length !== currentValues.length ||
+      values.some((value, index) => {
+        const current = currentValues[index];
+        return !current || 
+               current.id !== value.id || 
+               current.content !== value.content;
+      });
+
+    if (hasChanged) {
+      updateNodeData(id, { displayedValues: values });
+    }
+  },
+  
+  renderCollapsed: ({ data }) => (
+    <div className="absolute inset-0 flex flex-col items-center justify-center p-2">
+      <div className="text-xs font-semibold mb-1 text-gray-600">View</div>
+      <div className="text-xs text-center">
+        {data.displayedValues.length === 0 ? (
+          <span className="text-gray-400">No data</span>
+        ) : (
+          <span className="text-green-600">
+            {data.displayedValues.length} item{data.displayedValues.length !== 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
+    </div>
+  ),
+  
+  renderExpanded: ({ data, categoryTextTheme }) => (
+    <div className="flex flex-col h-[156px]"> {/* 180px total - 24px factory padding */}
+      <div className={`text-xs font-semibold mb-2 ${categoryTextTheme.primary}`}>
+        Viewing Outputs
+      </div>
+      <div className="flex-1 min-h-0 text-xs bg-white border rounded">
+        {data.displayedValues.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-gray-500">
+            Connect data sources to view their outputs
+          </div>
+        ) : (
+          <div className="p-2 h-full overflow-y-auto max-h-[120px]">
+            {data.displayedValues.map((item, index) => (
+              <div key={item.id} className="mb-3 last:mb-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`px-1.5 py-0.5 text-xs rounded text-white ${getDataTypeInfo(item).color}`}>
+                    {getDataTypeInfo(item).label}
+                  </span>
+                  <span className="text-xs text-gray-500 font-mono">
+                    Node {item.id}
+                  </span>
+                </div>
+                <div className="text-xs break-all bg-gray-50 p-2 rounded border">
+                  {item.content}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+});
+
+// Helper functions preserved from original
+const getDataTypeInfo = (data: any) => {
+  // ... type detection logic
+};
+
+const formatContent = (data: any) => {
+  // ... content formatting logic
+};
+
+export default ViewOutput;
+```
+
+### Key Conversion Benefits
+
+1. **Reduced Code**: From 241 lines to ~80 lines
+2. **Automatic Error Handling**: Factory provides error recovery
+3. **Consistent Styling**: Uses theme system automatically
+4. **Performance**: Built-in change detection and optimization
+5. **Active State**: Green glow when displaying data
+6. **Inspector Support**: Automatic integration with node inspector
+
+### Migration Checklist
+
+- [ ] Define data interface extending `BaseNodeData`
+- [ ] Move state logic to `processLogic` function
+- [ ] Convert render logic to `renderCollapsed`/`renderExpanded`
+- [ ] Set up proper handle configuration
+- [ ] Add change detection for performance
+- [ ] Account for factory padding in sizing
+- [ ] Test active state behavior
+- [ ] Verify error handling works
+
+---
+
+## Advanced Features 

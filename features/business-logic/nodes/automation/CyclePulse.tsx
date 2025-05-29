@@ -1,400 +1,632 @@
 // nodes/CyclePulse.tsx
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
-import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
-import CustomHandle from '../../handles/CustomHandle'
-import IconForPulseCycles from '../node-icons/IconForPulseCycles'
-import { CyclePulseData } from '../../flow-editor/types'
-import { useFlowStore } from '../../stores/flowStore'
+import React from 'react';
+import { Position } from '@xyflow/react';
+import { createNodeComponent, type BaseNodeData } from '../factory/NodeFactory';
+import IconForPulseCycles from '../node-icons/IconForPulseCycles';
 
-// CYCLE PULSE NODE COMPONENT
-const CyclePulse: React.FC<NodeProps<Node<CyclePulseData & Record<string, unknown>>>> = ({ id, data }) => {
-  // Zustand store actions
-  const updateNodeData = useFlowStore(state => state.updateNodeData)
+// ============================================================================
+// NODE DATA INTERFACE  
+// ============================================================================
+
+interface CyclePulseData extends BaseNodeData {
+  cycleDuration: number;
+  pulseDuration: number;
+  infinite: boolean;
+  initialState: boolean;
+  maxCycles: number;
+  isRunning: boolean;
+  triggered: boolean;
+  // Runtime state
+  isOn: boolean;
+  pulsing: boolean;
+  cycleCount: number;
+  progress: number;
+  // Timer tracking
+  cycleStartTime?: number;
+}
+
+// ============================================================================
+// GLOBAL TIMER MANAGEMENT
+// ============================================================================
+
+// Helper function to ensure progress is always rounded to 5 decimal places
+const roundProgress = (progress: number): number => {
+  return Math.round(Math.max(0, Math.min(1, progress)) * 100000) / 100000;
+};
+
+// Global timer management for CyclePulse instances
+const cycleTimers = new Map<string, {
+  intervalRef: number | null;
+  timeoutRef: number | null;
+  progressIntervalRef: number | null;
+}>();
+
+// ============================================================================
+// SIMPLE CYCLE FUNCTIONS (Using working setTimeout pattern)
+// ============================================================================
+
+// Store active cycles with separate timers
+const activeCycles = new Map<string, { 
+  pulseTimeoutId: number | null;
+  cycleTimeoutId: number | null;
+  progressIntervalId: number | null;
+  isRunning: boolean;
+  currentCycleCount: number;
+}>();
+
+// Start a simple repeating cycle
+function startSimpleCycle(
+  id: string,
+  updateNodeData: (id: string, updates: Partial<CyclePulseData>) => void,
+  cycleDuration: number,
+  pulseDuration: number
+) {
+  console.log(`CyclePulse ${id}: Starting simple cycle, cycle: ${cycleDuration}ms, pulse: ${pulseDuration}ms`);
   
-  // State
-  const [showUI, setShowUI] = useState(false)
-  const [isOn, setIsOn] = useState(data.initialState ?? false)
-  const [pulsing, setPulsing] = useState(false)
-  const [cycleCount, setCycleCount] = useState(0)
-  const intervalRef = useRef<number | null>(null)
-  const timeoutRef = useRef<number | null>(null)
-  const [progress, setProgress] = useState(0)
-  const cycleStartRef = useRef(Date.now())
-
-  // Get values from data with defaults
-  const cycleDuration = data.cycleDuration ?? 2000
-  const pulseDuration = data.pulseDuration ?? 500
-  const infinite = data.infinite ?? true
-  const initialState = data.initialState ?? false
-  const maxCycles = data.maxCycles ?? 1
-
-  // Boolean input handle logic
-  const connections = useNodeConnections({ handleType: 'target' })
-  const boolInputConnections = connections.filter(c => c.targetHandle === 'b')
-  const boolInputSourceIds = boolInputConnections.map((c) => c.source)
-  const boolInputNodesData = useNodesData(boolInputSourceIds)
-  const hasExternalTrigger = boolInputSourceIds.length > 0
+  // Stop any existing cycle first
+  stopSimpleCycle(id);
   
-  // Check for any truthy value from connected input nodes
-  const externalTrigger = boolInputNodesData.some((n) => {
-    const data = n.data
-    return !!(data.triggered || data.value || data.text || data.output)
-  })
-
-  // INSPECTOR CONTROLS - Use separate control property to avoid feedback loop
-  const prevIsRunningRef = useRef(data.isRunning)
-  useEffect(() => {
-    if (!hasExternalTrigger) {
-      // Only respond to changes in isRunning control property from inspector
-      if (data.isRunning !== prevIsRunningRef.current) {
-        setIsOn(!!data.isRunning)
-        prevIsRunningRef.current = data.isRunning
-      }
+  // Initialize cycle state
+  const cycleState = {
+    pulseTimeoutId: null as number | null,
+    cycleTimeoutId: null as number | null,
+    progressIntervalId: null as number | null,
+    isRunning: true,
+    currentCycleCount: 0
+  };
+  activeCycles.set(id, cycleState);
+  
+  // Start the cycle immediately
+  startNextCycle();
+  
+  function startNextCycle() {
+    const currentState = activeCycles.get(id);
+    if (!currentState || !currentState.isRunning) {
+      console.log(`CyclePulse ${id}: Cycle stopped, exiting`);
+      return;
     }
-  }, [data.isRunning, hasExternalTrigger])
+    
+    console.log(`CyclePulse ${id}: Starting next cycle`);
+    
+    // Start cycle stage (waiting phase with blue animation)
+    updateNodeData(id, { 
+      pulsing: false, 
+      triggered: false,
+      progress: 0
+    });
+    
+    const cycleStartTime = Date.now();
+    
+    // Progress animation during cycle stage
+    const cycleProgressInterval = window.setInterval(() => {
+      const currentState = activeCycles.get(id);
+      if (!currentState || !currentState.isRunning) {
+        window.clearInterval(cycleProgressInterval);
+        return;
+      }
+      
+      const elapsed = Date.now() - cycleStartTime;
+      const rawProgress = Math.min(1, elapsed / cycleDuration);
+      const progress = roundProgress(rawProgress);
+      
+      updateNodeData(id, { progress });
+      
+      if (progress >= 1) {
+        window.clearInterval(cycleProgressInterval);
+      }
+    }, 50);
+    
+    // Store progress interval
+    if (currentState) {
+      currentState.progressIntervalId = cycleProgressInterval;
+    }
+    
+    // After cycle duration, start pulse stage
+    const cycleTimeoutId = window.setTimeout(() => {
+      startPulseStage();
+    }, cycleDuration);
+    
+    // Store cycle timeout
+    if (currentState) {
+      currentState.cycleTimeoutId = cycleTimeoutId;
+    }
+  }
+  
+  function startPulseStage() {
+    const currentState = activeCycles.get(id);
+    if (!currentState || !currentState.isRunning) {
+      return;
+    }
+    
+    console.log(`CyclePulse ${id}: Starting pulse stage`);
+    
+    // Clear cycle progress interval
+    if (currentState.progressIntervalId) {
+      window.clearInterval(currentState.progressIntervalId);
+      currentState.progressIntervalId = null;
+    }
+    
+    // Start pulse stage and increment cycle count
+    updateNodeData(id, { 
+      pulsing: true, 
+      triggered: true,
+      progress: 1.0, // Full circle for solid red
+      cycleCount: (currentState as any).currentCycleCount + 1
+    });
+    
+    // Store the new cycle count in our local state
+    const currentCycleCount = (currentState as any).currentCycleCount + 1;
+    if (currentState) {
+      (currentState as any).currentCycleCount = currentCycleCount;
+    }
+    
+    console.log(`CyclePulse ${id}: Cycle ${currentCycleCount} - pulse stage started`);
+    
+    // End pulse after pulse duration
+    const pulseTimeoutId = window.setTimeout(() => {
+      endPulseStageAndDecide(currentCycleCount);
+    }, pulseDuration);
+    
+    // Store pulse timeout
+    if (currentState) {
+      currentState.pulseTimeoutId = pulseTimeoutId;
+    }
+  }
+  
+  function endPulseStageAndDecide(cycleCount: number) {
+    const currentState = activeCycles.get(id);
+    if (!currentState || !currentState.isRunning) {
+      return;
+    }
+    
+    console.log(`CyclePulse ${id}: Ending pulse stage, cycle ${cycleCount} complete`);
+    
+    // End the pulse stage
+    updateNodeData(id, { 
+      pulsing: false, 
+      triggered: false
+    });
+    
+    // Always schedule next cycle - processLogic will handle stopping if max cycles reached
+    console.log(`CyclePulse ${id}: Scheduling next cycle`);
+    setTimeout(() => startNextCycle(), 0);
+  }
+}
 
-  // EXTERNAL TRIGGER CONTROL
-  useEffect(() => {
-    if (hasExternalTrigger) {
-      if (externalTrigger) {
-        // Only start if not already running, otherwise keep going
-        if (!isOn) {
-          setIsOn(true)
+// Stop the simple cycle
+function stopSimpleCycle(id: string) {
+  const cycle = activeCycles.get(id);
+  if (cycle) {
+    console.log(`CyclePulse ${id}: Stopping simple cycle`);
+    
+    // Mark as stopped
+    cycle.isRunning = false;
+    
+    // Clear any active timers
+    if (cycle.pulseTimeoutId) {
+      window.clearTimeout(cycle.pulseTimeoutId);
+    }
+    if (cycle.cycleTimeoutId) {
+      window.clearTimeout(cycle.cycleTimeoutId);
+    }
+    if (cycle.progressIntervalId) {
+      window.clearInterval(cycle.progressIntervalId);
+    }
+    
+    // Remove from active cycles
+    activeCycles.delete(id);
+  }
+}
+
+// ============================================================================
+// NODE CONFIGURATION
+// ============================================================================
+
+const CyclePulse = createNodeComponent<CyclePulseData>({
+  nodeType: 'cyclePulse',
+  category: 'trigger', // Yellow theme for trigger nodes
+  displayName: 'Cycle Pulse',
+  defaultData: { 
+    cycleDuration: 2000,
+    pulseDuration: 500,
+    infinite: true,
+    initialState: false,
+    maxCycles: 1,
+    isRunning: false,
+    triggered: false,
+    // Runtime state
+    isOn: false,
+    pulsing: false,
+    cycleCount: 0,
+    progress: 0,
+    cycleStartTime: undefined
+  },
+  
+  // Custom sizing: 120x120 collapsed, 180x180 expanded
+  size: {
+    collapsed: {
+      width: 'w-[120px]',
+      height: 'h-[120px]'
+    },
+    expanded: {
+      width: 'w-[180px]'
+    }
+  },
+  
+  // Define handles (boolean input -> boolean output)
+  handles: [
+    { id: 'b', dataType: 'b', position: Position.Left, type: 'target' },
+    { id: 'b', dataType: 'b', position: Position.Right, type: 'source' }
+  ],
+  
+  // Processing logic - handle external triggers and timer management
+  processLogic: ({ data, connections, nodesData, updateNodeData, id, setError }) => {
+    console.log(`CyclePulse ${id}: processLogic called, isOn: ${data.isOn}, isRunning: ${data.isRunning}, cycleCount: ${data.cycleCount}`);
+    
+    try {
+      // Check if max cycles reached and stop if needed
+      if (data.isOn && !data.infinite && (data.cycleCount || 0) >= (data.maxCycles || 1)) {
+        console.log(`CyclePulse ${id}: Max cycles (${data.maxCycles}) reached in processLogic, stopping`);
+        updateNodeData(id, { 
+          isOn: false,
+          isRunning: false,
+          progress: 0,
+          pulsing: false,
+          triggered: false
+        });
+        stopSimpleCycle(id);
+        return;
+      }
+      
+      // Handle inspector control changes (isRunning property)
+      if (data.isRunning !== data.isOn) {
+        console.log(`CyclePulse ${id}: Inspector control changed, syncing isOn with isRunning`);
+        
+        if (data.isRunning && !data.isOn) {
+          // Inspector started the cycle
+          updateNodeData(id, { 
+            isOn: true,
+            cycleCount: 0,
+            progress: 0,
+            pulsing: false,
+            triggered: false
+          });
+          startSimpleCycle(id, updateNodeData, data.cycleDuration || 2000, data.pulseDuration || 500);
+        } else if (!data.isRunning && data.isOn) {
+          // Inspector stopped the cycle
+          updateNodeData(id, { 
+            isOn: false,
+            progress: 0,
+            pulsing: false,
+            triggered: false
+          });
+          stopSimpleCycle(id);
         }
-      } else {
-        // Stop when trigger is false
-        setIsOn(false)
       }
-    }
-  }, [externalTrigger, hasExternalTrigger, isOn])
-
-  // Start/stop cycle
-  useEffect(() => {
-    if (isOn) {
-      setCycleCount(0) // Reset on start
-      let cycleTimer: number | null = null
-      let pulseTimer: number | null = null
-
-      const startCycle = () => {
-        // Reset progress and set cycle start time
-        setProgress(0)
-        cycleStartRef.current = Date.now()
+      
+      // Check for external trigger
+      const boolInputConnections = connections.filter(c => c.targetHandle === 'b');
+      const hasExternalTrigger = boolInputConnections.length > 0;
+      
+      if (hasExternalTrigger) {
+        const externalTrigger = nodesData.some((node) => {
+          const nodeData = node.data;
+          return !!(nodeData?.triggered || nodeData?.value || nodeData?.text || nodeData?.output);
+        });
         
-        setPulsing(true)
-        // Update triggered for boolean output to other nodes
-        updateNodeData(id, { triggered: true })
-        
-        // End pulse after pulseDuration
-        pulseTimer = window.setTimeout(() => {
-          setPulsing(false)
-          updateNodeData(id, { triggered: false })
-          setCycleCount(c => c + 1)
-        }, pulseDuration)
+        // Only handle external triggers if they change state
+        if (externalTrigger && !data.isOn) {
+          console.log(`CyclePulse ${id}: External trigger ON`);
+          updateNodeData(id, { isOn: true, isRunning: true });
+          startSimpleCycle(id, updateNodeData, data.cycleDuration || 2000, data.pulseDuration || 500);
+        } else if (!externalTrigger && data.isOn) {
+          console.log(`CyclePulse ${id}: External trigger OFF`);
+          updateNodeData(id, { isOn: false, isRunning: false, pulsing: false, triggered: false });
+          stopSimpleCycle(id);
+        }
       }
-
-      // Start first cycle
-      startCycle()
-
-      // Set up cycle interval (total cycle duration = cycleDuration + pulseDuration)
-      cycleTimer = window.setInterval(startCycle, cycleDuration + pulseDuration)
-
-      return () => {
-        if (cycleTimer) window.clearInterval(cycleTimer)
-        if (pulseTimer) window.clearTimeout(pulseTimer)
-      }
-    } else {
-      // Stop cycle
-      setPulsing(false)
-      updateNodeData(id, { triggered: false })
-      setCycleCount(0)
-      setProgress(0)
-    }
-  }, [isOn, cycleDuration, pulseDuration, id, updateNodeData])
-
-  // Update progress for radial indicator - only during cycle time
-  useEffect(() => {
-    if (!isOn) {
-      setProgress(0)
-      return
-    }
-
-    const updateProgress = () => {
-      const now = Date.now()
-      const elapsed = now - cycleStartRef.current
       
-      if (pulsing) {
-        // During pulse, keep the last progress value
-        const remainingTime = Math.max(0, cycleDuration - (elapsed - pulseDuration))
-        const newProgress = 1 - (remainingTime / cycleDuration)
-        setProgress(Math.min(1, Math.max(0, newProgress)))
+    } catch (updateError) {
+      console.error(`CyclePulse ${id} - Update error:`, updateError);
+      const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
+      setError(errorMessage);
+      
+      // Clean up timers on error
+      stopSimpleCycle(id);
+    }
+  },
+
+  // Collapsed state rendering - icon with progress
+  renderCollapsed: ({ data, error, updateNodeData, id }) => {
+    const handleToggle = () => {
+      console.log(`CyclePulse ${id}: Manual toggle, current isOn:`, data.isOn);
+      const newIsOn = !data.isOn;
+      
+      console.log(`CyclePulse ${id}: Setting isOn to:`, newIsOn);
+      
+      if (newIsOn) {
+        // Starting
+        updateNodeData(id, { 
+          isOn: true, 
+          isRunning: true,
+          cycleCount: 0,
+          progress: 0,
+          pulsing: false,
+          triggered: false
+        });
+        startSimpleCycle(id, updateNodeData, data.cycleDuration || 2000, data.pulseDuration || 500);
       } else {
-        // After pulse, calculate progress based on remaining cycle time
-        const remainingTime = Math.max(0, cycleDuration - (elapsed - pulseDuration))
-        const newProgress = 1 - (remainingTime / cycleDuration)
-        setProgress(Math.min(1, Math.max(0, newProgress)))
+        // Stopping
+        updateNodeData(id, { 
+          isOn: false, 
+          isRunning: false,
+          progress: 0,
+          pulsing: false,
+          triggered: false
+        });
+        stopSimpleCycle(id);
       }
-    }
+    };
 
-    // Update immediately and then every 30ms
-    updateProgress()
-    const interval = setInterval(updateProgress, 30)
-    return () => clearInterval(interval)
-  }, [isOn, pulsing, cycleDuration, pulseDuration])
-
-  // Stop after maxCycles if not infinite
-  useEffect(() => {
-    if (!infinite && cycleCount >= maxCycles) {
-      setIsOn(false)
-    }
-  }, [cycleCount, infinite, maxCycles])
-
-  // Handlers
-  const handleToggle = () => {
-    // Allow manual control when not connected OR when connected and input is true
-    if (!hasExternalTrigger || externalTrigger) {
-      const newIsOn = !isOn
-      setIsOn(newIsOn)
-      updateNodeData(id, { isRunning: newIsOn })
-    }
-  }
-
-  const handleCycleDurationChange = (value: number) => {
-    updateNodeData(id, { cycleDuration: value })
-  }
-
-  const handlePulseDurationChange = (value: number) => {
-    updateNodeData(id, { pulseDuration: value })
-  }
-
-  const handleInfiniteChange = (value: boolean) => {
-    updateNodeData(id, { infinite: value })
-  }
-
-  const handleInitialStateChange = (value: boolean) => {
-    updateNodeData(id, { initialState: value })
-  }
-
-  const handleMaxCyclesChange = (value: number) => {
-    updateNodeData(id, { maxCycles: value })
-  }
-
-  // RENDER
-  return (
-    <div className={`relative ${showUI ? 'px-4 py-3 min-w-[220px]' : 'w-[120px] h-[120px] flex items-center justify-center'} rounded-lg bg-emerald-100 dark:bg-emerald-900 shadow border border-emerald-300 dark:border-emerald-800`}>
-      {/* HANDLES: Always visible */}
-      <CustomHandle type="target" position={Position.Left} id="b" dataType="b" style={{ top: '50%', left: 0, transform: 'translateY(-50%)', zIndex: 20 }} />
-      <CustomHandle type="source" position={Position.Right} id="b" dataType="b" style={{ top: '50%', right: 0, transform: 'translateY(-50%)', zIndex: 20 }} />
-      
-      {/* TOGGLE BUTTON (top-right, always visible) */}
-      <button
-        aria-label={showUI ? 'Collapse node' : 'Expand node'}
-        title={showUI ? 'Collapse' : 'Expand'}
-        onClick={() => setShowUI((v) => !v)}
-        className="absolute top-1 left-1 cursor-pointer z-10 w-2 h-2 flex items-center justify-center rounded-full bg-white/80 dark:bg-black/40 border border-cyan-300 dark:border-cyan-800 text-xs hover:bg-cyan-200 dark:hover:bg-cyan-800 transition-colors shadow"
-        type="button"
-      >
-        {showUI ? '⦿' : '⦾'}
-      </button>
-      
-      {/* COLLAPSED: Centered Icon */}
-      {!showUI && (
-        <div className="flex items-center justify-center w-full h-full">
+    return (
+      <div className="absolute inset-0 flex items-center justify-center">
+        {error ? (
+          <div className="text-xs text-center text-red-600 break-words p-2">
+            {error}
+          </div>
+        ) : (
           <IconForPulseCycles
-            progress={progress}
+            progress={data.progress || 0}
             onToggle={handleToggle}
-            isRunning={isOn}
-            label="Pulse Cycle"
+            isRunning={data.isOn || false}
+            label="Pulse"
             size={100}
-            color={pulsing ? '#ef4444' : '#3b82f6'}
+            color={data.pulsing ? '#ef4444' : '#3b82f6'}
           />
+        )}
+      </div>
+    );
+  },
+
+  // Expanded state rendering - full controls
+  renderExpanded: ({ data, error, categoryTextTheme, updateNodeData, id }) => (
+    <div className="flex flex-col w-full h-full text-xs p-1"> {/* Reduce padding from p-2 to p-1 */}
+      <div className={`font-semibold mb-1 text-center ${categoryTextTheme.primary}`}> {/* Keep mb-1 */}
+        {error ? (
+          <span className="text-red-600 dark:text-red-400">Error</span>
+        ) : (
+          'Pulse Cycle'
+        )}
+      </div>
+      
+      {error && (
+        <div className="mb-1 p-1 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-300">
+          {error}
         </div>
       )}
       
-      {/* EXPANDED: Full UI */}
-      {showUI && (
-        <CyclePulseExpandedUI
-          cycleDuration={cycleDuration}
-          pulseDuration={pulseDuration}
-          infinite={infinite}
-          maxCycles={maxCycles}
-          initialState={initialState}
-          isOn={isOn}
-          cycleCount={cycleCount}
-          pulsing={pulsing}
-          hasExternalTrigger={hasExternalTrigger}
-          externalTrigger={externalTrigger}
-          onCycleDurationChange={handleCycleDurationChange}
-          onPulseDurationChange={handlePulseDurationChange}
-          onInfiniteChange={handleInfiniteChange}
-          onMaxCyclesChange={handleMaxCyclesChange}
-          onInitialStateChange={handleInitialStateChange}
-          onToggle={handleToggle}
-        />
-      )}
-    </div>
-  )
-}
-
-// Separate component for expanded UI to keep main component clean
-interface CyclePulseExpandedUIProps {
-  cycleDuration: number
-  pulseDuration: number
-  infinite: boolean
-  maxCycles: number
-  initialState: boolean
-  isOn: boolean
-  cycleCount: number
-  pulsing: boolean
-  hasExternalTrigger: boolean
-  externalTrigger: boolean
-  onCycleDurationChange: (value: number) => void
-  onPulseDurationChange: (value: number) => void
-  onInfiniteChange: (value: boolean) => void
-  onMaxCyclesChange: (value: number) => void
-  onInitialStateChange: (value: boolean) => void
-  onToggle: () => void
-}
-
-const CyclePulseExpandedUI: React.FC<CyclePulseExpandedUIProps> = ({
-  cycleDuration,
-  pulseDuration,
-  infinite,
-  maxCycles,
-  initialState,
-  isOn,
-  cycleCount,
-  pulsing,
-  hasExternalTrigger,
-  externalTrigger,
-  onCycleDurationChange,
-  onPulseDurationChange,
-  onInfiniteChange,
-  onMaxCyclesChange,
-  onInitialStateChange,
-  onToggle,
-}) => {
-  const [cycleDurationInput, setCycleDurationInput] = useState(cycleDuration.toString())
-  const [pulseDurationInput, setPulseDurationInput] = useState(pulseDuration.toString())
-  const [maxCyclesInput, setMaxCyclesInput] = useState(maxCycles.toString())
-
-  // Sync inputs with props
-  useEffect(() => { setCycleDurationInput(cycleDuration.toString()) }, [cycleDuration])
-  useEffect(() => { setPulseDurationInput(pulseDuration.toString()) }, [pulseDuration])
-  useEffect(() => { setMaxCyclesInput(maxCycles.toString()) }, [maxCycles])
-
-  const commitCycleDuration = () => {
-    let value = Number(cycleDurationInput)
-    if (isNaN(value) || value < 100) value = 100
-    onCycleDurationChange(value)
-    setCycleDurationInput(value.toString())
-  }
-
-  const commitPulseDuration = () => {
-    let value = Number(pulseDurationInput)
-    if (isNaN(value) || value < 10) value = 10
-    onPulseDurationChange(value)
-    setPulseDurationInput(value.toString())
-  }
-
-  const commitMaxCycles = () => {
-    let value = Number(maxCyclesInput)
-    if (isNaN(value) || value < 1) value = 1
-    onMaxCyclesChange(value)
-    setMaxCyclesInput(value.toString())
-  }
-
-  return (
-    <>
-      <div className="font-semibold text-cyan-900 dark:text-cyan-100 mb-2">Pulse Cycle</div>
-      
-      {/* CYCLE DURATION INPUT */}
-      <div className="flex items-center gap-2 mb-2">
-        <label className="text-xs text-cyan-700 dark:text-cyan-200">Cycle:</label>
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={cycleDurationInput}
-          onChange={(e) => setCycleDurationInput(e.target.value.replace(/\D/g, ''))}
-          onBlur={commitCycleDuration}
-          onKeyDown={(e) => e.key === 'Enter' && commitCycleDuration()}
-          className="w-16 rounded border px-1 text-xs bg-white dark:bg-black"
-        />
-        <span className="text-xs text-cyan-700 dark:text-cyan-200">ms</span>
-      </div>
-      
-      {/* PULSE DURATION INPUT */}
-      <div className="flex items-center gap-2 mb-2">
-        <label className="text-xs text-cyan-700 dark:text-cyan-200">Pulse:</label>
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={pulseDurationInput}
-          onChange={(e) => setPulseDurationInput(e.target.value.replace(/\D/g, ''))}
-          onBlur={commitPulseDuration}
-          onKeyDown={(e) => e.key === 'Enter' && commitPulseDuration()}
-          className="w-16 rounded border px-1 text-xs bg-white dark:bg-black"
-        />
-        <span className="text-xs text-cyan-700 dark:text-cyan-200">ms</span>
-      </div>
-      
-      <div className="flex items-center gap-2 mb-2">
-        <label className="text-xs text-cyan-700 dark:text-cyan-200">Infinite:</label>
-        <input 
-          type="checkbox" 
-          checked={infinite} 
-          onChange={(e) => onInfiniteChange(e.target.checked)} 
-        />
-      </div>
-      
-      {!infinite && (
-        <div className="flex items-center gap-2 mb-2">
-          <label className="text-xs text-cyan-700 dark:text-cyan-200">Cycles:</label>
+      <div className="flex-1 space-y-1 min-h-0"> {/* Reduce spacing from space-y-2 to space-y-1 */}
+        {/* Cycle Duration */}
+        <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
+          <label className="text-xs w-12 shrink-0">Cycle:</label>
           <input
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
-            value={maxCyclesInput}
-            onChange={(e) => setMaxCyclesInput(e.target.value.replace(/\D/g, ''))}
-            onBlur={commitMaxCycles}
-            onKeyDown={(e) => e.key === 'Enter' && commitMaxCycles()}
-            className="w-16 rounded border px-1 text-xs bg-white dark:bg-black"
+            value={data.cycleDuration || 2000}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, ''); // Only allow digits
+              const numValue = parseInt(value) || 100; // Minimum 100ms
+              updateNodeData(id, { cycleDuration: Math.max(100, numValue) });
+            }}
+            className="w-16 rounded border border-gray-300 dark:border-gray-600 px-1 text-xs h-5 bg-white dark:bg-gray-800" // Reduce height and padding
+            disabled={!!error}
           />
-          {isOn && (
-            <span className="text-xs text-cyan-700 dark:text-cyan-200">
-              ({maxCycles - cycleCount} left)
+          <span className="text-xs w-6 shrink-0">ms</span>
+        </div>
+        
+        {/* Pulse Duration */}
+        <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
+          <label className="text-xs w-12 shrink-0">Pulse:</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={data.pulseDuration || 500}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, ''); // Only allow digits
+              const numValue = parseInt(value) || 10; // Minimum 10ms
+              updateNodeData(id, { pulseDuration: Math.max(10, numValue) });
+            }}
+            className="w-16 rounded border border-gray-300 dark:border-gray-600 px-1 text-xs h-5 bg-white dark:bg-gray-800" // Reduce height and padding
+            disabled={!!error}
+          />
+          <span className="text-xs w-6 shrink-0">ms</span>
+        </div>
+        
+        {/* Infinite checkbox */}
+        <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
+          <input 
+            type="checkbox" 
+            checked={data.infinite ?? true}
+            onChange={(e) => updateNodeData(id, { infinite: e.target.checked })}
+            disabled={!!error}
+            className="shrink-0"
+          />
+          <label className="text-xs">Infinite cycles</label>
+        </div>
+        
+        {/* Max Cycles (when not infinite) */}
+        {!data.infinite && (
+          <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
+            <label className="text-xs w-12 shrink-0">Max:</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={data.maxCycles || 1}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, ''); // Only allow digits
+                const numValue = parseInt(value) || 1; // Minimum 1 cycle
+                updateNodeData(id, { maxCycles: Math.max(1, numValue) });
+              }}
+              className="w-12 rounded border border-gray-300 dark:border-gray-600 px-1 text-xs h-5 bg-white dark:bg-gray-800" // Reduce height and padding
+              disabled={!!error}
+            />
+            <span className="text-xs w-14 shrink-0">cycles</span>
+          </div>
+        )}
+        
+        {/* Status */}
+        <div className={`text-xs ${categoryTextTheme.secondary} text-center py-1`}> {/* Reduce padding from py-2 to py-1 */}
+          {data.isOn ? (
+            <span className="text-yellow-600 dark:text-yellow-400">
+              {data.pulsing ? 'PULSING' : 'CYCLING'} ({data.cycleCount || 0})
             </span>
+          ) : (
+            <span className="text-gray-500">Stopped</span>
           )}
         </div>
-      )}
-      
-      <div className="flex items-center gap-2 mb-2">
-        <label className="text-xs text-cyan-700 dark:text-cyan-200">Initial On:</label>
-        <input 
-          type="checkbox" 
-          checked={initialState} 
-          onChange={(e) => onInitialStateChange(e.target.checked)} 
-        />
+        
+        {/* Control button */}
+        <div 
+          className="nodrag nowheel flex justify-center pt-1" // Reduce padding from pt-2 to pt-1
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          <button
+            className={`px-3 py-1 rounded text-white font-bold shadow transition-colors text-xs ${
+              data.pulsing 
+                ? 'bg-red-500 hover:bg-red-600' 
+                : data.isOn 
+                  ? 'bg-yellow-600 hover:bg-yellow-700' 
+                  : 'bg-yellow-500 hover:bg-yellow-600'
+            }`} // Reduce button padding from px-4 py-2 to px-3 py-1
+            onClick={() => {
+              console.log(`CyclePulse ${id}: Button clicked, current isOn:`, data.isOn);
+              const newIsOn = !data.isOn;
+              updateNodeData(id, { 
+                isOn: newIsOn, 
+                isRunning: newIsOn,
+                cycleCount: newIsOn ? 0 : (data.cycleCount || 0),
+                progress: 0
+              });
+            }}
+            disabled={!!error}
+          >
+            {data.isOn ? 'Stop' : 'Start'}
+          </button>
+        </div>
       </div>
-      
-      <button
-        className={`px-3 py-1 rounded text-white font-bold shadow transition-colors ${
-          pulsing 
-            ? 'bg-red-500 hover:bg-red-600' 
-            : isOn 
-              ? 'bg-emerald-700' 
-              : 'bg-emerald-500 hover:bg-emerald-600'
-        } ${(hasExternalTrigger && !externalTrigger) ? 'opacity-50 cursor-not-allowed' : ''}`}
-        onClick={onToggle}
-        disabled={hasExternalTrigger && !externalTrigger}
-      >
-        {isOn ? (infinite ? 'Cycling...' : 'Cycle Once') : 'Start Cycle'}
-      </button>
-    </>
-  )
+    </div>
+  ),
+
+  // Error recovery data
+  errorRecoveryData: {
+    cycleDuration: 2000,
+    pulseDuration: 500,
+    infinite: true,
+    initialState: false,
+    maxCycles: 1,
+    isRunning: false,
+    triggered: false,
+    isOn: false,
+    pulsing: false,
+    cycleCount: 0,
+    progress: 0,
+    cycleStartTime: undefined
+  }
+});
+
+// ============================================================================
+// TIMER HELPER FUNCTIONS
+// ============================================================================
+
+// Start timers for a node (simplified version)
+function startTimersForNode(
+  id: string, 
+  updateNodeData: (id: string, updates: Partial<CyclePulseData>) => void,
+  cycleDuration: number,
+  pulseDuration: number
+) {
+  // Clear any existing timers
+  stopTimersForNode(id);
+  
+  console.log(`CyclePulse ${id}: Starting timers, cycle: ${cycleDuration}ms, pulse: ${pulseDuration}ms`);
+  
+  const timerState = {
+    intervalRef: null as number | null,
+    timeoutRef: null as number | null,
+    progressIntervalRef: null as number | null,
+  };
+  
+  cycleTimers.set(id, timerState);
+  
+  let currentCycleCount = 0;
+  
+  const startCycle = () => {
+    console.log(`CyclePulse ${id}: Starting new cycle`);
+    const cycleStartTime = Date.now();
+    
+    // Start pulse
+    updateNodeData(id, { 
+      pulsing: true, 
+      triggered: true,
+      progress: 0,
+      cycleStartTime
+    });
+    
+    // End pulse after pulseDuration
+    timerState.timeoutRef = window.setTimeout(() => {
+      console.log(`CyclePulse ${id}: Ending pulse`);
+      currentCycleCount++;
+      updateNodeData(id, { 
+        pulsing: false, 
+        triggered: false,
+        cycleCount: currentCycleCount
+      });
+    }, pulseDuration);
+  };
+  
+  // Start first cycle immediately
+  startCycle();
+  
+  // Set up cycle interval
+  timerState.intervalRef = window.setInterval(startCycle, cycleDuration + pulseDuration);
+  
+  // Start progress tracking
+  timerState.progressIntervalRef = window.setInterval(() => {
+    // Simple progress tracking - this is approximate since we don't have access to current data
+    const now = Date.now();
+    // We'll update progress to 50% as a placeholder - the actual progress would need 
+    // to be calculated based on the current cycle start time from the node data
+    updateNodeData(id, { progress: roundProgress(Math.random() * 0.5 + 0.25) }); // Temporary visual feedback
+  }, 100);
 }
 
-export default CyclePulse 
+// Stop timers for a node
+function stopTimersForNode(id: string) {
+  const timerState = cycleTimers.get(id);
+  if (timerState) {
+    console.log(`CyclePulse ${id}: Stopping timers`);
+    if (timerState.intervalRef) {
+      window.clearInterval(timerState.intervalRef);
+    }
+    if (timerState.timeoutRef) {
+      window.clearTimeout(timerState.timeoutRef);
+    }
+    if (timerState.progressIntervalRef) {
+      window.clearInterval(timerState.progressIntervalRef);
+    }
+    cycleTimers.delete(id);
+  }
+}
+
+// Cleanup function for when nodes are removed
+export const cleanupCyclePulseTimers = (id: string) => {
+  stopTimersForNode(id);
+};
+
+export default CyclePulse; 

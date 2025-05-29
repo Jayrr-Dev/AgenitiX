@@ -80,7 +80,6 @@ const IconForPulseCycles: React.FC<IconForPulseCyclesProps> = ({ progress, onTog
             fontSize: size * 0.18,
             color: isRunning ? '#fff' : color,
             cursor: 'pointer',
-            transition: 'background 0.2s, color 0.2s',
           }}
           aria-label={isRunning ? 'Stop cycle' : 'Start cycle'}
         >

@@ -1,113 +1,183 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { Handle, Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
-import CustomHandle from '../../handles/CustomHandle'
-import IconForTrigger from '../node-icons/IconForTrigger'
-import { FloatingNodeId } from '../components/FloatingNodeId'
-import { useFlowStore } from '../../stores/flowStore'
+import React from 'react';
+import { Position } from '@xyflow/react';
+import { createNodeComponent, type BaseNodeData } from '../factory/NodeFactory';
+import IconForTrigger from '../node-icons/IconForTrigger';
 
-// TYPES
-interface TriggerOnClickData {
-  triggered: boolean
+// ============================================================================
+// NODE DATA INTERFACE  
+// ============================================================================
+
+interface TriggerOnClickData extends BaseNodeData {
+  triggered: boolean;
 }
 
-// TRIGGER ON CLICK NODE COMPONENT
-const TriggerOnClick: React.FC<NodeProps<Node<TriggerOnClickData & Record<string, unknown>>>> = ({ id, data }) => {
-  const updateNodeData = useFlowStore((state) => state.updateNodeData)
-  const isTriggered = data.triggered === true
+// ============================================================================
+// NODE CONFIGURATION
+// ============================================================================
 
-  // Boolean input handle logic
-  const connections = useNodeConnections({ handleType: 'target' })
-  const boolInputConnections = connections.filter(c => c.targetHandle === 'b')
-  const boolInputSourceIds = boolInputConnections.map((c) => c.source)
-  const boolInputNodesData = useNodesData(boolInputSourceIds)
-  // If any connected boolean input is true, trigger this node
-  const externalTrigger = boolInputNodesData.some((n) => n.data.triggered)
-
-  // When triggered, set state and update node data
-  const handleTrigger = () => {
-    updateNodeData(id, { triggered: true })
-  }
-
-  // Reset trigger
-  const handleReset = () => {
-    updateNodeData(id, { triggered: undefined })
-  }
-
-  // React to external boolean input
-  useEffect(() => {
-    if (boolInputConnections.length > 0) {
-      if (externalTrigger && !isTriggered) {
-        updateNodeData(id, { triggered: true })
-      }
-      // Do NOT forcibly reset to false if externalTrigger is false
+const TriggerOnClick = createNodeComponent<TriggerOnClickData>({
+  nodeType: 'triggerOnClick',
+  category: 'trigger', // Yellow theme for trigger nodes
+  displayName: 'Trigger On Click',
+  defaultData: { 
+    triggered: false
+  },
+  
+  // Use logic node size (60x60 collapsed, 120x120 expanded)
+  size: {
+    collapsed: {
+      width: 'w-[60px]',
+      height: 'h-[60px]'
+    },
+    expanded: {
+      width: 'w-[120px]'
     }
-    // If no boolean input is connected, do not override manual state
-  }, [externalTrigger, isTriggered, updateNodeData, id, boolInputConnections.length])
+  },
+  
+  // Define handles (boolean input -> boolean output)
+  handles: [
+    { id: 'b', dataType: 'b', position: Position.Left, type: 'target' },
+    { id: 'b', dataType: 'b', position: Position.Right, type: 'source' }
+  ],
+  
+  // Processing logic - handle external trigger input
+  processLogic: ({ data, connections, nodesData, updateNodeData, id, setError }) => {
+    try {
+      // Filter for boolean input connections
+      const boolInputConnections = connections.filter(c => c.targetHandle === 'b');
+      
+      // If there are external boolean inputs, check if any are triggered
+      if (boolInputConnections.length > 0) {
+        const externalTrigger = nodesData.some(node => {
+          // Check various trigger properties that might indicate an active trigger
+          return node.data?.triggered === true || 
+                 node.data?.value === true || 
+                 node.data?.output === true;
+        });
+        
+        // Only trigger if not already triggered (prevent spam)
+        if (externalTrigger && !data.triggered) {
+          updateNodeData(id, { triggered: true });
+        }
+        // Note: We don't auto-reset when external trigger goes false
+        // This preserves the manual trigger behavior
+      }
+      
+    } catch (updateError) {
+      console.error(`TriggerOnClick ${id} - Update error:`, updateError);
+      const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
+      setError(errorMessage);
+    }
+  },
 
-  // Expand/collapse UI state
-  const [showUI, setShowUI] = useState<boolean | undefined>(undefined)
+  // Collapsed state rendering - just the trigger icon
+  renderCollapsed: ({ data, error, updateNodeData, id }) => {
+    const isTriggered = data.triggered === true;
+    
+    const handleTrigger = () => {
+      updateNodeData(id, { triggered: true });
+    };
 
-  // RENDER
-  return (
-    <div className={`relative ${showUI ? 'px-4 py-3 min-w-[180px] min-h-[120px]' : 'w-[60px] h-[60px] flex items-center justify-center'} rounded-lg shadow border bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-800`}>
-      {/* Floating Node ID */}
-      <FloatingNodeId nodeId={id} />
-      {/* TOGGLE BUTTON (top-left) */}
-      <button
-        aria-label={showUI ? 'Collapse node' : 'Expand node'}
-        title={showUI ? 'Collapse' : 'Expand'}
-        onClick={() => setShowUI((v) => !v)}
-        className="absolute top-1 left-1 cursor-pointer z-10 w-2 h-2 flex items-center justify-center rounded-full bg-white/80 dark:bg-black/40 border border-blue-300 dark:border-blue-800 text-xs hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors shadow"
-        type="button"
-      >
-        {showUI ? '⦿' : '⦾'}
-      </button>
-      {/* INPUT HANDLE (left, boolean, can externally trigger this node) */}
-      <CustomHandle type="target" position={Position.Left} id="b" dataType="b" />
-      {/* COLLAPSED: Only Icon */}
-      {!showUI && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <IconForTrigger isOn={isTriggered} onClick={isTriggered ? handleReset : handleTrigger} size={40} />
-        </div>
-      )}
-      {/* EXPANDED: Full UI */}
-      {showUI && (
-        <>
-          {/* HEADER */}
-          <div className="flex items-center justify-center w-full mb-2 mt-2">
-            <div className="font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
-              <IconForTrigger isOn={isTriggered} onClick={isTriggered ? handleReset : handleTrigger} size={20} />
-              Trigger
-            </div>
+    const handleReset = () => {
+      updateNodeData(id, { triggered: false });
+    };
+
+    return (
+      <div className="absolute inset-0 flex items-center justify-center">
+        {error ? (
+          <div className="text-xs text-center text-red-600 break-words">
+            {error}
           </div>
-          {/* BUTTONS */}
-          {isTriggered ? (
-            <button
-              className="px-3 py-1 rounded bg-blue-700 text-white font-bold shadow transition-colors hover:bg-blue-600"
-              onClick={handleReset}
-            >
-              Reset
-            </button>
-          ) : (
-            <button
-              className="px-3 py-1 rounded bg-blue-500 text-white font-bold shadow transition-colors hover:bg-blue-600"
-              onClick={handleTrigger}
-            >
-              Click to Trigger
-            </button>
-          )}
-        </>
-      )}
-      {/* OUTPUT HANDLE (right, boolean, id and dataType = 'b') */}
-      <CustomHandle type="source" position={Position.Right} id="b" dataType="b" />
-      {/* Example for union: id="b|n" dataType="b" */}
-      {/* <CustomHandle type="source" position={Position.Right} id="b|n" dataType="b" /> */}
-      {/* Example for any: id="x" dataType="x" /> */}
-      {/* Example for custom: id="customType" dataType="customType" /> */}
-    </div>
-  )
-}
+        ) : (
+          <IconForTrigger 
+            isOn={isTriggered} 
+            onClick={isTriggered ? handleReset : handleTrigger} 
+            size={40} 
+          />
+        )}
+      </div>
+    );
+  },
 
-export default TriggerOnClick
+  // Expanded state rendering - full UI with buttons
+  renderExpanded: ({ data, error, categoryTextTheme, updateNodeData, id }) => {
+    const isTriggered = data.triggered === true;
+    
+    const handleTrigger = () => {
+      updateNodeData(id, { triggered: true });
+    };
+
+    const handleReset = () => {
+      updateNodeData(id, { triggered: false });
+    };
+
+    return (
+      <div className="flex text-xs flex-col w-full h-[96px] px-1"> {/* 120px total - 24px factory padding */}
+        <div className={`font-semibold mb-1 text-center ${categoryTextTheme.primary}`}>
+          {error ? (
+            <span className="text-red-600 dark:text-red-400">Error</span>
+          ) : (
+            'Trigger'
+          )}
+        </div>
+        
+        {error && (
+          <div className="mb-1 p-1 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-300">
+            <div className="text-xs">{error}</div>
+          </div>
+        )}
+
+        <div className="flex-1 flex flex-col items-center justify-center space-y-2">
+          {/* Icon */}
+          <IconForTrigger 
+            isOn={isTriggered} 
+            onClick={isTriggered ? handleReset : handleTrigger} 
+            size={24} 
+          />
+          
+          {/* Action button */}
+          <div 
+            className="nodrag nowheel"
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+          >
+            {isTriggered ? (
+              <button
+                className="px-2 py-1 rounded bg-yellow-600 hover:bg-yellow-700 text-white font-bold shadow transition-colors text-xs"
+                onClick={handleReset}
+                disabled={!!error}
+              >
+                Reset
+              </button>
+            ) : (
+              <button
+                className="px-2 py-1 rounded bg-yellow-500 hover:bg-yellow-600 text-white font-bold shadow transition-colors text-xs"
+                onClick={handleTrigger}
+                disabled={!!error}
+              >
+                Trigger
+              </button>
+            )}
+          </div>
+          
+          {/* Compact status indicator */}
+          <div className={`text-xs ${categoryTextTheme.secondary}`}>
+            {isTriggered ? 
+              <span className="text-yellow-600 dark:text-yellow-400 font-semibold">ON</span> : 
+              <span className="text-gray-500">Ready</span>
+            }
+          </div>
+        </div>
+      </div>
+    );
+  },
+
+  // Error recovery data
+  errorRecoveryData: {
+    triggered: false
+  }
+});
+
+export default TriggerOnClick;

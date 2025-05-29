@@ -179,10 +179,20 @@ export const CyclePulseControl: React.FC<BaseControlProps> = ({ node }) => {
           <span className="text-xs">Status:</span>
           <StatusBadge 
             status={isRunning}
-            trueLabel="Pulsing"
+            trueLabel={node.data.pulsing ? "Pulsing" : "Cycling"}
             falseLabel="Stopped"
           />
         </div>
+        
+        {/* Progress display when running */}
+        {isRunning && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs">Progress:</span>
+            <span className="text-xs font-mono text-blue-600 dark:text-blue-400">
+              {Math.round((typeof node.data.progress === 'number' ? node.data.progress : 0) * 100)}%
+            </span>
+          </div>
+        )}
         
         <label className="block text-xs">
           <div className="flex flex-row gap-2 items-center">
@@ -343,7 +353,7 @@ export const CycleToggleControl: React.FC<BaseControlProps> = ({ node }) => {
           <span className="text-xs">Status:</span>
           <StatusBadge 
             status={isRunning}
-            trueLabel="Cycling"
+            trueLabel={node.data.pulsing ? "Pulsing" : "Cycling"}
             falseLabel="Stopped"
           />
         </div>

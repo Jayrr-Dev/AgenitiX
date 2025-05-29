@@ -1,505 +1,530 @@
 'use client'
 
-/* -------------------------------------------------------------------------- */
-/*  CycleToggle                                                               */
-/*  – Cycles between on/off states with customizable durations                 */
-/* -------------------------------------------------------------------------- */
+import React from 'react';
+import { Position } from '@xyflow/react';
+import { createNodeComponent, type BaseNodeData } from '../factory/NodeFactory';
+import IconForToggleCycles from '../node-icons/IconForToggleCycles';
 
-import React, { useState, useEffect, useRef } from 'react'
-import {
-  Handle,
-  Position,
-  useNodeConnections,
-  useNodesData,
-  type NodeProps,
-  type Node,
-} from '@xyflow/react'
+// ============================================================================
+// NODE DATA INTERFACE  
+// ============================================================================
 
-import CustomHandle from '../../handles/CustomHandle'
-// import IconPlaceholder from '../node-icons/IconPlaceholder' 
-import IconForToggleCycles from '../node-icons/IconForToggleCycles'
-import { CycleToggleData } from '../../flow-editor/types'
-import { useFlowStore } from '../../stores/flowStore'
+interface CycleToggleData extends BaseNodeData {
+  onDuration: number;
+  offDuration: number;
+  infinite: boolean;
+  initialState: boolean;
+  maxCycles: number;
+  isRunning: boolean;
+  triggered: boolean;
+  // Runtime state
+  isOn: boolean;
+  phase: boolean; // true = ON phase, false = OFF phase
+  cycleCount: number;
+  progress: number;
+  // Timer tracking
+  phaseStartTime?: number;
+}
 
-/* -------------------------------------------------------------------------- */
-/*  COMPONENT                                                                 */
-/* -------------------------------------------------------------------------- */
-const CycleToggle: React.FC<NodeProps<Node<CycleToggleData & Record<string, unknown>>>> = ({ id, data }) => {
-  // Zustand store actions
-  const updateNodeData = useFlowStore(state => state.updateNodeData)
+// ============================================================================
+// GLOBAL TIMER MANAGEMENT
+// ============================================================================
+
+// Helper function to ensure progress is always rounded to 5 decimal places
+const roundProgress = (progress: number): number => {
+  return Math.round(Math.max(0, Math.min(1, progress)) * 100000) / 100000;
+};
+
+// Global timer management for CycleToggle instances
+const activeCycles = new Map<string, { 
+  phaseTimeoutId: number | null;
+  progressIntervalId: number | null;
+  isRunning: boolean;
+  currentCycleCount: number;
+  currentPhase: boolean; // true = ON, false = OFF
+}>();
+
+// ============================================================================
+// CYCLE TOGGLE FUNCTIONS
+// ============================================================================
+
+// Start the toggle cycle
+function startToggleCycle(
+  id: string,
+  updateNodeData: (id: string, updates: Partial<CycleToggleData>) => void,
+  onDuration: number,
+  offDuration: number,
+  initialState: boolean
+) {
+  console.log(`CycleToggle ${id}: Starting toggle cycle, ON: ${onDuration}ms, OFF: ${offDuration}ms, initial: ${initialState ? 'ON' : 'OFF'}`);
   
-  // STATE
-  const [showUI, setShowUI] = useState(false)
-  const [isRunning, setIsRunning] = useState(false)
-  const [phase, setPhase] = useState(data.initialState ?? false) // true = ON, false = OFF
-  const [cycleCount, setCycleCount] = useState(0)
-  const intervalRef = useRef<number | null>(null)
-  const [progress, setProgress] = useState(0)
-  const cycleStartRef = useRef(Date.now())
-  // STATE FOR ON DURATION INPUT (robust text input for numeric value)
-  const [onDurationInput, setOnDurationInput] = useState(data.onDuration?.toString() ?? '4000')
-  // STATE FOR OFF DURATION INPUT (robust text input for numeric value)
-  const [offDurationInput, setOffDurationInput] = useState(data.offDuration?.toString() ?? '4000')
-  // STATE FOR MAX CYCLES INPUT (robust text input for numeric value)
-  const [maxCyclesInput, setMaxCyclesInput] = useState(data.maxCycles?.toString() ?? '1')
-
-  // Get values from data with defaults
-  const onDuration = data.onDuration ?? 4000
-  const offDuration = data.offDuration ?? 4000
-  const infinite = data.infinite ?? true
-  const initialState = data.initialState ?? false
-  const maxCycles = data.maxCycles ?? 1
-
-  // Boolean input handle logic
-  const connections = useNodeConnections({ handleType: 'target' })
-  const boolInputConnections = connections.filter(c => c.targetHandle === 'b')
-  const boolInputSourceIds = boolInputConnections.map((c) => c.source)
-  const boolInputNodesData = useNodesData(boolInputSourceIds)
-  const hasExternalTrigger = boolInputSourceIds.length > 0
+  // Stop any existing cycle first
+  stopToggleCycle(id);
   
-  // Check for any truthy value from connected input nodes
-  const externalTrigger = boolInputNodesData.some((n) => {
-    const data = n.data
-    return !!(data.triggered || data.value || data.text || data.output)
-  })
-
-  // INSPECTOR CONTROLS - Use separate control property to avoid feedback loop
-  const prevIsRunningRef = useRef(data.isRunning)
-  useEffect(() => {
-    if (!hasExternalTrigger) {
-      // Only respond to changes in isRunning control property from inspector
-      if (data.isRunning !== prevIsRunningRef.current) {
-        setIsRunning(!!data.isRunning)
-        if (!!data.isRunning) {
-          setPhase(initialState) // Start with initial state when triggered
-        }
-        prevIsRunningRef.current = data.isRunning
-      }
+  // Initialize cycle state
+  const cycleState = {
+    phaseTimeoutId: null as number | null,
+    progressIntervalId: null as number | null,
+    isRunning: true,
+    currentCycleCount: 0,
+    currentPhase: initialState // Start with initial state
+  };
+  activeCycles.set(id, cycleState);
+  
+  // Start the first phase immediately
+  startNextPhase();
+  
+  function startNextPhase() {
+    const currentState = activeCycles.get(id);
+    if (!currentState || !currentState.isRunning) {
+      console.log(`CycleToggle ${id}: Cycle stopped, exiting`);
+      return;
     }
-  }, [data.isRunning, hasExternalTrigger, initialState])
+    
+    const phase = currentState.currentPhase;
+    const phaseDuration = phase ? onDuration : offDuration;
+    
+    console.log(`CycleToggle ${id}: Starting ${phase ? 'ON' : 'OFF'} phase for ${phaseDuration}ms`);
+    
+    // Update phase state
+    updateNodeData(id, { 
+      phase: phase,
+      triggered: phase, // Output is active during ON phase
+      progress: 0
+    });
+    
+    const phaseStartTime = Date.now();
+    
+    // Progress animation during current phase
+    const progressInterval = window.setInterval(() => {
+      const currentState = activeCycles.get(id);
+      if (!currentState || !currentState.isRunning) {
+        window.clearInterval(progressInterval);
+        return;
+      }
+      
+      const elapsed = Date.now() - phaseStartTime;
+      const rawProgress = Math.min(1, elapsed / phaseDuration);
+      const progress = roundProgress(rawProgress);
+      
+      updateNodeData(id, { progress });
+      
+      if (progress >= 1) {
+        window.clearInterval(progressInterval);
+      }
+    }, 50);
+    
+    // Store progress interval
+    if (currentState) {
+      currentState.progressIntervalId = progressInterval;
+    }
+    
+    // After phase duration, switch to next phase
+    const phaseTimeoutId = window.setTimeout(() => {
+      switchToNextPhase();
+    }, phaseDuration);
+    
+    // Store phase timeout
+    if (currentState) {
+      currentState.phaseTimeoutId = phaseTimeoutId;
+    }
+  }
+  
+  function switchToNextPhase() {
+    const currentState = activeCycles.get(id);
+    if (!currentState || !currentState.isRunning) {
+      return;
+    }
+    
+    // Clear progress interval from previous phase
+    if (currentState.progressIntervalId) {
+      window.clearInterval(currentState.progressIntervalId);
+      currentState.progressIntervalId = null;
+    }
+    
+    // Switch phase
+    const wasOnPhase = currentState.currentPhase;
+    currentState.currentPhase = !currentState.currentPhase;
+    
+    // If we just finished an OFF phase (switching to ON), increment cycle count
+    if (!wasOnPhase) {
+      currentState.currentCycleCount++;
+      console.log(`CycleToggle ${id}: Completed cycle ${currentState.currentCycleCount}`);
+      
+      // Update cycle count in node data
+      updateNodeData(id, { 
+        cycleCount: currentState.currentCycleCount,
+        progress: 1.0 // Complete the progress for the finished phase
+      });
+    }
+    
+    // Continue with next phase
+    console.log(`CycleToggle ${id}: Switching to ${currentState.currentPhase ? 'ON' : 'OFF'} phase`);
+    setTimeout(() => startNextPhase(), 0);
+  }
+}
 
-  // EXTERNAL TRIGGER CONTROL
-  useEffect(() => {
-    if (hasExternalTrigger) {
-      if (externalTrigger) {
-        // Only start if not already running, otherwise keep going
-        if (!isRunning) {
-          setPhase(initialState) // Start with initial state
-          setIsRunning(true)
+// Stop the toggle cycle
+function stopToggleCycle(id: string) {
+  const cycle = activeCycles.get(id);
+  if (cycle) {
+    console.log(`CycleToggle ${id}: Stopping toggle cycle`);
+    
+    // Mark as stopped
+    cycle.isRunning = false;
+    
+    // Clear any active timers
+    if (cycle.phaseTimeoutId) {
+      window.clearTimeout(cycle.phaseTimeoutId);
+    }
+    if (cycle.progressIntervalId) {
+      window.clearInterval(cycle.progressIntervalId);
+    }
+    
+    // Remove from active cycles
+    activeCycles.delete(id);
+  }
+}
+
+// ============================================================================
+// NODE CONFIGURATION
+// ============================================================================
+
+const CycleToggle = createNodeComponent<CycleToggleData>({
+  nodeType: 'cycleToggle',
+  category: 'trigger', // Yellow theme for trigger nodes
+  displayName: 'Cycle Toggle',
+  defaultData: { 
+    onDuration: 4000,
+    offDuration: 4000,
+    infinite: true,
+    initialState: false,
+    maxCycles: 1,
+    isRunning: false,
+    triggered: false,
+    // Runtime state
+    isOn: false,
+    phase: false,
+    cycleCount: 0,
+    progress: 0,
+    phaseStartTime: undefined
+  },
+  
+  // Custom sizing: 120x120 collapsed, 180x180 expanded
+  size: {
+    collapsed: {
+      width: 'w-[120px]',
+      height: 'h-[120px]'
+    },
+    expanded: {
+      width: 'w-[180px]'
+    }
+  },
+  
+  // Define handles (boolean input -> boolean output)
+  handles: [
+    { id: 'b', dataType: 'b', position: Position.Left, type: 'target' },
+    { id: 'b', dataType: 'b', position: Position.Right, type: 'source' }
+  ],
+  
+  // Processing logic - handle external triggers and timer management
+  processLogic: ({ data, connections, nodesData, updateNodeData, id, setError }) => {
+    console.log(`CycleToggle ${id}: processLogic called, isOn: ${data.isOn}, isRunning: ${data.isRunning}, cycleCount: ${data.cycleCount}`);
+    
+    try {
+      // Check if max cycles reached and stop if needed
+      if (data.isOn && !data.infinite && (data.cycleCount || 0) >= (data.maxCycles || 1)) {
+        console.log(`CycleToggle ${id}: Max cycles (${data.maxCycles}) reached, stopping`);
+        updateNodeData(id, { 
+          isOn: false,
+          isRunning: false,
+          progress: 0,
+          phase: false,
+          triggered: false
+        });
+        stopToggleCycle(id);
+        return;
+      }
+      
+      // Handle inspector control changes (isRunning property)
+      if (data.isRunning !== data.isOn) {
+        console.log(`CycleToggle ${id}: Inspector control changed, syncing isOn with isRunning`);
+        
+        if (data.isRunning && !data.isOn) {
+          // Inspector started the cycle
+          updateNodeData(id, { 
+            isOn: true,
+            cycleCount: 0,
+            progress: 0,
+            phase: data.initialState || false,
+            triggered: data.initialState || false
+          });
+          startToggleCycle(id, updateNodeData, data.onDuration || 4000, data.offDuration || 4000, data.initialState || false);
+        } else if (!data.isRunning && data.isOn) {
+          // Inspector stopped the cycle
+          updateNodeData(id, { 
+            isOn: false,
+            progress: 0,
+            phase: false,
+            triggered: false
+          });
+          stopToggleCycle(id);
         }
+      }
+      
+      // Check for external trigger
+      const boolInputConnections = connections.filter(c => c.targetHandle === 'b');
+      const hasExternalTrigger = boolInputConnections.length > 0;
+      
+      if (hasExternalTrigger) {
+        const externalTrigger = nodesData.some((node) => {
+          const nodeData = node.data;
+          return !!(nodeData?.triggered || nodeData?.value || nodeData?.text || nodeData?.output);
+        });
+        
+        // Only handle external triggers if they change state
+        if (externalTrigger && !data.isOn) {
+          console.log(`CycleToggle ${id}: External trigger ON`);
+          updateNodeData(id, { isOn: true, isRunning: true });
+          startToggleCycle(id, updateNodeData, data.onDuration || 4000, data.offDuration || 4000, data.initialState || false);
+        } else if (!externalTrigger && data.isOn) {
+          console.log(`CycleToggle ${id}: External trigger OFF`);
+          updateNodeData(id, { isOn: false, isRunning: false, phase: false, triggered: false });
+          stopToggleCycle(id);
+        }
+      }
+      
+    } catch (updateError) {
+      console.error(`CycleToggle ${id} - Update error:`, updateError);
+      const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
+      setError(errorMessage);
+      
+      // Clean up timers on error
+      stopToggleCycle(id);
+    }
+  },
+
+  // Collapsed state rendering - icon with progress
+  renderCollapsed: ({ data, error, updateNodeData, id }) => {
+    const handleToggle = () => {
+      console.log(`CycleToggle ${id}: Manual toggle, current isOn:`, data.isOn);
+      const newIsOn = !data.isOn;
+      
+      console.log(`CycleToggle ${id}: Setting isOn to:`, newIsOn);
+      
+      if (newIsOn) {
+        // Starting
+        updateNodeData(id, { 
+          isOn: true, 
+          isRunning: true,
+          cycleCount: 0,
+          progress: 0,
+          phase: data.initialState || false,
+          triggered: data.initialState || false
+        });
+        startToggleCycle(id, updateNodeData, data.onDuration || 4000, data.offDuration || 4000, data.initialState || false);
       } else {
-        // Stop when trigger is false
-        setIsRunning(false)
+        // Stopping
+        updateNodeData(id, { 
+          isOn: false, 
+          isRunning: false,
+          progress: 0,
+          phase: false,
+          triggered: false
+        });
+        stopToggleCycle(id);
       }
-    }
-  }, [externalTrigger, hasExternalTrigger, isRunning, initialState])
+    };
 
-  // Start/stop cycle
-  useEffect(() => {
-    if (isRunning) {
-      setCycleCount(0) // Reset on start
-      setProgress(0)
-      cycleStartRef.current = Date.now()
-      
-      const runCycle = () => {
-        const currentDuration = phase ? onDuration : offDuration
-        
-        // Update triggered for boolean output to other nodes
-        updateNodeData(id, { triggered: phase })
-        
-        // Set timeout for next phase
-        intervalRef.current = window.setTimeout(() => {
-          setPhase(prev => !prev)
-          
-          // If we just completed an OFF phase (going from OFF to ON), increment cycle count
-          if (!phase) {
-            setCycleCount(c => c + 1)
-          }
-          
-          // Reset progress and cycle start time for next phase
-          setProgress(0)
-          cycleStartRef.current = Date.now()
-          
-          runCycle() // Continue the cycle
-        }, currentDuration)
-      }
-      
-      runCycle()
-      
-      return () => {
-        if (intervalRef.current) {
-          window.clearTimeout(intervalRef.current)
-          intervalRef.current = null
-        }
-      }
-    } else {
-      // Stop cycle
-      if (intervalRef.current) {
-        window.clearTimeout(intervalRef.current)
-        intervalRef.current = null
-      }
-      updateNodeData(id, { triggered: false })
-      setCycleCount(0)
-      setProgress(0)
-    }
-  }, [isRunning, phase, onDuration, offDuration, id, updateNodeData])
-
-  // Update progress for radial indicator
-  useEffect(() => {
-    if (!isRunning) {
-      setProgress(0)
-      return
-    }
-
-    const updateProgress = () => {
-      const now = Date.now()
-      const elapsed = now - cycleStartRef.current
-      const currentDuration = phase ? onDuration : offDuration
-      const newProgress = Math.min(1, elapsed / currentDuration)
-      setProgress(newProgress)
-    }
-
-    // Update immediately and then every 30ms
-    updateProgress()
-    const interval = setInterval(updateProgress, 30)
-    return () => clearInterval(interval)
-  }, [isRunning, phase, onDuration, offDuration])
-
-  // Stop after maxCycles if not infinite
-  useEffect(() => {
-    if (!infinite && cycleCount >= maxCycles) {
-      setIsRunning(false)
-    }
-  }, [cycleCount, infinite, maxCycles])
-
-  // Handlers
-  const handleStartStop = () => {
-    // Allow manual control when not connected OR when connected and input is true
-    if (!hasExternalTrigger || externalTrigger) {
-      const newIsRunning = !isRunning
-      setPhase(initialState) // Always start with initialState
-      setIsRunning(newIsRunning)
-      updateNodeData(id, { isRunning: newIsRunning })
-    }
-  }
-
-  const handleOnDurationChange = (value: number) => {
-    updateNodeData(id, { onDuration: value })
-  }
-
-  const handleOffDurationChange = (value: number) => {
-    updateNodeData(id, { offDuration: value })
-  }
-
-  const handleInfiniteChange = (value: boolean) => {
-    updateNodeData(id, { infinite: value })
-  }
-
-  const handleInitialStateChange = (value: boolean) => {
-    updateNodeData(id, { initialState: value })
-  }
-
-  const handleMaxCyclesChange = (value: number) => {
-    updateNodeData(id, { maxCycles: value })
-  }
-
-  // HANDLER: On Duration Input Change
-  const handleOnDurationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Allow only digits
-    const digits = e.target.value.replace(/\D/g, '')
-    setOnDurationInput(digits)
-  }
-  // HANDLER: Commit On Duration Input
-  const commitOnDurationInput = () => {
-    let value = Number(onDurationInput)
-    if (isNaN(value) || value < 100) value = 100
-    updateNodeData(id, { onDuration: value })
-    setOnDurationInput(value.toString())
-  }
-  const handleOnDurationInputBlur = () => { commitOnDurationInput() }
-  const handleOnDurationInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') commitOnDurationInput()
-  }
-  // HANDLER: Off Duration Input Change
-  const handleOffDurationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Allow only digits
-    const digits = e.target.value.replace(/\D/g, '')
-    setOffDurationInput(digits)
-  }
-  // HANDLER: Commit Off Duration Input
-  const commitOffDurationInput = () => {
-    let value = Number(offDurationInput)
-    if (isNaN(value) || value < 100) value = 100
-    updateNodeData(id, { offDuration: value })
-    setOffDurationInput(value.toString())
-  }
-  const handleOffDurationInputBlur = () => { commitOffDurationInput() }
-  const handleOffDurationInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') commitOffDurationInput()
-  }
-  // HANDLER: Max Cycles Input Change
-  const handleMaxCyclesInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Allow only digits
-    const digits = e.target.value.replace(/\D/g, '')
-    setMaxCyclesInput(digits)
-  }
-  // HANDLER: Commit Max Cycles Input
-  const commitMaxCyclesInput = () => {
-    let value = Number(maxCyclesInput)
-    if (isNaN(value) || value < 1) value = 1
-    updateNodeData(id, { maxCycles: value })
-    setMaxCyclesInput(value.toString())
-  }
-  const handleMaxCyclesInputBlur = () => { commitMaxCyclesInput() }
-  const handleMaxCyclesInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') commitMaxCyclesInput()
-  }
-
-  /* -------------------------------------------------------------- */
-  /*  RENDER                                                        */
-  /* -------------------------------------------------------------- */
-  return (
-    <div className={`relative ${showUI ? 'px-4 py-3 min-w-[220px]' : 'w-[120px] h-[120px] flex items-center justify-center'} rounded-lg bg-emerald-100 dark:bg-emerald-900 shadow border border-emerald-300 dark:border-emerald-800`}>
-      {/* HANDLES: Always visible */}
-      <CustomHandle type="target" position={Position.Left} id="b" dataType="b" style={{ top: '50%', left: 0, transform: 'translateY(-50%)', zIndex: 20 }} />
-      <CustomHandle type="source" position={Position.Right} id="b" dataType="b" style={{ top: '50%', right: 0, transform: 'translateY(-50%)', zIndex: 20 }} />
-      {/* TOGGLE BUTTON (top-right, always visible) */}
-      <button
-        aria-label={showUI ? 'Collapse node' : 'Expand node'}
-        title={showUI ? 'Collapse' : 'Expand'}
-        onClick={() => setShowUI((v) => !v)}
-        className="absolute top-1 left-1 cursor-pointer z-10 w-2 h-2 flex items-center justify-center rounded-full bg-white/80 dark:bg-black/40 border border-emerald-300 dark:border-emerald-800 text-xs hover:bg-emerald-200 dark:hover:bg-emerald-800 transition-colors shadow"
-        type="button"
-      >
-        {showUI ? '⦿' : '⦾'}
-      </button>
-      {/* COLLAPSED: Centered Icon */}
-      {!showUI && (
-        <div className="flex items-center justify-center w-full h-full">
+    return (
+      <div className="absolute inset-0 flex items-center justify-center">
+        {error ? (
+          <div className="text-xs text-center text-red-600 break-words p-2">
+            {error}
+          </div>
+        ) : (
           <IconForToggleCycles
-            progress={progress}
-            onToggle={handleStartStop}
-            isRunning={isRunning}
-            label="Toggle Cycle"
+            progress={data.progress || 0}
+            onToggle={handleToggle}
+            isRunning={data.isOn || false}
+            label="Toggle"
             size={100}
-            color={phase ? '#3b82f6' : '#ef4444'}
+            color={data.phase ? '#3b82f6' : '#ef4444'} // Blue for ON, Red for OFF
           />
+        )}
+      </div>
+    );
+  },
+
+  // Expanded state rendering - full controls
+  renderExpanded: ({ data, error, categoryTextTheme, updateNodeData, id }) => (
+    <div className="flex flex-col w-full h-full text-xs p-1"> {/* Reduce padding from p-2 to p-1 */}
+      <div className={`font-semibold mb-1 text-center ${categoryTextTheme.primary}`}> {/* Keep mb-1 */}
+        {error ? (
+          <span className="text-red-600 dark:text-red-400">Error</span>
+        ) : (
+          'Toggle Cycle'
+        )}
+      </div>
+      
+      {error && (
+        <div className="mb-1 p-1 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-300">
+          {error}
         </div>
       )}
-      {/* EXPANDED: Full UI */}
-      {showUI && (
-        <CycleToggleExpandedUI
-          onDuration={onDuration}
-          offDuration={offDuration}
-          infinite={infinite}
-          maxCycles={maxCycles}
-          initialState={initialState}
-          isRunning={isRunning}
-          cycleCount={cycleCount}
-          phase={phase}
-          hasExternalTrigger={hasExternalTrigger}
-          externalTrigger={externalTrigger}
-          onOnDurationChange={handleOnDurationChange}
-          onOffDurationChange={handleOffDurationChange}
-          onInfiniteChange={handleInfiniteChange}
-          onMaxCyclesChange={handleMaxCyclesChange}
-          onInitialStateChange={handleInitialStateChange}
-          onStartStop={handleStartStop}
-        />
-      )}
-    </div>
-  )
-}
-
-// Separate component for expanded UI to keep main component clean
-interface CycleToggleExpandedUIProps {
-  onDuration: number
-  offDuration: number
-  infinite: boolean
-  maxCycles: number
-  initialState: boolean
-  isRunning: boolean
-  cycleCount: number
-  phase: boolean
-  hasExternalTrigger: boolean
-  externalTrigger: boolean
-  onOnDurationChange: (value: number) => void
-  onOffDurationChange: (value: number) => void
-  onInfiniteChange: (value: boolean) => void
-  onMaxCyclesChange: (value: number) => void
-  onInitialStateChange: (value: boolean) => void
-  onStartStop: () => void
-}
-
-const CycleToggleExpandedUI: React.FC<CycleToggleExpandedUIProps> = ({
-  onDuration,
-  offDuration,
-  infinite,
-  maxCycles,
-  initialState,
-  isRunning,
-  cycleCount,
-  phase,
-  hasExternalTrigger,
-  externalTrigger,
-  onOnDurationChange,
-  onOffDurationChange,
-  onInfiniteChange,
-  onMaxCyclesChange,
-  onInitialStateChange,
-  onStartStop,
-}) => {
-  const [onDurationInput, setOnDurationInput] = useState(onDuration.toString())
-  const [offDurationInput, setOffDurationInput] = useState(offDuration.toString())
-  const [maxCyclesInput, setMaxCyclesInput] = useState(maxCycles.toString())
-
-  // Sync inputs with props
-  useEffect(() => { setOnDurationInput(onDuration.toString()) }, [onDuration])
-  useEffect(() => { setOffDurationInput(offDuration.toString()) }, [offDuration])
-  useEffect(() => { setMaxCyclesInput(maxCycles.toString()) }, [maxCycles])
-
-  const handleOnDurationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, '')
-    setOnDurationInput(digits)
-  }
-
-  const commitOnDuration = () => {
-    let value = Number(onDurationInput)
-    if (isNaN(value) || value < 100) value = 100
-    onOnDurationChange(value)
-    setOnDurationInput(value.toString())
-  }
-
-  const handleOnDurationInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') commitOnDuration()
-  }
-
-  const handleOffDurationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, '')
-    setOffDurationInput(digits)
-  }
-
-  const commitOffDuration = () => {
-    let value = Number(offDurationInput)
-    if (isNaN(value) || value < 100) value = 100
-    onOffDurationChange(value)
-    setOffDurationInput(value.toString())
-  }
-
-  const handleOffDurationInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') commitOffDuration()
-  }
-
-  const handleMaxCyclesInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, '')
-    setMaxCyclesInput(digits)
-  }
-
-  const commitMaxCycles = () => {
-    let value = Number(maxCyclesInput)
-    if (isNaN(value) || value < 1) value = 1
-    onMaxCyclesChange(value)
-    setMaxCyclesInput(value.toString())
-  }
-
-  const handleMaxCyclesInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') commitMaxCycles()
-  }
-
-  return (
-    <>
-      <div className="font-semibold text-purple-900 dark:text-purple-100 mb-2">Toggle Cycle</div>
       
-      {/* ON DURATION INPUT */}
-      <div className="flex items-center gap-2 mb-2">
-        <label className="text-xs text-purple-700 dark:text-purple-200">ON:</label>
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={onDurationInput}
-          onChange={handleOnDurationInputChange}
-          onBlur={commitOnDuration}
-          onKeyDown={handleOnDurationInputKeyDown}
-          className="w-16 rounded border px-1 text-xs bg-white dark:bg-black"
-        />
-        <span className="text-xs text-purple-700 dark:text-purple-200">ms</span>
-      </div>
-      
-      {/* OFF DURATION INPUT */}
-      <div className="flex items-center gap-2 mb-2">
-        <label className="text-xs text-purple-700 dark:text-purple-200">OFF:</label>
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={offDurationInput}
-          onChange={handleOffDurationInputChange}
-          onBlur={commitOffDuration}
-          onKeyDown={handleOffDurationInputKeyDown}
-          className="w-16 rounded border px-1 text-xs bg-white dark:bg-black"
-        />
-        <span className="text-xs text-purple-700 dark:text-purple-200">ms</span>
-      </div>
-      
-      <div className="flex items-center gap-2 mb-2">
-        <label className="text-xs text-purple-700 dark:text-purple-200">Infinite:</label>
-        <input 
-          type="checkbox" 
-          checked={infinite} 
-          onChange={(e) => onInfiniteChange(e.target.checked)} 
-        />
-      </div>
-      
-      {!infinite && (
-        <div className="flex items-center gap-2 mb-2">
-          <label className="text-xs text-purple-700 dark:text-purple-200">Cycles:</label>
+      <div className="flex-1 space-y-1 min-h-0"> {/* Reduce spacing from space-y-2 to space-y-1 */}
+        {/* ON Duration */}
+        <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
+          <label className="text-xs w-10 shrink-0">ON:</label>
           <input
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
-            value={maxCyclesInput}
-            onChange={handleMaxCyclesInputChange}
-            onBlur={commitMaxCycles}
-            onKeyDown={handleMaxCyclesInputKeyDown}
-            className="w-16 rounded border px-1 text-xs bg-white dark:bg-black"
+            value={data.onDuration || 4000}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, ''); // Only allow digits
+              const numValue = parseInt(value) || 100; // Minimum 100ms
+              updateNodeData(id, { onDuration: Math.max(100, numValue) });
+            }}
+            className="w-16 rounded border border-gray-300 dark:border-gray-600 px-1 text-xs h-5 bg-white dark:bg-gray-800" // Reduce height and padding
+            disabled={!!error}
           />
-          {isRunning && (
-            <span className="text-xs text-purple-700 dark:text-purple-200">
-              ({maxCycles - cycleCount} left)
+          <span className="text-xs w-6 shrink-0">ms</span>
+        </div>
+        
+        {/* OFF Duration */}
+        <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
+          <label className="text-xs w-10 shrink-0">OFF:</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={data.offDuration || 4000}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, ''); // Only allow digits
+              const numValue = parseInt(value) || 100; // Minimum 100ms
+              updateNodeData(id, { offDuration: Math.max(100, numValue) });
+            }}
+            className="w-16 rounded border border-gray-300 dark:border-gray-600 px-1 text-xs h-5 bg-white dark:bg-gray-800" // Reduce height and padding
+            disabled={!!error}
+          />
+          <span className="text-xs w-6 shrink-0">ms</span>
+        </div>
+        
+        {/* Infinite checkbox */}
+        <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
+          <input 
+            type="checkbox" 
+            checked={data.infinite ?? true}
+            onChange={(e) => updateNodeData(id, { infinite: e.target.checked })}
+            disabled={!!error}
+            className="shrink-0"
+          />
+          <label className="text-xs">Infinite cycles</label>
+        </div>
+        
+        {/* Max Cycles (when not infinite) */}
+        {!data.infinite && (
+          <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
+            <label className="text-xs w-10 shrink-0">Max:</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={data.maxCycles || 1}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, ''); // Only allow digits
+                const numValue = parseInt(value) || 1; // Minimum 1 cycle
+                updateNodeData(id, { maxCycles: Math.max(1, numValue) });
+              }}
+              className="w-12 rounded border border-gray-300 dark:border-gray-600 px-1 text-xs h-5 bg-white dark:bg-gray-800" // Reduce height and padding
+              disabled={!!error}
+            />
+            <span className="text-xs w-14 shrink-0">cycles</span>
+          </div>
+        )}
+        
+        {/* Initial State */}
+        <div className="flex items-center gap-1"> {/* Reduce gap from gap-2 to gap-1 */}
+          <input 
+            type="checkbox" 
+            checked={data.initialState ?? false}
+            onChange={(e) => updateNodeData(id, { initialState: e.target.checked })}
+            disabled={!!error}
+            className="shrink-0"
+          />
+          <label className="text-xs">Start ON</label>
+        </div>
+        
+        {/* Status */}
+        <div className={`text-xs ${categoryTextTheme.secondary} text-center py-1`}> {/* Reduce padding from py-2 to py-1 */}
+          {data.isOn ? (
+            <span className="text-yellow-600 dark:text-yellow-400">
+              {data.phase ? 'ON' : 'OFF'} ({data.cycleCount || 0})
             </span>
+          ) : (
+            <span className="text-gray-500">Stopped</span>
           )}
         </div>
-      )}
-      
-      <div className="flex items-center gap-2 mb-2">
-        <label className="text-xs text-purple-700 dark:text-purple-200">Initial On:</label>
-        <input 
-          type="checkbox" 
-          checked={initialState} 
-          onChange={(e) => onInitialStateChange(e.target.checked)} 
-        />
-      </div>
-      
-      <button
-        className={`px-3 py-1 rounded text-white font-bold shadow transition-colors ${
-          isRunning 
-            ? 'bg-red-500 hover:bg-red-600' 
-            : 'bg-purple-500 hover:bg-purple-600'
-        } ${(hasExternalTrigger && !externalTrigger) ? 'opacity-50 cursor-not-allowed' : ''}`}
-        onClick={onStartStop}
-        disabled={hasExternalTrigger && !externalTrigger}
-      >
-        {isRunning ? 'Stop Cycle' : 'Start Cycle'}
-      </button>
-      
-      {isRunning && (
-        <div className="mt-2 text-xs text-purple-700 dark:text-purple-200">
-          Phase: {phase ? 'ON' : 'OFF'}
+        
+        {/* Control button */}
+        <div 
+          className="nodrag nowheel flex justify-center pt-1" // Reduce padding from pt-2 to pt-1
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          <button
+            className={`px-3 py-1 rounded text-white font-bold shadow transition-colors text-xs ${
+              data.phase 
+                ? 'bg-blue-500 hover:bg-blue-600' 
+                : data.isOn 
+                  ? 'bg-red-500 hover:bg-red-600' 
+                  : 'bg-yellow-500 hover:bg-yellow-600'
+            }`} // Reduce button padding from px-4 py-2 to px-3 py-1
+            onClick={() => {
+              console.log(`CycleToggle ${id}: Button clicked, current isOn:`, data.isOn);
+              const newIsOn = !data.isOn;
+              updateNodeData(id, { 
+                isOn: newIsOn, 
+                isRunning: newIsOn,
+                cycleCount: newIsOn ? 0 : (data.cycleCount || 0),
+                progress: 0
+              });
+            }}
+            disabled={!!error}
+          >
+            {data.isOn ? 'Stop' : 'Start'}
+          </button>
         </div>
-      )}
-    </>
-  )
-}
+      </div>
+    </div>
+  ),
 
-export default CycleToggle 
+  // Error recovery data
+  errorRecoveryData: {
+    onDuration: 4000,
+    offDuration: 4000,
+    infinite: true,
+    initialState: false,
+    maxCycles: 1,
+    isRunning: false,
+    triggered: false,
+    isOn: false,
+    phase: false,
+    cycleCount: 0,
+    progress: 0,
+    phaseStartTime: undefined
+  }
+});
+
+// ============================================================================
+// CLEANUP FUNCTION
+// ============================================================================
+
+// Cleanup function for when nodes are removed
+export const cleanupCycleToggleTimers = (id: string) => {
+  stopToggleCycle(id);
+};
+
+export default CycleToggle; 
