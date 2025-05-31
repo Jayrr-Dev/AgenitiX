@@ -1,17 +1,19 @@
-import React, { useRef, useMemo, useState, useEffect } from 'react';
+import React, { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import {
   ReactFlow,
+  MiniMap,
   Controls,
   Background,
-  MiniMap,
   Panel,
-  SelectionMode,
+  useReactFlow,
   ColorMode,
   PanOnScrollMode,
-  ConnectionMode
+  ConnectionMode,
+  MarkerType,
+  SelectionMode,
 } from '@xyflow/react';
 import { useTheme } from 'next-themes';
-import type { AgenNode, AgenEdge } from '../types';
+import type { AgenNode, AgenEdge, NodeError } from '../types';
 
 // Import node components
 import CreateText from '../../nodes/media/CreateText';
@@ -29,18 +31,21 @@ import LogicXor from '../../nodes/main/LogicXor';
 import LogicXnor from '../../nodes/main/LogicXnor';
 import TurnToText from '../../nodes/media/TurnToText';
 import TurnToBoolean from '../../nodes/automation/TurnToBoolean';
+import TestInput from '../../nodes/test/TestInput';
 import EditObject from '../../nodes/main/EditObject';
 import EditArray from '../../nodes/main/EditArray';
 import CountInput from '../../nodes/automation/CountInput';
 import DelayInput from '../../nodes/automation/DelayInput';
 import TestError from '../../nodes/test/TestError';
 import TestJson from '../../nodes/test/TestJson';
-import TestInput from '../../nodes/test/TestInput';
-// Import components
-import NodeInspector from '../../components/NodeInspector';
-import ActionToolbar from '../../components/ActionToolbar';
+
+// Import other components
+import NodeInspector from '../../components/node-inspector/NodeInspector';
 import HistoryPanel from '../../components/HistoryPanel';
 import { ActionHistoryEntry } from '../../components/UndoRedoManager';
+
+// Import multi-selection copy/paste hook
+import { useMultiSelectionCopyPaste } from '../hooks/useMultiSelectionCopyPaste';
 
 interface FlowCanvasProps {
   nodes: AgenNode[];
@@ -257,10 +262,15 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         
         {/* ACTION TOOLBAR */}
         <Panel position="top-right" className="m-2">
-          <ActionToolbar
-            showHistoryPanel={showHistoryPanel}
-            onToggleHistory={onToggleHistory}
-          />
+          <button
+            onClick={onToggleHistory}
+            className="bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 shadow-sm"
+            title={showHistoryPanel ? "Hide History" : "Show History"}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
         </Panel>
 
         {/* MOBILE DELETE BUTTON - Only visible on mobile when node or edge is selected */}

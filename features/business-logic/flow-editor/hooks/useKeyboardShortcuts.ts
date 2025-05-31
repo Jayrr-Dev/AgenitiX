@@ -5,12 +5,14 @@ interface KeyboardShortcutsProps {
   onCopy: () => void;
   onPaste: () => void;
   onToggleHistory: () => void;
+  onDelete?: () => void; // Optional delete handler for Ctrl+Q
 }
 
 export function useKeyboardShortcuts({
   onCopy,
   onPaste,
-  onToggleHistory
+  onToggleHistory,
+  onDelete
 }: KeyboardShortcutsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -54,10 +56,18 @@ export function useKeyboardShortcuts({
             e.preventDefault();
           }
           break;
+          
+        case 'q':
+          // Ctrl+Q for multi-selection delete
+          if (!isInputFocused && onDelete) {
+            onDelete();
+            e.preventDefault();
+          }
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onCopy, onPaste, onToggleHistory]);
+  }, [onCopy, onPaste, onToggleHistory, onDelete]);
 } 

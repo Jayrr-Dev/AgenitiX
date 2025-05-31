@@ -61,6 +61,7 @@ interface FlowActions {
   // Copy/Paste Operations
   copySelectedNodes: () => void;
   pasteNodes: () => void;
+  pasteNodesAtPosition: (position?: { x: number; y: number }) => void;
   
   // Bulk Operations
   setNodes: (nodes: AgenNode[]) => void;
@@ -291,18 +292,32 @@ export const useFlowStore = create<FlowStore>()(
         // ============================================================================
 
         copySelectedNodes: () => {
-          const { selectedNodeId, nodes, edges } = get();
-          if (!selectedNodeId) return;
+          const { nodes, edges } = get();
+          
+          // Get all selected nodes from ReactFlow state
+          const selectedNodes = nodes.filter(node => node.selected);
+          if (selectedNodes.length === 0) return;
+
+          // Get all selected edges
+          const selectedEdges = edges.filter(edge => edge.selected);
+          
+          // Also include edges between selected nodes (even if edge isn't explicitly selected)
+          const selectedNodeIds = new Set(selectedNodes.map(n => n.id));
+          const edgesBetweenSelectedNodes = edges.filter(edge => 
+            selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target)
+          );
+          
+          // Combine explicitly selected edges with edges between selected nodes
+          const allRelevantEdges = [...selectedEdges];
+          edgesBetweenSelectedNodes.forEach(edge => {
+            if (!allRelevantEdges.find(e => e.id === edge.id)) {
+              allRelevantEdges.push(edge);
+            }
+          });
 
           set((state) => {
-            const selectedNode = nodes.find(n => n.id === selectedNodeId);
-            if (selectedNode) {
-              state.copiedNodes = [selectedNode];
-              // Copy related edges
-              state.copiedEdges = edges.filter(
-                e => e.source === selectedNodeId || e.target === selectedNodeId
-              );
-            }
+            state.copiedNodes = [...selectedNodes];
+            state.copiedEdges = allRelevantEdges;
           });
         },
 
@@ -311,9 +326,10 @@ export const useFlowStore = create<FlowStore>()(
           if (copiedNodes.length === 0) return;
 
           set((state) => {
-            // Create new nodes with offset positions and new IDs
+            // Create mapping from old IDs to new IDs
             const nodeIdMap = new Map<string, string>();
             
+            // Generate new nodes with unique IDs and offset positions
             copiedNodes.forEach(node => {
               const newId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
               nodeIdMap.set(node.id, newId);
@@ -322,9 +338,10 @@ export const useFlowStore = create<FlowStore>()(
                 ...node,
                 id: newId,
                 position: {
-                  x: node.position.x + 40,
+                  x: node.position.x + 40, // Standard offset
                   y: node.position.y + 40,
                 },
+                selected: false, // Don't select pasted nodes initially
               };
               
               state.nodes.push(newNode);
@@ -335,12 +352,95 @@ export const useFlowStore = create<FlowStore>()(
               const newSourceId = nodeIdMap.get(edge.source);
               const newTargetId = nodeIdMap.get(edge.target);
               
+              // Only create edge if both nodes were copied
               if (newSourceId && newTargetId) {
                 const newEdge: AgenEdge = {
                   ...edge,
                   id: `edge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                   source: newSourceId,
                   target: newTargetId,
+                  selected: false, // Don't select pasted edges initially
+                };
+                
+                state.edges.push(newEdge);
+              }
+            });
+          });
+        },
+
+        pasteNodesAtPosition: (position?: { x: number; y: number }) => {
+          const { copiedNodes, copiedEdges } = get();
+          if (copiedNodes.length === 0) return;
+
+          set((state) => {
+            // Calculate the center of the copied nodes
+            const bounds = copiedNodes.reduce(
+              (acc, node) => {
+                return {
+                  minX: Math.min(acc.minX, node.position.x),
+                  minY: Math.min(acc.minY, node.position.y),
+                  maxX: Math.max(acc.maxX, node.position.x),
+                  maxY: Math.max(acc.maxY, node.position.y),
+                };
+              },
+              { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
+            );
+
+            const centerX = (bounds.minX + bounds.maxX) / 2;
+            const centerY = (bounds.minY + bounds.maxY) / 2;
+
+            // Determine paste position
+            let pasteX: number;
+            let pasteY: number;
+
+            if (position) {
+              // Paste at specified position (e.g., mouse cursor)
+              pasteX = position.x;
+              pasteY = position.y;
+            } else {
+              // Default offset paste (original behavior)
+              pasteX = centerX + 40;
+              pasteY = centerY + 40;
+            }
+
+            // Calculate offset from original center to paste position
+            const offsetX = pasteX - centerX;
+            const offsetY = pasteY - centerY;
+
+            // Create mapping from old IDs to new IDs
+            const nodeIdMap = new Map<string, string>();
+            
+            // Generate new nodes with unique IDs and calculated positions
+            copiedNodes.forEach(node => {
+              const newId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+              nodeIdMap.set(node.id, newId);
+              
+              const newNode: AgenNode = {
+                ...node,
+                id: newId,
+                position: {
+                  x: node.position.x + offsetX,
+                  y: node.position.y + offsetY,
+                },
+                selected: false, // Don't select pasted nodes initially
+              };
+              
+              state.nodes.push(newNode);
+            });
+
+            // Create new edges with updated node references
+            copiedEdges.forEach(edge => {
+              const newSourceId = nodeIdMap.get(edge.source);
+              const newTargetId = nodeIdMap.get(edge.target);
+              
+              // Only create edge if both nodes were copied
+              if (newSourceId && newTargetId) {
+                const newEdge: AgenEdge = {
+                  ...edge,
+                  id: `edge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                  source: newSourceId,
+                  target: newTargetId,
+                  selected: false, // Don't select pasted edges initially
                 };
                 
                 state.edges.push(newEdge);

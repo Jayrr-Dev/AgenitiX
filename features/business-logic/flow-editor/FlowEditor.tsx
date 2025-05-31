@@ -19,6 +19,7 @@ import { useFlowStore } from '../stores/flowStore';
 import { useDragAndDrop } from './hooks/useDragAndDrop';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useReactFlowHandlers } from './hooks/useReactFlowHandlers';
+import { useMultiSelectionCopyPaste } from './hooks/useMultiSelectionCopyPaste';
 
 // Import types
 import type { Node, Edge } from '@xyflow/react';
@@ -44,7 +45,45 @@ export default function FlowEditor() {
   // ============================================================================
   
   const [mounted, setMounted] = useState(false);
+  const { _hasHydrated } = useFlowStore();
+
+  // ============================================================================
+  // MOUNT EFFECT
+  // ============================================================================
   
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+  
+  if (!mounted || !_hasHydrated) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg">
+          {!mounted ? 'Loading Flow Editor...' : 'Loading saved data...'}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ReactFlowProvider>
+      <UndoRedoProvider>
+        <NodeDisplayProvider>
+          <FlowEditorContent />
+        </NodeDisplayProvider>
+      </UndoRedoProvider>
+    </ReactFlowProvider>
+  );
+}
+
+/**
+ * FlowEditorContent - The main flow editor logic that runs inside ReactFlow context
+ */
+function FlowEditorContent() {
   // ============================================================================
   // REFS
   // ============================================================================
@@ -65,7 +104,6 @@ export default function FlowEditor() {
     showHistoryPanel,
     inspectorLocked,
     nodeErrors,
-    _hasHydrated,
     
     // Actions
     updateNodeData,
@@ -103,6 +141,41 @@ export default function FlowEditor() {
   
   const [actionHistory, setActionHistory] = useState<ActionHistoryEntry[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+
+  // ============================================================================
+  // MULTI-SELECTION COPY/PASTE (Now inside ReactFlow context)
+  // ============================================================================
+  
+  const multiSelectionCopyPaste = useMultiSelectionCopyPaste();
+
+  // Install mouse tracking for smart paste positioning
+  useEffect(() => {
+    return multiSelectionCopyPaste.installMouseTracking();
+  }, [multiSelectionCopyPaste.installMouseTracking]);
+
+  // ============================================================================
+  // MULTI-SELECTION DELETE
+  // ============================================================================
+  
+  const handleMultiDelete = useCallback(() => {
+    // Get all selected nodes and edges
+    const selectedNodes = nodes.filter(node => node.selected);
+    const selectedEdges = edges.filter(edge => edge.selected);
+    
+    if (selectedNodes.length === 0 && selectedEdges.length === 0) return;
+    
+    // Remove selected nodes from Zustand store
+    selectedNodes.forEach(node => {
+      removeNode(node.id);
+    });
+    
+    // Remove selected edges from Zustand store
+    selectedEdges.forEach(edge => {
+      removeEdge(edge.id);
+    });
+    
+    console.log(`Deleted ${selectedNodes.length} nodes and ${selectedEdges.length} edges`);
+  }, [nodes, edges, removeNode, removeEdge]);
 
   // ============================================================================
   // REACTFLOW HANDLERS
@@ -257,13 +330,13 @@ export default function FlowEditor() {
   // KEYBOARD SHORTCUTS
   // ============================================================================
   
-  // Using ReactFlow's built-in delete functionality (deleteKeyCode prop)
-  // instead of custom delete handlers for better reliability
+  // Using ReactFlow's built-in delete functionality (deleteKeyCode prop) for Delete/Backspace
+  // and custom Ctrl+Q for bulk delete operations
   useKeyboardShortcuts({
-    onCopy: copySelectedNodes,
-    onPaste: pasteNodes,
+    onCopy: multiSelectionCopyPaste.copySelectedElements,
+    onPaste: multiSelectionCopyPaste.pasteElements,
+    onDelete: handleMultiDelete, // Custom multi-delete for Ctrl+Q
     onToggleHistory: toggleHistoryPanel
-    // Removed onDelete - using ReactFlow's built-in delete functionality
   });
 
   // ============================================================================
@@ -326,80 +399,52 @@ export default function FlowEditor() {
     };
   }, [selectedNodeId]);
 
-  // ============================================================================
-  // MOUNT EFFECT
-  // ============================================================================
-  
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // ============================================================================
-  // RENDER
-  // ============================================================================
-  
-  if (!mounted || !_hasHydrated) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-lg">
-          {!mounted ? 'Loading Flow Editor...' : 'Loading saved data...'}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <ReactFlowProvider>
-      <UndoRedoProvider>
-        <NodeDisplayProvider>
-          <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-            {/* SIDEBAR */}
-            <Sidebar />
-            
-            {/* MAIN CONTENT */}
-            <div className="flex-1 flex flex-col">
-              {/* UNDO/REDO TOOLBAR */}
-              <UndoRedoManager
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={handleNodesChangeWithHistory}
-                onEdgesChange={handleEdgesChangeWithHistory}
-                onHistoryChange={handleHistoryChange}
-              />
-              
-              {/* FLOW CANVAS */}
-              <FlowCanvas
-                nodes={nodes}
-                edges={edges}
-                selectedNode={selectedNode}
-                selectedEdge={selectedEdge}
-                selectedOutput={selectedOutput}
-                nodeErrors={nodeErrors}
-                showHistoryPanel={showHistoryPanel}
-                actionHistory={actionHistory}
-                historyIndex={historyIndex}
-                wrapperRef={wrapperRef}
-                updateNodeData={updateNodeData}
-                updateNodeId={handleUpdateNodeId}
-                logNodeError={logNodeError}
-                clearNodeErrors={clearNodeErrors}
-                onToggleHistory={toggleHistoryPanel}
-                onDragOver={dragAndDrop.onDragOver}
-                onDrop={dragAndDrop.onDrop}
-                onDeleteNode={handleDeleteNode}
-                onDuplicateNode={handleDuplicateNode}
-                onDeleteEdge={removeEdge}
-                inspectorLocked={inspectorLocked}
-                setInspectorLocked={setInspectorLocked}
-                reactFlowHandlers={reactFlowHandlers}
-              />
-              
-              {/* DEBUG TOOL */}
-              <DebugTool />
-            </div>
-          </div>
-        </NodeDisplayProvider>
-      </UndoRedoProvider>
-    </ReactFlowProvider>
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      {/* SIDEBAR */}
+      <Sidebar />
+      
+      {/* MAIN CONTENT */}
+      <div className="flex-1 flex flex-col">
+        {/* UNDO/REDO TOOLBAR */}
+        <UndoRedoManager
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={handleNodesChangeWithHistory}
+          onEdgesChange={handleEdgesChangeWithHistory}
+          onHistoryChange={handleHistoryChange}
+        />
+        
+        {/* FLOW CANVAS */}
+        <FlowCanvas
+          nodes={nodes}
+          edges={edges}
+          selectedNode={selectedNode}
+          selectedEdge={selectedEdge}
+          selectedOutput={selectedOutput}
+          nodeErrors={nodeErrors}
+          showHistoryPanel={showHistoryPanel}
+          actionHistory={actionHistory}
+          historyIndex={historyIndex}
+          wrapperRef={wrapperRef}
+          updateNodeData={updateNodeData}
+          updateNodeId={handleUpdateNodeId}
+          logNodeError={logNodeError}
+          clearNodeErrors={clearNodeErrors}
+          onToggleHistory={toggleHistoryPanel}
+          onDragOver={dragAndDrop.onDragOver}
+          onDrop={dragAndDrop.onDrop}
+          onDeleteNode={handleDeleteNode}
+          onDuplicateNode={handleDuplicateNode}
+          onDeleteEdge={removeEdge}
+          inspectorLocked={inspectorLocked}
+          setInspectorLocked={setInspectorLocked}
+          reactFlowHandlers={reactFlowHandlers}
+        />
+        
+        {/* DEBUG TOOL */}
+        <DebugTool />
+      </div>
+    </div>
   );
 } 

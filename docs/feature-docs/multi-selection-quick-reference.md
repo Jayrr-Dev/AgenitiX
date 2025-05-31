@@ -13,9 +13,28 @@
 | Action | Shortcut | Description |
 |--------|----------|-------------|
 | **Move Multiple** | Drag any selected node | All selected nodes move together |
+| **Copy Selection** | `Ctrl/Cmd` + `C` | Copy all selected nodes and connections |
+| **Paste at Mouse** | `Ctrl/Cmd` + `V` | Paste copied elements at mouse cursor |
 | **Delete Multiple** | `Delete` or `Backspace` | Remove all selected elements |
 | **Bulk Delete** | `Ctrl/Cmd` + `Q` | Alternative deletion method |
 | **Clear Selection** | Click empty area | Deselect all elements |
+
+## 🔄 Copy & Paste Features
+
+| Feature | Behavior |
+|---------|----------|
+| **Smart Edge Detection** | Automatically includes connections between copied nodes |
+| **Mouse-Aware Paste** | Pastes at current mouse cursor location |
+| **Unique ID Generation** | Creates new IDs for all pasted elements |
+| **Layout Preservation** | Maintains relative positioning of copied elements |
+| **Clean State** | Pasted elements start unselected |
+
+## 💡 Pro Tips
+
+- **Template Creation**: Copy common node patterns for reuse
+- **Rapid Prototyping**: Duplicate and modify existing workflows  
+- **Precise Positioning**: Move mouse before pasting for exact placement
+- **Connection Preservation**: All edges between selected nodes are copied automatically
 
 ## 💡 Tips & Tricks
 
