@@ -119,6 +119,7 @@ This document details the implementation of keyboard shortcuts for the sidebar c
 | Shortcut | Windows/Linux | macOS | Function |
 |----------|---------------|-------|----------|
 | History Toggle | `Ctrl` + `H` | `Cmd` + `H` | Show/hide action history panel |
+| Vibe Mode Toggle | `Ctrl` + `X` | `Cmd` + `X` | Enter/exit distraction-free vibe mode |
 
 ## 🔧 **Technical Implementation Notes**
 

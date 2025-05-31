@@ -11,6 +11,8 @@ import {
   ConnectionMode,
   MarkerType,
   SelectionMode,
+  type ReactFlowInstance,
+  type OnConnect
 } from '@xyflow/react';
 import { useTheme } from 'next-themes';
 import type { AgenNode, AgenEdge, NodeError } from '../types';
@@ -43,6 +45,7 @@ import TestJson from '../../nodes/test/TestJson';
 import NodeInspector from '../../components/node-inspector/NodeInspector';
 import HistoryPanel from '../../components/HistoryPanel';
 import { ActionHistoryEntry } from '../../components/UndoRedoManager';
+import ActionToolbar from '../../components/ActionToolbar';
 
 // Import multi-selection copy/paste hook
 import { useMultiSelectionCopyPaste } from '../hooks/useMultiSelectionCopyPaste';
@@ -262,15 +265,10 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         
         {/* ACTION TOOLBAR */}
         <Panel position="top-right" className="m-2">
-          <button
-            onClick={onToggleHistory}
-            className="bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 shadow-sm"
-            title={showHistoryPanel ? "Hide History" : "Show History"}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </button>
+          <ActionToolbar
+            showHistoryPanel={showHistoryPanel}
+            onToggleHistory={onToggleHistory}
+          />
         </Panel>
 
         {/* MOBILE DELETE BUTTON - Only visible on mobile when node or edge is selected */}

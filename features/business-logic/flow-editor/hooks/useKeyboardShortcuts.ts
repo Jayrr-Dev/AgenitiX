@@ -6,13 +6,15 @@ interface KeyboardShortcutsProps {
   onPaste: () => void;
   onToggleHistory: () => void;
   onDelete?: () => void; // Optional delete handler for Ctrl+Q
+  onToggleVibeMode?: () => void; // Optional vibe mode toggle for Ctrl+X
 }
 
 export function useKeyboardShortcuts({
   onCopy,
   onPaste,
   onToggleHistory,
-  onDelete
+  onDelete,
+  onToggleVibeMode
 }: KeyboardShortcutsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -64,10 +66,18 @@ export function useKeyboardShortcuts({
             e.preventDefault();
           }
           break;
+          
+        case 'x':
+          // Ctrl+X for vibe mode toggle (only when not in input field)
+          if (!isInputFocused && onToggleVibeMode) {
+            onToggleVibeMode();
+            e.preventDefault();
+          }
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onCopy, onPaste, onToggleHistory, onDelete]);
+  }, [onCopy, onPaste, onToggleHistory, onDelete, onToggleVibeMode]);
 } 

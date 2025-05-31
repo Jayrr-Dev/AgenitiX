@@ -19,6 +19,7 @@
 | **Delete (Native)** | `Delete` or `Backspace` | Remove all selected elements (ReactFlow native) |
 | **Delete (Custom)** | `Ctrl/Cmd` + `Q` | Remove with console feedback |
 | **Toggle History** | `Ctrl/Cmd` + `H` | Show/hide action history panel |
+| **Toggle Vibe Mode** | `Ctrl/Cmd` + `X` | Enter/exit distraction-free vibe mode |
 
 ## 🔄 Copy & Paste Features
 
@@ -105,6 +106,7 @@
 | **Delete (Native)** | `Delete` / `Backspace` | `Delete` / `Backspace` | ReactFlow deletion |
 | **Delete (Custom)** | `Ctrl` + `Q` | `Cmd` + `Q` | Custom deletion |
 | **History** | `Ctrl` + `H` | `Cmd` + `H` | Toggle history panel |
+| **Vibe Mode** | `Ctrl` + `X` | `Cmd` + `X` | Toggle vibe mode |
 
 ## 🔄 Platform Differences
 

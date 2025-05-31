@@ -14,6 +14,7 @@ import { NodeDisplayProvider } from './contexts/NodeDisplayContext';
 
 // Import Zustand store
 import { useFlowStore } from '../stores/flowStore';
+import { useVibeModeStore } from '../stores/vibeModeStore';
 
 // Import hooks (only the ones we still need)
 import { useDragAndDrop } from './hooks/useDragAndDrop';
@@ -178,6 +179,12 @@ function FlowEditorContent() {
   }, [nodes, edges, removeNode, removeEdge]);
 
   // ============================================================================
+  // VIBE MODE
+  // ============================================================================
+  
+  const { toggleVibeMode } = useVibeModeStore();
+
+  // ============================================================================
   // REACTFLOW HANDLERS
   // ============================================================================
   
@@ -336,7 +343,8 @@ function FlowEditorContent() {
     onCopy: multiSelectionCopyPaste.copySelectedElements,
     onPaste: multiSelectionCopyPaste.pasteElements,
     onDelete: handleMultiDelete, // Custom multi-delete for Ctrl+Q
-    onToggleHistory: toggleHistoryPanel
+    onToggleHistory: toggleHistoryPanel,
+    onToggleVibeMode: toggleVibeMode // Vibe mode toggle for Ctrl+X
   });
 
   // ============================================================================
