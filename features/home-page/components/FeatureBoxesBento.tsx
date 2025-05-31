@@ -94,7 +94,7 @@ export const SkeletonOne = () => {
         <div className="flex flex-1 w-full h-full flex-col space-y-2  ">
           {/* TODO */}
           <img
-            src="/linear.webp"
+            src="https://placehold.co/800x800/png"
             alt="header"
             width={800}
             height={800}

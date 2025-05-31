@@ -84,7 +84,12 @@ function isAllowedUserAgent(userAgent: string | undefined, allowedAgents: string
 // Middleware config
 export const config = {
   matcher: [
-    // APPLY TO ALL ROUTES EXCEPT STATIC FILES AND API ROUTES
-    '/((?!_next/static|_next/image|favicon.ico|api/anubis|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // APPLY TO ALL ROUTES EXCEPT:
+    // - Static files and assets
+    // - Next.js internal routes
+    // - API routes (Convex, auth, webhooks, etc.)
+    // - Anubis own routes
+    // - Vercel internal routes
+    '/((?!_next/static|_next/image|_vercel|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$).*)',
   ],
 };

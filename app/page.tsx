@@ -1,3 +1,6 @@
+'use client';
+
+import { useAnubisProtection } from '@/hooks/useAnubisProtection';
 import Hero from "@/features/home-page/components/HeroSection";
 import { TabletScroller } from "@/features/home-page/components/TabletScroller";
 import FeatureBoxesIconed from "@/features/home-page/components/FeatureBoxesIconed";
@@ -9,17 +12,36 @@ import { Revealer } from "@/features/home-page/components/HoverRevealer";
 import { Testimonials } from "@/features/home-page/components/TestimonialsTicker";
 import FeaturesBoxesPlain from "@/features/home-page/components/FeatureBoxesPlain";
 import { featureBoxesBento, featureBoxesIconed, featureBoxesPlain } from "@/features/home-page/data";
+import { useEffect, useState } from 'react';
 
-export default async function Home() {
-  await import("@/features/home-page/components/LaserPathDelay");
-  await import("@/features/home-page/components/FeatureBoxesPlain");
-  await import("@/features/home-page/components/FeatureBoxesIconed");
-  await import("@/features/home-page/components/FeatureBoxesBento");
-  await import("@/components/ui/infinite-moving-cards");
-  await import("@/components/ui/card");
-  
-  //Data
-  const faqData = await import("@/features/home-page/data");  
+export default function Home() {
+  // ENABLE ANUBIS PROTECTION FOR HOME PAGE
+  useAnubisProtection({ 
+    autoProtect: true,
+    description: 'Home page protection against bots and scrapers'
+  });
+
+  // STATE FOR DYNAMIC IMPORTS
+  const [faqData, setFaqData] = useState<any>(null);
+
+  // DYNAMIC IMPORTS
+  useEffect(() => {
+    const loadComponents = async () => {
+      await import("@/features/home-page/components/LaserPathDelay");
+      await import("@/features/home-page/components/FeatureBoxesPlain");
+      await import("@/features/home-page/components/FeatureBoxesIconed");
+      await import("@/features/home-page/components/FeatureBoxesBento");
+      await import("@/components/ui/infinite-moving-cards");
+      await import("@/components/ui/card");
+      
+      // LOAD FAQ DATA
+      const faqModule = await import("@/features/home-page/data");
+      setFaqData(faqModule);
+    };
+
+    loadComponents();
+  }, []);
+
   return (
     <main className="grid grid-cols-12">
       {/* Hero */}
@@ -86,9 +108,11 @@ export default async function Home() {
       </div>
 
       {/* FAQ */}
-      <div id="faq" className="w-full h-full col-span-8 col-start-3 ">
-        <FAQ faq={faqData.faq} />
-      </div>
+      {faqData && (
+        <div id="faq" className="w-full h-full col-span-8 col-start-3 ">
+          <FAQ faq={faqData.faq} />
+        </div>
+      )}
       {/* Footer */}
 
     </main>

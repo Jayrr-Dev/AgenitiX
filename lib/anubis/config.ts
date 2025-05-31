@@ -10,10 +10,17 @@ const DEFAULT_CONFIG: AnubisConfig = {
   excludedRoutes: [
     '/api/health',
     '/api/anubis',
-    '/_next',
+    '/api/convex',      // Convex API routes
+    '/api/convex/*',    // All Convex endpoints
+    '/_next',           // Next.js internal routes
+    '/_next/*',         // All Next.js static/internal
     '/favicon.ico',
     '/robots.txt',
-    '/sitemap.xml'
+    '/sitemap.xml',
+    '/_vercel/*',       // Vercel internal routes
+    '/api/auth/*',      // Authentication routes (NextAuth, etc.)
+    '/api/webhooks/*',  // Webhook endpoints
+    '/api/trpc/*'       // tRPC endpoints (if used)
   ],
   allowedUserAgents: [
     'Googlebot',
@@ -26,7 +33,9 @@ const DEFAULT_CONFIG: AnubisConfig = {
     'Twitterbot',
     'LinkedInBot',
     'WhatsApp',
-    'Applebot'
+    'Applebot',
+    'Vercel',           // Vercel monitoring
+    'vercel-bot'        // Vercel internal bots
   ]
 };
 
