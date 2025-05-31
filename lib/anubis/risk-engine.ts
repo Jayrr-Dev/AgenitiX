@@ -122,14 +122,14 @@ export class RiskEngine {
   // CALCULATE OVERALL RISK SCORE
   static calculateRiskScore(factors: Partial<RiskFactors>): number {
     const weights: Record<keyof RiskFactors, number> = {
-      ipReputation: 0.25,
-      geolocation: 0.10,
-      userAgent: 0.15,
-      requestPattern: 0.20,
-      timeOfDay: 0.05,
-      sessionHistory: 0.15,
-      deviceFingerprint: 0.05,
-      networkBehavior: 0.05
+      ipReputation: 0.20,        // Reduced from 0.25
+      geolocation: 0.08,         // Reduced from 0.10
+      userAgent: 0.35,           // INCREASED from 0.15 - most important for bot detection
+      requestPattern: 0.15,      // Reduced from 0.20
+      timeOfDay: 0.05,           // Same
+      sessionHistory: 0.10,      // Reduced from 0.15
+      deviceFingerprint: 0.04,   // Reduced from 0.05
+      networkBehavior: 0.03      // Reduced from 0.05
     };
 
     let totalScore = 0;
@@ -147,10 +147,21 @@ export class RiskEngine {
 
   // DETERMINE RISK LEVEL FROM SCORE
   static getRiskLevel(score: number): RiskLevel {
-    if (score >= 90) return RISK_LEVELS[5]; // DANGEROUS
-    if (score >= 75) return RISK_LEVELS[4]; // HIGH
-    if (score >= 50) return RISK_LEVELS[3]; // ELEVATED
-    if (score >= 25) return RISK_LEVELS[2]; // MODERATE
+    // GET THRESHOLDS FROM ENVIRONMENT VARIABLES OR USE DEFAULTS
+    const thresholds = {
+      moderate: parseInt(process.env.ANUBIS_RISK_THRESHOLD_LOW || '20', 10),
+      elevated: parseInt(process.env.ANUBIS_RISK_THRESHOLD_MODERATE || '40', 10),
+      high: parseInt(process.env.ANUBIS_RISK_THRESHOLD_ELEVATED || '55', 10),
+      dangerous: parseInt(process.env.ANUBIS_RISK_THRESHOLD_HIGH || '70', 10)
+    };
+
+    console.log(`🎯 Risk thresholds: MODERATE=${thresholds.moderate}, ELEVATED=${thresholds.elevated}, HIGH=${thresholds.high}, DANGEROUS=${thresholds.dangerous}`);
+    console.log(`📊 Current score: ${score}`);
+
+    if (score >= thresholds.dangerous) return RISK_LEVELS[5]; // DANGEROUS
+    if (score >= thresholds.high) return RISK_LEVELS[4]; // HIGH
+    if (score >= thresholds.elevated) return RISK_LEVELS[3]; // ELEVATED
+    if (score >= thresholds.moderate) return RISK_LEVELS[2]; // MODERATE
     return RISK_LEVELS[1]; // LOW
   }
 
@@ -168,6 +179,8 @@ export class RiskEngine {
     timestamp: number;
   }): Promise<{ riskLevel: RiskLevel; config: AdaptiveConfig; factors: RiskFactors }> {
     
+    console.log(`🔍 Starting risk analysis for: ${request.userAgent}`);
+    
     const factors: RiskFactors = {
       ipReputation: await this.checkIPReputation(request.ip),
       geolocation: await this.checkGeolocation(request.ip),
@@ -179,9 +192,13 @@ export class RiskEngine {
       networkBehavior: await this.analyzeNetworkBehavior(request.ip)
     };
 
+    console.log(`📊 Risk factors:`, factors);
+
     const score = this.calculateRiskScore(factors);
     const riskLevel = this.getRiskLevel(score);
     const config = this.getAdaptiveConfig(riskLevel.level);
+
+    console.log(`🎯 Final risk assessment: ${riskLevel.name} (Level ${riskLevel.level}) - Score: ${score}`);
 
     return { riskLevel, config, factors };
   }
@@ -196,8 +213,16 @@ export class RiskEngine {
     if (knownBadIPs.has(ip)) return 100;
     if (ip.startsWith('127.') || ip.startsWith('192.168.') || ip.startsWith('10.')) return 0;
     
-    // Check against threat intelligence feeds (implement as needed)
-    return 10; // Default low risk for unknown IPs
+    // Check for hosting providers and cloud services (higher risk)
+    const hostingProviders = [
+      /amazonaws\.com/i, /googlecloud/i, /azure/i, /digitalocean/i,
+      /vultr/i, /linode/i, /ovh/i, /hetzner/i
+    ];
+    
+    // This would normally do a reverse DNS lookup
+    // For now, we'll use a moderate default for unknown IPs
+    console.log(`🌐 IP reputation check for: ${ip}`);
+    return 30; // Increased from 10 - unknown IPs are more suspicious
   }
 
   private static async checkGeolocation(ip: string): Promise<number> {
@@ -208,70 +233,165 @@ export class RiskEngine {
       // Implement geolocation lookup
       // const geo = await geolocateIP(ip);
       // if (highRiskCountries.has(geo.country)) return 80;
-      return 20; // Default moderate risk
+      console.log(`🗺️ Geolocation check for: ${ip}`);
+      return 35; // Increased from 20 - default moderate risk
     } catch {
-      return 30; // Unknown location = slight risk increase
+      return 45; // Increased from 30 - unknown location = higher risk
     }
   }
 
   private static analyzeUserAgent(userAgent: string): number {
-    if (!userAgent) return 90;
+    if (!userAgent) return 95; // No user agent = very suspicious
     
+    // AGGRESSIVE BOT DETECTION PATTERNS
     const botPatterns = [
       /bot/i, /crawler/i, /spider/i, /scraper/i,
-      /curl/i, /wget/i, /python/i, /java/i
+      /curl/i, /wget/i, /python/i, /java/i,
+      /requests/i, /urllib/i, /httpx/i, /aiohttp/i,
+      /scrapy/i, /beautifulsoup/i, /mechanize/i
     ];
     
-    const suspiciousPatterns = [
-      /headless/i, /phantom/i, /selenium/i, /webdriver/i
+    // HEADLESS BROWSER AND AUTOMATION PATTERNS
+    const headlessPatterns = [
+      /headless/i, /phantom/i, /selenium/i, /webdriver/i,
+      /puppeteer/i, /playwright/i, /chromedriver/i,
+      /automated/i, /test/i
     ];
 
-    if (botPatterns.some(pattern => pattern.test(userAgent))) return 95;
-    if (suspiciousPatterns.some(pattern => pattern.test(userAgent))) return 80;
-    if (userAgent.length < 20) return 70;
+    // SUSPICIOUS CHARACTERISTICS
+    const suspiciousPatterns = [
+      /^[a-zA-Z0-9\-\.\/\s]{1,20}$/, // Very short user agents
+      /^Mozilla\/[0-9]\.[0-9]$/, // Minimal Mozilla strings
+      /Windows NT [0-9]+\.[0-9]+\)$/, // Incomplete Windows strings
+    ];
+
+    // LEGITIMATE BROWSER PATTERNS (lower risk)
+    const legitimateBrowsers = [
+      /Chrome\/[0-9]{2,3}\.[0-9]+\.[0-9]+\.[0-9]+.*Safari\/[0-9]+/,
+      /Firefox\/[0-9]{2,3}\.[0-9]+/,
+      /Safari\/[0-9]+.*Version\/[0-9]+/,
+      /Edge\/[0-9]+/,
+      /Opera\/[0-9]+/
+    ];
+
+    // CHECK FOR KNOWN BOTS (highest risk)
+    if (botPatterns.some(pattern => pattern.test(userAgent))) {
+      console.log(`🤖 Bot detected: ${userAgent}`);
+      return 98; // Very high risk for obvious bots
+    }
     
-    return 10; // Normal user agent
+    // CHECK FOR HEADLESS BROWSERS (high risk)
+    if (headlessPatterns.some(pattern => pattern.test(userAgent))) {
+      console.log(`🕷️ Headless browser detected: ${userAgent}`);
+      return 85; // High risk for automation tools
+    }
+    
+    // CHECK FOR SUSPICIOUS PATTERNS (moderate-high risk)
+    if (suspiciousPatterns.some(pattern => pattern.test(userAgent))) {
+      console.log(`⚠️ Suspicious user agent: ${userAgent}`);
+      return 70; // Moderate-high risk for suspicious patterns
+    }
+    
+    // CHECK FOR LEGITIMATE BROWSERS (low risk)
+    if (legitimateBrowsers.some(pattern => pattern.test(userAgent))) {
+      console.log(`✅ Legitimate browser: ${userAgent}`);
+      return 5; // Very low risk for real browsers
+    }
+    
+    // FALLBACK: Unknown user agent patterns
+    if (userAgent.length < 30) {
+      console.log(`📏 Short user agent: ${userAgent}`);
+      return 60; // Moderate risk for short user agents
+    }
+    
+    console.log(`❓ Unknown user agent pattern: ${userAgent}`);
+    return 25; // Default moderate risk for unknown patterns
   }
 
   private static analyzeRequestPattern(request: any): number {
     // Analyze request timing, frequency, etc.
     // This would integrate with your existing request tracking
-    return 20; // Default
+    console.log(`⏱️ Request pattern analysis`);
+    return 40; // Increased from 20 - default moderate risk for unknown patterns
   }
 
   private static analyzeTimeOfDay(timestamp: number): number {
     const hour = new Date(timestamp).getHours();
     // Higher risk during typical bot hours (2-6 AM)
-    if (hour >= 2 && hour <= 6) return 40;
-    return 10;
+    if (hour >= 2 && hour <= 6) {
+      console.log(`🌙 High-risk time detected: ${hour}:00`);
+      return 60; // Increased from 40
+    }
+    console.log(`☀️ Normal time: ${hour}:00`);
+    return 15; // Increased from 10
   }
 
   private static analyzeSessionHistory(history: any): number {
-    if (!history) return 20;
+    if (!history) {
+      console.log(`📝 No session history available`);
+      return 35; // Increased from 20 - no history is more suspicious
+    }
     
     const failures = history.failures || 0;
     const challenges = history.challenges || 0;
     
-    if (failures > 3) return 90;
-    if (failures > 1) return 60;
-    if (challenges > 5) return 40;
+    if (failures > 3) {
+      console.log(`❌ High failure count: ${failures}`);
+      return 95; // Increased from 90
+    }
+    if (failures > 1) {
+      console.log(`⚠️ Multiple failures: ${failures}`);
+      return 70; // Increased from 60
+    }
+    if (challenges > 5) {
+      console.log(`🔄 Many challenges: ${challenges}`);
+      return 50; // Increased from 40
+    }
     
-    return 10;
+    console.log(`✅ Clean session history`);
+    return 5; // Decreased from 10 - clean history is very good
   }
 
   private static analyzeDeviceFingerprint(headers: Record<string, string>): number {
     // Analyze browser capabilities, screen resolution, etc.
     const acceptLanguage = headers['accept-language'];
     const acceptEncoding = headers['accept-encoding'];
+    const acceptHeader = headers['accept'];
     
-    if (!acceptLanguage || !acceptEncoding) return 60;
-    return 15;
+    let suspiciousCount = 0;
+    
+    if (!acceptLanguage) {
+      console.log(`🌐 Missing Accept-Language header`);
+      suspiciousCount++;
+    }
+    if (!acceptEncoding) {
+      console.log(`📦 Missing Accept-Encoding header`);
+      suspiciousCount++;
+    }
+    if (!acceptHeader) {
+      console.log(`📄 Missing Accept header`);
+      suspiciousCount++;
+    }
+    
+    // More missing headers = higher risk
+    if (suspiciousCount >= 2) {
+      console.log(`🚨 Multiple missing headers: ${suspiciousCount}`);
+      return 75; // High risk for missing multiple headers
+    }
+    if (suspiciousCount === 1) {
+      console.log(`⚠️ One missing header`);
+      return 45; // Moderate risk for one missing header
+    }
+    
+    console.log(`✅ Complete headers present`);
+    return 10; // Low risk for complete headers
   }
 
   private static async analyzeNetworkBehavior(ip: string): Promise<number> {
     // Check for VPN, proxy, hosting provider
     // This would integrate with services like IPQualityScore
-    return 25; // Default
+    console.log(`🔗 Network behavior analysis for: ${ip}`);
+    return 35; // Increased from 25 - default moderate risk
   }
 }
 
