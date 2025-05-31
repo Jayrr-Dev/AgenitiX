@@ -1,4 +1,3 @@
-
 declare namespace NodeJS {
     interface ProcessEnv {
       EMAIL_HOST: string;
@@ -9,6 +8,12 @@ declare namespace NodeJS {
       EMAIL_FROM: string;
       NODE_ENV: 'development' | 'production' | 'test';
       CLOUDFLARE_SECRET_KEY: string;
+      // ANUBIS CONFIGURATION
+      ANUBIS_ENABLED: 'true' | 'false';
+      ANUBIS_DIFFICULTY: string;
+      ANUBIS_JWT_SECRET: string;
+      ANUBIS_COOKIE_DOMAIN?: string;
+      ANUBIS_BYPASS_DEVELOPMENT?: 'true' | 'false';
     }
   }
 

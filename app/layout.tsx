@@ -11,6 +11,9 @@ import LayoutWrapper from '@/app/wrapper/LayoutWrapper';
 import { Toaster } from 'sonner';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import PWAStatus from '@/components/PWAStatus';
+import { Inter } from 'next/font/google';
+import { AnubisProvider, AnubisStatus } from '@/components/anubis/AnubisProvider';
+import { AnubisControlPanel } from '@/components/anubis/AnubisControlPanel';
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -77,6 +80,10 @@ const geistSans = Geist({
   subsets: ['latin'],
 });
 
+const inter = Inter({
+  subsets: ['latin'],
+});
+
 export default function RootLayout({
   children,
 }: {
@@ -86,21 +93,20 @@ export default function RootLayout({
     <html lang="en" className={geistSans.className}>
       <body className="bg-background text-foreground" suppressHydrationWarning>
         <ThemeProvider
-          defaultTheme="dark"
           attribute="class"
+          defaultTheme="system"
           enableSystem
-          enableColorScheme
           disableTransitionOnChange
         >
-          <main className="min-h-screen flex flex-col items-center">
-            <div className="flex-1 w-full flex flex-col items-center">
-              <Providers>
-                <Suspense fallback={<Loading />}>
-                  <LayoutWrapper>{children}</LayoutWrapper>
-                </Suspense>
-              </Providers>
-            </div>
-          </main>
+          <AnubisProvider>
+            <Providers>
+              <Suspense fallback={<Loading />}>
+                <LayoutWrapper>{children}</LayoutWrapper>
+              </Suspense>
+            </Providers>
+            <AnubisStatus />
+            <AnubisControlPanel />
+          </AnubisProvider>
           <Toaster position="top-right" />
           <PWAInstallPrompt />
           <PWAStatus />
