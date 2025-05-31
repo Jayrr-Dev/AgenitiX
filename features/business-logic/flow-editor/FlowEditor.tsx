@@ -220,10 +220,25 @@ function FlowEditorContent() {
     onEdgeSelectionChange: selectEdge
   });
 
-  // Original handlers for nodes and edges to preserve drag and drop
+  // ============================================================================
+  // REACTFLOW CHANGE HANDLERS
+  // ============================================================================
+  
+  /**
+   * Handle node changes from ReactFlow
+   * 
+   * This function creates a deep copy of nodes before applying changes to avoid
+   * read-only property errors caused by Zustand's immer middleware. The immer
+   * middleware creates immutable objects, and ReactFlow's applyNodeChanges tries
+   * to directly mutate properties like 'width', 'height', etc.
+   */
   const handleNodesChange = useCallback((changes: any[]) => {
+    // Create a deep copy of nodes to avoid read-only property issues with Zustand immer
+    // Using JSON serialization for a clean deep copy that preserves all properties
+    const nodesCopy = JSON.parse(JSON.stringify(nodes)) as AgenNode[];
+
     // Apply changes to ReactFlow's nodes array first
-    const updatedNodes = applyNodeChanges(changes, nodes);
+    const updatedNodes = applyNodeChanges(changes, nodesCopy);
     setNodes(updatedNodes);
     
     // Also update our Zustand store for specific operations
@@ -240,9 +255,18 @@ function FlowEditorContent() {
     });
   }, [nodes, setNodes, updateNodePosition, removeNode, selectNode]);
 
+  /**
+   * Handle edge changes from ReactFlow
+   * 
+   * Similar to handleNodesChange, this creates a deep copy to avoid
+   * immutability issues with Zustand's immer middleware.
+   */
   const handleEdgesChange = useCallback((changes: any[]) => {
+    // Create a deep copy of edges to avoid read-only property issues with Zustand immer
+    const edgesCopy = JSON.parse(JSON.stringify(edges)) as AgenEdge[];
+    
     // Apply changes to ReactFlow's edges array first
-    const updatedEdges = applyEdgeChanges(changes, edges);
+    const updatedEdges = applyEdgeChanges(changes, edgesCopy);
     setEdges(updatedEdges);
     
     // Also update our Zustand store for specific operations
@@ -257,6 +281,11 @@ function FlowEditorContent() {
     });
   }, [edges, setEdges, removeEdge, selectEdge]);
 
+  /**
+   * Handle selection changes in ReactFlow
+   * 
+   * Updates the Zustand store when nodes or edges are selected/deselected
+   */
   const handleSelectionChange = useCallback((selection: any) => {
     if (selection.nodes.length > 0) {
       selectNode(selection.nodes[0].id);

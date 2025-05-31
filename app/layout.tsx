@@ -109,7 +109,7 @@ export default function RootLayout({
                   <LayoutWrapper>{children}</LayoutWrapper>
                 </Suspense>
               </Providers>
-              <PWAInstallPrompt />
+              <PWAInstallPrompt />https://agenitix.vercel.app/
               <PWAStatus />
               {/* <AnubisToggle /> */}
               <AnubisStatus />
