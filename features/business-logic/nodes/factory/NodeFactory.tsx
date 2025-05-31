@@ -226,26 +226,24 @@ export function createNodeComponent<T extends BaseNodeData>(
     const memoizedNodesData = useMemo(() => nodesData, [JSON.stringify(nodesData)]);
 
     // ============================================================================
-    // VIBE MODE PROCESSING (SEPARATE EFFECT)
+    // JSON INPUT PROCESSING (ALWAYS ACTIVE)
     // ============================================================================
     
     useEffect(() => {
-      if (!isVibeModeActive) return;
-      
-      // Find all JSON input handles that can be used for Vibe Mode
+      // Find all JSON input handles that can be used for data updates
       const jsonHandles = enhancedConfig.handles.filter(h => h.type === 'target' && h.dataType === 'j');
       const jsonHandleIds = jsonHandles.map(h => h.id);
       
-      // Add the Vibe Mode handle ID if no existing JSON handles
+      // Add the default JSON handle ID if no existing JSON handles
       const allJsonHandleIds = jsonHandleIds.length > 0 ? jsonHandleIds : ['j'];
       
       // Look for connections to any JSON input handles
-      const vibeConnections = memoizedConnections.filter(c => allJsonHandleIds.includes(c.targetHandle || ''));
-      if (vibeConnections.length === 0) return;
+      const jsonConnections = memoizedConnections.filter(c => allJsonHandleIds.includes(c.targetHandle || ''));
+      if (jsonConnections.length === 0) return;
       
       // Get JSON data from connected nodes
       const jsonInputs = memoizedNodesData
-        .filter(node => vibeConnections.some(c => c.source === node.id))
+        .filter(node => jsonConnections.some(c => c.source === node.id))
         .map(node => {
           // Try to extract JSON from various node data properties
           const nodeData = node.data;
@@ -267,13 +265,13 @@ export function createNodeComponent<T extends BaseNodeData>(
             // Try to parse as JSON string
             parsedData = JSON.parse(jsonInput);
           } else {
-            console.warn(`VibeMode ${id}: Invalid JSON input type:`, typeof jsonInput);
+            console.warn(`JSON Processing ${id}: Invalid JSON input type:`, typeof jsonInput);
             return;
           }
           
           // Validate that it's an object
           if (typeof parsedData !== 'object' || parsedData === null || Array.isArray(parsedData)) {
-            console.warn(`VibeMode ${id}: JSON input must be an object, got:`, typeof parsedData);
+            console.warn(`JSON Processing ${id}: JSON input must be an object, got:`, typeof parsedData);
             return;
           }
           
@@ -295,16 +293,16 @@ export function createNodeComponent<T extends BaseNodeData>(
           
           // Only update if there are actual changes
           if (hasChanges) {
-            console.log(`VibeMode ${id}: Applying JSON data:`, safeData);
+            console.log(`JSON Processing ${id}: Applying JSON data:`, safeData);
             updateNodeData(id, safeData);
           }
           
         } catch (parseError) {
-          console.error(`VibeMode ${id}: Failed to parse JSON:`, parseError);
-          // Don't set error state for Vibe Mode parsing failures to avoid disrupting normal operation
+          console.error(`JSON Processing ${id}: Failed to parse JSON:`, parseError);
+          // Don't set error state for JSON parsing failures to avoid disrupting normal operation
         }
       });
-    }, [isVibeModeActive, memoizedConnections, memoizedNodesData, id]); // Use memoized versions
+    }, [memoizedConnections, memoizedNodesData, id]); // Removed isVibeModeActive dependency
 
     // ============================================================================
     // DATA PROCESSING
@@ -527,32 +525,25 @@ export function createNodeComponent<T extends BaseNodeData>(
         {enhancedConfig.handles
           .filter(handle => handle.type === 'target')
           .filter(handle => {
-            // Hide JSON handles when Vibe Mode is off
+            // Smart JSON handle visibility: show if connected OR if Vibe Mode is active
             if (handle.dataType === 'j') {
-              return isVibeModeActive;
+              // Check if this JSON handle has any existing connections
+              const hasJsonConnection = memoizedConnections.some(c => c.targetHandle === handle.id);
+              
+              // Show JSON handle if: it has connections OR Vibe Mode is active
+              return hasJsonConnection || isVibeModeActive;
             }
             return true;
           })
-          .map(handle => {
-            // Enhanced styling for JSON handles when visible
-            const isJsonHandle = handle.dataType === 'j';
-            const jsonStyle = isJsonHandle ? {
-              // background: '#8b5cf6', // Purple when visible (Vibe Mode active)
-              // border: '2px solid #7c3aed',
-              // boxShadow: '0 0 8px rgba(139, 92, 246, 0.6)',
-            } : undefined;
-            
-            return (
-              <CustomHandle
-                key={handle.id}
-                type="target"
-                position={handle.position}
-                id={handle.id}
-                dataType={handle.dataType}
-                style={jsonStyle}
-              />
-            );
-          })}
+          .map(handle => (
+            <CustomHandle
+              key={handle.id}
+              type="target"
+              position={handle.position}
+              id={handle.id}
+              dataType={handle.dataType}
+            />
+          ))}
         
         {/* Collapsed State */}
         {!showUI && enhancedConfig.renderCollapsed({

@@ -2,20 +2,21 @@
 
 ## 🎯 Overview
 
-The NodeFactory includes a **universal JSON input system** that allows any node to receive JSON data and update its properties programmatically. **Every factory-created node automatically has a JSON input handle** that's always available, and **Vibe Mode** enhances the experience with visual highlighting and advanced processing.
+The NodeFactory includes a **universal JSON input system** with **smart handle visibility**. JSON handles automatically show when they have connections (so you can manage them) and hide when unused (for a clean interface). **JSON processing works continuously** for all connections regardless of handle visibility.
 
 ## 🚀 How It Works
 
-### 1. JSON Handles Always Available
-- **Every factory node** automatically gets a gray JSON handle (indigo `j` type)
-- JSON handles are **always visible and functional**
-- No setup required - just connect and use!
+### 1. Smart JSON Handle Visibility
+- **Connected handles**: Always visible (even when Vibe Mode is off) 
+- **Unconnected handles**: Hidden when Vibe Mode is off, visible when Vibe Mode is on
+- **Vibe Mode On**: All JSON handles visible (purple `j` type) for creating connections
+- **Vibe Mode Off**: Only connected handles visible for managing existing connections
 
-### 2. Enable Vibe Mode (Optional Enhancement)
-- Click the purple **X** button in the top-right Action Toolbar
-- JSON handles turn **purple** and get enhanced styling
-- The button will pulse to indicate Vibe Mode is active
-- Enhanced processing and visual feedback
+### 2. JSON Processing Always Active
+- **All connections**: Process JSON data continuously regardless of handle visibility
+- **Real-time updates**: Data flows immediately when JSON changes
+- **Background processing**: Works even when some handles are hidden
+- **Smart interface**: Shows only the handles you're actually using
 
 ### 3. Create JSON Data
 Use the **TestJson** node to create and validate JSON:
@@ -28,21 +29,23 @@ Use the **TestJson** node to create and validate JSON:
 ```
 
 ### 4. Connect and Update
-1. Connect TestJson's output to **any node's JSON handle** (always visible)
-2. Node data updates automatically in real-time
-3. Changes apply immediately to node behavior
+1. **Enable Vibe Mode**: Click purple X to show all JSON handles
+2. **Connect**: TestJson output (`j`) → Target node input (`j`)
+3. **Data flows**: Node data updates automatically in real-time
+4. **Smart behavior**: Connected handle stays visible even when Vibe Mode is disabled
 
 ## 🔧 Universal Support
 
 **Every factory-created node automatically has JSON input!** Zero configuration needed.
 
 ### Automatic Features:
-- ✅ **JSON input handle** on every factory node (always visible)
+- ✅ **JSON input handle** on every factory node (always visible as gray `j`)
 - ✅ **Safe parsing** with error handling
 - ✅ **Property filtering** (excludes dangerous properties like `error`)
 - ✅ **Change detection** (only updates when data actually changes)
 - ✅ **Real-time updates** with immediate visual feedback
 - ✅ **Enhanced styling** when Vibe Mode is active (purple glow)
+- ✅ **Always functional** regardless of Vibe Mode state
 
 ### Node Examples:
 
@@ -57,10 +60,19 @@ Use the **TestJson** node to create and validate JSON:
 #### CyclePulse Node
 ```json
 {
-  "cycleDuration": 1000,
-  "pulseDuration": 200,
-  "maxCycles": 5,
-  "infinite": false
+  "cycleDuration": 2000,
+  "pulseDuration": 300,
+  "maxCycles": 10,
+  "isOn": true
+}
+```
+
+#### Error Generator Node
+```json
+{
+  "errorMessage": "Custom JSON error",
+  "errorType": "warning",
+  "triggerMode": "always"
 }
 ```
 
@@ -68,198 +80,191 @@ Use the **TestJson** node to create and validate JSON:
 ```json
 {
   "count": 42,
-  "step": 5,
-  "active": true
+  "multiplier": 5,
+  "autoCount": true
 }
 ```
 
-## 🎨 Adding JSON Support to New Nodes
+## 📋 Connection Workflow
 
-### Automatic Support (Recommended)
-All factory nodes get JSON support automatically. Just create your node normally:
+### Creating New Connections
+1. **Enable Vibe Mode**: Click purple X in toolbar (all handles appear)
+2. **Create nodes**: Add TestJson and target node  
+3. **Configure JSON**: Enter valid JSON in TestJson
+4. **Connect**: TestJson output (`j`) → Target node input (`j`)
+5. **Verify**: Check target node data updates immediately
+6. **Smart cleanup**: Disable Vibe Mode - connected handles stay, unused ones hide
 
+### Managing Existing Connections
+1. **Connected handles**: Always visible for easy access and management
+2. **Data processing**: Continues continuously regardless of Vibe Mode state
+3. **Clean interface**: Unused handles don't clutter your view
+4. **Full access**: Enable Vibe Mode anytime to see all handles and create new connections
+
+## 🎨 Visual Indicators
+
+### Smart Handle Visibility States
+- **Vibe Mode Off + Connected**: Handle **visible** (can manage existing connection)
+- **Vibe Mode Off + Unconnected**: Handle **hidden** (clean interface)
+- **Vibe Mode On**: All handles **visible** (can create and manage connections)
+- **Position**: Top center of nodes (`Position.Top`)
+- **Type**: Always `j` (JSON data type)
+
+### Benefits of Smart Visibility
+- **Clean interface**: Only see handles you're using
+- **Easy management**: Connected handles always accessible
+- **Clear workflow**: Enable Vibe Mode when you need to create connections
+- **No disruption**: Existing connections continue working seamlessly
+
+## 🔧 Advanced Usage
+
+### Multiple JSON Inputs
+Nodes can receive JSON from multiple sources:
 ```typescript
-const MyNode = createNodeComponent<MyNodeData>({
-  nodeType: 'myNode',
-  category: 'create',
-  displayName: 'My Node',
-  defaultData: { 
-    myProperty: 'default value',
-    anotherProperty: 123
-  },
-  handles: [
-    // Your regular handles - JSON handle added automatically in Vibe Mode
-    { id: 's', dataType: 's', position: Position.Right, type: 'source' }
-  ],
-  // ... rest of config
-});
+// JSON data gets merged safely with conflict resolution
+const mergedData = Object.assign({}, currentData, safeJsonData);
 ```
 
-### Manual JSON Handle (Optional)
-If you want a permanent JSON input handle:
+### JSON Templates
+Use TestJson quick examples for common patterns:
+- **Text Update**: `{"heldText": "Hello!", "text": "Output"}`
+- **CyclePulse Config**: `{"cycleDuration": 1000, "pulseDuration": 200}`
+- **Count Config**: `{"count": 42, "step": 5, "active": true}`
 
-```typescript
-import { addJsonInputSupport } from '../factory/NodeFactory';
-
-const MyNode = createNodeComponent<MyNodeData>({
-  nodeType: 'myNode',
-  handles: addJsonInputSupport([
-    // Your existing handles
-    { id: 's', dataType: 's', position: Position.Right, type: 'source' }
-  ]),
-  // ... rest of config
-});
-```
-
-### Manual JSON Processing (Advanced)
-For custom JSON handling:
-
-```typescript
-import { processJsonInput } from '../factory/NodeFactory';
-
-// In your processLogic function:
-processLogic: ({ data, connections, nodesData, updateNodeData, id }) => {
-  // Get JSON input
-  const jsonConnections = connections.filter(c => c.targetHandle === 'j');
-  if (jsonConnections.length > 0) {
-    const jsonData = nodesData.find(n => n.id === jsonConnections[0].source)?.data?.json;
-    
-    if (jsonData) {
-      processJsonInput(jsonData, data, updateNodeData, id);
-    }
-  }
-  
-  // Your regular processing logic...
-}
-```
-
-## 📝 TestJson Node Features
-
-### Built-in Examples
-The TestJson node includes quick example buttons:
-
-- **Text Update**: Updates CreateText properties
-- **CyclePulse Config**: Configures automation timing
-- **CountInput Config**: Sets counter values
-
-### JSON Validation
-- ✅ Real-time parse validation
-- ✅ Visual feedback (green = valid, orange = error)
-- ✅ Property count display
-- ✅ Formatted preview
-
-### Editor Features
-- 📝 Syntax highlighting
-- 🔍 Error detection
-- 📋 Copy/paste support
-- 💾 Inspector panel editing
+### Error Handling
+- **Parse errors**: Logged to console, don't break functionality
+- **Type validation**: Only object types accepted
+- **Property filtering**: Dangerous properties automatically removed
+- **Change detection**: Only meaningful changes trigger updates
 
 ## 🛡️ Safety Features
 
-### Automatic Protections:
-- **Error property filtering**: Prevents system corruption
-- **Type validation**: Only accepts JSON objects
-- **Parse error handling**: Graceful failure without breaking nodes
-- **Change detection**: Prevents infinite update loops
-- **Memory limits**: Prevents oversized data
-
-### Best Practices:
-1. **Validate JSON** in TestJson before connecting
-2. **Use exact property names** from node data interfaces
-3. **Test changes** on individual nodes first
-4. **Disconnect when done** to avoid unnecessary processing
-
-## 🎯 Common Use Cases
-
-### 1. Rapid Prototyping
-Quickly test different node configurations without manual input:
+### Automatic Filtering
 ```json
+// ❌ This property is automatically filtered out
 {
-  "text": "Test content",
-  "duration": 500,
-  "enabled": true
+  "error": "This would break the node",
+  "validProperty": "This gets applied"
+}
+// ✅ Only validProperty gets applied
+```
+
+### Type Validation
+```json
+// ✅ Valid - Object type
+{"property": "value"}
+
+// ❌ Invalid - Array type
+["array", "values"]
+
+// ❌ Invalid - Primitive type
+"just a string"
+```
+
+### Change Detection
+- Only applies updates when data actually changes
+- Prevents infinite update loops
+- Optimizes performance with minimal re-renders
+
+## 🔄 Migration & Compatibility
+
+### From Previous Versions
+- **Existing connections**: Continue to work automatically
+- **No breaking changes**: All previous JSON functionality preserved
+- **Enhanced experience**: Better visual feedback and debugging
+
+### Factory vs Manual Nodes
+- **Factory nodes**: Automatic JSON support (recommended)
+- **Manual nodes**: May need custom JSON handling
+- **Mixed flows**: Factory and manual nodes can coexist
+
+## 📊 Performance Optimizations
+
+### Efficient Processing
+- **Change detection**: Only updates when necessary
+- **Memoized connections**: Prevents unnecessary re-calculations
+- **Safe parsing**: Error handling doesn't impact performance
+- **Optimized rendering**: Minimal impact on UI performance
+
+### Best Practices
+- **Use TestJson**: For validation before connecting
+- **Monitor console**: Check for parsing errors or warnings
+- **Test incrementally**: Start with simple JSON, add complexity
+- **Use inspector**: Verify property updates in real-time
+
+## 🎯 Common Patterns
+
+### Dynamic Text Content
+```typescript
+// TestJson → CreateText
+{
+  "heldText": "Dynamic content",
+  "text": "Processed output"
 }
 ```
 
-### 2. Automation Configuration
-Programmatically configure complex automation sequences:
-```json
+### Timer Configuration
+```typescript
+// TestJson → CyclePulse
 {
-  "cycleDuration": 2000,
-  "pulseDuration": 100,
-  "maxCycles": 10,
-  "infinite": false
+  "cycleDuration": 1500,
+  "pulseDuration": 250,
+  "maxCycles": 8
 }
 ```
 
-### 3. Batch Updates
-Update multiple properties simultaneously:
-```json
+### Error Simulation
+```typescript
+// TestJson → Error Generator
 {
-  "title": "Updated Title",
-  "description": "Updated Description", 
-  "color": "red",
-  "size": "large"
+  "errorMessage": "Test scenario error",
+  "errorType": "critical",
+  "triggerMode": "always"
 }
 ```
 
-### 4. External Data Integration
-Connect to external APIs or databases (future enhancement):
-```json
+### Counter Control
+```typescript
+// TestJson → CountInput  
 {
-  "apiEndpoint": "https://api.example.com/data",
-  "refreshRate": 30000,
-  "autoUpdate": true
+  "count": 100,
+  "multiplier": 2,
+  "autoCount": false
 }
 ```
 
-## 🚨 Troubleshooting
+## 🔍 Troubleshooting
 
 ### JSON Not Applying
-1. **Check connections**: Ensure TestJson output is connected to the JSON handle
-2. **Validate JSON**: Use TestJson to verify syntax
-3. **Property Names**: Ensure exact match with node data structure
-4. **Console Logs**: Check browser console for error messages
+1. **Check JSON format**: Use TestJson for validation
+2. **Verify connection**: Ensure `j` to `j` handle connection
+3. **Check console**: Look for parsing errors
+4. **Property names**: Ensure they match node data structure
 
-### JSON Handles Not Showing
-1. **Factory Nodes Only**: Only factory-created nodes have automatic JSON handles
-2. **Cache Issues**: Refresh page if handles don't appear
-3. **Check Handle Type**: Look for gray `j` handles (purple when Vibe Mode is active)
+### Handles Not Visible
+1. **Factory nodes**: Ensure using factory-created nodes
+2. **Gray handles**: Should be visible by default
+3. **Manual nodes**: May need custom JSON support
 
-### Enhanced Styling Not Showing (Vibe Mode)
-1. **Vibe Mode Disabled**: Click purple X to enable enhanced JSON handle styling
-2. **Check Connection**: JSON handles should turn purple when Vibe Mode is active
+### Vibe Mode Issues
+1. **Purple styling**: Only appears when Vibe Mode active
+2. **Basic functionality**: Works without Vibe Mode
+3. **Toggle state**: Check purple X button in toolbar
 
-### Performance Issues
-1. **Disconnect Unused**: Remove JSON connections when not needed
-2. **Simplify JSON**: Use only necessary properties
-3. **Disable Vibe Mode**: Turn off when not actively using
+## 🎉 Success Indicators
 
-## 🔮 Future Enhancements
+### Working Connection
+- ✅ Gray JSON handles visible on both nodes
+- ✅ Connection line appears when dragging
+- ✅ Target node data updates immediately
+- ✅ Console shows "JSON Processing" logs
 
-### Planned Features:
-- **JSON Schema Validation**: Type-safe property validation
-- **Batch Operations**: Update multiple nodes simultaneously  
-- **Templates**: Pre-built JSON configurations for common patterns
-- **External Sources**: API and database integration
-- **Visual Feedback**: Highlight nodes receiving JSON updates
-
-### Integration Ideas:
-- **Flow Export/Import**: Save entire flow configurations as JSON
-- **Real-time Collaboration**: Share JSON configurations between users
-- **Version Control**: Track changes to node configurations
-- **Automation**: Trigger JSON updates based on external events
+### Enhanced with Vibe Mode
+- ✅ Purple JSON handles with glow effects
+- ✅ Enhanced console feedback
+- ✅ Pulsing toolbar button
+- ✅ Same functionality with better visuals
 
 ---
 
-## 🎉 Ready to Use!
-
-The universal JSON input system is **ready to use right now**:
-
-1. ✅ **Add TestJson node** to your flow
-2. ✅ **Add CreateText node** (or any factory node) - JSON handle is automatically there!
-3. ✅ **Connect JSON output to gray JSON handle** 
-4. ✅ **Watch real-time updates**
-5. ✅ **Optional**: Enable Vibe Mode (purple X) for enhanced styling
-
-**It's that simple!** Every factory node automatically has a JSON input handle with zero additional code required. 
+**The Universal JSON System makes every factory node programmable! Connect, configure, and control your flow with JSON data - always available, optionally enhanced with Vibe Mode! 🔗⚡** 

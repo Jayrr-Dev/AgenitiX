@@ -5,52 +5,62 @@ import { AnubisJWT, AnubisCrypto } from '@/lib/anubis/crypto';
 import { RiskEngine, RiskMonitor } from '@/lib/anubis/risk-engine';
 import { adaptiveRateLimiter } from '@/lib/anubis/rate-limiter';
 
-// ROUTES THAT REQUIRE ANUBIS PROTECTION
-const PROTECTED_ROUTES = [
-  '/admin',
-  '/dashboard',
-  '/api/protected',
-  // Add more routes as needed
-];
-
-// ROUTES THAT SHOULD BE EXCLUDED FROM PROTECTION
-const EXCLUDED_ROUTES = [
-  '/api/anubis',
-  '/_next',
-  '/favicon.ico',
-  '/manifest.json',
-  '/logo-mark.png'
-];
-
 // ADAPTIVE ANUBIS MIDDLEWARE
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const userAgent = request.headers.get('user-agent') || '';
   
-  console.log('Incoming request to:', pathname);
+  console.log(`🐺 ANUBIS MIDDLEWARE TRIGGERED:`);
+  console.log(`   📍 Path: ${pathname}`);
+  console.log(`   🤖 User Agent: ${userAgent}`);
+  console.log(`   🌐 Host: ${request.nextUrl.hostname}`);
   
-  // SKIP EXCLUDED ROUTES
-  if (EXCLUDED_ROUTES.some(route => pathname.startsWith(route))) {
-    return NextResponse.next();
+  // LOAD ANUBIS CONFIGURATION
+  const config = loadAnubisConfig();
+  const routeManager = getRouteProtectionManager();
+  
+  console.log(`   ⚙️ Anubis Enabled: ${config.enabled}`);
+  console.log(`   🛡️ Protected Routes: ${config.protectedRoutes.join(', ')}`);
+  console.log(`   ⏭️ Excluded Routes: ${config.excludedRoutes.slice(0, 3).join(', ')}...`);
+  
+  // FORCE ENABLE FOR TESTING (REMOVE IN PRODUCTION)
+  if (!config.enabled) {
+    console.log(`   🔧 FORCING ANUBIS ENABLED FOR TESTING`);
+    config.enabled = true;
   }
   
-  // CHECK IF ROUTE NEEDS PROTECTION
-  const needsProtection = PROTECTED_ROUTES.some(route => pathname.startsWith(route));
+  // CHECK IF ROUTE IS PROTECTED USING ANUBIS CONFIG
+  const needsProtection = routeManager.isRouteProtected(pathname);
+  
+  console.log(`   🛡️ Protection Required: ${needsProtection ? 'YES' : 'NO'}`);
   
   if (!needsProtection) {
+    console.log(`   ✅ ALLOWED: Route not protected`);
     return NextResponse.next();
+  }
+
+  console.log(`   🔍 PROCESSING PROTECTED ROUTE: ${pathname}`);
+
+  // CHECK FOR LEGITIMATE BOTS FIRST
+  if (isAllowedUserAgent(userAgent, config.allowedUserAgents)) {
+    console.log(`✅ Legitimate bot allowed: ${userAgent}`);
+    const response = NextResponse.next();
+    response.headers.set('X-Anubis-Bot-Allowed', 'true');
+    response.headers.set('X-Anubis-Bot-Type', 'legitimate');
+    return response;
   }
 
   // EXTRACT REQUEST METADATA FOR RISK ANALYSIS
   const requestMetadata = {
     ip: getClientIP(request),
-    userAgent: request.headers.get('user-agent') || '',
+    userAgent: userAgent,
     headers: Object.fromEntries(request.headers.entries()),
     sessionHistory: await getSessionHistory(request),
     timestamp: Date.now()
   };
 
   // PERFORM RISK ANALYSIS
-  const { riskLevel, config, factors } = await RiskEngine.analyzeRequest(requestMetadata);
+  const { riskLevel, config: adaptiveConfig, factors } = await RiskEngine.analyzeRequest(requestMetadata);
   
   // TRACK RISK FOR MONITORING
   RiskMonitor.trackRisk(requestMetadata.ip, riskLevel);
@@ -90,8 +100,8 @@ export async function middleware(request: NextRequest) {
   const now = Date.now();
   
   // BLOCK IF TOO MANY FAILURES (ADAPTIVE THRESHOLD)
-  if (failures >= config.maxFailures) {
-    return redirectToChallenge(request, config.challengeDifficulty);
+  if (failures >= adaptiveConfig.maxFailures) {
+    return redirectToChallenge(request, adaptiveConfig.challengeDifficulty);
   }
   
   // CHECK EXISTING VERIFICATION
@@ -101,11 +111,13 @@ export async function middleware(request: NextRequest) {
       const sessionAge = now - authData.timestamp;
       
       // VALID VERIFICATION - ALLOW ACCESS
-      if (sessionAge < config.sessionTimeout) {
+      if (sessionAge < adaptiveConfig.sessionTimeout) {
         const response = NextResponse.next();
         // ADD RISK LEVEL HEADERS FOR DEBUGGING
         response.headers.set('X-Anubis-Risk-Level', riskLevel.name);
         response.headers.set('X-Anubis-Risk-Score', riskLevel.score.toString());
+        response.headers.set('X-Anubis-Verified', 'true');
+        response.headers.set('X-Anubis-Session-Age', sessionAge.toString());
         return response;
       }
     } catch (error) {
@@ -114,7 +126,7 @@ export async function middleware(request: NextRequest) {
   }
   
   // ADAPTIVE VERIFICATION FLOW
-  if (config.optimisticEnabled) {
+  if (adaptiveConfig.optimisticEnabled) {
     // CHECK IF BACKGROUND VERIFICATION IS IN PROGRESS
     if (sessionCookie?.value) {
       try {
@@ -122,23 +134,24 @@ export async function middleware(request: NextRequest) {
         const sessionAge = now - sessionData.startTime;
         
         // STILL WITHIN GRACE PERIOD - ALLOW ACCESS
-        if (sessionAge < config.gracePeriod) {
+        if (sessionAge < adaptiveConfig.gracePeriod) {
           const response = NextResponse.next();
           
           // ADD ADAPTIVE VERIFICATION HEADERS
           response.headers.set('X-Anubis-Optimistic', 'true');
           response.headers.set('X-Anubis-Session', sessionData.sessionId);
-          response.headers.set('X-Anubis-Remaining', String(config.gracePeriod - sessionAge));
+          response.headers.set('X-Anubis-Remaining', String(adaptiveConfig.gracePeriod - sessionAge));
           response.headers.set('X-Anubis-Risk-Level', riskLevel.name);
           response.headers.set('X-Anubis-Risk-Score', riskLevel.score.toString());
-          response.headers.set('X-Anubis-Difficulty', config.challengeDifficulty.toString());
+          response.headers.set('X-Anubis-Difficulty', adaptiveConfig.challengeDifficulty.toString());
+          response.headers.set('X-Anubis-Grace-Period', adaptiveConfig.gracePeriod.toString());
           
           return response;
         } else {
           // GRACE PERIOD EXPIRED - CHECK VERIFICATION STATUS
           if (!sessionData.verified) {
             // VERIFICATION FAILED - INCREMENT FAILURES AND BLOCK
-            const response = redirectToChallenge(request, config.challengeDifficulty);
+            const response = redirectToChallenge(request, adaptiveConfig.challengeDifficulty);
             response.cookies.set('anubis-failures', String(failures + 1), {
               maxAge: 3600, // 1 hour
               httpOnly: true,
@@ -159,7 +172,7 @@ export async function middleware(request: NextRequest) {
       sessionId,
       startTime: now,
       verified: false,
-      challenge: generateChallenge(config.challengeDifficulty),
+      challenge: generateChallenge(adaptiveConfig.challengeDifficulty),
       riskLevel: riskLevel.level,
       riskFactors: factors
     };
@@ -168,7 +181,7 @@ export async function middleware(request: NextRequest) {
     
     // SET ADAPTIVE SESSION COOKIE
     response.cookies.set('anubis-session', JSON.stringify(sessionData), {
-      maxAge: config.gracePeriod / 1000,
+      maxAge: adaptiveConfig.gracePeriod / 1000,
       httpOnly: true,
       secure: true,
       sameSite: 'strict'
@@ -178,17 +191,18 @@ export async function middleware(request: NextRequest) {
     response.headers.set('X-Anubis-Optimistic', 'true');
     response.headers.set('X-Anubis-Session', sessionId);
     response.headers.set('X-Anubis-Challenge', JSON.stringify(sessionData.challenge));
-    response.headers.set('X-Anubis-Remaining', String(config.gracePeriod));
+    response.headers.set('X-Anubis-Remaining', String(adaptiveConfig.gracePeriod));
     response.headers.set('X-Anubis-Risk-Level', riskLevel.name);
     response.headers.set('X-Anubis-Risk-Score', riskLevel.score.toString());
-    response.headers.set('X-Anubis-Difficulty', config.challengeDifficulty.toString());
-    response.headers.set('X-Anubis-Requires-Interaction', config.requiresInteraction.toString());
+    response.headers.set('X-Anubis-Difficulty', adaptiveConfig.challengeDifficulty.toString());
+    response.headers.set('X-Anubis-Requires-Interaction', adaptiveConfig.requiresInteraction.toString());
+    response.headers.set('X-Anubis-Grace-Period', adaptiveConfig.gracePeriod.toString());
     
     return response;
   }
   
   // BLOCKING MODE OR HIGH RISK - IMMEDIATE CHALLENGE
-  return redirectToChallenge(request, config.challengeDifficulty);
+  return redirectToChallenge(request, adaptiveConfig.challengeDifficulty);
 }
 
 // HELPER FUNCTIONS
@@ -262,12 +276,18 @@ function isAllowedUserAgent(userAgent: string | undefined, allowedAgents: string
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
+     * Match all request paths including home page
+     * Exclude only:
      * - api/anubis (Anubis API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - manifest.json (PWA manifest)
+     * - logo-mark.png (logo)
+     * - .well-known (well-known paths)
      */
-    '/((?!api/anubis|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api/anubis|_next/static|_next/image|favicon.ico|manifest.json|logo-mark.png|.well-known).*)',
+    // Explicitly match home page
+    '/'
   ],
 };
