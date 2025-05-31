@@ -31,15 +31,165 @@ This document details the implementation of keyboard shortcuts for the sidebar c
 - **Shift + Drag**: Draw selection box to select multiple nodes/edges
 - **Ctrl/Cmd + Click**: Multi-select individual nodes by clicking
 - **Shift + Click**: Alternative multi-selection method
-- **Delete/Backspace**: Remove all selected elements
-- **Ctrl+Q**: Bulk deletion of selected elements
-- **Drag Selected**: Move all selected nodes together
 
-**Implementation Notes**:
-- Uses ReactFlow's native selection system for visual feedback
-- Proper state synchronization between ReactFlow and Zustand store
-- Platform-specific modifier key detection (Cmd on Mac, Ctrl on PC)
-- Partial overlap selection mode for intuitive selection boxes
+**Copy/Paste Shortcuts**:
+- **Ctrl/Cmd + C**: Copy all selected nodes and their connections
+  - Smart edge detection: Automatically includes edges between selected nodes
+  - Console feedback: Shows number of copied elements
+  - Works with both single and multi-selection
+- **Ctrl/Cmd + V**: Paste copied elements at mouse cursor location
+  - Mouse-aware positioning: Pastes at current cursor position
+  - Layout preservation: Maintains relative positioning
+  - Unique ID generation: Creates new IDs for all pasted elements
+  - Multiple paste support: Each paste at different mouse position
+
+**Delete Shortcuts**:
+- **Delete / Backspace**: Native ReactFlow deletion (recommended)
+  - Built-in ReactFlow functionality
+  - Full integration with undo/redo system
+  - Works with both single and multi-selection
+- **Ctrl/Cmd + Q**: Custom bulk delete with enhanced feedback
+  - Console logging of deleted element counts
+  - Custom implementation for detailed feedback
+  - Works with both nodes and edges
+
+**Selection Management**:
+- **Click empty area**: Clear all selections
+- **Escape key**: Clear selection (if implemented)
+
+## 🎯 **Enhanced Workflow Examples**
+
+### **Template Creation Workflow**:
+1. **Design**: Create a useful node pattern
+2. **Select**: Shift+drag to select the pattern
+3. **Copy**: Ctrl+C to copy (see "Copied 3 nodes and 2 edges")
+4. **Position**: Move mouse to desired location  
+5. **Paste**: Ctrl+V to create template instance
+6. **Customize**: Modify the new nodes independently
+
+### **Bulk Editing Workflow**:
+1. **Multi-select**: Ctrl+click to select specific nodes
+2. **Move group**: Drag any selected node to move all together
+3. **Batch delete**: Delete key to remove all selected
+4. **Feedback delete**: Ctrl+Q for deletion with console feedback
+
+## 📋 **Complete Keyboard Shortcuts Reference**
+
+### **Selection Operations**
+| Shortcut | Windows/Linux | macOS | Function |
+|----------|---------------|-------|----------|
+| Selection Box | `Shift` + Drag | `Shift` + Drag | Draw rectangle to select multiple elements |
+| Multi-Select | `Ctrl` + Click | `Cmd` + Click | Add/remove elements from selection |
+| Alt Multi-Select | `Shift` + Click | `Shift` + Click | Alternative multi-selection method |
+| Clear Selection | Click empty area | Click empty area | Deselect all elements |
+
+### **Copy/Paste Operations**
+| Shortcut | Windows/Linux | macOS | Function |
+|----------|---------------|-------|----------|
+| Copy | `Ctrl` + `C` | `Cmd` + `C` | Copy selected elements + connections |
+| Paste | `Ctrl` + `V` | `Cmd` + `V` | Paste at mouse cursor location |
+
+### **Delete Operations** 
+| Shortcut | Windows/Linux | macOS | Function |
+|----------|---------------|-------|----------|
+| Delete (Native) | `Delete` / `Backspace` | `Delete` / `Backspace` | ReactFlow built-in deletion |
+| Delete (Custom) | `Ctrl` + `Q` | `Cmd` + `Q` | Custom deletion with feedback |
+
+### **Node Creation Shortcuts (Existing)**
+| Shortcut | Function |
+|----------|----------|
+| `Q` | Create Text node |
+| `W` | Turn To Uppercase node |
+| `E` | View Output node |
+| `R` | Trigger On Click node |
+| `T` | Trigger On Pulse node |
+| `Y` | Logic AND node |
+
+### **Tab Switching (Existing)**
+| Shortcut | Function |
+|----------|----------|
+| `1` | Switch to Tab 1 (Triggers) |
+| `2` | Switch to Tab 2 (Logic) |
+| `3` | Switch to Tab 3 (Media) |
+| `4` | Switch to Tab 4 (Test) |
+| `5` | Switch to Tab 5 (Other) |
+| `6` | Switch to Tab 6 (Custom) |
+
+### **Utility Shortcuts**
+| Shortcut | Windows/Linux | macOS | Function |
+|----------|---------------|-------|----------|
+| History Toggle | `Ctrl` + `H` | `Cmd` + `H` | Show/hide action history panel |
+
+## 🔧 **Technical Implementation Notes**
+
+### **Platform Detection**:
+```typescript
+const isMac = navigator.platform.toUpperCase().includes('MAC');
+const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
+```
+
+### **Input Protection**:
+- All shortcuts check if user is focused on input fields
+- Prevents accidental triggers while typing
+- Maintains normal copy/paste in text inputs
+
+### **Smart Copy Logic**:
+```typescript
+// Copies explicitly selected elements
+const selectedNodes = nodes.filter(node => node.selected);
+const selectedEdges = edges.filter(edge => edge.selected);
+
+// Also includes edges between selected nodes
+const edgesBetweenNodes = edges.filter(edge => 
+  selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target)
+);
+```
+
+### **Mouse-Aware Paste**:
+```typescript
+// Tracks mouse position globally
+const mousePosition = useRef({ x: 200, y: 200 });
+
+// Converts screen coordinates to flow coordinates
+const flowPosition = reactFlow.screenToFlowPosition(mousePosition.current);
+```
+
+## 🚀 **Performance Optimizations**
+
+### **Event Handling**:
+- Debounced mouse tracking to prevent excessive updates
+- Efficient event listener management with proper cleanup
+- Platform-specific key detection for optimal performance
+
+### **State Management**:
+- Uses ReactFlow's native selection system for performance
+- Minimal re-renders through optimized state synchronization
+- Batch operations for multiple element manipulation
+
+### **Memory Management**:
+- Automatic cleanup of mouse event listeners
+- Efficient ID generation using timestamps + random strings
+- Smart object references to prevent unnecessary recreations
+
+## 🎯 **User Experience Enhancements**
+
+### **Visual Feedback**:
+- Selection box appears while dragging
+- Selected elements highlighted with blue border
+- Console feedback for copy/paste/delete operations
+- Movement preview for group drag operations
+
+### **Error Prevention**:
+- Input field detection prevents accidental shortcuts
+- Platform-aware key combinations
+- Graceful fallbacks for edge cases
+
+### **Accessibility**:
+- Keyboard-only operation possible
+- Screen reader compatible selection states
+- Clear visual indicators for all operations
+
+This enhanced keyboard shortcut system transforms the flow editor into a power-user tool while maintaining simplicity for basic operations. The combination of ReactFlow's native capabilities with custom enhancements provides a professional-grade editing experience.
 
 ## 🏗️ Implementation Approach
 

@@ -2,44 +2,264 @@
 
 ## 🎯 Overview
 
-The Multi-Selection feature enables users to select and manipulate multiple nodes and edges simultaneously in the ReactFlow editor. This feature significantly improves workflow efficiency by allowing bulk operations on flow elements.
+The Multi-Selection feature provides a comprehensive set of tools for selecting and manipulating multiple nodes and edges simultaneously in the ReactFlow editor. This feature significantly improves workflow efficiency by enabling bulk operations, template creation, and rapid prototyping.
 
-## ✨ Features
+## ✨ Complete Feature Set
 
-### Selection Methods
+### 🎯 **Selection Methods**
 
-#### 1. **Selection Box (Shift + Drag)**
-- **Action**: Hold `Shift` and drag to draw a selection box
-- **Result**: Selects all nodes and edges within the drawn rectangle
+#### **1. Selection Box (Shift + Drag)**
+- **Action**: Hold `Shift` and drag to draw a selection rectangle
+- **Result**: Selects all nodes and edges within or partially overlapping the rectangle
+- **Visual**: Semi-transparent blue selection box while dragging
 - **Use Case**: Quickly select multiple elements in a specific area
 
-#### 2. **Multi-Click Selection (Ctrl/Cmd + Click)**
-- **Action**: Hold `Ctrl` (Windows/Linux) or `Cmd` (Mac) and click individual nodes/edges
-- **Result**: Adds elements to the current selection
-- **Use Case**: Precise selection of specific elements across the canvas
+#### **2. Multi-Click Selection (Ctrl/Cmd + Click)**
+- **Action**: Hold `Ctrl` (Windows/Linux) or `Cmd` (Mac) and click individual elements
+- **Result**: Adds elements to the current selection without clearing previous selections
+- **Visual**: Blue highlight border around each selected element
+- **Use Case**: Precisely select specific nodes/edges across the canvas
 
-#### 3. **Alternative Multi-Click (Shift + Click)**
-- **Action**: Hold `Shift` and click individual nodes/edges  
+#### **3. Alternative Multi-Selection (Shift + Click)**
+- **Action**: Hold `Shift` and click individual elements
 - **Result**: Alternative method for multi-selection
-- **Use Case**: Cross-platform compatibility and user preference
+- **Cross-Platform**: Works consistently across all platforms
+- **Use Case**: Additional option for users preferring Shift over Ctrl/Cmd
 
-### Bulk Operations
+### 🔄 **Copy & Paste Operations**
 
-#### **Multi-Node Dragging**
-- **Action**: Drag any selected node when multiple are selected
-- **Result**: All selected nodes move together, maintaining relative positions
-- **Visual Feedback**: All selected nodes highlight during drag operation
+#### **Enhanced Copy (Ctrl+C / Cmd+C)**
+- **What it copies**: 
+  - All currently selected nodes with their complete data
+  - All explicitly selected edges
+  - **Smart edge detection**: Automatically includes connections between selected nodes (even if edges aren't explicitly selected)
+  - Preserves relative positioning and relationships
+- **Visual feedback**: Console log confirms number of elements copied
+- **Memory**: Stores in application clipboard for multiple paste operations
 
-#### **Bulk Deletion**
-- **Delete Key**: Removes all currently selected nodes and edges
-- **Backspace Key**: Alternative deletion method  
-- **Ctrl+Q**: Custom shortcut for bulk deletion
-- **Result**: Simultaneous removal with proper cleanup of connections
+#### **Smart Paste (Ctrl+V / Cmd+V)**
+- **Mouse-aware positioning**: Pastes elements at current mouse cursor location
+- **Intelligent placement**: Calculates center of copied group and positions relative to mouse
+- **Layout preservation**: Maintains exact spatial relationships between elements
+- **Unique ID generation**: Creates new unique IDs for all pasted elements
+- **Clean state**: Pasted elements start unselected and ready for independent editing
+- **Fallback behavior**: If mouse tracking fails, uses standard 40px offset
 
-#### **Visual Selection Feedback**
-- **Selected Elements**: Highlighted with selection border
-- **Selection Count**: Visual indication of number of selected items
-- **Drag Preview**: All selected elements show movement preview
+#### **Copy/Paste Behavior Examples**
+```
+✅ Copy 3 selected nodes → Gets all 3 nodes + any edges between them
+✅ Copy nodes + edges → Gets explicit selection + implicit connections  
+✅ Copy single node → Works with existing single-node copy functionality
+✅ Mouse at (100,100) → Pastes group centered around that position
+✅ Mouse at (500,200) → Same group layout, different location
+✅ Multiple pastes → Each paste at current mouse position
+✅ No mouse tracking → Falls back to offset paste (40px right, 40px down)
+```
+
+### 🗑️ **Delete Operations**
+
+#### **Native ReactFlow Delete (Delete/Backspace)**
+- **Action**: Press `Delete` or `Backspace` keys
+- **Behavior**: Uses ReactFlow's built-in deletion system
+- **Advantages**: Fully integrated with ReactFlow's undo/redo and state management
+- **Works with**: Both single and multi-selection
+
+#### **Custom Bulk Delete (Ctrl+Q / Cmd+Q)**
+- **Action**: Press `Ctrl+Q` (Windows/Linux) or `Cmd+Q` (Mac)
+- **Behavior**: Custom deletion with enhanced feedback
+- **Features**: 
+  - Console log showing number of deleted elements
+  - Works with both nodes and edges
+  - Proper cleanup of connected edges when nodes are deleted
+- **Use Case**: When you want detailed feedback about deletion operations
+
+#### **Mobile Delete Button**
+- **Visibility**: Appears on mobile devices when elements are selected
+- **Location**: Top-right corner on mobile interfaces
+- **Function**: Touch-friendly delete for mobile users
+
+### 🚀 **Bulk Operations**
+
+#### **Group Movement**
+- **Action**: Drag any selected node
+- **Result**: All selected nodes move together maintaining relative positions
+- **Visual**: All selected elements show movement outline during drag
+- **Precision**: Maintains exact spatial relationships
+
+#### **Batch Processing**
+- **Template Creation**: Copy common node patterns for reuse
+- **Workflow Duplication**: Duplicate entire sections of your flow
+- **Bulk Modifications**: Select multiple nodes for simultaneous property changes
+
+## 🔧 Technical Implementation
+
+### **Architecture Overview**
+
+#### **1. ReactFlow Integration**
+- **Native Selection**: Uses ReactFlow's built-in selection system
+- **Selection Keys**: Platform-specific key detection (Meta vs Control)
+- **State Synchronization**: Bridges ReactFlow selection with Zustand store
+- **Change Handlers**: Proper integration with ReactFlow's change system
+
+#### **2. Enhanced Zustand Store**
+```typescript
+// State Management
+copiedNodes: AgenNode[];
+copiedEdges: AgenEdge[];
+
+// Enhanced Functions
+copySelectedNodes() // ReactFlow-aware copying
+pasteNodesAtPosition(position?) // Smart positioning paste
+```
+
+#### **3. Multi-Selection Copy/Paste Hook**
+```typescript
+useMultiSelectionCopyPaste() {
+  // ReactFlow integration via useReactFlow()
+  // Mouse tracking for smart positioning
+  // Smart edge detection
+  // Coordinate conversion
+}
+```
+
+#### **4. Keyboard Shortcuts System**
+```typescript
+useKeyboardShortcuts({
+  onCopy: copySelectedElements,
+  onPaste: pasteElements,
+  onDelete: handleMultiDelete, // Ctrl+Q
+  onToggleHistory: toggleHistoryPanel
+})
+```
+
+### **Key Technical Features**
+
+#### **Smart Edge Detection**
+```typescript
+// Copies explicitly selected edges
+const selectedEdges = edges.filter(edge => edge.selected);
+
+// Also finds edges between selected nodes (even if not selected)
+const selectedNodeIds = new Set(selectedNodes.map(n => n.id));
+const edgesBetweenSelectedNodes = edges.filter(edge => 
+  selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target)
+);
+```
+
+#### **Intelligent Mouse-Aware Positioning**
+```typescript
+// Calculates center of copied elements
+const centerX = (bounds.minX + bounds.maxX) / 2;
+const centerY = (bounds.minY + bounds.maxY) / 2;
+
+// Converts screen coordinates to flow coordinates
+const flowPosition = reactFlow.screenToFlowPosition({
+  x: mousePosition.x,
+  y: mousePosition.y
+});
+
+// Calculates offset from original center to paste position
+const offsetX = pasteX - centerX;
+const offsetY = pasteY - centerY;
+```
+
+#### **Unique ID Generation Strategy**
+```typescript
+// Timestamp + random string for guaranteed uniqueness
+const newId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+// Maps old IDs to new IDs for edge updates
+const nodeIdMap = new Map<string, string>();
+```
+
+## 🎯 Complete User Workflows
+
+### **Workflow 1: Template Creation**
+1. **Design Pattern**: Create a useful node pattern (e.g., input → processor → output)
+2. **Select Group**: Use Shift+drag to select the entire pattern
+3. **Copy Template**: Press `Ctrl+C` - see "Copied 3 nodes and 2 edges"
+4. **Position Cursor**: Move mouse to desired location
+5. **Paste Template**: Press `Ctrl+V` - pattern appears at mouse location
+6. **Customize**: Modify the new nodes independently
+
+### **Workflow 2: Bulk Operations**
+1. **Multi-Select**: Use Ctrl+click to select specific nodes across the canvas
+2. **Group Move**: Drag any selected node to move all together
+3. **Batch Delete**: Press `Delete` key to remove all selected elements
+4. **Alternative Delete**: Use `Ctrl+Q` for deletion with console feedback
+
+### **Workflow 3: Rapid Prototyping**
+1. **Create Base**: Build initial flow section
+2. **Duplicate**: Select and copy (`Ctrl+C`) the working section
+3. **Iterate**: Paste (`Ctrl+V`) multiple times at different locations
+4. **Modify**: Adjust each copy for different use cases
+5. **Refine**: Use multi-selection to make bulk adjustments
+
+## 🚀 Performance & Optimization
+
+### **Efficient Operations**
+- **Mouse Tracking**: Lightweight event listener management
+- **Smart Edge Detection**: Only processes necessary relationships
+- **Batched Updates**: Single state update for entire operations
+- **Memory Management**: Automatic cleanup of event listeners
+- **Change Optimization**: Uses ReactFlow's optimized change handlers
+
+### **Cross-Platform Consistency**
+- **Key Detection**: Automatic Mac vs PC key mapping
+- **Touch Support**: Mobile-friendly interface adaptations
+- **Responsive Design**: Adapts to different screen sizes
+- **Browser Compatibility**: Works across modern browsers
+
+## 📊 Feature Comparison
+
+| Feature | Single Selection | Multi-Selection |
+|---------|------------------|-----------------|
+| **Selection** | Click node/edge | Shift+drag, Ctrl+click |
+| **Movement** | Drag individual | Drag group together |
+| **Copy/Paste** | Single element | Multiple elements + connections |
+| **Deletion** | Individual delete | Bulk delete operations |
+| **Feedback** | Basic | Enhanced with counts |
+| **Templates** | Manual recreation | Copy/paste patterns |
+
+## 🧪 Testing Scenarios
+
+### **Basic Multi-Selection**
+1. **Selection Box**: Shift+drag over multiple nodes → Verify all enclosed nodes selected
+2. **Multi-Click**: Ctrl+click several nodes → Verify cumulative selection
+3. **Mixed Selection**: Select nodes and edges → Verify both types highlighted
+
+### **Copy/Paste Operations**
+1. **Basic Copy/Paste**: Select 2 nodes → Copy → Paste → Verify 2 new nodes with connections
+2. **Mouse Positioning**: Copy → Move mouse → Paste → Verify paste at mouse location
+3. **Multiple Pastes**: Copy once → Paste multiple times → Verify each at different mouse positions
+4. **Edge Preservation**: Copy nodes with connections → Verify all relationships maintained
+
+### **Delete Operations**
+1. **Native Delete**: Select multiple → Press Delete → Verify removal
+2. **Custom Delete**: Select multiple → Press Ctrl+Q → Verify removal + console log
+3. **Edge Cleanup**: Delete nodes → Verify connected edges also removed
+
+### **Advanced Scenarios**
+1. **Large Groups**: Select 10+ nodes → Test all operations
+2. **Complex Connections**: Select nodes with multiple edge types → Verify preservation
+3. **Cross-Browser**: Test on Chrome, Firefox, Safari, Edge
+4. **Mobile**: Test touch interactions on mobile devices
+
+## 🔗 Integration Points
+
+### **With Existing Features**
+- **Node Inspector**: Works with multi-selection for batch property editing
+- **Undo/Redo**: Integrates with history system for operation reversal
+- **Drag & Drop**: Maintains compatibility with sidebar node creation
+- **Keyboard Shortcuts**: Extends existing shortcut system
+
+### **With ReactFlow**
+- **Selection System**: Fully integrated with ReactFlow's native selection
+- **Change Handlers**: Properly handles ReactFlow's change events
+- **State Management**: Maintains synchronization with ReactFlow state
+- **Performance**: Leverages ReactFlow's optimization strategies
+
+This comprehensive multi-selection system transforms the flow editor into a powerful tool for rapid development, template creation, and efficient workflow management. The combination of intuitive selection methods, smart copy/paste operations, and flexible deletion options provides users with professional-grade editing capabilities.
 
 ## 🎮 User Guide
 
