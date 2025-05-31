@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ReactFlowProvider } from '@xyflow/react';
+import { ReactFlowProvider, applyNodeChanges, applyEdgeChanges } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 // Import components
@@ -97,17 +97,6 @@ export default function FlowEditor() {
   const selectedOutput = selectedNode ? getNodeOutput(selectedNode, nodes, edges) : null;
   const errors = selectedNodeId ? nodeErrors[selectedNodeId] || [] : [];
 
-  // Sync ReactFlow's selection system with our custom selection state
-  const nodesWithSelection = nodes.map(node => ({
-    ...node,
-    selected: node.id === selectedNodeId
-  }));
-
-  const edgesWithSelection = edges.map(edge => ({
-    ...edge,
-    selected: edge.id === selectedEdgeId
-  }));
-
   // ============================================================================
   // UNDO/REDO STATE (keeping for now, can be moved to Zustand later)
   // ============================================================================
@@ -153,6 +142,11 @@ export default function FlowEditor() {
 
   // Original handlers for nodes and edges to preserve drag and drop
   const handleNodesChange = useCallback((changes: any[]) => {
+    // Apply changes to ReactFlow's nodes array first
+    const updatedNodes = applyNodeChanges(changes, nodes);
+    setNodes(updatedNodes);
+    
+    // Also update our Zustand store for specific operations
     changes.forEach(change => {
       if (change.type === 'position' && change.position) {
         updateNodePosition(change.id, change.position);
@@ -164,9 +158,14 @@ export default function FlowEditor() {
         }
       }
     });
-  }, [updateNodePosition, removeNode, selectNode]);
+  }, [nodes, setNodes, updateNodePosition, removeNode, selectNode]);
 
   const handleEdgesChange = useCallback((changes: any[]) => {
+    // Apply changes to ReactFlow's edges array first
+    const updatedEdges = applyEdgeChanges(changes, edges);
+    setEdges(updatedEdges);
+    
+    // Also update our Zustand store for specific operations
     changes.forEach(change => {
       if (change.type === 'remove') {
         removeEdge(change.id);
@@ -176,7 +175,7 @@ export default function FlowEditor() {
         }
       }
     });
-  }, [removeEdge, selectEdge]);
+  }, [edges, setEdges, removeEdge, selectEdge]);
 
   const handleSelectionChange = useCallback((selection: any) => {
     if (selection.nodes.length > 0) {
@@ -370,8 +369,8 @@ export default function FlowEditor() {
               
               {/* FLOW CANVAS */}
               <FlowCanvas
-                nodes={nodesWithSelection}
-                edges={edgesWithSelection}
+                nodes={nodes}
+                edges={edges}
                 selectedNode={selectedNode}
                 selectedEdge={selectedEdge}
                 selectedOutput={selectedOutput}

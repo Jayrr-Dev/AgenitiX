@@ -167,33 +167,22 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   const edgeTypes = useMemo(() => ({}), []);
 
   // ============================================================================
-  // PREPARE NODES WITH DIMENSIONS FOR MINIMAP
+  // PLATFORM-SPECIFIC MULTI-SELECTION CONFIGURATION
   // ============================================================================
   
-  // Create a stable reference for node dimensions to prevent infinite loops
-  const nodeIds = useMemo(() => nodes.map(n => n.id).join(','), [nodes]);
-  
-  const nodesWithDimensions = useMemo(() => {
-    return nodes.map(node => {
-      // Calculate dimensions based on node type
-      let width = 60;
-      let height = 60;
-      
-      if (node.type === 'createText' || node.type === 'turnToUppercase' || node.type === 'turnToText') {
-        width = 120;
-        height = 60;
-      } else if (node.type === 'viewOutput') {
-        width = 120;
-        height = 120;
-      }
-      
-      return {
-        ...node,
-        width,
-        height
-      };
-    });
-  }, [nodeIds, nodes]);
+  const isMac = useMemo(() => {
+    if (typeof navigator === 'undefined') return false;
+    return navigator.platform.toUpperCase().includes('MAC');
+  }, []);
+
+  // Configure selection keys based on ReactFlow documentation
+  const selectionKeys = useMemo(() => ({
+    // Allow drawing selection box with Shift key
+    selectionKeyCode: "Shift",
+    // Platform-specific multi-selection: Meta (Cmd) on Mac, Control on others
+    // Also support Shift as alternative for both platforms
+    multiSelectionKeyCode: [isMac ? "Meta" : "Control", "Shift"]
+  }), [isMac]);
 
   // ============================================================================
   // RENDER
@@ -208,7 +197,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       style={{ touchAction: 'none' }}
     >
       <ReactFlow
-        nodes={nodesWithDimensions}
+        nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -225,6 +214,8 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         selectionMode={SelectionMode.Partial}
         proOptions={{ hideAttribution: true }}
         deleteKeyCode={['Delete', 'Backspace']}
+        selectionKeyCode={selectionKeys.selectionKeyCode}
+        multiSelectionKeyCode={selectionKeys.multiSelectionKeyCode}
         colorMode={resolvedTheme === 'dark' ? 'dark' : ('light' satisfies ColorMode)}
         panOnDrag={true}
         panOnScroll={true}

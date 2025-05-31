@@ -23,6 +23,24 @@ This document details the implementation of keyboard shortcuts for the sidebar c
 2. Press QWERTY keys to instantly create nodes at mouse cursor
 3. Maintain input field protection (don't interfere with typing)
 
+## 🔄 Multi-Selection & Bulk Operations
+
+**New Feature Added**: Multi-selection functionality for bulk operations
+
+**Multi-Selection Shortcuts**:
+- **Shift + Drag**: Draw selection box to select multiple nodes/edges
+- **Ctrl/Cmd + Click**: Multi-select individual nodes by clicking
+- **Shift + Click**: Alternative multi-selection method
+- **Delete/Backspace**: Remove all selected elements
+- **Ctrl+Q**: Bulk deletion of selected elements
+- **Drag Selected**: Move all selected nodes together
+
+**Implementation Notes**:
+- Uses ReactFlow's native selection system for visual feedback
+- Proper state synchronization between ReactFlow and Zustand store
+- Platform-specific modifier key detection (Cmd on Mac, Ctrl on PC)
+- Partial overlap selection mode for intuitive selection boxes
+
 ## 🏗️ Implementation Approach
 
 ### Architecture Decision
@@ -304,6 +322,24 @@ if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) {
 ### Node Management
 - **`Ctrl+Q`** - Delete currently selected node (and its connected edges)
 
+### Multi-Selection Features ✨ NEW
+#### Selection Box Drawing
+- **`Shift + Click & Drag`** - Draw a selection box to select multiple nodes and edges at once
+- **Selection box behavior**: Hold Shift, then click and drag to draw a rectangular selection area
+- **What gets selected**: All nodes and edges that intersect with the selection box
+
+#### Multi-Click Selection
+- **`Ctrl + Click`** (Windows/Linux) - Add individual nodes/edges to selection by clicking
+- **`Cmd + Click`** (macOS) - Add individual nodes/edges to selection by clicking  
+- **`Shift + Click`** (All platforms) - Alternative multi-selection method
+- **Selection behavior**: Click on nodes or edges while holding the multi-selection key to add them to your current selection
+
+#### Selection Management
+- **`Click on empty space`** - Clear all selections
+- **`Delete` or `Backspace`** - Delete all currently selected nodes and edges
+- **Mixed selections**: You can have both nodes and edges selected simultaneously
+- **Visual feedback**: Selected items are highlighted with a blue outline
+
 ### QWERTY Grid Node Creation
 Position your mouse where you want the node to appear, then press:
 
@@ -325,6 +361,7 @@ Position your mouse where you want the node to appear, then press:
 - **Cross-variant support**: Works across all sidebar variants
 - **Zoom/pan aware**: Coordinates properly transformed for any view
 - **Persistent storage**: Custom nodes and sidebar state survive page refreshes
+- **Multi-platform selection**: Automatic detection of macOS vs Windows/Linux for optimal key bindings
 
 ## 🧪 Testing Approach
 
@@ -340,6 +377,16 @@ Position your mouse where you want the node to appear, then press:
 - [ ] Ctrl+Q does nothing when no node is selected
 - [ ] Works with zoomed/panned canvas
 - [ ] No console errors during node creation
+- [ ] **Shift + Click & Drag** draws selection box around multiple nodes/edges
+- [ ] **Ctrl + Click** (Windows/Linux) adds individual items to selection
+- [ ] **Cmd + Click** (macOS) adds individual items to selection
+- [ ] **Shift + Click** alternative multi-selection works on all platforms
+- [ ] Delete key removes all selected nodes and edges simultaneously
+- [ ] Selection box works correctly when canvas is zoomed/panned
+- [ ] Visual feedback shows selected items with blue outline
+- [ ] Clicking empty space clears all selections
+- [ ] Multi-selection works with both nodes and edges mixed together
+- [ ] Platform detection correctly identifies macOS vs Windows/Linux
 
 ### Edge Cases Tested
 - ✅ Empty tabs (no nodes to create)
@@ -466,3 +513,39 @@ localStorage['agenitix-sidebar-tabs'] = {
   - **Standard Tabs**: Q,W,E,R,T (row 1), A,S,D,F,G (row 2), Z,X,C,V,B (row 3)
   - **Custom Tab**: Q opens "Add Node" modal, W,E,R,T (positions 0-3), A,S,D,F,G (positions 4-8), Z,X,C,V,B (positions 9-13) 
 - **Node Management**: Ctrl+Q deletes currently selected node and its connected edges 
+- **Multi-Selection Features**: 
+  - **Selection Box**: Shift + Click & Drag to select multiple items in a rectangular area
+  - **Multi-Click Selection**: Ctrl/Cmd+Click (Windows/Linux) or Cmd+Click (macOS) to add items to selection
+  - **Batch Operations**: Delete key removes all selected nodes and edges simultaneously
+
+## 🆕 Recent Updates
+
+### Multi-Selection Implementation (January 30, 2025)
+**Added ReactFlow's built-in multi-selection capabilities:**
+
+#### Technical Changes:
+```typescript
+// FlowCanvas.tsx - New ReactFlow props
+selectionKeyCode="Shift"  // Enables selection box drawing
+multiSelectionKeyCode={[isMac ? "Meta" : "Control", "Shift"]}  // Platform-specific multi-selection
+```
+
+#### Features Added:
+1. **Selection Box Drawing** - Hold Shift and drag to select multiple items at once
+2. **Multi-Click Selection** - Ctrl/Cmd+Click to add individual items to selection
+3. **Platform Detection** - Automatic macOS vs Windows/Linux key binding detection
+4. **Batch Operations** - Delete multiple selected items simultaneously
+5. **Cross-Platform Support** - Shift key works as alternative on all platforms
+
+#### User Benefits:
+- **Faster Workflow**: Select and manipulate multiple nodes/edges simultaneously
+- **Intuitive Controls**: Standard multi-selection patterns from other applications
+- **Platform Native**: Uses familiar Cmd on Mac, Ctrl on Windows/Linux
+- **Visual Feedback**: Selected items clearly highlighted with blue outline
+- **Batch Cleanup**: Delete multiple unneeded nodes at once
+
+#### Implementation Details:
+- **Zero Breaking Changes**: All existing functionality preserved
+- **Type Safety**: Proper TypeScript types with platform detection
+- **Performance**: Leverages ReactFlow's optimized native selection system
+- **SSR Safe**: Navigator detection with fallbacks for server-side rendering

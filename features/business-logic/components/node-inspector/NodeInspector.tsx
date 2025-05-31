@@ -10,7 +10,7 @@ import { NodeOutput } from './components/NodeOutput';
 import { NodeControls } from './components/NodeControls';
 import { ErrorLog } from './components/ErrorLog';
 import { EdgeInspector } from './components/EdgeInspector';
-import { useFlowStore, useSelectedNode, useSelectedEdge, useNodeErrors } from '../../stores/flowStore';
+import { useFlowStore, useNodeErrors } from '../../stores/flowStore';
 import type { AgenNode } from '../../flow-editor/types';
 import { getNodeOutput } from '../../flow-editor/utils/outputUtils';
 
@@ -33,9 +33,10 @@ const NodeInspector = React.memo(function NodeInspector() {
     selectNode,
   } = useFlowStore();
 
-  // Get selected items using selectors
-  const selectedNode = useSelectedNode();
-  const selectedEdge = useSelectedEdge();
+  // Get selected items
+  const selectedNode = selectedNodeId ? nodes.find(n => n.id === selectedNodeId) || null : null;
+  const selectedEdge = selectedEdgeId ? edges.find(e => e.id === selectedEdgeId) || null : null;
+  
   // Always call useNodeErrors to avoid conditional hook usage
   const errors = useNodeErrors(selectedNodeId);
 
