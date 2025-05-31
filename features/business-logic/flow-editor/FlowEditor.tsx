@@ -27,6 +27,8 @@ import type { Node, Edge } from '@xyflow/react';
 import type { AgenNode, AgenEdge } from './types';
 import { getNodeOutput } from './utils/outputUtils';
 
+import { StressTester } from '../nodes/factory/StressTester';
+
 /**
  * FlowEditor - Main component for the visual flow editor
  * 
@@ -580,9 +582,10 @@ function FlowEditorContent() {
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       {/* SIDEBAR */}
-      
       <Sidebar ref={sidebarRef} />
-      
+       {/* DEBUG TOOLS */}
+       <DebugTool />
+       {/* <StressTester /> */}
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col">
         {/* UNDO/REDO TOOLBAR */}
@@ -621,8 +624,7 @@ function FlowEditorContent() {
           reactFlowHandlers={reactFlowHandlers}
         />
         
-        {/* DEBUG TOOL */}
-        <DebugTool />
+       
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import type { AgenNode, AgenEdge, NodeError } from '../flow-editor/types';
 import { INITIAL_NODES, INITIAL_EDGES } from '../flow-editor/constants';
+import { cleanupNodeTimers, emergencyCleanupAllTimers } from '../nodes/utils/timerCleanup';
 
 // ============================================================================
 // STORE TYPES
@@ -168,6 +169,9 @@ export const useFlowStore = create<FlowStore>()(
 
         removeNode: (nodeId: string) => {
           set((state) => {
+            // MEMORY LEAK FIX: Clean up all timers for the node before removing
+            cleanupNodeTimers(nodeId);
+            
             state.nodes = state.nodes.filter((n: AgenNode) => n.id !== nodeId);
             state.edges = state.edges.filter((e: AgenEdge) => e.source !== nodeId && e.target !== nodeId);
             if (state.selectedNodeId === nodeId) {
@@ -477,10 +481,13 @@ export const useFlowStore = create<FlowStore>()(
 
         // Force reset to initial state (clears localStorage)
         forceReset: () => {
-          // Clear localStorage
-          localStorage.removeItem('flow-editor-storage');
-          // Reset to initial state
-          set(() => ({ ...initialState }));
+          // MEMORY LEAK FIX: Emergency cleanup of ALL timers before reset
+          emergencyCleanupAllTimers();
+          
+          set(() => ({
+            ...initialState,
+            _hasHydrated: true,
+          }));
         },
 
         // Hydration

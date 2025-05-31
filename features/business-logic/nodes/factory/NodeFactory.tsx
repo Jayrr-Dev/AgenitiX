@@ -1,4 +1,11 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
+
+// React Core
 import React, { memo, useEffect, useState, ReactNode, useMemo, useCallback } from 'react';
+
+// External Libraries
 import {
   Position,
   useNodeConnections,
@@ -8,21 +15,23 @@ import {
   type Connection,
 } from '@xyflow/react';
 
-// Store and utilities
+// Internal Stores
 import { useFlowStore } from '../../stores/flowStore';
 import { useVibeModeStore } from '../../stores/vibeModeStore';
+
+// Internal Components
 import CustomHandle from '../../handles/CustomHandle';
 import { FloatingNodeId } from '../components/FloatingNodeId';
 import { ExpandCollapseButton } from '../components/ExpandCollapseButton';
 
-// Configuration registration
+// Configuration & Types
 import { NODE_TYPE_CONFIG } from '../../flow-editor/constants';
 import type { NodeTypeConfig } from '../../flow-editor/types';
 
-// ULTRA-FAST PROPAGATION ENGINE
+// Ultra-Fast Propagation Engine
 import { useUltraFastPropagation } from './UltraFastPropagationEngine';
 
-// Styling hooks
+// Styling Hooks
 import { 
   useNodeStyleClasses, 
   useNodeButtonTheme, 
@@ -34,22 +43,41 @@ import {
 } from '../../stores/nodeStyleStore';
 
 // ============================================================================
-// BASE NODE FACTORY TYPES
+// TYPE DEFINITIONS
 // ============================================================================
 
+/**
+ * BASE NODE DATA INTERFACE
+ * All factory nodes must extend this base interface
+ */
 export interface BaseNodeData {
+  /** Error message if node encounters issues */
   error?: string;
-  isActive?: boolean; // Single source of truth: node should pass data
+  /** Whether node should propagate data downstream */
+  isActive?: boolean;
+  /** Allow additional properties for flexibility */
   [key: string]: any;
 }
 
+/**
+ * HANDLE CONFIGURATION
+ * Defines input/output handles for nodes
+ */
 export interface HandleConfig {
+  /** Unique identifier for the handle */
   id: string;
+  /** Data type: string, number, boolean, json, array, etc. */
   dataType: 's' | 'n' | 'b' | 'j' | 'a' | 'N' | 'f' | 'x' | 'u' | 'S' | '∅';
+  /** Position on the node */
   position: Position;
+  /** Handle type: input or output */
   type: 'source' | 'target';
 }
 
+/**
+ * NODE SIZE CONFIGURATION
+ * Defines responsive sizing for collapsed and expanded states
+ */
 export interface NodeSize {
   collapsed: {
     width: string;
@@ -60,10 +88,18 @@ export interface NodeSize {
   };
 }
 
+/**
+ * INSPECTOR CONTROL PROPS
+ * Props passed to custom inspector control components
+ */
 export interface InspectorControlProps<T extends BaseNodeData> {
+  /** Node data and metadata */
   node: { id: string; type: string; data: T };
+  /** Function to update node data */
   updateNodeData: (id: string, patch: Record<string, unknown>) => void;
+  /** Optional error logging function */
   onLogError?: (nodeId: string, message: string, type?: any, source?: string) => void;
+  /** Optional inspector state for complex controls */
   inspectorState?: {
     durationInput: string;
     setDurationInput: (value: string) => void;
@@ -76,13 +112,24 @@ export interface InspectorControlProps<T extends BaseNodeData> {
   };
 }
 
+/**
+ * NODE FACTORY CONFIGURATION
+ * Complete configuration for creating a factory node
+ */
 export interface NodeFactoryConfig<T extends BaseNodeData> {
+  /** Unique node type identifier */
   nodeType: string;
+  /** Visual category for styling */
   category: NodeCategory;
+  /** Human-readable display name */
   displayName: string;
+  /** Optional custom sizing */
   size?: NodeSize;
+  /** Input/output handle definitions */
   handles: HandleConfig[];
+  /** Default data structure */
   defaultData: T;
+  /** Main processing logic */
   processLogic: (props: {
     id: string;
     data: T;
@@ -91,6 +138,7 @@ export interface NodeFactoryConfig<T extends BaseNodeData> {
     updateNodeData: (id: string, data: Partial<T>) => void;
     setError: (error: string | null) => void;
   }) => void;
+  /** Collapsed state render function */
   renderCollapsed: (props: {
     data: T;
     error: string | null;
@@ -98,6 +146,7 @@ export interface NodeFactoryConfig<T extends BaseNodeData> {
     updateNodeData: (id: string, data: Partial<T>) => void;
     id: string;
   }) => ReactNode;
+  /** Expanded state render function */
   renderExpanded: (props: {
     data: T;
     error: string | null;
@@ -107,26 +156,72 @@ export interface NodeFactoryConfig<T extends BaseNodeData> {
     updateNodeData: (id: string, data: Partial<T>) => void;
     id: string;
   }) => ReactNode;
+  /** Optional inspector controls */
   renderInspectorControls?: (props: InspectorControlProps<T>) => ReactNode;
+  /** Optional error recovery data */
   errorRecoveryData?: Partial<T>;
 }
 
 // ============================================================================
-// OPTIMIZED PROPAGATION UTILITIES
+// CONSTANTS & CONFIGURATION
 // ============================================================================
 
 /**
- * OPTIMIZED PROPAGATION HELPERS
- * Extracted from the main component to avoid recalculation on every render
+ * CACHE CONFIGURATION
+ * Settings for performance optimization caching
  */
-
-// Cache for expensive calculations to avoid repeated work
-const calculationCache = new Map<string, { result: boolean; timestamp: number }>();
 const CACHE_TTL = 100; // Cache for 100ms to batch rapid updates
 
 /**
- * MEMOIZED HEAD NODE CHECKER
- * Determines if a node is a head node (source/trigger) based on connections
+ * DEFAULT NODE SIZES
+ * Standard sizing configurations for different node types
+ */
+const DEFAULT_TEXT_NODE_SIZE: NodeSize = {
+  collapsed: {
+    width: 'w-[120px]',
+    height: 'h-[60px]'
+  },
+  expanded: {
+    width: 'w-[180px]'
+  }
+};
+
+const DEFAULT_LOGIC_NODE_SIZE: NodeSize = {
+  collapsed: {
+    width: 'w-[60px]',
+    height: 'h-[60px]'
+  },
+  expanded: {
+    width: 'w-[120px]'
+  }
+};
+
+/**
+ * DEBOUNCE TIMING
+ * Optimized timing for smooth vs instant updates
+ */
+const SMOOTH_ACTIVATION_DELAY = 8; // ms for smooth activation
+const INSTANT_PRIORITY_DELAY = 0; // ms for instant updates
+
+// ============================================================================
+// PROPAGATION UTILITIES
+// ============================================================================
+
+/**
+ * CACHE MANAGEMENT
+ * Performance optimization through smart caching
+ */
+const calculationCache = new Map<string, { result: boolean; timestamp: number }>();
+
+/**
+ * DEBOUNCED UPDATE MANAGEMENT
+ * Track pending updates for smooth activation
+ */
+const debouncedUpdates = new Map<string, ReturnType<typeof setTimeout>>();
+
+/**
+ * HEAD NODE DETECTION
+ * Determines if a node is a source/trigger node
  */
 const isHeadNode = (connections: Connection[], nodeId: string): boolean => {
   const allInputConnections = connections.filter(c => c.target === nodeId);
@@ -135,96 +230,61 @@ const isHeadNode = (connections: Connection[], nodeId: string): boolean => {
 };
 
 /**
- * OPTIMIZED HEAD NODE ACTIVATION CALCULATOR
- * Calculates active state for head nodes using smart caching (bypasses cache for deactivation)
+ * CACHE KEY GENERATION
+ * Creates unique cache keys for optimization
  */
-const calculateHeadNodeActivation = <T extends BaseNodeData>(
-  nodeType: string,
-  data: T,
-  bypassCache: boolean = false
-): boolean => {
-  const cacheKey = `head-${nodeType}-${JSON.stringify(data)}`;
-  const cached = calculationCache.get(cacheKey);
-  
-  // INSTANT DEACTIVATION: Skip cache for immediate "off" response
-  if (!bypassCache && cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.result;
+const createCacheKey = (type: 'head' | 'downstream', nodeId: string, data?: any, connections?: Connection[], nodesData?: any[]): string => {
+  if (type === 'head') {
+    return `head-${nodeId}-${JSON.stringify(data)}`;
   }
-
-  let result = false;
-  const currentData = data as any;
-
-  // For trigger nodes (TriggerOn, TriggerOff, etc.)
-  if (nodeType.toLowerCase().includes('trigger')) {
-    result = !!(currentData?.triggered);
-  }
-  // For cycle nodes (CycleToggle, CyclePulse)
-  else if (nodeType.toLowerCase().includes('cycle')) {
-    result = !!(currentData?.isOn && (currentData?.triggered || currentData?.phase || currentData?.pulsing));
-  }
-  // For manual trigger nodes (TestError, etc.)
-  else if (currentData?.isManuallyActivated !== undefined) {
-    result = !!(currentData?.isManuallyActivated);
-  }
-  // Special handling for TestJson nodes
-  else if (nodeType === 'testJson') {
-    result = currentData?.parsedJson !== null && 
-             currentData?.parsedJson !== undefined && 
-             currentData?.parseError === null;
-  }
-  // For input/creation nodes (CreateText, etc.)
-  else {
-    const outputValue = currentData?.text !== undefined ? currentData.text :
-                       currentData?.value !== undefined ? currentData.value :
-                       currentData?.output !== undefined ? currentData.output :
-                       currentData?.result !== undefined ? currentData.result :
-                       undefined;
-    
-    result = outputValue !== undefined && outputValue !== null && outputValue !== '';
-  }
-
-  // Cache the result (but don't cache false results for instant deactivation)
-  if (result || !bypassCache) {
-    calculationCache.set(cacheKey, { result, timestamp: Date.now() });
-  }
-  
-  return result;
+  return `downstream-${nodeId}-${connections?.length || 0}-${nodesData?.map(n => n.id).join(',') || ''}`;
 };
 
 /**
- * OPTIMIZED DOWNSTREAM NODE ACTIVATION CALCULATOR
- * Calculates active state for downstream nodes with smart caching (bypasses cache for deactivation)
+ * CACHE VALIDATION
+ * Checks if cached result is still valid
  */
-const calculateDownstreamNodeActivation = <T extends BaseNodeData>(
-  nodeType: string,
-  data: T,
-  connections: Connection[],
-  nodesData: any[],
-  nodeId: string,
-  bypassCache: boolean = false
-): boolean => {
-  const cacheKey = `downstream-${nodeId}-${connections.length}-${nodesData.map(n => n.id).join(',')}`;
-  const cached = calculationCache.get(cacheKey);
-  
-  // INSTANT DEACTIVATION: Skip cache for immediate "off" response
-  if (!bypassCache && cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.result;
-  }
+const isCacheValid = (cached: { result: boolean; timestamp: number } | undefined, bypassCache: boolean): boolean => {
+  if (bypassCache || !cached) return false;
+  return Date.now() - cached.timestamp < CACHE_TTL;
+};
 
-  // Get all source nodes connected to this node (excluding JSON inputs)
+/**
+ * TRIGGER STATE DETECTION
+ * Checks if trigger nodes allow activation
+ */
+const checkTriggerState = (connections: Connection[], nodesData: any[], nodeId: string): boolean => {
+  const triggerConnections = connections.filter(c => c.targetHandle === 'b' && c.target === nodeId);
+  
+  if (triggerConnections.length === 0) return true; // No trigger = always allowed
+  
+  const triggerSourceIds = triggerConnections.map(c => c.source);
+  const triggerNodesData = nodesData.filter(node => triggerSourceIds.includes(node.id));
+  
+  return triggerNodesData.some(triggerNode => {
+    const triggerData = triggerNode.data || {};
+    return !!(
+      triggerData.triggered ||
+      triggerData.isActive ||
+      triggerData.value === true ||
+      triggerData.output === true
+    );
+  });
+};
+
+/**
+ * INPUT ACTIVITY DETECTION
+ * Checks if any input nodes are active
+ */
+const hasActiveInputNodes = (connections: Connection[], nodesData: any[], nodeId: string): boolean => {
   const allInputConnections = connections.filter(c => c.target === nodeId);
   const nonJsonInputs = allInputConnections.filter(c => c.targetHandle !== 'j');
   const sourceNodeIds = nonJsonInputs.map(c => c.source);
   const sourceNodesData = nodesData.filter(node => sourceNodeIds.includes(node.id));
   
-  if (sourceNodesData.length === 0) {
-    const result = false;
-    calculationCache.set(cacheKey, { result, timestamp: Date.now() });
-    return result;
-  }
+  if (sourceNodesData.length === 0) return false;
   
-  // Check if ANY input node is active
-  const hasActiveInput = sourceNodesData.some(sourceNode => {
+  return sourceNodesData.some(sourceNode => {
     const sourceData = sourceNode.data || {};
     return !!(
       sourceData.isActive ||
@@ -234,80 +294,44 @@ const calculateDownstreamNodeActivation = <T extends BaseNodeData>(
       (sourceData.output !== undefined && sourceData.output !== null && sourceData.output !== '')
     );
   });
-  
-  let result = hasActiveInput;
+};
 
-  // SPECIAL CASE: Handle trigger inputs (boolean handle 'b')
-  const triggerConnections = connections.filter(c => c.targetHandle === 'b' && c.target === nodeId);
-  if (triggerConnections.length > 0) {
-    const triggerSourceIds = triggerConnections.map(c => c.source);
-    const triggerNodesData = nodesData.filter(node => triggerSourceIds.includes(node.id));
-    
-    const triggerAllows = triggerNodesData.some(triggerNode => {
-      const triggerData = triggerNode.data || {};
-      return !!(
-        triggerData.triggered ||
-        triggerData.isActive ||
-        triggerData.value === true ||
-        triggerData.output === true
-      );
-    });
-    
-    result = hasActiveInput && triggerAllows;
-  }
+/**
+ * OUTPUT CONTENT VALIDATION
+ * Checks if node has meaningful output
+ */
+const hasValidOutput = (data: any): boolean => {
+  return !!(
+    (data?.text !== undefined && data?.text !== null && data?.text !== '') ||
+    (data?.value !== undefined && data?.value !== null && data?.value !== '') ||
+    (data?.output !== undefined && data?.output !== null && data?.output !== '')
+  );
+};
+
+/**
+ * OPTIMIZED PROPAGATION HELPERS
+ * Extracted from the main component to avoid recalculation on every render
+ */
+
+/**
+ * HEAD NODE ACTIVATION CALCULATION
+ * Calculates active state for head nodes using smart caching
+ */
+const calculateHeadNodeActivation = <T extends BaseNodeData>(
+  nodeType: string,
+  data: T,
+  bypassCache: boolean = false
+): boolean => {
+  const cacheKey = createCacheKey('head', nodeType, data);
+  const cached = calculationCache.get(cacheKey);
   
-  // ENHANCED: Special handling for transformation nodes (like uppercase)
-  if (nodeType === 'turnToUppercase' || 
-      nodeType.toLowerCase().includes('transform') || 
-      nodeType.toLowerCase().includes('turn') ||
-      nodeType.toLowerCase().includes('convert')) {
-    // For transformation nodes, check if they have meaningful output
-    const currentData = data as any;
-    const hasOutput = !!(
-      (currentData?.text !== undefined && currentData?.text !== null && currentData?.text !== '') ||
-      (currentData?.value !== undefined && currentData?.value !== null && currentData?.value !== '') ||
-      (currentData?.output !== undefined && currentData?.output !== null && currentData?.output !== '')
-    );
-    
-    // Transformation nodes are active if they have input AND have produced output
-    result = hasActiveInput && hasOutput;
-    
-    console.log(`UFS Debug ${nodeType} ${nodeId}: hasActiveInput=${hasActiveInput}, hasOutput=${hasOutput}, result=${result}`);
-  }
-  
-  // Special handling for ViewOutput nodes
-  if (nodeType === 'viewOutput') {
-    if (!hasActiveInput) {
-      result = false;
-    } else {
-      const displayedValues = (data as any)?.displayedValues;
-      if (!Array.isArray(displayedValues) || displayedValues.length === 0) {
-        result = false;
-      } else {
-        result = displayedValues.some(item => {
-          const content = item.content;
-          
-          if (content === undefined || content === null || content === '') {
-            return false;
-          }
-          
-          if (typeof content === 'string' && content.trim() === '') {
-            return false;
-          }
-          
-          if (typeof content === 'object') {
-            if (Array.isArray(content)) {
-              return content.length > 0;
-            }
-            return Object.keys(content).length > 0;
-          }
-          
-          return true;
-        });
-      }
-    }
+  // INSTANT DEACTIVATION: Skip cache for immediate "off" response
+  if (isCacheValid(cached, bypassCache)) {
+    return cached!.result;
   }
 
+  const result = determineHeadNodeState(nodeType, data as any);
+  
   // Cache the result (but don't cache false results for instant deactivation)
   if (result || !bypassCache) {
     calculationCache.set(cacheKey, { result, timestamp: Date.now() });
@@ -317,51 +341,222 @@ const calculateDownstreamNodeActivation = <T extends BaseNodeData>(
 };
 
 /**
- * INSTANT DEACTIVATION + SMOOTH ACTIVATION UPDATE FUNCTION
+ * DETERMINE HEAD NODE STATE
+ * Core logic for head node activation
+ */
+const determineHeadNodeState = (nodeType: string, data: any): boolean => {
+  // Trigger nodes
+  if (nodeType.toLowerCase().includes('trigger')) {
+    return !!(data?.triggered);
+  }
+  
+  // Cycle nodes
+  if (nodeType.toLowerCase().includes('cycle')) {
+    return !!(data?.isOn && (data?.triggered || data?.phase || data?.pulsing));
+  }
+  
+  // Manual trigger nodes
+  if (data?.isManuallyActivated !== undefined) {
+    return !!(data?.isManuallyActivated);
+  }
+  
+  // JSON test nodes
+  if (nodeType === 'testJson') {
+    return data?.parsedJson !== null && 
+           data?.parsedJson !== undefined && 
+           data?.parseError === null;
+  }
+  
+  // Input/creation nodes
+  return hasValidOutput(data);
+};
+
+/**
+ * DOWNSTREAM NODE ACTIVATION CALCULATION
+ * Calculates active state for downstream nodes with smart caching
+ */
+const calculateDownstreamNodeActivation = <T extends BaseNodeData>(
+  nodeType: string,
+  data: T,
+  connections: Connection[],
+  nodesData: any[],
+  nodeId: string,
+  bypassCache: boolean = false
+): boolean => {
+  const cacheKey = createCacheKey('downstream', nodeId, undefined, connections, nodesData);
+  const cached = calculationCache.get(cacheKey);
+  
+  // INSTANT DEACTIVATION: Skip cache for immediate "off" response
+  if (isCacheValid(cached, bypassCache)) {
+    return cached!.result;
+  }
+
+  const result = determineDownstreamNodeState(nodeType, data, connections, nodesData, nodeId);
+  
+  // Cache the result (but don't cache false results for instant deactivation)
+  if (result || !bypassCache) {
+    calculationCache.set(cacheKey, { result, timestamp: Date.now() });
+  }
+  
+  return result;
+};
+
+/**
+ * DETERMINE DOWNSTREAM NODE STATE
+ * Core logic for downstream node activation
+ */
+const determineDownstreamNodeState = <T extends BaseNodeData>(
+  nodeType: string,
+  data: T,
+  connections: Connection[],
+  nodesData: any[],
+  nodeId: string
+): boolean => {
+  const hasActiveInput = hasActiveInputNodes(connections, nodesData, nodeId);
+  
+  if (!hasActiveInput) return false;
+  
+  // Check trigger constraints
+  const triggerAllows = checkTriggerState(connections, nodesData, nodeId);
+  if (!triggerAllows) return false;
+  
+  // Handle transformation nodes
+  if (isTransformationNode(nodeType)) {
+    return handleTransformationNodeActivation(nodeType, data, hasActiveInput, nodeId);
+  }
+  
+  // Handle view output nodes
+  if (nodeType === 'viewOutput') {
+    return handleViewOutputActivation(data as any);
+  }
+  
+  return hasActiveInput;
+};
+
+/**
+ * TRANSFORMATION NODE DETECTION
+ * Identifies nodes that transform input data
+ */
+const isTransformationNode = (nodeType: string): boolean => {
+  return nodeType === 'turnToUppercase' || 
+         nodeType.toLowerCase().includes('transform') || 
+         nodeType.toLowerCase().includes('turn') ||
+         nodeType.toLowerCase().includes('convert');
+};
+
+/**
+ * TRANSFORMATION NODE ACTIVATION LOGIC
+ * Handles activation for transformation nodes
+ */
+const handleTransformationNodeActivation = <T extends BaseNodeData>(
+  nodeType: string,
+  data: T,
+  hasActiveInput: boolean,
+  nodeId: string
+): boolean => {
+  const hasOutput = hasValidOutput(data as any);
+  const result = hasActiveInput && hasOutput;
+  
+  console.log(`UFS Debug ${nodeType} ${nodeId}: hasActiveInput=${hasActiveInput}, hasOutput=${hasOutput}, result=${result}`);
+  
+  return result;
+};
+
+/**
+ * VIEW OUTPUT ACTIVATION LOGIC
+ * Handles activation for view output nodes
+ */
+const handleViewOutputActivation = (data: any): boolean => {
+  const displayedValues = data?.displayedValues;
+  
+  if (!Array.isArray(displayedValues) || displayedValues.length === 0) {
+    return false;
+  }
+  
+  return displayedValues.some(item => {
+    const content = item.content;
+    
+    if (content === undefined || content === null || content === '') {
+      return false;
+    }
+    
+    if (typeof content === 'string' && content.trim() === '') {
+      return false;
+    }
+    
+    if (typeof content === 'object') {
+      if (Array.isArray(content)) {
+        return content.length > 0;
+      }
+      return Object.keys(content).length > 0;
+    }
+    
+    return true;
+  });
+};
+
+/**
+ * SMART UPDATE MANAGEMENT
+ * Handles timing for instant vs smooth updates
+ */
+
+/**
+ * PRIORITY UPDATE EXECUTOR
  * Provides immediate feedback for turning OFF, smooth updates for turning ON
  */
-const debouncedUpdates = new Map<string, ReturnType<typeof setTimeout>>();
-
 const smartNodeUpdate = (
   nodeId: string,
   updateFn: () => void,
   isActivating: boolean,
   priority: 'instant' | 'smooth' = 'smooth'
-) => {
+): void => {
   // INSTANT updates for deactivation or high priority
   if (!isActivating || priority === 'instant') {
-    // Clear any pending debounced update
-    const existingTimeout = debouncedUpdates.get(nodeId);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-      debouncedUpdates.delete(nodeId);
-    }
-    
-    // Execute immediately for instant feedback
+    clearPendingUpdate(nodeId);
     updateFn();
     return;
   }
   
   // SMOOTH updates for activation (debounced)
+  scheduleDelayedUpdate(nodeId, updateFn);
+};
+
+/**
+ * CLEAR PENDING UPDATE
+ * Removes any scheduled update for a node
+ */
+const clearPendingUpdate = (nodeId: string): void => {
   const existingTimeout = debouncedUpdates.get(nodeId);
   if (existingTimeout) {
     clearTimeout(existingTimeout);
+    debouncedUpdates.delete(nodeId);
   }
+};
+
+/**
+ * SCHEDULE DELAYED UPDATE
+ * Schedules a smooth activation update
+ */
+const scheduleDelayedUpdate = (nodeId: string, updateFn: () => void): void => {
+  clearPendingUpdate(nodeId);
   
   const newTimeout = setTimeout(() => {
     updateFn();
     debouncedUpdates.delete(nodeId);
-  }, 8); // Reduced to 8ms for faster activation
+  }, SMOOTH_ACTIVATION_DELAY);
   
   debouncedUpdates.set(nodeId, newTimeout);
 };
 
-// Legacy function for backward compatibility
+/**
+ * LEGACY DEBOUNCE FUNCTION
+ * Backward compatibility wrapper
+ */
 const debounceNodeUpdate = (
   nodeId: string,
   updateFn: () => void,
-  delay: number = 8
-) => {
+  delay: number = SMOOTH_ACTIVATION_DELAY
+): void => {
   smartNodeUpdate(nodeId, updateFn, true, 'smooth');
 };
 
@@ -405,30 +600,6 @@ export const registerNodeTypeConfig = <T extends BaseNodeData>(
 
   // Dynamically add to NODE_TYPE_CONFIG
   (NODE_TYPE_CONFIG as any)[nodeType] = nodeConfig;
-};
-
-// ============================================================================
-// DEFAULT CONFIGURATIONS
-// ============================================================================
-
-const DEFAULT_TEXT_NODE_SIZE: NodeSize = {
-  collapsed: {
-    width: 'w-[120px]',
-    height: 'h-[60px]'
-  },
-  expanded: {
-    width: 'w-[180px]'
-  }
-};
-
-const DEFAULT_LOGIC_NODE_SIZE: NodeSize = {
-  collapsed: {
-    width: 'w-[60px]',
-    height: 'h-[60px]'
-  },
-  expanded: {
-    width: 'w-[120px]'
-  }
 };
 
 // ============================================================================
