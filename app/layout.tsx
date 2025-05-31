@@ -14,6 +14,7 @@ import PWAStatus from '@/components/PWAStatus';
 import { Inter } from 'next/font/google';
 import { AnubisProvider, AnubisStatus } from '@/components/anubis/AnubisProvider';
 import { AnubisControlPanel } from '@/components/anubis/AnubisControlPanel';
+import { AnubisDebugger } from '@/components/anubis/AnubisDebugger';
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -106,6 +107,7 @@ export default function RootLayout({
             </Providers>
             <AnubisStatus />
             <AnubisControlPanel />
+            {process.env.NODE_ENV === 'development' && <AnubisDebugger />}
           </AnubisProvider>
           <Toaster position="top-right" />
           <PWAInstallPrompt />

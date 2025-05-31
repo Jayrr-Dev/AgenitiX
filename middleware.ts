@@ -87,9 +87,8 @@ export const config = {
     // APPLY TO ALL ROUTES EXCEPT:
     // - Static files and assets
     // - Next.js internal routes
-    // - API routes (Convex, auth, webhooks, etc.)
-    // - Anubis own routes
+    // - Specific API routes (but NOT Anubis routes)
     // - Vercel internal routes
-    '/((?!_next/static|_next/image|_vercel|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$).*)',
+    '/((?!_next/static|_next/image|_vercel|favicon.ico|api/convex|api/auth|api/webhooks|api/trpc|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$).*)',
   ],
 };

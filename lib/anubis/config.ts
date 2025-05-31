@@ -6,7 +6,14 @@ const DEFAULT_CONFIG: AnubisConfig = {
   difficulty: 4,
   jwtSecret: '',
   bypassDevelopment: true,
-  protectedRoutes: [],
+  protectedRoutes: [
+    '/',              // Home page
+    '/about',         // About page
+    '/expertise',     // Expertise page
+    '/projects',      // Projects page
+    '/careers',       // Careers page
+    '/contact'        // Contact page
+  ],
   excludedRoutes: [
     '/api/health',
     '/api/anubis',

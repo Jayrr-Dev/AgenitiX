@@ -1,0 +1,13 @@
+# Deployment used by `npx convex dev`
+CONVEX_DEPLOYMENT=dev:kindly-hummingbird-536 # team: jayrr-dev, project: agenitix-414f4
+
+NEXT_PUBLIC_CONVEX_URL=https://kindly-hummingbird-536.convex.cloud
+
+# ANUBIS BOT PROTECTION CONFIGURATION
+ANUBIS_ENABLED=true
+ANUBIS_DIFFICULTY=4
+ANUBIS_JWT_SECRET=3d6b76c7ab75ef3bdccd69b4596fd2fd1d11d9080f587ab305c8cae5d5ba4fbf
+
+# Optional Anubis settings
+ANUBIS_BYPASS_DEVELOPMENT=false
+ANUBIS_COOKIE_DOMAIN= 
