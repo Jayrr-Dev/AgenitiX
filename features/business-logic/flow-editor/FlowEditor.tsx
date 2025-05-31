@@ -403,6 +403,38 @@ function FlowEditorContent() {
     setEdges(updatedEdges);
   }, [nodes, edges, setNodes, setEdges]);
   
+  // CLEAR SELECTION HANDLER (Esc)
+  const handleClearSelection = useCallback(() => {
+    // Count currently selected items for feedback
+    const selectedNodes = nodes.filter(node => node.selected);
+    const selectedEdges = edges.filter(edge => edge.selected);
+    const totalSelected = selectedNodes.length + selectedEdges.length;
+    
+    if (totalSelected === 0) {
+      console.log(`⚠️ No items selected to clear`);
+      return;
+    }
+
+    console.log(`🔄 Clearing selection of ${selectedNodes.length} nodes and ${selectedEdges.length} edges (Esc)`);
+
+    // Clear selection on all nodes
+    const updatedNodes = nodes.map(node => ({
+      ...node,
+      selected: false
+    }));
+    setNodes(updatedNodes);
+    
+    // Clear selection on all edges
+    const updatedEdges = edges.map(edge => ({
+      ...edge,
+      selected: false
+    }));
+    setEdges(updatedEdges);
+    
+    // Also clear the Zustand store selection
+    clearSelection();
+  }, [nodes, edges, setNodes, setEdges, clearSelection]);
+  
   // INSPECTOR LOCK TOGGLE HANDLER (Alt+A)
   const handleToggleInspectorLock = useCallback(() => {
     setInspectorLocked(!inspectorLocked);
@@ -481,7 +513,8 @@ function FlowEditorContent() {
     onToggleInspectorLock: handleToggleInspectorLock, // Alt+A for inspector lock
     onDuplicateNode: handleDuplicateSelectedNode, // Alt+W for node duplication
     onToggleSidebar: handleToggleSidebar, // Alt+S for sidebar toggle
-    onSelectAll: handleSelectAllNodes // Ctrl+A for selecting all nodes
+    onSelectAll: handleSelectAllNodes, // Ctrl+A for selecting all nodes
+    onClearSelection: handleClearSelection // Esc for clearing selection
   });
 
   // ============================================================================

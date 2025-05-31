@@ -8,6 +8,7 @@
 | **Multi-Click** | `Ctrl` + Click | `Cmd` + Click | Add individual elements to selection |
 | **Alternative Multi** | `Shift` + Click | `Shift` + Click | Alternative multi-selection method |
 | **Clear Selection** | Click empty area | Click empty area | Deselect all elements |
+| **Clear Selection (Keyboard)** | `Esc` | `Esc` | Deselect all elements with keyboard |
 
 ## ⚡ Bulk Operations
 
@@ -63,6 +64,11 @@
 1. Press Ctrl+A → 2. All nodes selected → 3. Perform bulk operations (move, copy, delete)
 ```
 
+### **Clear Selection Workflow**
+```
+1. Press Esc → 2. All selections cleared → 3. Clean canvas ready for new operations
+```
+
 ### **Quick Template Creation**
 ```
 1. Design pattern → 2. Shift+drag select → 3. Ctrl+C copy → 4. Position mouse → 5. Ctrl+V paste
@@ -108,6 +114,7 @@
 | Combination | Windows/Linux | macOS | Function |
 |-------------|---------------|-------|----------|
 | **Select All** | `Ctrl` + `A` | `Cmd` + `A` | Select all nodes |
+| **Clear Selection** | `Esc` | `Esc` | Clear all selections |
 | **Copy** | `Ctrl` + `C` | `Cmd` + `C` | Copy selection |
 | **Paste** | `Ctrl` + `V` | `Cmd` + `V` | Paste at mouse |
 | **Delete (Native)** | `Delete` / `Backspace` | `Delete` / `Backspace` | ReactFlow deletion |

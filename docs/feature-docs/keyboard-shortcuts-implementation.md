@@ -88,6 +88,7 @@ This document details the implementation of keyboard shortcuts for the sidebar c
 | Shortcut | Windows/Linux | macOS | Function |
 |----------|---------------|-------|----------|
 | Select All | `Ctrl` + `A` | `Cmd` + `A` | Select all nodes in canvas |
+| Clear Selection | `Esc` | `Esc` | Clear all selections |
 | Copy | `Ctrl` + `C` | `Cmd` + `C` | Copy selected elements + connections |
 | Paste | `Ctrl` + `V` | `Cmd` + `V` | Paste at mouse cursor location |
 
@@ -493,6 +494,7 @@ if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) {
 
 #### Selection Management
 - **`Click on empty space`** - Clear all selections
+- **`Esc`** - Clear all selections with keyboard
 - **`Delete` or `Backspace`** - Delete all currently selected nodes and edges
 - **Mixed selections**: You can have both nodes and edges selected simultaneously
 - **Visual feedback**: Selected items are highlighted with a blue outline

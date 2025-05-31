@@ -6,6 +6,7 @@ interface KeyboardShortcutsProps {
   onPaste: () => void;
   onToggleHistory: () => void;
   onSelectAll?: () => void; // Optional select all handler for Ctrl+A
+  onClearSelection?: () => void; // Optional clear selection handler for Esc
   onDelete?: () => void; // Optional delete handler for Alt+Q
   onToggleVibeMode?: () => void; // Optional vibe mode toggle for Ctrl+X
   onToggleInspectorLock?: () => void; // Optional inspector lock toggle for Alt+A
@@ -18,6 +19,7 @@ export function useKeyboardShortcuts({
   onPaste,
   onToggleHistory,
   onSelectAll,
+  onClearSelection,
   onDelete,
   onToggleVibeMode,
   onToggleInspectorLock,
@@ -42,6 +44,14 @@ export function useKeyboardShortcuts({
       const key = e.key.toLowerCase();
       
       // ReactFlow handles delete keys natively, so we don't need custom handling
+      
+      // Handle Escape key (clear selection) - works regardless of modifier keys
+      if (e.key === KEYBOARD_SHORTCUTS.ESCAPE && !isInputFocused) {
+        if (onClearSelection) {
+          onClearSelection();
+          e.preventDefault();
+        }
+      }
       
       // Handle Ctrl-based shortcuts
       if (ctrl && !isInputFocused) {
@@ -119,5 +129,5 @@ export function useKeyboardShortcuts({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onCopy, onPaste, onToggleHistory, onSelectAll, onDelete, onToggleVibeMode, onToggleInspectorLock, onDuplicateNode, onToggleSidebar]);
+  }, [onCopy, onPaste, onToggleHistory, onSelectAll, onClearSelection, onDelete, onToggleVibeMode, onToggleInspectorLock, onDuplicateNode, onToggleSidebar]);
 } 

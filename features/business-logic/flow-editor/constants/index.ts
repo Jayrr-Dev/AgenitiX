@@ -248,6 +248,7 @@ export const KEYBOARD_SHORTCUTS = {
   PASTE: 'v',
   TOGGLE_HISTORY: 'h',
   SELECT_ALL: 'a',          // Ctrl+A
+  ESCAPE: 'Escape',         // Esc
   // Alt-based shortcuts
   DELETE_NODES: 'q',        // Alt+Q
   TOGGLE_INSPECTOR: 'a',    // Alt+A  
