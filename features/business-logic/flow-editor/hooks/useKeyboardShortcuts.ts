@@ -5,6 +5,7 @@ interface KeyboardShortcutsProps {
   onCopy: () => void;
   onPaste: () => void;
   onToggleHistory: () => void;
+  onSelectAll?: () => void; // Optional select all handler for Ctrl+A
   onDelete?: () => void; // Optional delete handler for Alt+Q
   onToggleVibeMode?: () => void; // Optional vibe mode toggle for Ctrl+X
   onToggleInspectorLock?: () => void; // Optional inspector lock toggle for Alt+A
@@ -16,6 +17,7 @@ export function useKeyboardShortcuts({
   onCopy,
   onPaste,
   onToggleHistory,
+  onSelectAll,
   onDelete,
   onToggleVibeMode,
   onToggleInspectorLock,
@@ -57,6 +59,14 @@ export function useKeyboardShortcuts({
           case KEYBOARD_SHORTCUTS.PASTE:
             onPaste();
             e.preventDefault();
+            break;
+            
+          case KEYBOARD_SHORTCUTS.SELECT_ALL:
+            // Ctrl+A for select all nodes (prevent default text selection)
+            if (onSelectAll) {
+              onSelectAll();
+              e.preventDefault();
+            }
             break;
             
           case 'x':
@@ -109,5 +119,5 @@ export function useKeyboardShortcuts({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onCopy, onPaste, onToggleHistory, onDelete, onToggleVibeMode, onToggleInspectorLock, onDuplicateNode, onToggleSidebar]);
+  }, [onCopy, onPaste, onToggleHistory, onSelectAll, onDelete, onToggleVibeMode, onToggleInspectorLock, onDuplicateNode, onToggleSidebar]);
 } 

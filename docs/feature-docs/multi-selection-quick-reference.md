@@ -14,6 +14,7 @@
 | Action | Shortcut | Description |
 |--------|----------|-------------|
 | **Move Multiple** | Drag any selected node | All selected nodes move together |
+| **Select All Nodes** | `Ctrl/Cmd` + `A` | Select all nodes in canvas (prevents default text selection) |
 | **Copy Selection** | `Ctrl/Cmd` + `C` | Copy all selected nodes and connections |
 | **Paste at Mouse** | `Ctrl/Cmd` + `V` | Paste copied elements at mouse cursor |
 | **Delete (Native)** | `Delete` or `Backspace` | Remove all selected elements (ReactFlow native) |
@@ -56,6 +57,11 @@
 - **Incremental Development**: Copy working sections to build larger flows
 
 ## 🎯 Common Workflows
+
+### **Select All Workflow**
+```
+1. Press Ctrl+A → 2. All nodes selected → 3. Perform bulk operations (move, copy, delete)
+```
 
 ### **Quick Template Creation**
 ```
@@ -101,6 +107,7 @@
 
 | Combination | Windows/Linux | macOS | Function |
 |-------------|---------------|-------|----------|
+| **Select All** | `Ctrl` + `A` | `Cmd` + `A` | Select all nodes |
 | **Copy** | `Ctrl` + `C` | `Cmd` + `C` | Copy selection |
 | **Paste** | `Ctrl` + `V` | `Cmd` + `V` | Paste at mouse |
 | **Delete (Native)** | `Delete` / `Backspace` | `Delete` / `Backspace` | ReactFlow deletion |

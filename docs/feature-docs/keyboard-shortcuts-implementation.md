@@ -33,6 +33,7 @@ This document details the implementation of keyboard shortcuts for the sidebar c
 - **Shift + Click**: Alternative multi-selection method
 
 **Copy/Paste Shortcuts**:
+- **Ctrl/Cmd + A**: Select all nodes in canvas
 - **Ctrl/Cmd + C**: Copy all selected nodes and their connections
   - Smart edge detection: Automatically includes edges between selected nodes
   - Console feedback: Shows number of copied elements
@@ -86,6 +87,7 @@ This document details the implementation of keyboard shortcuts for the sidebar c
 ### **Copy/Paste Operations**
 | Shortcut | Windows/Linux | macOS | Function |
 |----------|---------------|-------|----------|
+| Select All | `Ctrl` + `A` | `Cmd` + `A` | Select all nodes in canvas |
 | Copy | `Ctrl` + `C` | `Cmd` + `C` | Copy selected elements + connections |
 | Paste | `Ctrl` + `V` | `Cmd` + `V` | Paste at mouse cursor location |
 

@@ -367,6 +367,42 @@ function FlowEditorContent() {
   // KEYBOARD SHORTCUTS
   // ============================================================================
   
+  // SELECT ALL NODES HANDLER (Ctrl+A)
+  const handleSelectAllNodes = useCallback(() => {
+    // Get ReactFlow instance to access and modify node selection
+    const reactFlowInstance = flowInstanceRef.current;
+    if (!reactFlowInstance) {
+      console.warn(`⚠️ ReactFlow instance not available`);
+      return;
+    }
+
+    // Get all nodes in the canvas
+    const allNodes = nodes;
+    
+    if (allNodes.length === 0) {
+      console.log(`⚠️ No nodes available to select`);
+      return;
+    }
+
+    console.log(`🎯 Selecting all ${allNodes.length} nodes (Ctrl+A)`);
+
+    // Update all nodes to be selected
+    const updatedNodes = allNodes.map(node => ({
+      ...node,
+      selected: true
+    }));
+
+    // Apply the selection changes
+    setNodes(updatedNodes);
+    
+    // Clear edge selection
+    const updatedEdges = edges.map(edge => ({
+      ...edge,
+      selected: false
+    }));
+    setEdges(updatedEdges);
+  }, [nodes, edges, setNodes, setEdges]);
+  
   // INSPECTOR LOCK TOGGLE HANDLER (Alt+A)
   const handleToggleInspectorLock = useCallback(() => {
     setInspectorLocked(!inspectorLocked);
@@ -444,7 +480,8 @@ function FlowEditorContent() {
     onToggleVibeMode: toggleVibeMode, // Ctrl+X for vibe mode toggle
     onToggleInspectorLock: handleToggleInspectorLock, // Alt+A for inspector lock
     onDuplicateNode: handleDuplicateSelectedNode, // Alt+W for node duplication
-    onToggleSidebar: handleToggleSidebar // Alt+S for sidebar toggle
+    onToggleSidebar: handleToggleSidebar, // Alt+S for sidebar toggle
+    onSelectAll: handleSelectAllNodes // Ctrl+A for selecting all nodes
   });
 
   // ============================================================================
