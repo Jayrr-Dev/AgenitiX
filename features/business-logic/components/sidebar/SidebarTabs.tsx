@@ -7,6 +7,7 @@ import { StencilInfoPanel, HoveredStencil } from '../StencilInfoPanel';
 import { TabContent } from './components/TabContent';
 import { NodeSearchModal } from './components/NodeSearchModal';
 import { SearchBar } from './components/SearchBar';
+import { useFlowStore } from '../../stores/flowStore';
 
 interface SidebarTabsProps {
   variant: SidebarVariant;
@@ -43,6 +44,9 @@ export function SidebarTabs({
   // Store current stencils for keyboard shortcuts
   const currentStencilsRef = useRef<Record<string, NodeStencil[]>>({});
 
+  // Get flow store for node deletion
+  const { selectedNodeId, removeNode } = useFlowStore();
+
   // Get existing node types in custom section to prevent duplicates
   const existingCustomNodeTypes = customNodes.map(node => node.nodeType);
 
@@ -71,15 +75,31 @@ export function SidebarTabs({
         activeElement.getAttribute('contenteditable') === 'true'
       );
 
-      // Skip shortcuts if user is typing in an input field
+      // If typing in input field, only allow system shortcuts (with modifier keys)
       if (isTyping) {
-        return;
+        // Allow system shortcuts to pass through (Ctrl+Q, Ctrl+C, etc.)
+        if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) {
+          // Let the system handle these shortcuts normally
+          return;
+        } else {
+          // Block plain letter shortcuts when typing
+          return;
+        }
       }
 
       // Search shortcut (Ctrl+K / Cmd+K)
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         setIsSearchVisible(true);
+      }
+      
+      // Delete selected node shortcut (Ctrl+Q / Cmd+Q)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'q') {
+        e.preventDefault();
+        if (selectedNodeId) {
+          removeNode(selectedNodeId);
+        }
+        return; // Exit early to avoid processing other shortcuts
       }
       
       // Variant switching shortcuts (Alt+1-5)
@@ -126,6 +146,11 @@ export function SidebarTabs({
       }
 
       // Node grid shortcuts (QWERTY layout)
+      // Skip if any modifier keys are pressed (to avoid conflicts with Ctrl+C, Ctrl+V, etc.)
+      if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) {
+        return; // Let system shortcuts work normally
+      }
+      
       const isCustomTab = variant === 'e' && activeTab === 'custom';
       
       if (isCustomTab) {
@@ -186,7 +211,7 @@ export function SidebarTabs({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [tabs, onTabChange, variant, activeTab, customNodes, onDoubleClickCreate, onVariantChange, onToggle]);
+  }, [tabs, onTabChange, variant, activeTab, customNodes, onDoubleClickCreate, onVariantChange, onToggle, selectedNodeId, removeNode]);
 
   if (isHidden) return null;
 

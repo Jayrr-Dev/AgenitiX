@@ -45,7 +45,7 @@ This document details the implementation of keyboard shortcuts for the sidebar c
 // SidebarTabs.tsx - Global keyboard listener
 useEffect(() => {
   const handleKeyDown = (e: KeyboardEvent) => {
-    // Input field protection
+    // Check if user is typing in an input field
     const activeElement = document.activeElement;
     const isTyping = activeElement && (
       activeElement.tagName === 'INPUT' ||
@@ -53,12 +53,31 @@ useEffect(() => {
       activeElement.getAttribute('contenteditable') === 'true'
     );
 
-    if (isTyping) return; // Skip shortcuts when typing
+    // If typing in input field, only allow system shortcuts (with modifier keys)
+    if (isTyping) {
+      // Allow system shortcuts to pass through (Ctrl+Q, Ctrl+C, etc.)
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) {
+        // Let the system handle these shortcuts normally
+        return;
+      } else {
+        // Block plain letter shortcuts when typing
+        return;
+      }
+    }
 
     // Search shortcut (Ctrl+K / Cmd+K)
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
       e.preventDefault();
       setIsSearchVisible(true);
+    }
+
+    // Delete selected node shortcut (Ctrl+Q / Cmd+Q)
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'q') {
+      e.preventDefault();
+      if (selectedNodeId) {
+        removeNode(selectedNodeId);
+      }
+      return; // Exit early to avoid processing other shortcuts
     }
 
     // Variant switching shortcuts (Alt+1-5)
@@ -214,9 +233,9 @@ const newNode = createNode(nodeType as NodeType, flowPosition);
 **Solution**: Implement mouse tracking and `screenToFlowPosition` conversion
 
 ### Issue 4: Input Field Interference  
-**Problem**: Typing numbers in input fields triggered tab switching
+**Problem**: Typing numbers in input fields triggered tab switching, and users couldn't use system shortcuts like Ctrl+Q while typing
 
-**Root Cause**: Global keyboard listener didn't check focus context
+**Root Cause**: Global keyboard listener didn't check focus context, and original fix blocked ALL shortcuts when typing
 
 **Solution**:
 ```typescript
@@ -228,8 +247,38 @@ const isTyping = activeElement && (
   activeElement.getAttribute('contenteditable') === 'true'
 );
 
-if (isTyping) return; // Skip shortcuts
+// If typing in input field, only allow system shortcuts (with modifier keys)
+if (isTyping) {
+  // Allow system shortcuts to pass through (Ctrl+Q, Ctrl+C, etc.)
+  if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) {
+    // Let the system handle these shortcuts normally
+    return;
+  } else {
+    // Block plain letter shortcuts when typing
+    return;
+  }
+}
 ```
+
+### Issue 5: System Shortcut Conflicts
+**Problem**: Ctrl+C (copy) was triggering 'C' key node creation shortcut
+
+**Root Cause**: QWERTY grid shortcuts didn't check for modifier keys
+
+**Solution**:
+```typescript
+// Skip QWERTY shortcuts when modifier keys are pressed
+if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) {
+  return; // Let system shortcuts work normally
+}
+```
+
+### Issue 6: Alt+Letter Key Conflicts  
+**Problem**: Alt+W was creating nodes even though Alt+W has no intended function
+
+**Root Cause**: Alt key was not included in modifier key protection, so Alt+W fell through to QWERTY grid
+
+**Solution**: Added `e.altKey` to modifier key protection to prevent unintended Alt+letter combinations from creating nodes
 
 ## 🎮 User Guide
 
@@ -252,6 +301,9 @@ if (isTyping) return; // Skip shortcuts
 - **`6`** - Open search modal
 - **`Ctrl+K`** - Also opens search modal
 
+### Node Management
+- **`Ctrl+Q`** - Delete currently selected node (and its connected edges)
+
 ### QWERTY Grid Node Creation
 Position your mouse where you want the node to appear, then press:
 
@@ -268,7 +320,8 @@ Position your mouse where you want the node to appear, then press:
 
 ### Smart Features
 - **Mouse-based positioning**: Nodes appear exactly at cursor location
-- **Input protection**: Shortcuts disabled when typing in text fields
+- **Intelligent input protection**: Plain letter shortcuts disabled when typing in text fields, but system shortcuts (Ctrl+Q, Ctrl+C, etc.) still work
+- **Modifier key protection**: QWERTY shortcuts disabled when Ctrl/Alt/Shift/Cmd are pressed (avoids conflicts with copy/paste/etc.)
 - **Cross-variant support**: Works across all sidebar variants
 - **Zoom/pan aware**: Coordinates properly transformed for any view
 - **Persistent storage**: Custom nodes and sidebar state survive page refreshes
@@ -280,7 +333,11 @@ Position your mouse where you want the node to appear, then press:
 - [ ] Tab switching (1-5) works across all variants
 - [ ] Search opens with key 6 and Ctrl+K
 - [ ] QWERTY keys create correct nodes at mouse position
-- [ ] Shortcuts disabled when typing in input fields
+- [ ] Plain letter shortcuts disabled when typing in input fields
+- [ ] System shortcuts work normally when typing in input fields (Ctrl+C copy, Ctrl+V paste, Ctrl+Q delete, etc.)
+- [ ] System shortcuts work normally outside input fields (Ctrl+C copy, Ctrl+V paste, Ctrl+Z undo, etc.)
+- [ ] Ctrl+Q deletes selected node and its connected edges
+- [ ] Ctrl+Q does nothing when no node is selected
 - [ ] Works with zoomed/panned canvas
 - [ ] No console errors during node creation
 
@@ -398,7 +455,7 @@ localStorage['agenitix-sidebar-tabs'] = {
 ---
 
 **Implementation Status**: ✅ Complete and Production Ready  
-**Last Updated**: January 30, 2025 (Added localStorage persistence for custom nodes)  
+**Last Updated**: January 30, 2025 (Improved input protection to allow system shortcuts while typing)  
 **Next Review**: March 2025 
 
 **Complete Keyboard Shortcuts**:
@@ -408,3 +465,4 @@ localStorage['agenitix-sidebar-tabs'] = {
 - **Node Creation**: QWERTY grid creates nodes at mouse cursor position
   - **Standard Tabs**: Q,W,E,R,T (row 1), A,S,D,F,G (row 2), Z,X,C,V,B (row 3)
   - **Custom Tab**: Q opens "Add Node" modal, W,E,R,T (positions 0-3), A,S,D,F,G (positions 4-8), Z,X,C,V,B (positions 9-13) 
+- **Node Management**: Ctrl+Q deletes currently selected node and its connected edges 
