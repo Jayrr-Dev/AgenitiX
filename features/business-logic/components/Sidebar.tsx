@@ -88,7 +88,7 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(({ className = '' }, ref) =
   );
 
   return (
-    <div className={className}>
+    <div className={`${className}`}>
       <VariantSelector
         variant={variant}
         onVariantChange={setVariant}

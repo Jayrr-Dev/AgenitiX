@@ -9,7 +9,7 @@ export function ToggleButton({ isHidden, onToggle }: ToggleButtonProps) {
   return (
     <button 
       onClick={onToggle} 
-      className="absolute bottom-0.5 right-1 z-40 cursor-pointer"
+      className="absolute bottom-0 right-0.5 z-40 cursor-pointer"
       aria-label={isHidden ? 'Show sidebar' : 'Hide sidebar'}
       title={isHidden ? 'Show sidebar (Alt+S)' : 'Hide sidebar (Alt+S)'}
     >

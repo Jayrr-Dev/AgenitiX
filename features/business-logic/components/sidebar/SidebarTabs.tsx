@@ -228,7 +228,7 @@ export function SidebarTabs({
 
   return (
     <Tabs value={activeTab} onValueChange={onTabChange}>
-      <aside className="absolute bottom-0 right-0 z-30 h-[200px] sm:h-[280px] w-full sm:w-[400px] lg:w-[450px] border bg-background pl-3 sm:pl-6 pr-3 sm:pr-5 pt-2 rounded-lg sm:rounded-lg rounded-b-none">
+      <aside className="absolute bottom-4 right-4 z-30 h-[200px] sm:h-[280px] w-full sm:w-[400px] lg:w-[450px] border bg-background pl-3 sm:pl-6 pr-3 sm:pr-5 pt-2 rounded-lg sm:rounded-lg rounded-b-none">
         <StencilInfoPanel stencil={hovered} />
 
         <TabsList className="bg-background  items-stretch justify-between w-full gap-1 ">

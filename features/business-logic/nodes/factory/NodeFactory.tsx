@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState, ReactNode, useMemo } from 'react';
+import React, { memo, useEffect, useState, ReactNode, useMemo, useCallback } from 'react';
 import {
   Position,
   useNodeConnections,
@@ -18,6 +18,9 @@ import { ExpandCollapseButton } from '../components/ExpandCollapseButton';
 // Configuration registration
 import { NODE_TYPE_CONFIG } from '../../flow-editor/constants';
 import type { NodeTypeConfig } from '../../flow-editor/types';
+
+// ULTRA-FAST PROPAGATION ENGINE
+import { useUltraFastPropagation } from './UltraFastPropagationEngine';
 
 // Styling hooks
 import { 
@@ -107,6 +110,260 @@ export interface NodeFactoryConfig<T extends BaseNodeData> {
   renderInspectorControls?: (props: InspectorControlProps<T>) => ReactNode;
   errorRecoveryData?: Partial<T>;
 }
+
+// ============================================================================
+// OPTIMIZED PROPAGATION UTILITIES
+// ============================================================================
+
+/**
+ * OPTIMIZED PROPAGATION HELPERS
+ * Extracted from the main component to avoid recalculation on every render
+ */
+
+// Cache for expensive calculations to avoid repeated work
+const calculationCache = new Map<string, { result: boolean; timestamp: number }>();
+const CACHE_TTL = 100; // Cache for 100ms to batch rapid updates
+
+/**
+ * MEMOIZED HEAD NODE CHECKER
+ * Determines if a node is a head node (source/trigger) based on connections
+ */
+const isHeadNode = (connections: Connection[], nodeId: string): boolean => {
+  const allInputConnections = connections.filter(c => c.target === nodeId);
+  const nonJsonInputs = allInputConnections.filter(c => c.targetHandle !== 'j');
+  return nonJsonInputs.length === 0;
+};
+
+/**
+ * OPTIMIZED HEAD NODE ACTIVATION CALCULATOR
+ * Calculates active state for head nodes using smart caching (bypasses cache for deactivation)
+ */
+const calculateHeadNodeActivation = <T extends BaseNodeData>(
+  nodeType: string,
+  data: T,
+  bypassCache: boolean = false
+): boolean => {
+  const cacheKey = `head-${nodeType}-${JSON.stringify(data)}`;
+  const cached = calculationCache.get(cacheKey);
+  
+  // INSTANT DEACTIVATION: Skip cache for immediate "off" response
+  if (!bypassCache && cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.result;
+  }
+
+  let result = false;
+  const currentData = data as any;
+
+  // For trigger nodes (TriggerOn, TriggerOff, etc.)
+  if (nodeType.toLowerCase().includes('trigger')) {
+    result = !!(currentData?.triggered);
+  }
+  // For cycle nodes (CycleToggle, CyclePulse)
+  else if (nodeType.toLowerCase().includes('cycle')) {
+    result = !!(currentData?.isOn && (currentData?.triggered || currentData?.phase || currentData?.pulsing));
+  }
+  // For manual trigger nodes (TestError, etc.)
+  else if (currentData?.isManuallyActivated !== undefined) {
+    result = !!(currentData?.isManuallyActivated);
+  }
+  // Special handling for TestJson nodes
+  else if (nodeType === 'testJson') {
+    result = currentData?.parsedJson !== null && 
+             currentData?.parsedJson !== undefined && 
+             currentData?.parseError === null;
+  }
+  // For input/creation nodes (CreateText, etc.)
+  else {
+    const outputValue = currentData?.text !== undefined ? currentData.text :
+                       currentData?.value !== undefined ? currentData.value :
+                       currentData?.output !== undefined ? currentData.output :
+                       currentData?.result !== undefined ? currentData.result :
+                       undefined;
+    
+    result = outputValue !== undefined && outputValue !== null && outputValue !== '';
+  }
+
+  // Cache the result (but don't cache false results for instant deactivation)
+  if (result || !bypassCache) {
+    calculationCache.set(cacheKey, { result, timestamp: Date.now() });
+  }
+  
+  return result;
+};
+
+/**
+ * OPTIMIZED DOWNSTREAM NODE ACTIVATION CALCULATOR
+ * Calculates active state for downstream nodes with smart caching (bypasses cache for deactivation)
+ */
+const calculateDownstreamNodeActivation = <T extends BaseNodeData>(
+  nodeType: string,
+  data: T,
+  connections: Connection[],
+  nodesData: any[],
+  nodeId: string,
+  bypassCache: boolean = false
+): boolean => {
+  const cacheKey = `downstream-${nodeId}-${connections.length}-${nodesData.map(n => n.id).join(',')}`;
+  const cached = calculationCache.get(cacheKey);
+  
+  // INSTANT DEACTIVATION: Skip cache for immediate "off" response
+  if (!bypassCache && cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.result;
+  }
+
+  // Get all source nodes connected to this node (excluding JSON inputs)
+  const allInputConnections = connections.filter(c => c.target === nodeId);
+  const nonJsonInputs = allInputConnections.filter(c => c.targetHandle !== 'j');
+  const sourceNodeIds = nonJsonInputs.map(c => c.source);
+  const sourceNodesData = nodesData.filter(node => sourceNodeIds.includes(node.id));
+  
+  if (sourceNodesData.length === 0) {
+    const result = false;
+    calculationCache.set(cacheKey, { result, timestamp: Date.now() });
+    return result;
+  }
+  
+  // Check if ANY input node is active
+  const hasActiveInput = sourceNodesData.some(sourceNode => {
+    const sourceData = sourceNode.data || {};
+    return !!(
+      sourceData.isActive ||
+      sourceData.triggered ||
+      (sourceData.value !== undefined && sourceData.value !== null && sourceData.value !== '') ||
+      (sourceData.text !== undefined && sourceData.text !== null && sourceData.text !== '') ||
+      (sourceData.output !== undefined && sourceData.output !== null && sourceData.output !== '')
+    );
+  });
+  
+  let result = hasActiveInput;
+
+  // SPECIAL CASE: Handle trigger inputs (boolean handle 'b')
+  const triggerConnections = connections.filter(c => c.targetHandle === 'b' && c.target === nodeId);
+  if (triggerConnections.length > 0) {
+    const triggerSourceIds = triggerConnections.map(c => c.source);
+    const triggerNodesData = nodesData.filter(node => triggerSourceIds.includes(node.id));
+    
+    const triggerAllows = triggerNodesData.some(triggerNode => {
+      const triggerData = triggerNode.data || {};
+      return !!(
+        triggerData.triggered ||
+        triggerData.isActive ||
+        triggerData.value === true ||
+        triggerData.output === true
+      );
+    });
+    
+    result = hasActiveInput && triggerAllows;
+  }
+  
+  // ENHANCED: Special handling for transformation nodes (like uppercase)
+  if (nodeType === 'turnToUppercase' || 
+      nodeType.toLowerCase().includes('transform') || 
+      nodeType.toLowerCase().includes('turn') ||
+      nodeType.toLowerCase().includes('convert')) {
+    // For transformation nodes, check if they have meaningful output
+    const currentData = data as any;
+    const hasOutput = !!(
+      (currentData?.text !== undefined && currentData?.text !== null && currentData?.text !== '') ||
+      (currentData?.value !== undefined && currentData?.value !== null && currentData?.value !== '') ||
+      (currentData?.output !== undefined && currentData?.output !== null && currentData?.output !== '')
+    );
+    
+    // Transformation nodes are active if they have input AND have produced output
+    result = hasActiveInput && hasOutput;
+    
+    console.log(`UFS Debug ${nodeType} ${nodeId}: hasActiveInput=${hasActiveInput}, hasOutput=${hasOutput}, result=${result}`);
+  }
+  
+  // Special handling for ViewOutput nodes
+  if (nodeType === 'viewOutput') {
+    if (!hasActiveInput) {
+      result = false;
+    } else {
+      const displayedValues = (data as any)?.displayedValues;
+      if (!Array.isArray(displayedValues) || displayedValues.length === 0) {
+        result = false;
+      } else {
+        result = displayedValues.some(item => {
+          const content = item.content;
+          
+          if (content === undefined || content === null || content === '') {
+            return false;
+          }
+          
+          if (typeof content === 'string' && content.trim() === '') {
+            return false;
+          }
+          
+          if (typeof content === 'object') {
+            if (Array.isArray(content)) {
+              return content.length > 0;
+            }
+            return Object.keys(content).length > 0;
+          }
+          
+          return true;
+        });
+      }
+    }
+  }
+
+  // Cache the result (but don't cache false results for instant deactivation)
+  if (result || !bypassCache) {
+    calculationCache.set(cacheKey, { result, timestamp: Date.now() });
+  }
+  
+  return result;
+};
+
+/**
+ * INSTANT DEACTIVATION + SMOOTH ACTIVATION UPDATE FUNCTION
+ * Provides immediate feedback for turning OFF, smooth updates for turning ON
+ */
+const debouncedUpdates = new Map<string, ReturnType<typeof setTimeout>>();
+
+const smartNodeUpdate = (
+  nodeId: string,
+  updateFn: () => void,
+  isActivating: boolean,
+  priority: 'instant' | 'smooth' = 'smooth'
+) => {
+  // INSTANT updates for deactivation or high priority
+  if (!isActivating || priority === 'instant') {
+    // Clear any pending debounced update
+    const existingTimeout = debouncedUpdates.get(nodeId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+      debouncedUpdates.delete(nodeId);
+    }
+    
+    // Execute immediately for instant feedback
+    updateFn();
+    return;
+  }
+  
+  // SMOOTH updates for activation (debounced)
+  const existingTimeout = debouncedUpdates.get(nodeId);
+  if (existingTimeout) {
+    clearTimeout(existingTimeout);
+  }
+  
+  const newTimeout = setTimeout(() => {
+    updateFn();
+    debouncedUpdates.delete(nodeId);
+  }, 8); // Reduced to 8ms for faster activation
+  
+  debouncedUpdates.set(nodeId, newTimeout);
+};
+
+// Legacy function for backward compatibility
+const debounceNodeUpdate = (
+  nodeId: string,
+  updateFn: () => void,
+  delay: number = 8
+) => {
+  smartNodeUpdate(nodeId, updateFn, true, 'smooth');
+};
 
 // ============================================================================
 // NODE INSPECTOR REGISTRY
@@ -210,42 +467,87 @@ export function createNodeComponent<T extends BaseNodeData>(
     const { isVibeModeActive } = useVibeModeStore();
 
     // ============================================================================
-    // CONNECTION HANDLING
+    // CONNECTION HANDLING WITH OPTIMIZATION
     // ============================================================================
     
     const connections = useNodeConnections({ handleType: 'target' });
-    const inputHandles = enhancedConfig.handles.filter(h => h.type === 'target');
+    const inputHandles = useMemo(() => 
+      enhancedConfig.handles.filter(h => h.type === 'target'), 
+      [enhancedConfig.handles]
+    );
     
-    const sourceIds = connections
-      .filter(c => inputHandles.some(h => h.id === c.targetHandle))
-      .map(c => c.source);
+    const sourceIds = useMemo(() => 
+      connections
+        .filter(c => inputHandles.some(h => h.id === c.targetHandle))
+        .map(c => c.source),
+      [connections, inputHandles]
+    );
+    
     const nodesData = useNodesData(sourceIds);
+    
+    // ULTRA-FAST PROPAGATION: Get all nodes for the propagation engine
+    const allNodes = useNodesData([]);
 
-    // Memoize connection and node data to prevent unnecessary effect triggers
-    const memoizedConnections = useMemo(() => connections, [JSON.stringify(connections)]);
-    const memoizedNodesData = useMemo(() => nodesData, [JSON.stringify(nodesData)]);
+    // OPTIMIZED: More selective memoization - only re-compute when actual meaningful data changes
+    const relevantConnectionData = useMemo(() => ({
+      connectionsSummary: connections.map(c => ({ 
+        source: c.source, 
+        target: c.target, 
+        targetHandle: c.targetHandle,
+        sourceHandle: c.sourceHandle
+      })),
+      nodeIds: sourceIds,
+      nodeDataSummary: nodesData.map(node => ({
+        id: node.id,
+        isActive: node.data?.isActive,
+        triggered: node.data?.triggered,
+        value: node.data?.value,
+        text: node.data?.text,
+        output: node.data?.output
+      }))
+    }), [connections, sourceIds, nodesData]);
 
     // ============================================================================
-    // JSON INPUT PROCESSING (ALWAYS ACTIVE)
+    // ULTRA-FAST PROPAGATION SYSTEM
     // ============================================================================
     
+    const { propagateUltraFast, enableGPUAcceleration } = useUltraFastPropagation(
+      allNodes || [],
+      connections,
+      updateNodeData
+    );
+
+    // Enable GPU acceleration for frequently updating nodes
     useEffect(() => {
-      // Find all JSON input handles that can be used for data updates
-      const jsonHandles = enhancedConfig.handles.filter(h => h.type === 'target' && h.dataType === 'j');
-      const jsonHandleIds = jsonHandles.map(h => h.id);
+      const nodeType = enhancedConfig.nodeType;
       
-      // Add the default JSON handle ID if no existing JSON handles
+      // Enable GPU acceleration for high-frequency nodes
+      if (nodeType.includes('trigger') || 
+          nodeType.includes('cycle') || 
+          nodeType.includes('delay') ||
+          nodeType.includes('pulse')) {
+        enableGPUAcceleration([id]);
+      }
+    }, [id, enhancedConfig.nodeType, enableGPUAcceleration]);
+
+    // ============================================================================
+    // INSTANT JSON INPUT PROCESSING
+    // ============================================================================
+    
+    const processJsonInputs = useCallback(() => {
+      // Find all JSON input handles that can be used for data updates
+      const jsonHandles = enhancedConfig.handles.filter((h: HandleConfig) => h.type === 'target' && h.dataType === 'j');
+      const jsonHandleIds = jsonHandles.map(h => h.id);
       const allJsonHandleIds = jsonHandleIds.length > 0 ? jsonHandleIds : ['j'];
       
       // Look for connections to any JSON input handles
-      const jsonConnections = memoizedConnections.filter(c => allJsonHandleIds.includes(c.targetHandle || ''));
+      const jsonConnections = connections.filter(c => allJsonHandleIds.includes(c.targetHandle || ''));
       if (jsonConnections.length === 0) return;
       
       // Get JSON data from connected nodes
-      const jsonInputs = memoizedNodesData
+      const jsonInputs = nodesData
         .filter(node => jsonConnections.some(c => c.source === node.id))
         .map(node => {
-          // Try to extract JSON from various node data properties
           const nodeData = node.data;
           return nodeData?.json || nodeData?.text || nodeData?.value || nodeData?.output || nodeData?.result;
         })
@@ -258,166 +560,165 @@ export function createNodeComponent<T extends BaseNodeData>(
         try {
           let parsedData;
           
-          // If it's already an object, use it directly
           if (typeof jsonInput === 'object') {
             parsedData = jsonInput;
           } else if (typeof jsonInput === 'string') {
-            // Try to parse as JSON string
             parsedData = JSON.parse(jsonInput);
           } else {
             console.warn(`JSON Processing ${id}: Invalid JSON input type:`, typeof jsonInput);
             return;
           }
           
-          // Validate that it's an object
           if (typeof parsedData !== 'object' || parsedData === null || Array.isArray(parsedData)) {
             console.warn(`JSON Processing ${id}: JSON input must be an object, got:`, typeof parsedData);
             return;
           }
           
-          // Filter out properties that shouldn't be overridden
           const { error: _, ...safeData } = parsedData;
           
-          // Check if any data would actually change to prevent infinite loops
+          // OPTIMIZED: More efficient change detection
           const currentData = data as T;
           const hasChanges = Object.keys(safeData).some(key => {
             const newValue = safeData[key];
             const currentValue = currentData[key];
             
-            // Deep comparison for objects, strict comparison for primitives
             if (typeof newValue === 'object' && typeof currentValue === 'object') {
               return JSON.stringify(newValue) !== JSON.stringify(currentValue);
             }
             return newValue !== currentValue;
           });
           
-          // Only update if there are actual changes
           if (hasChanges) {
             console.log(`JSON Processing ${id}: Applying JSON data:`, safeData);
+            // INSTANT JSON updates - no debouncing to prevent delays
             updateNodeData(id, safeData);
           }
           
         } catch (parseError) {
           console.error(`JSON Processing ${id}: Failed to parse JSON:`, parseError);
-          // Don't set error state for JSON parsing failures to avoid disrupting normal operation
         }
       });
-    }, [memoizedConnections, memoizedNodesData, id]); // Removed isVibeModeActive dependency
+    }, [connections, nodesData, id, enhancedConfig.handles, data, updateNodeData]);
+
+    // INSTANT JSON processing - no debouncing to prevent deactivation delays
+    useEffect(() => {
+      processJsonInputs();
+    }, [processJsonInputs]);
 
     // ============================================================================
-    // DATA PROCESSING
+    // OPTIMIZED DATA PROCESSING WITH SMART PROPAGATION
     // ============================================================================
     
+    // MEMOIZED: Propagation calculation to avoid unnecessary re-computation
+    const calculatedIsActive = useMemo(() => {
+      try {
+        // STEP 1: Check if this is a HEAD NODE
+        const isHead = isHeadNode(connections, id);
+        
+        // STEP 2: Determine if we should bypass cache for instant deactivation
+        const previousIsActive = (data as any)?.isActive;
+        const quickCheck = isHead 
+          ? calculateHeadNodeActivation(enhancedConfig.nodeType, data as T, true) // Quick check without cache
+          : calculateDownstreamNodeActivation(enhancedConfig.nodeType, data as T, connections, nodesData, id, true);
+        
+        // If transitioning from active to inactive, bypass cache for instant response
+        const bypassCache = previousIsActive === true && quickCheck === false;
+        
+        if (isHead) {
+          // HEAD NODE LOGIC
+          return calculateHeadNodeActivation(enhancedConfig.nodeType, data as T, bypassCache);
+        } else {
+          // DOWNSTREAM NODE LOGIC
+          return calculateDownstreamNodeActivation(
+            enhancedConfig.nodeType, 
+            data as T, 
+            connections, 
+            nodesData, 
+            id,
+            bypassCache
+          );
+        }
+      } catch (error) {
+        console.error(`${enhancedConfig.nodeType} ${id} - Propagation calculation error:`, error);
+        return false;
+      }
+    }, [
+      id,
+      enhancedConfig.nodeType,
+      relevantConnectionData,
+      nodesData,
+      // OPTIMIZED: Only depend on specific data properties that affect activation
+      (data as any)?.triggered,
+      (data as any)?.isManuallyActivated,
+      (data as any)?.text,
+      (data as any)?.value,
+      (data as any)?.output,
+      (data as any)?.result,
+      (data as any)?.parsedJson,
+      (data as any)?.parseError,
+      (data as any)?.isOn,
+      (data as any)?.phase,
+      (data as any)?.pulsing,
+      (data as any)?.displayedValues
+    ]);
+
+    // INSTANT DEACTIVATION + SMOOTH ACTIVATION: Update isActive state with smart timing
+    useEffect(() => {
+      if (isActive !== calculatedIsActive) {
+        const isActivating = !isActive && calculatedIsActive;
+        const isDeactivating = isActive && !calculatedIsActive;
+        
+        // Update local state immediately
+        setIsActive(calculatedIsActive);
+        
+        // ULTRA-FAST PROPAGATION: Use the new system for instant feedback
+        if (isDeactivating) {
+          console.log(`UFS ${enhancedConfig.nodeType} ${id}: DEACTIVATING - Using ultra-fast instant propagation`);
+        } else if (isActivating) {
+          console.log(`UFS ${enhancedConfig.nodeType} ${id}: ACTIVATING - Using ultra-fast smooth propagation`);
+        }
+        
+        // Propagate using Ultra-Fast System
+        propagateUltraFast(id, calculatedIsActive);
+      }
+    }, [calculatedIsActive, isActive, id, propagateUltraFast]);
+
+    // OPTIMIZED: Process main node logic with better dependency management
     useEffect(() => {
       try {
-        // Process regular node logic (Vibe Mode is handled separately)
         enhancedConfig.processLogic({
           id,
           data: data as T,
-          connections: memoizedConnections,
-          nodesData: memoizedNodesData,
+          connections: connections,
+          nodesData,
           updateNodeData: (nodeId: string, updates: Partial<T>) => 
             updateNodeData(nodeId, updates as Partial<Record<string, unknown>>),
           setError
         });
         
-        // Check if this node has produced meaningful output after processing
-        const hasOutputData = (() => {
-          const currentData = data as T;
+        // INSTANT OUTPUT UPDATES: Trigger/cycle node output value updates
+        if (enhancedConfig.nodeType.toLowerCase().includes('trigger') || 
+            enhancedConfig.nodeType.toLowerCase().includes('cycle')) {
+          const outputValue = calculatedIsActive ? true : false;
+          const currentOutputValue = (data as any)?.value;
           
-          // Special handling for TestJson nodes
-          if (enhancedConfig.nodeType === 'testJson') {
-            const testJsonData = currentData as any;
-            // Active when there's valid parsed JSON (no parse error and parsedJson exists)
-            return testJsonData?.parsedJson !== null && 
-                   testJsonData?.parsedJson !== undefined && 
-                   testJsonData?.parseError === null;
-          }
-          
-          // Special handling for ViewOutput nodes
-          if (enhancedConfig.nodeType === 'viewOutput') {
-            const displayedValues = (currentData as any)?.displayedValues;
-            if (!Array.isArray(displayedValues) || displayedValues.length === 0) {
-              return false;
-            }
+          if (currentOutputValue !== outputValue) {
+            const isOutputDeactivating = currentOutputValue === true && outputValue === false;
             
-            // Check if any displayed value has meaningful content
-            return displayedValues.some(item => {
-              const content = item.content;
-              
-              // Exclude meaningless values
-              if (content === undefined || content === null || content === '') {
-                return false;
-              }
-              
-              // For strings, check if they're not just whitespace
-              if (typeof content === 'string' && content.trim() === '') {
-                return false;
-              }
-              
-              // For objects/arrays, check if they have meaningful data
-              if (typeof content === 'object') {
-                if (Array.isArray(content)) {
-                  return content.length > 0;
-                }
-                // For objects, check if they have enumerable properties
-                return Object.keys(content).length > 0;
-              }
-              
-              // Numbers (including 0), booleans (including false), and other types are meaningful
-              return true;
-            });
+            // ULTRA-FAST: Instant updates for output changes
+            updateNodeData(id, { value: outputValue } as Partial<Record<string, unknown>>);
+            
+            if (isOutputDeactivating) {
+              console.log(`UFS Output ${enhancedConfig.nodeType} ${id}: INSTANT output deactivation`);
+              propagateUltraFast(id, false);
+            }
           }
-          
-          // Check for meaningful output data in this node
-          const outputValue = currentData?.text !== undefined ? currentData.text :
-                             currentData?.value !== undefined ? currentData.value :
-                             currentData?.output !== undefined ? currentData.output :
-                             currentData?.result !== undefined ? currentData.result :
-                             undefined;
-          
-          // Only activate if there's actual meaningful output
-          return outputValue !== undefined && outputValue !== null && outputValue !== '';
-        })();
-
-        // Compute final active state: has meaningful output AND trigger allows data
-        const triggerInfo = (() => {
-          // Import here to avoid circular dependency
-          const { getSingleInputValue, isTruthyValue } = require('../utils/nodeUtils');
-          
-          // Filter for trigger connections (boolean handle 'b')
-          const triggerConnections = memoizedConnections.filter(c => c.targetHandle === 'b');
-          const hasTrigger = triggerConnections.length > 0;
-          
-          if (!hasTrigger) {
-            return true; // No trigger = always allow data
-          }
-          
-          // Get the source node IDs for trigger connections
-          const triggerSourceIds = triggerConnections.map(c => c.source);
-          
-          // Filter nodesData to only include nodes connected to the trigger handle
-          const triggerNodesData = memoizedNodesData.filter(node => triggerSourceIds.includes(node.id));
-          
-          // Get trigger value from connected trigger nodes
-          const triggerValue = getSingleInputValue(triggerNodesData);
-          return isTruthyValue(triggerValue);
-        })();
-
-        // Final isActive state: has meaningful output AND trigger allows data
-        const finalIsActive = hasOutputData && triggerInfo;
-        setIsActive(finalIsActive);
-        
-        // Update the state in the node data
-        if ((data as any)?.isActive !== finalIsActive) {
-          console.log(`Factory ${enhancedConfig.nodeType} ${id}: Setting isActive to ${finalIsActive} (hasOutput: ${hasOutputData}, triggerAllows: ${triggerInfo})`);
-          updateNodeData(id, { isActive: finalIsActive } as Partial<Record<string, unknown>>);
         }
         
       } catch (processingError) {
-        setIsActive(false); // Clear active state on error
+        // INSTANT error state clearing
+        setIsActive(false);
         
-        // Clear isActive state in node data on error
         if ((data as any)?.isActive === true) {
           updateNodeData(id, { isActive: false } as Partial<Record<string, unknown>>);
         }
@@ -429,15 +730,15 @@ export function createNodeComponent<T extends BaseNodeData>(
         setError(errorMessage);
       }
     }, [
-      id, 
-      memoizedConnections, 
-      memoizedNodesData, 
+      id,
+      relevantConnectionData, // OPTIMIZED: Use summarized connection data
+      nodesData,
       enhancedConfig.nodeType,
-      // Add specific data properties that should trigger processing
-      (data as any)?.isManuallyActivated,
-      (data as any)?.triggerMode,
-      (data as any)?.errorType,
-      (data as any)?.errorMessage
+      enhancedConfig.processLogic,
+      calculatedIsActive,
+      updateNodeData,
+      propagateUltraFast,
+      data // Keep full data dependency for process logic
     ]);
 
     // ============================================================================
@@ -445,23 +746,19 @@ export function createNodeComponent<T extends BaseNodeData>(
     // ============================================================================
     
     useEffect(() => {
-      // Clear error on successful processing only for non-TestJson nodes
-      // TestJson nodes manage their own error state through their data.error property
       if (error && !isRecovering && enhancedConfig.nodeType !== 'testJson' && enhancedConfig.nodeType !== 'testError') {
-        // Only clear if the node doesn't have an error in its data
         if (!data?.error) {
           setError(null);
         }
       }
-    }, [error, isRecovering, enhancedConfig.nodeType]); // Remove data.error dependency to prevent loops
+    }, [error, isRecovering, enhancedConfig.nodeType]);
 
-    // Recovery function
-    const recoverFromError = () => {
+    // MEMOIZED: Recovery function to prevent recreation on every render
+    const recoverFromError = useCallback(() => {
       try {
         setIsRecovering(true);
         setError(null);
         
-        // Reset to safe defaults
         const recoveryData = {
           ...enhancedConfig.defaultData,
           ...enhancedConfig.errorRecoveryData,
@@ -476,40 +773,62 @@ export function createNodeComponent<T extends BaseNodeData>(
         setError('Recovery failed. Please refresh.');
         setIsRecovering(false);
       }
-    };
+    }, [id, enhancedConfig, updateNodeData]);
 
     // ============================================================================
-    // STYLING
+    // MEMOIZED STYLING CALCULATIONS
     // ============================================================================
     
-    const nodeSize = enhancedConfig.size || DEFAULT_TEXT_NODE_SIZE;
+    const nodeSize = useMemo(() => enhancedConfig.size || DEFAULT_TEXT_NODE_SIZE, [enhancedConfig.size]);
     
-    // Check for Vibe Mode injected error state - only for nodes that support error injection
-    const supportsErrorInjection = ['createText', 'testJson', 'viewOutput'].includes(enhancedConfig.nodeType);
-    const hasVibeError = supportsErrorInjection && (data as any)?.isErrorState === true;
-    const vibeErrorType = (data as any)?.errorType || 'error';
+    // OPTIMIZED: Memoize error state calculations
+    const errorState = useMemo(() => {
+      const supportsErrorInjection = ['createText', 'testJson', 'viewOutput'].includes(enhancedConfig.nodeType);
+      const hasVibeError = supportsErrorInjection && (data as any)?.isErrorState === true;
+      const vibeErrorType = (data as any)?.errorType || 'error';
+      const finalErrorForStyling = error || hasVibeError;
+      const finalErrorType = error ? 'local' : vibeErrorType;
+      
+      return { supportsErrorInjection, hasVibeError, finalErrorForStyling, finalErrorType };
+    }, [enhancedConfig.nodeType, error, data]);
     
-    // Determine final error state for styling (local error takes precedence)
-    const finalErrorForStyling = error || hasVibeError;
-    const finalErrorType = error ? 'local' : vibeErrorType;
-    
-    const nodeStyleClasses = useNodeStyleClasses(!!selected, !!finalErrorForStyling, isActive);
-    const buttonTheme = useNodeButtonTheme(!!finalErrorForStyling, isActive);
-    const textTheme = useNodeTextTheme(!!finalErrorForStyling);
+    // MEMOIZED: Styling hooks with stable dependencies
+    const nodeStyleClasses = useNodeStyleClasses(!!selected, !!errorState.finalErrorForStyling, isActive);
+    const buttonTheme = useNodeButtonTheme(!!errorState.finalErrorForStyling, isActive);
+    const textTheme = useNodeTextTheme(!!errorState.finalErrorForStyling);
     const categoryBaseClasses = useNodeCategoryBaseClasses(enhancedConfig.nodeType);
-    const categoryButtonTheme = useNodeCategoryButtonTheme(enhancedConfig.nodeType, !!finalErrorForStyling, isActive);
-    const categoryTextTheme = useNodeCategoryTextTheme(enhancedConfig.nodeType, !!finalErrorForStyling);
+    const categoryButtonTheme = useNodeCategoryButtonTheme(enhancedConfig.nodeType, !!errorState.finalErrorForStyling, isActive);
+    const categoryTextTheme = useNodeCategoryTextTheme(enhancedConfig.nodeType, !!errorState.finalErrorForStyling);
+
+    // MEMOIZED: Handle filtering for better performance
+    const { inputHandlesFiltered, outputHandles } = useMemo(() => {
+      const inputHandlesFiltered = enhancedConfig.handles
+        .filter(handle => handle.type === 'target')
+        .filter(handle => {
+          if (handle.dataType === 'j') {
+            const hasJsonConnection = connections.some(c => c.targetHandle === handle.id);
+            return hasJsonConnection || isVibeModeActive;
+          }
+          return true;
+        });
+      
+      const outputHandles = enhancedConfig.handles.filter(handle => handle.type === 'source');
+      
+      return { inputHandlesFiltered, outputHandles };
+    }, [enhancedConfig.handles, connections, isVibeModeActive]);
 
     // ============================================================================
     // RENDER
     // ============================================================================
     
     return (
-      <div className={`relative ${
-        showUI 
-          ? `px-4 py-3 ${nodeSize.expanded.width}` 
-          : `${nodeSize.collapsed.width} ${nodeSize.collapsed.height} flex items-center justify-center`
-      } rounded-lg ${categoryBaseClasses.background} shadow border ${categoryBaseClasses.border} ${nodeStyleClasses}`}>
+      <div 
+        data-id={id} // ULTRA-FAST: DOM targeting for instant visual feedback
+        className={`relative ${
+          showUI 
+            ? `px-4 py-3 ${nodeSize.expanded.width}` 
+            : `${nodeSize.collapsed.width} ${nodeSize.collapsed.height} flex items-center justify-center`
+        } rounded-lg ${categoryBaseClasses.background} shadow border ${categoryBaseClasses.border} ${nodeStyleClasses}`}>
         
         {/* Floating Node ID */}
         <FloatingNodeId nodeId={id} />
@@ -518,37 +837,25 @@ export function createNodeComponent<T extends BaseNodeData>(
         <ExpandCollapseButton
           showUI={showUI}
           onToggle={() => setShowUI((v) => !v)}
-          className={`${finalErrorForStyling ? buttonTheme : categoryButtonTheme}`}
+          className={`${errorState.finalErrorForStyling ? buttonTheme : categoryButtonTheme}`}
         />
 
         {/* Input Handles */}
-        {enhancedConfig.handles
-          .filter(handle => handle.type === 'target')
-          .filter(handle => {
-            // Smart JSON handle visibility: show if connected OR if Vibe Mode is active
-            if (handle.dataType === 'j') {
-              // Check if this JSON handle has any existing connections
-              const hasJsonConnection = memoizedConnections.some(c => c.targetHandle === handle.id);
-              
-              // Show JSON handle if: it has connections OR Vibe Mode is active
-              return hasJsonConnection || isVibeModeActive;
-            }
-            return true;
-          })
-          .map(handle => (
-            <CustomHandle
-              key={handle.id}
-              type="target"
-              position={handle.position}
-              id={handle.id}
-              dataType={handle.dataType}
-            />
-          ))}
+        {inputHandlesFiltered.map(handle => (
+          <CustomHandle
+            key={handle.id}
+            type="target"
+            position={handle.position}
+            id={handle.id}
+            dataType={handle.dataType}
+          />
+        ))}
         
         {/* Collapsed State */}
         {!showUI && enhancedConfig.renderCollapsed({
           data: data as T,
-          error: supportsErrorInjection && finalErrorForStyling ? (error || (data as any)?.error || 'Error state active') : error,
+          error: errorState.supportsErrorInjection && errorState.finalErrorForStyling ? 
+            (error || (data as any)?.error || 'Error state active') : error,
           nodeType: enhancedConfig.nodeType,
           updateNodeData,
           id
@@ -557,7 +864,8 @@ export function createNodeComponent<T extends BaseNodeData>(
         {/* Expanded State */}
         {showUI && enhancedConfig.renderExpanded({
           data: data as T,
-          error: supportsErrorInjection && finalErrorForStyling ? (error || (data as any)?.error || 'Error state active') : error,
+          error: errorState.supportsErrorInjection && errorState.finalErrorForStyling ? 
+            (error || (data as any)?.error || 'Error state active') : error,
           nodeType: enhancedConfig.nodeType,
           categoryTextTheme,
           textTheme,
@@ -566,17 +874,15 @@ export function createNodeComponent<T extends BaseNodeData>(
         })}
 
         {/* Output Handles */}
-        {enhancedConfig.handles
-          .filter(handle => handle.type === 'source')
-          .map(handle => (
-            <CustomHandle
-              key={handle.id}
-              type="source"
-              position={handle.position}
-              id={handle.id}
-              dataType={handle.dataType}
-            />
-          ))}
+        {outputHandles.map(handle => (
+          <CustomHandle
+            key={handle.id}
+            type="source"
+            position={handle.position}
+            id={handle.id}
+            dataType={handle.dataType}
+          />
+        ))}
       </div>
     );
   };
@@ -584,6 +890,7 @@ export function createNodeComponent<T extends BaseNodeData>(
   // Add display name for debugging
   NodeComponent.displayName = enhancedConfig.displayName;
 
+  // CRITICAL: Wrap the component in React.memo for optimal performance
   return memo(NodeComponent);
 }
 
@@ -694,7 +1001,7 @@ export const addJsonInputSupport = <T extends BaseNodeData>(
   handles: HandleConfig[]
 ): HandleConfig[] => {
   // Check if node already has a JSON input handle
-  const hasJsonInput = handles.some(h => h.type === 'target' && h.dataType === 'j');
+  const hasJsonInput = handles.some((h: HandleConfig) => h.type === 'target' && h.dataType === 'j');
   
   if (!hasJsonInput) {
     // Add a JSON input handle positioned at the top center
@@ -789,7 +1096,7 @@ export const addTriggerSupport = <T extends BaseNodeData>(
   handles: HandleConfig[]
 ): HandleConfig[] => {
   // Check if node already has a boolean trigger input handle
-  const hasTriggerInput = handles.some(h => h.type === 'target' && h.dataType === 'b');
+  const hasTriggerInput = handles.some((h: HandleConfig) => h.type === 'target' && h.dataType === 'b');
   
   if (!hasTriggerInput) {
     // Add a boolean trigger input handle positioned at the left
@@ -978,4 +1285,4 @@ if (node.data.isActive) {
   // Node is triggered and should pass data to connected nodes
   const outputData = node.data.text || node.data.value || node.data.output;
 }
-*/ 
+*/

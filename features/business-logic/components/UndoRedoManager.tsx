@@ -348,7 +348,21 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
       
       if (!ctrlKey) return
       
-      // Prevent default browser behavior
+      // Check if user is currently typing in an input field
+      const activeElement = document.activeElement;
+      const isTypingInInput = activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.getAttribute('contenteditable') === 'true' ||
+        (activeElement as HTMLElement).contentEditable === 'true'
+      );
+      
+      // If typing in an input field, allow browser's native undo/redo to work
+      if (isTypingInInput) {
+        return; // Let the browser handle Ctrl+Z/Ctrl+Y natively in input fields
+      }
+      
+      // Prevent default browser behavior only when NOT in input fields
       if (event.key === 'z' || event.key === 'y') {
         event.preventDefault()
       }

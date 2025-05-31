@@ -117,6 +117,15 @@ export function SearchBar({
 
       // Check if user is typing in the input field
       const isTypingInInput = document.activeElement === inputRef.current;
+      
+      // Also check if user is typing in ANY input field (text nodes, etc.)
+      const activeElement = document.activeElement;
+      const isTypingInAnyInput = activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.getAttribute('contenteditable') === 'true' ||
+        (activeElement as HTMLElement).contentEditable === 'true'
+      );
 
       if (isTypingInInput) {
         // ENTER KEY - Exit search and return focus to main area
@@ -166,6 +175,11 @@ export function SearchBar({
 
       // "6" KEY - Return focus to input field (when not already focused)
       if (e.key === '6') {
+        // Don't execute if user is typing in any other input field
+        if (isTypingInAnyInput && !isTypingInInput) {
+          return; // Let the other input field handle the typing
+        }
+        
         e.preventDefault();
         e.stopPropagation(); // Prevent event from bubbling to SidebarTabs
         if (inputRef.current) {
@@ -177,6 +191,11 @@ export function SearchBar({
 
       // QWERTY SHORTCUTS - Create nodes from search results (when not typing in input)
       if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+        // Don't execute shortcuts if user is typing in ANY input field
+        if (isTypingInAnyInput) {
+          return; // Let the input field handle the typing naturally
+        }
+        
         const gridKeyMap: Record<string, number> = {
           // Row 1: qwert (positions 0-4)
           'q': 0, 'w': 1, 'e': 2, 'r': 3, 't': 4,
