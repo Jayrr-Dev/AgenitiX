@@ -15,6 +15,7 @@ import { Inter } from 'next/font/google';
 import { AnubisProvider, AnubisStatus } from '@/components/anubis/AnubisProvider';
 import { AnubisControlPanel } from '@/components/anubis/AnubisControlPanel';
 import { AnubisDebugger } from '@/components/anubis/AnubisDebugger';
+import { AnubisToggle } from '@/components/anubis/AnubisToggle';
 import { OptimisticVerificationProvider } from "@/components/anubis/OptimisticVerification";
 import { RiskDashboard } from "@/components/anubis/RiskDashboard";
 
@@ -110,6 +111,7 @@ export default function RootLayout({
               </Providers>
               <PWAInstallPrompt />
               <PWAStatus />
+              {/* <AnubisToggle /> */}
               <AnubisStatus />
               <AnubisControlPanel />
               {process.env.NODE_ENV === 'development' && <AnubisDebugger />}

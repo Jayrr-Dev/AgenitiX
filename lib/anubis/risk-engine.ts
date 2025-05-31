@@ -1,4 +1,6 @@
 // ADAPTIVE RISK ENGINE FOR ANUBIS
+import { ThreatIntelligence } from './threat-intelligence';
+
 export interface RiskFactors {
   ipReputation: number;        // 0-100 (100 = known bad)
   geolocation: number;         // 0-100 (100 = high-risk country)
@@ -205,24 +207,85 @@ export class RiskEngine {
 
   // INDIVIDUAL RISK FACTOR ANALYZERS
   private static async checkIPReputation(ip: string): Promise<number> {
-    // Known bad IPs database check
-    const knownBadIPs = new Set<string>([
-      // Add known bad IPs here
-    ]);
+    console.log(`🌐 Starting enhanced IP reputation check for: ${ip}`);
     
-    if (knownBadIPs.has(ip)) return 100;
-    if (ip.startsWith('127.') || ip.startsWith('192.168.') || ip.startsWith('10.')) return 0;
-    
-    // Check for hosting providers and cloud services (higher risk)
-    const hostingProviders = [
-      /amazonaws\.com/i, /googlecloud/i, /azure/i, /digitalocean/i,
-      /vultr/i, /linode/i, /ovh/i, /hetzner/i
+    // LOCAL/PRIVATE IPS (SAFE)
+    if (ip.startsWith('127.') || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.16.')) {
+      console.log(`🏠 Local/private IP detected: ${ip}`);
+      return 0;
+    }
+
+    try {
+      // USE ENHANCED THREAT INTELLIGENCE
+      const threatResult = await ThreatIntelligence.checkIPReputation(ip);
+      
+      if (threatResult.isMalicious) {
+        console.log(`🚨 Malicious IP detected: ${ip} - Risk: ${threatResult.riskScore}, Confidence: ${threatResult.confidence}, Sources: ${threatResult.sources.join(', ')}, Blacklist hits: ${threatResult.blacklistHits}`);
+        return threatResult.riskScore;
+      }
+
+      // NOT IN THREAT FEEDS - CHECK ADDITIONAL PATTERNS
+      return this.checkAdditionalIPPatterns(ip);
+
+    } catch (error) {
+      console.error(`❌ Error checking IP reputation for ${ip}:`, error);
+      // FALLBACK TO BASIC CHECKS
+      return this.checkAdditionalIPPatterns(ip);
+    }
+  }
+
+  // ADDITIONAL IP PATTERN CHECKS (FALLBACK)
+  private static checkAdditionalIPPatterns(ip: string): number {
+    // TOR EXIT NODES PATTERNS (BACKUP CHECK)
+    const torPatterns = [
+      /^185\.220\./,    // Common Tor range
+      /^199\.87\./,     // Common Tor range
+      /^176\.10\./,     // Common Tor range
+      /^51\.15\./,      // Some Tor exits
+      /^163\.172\./     // Some Tor exits
     ];
     
-    // This would normally do a reverse DNS lookup
-    // For now, we'll use a moderate default for unknown IPs
-    console.log(`🌐 IP reputation check for: ${ip}`);
-    return 30; // Increased from 10 - unknown IPs are more suspicious
+    if (torPatterns.some(pattern => pattern.test(ip))) {
+      console.log(`🧅 Potential Tor exit node (backup check): ${ip}`);
+      return 85;
+    }
+    
+    // HOSTING PROVIDER RANGES
+    const hostingRanges = [
+      /^5\./,           // Many VPS providers
+      /^104\./,         // US hosting/CDN
+      /^185\./,         // European hosting
+      /^172\.(?!1[6-9]|2[0-9]|3[01])\./,  // Hosting (excluding private 172.16-31)
+      /^198\.199\./,    // DigitalOcean
+      /^159\.203\./,    // DigitalOcean
+      /^142\.93\./,     // DigitalOcean
+      /^167\.99\./      // DigitalOcean
+    ];
+    
+    if (hostingRanges.some(pattern => pattern.test(ip))) {
+      console.log(`🏢 Hosting provider range detected: ${ip}`);
+      return 60;
+    }
+    
+    // SUSPICIOUS RANGES
+    const suspiciousRanges = [
+      /^103\./,         // APNIC region, often abused
+      /^125\./,         // APNIC region
+      /^180\./,         // APNIC region
+      /^200\./,         // LACNIC region
+      /^46\./,          // RIPE region, some abuse
+      /^80\./,          // RIPE region
+      /^92\./,          // RIPE region
+      /^93\./           // RIPE region
+    ];
+    
+    if (suspiciousRanges.some(pattern => pattern.test(ip))) {
+      console.log(`⚠️ Suspicious IP range detected: ${ip}`);
+      return 40;
+    }
+    
+    console.log(`✅ IP appears clean: ${ip}`);
+    return 15; // Low risk for unknown but clean IPs
   }
 
   private static async checkGeolocation(ip: string): Promise<number> {
@@ -309,10 +372,71 @@ export class RiskEngine {
   }
 
   private static analyzeRequestPattern(request: any): number {
-    // Analyze request timing, frequency, etc.
-    // This would integrate with your existing request tracking
+    // ANALYZE REQUEST TIMING, FREQUENCY, AND PATTERNS
     console.log(`⏱️ Request pattern analysis`);
-    return 40; // Increased from 20 - default moderate risk for unknown patterns
+    
+    let riskScore = 0;
+    const headers = request.headers || {};
+    
+    // CHECK FOR AUTOMATION INDICATORS IN HEADERS
+    const automationHeaders = [
+      'x-requested-with',
+      'x-automation',
+      'x-test',
+      'x-selenium',
+      'x-webdriver'
+    ];
+    
+    const hasAutomationHeaders = automationHeaders.some(header => 
+      headers[header] || headers[header.toLowerCase()]
+    );
+    
+    if (hasAutomationHeaders) {
+      console.log(`🤖 Automation headers detected`);
+      riskScore += 40;
+    }
+    
+    // CHECK FOR MISSING STANDARD BROWSER HEADERS
+    const expectedHeaders = ['accept', 'accept-language', 'accept-encoding'];
+    const missingHeaders = expectedHeaders.filter(header => 
+      !headers[header] && !headers[header.toLowerCase()]
+    );
+    
+    if (missingHeaders.length > 0) {
+      console.log(`📄 Missing standard headers: ${missingHeaders.join(', ')}`);
+      riskScore += missingHeaders.length * 15;
+    }
+    
+    // CHECK FOR SUSPICIOUS HEADER VALUES
+    const acceptHeader = headers['accept'] || headers['Accept'] || '';
+    if (acceptHeader === '*/*' && !headers['accept-language']) {
+      console.log(`⚠️ Generic accept header without language preference`);
+      riskScore += 25;
+    }
+    
+    // CHECK FOR UNUSUAL HEADER COMBINATIONS
+    const userAgent = headers['user-agent'] || headers['User-Agent'] || '';
+    const acceptLanguage = headers['accept-language'] || headers['Accept-Language'] || '';
+    
+    // Chrome browser should have accept-language
+    if (userAgent.includes('Chrome') && !acceptLanguage) {
+      console.log(`🌐 Chrome without accept-language header`);
+      riskScore += 30;
+    }
+    
+    // CHECK FOR RAPID SEQUENTIAL REQUESTS (if timestamp data available)
+    // This would require session tracking implementation
+    // const requestFrequency = analyzeRequestFrequency(request);
+    // if (requestFrequency > threshold) riskScore += 50;
+    
+    // CHECK FOR SUSPICIOUS CONNECTION PATTERNS
+    const connection = headers['connection'] || headers['Connection'] || '';
+    if (connection.toLowerCase() === 'close' && userAgent.includes('Mozilla')) {
+      console.log(`🔌 Suspicious connection header for browser`);
+      riskScore += 20;
+    }
+    
+    return Math.min(riskScore, 100); // Cap at 100
   }
 
   private static analyzeTimeOfDay(timestamp: number): number {

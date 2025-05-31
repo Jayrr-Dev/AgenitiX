@@ -14,10 +14,14 @@ export function RiskDashboard() {
     averageRiskScore: 0,
     threatTrend: 'stable' as 'increasing' | 'decreasing' | 'stable'
   });
-
-  // TOGGLE DASHBOARD VISIBILITY
-  const toggleDashboard = () => setIsVisible(!isVisible);
-
+  
+  // CHECK IF UI IS ENABLED
+  const [showUI, setShowUI] = useState(false);
+  useEffect(() => {
+    const saved = localStorage.getItem('anubis-ui-enabled');
+    setShowUI(saved === 'true');
+  }, []);
+  
   // SIMULATE REAL-TIME METRICS (replace with actual API calls)
   useEffect(() => {
     const interval = setInterval(() => {
@@ -32,6 +36,11 @@ export function RiskDashboard() {
 
     return () => clearInterval(interval);
   }, []);
+  
+  if (!showUI) return null;
+
+  // TOGGLE DASHBOARD VISIBILITY
+  const toggleDashboard = () => setIsVisible(!isVisible);
 
   const currentRisk = RISK_LEVELS[currentRiskLevel];
   const currentConfig = ADAPTIVE_CONFIGS[currentRiskLevel];
@@ -40,7 +49,7 @@ export function RiskDashboard() {
     return (
       <button
         onClick={toggleDashboard}
-        className="fixed top-4 right-4 bg-background/90 backdrop-blur-sm border border-border rounded-lg p-2 shadow-lg z-50 hover:bg-background/95 transition-colors"
+        className="fixed top-4 right-20 bg-background/90 backdrop-blur-sm border border-border rounded-lg p-2 shadow-lg z-50 hover:bg-background/95 transition-colors"
         title="Open Risk Dashboard"
       >
         <div className="flex items-center gap-2">

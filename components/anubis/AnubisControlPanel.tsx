@@ -8,10 +8,19 @@ import type { RouteProtectionConfig } from '@/types/anubis';
 // AGENITIX CONTROL PANEL COMPONENT
 export function AnubisControlPanel() {
   const { isEnabled, currentRoute, toggleProtection, updateConfig, getRouteConfig } = useAnubis();
+  
+  // ALL STATE HOOKS MUST BE DECLARED BEFORE ANY CONDITIONAL RETURNS
+  const [showUI, setShowUI] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [newRoutePath, setNewRoutePath] = useState('');
   const [protectedRoutes, setProtectedRoutes] = useState<RouteProtectionConfig[]>([]);
   const [globalEnabled, setGlobalEnabled] = useState(isEnabled);
+  
+  // ALL EFFECT HOOKS MUST BE DECLARED BEFORE ANY CONDITIONAL RETURNS
+  useEffect(() => {
+    const saved = localStorage.getItem('anubis-ui-enabled');
+    setShowUI(saved === 'true');
+  }, []);
   
   // LOAD PROTECTED ROUTES
   useEffect(() => {
@@ -30,6 +39,9 @@ export function AnubisControlPanel() {
     loadRoutes();
     setGlobalEnabled(isEnabled);
   }, [isEnabled]);
+  
+  // NOW WE CAN HAVE CONDITIONAL RETURNS
+  if (!showUI) return null;
   
   // TOGGLE GLOBAL PROTECTION
   const handleGlobalToggle = () => {

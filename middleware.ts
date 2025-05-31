@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadAnubisConfig, getRouteProtectionManager } from '@/lib/anubis/config';
 import { AnubisJWT, AnubisCrypto } from '@/lib/anubis/crypto';
 import { RiskEngine, RiskMonitor } from '@/lib/anubis/risk-engine';
+import { adaptiveRateLimiter } from '@/lib/anubis/rate-limiter';
 
 // ROUTES THAT REQUIRE ANUBIS PROTECTION
 const PROTECTED_ROUTES = [
@@ -53,6 +54,30 @@ export async function middleware(request: NextRequest) {
   
   // TRACK RISK FOR MONITORING
   RiskMonitor.trackRisk(requestMetadata.ip, riskLevel);
+  
+  // CHECK RATE LIMITING BASED ON RISK LEVEL
+  const rateLimitResult = adaptiveRateLimiter.checkLimit(requestMetadata, riskLevel.name);
+  
+  if (!rateLimitResult.allowed) {
+    console.log(`🚦 Rate limit exceeded for ${riskLevel.name} user: ${rateLimitResult.totalHits}/${rateLimitResult.remaining}`);
+    
+    const response = NextResponse.json(
+      { 
+        error: 'Rate limit exceeded',
+        message: 'Too many requests. Please try again later.',
+        retryAfter: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
+      },
+      { status: 429 }
+    );
+    
+    // ADD RATE LIMIT HEADERS
+    response.headers.set('X-RateLimit-Limit', String(rateLimitResult.totalHits + rateLimitResult.remaining));
+    response.headers.set('X-RateLimit-Remaining', String(rateLimitResult.remaining));
+    response.headers.set('X-RateLimit-Reset', String(Math.ceil(rateLimitResult.resetTime / 1000)));
+    response.headers.set('Retry-After', String(Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)));
+    
+    return response;
+  }
   
   console.log(`Risk Assessment: ${riskLevel.name} (Level ${riskLevel.level}) - Score: ${riskLevel.score}`);
   

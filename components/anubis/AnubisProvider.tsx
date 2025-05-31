@@ -127,7 +127,14 @@ export function useAnubis(): AnubisContextType {
 export function AnubisStatus() {
   const { isEnabled, isProtected, currentRoute } = useAnubis();
   
-  if (!isEnabled) return null;
+  // CHECK IF UI IS ENABLED
+  const [showUI, setShowUI] = useState(false);
+  useEffect(() => {
+    const saved = localStorage.getItem('anubis-ui-enabled');
+    setShowUI(saved === 'true');
+  }, []);
+  
+  if (!showUI || !isEnabled) return null;
   
   return (
     <div className="fixed bottom-4 right-4 bg-background border border-transparent bg-fill-border rounded-lg p-3 shadow-lg text-sm backdrop-blur-lg">
