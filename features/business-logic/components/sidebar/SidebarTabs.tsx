@@ -157,6 +157,11 @@ export function SidebarTabs({
         return; // Let system shortcuts work normally
       }
       
+      // Skip QWERTY shortcuts when search is visible to avoid conflicts
+      if (isSearchVisible) {
+        return; // Let SearchBar handle all QWERTY shortcuts
+      }
+      
       const isCustomTab = variant === 'e' && activeTab === 'custom';
       
       if (isCustomTab) {

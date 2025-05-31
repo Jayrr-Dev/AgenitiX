@@ -102,6 +102,7 @@ export function SearchBar({
       // ESCAPE KEY - Close search completely (works even when typing)
       if (e.key === 'Escape') {
         e.preventDefault();
+        e.stopPropagation(); // Prevent event from bubbling to SidebarTabs
         handleClose();
         return;
       }
@@ -109,6 +110,7 @@ export function SearchBar({
       // ALT+C - Close search completely (works even when typing)
       if (e.altKey && e.key.toLowerCase() === 'c') {
         e.preventDefault();
+        e.stopPropagation(); // Prevent event from bubbling to SidebarTabs
         handleClose();
         return;
       }
@@ -120,6 +122,7 @@ export function SearchBar({
         // ENTER KEY - Exit search and return focus to main area
         if (e.key === 'Enter') {
           e.preventDefault();
+          e.stopPropagation(); // Prevent event from bubbling to SidebarTabs
           inputRef.current?.blur();
           setIsInputFocused(false);
           // Don't close search immediately, allow user to use shortcuts on results
@@ -129,6 +132,7 @@ export function SearchBar({
         // ALT+Q - Backspace when typing (ergonomic text editing)
         if (e.altKey && e.key.toLowerCase() === 'q') {
           e.preventDefault();
+          e.stopPropagation(); // Prevent event from bubbling to SidebarTabs
           const input = inputRef.current;
           if (input) {
             const cursorPos = input.selectionStart || 0;
@@ -149,6 +153,7 @@ export function SearchBar({
         // ALT+W - Enter when typing (ergonomic text editing)
         if (e.altKey && e.key.toLowerCase() === 'w') {
           e.preventDefault();
+          e.stopPropagation(); // Prevent event from bubbling to SidebarTabs
           inputRef.current?.blur();
           setIsInputFocused(false);
           // Don't close search immediately, allow user to use shortcuts on results
@@ -162,6 +167,7 @@ export function SearchBar({
       // "6" KEY - Return focus to input field (when not already focused)
       if (e.key === '6') {
         e.preventDefault();
+        e.stopPropagation(); // Prevent event from bubbling to SidebarTabs
         if (inputRef.current) {
           inputRef.current.focus();
           setIsInputFocused(true);
@@ -182,6 +188,7 @@ export function SearchBar({
 
         if (gridKeyMap.hasOwnProperty(currentKey)) {
           e.preventDefault();
+          e.stopPropagation(); // Prevent event from bubbling to SidebarTabs
           
           const position = gridKeyMap[currentKey];
           
