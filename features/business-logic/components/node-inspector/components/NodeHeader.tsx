@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import type { AgenNode } from '../../../flow-editor/types';
 import { NODE_TYPE_CONFIG } from '../constants';
 import { useNodeDisplay } from '../../../flow-editor/contexts/NodeDisplayContext';
+import { useTextInputShortcuts } from '../../../hooks/useTextInputShortcuts';
 
 interface NodeHeaderProps {
   node: AgenNode;
@@ -54,13 +55,26 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
     setIsEditingId(false);
   }, [node.id]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleIdSave();
-    } else if (e.key === 'Escape') {
-      handleIdCancel();
+  // ERGONOMIC TEXT INPUT SHORTCUTS - Alt+Q (backspace) and Alt+W (enter)
+  const textInputShortcuts = useTextInputShortcuts({
+    value: editingId,
+    setValue: setEditingId,
+    onEnter: handleIdSave,
+  });
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    // First, let the text input shortcuts handle Alt+Q and Alt+W
+    textInputShortcuts.handleKeyDown(e);
+    
+    // Then handle existing shortcuts (Enter/Escape) if not already handled
+    if (!e.defaultPrevented) {
+      if (e.key === 'Enter') {
+        handleIdSave();
+      } else if (e.key === 'Escape') {
+        handleIdCancel();
+      }
     }
-  }, [handleIdSave, handleIdCancel]);
+  }, [handleIdSave, handleIdCancel, textInputShortcuts]);
 
   return (
     <div className="border-b border-gray-200 dark:border-gray-700 pb-2">
@@ -83,6 +97,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
               onChange={(e) => setEditingId(e.target.value)}
               onBlur={handleIdSave}
               onKeyDown={handleKeyDown}
+              title="Edit node ID • Alt+Q = backspace • Alt+W = enter"
               className="text-[10px] px-1 py-0.5 border border-blue-300 dark:border-blue-600 rounded
                          bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
                          focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-0 flex-1"

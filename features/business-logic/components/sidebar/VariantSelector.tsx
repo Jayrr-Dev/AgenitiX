@@ -57,21 +57,27 @@ export function VariantSelector({
         
         {/* Variant Buttons - Half width */}
         <div className="w-1/2 flex gap-2 justify-end">
-          {variants.map((v) => (
-            <button
-              key={v}
-              onClick={() => onVariantChange(v)}
-              onMouseEnter={() => setHoveredVariant(v)}
-              onMouseLeave={() => setHoveredVariant(null)}
-              className={`rounded h-8 w-8 py-1 text-sm transition-colors flex items-center justify-center ${
-                variant === v 
-                ? 'bg-white text-black hover:bg-gray-100'
-                : 'bg-black text-white hover:bg-gray-700' 
-              }`}
-            >
-              {renderIcon(v)}
-            </button>
-          ))}
+          {variants.map((v, index) => {
+            const shortcutNumber = index + 1;
+            const variantName = VARIANT_NAMES[v];
+            
+            return (
+              <button
+                key={v}
+                onClick={() => onVariantChange(v)}
+                onMouseEnter={() => setHoveredVariant(v)}
+                onMouseLeave={() => setHoveredVariant(null)}
+                title={`${variantName} (Alt+${shortcutNumber})`}
+                className={`rounded h-8 w-8 py-1 text-sm transition-colors flex items-center justify-center ${
+                  variant === v 
+                  ? 'bg-white text-black hover:bg-gray-100'
+                  : 'bg-black text-white hover:bg-gray-700' 
+                }`}
+              >
+                {renderIcon(v)}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

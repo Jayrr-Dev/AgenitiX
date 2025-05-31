@@ -11,10 +11,11 @@ interface SortableStencilProps {
   setHovered: (s: HoveredStencil | null) => void;
   onRemove?: (stencilId: string) => void;
   showRemoveButton?: boolean;
+  keyboardShortcut?: string;
 }
 
 export const SortableStencil = React.memo<SortableStencilProps>(
-  ({ stencil, onNativeDragStart, onDoubleClickCreate, setHovered, onRemove, showRemoveButton = false }) => {
+  ({ stencil, onNativeDragStart, onDoubleClickCreate, setHovered, onRemove, showRemoveButton = false, keyboardShortcut }) => {
     const { setNodeRef, attributes, listeners, transform, transition } =
       useSortable({ id: stencil.id });
 
@@ -181,6 +182,7 @@ export const SortableStencil = React.memo<SortableStencilProps>(
         ref={setNodeRef}
         style={style}
         className="relative flex h-[70px] w-[70px] select-none items-center justify-center rounded border bg-background text-xs hover:bg-stone-900 group"
+        title={keyboardShortcut ? `${stencil.label} (${keyboardShortcut})` : stencil.label}
         onDoubleClick={() => onDoubleClickCreate(stencil.nodeType)}
         onMouseEnter={() => setHovered(stencil)}
         onMouseLeave={() => setHovered(null)}

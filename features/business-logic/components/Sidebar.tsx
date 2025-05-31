@@ -3,7 +3,7 @@
 /* -------------------------------------------------------------------------- */
 'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useReactFlow } from '@xyflow/react';
 
 import { SidebarTabs } from './sidebar/SidebarTabs';
@@ -19,7 +19,11 @@ interface SidebarProps {
   className?: string;
 }
 
-export default function Sidebar({ className = '' }: SidebarProps) {
+export interface SidebarRef {
+  toggle: () => void;
+}
+
+const Sidebar = forwardRef<SidebarRef, SidebarProps>(({ className = '' }, ref) => {
   const [isHidden, setIsHidden] = useState(false);
   const { 
     variant, 
@@ -50,6 +54,11 @@ export default function Sidebar({ className = '' }: SidebarProps) {
   const toggleVisibility = useCallback(() => {
     setIsHidden(prev => !prev);
   }, []);
+
+  // EXPOSE TOGGLE FUNCTION TO PARENT VIA REF
+  useImperativeHandle(ref, () => ({
+    toggle: toggleVisibility
+  }), [toggleVisibility]);
 
   const handleCreateNode = useCallback(
     (nodeType: string) => {
@@ -106,4 +115,8 @@ export default function Sidebar({ className = '' }: SidebarProps) {
       />
     </div>
   );
-}
+});
+
+Sidebar.displayName = 'Sidebar';
+
+export default Sidebar;

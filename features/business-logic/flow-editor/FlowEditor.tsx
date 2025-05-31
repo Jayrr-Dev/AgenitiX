@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ReactFlowProvider, applyNodeChanges, applyEdgeChanges } from '@xyflow/react';
+import { ReactFlowProvider, applyNodeChanges, applyEdgeChanges, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 // Import components
-import Sidebar from '../components/Sidebar';
+import Sidebar, { SidebarRef } from '../components/Sidebar';
 import DebugTool from '../components/DebugTool';
 import UndoRedoManager, { ActionHistoryEntry } from '../components/UndoRedoManager';
 import { UndoRedoProvider } from '../components/UndoRedoContext';
@@ -91,6 +91,7 @@ function FlowEditorContent() {
   
   const wrapperRef = useRef<HTMLDivElement>(null);
   const flowInstanceRef = useRef<any>(null);
+  const sidebarRef = useRef<SidebarRef>(null);
 
   // ============================================================================
   // ZUSTAND STORE
@@ -366,14 +367,84 @@ function FlowEditorContent() {
   // KEYBOARD SHORTCUTS
   // ============================================================================
   
+  // INSPECTOR LOCK TOGGLE HANDLER (Alt+A)
+  const handleToggleInspectorLock = useCallback(() => {
+    setInspectorLocked(!inspectorLocked);
+    console.log(`🔒 Inspector ${!inspectorLocked ? 'locked' : 'unlocked'} (Alt+A)`);
+  }, [inspectorLocked, setInspectorLocked]);
+  
+  // NODE DUPLICATION HANDLER (Alt+W) - Multi-selection aware
+  const handleDuplicateSelectedNode = useCallback(() => {
+    // Get ReactFlow instance to access selected nodes
+    const reactFlowInstance = flowInstanceRef.current;
+    if (!reactFlowInstance) {
+      console.warn(`⚠️ ReactFlow instance not available`);
+      return;
+    }
+
+    // Get all currently selected nodes from ReactFlow
+    const selectedNodes = nodes.filter(node => node.selected);
+    
+    if (selectedNodes.length === 0) {
+      console.log(`⚠️ No nodes selected to duplicate`);
+      return;
+    }
+
+    console.log(`📋 Duplicating ${selectedNodes.length} selected node(s) (Alt+W)`);
+
+    // Create duplicates with proper positioning
+    const duplicatedNodes = selectedNodes.map((nodeToDuplicate, index) => {
+      const newId = `${nodeToDuplicate.id}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+      
+      // Offset each duplicate slightly to avoid stacking
+      const offsetX = 40 + (index * 10); // Slight stagger for multiple nodes
+      const offsetY = 40 + (index * 10);
+      
+      return {
+        ...nodeToDuplicate,
+        id: newId,
+        position: { 
+          x: nodeToDuplicate.position.x + offsetX, 
+          y: nodeToDuplicate.position.y + offsetY 
+        },
+        selected: false, // Start unselected
+        data: { ...nodeToDuplicate.data }
+      } as AgenNode;
+    });
+
+    // Add all duplicated nodes to the store
+    duplicatedNodes.forEach(newNode => {
+      addNode(newNode);
+    });
+    
+    // Clear current selection and select the first duplicated node for feedback
+    clearSelection();
+    if (duplicatedNodes.length > 0) {
+      selectNode(duplicatedNodes[0].id);
+    }
+  }, [nodes, addNode, selectNode, clearSelection]);
+  
+  // SIDEBAR TOGGLE HANDLER (Alt+S) - Connected to sidebar ref
+  const handleToggleSidebar = useCallback(() => {
+    if (sidebarRef.current) {
+      sidebarRef.current.toggle();
+      console.log(`📋 Sidebar toggled (Alt+S)`);
+    } else {
+      console.warn(`⚠️ Sidebar ref not available`);
+    }
+  }, []);
+  
   // Using ReactFlow's built-in delete functionality (deleteKeyCode prop) for Delete/Backspace
-  // and custom Ctrl+Q for bulk delete operations
+  // and custom Alt+Q for bulk delete operations
   useKeyboardShortcuts({
     onCopy: multiSelectionCopyPaste.copySelectedElements,
     onPaste: multiSelectionCopyPaste.pasteElements,
-    onDelete: handleMultiDelete, // Custom multi-delete for Ctrl+Q
+    onDelete: handleMultiDelete, // Alt+Q for deletion
     onToggleHistory: toggleHistoryPanel,
-    onToggleVibeMode: toggleVibeMode // Vibe mode toggle for Ctrl+X
+    onToggleVibeMode: toggleVibeMode, // Ctrl+X for vibe mode toggle
+    onToggleInspectorLock: handleToggleInspectorLock, // Alt+A for inspector lock
+    onDuplicateNode: handleDuplicateSelectedNode, // Alt+W for node duplication
+    onToggleSidebar: handleToggleSidebar // Alt+S for sidebar toggle
   });
 
   // ============================================================================
@@ -439,7 +510,7 @@ function FlowEditorContent() {
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       {/* SIDEBAR */}
-      <Sidebar />
+      <Sidebar ref={sidebarRef} />
       
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col">

@@ -2,12 +2,14 @@ import React from 'react';
 
 interface AddNodeButtonProps {
   onClick: () => void;
+  title?: string;
 }
 
-export function AddNodeButton({ onClick }: AddNodeButtonProps) {
+export function AddNodeButton({ onClick, title }: AddNodeButtonProps) {
   return (
     <button
       onClick={onClick}
+      title={title}
       className="h-[70px] w-[70px] p-3 border-2 border-dashed border-gray-300 dark:border-zinc-600 
                  rounded-lg hover:border-blue-400 dark:hover:border-blue-500 
                  hover:bg-blue-50 dark:hover:bg-blue-950/20

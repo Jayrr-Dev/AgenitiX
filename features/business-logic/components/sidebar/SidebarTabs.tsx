@@ -44,6 +44,10 @@ export function SidebarTabs({
   // Store current stencils for keyboard shortcuts
   const currentStencilsRef = useRef<Record<string, NodeStencil[]>>({});
 
+  // KEY REPEAT PREVENTION - Prevent spam node creation
+  const lastKeyPressRef = useRef<{ key: string; timestamp: number } | null>(null);
+  const KEY_REPEAT_COOLDOWN = 150; // 150ms cooldown between same key presses
+
   // Get flow store for node deletion
   const { selectedNodeId, removeNode } = useFlowStore();
 
@@ -67,6 +71,30 @@ export function SidebarTabs({
   // Keyboard shortcut for search (Ctrl+K / Cmd+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // PREVENT KEY REPEAT SPAM - Block browser key repeat events
+      if (e.repeat) {
+        // Browser detected key repeat - block it completely for node creation keys
+        const nodeCreationKeys = ['q', 'w', 'e', 'r', 't', 'a', 's', 'd', 'f', 'g', 'z', 'x', 'c', 'v', 'b'];
+        if (nodeCreationKeys.includes(e.key.toLowerCase()) && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+          e.preventDefault();
+          return; // Block all repeat events for node creation
+        }
+      }
+
+      // PREVENT RAPID KEY SPAM - Throttle same key presses
+      const currentTime = Date.now();
+      const currentKey = e.key.toLowerCase();
+      const lastKeyPress = lastKeyPressRef.current;
+
+      if (lastKeyPress && lastKeyPress.key === currentKey && (currentTime - lastKeyPress.timestamp) < KEY_REPEAT_COOLDOWN) {
+        // Same key pressed too quickly - ignore it
+        e.preventDefault();
+        return;
+      }
+
+      // Update last key press for throttling
+      lastKeyPressRef.current = { key: currentKey, timestamp: currentTime };
+
       // Check if user is typing in an input field
       const activeElement = document.activeElement;
       const isTyping = activeElement && (
@@ -93,15 +121,6 @@ export function SidebarTabs({
         setIsSearchVisible(true);
       }
       
-      // Delete selected node shortcut (Ctrl+Q / Cmd+Q)
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'q') {
-        e.preventDefault();
-        if (selectedNodeId) {
-          removeNode(selectedNodeId);
-        }
-        return; // Exit early to avoid processing other shortcuts
-      }
-      
       // Variant switching shortcuts (Alt+1-5)
       if (e.altKey && e.key >= '1' && e.key <= '5') {
         e.preventDefault();
@@ -118,13 +137,6 @@ export function SidebarTabs({
         if (targetVariant) {
           onVariantChange(targetVariant);
         }
-        return; // Exit early to avoid processing other shortcuts
-      }
-      
-      // Sidebar toggle shortcut (Alt+Q)
-      if (e.altKey && e.key.toLowerCase() === 'q') {
-        e.preventDefault();
-        onToggle();
         return; // Exit early to avoid processing other shortcuts
       }
       
@@ -221,21 +233,26 @@ export function SidebarTabs({
         <StencilInfoPanel stencil={hovered} />
 
         <TabsList className="bg-background  items-stretch justify-between w-full gap-1 ">
-          {tabs.map(({ key, label }) => (
-            <TabsTrigger
-              key={key}
-              value={key}
-              className=" data-[state=active]:bg-white data-[state=active]:brightness-110 dark:data-[state=active]:bg-gray-700"
-            >
-              {label}
-            </TabsTrigger>
-          ))}
+          {tabs.map(({ key, label }, index) => {
+            const shortcutNumber = index + 1;
+            
+            return (
+              <TabsTrigger
+                key={key}
+                value={key}
+                title={`${label} (${shortcutNumber})`}
+                className=" data-[state=active]:bg-white data-[state=active]:brightness-110 dark:data-[state=active]:bg-gray-700"
+              >
+                {label}
+              </TabsTrigger>
+            );
+          })}
           
           {/* Search Button */}
           <button
             onClick={() => setIsSearchVisible(true)}
             className="px-3 py-1.5 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1"
-            title="Search all nodes (Ctrl+K)"
+            title="Search all nodes (6 or Ctrl+K) • Enter to exit input • QWERTY to create • Press 6 to return to input • Alt+C to close"
           >
             <Search className="h-4 w-4" />
             {/* <span className="hidden sm:inline">Search</span> */}

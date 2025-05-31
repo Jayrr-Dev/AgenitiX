@@ -108,7 +108,7 @@ const NodeInspector = React.memo(function NodeInspector() {
       <div className="flex items-center justify-center h-5 w-4">
         <button
           aria-label="Unlock Inspector"
-          title="Unlock Inspector"
+          title="Unlock Inspector (Alt+A)"
           onClick={() => setInspectorLocked(false)}
           className="text-gray-400 hover:text-orange-500 hover:border-orange-300 dark:hover:border-orange-700 dark:hover:text-orange-400 dark:text-gray-600 text-3xl p-2 rounded-full border border-transparent transition-colors"
         >
@@ -155,7 +155,7 @@ const NodeInspector = React.memo(function NodeInspector() {
               <button
                 onClick={() => setInspectorLocked(!inspectorLocked)}
                 className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                title={inspectorLocked ? "Unlock Inspector" : "Lock Inspector"}
+                title={inspectorLocked ? "Unlock Inspector (Alt+A)" : "Lock Inspector (Alt+A)"}
               >
                 {inspectorLocked ? (
                   <FaLock className="w-3 h-3" />
@@ -167,7 +167,7 @@ const NodeInspector = React.memo(function NodeInspector() {
               <button
                 onClick={() => handleDuplicateNode(selectedNode.id)}
                 className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
-                title="Duplicate Node"
+                title="Duplicate Node (Alt+W)"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -177,7 +177,7 @@ const NodeInspector = React.memo(function NodeInspector() {
               <button
                 onClick={() => handleDeleteNode(selectedNode.id)}
                 className="flex items-center gap-1 px-2 py-1 text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
-                title="Delete Node"
+                title="Delete Node (Alt+Q)"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

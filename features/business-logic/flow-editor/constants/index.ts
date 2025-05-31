@@ -246,7 +246,12 @@ export const EDGE_ID_PREFIX = 'edge-';
 export const KEYBOARD_SHORTCUTS = {
   COPY: 'c',
   PASTE: 'v',
-  TOGGLE_HISTORY: 'h'
+  TOGGLE_HISTORY: 'h',
+  // Alt-based shortcuts
+  DELETE_NODES: 'q',        // Alt+Q
+  TOGGLE_INSPECTOR: 'a',    // Alt+A  
+  DUPLICATE_NODE: 'w',      // Alt+W
+  TOGGLE_SIDEBAR: 's'       // Alt+S
 } as const;
 
 // ============================================================================

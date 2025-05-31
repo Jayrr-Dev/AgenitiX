@@ -74,8 +74,9 @@ flow-editor/
 
 ### Keyboard Shortcuts (`hooks/useKeyboardShortcuts.ts`)
 - **Purpose**: Global keyboard shortcut handling
-- **Contains**: Copy/paste, history toggle shortcuts
-- **Benefits**: Centralized keyboard logic, easy to extend
+- **Contains**: Copy/paste, history toggle, Alt-based UI controls
+- **Alt Shortcuts**: Delete nodes (Alt+Q), duplicate node (Alt+W), toggle sidebar (Alt+S), toggle inspector (Alt+A)  
+- **Benefits**: Centralized keyboard logic, easy to extend, ergonomic layout
 
 ### Node Factory (`utils/nodeFactory.ts`)
 - **Purpose**: Node creation and validation
@@ -149,12 +150,17 @@ test('should add node correctly', () => {
 ### Extending Keyboard Shortcuts
 
 ```typescript
-// In useKeyboardShortcuts.ts
+// In constants/index.ts
 export const KEYBOARD_SHORTCUTS = {
-  COPY: 'c',
-  PASTE: 'v',
-  TOGGLE_HISTORY: 'h',
-  DELETE_ALL: 'delete', // New shortcut
+  COPY: 'c',              // Ctrl+C
+  PASTE: 'v',             // Ctrl+V  
+  TOGGLE_HISTORY: 'h',    // Ctrl+H
+  // Alt-based shortcuts
+  DELETE_NODES: 'q',      // Alt+Q
+  TOGGLE_INSPECTOR: 'a',  // Alt+A  
+  DUPLICATE_NODE: 'w',    // Alt+W
+  TOGGLE_SIDEBAR: 's',    // Alt+S
+  CUSTOM_ACTION: 'z',     // Alt+Z (new shortcut)
 } as const;
 ```
 

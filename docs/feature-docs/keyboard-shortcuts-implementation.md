@@ -452,7 +452,10 @@ if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) {
 ## 🎮 User Guide
 
 ### Sidebar Control
-- **`Alt+Q`** - Toggle sidebar visibility (open/close)
+- **`Alt+S`** - Toggle sidebar visibility (open/close)
+
+### Inspector Control ✨ NEW
+- **`Alt+A`** - Lock/unlock inspector panel
 
 ### Variant Navigation (Alt+1-5)
 - **`Alt+1`** - Switch to Main variant (Core/Logic/Stores/Testing/Time)
@@ -470,12 +473,13 @@ if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) {
 - **`6`** - Open search modal
 - **`Ctrl+K`** - Also opens search modal
 
-### Node Management
-- **`Ctrl+Q`** - Delete currently selected node (and its connected edges)
+### Node Management ✨ UPDATED
+- **`Alt+Q`** - Delete currently selected nodes and edges (multi-selection supported)
+- **`Alt+W`** - Duplicate currently selected node ✨ NEW
 
 ### Multi-Selection Features ✨ NEW
 #### Selection Box Drawing
-- **`Shift + Click & Drag`** - Draw a selection box to select multiple nodes and edges at once
+- **`Shift + Click & Drag`** - Draw a selection box to select multiple items in a rectangular area
 - **Selection box behavior**: Hold Shift, then click and drag to draw a rectangular selection area
 - **What gets selected**: All nodes and edges that intersect with the selection box
 
@@ -507,12 +511,14 @@ Position your mouse where you want the node to appear, then press:
 
 ### Smart Features
 - **Mouse-based positioning**: Nodes appear exactly at cursor location
-- **Intelligent input protection**: Plain letter shortcuts disabled when typing in text fields, but system shortcuts (Ctrl+Q, Ctrl+C, etc.) still work
+- **Intelligent input protection**: Plain letter shortcuts disabled when typing in text fields, but system shortcuts (Ctrl+C, Ctrl+V, etc.) still work
 - **Modifier key protection**: QWERTY shortcuts disabled when Ctrl/Alt/Shift/Cmd are pressed (avoids conflicts with copy/paste/etc.)
 - **Cross-variant support**: Works across all sidebar variants
 - **Zoom/pan aware**: Coordinates properly transformed for any view
 - **Persistent storage**: Custom nodes and sidebar state survive page refreshes
 - **Multi-platform selection**: Automatic detection of macOS vs Windows/Linux for optimal key bindings
+- **Inspector state management**: Alt+A toggle preserves locked/unlocked state across sessions
+- **Node duplication positioning**: Alt+W creates duplicates with smart offset positioning
 
 ## 🧪 Testing Approach
 
@@ -522,10 +528,13 @@ Position your mouse where you want the node to appear, then press:
 - [ ] Search opens with key 6 and Ctrl+K
 - [ ] QWERTY keys create correct nodes at mouse position
 - [ ] Plain letter shortcuts disabled when typing in input fields
-- [ ] System shortcuts work normally when typing in input fields (Ctrl+C copy, Ctrl+V paste, Ctrl+Q delete, etc.)
+- [ ] System shortcuts work normally when typing in input fields (Ctrl+C copy, Ctrl+V paste, Ctrl+Z undo, etc.)
 - [ ] System shortcuts work normally outside input fields (Ctrl+C copy, Ctrl+V paste, Ctrl+Z undo, etc.)
-- [ ] Ctrl+Q deletes selected node and its connected edges
-- [ ] Ctrl+Q does nothing when no node is selected
+- [ ] **Alt+Q** deletes selected nodes and edges (supports multi-selection) ✨ UPDATED
+- [ ] **Alt+S** toggles sidebar visibility (open/close) ✨ UPDATED  
+- [ ] **Alt+A** locks/unlocks inspector panel ✨ NEW
+- [ ] **Alt+W** duplicates currently selected node ✨ NEW
+- [ ] Alt shortcuts do nothing when no node is selected (where applicable)
 - [ ] Works with zoomed/panned canvas
 - [ ] No console errors during node creation
 - [ ] **Shift + Click & Drag** draws selection box around multiple nodes/edges
@@ -653,23 +662,63 @@ localStorage['agenitix-sidebar-tabs'] = {
 ---
 
 **Implementation Status**: ✅ Complete and Production Ready  
-**Last Updated**: January 30, 2025 (Improved input protection to allow system shortcuts while typing)  
+**Last Updated**: January 30, 2025 (Alt-based shortcut reorganization + inspector controls)  
 **Next Review**: March 2025 
 
 **Complete Keyboard Shortcuts**:
-- **Sidebar Control**: Alt+Q toggles sidebar visibility (open/close)
+- **Sidebar Control**: Alt+S toggles sidebar visibility (open/close)
+- **Inspector Control**: Alt+A locks/unlocks inspector panel
 - **Variant Navigation**: Alt+1-5 switch between sidebar variants
 - **Tab Navigation**: 1-5 switch tabs within variant, 6 opens search, Ctrl+K also opens search
 - **Node Creation**: QWERTY grid creates nodes at mouse cursor position
   - **Standard Tabs**: Q,W,E,R,T (row 1), A,S,D,F,G (row 2), Z,X,C,V,B (row 3)
   - **Custom Tab**: Q opens "Add Node" modal, W,E,R,T (positions 0-3), A,S,D,F,G (positions 4-8), Z,X,C,V,B (positions 9-13) 
-- **Node Management**: Ctrl+Q deletes currently selected node and its connected edges 
+- **Node Management**: Alt+Q deletes currently selected nodes and edges (multi-selection supported), Alt+W duplicates currently selected node
 - **Multi-Selection Features**: 
   - **Selection Box**: Shift + Click & Drag to select multiple items in a rectangular area
   - **Multi-Click Selection**: Ctrl/Cmd+Click (Windows/Linux) or Cmd+Click (macOS) to add items to selection
   - **Batch Operations**: Delete key removes all selected nodes and edges simultaneously
 
 ## 🆕 Recent Updates
+
+### Alt-Based Shortcut Reorganization (January 30, 2025) ✨ NEW
+**Major keyboard shortcut reorganization for better ergonomics and consistency:**
+
+#### Changes Made:
+1. **Alt+Q** → Delete selected nodes/edges (was Ctrl+Q)
+2. **Alt+S** → Toggle sidebar visibility (was Alt+Q)  
+3. **Alt+A** → Lock/unlock inspector panel (NEW)
+4. **Alt+W** → Duplicate selected node (NEW)
+
+#### Technical Implementation:
+```typescript
+// useKeyboardShortcuts.ts - New Alt-based shortcuts
+const KEYBOARD_SHORTCUTS = {
+  COPY: 'c',           // Ctrl+C (unchanged)
+  PASTE: 'v',          // Ctrl+V (unchanged) 
+  TOGGLE_HISTORY: 'h', // Ctrl+H (unchanged)
+  // Alt-based shortcuts
+  DELETE_NODES: 'q',        // Alt+Q
+  TOGGLE_INSPECTOR: 'a',    // Alt+A  
+  DUPLICATE_NODE: 'w',      // Alt+W
+  TOGGLE_SIDEBAR: 's'       // Alt+S
+} as const;
+```
+
+#### Benefits:
+- **Consistent Alt prefix**: All major UI controls now use Alt modifier
+- **Ergonomic layout**: Alt+QWAS forms comfortable left-hand cluster
+- **No browser conflicts**: Alt shortcuts avoid common browser hotkeys
+- **Inspector control**: New Alt+A provides quick inspector lock/unlock
+- **Node duplication**: Alt+W enables rapid node duplication workflow
+- **Better discoverability**: Logical grouping of related functions
+
+#### User Impact:
+- **Faster workflow**: Quick access to all major UI controls with left hand
+- **Reduced conflicts**: Alt shortcuts don't interfere with browser navigation
+- **Enhanced productivity**: Inspector lock and node duplication boost efficiency
+- **Intuitive mapping**: Q for quit/delete, S for sidebar, A for auxiliary panel, W for duplicate
+- **Backward compatibility**: Only shortcuts changed, all other functionality preserved
 
 ### Multi-Selection Implementation (January 30, 2025)
 **Added ReactFlow's built-in multi-selection capabilities:**

@@ -43,6 +43,33 @@ export function TabContent({
   const { defaults } = VARIANT_CONFIG[variant];
   const sensors = useDragSensors();
 
+  // KEYBOARD SHORTCUT MAPPING - Different for custom vs regular tabs
+  const getKeyboardShortcut = React.useCallback((index: number): string => {
+    if (isCustomTab) {
+      // Custom tab mapping: q = add node, w-b shifted positions
+      const customGridKeyMap: Record<number, string> = {
+        // Row 1: wert (positions 0-3, shifted from qwer)
+        0: 'W', 1: 'E', 2: 'R', 3: 'T',
+        // Row 2: asdfg (positions 4-8, shifted from asdg)
+        4: 'A', 5: 'S', 6: 'D', 7: 'F', 8: 'G',
+        // Row 3: zxcvb (positions 9-13, shifted from zxcv)
+        9: 'Z', 10: 'X', 11: 'C', 12: 'V', 13: 'B',
+      };
+      return customGridKeyMap[index] || '';
+    } else {
+      // Regular tab mapping: full QWERTY grid
+      const gridKeyMap: Record<number, string> = {
+        // Row 1: qwert (positions 0-4)
+        0: 'Q', 1: 'W', 2: 'E', 3: 'R', 4: 'T',
+        // Row 2: asdfg (positions 5-9)
+        5: 'A', 6: 'S', 7: 'D', 8: 'F', 9: 'G',
+        // Row 3: zxcvb (positions 10-14)
+        10: 'Z', 11: 'X', 12: 'C', 13: 'V', 14: 'B',
+      };
+      return gridKeyMap[index] || '';
+    }
+  }, [isCustomTab]);
+
   // Get the correct defaults for this specific variant and tab
   const getDefaultStencils = (): NodeStencil[] => {
     if (isCustomTab) return [];
@@ -95,11 +122,11 @@ export function TabContent({
             <div className="flex flex-wrap justify-evenly gap-2 sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center sm:mx-auto">
               {/* Add Node Button as first item in grid */}
               <div className="flex items-center justify-center">
-                <AddNodeButton onClick={onAddCustomNode || (() => {})} />
+                <AddNodeButton onClick={onAddCustomNode || (() => {})} title="Add Node (Q)" />
               </div>
               
               {/* Custom nodes - now sortable */}
-              {customNodes.map((stencil) => (
+              {customNodes.map((stencil, index) => (
                 <SortableStencil
                   key={stencil.id}
                   stencil={stencil}
@@ -108,6 +135,7 @@ export function TabContent({
                   setHovered={setHovered}
                   onRemove={onRemoveCustomNode}
                   showRemoveButton={true}
+                  keyboardShortcut={getKeyboardShortcut(index)}
                 />
               ))}
             </div>
@@ -125,6 +153,7 @@ export function TabContent({
         onNativeDragStart={onNativeDragStart}
         onDoubleClickCreate={onDoubleClickCreate}
         setHovered={setHovered}
+        getKeyboardShortcut={getKeyboardShortcut}
       />
     </TabsContent>
   );

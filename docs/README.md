@@ -8,7 +8,7 @@ Welcome to the Agenitix-2 project documentation! This directory contains compreh
 Documentation for implemented features and their technical details.
 
 #### Available Documents:
-- **[Keyboard Shortcuts Implementation](./feature-docs/keyboard-shortcuts-implementation.md)** - Complete guide to the QWERTY grid node creation and tab navigation system
+- **[Keyboard Shortcuts Implementation](./feature-docs/keyboard-shortcuts-implementation.md)** - Complete guide to the QWERTY grid node creation, tab navigation system, and Alt-based UI controls
 
 ## 🎯 Feature Documentation Standards
 

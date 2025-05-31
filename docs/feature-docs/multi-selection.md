@@ -64,8 +64,8 @@ The Multi-Selection feature provides a comprehensive set of tools for selecting 
 - **Advantages**: Fully integrated with ReactFlow's undo/redo and state management
 - **Works with**: Both single and multi-selection
 
-#### **Custom Bulk Delete (Ctrl+Q / Cmd+Q)**
-- **Action**: Press `Ctrl+Q` (Windows/Linux) or `Cmd+Q` (Mac)
+#### **Custom Bulk Delete (Alt+Q)**
+- **Action**: Press `Alt+Q` (All platforms)
 - **Behavior**: Custom deletion with enhanced feedback
 - **Features**: 
   - Console log showing number of deleted elements
@@ -127,7 +127,7 @@ useMultiSelectionCopyPaste() {
 useKeyboardShortcuts({
   onCopy: copySelectedElements,
   onPaste: pasteElements,
-  onDelete: handleMultiDelete, // Ctrl+Q
+  onDelete: handleMultiDelete, // Alt+Q
   onToggleHistory: toggleHistoryPanel
 })
 ```
@@ -186,7 +186,7 @@ const nodeIdMap = new Map<string, string>();
 1. **Multi-Select**: Use Ctrl+click to select specific nodes across the canvas
 2. **Group Move**: Drag any selected node to move all together
 3. **Batch Delete**: Press `Delete` key to remove all selected elements
-4. **Alternative Delete**: Use `Ctrl+Q` for deletion with console feedback
+4. **Alternative Delete**: Use `Alt+Q` for deletion with console feedback
 
 ### **Workflow 3: Rapid Prototyping**
 1. **Create Base**: Build initial flow section
@@ -236,7 +236,7 @@ const nodeIdMap = new Map<string, string>();
 
 ### **Delete Operations**
 1. **Native Delete**: Select multiple → Press Delete → Verify removal
-2. **Custom Delete**: Select multiple → Press Ctrl+Q → Verify removal + console log
+2. **Custom Delete**: Select multiple → Press Alt+Q → Verify removal + console log
 3. **Edge Cleanup**: Delete nodes → Verify connected edges also removed
 
 ### **Advanced Scenarios**
@@ -458,51 +458,7 @@ selectionMode={SelectionMode.Full}        // Full overlap required
 deleteKeyCode={['Delete', 'Backspace']}   // Native ReactFlow deletion
 
 // In useKeyboardShortcuts.ts - Custom deletion shortcuts
-case 'q':  // Ctrl+Q for bulk deletion
+case 'q':  // Alt+Q for bulk deletion
   // Custom deletion logic
   break;
 ```
-
-## 📈 Future Enhancements
-
-### Planned Features
-- **Selection Groups**: Save and restore selection sets
-- **Selection Filters**: Filter selection by node type or properties  
-- **Bulk Editing**: Edit properties of multiple selected nodes simultaneously
-- **Selection History**: Undo/redo selection changes
-- **Keyboard Navigation**: Arrow keys to modify selection
-
-### Extension Points
-- **Custom Selection Logic**: Override selection behavior for specific node types
-- **Selection Plugins**: Extensible selection mode system
-- **Visual Customization**: Customizable selection appearance and feedback
-- **Integration Hooks**: API for external tools to manipulate selections
-
-## 📚 Related Documentation
-
-- [ReactFlow Selection Documentation](https://reactflow.dev/docs/api/react-flow-props/#selection)
-- [Keyboard Shortcuts Guide](./keyboard-shortcuts.md)
-- [State Management Architecture](../architecture/state-management.md)
-- [Node Editor User Guide](./node-editor.md)
-
----
-
-## ✅ Implementation Checklist
-
-For developers implementing similar features:
-
-- [ ] Configure `selectionKeyCode` and `multiSelectionKeyCode` props
-- [ ] Implement platform detection for proper modifier keys
-- [ ] Use `applyNodeChanges` and `applyEdgeChanges` for proper state management
-- [ ] Set up dual state system (ReactFlow + custom store)
-- [ ] Handle `onSelectionChange` events for synchronization
-- [ ] Test selection box drawing functionality  
-- [ ] Test multi-click selection with modifier keys
-- [ ] Verify bulk drag operations work correctly
-- [ ] Test deletion shortcuts (Delete, Backspace, custom)
-- [ ] Ensure proper cleanup and memory management
-- [ ] Add error handling for edge cases
-- [ ] Document user-facing functionality
-- [ ] Create troubleshooting guides
-
-**Status**: ✅ **Fully Implemented and Tested** 
