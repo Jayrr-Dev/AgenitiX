@@ -16,6 +16,21 @@ const typeMap: Record<string, { label: string; color: string }> = {
   '∅': { label: '∅', color: '#ef4444' },    // null - red
 }
 
+// DESCRIPTIVE TOOLTIPS FOR EACH DATA TYPE
+const TYPE_DESCRIPTIONS: Record<string, string> = {
+  s: 'String Only - Text and string values',
+  n: 'Number Only - Integer and numeric values', 
+  b: 'Boolean Only - True/false values',
+  j: 'JSON Only - JavaScript objects and JSON data',
+  a: 'Array Only - Lists and array structures',
+  N: 'BigInt Only - Large integer values',
+  f: 'Float Only - Decimal and floating-point numbers',
+  x: 'Any Type - Accepts all data types',
+  u: 'Undefined Only - Undefined values',
+  S: 'Symbol Only - JavaScript symbol values',
+  '∅': 'Null Only - Null values'
+}
+
 interface CustomHandleProps extends Omit<HandleProps, 'className' | 'isConnectable'> {
   dataType: keyof typeof typeMap
   className?: string
@@ -79,8 +94,34 @@ const CustomHandle: React.FC<CustomHandleProps> = ({ dataType, className = '', p
     return true;
   };
 
-  // Tooltip for invalid connection
-  const tooltip = invalid ? 'Type mismatch: cannot connect these handles.' : undefined
+  // Tooltip for invalid connection and data type description
+  const getTooltip = () => {
+    if (invalid) {
+      return 'Type mismatch: cannot connect these handles.';
+    }
+    
+    const direction = props.type === 'target' ? 'Input' : 'Output';
+    
+    // Handle union types (e.g., 's|n' means string OR number)
+    if (id && id.includes('|')) {
+      const types = parseTypes(id);
+      const descriptions = types
+        .map(type => TYPE_DESCRIPTIONS[type])
+        .filter(Boolean);
+      
+      if (descriptions.length > 1) {
+        return `${direction}: ${descriptions.join(' OR ')}`;
+      } else if (descriptions.length === 1) {
+        return `${direction}: ${descriptions[0]}`;
+      }
+    }
+    
+    // Single type
+    const typeDescription = TYPE_DESCRIPTIONS[dataType] || 'Unknown type';
+    return `${direction}: ${typeDescription}`;
+  };
+
+  const tooltip = getTooltip();
 
   return (
     <Handle
