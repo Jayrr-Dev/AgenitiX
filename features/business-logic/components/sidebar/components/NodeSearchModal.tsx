@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AVAILABLE_NODES } from '../constants';
 import type { NodeStencil } from '../types';
 
@@ -16,6 +16,31 @@ export function NodeSearchModal({
   existingNodes 
 }: NodeSearchModalProps) {
   const [searchTerm, setSearchTerm] = useState('');
+
+  // ESCAPE KEY HANDLING - Close modal with Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle events when modal is open
+      if (!isOpen) return;
+
+      // ESCAPE KEY - Close modal
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      // ALT+C - Close modal (alternative shortcut for consistency)
+      if (e.altKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   // Filter available nodes based on search term and exclude already added nodes
   const filteredNodes = useMemo(() => {

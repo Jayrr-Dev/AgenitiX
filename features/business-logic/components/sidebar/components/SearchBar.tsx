@@ -99,6 +99,20 @@ export function SearchBar({
 
       lastKeyPressRef.current = { key: currentKey, timestamp: currentTime };
 
+      // ESCAPE KEY - Close search completely (works even when typing)
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleClose();
+        return;
+      }
+
+      // ALT+C - Close search completely (works even when typing)
+      if (e.altKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        handleClose();
+        return;
+      }
+
       // Check if user is typing in the input field
       const isTypingInInput = document.activeElement === inputRef.current;
 
@@ -142,20 +156,6 @@ export function SearchBar({
         }
 
         // When typing in input, only allow input-related keys and our Alt shortcuts
-        return;
-      }
-
-      // ESCAPE KEY - Close search completely
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        handleClose();
-        return;
-      }
-
-      // ALT+C - Close search completely (alternative to Escape)
-      if (e.altKey && e.key.toLowerCase() === 'c') {
-        e.preventDefault();
-        handleClose();
         return;
       }
 

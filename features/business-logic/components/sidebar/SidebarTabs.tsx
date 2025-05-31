@@ -68,7 +68,7 @@ export function SidebarTabs({
     currentStencilsRef.current[tabKey] = stencils;
   }, []);
 
-  // Keyboard shortcut for search (Ctrl+K / Cmd+K)
+  // Keyboard shortcuts for tab navigation and node creation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // PREVENT KEY REPEAT SPAM - Block browser key repeat events
@@ -115,12 +115,6 @@ export function SidebarTabs({
         }
       }
 
-      // Search shortcut (Ctrl+K / Cmd+K)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        setIsSearchVisible(true);
-      }
-      
       // Variant switching shortcuts (Alt+1-5)
       if (e.altKey && e.key >= '1' && e.key <= '5') {
         e.preventDefault();
@@ -252,7 +246,7 @@ export function SidebarTabs({
           <button
             onClick={() => setIsSearchVisible(true)}
             className="px-3 py-1.5 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1"
-            title="Search all nodes (6 or Ctrl+K) • Enter to exit input • QWERTY to create • Press 6 to return to input • Alt+C to close"
+            title="Search all nodes (6)"
           >
             <Search className="h-4 w-4" />
             {/* <span className="hidden sm:inline">Search</span> */}

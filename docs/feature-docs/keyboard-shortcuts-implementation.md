@@ -237,12 +237,6 @@ useEffect(() => {
       }
     }
 
-    // Search shortcut (Ctrl+K / Cmd+K)
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      e.preventDefault();
-      setIsSearchVisible(true);
-    }
-
     // Delete selected node shortcut (Ctrl+Q / Cmd+Q)
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'q') {
       e.preventDefault();
@@ -474,7 +468,6 @@ if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) {
 - **`4`** - Switch to tab 4 (Testing/Interface/Files/Smart/Filler)
 - **`5`** - Switch to tab 5 (Time/Transform/Crypto/Tools/Custom)
 - **`6`** - Open search modal
-- **`Ctrl+K`** - Also opens search modal
 
 ### Node Management ✨ UPDATED
 - **`Alt+Q`** - Delete currently selected nodes and edges (multi-selection supported)
@@ -529,7 +522,7 @@ Position your mouse where you want the node to appear, then press:
 ### Manual Testing Checklist
 - [ ] Variant switching (Alt+1-5) works correctly
 - [ ] Tab switching (1-5) works across all variants
-- [ ] Search opens with key 6 and Ctrl+K
+- [ ] Search opens with key 6
 - [ ] QWERTY keys create correct nodes at mouse position
 - [ ] Plain letter shortcuts disabled when typing in input fields
 - [ ] System shortcuts work normally when typing in input fields (Ctrl+C copy, Ctrl+V paste, Ctrl+Z undo, etc.)
@@ -673,7 +666,7 @@ localStorage['agenitix-sidebar-tabs'] = {
 - **Sidebar Control**: Alt+S toggles sidebar visibility (open/close)
 - **Inspector Control**: Alt+A locks/unlocks inspector panel
 - **Variant Navigation**: Alt+1-5 switch between sidebar variants
-- **Tab Navigation**: 1-5 switch tabs within variant, 6 opens search, Ctrl+K also opens search
+- **Tab Navigation**: 1-5 switch tabs within variant, 6 opens search
 - **Node Creation**: QWERTY grid creates nodes at mouse cursor position
   - **Standard Tabs**: Q,W,E,R,T (row 1), A,S,D,F,G (row 2), Z,X,C,V,B (row 3)
   - **Custom Tab**: Q opens "Add Node" modal, W,E,R,T (positions 0-3), A,S,D,F,G (positions 4-8), Z,X,C,V,B (positions 9-13) 
