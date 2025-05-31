@@ -2,17 +2,29 @@ import type { AnubisConfig, RouteProtectionConfig } from '@/types/anubis';
 
 // DEFAULT ANUBIS CONFIGURATION
 const DEFAULT_CONFIG: AnubisConfig = {
-  enabled: false,
+  enabled: true,                // 🔥 ENABLED BY DEFAULT for comprehensive protection
   difficulty: 4,
   jwtSecret: '',
-  bypassDevelopment: true,
+  bypassDevelopment: false,     // 🔥 DISABLE BYPASS for consistent protection
   protectedRoutes: [
-    '/',              // Home page
-    '/about',         // About page
-    '/expertise',     // Expertise page
-    '/projects',      // Projects page
-    '/careers',       // Careers page
-    '/contact'        // Contact page
+    '/',                    // Home page ✅ Working
+    '/about',               // About Us page
+    '/expertise',           // Expertise page  
+    '/projects',            // Projects page
+    '/careers',             // Careers page
+    '/contact',             // Contact page
+    '/admin',               // Admin dashboard
+    '/dashboard',           // User dashboard
+    '/talent-acquisition',  // Talent acquisition page
+    '/blog',                // Blog section (if exists)
+    '/services',            // Services page (if exists)
+    '/portfolio',           // Portfolio page (if exists)
+    '/team',                // Team page (if exists)
+    '/pricing',             // Pricing page (if exists)
+    '/case-studies',        // Case studies (if exists)
+    '/resources',           // Resources section (if exists)
+    '/news',                // News section (if exists)
+    '/events'               // Events page (if exists)
   ],
   excludedRoutes: [
     '/api/health',

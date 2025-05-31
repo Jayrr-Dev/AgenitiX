@@ -5,14 +5,20 @@
  * Focused testing of home page (/) protection only
  */
 
+console.log('🚀 Starting homepage test script...');
+
 // SET ENVIRONMENT VARIABLES FOR TESTING
 process.env.ANUBIS_ENABLED = 'true';
 process.env.ANUBIS_DIFFICULTY = '4';
 process.env.ANUBIS_JWT_SECRET = 'test-secret-key-for-anubis-testing';
 
+console.log('✅ Environment variables set');
+
 const https = require('https');
 const http = require('http');
 const { performance } = require('perf_hooks');
+
+console.log('✅ Modules imported successfully');
 
 // TEST CONFIGURATION
 const CONFIG = {
