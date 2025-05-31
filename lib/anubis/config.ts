@@ -24,7 +24,17 @@ const DEFAULT_CONFIG: AnubisConfig = {
     '/case-studies',        // Case studies (if exists)
     '/resources',           // Resources section (if exists)
     '/news',                // News section (if exists)
-    '/events'               // Events page (if exists)
+    '/events',              // Events page (if exists)
+    // 🛡️ FORM SUBMISSION PROTECTION
+    '/api/contact',         // Contact form submissions
+    '/api/forms/*',         // All form submission endpoints
+    '/api/submit/*',        // Alternative form submission endpoints
+    '/api/newsletter',      // Newsletter signups
+    '/api/subscribe',       // Subscription forms
+    '/api/feedback',        // Feedback forms
+    '/api/quote',           // Quote request forms
+    '/api/demo',            // Demo request forms
+    '/api/consultation'     // Consultation request forms
   ],
   excludedRoutes: [
     '/api/health',
