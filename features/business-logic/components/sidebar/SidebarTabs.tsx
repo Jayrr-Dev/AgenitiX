@@ -126,35 +126,60 @@ export function SidebarTabs({
       }
 
       // Node grid shortcuts (QWERTY layout)
-      const gridKeyMap: Record<string, number> = {
-        // Row 1: qwert (positions 0-4)
-        'q': 0, 'w': 1, 'e': 2, 'r': 3, 't': 4,
-        // Row 2: asdfg (positions 5-9)
-        'a': 5, 's': 6, 'd': 7, 'f': 8, 'g': 9,
-        // Row 3: zxcvb (positions 10-14)
-        'z': 10, 'x': 11, 'c': 12, 'v': 13, 'b': 14,
-      };
-
-      if (gridKeyMap.hasOwnProperty(e.key.toLowerCase())) {
-        e.preventDefault();
-        
-        // Get current stencils from the active tab
-        const isCustomTab = variant === 'e' && activeTab === 'custom';
-        let currentStencils: NodeStencil[] = [];
-        
-        if (isCustomTab) {
-          currentStencils = customNodes;
-        } else {
-          // Get stencils from the ref
-          currentStencils = currentStencilsRef.current[activeTab] || [];
+      const isCustomTab = variant === 'e' && activeTab === 'custom';
+      
+      if (isCustomTab) {
+        // Special mapping for custom tab: q = add node, w-b shifted positions
+        if (e.key.toLowerCase() === 'q') {
+          e.preventDefault();
+          // Open the add node modal
+          setIsSearchModalOpen(true);
+          return;
         }
-
-        const position = gridKeyMap[e.key.toLowerCase()];
         
-        // Check if there's a node at this position
-        if (position < currentStencils.length) {
-          const stencil = currentStencils[position];
-          onDoubleClickCreate(stencil.nodeType);
+        const customGridKeyMap: Record<string, number> = {
+          // Row 1: wert (positions 0-3, shifted from qwer)
+          'w': 0, 'e': 1, 'r': 2, 't': 3,
+          // Row 2: asdfg (positions 4-8, shifted from asdg)
+          'a': 4, 's': 5, 'd': 6, 'f': 7, 'g': 8,
+          // Row 3: zxcvb (positions 9-13, shifted from zxcv)
+          'z': 9, 'x': 10, 'c': 11, 'v': 12, 'b': 13,
+        };
+
+        if (customGridKeyMap.hasOwnProperty(e.key.toLowerCase())) {
+          e.preventDefault();
+          
+          const position = customGridKeyMap[e.key.toLowerCase()];
+          
+          // Check if there's a node at this position in custom nodes
+          if (position < customNodes.length) {
+            const stencil = customNodes[position];
+            onDoubleClickCreate(stencil.nodeType);
+          }
+        }
+      } else {
+        // Original mapping for all other tabs
+        const gridKeyMap: Record<string, number> = {
+          // Row 1: qwert (positions 0-4)
+          'q': 0, 'w': 1, 'e': 2, 'r': 3, 't': 4,
+          // Row 2: asdfg (positions 5-9)
+          'a': 5, 's': 6, 'd': 7, 'f': 8, 'g': 9,
+          // Row 3: zxcvb (positions 10-14)
+          'z': 10, 'x': 11, 'c': 12, 'v': 13, 'b': 14,
+        };
+
+        if (gridKeyMap.hasOwnProperty(e.key.toLowerCase())) {
+          e.preventDefault();
+          
+          // Get current stencils from the active tab
+          const currentStencils = currentStencilsRef.current[activeTab] || [];
+          const position = gridKeyMap[e.key.toLowerCase()];
+          
+          // Check if there's a node at this position
+          if (position < currentStencils.length) {
+            const stencil = currentStencils[position];
+            onDoubleClickCreate(stencil.nodeType);
+          }
         }
       }
     };

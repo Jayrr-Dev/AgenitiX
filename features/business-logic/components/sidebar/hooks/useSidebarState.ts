@@ -1,36 +1,87 @@
-import { useState } from 'react';
-import { SidebarVariant, TabKey, NodeStencil } from '../types';
+import { useState, useEffect } from 'react';
+import { SidebarVariant, TabKey, NodeStencil, TabKeyA, TabKeyB, TabKeyC, TabKeyD, TabKeyE } from '../types';
+
+// Helper functions for localStorage
+const STORAGE_KEYS = {
+  CUSTOM_NODES: 'agenitix-custom-nodes',
+  SIDEBAR_VARIANT: 'agenitix-sidebar-variant',
+  SIDEBAR_TABS: 'agenitix-sidebar-tabs',
+} as const;
+
+// Type for the tabs state object
+type TabsState = {
+  a: TabKeyA;
+  b: TabKeyB;
+  c: TabKeyC;
+  d: TabKeyD;
+  e: TabKeyE;
+};
+
+const loadFromStorage = <T>(key: string, fallback: T): T => {
+  if (typeof window === 'undefined') return fallback;
+  
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : fallback;
+  } catch (error) {
+    console.warn(`Failed to load ${key} from localStorage:`, error);
+    return fallback;
+  }
+};
+
+const saveToStorage = <T>(key: string, value: T): void => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.warn(`Failed to save ${key} to localStorage:`, error);
+  }
+};
 
 export function useSidebarState() {
-  const [variant, setVariant] = useState<SidebarVariant>('a');
-  const [tabA, setTabA] = useState<TabKey<'a'>>('core');
-  const [tabB, setTabB] = useState<TabKey<'b'>>('images');
-  const [tabC, setTabC] = useState<TabKey<'c'>>('api');
-  const [tabD, setTabD] = useState<TabKey<'d'>>('triggers');
-  const [tabE, setTabE] = useState<TabKey<'e'>>('special');
+  // Load initial states from localStorage
+  const [variant, setVariant] = useState<SidebarVariant>(() => 
+    loadFromStorage(STORAGE_KEYS.SIDEBAR_VARIANT, 'a')
+  );
   
-  // Custom nodes state for variant E
-  const [customNodes, setCustomNodes] = useState<NodeStencil[]>([]);
+  const [tabs, setTabs] = useState<TabsState>(() =>
+    loadFromStorage(STORAGE_KEYS.SIDEBAR_TABS, {
+      a: 'core' as TabKeyA,
+      b: 'images' as TabKeyB, 
+      c: 'api' as TabKeyC,
+      d: 'triggers' as TabKeyD,
+      e: 'special' as TabKeyE,
+    })
+  );
+  
+  // Custom nodes state with localStorage persistence
+  const [customNodes, setCustomNodes] = useState<NodeStencil[]>(() =>
+    loadFromStorage(STORAGE_KEYS.CUSTOM_NODES, [])
+  );
 
-  const activeTab = 
-    variant === 'a' ? tabA : 
-    variant === 'b' ? tabB : 
-    variant === 'c' ? tabC :
-    variant === 'd' ? tabD : 
-    tabE;
+  // Save to localStorage whenever variant changes
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.SIDEBAR_VARIANT, variant);
+  }, [variant]);
+
+  // Save to localStorage whenever tabs change
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.SIDEBAR_TABS, tabs);
+  }, [tabs]);
+
+  // Save to localStorage whenever custom nodes change
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.CUSTOM_NODES, customNodes);
+  }, [customNodes]);
+
+  const activeTab = tabs[variant];
   
   const setActiveTab = (tab: string) => {
-    if (variant === 'a') {
-      setTabA(tab as TabKey<'a'>);
-    } else if (variant === 'b') {
-      setTabB(tab as TabKey<'b'>);
-    } else if (variant === 'c') {
-      setTabC(tab as TabKey<'c'>);
-    } else if (variant === 'd') {
-      setTabD(tab as TabKey<'d'>);
-    } else {
-      setTabE(tab as TabKey<'e'>);
-    }
+    setTabs(prev => ({
+      ...prev,
+      [variant]: tab
+    }));
   };
 
   const addCustomNode = (node: NodeStencil) => {

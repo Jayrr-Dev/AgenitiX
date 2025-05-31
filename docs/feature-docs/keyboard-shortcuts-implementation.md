@@ -255,20 +255,23 @@ if (isTyping) return; // Skip shortcuts
 ### QWERTY Grid Node Creation
 Position your mouse where you want the node to appear, then press:
 
-#### Row 1: `Q` `W` `E` `R` `T`
-Creates nodes from grid positions 1-5 (top row)
+#### Standard Tabs (Main, Media, Integration, Automation)
+**Row 1**: `Q` `W` `E` `R` `T` - Creates nodes from grid positions 1-5 (top row)
+**Row 2**: `A` `S` `D` `F` `G` - Creates nodes from grid positions 6-10 (middle row)  
+**Row 3**: `Z` `X` `C` `V` `B` - Creates nodes from grid positions 11-15 (bottom row)
 
-#### Row 2: `A` `S` `D` `F` `G`  
-Creates nodes from grid positions 6-10 (middle row)
-
-#### Row 3: `Z` `X` `C` `V` `B`
-Creates nodes from grid positions 11-15 (bottom row)
+#### Custom Tab (Misc Variant Only)
+**Special Key**: `Q` - Opens "Add New Node" search modal
+**Row 1**: `W` `E` `R` `T` - Creates custom nodes from positions 1-4 (shifted layout)
+**Row 2**: `A` `S` `D` `F` `G` - Creates custom nodes from positions 5-9 (shifted layout)
+**Row 3**: `Z` `X` `C` `V` `B` - Creates custom nodes from positions 10-14 (shifted layout)
 
 ### Smart Features
 - **Mouse-based positioning**: Nodes appear exactly at cursor location
 - **Input protection**: Shortcuts disabled when typing in text fields
 - **Cross-variant support**: Works across all sidebar variants
 - **Zoom/pan aware**: Coordinates properly transformed for any view
+- **Persistent storage**: Custom nodes and sidebar state survive page refreshes
 
 ## 🧪 Testing Approach
 
@@ -365,10 +368,37 @@ features/business-logic/
 - **Speed improvement**: 3x faster than drag & drop workflow
 - **Error rate**: <1% accidental activations when typing
 
+## 💾 Data Persistence
+
+### localStorage Integration
+The sidebar now automatically saves and restores:
+
+- **Custom nodes**: All nodes added to the custom tab persist across browser sessions
+- **Sidebar variant**: Your selected variant (Main/Media/Integration/Automation/Misc) is remembered  
+- **Active tabs**: The last active tab for each variant is restored
+- **Storage keys**: Uses prefixed keys (`agenitix-*`) to avoid conflicts
+
+### Storage Details
+```typescript
+// Storage structure
+localStorage['agenitix-custom-nodes'] = [
+  { id: 'uuid', nodeType: 'nodeType', label: 'Label', description: 'Description' }
+];
+localStorage['agenitix-sidebar-variant'] = 'e'; // Current variant
+localStorage['agenitix-sidebar-tabs'] = { 
+  a: 'core', b: 'images', c: 'api', d: 'triggers', e: 'custom' 
+};
+```
+
+### Error Handling
+- **Graceful fallbacks**: If localStorage fails, defaults to standard behavior
+- **JSON parsing**: Safely handles corrupted localStorage data
+- **SSR compatibility**: Properly handles server-side rendering with no localStorage
+
 ---
 
 **Implementation Status**: ✅ Complete and Production Ready  
-**Last Updated**: January 30, 2025 (Added Alt+1-5 variant switching)  
+**Last Updated**: January 30, 2025 (Added localStorage persistence for custom nodes)  
 **Next Review**: March 2025 
 
 **Complete Keyboard Shortcuts**:
@@ -376,6 +406,5 @@ features/business-logic/
 - **Variant Navigation**: Alt+1-5 switch between sidebar variants
 - **Tab Navigation**: 1-5 switch tabs within variant, 6 opens search, Ctrl+K also opens search
 - **Node Creation**: QWERTY grid creates nodes at mouse cursor position
-  - Row 1: Q,W,E,R,T (positions 0-4)
-  - Row 2: A,S,D,F,G (positions 5-9)  
-  - Row 3: Z,X,C,V,B (positions 10-14) 
+  - **Standard Tabs**: Q,W,E,R,T (row 1), A,S,D,F,G (row 2), Z,X,C,V,B (row 3)
+  - **Custom Tab**: Q opens "Add Node" modal, W,E,R,T (positions 0-3), A,S,D,F,G (positions 4-8), Z,X,C,V,B (positions 9-13) 
