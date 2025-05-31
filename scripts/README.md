@@ -1,172 +1,239 @@
-# 🐺 Anubis Testing Scripts
+# AgenitiX Adaptive Anubis Testing Suite
 
-This folder contains automated testing scripts to verify that Anubis bot protection is working correctly on your website.
-
-## 📁 Files
-
-- **`test-anubis.ps1`** - PowerShell script for Windows
-- **`test-anubis.sh`** - Bash script for Linux/macOS  
-- **`README.md`** - This documentation
+Comprehensive testing suite for the 5-level adaptive risk system in your AgenitiX Anubis bot protection.
 
 ## 🚀 Quick Start
 
-### Windows (PowerShell)
-```powershell
-# Test production site
-.\scripts\test-anubis.ps1
+### Prerequisites
+- Node.js 14+ installed
+- Your AgenitiX server running with Anubis protection enabled
 
-# Test local development
-.\scripts\test-anubis.ps1 -Local
+### Basic Usage
 
-# Verbose output with details
-.\scripts\test-anubis.ps1 -Verbose
-```
-
-### Linux/macOS (Bash)
 ```bash
-# Make script executable (first time only)
-chmod +x scripts/test-anubis.sh
+# Navigate to scripts directory
+cd scripts
 
-# Test production site
-./scripts/test-anubis.sh
+# Test against local development server
+npm run test:local
 
-# Test local development
-./scripts/test-anubis.sh --local
+# Test against custom server
+TEST_SERVER_URL=https://your-server.com node test-adaptive-anubis.js
 
-# Verbose output with details
-./scripts/test-anubis.sh --verbose
-
-# Test custom URL
-./scripts/test-anubis.sh --url https://example.com
+# Test with specific endpoints
+node test-adaptive-anubis.js
 ```
 
-## 🧪 What the Tests Do
+## 🧪 What Gets Tested
 
-The scripts test 6 different scenarios:
+### Risk Levels (1-5)
+- **Level 1 (LOW)**: Trusted users with optimistic verification
+- **Level 2 (MODERATE)**: Standard users with optimistic verification  
+- **Level 3 (ELEVATED)**: Suspicious users with immediate challenges (difficulty 4)
+- **Level 4 (HIGH)**: High-risk users with harder challenges (difficulty 6)
+- **Level 5 (DANGEROUS)**: Maximum security with hardest challenges (difficulty 8)
 
-### 🚫 Should be BLOCKED (Challenge Page)
-1. **🤖 Scraping Bot** - `ScrapingBot/1.0`
-2. **🐍 Python Requests** - `Python-requests/2.28.1`  
-3. **🕷️ Generic Crawler** - `WebCrawler/1.0`
+### Test Scenarios
+1. **Trusted Browser**: Chrome with full headers → Should get LOW risk
+2. **Standard Browser**: Safari with basic headers → Should get MODERATE risk
+3. **Headless Browser**: HeadlessChrome → Should get ELEVATED risk (no optimistic)
+4. **Bot User Agent**: python-requests → Should get HIGH risk (no optimistic)
+5. **Known Bot**: curl → Should get DANGEROUS risk (no optimistic)
 
-### ✅ Should be ALLOWED (Website Content)
-4. **✅ Google Bot** - `Googlebot/2.1`
-5. **✅ Bing Bot** - `Bingbot/2.0`
-6. **🌐 Regular Browser** - Standard browser User-Agent
+### Endpoints Tested
+- `/admin` - Protected admin area
+- `/dashboard` - User dashboard
+- `/api/protected` - Protected API endpoint
 
-## 📊 Understanding Results
+## 📊 Test Output
 
-### ✅ PASS Results
-- **Bot correctly blocked with challenge** - Malicious bots get challenge page ✓
-- **Legitimate request allowed** - Good bots/browsers get website content ✓
-
-### ❌ FAIL Results  
-- **Bot accessed website (should be blocked)** - Anubis not working, bots bypass protection ❌
-- **Legitimate request blocked (false positive)** - Good traffic incorrectly blocked ❌
-
-### ⚠️ UNKNOWN Results
-- **Unexpected response** - Neither challenge nor website content detected
-
-## 🔧 Troubleshooting
-
-### All Tests Failing (Bots Getting Website)
-**Problem:** Anubis protection is not active
-**Solutions:**
-1. Check environment variables in Vercel/production
-2. Verify `ANUBIS_ENABLED=true`
-3. Ensure JWT secret is set
-4. Redeploy application
-
-### Good Bots Being Blocked
-**Problem:** Legitimate crawlers getting challenge page
-**Solutions:**
-1. Check `allowedUserAgents` in Anubis config
-2. Verify Googlebot/Bingbot are in allowed list
-3. Check for typos in User-Agent patterns
-
-### Local Tests Not Working
-**Problem:** Development bypass might be active
-**Solutions:**
-1. Set `ANUBIS_BYPASS_DEVELOPMENT=false` in `.env.local`
-2. Restart development server
-3. Use `--local` flag for localhost testing
-
-## 📝 Example Output
+The script provides detailed output including:
 
 ```
-🐺 ANUBIS PROTECTION TEST SUITE
-Testing URL: https://agenitix.vercel.app/
-==================================================
-
-🤖 Scraping Bot (Should be BLOCKED)
-User-Agent: ScrapingBot/1.0
-✅ PASS Bot correctly blocked with challenge
-
-✅ Google Bot (Should be ALLOWED)  
-User-Agent: Googlebot/2.1 (+http://www.google.com/bot.html)
-✅ PASS Legitimate request allowed
-
-==================================================
-📊 TEST SUMMARY
-✅ Passed: 6
-❌ Failed: 0
-⚠️ Unknown: 0
-
-🎉 ALL TESTS PASSED! Anubis protection is working correctly.
+🧪 Testing lowRisk on /admin
+📊 Results for lowRisk:
+   Status: 200
+   Response Time: 45ms
+   Risk Level: LOW
+   Optimistic Mode: ✅
+   Difficulty: 2
+   Grace Period: 60000ms
+   Challenge Required: ❌
+   ✅ All checks passed!
 ```
 
-## 🔄 Automation
+## 🔧 Configuration
 
-You can integrate these scripts into your CI/CD pipeline:
+Edit the `CONFIG` object in `test-adaptive-anubis.js` to customize:
 
-### GitHub Actions Example
-```yaml
-- name: Test Anubis Protection
-  run: |
-    chmod +x scripts/test-anubis.sh
-    ./scripts/test-anubis.sh --url ${{ secrets.PRODUCTION_URL }}
+```javascript
+const CONFIG = {
+  baseUrl: 'http://localhost:3000',
+  endpoints: ['/admin', '/dashboard', '/api/protected'],
+  scenarios: {
+    // Add custom test scenarios here
+  }
+};
 ```
 
-### Scheduled Testing
+### Environment Variables
+- `TEST_SERVER_URL`: Override the target server URL
+
+## 🎯 Expected Results
+
+### Optimistic Mode (Levels 1-2)
+- Immediate access granted (200 status)
+- Background verification headers present
+- Grace period provided (30-60 seconds)
+- Low difficulty challenges (2-3)
+
+### Immediate Mode (Levels 3-5)
+- Challenge required immediately
+- No optimistic headers
+- Higher difficulty challenges (4, 6, 8)
+- Shorter session timeouts
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+1. **Connection Refused**
+   ```
+   ❌ Request failed: connect ECONNREFUSED
+   ```
+   - Ensure your server is running
+   - Check the TEST_SERVER_URL is correct
+
+2. **Risk Level Not Detected**
+   ```
+   Risk Level: Not detected
+   ```
+   - Verify Anubis middleware is properly configured
+   - Check that risk headers are being set
+
+3. **Unexpected Risk Levels**
+   ```
+   Expected risk level LOW, got MODERATE
+   ```
+   - Review your risk engine configuration
+   - Check user agent patterns in `risk-engine.ts`
+
+### Debug Mode
+
+Add debug logging by modifying the script:
+
+```javascript
+// Add at the top of test-adaptive-anubis.js
+const DEBUG = process.env.DEBUG === 'true';
+
+// Use throughout the script
+if (DEBUG) console.log('Debug info:', data);
+```
+
+Run with debug:
 ```bash
-# Add to crontab for daily testing
-0 9 * * * /path/to/your/project/scripts/test-anubis.sh
+DEBUG=true npm run test:local
 ```
 
-## 🛠️ Customization
+## 📈 Advanced Testing
 
-### Adding New Test Cases
-Edit the arrays in the script files:
+### Custom Scenarios
 
-```powershell
-# PowerShell
-$testCases += @{
-    Name = "🔍 Custom Bot (Should be BLOCKED)"
-    UserAgent = "CustomBot/1.0"
-    ExpectedResult = "Challenge"
-    Color = "Red"
+Add your own test scenarios:
+
+```javascript
+// In CONFIG.scenarios
+customBot: {
+  userAgent: 'MyBot/1.0',
+  headers: {
+    'Accept': 'application/json'
+  },
+  expectedRiskLevel: 'HIGH',
+  expectedOptimistic: false,
+  expectedDifficulty: 6
 }
 ```
 
-```bash
-# Bash
-test_names+=("🔍 Custom Bot (Should be BLOCKED)")
-user_agents+=("CustomBot/1.0")
-expected_results+=("Challenge")
-colors+=("$RED")
+### Rate Limiting Tests
+
+The script includes rate limiting tests that make 10 rapid requests to test escalation behavior.
+
+### Challenge Flow Testing
+
+For non-optimistic scenarios, the script tests the complete challenge flow:
+1. Request challenge page
+2. Extract challenge parameters
+3. Simulate solving (timing analysis)
+
+## 🔗 Integration
+
+### CI/CD Integration
+
+Add to your GitHub Actions:
+
+```yaml
+- name: Test Anubis Protection
+  run: |
+    cd scripts
+    npm run test:staging
 ```
 
-### Testing Different URLs
-```bash
-# Test staging environment
-./scripts/test-anubis.sh --url https://staging.agenitix.vercel.app
+### Monitoring Integration
 
-# Test specific pages
-./scripts/test-anubis.sh --url https://agenitix.vercel.app/about
+The test results can be parsed and sent to monitoring systems:
+
+```javascript
+const results = await runAllTests();
+// Send results to your monitoring system
 ```
 
-## 📚 Related Documentation
+## 📋 Test Checklist
 
-- [Anubis Setup Guide](../docs/ANUBIS_SETUP.md)
-- [Anubis Quick Reference](../docs/ANUBIS.md)
-- [Environment Configuration](../.env.example) 
+Before deploying to production:
+
+- [ ] All 5 risk levels working correctly
+- [ ] Optimistic mode only for levels 1-2
+- [ ] Correct difficulty escalation (2→3→4→6→8)
+- [ ] Challenge flows working for levels 3-5
+- [ ] Rate limiting and escalation working
+- [ ] Response times acceptable (<100ms for optimistic)
+- [ ] No false positives for legitimate browsers
+
+## 🛠️ Extending the Tests
+
+### Adding New Test Cases
+
+1. Add scenario to `CONFIG.scenarios`
+2. Define expected behavior
+3. Run tests to validate
+
+### Custom Assertions
+
+Add custom validation logic in `analyzeResponse()`:
+
+```javascript
+// Custom validation
+if (scenario.customCheck) {
+  if (!customValidation(response)) {
+    analysis.issues.push('Custom validation failed');
+  }
+}
+```
+
+## 📞 Support
+
+If tests are failing:
+
+1. Check server logs for detailed error information
+2. Verify middleware configuration
+3. Test with browser developer tools
+4. Review the Risk Dashboard during testing
+
+## 🎉 Success Criteria
+
+Your adaptive system is working correctly when:
+- ✅ 100% test pass rate
+- ✅ Optimistic mode only for trusted users
+- ✅ Appropriate challenge difficulties
+- ✅ Fast response times
+- ✅ No false positives for real browsers 

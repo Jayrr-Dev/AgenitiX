@@ -1,4 +1,4 @@
-import { Geist } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 import './globals.css';
 import { Providers } from '@/app/provider';
@@ -15,6 +15,8 @@ import { Inter } from 'next/font/google';
 import { AnubisProvider, AnubisStatus } from '@/components/anubis/AnubisProvider';
 import { AnubisControlPanel } from '@/components/anubis/AnubisControlPanel';
 import { AnubisDebugger } from '@/components/anubis/AnubisDebugger';
+import { OptimisticVerificationProvider } from "@/components/anubis/OptimisticVerification";
+import { RiskDashboard } from "@/components/anubis/RiskDashboard";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -95,23 +97,26 @@ export default function RootLayout({
       <body className="bg-background text-foreground" suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >
           <AnubisProvider>
-            <Providers>
-              <Suspense fallback={<Loading />}>
-                <LayoutWrapper>{children}</LayoutWrapper>
-              </Suspense>
-            </Providers>
-            <AnubisStatus />
-            <AnubisControlPanel />
-            {process.env.NODE_ENV === 'development' && <AnubisDebugger />}
+            <OptimisticVerificationProvider>
+              <Providers>
+                <Suspense fallback={<Loading />}>
+                  <LayoutWrapper>{children}</LayoutWrapper>
+                </Suspense>
+              </Providers>
+              <PWAInstallPrompt />
+              <PWAStatus />
+              <AnubisStatus />
+              <AnubisControlPanel />
+              {process.env.NODE_ENV === 'development' && <AnubisDebugger />}
+              {process.env.NODE_ENV === 'development' && <RiskDashboard />}
+            </OptimisticVerificationProvider>
           </AnubisProvider>
           <Toaster position="top-right" />
-          <PWAInstallPrompt />
-          <PWAStatus />
 
           <Analytics />
 
