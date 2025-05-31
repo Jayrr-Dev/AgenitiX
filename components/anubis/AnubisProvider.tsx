@@ -123,23 +123,23 @@ export function useAnubis(): AnubisContextType {
   return context;
 }
 
-// ANUBIS STATUS COMPONENT
+// AGENITIX STATUS COMPONENT
 export function AnubisStatus() {
   const { isEnabled, isProtected, currentRoute } = useAnubis();
   
   if (!isEnabled) return null;
   
   return (
-    <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-lg text-sm">
+    <div className="fixed bottom-4 right-4 bg-background border border-transparent bg-fill-border rounded-lg p-3 shadow-lg text-sm backdrop-blur-lg">
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-        <span className="font-medium">Anubis Protection</span>
+        <div className={`w-2 h-2 rounded-full ${isProtected ? 'bg-secondary shadow-[0_0_4px_rgba(34,197,94,0.8)]' : 'bg-muted'}`}></div>
+        <span className="font-brand text-foreground">AgenitiX Protection</span>
       </div>
-      <div className="text-gray-600 dark:text-gray-400 mt-1">
-        Route: {currentRoute}
+      <div className="text-muted-foreground mt-1">
+        Route: <code className="text-xs bg-muted px-1 rounded">{currentRoute}</code>
       </div>
-      <div className="text-gray-600 dark:text-gray-400">
-        Status: {isProtected ? 'Protected' : 'Unprotected'}
+      <div className="text-muted-foreground">
+        Status: <span className={isProtected ? 'text-secondary' : 'text-muted-foreground'}>{isProtected ? '🛡️ Protected' : '🔓 Unprotected'}</span>
       </div>
     </div>
   );

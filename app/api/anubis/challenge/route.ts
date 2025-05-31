@@ -109,198 +109,284 @@ function generateChallengePageHTML(challenge: any, returnTo: string): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anubis Protection - Verifying Your Browser</title>
+    <title>AgenitiX Protection - Verifying Your Browser</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Work+Sans:wght@400;600&display=swap');
+        
+        :root {
+            --background: 0 0% 6%;
+            --foreground: 0 0% 98%;
+            --muted: 0 0% 18%;
+            --muted-foreground: 0 0% 70%;
+            --secondary: 210 100% 54%;
+            --border: var(--muted);
+        }
+        
+        .light {
+            --background: 0 0% 100%;
+            --foreground: 222 47% 11%;
+            --muted: 0 0% 96%;
+            --muted-foreground: 222 10% 45%;
+            --border: 220 14% 91%;
+        }
+        
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
+        
         .container {
-            background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            background: hsl(var(--background));
+            border: 1px solid hsl(var(--border));
+            border-radius: 16px;
+            padding: 40px;
             max-width: 500px;
-            width: 90%;
+            width: 100%;
             text-align: center;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
+            backdrop-filter: blur(16px);
         }
+        
         .logo {
-            font-size: 3rem;
-            margin-bottom: 1rem;
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 24px;
+            background: hsl(var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
         }
+        
         h1 {
-            color: #333;
-            margin-bottom: 1rem;
-            font-size: 1.5rem;
+            font-family: 'Work Sans', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: hsl(var(--foreground));
         }
-        .description {
-            color: #666;
-            margin-bottom: 2rem;
-            line-height: 1.6;
+        
+        .subtitle {
+            color: hsl(var(--muted-foreground));
+            margin-bottom: 32px;
+            font-size: 16px;
+            line-height: 1.5;
         }
-        .progress {
-            background: #f0f0f0;
-            border-radius: 20px;
-            height: 8px;
-            margin: 1rem 0;
-            overflow: hidden;
+        
+        .challenge-container {
+            background: hsl(var(--muted) / 0.3);
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
         }
+        
+        .progress-container {
+            margin-bottom: 20px;
+        }
+        
         .progress-bar {
-            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 100%;
+            height: 8px;
+            background: hsl(var(--muted));
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        
+        .progress-fill {
             height: 100%;
+            background: linear-gradient(90deg, #08f, #f03);
+            border-radius: 4px;
             width: 0%;
             transition: width 0.3s ease;
         }
+        
+        .progress-text {
+            font-size: 14px;
+            color: hsl(var(--muted-foreground));
+            margin-bottom: 8px;
+        }
+        
         .status {
-            color: #666;
-            font-size: 0.9rem;
-            margin: 1rem 0;
-        }
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 1rem auto;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .error {
-            color: #e74c3c;
-            background: #fdf2f2;
-            padding: 1rem;
+            font-weight: 600;
+            padding: 8px 16px;
             border-radius: 8px;
-            margin: 1rem 0;
-            display: none;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .status.working {
+            background: rgba(34, 197, 94, 0.1);
+            color: hsl(var(--secondary));
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+        
+        .status.completed {
+            background: rgba(34, 197, 94, 0.2);
+            color: hsl(var(--secondary));
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid hsl(var(--muted));
+            border-radius: 50%;
+            border-top-color: hsl(var(--secondary));
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .footer {
+            font-size: 12px;
+            color: hsl(var(--muted-foreground));
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid hsl(var(--border));
+        }
+        
+        .brand {
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 700;
+            color: hsl(var(--foreground));
+        }
+        
+        @media (prefers-color-scheme: light) {
+            :root {
+                --background: 0 0% 100%;
+                --foreground: 222 47% 11%;
+                --muted: 0 0% 96%;
+                --muted-foreground: 222 10% 45%;
+                --border: 220 14% 91%;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">🐺</div>
-        <h1>Anubis Protection</h1>
-        <div class="description">
-            We're verifying that you're a real person and not a bot. 
-            This process helps protect our website from automated traffic.
+        <div class="logo">A</div>
+        <h1>AgenitiX Protection</h1>
+        <p class="subtitle">
+            Verifying your browser to ensure you're a legitimate user. 
+            This process helps protect against automated traffic.
+        </p>
+        
+        <div class="challenge-container">
+            <div class="progress-container">
+                <div class="progress-text">Verifying browser...</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+            
+            <div class="status working" id="status">
+                <span class="spinner"></span>
+                Processing verification...
+            </div>
         </div>
         
-        <div class="progress">
-            <div class="progress-bar" id="progressBar"></div>
+        <div class="footer">
+            <span class="brand">AgenitiX</span> uses advanced verification to ensure legitimate access.
+            <br>This process typically takes a few seconds to complete.
         </div>
-        
-        <div class="spinner" id="spinner"></div>
-        <div class="status" id="status">Initializing challenge...</div>
-        <div class="error" id="error"></div>
     </div>
 
     <script>
-        // ANUBIS PROOF OF WORK CHALLENGE
         const challenge = ${JSON.stringify(challenge)};
-        const returnTo = ${JSON.stringify(returnTo)};
-        
-        let nonce = 0;
+        const returnTo = "${returnTo}";
         let startTime = Date.now();
+        let nonce = 0;
         
-        // UPDATE STATUS AND PROGRESS
-        function updateStatus(message, progress = 0) {
-            document.getElementById('status').textContent = message;
-            document.getElementById('progressBar').style.width = progress + '%';
+        function updateProgress(percentage) {
+            document.getElementById('progressFill').style.width = percentage + '%';
         }
         
-        // SHOW ERROR
-        function showError(message) {
-            document.getElementById('error').textContent = message;
-            document.getElementById('error').style.display = 'block';
-            document.getElementById('spinner').style.display = 'none';
+        function updateStatus(message, isCompleted = false) {
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = isCompleted 
+                ? '✅ ' + message
+                : '<span class="spinner"></span>' + message;
+            statusEl.className = 'status ' + (isCompleted ? 'completed' : 'working');
         }
         
-        // SHA256 HASH FUNCTION
-        async function sha256(input) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(input);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            return crypto.subtle.digest('SHA-256', msgBuffer).then(hashBuffer => {
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            });
         }
         
-        // SOLVE PROOF OF WORK
         async function solveChallenge() {
-            const requiredPrefix = '0'.repeat(challenge.difficulty);
-            const maxIterations = 1000000; // PREVENT INFINITE LOOPS
+            const target = '0'.repeat(challenge.difficulty);
             
-            updateStatus('Solving challenge...', 10);
-            
-            for (let i = 0; i < maxIterations; i++) {
+            while (true) {
                 const input = challenge.challenge + nonce;
                 const hash = await sha256(input);
                 
-                // UPDATE PROGRESS PERIODICALLY
-                if (i % 1000 === 0) {
-                    const progress = Math.min(90, 10 + (i / maxIterations) * 80);
-                    updateStatus(\`Computing... (attempt \${i.toLocaleString()})\`, progress);
+                if (hash.startsWith(target)) {
+                    updateProgress(100);
+                    updateStatus('Verification completed! Redirecting...', true);
                     
-                    // YIELD TO BROWSER
-                    await new Promise(resolve => setTimeout(resolve, 1));
-                }
-                
-                // CHECK IF SOLUTION FOUND
-                if (hash.startsWith(requiredPrefix)) {
-                    updateStatus('Solution found! Verifying...', 95);
+                    const response = await fetch('/api/anubis/challenge', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            challenge: challenge.challenge,
+                            nonce: nonce,
+                            hash: hash
+                        })
+                    });
                     
-                    // SUBMIT SOLUTION
-                    try {
-                        const response = await fetch('/api/anubis/challenge', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                nonce: nonce,
-                                hash: hash,
-                                challenge: challenge.challenge,
-                                timestamp: challenge.timestamp
-                            })
-                        });
-                        
-                        if (response.ok) {
-                            updateStatus('Verification complete!', 100);
-                            setTimeout(() => {
-                                window.location.href = returnTo;
-                            }, 1000);
-                        } else {
-                            showError('Verification failed. Please try again.');
-                        }
-                    } catch (error) {
-                        showError('Network error. Please check your connection.');
+                    if (response.ok) {
+                        setTimeout(() => {
+                            window.location.href = returnTo;
+                        }, 1000);
+                    } else {
+                        updateStatus('Verification failed. Please refresh to try again.');
                     }
-                    
-                    return;
+                    break;
                 }
                 
                 nonce++;
+                
+                if (nonce % 1000 === 0) {
+                    const elapsed = Date.now() - startTime;
+                    const rate = nonce / (elapsed / 1000);
+                    const estimated = Math.pow(16, challenge.difficulty) / rate;
+                    const progress = Math.min(95, (elapsed / (estimated * 1000)) * 100);
+                    updateProgress(progress);
+                    
+                    await new Promise(resolve => setTimeout(resolve, 1));
+                }
             }
-            
-            showError('Challenge timeout. Please refresh the page to try again.');
         }
         
-        // START CHALLENGE
-        setTimeout(() => {
-            solveChallenge().catch(error => {
-                console.error('Challenge error:', error);
-                showError('An error occurred. Please refresh the page.');
-            });
-        }, 1000);
+        solveChallenge();
     </script>
 </body>
-</html>`;
+</html>
+  `;
 } 

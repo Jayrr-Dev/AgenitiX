@@ -3,8 +3,9 @@
 import React from 'react';
 import { useAnubis } from './AnubisProvider';
 import { useAnubisProtection, ProtectedComponent, AnubisUtils } from '@/hooks/useAnubisProtection';
+import { CustomLogo } from '@/branding/custom-logo';
 
-// EXAMPLE COMPONENT SHOWING ANUBIS USAGE
+// EXAMPLE COMPONENT SHOWING AGENITIX PROTECTION USAGE
 export function AnubisExample() {
   const { isEnabled, toggleProtection } = useAnubis();
   const { isProtected, protectCurrentRoute, unprotectCurrentRoute } = useAnubisProtection({
@@ -21,143 +22,177 @@ export function AnubisExample() {
     AnubisUtils.protectRoutes(AnubisUtils.patterns.ecommerce, toggleProtection);
   };
 
+  // PROTECT API ROUTES EXAMPLE
+  const protectApiRoutes = () => {
+    AnubisUtils.protectRoutes(AnubisUtils.patterns.api, toggleProtection);
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          🐺 Anubis Protection Examples
-        </h1>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* CURRENT STATUS */}
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-              Current Status
-            </h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Global Protection:</span>
-                <span className={`font-medium ${isEnabled ? 'text-green-600' : 'text-red-600'}`}>
-                  {isEnabled ? 'Enabled' : 'Disabled'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Current Route:</span>
-                <span className={`font-medium ${isProtected ? 'text-green-600' : 'text-gray-600'}`}>
-                  {isProtected ? 'Protected' : 'Unprotected'}
-                </span>
-              </div>
-            </div>
-          </div>
+      {/* HEADER */}
+      <div className="text-center border border-transparent bg-fill-border hover:animate-fill-transparency rounded-xl p-8">
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <CustomLogo size={48} />
+          <h1 className="text-3xl font-brand text-foreground">AgenitiX Protection</h1>
+        </div>
+        <p className="text-muted-foreground max-w-2xl mx-auto">
+          Advanced protection system that verifies legitimate users and blocks automated traffic. 
+          Secure your routes with intelligent verification mechanisms.
+        </p>
+      </div>
 
-          {/* MANUAL CONTROLS */}
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-              Manual Controls
-            </h3>
-            <div className="space-y-2">
-              <button
-                onClick={protectCurrentRoute}
-                disabled={isProtected}
-                className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-sm font-medium transition-colors"
-              >
-                Protect This Page
-              </button>
-              <button
-                onClick={unprotectCurrentRoute}
-                disabled={!isProtected}
-                className="w-full px-3 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded text-sm font-medium transition-colors"
-              >
-                Unprotect This Page
-              </button>
-            </div>
+      {/* STATUS OVERVIEW */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="border border-transparent bg-fill-border hover:animate-fill-transparency rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`w-3 h-3 rounded-full ${isEnabled ? 'bg-secondary shadow-[0_0_6px_rgba(34,197,94,0.8)]' : 'bg-muted'}`}></div>
+            <h3 className="font-ui font-semibold text-foreground">System Status</h3>
           </div>
+          <p className="text-sm text-muted-foreground">
+            {isEnabled ? '🛡️ Protection Active' : '🔓 Protection Disabled'}
+          </p>
         </div>
 
-        {/* BULK PROTECTION EXAMPLES */}
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Bulk Protection Examples
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button
-              onClick={protectAdminRoutes}
-              className="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
-            >
-              🔒 Protect Admin Routes
-              <div className="text-xs opacity-80 mt-1">
-                /admin, /dashboard, etc.
-              </div>
-            </button>
-            <button
-              onClick={protectEcommerceRoutes}
-              className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
-            >
-              🛒 Protect E-commerce Routes
-              <div className="text-xs opacity-80 mt-1">
-                /checkout, /cart, /orders
-              </div>
-            </button>
+        <div className="border border-transparent bg-fill-border hover:animate-fill-transparency rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`w-3 h-3 rounded-full ${isProtected ? 'bg-secondary shadow-[0_0_6px_rgba(34,197,94,0.8)]' : 'bg-yellow-400'}`}></div>
+            <h3 className="font-ui font-semibold text-foreground">Current Route</h3>
           </div>
+          <p className="text-sm text-muted-foreground">
+            {isProtected ? '🛡️ Protected' : '🔓 Unprotected'}
+          </p>
         </div>
 
-        {/* PROTECTED COMPONENT EXAMPLE */}
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Protected Component Example
-          </h3>
-          <ProtectedComponent
-            options={{ autoProtect: false }}
-            fallback={
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-yellow-800">
-                  🔒 This content is only visible when the route is protected.
-                </p>
-              </div>
-            }
+        <div className="border border-transparent bg-fill-border hover:animate-fill-transparency rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-3 h-3 rounded-full bg-secondary shadow-[0_0_6px_rgba(34,197,94,0.8)]"></div>
+            <h3 className="font-ui font-semibold text-foreground">Verification Type</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            🔐 Browser Verification
+          </p>
+        </div>
+      </div>
+
+      {/* QUICK ACTIONS */}
+      <div className="border border-transparent bg-fill-border hover:animate-fill-transparency rounded-xl p-6">
+        <h2 className="text-xl font-ui font-semibold text-foreground mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button
+            onClick={protectCurrentRoute}
+            disabled={isProtected}
+            className={`p-4 rounded-lg text-left transition-all duration-300 border border-transparent ${
+              isProtected 
+                ? 'bg-muted text-muted-foreground cursor-not-allowed' 
+                : 'bg-fill-border hover:animate-fill-transparency text-foreground'
+            }`}
           >
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-green-800">
-                ✅ This content is visible because the route is protected!
+            <div className="font-medium">🛡️ Protect Current Route</div>
+            <div className="text-sm text-muted-foreground mt-1">
+              Enable protection for this page
+            </div>
+          </button>
+
+          <button
+            onClick={unprotectCurrentRoute}
+            disabled={!isProtected}
+            className={`p-4 rounded-lg text-left transition-all duration-300 border border-transparent ${
+              !isProtected 
+                ? 'bg-muted text-muted-foreground cursor-not-allowed' 
+                : 'bg-fill-border hover:animate-fill-transparency text-foreground'
+            }`}
+          >
+            <div className="font-medium">🔓 Unprotect Current Route</div>
+            <div className="text-sm text-muted-foreground mt-1">
+              Disable protection for this page
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* BULK PROTECTION */}
+      <div className="border border-transparent bg-fill-border hover:animate-fill-transparency rounded-xl p-6">
+        <h2 className="text-xl font-ui font-semibold text-foreground mb-4">Bulk Protection</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <button
+            onClick={protectAdminRoutes}
+            className="p-4 rounded-lg text-left transition-all duration-300 border border-transparent bg-fill-border hover:animate-fill-transparency text-foreground"
+          >
+            <div className="font-medium">🔐 Admin Routes</div>
+            <div className="text-sm text-muted-foreground mt-1">
+              /admin, /dashboard, /settings
+            </div>
+          </button>
+
+          <button
+            onClick={protectEcommerceRoutes}
+            className="p-4 rounded-lg text-left transition-all duration-300 border border-transparent bg-fill-border hover:animate-fill-transparency text-foreground"
+          >
+            <div className="font-medium">🛒 E-commerce Routes</div>
+            <div className="text-sm text-muted-foreground mt-1">
+              /checkout, /payment, /account
+            </div>
+          </button>
+
+          <button
+            onClick={protectApiRoutes}
+            className="p-4 rounded-lg text-left transition-all duration-300 border border-transparent bg-fill-border hover:animate-fill-transparency text-foreground"
+          >
+            <div className="font-medium">🔌 API Routes</div>
+            <div className="text-sm text-muted-foreground mt-1">
+              /api/*, /graphql, /webhook
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* PROTECTED COMPONENT EXAMPLE */}
+      <div className="border border-transparent bg-fill-border hover:animate-fill-transparency rounded-xl p-6">
+        <h2 className="text-xl font-ui font-semibold text-foreground mb-4">Protected Component Example</h2>
+        <ProtectedComponent
+          fallback={
+            <div className="p-4 border border-dashed border-border rounded-lg text-center">
+              <p className="text-muted-foreground">🔒 This content is protected by AgenitiX</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Enable protection to see the verification system in action
               </p>
             </div>
-          </ProtectedComponent>
-        </div>
+          }
+        >
+          <div className="p-4 bg-secondary/10 border border-secondary/20 rounded-lg">
+            <h3 className="font-medium text-secondary mb-2">🎉 Protected Content</h3>
+            <p className="text-sm text-muted-foreground">
+              This content is only visible when AgenitiX protection is active and the user has 
+              successfully completed the verification process. This demonstrates how you can 
+              protect sensitive components within your application.
+            </p>
+          </div>
+        </ProtectedComponent>
+      </div>
 
-        {/* CODE EXAMPLES */}
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Code Examples
-          </h3>
-          <div className="space-y-4">
-            <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
-              <pre className="text-green-400 text-sm">
-{`// Hook Usage
-import { useAnubisProtection } from '@/hooks/useAnubisProtection';
-
-function MyComponent() {
-  const { isProtected, protectCurrentRoute } = useAnubisProtection();
-  
-  return (
-    <button onClick={protectCurrentRoute}>
-      {isProtected ? 'Protected' : 'Protect This Page'}
-    </button>
-  );
-}`}
-              </pre>
-            </div>
-            
-            <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
-              <pre className="text-green-400 text-sm">
-{`// HOC Usage
-import { withAnubisProtection } from '@/hooks/useAnubisProtection';
-
-const ProtectedPage = withAnubisProtection(MyPage, {
-  autoProtect: true,
-  description: 'Admin dashboard protection'
-});`}
-              </pre>
-            </div>
+      {/* INTEGRATION GUIDE */}
+      <div className="border border-transparent bg-fill-border hover:animate-fill-transparency rounded-xl p-6">
+        <h2 className="text-xl font-ui font-semibold text-foreground mb-4">Integration Guide</h2>
+        <div className="space-y-4">
+          <div className="p-4 bg-muted/30 rounded-lg">
+            <h3 className="font-medium text-foreground mb-2">1. Hook-based Protection</h3>
+            <code className="text-sm bg-muted px-2 py-1 rounded text-foreground">
+              useAnubisProtection(&#123; autoProtect: true &#125;)
+            </code>
+          </div>
+          
+          <div className="p-4 bg-muted/30 rounded-lg">
+            <h3 className="font-medium text-foreground mb-2">2. Component Wrapping</h3>
+            <code className="text-sm bg-muted px-2 py-1 rounded text-foreground">
+              &lt;ProtectedComponent&gt;...&lt;/ProtectedComponent&gt;
+            </code>
+          </div>
+          
+          <div className="p-4 bg-muted/30 rounded-lg">
+            <h3 className="font-medium text-foreground mb-2">3. Manual Route Protection</h3>
+            <code className="text-sm bg-muted px-2 py-1 rounded text-foreground">
+              toggleProtection('/sensitive-route', true)
+            </code>
           </div>
         </div>
       </div>

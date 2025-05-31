@@ -339,4 +339,16 @@ const ProtectedPage = withAnubisProtection(MyPage, {
 - **Challenge**: ~50KB page size
 - **Solve time**: 1-5 seconds (difficulty 4)
 - **Memory**: Minimal server usage
-- **SEO**: No impact (search bots allowed) 
+- **SEO**: No impact (search bots allowed)
+
+## 📚 Additional Documentation
+
+- **[🔧 Complete Setup Guide](./ANUBIS_SETUP.md)** - Detailed implementation guide
+- **[🆚 Anubis vs Turnstile](./ANUBIS_VS_TURNSTILE.md)** - Why we chose Anubis over alternatives
+- **[🧪 Testing Scripts](../scripts/README.md)** - Automated testing tools
+
+## 🤔 Why Anubis?
+
+Wondering why we built a custom solution instead of using Cloudflare Turnstile or other services? Check out our detailed comparison: **[Anubis vs Turnstile](./ANUBIS_VS_TURNSTILE.md)**
+
+**TL;DR**: We chose Anubis for complete privacy control, custom branding, zero costs, and the flexibility to implement exactly what our application needs. 

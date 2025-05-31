@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAnubis } from './AnubisProvider';
+import { CustomLogo } from '@/branding/custom-logo';
 
-// ANUBIS DEBUG COMPONENT
+// AGENITIX DEBUG COMPONENT
 export function AnubisDebugger() {
   const { isEnabled, isProtected, currentRoute } = useAnubis();
   const [isVisible, setIsVisible] = useState(false);
@@ -42,55 +43,61 @@ export function AnubisDebugger() {
     return (
       <button
         onClick={toggleVisibility}
-        className="fixed top-4 right-4 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-lg z-50"
-        title="Show Anubis Debug Info"
+        className="fixed top-4 right-4 px-3 py-2 rounded-lg text-sm font-medium shadow-lg z-50 flex items-center gap-2 border border-transparent bg-fill-border hover:animate-fill-transparency backdrop-blur-lg text-foreground transition-all duration-300"
+        title="Show AgenitiX Debug Info"
       >
-        🐺 Debug
+        <CustomLogo size={16} />
+        Debug
       </button>
     );
   }
 
   return (
-    <div className="fixed top-4 right-4 bg-black text-white p-4 rounded-lg shadow-xl z-50 max-w-sm">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="font-bold text-lg">🐺 Anubis Debug</h3>
+    <div className="fixed top-4 right-4 bg-background border border-transparent bg-fill-border rounded-lg shadow-xl z-50 max-w-sm backdrop-blur-lg">
+      <div className="flex justify-between items-center p-4 border-b border-border">
+        <div className="flex items-center gap-2">
+          <CustomLogo size={20} />
+          <h3 className="font-brand text-foreground">AgenitiX Debug</h3>
+        </div>
         <button
           onClick={toggleVisibility}
-          className="text-gray-400 hover:text-white"
+          className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded border border-transparent bg-fill-border hover:animate-fill-transparency"
         >
           ✕
         </button>
       </div>
 
-      <div className="space-y-2 text-sm">
+      <div className="p-4 space-y-3 text-sm">
         {/* CLIENT STATUS */}
-        <div className="border-b border-gray-600 pb-2">
-          <h4 className="font-semibold text-blue-400">Client Status</h4>
-          <div className="flex justify-between">
-            <span>Enabled:</span>
-            <span className={isEnabled ? 'text-green-400' : 'text-red-400'}>
-              {isEnabled ? '✅ Yes' : '❌ No'}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span>Protected:</span>
-            <span className={isProtected ? 'text-green-400' : 'text-yellow-400'}>
-              {isProtected ? '🛡️ Yes' : '🔓 No'}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span>Route:</span>
-            <span className="text-gray-300 font-mono text-xs">{currentRoute}</span>
+        <div className="border-b border-border pb-3">
+          <h4 className="font-ui font-semibold text-secondary mb-2">Client Status</h4>
+          <div className="space-y-1">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Enabled:</span>
+              <span className={isEnabled ? 'text-secondary' : 'text-red-400'}>
+                {isEnabled ? '✅ Yes' : '❌ No'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Protected:</span>
+              <span className={isProtected ? 'text-secondary' : 'text-yellow-400'}>
+                {isProtected ? '🛡️ Yes' : '🔓 No'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Route:</span>
+              <code className="text-xs bg-muted px-1 rounded text-foreground">{currentRoute}</code>
+            </div>
           </div>
         </div>
 
         {/* SERVER STATUS */}
-        <div className="border-b border-gray-600 pb-2">
-          <h4 className="font-semibold text-blue-400">Server Status</h4>
+        <div className="border-b border-border pb-3">
+          <h4 className="font-ui font-semibold text-secondary mb-2">Server Status</h4>
           <div className="flex justify-between">
-            <span>Server:</span>
+            <span className="text-muted-foreground">Server:</span>
             <span className={
-              serverStatus === 'enabled' ? 'text-green-400' : 
+              serverStatus === 'enabled' ? 'text-secondary' : 
               serverStatus === 'disabled' ? 'text-red-400' : 'text-yellow-400'
             }>
               {serverStatus === 'enabled' ? '✅ Enabled' : 
@@ -100,35 +107,37 @@ export function AnubisDebugger() {
         </div>
 
         {/* ENVIRONMENT INFO */}
-        <div className="border-b border-gray-600 pb-2">
-          <h4 className="font-semibold text-blue-400">Environment</h4>
-          <div className="flex justify-between">
-            <span>Mode:</span>
-            <span className="text-gray-300">{process.env.NODE_ENV || 'development'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Cookies:</span>
-            <span className="text-gray-300">
-              {document.cookie.includes('anubis-auth') ? '🍪 Has Auth' : '🚫 No Auth'}
-            </span>
+        <div className="border-b border-border pb-3">
+          <h4 className="font-ui font-semibold text-secondary mb-2">Environment</h4>
+          <div className="space-y-1">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Mode:</span>
+              <span className="text-foreground">{process.env.NODE_ENV || 'development'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Cookies:</span>
+              <span className="text-foreground">
+                {document.cookie.includes('anubis-auth') ? '🍪 Has Auth' : '🚫 No Auth'}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* ACTIONS */}
-        <div className="pt-2">
-          <h4 className="font-semibold text-blue-400 mb-2">Actions</h4>
+        <div>
+          <h4 className="font-ui font-semibold text-secondary mb-2">Actions</h4>
           <div className="space-y-2">
             <button
               onClick={triggerTestChallenge}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded text-xs"
+              className="w-full px-3 py-2 rounded-lg text-xs border border-transparent bg-fill-border hover:animate-fill-transparency text-foreground transition-all duration-300"
             >
-              🧪 Test Challenge
+              🧪 Test Verification
             </button>
             <button
               onClick={() => window.open('/api/anubis/challenge', '_blank')}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
+              className="w-full px-3 py-2 rounded-lg text-xs border border-transparent bg-fill-border hover:animate-fill-transparency text-foreground transition-all duration-300"
             >
-              👀 View Challenge Page
+              👀 View Verification Page
             </button>
           </div>
         </div>

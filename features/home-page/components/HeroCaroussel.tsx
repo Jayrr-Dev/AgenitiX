@@ -75,11 +75,26 @@ export function HeroCarousel() {
     return () => clearInterval(interval);
   }, [emblaApi]);
 
-  // Update scrollY value on scroll for parallax effect
+  // Update scrollY value on scroll for parallax effect with throttling
   useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    let ticking = false;
+    
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setScrollY(window.scrollY);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    
+    // Add passive listener for better performance
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
 
