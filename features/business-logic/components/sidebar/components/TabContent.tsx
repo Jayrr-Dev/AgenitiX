@@ -23,6 +23,8 @@ interface TabContentProps {
   onAddCustomNode?: () => void;
   onRemoveCustomNode?: (nodeId: string) => void;
   onReorderCustomNodes?: (newOrder: NodeStencil[]) => void;
+  // Callback to notify parent of stencil changes
+  onStencilsChange?: (tabKey: string, stencils: NodeStencil[]) => void;
 }
 
 export function TabContent({
@@ -36,6 +38,7 @@ export function TabContent({
   onAddCustomNode,
   onRemoveCustomNode,
   onReorderCustomNodes,
+  onStencilsChange,
 }: TabContentProps) {
   const { defaults } = VARIANT_CONFIG[variant];
   const sensors = useDragSensors();
@@ -57,6 +60,13 @@ export function TabContent({
         tabKey as TabKey<typeof variant>,
         getDefaultStencils(),
       );
+
+  // Notify parent of stencil changes for keyboard shortcuts
+  React.useEffect(() => {
+    if (!isCustomTab && onStencilsChange) {
+      onStencilsChange(tabKey, stencils);
+    }
+  }, [stencils, tabKey, onStencilsChange, isCustomTab]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;

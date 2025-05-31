@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search } from 'lucide-react';
-import { SidebarVariant, NodeStencil } from './types';
+import { SidebarVariant, NodeStencil, VARIANT_NAMES } from './types';
 import { VARIANT_CONFIG } from './constants';
 import { StencilInfoPanel, HoveredStencil } from '../StencilInfoPanel';
 import { TabContent } from './components/TabContent';
@@ -18,6 +18,8 @@ interface SidebarTabsProps {
   onAddCustomNode: (node: NodeStencil) => void;
   onRemoveCustomNode: (nodeId: string) => void;
   onReorderCustomNodes: (newOrder: NodeStencil[]) => void;
+  onVariantChange: (variant: SidebarVariant) => void;
+  onToggle: () => void;
 }
 
 export function SidebarTabs({
@@ -30,11 +32,16 @@ export function SidebarTabs({
   onAddCustomNode,
   onRemoveCustomNode,
   onReorderCustomNodes,
+  onVariantChange,
+  onToggle,
 }: SidebarTabsProps) {
   const { tabs } = VARIANT_CONFIG[variant];
   const [hovered, setHovered] = useState<HoveredStencil | null>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+
+  // Store current stencils for keyboard shortcuts
+  const currentStencilsRef = useRef<Record<string, NodeStencil[]>>({});
 
   // Get existing node types in custom section to prevent duplicates
   const existingCustomNodeTypes = customNodes.map(node => node.nodeType);
@@ -48,18 +55,113 @@ export function SidebarTabs({
     [],
   );
 
+  // Callback to update current stencils for a tab
+  const updateTabStencils = useCallback((tabKey: string, stencils: NodeStencil[]) => {
+    currentStencilsRef.current[tabKey] = stencils;
+  }, []);
+
   // Keyboard shortcut for search (Ctrl+K / Cmd+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if user is typing in an input field
+      const activeElement = document.activeElement;
+      const isTyping = activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.getAttribute('contenteditable') === 'true'
+      );
+
+      // Skip shortcuts if user is typing in an input field
+      if (isTyping) {
+        return;
+      }
+
+      // Search shortcut (Ctrl+K / Cmd+K)
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         setIsSearchVisible(true);
+      }
+      
+      // Variant switching shortcuts (Alt+1-5)
+      if (e.altKey && e.key >= '1' && e.key <= '5') {
+        e.preventDefault();
+        
+        const variantMap: Record<string, SidebarVariant> = {
+          '1': 'a', // Main
+          '2': 'b', // Media
+          '3': 'c', // Integration
+          '4': 'd', // Automation
+          '5': 'e', // Misc
+        };
+        
+        const targetVariant = variantMap[e.key];
+        if (targetVariant) {
+          onVariantChange(targetVariant);
+        }
+        return; // Exit early to avoid processing other shortcuts
+      }
+      
+      // Sidebar toggle shortcut (Alt+Q)
+      if (e.altKey && e.key.toLowerCase() === 'q') {
+        e.preventDefault();
+        onToggle();
+        return; // Exit early to avoid processing other shortcuts
+      }
+      
+      // Tab shortcuts (1-5 for tabs, 6 for search)
+      if (e.key >= '1' && e.key <= '6') {
+        e.preventDefault();
+        
+        if (e.key === '6') {
+          // Key 6 opens search
+          setIsSearchVisible(true);
+        } else {
+          // Keys 1-5 switch to corresponding tab
+          const tabIndex = parseInt(e.key) - 1;
+          if (tabIndex < tabs.length) {
+            const targetTab = tabs[tabIndex];
+            onTabChange(targetTab.key);
+          }
+        }
+      }
+
+      // Node grid shortcuts (QWERTY layout)
+      const gridKeyMap: Record<string, number> = {
+        // Row 1: qwert (positions 0-4)
+        'q': 0, 'w': 1, 'e': 2, 'r': 3, 't': 4,
+        // Row 2: asdfg (positions 5-9)
+        'a': 5, 's': 6, 'd': 7, 'f': 8, 'g': 9,
+        // Row 3: zxcvb (positions 10-14)
+        'z': 10, 'x': 11, 'c': 12, 'v': 13, 'b': 14,
+      };
+
+      if (gridKeyMap.hasOwnProperty(e.key.toLowerCase())) {
+        e.preventDefault();
+        
+        // Get current stencils from the active tab
+        const isCustomTab = variant === 'e' && activeTab === 'custom';
+        let currentStencils: NodeStencil[] = [];
+        
+        if (isCustomTab) {
+          currentStencils = customNodes;
+        } else {
+          // Get stencils from the ref
+          currentStencils = currentStencilsRef.current[activeTab] || [];
+        }
+
+        const position = gridKeyMap[e.key.toLowerCase()];
+        
+        // Check if there's a node at this position
+        if (position < currentStencils.length) {
+          const stencil = currentStencils[position];
+          onDoubleClickCreate(stencil.nodeType);
+        }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [tabs, onTabChange, variant, activeTab, customNodes, onDoubleClickCreate, onVariantChange, onToggle]);
 
   if (isHidden) return null;
 
@@ -108,6 +210,7 @@ export function SidebarTabs({
                 onAddCustomNode={isCustomTab ? () => setIsSearchModalOpen(true) : undefined}
                 onRemoveCustomNode={isCustomTab ? onRemoveCustomNode : undefined}
                 onReorderCustomNodes={isCustomTab ? onReorderCustomNodes : undefined}
+                onStencilsChange={!isCustomTab ? updateTabStencils : undefined}
               />
             );
           })}
