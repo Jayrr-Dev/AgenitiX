@@ -1,137 +1,170 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react'
-import CustomHandle from '../../handles/CustomHandle'
-import { getInputValues, isTruthyValue, hasValueChanged } from '../utils/nodeUtils'
-import IconForToggle from '../node-icons/IconForToggle'
-import { useFlowStore } from '../../stores/flowStore'
+import React from 'react';
+import { Position } from '@xyflow/react';
+import { createNodeComponent } from '../factory/RefactoredNodeFactory';
+import type { BaseNodeData } from '../factory/types';
+import IconForToggle from '../node-icons/IconForToggle';
 
 // TYPES
-interface TriggerOnToggleRefactorData {
-  triggered: boolean
+interface TriggerOnToggleRefactorData extends BaseNodeData {
+  triggered: boolean;
+  // Error injection support
+  isErrorState?: boolean;
+  errorType?: 'warning' | 'error' | 'critical';
+  error?: string;
 }
 
-// TRIGGER ON TOGGLE REFACTOR NODE COMPONENT
-const TriggerOnToggleRefactor: React.FC<NodeProps<Node<TriggerOnToggleRefactorData & Record<string, unknown>>>> = ({ id, data }) => {
-  const updateNodeData = useFlowStore((state) => state.updateNodeData)
-  const connections = useNodeConnections({ handleType: 'target' })
-  const boolInputConnections = connections.filter(c => c.targetHandle === 'b')
-  const boolInputSourceIds = boolInputConnections.map((c) => c.source)
-  const boolInputNodesData = useNodesData(boolInputSourceIds)
+// TRIGGER ON TOGGLE REFACTOR - NOW USING REFACTORED FACTORY
+const TriggerOnToggleRefactor = createNodeComponent<TriggerOnToggleRefactorData>({
+  nodeType: 'triggerOnToggleRefactor',
+  category: 'trigger', // Use proper category
+  displayName: '🔧 Toggle Trigger (Refactored)',
   
-  // Extract input values using safe utility
-  const inputValues = getInputValues(boolInputNodesData)
-  const externalTrigger = inputValues.some(value => isTruthyValue(value))
-
-  const [triggered, setTriggered] = useState(data.triggered ?? false)
-  const [showUI, setShowUI] = useState(false)
-
-  // Initialize node data on mount to ensure inspector has data
-  useEffect(() => {
-    const initialData = {
-      triggered,
-      value: triggered,
-      outputValue: triggered, // For DelayNode compatibility
-      type: 'TriggerOnToggleRefactor',
-      label: '🔧 Toggle Trigger (Refactored)'
-    }
-    updateNodeData(id, initialData)
-  }, []) // Only run on mount
-
-  // React to external boolean input with safe change detection
-  const prevExternalTrigger = React.useRef(externalTrigger)
-  useEffect(() => {
-    if (boolInputConnections.length > 0) {
-      if (hasValueChanged(prevExternalTrigger.current, externalTrigger)) {
-        setTriggered((prev) => !prev)
+  // DEFAULT DATA
+  defaultData: {
+    triggered: false
+  },
+  
+  // PROCESSING LOGIC
+  processLogic: ({ data, connections, nodesData, updateNodeData, id, setError }) => {
+    try {
+      // Handle error injection
+      if (data.isErrorState) {
+        setError(data.error || 'Trigger is in error state');
+        return;
       }
+      
+      // Check for external boolean trigger from connected nodes
+      const hasExternalTrigger = nodesData.some(node => {
+        const value = node?.data?.value || node?.data?.triggered || node?.data?.output;
+        return value === true || value === 'true' || (typeof value === 'string' && value.toLowerCase() === 'true');
+      });
+      
+      // If external trigger received and different from last state, toggle
+      if (hasExternalTrigger && !data._lastExternalTrigger) {
+        const newTriggered = !data.triggered;
+        updateNodeData(id, {
+          triggered: newTriggered,
+          value: newTriggered,
+          outputValue: newTriggered,
+          type: 'TriggerOnToggleRefactor',
+          label: '🔧 Toggle Trigger (Refactored)',
+          _lastExternalTrigger: true
+        });
+      } else if (!hasExternalTrigger && data._lastExternalTrigger) {
+        // Reset external trigger tracking when no trigger
+        updateNodeData(id, {
+          _lastExternalTrigger: false
+        });
+      }
+      
+      // Clear any existing errors
+      setError(null);
+    } catch (error) {
+      console.error(`TriggerOnToggleRefactor ${id} error:`, error);
+      setError(error instanceof Error ? error.message : 'Processing error');
     }
-    prevExternalTrigger.current = externalTrigger
-    // If no boolean input is connected, manual toggle works as before
-  }, [externalTrigger, boolInputConnections.length])
+  },
+  
+  // HANDLE CONFIGURATION
+  handles: [
+    { type: 'target', position: Position.Left, dataType: 'b', id: 'trigger' },
+    { type: 'target', position: Position.Left, dataType: 'j', id: 'json' }, // For error injection
+    { type: 'source', position: Position.Right, dataType: 'b', id: 'output' }
+  ],
+  
+  // COLLAPSED STATE RENDERER
+  renderCollapsed: ({ data, updateNodeData, id }) => {
+    const handleToggle = () => {
+      const newTriggered = !data.triggered;
+      updateNodeData(id, {
+        triggered: newTriggered,
+        value: newTriggered,
+        outputValue: newTriggered
+      });
+    };
 
-  // Toggle handler
-  const handleToggle = () => {
-    setTriggered((prev) => !prev)
+    return (
+      <div className="absolute inset-0 flex items-center justify-center">
+        <IconForToggle 
+          isOn={data.triggered || false} 
+          onClick={handleToggle}
+          size={40}
+        />
+      </div>
+    );
+  },
+  
+  // EXPANDED STATE RENDERER
+  renderExpanded: ({ data, updateNodeData, id, error }) => {
+    const handleToggle = () => {
+      const newTriggered = !data.triggered;
+      updateNodeData(id, {
+        triggered: newTriggered,
+        value: newTriggered,
+        outputValue: newTriggered
+      });
+    };
+
+    return (
+      <div className="flex flex-col items-center">
+        <div className="font-semibold text-violet-900 dark:text-violet-100 mb-3">
+          🔧 Toggle Trigger (Refactored)
+        </div>
+        <IconForToggle 
+          isOn={data.triggered || false} 
+          onClick={handleToggle}
+          size={48}
+        />
+        <div className="text-xs text-violet-800 dark:text-violet-200 mt-2">
+          Status: <span className="font-mono">{data.triggered ? 'ON' : 'OFF'}</span>
+        </div>
+        <div className="text-xs text-violet-600 dark:text-violet-300 mt-1 italic">
+          Enhanced Registry + Factory
+        </div>
+        {error && (
+          <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  },
+  
+  // INSPECTOR CONTROLS RENDERER
+  renderInspectorControls: ({ node, updateNodeData }) => {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs">Status:</span>
+          <span className={`px-2 py-1 rounded text-xs text-white ${
+            node.data.triggered ? 'bg-green-500' : 'bg-gray-500'
+          }`}>
+            {node.data.triggered ? 'ON' : 'OFF'}
+          </span>
+        </div>
+        
+        <button
+          onClick={() => updateNodeData(node.id, { 
+            triggered: !node.data.triggered,
+            value: !node.data.triggered,
+            outputValue: !node.data.triggered
+          })}
+          className="w-full px-3 py-2 bg-violet-500 hover:bg-violet-600 text-white text-sm rounded transition-colors"
+        >
+          Toggle
+        </button>
+        
+        {/* Debug info */}
+        <div className="text-xs text-gray-500 mt-2 space-y-1">
+          <div>Value: {String(node.data.triggered)}</div>
+          <div>Factory: RefactoredNodeFactory</div>
+          <div>Registry: Enhanced</div>
+        </div>
+      </div>
+    );
   }
+});
 
-  // Sync triggered state to node data with comprehensive fields
-  useEffect(() => {
-    const nodeData = {
-      triggered,
-      value: triggered,
-      outputValue: triggered, // For DelayNode compatibility
-      type: 'TriggerOnToggleRefactor',
-      label: '🔧 Toggle Trigger (Refactored)',
-      inputCount: boolInputConnections.length,
-      hasExternalInputs: boolInputConnections.length > 0
-    }
-    updateNodeData(id, nodeData)
-  }, [triggered, boolInputConnections.length, updateNodeData, id])
-
-  // Sync initial state from props when data changes externally
-  useEffect(() => {
-    if (data.triggered !== undefined && data.triggered !== triggered) {
-      setTriggered(data.triggered)
-    }
-  }, [data.triggered])
-
-  // RENDER
-  return (
-    <div className={`relative ${showUI ? 'px-4 py-3 min-w-[180px] min-h-[120px]' : 'w-[60px] h-[60px] flex items-center justify-center'} rounded-lg bg-violet-100 dark:bg-violet-900 shadow border border-violet-300 dark:border-violet-800`}>
-      {/* TOGGLE BUTTON (top-left) */}
-      <button
-        aria-label={showUI ? 'Collapse node' : 'Expand node'}
-        title={showUI ? 'Collapse' : 'Expand'}
-        onClick={() => setShowUI((v) => !v)}
-        className="absolute top-1 left-1 cursor-pointer z-10 w-2 h-2 flex items-center justify-center rounded-full bg-white/80 dark:bg-black/40 border border-violet-300 dark:border-violet-800 text-xs hover:bg-violet-200 dark:hover:bg-violet-800 transition-colors shadow"
-        type="button"
-      >
-        {showUI ? '⦿' : '⦾'}
-      </button>
-
-      {/* INPUT HANDLE (left, boolean, can externally trigger this node) */}
-      <CustomHandle type="target" position={Position.Left} id="b" dataType="b" />
-
-      {/* COLLAPSED: Only Icon */}
-      {!showUI && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <IconForToggle 
-            isOn={triggered} 
-            onClick={handleToggle}
-            size={40}
-          />
-        </div>
-      )}
-
-      {/* EXPANDED: Full UI */}
-      {showUI && (
-        <div className="flex flex-col items-center">
-          <div className="font-semibold text-violet-900 dark:text-violet-100 mb-3">🔧 Toggle Trigger (Refactored)</div>
-          <IconForToggle 
-            isOn={triggered} 
-            onClick={handleToggle}
-            size={48}
-          />
-          <div className="text-xs text-violet-800 dark:text-violet-200 mt-2">
-            Status: <span className="font-mono">{triggered ? 'ON' : 'OFF'}</span>
-          </div>
-          {boolInputConnections.length > 0 && (
-            <div className="text-xs text-violet-800 dark:text-violet-200 mt-1">
-              External inputs: {boolInputConnections.length}
-            </div>
-          )}
-          <div className="text-xs text-violet-600 dark:text-violet-300 mt-1 italic">
-            Enhanced Registry Demo
-          </div>
-        </div>
-      )}
-
-      {/* OUTPUT HANDLE (right, boolean, id and dataType = 'b') */}
-      <CustomHandle type="source" position={Position.Right} id="b" dataType="b" />
-    </div>
-  )
-}
-
-export default TriggerOnToggleRefactor 
+export default TriggerOnToggleRefactor; 

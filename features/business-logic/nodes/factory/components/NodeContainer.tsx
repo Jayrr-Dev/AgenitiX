@@ -1,7 +1,12 @@
 import React from 'react';
 import { FloatingNodeId } from '../../components/FloatingNodeId';
 import { ExpandCollapseButton } from '../../components/ExpandCollapseButton';
-import { DEFAULT_TEXT_NODE_SIZE } from '../constants';
+import { 
+  DEFAULT_TEXT_NODE_SIZE, 
+  DEFAULT_LOGIC_NODE_SIZE,
+  DEFAULT_TRIGGER_NODE_SIZE,
+  TRIGGER_NODE_PATTERNS 
+} from '../constants';
 import type { BaseNodeData, NodeFactoryConfig } from '../types';
 
 // TYPES
@@ -15,9 +20,28 @@ interface NodeContainerProps<T extends BaseNodeData> {
 }
 
 /**
+ * GET SMART DEFAULT SIZE
+ * Automatically pick the right default size based on node type
+ */
+function getSmartDefaultSize(nodeType: string) {
+  // Check if it's a trigger node
+  if (TRIGGER_NODE_PATTERNS.some(pattern => nodeType.toLowerCase().includes(pattern))) {
+    return DEFAULT_TRIGGER_NODE_SIZE;
+  }
+  
+  // Check if it's a logic node (small icon-based)
+  if (nodeType.toLowerCase().includes('logic')) {
+    return DEFAULT_LOGIC_NODE_SIZE;
+  }
+  
+  // Default to text node size for everything else
+  return DEFAULT_TEXT_NODE_SIZE;
+}
+
+/**
  * NODE CONTAINER
  * Handles the outer structure, sizing, and expand/collapse functionality
- * Enhanced with enterprise safety features and proper error styling
+ * Enhanced with enterprise safety features and smart size detection
  */
 export function NodeContainer<T extends BaseNodeData>({
   id,
@@ -27,8 +51,8 @@ export function NodeContainer<T extends BaseNodeData>({
   isEnterprise = false,
   children
 }: NodeContainerProps<T>) {
-  // NODE SIZE CALCULATION
-  const nodeSize = enhancedConfig.size || DEFAULT_TEXT_NODE_SIZE;
+  // SMART NODE SIZE CALCULATION
+  const nodeSize = enhancedConfig.size || getSmartDefaultSize(enhancedConfig.nodeType);
   
   // ERROR THEME SELECTION
   const buttonTheme = styling.errorState.finalErrorForStyling 

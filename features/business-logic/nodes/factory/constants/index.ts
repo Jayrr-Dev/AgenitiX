@@ -60,6 +60,16 @@ export const DEFAULT_LOGIC_NODE_SIZE: NodeSize = {
   }
 };
 
+export const DEFAULT_TRIGGER_NODE_SIZE: NodeSize = {
+  collapsed: {
+    width: 'w-[60px]',
+    height: 'h-[60px]'
+  },
+  expanded: {
+    width: 'w-[120px]'
+  }
+};
+
 // ============================================================================
 // ERROR INJECTION SUPPORT
 // ============================================================================

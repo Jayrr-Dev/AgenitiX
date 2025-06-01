@@ -723,37 +723,37 @@ export {
 
 // Add CSS for enhanced safety layer instant visual feedback
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  const safetyStyleSheet = document.createElement('style');
-  safetyStyleSheet.textContent = `
-    /* Enhanced Safe Factory instant activation */
-    .node-active-instant {
-      box-shadow: 0 0 8px 2px rgba(34, 197, 94, 0.8);
-      transform: translateZ(0) scale(1.02);
-      transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    .node-inactive-instant {
-      box-shadow: none;
-      transform: translateZ(0) scale(1);
-      opacity: 0.9;
-      transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    [data-safe-factory="true"] {
-      will-change: transform, opacity, box-shadow;
-      transform: translateZ(0);
-    }
-    
-    /* Safety indicator styling */
-    [data-safe-factory="true"] .safety-indicator {
-      background: linear-gradient(45deg, #10B981, #059669);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      backdrop-filter: blur(4px);
-    }
-  `;
+const safetyStyleSheet = document.createElement('style');
+safetyStyleSheet.textContent = `
+  /* Enhanced Safe Factory instant activation */
+  .node-active-instant {
+    box-shadow: 0 0 8px 2px rgba(34, 197, 94, 0.8);
+    transform: translateZ(0) scale(1.02);
+    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .node-inactive-instant {
+    box-shadow: none;
+    transform: translateZ(0) scale(1);
+    opacity: 0.9;
+    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  [data-safe-factory="true"] {
+    will-change: transform, opacity, box-shadow;
+    transform: translateZ(0);
+  }
+  
+  /* Safety indicator styling */
+  [data-safe-factory="true"] .safety-indicator {
+    background: linear-gradient(45deg, #10B981, #059669);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    backdrop-filter: blur(4px);
+  }
+`;
 
-  if (!document.getElementById('safe-factory-styles')) {
-    safetyStyleSheet.id = 'safe-factory-styles';
-    document.head.appendChild(safetyStyleSheet);
+if (!document.getElementById('safe-factory-styles')) {
+  safetyStyleSheet.id = 'safe-factory-styles';
+  document.head.appendChild(safetyStyleSheet);
   }
 }

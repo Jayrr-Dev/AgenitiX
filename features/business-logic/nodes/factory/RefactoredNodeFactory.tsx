@@ -1,6 +1,38 @@
 'use client'
 
 // ============================================================================
+// IMPORTS & TYPE DEFINITIONS
+// ============================================================================
+
+import React, { memo, useRef } from 'react';
+import type { NodeProps, Node, Connection } from '@xyflow/react';
+import { Position } from '@xyflow/react';
+
+// TYPE DEFINITIONS
+import type { BaseNodeData, NodeFactoryConfig } from './types';
+
+// MODULAR HOOKS - FOCUSED RESPONSIBILITIES
+import { useNodeRegistration } from './hooks/useNodeRegistration';
+import { useNodeState } from './hooks/useNodeState';
+import { useNodeConnections } from './hooks/useNodeConnections';
+import { useNodeProcessing } from './hooks/useNodeProcessing';
+import { useNodeStyling } from './hooks/useNodeStyling';
+import { useNodeHandles } from './hooks/useNodeHandles';
+
+// CONSTANTS & CONFIGURATIONS
+import { ERROR_INJECTION_SUPPORTED_NODES } from './constants';
+
+// COMPONENT MODULES
+import { NodeContainer } from './components/NodeContainer';
+import { NodeContent } from './components/NodeContent';
+
+// ENTERPRISE INTEGRATION
+import { 
+  createBulletproofNode, 
+  type EnterpriseNodeConfig 
+} from './core/BulletproofNodeBase';
+
+// ============================================================================
 // COMPLETE REFACTORED NODE FACTORY - ENTERPRISE FEATURES PRESERVED
 // ============================================================================
 // 
@@ -21,39 +53,12 @@
 // 🔧 Enhanced performance and maintainability
 // ============================================================================
 
-import React, { memo, useRef } from 'react';
-import type { NodeProps, Node } from '@xyflow/react';
-
-// TYPES & INTERFACES
-import type { BaseNodeData, NodeFactoryConfig } from './types';
-
-// MODULAR HOOKS
-import { useNodeRegistration } from './hooks/useNodeRegistration';
-import { useNodeState } from './hooks/useNodeState';
-import { useNodeConnections } from './hooks/useNodeConnections';
-import { useNodeProcessing } from './hooks/useNodeProcessing';
-import { useNodeStyling } from './hooks/useNodeStyling';
-import { useNodeHandles } from './hooks/useNodeHandles';
-
-// ERROR INJECTION SUPPORT
-import { ERROR_INJECTION_SUPPORTED_NODES } from './constants';
-
 // VIBE MODE ERROR INJECTION INTERFACE
 interface VibeErrorInjection {
   isErrorState?: boolean;
   errorType?: 'warning' | 'error' | 'critical';
   error?: string;
 }
-
-// ENTERPRISE COMPONENTS
-import { NodeContainer } from './components/NodeContainer';
-import { NodeContent } from './components/NodeContent';
-
-// BULLETPROOF NODE BASE INTEGRATION
-import { 
-  createBulletproofNode, 
-  type EnterpriseNodeConfig 
-} from './core/BulletproofNodeBase';
 
 // Re-export BulletproofNodeBase for enhanced nodes
 export { createBulletproofNode, type EnterpriseNodeConfig } from './core/BulletproofNodeBase';
@@ -62,18 +67,26 @@ export { createBulletproofNode, type EnterpriseNodeConfig } from './core/Bulletp
 // ENTERPRISE SAFETY LAYER SYSTEM (PRESERVED FROM ORIGINAL)
 // ============================================================================
 
-// LAYER 1: ULTRA-FAST VISUAL SYSTEM (0.01ms)
+// LAYER 1: ULTRA-FAST VISUAL SYSTEM (0.01ms response time)
 class SafeVisualLayer {
   private visualStates = new Map<string, boolean>();
   private pendingUpdates = new Set<string>();
 
+  /**
+   * UPDATE VISUAL STATE
+   * Instant DOM updates bypassing React for ultra-fast response
+   */
   updateVisualState(nodeId: string, isActive: boolean) {
     this.visualStates.set(nodeId, isActive);
     this.applyInstantDOMUpdate(nodeId, isActive);
   }
 
+  /**
+   * APPLY INSTANT DOM UPDATE
+   * GPU-accelerated visual state changes
+   */
   private applyInstantDOMUpdate(nodeId: string, isActive: boolean) {
-    // Check if we're in the browser environment
+    // Browser environment check
     if (typeof window === 'undefined' || typeof document === 'undefined') {
       return;
     }
@@ -81,7 +94,7 @@ class SafeVisualLayer {
     const element = document.querySelector(`[data-id="${nodeId}"]`);
     if (!element) return;
 
-    // INSTANT DOM updates (bypasses React)
+    // INSTANT DOM updates (bypasses React for performance)
     if (isActive) {
       element.classList.add('node-active-instant');
       element.classList.remove('node-inactive-instant');
@@ -95,6 +108,10 @@ class SafeVisualLayer {
     htmlElement.style.setProperty('--activation-state', isActive ? '1' : '0');
   }
 
+  /**
+   * GET VISUAL STATE
+   * Retrieve current visual state
+   */
   getVisualState(nodeId: string): boolean | undefined {
     return this.visualStates.get(nodeId);
   }
@@ -106,23 +123,27 @@ class SafeStateLayer<T extends Record<string, any>> {
   private updateCallbacks = new Map<string, (data: Partial<T>) => void>();
   private validationCallbacks = new Map<string, (data: T) => boolean>();
 
+  /**
+   * UPDATE STATE
+   * Atomic state updates with validation
+   */
   updateState(nodeId: string, updates: Partial<T>): boolean {
     const currentState = this.nodeStates.get(nodeId);
     if (!currentState) return false;
 
     const newState = { ...currentState, ...updates };
     
-    // Validation layer
+    // VALIDATION LAYER
     const validator = this.validationCallbacks.get(nodeId);
     if (validator && !validator(newState)) {
       console.warn(`State validation failed for ${nodeId}`);
       return false;
     }
 
-    // Atomic update
+    // ATOMIC UPDATE
     this.nodeStates.set(nodeId, newState);
     
-    // Trigger React update
+    // TRIGGER REACT UPDATE
     const callback = this.updateCallbacks.get(nodeId);
     if (callback) {
       callback(updates);
@@ -131,6 +152,10 @@ class SafeStateLayer<T extends Record<string, any>> {
     return true;
   }
 
+  /**
+   * REGISTER NODE
+   * Initialize node with safety system
+   */
   registerNode(nodeId: string, initialData: T, updateCallback: (data: Partial<T>) => void, validator?: (data: T) => boolean) {
     this.nodeStates.set(nodeId, initialData);
     this.updateCallbacks.set(nodeId, updateCallback);
@@ -139,6 +164,10 @@ class SafeStateLayer<T extends Record<string, any>> {
     }
   }
 
+  /**
+   * GET STATE
+   * Retrieve current node state
+   */
   getState(nodeId: string): T | undefined {
     return this.nodeStates.get(nodeId);
   }
@@ -148,15 +177,26 @@ class SafeStateLayer<T extends Record<string, any>> {
 class SafeDataFlowController {
   private nodeActivations = new Map<string, boolean>();
   
+  /**
+   * SET NODE ACTIVATION
+   * Control data flow activation state
+   */
   setNodeActivation(nodeId: string, isActive: boolean) {
     this.nodeActivations.set(nodeId, isActive);
   }
 
+  /**
+   * IS NODE ACTIVE FOR DATA FLOW
+   * Check if node should participate in data flow
+   */
   isNodeActiveForDataFlow(nodeId: string): boolean {
     return this.nodeActivations.get(nodeId) === true;
   }
 
-  // Validate data flow integrity
+  /**
+   * VALIDATE DATA FLOW
+   * Ensure data flow integrity between nodes
+   */
   validateDataFlow(sourceId: string, targetId: string): boolean {
     const sourceActive = this.isNodeActiveForDataFlow(sourceId);
     if (!sourceActive) {
@@ -167,7 +207,10 @@ class SafeDataFlowController {
   }
 }
 
+// ============================================================================
 // GLOBAL SAFETY INSTANCES
+// ============================================================================
+
 const globalSafeVisualLayer = new SafeVisualLayer();
 const globalSafeStateLayer = new SafeStateLayer();
 const globalSafeDataFlowController = new SafeDataFlowController();
@@ -186,9 +229,12 @@ export {
 // ENTERPRISE SAFETY CSS STYLES (GPU ACCELERATED)
 // ============================================================================
 
-// Initialize safety styles once
 let safetyStylesInitialized = false;
 
+/**
+ * INITIALIZE SAFETY STYLES
+ * One-time CSS injection for enterprise features
+ */
 function initializeSafetyStyles() {
   if (safetyStylesInitialized || typeof window === 'undefined' || typeof document === 'undefined') return;
   
@@ -268,10 +314,14 @@ export function createNodeComponent<T extends BaseNodeData>(
   // ============================================================================
 
   const EnterpriseNodeComponent = ({ id, data, selected }: NodeProps<Node<T & Record<string, unknown>>>) => {
-    // REGISTRATION: Handle inspector and type registration (MOVED INSIDE COMPONENT)
+    // ========================================================================
+    // HOOK INITIALIZATION - MODULAR ARCHITECTURE
+    // ========================================================================
+    
+    // REGISTRATION: Handle inspector and type registration
     const enhancedConfig = useNodeRegistration(config);
 
-    // SAFETY LAYER INTEGRATION (MOVED INSIDE COMPONENT)
+    // SAFETY LAYER INTEGRATION
     const safetyLayerRef = useRef({
       visual: globalSafeVisualLayer,
       state: globalSafeStateLayer,
@@ -309,23 +359,29 @@ export function createNodeComponent<T extends BaseNodeData>(
       connectionData.allNodes
     );
 
+    // ========================================================================
     // ENTERPRISE SAFETY INTEGRATION
+    // ========================================================================
+    
     React.useEffect(() => {
-      // Register node with safety layers
+      // REGISTER NODE with safety layers
       safetyLayerRef.current.state.registerNode(
         id, 
         nodeState.data as T, 
         nodeState.updateNodeDataSafe // Use the safety-compatible update function
       );
       
-      // Update visual state
+      // UPDATE VISUAL STATE
       safetyLayerRef.current.visual.updateVisualState(id, processingState.isActive);
       
-      // Update data flow state
+      // UPDATE DATA FLOW STATE
       safetyLayerRef.current.dataFlow.setNodeActivation(id, processingState.isActive);
     }, [id, processingState.isActive, nodeState.data, nodeState.updateNodeDataSafe]);
 
+    // ========================================================================
     // RENDER: Enterprise-grade rendering with safety attributes
+    // ========================================================================
+    
     return (
       <NodeContainer
         id={id}
