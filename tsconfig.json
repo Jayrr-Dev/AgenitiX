@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5", 
+    "target": "es5",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -21,29 +21,55 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      
+
       "@modern/*": ["./features/business-logic-modern/*"],
-      
+
       "@domains/*": ["./features/business-logic-modern/domains/*"],
-      "@content/*": ["./features/business-logic-modern/domains/content-creation/*"],
-      "@automation/*": ["./features/business-logic-modern/domains/automation-triggers/*"],
-      "@visualization/*": ["./features/business-logic-modern/domains/data-visualization/*"],
-      "@testing/*": ["./features/business-logic-modern/domains/testing-debugging/*"],
-      
-      "@infrastructure/*": ["./features/business-logic-modern/infrastructure/*"],
-      "@components/*": ["./features/business-logic-modern/infrastructure/components/modern/components/*"],
-      "@ui/*": ["./features/business-logic-modern/infrastructure/components/modern/components/*"],
-      "@theming/*": ["./features/business-logic-modern/infrastructure/theming/modern/*"],
-      "@stores/*": ["./features/business-logic-modern/infrastructure/theming/modern/stores/*"],
-      "@flow-editor/*": ["./features/business-logic-modern/infrastructure/flow-engine/flow-editor/*"],
-      "@registries/*": ["./features/business-logic-modern/infrastructure/registries/modern/*"],
-      
+      "@content/*": [
+        "./features/business-logic-modern/domains/content-creation/*"
+      ],
+      "@automation/*": [
+        "./features/business-logic-modern/domains/automation-triggers/*"
+      ],
+      "@visualization/*": [
+        "./features/business-logic-modern/domains/data-visualization/*"
+      ],
+      "@testing/*": [
+        "./features/business-logic-modern/domains/testing-debugging/*"
+      ],
+
+      "@infrastructure/*": [
+        "./features/business-logic-modern/infrastructure/*"
+      ],
+      "@components/*": [
+        "features/business-logic-modern/infrastructure/node-creation/components/*"
+      ],
+      "@ui/*": [
+        "features/business-logic-modern/infrastructure/node-creation/components/*"
+      ],
+      "@theming/*": [
+        "./features/business-logic-modern/infrastructure/theming/modern/*"
+      ],
+      "@stores/*": [
+        "features/business-logic-modern/infrastructure/theming/stores/*"
+      ],
+      "@flow-editor/*": [
+        "./features/business-logic-modern/infrastructure/flow-engine/flow-editor/*"
+      ],
+      "@registries/*": [
+        "features/business-logic-modern/infrastructure/node-registries/modern/*"
+      ],
+
       "@modern-docs/*": ["./features/business-logic-modern/documentation/*"],
       "@modern-tooling/*": ["./features/business-logic-modern/tooling/*"],
       "@modern-testing/*": ["./features/business-logic-modern/testing/*"],
 
-      "@node-inspector/*": ["./features/business-logic-modern/infrastructure/components/modern/components/node-inspector/*"],
-      "@factory/*": ["./features/business-logic-modern/infrastructure/components/modern/factory/*"],
+      "@node-inspector/*": [
+        "features/business-logic-modern/infrastructure/node-creation/components/node-inspector/*"
+      ],
+      "@factory/*": [
+        "features/business-logic-modern/infrastructure/node-creation/factory/*"
+      ],
       "@legacy/*": ["./features/business-logic-legacy/*"]
     }
   },
