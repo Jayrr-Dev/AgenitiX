@@ -17,14 +17,14 @@ import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // COMPONENT IMPORTS
-import DebugTool from "@/features/business-logic-modern/infrastructure/node-creation/components/DebugTool";
-import Sidebar, {
-  SidebarRef,
-} from "@/features/business-logic-modern/infrastructure/node-creation/components/Sidebar";
-import { UndoRedoProvider } from "@/features/business-logic-modern/infrastructure/node-creation/components/UndoRedoContext";
+import DebugTool from "@/features/business-logic-modern/infrastructure/components/DebugTool";
+import { UndoRedoProvider } from "@/features/business-logic-modern/infrastructure/components/UndoRedoContext";
 import UndoRedoManager, {
   ActionHistoryEntry,
-} from "@/features/business-logic-modern/infrastructure/node-creation/components/UndoRedoManager";
+} from "@/features/business-logic-modern/infrastructure/components/UndoRedoManager";
+import Sidebar, {
+  SidebarRef,
+} from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
 
 // LOCAL COMPONENT IMPORTS
 import { FlowCanvas } from "./components/FlowCanvas";
@@ -33,7 +33,7 @@ import { NodeDisplayProvider } from "./contexts/NodeDisplayContext";
 
 // STORE IMPORTS
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
-import { useVibeModeStore } from "@/features/business-logic-modern/infrastructure/theming/stores/vibeModeStore";
+import { useVibeModeStore } from "@/features/business-logic-modern/infrastructure/node-creation/stores/vibeModeStore";
 
 // HOOK IMPORTS
 import { useDragAndDrop } from "./hooks/useDragAndDrop";

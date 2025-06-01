@@ -12,7 +12,7 @@
 
 "use client";
 
-import CustomHandle from "../../../handles/CustomHandle";
+import CustomHandle from "../../node-handles/CustomHandle";
 import type { BaseNodeData, NodeFactoryConfig } from "../types";
 import {
   calculateRenderError,

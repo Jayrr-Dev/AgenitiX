@@ -1,10 +1,16 @@
 // BOOLEAN CONVERTER NODE COMPONENT
 // Converts any input to a boolean (truthy/falsy)
-import React, { useEffect } from 'react';
-import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react';
-import CustomHandle from '../../handles/CustomHandle';
-import { getSingleInputValue, isTruthyValue } from '../utils/nodeUtils';
-import { useFlowStore } from '../../stores/flowStore';
+import {
+  Position,
+  useNodeConnections,
+  useNodesData,
+  type Node,
+  type NodeProps,
+} from "@xyflow/react";
+import React, { useEffect } from "react";
+import CustomHandle from "../../handles/TypesafeHandle";
+import { useFlowStore } from "../../stores/flowStore";
+import { getSingleInputValue, isTruthyValue } from "../utils/nodeUtils";
 
 // ---------------------- TYPES ----------------------
 interface BooleanConverterNodeData {
@@ -13,13 +19,15 @@ interface BooleanConverterNodeData {
 }
 
 // ------------------- COMPONENT --------------------
-const BooleanConverterNode: React.FC<NodeProps<Node<BooleanConverterNodeData & Record<string, unknown>>>> = ({ id, data }) => {
+const BooleanConverterNode: React.FC<
+  NodeProps<Node<BooleanConverterNodeData & Record<string, unknown>>>
+> = ({ id, data }) => {
   // Get input connection (any type)
-  const connections = useNodeConnections({ handleType: 'target' });
-  const inputConn = connections.find(c => c.targetHandle === 'x');
+  const connections = useNodeConnections({ handleType: "target" });
+  const inputConn = connections.find((c) => c.targetHandle === "x");
   const inputNodeId = inputConn?.source;
   const inputNodesData = useNodesData(inputNodeId ? [inputNodeId] : []);
-  
+
   // Extract input value using safe utility
   const inputValue = getSingleInputValue(inputNodesData);
 
@@ -36,13 +44,27 @@ const BooleanConverterNode: React.FC<NodeProps<Node<BooleanConverterNodeData & R
   return (
     <div className="px-4 py-3 rounded-lg bg-green-50 dark:bg-green-900 shadow border border-green-300 dark:border-green-800 flex flex-col items-center min-w-[120px]">
       {/* INPUT HANDLE (left, any type) */}
-      <CustomHandle type="target" position={Position.Left} id="x" dataType="x" />
-      <div className="font-semibold text-green-900 dark:text-green-100 mb-2">Boolean Converter</div>
-      <div className="text-xs text-green-800 dark:text-green-200 mb-2">Output: <span className="font-mono">{String(boolValue)}</span></div>
+      <CustomHandle
+        type="target"
+        position={Position.Left}
+        id="x"
+        dataType="x"
+      />
+      <div className="font-semibold text-green-900 dark:text-green-100 mb-2">
+        Boolean Converter
+      </div>
+      <div className="text-xs text-green-800 dark:text-green-200 mb-2">
+        Output: <span className="font-mono">{String(boolValue)}</span>
+      </div>
       {/* OUTPUT HANDLE (right, boolean) */}
-      <CustomHandle type="source" position={Position.Right} id="b" dataType="b" />
+      <CustomHandle
+        type="source"
+        position={Position.Right}
+        id="b"
+        dataType="b"
+      />
     </div>
   );
 };
 
-export default BooleanConverterNode; 
+export default BooleanConverterNode;

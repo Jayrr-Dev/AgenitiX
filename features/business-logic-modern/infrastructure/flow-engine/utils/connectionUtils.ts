@@ -11,7 +11,7 @@
  */
 
 import type { Connection } from "@xyflow/react";
-import { parseTypes } from "../../handles/CustomHandle";
+import { parseTypes } from "../../node-creation/node-handles/CustomHandle";
 import { TYPE_MAP } from "../constants";
 
 /**

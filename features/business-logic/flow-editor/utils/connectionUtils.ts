@@ -1,6 +1,6 @@
-import type { Connection } from '@xyflow/react';
-import { parseTypes } from '../../handles/CustomHandle';
-import { TYPE_MAP } from '../constants';
+import type { Connection } from "@xyflow/react";
+import { parseTypes } from "../../handles/TypesafeHandle";
+import { TYPE_MAP } from "../constants";
 
 /**
  * Validates if a connection between two handles is valid
@@ -12,12 +12,13 @@ export function validateConnection(connection: Connection): boolean {
 
   const sourceTypes = parseTypes(connection.sourceHandle);
   const targetTypes = parseTypes(connection.targetHandle);
-  
+
   // Allow if either side is 'x' (any)
-  const valid = sourceTypes.includes('x') || 
-                targetTypes.includes('x') || 
-                sourceTypes.some((st: string) => targetTypes.includes(st));
-  
+  const valid =
+    sourceTypes.includes("x") ||
+    targetTypes.includes("x") ||
+    sourceTypes.some((st: string) => targetTypes.includes(st));
+
   return valid;
 }
 
@@ -26,20 +27,20 @@ export function validateConnection(connection: Connection): boolean {
  */
 export function getConnectionDataType(connection: Connection): string {
   if (!connection.sourceHandle) {
-    return 's'; // fallback to string
+    return "s"; // fallback to string
   }
-  
+
   // Use parseTypes to support union/any/custom
   const types = parseTypes(connection.sourceHandle);
   // Use first type for color (or 'x' for any)
-  return types[0] || 's';
+  return types[0] || "s";
 }
 
 /**
  * Gets the color for an edge based on data type
  */
 export function getEdgeColor(dataType: string): string {
-  return TYPE_MAP[dataType]?.color || '#6b7280';
+  return TYPE_MAP[dataType]?.color || "#6b7280";
 }
 
 /**
@@ -48,7 +49,7 @@ export function getEdgeColor(dataType: string): string {
 export function createEdgeStyle(dataType: string, strokeWidth: number = 2) {
   return {
     stroke: getEdgeColor(dataType),
-    strokeWidth
+    strokeWidth,
   };
 }
 
@@ -57,4 +58,4 @@ export function createEdgeStyle(dataType: string, strokeWidth: number = 2) {
  */
 export function generateEdgeId(sourceId: string, targetId: string): string {
   return `edge-${sourceId}-${targetId}-${Date.now()}`;
-} 
+}

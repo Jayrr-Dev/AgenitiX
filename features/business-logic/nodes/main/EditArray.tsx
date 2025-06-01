@@ -1,9 +1,15 @@
 // ARRAY EDITOR NODE COMPONENT
 // Takes an array as input, allows editing items (including objects), and outputs the array
-import React, { useEffect, useState } from 'react';
-import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react';
-import CustomHandle from '../../handles/CustomHandle';
-import { useFlowStore } from '../../stores/flowStore';
+import {
+  Position,
+  useNodeConnections,
+  useNodesData,
+  type Node,
+  type NodeProps,
+} from "@xyflow/react";
+import React, { useEffect, useState } from "react";
+import CustomHandle from "../../handles/TypesafeHandle";
+import { useFlowStore } from "../../stores/flowStore";
 
 // ---------------------- TYPES ----------------------
 interface ArrayEditorNodeData {
@@ -19,17 +25,34 @@ interface ArrayEditorFieldProps {
   depth?: number;
 }
 
-const ArrayEditorField: React.FC<ArrayEditorFieldProps> = ({ path, value, onChange, depth = 0 }) => {
+const ArrayEditorField: React.FC<ArrayEditorFieldProps> = ({
+  path,
+  value,
+  onChange,
+  depth = 0,
+}) => {
   if (Array.isArray(value)) {
-    const isObjectArray = value.length > 0 && value.every(item => typeof item === 'object' && item !== null && !Array.isArray(item));
+    const isObjectArray =
+      value.length > 0 &&
+      value.every(
+        (item) =>
+          typeof item === "object" && item !== null && !Array.isArray(item)
+      );
     return (
       <div style={{ marginLeft: depth * 16 }}>
-        <span className="font-mono min-w-[60px] text-xs">[{path[path.length-1] ?? ''}]</span>
+        <span className="font-mono min-w-[60px] text-xs">
+          [{path[path.length - 1] ?? ""}]
+        </span>
         <div className="flex flex-col gap-1">
           {value.map((item, idx) => (
-            <div key={idx} className="flex flex-col gap-0.5 border-l-2 border-blue-300 pl-2 mb-1">
+            <div
+              key={idx}
+              className="flex flex-col gap-0.5 border-l-2 border-blue-300 pl-2 mb-1"
+            >
               {isObjectArray && (
-                <div className="text-xs font-bold text-blue-700 dark:text-blue-200 mb-0.5">Item {idx}</div>
+                <div className="text-xs font-bold text-blue-700 dark:text-blue-200 mb-0.5">
+                  Item {idx}
+                </div>
               )}
               <div className="flex items-center gap-1">
                 <ArrayEditorField
@@ -62,7 +85,7 @@ const ArrayEditorField: React.FC<ArrayEditorFieldProps> = ({ path, value, onChan
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              const newItem = isObjectArray ? {} : '';
+              const newItem = isObjectArray ? {} : "";
               onChange(path, [...value, newItem]);
             }}
           >
@@ -72,7 +95,7 @@ const ArrayEditorField: React.FC<ArrayEditorFieldProps> = ({ path, value, onChan
       </div>
     );
   }
-  if (typeof value === 'object' && value !== null) {
+  if (typeof value === "object" && value !== null) {
     const key = path[path.length - 1];
     return (
       <div style={{ marginLeft: depth * 16 }}>
@@ -95,35 +118,39 @@ const ArrayEditorField: React.FC<ArrayEditorFieldProps> = ({ path, value, onChan
   }
   const key = path[path.length - 1];
   return (
-    <label className="flex items-center gap-2 text-xs px-1 py-0.5" style={{ marginLeft: depth * 16 }}>
+    <label
+      className="flex items-center gap-2 text-xs px-1 py-0.5"
+      style={{ marginLeft: depth * 16 }}
+    >
       <span className="font-mono min-w-[60px]">{key}:</span>
       <input
         type="text"
         className="w-full rounded border px-1 text-xs bg-white dark:bg-black"
         value={String(value)}
-        onChange={e => onChange(path, e.target.value)}
+        onChange={(e) => onChange(path, e.target.value)}
       />
     </label>
   );
 };
 
 // ------------------- COMPONENT --------------------
-const ArrayEditorNode: React.FC<NodeProps<Node<ArrayEditorNodeData & Record<string, unknown>>>> = ({ id, data }) => {
+const ArrayEditorNode: React.FC<
+  NodeProps<Node<ArrayEditorNodeData & Record<string, unknown>>>
+> = ({ id, data }) => {
   // Get input connection (any type)
-  const connections = useNodeConnections({ handleType: 'target' });
-  const inputConn = connections.find(c => c.targetHandle === 'a');
+  const connections = useNodeConnections({ handleType: "target" });
+  const inputConn = connections.find((c) => c.targetHandle === "a");
   const inputNodeId = inputConn?.source;
   const inputNodesData = useNodesData(inputNodeId ? [inputNodeId] : []);
   // Use .value if present, else .text, else .triggered
-  const inputValue = inputNodesData.length > 0
-    ? (
-        inputNodesData[0].data?.value !== undefined
-          ? inputNodesData[0].data?.value
-          : (inputNodesData[0].data?.text !== undefined
-              ? inputNodesData[0].data?.text
-              : inputNodesData[0].data?.triggered)
-      )
-    : data.value ?? [];
+  const inputValue =
+    inputNodesData.length > 0
+      ? inputNodesData[0].data?.value !== undefined
+        ? inputNodesData[0].data?.value
+        : inputNodesData[0].data?.text !== undefined
+          ? inputNodesData[0].data?.text
+          : inputNodesData[0].data?.triggered
+      : (data.value ?? []);
 
   // Only allow editing if input is an array
   const [localArr, setLocalArr] = useState<unknown[]>(
@@ -155,7 +182,7 @@ const ArrayEditorNode: React.FC<NodeProps<Node<ArrayEditorNodeData & Record<stri
 
       const clone = JSON.parse(JSON.stringify(prev));
       let curr: any = clone;
-      
+
       // Navigate to the parent of the target
       for (let i = 0; i < path.length - 1; i++) {
         const key = path[i];
@@ -163,13 +190,13 @@ const ArrayEditorNode: React.FC<NodeProps<Node<ArrayEditorNodeData & Record<stri
           curr = curr[Number(key)];
         } else {
           const nextKey = path[i + 1];
-          if (typeof curr[key] !== 'object' || curr[key] === null) {
+          if (typeof curr[key] !== "object" || curr[key] === null) {
             curr[key] = !isNaN(Number(nextKey)) ? [] : {};
           }
           curr = curr[key];
         }
       }
-      
+
       // Set the final value
       const lastKey = path[path.length - 1];
       if (Array.isArray(curr) && !isNaN(Number(lastKey))) {
@@ -177,7 +204,7 @@ const ArrayEditorNode: React.FC<NodeProps<Node<ArrayEditorNodeData & Record<stri
       } else {
         curr[lastKey] = value;
       }
-      
+
       return clone;
     });
   };
@@ -186,12 +213,26 @@ const ArrayEditorNode: React.FC<NodeProps<Node<ArrayEditorNodeData & Record<stri
   return (
     <div className="px-3 py-3 rounded bg-blue-50 dark:bg-blue-900 shadow border border-blue-300 dark:border-blue-800 flex flex-col items-center min-w-[180px]">
       {/* INPUT HANDLE (left, Array only) */}
-      <CustomHandle type="target" position={Position.Left} id="a" dataType="a" />
+      <CustomHandle
+        type="target"
+        position={Position.Left}
+        id="a"
+        dataType="a"
+      />
       {/* OUTPUT HANDLE (right, Array only) */}
-      <CustomHandle type="source" position={Position.Right} id="a" dataType="a" />
-      <div className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Array Editor</div>
+      <CustomHandle
+        type="source"
+        position={Position.Right}
+        id="a"
+        dataType="a"
+      />
+      <div className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+        Array Editor
+      </div>
       {localArr.length === 0 ? (
-        <div className="text-xs text-blue-800 dark:text-blue-200 italic">No array input</div>
+        <div className="text-xs text-blue-800 dark:text-blue-200 italic">
+          No array input
+        </div>
       ) : (
         <div className="flex flex-col gap-1 w-full">
           <ArrayEditorField
@@ -205,4 +246,4 @@ const ArrayEditorNode: React.FC<NodeProps<Node<ArrayEditorNodeData & Record<stri
   );
 };
 
-export default ArrayEditorNode; 
+export default ArrayEditorNode;

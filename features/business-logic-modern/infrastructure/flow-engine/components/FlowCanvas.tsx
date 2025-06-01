@@ -26,15 +26,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import type { AgenEdge, AgenNode } from "../types";
 
 // Import other components - Using clean aliases
-import ActionToolbar from "@/features/business-logic-modern/infrastructure/node-creation/components/ActionToolbar";
-import HistoryPanel from "@/features/business-logic-modern/infrastructure/node-creation/components/HistoryPanel";
-import NodeInspector from "@/features/business-logic-modern/infrastructure/node-creation/components/NodeInspector";
-import { ActionHistoryEntry } from "@/features/business-logic-modern/infrastructure/node-creation/components/UndoRedoManager";
+import ActionToolbar from "@/features/business-logic-modern/infrastructure/components/ActionToolbar";
+import HistoryPanel from "@/features/business-logic-modern/infrastructure/components/HistoryPanel";
+import { ActionHistoryEntry } from "@/features/business-logic-modern/infrastructure/components/UndoRedoManager";
+import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
 
 // Import multi-selection copy/paste hook
 
 // CENTRALIZED NODE REGISTRY - Using clean alias
-import { getNodeTypes } from "@/features/business-logic-modern/infrastructure/node-registries/EnhancedNodeRegistry";
+import { getNodeTypes } from "@/features/business-logic-modern/infrastructure/node-creation/node-registries/EnhancedNodeRegistry";
 
 interface FlowCanvasProps {
   nodes: AgenNode[];

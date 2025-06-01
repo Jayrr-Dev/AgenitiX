@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from "react";
-import { useVibeModeStore } from "../../../theming/stores/vibeModeStore";
+import { useVibeModeStore } from "../../stores/vibeModeStore";
 import type { FilteredHandles, HandleConfig } from "../types";
 import { shouldShowJsonHandle } from "../utils/conditionalRendering";
 

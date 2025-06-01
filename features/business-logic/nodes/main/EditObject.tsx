@@ -1,9 +1,15 @@
 // OBJECT EDITOR NODE COMPONENT
 // Takes a JSON object as input, mirrors the keys, and allows editing the values
-import React, { useEffect, useState } from 'react';
-import { Position, useNodeConnections, useNodesData, type NodeProps, type Node } from '@xyflow/react';
-import CustomHandle from '../../handles/CustomHandle';
-import { useFlowStore } from '../../stores/flowStore';
+import {
+  Position,
+  useNodeConnections,
+  useNodesData,
+  type Node,
+  type NodeProps,
+} from "@xyflow/react";
+import React, { useEffect, useState } from "react";
+import CustomHandle from "../../handles/TypesafeHandle";
+import { useFlowStore } from "../../stores/flowStore";
 
 // ---------------------- TYPES ----------------------
 interface ObjectEditorNodeData {
@@ -19,19 +25,36 @@ interface JsonEditorFieldProps {
   depth?: number;
 }
 
-const JsonEditorField: React.FC<JsonEditorFieldProps> = ({ path, value, onChange, depth = 0 }) => {
+const JsonEditorField: React.FC<JsonEditorFieldProps> = ({
+  path,
+  value,
+  onChange,
+  depth = 0,
+}) => {
   // Handle arrays
   if (Array.isArray(value)) {
     // Check if this is an array of objects (all items are objects, not null, not arrays)
-    const isObjectArray = value.length > 0 && value.every(item => typeof item === 'object' && item !== null && !Array.isArray(item));
+    const isObjectArray =
+      value.length > 0 &&
+      value.every(
+        (item) =>
+          typeof item === "object" && item !== null && !Array.isArray(item)
+      );
     return (
       <div style={{ marginLeft: depth * 16 }}>
-        <span className="font-mono min-w-[60px] text-xs">[{path[path.length-1] ?? ''}]</span>
+        <span className="font-mono min-w-[60px] text-xs">
+          [{path[path.length - 1] ?? ""}]
+        </span>
         <div className="flex flex-col gap-1">
           {value.map((item, idx) => (
-            <div key={idx} className="flex flex-col gap-0.5 border-l-2 border-yellow-300 pl-2 mb-1">
+            <div
+              key={idx}
+              className="flex flex-col gap-0.5 border-l-2 border-yellow-300 pl-2 mb-1"
+            >
               {isObjectArray && (
-                <div className="text-xs font-bold text-yellow-700 dark:text-yellow-200 mb-0.5">Item {idx}</div>
+                <div className="text-xs font-bold text-yellow-700 dark:text-yellow-200 mb-0.5">
+                  Item {idx}
+                </div>
               )}
               <div className="flex items-center gap-1">
                 <JsonEditorField
@@ -66,7 +89,7 @@ const JsonEditorField: React.FC<JsonEditorFieldProps> = ({ path, value, onChange
               e.preventDefault();
               e.stopPropagation();
               // Add {} for object arrays, '' for others
-              const newItem = isObjectArray ? {} : '';
+              const newItem = isObjectArray ? {} : "";
               onChange(path, [...value, newItem]);
             }}
           >
@@ -77,7 +100,7 @@ const JsonEditorField: React.FC<JsonEditorFieldProps> = ({ path, value, onChange
     );
   }
   // If value is an object (not array/null), render nested fields with key label
-  if (typeof value === 'object' && value !== null) {
+  if (typeof value === "object" && value !== null) {
     const key = path[path.length - 1];
     return (
       <div style={{ marginLeft: depth * 16 }}>
@@ -101,46 +124,56 @@ const JsonEditorField: React.FC<JsonEditorFieldProps> = ({ path, value, onChange
   // Otherwise, render an input for primitives
   const key = path[path.length - 1];
   return (
-    <label className="flex items-center gap-2 text-xs px-1 py-0.5" style={{ marginLeft: depth * 16 }}>
+    <label
+      className="flex items-center gap-2 text-xs px-1 py-0.5"
+      style={{ marginLeft: depth * 16 }}
+    >
       <span className="font-mono min-w-[60px]">{key}:</span>
       <input
         type="text"
         className="w-full rounded border px-1 text-xs bg-white dark:bg-black"
         value={String(value)}
-        onChange={e => onChange(path, e.target.value)}
+        onChange={(e) => onChange(path, e.target.value)}
       />
     </label>
   );
 };
 
 // ------------------- COMPONENT --------------------
-const ObjectEditorNode: React.FC<NodeProps<Node<ObjectEditorNodeData & Record<string, unknown>>>> = ({ id, data }) => {
+const ObjectEditorNode: React.FC<
+  NodeProps<Node<ObjectEditorNodeData & Record<string, unknown>>>
+> = ({ id, data }) => {
   // Get input connection (any type)
-  const connections = useNodeConnections({ handleType: 'target' });
-  const inputConn = connections.find(c => c.targetHandle === 'j');
+  const connections = useNodeConnections({ handleType: "target" });
+  const inputConn = connections.find((c) => c.targetHandle === "j");
   const inputNodeId = inputConn?.source;
   const inputNodesData = useNodesData(inputNodeId ? [inputNodeId] : []);
   // Use .value if present, else .text, else .triggered
-  const inputValue = inputNodesData.length > 0
-    ? (
-        inputNodesData[0].data?.value !== undefined
-          ? inputNodesData[0].data?.value
-          : (inputNodesData[0].data?.text !== undefined
-              ? inputNodesData[0].data?.text
-              : inputNodesData[0].data?.triggered)
-      )
-    : data.value ?? {};
+  const inputValue =
+    inputNodesData.length > 0
+      ? inputNodesData[0].data?.value !== undefined
+        ? inputNodesData[0].data?.value
+        : inputNodesData[0].data?.text !== undefined
+          ? inputNodesData[0].data?.text
+          : inputNodesData[0].data?.triggered
+      : (data.value ?? {});
 
   // Only allow editing if input is an object
   const [localObj, setLocalObj] = useState<Record<string, unknown>>(
-    typeof inputValue === 'object' && inputValue !== null && !Array.isArray(inputValue)
+    typeof inputValue === "object" &&
+      inputValue !== null &&
+      !Array.isArray(inputValue)
       ? { ...inputValue }
       : {}
   );
 
   // Sync local state with input changes
   useEffect(() => {
-    if (typeof inputValue === 'object' && inputValue !== null && !Array.isArray(inputValue)) {
+    if (
+      typeof inputValue === "object" &&
+      inputValue !== null &&
+      !Array.isArray(inputValue)
+    ) {
       setLocalObj({ ...inputValue });
     }
   }, [inputValue]);
@@ -159,15 +192,17 @@ const ObjectEditorNode: React.FC<NodeProps<Node<ObjectEditorNodeData & Record<st
     setLocalObj((prev) => {
       // Handle root object case (empty path)
       if (path.length === 0) {
-        return typeof value === 'object' && value !== null && !Array.isArray(value) 
-          ? { ...value } 
+        return typeof value === "object" &&
+          value !== null &&
+          !Array.isArray(value)
+          ? { ...value }
           : prev;
       }
 
       // Deep clone and set value at path (support arrays)
       const clone = JSON.parse(JSON.stringify(prev));
       let curr: any = clone;
-      
+
       // Navigate to the parent of the target
       for (let i = 0; i < path.length - 1; i++) {
         const key = path[i];
@@ -176,14 +211,14 @@ const ObjectEditorNode: React.FC<NodeProps<Node<ObjectEditorNodeData & Record<st
         } else {
           // If next key is a number, treat as array
           const nextKey = path[i + 1];
-          if (typeof curr[key] !== 'object' || curr[key] === null) {
+          if (typeof curr[key] !== "object" || curr[key] === null) {
             // If next is number, make array, else object
             curr[key] = !isNaN(Number(nextKey)) ? [] : {};
           }
           curr = curr[key];
         }
       }
-      
+
       // Set the final value
       const lastKey = path[path.length - 1];
       if (Array.isArray(curr) && !isNaN(Number(lastKey))) {
@@ -191,7 +226,7 @@ const ObjectEditorNode: React.FC<NodeProps<Node<ObjectEditorNodeData & Record<st
       } else {
         curr[lastKey] = value;
       }
-      
+
       return clone;
     });
   };
@@ -200,12 +235,26 @@ const ObjectEditorNode: React.FC<NodeProps<Node<ObjectEditorNodeData & Record<st
   return (
     <div className="px-3 py-3 rounded bg-yellow-50 dark:bg-yellow-900 shadow border border-yellow-300 dark:border-yellow-800 flex flex-col items-center min-w-[180px]">
       {/* INPUT HANDLE (left, JSON only) */}
-      <CustomHandle type="target" position={Position.Left} id="j" dataType="j" />
+      <CustomHandle
+        type="target"
+        position={Position.Left}
+        id="j"
+        dataType="j"
+      />
       {/* OUTPUT HANDLE (right, JSON only) */}
-      <CustomHandle type="source" position={Position.Right} id="j" dataType="j" />
-      <div className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Object Editor</div>
+      <CustomHandle
+        type="source"
+        position={Position.Right}
+        id="j"
+        dataType="j"
+      />
+      <div className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
+        Object Editor
+      </div>
       {Object.keys(localObj).length === 0 ? (
-        <div className="text-xs text-yellow-800 dark:text-yellow-200 italic">No object input</div>
+        <div className="text-xs text-yellow-800 dark:text-yellow-200 italic">
+          No object input
+        </div>
       ) : (
         <div className="flex flex-col gap-1 w-full">
           {Object.entries(localObj).map(([key, value]) => (
@@ -222,4 +271,4 @@ const ObjectEditorNode: React.FC<NodeProps<Node<ObjectEditorNodeData & Record<st
   );
 };
 
-export default ObjectEditorNode; 
+export default ObjectEditorNode;
