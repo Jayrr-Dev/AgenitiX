@@ -364,6 +364,64 @@ The new modular architecture enables:
 5. **Micro-optimizations**: Target specific performance bottlenecks
 6. **Better Monitoring**: Focused metrics for each processing concern
 
+## 🚨 Critical Issues Discovered & Resolved
+
+### Handle Compatibility Crisis (December 2024)
+
+During production testing, we discovered critical compatibility issues between RefactoredNodeFactory nodes and the existing CustomHandle validation system.
+
+#### **Problem Discovery:**
+- ❌ RefactoredNodeFactory nodes using descriptive handle IDs (`'input'`, `'output'`) were being rejected by CustomHandle validation
+- ❌ Boolean-to-boolean connections showed "Type mismatch" errors
+- ❌ Nodes were incorrectly sized (too large)
+- ❌ Handle displays showed JSON (`'j'`) instead of Boolean (`'b'`) labels
+
+#### **Root Cause Analysis:**
+1. **Handle ID vs Type Mismatch**: `CustomHandle.isValidConnection()` used `parseTypes(handleId)` to determine data types
+2. **Legacy Expectation**: The validation system expected handle IDs to BE the type codes (`'b'`, `'s'`, `'j'`)
+3. **RefactoredNodeFactory Innovation**: Used descriptive IDs (`'input'`, `'output'`) for better readability
+4. **Parsing Failure**: `parseTypes('input')` returned `['input']` (invalid type) vs `parseTypes('b')` returning `['b']` (valid)
+
+#### **Additional Issues Found:**
+- **Duplicate Handle IDs**: Initial fix attempt used identical IDs (`id='b'`) for both input/output handles
+- **React Crashes**: Duplicate handle IDs caused infinite loops and page crashes
+- **Size Configuration**: Missing explicit size configuration caused oversized nodes
+
+#### **Final Solution:**
+```typescript
+// SOLUTION: Type-prefixed unique handle IDs
+handles: [
+  { type: 'target', position: Position.Left, dataType: 'b', id: 'b_in' },   
+  { type: 'source', position: Position.Right, dataType: 'b', id: 'b_out' }  
+]
+
+// RESULT: parseTypes('b_in') = ['b'] ✅ Valid boolean type
+//         parseTypes('b_out') = ['b'] ✅ Valid boolean type  
+//         Unique IDs prevent conflicts ✅
+```
+
+#### **Lessons Learned:**
+1. **Handle ID Conventions**: Handle IDs must start with type codes for compatibility
+2. **Validation Dependencies**: CustomHandle validation tightly coupled to ID-based type detection
+3. **Backward Compatibility**: Innovation must consider existing validation systems
+4. **Testing Gaps**: Need comprehensive handle connection testing in CI/CD
+5. **Documentation**: Handle ID conventions need explicit documentation
+
+#### **Prevention Measures:**
+- ✅ **Handle ID Standards**: Document required `{type}_{direction}` pattern
+- ✅ **Validation Testing**: Add automated handle connection tests
+- ✅ **Size Defaults**: Ensure all RefactoredNodeFactory nodes have explicit sizing
+- ✅ **Type Safety**: Enhance TypeScript checking for handle configurations
+- ✅ **Debug Logging**: Add handle validation debugging in development mode
+
+#### **Impact Assessment:**
+- **Scope**: All RefactoredNodeFactory nodes affected
+- **User Experience**: Complete connection failures, oversized nodes
+- **Development**: Revealed critical gap in testing strategy
+- **Architecture**: Highlighted coupling between handle IDs and validation logic
+
+This issue revealed the importance of **comprehensive integration testing** and **explicit documentation** of system expectations, especially when innovating within existing architectural constraints.
+
 ## 🎉 Conclusion
 
 This refactoring represents a **complete overhaul** of the NodeFactory system while maintaining **100% backward compatibility**. The improvements address every identified readability pattern and create a **sustainable**, **maintainable**, and **performant** foundation for future development.

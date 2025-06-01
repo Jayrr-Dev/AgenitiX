@@ -10,9 +10,10 @@ import {
   applyCustomCategoryColors,
   makeAllCreateNodesGreen,
   makeAllLogicNodesPink,
-  getNodesInCategory,
-  NodeCategory
+  getNodesInCategory
 } from './nodeStyleStore'
+
+import type { NodeCategory } from '../nodes/nodeRegistry';
 
 // ============================================================================
 // HOW TO USE CATEGORY-BASED THEMING

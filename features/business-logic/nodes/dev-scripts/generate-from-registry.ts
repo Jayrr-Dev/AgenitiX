@@ -13,6 +13,41 @@ import {
   generateNodeTypeConfig,
   generateInspectorControlMapping
 } from '../nodeRegistry';
+import { Position } from '@xyflow/react';
+
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+/** NODE CONFIGURATION INTERFACE */
+interface NodeTypeConfig {
+  defaultData: Record<string, any>;
+  hasTargetPosition: boolean;
+  targetPosition?: Position;
+  hasOutput: boolean;
+  hasControls: boolean;
+  displayName: string;
+}
+
+/** INSPECTOR CONTROL CONFIGURATION INTERFACE */
+interface InspectorControlConfig {
+  type: 'factory' | 'legacy' | 'none';
+  legacyControlType?: string;
+  controlGroups?: Array<{
+    title: string;
+    fields: Array<{
+      key: string;
+      type: string;
+      label: string;
+      placeholder?: string;
+      options?: Array<{ value: any; label: string }>;
+      min?: number;
+      max?: number;
+      step?: number;
+      rows?: number;
+    }>;
+  }>;
+}
 
 // ============================================================================
 // DEMO: AUTO-GENERATE types/index.ts
@@ -28,9 +63,9 @@ console.log(typeDefinitions);
 console.log('\n' + '='.repeat(80));
 console.log('📁 AUTO-GENERATING constants/index.ts (NODE_TYPE_CONFIG)\n');
 
-const nodeTypeConfig = generateNodeTypeConfig();
+const nodeTypeConfig: Record<string, NodeTypeConfig> = generateNodeTypeConfig();
 console.log('export const NODE_TYPE_CONFIG = {');
-Object.entries(nodeTypeConfig).forEach(([nodeType, config]) => {
+Object.entries(nodeTypeConfig).forEach(([nodeType, config]: [string, NodeTypeConfig]) => {
   console.log(`  ${nodeType}: {`);
   console.log(`    defaultData: ${JSON.stringify(config.defaultData, null, 6).replace(/\n/g, '\n    ')},`);
   console.log(`    hasTargetPosition: ${config.hasTargetPosition},`);
@@ -47,10 +82,10 @@ console.log('};');
 console.log('\n' + '='.repeat(80));
 console.log('📁 AUTO-GENERATING NodeControls.tsx (Inspector Mapping)\n');
 
-const inspectorMapping = generateInspectorControlMapping();
+const inspectorMapping: Record<string, InspectorControlConfig> = generateInspectorControlMapping();
 console.log('// Auto-generated inspector control mapping:');
 console.log('const NODE_INSPECTOR_CONTROLS = {');
-Object.entries(inspectorMapping).forEach(([nodeType, controlConfig]) => {
+Object.entries(inspectorMapping).forEach(([nodeType, controlConfig]: [string, InspectorControlConfig]) => {
   console.log(`  ${nodeType}: {`);
   console.log(`    type: '${controlConfig.type}',`);
   if (controlConfig.legacyControlType) {

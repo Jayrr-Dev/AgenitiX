@@ -26,17 +26,31 @@ const TriggerOnToggleRefactor = createNodeComponent<TriggerOnToggleRefactorData>
     triggered: false
   },
   
+  // SIZE CONFIGURATION - MATCH ORIGINAL (60x60 collapsed, 120x120 expanded)
+  size: {
+    collapsed: {
+      width: 'w-[60px]',
+      height: 'h-[60px]'
+    },
+    expanded: {
+      width: 'w-[120px]'
+    }
+  },
+  
   // PROCESSING LOGIC
   processLogic: ({ data, connections, nodesData, updateNodeData, id, setError }) => {
     try {
-      // Handle error injection
+      // Handle error injection (only if JSON input is connected in future versions)
       if (data.isErrorState) {
         setError(data.error || 'Trigger is in error state');
         return;
       }
       
+      // Filter for boolean trigger connections using the unique handle ID
+      const boolInputConnections = connections.filter(c => c.targetHandle === 'b_in');
+      
       // Check for external boolean trigger from connected nodes
-      const hasExternalTrigger = nodesData.some(node => {
+      const hasExternalTrigger = boolInputConnections.length > 0 && nodesData.some(node => {
         const value = node?.data?.value || node?.data?.triggered || node?.data?.output;
         return value === true || value === 'true' || (typeof value === 'string' && value.toLowerCase() === 'true');
       });
@@ -67,11 +81,10 @@ const TriggerOnToggleRefactor = createNodeComponent<TriggerOnToggleRefactorData>
     }
   },
   
-  // HANDLE CONFIGURATION
+  // HANDLE CONFIGURATION - UNIQUE IDs WITH BOOLEAN TYPE COMPATIBILITY
   handles: [
-    { type: 'target', position: Position.Left, dataType: 'b', id: 'trigger' },
-    { type: 'target', position: Position.Left, dataType: 'j', id: 'json' }, // For error injection
-    { type: 'source', position: Position.Right, dataType: 'b', id: 'output' }
+    { type: 'target', position: Position.Left, dataType: 'b', id: 'b_in' },   // Boolean input (unique ID)
+    { type: 'source', position: Position.Right, dataType: 'b', id: 'b_out' }  // Boolean output (unique ID)
   ],
   
   // COLLAPSED STATE RENDERER
@@ -167,4 +180,4 @@ const TriggerOnToggleRefactor = createNodeComponent<TriggerOnToggleRefactorData>
   }
 });
 
-export default TriggerOnToggleRefactor; 
+export default TriggerOnToggleRefactor;

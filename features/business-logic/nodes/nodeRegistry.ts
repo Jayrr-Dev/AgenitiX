@@ -82,6 +82,23 @@ export interface ControlGroup {
   fields: ControlField[];
 }
 
+// NODE TYPE CONFIGURATION INTERFACE
+export interface NodeTypeConfig {
+  defaultData: Record<string, any>;
+  hasTargetPosition: boolean;
+  targetPosition?: Position;
+  hasOutput: boolean;
+  hasControls: boolean;
+  displayName: string;
+}
+
+// INSPECTOR CONTROL CONFIGURATION INTERFACE
+export interface InspectorControlConfig {
+  type: 'factory' | 'legacy' | 'none';
+  controlGroups?: ControlGroup[];
+  legacyControlType?: string;
+}
+
 // Complete node registration interface
 export interface EnhancedNodeRegistration {
   // ========================================
@@ -1253,8 +1270,8 @@ export const generateTypeDefinitions = (): string => {
 };
 
 /** Generate constants configuration */
-export const generateNodeTypeConfig = (): any => {
-  const config: Record<string, any> = {};
+export const generateNodeTypeConfig = (): Record<string, NodeTypeConfig> => {
+  const config: Record<string, NodeTypeConfig> = {};
   
   Object.values(ENHANCED_NODE_REGISTRY).forEach(node => {
     config[node.nodeType] = {
@@ -1271,8 +1288,8 @@ export const generateNodeTypeConfig = (): any => {
 };
 
 /** Generate inspector control mapping */
-export const generateInspectorControlMapping = (): Record<string, any> => {
-  const mapping: Record<string, any> = {};
+export const generateInspectorControlMapping = (): Record<string, InspectorControlConfig> => {
+  const mapping: Record<string, InspectorControlConfig> = {};
   
   Object.values(ENHANCED_NODE_REGISTRY).forEach(node => {
     if (node.inspectorControls) {

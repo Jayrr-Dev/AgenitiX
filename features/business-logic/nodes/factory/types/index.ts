@@ -4,7 +4,7 @@
 
 import { ReactNode } from 'react';
 import { Position, type Connection, type Node } from '@xyflow/react';
-import type { NodeCategory } from '../../../stores/nodeStyleStore';
+import type { NodeCategory } from '../../nodeRegistry';
 
 // ============================================================================
 // BASE INTERFACES

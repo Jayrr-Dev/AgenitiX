@@ -23,10 +23,22 @@ export const addJsonInputSupport = <T extends BaseNodeData>(
   );
   
   if (!hasJsonInput) {
-    // Add a JSON input handle positioned at the top center
+    // Check for handle ID conflicts and generate unique ID
+    const existingIds = handles.map(h => h.id);
+    let jsonInputId = 'j';
+    
+    // If 'j' is already used, try alternative IDs
+    if (existingIds.includes('j')) {
+      const alternatives = ['json', 'j_in', 'j_input', 'json_in'];
+      jsonInputId = alternatives.find(id => !existingIds.includes(id)) || `j_${Date.now()}`;
+      
+      console.log(`🔧 Handle ID conflict detected: 'j' already exists. Using '${jsonInputId}' for JSON input handle.`);
+    }
+    
+    // Add a JSON input handle positioned at the top center with unique ID
     return [
       ...handles,
-      { id: 'j', dataType: 'j', position: Position.Top, type: 'target' }
+      { id: jsonInputId, dataType: 'j', position: Position.Top, type: 'target' }
     ];
   }
   
@@ -163,10 +175,17 @@ export const processJsonInput = <T extends BaseNodeData>(
 /**
  * GET JSON CONNECTIONS
  * Gets all JSON input connections for a node
+ * Now handles dynamic JSON input handle IDs
  */
 export const getJsonConnections = (connections: any[], nodeId: string) => {
   return connections.filter(conn => 
-    conn.target === nodeId && conn.targetHandle === 'j'
+    conn.target === nodeId && 
+    (conn.targetHandle === 'j' || 
+     conn.targetHandle === 'json' || 
+     conn.targetHandle === 'j_in' || 
+     conn.targetHandle === 'j_input' || 
+     conn.targetHandle === 'json_in' ||
+     conn.targetHandle?.startsWith('j_')) // Handle timestamp-based IDs
   );
 };
 
@@ -188,10 +207,17 @@ export const getJsonInputValues = (connections: any[], nodesData: any[], nodeId:
 /**
  * HAS JSON CONNECTIONS
  * Checks if a node has any JSON input connections
+ * Now handles dynamic JSON input handle IDs
  */
 export const hasJsonConnections = (connections: any[], nodeId: string): boolean => {
   return connections.some(conn => 
-    conn.target === nodeId && conn.targetHandle === 'j'
+    conn.target === nodeId && 
+    (conn.targetHandle === 'j' || 
+     conn.targetHandle === 'json' || 
+     conn.targetHandle === 'j_in' || 
+     conn.targetHandle === 'j_input' || 
+     conn.targetHandle === 'json_in' ||
+     conn.targetHandle?.startsWith('j_')) // Handle timestamp-based IDs
   );
 };
 

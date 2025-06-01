@@ -22,6 +22,21 @@ export function useNodeHandles(
   const { isVibeModeActive, showJsonHandles } = useVibeModeStore();
 
   // ========================================================================
+  // HANDLE VALIDATION AND DEBUGGING
+  // ========================================================================
+  
+  // Check for handle ID conflicts (in development)
+  if (process.env.NODE_ENV === 'development') {
+    const handleIds = handles.map(h => h.id);
+    const duplicateIds = handleIds.filter((id, index) => handleIds.indexOf(id) !== index);
+    
+    if (duplicateIds.length > 0) {
+      console.error('🚨 Handle ID conflicts detected:', duplicateIds);
+      console.error('🔧 Handles configuration:', handles);
+    }
+  }
+
+  // ========================================================================
   // HANDLE FILTERING LOGIC WITH EXTRACTED UTILITIES
   // ========================================================================
   
