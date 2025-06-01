@@ -35,22 +35,7 @@ import {
 // ============================================================================
 // COMPLETE REFACTORED NODE FACTORY - ENTERPRISE FEATURES PRESERVED
 // ============================================================================
-// 
-// This complete integration preserves ALL original enterprise features:
-// ✅ Safety Layer System (SafeVisualLayer, SafeStateLayer, SafeDataFlowController)
-// ✅ GPU Acceleration for high-frequency nodes
-// ✅ Ultra-Fast Propagation Engine integration
-// ✅ BulletproofNode Base compatibility 
-// ✅ Enhanced safety CSS styles
-// ✅ All original exports and functionality
-// ✅ Modular architecture with focused hooks
-// ✅ Complete backward compatibility
-//
-// Key improvements:
-// 🔧 Split 768-line function into focused modules
-// 🔧 Eliminated duplicate logic
-// 🔧 Preserved all enterprise safety features
-// 🔧 Enhanced performance and maintainability
+
 // ============================================================================
 
 // VIBE MODE ERROR INJECTION INTERFACE
@@ -391,6 +376,7 @@ export function createNodeComponent<T extends BaseNodeData>(
         isEnterprise={true}
       >
         <NodeContent
+          id={id}
           nodeState={nodeState}
           processingState={processingState}
           styling={styling}

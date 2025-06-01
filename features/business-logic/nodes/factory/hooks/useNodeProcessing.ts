@@ -1,37 +1,68 @@
-import { useEffect, useRef, useMemo, useCallback } from 'react';
+import { useEffect } from 'react';
 import type { BaseNodeData, NodeFactoryConfig } from '../types';
-import { useUltraFastPropagation } from '../UltraFastPropagationEngine';
-import { 
-  getJsonConnections,
-  getJsonInputValues,
-  hasJsonConnections,
-  createJsonProcessingTracker,
-  processJsonInput 
-} from '../utils/jsonProcessor';
-import { 
-  isHeadNode,
-  calculateHeadNodeActivation,
-  calculateDownstreamNodeActivation 
-} from '../utils/propagationEngine';
-import { PROCESSING_THROTTLE_MS, ERROR_INJECTION_SUPPORTED_NODES } from '../constants';
-import { useFlowStore } from '../../../stores/flowStore';
 
-// TYPES
+// FOCUSED PROCESSING HOOKS
+import { 
+  useErrorInjectionProcessing, 
+  createErrorInjectionConfig 
+} from './useErrorInjectionProcessing';
+import { 
+  useJsonInputProcessing, 
+  createJsonProcessingConfig 
+} from './useJsonInputProcessing';
+import { 
+  useActivationCalculation, 
+  createActivationConfig,
+  hasActivationChanged 
+} from './useActivationCalculation';
+import { 
+  useGPUAcceleration, 
+  createGPUAccelerationConfig 
+} from './useGPUAcceleration';
+import { 
+  useMainProcessingLogic, 
+  createProcessingConfig 
+} from './useMainProcessingLogic';
+
+// ============================================================================
+// ENTERPRISE SAFETY LAYERS TYPE
+// ============================================================================
+
+interface SafetyLayers {
+  visual: {
+    updateVisualState: (nodeId: string, isActive: boolean) => void;
+  };
+  state: any;
+  dataFlow: {
+    setNodeActivation: (nodeId: string, isActive: boolean) => void;
+  };
+}
+
+// ============================================================================
+// PROCESSING STATE TYPE
+// ============================================================================
+
 interface ProcessingState {
   isActive: boolean;
   error: string | null;
 }
 
-interface SafetyLayers {
-  visual: any;
-  state: any;
-  dataFlow: any;
-}
+// ============================================================================
+// REFACTORED USE NODE PROCESSING
+// ============================================================================
 
 /**
  * USE NODE PROCESSING
- * Handles all processing logic, JSON processing, and propagation
+ * Orchestrates all processing logic using focused, modular hooks
  * Enhanced with enterprise safety layer integration
+ * 
+ * Key improvements:
+ * ✅ Broken down into 5 focused hooks (single responsibility)
+ * ✅ Simplified conditional logic with early returns
+ * ✅ Smaller, focused effects with specific dependencies
+ * ✅ Clear separation of concerns
+ * ✅ Maintained backward compatibility
+ * ✅ Enhanced error handling and logging
  * 
  * @param id - Node ID
  * @param nodeState - Node state and actions
@@ -47,287 +78,136 @@ export function useNodeProcessing<T extends BaseNodeData>(
   config: NodeFactoryConfig<T>,
   safetyLayers?: SafetyLayers
 ): ProcessingState {
-  // PROCESSING TRACKERS
-  const jsonProcessingTracker = useRef(createJsonProcessingTracker());
-  const logicProcessingTracker = useRef(createJsonProcessingTracker());
   
-  // FLOW STORE FOR NODE DATA ACCESS
-  const { updateNodeData } = useFlowStore();
+  // ========================================================================
+  // CONFIGURATION CREATION
+  // ========================================================================
   
-  // ULTRA-FAST PROPAGATION SYSTEM
-  const { propagateUltraFast, enableGPUAcceleration } = useUltraFastPropagation(
-    connectionData.allNodes || [],
-    connectionData.connections,
-    updateNodeData
+  const errorInjectionConfig = createErrorInjectionConfig(config.nodeType);
+  const jsonProcessingConfig = createJsonProcessingConfig(config.handles, config.nodeType);
+  const activationConfig = createActivationConfig(config.nodeType);
+  const gpuAccelerationConfig = createGPUAccelerationConfig(config.nodeType, id);
+  const processingConfig = createProcessingConfig(config.nodeType, config.processLogic);
+
+  // ========================================================================
+  // FOCUSED PROCESSING HOOKS
+  // ========================================================================
+
+  // ERROR INJECTION PROCESSING: Handle VIBE mode error injection
+  useErrorInjectionProcessing(
+    id, 
+    errorInjectionConfig, 
+    connectionData, 
+    nodeState
   );
 
-  // GPU ACCELERATION: Enable for high-frequency nodes (ENTERPRISE FEATURE)
-  useEffect(() => {
-    const nodeType = config.nodeType;
-    
-    if (nodeType.includes('trigger') || 
-        nodeType.includes('cycle') || 
-        nodeType.includes('delay') ||
-        nodeType.includes('pulse')) {
-      enableGPUAcceleration([id]);
-      
-      // Enterprise safety integration
-      if (safetyLayers) {
-        console.log(`🚀 Enterprise GPU acceleration enabled for ${nodeType} ${id}`);
-      }
-    }
-  }, [id, config.nodeType, enableGPUAcceleration, safetyLayers]);
+  // JSON INPUT PROCESSING: Handle JSON input processing with throttling
+  const jsonProcessingState = useJsonInputProcessing(
+    id,
+    jsonProcessingConfig,
+    connectionData,
+    nodeState.data
+  );
 
-  // ============================================================================
-  // VIBE MODE ERROR INJECTION PROCESSING
-  // ============================================================================
+  // ACTIVATION CALCULATION: Calculate node activation state
+  const activationResult = useActivationCalculation(
+    id,
+    activationConfig,
+    nodeState.data,
+    connectionData
+  );
+
+  // GPU ACCELERATION: Setup ultra-fast propagation for high-frequency nodes
+  const gpuAcceleration = useGPUAcceleration(
+    gpuAccelerationConfig,
+    connectionData,
+    nodeState.updateNodeData,
+    safetyLayers
+  );
+
+  // MAIN PROCESSING LOGIC: Execute core business logic
+  const processingState = useMainProcessingLogic(
+    id,
+    processingConfig,
+    nodeState.data,
+    connectionData,
+    nodeState,
+    activationResult,
+    gpuAcceleration.propagateUltraFast
+  );
+
+  // ========================================================================
+  // ACTIVATION STATE MANAGEMENT WITH ENTERPRISE SAFETY
+  // ========================================================================
   
   useEffect(() => {
-    const supportsErrorInjection = ERROR_INJECTION_SUPPORTED_NODES.includes(
-      config.nodeType as any
+    const activationChange = hasActivationChanged(
+      nodeState.isActive, 
+      activationResult.calculatedIsActive
     );
-    
-    if (!supportsErrorInjection) return;
-    
-    // Check for JSON connections with error data
-    if (hasJsonConnections(connectionData.connections, id)) {
-      const jsonInputValues = getJsonInputValues(connectionData.connections, connectionData.nodesData, id);
-      
-      jsonInputValues.forEach(jsonInput => {
-        if (jsonInput && typeof jsonInput === 'object') {
-          // Check if this is error injection JSON from Error Generator
-          if (jsonInput.isErrorState === true && jsonInput.error) {
-            console.log(`🔴 [${config.nodeType}] ${id}: Received error injection:`, {
-              error: jsonInput.error,
-              errorType: jsonInput.errorType || 'error',
-              timestamp: jsonInput.timestamp
-            });
-            
-            // Apply error state to node
-            updateNodeData(id, {
-              isErrorState: true,
-              errorType: jsonInput.errorType || 'error',
-              error: jsonInput.error
-            });
-            
-            // Set local error for immediate visual feedback
-            nodeState.setError(jsonInput.error);
-            
-          } else if (jsonInput.isErrorState === false || !jsonInput.error) {
-            // Clear error state if JSON indicates no error
-            console.log(`✅ [${config.nodeType}] ${id}: Clearing error injection`);
-            
-            updateNodeData(id, {
-              isErrorState: false,
-              errorType: undefined,
-              error: undefined
-            });
-            
-            // Clear local error if it was from error injection
-            if ((nodeState.data as any)?.isErrorState) {
-              nodeState.setError(null);
-            }
-          }
-        }
-      });
-    } else {
-      // No JSON connections - clear error injection state if it exists
-      if ((nodeState.data as any)?.isErrorState) {
-        console.log(`🧹 [${config.nodeType}] ${id}: Clearing error injection (no JSON connections)`);
-        
-        updateNodeData(id, {
-          isErrorState: false,
-          errorType: undefined,
-          error: undefined
-        });
-        
-        nodeState.setError(null);
-      }
-    }
-  }, [
-    id,
-    config.nodeType,
-    connectionData.connections,
-    connectionData.nodesData,
-    updateNodeData,
-    nodeState
-  ]);
 
-  // JSON INPUT PROCESSING
-  const processJsonInputs = useCallback(() => {
-    if (!jsonProcessingTracker.current.shouldProcess(PROCESSING_THROTTLE_MS)) {
-      return;
-    }
-    
-    if (!hasJsonConnections(connectionData.connections, id)) {
-      return;
-    }
-        
-    const jsonInputValues = getJsonInputValues(
-      connectionData.connections, 
-      connectionData.nodesData, 
-      id
-    );
-    
-    jsonInputValues.forEach(jsonInput => {
-      processJsonInput(jsonInput, nodeState.data as T, updateNodeData, id);
-    });
-    
-  }, [connectionData.connections, connectionData.nodesData, id, updateNodeData]);
-
-  // JSON PROCESSING EFFECT
-  useEffect(() => {
-    const hasJsonHandles = config.handles.some(h => 
-      h.id === 'j' && h.type === 'target'
-    );
-    
-    if (hasJsonHandles && hasJsonConnections(connectionData.connections, id)) {
-      processJsonInputs();
-    }
-  }, [
-    processJsonInputs,
-    connectionData.connections.length,
-    JSON.stringify(connectionData.connections.map((c: any) => ({ 
-      source: c.source, 
-      target: c.target, 
-      targetHandle: c.targetHandle 
-    }))),
-    connectionData.nodesData.length
-  ]);
-
-  // ACTIVATION CALCULATION
-  const calculatedIsActive = useMemo(() => {
-    try {
-      const isHead = isHeadNode(connectionData.connections, id);
-      const previousIsActive = (nodeState.data as any)?.isActive;
+    if (activationChange.hasChanged) {
+      // UPDATE LOCAL STATE
+      nodeState.setIsActive(activationResult.calculatedIsActive);
       
-      // Quick check for instant deactivation
-      const quickCheck = isHead 
-        ? calculateHeadNodeActivation(config.nodeType, nodeState.data as T, true)
-        : calculateDownstreamNodeActivation(
-            config.nodeType, 
-            nodeState.data as T, 
-            connectionData.connections, 
-            connectionData.nodesData, 
-            id, 
-            true
-          );
-      
-      const bypassCache = previousIsActive === true && quickCheck === false;
-      
-      if (isHead) {
-        return calculateHeadNodeActivation(config.nodeType, nodeState.data as T, bypassCache);
-      } else {
-        return calculateDownstreamNodeActivation(
-          config.nodeType, 
-          nodeState.data as T, 
-          connectionData.connections, 
-          connectionData.nodesData, 
-          id,
-          bypassCache
-        );
-      }
-    } catch (error) {
-      console.error(`${config.nodeType} ${id} - Propagation calculation error:`, error);
-      return false;
-    }
-  }, [
-    id,
-    config.nodeType,
-    connectionData.relevantConnectionData,
-    connectionData.nodesData,
-    JSON.stringify(nodeState.data)
-  ]);
-
-  // ACTIVATION STATE MANAGEMENT WITH ENTERPRISE SAFETY
-  useEffect(() => {
-    if (nodeState.isActive !== calculatedIsActive) {
-      const isActivating = !nodeState.isActive && calculatedIsActive;
-      const isDeactivating = nodeState.isActive && !calculatedIsActive;
-      
-      nodeState.setIsActive(calculatedIsActive);
-      
-      // Enterprise safety layer integration
+      // ENTERPRISE SAFETY LAYER INTEGRATION
       if (safetyLayers) {
-        safetyLayers.visual.updateVisualState(id, calculatedIsActive);
-        safetyLayers.dataFlow.setNodeActivation(id, calculatedIsActive);
+        safetyLayers.visual.updateVisualState(id, activationResult.calculatedIsActive);
+        safetyLayers.dataFlow.setNodeActivation(id, activationResult.calculatedIsActive);
       }
       
-      if (isDeactivating) {
+      // LOGGING FOR DIFFERENT ACTIVATION TYPES
+      if (activationChange.isDeactivating) {
         console.log(`UFS ${config.nodeType} ${id}: DEACTIVATING - Using ultra-fast instant propagation`);
-      } else if (isActivating) {
+      } else if (activationChange.isActivating) {
         console.log(`UFS ${config.nodeType} ${id}: ACTIVATING - Using ultra-fast smooth propagation`);
       }
       
-      propagateUltraFast(id, calculatedIsActive);
-    }
-  }, [calculatedIsActive, nodeState.isActive, id, propagateUltraFast, safetyLayers]);
-
-  // MAIN PROCESSING LOGIC
-  useEffect(() => {
-    // Bypass throttling for input nodes that need immediate text updates
-    const isInputNode = config.nodeType === 'createText';
-    
-    if (!isInputNode && !logicProcessingTracker.current.shouldProcess(PROCESSING_THROTTLE_MS)) {
-      return;
-    }
-    
-    try {
-      config.processLogic({
-        id,
-        data: nodeState.data as T,
-        connections: connectionData.connections,
-        nodesData: connectionData.nodesData,
-        updateNodeData: (nodeId: string, updates: Partial<T>) => 
-          nodeState.updateNodeData(nodeId, updates as Partial<Record<string, unknown>>),
-        setError: nodeState.setError
-      });
-      
-      // Handle trigger/cycle node output value updates
-      if (config.nodeType.toLowerCase().includes('trigger') || 
-          config.nodeType.toLowerCase().includes('cycle')) {
-        const outputValue = calculatedIsActive ? true : false;
-        const currentOutputValue = (nodeState.data as any)?.value;
-        
-        if (currentOutputValue !== outputValue) {
-          const isOutputDeactivating = currentOutputValue === true && outputValue === false;
-          
-          nodeState.updateNodeData(id, { value: outputValue } as Partial<Record<string, unknown>>);
-          
-          if (isOutputDeactivating) {
-            console.log(`UFS Output ${config.nodeType} ${id}: INSTANT output deactivation`);
-            propagateUltraFast(id, false);
-          }
-        }
-      }
-      
-    } catch (processingError) {
-      nodeState.setIsActive(false);
-      
-      if ((nodeState.data as any)?.isActive === true) {
-        nodeState.updateNodeData(id, { isActive: false } as Partial<Record<string, unknown>>);
-      }
-      
-      console.error(`${config.nodeType} ${id} - Processing error:`, processingError);
-      const errorMessage = processingError instanceof Error 
-        ? processingError.message 
-        : 'Processing error';
-      nodeState.setError(errorMessage);
+      // ULTRA-FAST PROPAGATION
+      gpuAcceleration.propagateUltraFast(id, activationResult.calculatedIsActive);
     }
   }, [
     id,
-    connectionData.relevantConnectionData,
-    connectionData.nodesData,
-    config.nodeType,
-    config.processLogic,
-    calculatedIsActive,
-    nodeState.updateNodeData,
-    propagateUltraFast,
-    (nodeState.data as any)?.heldText
+    nodeState.isActive,
+    activationResult.calculatedIsActive, 
+    gpuAcceleration.propagateUltraFast, 
+    safetyLayers,
+    config.nodeType
   ]);
+
+  // ========================================================================
+  // RETURN PROCESSING STATE
+  // ========================================================================
 
   return {
     isActive: nodeState.isActive,
     error: nodeState.error
   };
-} 
+}
+
+// ============================================================================
+// UTILITY EXPORTS FOR BACKWARD COMPATIBILITY
+// ============================================================================
+
+export { 
+  createErrorInjectionConfig
+} from './useErrorInjectionProcessing';
+
+export { 
+  createJsonProcessingConfig
+} from './useJsonInputProcessing';
+
+export { 
+  createActivationConfig,
+  hasActivationChanged 
+} from './useActivationCalculation';
+
+export { 
+  createGPUAccelerationConfig
+} from './useGPUAcceleration';
+
+export { 
+  createProcessingConfig
+} from './useMainProcessingLogic';
+
+export type { SafetyLayers, ProcessingState }; 

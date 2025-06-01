@@ -83,6 +83,7 @@ export const ERROR_INJECTION_SUPPORTED_NODES = [
   'createTextRefactor',
   'createTextEnhanced', 
   'testJson', 
+  'testErrorRefactored',
   'viewOutput',
   'viewOutputRefactor',
   'viewOutputEnhanced'

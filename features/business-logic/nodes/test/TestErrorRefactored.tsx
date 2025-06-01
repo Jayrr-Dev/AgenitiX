@@ -43,9 +43,14 @@ const BaseActivateResetButton = ({
     e.preventDefault();
     e.stopPropagation();
     console.log(`🔥 Error Generator ${id}: ACTIVATING manually`);
+    console.log(`🔥 Error Generator ${id}: Current data:`, data);
+    console.log(`🔥 Error Generator ${id}: updateNodeData function:`, updateNodeData);
+    
     updateNodeData(id, { 
       isManuallyActivated: true 
     });
+    
+    console.log(`🔥 Error Generator ${id}: Update called with isManuallyActivated: true`);
   };
   
   const handleReset = (e: React.MouseEvent) => {

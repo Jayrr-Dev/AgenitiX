@@ -488,7 +488,8 @@ export function createNodeComponent<T extends BaseNodeData>(
       calculatedIsActive,
       updateNodeData,
       propagateUltraFast,
-      (data as any)?.heldText
+      (data as any)?.heldText,
+      data
     ]);
 
     // ============================================================================

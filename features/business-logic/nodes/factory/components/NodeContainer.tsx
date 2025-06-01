@@ -7,9 +7,16 @@ import {
   DEFAULT_TRIGGER_NODE_SIZE,
   TRIGGER_NODE_PATTERNS 
 } from '../constants';
+import { 
+  getNodeSize, 
+  selectButtonTheme 
+} from '../utils/conditionalRendering';
 import type { BaseNodeData, NodeFactoryConfig } from '../types';
 
-// TYPES
+// ============================================================================
+// NODE CONTAINER COMPONENT TYPES
+// ============================================================================
+
 interface NodeContainerProps<T extends BaseNodeData> {
   id: string;
   styling: any;
@@ -19,29 +26,14 @@ interface NodeContainerProps<T extends BaseNodeData> {
   children: React.ReactNode;
 }
 
-/**
- * GET SMART DEFAULT SIZE
- * Automatically pick the right default size based on node type
- */
-function getSmartDefaultSize(nodeType: string) {
-  // Check if it's a trigger node
-  if (TRIGGER_NODE_PATTERNS.some(pattern => nodeType.toLowerCase().includes(pattern))) {
-    return DEFAULT_TRIGGER_NODE_SIZE;
-  }
-  
-  // Check if it's a logic node (small icon-based)
-  if (nodeType.toLowerCase().includes('logic')) {
-    return DEFAULT_LOGIC_NODE_SIZE;
-  }
-  
-  // Default to text node size for everything else
-  return DEFAULT_TEXT_NODE_SIZE;
-}
+// ============================================================================
+// NODE CONTAINER COMPONENT
+// ============================================================================
 
 /**
  * NODE CONTAINER
  * Handles the outer structure, sizing, and expand/collapse functionality
- * Enhanced with enterprise safety features and smart size detection
+ * Enhanced with enterprise safety features and extracted conditional logic
  */
 export function NodeContainer<T extends BaseNodeData>({
   id,
@@ -51,40 +43,65 @@ export function NodeContainer<T extends BaseNodeData>({
   isEnterprise = false,
   children
 }: NodeContainerProps<T>) {
-  // SMART NODE SIZE CALCULATION
-  const nodeSize = enhancedConfig.size || getSmartDefaultSize(enhancedConfig.nodeType);
   
-  // ERROR THEME SELECTION
-  const buttonTheme = styling.errorState.finalErrorForStyling 
-    ? styling.buttonTheme 
-    : styling.categoryButtonTheme;
+  // ========================================================================
+  // SIZE CALCULATION WITH EXTRACTED LOGIC
+  // ========================================================================
 
+  const nodeSize = getNodeSize(
+    enhancedConfig.size, 
+    enhancedConfig.nodeType, 
+    nodeState.showUI
+  );
+
+  // ========================================================================
+  // THEME SELECTION WITH EXTRACTED LOGIC
+  // ========================================================================
+
+  const buttonTheme = selectButtonTheme(
+    !!styling.errorState.finalErrorForStyling,
+    styling.buttonTheme,
+    styling.categoryButtonTheme
+  );
+
+  // ========================================================================
   // ENTERPRISE ATTRIBUTES
-  const enterpriseAttributes = isEnterprise ? {
-    'data-enterprise-factory': 'true',
-    'data-safe-factory': 'true'
-  } : {};
+  // ========================================================================
 
+  const enterpriseAttributes = getEnterpriseAttributes(isEnterprise);
+
+  // ========================================================================
   // DEBUG ERROR INJECTION STATE
-  if (styling.errorState.hasVibeError || styling.errorState.finalErrorForStyling) {
-    console.log(`🎨 [NodeContainer] ${enhancedConfig.nodeType} ${id}: Applying error styling:`, {
-      hasVibeError: styling.errorState.hasVibeError,
-      finalErrorForStyling: styling.errorState.finalErrorForStyling,
-      errorType: styling.errorState.finalErrorType,
-      nodeStyleClasses: styling.nodeStyleClasses,
-      supportsErrorInjection: styling.errorState.supportsErrorInjection
-    });
-  }
+  // ========================================================================
+
+  logErrorInjectionDebug(
+    enhancedConfig.nodeType,
+    id,
+    styling.errorState,
+    styling.nodeStyleClasses
+  );
+
+  // ========================================================================
+  // CONTAINER STYLING CALCULATION
+  // ========================================================================
+
+  const containerClasses = buildContainerClasses(
+    nodeState.showUI,
+    nodeSize,
+    styling.categoryBaseClasses,
+    styling.nodeStyleClasses,
+    isEnterprise
+  );
+
+  // ========================================================================
+  // RENDER CONTAINER
+  // ========================================================================
 
   return (
     <div 
       data-id={id}
       {...enterpriseAttributes}
-      className={`relative ${
-        nodeState.showUI 
-          ? `px-4 py-3 ${nodeSize.expanded.width}` 
-          : `${nodeSize.collapsed.width} ${nodeSize.collapsed.height} flex items-center justify-center`
-      } rounded-lg ${styling.categoryBaseClasses.background} shadow border ${styling.categoryBaseClasses.border} ${styling.nodeStyleClasses} ${isEnterprise ? 'enterprise-node' : ''}`}
+      className={containerClasses}
     >
       {/* FLOATING NODE ID */}
       <FloatingNodeId nodeId={id} />
@@ -99,4 +116,104 @@ export function NodeContainer<T extends BaseNodeData>({
       {children}
     </div>
   );
+}
+
+// ============================================================================
+// EXTRACTED UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * GET ENTERPRISE ATTRIBUTES
+ * Extract enterprise attributes with early return
+ */
+function getEnterpriseAttributes(isEnterprise: boolean): Record<string, string> {
+  // EARLY RETURN: Not enterprise
+  if (!isEnterprise) {
+    return {};
+  }
+
+  return {
+    'data-enterprise-factory': 'true',
+    'data-safe-factory': 'true'
+  };
+}
+
+/**
+ * LOG ERROR INJECTION DEBUG
+ * Extract debug logging with early return
+ */
+function logErrorInjectionDebug(
+  nodeType: string,
+  id: string,
+  errorState: any,
+  nodeStyleClasses: string
+): void {
+  // EARLY RETURN: No error injection or error state
+  if (!errorState.hasVibeError && !errorState.finalErrorForStyling) {
+    return;
+  }
+
+  console.log(`🎨 [NodeContainer] ${nodeType} ${id}: Applying error styling:`, {
+    hasVibeError: errorState.hasVibeError,
+    finalErrorForStyling: errorState.finalErrorForStyling,
+    errorType: errorState.finalErrorType,
+    nodeStyleClasses: nodeStyleClasses,
+    supportsErrorInjection: errorState.supportsErrorInjection
+  });
+}
+
+/**
+ * BUILD CONTAINER CLASSES
+ * Construct container CSS classes with conditional logic
+ */
+function buildContainerClasses(
+  showUI: boolean,
+  nodeSize: { width: string; height: string },
+  categoryBaseClasses: any,
+  nodeStyleClasses: string,
+  isEnterprise: boolean
+): string {
+  // BASE SIZING CLASSES
+  const sizeClasses = showUI 
+    ? `px-4 py-3 ${nodeSize.width}` 
+    : `${nodeSize.width} ${nodeSize.height} flex items-center justify-center`;
+
+  // ENTERPRISE CLASS
+  const enterpriseClass = isEnterprise ? 'enterprise-node' : '';
+
+  // COMBINE ALL CLASSES
+  return [
+    'relative',
+    sizeClasses,
+    'rounded-lg',
+    categoryBaseClasses.background,
+    'shadow border',
+    categoryBaseClasses.border,
+    nodeStyleClasses,
+    enterpriseClass
+  ].filter(Boolean).join(' ');
+}
+
+// ============================================================================
+// LEGACY COMPATIBILITY FUNCTIONS (DEPRECATED)
+// ============================================================================
+
+/**
+ * GET SMART DEFAULT SIZE (DEPRECATED)
+ * @deprecated Use getNodeSize from conditionalRendering utils instead
+ * Kept for backward compatibility
+ */
+function getSmartDefaultSize(nodeType: string) {
+  // CHECK IF IT'S A TRIGGER NODE
+  if (TRIGGER_NODE_PATTERNS.some(pattern => nodeType.toLowerCase().includes(pattern))) {
+    return DEFAULT_TRIGGER_NODE_SIZE;
+  }
+  
+  // CHECK IF IT'S A LOGIC NODE
+  if (nodeType.toLowerCase().includes('logic')) {
+    return DEFAULT_LOGIC_NODE_SIZE;
+  }
+  
+  // DEFAULT TO TEXT NODE SIZE
+  return DEFAULT_TEXT_NODE_SIZE;
 } 

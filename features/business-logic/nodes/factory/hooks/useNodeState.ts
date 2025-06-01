@@ -78,7 +78,8 @@ export function useNodeState<T extends BaseNodeData>(
   useEffect(() => {
     if (error && !isRecovering && 
         config.nodeType !== 'testJson' && 
-        config.nodeType !== 'testError') {
+        config.nodeType !== 'testError' &&
+        config.nodeType !== 'testErrorRefactored') {
       if (!data?.error) {
         setError(null);
       }

@@ -479,7 +479,74 @@ renderExpanded: ({ data, error }) => (
 
 ---
 
-## **Step 5: Test Your Node**
+## **Step 5: Sidebar Registration (Mostly Automated!)**
+
+**✅ GOOD NEWS**: Sidebar registration is now **mostly automated** based on your registry metadata!
+
+### **🤖 Auto-Generated Categories**
+
+The sidebar now auto-generates content from your registry using `folder` and `category`:
+
+| Registry Metadata | Auto-Generated To | Sidebar Location |
+|------------------|-------------------|------------------|
+| `folder: 'testing'` | Testing tab | Variant A → Testing |
+| `folder: 'main'` | Core tab | Variant A → Core |
+| `folder: 'media'` | Text tab | Variant B → Text |
+| `folder: 'automation', category: 'trigger'` | Triggers tab | Variant D → Triggers |
+| `folder: 'automation', category: 'cycle'` | Cyclers tab | Variant D → Cyclers |
+| `category: 'count'` | Math tab | Variant E → Math |
+
+### **🎯 Most Common Case: No Action Needed!**
+
+For most nodes, simply setting the correct `folder` and `category` in your registry entry automatically places them in the sidebar:
+
+```typescript
+TestErrorRefactored: {
+  nodeType: 'testErrorRefactored',
+  component: TestErrorRefactored,
+  folder: 'testing',    // ✅ Auto-placed in Testing tab
+  category: 'test',     // ✅ Auto-categorized
+  // ... rest of config
+}
+```
+
+**Result**: Your node automatically appears in **Variant A → Testing tab** with no manual intervention!
+
+### **⚠️ Manual Override Only When Needed**
+
+You only need manual intervention for **custom placement** outside the standard patterns:
+
+#### **For Special Placement:**
+```typescript
+// If you want a testing node in the Core tab instead
+// Add to DEFAULT_STENCILS_A.core manually in sidebar/constants.ts
+export const DEFAULT_STENCILS_A = {
+  core: [
+    ...autoGenerateStencils({ folder: 'main' }, 'core'),
+    createStencil('TestErrorRefactored', 'core', 999) // Custom placement
+  ]
+};
+```
+
+#### **For New Sidebar Categories:**
+```typescript
+// If you create a new folder/category combination
+// Add a new auto-generation rule in sidebar/constants.ts
+export const DEFAULT_STENCILS_D = {
+  newCategory: autoGenerateStencils({ folder: 'integration' }, 'integration')
+};
+```
+
+### **🚀 Benefits of Auto-Generation**
+
+- ✅ **Set once, works everywhere** - Registry metadata controls sidebar
+- ✅ **No sync issues** - Impossible to forget sidebar registration  
+- ✅ **Consistent organization** - Nodes automatically go to logical places
+- ✅ **Less maintenance** - No manual lists to update
+
+---
+
+## **Step 6: Test Your Node**
 
 ### **Testing Checklist**
 
@@ -506,18 +573,32 @@ npm test
 
 ---
 
-## **Step 6: Debugging Common Issues**
+## **Step 7: Debugging Common Issues**
 
-### **Node Doesn't Appear in Sidebar**
+### **🎉 MUCH IMPROVED: Node Doesn't Appear in Sidebar**
+
+**✅ Good News**: With auto-generation, this is now **much less common**! The sidebar automatically uses your registry metadata.
 
 ```typescript
-// Add debug logging to nodeRegistry.ts
+// Check if your node is registered and auto-generated correctly
 console.log('🔍 Available nodes:', Object.keys(ENHANCED_NODE_REGISTRY));
-console.log('🔍 Registry mapping:', generateInspectorControlMapping());
+console.log('🔍 Your node folder:', ENHANCED_NODE_REGISTRY.YourNodeKey?.folder);
+console.log('🔍 Your node category:', ENHANCED_NODE_REGISTRY.YourNodeKey?.category);
+console.log('🔍 Auto-generated stencils:', autoGenerateStencils({ folder: 'testing' }, 'testing'));
 ```
 
-**Common causes:**
-- Import statement missing
+**✅ Most Common Solution**: Just set the correct `folder` in your registry entry!
+
+```typescript
+YourNewNode: {
+  folder: 'testing',    // ✅ This automatically puts it in Testing tab
+  category: 'test',     // ✅ This categorizes it properly
+  // ... rest of config
+}
+```
+
+**Rare causes that still need manual intervention:**
+- ✅ **Custom placement** - Node needs to go somewhere outside standard patterns
 - Registry entry has syntax errors
 - Development server needs restart
 
@@ -549,7 +630,7 @@ console.log('🔍 Error injection supported:',
 
 ---
 
-## **Step 7: Advanced Patterns**
+## **Step 8: Advanced Patterns**
 
 ### **Complex Inspector Controls**
 
@@ -784,9 +865,10 @@ version: '2.1.0'          // Track node versions
 
 - [ ] **Component Created** - Node component in correct directory
 - [ ] **Import Added** - Import statement in nodeRegistry.ts  
-- [ ] **Registry Entry** - Complete entry with all required fields
+- [ ] **Registry Entry** - Complete entry with all required fields including `folder`
 - [ ] **Error Support** - Added to ERROR_INJECTION_SUPPORTED_NODES (if needed)
-- [ ] **Sidebar Appearance** - Node appears in correct folder
+- [ ] **Sidebar Auto-Generation** - Correct `folder` and `category` set (auto-generates sidebar placement)
+- [ ] **Sidebar Appearance** - Node appears in expected tab (auto-generated from metadata)
 - [ ] **Inspector Controls** - Controls render and function correctly
 - [ ] **Data Processing** - Node processes data as expected
 - [ ] **Connections** - Input/output handles work properly

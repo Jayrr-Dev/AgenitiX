@@ -54,6 +54,7 @@ import EditArray from './main/EditArray';
 // Test nodes
 import TestError from './test/TestError';
 import TestJson from './test/TestJson';
+import TestErrorRefactored from './test/TestErrorRefactored';
 
 // ============================================================================
 // ENHANCED TYPE DEFINITIONS
@@ -1084,6 +1085,107 @@ export const ENHANCED_NODE_REGISTRY: Record<string, EnhancedNodeRegistration> = 
     }
   },
   
+  TestErrorRefactored: {
+    nodeType: 'testErrorRefactored',
+    component: TestErrorRefactored,
+    label: '🔧 Error Generator (Refactored)',
+    description: 'Refactored Error Generator using the new RefactoredNodeFactory system. Generate errors with custom messages and trigger conditions. Features enhanced enterprise safety layers, GPU acceleration, and ultra-fast propagation. Full error injection support for Vibe Mode.',
+    icon: '⚡',
+    category: 'test',
+    folder: 'testing', // Place in testing folder since it's a refactored version
+    
+    // Type system
+    dataInterface: {
+      errorMessage: 'string',
+      errorType: "'warning' | 'error' | 'critical'",
+      triggerMode: "'always' | 'trigger_on' | 'trigger_off'",
+      isGeneratingError: 'boolean',
+      isManuallyActivated: 'boolean',
+      text: 'string',
+      json: 'any',
+      isActive: 'boolean',
+      // Error injection support
+      isErrorState: 'boolean',
+      error: 'string'
+    },
+    hasTargetPosition: true,
+    targetPosition: Position.Left,
+    
+    // Configuration
+    defaultData: { 
+      errorMessage: 'Custom error message',
+      errorType: 'error',
+      triggerMode: 'trigger_on',
+      isGeneratingError: false,
+      isManuallyActivated: false,
+      text: '',
+      json: '',
+      isActive: false
+    },
+    hasOutput: true,
+    hasControls: true,
+    displayName: 'Error Generator (Refactored)',
+    
+    // Inspector controls - Factory type since it uses RefactoredNodeFactory
+    inspectorControls: {
+      type: 'factory',
+      controlGroups: [
+        {
+          title: 'Error Configuration',
+          fields: [
+            {
+              key: 'errorMessage',
+              type: 'textarea',
+              label: 'Error Message',
+              placeholder: 'Enter custom error message...',
+              rows: 3
+            },
+            {
+              key: 'errorType',
+              type: 'select',
+              label: 'Error Type',
+              options: [
+                { value: 'warning', label: 'Warning (Yellow)' },
+                { value: 'error', label: 'Error (Orange)' },
+                { value: 'critical', label: 'Critical (Red)' }
+              ]
+            },
+            {
+              key: 'triggerMode',
+              type: 'select',
+              label: 'Trigger Mode',
+              options: [
+                { value: 'always', label: 'Always Generate' },
+                { value: 'trigger_on', label: 'Generate When Triggered ON' },
+                { value: 'trigger_off', label: 'Generate When Triggered OFF' }
+              ]
+            }
+          ]
+        },
+        {
+          title: 'Status',
+          fields: [
+            {
+              key: 'isGeneratingError',
+              type: 'boolean',
+              label: 'Currently Generating Error'
+            },
+            {
+              key: 'isManuallyActivated',
+              type: 'boolean',
+              label: 'Manually Activated'
+            }
+          ]
+        }
+      ]
+    },
+    
+    // Metadata
+    tags: ['error', 'testing', 'vibe-mode', 'refactored'],
+    experimental: true, // Mark as experimental since it's a refactored version
+    version: '2.0.0' // Higher version since it's enhanced
+  },
+  
   TestJson: {
     nodeType: 'testJson',
     component: TestJson,
@@ -1289,19 +1391,38 @@ export const createNodeStencils = (nodeKeys: string[], prefix: string) => {
   }>;
 };
 
-/** Get testing nodes */
+/** Auto-generate stencils from registry by folder/criteria */
+export const autoGenerateStencils = (
+  criteria: {
+    folder?: SidebarFolder;
+    category?: NodeCategory;
+    experimental?: boolean;
+    deprecated?: boolean;
+  },
+  prefix: string
+) => {
+  const nodes = Object.entries(ENHANCED_NODE_REGISTRY)
+    .filter(([key, node]) => {
+      if (criteria.folder && node.folder !== criteria.folder) return false;
+      if (criteria.category && node.category !== criteria.category) return false;
+      if (criteria.experimental !== undefined && node.experimental !== criteria.experimental) return false;
+      if (criteria.deprecated !== undefined && node.deprecated !== criteria.deprecated) return false;
+      return true;
+    })
+    .map(([key, node], index) => ({
+      id: `${prefix}-${key.toLowerCase()}-${index + 1}`,
+      nodeType: node.nodeType,
+      label: node.label,
+      description: node.description
+    }));
+  
+  return nodes;
+};
+
+/** Get testing nodes - AUTO-GENERATED from registry */
 export const getTestingNodes = () => {
-  return createNodeStencils([
-    'CreateTextEnhanced',
-    'CyclePulseEnhanced', 
-    'TriggerToggleEnhanced',
-    'ViewOutputEnhanced',
-    'CreateTextRefactor',
-    'ViewOutputRefactor',
-    'TriggerOnToggleRefactor',
-    'TestError',
-    'TestJson'
-  ], 'testing');
+  // Auto-generate from registry instead of manual list
+  return autoGenerateStencils({ folder: 'testing' }, 'testing');
 };
 
 // ============================================================================
