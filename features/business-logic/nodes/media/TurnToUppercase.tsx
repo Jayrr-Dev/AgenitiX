@@ -32,14 +32,30 @@ const TurnToUppercase = createNodeComponent<TurnToUppercaseData>({
     text: ''
   },
   
-  // Define handles (string input -> string output)
+  // Define handles (string input + boolean trigger -> string output)
   handles: [
     { id: 's', dataType: 's', position: Position.Left, type: 'target' },
+    { id: 'b', dataType: 'b', position: Position.Bottom, type: 'target' },
     { id: 's', dataType: 's', position: Position.Right, type: 'source' }
   ],
   
-  // Processing logic - preserve the exact original logic
+  // Processing logic - preserve the exact original logic + add trigger support
   processLogic: ({ data, connections, nodesData, updateNodeData, id }) => {
+    // Check trigger state first
+    const triggerConnections = connections.filter(c => c.targetHandle === 'b');
+    const isTriggered = triggerConnections.length === 0 || // No trigger = always active
+      nodesData.some(node => 
+        node.data?.triggered === true || 
+        node.data?.value === true || 
+        node.data?.output === true
+      );
+    
+    // If not triggered, clear output and return
+    if (!isTriggered) {
+      updateNodeData(id, { text: '' });
+      return;
+    }
+    
     // Filter for connections to our string input handle ('s') or default connections
     const stringConnections = connections.filter(c => 
       c.targetHandle === 's' || 
@@ -63,8 +79,9 @@ const TurnToUppercase = createNodeComponent<TurnToUppercaseData>({
       })
       .filter((text): text is string => Boolean(text));
 
-    // If no valid text nodes are connected, return empty string
-    const transformed = !texts.length ? '' : texts.join(' ').toUpperCase();
+    // If no valid text nodes are connected, use default text
+    const defaultText = texts.length === 0 ? 'HELLO' : texts.join(' ');
+    const transformed = defaultText.toUpperCase();
 
     // Update node data with the transformed text
     updateNodeData(id, { text: transformed });

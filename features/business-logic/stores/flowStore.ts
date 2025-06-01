@@ -4,6 +4,7 @@ import { immer } from 'zustand/middleware/immer';
 import type { AgenNode, AgenEdge, NodeError } from '../flow-editor/types';
 import { INITIAL_NODES, INITIAL_EDGES } from '../flow-editor/constants';
 import { cleanupNodeTimers, emergencyCleanupAllTimers } from '../nodes/utils/timerCleanup';
+import { performCompleteMemoryCleanup } from '../nodes/utils/memoryCleanup';
 
 // ============================================================================
 // STORE TYPES
@@ -481,13 +482,24 @@ export const useFlowStore = create<FlowStore>()(
 
         // Force reset to initial state (clears localStorage)
         forceReset: () => {
-          // MEMORY LEAK FIX: Emergency cleanup of ALL timers before reset
-          emergencyCleanupAllTimers();
+          console.warn('🧹 Force reset initiated - performing comprehensive memory cleanup');
+          
+          // MEMORY LEAK FIX: Comprehensive cleanup of ALL accumulated data
+          try {
+            const memoryStats = performCompleteMemoryCleanup();
+            console.log('Memory cleanup stats:', memoryStats);
+          } catch (error) {
+            console.error('Memory cleanup failed:', error);
+            // Fallback to timer cleanup only
+            emergencyCleanupAllTimers();
+          }
           
           set(() => ({
             ...initialState,
             _hasHydrated: true,
           }));
+          
+          console.log('✅ Force reset complete');
         },
 
         // Hydration
