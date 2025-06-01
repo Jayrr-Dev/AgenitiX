@@ -1,5 +1,22 @@
+/**
+ * EDGE INSPECTOR COMPONENT - Edge properties display and editing interface
+ *
+ * • Displays selected edge connection details and metadata
+ * • Shows source and target node information with type validation
+ * • Provides edge deletion functionality with confirmation prompts
+ * • Renders connection path and styling information for debugging
+ * • Integrates with flow state management for real-time edge updates
+ *
+ * Keywords: edge-inspector, connections, source-target, validation, deletion, metadata
+ */
+
+"use client";
+
+import type {
+  AgenEdge,
+  AgenNode,
+} from "@/features/business-logic-modern/infrastructure/flow-engine/types";
 import { JsonHighlighter } from "@/features/business-logic-modern/infrastructure/node-creation/components/node-inspector/utils/JsonHighlighter";
-import type { AgenEdge, AgenNode } from "@flow-editor/types";
 import { ArrowRight, Trash2, Zap } from "lucide-react";
 import React from "react";
 

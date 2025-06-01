@@ -1,13 +1,25 @@
-import { useEffect, useCallback, useRef } from 'react';
-import { useFlowStore } from '../../../stores/flowStore';
-import { PROCESSING_THROTTLE_MS } from '../constants';
-import { 
-  hasJsonConnections,
-  getJsonInputValues,
+/**
+ * USE JSON INPUT PROCESSING HOOK - JSON data validation and processing
+ *
+ * • Handles JSON input validation, parsing, and error detection
+ * • Implements real-time JSON syntax checking and formatting
+ * • Supports complex JSON schema validation and transformation
+ * • Features performance-optimized parsing with error recovery
+ * • Integrates with node processing systems for data flow
+ *
+ * Keywords: json-processing, validation, parsing, syntax-checking, schema-validation, data-flow
+ */
+
+import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
+import { useCallback, useEffect, useRef } from "react";
+import { PROCESSING_THROTTLE_MS } from "../constants";
+import type { BaseNodeData, HandleConfig } from "../types";
+import {
   createJsonProcessingTracker,
-  processJsonInput
-} from '../utils/jsonProcessor';
-import type { BaseNodeData, HandleConfig } from '../types';
+  getJsonInputValues,
+  hasJsonConnections,
+  processJsonInput,
+} from "../utils/jsonProcessor";
 
 // ============================================================================
 // JSON INPUT PROCESSING TYPES
@@ -31,7 +43,7 @@ interface JsonConnectionData {
  * USE JSON INPUT PROCESSING
  * Handles JSON input processing with throttling and validation
  * Focused responsibility: Only JSON data processing
- * 
+ *
  * @param id - Node ID
  * @param config - JSON processing configuration
  * @param connectionData - Connection and node data
@@ -45,7 +57,7 @@ export function useJsonInputProcessing<T extends BaseNodeData>(
 ) {
   // FLOW STORE ACCESS
   const { updateNodeData } = useFlowStore();
-  
+
   // PROCESSING TRACKER for throttling
   const jsonProcessingTracker = useRef(createJsonProcessingTracker());
 
@@ -62,29 +74,28 @@ export function useJsonInputProcessing<T extends BaseNodeData>(
     if (!jsonProcessingTracker.current.shouldProcess(PROCESSING_THROTTLE_MS)) {
       return;
     }
-    
+
     // EARLY RETURN: No JSON connections
     if (!hasJsonConnections(connectionData.connections, id)) {
       return;
     }
-        
+
     // PROCESS ALL JSON INPUTS
     const jsonInputValues = getJsonInputValues(
-      connectionData.connections, 
-      connectionData.nodesData, 
+      connectionData.connections,
+      connectionData.nodesData,
       id
     );
-    
-    jsonInputValues.forEach(jsonInput => {
+
+    jsonInputValues.forEach((jsonInput) => {
       processJsonInput(jsonInput, nodeData, updateNodeData, id);
     });
-    
   }, [
-    connectionData.connections, 
-    connectionData.nodesData, 
-    id, 
+    connectionData.connections,
+    connectionData.nodesData,
+    id,
     updateNodeData,
-    nodeData
+    nodeData,
   ]);
 
   // ========================================================================
@@ -93,10 +104,10 @@ export function useJsonInputProcessing<T extends BaseNodeData>(
 
   useEffect(() => {
     // CHECK IF NODE HAS JSON HANDLES
-    const hasJsonHandles = config.handles.some(handle => 
-      handle.id === 'j' && handle.type === 'target'
+    const hasJsonHandles = config.handles.some(
+      (handle) => handle.id === "j" && handle.type === "target"
     );
-    
+
     // PROCESS JSON INPUTS if conditions are met
     if (hasJsonHandles && hasJsonConnections(connectionData.connections, id)) {
       processJsonInputs();
@@ -105,13 +116,15 @@ export function useJsonInputProcessing<T extends BaseNodeData>(
     processJsonInputs,
     connectionData.connections.length,
     // JSON-stringify for deep comparison of connection changes
-    JSON.stringify(connectionData.connections.map((connection: any) => ({ 
-      source: connection.source, 
-      target: connection.target, 
-      targetHandle: connection.targetHandle 
-    }))),
+    JSON.stringify(
+      connectionData.connections.map((connection: any) => ({
+        source: connection.source,
+        target: connection.target,
+        targetHandle: connection.targetHandle,
+      }))
+    ),
     connectionData.nodesData.length,
-    config.handles
+    config.handles,
   ]);
 
   // ========================================================================
@@ -119,9 +132,11 @@ export function useJsonInputProcessing<T extends BaseNodeData>(
   // ========================================================================
 
   return {
-    hasJsonHandles: config.handles.some(h => h.id === 'j' && h.type === 'target'),
+    hasJsonHandles: config.handles.some(
+      (h) => h.id === "j" && h.type === "target"
+    ),
     hasJsonConnections: hasJsonConnections(connectionData.connections, id),
-    processJsonInputs // Expose for manual triggering if needed
+    processJsonInputs, // Expose for manual triggering if needed
   };
 }
 
@@ -134,11 +149,11 @@ export function useJsonInputProcessing<T extends BaseNodeData>(
  * Helper to create JSON processing configuration object
  */
 export function createJsonProcessingConfig(
-  handles: HandleConfig[], 
+  handles: HandleConfig[],
   nodeType: string
 ): JsonProcessingConfig {
   return {
     handles,
-    nodeType
+    nodeType,
   };
-} 
+}

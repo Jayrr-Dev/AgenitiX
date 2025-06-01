@@ -1,4 +1,17 @@
-import React from 'react';
+/**
+ * BASE CONTROL COMPONENTS - Foundational UI controls for node property editing
+ *
+ * • Provides reusable base components for building node-specific controls
+ * • Includes status badges, action buttons, and input field foundations
+ * • Implements consistent styling and interaction patterns
+ * • Supports theming and accessibility features across all controls
+ * • Serves as building blocks for complex node control interfaces
+ *
+ * Keywords: base-controls, reusable, styling, accessibility, theming, building-blocks
+ */
+
+import React from "react";
+import type { BaseControlProps } from "../types";
 
 interface BaseControlProps {
   children: React.ReactNode;
@@ -6,10 +19,10 @@ interface BaseControlProps {
   className?: string;
 }
 
-export const BaseControl: React.FC<BaseControlProps> = ({ 
-  children, 
-  title, 
-  className = '' 
+export const BaseControl: React.FC<BaseControlProps> = ({
+  children,
+  title,
+  className = "",
 }) => {
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
@@ -33,13 +46,15 @@ interface StatusBadgeProps {
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({
   status,
-  trueLabel = 'TRUE',
-  falseLabel = 'FALSE',
-  trueColor = 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-  falseColor = 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+  trueLabel = "TRUE",
+  falseLabel = "FALSE",
+  trueColor = "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+  falseColor = "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
 }) => {
   return (
-    <span className={`text-xs px-2 py-1 rounded ${status ? trueColor : falseColor}`}>
+    <span
+      className={`text-xs px-2 py-1 rounded ${status ? trueColor : falseColor}`}
+    >
       {status ? trueLabel : falseLabel}
     </span>
   );
@@ -48,7 +63,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 interface ActionButtonProps {
   onClick: () => void;
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: "primary" | "secondary" | "danger";
   disabled?: boolean;
   className?: string;
 }
@@ -56,16 +71,19 @@ interface ActionButtonProps {
 export const ActionButton: React.FC<ActionButtonProps> = ({
   onClick,
   children,
-  variant = 'primary',
+  variant = "primary",
   disabled = false,
-  className = ''
+  className = "",
 }) => {
-  const baseClasses = 'text-xs px-2 py-1 rounded transition-colors';
-  
+  const baseClasses = "text-xs px-2 py-1 rounded transition-colors";
+
   const variantClasses = {
-    primary: 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800',
-    secondary: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600',
-    danger: 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800'
+    primary:
+      "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800",
+    secondary:
+      "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600",
+    danger:
+      "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800",
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -77,9 +95,9 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
     <button
       onClick={handleClick}
       disabled={disabled}
-      className={`${baseClasses} ${variantClasses[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+      className={`${baseClasses} ${variantClasses[variant]} ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${className}`}
     >
       {children}
     </button>
   );
-}; 
+};

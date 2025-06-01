@@ -1,9 +1,17 @@
-// ============================================================================
-// CACHE MANAGER
-// ============================================================================
+/**
+ * CACHE MANAGER UTILITY - High-performance caching and memory management
+ *
+ * • Provides intelligent caching system for node calculations and state
+ * • Implements TTL-based cache invalidation and memory optimization
+ * • Supports pattern-based cache clearing and statistics tracking
+ * • Features debounced update tracking for smooth performance
+ * • Integrates with factory systems for optimal memory usage
+ *
+ * Keywords: cache-manager, memory-optimization, ttl-invalidation, statistics, debouncing, performance
+ */
 
-import type { CacheEntry } from '../types';
-import { CACHE_TTL } from '../constants';
+import { CACHE_TTL } from "../constants";
+import type { CacheEntry } from "../types";
 
 // ============================================================================
 // CACHE STORAGE
@@ -19,7 +27,10 @@ export const calculationCache = new Map<string, CacheEntry>();
  * DEBOUNCED UPDATES TRACKING
  * Track pending updates for smooth activation
  */
-export const debouncedUpdates = new Map<string, ReturnType<typeof setTimeout>>();
+export const debouncedUpdates = new Map<
+  string,
+  ReturnType<typeof setTimeout>
+>();
 
 // ============================================================================
 // CACHE KEY GENERATION
@@ -30,16 +41,16 @@ export const debouncedUpdates = new Map<string, ReturnType<typeof setTimeout>>()
  * Generates unique cache keys for optimization
  */
 export const createCacheKey = (
-  type: 'head' | 'downstream', 
-  nodeId: string, 
-  data?: any, 
-  connections?: any[], 
+  type: "head" | "downstream",
+  nodeId: string,
+  data?: any,
+  connections?: any[],
   nodesData?: any[]
 ): string => {
-  if (type === 'head') {
+  if (type === "head") {
     return `head-${nodeId}-${JSON.stringify(data)}`;
   }
-  return `downstream-${nodeId}-${connections?.length || 0}-${nodesData?.map(n => n.id).join(',') || ''}`;
+  return `downstream-${nodeId}-${connections?.length || 0}-${nodesData?.map((n) => n.id).join(",") || ""}`;
 };
 
 // ============================================================================
@@ -51,7 +62,7 @@ export const createCacheKey = (
  * Checks if cached result is still valid
  */
 export const isCacheValid = (
-  cached: CacheEntry | undefined, 
+  cached: CacheEntry | undefined,
   bypassCache: boolean
 ): boolean => {
   if (bypassCache || !cached) return false;
@@ -87,7 +98,7 @@ export const clearCache = (pattern?: string): void => {
     calculationCache.clear();
     return;
   }
-  
+
   // Clear cache entries matching pattern
   const keysToDelete: string[] = [];
   calculationCache.forEach((_, key) => {
@@ -95,8 +106,8 @@ export const clearCache = (pattern?: string): void => {
       keysToDelete.push(key);
     }
   });
-  
-  keysToDelete.forEach(key => calculationCache.delete(key));
+
+  keysToDelete.forEach((key) => calculationCache.delete(key));
 };
 
 /**
@@ -106,14 +117,14 @@ export const clearCache = (pattern?: string): void => {
 export const clearExpiredCache = (): void => {
   const now = Date.now();
   const keysToDelete: string[] = [];
-  
+
   calculationCache.forEach((entry, key) => {
     if (now - entry.timestamp > CACHE_TTL) {
       keysToDelete.push(key);
     }
   });
-  
-  keysToDelete.forEach(key => calculationCache.delete(key));
+
+  keysToDelete.forEach((key) => calculationCache.delete(key));
 };
 
 /**
@@ -124,7 +135,7 @@ export const getCacheStats = () => {
   const now = Date.now();
   let validEntries = 0;
   let expiredEntries = 0;
-  
+
   calculationCache.forEach((entry) => {
     if (now - entry.timestamp < CACHE_TTL) {
       validEntries++;
@@ -132,11 +143,11 @@ export const getCacheStats = () => {
       expiredEntries++;
     }
   });
-  
+
   return {
     total: calculationCache.size,
     valid: validEntries,
     expired: expiredEntries,
-    hitRate: validEntries / (validEntries + expiredEntries) || 0
+    hitRate: validEntries / (validEntries + expiredEntries) || 0,
   };
-}; 
+};

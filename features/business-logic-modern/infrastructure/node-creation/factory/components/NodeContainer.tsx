@@ -1,17 +1,28 @@
-import React from 'react';
-import { FloatingNodeId } from '../../components/FloatingNodeId';
-import { ExpandCollapseButton } from '../../components/ExpandCollapseButton';
-import { 
-  DEFAULT_TEXT_NODE_SIZE, 
+/**
+ * NODE CONTAINER COMPONENT - Enterprise-grade node wrapper with safety systems
+ *
+ * • Provides bulletproof container for all factory-created nodes
+ * • Implements enterprise-grade error boundaries and state isolation
+ * • Manages visual styling, selection states, and interaction handlers
+ * • Integrates with safety layers for ultra-fast DOM updates
+ * • Supports dynamic theming and responsive layout adaptations
+ *
+ * Keywords: node-container, enterprise, error-boundaries, safety-layers, theming, responsive
+ */
+
+"use client";
+
+import React from "react";
+import { ExpandCollapseButton } from "../../components/ExpandCollapseButton";
+import { FloatingNodeId } from "../../components/FloatingNodeId";
+import {
   DEFAULT_LOGIC_NODE_SIZE,
+  DEFAULT_TEXT_NODE_SIZE,
   DEFAULT_TRIGGER_NODE_SIZE,
-  TRIGGER_NODE_PATTERNS 
-} from '../constants';
-import { 
-  getNodeSize, 
-  selectButtonTheme 
-} from '../utils/conditionalRendering';
-import type { BaseNodeData, NodeFactoryConfig } from '../types';
+  TRIGGER_NODE_PATTERNS,
+} from "../constants";
+import type { BaseNodeData, NodeFactoryConfig } from "../types";
+import { getNodeSize, selectButtonTheme } from "../utils/conditionalRendering";
 
 // ============================================================================
 // NODE CONTAINER COMPONENT TYPES
@@ -41,16 +52,15 @@ export function NodeContainer<T extends BaseNodeData>({
   nodeState,
   enhancedConfig,
   isEnterprise = false,
-  children
+  children,
 }: NodeContainerProps<T>) {
-  
   // ========================================================================
   // SIZE CALCULATION WITH EXTRACTED LOGIC
   // ========================================================================
 
   const nodeSize = getNodeSize(
-    enhancedConfig.size, 
-    enhancedConfig.nodeType, 
+    enhancedConfig.size,
+    enhancedConfig.nodeType,
     nodeState.showUI
   );
 
@@ -98,14 +108,10 @@ export function NodeContainer<T extends BaseNodeData>({
   // ========================================================================
 
   return (
-    <div 
-      data-id={id}
-      {...enterpriseAttributes}
-      className={containerClasses}
-    >
+    <div data-id={id} {...enterpriseAttributes} className={containerClasses}>
       {/* FLOATING NODE ID */}
       <FloatingNodeId nodeId={id} />
-      
+
       {/* EXPAND/COLLAPSE BUTTON */}
       <ExpandCollapseButton
         showUI={nodeState.showUI}
@@ -126,15 +132,17 @@ export function NodeContainer<T extends BaseNodeData>({
  * GET ENTERPRISE ATTRIBUTES
  * Extract enterprise attributes with early return
  */
-function getEnterpriseAttributes(isEnterprise: boolean): Record<string, string> {
+function getEnterpriseAttributes(
+  isEnterprise: boolean
+): Record<string, string> {
   // EARLY RETURN: Not enterprise
   if (!isEnterprise) {
     return {};
   }
 
   return {
-    'data-enterprise-factory': 'true',
-    'data-safe-factory': 'true'
+    "data-enterprise-factory": "true",
+    "data-safe-factory": "true",
   };
 }
 
@@ -158,7 +166,7 @@ function logErrorInjectionDebug(
     finalErrorForStyling: errorState.finalErrorForStyling,
     errorType: errorState.finalErrorType,
     nodeStyleClasses: nodeStyleClasses,
-    supportsErrorInjection: errorState.supportsErrorInjection
+    supportsErrorInjection: errorState.supportsErrorInjection,
   });
 }
 
@@ -174,24 +182,26 @@ function buildContainerClasses(
   isEnterprise: boolean
 ): string {
   // BASE SIZING CLASSES
-  const sizeClasses = showUI 
-    ? `px-4 py-3 ${nodeSize.width}` 
+  const sizeClasses = showUI
+    ? `px-4 py-3 ${nodeSize.width}`
     : `${nodeSize.width} ${nodeSize.height} flex items-center justify-center`;
 
   // ENTERPRISE CLASS
-  const enterpriseClass = isEnterprise ? 'enterprise-node' : '';
+  const enterpriseClass = isEnterprise ? "enterprise-node" : "";
 
   // COMBINE ALL CLASSES
   return [
-    'relative',
+    "relative",
     sizeClasses,
-    'rounded-lg',
+    "rounded-lg",
     categoryBaseClasses.background,
-    'shadow border',
+    "shadow border",
     categoryBaseClasses.border,
     nodeStyleClasses,
-    enterpriseClass
-  ].filter(Boolean).join(' ');
+    enterpriseClass,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 // ============================================================================
@@ -205,15 +215,19 @@ function buildContainerClasses(
  */
 function getSmartDefaultSize(nodeType: string) {
   // CHECK IF IT'S A TRIGGER NODE
-  if (TRIGGER_NODE_PATTERNS.some(pattern => nodeType.toLowerCase().includes(pattern))) {
+  if (
+    TRIGGER_NODE_PATTERNS.some((pattern) =>
+      nodeType.toLowerCase().includes(pattern)
+    )
+  ) {
     return DEFAULT_TRIGGER_NODE_SIZE;
   }
-  
+
   // CHECK IF IT'S A LOGIC NODE
-  if (nodeType.toLowerCase().includes('logic')) {
+  if (nodeType.toLowerCase().includes("logic")) {
     return DEFAULT_LOGIC_NODE_SIZE;
   }
-  
+
   // DEFAULT TO TEXT NODE SIZE
   return DEFAULT_TEXT_NODE_SIZE;
-} 
+}

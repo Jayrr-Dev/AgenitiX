@@ -1,4 +1,19 @@
-import type { AgenNode, AgenEdge } from '@flow-editor/types';
+/**
+ * NODE INSPECTOR TYPES - Type definitions for node inspection and editing
+ *
+ * • Defines interfaces for node inspector components and their props
+ * • Provides type safety for error handling and logging functionality
+ * • Includes base control types for extensible node property editors
+ * • Defines inspector state and editing control interfaces
+ * • Centralizes all node inspector type definitions for consistency
+ *
+ * Keywords: types, interfaces, node-inspector, props, errors, controls, state
+ */
+
+import type {
+  AgenEdge,
+  AgenNode,
+} from "@/features/business-logic-modern/infrastructure/flow-engine/types";
 
 export interface NodeInspectorProps {
   /** The currently selected node (or null if none) */
@@ -16,7 +31,12 @@ export interface NodeInspectorProps {
   /** Function to clear errors for the current node */
   onClearErrors?: () => void;
   /** Function to log new errors */
-  onLogError: (nodeId: string, message: string, type?: ErrorType, source?: string) => void;
+  onLogError: (
+    nodeId: string,
+    message: string,
+    type?: ErrorType,
+    source?: string
+  ) => void;
   /** Function to update node ID (optional) */
   onUpdateNodeId?: (oldId: string, newId: string) => void;
   /** Function to delete the current node (optional) */
@@ -38,7 +58,7 @@ export interface NodeError {
   source?: string;
 }
 
-export type ErrorType = 'error' | 'warning' | 'info';
+export type ErrorType = "error" | "warning" | "info";
 
 export interface BaseControlProps {
   node: AgenNode;
@@ -51,7 +71,12 @@ export interface JsonHighlighterProps {
 }
 
 export interface NodeControlsProps extends BaseControlProps {
-  onLogError: (nodeId: string, message: string, type?: ErrorType, source?: string) => void;
+  onLogError: (
+    nodeId: string,
+    message: string,
+    type?: ErrorType,
+    source?: string
+  ) => void;
 }
 
 export interface InspectorState {
@@ -67,10 +92,10 @@ export interface EditingRefs {
 }
 
 // Node type mappings for better type safety
-export type NodeType = AgenNode['type'];
+export type NodeType = AgenNode["type"];
 
 export interface NodeTypeConfig {
   hasOutput: boolean;
   hasControls: boolean;
   displayName: string;
-} 
+}

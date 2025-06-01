@@ -1,8 +1,18 @@
-// ============================================================================
-// BULLETPROOF NODE BASE - ENTERPRISE GRADE WITH ULTRA-FAST PROPAGATION
-// ============================================================================
+/**
+ * BULLETPROOF NODE BASE - Enterprise-grade node creation foundation
+ *
+ * • Provides bulletproof foundation for creating enterprise-grade nodes
+ * • Implements comprehensive error handling and memory leak prevention
+ * • Features ultra-fast performance optimization and safety layers
+ * • Supports advanced configuration with atomic state management
+ * • Includes validation systems and standardized node architecture
+ *
+ * Keywords: bulletproof, enterprise-grade, error-handling, performance, safety-layers, validation
+ */
 
-import { useFlowStore } from "@/features/business-logic-modern/infrastructure/theming/stores/flowStore";
+"use client";
+
+import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import { type Connection, type Node, type NodeProps } from "@xyflow/react";
 import React, {
   memo,

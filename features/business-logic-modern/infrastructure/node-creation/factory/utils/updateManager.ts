@@ -1,9 +1,17 @@
-// ============================================================================
-// UPDATE MANAGER
-// ============================================================================
+/**
+ * UPDATE MANAGER UTILITY - Intelligent node update scheduling system
+ *
+ * • Provides smart update scheduling with priority-based execution
+ * • Implements debounced updates for smooth performance optimization
+ * • Supports batch processing for multiple node updates
+ * • Features instant vs smooth update strategies for different scenarios
+ * • Integrates with factory systems for efficient state management
+ *
+ * Keywords: update-manager, scheduling, debouncing, batch-processing, priority-based, performance
+ */
 
-import { debouncedUpdates } from './cacheManager';
-import { SMOOTH_ACTIVATION_DELAY, INSTANT_PRIORITY_DELAY } from '../constants';
+import { SMOOTH_ACTIVATION_DELAY } from "../constants";
+import { debouncedUpdates } from "./cacheManager";
 
 // ============================================================================
 // UPDATE TIMING UTILITIES
@@ -25,14 +33,17 @@ export const clearPendingUpdate = (nodeId: string): void => {
  * SCHEDULE DELAYED UPDATE
  * Schedules a smooth activation update
  */
-export const scheduleDelayedUpdate = (nodeId: string, updateFn: () => void): void => {
+export const scheduleDelayedUpdate = (
+  nodeId: string,
+  updateFn: () => void
+): void => {
   clearPendingUpdate(nodeId);
-  
+
   const newTimeout = setTimeout(() => {
     updateFn();
     debouncedUpdates.delete(nodeId);
   }, SMOOTH_ACTIVATION_DELAY);
-  
+
   debouncedUpdates.set(nodeId, newTimeout);
 };
 
@@ -44,15 +55,15 @@ export const smartNodeUpdate = (
   nodeId: string,
   updateFn: () => void,
   isActivating: boolean,
-  priority: 'instant' | 'smooth' = 'smooth'
+  priority: "instant" | "smooth" = "smooth"
 ): void => {
   // INSTANT updates for deactivation or high priority
-  if (!isActivating || priority === 'instant') {
+  if (!isActivating || priority === "instant") {
     clearPendingUpdate(nodeId);
     updateFn();
     return;
   }
-  
+
   // SMOOTH updates for activation (debounced)
   scheduleDelayedUpdate(nodeId, updateFn);
 };
@@ -66,7 +77,7 @@ export const debounceNodeUpdate = (
   updateFn: () => void,
   delay: number = SMOOTH_ACTIVATION_DELAY
 ): void => {
-  smartNodeUpdate(nodeId, updateFn, true, 'smooth');
+  smartNodeUpdate(nodeId, updateFn, true, "smooth");
 };
 
 // ============================================================================
@@ -82,19 +93,23 @@ export const batchNodeUpdates = (
     nodeId: string;
     updateFn: () => void;
     isActivating: boolean;
-    priority?: 'instant' | 'smooth';
+    priority?: "instant" | "smooth";
   }>
 ): void => {
   // Group by priority
-  const instantUpdates = updates.filter(u => !u.isActivating || u.priority === 'instant');
-  const smoothUpdates = updates.filter(u => u.isActivating && u.priority !== 'instant');
-  
+  const instantUpdates = updates.filter(
+    (u) => !u.isActivating || u.priority === "instant"
+  );
+  const smoothUpdates = updates.filter(
+    (u) => u.isActivating && u.priority !== "instant"
+  );
+
   // Execute instant updates immediately
   instantUpdates.forEach(({ nodeId, updateFn }) => {
     clearPendingUpdate(nodeId);
     updateFn();
   });
-  
+
   // Schedule smooth updates
   smoothUpdates.forEach(({ nodeId, updateFn }) => {
     scheduleDelayedUpdate(nodeId, updateFn);
@@ -118,4 +133,4 @@ export const clearAllPendingUpdates = (): void => {
  */
 export const getPendingUpdatesCount = (): number => {
   return debouncedUpdates.size;
-}; 
+};

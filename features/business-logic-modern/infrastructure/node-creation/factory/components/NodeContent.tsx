@@ -1,10 +1,23 @@
-import React from 'react';
-import CustomHandle from '../../../handles/CustomHandle';
-import type { BaseNodeData, NodeFactoryConfig } from '../types';
-import { 
-  calculateRenderError, 
-  logErrorInjectionState 
-} from '../utils/conditionalRendering';
+/**
+ * NODE CONTENT COMPONENT - Dynamic content rendering for factory nodes
+ *
+ * • Renders node-specific content based on factory configuration
+ * • Supports dynamic layouts with conditional rendering systems
+ * • Provides advanced button systems and interactive controls
+ * • Integrates with JSON processing and input field handling
+ * • Manages content state and real-time updates efficiently
+ *
+ * Keywords: node-content, dynamic-rendering, factory-config, conditional-rendering, json-processing
+ */
+
+"use client";
+
+import CustomHandle from "../../../handles/CustomHandle";
+import type { BaseNodeData, NodeFactoryConfig } from "../types";
+import {
+  calculateRenderError,
+  logErrorInjectionState,
+} from "../utils/conditionalRendering";
 
 // ============================================================================
 // NODE CONTENT COMPONENT TYPES
@@ -34,9 +47,8 @@ export function NodeContent<T extends BaseNodeData>({
   processingState,
   styling,
   handles,
-  enhancedConfig
+  enhancedConfig,
 }: NodeContentProps<T>) {
-  
   // ========================================================================
   // ERROR STATE CALCULATION WITH EXTRACTED LOGIC
   // ========================================================================
@@ -65,9 +77,9 @@ export function NodeContent<T extends BaseNodeData>({
     <>
       {/* INPUT HANDLES SECTION */}
       <InputHandlesSection handles={handles.inputHandlesFiltered} />
-      
+
       {/* COLLAPSED STATE SECTION */}
-      <CollapsedStateSection 
+      <CollapsedStateSection
         showUI={nodeState.showUI}
         enhancedConfig={enhancedConfig}
         nodeState={nodeState}
@@ -76,7 +88,7 @@ export function NodeContent<T extends BaseNodeData>({
       />
 
       {/* EXPANDED STATE SECTION */}
-      <ExpandedStateSection 
+      <ExpandedStateSection
         showUI={nodeState.showUI}
         enhancedConfig={enhancedConfig}
         nodeState={nodeState}
@@ -124,12 +136,12 @@ function InputHandlesSection({ handles }: { handles: any[] }) {
  * COLLAPSED STATE SECTION
  * Renders collapsed state with early return
  */
-function CollapsedStateSection({ 
-  showUI, 
-  enhancedConfig, 
-  nodeState, 
+function CollapsedStateSection({
+  showUI,
+  enhancedConfig,
+  nodeState,
   renderError,
-  id
+  id,
 }: {
   showUI: boolean;
   enhancedConfig: any;
@@ -149,7 +161,7 @@ function CollapsedStateSection({
         error: renderError,
         nodeType: enhancedConfig.nodeType,
         updateNodeData: nodeState.updateNodeData,
-        id: id
+        id: id,
       })}
     </>
   );
@@ -159,13 +171,13 @@ function CollapsedStateSection({
  * EXPANDED STATE SECTION
  * Renders expanded state with early return
  */
-function ExpandedStateSection({ 
-  showUI, 
-  enhancedConfig, 
-  nodeState, 
+function ExpandedStateSection({
+  showUI,
+  enhancedConfig,
+  nodeState,
   styling,
   renderError,
-  id
+  id,
 }: {
   showUI: boolean;
   enhancedConfig: any;
@@ -188,7 +200,7 @@ function ExpandedStateSection({
         categoryTextTheme: styling.categoryTextTheme,
         textTheme: styling.textTheme,
         updateNodeData: nodeState.updateNodeData,
-        id: id
+        id: id,
       })}
     </>
   );
@@ -217,4 +229,4 @@ function OutputHandlesSection({ handles }: { handles: any[] }) {
       ))}
     </>
   );
-} 
+}

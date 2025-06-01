@@ -1,10 +1,27 @@
+/**
+ * ENTERPRISE NODE TESTING - Comprehensive test suite for factory nodes
+ *
+ * • Provides comprehensive testing framework for enterprise node functionality
+ * • Implements unit tests for node creation, state management, and processing
+ * • Supports integration testing for factory systems and safety layers
+ * • Features performance testing and memory leak detection
+ * • Validates enterprise-grade reliability and error handling
+ *
+ * Keywords: enterprise-testing, unit-tests, integration-tests, performance-testing, memory-leak-detection, reliability
+ */
+
 // ============================================================================
 // ENTERPRISE NODE TESTING FRAMEWORK
 // ============================================================================
 
-import { render, screen, fireEvent } from '@testing-library/react';
-import { registerNode, getAllNodes, getNodeTypes, getSidebarItems } from '../core/BulletproofNodeBase';
-import type { EnterpriseNodeConfig } from '../core/BulletproofNodeBase';
+import { render } from "@testing-library/react";
+import type { EnterpriseNodeConfig } from "../core/BulletproofNodeBase";
+import {
+  getAllNodes,
+  getNodeTypes,
+  getSidebarItems,
+  registerNode,
+} from "../core/BulletproofNodeBase";
 
 // ============================================================================
 // TESTING UTILITIES
@@ -33,7 +50,7 @@ export function testPureFunctions<T extends Record<string, any>>(
   describe(`${config.displayName} Pure Functions`, () => {
     // VALIDATION TESTS
     if (config.validate && testCases.validation) {
-      describe('Validation', () => {
+      describe("Validation", () => {
         testCases.validation.forEach(({ name, data, expectedError }) => {
           test(name, () => {
             const result = config.validate!(data);
@@ -43,15 +60,17 @@ export function testPureFunctions<T extends Record<string, any>>(
       });
     }
 
-    // COMPUTATION TESTS  
+    // COMPUTATION TESTS
     if (config.compute && testCases.computation) {
-      describe('Computation', () => {
-        testCases.computation.forEach(({ name, data, inputs, expectedOutput }) => {
-          test(name, () => {
-            const result = config.compute!(data, inputs);
-            expect(result).toEqual(expectedOutput);
-          });
-        });
+      describe("Computation", () => {
+        testCases.computation.forEach(
+          ({ name, data, inputs, expectedOutput }) => {
+            test(name, () => {
+              const result = config.compute!(data, inputs);
+              expect(result).toEqual(expectedOutput);
+            });
+          }
+        );
       });
     }
   });
@@ -78,17 +97,17 @@ export function testNodeComponent<T extends Record<string, any>>(
       test(name, () => {
         const mockUpdate = jest.fn();
         const mockToggle = jest.fn();
-        
+
         const { container } = render(
           <div>
             {config.renderNode({
               ...props,
               onUpdate: mockUpdate,
-              onToggle: mockToggle
+              onToggle: mockToggle,
             })}
           </div>
         );
-        
+
         assertions(container);
       });
     });
@@ -107,53 +126,53 @@ export function testNodeIntegration<T extends Record<string, any>>(
       registerNode(config);
     });
 
-    test('registers in node types', () => {
+    test("registers in node types", () => {
       const nodeTypes = getNodeTypes();
       expect(nodeTypes[config.nodeType]).toBeDefined();
     });
 
-    test('appears in sidebar items', () => {
+    test("appears in sidebar items", () => {
       const sidebarItems = getSidebarItems();
-      const item = sidebarItems.find(item => item.type === config.nodeType);
+      const item = sidebarItems.find((item) => item.type === config.nodeType);
       expect(item).toBeDefined();
       expect(item?.label).toBe(config.displayName);
       expect(item?.category).toBe(config.category);
     });
 
-    test('has valid default data', () => {
+    test("has valid default data", () => {
       expect(config.defaultData).toBeDefined();
-      expect(typeof config.defaultData).toBe('object');
+      expect(typeof config.defaultData).toBe("object");
     });
 
-    test('validation function is pure', () => {
+    test("validation function is pure", () => {
       if (config.validate) {
         const data1 = { ...config.defaultData };
         const data2 = { ...config.defaultData };
-        
+
         const result1 = config.validate(data1);
         const result2 = config.validate(data2);
-        
+
         // Same input should produce same output (pure function)
         expect(result1).toBe(result2);
-        
+
         // Original data should not be modified
         expect(data1).toEqual(config.defaultData);
         expect(data2).toEqual(config.defaultData);
       }
     });
 
-    test('compute function is pure', () => {
+    test("compute function is pure", () => {
       if (config.compute) {
         const data1 = { ...config.defaultData };
         const data2 = { ...config.defaultData };
         const inputs = {};
-        
+
         const result1 = config.compute(data1, inputs);
         const result2 = config.compute(data2, inputs);
-        
+
         // Same input should produce same output (pure function)
         expect(result1).toEqual(result2);
-        
+
         // Original data should not be modified
         expect(data1).toEqual(config.defaultData);
         expect(data2).toEqual(config.defaultData);
@@ -265,47 +284,47 @@ export function testNodePerformance<T extends Record<string, any>>(
     const {
       maxValidationTime = 1,
       maxComputationTime = 1,
-      maxRenderTime = 5
+      maxRenderTime = 5,
     } = benchmarks;
 
-    test('validation performance', () => {
+    test("validation performance", () => {
       if (!config.validate) return;
 
       const data = config.defaultData;
       const iterations = 1000;
-      
+
       const start = performance.now();
       for (let i = 0; i < iterations; i++) {
         config.validate(data);
       }
       const end = performance.now();
-      
+
       const avgTime = (end - start) / iterations;
       expect(avgTime).toBeLessThan(maxValidationTime);
     });
 
-    test('computation performance', () => {
+    test("computation performance", () => {
       if (!config.compute) return;
 
       const data = config.defaultData;
       const inputs = {};
       const iterations = 1000;
-      
+
       const start = performance.now();
       for (let i = 0; i < iterations; i++) {
         config.compute(data, inputs);
       }
       const end = performance.now();
-      
+
       const avgTime = (end - start) / iterations;
       expect(avgTime).toBeLessThan(maxComputationTime);
     });
 
-    test('render performance', () => {
+    test("render performance", () => {
       const mockUpdate = jest.fn();
       const mockToggle = jest.fn();
       const iterations = 100;
-      
+
       const start = performance.now();
       for (let i = 0; i < iterations; i++) {
         render(
@@ -314,13 +333,13 @@ export function testNodePerformance<T extends Record<string, any>>(
               data: config.defaultData,
               isExpanded: false,
               onUpdate: mockUpdate,
-              onToggle: mockToggle
+              onToggle: mockToggle,
             })}
           </div>
         );
       }
       const end = performance.now();
-      
+
       const avgTime = (end - start) / iterations;
       expect(avgTime).toBeLessThan(maxRenderTime);
     });
@@ -336,36 +355,36 @@ export function testNodePerformance<T extends Record<string, any>>(
  * Verifies the system works with enterprise scale (1000+ nodes)
  */
 export function testEnterpriseScale() {
-  describe('Enterprise Scale Testing', () => {
-    test('handles 1000+ registered nodes', () => {
+  describe("Enterprise Scale Testing", () => {
+    test("handles 1000+ registered nodes", () => {
       const initialCount = Object.keys(getAllNodes()).length;
-      
+
       // Register 1000 test nodes
       for (let i = 0; i < 1000; i++) {
         const testConfig: EnterpriseNodeConfig<{ id: number }> = {
           nodeType: `testNode${i}`,
           displayName: `Test Node ${i}`,
-          category: 'data',
+          category: "data",
           defaultData: { id: i },
-          renderNode: ({ data }) => <div>Test {data.id}</div>
+          renderNode: ({ data }) => <div>Test {data.id}</div>,
         };
-        
+
         registerNode(testConfig);
       }
-      
+
       const finalCount = Object.keys(getAllNodes()).length;
       expect(finalCount - initialCount).toBe(1000);
     });
 
-    test('auto-discovery scales well', () => {
+    test("auto-discovery scales well", () => {
       const start = performance.now();
-      
+
       // These should be fast even with 1000+ nodes
       const nodeTypes = getNodeTypes();
       const sidebarItems = getSidebarItems();
-      
+
       const end = performance.now();
-      
+
       expect(Object.keys(nodeTypes).length).toBeGreaterThan(1000);
       expect(sidebarItems.length).toBeGreaterThan(1000);
       expect(end - start).toBeLessThan(10); // Should take less than 10ms
@@ -378,9 +397,9 @@ export function testEnterpriseScale() {
 // ============================================================================
 
 export {
-  testPureFunctions,
+  testEnterpriseScale,
   testNodeComponent,
   testNodeIntegration,
   testNodePerformance,
-  testEnterpriseScale
-}; 
+  testPureFunctions,
+};

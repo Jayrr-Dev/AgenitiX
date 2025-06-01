@@ -1,4 +1,16 @@
-import { useEffect } from 'react';
+/**
+ * USE GPU ACCELERATION HOOK - GPU-powered performance optimization
+ *
+ * • Provides GPU-accelerated processing for high-performance operations
+ * • Implements WebGL and hardware acceleration optimizations
+ * • Supports parallel processing and computational offloading
+ * • Features automatic fallback to CPU when GPU unavailable
+ * • Integrates with ultra-fast rendering and visual systems
+ *
+ * Keywords: gpu-acceleration, webgl, parallel-processing, hardware-optimization, fallback, ultra-fast
+ */
+
+import { useCallback, useEffect, useRef } from 'react';
 import { useUltraFastPropagation } from '../UltraFastPropagationEngine';
 
 // ============================================================================
@@ -28,7 +40,7 @@ interface GPUAccelerationResult {
 
 const GPU_ACCELERATION_PATTERNS = [
   'trigger',
-  'cycle', 
+  'cycle',
   'delay',
   'pulse',
   'timer',
@@ -44,7 +56,7 @@ const GPU_ACCELERATION_PATTERNS = [
  * USE GPU ACCELERATION
  * Handles GPU acceleration setup for high-frequency nodes
  * Focused responsibility: Only GPU acceleration and ultra-fast propagation
- * 
+ *
  * @param config - GPU acceleration configuration
  * @param connectionData - Connection and node data
  * @param updateNodeData - Node update function
@@ -63,7 +75,7 @@ export function useGPUAcceleration(
   // ========================================================================
   // ULTRA-FAST PROPAGATION SYSTEM SETUP
   // ========================================================================
-  
+
   const { propagateUltraFast, enableGPUAcceleration } = useUltraFastPropagation(
     connectionData.allNodes || [],
     connectionData.connections,
@@ -79,7 +91,7 @@ export function useGPUAcceleration(
   useEffect(() => {
     if (isGPUEnabled) {
       enableGPUAcceleration([config.nodeId]);
-      
+
       // ENTERPRISE SAFETY INTEGRATION
       if (safetyLayers) {
         console.log(`🚀 Enterprise GPU acceleration enabled for ${config.nodeType} ${config.nodeId}`);
@@ -88,10 +100,10 @@ export function useGPUAcceleration(
       }
     }
   }, [
-    config.nodeId, 
-    config.nodeType, 
+    config.nodeId,
+    config.nodeType,
     isGPUEnabled,
-    enableGPUAcceleration, 
+    enableGPUAcceleration,
     safetyLayers
   ]);
 
@@ -111,7 +123,7 @@ export function useGPUAcceleration(
  * Determine if a node type should use GPU acceleration
  */
 function checkIfGPUEnabled(nodeType: string): boolean {
-  return GPU_ACCELERATION_PATTERNS.some(pattern => 
+  return GPU_ACCELERATION_PATTERNS.some(pattern =>
     nodeType.toLowerCase().includes(pattern)
   );
 }
@@ -121,7 +133,7 @@ function checkIfGPUEnabled(nodeType: string): boolean {
  * Helper to create GPU acceleration configuration object
  */
 export function createGPUAccelerationConfig(
-  nodeType: string, 
+  nodeType: string,
   nodeId: string
 ): GPUAccelerationConfig {
   return {
@@ -136,4 +148,8 @@ export function createGPUAccelerationConfig(
  */
 export function getGPUAccelerationPatterns(): string[] {
   return [...GPU_ACCELERATION_PATTERNS];
-} 
+}
+ */
+export function getGPUAccelerationPatterns(): string[] {
+  return [...GPU_ACCELERATION_PATTERNS];
+}

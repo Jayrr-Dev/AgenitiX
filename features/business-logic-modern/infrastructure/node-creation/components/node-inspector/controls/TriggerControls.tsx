@@ -1,45 +1,65 @@
-import React from 'react';
-import { BaseControlProps } from '../types';
-import { BaseControl, StatusBadge, ActionButton } from './BaseControl';
-import { useFlowStore } from '../../../stores/flowStore';
+/**
+ * TRIGGER CONTROLS COMPONENT - Interactive controls for trigger-based nodes
+ *
+ * • Provides specialized control interfaces for trigger nodes and timing controls
+ * • Supports count, delay, multiplier, and duration parameter adjustments
+ * • Includes real-time validation and input formatting for numeric values
+ * • Integrates with node execution lifecycle and status management
+ * • Renders progress indicators and execution state feedback
+ *
+ * Keywords: trigger-controls, timing, parameters, validation, execution, progress
+ */
+
+"use client";
+
+import React from "react";
+import { useFlowStore } from "../../../stores/flowStore";
+import { BaseControlProps } from "../types";
+import { ActionButton, BaseControl, StatusBadge } from "./BaseControl";
 
 export const TriggerOnClickControl: React.FC<BaseControlProps> = ({ node }) => {
-  const updateNodeData = useFlowStore(state => state.updateNodeData);
-  
+  const updateNodeData = useFlowStore((state) => state.updateNodeData);
+
   return (
     <BaseControl>
       <div className="flex items-center gap-2">
         <span className="text-xs">Status:</span>
-        <StatusBadge 
+        <StatusBadge
           status={!!node.data.triggered}
           trueLabel="Triggered"
           falseLabel="Ready"
         />
       </div>
       <ActionButton
-        onClick={() => updateNodeData(node.id, { triggered: !node.data.triggered })}
+        onClick={() =>
+          updateNodeData(node.id, { triggered: !node.data.triggered })
+        }
       >
-        {node.data.triggered ? 'Reset' : 'Trigger'}
+        {node.data.triggered ? "Reset" : "Trigger"}
       </ActionButton>
     </BaseControl>
   );
 };
 
-export const TriggerOnToggleControl: React.FC<BaseControlProps> = ({ node }) => {
-  const updateNodeData = useFlowStore(state => state.updateNodeData);
-  
+export const TriggerOnToggleControl: React.FC<BaseControlProps> = ({
+  node,
+}) => {
+  const updateNodeData = useFlowStore((state) => state.updateNodeData);
+
   return (
     <BaseControl>
       <div className="flex items-center gap-2">
         <span className="text-xs">Status:</span>
-        <StatusBadge 
+        <StatusBadge
           status={!!node.data.triggered}
           trueLabel="ON"
           falseLabel="OFF"
         />
       </div>
       <ActionButton
-        onClick={() => updateNodeData(node.id, { triggered: !node.data.triggered })}
+        onClick={() =>
+          updateNodeData(node.id, { triggered: !node.data.triggered })
+        }
       >
         Toggle
       </ActionButton>
@@ -52,15 +72,17 @@ interface TriggerOnPulseControlProps extends BaseControlProps {
   setDurationInput: (value: string) => void;
 }
 
-export const TriggerOnPulseControl: React.FC<TriggerOnPulseControlProps> = ({ 
-  node, 
-  durationInput, 
-  setDurationInput 
+export const TriggerOnPulseControl: React.FC<TriggerOnPulseControlProps> = ({
+  node,
+  durationInput,
+  setDurationInput,
 }) => {
-  const updateNodeData = useFlowStore(state => state.updateNodeData);
-  
-  const handleDurationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, '');
+  const updateNodeData = useFlowStore((state) => state.updateNodeData);
+
+  const handleDurationInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const digits = e.target.value.replace(/\D/g, "");
     setDurationInput(digits);
   };
 
@@ -75,8 +97,10 @@ export const TriggerOnPulseControl: React.FC<TriggerOnPulseControlProps> = ({
     commitDurationInput();
   };
 
-  const handleDurationInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') commitDurationInput();
+  const handleDurationInputKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (e.key === "Enter") commitDurationInput();
   };
 
   return (
@@ -102,40 +126,59 @@ export const TriggerOnPulseControl: React.FC<TriggerOnPulseControlProps> = ({
 };
 
 export const CyclePulseControl: React.FC<BaseControlProps> = ({ node }) => {
-  const updateNodeData = useFlowStore(state => state.updateNodeData);
-  
+  const updateNodeData = useFlowStore((state) => state.updateNodeData);
+
   const [cycleDurationInput, setCycleDurationInput] = React.useState(
-    (typeof node.data.cycleDuration === 'number' ? node.data.cycleDuration : 2000).toString()
+    (typeof node.data.cycleDuration === "number"
+      ? node.data.cycleDuration
+      : 2000
+    ).toString()
   );
   const [pulseDurationInput, setPulseDurationInput] = React.useState(
-    (typeof node.data.pulseDuration === 'number' ? node.data.pulseDuration : 500).toString()
+    (typeof node.data.pulseDuration === "number"
+      ? node.data.pulseDuration
+      : 500
+    ).toString()
   );
   const [maxCyclesInput, setMaxCyclesInput] = React.useState(
-    (typeof node.data.maxCycles === 'number' ? node.data.maxCycles : 1).toString()
+    (typeof node.data.maxCycles === "number"
+      ? node.data.maxCycles
+      : 1
+    ).toString()
   );
 
-  const infinite = typeof node.data.infinite === 'boolean' ? node.data.infinite : true;
+  const infinite =
+    typeof node.data.infinite === "boolean" ? node.data.infinite : true;
   const isRunning = !!node.data.isRunning;
 
   // Sync local state with node data changes
   React.useEffect(() => {
-    const cycleDuration = typeof node.data.cycleDuration === 'number' ? node.data.cycleDuration : 2000;
+    const cycleDuration =
+      typeof node.data.cycleDuration === "number"
+        ? node.data.cycleDuration
+        : 2000;
     setCycleDurationInput(cycleDuration.toString());
   }, [node.data.cycleDuration]);
 
   React.useEffect(() => {
-    const pulseDuration = typeof node.data.pulseDuration === 'number' ? node.data.pulseDuration : 500;
+    const pulseDuration =
+      typeof node.data.pulseDuration === "number"
+        ? node.data.pulseDuration
+        : 500;
     setPulseDurationInput(pulseDuration.toString());
   }, [node.data.pulseDuration]);
 
   React.useEffect(() => {
-    const maxCycles = typeof node.data.maxCycles === 'number' ? node.data.maxCycles : 1;
+    const maxCycles =
+      typeof node.data.maxCycles === "number" ? node.data.maxCycles : 1;
     setMaxCyclesInput(maxCycles.toString());
   }, [node.data.maxCycles]);
 
   // Handlers for cycle duration
-  const handleCycleDurationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, '');
+  const handleCycleDurationInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const digits = e.target.value.replace(/\D/g, "");
     setCycleDurationInput(digits);
   };
 
@@ -147,8 +190,10 @@ export const CyclePulseControl: React.FC<BaseControlProps> = ({ node }) => {
   };
 
   // Handlers for pulse duration
-  const handlePulseDurationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, '');
+  const handlePulseDurationInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const digits = e.target.value.replace(/\D/g, "");
     setPulseDurationInput(digits);
   };
 
@@ -160,8 +205,10 @@ export const CyclePulseControl: React.FC<BaseControlProps> = ({ node }) => {
   };
 
   // Handlers for max cycles
-  const handleMaxCyclesInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, '');
+  const handleMaxCyclesInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const digits = e.target.value.replace(/\D/g, "");
     setMaxCyclesInput(digits);
   };
 
@@ -177,23 +224,28 @@ export const CyclePulseControl: React.FC<BaseControlProps> = ({ node }) => {
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <span className="text-xs">Status:</span>
-          <StatusBadge 
+          <StatusBadge
             status={isRunning}
             trueLabel={node.data.pulsing ? "Pulsing" : "Cycling"}
             falseLabel="Stopped"
           />
         </div>
-        
+
         {/* Progress display when running */}
         {isRunning && (
           <div className="flex items-center gap-2">
             <span className="text-xs">Progress:</span>
             <span className="text-xs font-mono text-blue-600 dark:text-blue-400">
-              {Math.round((typeof node.data.progress === 'number' ? node.data.progress : 0) * 100)}%
+              {Math.round(
+                (typeof node.data.progress === "number"
+                  ? node.data.progress
+                  : 0) * 100
+              )}
+              %
             </span>
           </div>
         )}
-        
+
         <label className="block text-xs">
           <div className="flex flex-row gap-2 items-center">
             <span className="py-1">Cycle Duration:</span>
@@ -205,12 +257,12 @@ export const CyclePulseControl: React.FC<BaseControlProps> = ({ node }) => {
               value={cycleDurationInput}
               onChange={handleCycleDurationInputChange}
               onBlur={commitCycleDurationInput}
-              onKeyDown={(e) => e.key === 'Enter' && commitCycleDurationInput()}
+              onKeyDown={(e) => e.key === "Enter" && commitCycleDurationInput()}
             />
             <span className="text-xs">ms</span>
           </div>
         </label>
-        
+
         <label className="block text-xs">
           <div className="flex flex-row gap-2 items-center">
             <span className="py-1">Pulse Duration:</span>
@@ -222,17 +274,19 @@ export const CyclePulseControl: React.FC<BaseControlProps> = ({ node }) => {
               value={pulseDurationInput}
               onChange={handlePulseDurationInputChange}
               onBlur={commitPulseDurationInput}
-              onKeyDown={(e) => e.key === 'Enter' && commitPulseDurationInput()}
+              onKeyDown={(e) => e.key === "Enter" && commitPulseDurationInput()}
             />
             <span className="text-xs">ms</span>
           </div>
         </label>
-        
+
         <label className="flex items-center gap-2 text-xs">
           <input
             type="checkbox"
             checked={infinite}
-            onChange={(e) => updateNodeData(node.id, { infinite: e.target.checked })}
+            onChange={(e) =>
+              updateNodeData(node.id, { infinite: e.target.checked })
+            }
           />
           <span>Infinite cycles</span>
         </label>
@@ -249,26 +303,32 @@ export const CyclePulseControl: React.FC<BaseControlProps> = ({ node }) => {
                 value={maxCyclesInput}
                 onChange={handleMaxCyclesInputChange}
                 onBlur={commitMaxCyclesInput}
-                onKeyDown={(e) => e.key === 'Enter' && commitMaxCyclesInput()}
+                onKeyDown={(e) => e.key === "Enter" && commitMaxCyclesInput()}
               />
             </div>
           </label>
         )}
-        
+
         <label className="flex items-center gap-2 text-xs">
           <input
             type="checkbox"
-            checked={typeof node.data.initialState === 'boolean' ? node.data.initialState : false}
-            onChange={(e) => updateNodeData(node.id, { initialState: e.target.checked })}
+            checked={
+              typeof node.data.initialState === "boolean"
+                ? node.data.initialState
+                : false
+            }
+            onChange={(e) =>
+              updateNodeData(node.id, { initialState: e.target.checked })
+            }
           />
           <span>Start ON</span>
         </label>
 
         <ActionButton
           onClick={() => updateNodeData(node.id, { isRunning: !isRunning })}
-          variant={isRunning ? 'danger' : 'primary'}
+          variant={isRunning ? "danger" : "primary"}
         >
-          {isRunning ? 'Stop Cycle' : 'Start Cycle'}
+          {isRunning ? "Stop Cycle" : "Start Cycle"}
         </ActionButton>
       </div>
     </BaseControl>
@@ -276,40 +336,55 @@ export const CyclePulseControl: React.FC<BaseControlProps> = ({ node }) => {
 };
 
 export const CycleToggleControl: React.FC<BaseControlProps> = ({ node }) => {
-  const updateNodeData = useFlowStore(state => state.updateNodeData);
-  
+  const updateNodeData = useFlowStore((state) => state.updateNodeData);
+
   const [onDurationInput, setOnDurationInput] = React.useState(
-    (typeof node.data.onDuration === 'number' ? node.data.onDuration : 4000).toString()
+    (typeof node.data.onDuration === "number"
+      ? node.data.onDuration
+      : 4000
+    ).toString()
   );
   const [offDurationInput, setOffDurationInput] = React.useState(
-    (typeof node.data.offDuration === 'number' ? node.data.offDuration : 4000).toString()
+    (typeof node.data.offDuration === "number"
+      ? node.data.offDuration
+      : 4000
+    ).toString()
   );
   const [maxCyclesInput, setMaxCyclesInput] = React.useState(
-    (typeof node.data.maxCycles === 'number' ? node.data.maxCycles : 1).toString()
+    (typeof node.data.maxCycles === "number"
+      ? node.data.maxCycles
+      : 1
+    ).toString()
   );
 
-  const infinite = typeof node.data.infinite === 'boolean' ? node.data.infinite : true;
+  const infinite =
+    typeof node.data.infinite === "boolean" ? node.data.infinite : true;
   const isRunning = !!node.data.isRunning;
 
   // Sync local state with node data changes
   React.useEffect(() => {
-    const onDuration = typeof node.data.onDuration === 'number' ? node.data.onDuration : 4000;
+    const onDuration =
+      typeof node.data.onDuration === "number" ? node.data.onDuration : 4000;
     setOnDurationInput(onDuration.toString());
   }, [node.data.onDuration]);
 
   React.useEffect(() => {
-    const offDuration = typeof node.data.offDuration === 'number' ? node.data.offDuration : 4000;
+    const offDuration =
+      typeof node.data.offDuration === "number" ? node.data.offDuration : 4000;
     setOffDurationInput(offDuration.toString());
   }, [node.data.offDuration]);
 
   React.useEffect(() => {
-    const maxCycles = typeof node.data.maxCycles === 'number' ? node.data.maxCycles : 1;
+    const maxCycles =
+      typeof node.data.maxCycles === "number" ? node.data.maxCycles : 1;
     setMaxCyclesInput(maxCycles.toString());
   }, [node.data.maxCycles]);
 
   // Handlers for ON duration
-  const handleOnDurationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, '');
+  const handleOnDurationInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const digits = e.target.value.replace(/\D/g, "");
     setOnDurationInput(digits);
   };
 
@@ -321,8 +396,10 @@ export const CycleToggleControl: React.FC<BaseControlProps> = ({ node }) => {
   };
 
   // Handlers for OFF duration
-  const handleOffDurationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, '');
+  const handleOffDurationInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const digits = e.target.value.replace(/\D/g, "");
     setOffDurationInput(digits);
   };
 
@@ -334,8 +411,10 @@ export const CycleToggleControl: React.FC<BaseControlProps> = ({ node }) => {
   };
 
   // Handlers for max cycles
-  const handleMaxCyclesInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, '');
+  const handleMaxCyclesInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const digits = e.target.value.replace(/\D/g, "");
     setMaxCyclesInput(digits);
   };
 
@@ -351,13 +430,13 @@ export const CycleToggleControl: React.FC<BaseControlProps> = ({ node }) => {
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <span className="text-xs">Status:</span>
-          <StatusBadge 
+          <StatusBadge
             status={isRunning}
             trueLabel={node.data.pulsing ? "Pulsing" : "Cycling"}
             falseLabel="Stopped"
           />
         </div>
-        
+
         <label className="block text-xs">
           <div className="flex flex-row gap-2 items-center">
             <span className="py-1">ON Duration:</span>
@@ -369,12 +448,12 @@ export const CycleToggleControl: React.FC<BaseControlProps> = ({ node }) => {
               value={onDurationInput}
               onChange={handleOnDurationInputChange}
               onBlur={commitOnDurationInput}
-              onKeyDown={(e) => e.key === 'Enter' && commitOnDurationInput()}
+              onKeyDown={(e) => e.key === "Enter" && commitOnDurationInput()}
             />
             <span className="text-xs">ms</span>
           </div>
         </label>
-        
+
         <label className="block text-xs">
           <div className="flex flex-row gap-2 items-center">
             <span className="py-1">OFF Duration:</span>
@@ -386,17 +465,19 @@ export const CycleToggleControl: React.FC<BaseControlProps> = ({ node }) => {
               value={offDurationInput}
               onChange={handleOffDurationInputChange}
               onBlur={commitOffDurationInput}
-              onKeyDown={(e) => e.key === 'Enter' && commitOffDurationInput()}
+              onKeyDown={(e) => e.key === "Enter" && commitOffDurationInput()}
             />
             <span className="text-xs">ms</span>
           </div>
         </label>
-        
+
         <label className="flex items-center gap-2 text-xs">
           <input
             type="checkbox"
             checked={infinite}
-            onChange={(e) => updateNodeData(node.id, { infinite: e.target.checked })}
+            onChange={(e) =>
+              updateNodeData(node.id, { infinite: e.target.checked })
+            }
           />
           <span>Infinite cycles</span>
         </label>
@@ -413,28 +494,34 @@ export const CycleToggleControl: React.FC<BaseControlProps> = ({ node }) => {
                 value={maxCyclesInput}
                 onChange={handleMaxCyclesInputChange}
                 onBlur={commitMaxCyclesInput}
-                onKeyDown={(e) => e.key === 'Enter' && commitMaxCyclesInput()}
+                onKeyDown={(e) => e.key === "Enter" && commitMaxCyclesInput()}
               />
             </div>
           </label>
         )}
-        
+
         <label className="flex items-center gap-2 text-xs">
           <input
             type="checkbox"
-            checked={typeof node.data.initialState === 'boolean' ? node.data.initialState : false}
-            onChange={(e) => updateNodeData(node.id, { initialState: e.target.checked })}
+            checked={
+              typeof node.data.initialState === "boolean"
+                ? node.data.initialState
+                : false
+            }
+            onChange={(e) =>
+              updateNodeData(node.id, { initialState: e.target.checked })
+            }
           />
           <span>Start ON</span>
         </label>
 
         <ActionButton
           onClick={() => updateNodeData(node.id, { isRunning: !isRunning })}
-          variant={isRunning ? 'danger' : 'primary'}
+          variant={isRunning ? "danger" : "primary"}
         >
-          {isRunning ? 'Stop Cycling' : 'Start Cycle'}
+          {isRunning ? "Stop Cycling" : "Start Cycle"}
         </ActionButton>
       </div>
     </BaseControl>
   );
-}; 
+};

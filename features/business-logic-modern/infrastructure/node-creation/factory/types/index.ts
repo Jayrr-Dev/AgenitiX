@@ -1,10 +1,22 @@
+/**
+ * FACTORY TYPES INDEX - Comprehensive type definitions for node factory
+ *
+ * • Defines all TypeScript interfaces and types for factory system
+ * • Provides type safety for node creation and configuration
+ * • Includes base types, configuration interfaces, and utility types
+ * • Supports extensible type system for custom node implementations
+ * • Centralizes all factory-related type definitions for consistency
+ *
+ * Keywords: factory-types, typescript, interfaces, type-safety, configuration, extensible
+ */
+
 // ============================================================================
 // FACTORY NODE TYPE DEFINITIONS
 // ============================================================================
 
-import { ReactNode } from 'react';
-import { Position, type Connection, type Node } from '@xyflow/react';
-import type { NodeCategory } from '../../nodeRegistry';
+import { Position, type Connection } from "@xyflow/react";
+import { ReactNode } from "react";
+import type { NodeCategory } from "../../nodeRegistry";
 
 // ============================================================================
 // BASE INTERFACES
@@ -31,11 +43,11 @@ export interface HandleConfig {
   /** Unique identifier for the handle */
   id: string;
   /** Data type: string, number, boolean, json, array, etc. */
-  dataType: 's' | 'n' | 'b' | 'j' | 'a' | 'N' | 'f' | 'x' | 'u' | 'S' | '∅';
+  dataType: "s" | "n" | "b" | "j" | "a" | "N" | "f" | "x" | "u" | "S" | "∅";
   /** Position on the node */
   position: Position;
   /** Handle type: input or output */
-  type: 'source' | 'target';
+  type: "source" | "target";
 }
 
 /**
@@ -66,7 +78,12 @@ export interface InspectorControlProps<T extends BaseNodeData> {
   /** Function to update node data */
   updateNodeData: (id: string, patch: Record<string, unknown>) => void;
   /** Optional error logging function */
-  onLogError?: (nodeId: string, message: string, type?: any, source?: string) => void;
+  onLogError?: (
+    nodeId: string,
+    message: string,
+    type?: any,
+    source?: string
+  ) => void;
   /** Optional inspector state for complex controls */
   inspectorState?: {
     durationInput: string;
@@ -227,4 +244,4 @@ export interface ErrorState {
 export interface FilteredHandles {
   inputHandlesFiltered: HandleConfig[];
   outputHandles: HandleConfig[];
-} 
+}

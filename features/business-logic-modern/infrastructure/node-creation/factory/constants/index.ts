@@ -1,9 +1,20 @@
+/**
+ * FACTORY CONSTANTS INDEX - Configuration constants for node factory system
+ *
+ * • Defines all configuration constants and default values for factory
+ * • Provides timing constants for performance optimization and caching
+ * • Includes node type patterns and classification constants
+ * • Supports error injection and testing configuration values
+ * • Centralizes all factory-related constants for easy maintenance
+ *
+ * Keywords: factory-constants, configuration, timing, performance, node-patterns, error-injection
+ */
+
 // ============================================================================
 // FACTORY NODE CONSTANTS
 // ============================================================================
 
-import { Position } from '@xyflow/react';
-import type { NodeSize } from '../types';
+import type { NodeSize } from "../types";
 
 // ============================================================================
 // CACHE CONFIGURATION
@@ -42,32 +53,32 @@ export const PROCESSING_THROTTLE_MS = 5; // ms minimum between processing calls
  */
 export const DEFAULT_TEXT_NODE_SIZE: NodeSize = {
   collapsed: {
-    width: 'w-[120px]',
-    height: 'h-[60px]'
+    width: "w-[120px]",
+    height: "h-[60px]",
   },
   expanded: {
-    width: 'w-[180px]'
-  }
+    width: "w-[180px]",
+  },
 };
 
 export const DEFAULT_LOGIC_NODE_SIZE: NodeSize = {
   collapsed: {
-    width: 'w-[60px]',
-    height: 'h-[60px]'
+    width: "w-[60px]",
+    height: "h-[60px]",
   },
   expanded: {
-    width: 'w-[120px]'
-  }
+    width: "w-[120px]",
+  },
 };
 
 export const DEFAULT_TRIGGER_NODE_SIZE: NodeSize = {
   collapsed: {
-    width: 'w-[60px]',
-    height: 'h-[60px]'
+    width: "w-[60px]",
+    height: "h-[60px]",
   },
   expanded: {
-    width: 'w-[120px]'
-  }
+    width: "w-[120px]",
+  },
 };
 
 // ============================================================================
@@ -79,14 +90,14 @@ export const DEFAULT_TRIGGER_NODE_SIZE: NodeSize = {
  * Node types that support Vibe Mode error injection
  */
 export const ERROR_INJECTION_SUPPORTED_NODES = [
-  'createText', 
-  'createTextRefactor',
-  'createTextEnhanced', 
-  'testJson', 
-  'testErrorRefactored',
-  'viewOutput',
-  'viewOutputRefactor',
-  'viewOutputEnhanced'
+  "createText",
+  "createTextRefactor",
+  "createTextEnhanced",
+  "testJson",
+  "testErrorRefactored",
+  "viewOutput",
+  "viewOutputRefactor",
+  "viewOutputEnhanced",
 ] as const;
 
 // ============================================================================
@@ -98,30 +109,26 @@ export const ERROR_INJECTION_SUPPORTED_NODES = [
  * Patterns to identify transformation nodes
  */
 export const TRANSFORMATION_NODE_PATTERNS = [
-  'turnToUppercase',
-  'transform',
-  'turn',
-  'convert'
+  "turnToUppercase",
+  "transform",
+  "turn",
+  "convert",
 ] as const;
 
 /**
  * TRIGGER NODE PATTERNS
  * Patterns to identify trigger nodes
  */
-export const TRIGGER_NODE_PATTERNS = [
-  'trigger',
-  'pulse',
-  'toggle'
-] as const;
+export const TRIGGER_NODE_PATTERNS = ["trigger", "pulse", "toggle"] as const;
 
 /**
  * HEAD NODE PATTERNS
  * Patterns to identify head/source nodes
  */
 export const HEAD_NODE_PATTERNS = [
-  'trigger',
-  'cycle',
-  'create',
-  'input',
-  'manual'
-] as const; 
+  "trigger",
+  "cycle",
+  "create",
+  "input",
+  "manual",
+] as const;

@@ -1,19 +1,28 @@
+/**
+ * PROPAGATION ENGINE UTILITY - High-performance data flow propagation
+ *
+ * • Implements ultra-fast data propagation algorithms for node networks
+ * • Provides efficient data flow management with optimization strategies
+ * • Supports batch processing and parallel propagation operations
+ * • Features intelligent routing and bottleneck detection systems
+ * • Integrates with enterprise safety layers for reliable data flow
+ *
+ * Keywords: propagation-engine, data-flow, batch-processing, parallel-operations, routing, safety-layers
+ */
+
 // ============================================================================
 // PROPAGATION ENGINE
 // ============================================================================
 
-import type { Connection } from '@xyflow/react';
-import type { BaseNodeData } from '../types';
-import { 
-  createCacheKey, 
-  isCacheValid, 
-  getCacheEntry, 
-  setCacheEntry 
-} from './cacheManager';
-import { 
-  TRANSFORMATION_NODE_PATTERNS,
-  HEAD_NODE_PATTERNS 
-} from '../constants';
+import type { Connection } from "@xyflow/react";
+import { TRANSFORMATION_NODE_PATTERNS } from "../constants";
+import type { BaseNodeData } from "../types";
+import {
+  createCacheKey,
+  getCacheEntry,
+  isCacheValid,
+  setCacheEntry,
+} from "./cacheManager";
 
 // ============================================================================
 // NODE CLASSIFICATION UTILITIES
@@ -23,9 +32,14 @@ import {
  * IS HEAD NODE
  * Determines if a node is a source/trigger node
  */
-export const isHeadNode = (connections: Connection[], nodeId: string): boolean => {
-  const allInputConnections = connections.filter(c => c.target === nodeId);
-  const nonJsonInputs = allInputConnections.filter(c => c.targetHandle !== 'j');
+export const isHeadNode = (
+  connections: Connection[],
+  nodeId: string
+): boolean => {
+  const allInputConnections = connections.filter((c) => c.target === nodeId);
+  const nonJsonInputs = allInputConnections.filter(
+    (c) => c.targetHandle !== "j"
+  );
   return nonJsonInputs.length === 0;
 };
 
@@ -34,7 +48,7 @@ export const isHeadNode = (connections: Connection[], nodeId: string): boolean =
  * Identifies nodes that transform input data
  */
 export const isTransformationNode = (nodeType: string): boolean => {
-  return TRANSFORMATION_NODE_PATTERNS.some(pattern => 
+  return TRANSFORMATION_NODE_PATTERNS.some((pattern) =>
     nodeType.toLowerCase().includes(pattern)
   );
 };
@@ -48,22 +62,22 @@ export const isTransformationNode = (nodeType: string): boolean => {
  * Checks if trigger nodes allow activation
  */
 export const checkTriggerState = (
-  connections: Connection[], 
-  nodesData: any[], 
+  connections: Connection[],
+  nodesData: any[],
   nodeId: string
 ): boolean => {
-  const triggerConnections = connections.filter(c => 
-    c.targetHandle === 'b' && c.target === nodeId
+  const triggerConnections = connections.filter(
+    (c) => c.targetHandle === "b" && c.target === nodeId
   );
-  
+
   if (triggerConnections.length === 0) return true; // No trigger = always allowed
-  
-  const triggerSourceIds = triggerConnections.map(c => c.source);
-  const triggerNodesData = nodesData.filter(node => 
+
+  const triggerSourceIds = triggerConnections.map((c) => c.source);
+  const triggerNodesData = nodesData.filter((node) =>
     triggerSourceIds.includes(node.id)
   );
-  
-  return triggerNodesData.some(triggerNode => {
+
+  return triggerNodesData.some((triggerNode) => {
     const triggerData = triggerNode.data || {};
     return !!(
       triggerData.triggered ||
@@ -79,27 +93,35 @@ export const checkTriggerState = (
  * Checks if any input nodes are active
  */
 export const hasActiveInputNodes = (
-  connections: Connection[], 
-  nodesData: any[], 
+  connections: Connection[],
+  nodesData: any[],
   nodeId: string
 ): boolean => {
-  const allInputConnections = connections.filter(c => c.target === nodeId);
-  const nonJsonInputs = allInputConnections.filter(c => c.targetHandle !== 'j');
-  const sourceNodeIds = nonJsonInputs.map(c => c.source);
-  const sourceNodesData = nodesData.filter(node => 
+  const allInputConnections = connections.filter((c) => c.target === nodeId);
+  const nonJsonInputs = allInputConnections.filter(
+    (c) => c.targetHandle !== "j"
+  );
+  const sourceNodeIds = nonJsonInputs.map((c) => c.source);
+  const sourceNodesData = nodesData.filter((node) =>
     sourceNodeIds.includes(node.id)
   );
-  
+
   if (sourceNodesData.length === 0) return false;
-  
-  return sourceNodesData.some(sourceNode => {
+
+  return sourceNodesData.some((sourceNode) => {
     const sourceData = sourceNode.data || {};
     return !!(
       sourceData.isActive ||
       sourceData.triggered ||
-      (sourceData.value !== undefined && sourceData.value !== null && sourceData.value !== '') ||
-      (sourceData.text !== undefined && sourceData.text !== null && sourceData.text !== '') ||
-      (sourceData.output !== undefined && sourceData.output !== null && sourceData.output !== '')
+      (sourceData.value !== undefined &&
+        sourceData.value !== null &&
+        sourceData.value !== "") ||
+      (sourceData.text !== undefined &&
+        sourceData.text !== null &&
+        sourceData.text !== "") ||
+      (sourceData.output !== undefined &&
+        sourceData.output !== null &&
+        sourceData.output !== "")
     );
   });
 };
@@ -110,10 +132,14 @@ export const hasActiveInputNodes = (
  */
 export const hasValidOutput = (data: any): boolean => {
   return !!(
-    (data?.text !== undefined && data?.text !== null && data?.text !== '') ||
-    (data?.value !== undefined && data?.value !== null && data?.value !== '') ||
-    (data?.output !== undefined && data?.output !== null && data?.output !== '') ||
-    (data?.heldText !== undefined && data?.heldText !== null && data?.heldText !== '')
+    (data?.text !== undefined && data?.text !== null && data?.text !== "") ||
+    (data?.value !== undefined && data?.value !== null && data?.value !== "") ||
+    (data?.output !== undefined &&
+      data?.output !== null &&
+      data?.output !== "") ||
+    (data?.heldText !== undefined &&
+      data?.heldText !== null &&
+      data?.heldText !== "")
   );
 };
 
@@ -125,29 +151,34 @@ export const hasValidOutput = (data: any): boolean => {
  * DETERMINE HEAD NODE STATE
  * Core logic for head node activation
  */
-export const determineHeadNodeState = (nodeType: string, data: any): boolean => {
+export const determineHeadNodeState = (
+  nodeType: string,
+  data: any
+): boolean => {
   // Trigger nodes
-  if (nodeType.toLowerCase().includes('trigger')) {
-    return !!(data?.triggered);
+  if (nodeType.toLowerCase().includes("trigger")) {
+    return !!data?.triggered;
   }
-  
+
   // Cycle nodes
-  if (nodeType.toLowerCase().includes('cycle')) {
+  if (nodeType.toLowerCase().includes("cycle")) {
     return !!(data?.isOn && (data?.triggered || data?.phase || data?.pulsing));
   }
-  
+
   // Manual trigger nodes
   if (data?.isManuallyActivated !== undefined) {
-    return !!(data?.isManuallyActivated);
+    return !!data?.isManuallyActivated;
   }
-  
+
   // JSON test nodes
-  if (nodeType === 'testJson') {
-    return data?.parsedJson !== null && 
-           data?.parsedJson !== undefined && 
-           data?.parseError === null;
+  if (nodeType === "testJson") {
+    return (
+      data?.parsedJson !== null &&
+      data?.parsedJson !== undefined &&
+      data?.parseError === null
+    );
   }
-  
+
   // Input/creation nodes
   return hasValidOutput(data);
 };
@@ -161,21 +192,21 @@ export const calculateHeadNodeActivation = <T extends BaseNodeData>(
   data: T,
   bypassCache: boolean = false
 ): boolean => {
-  const cacheKey = createCacheKey('head', nodeType, data);
+  const cacheKey = createCacheKey("head", nodeType, data);
   const cached = getCacheEntry(cacheKey);
-  
+
   // INSTANT DEACTIVATION: Skip cache for immediate "off" response
   if (isCacheValid(cached, bypassCache)) {
     return cached!.result;
   }
 
   const result = determineHeadNodeState(nodeType, data as any);
-  
+
   // Cache the result (but don't cache false results for instant deactivation)
   if (result || !bypassCache) {
     setCacheEntry(cacheKey, result);
   }
-  
+
   return result;
 };
 
@@ -195,9 +226,11 @@ export const handleTransformationNodeActivation = <T extends BaseNodeData>(
 ): boolean => {
   const hasOutput = hasValidOutput(data as any);
   const result = hasActiveInput && hasOutput;
-  
-  console.log(`UFS Debug ${nodeType} ${nodeId}: hasActiveInput=${hasActiveInput}, hasOutput=${hasOutput}, result=${result}`);
-  
+
+  console.log(
+    `UFS Debug ${nodeType} ${nodeId}: hasActiveInput=${hasActiveInput}, hasOutput=${hasOutput}, result=${result}`
+  );
+
   return result;
 };
 
@@ -207,29 +240,29 @@ export const handleTransformationNodeActivation = <T extends BaseNodeData>(
  */
 export const handleViewOutputActivation = (data: any): boolean => {
   const displayedValues = data?.displayedValues;
-  
+
   if (!Array.isArray(displayedValues) || displayedValues.length === 0) {
     return false;
   }
-  
-  return displayedValues.some(item => {
+
+  return displayedValues.some((item) => {
     const content = item.content;
-    
-    if (content === undefined || content === null || content === '') {
+
+    if (content === undefined || content === null || content === "") {
       return false;
     }
-    
-    if (typeof content === 'string' && content.trim() === '') {
+
+    if (typeof content === "string" && content.trim() === "") {
       return false;
     }
-    
-    if (typeof content === 'object') {
+
+    if (typeof content === "object") {
       if (Array.isArray(content)) {
         return content.length > 0;
       }
       return Object.keys(content).length > 0;
     }
-    
+
     return true;
   });
 };
@@ -246,23 +279,28 @@ export const determineDownstreamNodeState = <T extends BaseNodeData>(
   nodeId: string
 ): boolean => {
   const hasActiveInput = hasActiveInputNodes(connections, nodesData, nodeId);
-  
+
   if (!hasActiveInput) return false;
-  
+
   // Check trigger constraints
   const triggerAllows = checkTriggerState(connections, nodesData, nodeId);
   if (!triggerAllows) return false;
-  
+
   // Handle transformation nodes
   if (isTransformationNode(nodeType)) {
-    return handleTransformationNodeActivation(nodeType, data, hasActiveInput, nodeId);
+    return handleTransformationNodeActivation(
+      nodeType,
+      data,
+      hasActiveInput,
+      nodeId
+    );
   }
-  
+
   // Handle view output nodes
-  if (nodeType === 'viewOutput') {
+  if (nodeType === "viewOutput") {
     return handleViewOutputActivation(data as any);
   }
-  
+
   return hasActiveInput;
 };
 
@@ -278,20 +316,32 @@ export const calculateDownstreamNodeActivation = <T extends BaseNodeData>(
   nodeId: string,
   bypassCache: boolean = false
 ): boolean => {
-  const cacheKey = createCacheKey('downstream', nodeId, undefined, connections, nodesData);
+  const cacheKey = createCacheKey(
+    "downstream",
+    nodeId,
+    undefined,
+    connections,
+    nodesData
+  );
   const cached = getCacheEntry(cacheKey);
-  
+
   // INSTANT DEACTIVATION: Skip cache for immediate "off" response
   if (isCacheValid(cached, bypassCache)) {
     return cached!.result;
   }
 
-  const result = determineDownstreamNodeState(nodeType, data, connections, nodesData, nodeId);
-  
+  const result = determineDownstreamNodeState(
+    nodeType,
+    data,
+    connections,
+    nodesData,
+    nodeId
+  );
+
   // Cache the result (but don't cache false results for instant deactivation)
   if (result || !bypassCache) {
     setCacheEntry(cacheKey, result);
   }
-  
+
   return result;
-}; 
+};

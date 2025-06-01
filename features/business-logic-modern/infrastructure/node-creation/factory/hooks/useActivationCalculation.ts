@@ -1,10 +1,22 @@
-import { useMemo } from 'react';
-import type { BaseNodeData } from '../types';
-import { 
-  isHeadNode,
+/**
+ * USE ACTIVATION CALCULATION HOOK - Node activation state computation
+ *
+ * • Calculates node activation states based on input conditions
+ * • Implements complex activation algorithms and threshold logic
+ * • Supports real-time activation monitoring and state changes
+ * • Features performance-optimized calculation with caching
+ * • Integrates with data flow systems for activation propagation
+ *
+ * Keywords: activation-calculation, threshold-logic, real-time-monitoring, caching, data-flow, propagation
+ */
+
+import { useMemo } from "react";
+import type { BaseNodeData } from "../types";
+import {
+  calculateDownstreamNodeActivation,
   calculateHeadNodeActivation,
-  calculateDownstreamNodeActivation 
-} from '../utils/propagationEngine';
+  isHeadNode,
+} from "../utils/propagationEngine";
 
 // ============================================================================
 // ACTIVATION CALCULATION TYPES
@@ -23,7 +35,7 @@ interface ConnectionData {
 interface ActivationResult {
   calculatedIsActive: boolean;
   isHeadNode: boolean;
-  activationSource: 'head' | 'downstream';
+  activationSource: "head" | "downstream";
 }
 
 // ============================================================================
@@ -34,7 +46,7 @@ interface ActivationResult {
  * USE ACTIVATION CALCULATION
  * Handles node activation state calculation with caching optimization
  * Focused responsibility: Only activation logic computation
- * 
+ *
  * @param id - Node ID
  * @param config - Activation configuration
  * @param nodeData - Current node data
@@ -55,30 +67,30 @@ export function useActivationCalculation<T extends BaseNodeData>(
     try {
       const isHead = isHeadNode(connectionData.connections, id);
       const previousIsActive = nodeData?.isActive;
-      
+
       // QUICK CHECK FOR INSTANT DEACTIVATION
-      const quickCheck = isHead 
+      const quickCheck = isHead
         ? calculateHeadNodeActivation(config.nodeType, nodeData, true)
         : calculateDownstreamNodeActivation(
-            config.nodeType, 
-            nodeData, 
-            connectionData.connections, 
-            connectionData.nodesData, 
-            id, 
+            config.nodeType,
+            nodeData,
+            connectionData.connections,
+            connectionData.nodesData,
+            id,
             true
           );
-      
+
       // BYPASS CACHE for immediate deactivation
       const bypassCache = previousIsActive === true && quickCheck === false;
-      
+
       // CALCULATE ACTIVATION STATE
-      const calculatedIsActive = isHead 
+      const calculatedIsActive = isHead
         ? calculateHeadNodeActivation(config.nodeType, nodeData, bypassCache)
         : calculateDownstreamNodeActivation(
-            config.nodeType, 
-            nodeData, 
-            connectionData.connections, 
-            connectionData.nodesData, 
+            config.nodeType,
+            nodeData,
+            connectionData.connections,
+            connectionData.nodesData,
             id,
             bypassCache
           );
@@ -86,15 +98,17 @@ export function useActivationCalculation<T extends BaseNodeData>(
       return {
         calculatedIsActive,
         isHeadNode: isHead,
-        activationSource: isHead ? 'head' : 'downstream'
+        activationSource: isHead ? "head" : "downstream",
       } as ActivationResult;
-      
     } catch (error) {
-      console.error(`${config.nodeType} ${id} - Activation calculation error:`, error);
+      console.error(
+        `${config.nodeType} ${id} - Activation calculation error:`,
+        error
+      );
       return {
         calculatedIsActive: false,
         isHeadNode: false,
-        activationSource: 'head'
+        activationSource: "head",
       } as ActivationResult;
     }
   }, [
@@ -102,7 +116,7 @@ export function useActivationCalculation<T extends BaseNodeData>(
     config.nodeType,
     connectionData.relevantConnectionData,
     connectionData.nodesData,
-    JSON.stringify(nodeData) // Deep comparison for node data changes
+    JSON.stringify(nodeData), // Deep comparison for node data changes
   ]);
 
   return activationResult;
@@ -117,17 +131,17 @@ export function useActivationCalculation<T extends BaseNodeData>(
  * Helper to determine if activation state has changed
  */
 export function hasActivationChanged(
-  currentIsActive: boolean, 
+  currentIsActive: boolean,
   calculatedIsActive: boolean
 ): { isActivating: boolean; isDeactivating: boolean; hasChanged: boolean } {
   const hasChanged = currentIsActive !== calculatedIsActive;
   const isActivating = !currentIsActive && calculatedIsActive;
   const isDeactivating = currentIsActive && !calculatedIsActive;
-  
+
   return {
     isActivating,
     isDeactivating,
-    hasChanged
+    hasChanged,
   };
 }
 
@@ -137,6 +151,6 @@ export function hasActivationChanged(
  */
 export function createActivationConfig(nodeType: string): ActivationConfig {
   return {
-    nodeType
+    nodeType,
   };
-} 
+}

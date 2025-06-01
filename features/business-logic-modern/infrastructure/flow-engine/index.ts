@@ -1,25 +1,52 @@
 /**
- * FLOW ENGINE INDEX - Central export point for flow engine
+ * FLOW ENGINE INDEX - Centralized export hub for flow engine functionality
  *
- * • Re-exports main FlowEditor component and functionality
- * • Provides unified access to flow editor types and interfaces
- * • Exports flow editor constants and configuration
- * • Centralized entry point for all flow engine features
- * • Simplifies imports across the application
+ * • Single source of truth for all flow engine exports
+ * • Organized exports by category (components, hooks, types, utilities)
+ * • Eliminates import redundancy and naming conflicts
+ * • Provides clean, discoverable API surface for consumers
+ * • Follows modular export patterns with clear naming
  *
- * Keywords: exports, flow-engine, entry-point, types, constants
+ * Keywords: exports, flow-engine, centralized, API, modular, clean-imports
  */
 
 // ============================================================================
-// FLOW ENGINE EXPORTS
+// MAIN COMPONENT EXPORTS
 // ============================================================================
-// Central export point for all flow engine functionality
 
-// RE-EXPORT FLOW EDITOR MAIN
-export * from "./flow-editor";
+export { FlowCanvas } from "./components/FlowCanvas";
+export { FlowEditorLoading } from "./components/FlowEditorLoading";
 
-// RE-EXPORT TYPES
-export * from "./flow-editor/types";
+// Default export for FlowEditor
+export { default as FlowEditor } from "./FlowEditor";
 
-// RE-EXPORT CONSTANTS
-export * from "./flow-editor/constants";
+// ============================================================================
+// HOOK EXPORTS
+// ============================================================================
+
+export { useDragAndDrop } from "./hooks/useDragAndDrop";
+export { useErrorLogging } from "./hooks/useErrorLogging";
+export { useFlowEditorHandlers } from "./hooks/useFlowEditorHandlers";
+export { useFlowEditorState } from "./hooks/useFlowEditorState";
+export { useKeyboardShortcutHandlers } from "./hooks/useKeyboardShortcutHandlers";
+export { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+export { useMultiSelectionCopyPaste } from "./hooks/useMultiSelectionCopyPaste";
+export { useReactFlowHandlers } from "./hooks/useReactFlowHandlers";
+
+// ============================================================================
+// TYPE EXPORTS
+// ============================================================================
+
+export type { AgenEdge, AgenNode } from "./types";
+
+// ============================================================================
+// UTILITY EXPORTS
+// ============================================================================
+
+export { getNodeOutput } from "./utils/outputUtils";
+
+// ============================================================================
+// CONSTANT EXPORTS
+// ============================================================================
+
+export { syncNodeTypeConfigWithRegistry } from "./constants";

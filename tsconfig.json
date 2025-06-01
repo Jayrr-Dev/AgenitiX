@@ -54,7 +54,7 @@
         "features/business-logic-modern/infrastructure/theming/stores/*"
       ],
       "@flow-editor/*": [
-        "./features/business-logic-modern/infrastructure/flow-engine/flow-editor/*"
+        "features/business-logic-modern/infrastructure/flow-engine/*"
       ],
       "@registries/*": [
         "features/business-logic-modern/infrastructure/node-registries/modern/*"

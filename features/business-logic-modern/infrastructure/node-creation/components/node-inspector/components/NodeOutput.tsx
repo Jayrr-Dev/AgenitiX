@@ -1,5 +1,19 @@
-import React, { useMemo } from 'react';
-import { NodeType } from '../types';
+/**
+ * NODE OUTPUT COMPONENT - Node execution output display and formatting
+ *
+ * • Displays computed output results from node execution
+ * • Provides syntax highlighting for different data types and formats
+ * • Shows formatted JSON, text, and structured data with proper indentation
+ * • Includes copy-to-clipboard functionality for output values
+ * • Renders loading states and error indicators for output computation
+ *
+ * Keywords: node-output, syntax-highlighting, formatting, clipboard, results, display
+ */
+
+"use client";
+
+import React, { useMemo } from "react";
+import { NodeType } from "../types";
 
 interface NodeOutputProps {
   output: string | null;
@@ -7,12 +21,11 @@ interface NodeOutputProps {
 }
 
 export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
-  
   // ENHANCED REGISTRY INTEGRATION - Get additional metadata
   const registryMetadata = useMemo(() => {
     try {
       // Lazy import to avoid circular dependency
-      const { ENHANCED_NODE_REGISTRY } = require('../../../nodes/nodeRegistry');
+      const { ENHANCED_NODE_REGISTRY } = require("../../../nodes/nodeRegistry");
       return ENHANCED_NODE_REGISTRY[nodeType] || null;
     } catch (error) {
       // Fallback if registry unavailable
@@ -23,97 +36,102 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
   // ENHANCED OUTPUT FORMATTING
   const formatOutput = useMemo(() => {
     if (output === null || output === undefined) {
-      return { 
-        text: '—', 
-        color: 'text-gray-400 italic',
-        type: 'null'
+      return {
+        text: "—",
+        color: "text-gray-400 italic",
+        type: "null",
       };
     }
 
     // Try to parse and detect data type
     let parsedValue: any = output;
-    let detectedType = 'string';
-    
+    let detectedType = "string";
+
     try {
       // Attempt JSON parsing for complex types
-      if (typeof output === 'string' && (output.startsWith('{') || output.startsWith('['))) {
+      if (
+        typeof output === "string" &&
+        (output.startsWith("{") || output.startsWith("["))
+      ) {
         parsedValue = JSON.parse(output);
-        detectedType = Array.isArray(parsedValue) ? 'array' : 'object';
-      } else if (output === 'true' || output === 'false') {
-        parsedValue = output === 'true';
-        detectedType = 'boolean';
-      } else if (!isNaN(Number(output)) && output.trim() !== '') {
+        detectedType = Array.isArray(parsedValue) ? "array" : "object";
+      } else if (output === "true" || output === "false") {
+        parsedValue = output === "true";
+        detectedType = "boolean";
+      } else if (!isNaN(Number(output)) && output.trim() !== "") {
         parsedValue = Number(output);
-        detectedType = 'number';
+        detectedType = "number";
       }
     } catch {
       // Keep as string if parsing fails
-      detectedType = 'string';
+      detectedType = "string";
     }
 
     // TYPE-SPECIFIC FORMATTING AND COLORS
     switch (detectedType) {
-      case 'boolean':
+      case "boolean":
         return {
           text: String(parsedValue),
-          color: parsedValue ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400',
-          type: 'boolean',
-          icon: parsedValue ? '✅' : '❌'
+          color: parsedValue
+            ? "text-green-600 dark:text-green-400"
+            : "text-red-600 dark:text-red-400",
+          type: "boolean",
+          icon: parsedValue ? "✅" : "❌",
         };
-      
-      case 'number':
+
+      case "number":
         return {
           text: String(parsedValue),
-          color: 'text-orange-600 dark:text-orange-400',
-          type: 'number',
-          icon: '🔢'
+          color: "text-orange-600 dark:text-orange-400",
+          type: "number",
+          icon: "🔢",
         };
-      
-      case 'array':
+
+      case "array":
         return {
           text: `[${parsedValue.length} items]`,
-          color: 'text-pink-600 dark:text-pink-400',
-          type: 'array',
-          icon: '📊',
-          fullText: JSON.stringify(parsedValue, null, 2)
+          color: "text-pink-600 dark:text-pink-400",
+          type: "array",
+          icon: "📊",
+          fullText: JSON.stringify(parsedValue, null, 2),
         };
-      
-      case 'object':
+
+      case "object":
         const keys = Object.keys(parsedValue);
         return {
           text: `{${keys.length} properties}`,
-          color: 'text-indigo-600 dark:text-indigo-400',
-          type: 'object',
-          icon: '📋',
-          fullText: JSON.stringify(parsedValue, null, 2)
+          color: "text-indigo-600 dark:text-indigo-400",
+          type: "object",
+          icon: "📋",
+          fullText: JSON.stringify(parsedValue, null, 2),
         };
-      
+
       default:
         // REGISTRY-BASED SPECIAL STYLING
         if (registryMetadata?.ui?.branding?.textColor) {
           return {
             text: String(output),
             color: registryMetadata.ui.branding.textColor,
-            type: 'string',
-            icon: registryMetadata.ui.icon || '📝'
+            type: "string",
+            icon: registryMetadata.ui.icon || "📝",
           };
         }
-        
+
         // NODE TYPE SPECIFIC STYLING (LEGACY SUPPORT)
-        if (nodeType === 'turnToUppercase') {
+        if (nodeType === "turnToUppercase") {
           return {
             text: String(output),
-            color: 'text-sky-600 dark:text-sky-400',
-            type: 'string',
-            icon: '🔤'
+            color: "text-sky-600 dark:text-sky-400",
+            type: "string",
+            icon: "🔤",
           };
         }
-        
+
         return {
           text: String(output),
-          color: 'text-gray-700 dark:text-gray-300',
-          type: 'string',
-          icon: '📝'
+          color: "text-gray-700 dark:text-gray-300",
+          type: "string",
+          icon: "📝",
         };
     }
   }, [output, nodeType, registryMetadata]);
@@ -128,11 +146,13 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
           </span>
         )}
       </div>
-      
-      <div className={`font-mono break-all bg-gray-100 dark:bg-gray-800 rounded-md px-3 py-2 border ${formatOutput.color}`}>
+
+      <div
+        className={`font-mono break-all bg-gray-100 dark:bg-gray-800 rounded-md px-3 py-2 border ${formatOutput.color}`}
+      >
         {formatOutput.text}
       </div>
-      
+
       {/* EXPANDED VIEW FOR COMPLEX TYPES */}
       {formatOutput.fullText && (
         <details className="mt-2">
@@ -148,4 +168,4 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
       )}
     </div>
   );
-}; 
+};

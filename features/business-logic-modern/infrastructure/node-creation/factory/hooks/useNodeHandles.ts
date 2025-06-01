@@ -1,13 +1,25 @@
-import { useMemo } from 'react';
-import { useVibeModeStore } from '../../../stores/vibeModeStore';
-import type { HandleConfig, FilteredHandles } from '../types';
-import { shouldShowJsonHandle } from '../utils/conditionalRendering';
+/**
+ * USE NODE HANDLES HOOK - Handle management for node connections
+ *
+ * • Manages input/output handles for node connection points
+ * • Provides dynamic handle configuration based on node type
+ * • Supports typed handle validation and connection rules
+ * • Implements handle positioning and styling optimization
+ * • Features automatic handle generation and cleanup
+ *
+ * Keywords: node-handles, connections, typed-validation, positioning, auto-generation, cleanup
+ */
+
+import { useMemo } from "react";
+import { useVibeModeStore } from "../../../theming/stores/vibeModeStore";
+import type { FilteredHandles, HandleConfig } from "../types";
+import { shouldShowJsonHandle } from "../utils/conditionalRendering";
 
 /**
  * USE NODE HANDLES
  * Smart handle filtering and display logic
  * Refactored with extracted conditional logic utilities
- * 
+ *
  * @param handles - Handle configuration array
  * @param connections - Current connections
  * @param allNodes - All nodes in the flow
@@ -24,46 +36,44 @@ export function useNodeHandles(
   // ========================================================================
   // HANDLE VALIDATION AND DEBUGGING
   // ========================================================================
-  
+
   // Check for handle ID conflicts (in development)
-  if (process.env.NODE_ENV === 'development') {
-    const handleIds = handles.map(h => h.id);
-    const duplicateIds = handleIds.filter((id, index) => handleIds.indexOf(id) !== index);
-    
+  if (process.env.NODE_ENV === "development") {
+    const handleIds = handles.map((h) => h.id);
+    const duplicateIds = handleIds.filter(
+      (id, index) => handleIds.indexOf(id) !== index
+    );
+
     if (duplicateIds.length > 0) {
-      console.error('🚨 Handle ID conflicts detected:', duplicateIds);
-      console.error('🔧 Handles configuration:', handles);
+      console.error("🚨 Handle ID conflicts detected:", duplicateIds);
+      console.error("🔧 Handles configuration:", handles);
     }
   }
 
   // ========================================================================
   // HANDLE FILTERING LOGIC WITH EXTRACTED UTILITIES
   // ========================================================================
-  
-  const { inputHandlesFiltered, outputHandles }: FilteredHandles = useMemo(() => {
-    
-    // FILTER INPUT HANDLES with extracted logic
-    const inputHandlesFiltered = handles
-      .filter(handle => handle.type === 'target')
-      .filter(handle => shouldShowJsonHandle(
-        handle,
-        connections,
-        allNodes,
-        showJsonHandles,
-        isVibeModeActive
-      ));
-    
-    // FILTER OUTPUT HANDLES (simpler logic)
-    const outputHandles = filterOutputHandles(handles);
-    
-    return { inputHandlesFiltered, outputHandles };
-  }, [
-    handles, 
-    connections, 
-    showJsonHandles, 
-    isVibeModeActive, 
-    allNodes
-  ]);
+
+  const { inputHandlesFiltered, outputHandles }: FilteredHandles =
+    useMemo(() => {
+      // FILTER INPUT HANDLES with extracted logic
+      const inputHandlesFiltered = handles
+        .filter((handle) => handle.type === "target")
+        .filter((handle) =>
+          shouldShowJsonHandle(
+            handle,
+            connections,
+            allNodes,
+            showJsonHandles,
+            isVibeModeActive
+          )
+        );
+
+      // FILTER OUTPUT HANDLES (simpler logic)
+      const outputHandles = filterOutputHandles(handles);
+
+      return { inputHandlesFiltered, outputHandles };
+    }, [handles, connections, showJsonHandles, isVibeModeActive, allNodes]);
 
   return { inputHandlesFiltered, outputHandles };
 }
@@ -77,5 +87,5 @@ export function useNodeHandles(
  * Simple output handle filtering with early return
  */
 function filterOutputHandles(handles: HandleConfig[]): HandleConfig[] {
-  return handles.filter(handle => handle.type === 'source');
-} 
+  return handles.filter((handle) => handle.type === "source");
+}

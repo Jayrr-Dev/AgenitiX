@@ -1,9 +1,19 @@
-// ============================================================================
-// INSPECTOR CONTROL HELPERS
-// ============================================================================
+/**
+ * INSPECTOR CONTROL HELPERS - Helper components for node inspector controls
+ *
+ * • Provides reusable helper components for building inspector interfaces
+ * • Implements common control patterns and input validation helpers
+ * • Supports dynamic form generation and data binding utilities
+ * • Features accessibility and styling helpers for consistent UI
+ * • Integrates with inspector systems for enhanced user experience
+ *
+ * Keywords: inspector-controls, helper-components, form-generation, validation, accessibility, ui-consistency
+ */
 
-import React from 'react';
-import type { BaseNodeData, InspectorControlProps } from '../types';
+"use client";
+
+import React from "react";
+import type { BaseNodeData, InspectorControlProps } from "../types";
 
 // ============================================================================
 // COMMON CONTROL CREATORS
@@ -17,8 +27,13 @@ export function createTextInputControl(
   label: string,
   dataKey: string,
   placeholder?: string
-): <T extends BaseNodeData>(props: InspectorControlProps<T>) => React.ReactElement {
-  return function TextInputControl<T extends BaseNodeData>({ node, updateNodeData }: InspectorControlProps<T>) {
+): <T extends BaseNodeData>(
+  props: InspectorControlProps<T>
+) => React.ReactElement {
+  return function TextInputControl<T extends BaseNodeData>({
+    node,
+    updateNodeData,
+  }: InspectorControlProps<T>) {
     return (
       <div className="flex flex-col gap-2">
         <label className="block text-xs">
@@ -28,8 +43,12 @@ export function createTextInputControl(
               type="text"
               className="w-full rounded border px-1 py-1 text-xs"
               placeholder={placeholder}
-              value={typeof node.data[dataKey] === 'string' ? node.data[dataKey] : ''}
-              onChange={(e) => updateNodeData(node.id, { [dataKey]: e.target.value })}
+              value={
+                typeof node.data[dataKey] === "string" ? node.data[dataKey] : ""
+              }
+              onChange={(e) =>
+                updateNodeData(node.id, { [dataKey]: e.target.value })
+              }
             />
           </div>
         </label>
@@ -48,8 +67,13 @@ export function createNumberInputControl(
   min?: number,
   max?: number,
   step?: number
-): <T extends BaseNodeData>(props: InspectorControlProps<T>) => React.ReactElement {
-  return function NumberInputControl<T extends BaseNodeData>({ node, updateNodeData }: InspectorControlProps<T>) {
+): <T extends BaseNodeData>(
+  props: InspectorControlProps<T>
+) => React.ReactElement {
+  return function NumberInputControl<T extends BaseNodeData>({
+    node,
+    updateNodeData,
+  }: InspectorControlProps<T>) {
     return (
       <div className="flex flex-col gap-2">
         <label className="block text-xs">
@@ -61,8 +85,12 @@ export function createNumberInputControl(
               min={min}
               max={max}
               step={step}
-              value={typeof node.data[dataKey] === 'number' ? node.data[dataKey] : 0}
-              onChange={(e) => updateNodeData(node.id, { [dataKey]: Number(e.target.value) })}
+              value={
+                typeof node.data[dataKey] === "number" ? node.data[dataKey] : 0
+              }
+              onChange={(e) =>
+                updateNodeData(node.id, { [dataKey]: Number(e.target.value) })
+              }
             />
           </div>
         </label>
@@ -78,8 +106,13 @@ export function createNumberInputControl(
 export function createCheckboxControl(
   label: string,
   dataKey: string
-): <T extends BaseNodeData>(props: InspectorControlProps<T>) => React.ReactElement {
-  return function CheckboxControl<T extends BaseNodeData>({ node, updateNodeData }: InspectorControlProps<T>) {
+): <T extends BaseNodeData>(
+  props: InspectorControlProps<T>
+) => React.ReactElement {
+  return function CheckboxControl<T extends BaseNodeData>({
+    node,
+    updateNodeData,
+  }: InspectorControlProps<T>) {
     return (
       <div className="flex flex-col gap-2">
         <label className="block text-xs">
@@ -88,7 +121,9 @@ export function createCheckboxControl(
               type="checkbox"
               className="rounded border"
               checked={!!node.data[dataKey]}
-              onChange={(e) => updateNodeData(node.id, { [dataKey]: e.target.checked })}
+              onChange={(e) =>
+                updateNodeData(node.id, { [dataKey]: e.target.checked })
+              }
             />
             <span>{label}</span>
           </div>
@@ -106,8 +141,13 @@ export function createSelectControl(
   label: string,
   dataKey: string,
   options: Array<{ value: string | number; label: string }>
-): <T extends BaseNodeData>(props: InspectorControlProps<T>) => React.ReactElement {
-  return function SelectControl<T extends BaseNodeData>({ node, updateNodeData }: InspectorControlProps<T>) {
+): <T extends BaseNodeData>(
+  props: InspectorControlProps<T>
+) => React.ReactElement {
+  return function SelectControl<T extends BaseNodeData>({
+    node,
+    updateNodeData,
+  }: InspectorControlProps<T>) {
     return (
       <div className="flex flex-col gap-2">
         <label className="block text-xs">
@@ -115,8 +155,10 @@ export function createSelectControl(
             <span className="py-1">{label}:</span>
             <select
               className="w-full rounded border px-1 py-1 text-xs"
-              value={node.data[dataKey] || ''}
-              onChange={(e) => updateNodeData(node.id, { [dataKey]: e.target.value })}
+              value={node.data[dataKey] || ""}
+              onChange={(e) =>
+                updateNodeData(node.id, { [dataKey]: e.target.value })
+              }
             >
               {options.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -140,8 +182,13 @@ export function createTextareaControl(
   dataKey: string,
   placeholder?: string,
   rows: number = 3
-): <T extends BaseNodeData>(props: InspectorControlProps<T>) => React.ReactElement {
-  return function TextareaControl<T extends BaseNodeData>({ node, updateNodeData }: InspectorControlProps<T>) {
+): <T extends BaseNodeData>(
+  props: InspectorControlProps<T>
+) => React.ReactElement {
+  return function TextareaControl<T extends BaseNodeData>({
+    node,
+    updateNodeData,
+  }: InspectorControlProps<T>) {
     return (
       <div className="flex flex-col gap-2">
         <label className="block text-xs">
@@ -151,8 +198,12 @@ export function createTextareaControl(
               className="w-full rounded border px-2 py-1 text-xs"
               placeholder={placeholder}
               rows={rows}
-              value={typeof node.data[dataKey] === 'string' ? node.data[dataKey] : ''}
-              onChange={(e) => updateNodeData(node.id, { [dataKey]: e.target.value })}
+              value={
+                typeof node.data[dataKey] === "string" ? node.data[dataKey] : ""
+              }
+              onChange={(e) =>
+                updateNodeData(node.id, { [dataKey]: e.target.value })
+              }
             />
           </div>
         </label>
@@ -171,8 +222,13 @@ export function createRangeControl(
   min: number = 0,
   max: number = 100,
   step: number = 1
-): <T extends BaseNodeData>(props: InspectorControlProps<T>) => React.ReactElement {
-  return function RangeControl<T extends BaseNodeData>({ node, updateNodeData }: InspectorControlProps<T>) {
+): <T extends BaseNodeData>(
+  props: InspectorControlProps<T>
+) => React.ReactElement {
+  return function RangeControl<T extends BaseNodeData>({
+    node,
+    updateNodeData,
+  }: InspectorControlProps<T>) {
     return (
       <div className="flex flex-col gap-2">
         <label className="block text-xs">
@@ -187,8 +243,14 @@ export function createRangeControl(
               min={min}
               max={max}
               step={step}
-              value={typeof node.data[dataKey] === 'number' ? node.data[dataKey] : min}
-              onChange={(e) => updateNodeData(node.id, { [dataKey]: Number(e.target.value) })}
+              value={
+                typeof node.data[dataKey] === "number"
+                  ? node.data[dataKey]
+                  : min
+              }
+              onChange={(e) =>
+                updateNodeData(node.id, { [dataKey]: Number(e.target.value) })
+              }
             />
           </div>
         </label>
@@ -204,8 +266,13 @@ export function createRangeControl(
 export function createColorControl(
   label: string,
   dataKey: string
-): <T extends BaseNodeData>(props: InspectorControlProps<T>) => React.ReactElement {
-  return function ColorControl<T extends BaseNodeData>({ node, updateNodeData }: InspectorControlProps<T>) {
+): <T extends BaseNodeData>(
+  props: InspectorControlProps<T>
+) => React.ReactElement {
+  return function ColorControl<T extends BaseNodeData>({
+    node,
+    updateNodeData,
+  }: InspectorControlProps<T>) {
     return (
       <div className="flex flex-col gap-2">
         <label className="block text-xs">
@@ -214,14 +281,18 @@ export function createColorControl(
             <input
               type="color"
               className="w-8 h-8 rounded border cursor-pointer"
-              value={node.data[dataKey] || '#000000'}
-              onChange={(e) => updateNodeData(node.id, { [dataKey]: e.target.value })}
+              value={node.data[dataKey] || "#000000"}
+              onChange={(e) =>
+                updateNodeData(node.id, { [dataKey]: e.target.value })
+              }
             />
             <input
               type="text"
               className="flex-1 rounded border px-1 py-1 text-xs font-mono"
-              value={node.data[dataKey] || '#000000'}
-              onChange={(e) => updateNodeData(node.id, { [dataKey]: e.target.value })}
+              value={node.data[dataKey] || "#000000"}
+              onChange={(e) =>
+                updateNodeData(node.id, { [dataKey]: e.target.value })
+              }
             />
           </div>
         </label>
@@ -241,8 +312,12 @@ export function createColorControl(
 export function createGroupControl(
   title: string,
   controls: Array<(props: InspectorControlProps<any>) => React.ReactNode>
-): <T extends BaseNodeData>(props: InspectorControlProps<T>) => React.ReactElement {
-  return function GroupControl<T extends BaseNodeData>(props: InspectorControlProps<T>) {
+): <T extends BaseNodeData>(
+  props: InspectorControlProps<T>
+) => React.ReactElement {
+  return function GroupControl<T extends BaseNodeData>(
+    props: InspectorControlProps<T>
+  ) {
     return (
       <div className="flex flex-col gap-3">
         <div className="text-sm font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 pb-1">
@@ -281,14 +356,21 @@ export function createConditionalControl<T extends BaseNodeData>(
 export function createButtonControl(
   label: string,
   onClick: (node: any, updateNodeData: any) => void,
-  variant: 'primary' | 'secondary' | 'danger' = 'primary'
-): <T extends BaseNodeData>(props: InspectorControlProps<T>) => React.ReactElement {
-  return function ButtonControl<T extends BaseNodeData>({ node, updateNodeData }: InspectorControlProps<T>) {
-    const baseClasses = "px-3 py-2 rounded text-xs font-medium transition-colors";
+  variant: "primary" | "secondary" | "danger" = "primary"
+): <T extends BaseNodeData>(
+  props: InspectorControlProps<T>
+) => React.ReactElement {
+  return function ButtonControl<T extends BaseNodeData>({
+    node,
+    updateNodeData,
+  }: InspectorControlProps<T>) {
+    const baseClasses =
+      "px-3 py-2 rounded text-xs font-medium transition-colors";
     const variantClasses = {
       primary: "bg-blue-500 hover:bg-blue-600 text-white",
-      secondary: "bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-white",
-      danger: "bg-red-500 hover:bg-red-600 text-white"
+      secondary:
+        "bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-white",
+      danger: "bg-red-500 hover:bg-red-600 text-white",
     };
 
     return (
@@ -300,4 +382,4 @@ export function createButtonControl(
       </button>
     );
   };
-} 
+}

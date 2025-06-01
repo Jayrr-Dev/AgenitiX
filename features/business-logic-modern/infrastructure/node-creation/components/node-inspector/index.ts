@@ -1,25 +1,34 @@
-// Main component
-export { default as NodeInspector } from './NodeInspector';
+/**
+ * NODE INSPECTOR INDEX - Centralized exports for node inspector functionality
+ *
+ * • Exports all node inspector sub-components, hooks, types, and utilities
+ * • Provides unified access to inspector controls and display components
+ * • Centralizes type definitions and constants for node property editing
+ * • Includes specialized controls for different node types and data formats
+ * • Serves as entry point for node inspection sub-architecture
+ *
+ * Keywords: exports, node-inspector, components, controls, hooks, types, centralized
+ */
 
 // Types
-export * from './types';
+export * from "./types";
 
 // Components
-export { NodeHeader } from './components/NodeHeader';
-export { NodeOutput } from './components/NodeOutput';
-export { NodeControls } from './components/NodeControls';
-export { ErrorLog } from './components/ErrorLog';
+export { ErrorLog } from "./components/ErrorLog";
+export { NodeControls } from "./components/NodeControls";
+export { NodeHeader } from "./components/NodeHeader";
+export { NodeOutput } from "./components/NodeOutput";
 
 // Controls
-export { BaseControl, StatusBadge, ActionButton } from './controls/BaseControl';
-export { TextNodeControl } from './controls/TextNodeControl';
-export * from './controls/TriggerControls';
+export { ActionButton, BaseControl, StatusBadge } from "./controls/BaseControl";
+export { TextNodeControl } from "./controls/TextNodeControl";
+export * from "./controls/TriggerControls";
 
 // Utils
-export { JsonHighlighter } from './utils/JsonHighlighter';
+export { JsonHighlighter } from "./utils/JsonHighlighter";
 
 // Hooks
-export { useInspectorState } from './hooks/useInspectorState';
+export { useInspectorState } from "./hooks/useInspectorState";
 
 // Constants
-export * from './constants'; 
+export * from "./constants";

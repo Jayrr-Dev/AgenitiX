@@ -1,11 +1,23 @@
+/**
+ * INSPECTOR REGISTRY - Node inspector configuration management system
+ *
+ * • Manages registration and configuration of node inspector controls
+ * • Provides centralized registry for node type configurations
+ * • Supports dynamic inspector control registration and retrieval
+ * • Features type-safe configuration management for inspector panels
+ * • Integrates with factory systems for seamless inspector functionality
+ *
+ * Keywords: inspector-registry, configuration-management, dynamic-registration, type-safety, inspector-panels, factory
+ */
+
 // ============================================================================
 // INSPECTOR REGISTRY
 // ============================================================================
 
-import type { ReactNode } from 'react';
-import type { BaseNodeData, InspectorControlProps } from '../types';
-import { NODE_TYPE_CONFIG } from '../../../flow-editor/constants';
-import type { NodeTypeConfig } from '../../../flow-editor/types';
+import type { ReactNode } from "react";
+import { NODE_TYPE_CONFIG } from "../../../flow-editor/constants";
+import type { NodeTypeConfig } from "../../../flow-editor/types";
+import type { BaseNodeData, InspectorControlProps } from "../types";
 
 // ============================================================================
 // REGISTRY STORAGE
@@ -15,7 +27,10 @@ import type { NodeTypeConfig } from '../../../flow-editor/types';
  * NODE INSPECTOR REGISTRY
  * Global registry for factory-created node inspector controls
  */
-export const NODE_INSPECTOR_REGISTRY = new Map<string, (props: InspectorControlProps<any>) => ReactNode>();
+export const NODE_INSPECTOR_REGISTRY = new Map<
+  string,
+  (props: InspectorControlProps<any>) => ReactNode
+>();
 
 // ============================================================================
 // REGISTRATION FUNCTIONS
@@ -26,7 +41,7 @@ export const NODE_INSPECTOR_REGISTRY = new Map<string, (props: InspectorControlP
  * Registers inspector controls for a specific node type
  */
 export const registerNodeInspectorControls = <T extends BaseNodeData>(
-  nodeType: string, 
+  nodeType: string,
   renderControls: (props: InspectorControlProps<T>) => ReactNode
 ) => {
   NODE_INSPECTOR_REGISTRY.set(nodeType, renderControls);
@@ -99,7 +114,7 @@ export const clearInspectorRegistry = (): void => {
 export const getRegistryStats = () => {
   return {
     totalRegistered: NODE_INSPECTOR_REGISTRY.size,
-    nodeTypes: getAllRegisteredNodeTypes()
+    nodeTypes: getAllRegisteredNodeTypes(),
   };
 };
 
@@ -109,4 +124,4 @@ export const getRegistryStats = () => {
  */
 export const removeNodeType = (nodeType: string): boolean => {
   return NODE_INSPECTOR_REGISTRY.delete(nodeType);
-}; 
+};

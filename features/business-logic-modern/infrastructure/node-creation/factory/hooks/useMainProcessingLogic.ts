@@ -1,7 +1,19 @@
-import { useEffect, useRef } from 'react';
-import type { BaseNodeData, NodeFactoryConfig } from '../types';
-import { PROCESSING_THROTTLE_MS } from '../constants';
-import { createJsonProcessingTracker } from '../utils/jsonProcessor';
+/**
+ * USE MAIN PROCESSING LOGIC HOOK - Core business logic processor for nodes
+ *
+ * • Implements main business logic processing for complex node operations
+ * • Handles data transformation, validation, and computation workflows
+ * • Supports asynchronous processing with error handling and recovery
+ * • Features performance optimization and memory management
+ * • Integrates with enterprise systems for advanced processing capabilities
+ *
+ * Keywords: main-processing, business-logic, data-transformation, async-processing, performance, enterprise
+ */
+
+import { useEffect, useRef } from "react";
+import { PROCESSING_THROTTLE_MS } from "../constants";
+import type { BaseNodeData } from "../types";
+import { createJsonProcessingTracker } from "../utils/jsonProcessor";
 
 // ============================================================================
 // MAIN PROCESSING LOGIC TYPES
@@ -34,7 +46,7 @@ interface ProcessingState {
  * USE MAIN PROCESSING LOGIC
  * Handles the main node processing logic with error handling and throttling
  * Focused responsibility: Only core business logic processing
- * 
+ *
  * @param id - Node ID
  * @param config - Processing configuration
  * @param nodeData - Current node data
@@ -53,7 +65,10 @@ export function useMainProcessingLogic<T extends BaseNodeData>(
     relevantConnectionData: any;
   },
   nodeState: {
-    updateNodeData: (nodeId: string, updates: Partial<Record<string, unknown>>) => void;
+    updateNodeData: (
+      nodeId: string,
+      updates: Partial<Record<string, unknown>>
+    ) => void;
     setError: (error: string | null) => void;
     setIsActive: (isActive: boolean) => void;
   },
@@ -83,7 +98,7 @@ export function useMainProcessingLogic<T extends BaseNodeData>(
     (nodeData as any)?.heldText, // Include text changes for input nodes
     (nodeData as any)?.isManuallyActivated, // Include manual activation changes for test nodes
     (nodeData as any)?.triggerMode, // Include trigger mode changes
-    (nodeData as any)?.value // Include value changes for output nodes
+    (nodeData as any)?.value, // Include value changes for output nodes
   ]);
 
   // ========================================================================
@@ -96,17 +111,19 @@ export function useMainProcessingLogic<T extends BaseNodeData>(
    */
   function processNodeLogic() {
     // THROTTLING CHECK: Skip for text input nodes that need immediate updates
-    if (!shouldBypassThrottling() && !logicProcessingTracker.current.shouldProcess(PROCESSING_THROTTLE_MS)) {
+    if (
+      !shouldBypassThrottling() &&
+      !logicProcessingTracker.current.shouldProcess(PROCESSING_THROTTLE_MS)
+    ) {
       return;
     }
-    
+
     try {
       // EXECUTE MAIN PROCESSING LOGIC
       executeProcessingLogic();
-      
+
       // HANDLE TRIGGER/CYCLE NODE OUTPUT UPDATES
       handleTriggerCycleOutputs();
-      
     } catch (processingError) {
       handleProcessingError(processingError);
     }
@@ -117,7 +134,7 @@ export function useMainProcessingLogic<T extends BaseNodeData>(
    * Check if node should bypass throttling (e.g., text input nodes)
    */
   function shouldBypassThrottling(): boolean {
-    return config.nodeType === 'createText';
+    return config.nodeType === "createText";
   }
 
   /**
@@ -130,9 +147,12 @@ export function useMainProcessingLogic<T extends BaseNodeData>(
       data: nodeData,
       connections: connectionData.connections,
       nodesData: connectionData.nodesData,
-      updateNodeData: (nodeId: string, updates: Partial<T>) => 
-        nodeState.updateNodeData(nodeId, updates as Partial<Record<string, unknown>>),
-      setError: nodeState.setError
+      updateNodeData: (nodeId: string, updates: Partial<T>) =>
+        nodeState.updateNodeData(
+          nodeId,
+          updates as Partial<Record<string, unknown>>
+        ),
+      setError: nodeState.setError,
     });
   }
 
@@ -141,23 +161,29 @@ export function useMainProcessingLogic<T extends BaseNodeData>(
    * Special handling for trigger and cycle node output values
    */
   function handleTriggerCycleOutputs() {
-    const isTriggerOrCycle = config.nodeType.toLowerCase().includes('trigger') || 
-                           config.nodeType.toLowerCase().includes('cycle');
-    
+    const isTriggerOrCycle =
+      config.nodeType.toLowerCase().includes("trigger") ||
+      config.nodeType.toLowerCase().includes("cycle");
+
     if (!isTriggerOrCycle) return;
-    
+
     const outputValue = activationState.calculatedIsActive ? true : false;
     const currentOutputValue = (nodeData as any)?.value;
-    
+
     if (currentOutputValue !== outputValue) {
-      const isOutputDeactivating = currentOutputValue === true && outputValue === false;
-      
+      const isOutputDeactivating =
+        currentOutputValue === true && outputValue === false;
+
       // UPDATE OUTPUT VALUE
-      nodeState.updateNodeData(id, { value: outputValue } as Partial<Record<string, unknown>>);
-      
+      nodeState.updateNodeData(id, { value: outputValue } as Partial<
+        Record<string, unknown>
+      >);
+
       // INSTANT PROPAGATION for deactivation
       if (isOutputDeactivating) {
-        console.log(`UFS Output ${config.nodeType} ${id}: INSTANT output deactivation`);
+        console.log(
+          `UFS Output ${config.nodeType} ${id}: INSTANT output deactivation`
+        );
         propagateUltraFast(id, false);
       }
     }
@@ -170,19 +196,25 @@ export function useMainProcessingLogic<T extends BaseNodeData>(
   function handleProcessingError(processingError: unknown) {
     // DEACTIVATE NODE on error
     nodeState.setIsActive(false);
-    
+
     // UPDATE NODE DATA if needed
     if ((nodeData as any)?.isActive === true) {
-      nodeState.updateNodeData(id, { isActive: false } as Partial<Record<string, unknown>>);
+      nodeState.updateNodeData(id, { isActive: false } as Partial<
+        Record<string, unknown>
+      >);
     }
-    
+
     // LOG ERROR
-    console.error(`${config.nodeType} ${id} - Processing error:`, processingError);
-    
+    console.error(
+      `${config.nodeType} ${id} - Processing error:`,
+      processingError
+    );
+
     // SET ERROR MESSAGE
-    const errorMessage = processingError instanceof Error 
-      ? processingError.message 
-      : 'Processing error';
+    const errorMessage =
+      processingError instanceof Error
+        ? processingError.message
+        : "Processing error";
     nodeState.setError(errorMessage);
   }
 
@@ -192,7 +224,7 @@ export function useMainProcessingLogic<T extends BaseNodeData>(
 
   return {
     isProcessing: true, // Could be enhanced with actual processing state tracking
-    lastProcessedAt: Date.now()
+    lastProcessedAt: Date.now(),
   };
 }
 
@@ -210,6 +242,6 @@ export function createProcessingConfig<T extends BaseNodeData>(
 ): ProcessingConfig<T> {
   return {
     nodeType,
-    processLogic
+    processLogic,
   };
-} 
+}

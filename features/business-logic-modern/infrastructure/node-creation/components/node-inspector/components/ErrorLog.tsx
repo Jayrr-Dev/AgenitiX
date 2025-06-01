@@ -1,3 +1,17 @@
+/**
+ * ERROR LOG COMPONENT - Node error display and management interface
+ *
+ * • Displays categorized error messages for the selected node
+ * • Provides error filtering by type (error, warning, info) and severity
+ * • Shows timestamped error entries with source information
+ * • Includes clear all errors functionality with confirmation
+ * • Auto-scrolls to newest errors and highlights critical issues
+ *
+ * Keywords: error-log, filtering, timestamps, severity, debugging, notifications
+ */
+
+"use client";
+
 import { NodeError } from "@/features/business-logic-modern/infrastructure/node-creation/components/node-inspector/types";
 import React from "react";
 

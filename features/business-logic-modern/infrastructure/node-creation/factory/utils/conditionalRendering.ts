@@ -1,8 +1,18 @@
+/**
+ * CONDITIONAL RENDERING UTILITY - Dynamic UI rendering system
+ *
+ * • Provides advanced conditional rendering logic for factory nodes
+ * • Implements dynamic UI component selection and configuration
+ * • Supports rule-based rendering with validation and error handling
+ * • Features performance-optimized rendering with lazy evaluation
+ * • Integrates with node factory systems for flexible UI generation
+ *
+ * Keywords: conditional-rendering, dynamic-ui, rule-based, lazy-evaluation, ui-generation, factory
+ */
+
 // ============================================================================
 // CONDITIONAL RENDERING UTILITIES
 // ============================================================================
-
-import type { BaseNodeData } from '../types';
 
 // ============================================================================
 // ERROR STATE CALCULATION
@@ -34,7 +44,7 @@ export function calculateRenderError(
 
   // ERROR INJECTION ERROR STATE
   if (nodeData?.isErrorState === true) {
-    return nodeData?.error || 'Error state active';
+    return nodeData?.error || "Error state active";
   }
 
   return null;
@@ -71,29 +81,33 @@ function getSmartDefaultSize(nodeType: string): any {
   const lowerType = nodeType.toLowerCase();
 
   // TRIGGER NODE PATTERNS
-  if (lowerType.includes('trigger') || 
-      lowerType.includes('cycle') || 
-      lowerType.includes('pulse')) {
+  if (
+    lowerType.includes("trigger") ||
+    lowerType.includes("cycle") ||
+    lowerType.includes("pulse")
+  ) {
     return {
-      collapsed: { width: 'w-[50px]', height: 'h-[50px]' },
-      expanded: { width: 'w-[120px]', height: 'h-[120px]' }
+      collapsed: { width: "w-[50px]", height: "h-[50px]" },
+      expanded: { width: "w-[120px]", height: "h-[120px]" },
     };
   }
 
   // LOGIC NODE PATTERNS
-  if (lowerType.includes('logic') || 
-      lowerType.includes('gate') || 
-      lowerType.includes('operator')) {
+  if (
+    lowerType.includes("logic") ||
+    lowerType.includes("gate") ||
+    lowerType.includes("operator")
+  ) {
     return {
-      collapsed: { width: 'w-[60px]', height: 'h-[60px]' },
-      expanded: { width: 'w-[120px]', height: 'h-[100px]' }
+      collapsed: { width: "w-[60px]", height: "h-[60px]" },
+      expanded: { width: "w-[120px]", height: "h-[100px]" },
     };
   }
 
   // DEFAULT TEXT NODE SIZE
   return {
-    collapsed: { width: 'w-[120px]', height: 'h-[60px]' },
-    expanded: { width: 'w-[240px]', height: 'h-[120px]' }
+    collapsed: { width: "w-[120px]", height: "h-[60px]" },
+    expanded: { width: "w-[240px]", height: "h-[120px]" },
   };
 }
 
@@ -119,7 +133,7 @@ export function selectButtonTheme(
 }
 
 /**
- * SELECT TEXT THEME  
+ * SELECT TEXT THEME
  * Simplify text theme selection
  */
 export function selectTextTheme(
@@ -151,12 +165,14 @@ export function shouldShowJsonHandle(
   isVibeModeActive: boolean
 ): boolean {
   // EARLY RETURN: Not a JSON handle
-  if (handle.dataType !== 'j') {
+  if (handle.dataType !== "j") {
     return true;
   }
 
   // CHECK FOR EXISTING CONNECTION
-  const hasJsonConnection = connections.some(c => c.targetHandle === handle.id);
+  const hasJsonConnection = connections.some(
+    (c) => c.targetHandle === handle.id
+  );
 
   // EARLY RETURN: Already connected (always visible)
   if (hasJsonConnection) {
@@ -164,10 +180,12 @@ export function shouldShowJsonHandle(
   }
 
   // CHECK FOR JSON SOURCES
-  const hasJsonSources = allNodes.some(node => 
-    node.type === 'testJson' || 
-    node.type === 'testError' ||
-    (node.data && (node.data.json !== undefined || node.data.parsedJson !== undefined))
+  const hasJsonSources = allNodes.some(
+    (node) =>
+      node.type === "testJson" ||
+      node.type === "testError" ||
+      (node.data &&
+        (node.data.json !== undefined || node.data.parsedJson !== undefined))
   );
 
   // VISIBILITY PRIORITY ORDER:
@@ -195,10 +213,13 @@ export function logErrorInjectionState(
     return;
   }
 
-  console.log(`🎨 [NodeRendering] ${nodeType} ${nodeId}: Error injection active:`, {
-    hasVibeError: errorState.hasVibeError,
-    errorType: errorState.finalErrorType,
-    errorMessage: errorState.finalErrorForStyling,
-    supportsErrorInjection: errorState.supportsErrorInjection
-  });
-} 
+  console.log(
+    `🎨 [NodeRendering] ${nodeType} ${nodeId}: Error injection active:`,
+    {
+      hasVibeError: errorState.hasVibeError,
+      errorType: errorState.finalErrorType,
+      errorMessage: errorState.finalErrorForStyling,
+      supportsErrorInjection: errorState.supportsErrorInjection,
+    }
+  );
+}

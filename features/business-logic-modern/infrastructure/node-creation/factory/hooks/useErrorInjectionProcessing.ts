@@ -1,10 +1,19 @@
-import { useEffect } from 'react';
-import { useFlowStore } from '../../../stores/flowStore';
-import { ERROR_INJECTION_SUPPORTED_NODES } from '../constants';
-import { 
-  hasJsonConnections,
-  getJsonInputValues
-} from '../utils/jsonProcessor';
+/**
+ * USE ERROR INJECTION PROCESSING HOOK - Error simulation and testing system
+ *
+ * • Provides controlled error injection for testing and debugging
+ * • Implements error simulation modes with configurable scenarios
+ * • Supports error type validation and recovery testing
+ * • Features comprehensive error logging and analysis
+ * • Integrates with safety systems for bulletproof error handling
+ *
+ * Keywords: error-injection, simulation, testing, debugging, validation, safety-systems
+ */
+
+import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
+import { useEffect } from "react";
+import { ERROR_INJECTION_SUPPORTED_NODES } from "../constants";
+import { getJsonInputValues, hasJsonConnections } from "../utils/jsonProcessor";
 
 // ============================================================================
 // ERROR INJECTION PROCESSING TYPES
@@ -17,7 +26,7 @@ interface ErrorInjectionConfig {
 
 interface ErrorInjectionState {
   isErrorState?: boolean;
-  errorType?: 'warning' | 'error' | 'critical';
+  errorType?: "warning" | "error" | "critical";
   error?: string;
 }
 
@@ -29,7 +38,7 @@ interface ErrorInjectionState {
  * USE ERROR INJECTION PROCESSING
  * Handles VIBE mode error injection from Error Generator nodes
  * Focused responsibility: Only error state management
- * 
+ *
  * @param id - Node ID
  * @param config - Error injection configuration
  * @param connectionData - Connection and node data
@@ -53,11 +62,11 @@ export function useErrorInjectionProcessing(
   // ========================================================================
   // ERROR INJECTION PROCESSING EFFECT
   // ========================================================================
-  
+
   useEffect(() => {
     // EARLY RETURN: Skip if node doesn't support error injection
     if (!config.supportsErrorInjection) return;
-    
+
     // CHECK FOR JSON CONNECTIONS WITH ERROR DATA
     if (hasJsonConnections(connectionData.connections, id)) {
       processErrorInjectionFromJsonInputs();
@@ -71,7 +80,7 @@ export function useErrorInjectionProcessing(
     connectionData.connections,
     connectionData.nodesData,
     updateNodeData,
-    nodeState.setError
+    nodeState.setError,
   ]);
 
   // ========================================================================
@@ -84,13 +93,13 @@ export function useErrorInjectionProcessing(
    */
   function processErrorInjectionFromJsonInputs() {
     const jsonInputValues = getJsonInputValues(
-      connectionData.connections, 
-      connectionData.nodesData, 
+      connectionData.connections,
+      connectionData.nodesData,
       id
     );
-    
-    jsonInputValues.forEach(jsonInput => {
-      if (jsonInput && typeof jsonInput === 'object') {
+
+    jsonInputValues.forEach((jsonInput) => {
+      if (jsonInput && typeof jsonInput === "object") {
         handleErrorInjectionObject(jsonInput);
       }
     });
@@ -102,11 +111,11 @@ export function useErrorInjectionProcessing(
    */
   function handleErrorInjectionObject(jsonInput: any) {
     const errorInjection = jsonInput as ErrorInjectionState;
-    
+
     // APPLY ERROR STATE
     if (errorInjection.isErrorState === true && errorInjection.error) {
       applyErrorState(errorInjection);
-    } 
+    }
     // CLEAR ERROR STATE
     else if (errorInjection.isErrorState === false || !errorInjection.error) {
       clearErrorState();
@@ -120,19 +129,19 @@ export function useErrorInjectionProcessing(
   function applyErrorState(errorInjection: ErrorInjectionState) {
     console.log(`🔴 [${config.nodeType}] ${id}: Received error injection:`, {
       error: errorInjection.error,
-      errorType: errorInjection.errorType || 'error',
-      timestamp: Date.now()
+      errorType: errorInjection.errorType || "error",
+      timestamp: Date.now(),
     });
-    
+
     // UPDATE NODE DATA with error state
     updateNodeData(id, {
       isErrorState: true,
-      errorType: errorInjection.errorType || 'error',
-      error: errorInjection.error
+      errorType: errorInjection.errorType || "error",
+      error: errorInjection.error,
     });
-    
+
     // SET LOCAL ERROR for immediate visual feedback
-    nodeState.setError(errorInjection.error || 'Error state active');
+    nodeState.setError(errorInjection.error || "Error state active");
   }
 
   /**
@@ -141,13 +150,13 @@ export function useErrorInjectionProcessing(
    */
   function clearErrorState() {
     console.log(`✅ [${config.nodeType}] ${id}: Clearing error injection`);
-    
+
     updateNodeData(id, {
       isErrorState: false,
       errorType: undefined,
-      error: undefined
+      error: undefined,
     });
-    
+
     // CLEAR LOCAL ERROR if it was from error injection
     if (nodeState.data?.isErrorState) {
       nodeState.setError(null);
@@ -160,14 +169,16 @@ export function useErrorInjectionProcessing(
    */
   function clearErrorInjectionIfExists() {
     if (nodeState.data?.isErrorState) {
-      console.log(`🧹 [${config.nodeType}] ${id}: Clearing error injection (no JSON connections)`);
-      
+      console.log(
+        `🧹 [${config.nodeType}] ${id}: Clearing error injection (no JSON connections)`
+      );
+
       updateNodeData(id, {
         isErrorState: false,
         errorType: undefined,
-        error: undefined
+        error: undefined,
       });
-      
+
       nodeState.setError(null);
     }
   }
@@ -181,9 +192,13 @@ export function useErrorInjectionProcessing(
  * CREATE ERROR INJECTION CONFIG
  * Helper to create error injection configuration object
  */
-export function createErrorInjectionConfig(nodeType: string): ErrorInjectionConfig {
+export function createErrorInjectionConfig(
+  nodeType: string
+): ErrorInjectionConfig {
   return {
     nodeType,
-    supportsErrorInjection: ERROR_INJECTION_SUPPORTED_NODES.includes(nodeType as any)
+    supportsErrorInjection: ERROR_INJECTION_SUPPORTED_NODES.includes(
+      nodeType as any
+    ),
   };
-} 
+}
