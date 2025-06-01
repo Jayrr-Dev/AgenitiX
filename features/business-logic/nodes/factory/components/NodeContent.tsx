@@ -22,10 +22,20 @@ export function NodeContent<T extends BaseNodeData>({
   handles,
   enhancedConfig
 }: NodeContentProps<T>) {
-  // ERROR CALCULATION FOR RENDERING
+  // ERROR CALCULATION FOR RENDERING WITH VIBE MODE SUPPORT
   const renderError = styling.errorState.supportsErrorInjection && styling.errorState.finalErrorForStyling ? 
     (processingState.error || (nodeState.data as any)?.error || 'Error state active') : 
     processingState.error;
+
+  // LOG ERROR INJECTION STATUS FOR DEBUGGING
+  if (styling.errorState.supportsErrorInjection && styling.errorState.hasVibeError) {
+    console.log(`🎨 [NodeContent] ${enhancedConfig.nodeType}: Rendering with error injection:`, {
+      hasVibeError: styling.errorState.hasVibeError,
+      errorType: (nodeState.data as any)?.errorType,
+      errorMessage: (nodeState.data as any)?.error,
+      finalErrorForStyling: styling.errorState.finalErrorForStyling
+    });
+  }
 
   return (
     <>

@@ -35,6 +35,16 @@ import { useNodeProcessing } from './hooks/useNodeProcessing';
 import { useNodeStyling } from './hooks/useNodeStyling';
 import { useNodeHandles } from './hooks/useNodeHandles';
 
+// ERROR INJECTION SUPPORT
+import { ERROR_INJECTION_SUPPORTED_NODES } from './constants';
+
+// VIBE MODE ERROR INJECTION INTERFACE
+interface VibeErrorInjection {
+  isErrorState?: boolean;
+  errorType?: 'warning' | 'error' | 'critical';
+  error?: string;
+}
+
 // ENTERPRISE COMPONENTS
 import { NodeContainer } from './components/NodeContainer';
 import { NodeContent } from './components/NodeContent';
@@ -234,6 +244,11 @@ function initializeSafetyStyles() {
  * Enterprise factory function that creates optimized React Flow node components
  * with full safety layer integration and modular architecture
  * 
+ * ✨ ENHANCED WITH VIBE MODE ERROR INJECTION SUPPORT
+ * - Nodes created with this factory can receive error states from Error Generator
+ * - Supports warning/error/critical error types with proper visual styling
+ * - Automatic error clearing when Error Generator disconnects
+ * 
  * @param config - Node configuration object
  * @returns Memoized React component with enterprise features
  */
@@ -242,6 +257,11 @@ export function createNodeComponent<T extends BaseNodeData>(
 ) {
   // INITIALIZE ENTERPRISE FEATURES
   initializeSafetyStyles();
+  
+  // LOG ERROR INJECTION SUPPORT
+  if (ERROR_INJECTION_SUPPORTED_NODES.includes(config.nodeType as any)) {
+    console.log(`✨ [RefactoredFactory] ${config.nodeType}: Error injection support ENABLED`);
+  }
   
   // ============================================================================
   // ENTERPRISE NODE COMPONENT DEFINITION
@@ -273,12 +293,13 @@ export function createNodeComponent<T extends BaseNodeData>(
       safetyLayerRef.current // Pass safety layers
     );
     
-    // STYLING: Consolidated theming and styling
+    // STYLING: Consolidated theming and styling with error injection support
     const styling = useNodeStyling(
       enhancedConfig.nodeType,
       selected,
       processingState.error,
-      processingState.isActive
+      processingState.isActive,
+      nodeState.data // Pass node data for error injection styling
     );
     
     // HANDLE MANAGEMENT: Smart handle filtering and display
@@ -340,6 +361,9 @@ export type {
   HandleConfig, 
   InspectorControlProps 
 } from './types';
+
+// VIBE MODE ERROR INJECTION TYPE
+export type { VibeErrorInjection };
 
 export { 
   createTextNodeConfig,

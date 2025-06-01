@@ -37,28 +37,34 @@ interface NodeStyling {
 /**
  * USE NODE STYLING
  * Consolidated styling and theming logic
- * Enhanced with proper TypeScript support
+ * Enhanced with proper TypeScript support and error injection
  * 
  * @param nodeType - Node type identifier
  * @param selected - Whether node is selected
  * @param error - Current error state
  * @param isActive - Whether node is active
+ * @param nodeData - Node data for error injection checking
  * @returns Complete styling object
  */
 export function useNodeStyling(
   nodeType: string,
   selected: boolean,
   error: string | null,
-  isActive: boolean
+  isActive: boolean,
+  nodeData?: any // Add nodeData parameter for error injection
 ): NodeStyling {
-  // ERROR STATE CALCULATION
+  // ERROR STATE CALCULATION WITH VIBE MODE SUPPORT
   const errorState: ErrorState = useMemo(() => {
     const supportsErrorInjection = ERROR_INJECTION_SUPPORTED_NODES.includes(
       nodeType as any
     );
-    const hasVibeError = supportsErrorInjection && false; // TODO: Get from data
-    const vibeErrorType = 'error'; // TODO: Get from data
-    const finalErrorForStyling = error || (hasVibeError ? 'Error state active' : null);
+    
+    // Check for Vibe Mode error injection
+    const hasVibeError = supportsErrorInjection && nodeData?.isErrorState === true;
+    const vibeErrorType = nodeData?.errorType || 'error';
+    
+    // Priority: local error > vibe error > no error
+    const finalErrorForStyling = error || (hasVibeError ? nodeData?.error || 'Error state active' : null);
     const finalErrorType = error ? 'local' : vibeErrorType;
     
     return { 
@@ -67,7 +73,7 @@ export function useNodeStyling(
       finalErrorForStyling, 
       finalErrorType 
     };
-  }, [nodeType, error]);
+  }, [nodeType, error, nodeData?.isErrorState, nodeData?.errorType, nodeData?.error]);
 
   // BASE STYLING HOOKS
   const nodeStyleClasses = useNodeStyleClasses(

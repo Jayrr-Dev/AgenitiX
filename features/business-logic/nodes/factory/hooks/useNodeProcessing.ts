@@ -2,17 +2,19 @@ import { useEffect, useRef, useMemo, useCallback } from 'react';
 import type { BaseNodeData, NodeFactoryConfig } from '../types';
 import { useUltraFastPropagation } from '../UltraFastPropagationEngine';
 import { 
-  hasJsonConnections,
+  getJsonConnections,
   getJsonInputValues,
-  processJsonInput,
-  createJsonProcessingTracker 
+  hasJsonConnections,
+  createJsonProcessingTracker,
+  processJsonInput 
 } from '../utils/jsonProcessor';
 import { 
   isHeadNode,
   calculateHeadNodeActivation,
   calculateDownstreamNodeActivation 
 } from '../utils/propagationEngine';
-import { PROCESSING_THROTTLE_MS } from '../constants';
+import { PROCESSING_THROTTLE_MS, ERROR_INJECTION_SUPPORTED_NODES } from '../constants';
+import { useFlowStore } from '../../../stores/flowStore';
 
 // TYPES
 interface ProcessingState {
@@ -49,11 +51,14 @@ export function useNodeProcessing<T extends BaseNodeData>(
   const jsonProcessingTracker = useRef(createJsonProcessingTracker());
   const logicProcessingTracker = useRef(createJsonProcessingTracker());
   
+  // FLOW STORE FOR NODE DATA ACCESS
+  const { updateNodeData } = useFlowStore();
+  
   // ULTRA-FAST PROPAGATION SYSTEM
   const { propagateUltraFast, enableGPUAcceleration } = useUltraFastPropagation(
     connectionData.allNodes || [],
     connectionData.connections,
-    nodeState.updateNodeData
+    updateNodeData
   );
 
   // GPU ACCELERATION: Enable for high-frequency nodes (ENTERPRISE FEATURE)
@@ -73,6 +78,81 @@ export function useNodeProcessing<T extends BaseNodeData>(
     }
   }, [id, config.nodeType, enableGPUAcceleration, safetyLayers]);
 
+  // ============================================================================
+  // VIBE MODE ERROR INJECTION PROCESSING
+  // ============================================================================
+  
+  useEffect(() => {
+    const supportsErrorInjection = ERROR_INJECTION_SUPPORTED_NODES.includes(
+      config.nodeType as any
+    );
+    
+    if (!supportsErrorInjection) return;
+    
+    // Check for JSON connections with error data
+    if (hasJsonConnections(connectionData.connections, id)) {
+      const jsonInputValues = getJsonInputValues(connectionData.connections, connectionData.nodesData, id);
+      
+      jsonInputValues.forEach(jsonInput => {
+        if (jsonInput && typeof jsonInput === 'object') {
+          // Check if this is error injection JSON from Error Generator
+          if (jsonInput.isErrorState === true && jsonInput.error) {
+            console.log(`🔴 [${config.nodeType}] ${id}: Received error injection:`, {
+              error: jsonInput.error,
+              errorType: jsonInput.errorType || 'error',
+              timestamp: jsonInput.timestamp
+            });
+            
+            // Apply error state to node
+            updateNodeData(id, {
+              isErrorState: true,
+              errorType: jsonInput.errorType || 'error',
+              error: jsonInput.error
+            });
+            
+            // Set local error for immediate visual feedback
+            nodeState.setError(jsonInput.error);
+            
+          } else if (jsonInput.isErrorState === false || !jsonInput.error) {
+            // Clear error state if JSON indicates no error
+            console.log(`✅ [${config.nodeType}] ${id}: Clearing error injection`);
+            
+            updateNodeData(id, {
+              isErrorState: false,
+              errorType: undefined,
+              error: undefined
+            });
+            
+            // Clear local error if it was from error injection
+            if ((nodeState.data as any)?.isErrorState) {
+              nodeState.setError(null);
+            }
+          }
+        }
+      });
+    } else {
+      // No JSON connections - clear error injection state if it exists
+      if ((nodeState.data as any)?.isErrorState) {
+        console.log(`🧹 [${config.nodeType}] ${id}: Clearing error injection (no JSON connections)`);
+        
+        updateNodeData(id, {
+          isErrorState: false,
+          errorType: undefined,
+          error: undefined
+        });
+        
+        nodeState.setError(null);
+      }
+    }
+  }, [
+    id,
+    config.nodeType,
+    connectionData.connections,
+    connectionData.nodesData,
+    updateNodeData,
+    nodeState
+  ]);
+
   // JSON INPUT PROCESSING
   const processJsonInputs = useCallback(() => {
     if (!jsonProcessingTracker.current.shouldProcess(PROCESSING_THROTTLE_MS)) {
@@ -90,10 +170,10 @@ export function useNodeProcessing<T extends BaseNodeData>(
     );
     
     jsonInputValues.forEach(jsonInput => {
-      processJsonInput(jsonInput, nodeState.data as T, nodeState.updateNodeData, id);
+      processJsonInput(jsonInput, nodeState.data as T, updateNodeData, id);
     });
     
-  }, [connectionData.connections, connectionData.nodesData, id, nodeState.updateNodeData]);
+  }, [connectionData.connections, connectionData.nodesData, id, updateNodeData]);
 
   // JSON PROCESSING EFFECT
   useEffect(() => {

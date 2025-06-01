@@ -17,7 +17,7 @@ interface NodeContainerProps<T extends BaseNodeData> {
 /**
  * NODE CONTAINER
  * Handles the outer structure, sizing, and expand/collapse functionality
- * Enhanced with enterprise safety features
+ * Enhanced with enterprise safety features and proper error styling
  */
 export function NodeContainer<T extends BaseNodeData>({
   id,
@@ -40,6 +40,17 @@ export function NodeContainer<T extends BaseNodeData>({
     'data-enterprise-factory': 'true',
     'data-safe-factory': 'true'
   } : {};
+
+  // DEBUG ERROR INJECTION STATE
+  if (styling.errorState.hasVibeError || styling.errorState.finalErrorForStyling) {
+    console.log(`🎨 [NodeContainer] ${enhancedConfig.nodeType} ${id}: Applying error styling:`, {
+      hasVibeError: styling.errorState.hasVibeError,
+      finalErrorForStyling: styling.errorState.finalErrorForStyling,
+      errorType: styling.errorState.finalErrorType,
+      nodeStyleClasses: styling.nodeStyleClasses,
+      supportsErrorInjection: styling.errorState.supportsErrorInjection
+    });
+  }
 
   return (
     <div 

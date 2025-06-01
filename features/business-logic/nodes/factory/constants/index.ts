@@ -70,8 +70,12 @@ export const DEFAULT_LOGIC_NODE_SIZE: NodeSize = {
  */
 export const ERROR_INJECTION_SUPPORTED_NODES = [
   'createText', 
+  'createTextRefactor',
+  'createTextEnhanced', 
   'testJson', 
-  'viewOutput'
+  'viewOutput',
+  'viewOutputRefactor',
+  'viewOutputEnhanced'
 ] as const;
 
 // ============================================================================
