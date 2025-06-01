@@ -12,34 +12,12 @@ import {
   MarkerType,
   SelectionMode,
   type ReactFlowInstance,
-  type OnConnect
+  type OnConnect,
+  type Node,
+  type NodeProps,
 } from '@xyflow/react';
 import { useTheme } from 'next-themes';
 import type { AgenNode, AgenEdge, NodeError } from '../types';
-
-// Import node components
-import CreateText from '../../nodes/media/CreateText';
-import TurnToUppercase from '../../nodes/media/TurnToUppercase';
-import ViewOutput from '../../nodes/main/ViewOutput';
-import TriggerOnClick from '../../nodes/automation/TriggerOnClick';
-import TriggerOnPulse from '../../nodes/automation/TriggerOnPulse';
-import CyclePulse from '../../nodes/automation/CyclePulse';
-import TriggerOnToggle from '../../nodes/automation/TriggerOnToggle';
-import CycleToggle from '../../nodes/automation/CycleToggle';
-import LogicAnd from '../../nodes/main/LogicAnd';
-import LogicOr from '../../nodes/main/LogicOr';
-import LogicNot from '../../nodes/main/LogicNot';
-import LogicXor from '../../nodes/main/LogicXor';
-import LogicXnor from '../../nodes/main/LogicXnor';
-import TurnToText from '../../nodes/media/TurnToText';
-import TurnToBoolean from '../../nodes/automation/TurnToBoolean';
-import TestInput from '../../nodes/test/TestInput';
-import EditObject from '../../nodes/main/EditObject';
-import EditArray from '../../nodes/main/EditArray';
-import CountInput from '../../nodes/automation/CountInput';
-import DelayInput from '../../nodes/automation/DelayInput';
-import TestError from '../../nodes/test/TestError';
-import TestJson from '../../nodes/test/TestJson';
 
 // Import other components
 import NodeInspector from '../../components/node-inspector/NodeInspector';
@@ -49,6 +27,9 @@ import ActionToolbar from '../../components/ActionToolbar';
 
 // Import multi-selection copy/paste hook
 import { useMultiSelectionCopyPaste } from '../hooks/useMultiSelectionCopyPaste';
+
+// CENTRALIZED NODE REGISTRY
+import { getNodeTypes } from '../../nodes/nodeRegistry';
 
 interface FlowCanvasProps {
   nodes: AgenNode[];
@@ -141,36 +122,10 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   const deleteButtonStyle = isMobile ? { marginTop: '100px', marginRight: '14px' } : { marginTop: '70px' };
 
   // ============================================================================
-  // NODE TYPES REGISTRY
+  // NODE TYPES REGISTRY (CENTRALIZED)
   // ============================================================================
   
-  const nodeTypes = useMemo(
-    () => ({
-      createText: CreateText,
-      turnToUppercase: TurnToUppercase,
-      viewOutput: ViewOutput,
-      triggerOnClick: TriggerOnClick,
-      triggerOnPulse: TriggerOnPulse,
-      cyclePulse: CyclePulse,
-      triggerOnToggle: TriggerOnToggle,
-      cycleToggle: CycleToggle,
-      logicAnd: LogicAnd,
-      logicOr: LogicOr,
-      logicNot: LogicNot,
-      logicXor: LogicXor,
-      logicXnor: LogicXnor,
-      turnToText: TurnToText,
-      turnToBoolean: TurnToBoolean,
-      testInput: TestInput,
-      editObject: EditObject,
-      editArray: EditArray,
-      countInput: CountInput,
-      delayInput: DelayInput,
-      testError: TestError,
-      testJson: TestJson,
-    }),
-    []
-  );
+  const nodeTypes = useMemo(() => getNodeTypes(), []);
 
   const edgeTypes = useMemo(() => ({}), []);
 

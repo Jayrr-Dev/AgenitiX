@@ -150,6 +150,8 @@ export interface NodeFactoryConfig<T extends BaseNodeData> {
   renderInspectorControls?: (props: InspectorControlProps<T>) => ReactNode;
   /** Optional error recovery data */
   errorRecoveryData?: Partial<T>;
+  /** Optional validation function for safety layer */
+  validate?: (data: T) => boolean;
 }
 
 // ============================================================================

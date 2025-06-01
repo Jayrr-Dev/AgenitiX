@@ -29,6 +29,9 @@ import { getNodeOutput } from './utils/outputUtils';
 
 import { StressTester } from '../nodes/factory/StressTester';
 
+// REGISTRY SYNC IMPORT
+import { syncNodeTypeConfigWithRegistry } from './constants';
+
 /**
  * FlowEditor - Main component for the visual flow editor
  * 
@@ -49,6 +52,18 @@ export default function FlowEditor() {
   
   const [mounted, setMounted] = useState(false);
   const { _hasHydrated } = useFlowStore();
+
+  // ============================================================================
+  // REGISTRY INITIALIZATION
+  // ============================================================================
+  
+  useEffect(() => {
+    // Sync NODE_TYPE_CONFIG with registry data at startup
+    const syncSuccess = syncNodeTypeConfigWithRegistry();
+    if (!syncSuccess) {
+      console.warn('⚠️ [FlowEditor] Registry sync failed - some controls may not appear');
+    }
+  }, []); // Run once on mount
 
   // ============================================================================
   // MOUNT EFFECT

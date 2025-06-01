@@ -112,7 +112,8 @@ export const hasValidOutput = (data: any): boolean => {
   return !!(
     (data?.text !== undefined && data?.text !== null && data?.text !== '') ||
     (data?.value !== undefined && data?.value !== null && data?.value !== '') ||
-    (data?.output !== undefined && data?.output !== null && data?.output !== '')
+    (data?.output !== undefined && data?.output !== null && data?.output !== '') ||
+    (data?.heldText !== undefined && data?.heldText !== null && data?.heldText !== '')
   );
 };
 

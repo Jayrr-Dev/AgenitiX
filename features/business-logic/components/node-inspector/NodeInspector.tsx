@@ -2,7 +2,7 @@
 
 import React, { useMemo, useCallback } from 'react';
 import { FaSearch, FaLock, FaLockOpen } from 'react-icons/fa';
-import { NODE_TYPE_CONFIG } from './constants';
+import { NODE_TYPE_CONFIG } from '../../flow-editor/constants';
 import { useInspectorState } from './hooks/useInspectorState';
 import { JsonHighlighter } from './utils/JsonHighlighter';
 import { NodeHeader } from './components/NodeHeader';
@@ -122,6 +122,27 @@ const NodeInspector = React.memo(function NodeInspector() {
   if (selectedNode) {
     const nodeConfig = NODE_TYPE_CONFIG[selectedNode.type];
     const hasRightColumn = (nodeConfig?.hasOutput || nodeConfig?.hasControls) ?? false;
+
+    // DEBUG: Enhanced logging for troubleshooting
+    if (selectedNode.type === 'createTextRefactor' || selectedNode.type === 'createText' || selectedNode.type === 'testInput') {
+      console.log(`🔍 [NodeInspector] DEBUG ${selectedNode.type} config:`, {
+        nodeType: selectedNode.type,
+        nodeConfig,
+        hasOutput: nodeConfig?.hasOutput,
+        hasControls: nodeConfig?.hasControls,
+        hasRightColumn,
+        isConfigDefined: !!nodeConfig,
+        configKeys: nodeConfig ? Object.keys(nodeConfig) : 'undefined'
+      });
+      
+      // Show specific NODE_TYPE_CONFIG entries for comparison
+      console.log(`🔍 [NodeInspector] NODE_TYPE_CONFIG entries:`, {
+        createText: NODE_TYPE_CONFIG['createText'],
+        createTextRefactor: NODE_TYPE_CONFIG['createTextRefactor'],
+        testInput: NODE_TYPE_CONFIG['testInput'],
+        totalConfigKeys: Object.keys(NODE_TYPE_CONFIG).length
+      });
+    }
 
     return (
       <div id="node-info-container" className="flex gap-3">

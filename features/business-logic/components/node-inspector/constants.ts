@@ -1,117 +1,13 @@
-import { NodeType, NodeTypeConfig } from './types';
+// ============================================================================
+// ENHANCED REGISTRY INTEGRATION
+// ============================================================================
 
-export const NODE_TYPE_CONFIG: Record<NodeType, NodeTypeConfig> = {
-  createText: {
-    hasOutput: true,
-    hasControls: true,
-    displayName: 'Create Text'
-  },
-  turnToUppercase: {
-    hasOutput: true,
-    hasControls: false,
-    displayName: 'Turn To Uppercase'
-  },
-  viewOutput: {
-    hasOutput: true,
-    hasControls: false,
-    displayName: 'View Output'
-  },
-  triggerOnClick: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Trigger On Click'
-  },
-  triggerOnPulse: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Trigger On Pulse'
-  },
-  cyclePulse: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Cycle Pulse'
-  },
-  triggerOnToggle: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Trigger On Toggle'
-  },
-  cycleToggle: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Cycle Toggle'
-  },
-  logicAnd: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Logic AND'
-  },
-  logicOr: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Logic OR'
-  },
-  logicNot: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Logic NOT'
-  },
-  logicXor: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Logic XOR'
-  },
-  logicXnor: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Logic XNOR'
-  },
-  turnToText: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Turn To Text'
-  },
-  turnToBoolean: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Turn To Boolean'
-  },
-  testInput: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Test Input'
-  },
-  editObject: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Edit Object'
-  },
-  editArray: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Edit Array'
-  },
-  countInput: {
-    hasOutput: true,
-    hasControls: true,
-    displayName: 'Count Input'
-  },
-  delayInput: {
-    hasOutput: true,
-    hasControls: true,
-    displayName: 'Delay Input'
-  },
-  testError: {
-    hasOutput: false,
-    hasControls: true,
-    displayName: 'Test Error'
-  },
-  testJson: {
-    hasOutput: true,
-    hasControls: true,
-    displayName: 'Test JSON'
-  }
-};
+// Import from enhanced registry instead of maintaining duplicate configuration
+export { NODE_TYPE_CONFIG } from '../../flow-editor/constants';
+
+// ============================================================================
+// NODE INSPECTOR SPECIFIC CONSTANTS
+// ============================================================================
 
 export const DEFAULT_VALUES = {
   DURATION: '500',

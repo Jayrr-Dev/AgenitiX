@@ -177,4 +177,80 @@ export {
   TRANSFORMATION_NODE_PATTERNS,
   TRIGGER_NODE_PATTERNS,
   HEAD_NODE_PATTERNS
-} from './constants'; 
+} from './constants';
+
+// ============================================================================
+// FAST + RELIABLE NODE FACTORY - INDEX EXPORTS
+// ============================================================================
+
+export { 
+  createFastReliableNode,
+  useFastReliableNode,
+  type FastReliableNodeConfig 
+} from './FastReliableNodeBase';
+
+export { default as FastReliableCreateText } from './FastReliableCreateText';
+
+// ============================================================================
+// QUICK DEMO REGISTRATION EXAMPLE
+// ============================================================================
+
+/*
+// To register FastReliableCreateText in your app:
+
+// 1. In flow-editor/types/index.ts:
+interface FastReliableCreateTextData {
+  text: string;
+  isActive: boolean;
+  prefix?: string;
+  maxLength?: number;
+  isExpanded?: boolean;
+  output?: string;
+  _validated?: boolean;
+}
+
+// Add to AgenNode union type:
+export type AgenNode =
+  | (Node<FastReliableCreateTextData & Record<string, unknown>> & { type: 'fastReliableCreateText' })
+  | // ... existing types
+
+// 2. In flow-editor/constants/index.ts:
+import FastReliableCreateText from '../nodes/factory/FastReliableCreateText';
+
+export const NODE_TYPE_CONFIG = {
+  fastReliableCreateText: {
+    defaultData: {
+      text: '',
+      isActive: false,
+      prefix: '',
+      maxLength: undefined,
+      isExpanded: false,
+      output: '',
+      _validated: true
+    }
+  },
+  // ... existing configs
+};
+
+// 3. In flow-editor/components/FlowCanvas.tsx:
+import FastReliableCreateText from '../../nodes/factory/FastReliableCreateText';
+
+const nodeTypes = useMemo(() => ({
+  fastReliableCreateText: FastReliableCreateText,
+  // ... existing types
+}), []);
+
+// 4. In components/sidebar/constants.ts:
+export const DEFAULT_STENCILS_A = {
+  testing: [
+    {
+      id: 'fast-reliable-create-text',
+      nodeType: 'fastReliableCreateText',
+      label: '⚡ Fast Create Text',
+      description: 'Fast + reliable text creation with category theming',
+    },
+    // ... existing nodes
+  ]
+};
+
+*/ 

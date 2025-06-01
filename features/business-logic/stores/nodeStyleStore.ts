@@ -1,53 +1,40 @@
 import { create } from 'zustand'
 
+// CENTRALIZED NODE REGISTRY
+import { getCategoryMapping, type NodeCategory } from '../nodes/nodeRegistry';
+
 // ============================================================================
 // NODE CATEGORY DEFINITIONS
 // ============================================================================
 
-export type NodeCategory = 'create' | 'logic' | 'trigger' | 'test' | 'turn' | 'count' | 'delay' | 'edit' | 'cycle'
+// Lazy-initialized to avoid circular dependency
+let _categoryMapping: Record<string, NodeCategory> | null = null;
 
-export const NODE_CATEGORY_MAPPING: Record<string, NodeCategory> = {
-  // Create category
-  'createText': 'create',
-  
-  // Logic category  
-  'logicAnd': 'logic',
-  'logicOr': 'logic',
-  'logicNot': 'logic',
-  'logicXor': 'logic',
-  'logicXnor': 'logic',
-  
-  // Trigger category
-  'triggerOnClick': 'trigger',
-  'triggerOnPulse': 'trigger',
-  'triggerOnToggle': 'trigger',
-  
-  // Test category
-  'testInput': 'test',
-  'testError': 'test',
-  
-  // Turn category
-  'turnToText': 'turn',
-  'turnToUppercase': 'turn',
-  'turnToBoolean': 'turn',
-  
-  // Count category
-  'countInput': 'count',
-  
-  // Delay category
-  'delayInput': 'delay',
-  
-  // Edit category
-  'editObject': 'edit',
-  'editArray': 'edit',
-  
-  // Cycle category
-  'cyclePulse': 'cycle',
-  'cycleToggle': 'cycle',
-  
-  // View/Output
-  'viewOutput': 'test', // Categorize as test for now
-}
+const getCachedCategoryMapping = (): Record<string, NodeCategory> => {
+  if (_categoryMapping === null) {
+    _categoryMapping = getCategoryMapping();
+  }
+  return _categoryMapping;
+};
+
+// Export a getter function instead of direct value
+export const getNodeCategoryMapping = () => getCachedCategoryMapping();
+
+// For backward compatibility, also export the object
+export const NODE_CATEGORY_MAPPING = new Proxy({} as Record<string, NodeCategory>, {
+  get(target, prop) {
+    const mapping = getCachedCategoryMapping();
+    return mapping[prop as string];
+  },
+  ownKeys() {
+    const mapping = getCachedCategoryMapping();
+    return Object.keys(mapping);
+  },
+  has(target, prop) {
+    const mapping = getCachedCategoryMapping();
+    return prop in mapping;
+  }
+});
 
 // ============================================================================
 // CATEGORY COLOR THEMES
@@ -196,6 +183,19 @@ export const CATEGORY_THEMES: Record<NodeCategory, CategoryTheme> = {
     button: {
       border: 'border-green-300 dark:border-green-800',
       hover: { light: 'hover:bg-green-200', dark: 'hover:bg-green-800' }
+    }
+  },
+  
+  view: {
+    background: { light: 'bg-gray-50', dark: 'bg-gray-900' },
+    border: { light: 'border-gray-300', dark: 'border-gray-800' },
+    text: {
+      primary: { light: 'text-gray-900', dark: 'text-gray-100' },
+      secondary: { light: 'text-gray-800', dark: 'text-gray-200' }
+    },
+    button: {
+      border: 'border-gray-300 dark:border-gray-800',
+      hover: { light: 'hover:bg-gray-200', dark: 'hover:bg-gray-800' }
     }
   }
 }
@@ -658,4 +658,108 @@ export const applyCustomCategoryColors = (categoryColors: Partial<Record<NodeCat
       })
     }
   })
+}
+
+// ============================================================================
+// QUICK CATEGORY COLOR CHANGE FUNCTIONS
+// ============================================================================
+
+// Change trigger nodes to yellow
+export const makeTriggerNodesYellow = () => {
+  applyCategoryTheme('trigger', {
+    background: { light: 'bg-yellow-50', dark: 'bg-yellow-900' },
+    border: { light: 'border-yellow-300', dark: 'border-yellow-800' },
+    text: {
+      primary: { light: 'text-yellow-900', dark: 'text-yellow-100' },
+      secondary: { light: 'text-yellow-800', dark: 'text-yellow-200' }
+    },
+    button: {
+      border: 'border-yellow-300 dark:border-yellow-800',
+      hover: { light: 'hover:bg-yellow-200', dark: 'hover:bg-yellow-800' }
+    }
+  })
+}
+
+// Change create nodes to emerald green
+export const makeCreateNodesEmerald = () => {
+  applyCategoryTheme('create', {
+    background: { light: 'bg-emerald-50', dark: 'bg-emerald-900' },
+    border: { light: 'border-emerald-300', dark: 'border-emerald-800' },
+    text: {
+      primary: { light: 'text-emerald-900', dark: 'text-emerald-100' },
+      secondary: { light: 'text-emerald-800', dark: 'text-emerald-200' }
+    },
+    button: {
+      border: 'border-emerald-300 dark:border-emerald-800',
+      hover: { light: 'hover:bg-emerald-200', dark: 'hover:bg-emerald-800' }
+    }
+  })
+}
+
+// Change view nodes to slate
+export const makeViewNodesSlate = () => {
+  applyCategoryTheme('view', {
+    background: { light: 'bg-slate-50', dark: 'bg-slate-900' },
+    border: { light: 'border-slate-300', dark: 'border-slate-800' },
+    text: {
+      primary: { light: 'text-slate-900', dark: 'text-slate-100' },
+      secondary: { light: 'text-slate-800', dark: 'text-slate-200' }
+    },
+    button: {
+      border: 'border-slate-300 dark:border-slate-800',
+      hover: { light: 'hover:bg-slate-200', dark: 'hover:bg-slate-800' }
+    }
+  })
+}
+
+// Apply a custom color scheme for common groups
+export const applyCustomNodeColors = () => {
+  enableCategoryTheming()
+  
+  // Trigger nodes = Violet (beautiful for toggles/triggers)
+  applyCategoryTheme('trigger', {
+    background: { light: 'bg-violet-50', dark: 'bg-violet-900' },
+    border: { light: 'border-violet-300', dark: 'border-violet-800' },
+    text: {
+      primary: { light: 'text-violet-900', dark: 'text-violet-100' },
+      secondary: { light: 'text-violet-800', dark: 'text-violet-200' }
+    },
+    button: {
+      border: 'border-violet-300 dark:border-violet-800',
+      hover: { light: 'hover:bg-violet-200', dark: 'hover:bg-violet-800' }
+    }
+  })
+  
+  // Create nodes = Blue (classic for creation)
+  applyCategoryTheme('create', {
+    background: { light: 'bg-blue-50', dark: 'bg-blue-900' },
+    border: { light: 'border-blue-300', dark: 'border-blue-800' },
+    text: {
+      primary: { light: 'text-blue-900', dark: 'text-blue-100' },
+      secondary: { light: 'text-blue-800', dark: 'text-blue-200' }
+    },
+    button: {
+      border: 'border-blue-300 dark:border-blue-800',
+      hover: { light: 'hover:bg-blue-200', dark: 'hover:bg-blue-800' }
+    }
+  })
+  
+  // View nodes = Gray (neutral for viewing)
+  applyCategoryTheme('view', {
+    background: { light: 'bg-gray-100', dark: 'bg-gray-800' },
+    border: { light: 'border-gray-300', dark: 'border-gray-600' },
+    text: {
+      primary: { light: 'text-gray-900', dark: 'text-gray-100' },
+      secondary: { light: 'text-gray-700', dark: 'text-gray-300' }
+    },
+    button: {
+      border: 'border-gray-300 dark:border-gray-600',
+      hover: { light: 'hover:bg-gray-200', dark: 'hover:bg-gray-700' }
+    }
+  })
+  
+  console.log('🎨 Applied custom node colors:')
+  console.log('- Trigger nodes: Violet')
+  console.log('- Create nodes: Blue') 
+  console.log('- View nodes: Gray')
 } 

@@ -14,50 +14,22 @@ import {
   SidebarVariant
 } from './types';
 
+// CENTRALIZED NODE REGISTRY
+import { getAvailableNodes, getTestingNodes } from '../../nodes/nodeRegistry';
+
 export const STORAGE_PREFIX = 'sidebar-stencil-order';
+
+// ============================================================================
+// AVAILABLE NODES MAPPING (AUTO-GENERATED)
+// ============================================================================
+// Auto-generated from centralized node registry for better maintainability
+
+export const AVAILABLE_NODES = getAvailableNodes();
 
 // ============================================================================
 // AVAILABLE NODES MAPPING
 // ============================================================================
 // Key-value mapping of all available nodes by filename for better readability
-
-export const AVAILABLE_NODES = {
-  // Main folder nodes
-  'ViewOutput': { nodeType: 'viewOutput', folder: 'main', label: 'View Output', description: 'Display the final result of your flow. Connect any node to see its output value in a clean, readable format.' },
-  'LogicAnd': { nodeType: 'logicAnd', folder: 'main', label: 'AND (⋀)', description: 'Only outputs TRUE when ALL connected inputs are true. Like saying "I need this AND that AND the other thing to proceed."' },
-  'LogicOr': { nodeType: 'logicOr', folder: 'main', label: 'OR (⋁)', description: 'Outputs TRUE when ANY connected input is true. Like saying "I need this OR that OR any of these options to proceed."' },
-  'LogicNot': { nodeType: 'logicNot', folder: 'main', label: 'NOT (¬)', description: 'Flips the input - turns TRUE into FALSE and FALSE into TRUE. Perfect for creating opposite conditions.' },
-  'LogicXor': { nodeType: 'logicXor', folder: 'main', label: 'XOR (⊕)', description: 'Only TRUE when exactly one input is true. Like an "either/or" choice - you can have one thing OR another, but not both.' },
-  'LogicXnor': { nodeType: 'logicXnor', folder: 'main', label: 'XNOR (⊙)', description: 'TRUE when all inputs match (all true OR all false). Perfect for checking if things are "in sync" with each other.' },
-  'TestInput': { nodeType: 'testInput', folder: 'main', label: 'Test Input', description: 'Create test values to experiment with your flow. Type in any value and see how it affects connected nodes.' },
-  'EditObject': { nodeType: 'editObject', folder: 'main', label: 'Edit Object', description: 'Create and edit complex data objects with multiple properties. Perfect for structured data like user profiles or settings.' },
-  'EditArray': { nodeType: 'editArray', folder: 'main', label: 'Edit Array', description: 'Create and edit lists of items. Great for managing collections like shopping lists, user groups, or data sets.' },
-  
-  // Media folder nodes
-  'CreateText': { nodeType: 'createText', folder: 'media', label: 'Create Text', description: 'Create and edit text content. Use the textarea to type your message, then connect to other nodes to pass the text along.' },
-  'TurnToUppercase': { nodeType: 'turnToUppercase', folder: 'media', label: 'Turn To Uppercase', description: 'Takes any text input and converts it to ALL CAPITAL LETTERS. Perfect for making text stand out or formatting headers.' },
-  'TurnToText': { nodeType: 'turnToText', folder: 'media', label: 'Turn To Text', description: 'Converts any input (numbers, objects, etc.) into readable text. Great for displaying complex data as simple text.' },
-  
-  // Automation folder nodes
-  'TriggerOnClick': { nodeType: 'triggerOnClick', folder: 'automation', label: 'Trigger', description: 'Acts like a gate - click the button to allow data to flow through. Great for controlling when things happen in your flow.' },
-  'TriggerOnPulse': { nodeType: 'triggerOnPulse', folder: 'automation', label: 'Pulse Trigger', description: 'Sends a quick "pulse" signal when clicked. Like pressing a doorbell - one click sends one signal to connected nodes.' },
-  'TriggerOnToggle': { nodeType: 'triggerOnToggle', folder: 'automation', label: 'Toggle Trigger', description: 'A simple ON/OFF switch. Click to toggle between true and false states. Perfect for enabling/disabling parts of your flow.' },
-  'CyclePulse': { nodeType: 'cyclePulse', folder: 'automation', label: 'Cycle Pulse', description: 'Automatically sends repeated pulses at timed intervals. Set how often and how many times to create automated sequences.' },
-  'CycleToggle': { nodeType: 'cycleToggle', folder: 'automation', label: 'Cycle Toggle', description: 'Automatically switches between ON and OFF states. Set custom durations for each state to create blinking or cycling patterns.' },
-  'TurnToBoolean': { nodeType: 'turnToBoolean', folder: 'automation', label: 'Turn To Boolean', description: 'Converts any input into TRUE or FALSE. Numbers become false if zero, text becomes false if empty, etc.' },
-  'CountInput': { nodeType: 'countInput', folder: 'automation', label: 'Count Input', description: 'Counts up or down automatically. Set the starting number and step size. Counts each time it receives an input signal.' },
-  'DelayInput': { nodeType: 'delayInput', folder: 'automation', label: 'Delay Input', description: 'Adds a time delay to your flow. Data goes in, waits for the specified time, then comes out. Perfect for creating timed sequences.' },
-  
-  // Test folder nodes
-  'TestError': { nodeType: 'testError', folder: 'test', label: 'Error Generator', description: 'Generate errors with custom messages and trigger conditions. Outputs JSON for Vibe Mode to set error states on connected nodes. Supports warning/error/critical levels.' },
-  'TestJson': { nodeType: 'testJson', folder: 'test', label: 'Test JSON', description: 'Create and test JSON data for Vibe Mode. Parse JSON text and output valid JSON objects for programmatic node manipulation.' },
-  
-  // Integrations folder nodes (empty for now)
-  // Add new integration nodes here as they're created
-  
-  // Misc folder nodes (empty for now)
-  // Add new misc nodes here as they're created
-} as const;
 
 // Helper functions
 export const getNodeType = (filename: keyof typeof AVAILABLE_NODES) => AVAILABLE_NODES[filename].nodeType;
@@ -112,11 +84,7 @@ export const DEFAULT_STENCILS_A: Record<TabKeyA, NodeStencil[]> = {
   stores: [
     // Store nodes moved to core for testing
   ],
-  testing: [
-    // Testing and debugging nodes will go here
-    createStencil('TestError', 'testing'),
-    createStencil('TestJson', 'testing', 2)
-  ],
+  testing: getTestingNodes(), // Auto-generated from registry
   time: [
     // Time nodes moved to core for testing
   ],

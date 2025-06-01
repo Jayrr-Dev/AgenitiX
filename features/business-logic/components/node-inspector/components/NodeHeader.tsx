@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import type { AgenNode } from '../../../flow-editor/types';
 import { NODE_TYPE_CONFIG } from '../constants';
 import { useNodeDisplay } from '../../../flow-editor/contexts/NodeDisplayContext';
@@ -26,6 +26,55 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
   const [isEditingId, setIsEditingId] = useState(false);
   const [editingId, setEditingId] = useState(node.id);
   const { showNodeIds, setShowNodeIds } = useNodeDisplay();
+
+  // ENHANCED REGISTRY INTEGRATION - Get additional metadata
+  const registryMetadata = useMemo(() => {
+    try {
+      // Lazy import to avoid circular dependency
+      const { ENHANCED_NODE_REGISTRY } = require('../../../nodes/nodeRegistry');
+      return ENHANCED_NODE_REGISTRY[node.type] || null;
+    } catch (error) {
+      // Fallback to static config if registry unavailable
+      return null;
+    }
+  }, [node.type]);
+
+  // GET DISPLAY NAME WITH REGISTRY FALLBACK
+  const displayName = useMemo(() => {
+    // Priority 1: Enhanced registry display name
+    if (registryMetadata?.ui?.label) {
+      return registryMetadata.ui.label;
+    }
+    
+    // Priority 2: Static config display name
+    if (nodeConfig?.displayName) {
+      return nodeConfig.displayName;
+    }
+    
+    // Priority 3: Fallback to node type
+    return node.type;
+  }, [registryMetadata, nodeConfig, node.type]);
+
+  // GET NODE DESCRIPTION FROM REGISTRY
+  const nodeDescription = useMemo(() => {
+    return registryMetadata?.ui?.description || null;
+  }, [registryMetadata]);
+
+  // GET NODE ICON FROM REGISTRY
+  const nodeIcon = useMemo(() => {
+    if (registryMetadata?.ui?.icon) {
+      return registryMetadata.ui.icon;
+    }
+    
+    // Fallback icons based on node type patterns
+    if (node.type.includes('trigger')) return '⚡';
+    if (node.type.includes('logic')) return '🧮';
+    if (node.type.includes('text') || node.type.includes('Text')) return '📝';
+    if (node.type.includes('view') || node.type.includes('View')) return '👁️';
+    if (node.type.includes('cycle')) return '🔄';
+    
+    return null;
+  }, [registryMetadata, node.type]);
 
   const handleIdEdit = useCallback(() => {
     setIsEditingId(true);
@@ -79,10 +128,26 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
   return (
     <div className="border-b border-gray-200 dark:border-gray-700 pb-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          {nodeConfig?.displayName || node.type}
-        </h3>
+        <div className="flex items-center gap-2">
+          {/* ENHANCED REGISTRY ICON */}
+          {nodeIcon && (
+            <span className="text-lg" title="Node Type Icon">
+              {nodeIcon}
+            </span>
+          )}
+          
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {displayName}
+          </h3>
+        </div>
       </div>
+      
+      {/* ENHANCED REGISTRY DESCRIPTION */}
+      {nodeDescription && (
+        <div className="mt-1 text-xs text-gray-600 dark:text-gray-400 italic">
+          {nodeDescription}
+        </div>
+      )}
       
       <div className="flex items-center gap-2 mt-1">
         <span className="text-[10px] text-gray-500 dark:text-gray-400">

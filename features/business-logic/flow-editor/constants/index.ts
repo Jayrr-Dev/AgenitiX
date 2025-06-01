@@ -20,17 +20,119 @@ export const TYPE_MAP: TypeMap = {
 };
 
 // ============================================================================
-// NODE TYPE CONFIGURATIONS
+// REGISTRY INTEGRATION
+// ============================================================================
+
+/**
+ * SYNC NODE TYPE CONFIG WITH REGISTRY
+ * Ensures NODE_TYPE_CONFIG is up-to-date with registry data
+ */
+export function syncNodeTypeConfigWithRegistry() {
+  try {
+    // Lazy import to avoid circular dependency
+    const { generateNodeTypeConfig } = require('../../nodes/nodeRegistry');
+    
+    if (typeof generateNodeTypeConfig === 'function') {
+      const registryConfig = generateNodeTypeConfig();
+      
+      // Merge registry data into the existing NODE_TYPE_CONFIG
+      Object.assign(NODE_TYPE_CONFIG, registryConfig);
+      
+      console.log('✅ [Constants] Synced NODE_TYPE_CONFIG with registry:', 
+        Object.keys(registryConfig).length, 'node types');
+      
+      return true;
+    } else {
+      console.warn('⚠️ [Constants] generateNodeTypeConfig not available');
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ [Constants] Failed to sync with registry:', error);
+    return false;
+  }
+}
+
+// ============================================================================
+// NODE TYPE CONFIGURATIONS (Enhanced Registry Compatible)
 // ============================================================================
 
 export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
   createText: {
     defaultData: { text: '', heldText: '', isActive: false },
     hasControls: true,
+    hasOutput: true,
     displayName: 'Create Text'
+  },
+  createTextRefactor: {
+    defaultData: { text: '', heldText: '', isActive: false },
+    hasControls: true,
+    hasOutput: true,
+    displayName: '🔧 Create Text (Refactored)'
+  },
+  createTextEnhanced: {
+    defaultData: { 
+      text: '', 
+      output: '', 
+      isEnabled: true, 
+      prefix: '', 
+      maxLength: 500, 
+      isActive: false 
+    },
+    hasControls: true,
+    displayName: '✨ Enhanced Text'
+  },
+  cyclePulseEnhanced: {
+    defaultData: { 
+      cycleDuration: 2000,
+      pulseDuration: 500,
+      infinite: true,
+      maxCycles: 1,
+      autoStart: false,
+      burstMode: false,
+      burstCount: 3,
+      isRunning: false,
+      isPulsing: false,
+      cycleCount: 0,
+      progress: 0,
+      currentPhase: 'stopped',
+      output: false,
+      isActive: false 
+    },
+    hasControls: true,
+    displayName: '⚡ Enhanced Pulse'
+  },
+  triggerToggleEnhanced: {
+    defaultData: { 
+      triggered: false,
+      autoToggle: false,
+      holdDuration: 1000,
+      pulseMode: false,
+      value: false,
+      text: undefined,
+      isActive: false 
+    },
+    hasControls: true,
+    displayName: '🔄 Enhanced Toggle'
+  },
+  viewOutputEnhanced: {
+    defaultData: { 
+      displayedValues: [],
+      maxHistory: 10,
+      autoScroll: true,
+      showTypeIcons: true,
+      groupSimilar: false,
+      filterEmpty: true,
+      filterDuplicates: false,
+      includedTypes: [],
+      text: undefined,
+      isActive: false 
+    },
+    hasControls: true,
+    displayName: '📤 Enhanced View'
   },
   turnToUppercase: {
     defaultData: { text: '', isActive: false },
+    hasControls: false,
     displayName: 'Turn To Uppercase'
   },
   viewOutput: {
@@ -40,6 +142,14 @@ export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
     hasOutput: true,
     hasControls: true,
     displayName: 'View Output'
+  },
+  viewOutputRefactor: {
+    defaultData: { displayedValues: [], isActive: false },
+    hasTargetPosition: true,
+    targetPosition: Position.Top,
+    hasOutput: true,
+    hasControls: false,
+    displayName: '🔧 View Output (Refactored)'
   },
   triggerOnClick: {
     defaultData: { triggered: false, isActive: false },
@@ -69,6 +179,20 @@ export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
     defaultData: { triggered: false, isActive: false },
     hasControls: true,
     displayName: 'Trigger On Toggle'
+  },
+  triggerOnToggleRefactor: {
+    defaultData: { 
+      triggered: false,
+      value: false,
+      outputValue: false,
+      type: 'TriggerOnToggleRefactor',
+      label: '🔧 Toggle Trigger (Refactored)',
+      inputCount: 0,
+      hasExternalInputs: false,
+      isActive: false 
+    },
+    hasControls: true,
+    displayName: '🔧 Toggle Trigger (Refactored)'
   },
   cycleToggle: {
     defaultData: {
@@ -157,6 +281,10 @@ export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
     displayName: 'Test JSON'
   }
 };
+
+// DEBUG: Verify the values are correct when this module loads
+console.log('🔧 DEBUG: NODE_TYPE_CONFIG loaded with createTextRefactor:', NODE_TYPE_CONFIG.createTextRefactor);
+console.log('🔧 DEBUG: NODE_TYPE_CONFIG loaded with createText:', NODE_TYPE_CONFIG.createText);
 
 // ============================================================================
 // INITIAL DEMO GRAPH

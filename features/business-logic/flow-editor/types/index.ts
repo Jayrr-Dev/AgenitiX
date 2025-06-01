@@ -9,6 +9,32 @@ export interface CreateTextData {
   heldText?: string;
 }
 
+export interface CreateTextEnhancedData {
+  text: string;
+  output: string;
+  isEnabled: boolean;
+  prefix: string;
+  maxLength: number;
+}
+
+export interface CyclePulseEnhancedData {
+  cycleDuration: number;
+  pulseDuration: number;
+  infinite: boolean;
+  maxCycles: number;
+  autoStart: boolean;
+  burstMode: boolean;
+  burstCount: number;
+  isRunning: boolean;
+  isPulsing: boolean;
+  cycleCount: number;
+  progress: number;
+  currentPhase: 'waiting' | 'pulsing' | 'stopped';
+  output: boolean;
+  text?: string;
+  isActive: boolean;
+}
+
 export interface TurnToUppercaseData {
   text: string;
 }
@@ -38,6 +64,16 @@ export interface CyclePulseData {
 
 export interface TriggerOnToggleData {
   triggered: boolean;
+}
+
+export interface TriggerOnToggleRefactorData {
+  triggered: boolean;
+  value: boolean;
+  outputValue: boolean;
+  type: string;
+  label: string;
+  inputCount: number;
+  hasExternalInputs: boolean;
 }
 
 export interface CycleToggleData {
@@ -124,18 +160,62 @@ export interface TestJsonData {
   json: any;
 }
 
+export interface TriggerToggleEnhancedData {
+  triggered: boolean;
+  autoToggle: boolean;
+  holdDuration: number;
+  pulseMode: boolean;
+  value: boolean;
+  text?: string;
+  _pulseTimerId?: number;
+  _lastTriggerState?: boolean;
+}
+
+export interface ViewOutputEnhancedData {
+  displayedValues: Array<{
+    type: string;
+    content: any;
+    id: string;
+    timestamp?: number;
+  }>;
+  maxHistory: number;
+  autoScroll: boolean;
+  showTypeIcons: boolean;
+  groupSimilar: boolean;
+  filterEmpty: boolean;
+  filterDuplicates: boolean;
+  includedTypes: string[];
+  text?: string;
+  _valueHistory?: Array<{
+    values: any[];
+    timestamp: number;
+  }>;
+}
+
+export interface ViewOutputRefactorData {
+  displayedValues: Array<{
+    type: string;
+    content: any;
+    id: string;
+  }>;
+}
+
 // ============================================================================
 // UNION TYPES
 // ============================================================================
 
 export type AgenNode =
   | (Node<CreateTextData & Record<string, unknown>> & { type: 'createText' })
+  | (Node<CreateTextData & Record<string, unknown>> & { type: 'createTextRefactor' })
+  | (Node<CreateTextEnhancedData & Record<string, unknown>> & { type: 'createTextEnhanced' })
+  | (Node<CyclePulseEnhancedData & Record<string, unknown>> & { type: 'cyclePulseEnhanced' })
   | (Node<TurnToUppercaseData & Record<string, unknown>> & { type: 'turnToUppercase' })
   | (Node<ViewOutputData & Record<string, unknown>> & { type: 'viewOutput'; targetPosition: Position })
   | (Node<TriggerOnClickData & Record<string, unknown>> & { type: 'triggerOnClick' })
   | (Node<TriggerOnPulseData & Record<string, unknown>> & { type: 'triggerOnPulse' })
   | (Node<CyclePulseData & Record<string, unknown>> & { type: 'cyclePulse' })
   | (Node<TriggerOnToggleData & Record<string, unknown>> & { type: 'triggerOnToggle' })
+  | (Node<TriggerOnToggleRefactorData & Record<string, unknown>> & { type: 'triggerOnToggleRefactor' })
   | (Node<CycleToggleData & Record<string, unknown>> & { type: 'cycleToggle' })
   | (Node<LogicAndData & Record<string, unknown>> & { type: 'logicAnd' })
   | (Node<LogicOrData & Record<string, unknown>> & { type: 'logicOr' })
@@ -150,7 +230,10 @@ export type AgenNode =
   | (Node<CountInputData & Record<string, unknown>> & { type: 'countInput' })
   | (Node<DelayInputData & Record<string, unknown>> & { type: 'delayInput' })
   | (Node<TestErrorData & Record<string, unknown>> & { type: 'testError' })
-  | (Node<TestJsonData & Record<string, unknown>> & { type: 'testJson' });
+  | (Node<TestJsonData & Record<string, unknown>> & { type: 'testJson' })
+  | (Node<TriggerToggleEnhancedData & Record<string, unknown>> & { type: 'triggerToggleEnhanced' })
+  | (Node<ViewOutputEnhancedData & Record<string, unknown>> & { type: 'viewOutputEnhanced' })
+  | (Node<ViewOutputRefactorData & Record<string, unknown>> & { type: 'viewOutputRefactor' });
 
 export type AgenEdge = Edge & {
   sourceHandle?: string | null;
