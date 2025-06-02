@@ -10,8 +10,8 @@
  * Keywords: connections, validation, edge-styling, data-types, union-types, type-mapping
  */
 
+import { parseTypes } from "@node-creation/node-handles/TypesafeHandle";
 import type { Connection } from "@xyflow/react";
-import { parseTypes } from "../../node-creation/node-handles/CustomHandle";
 import { TYPE_MAP } from "../constants";
 
 /**

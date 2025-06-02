@@ -12,7 +12,7 @@
 
 "use client";
 
-import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types";
+import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import React from "react";
 import {
   getNodeInspectorControls,

@@ -15,7 +15,7 @@ import {
   createNodeComponent,
   createTriggeredNodeConfig,
   type BaseNodeData,
-} from "@/features/business-logic-modern/infrastructure/node-creation/factory/RefactoredNodeFactory";
+} from "@/features/business-logic-modern/infrastructure/node-creation/factory/NodeFactory";
 import { getSingleInputValue, isTruthyValue } from "@factory/utils/nodeUtils";
 import { Position, useNodeConnections, useNodesData } from "@xyflow/react";
 

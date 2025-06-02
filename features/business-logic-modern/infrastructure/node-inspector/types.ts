@@ -13,7 +13,7 @@
 import type {
   AgenEdge,
   AgenNode,
-} from "@/features/business-logic-modern/infrastructure/flow-engine/types";
+} from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 
 export interface NodeInspectorProps {
   /** The currently selected node (or null if none) */

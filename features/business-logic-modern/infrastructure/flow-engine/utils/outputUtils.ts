@@ -10,8 +10,11 @@
  * Keywords: output-computation, value-formatting, node-connections, data-types, stringification
  */
 
-import { extractNodeValue, safeStringify } from "../../nodes/utils/nodeUtils";
-import type { AgenEdge, AgenNode } from "../types";
+import {
+  extractNodeValue,
+  safeStringify,
+} from "@node-creation/utils/nodeUtils";
+import type { AgenEdge, AgenNode } from "../types/nodeData";
 
 /**
  * Computes the output string for a given node

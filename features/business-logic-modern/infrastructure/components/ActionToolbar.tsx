@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useVibeModeStore } from "@/features/business-logic-modern/infrastructure/node-creation/stores/vibeModeStore";
+import { useVibeModeStore } from "@node-creation/stores/vibeModeStore";
 import {
   History,
   Maximize,

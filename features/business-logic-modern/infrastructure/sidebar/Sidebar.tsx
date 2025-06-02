@@ -30,7 +30,7 @@ import {
   isValidNodeType,
 } from "@/features/business-logic-modern/_temp/nodeFactory";
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
-import type { NodeType } from "@/features/business-logic-modern/infrastructure/flow-engine/types";
+import type { NodeType } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import { SidebarTabs } from "./SidebarTabs";
 import { ToggleButton } from "./ToggleButton";
 import { VariantSelector } from "./VariantSelector";

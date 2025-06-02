@@ -18,7 +18,7 @@ import type {
   AgenEdge,
   AgenNode,
   NodeError,
-} from "@/features/business-logic-modern/infrastructure/flow-engine/types";
+} from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import { performCompleteMemoryCleanup } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/memoryCleanup";
 import {
   cleanupNodeTimers,

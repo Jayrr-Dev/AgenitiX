@@ -37,7 +37,7 @@ export { useReactFlowHandlers } from "./hooks/useReactFlowHandlers";
 // TYPE EXPORTS
 // ============================================================================
 
-export type { AgenEdge, AgenNode } from "./types";
+export type { AgenEdge, AgenNode } from "./types/nodeData";
 
 // ============================================================================
 // UTILITY EXPORTS

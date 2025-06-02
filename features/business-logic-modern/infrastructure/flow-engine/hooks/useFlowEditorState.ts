@@ -16,7 +16,7 @@ import {
   INITIAL_NODES,
   MAX_ERRORS_PER_NODE,
 } from "../constants";
-import type { AgenEdge, AgenNode, NodeError } from "../types";
+import type { AgenEdge, AgenNode, NodeError } from "../types/nodeData";
 import { getNodeOutput } from "../utils/outputUtils";
 
 export function useFlowEditorState() {

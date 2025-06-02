@@ -25,7 +25,7 @@ import {
 } from "@xyflow/react";
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
-import type { AgenEdge, AgenNode } from "../types";
+import type { AgenEdge, AgenNode } from "../types/nodeData";
 import {
   createEdgeStyle,
   getConnectionDataType,

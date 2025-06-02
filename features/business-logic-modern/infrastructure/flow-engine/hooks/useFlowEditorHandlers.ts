@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from "react";
-import type { AgenEdge, AgenNode } from "../types";
+import type { AgenEdge, AgenNode } from "../types/nodeData";
 
 // ============================================================================
 // TYPESCRIPT INTERFACES

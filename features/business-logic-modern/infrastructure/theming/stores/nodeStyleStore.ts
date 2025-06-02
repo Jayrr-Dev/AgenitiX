@@ -16,7 +16,7 @@ import { create } from "zustand";
 import {
   getCategoryMapping,
   type NodeCategory,
-} from "@/features/business-logic-modern/infrastructure/node-creation/node-registries/EnhancedNodeRegistry";
+} from "@/features/business-logic-modern/infrastructure/node-creation/node-registry/nodeRegistry";
 
 // ============================================================================
 // NODE CATEGORY DEFINITIONS

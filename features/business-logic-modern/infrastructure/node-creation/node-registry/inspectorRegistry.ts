@@ -17,7 +17,7 @@
 import type { ReactNode } from "react";
 import { NODE_TYPE_CONFIG } from "../../../flow-editor/constants";
 import type { NodeTypeConfig } from "../../../flow-editor/types";
-import type { BaseNodeData, InspectorControlProps } from "../types";
+import type { BaseNodeData, InspectorControlProps } from "../factory/types";
 
 // ============================================================================
 // REGISTRY STORAGE

@@ -17,7 +17,7 @@ import {
   useFlowStore,
   useNodeErrors,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
-import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types";
+import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import { getNodeOutput } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/outputUtils";
 import React, { useCallback, useMemo } from "react";
 import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";

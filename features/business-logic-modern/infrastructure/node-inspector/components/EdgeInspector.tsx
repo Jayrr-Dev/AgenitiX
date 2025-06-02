@@ -15,7 +15,7 @@
 import type {
   AgenEdge,
   AgenNode,
-} from "@/features/business-logic-modern/infrastructure/flow-engine/types";
+} from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import { JsonHighlighter } from "@/features/business-logic-modern/infrastructure/node-inspector/utils/JsonHighlighter";
 import { ArrowRight, Trash2, Zap } from "lucide-react";
 import React from "react";

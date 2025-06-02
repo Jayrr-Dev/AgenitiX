@@ -23,7 +23,7 @@ import {
 } from "@xyflow/react";
 import { useTheme } from "next-themes";
 import React, { useEffect, useMemo, useState } from "react";
-import type { AgenEdge, AgenNode } from "../types";
+import type { AgenEdge, AgenNode } from "../types/nodeData";
 
 // Import other components - Using clean aliases
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/components/ActionToolbar";
@@ -34,7 +34,7 @@ import NodeInspector from "@/features/business-logic-modern/infrastructure/node-
 // Import multi-selection copy/paste hook
 
 // CENTRALIZED NODE REGISTRY - Using clean alias
-import { getNodeTypes } from "@/features/business-logic-modern/infrastructure/node-creation/node-registries/EnhancedNodeRegistry";
+import { getNodeTypes } from "@node-creation/node-registry/nodeRegistry";
 
 interface FlowCanvasProps {
   nodes: AgenNode[];

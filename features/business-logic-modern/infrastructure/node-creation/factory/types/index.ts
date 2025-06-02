@@ -14,7 +14,7 @@
 // FACTORY NODE TYPE DEFINITIONS
 // ============================================================================
 
-import { Position, type Connection } from "@xyflow/react";
+import { Position, type Connection, type Node } from "@xyflow/react";
 import { ReactNode } from "react";
 import type { NodeCategory } from "../../nodeRegistry";
 
@@ -244,4 +244,71 @@ export interface ErrorState {
 export interface FilteredHandles {
   inputHandlesFiltered: HandleConfig[];
   outputHandles: HandleConfig[];
+}
+
+// ============================================================================
+// BASE NODE TYPES
+// ============================================================================
+
+export interface AgenNode extends Node {
+  id: string;
+  type: NodeType;
+  position: { x: number; y: number };
+  data: NodeData;
+  deletable?: boolean;
+  targetPosition?: Position;
+}
+
+// ============================================================================
+// NODE TYPE DEFINITIONS
+// ============================================================================
+
+export type NodeType =
+  | "createText"
+  | "viewOutput"
+  | "triggerToggle"
+  | "testError"
+  | "cyclePulse";
+
+// ============================================================================
+// NODE DATA INTERFACE
+// ============================================================================
+
+export interface NodeData {
+  label?: string;
+  showUI?: boolean;
+  icon?: string;
+  [key: string]: unknown;
+}
+
+// ============================================================================
+// NODE CONFIGURATION INTERFACE
+// ============================================================================
+
+export interface NodeConfig {
+  label: string;
+  defaultData: NodeData;
+  hasTargetPosition?: boolean;
+  targetPosition?: Position;
+  icon?: string;
+  width?: number;
+  height?: number;
+}
+
+// ============================================================================
+// FACTORY TYPES
+// ============================================================================
+
+export interface NodeFactory {
+  createNode: (
+    type: NodeType,
+    position: { x: number; y: number },
+    customData?: Record<string, unknown>
+  ) => AgenNode;
+  isValidNodeType: (type: string) => type is NodeType;
+  getNodeDefaultData: (type: NodeType) => NodeData;
+  copyNode: (
+    originalNode: AgenNode,
+    offset?: { x: number; y: number }
+  ) => AgenNode;
 }

@@ -471,7 +471,7 @@ export {
   hasFactoryInspectorControls,
   NODE_INSPECTOR_REGISTRY,
   registerNodeInspectorControls,
-} from "./registry/inspectorRegistry";
+} from "../node-registry/inspectorRegistry";
 
 export { calculationCache, debouncedUpdates } from "./utils/cacheManager";
 
