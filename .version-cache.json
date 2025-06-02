@@ -1,6 +1,6 @@
 {
-  "version": "1.0.9",
-  "timestamp": 1748839721625,
+  "version": "1.0.10",
+  "timestamp": 1748839728340,
   "hashes": [
     [
       "features\\business-logic-modern\\infrastructure\\components\\ActionToolbar.tsx",
@@ -440,7 +440,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "4bbf7694b5a46deee15ef7d0cdeb80d1"
+      "9317d430feae69fbee361906db110d20"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
