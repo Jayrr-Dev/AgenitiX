@@ -1,6 +1,6 @@
-# 🏷️ NODE CATEGORY SYSTEM STANDARDS v1.1.0
+# 🏷️ NODE CATEGORY SYSTEM STANDARDS v1.1.3
 
-**Updated:** June 2025 v1.1.0
+**Updated:** June 2025 v1.1.3
 **Summary:** Complete standards for the node category system covering classification, theming, sidebar organization, validation rules, and extension patterns for the modern workflow system.
 
 ## 📋 OVERVIEW

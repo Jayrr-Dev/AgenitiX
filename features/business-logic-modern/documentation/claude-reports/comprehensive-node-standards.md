@@ -1,6 +1,6 @@
-# 🎯 COMPREHENSIVE NODE STANDARDS v1.1.0
+# 🎯 COMPREHENSIVE NODE STANDARDS v1.1.3
 
-**Updated:** June 2025 v1.1.0
+**Updated:** June 2025 v1.1.3
 **Summary:** Complete high-level overview of node standards covering styling, behaviors, properties, capabilities, and restrictions for the modern node-based workflow system.
 
 ## 📋 OVERVIEW
