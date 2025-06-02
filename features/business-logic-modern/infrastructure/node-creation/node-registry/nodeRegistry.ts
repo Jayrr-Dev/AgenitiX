@@ -28,7 +28,7 @@ import TriggerOnToggle from "../../../node-domain/trigger/TriggerOnToggle";
 import ViewOutput from "../../../node-domain/view/ViewOutput";
 
 // Import constants for validation
-import { NODE_TYPE_CONFIG } from "../../flow-engine/constants";
+import { getNodeTypeConfig } from "../../flow-engine/constants";
 import type { NodeType } from "../../flow-engine/types/nodeData";
 
 // Import factory types for integration
@@ -452,7 +452,7 @@ export function getSidebarFolderMapping(): Record<NodeType, SidebarFolder> {
  * Checks if a node type is registered and valid
  */
 export function isValidNodeType(nodeType: string): nodeType is NodeType {
-  return nodeType in MODERN_NODE_REGISTRY && nodeType in NODE_TYPE_CONFIG;
+  return nodeType in MODERN_NODE_REGISTRY && nodeType in getNodeTypeConfig();
 }
 
 /**
@@ -1060,7 +1060,7 @@ export function validateNodeForInspector(nodeType: string): {
   // CHECK REGISTRY VALIDITY
   const isValidType = isValidNodeType(nodeType);
   const metadata = isValidType ? getNodeMetadata(nodeType as NodeType) : null;
-  const config = isValidType ? NODE_TYPE_CONFIG[nodeType as NodeType] : null;
+  const config = isValidType ? getNodeTypeConfig()[nodeType as NodeType] : null;
 
   if (!isValidType) {
     warnings.push(`Node type '${nodeType}' not found in modern registry`);
@@ -1134,7 +1134,7 @@ export function getNodeCapabilities(nodeType: NodeType): {
   };
 } {
   const metadata = getNodeMetadata(nodeType);
-  const config = NODE_TYPE_CONFIG[nodeType];
+  const config = getNodeTypeConfig()[nodeType];
 
   if (!metadata) {
     throw new Error(`Unknown node type: ${nodeType}`);

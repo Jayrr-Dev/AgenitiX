@@ -103,14 +103,21 @@ export const INITIAL_EDGES: AgenEdge[] = [
 ];
 
 // ============================================================================
-// REGISTRY INTEGRATION - Single Source of Truth
+// REGISTRY INTEGRATION - Single Source of Truth (LAZY LOADING)
 // ============================================================================
 
+let isNodeTypeConfigInitialized = false;
+
 /**
- * AUTO-SYNC NODE TYPE CONFIG WITH REGISTRY
+ * AUTO-SYNC NODE TYPE CONFIG WITH REGISTRY (LAZY LOADING)
  * Now the registry is the single source of truth for all node data
+ * Uses lazy loading to prevent circular dependency issues
  */
 function initializeNodeTypeConfig() {
+  if (isNodeTypeConfigInitialized) {
+    return true; // Already initialized
+  }
+
   try {
     // Import registry functions dynamically to avoid circular dependency
     const {
@@ -129,6 +136,7 @@ function initializeNodeTypeConfig() {
         "node types"
       );
 
+      isNodeTypeConfigInitialized = true;
       return true;
     } else {
       console.warn("⚠️ [Constants] generateNodeTypeConfig not available");
@@ -141,6 +149,17 @@ function initializeNodeTypeConfig() {
 }
 
 /**
+ * LAZY GETTER FOR NODE TYPE CONFIG
+ * Ensures registry is loaded before accessing config
+ */
+function getNodeTypeConfig(): NodeTypeConfigMap {
+  if (!isNodeTypeConfigInitialized) {
+    initializeNodeTypeConfig();
+  }
+  return NODE_TYPE_CONFIG;
+}
+
+/**
  * SYNC NODE TYPE CONFIG WITH REGISTRY
  * Ensures NODE_TYPE_CONFIG is up-to-date with registry data
  * @deprecated Use initializeNodeTypeConfig instead
@@ -150,18 +169,19 @@ export function syncNodeTypeConfigWithRegistry() {
 }
 
 // ============================================================================
-// NODE TYPE CONFIGURATIONS - Auto-Generated from Registry
+// NODE TYPE CONFIGURATIONS - Auto-Generated from Registry (LAZY LOADING)
 // ============================================================================
 
-// Initialize as empty object - will be populated from registry
+// Initialize as empty object - will be populated from registry when needed
 export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {} as NodeTypeConfigMap;
 
-// Auto-sync with registry on module load
-initializeNodeTypeConfig();
+// Export lazy getters to prevent circular dependency
+export { getNodeTypeConfig, initializeNodeTypeConfig };
 
 // SYNC: Node type configuration is now auto-generated from MODERN_NODE_REGISTRY
 // Available node types: createText, viewOutput, triggerOnToggle, testError
 // All data comes from the registry - no manual duplication needed!
+// USES LAZY LOADING to prevent circular dependency issues.
 
 // ============================================================================
 // CONFIGURATION CONSTANTS

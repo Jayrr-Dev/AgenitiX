@@ -168,14 +168,21 @@ export const NODE_SIZES = {
 } as const;
 
 // ============================================================================
-// REGISTRY AUTO-SYNC - Single Source of Truth
+// REGISTRY AUTO-SYNC - Single Source of Truth (LAZY LOADING)
 // ============================================================================
 
+let isFactoryConfigInitialized = false;
+
 /**
- * AUTO-SYNC FACTORY CONFIG WITH REGISTRY
+ * AUTO-SYNC FACTORY CONFIG WITH REGISTRY (LAZY LOADING)
  * The registry is now the single source of truth for all factory data
+ * Uses lazy loading to prevent circular dependency issues
  */
 function initializeFactoryConfig() {
+  if (isFactoryConfigInitialized) {
+    return true; // Already initialized
+  }
+
   try {
     // Import registry functions dynamically to avoid circular dependency
     const {
@@ -190,7 +197,8 @@ function initializeFactoryConfig() {
       // Sync generated config into exported constants
       Object.assign(NODE_TYPE_CONFIG, generated.NODE_TYPE_CONFIG);
       Object.assign(NODE_SIZES, generated.NODE_SIZES);
-      Object.assign(VALID_NODE_TYPES, generated.VALID_NODE_TYPES);
+      VALID_NODE_TYPES.length = 0; // Clear array
+      VALID_NODE_TYPES.push(...generated.VALID_NODE_TYPES); // Add all items
 
       console.log(
         "✅ [Factory] Auto-synced with registry:",
@@ -198,6 +206,7 @@ function initializeFactoryConfig() {
         "factory node types"
       );
 
+      isFactoryConfigInitialized = true;
       return true;
     } else {
       console.warn("⚠️ [Factory] Registry auto-generation not available");
@@ -209,19 +218,42 @@ function initializeFactoryConfig() {
   }
 }
 
+/**
+ * LAZY GETTER FOR NODE TYPE CONFIG
+ * Ensures registry is loaded before accessing config
+ */
+function getNodeTypeConfig(): Record<NodeType, NodeConfig> {
+  if (!isFactoryConfigInitialized) {
+    initializeFactoryConfig();
+  }
+  return NODE_TYPE_CONFIG;
+}
+
+/**
+ * LAZY GETTER FOR VALID NODE TYPES
+ * Ensures registry is loaded before accessing valid types
+ */
+function getValidNodeTypes(): NodeType[] {
+  if (!isFactoryConfigInitialized) {
+    initializeFactoryConfig();
+  }
+  return VALID_NODE_TYPES;
+}
+
 // ============================================================================
-// NODE TYPE CONFIGURATION - Auto-Generated from Registry
+// NODE TYPE CONFIGURATION - Auto-Generated from Registry (LAZY LOADING)
 // ============================================================================
 
-// Initialize as empty object - will be populated from registry
+// Initialize as empty object - will be populated from registry when needed
 export const NODE_TYPE_CONFIG: Record<NodeType, NodeConfig> = {} as any;
 
-// Auto-sync with registry on module load
-initializeFactoryConfig();
+// Export lazy getters to prevent circular dependency
+export { getNodeTypeConfig, getValidNodeTypes, initializeFactoryConfig };
 
 // SYNC: Factory configuration is now auto-generated from MODERN_NODE_REGISTRY
 // All factory data comes from the registry - no manual duplication needed!
 // Icons, sizes, labels, and configs are all centrally managed.
+// USES LAZY LOADING to prevent circular dependency issues.
 
 // ============================================================================
 // TOGGLE BUTTON CONSTANTS
@@ -233,8 +265,8 @@ export const TOGGLE_SYMBOLS = {
 } as const;
 
 // ============================================================================
-// VALIDATION CONSTANTS - Auto-Generated from Registry
+// VALIDATION CONSTANTS - Auto-Generated from Registry (LAZY LOADING)
 // ============================================================================
 
-// Initialize as empty array - will be populated from registry
+// Initialize as empty array - will be populated from registry when needed
 export let VALID_NODE_TYPES: NodeType[] = [];

@@ -15,7 +15,7 @@
 // ============================================================================
 
 // Import from enhanced registry instead of maintaining duplicate configuration
-export { NODE_TYPE_CONFIG } from "@/features/business-logic-modern/infrastructure/flow-engine/constants";
+export { getNodeTypeConfig } from "@/features/business-logic-modern/infrastructure/flow-engine/constants";
 
 // ============================================================================
 // NODE INSPECTOR SPECIFIC CONSTANTS

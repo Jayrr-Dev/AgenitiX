@@ -15,7 +15,7 @@ import {
   type BaseNodeData,
   type NodeFactoryConfig,
 } from "../NodeFactory";
-import { NODE_TYPE_CONFIG, TOGGLE_SYMBOLS } from "../constants";
+import { getNodeTypeConfig, TOGGLE_SYMBOLS } from "../constants";
 import type { AgenNode, NodeType } from "../types";
 import { NodeFactory as UtilFactory } from "../utils/nodeFactory";
 
@@ -195,7 +195,7 @@ export function createFlowIntegrationHelpers(
 
     // SIDEBAR CONFIGURATION for Sidebar.tsx
     getSidebarNodeConfig: (nodeType: NodeType) => {
-      const config = NODE_TYPE_CONFIG[nodeType];
+      const config = getNodeTypeConfig()[nodeType];
       return {
         icon: config.icon || "🔧",
         label: config.label,

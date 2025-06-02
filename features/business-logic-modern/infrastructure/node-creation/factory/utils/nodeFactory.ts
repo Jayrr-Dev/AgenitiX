@@ -10,7 +10,7 @@
  * Keywords: node-factory, toggle-states, sizing, type-safety, modern-architecture
  */
 
-import { NODE_ID_PREFIX, NODE_TYPE_CONFIG } from "../constants";
+import { NODE_ID_PREFIX, getNodeTypeConfig } from "../constants";
 import type { AgenNode, NodeData, NodeType } from "../types";
 
 // ============================================================================
@@ -28,7 +28,7 @@ export function createNode(
   position: { x: number; y: number },
   customData?: Record<string, unknown>
 ): AgenNode {
-  const config = NODE_TYPE_CONFIG[type];
+  const config = getNodeTypeConfig()[type];
   const id = `${NODE_ID_PREFIX}${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
   // MERGE DEFAULT DATA WITH CUSTOM DATA
@@ -64,21 +64,21 @@ export function createNode(
  * Validates if a node type is supported by the factory
  */
 export function isValidNodeType(type: string): type is NodeType {
-  return type in NODE_TYPE_CONFIG;
+  return type in getNodeTypeConfig();
 }
 
 /**
  * Gets the default data configuration for a node type
  */
 export function getNodeDefaultData(type: NodeType): NodeData {
-  return { ...NODE_TYPE_CONFIG[type].defaultData };
+  return { ...getNodeTypeConfig()[type].defaultData };
 }
 
 /**
  * Gets the configuration object for a node type
  */
 export function getNodeConfig(type: NodeType) {
-  return NODE_TYPE_CONFIG[type];
+  return getNodeTypeConfig()[type];
 }
 
 // ============================================================================
@@ -136,7 +136,7 @@ export function toggleNodeUI(node: AgenNode): AgenNode {
  * Returns { width, height } based on ICON/EXPANDED state
  */
 export function getNodeSize(type: NodeType, showUI: boolean = false) {
-  const config = NODE_TYPE_CONFIG[type];
+  const config = getNodeTypeConfig()[type];
 
   if (showUI) {
     // EXPANDED state: 120x120px

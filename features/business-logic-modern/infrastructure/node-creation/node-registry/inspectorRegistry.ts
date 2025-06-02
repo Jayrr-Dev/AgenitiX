@@ -17,7 +17,7 @@
 // ============================================================================
 
 import type { ReactNode } from "react";
-import { NODE_TYPE_CONFIG } from "../../flow-engine/constants";
+import { getNodeTypeConfig } from "../../flow-engine/constants";
 import type {
   NodeType,
   NodeTypeConfig,
@@ -83,7 +83,7 @@ export function registerFactoryInspectorControls<T extends BaseNodeData>(
   NODE_INSPECTOR_REGISTRY.set(config.nodeType, config.renderControls);
 
   // Auto-register node type config if needed
-  if (!NODE_TYPE_CONFIG[config.nodeType as NodeType]) {
+  if (!getNodeTypeConfig()[config.nodeType as NodeType]) {
     registerNodeTypeConfig(config.nodeType, {
       defaultData: config.defaultData,
       displayName: config.displayName,
@@ -211,7 +211,8 @@ export function registerNodeTypeConfig<T extends BaseNodeData>(
   };
 
   // Dynamically add to NODE_TYPE_CONFIG
-  (NODE_TYPE_CONFIG as any)[nodeType] = nodeConfig;
+  const nodeTypeConfig = getNodeTypeConfig();
+  (nodeTypeConfig as any)[nodeType] = nodeConfig;
 }
 
 // ============================================================================
