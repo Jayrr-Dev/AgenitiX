@@ -90,9 +90,28 @@ const CreateText = createNodeComponent<CreateTextData>({
         (c) => c.targetHandle === "trigger"
       );
 
+      // DEBUG: Log trigger connection state
+      console.log(`🔍 [CreateText ${id}] Trigger analysis:`, {
+        hasConnections: triggerConnections.length > 0,
+        connectionCount: triggerConnections.length,
+        nodesDataCount: nodesData.length,
+        nodesData: nodesData.map((n) => ({
+          id: n.id,
+          type: n.type,
+          data: n.data,
+        })),
+      });
+
       // Get trigger value from connected trigger nodes
       const triggerValue = getSingleInputValue(nodesData);
       const isActive = isTruthyValue(triggerValue);
+
+      // DEBUG: Log trigger logic evaluation
+      console.log(`🔍 [CreateText ${id}] Trigger evaluation:`, {
+        triggerValue,
+        isActive,
+        shouldOutput: triggerConnections.length === 0 || isActive,
+      });
 
       // Get the held text (what user has typed)
       const outputText = typeof data.heldText === "string" ? data.heldText : "";
@@ -103,8 +122,17 @@ const CreateText = createNodeComponent<CreateTextData>({
       }
 
       // Output logic: output text if no trigger connected OR trigger is active
-      const finalOutput =
-        triggerConnections.length === 0 || isActive ? outputText : "";
+      const shouldOutput = triggerConnections.length === 0 || isActive;
+      const finalOutput = shouldOutput ? outputText : "";
+
+      // DEBUG: Log final output decision
+      console.log(`🔍 [CreateText ${id}] Final output:`, {
+        shouldOutput,
+        outputText:
+          outputText.substring(0, 20) + (outputText.length > 20 ? "..." : ""),
+        finalOutput:
+          finalOutput.substring(0, 20) + (finalOutput.length > 20 ? "..." : ""),
+      });
 
       updateNodeData(id, {
         text: finalOutput,
@@ -435,17 +463,21 @@ const CreateTextExpanded = ({
 // HELPER FUNCTIONS
 // ============================================================================
 
-// UTILITY FUNCTIONS - Inline implementations since utils don't exist
+// UTILITY FUNCTIONS - Fixed trigger logic
 function getSingleInputValue(nodesData: any[]): any {
   if (!nodesData || nodesData.length === 0) return null;
+
   // Get the first node's output value
   const firstNode = nodesData[0];
   if (!firstNode || !firstNode.data) return null;
 
-  // Look for common output properties
-  if ("text" in firstNode.data) return firstNode.data.text;
+  // ENHANCED: Check multiple properties for trigger values
+  // Priority order: outputValue, triggered, value, output, text
+  if ("outputValue" in firstNode.data) return firstNode.data.outputValue;
+  if ("triggered" in firstNode.data) return firstNode.data.triggered;
   if ("value" in firstNode.data) return firstNode.data.value;
   if ("output" in firstNode.data) return firstNode.data.output;
+  if ("text" in firstNode.data) return firstNode.data.text;
 
   return null;
 }
@@ -453,7 +485,10 @@ function getSingleInputValue(nodesData: any[]): any {
 function isTruthyValue(value: any): boolean {
   if (value === null || value === undefined) return false;
   if (typeof value === "boolean") return value;
-  if (typeof value === "string") return value.trim() !== "";
+  if (typeof value === "string") {
+    const trimmed = value.trim().toLowerCase();
+    return trimmed !== "" && trimmed !== "false" && trimmed !== "0";
+  }
   if (typeof value === "number") return value !== 0 && !isNaN(value);
   return Boolean(value);
 }
