@@ -37,6 +37,22 @@ export function useNodeHandles(
   // HANDLE VALIDATION AND DEBUGGING
   // ========================================================================
 
+  // Debug: Log handles being processed
+  console.log(
+    `🔧 [useNodeHandles] Processing ${handles.length} handles:`,
+    handles
+  );
+
+  // DEBUG: Log each handle type
+  handles.forEach((handle, index) => {
+    console.log(`🔧 [useNodeHandles] Handle ${index}:`, {
+      id: handle.id,
+      type: handle.type,
+      dataType: handle.dataType,
+      position: handle.position,
+    });
+  });
+
   // Check for handle ID conflicts (in development)
   if (process.env.NODE_ENV === "development") {
     const handleIds = handles.map((h) => h.id);
@@ -75,6 +91,11 @@ export function useNodeHandles(
       return { inputHandlesFiltered, outputHandles };
     }, [handles, connections, showJsonHandles, isVibeModeActive, allNodes]);
 
+  // Debug: Log final result
+  console.log(
+    `✅ [useNodeHandles] Final result: ${inputHandlesFiltered.length} inputs, ${outputHandles.length} outputs`
+  );
+
   return { inputHandlesFiltered, outputHandles };
 }
 
@@ -87,5 +108,10 @@ export function useNodeHandles(
  * Simple output handle filtering with early return
  */
 function filterOutputHandles(handles: HandleConfig[]): HandleConfig[] {
-  return handles.filter((handle) => handle.type === "source");
+  const outputHandles = handles.filter((handle) => handle.type === "source");
+  console.log(
+    `🔧 [filterOutputHandles] Input: ${handles.length} handles, Output: ${outputHandles.length} handles`
+  );
+  console.log(`🔧 [filterOutputHandles] Found output handles:`, outputHandles);
+  return outputHandles;
 }

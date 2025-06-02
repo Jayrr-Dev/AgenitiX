@@ -1,13 +1,13 @@
 /**
- * ERROR LOGGING HOOK - Console error tracking and user error management
+ * ERROR LOGGING HOOK - Safe error tracking without console override
  *
- * • Intercepts console.error and console.warn for node-specific error tracking
+ * • Uses window error events and React error boundaries for error tracking
+ * • No console method overrides to prevent originalError crashes
  * • Filters out React internal errors to focus on user code issues
  * • Automatically logs errors for the currently selected node
- * • Provides cleanup to restore original console methods
- * • Integrates with node error tracking system
+ * • Provides safe cleanup without console restoration issues
  *
- * Keywords: error-tracking, console-override, filtering, logging, cleanup, node-errors
+ * Keywords: error-tracking, window-events, error-boundary, safe-logging, node-errors
  */
 
 import { useEffect } from "react";
@@ -24,6 +24,7 @@ interface UseErrorLoggingProps {
     type?: "error" | "warning" | "info",
     source?: string
   ) => void;
+  reactFlowInstance?: any;
 }
 
 // ============================================================================
@@ -38,18 +39,11 @@ function isReactInternalError(message: string): boolean {
     message.includes("React") ||
     message.includes("static flag") ||
     message.includes("Expected") ||
-    message.includes("Internal React error")
-  );
-}
-
-/**
- * Check if warning message is from React internals (should be ignored)
- */
-function isReactInternalWarning(message: string): boolean {
-  return (
-    message.includes("React") ||
+    message.includes("Internal React error") ||
     message.includes("Warning:") ||
-    message.includes("validateDOMNesting")
+    message.includes("validateDOMNesting") ||
+    message.includes("React Flow") ||
+    message.includes("Couldn't create edge")
   );
 }
 
@@ -58,45 +52,65 @@ function isReactInternalWarning(message: string): boolean {
 // ============================================================================
 
 /**
- * Custom hook for setting up error logging with proper cleanup
+ * Custom hook for safe error logging without console override
  */
 export function useErrorLogging({
   selectedNodeId,
   logNodeError,
+  reactFlowInstance,
 }: UseErrorLoggingProps) {
   useEffect(() => {
-    // Store original console methods for restoration
-    const originalError = console.error;
-    const originalWarn = console.warn;
+    // Safe error handling using window events instead of console override
+    const handleError = (event: ErrorEvent) => {
+      const message = event.message || event.error?.message || "Unknown error";
 
-    // Override console.error for user error tracking
-    console.error = (...args) => {
-      originalError(...args);
+      // Filter out React internals and system errors
+      if (isReactInternalError(message)) {
+        return;
+      }
 
-      const message = args.join(" ");
-      const isUserError = !isReactInternalError(message);
-
-      if (selectedNodeId && isUserError) {
-        logNodeError(selectedNodeId, message, "error", "console.error");
+      // Only log if we have a selected node
+      if (selectedNodeId) {
+        try {
+          logNodeError(selectedNodeId, message, "error", "window.error");
+        } catch (err) {
+          // Silent failure to prevent infinite loops
+        }
       }
     };
 
-    // Override console.warn for user warning tracking
-    console.warn = (...args) => {
-      originalWarn(...args);
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const message =
+        event.reason?.message ||
+        String(event.reason) ||
+        "Unhandled promise rejection";
 
-      const message = args.join(" ");
-      const isUserWarning = !isReactInternalWarning(message);
+      // Filter out React internals and system errors
+      if (isReactInternalError(message)) {
+        return;
+      }
 
-      if (selectedNodeId && isUserWarning) {
-        logNodeError(selectedNodeId, message, "warning", "console.warn");
+      // Only log if we have a selected node
+      if (selectedNodeId) {
+        try {
+          logNodeError(selectedNodeId, message, "error", "unhandled.rejection");
+        } catch (err) {
+          // Silent failure to prevent infinite loops
+        }
       }
     };
 
-    // Cleanup function to restore original console methods
+    // Add event listeners for error tracking
+    window.addEventListener("error", handleError);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+
+    // Cleanup function to remove event listeners
     return () => {
-      console.error = originalError;
-      console.warn = originalWarn;
+      window.removeEventListener("error", handleError);
+      window.removeEventListener(
+        "unhandledrejection",
+        handleUnhandledRejection
+      );
     };
-  }, [selectedNodeId, logNodeError]);
+  }, [selectedNodeId, logNodeError, reactFlowInstance]);
 }

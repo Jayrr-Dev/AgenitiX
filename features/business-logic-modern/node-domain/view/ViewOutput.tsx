@@ -18,12 +18,12 @@
 /*  – Displays values from connected nodes with type indicators               */
 /* -------------------------------------------------------------------------- */
 
-import { Position } from "@xyflow/react";
-
 // FACTORY AND UTILITIES - Fixed imports to infrastructure layer
+import { Position } from "@xyflow/react";
 import {
   createNodeComponent,
   type BaseNodeData,
+  type HandleConfig,
 } from "../../infrastructure/node-creation/factory/NodeFactory";
 
 // KEY UTILITIES - Standardized React key generation
@@ -110,6 +110,31 @@ const formatContent = (content: any): string => {
 // NODE CONFIGURATION - Carbon Copy of Legacy
 // ============================================================================
 
+// Load handles from registry to avoid circular imports in factory
+let nodeHandles: HandleConfig[] = [];
+try {
+  const {
+    getNodeHandles,
+  } = require("@node-creation/node-registry/nodeRegistry");
+  nodeHandles = getNodeHandles("viewOutput") || [];
+  console.log(
+    `🔗 [ViewOutput] Loaded ${nodeHandles.length} handles from registry:`,
+    nodeHandles
+  );
+} catch (error) {
+  console.error(`❌ [ViewOutput] Failed to load handles from registry:`, error);
+  // Provide fallback handles
+  nodeHandles = [
+    {
+      id: "input",
+      dataType: "x",
+      position: Position.Left,
+      type: "target",
+    },
+  ];
+  console.log(`🛟 [ViewOutput] Using fallback handles:`, nodeHandles);
+}
+
 const ViewOutput = createNodeComponent<ViewOutputData>({
   nodeType: "viewOutput", // Match the registry nodeType
   category: "test", // Test/debug theme for utility nodes (same as legacy)
@@ -117,6 +142,9 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
   defaultData: {
     displayedValues: [],
   },
+
+  // ✨ HANDLES LOADED FROM REGISTRY (above)
+  handles: nodeHandles,
 
   // Custom size configuration for 120x120 collapsed, 180x180 expanded (same as legacy)
   size: {
@@ -128,11 +156,6 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
       width: "w-[180px]",
     },
   },
-
-  // Define handles (accepts any input type, same as legacy)
-  handles: [
-    { id: "x", dataType: "x", position: Position.Left, type: "target" },
-  ],
 
   // Processing logic - extract and format values from connected nodes
   processLogic: ({

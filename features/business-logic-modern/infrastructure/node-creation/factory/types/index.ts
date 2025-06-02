@@ -225,8 +225,8 @@ export interface NodeFactoryConfig<T extends BaseNodeData> {
   displayName: string;
   /** Optional custom sizing */
   size?: NodeSize;
-  /** Input/output handle definitions */
-  handles: HandleConfig[];
+  /** Input/output handle definitions (optional - loaded from registry if not provided) */
+  handles?: HandleConfig[];
   /** Default data structure */
   defaultData: T;
   /** Main processing logic */

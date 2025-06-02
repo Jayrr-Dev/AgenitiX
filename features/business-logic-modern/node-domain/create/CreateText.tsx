@@ -19,37 +19,21 @@
 /*  – Preserves all styling, functionality, and error handling               */
 /* -------------------------------------------------------------------------- */
 
-import { Position } from "@xyflow/react";
-import React, { useRef } from "react";
-
-// FACTORY AND UTILITIES - Fixed imports to infrastructure layer
 import {
   createNodeComponent,
   type BaseNodeData,
-} from "../../infrastructure/node-creation/factory/NodeFactory";
+  type HandleConfig,
+} from "@node-creation/factory/NodeFactory";
+import { Position } from "@xyflow/react";
+import React, { useRef } from "react";
 
-// UTILITY FUNCTIONS - Inline implementations since utils don't exist
-function getSingleInputValue(nodesData: any[]): any {
-  if (!nodesData || nodesData.length === 0) return null;
-  // Get the first node's output value
-  const firstNode = nodesData[0];
-  if (!firstNode || !firstNode.data) return null;
+// MODERN FACTORY INTEGRATION
 
-  // Look for common output properties
-  if ("text" in firstNode.data) return firstNode.data.text;
-  if ("value" in firstNode.data) return firstNode.data.value;
-  if ("output" in firstNode.data) return firstNode.data.output;
+// ============================================================================
+// DEBUG: IDENTIFY COMPONENT USAGE
+// ============================================================================
 
-  return null;
-}
-
-function isTruthyValue(value: any): boolean {
-  if (value === null || value === undefined) return false;
-  if (typeof value === "boolean") return value;
-  if (typeof value === "string") return value.trim() !== "";
-  if (typeof value === "number") return value !== 0 && !isNaN(value);
-  return Boolean(value);
-}
+console.log("🏭 [MODERN CreateText] Component is being loaded/imported!");
 
 // ============================================================================
 // NODE DATA INTERFACE - Enhanced with category registry integration
@@ -68,6 +52,37 @@ interface CreateTextData extends BaseNodeData {
 // ENTERPRISE NODE CONFIGURATION - Enhanced Factory with Registry Integration
 // ============================================================================
 
+// Load handles from registry to avoid circular imports in factory
+let nodeHandles: HandleConfig[] = [];
+try {
+  const {
+    getNodeHandles,
+  } = require("@node-creation/node-registry/nodeRegistry");
+  nodeHandles = getNodeHandles("createText") || [];
+  console.log(
+    `🔗 [CreateText] Loaded ${nodeHandles.length} handles from registry:`,
+    nodeHandles
+  );
+} catch (error) {
+  console.error(`❌ [CreateText] Failed to load handles from registry:`, error);
+  // Provide fallback handles
+  nodeHandles = [
+    {
+      id: "trigger",
+      dataType: "b",
+      position: Position.Left,
+      type: "target",
+    },
+    {
+      id: "output",
+      dataType: "s",
+      position: Position.Right,
+      type: "source",
+    },
+  ];
+  console.log(`🛟 [CreateText] Using fallback handles:`, nodeHandles);
+}
+
 const CreateText = createNodeComponent<CreateTextData>({
   nodeType: "createText", // Match the registry nodeType
   category: "create", // Enhanced category registry integration
@@ -77,11 +92,8 @@ const CreateText = createNodeComponent<CreateTextData>({
     heldText: "",
   },
 
-  // HANDLES: Boolean trigger input, string output
-  handles: [
-    { id: "trigger", dataType: "b", position: Position.Left, type: "target" },
-    { id: "output", dataType: "s", position: Position.Right, type: "source" },
-  ],
+  // ✨ HANDLES LOADED FROM REGISTRY (above)
+  handles: nodeHandles,
 
   // PROCESSING LOGIC: Enhanced trigger logic with registry integration
   processLogic: ({
@@ -438,5 +450,32 @@ const CreateTextExpanded = ({
     />
   );
 };
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+// UTILITY FUNCTIONS - Inline implementations since utils don't exist
+function getSingleInputValue(nodesData: any[]): any {
+  if (!nodesData || nodesData.length === 0) return null;
+  // Get the first node's output value
+  const firstNode = nodesData[0];
+  if (!firstNode || !firstNode.data) return null;
+
+  // Look for common output properties
+  if ("text" in firstNode.data) return firstNode.data.text;
+  if ("value" in firstNode.data) return firstNode.data.value;
+  if ("output" in firstNode.data) return firstNode.data.output;
+
+  return null;
+}
+
+function isTruthyValue(value: any): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return value.trim() !== "";
+  if (typeof value === "number") return value !== 0 && !isNaN(value);
+  return Boolean(value);
+}
 
 export default CreateText;

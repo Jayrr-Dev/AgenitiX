@@ -24,203 +24,215 @@ import type { BaseNodeData, HandleConfig, NodeFactoryConfig } from "../types";
 
 /**
  * CREATE TEXT NODE CONFIG
- * Helper for creating text-based node configurations
+ * Helper for creating text-based node configurations with proper handles
  */
 export const createTextNodeConfig = <T extends BaseNodeData>(
   overrides: Partial<NodeFactoryConfig<T>>
 ): Partial<NodeFactoryConfig<T>> => ({
   size: DEFAULT_TEXT_NODE_SIZE,
   handles: [
-    { id: "b", dataType: "b", position: Position.Left, type: "target" },
-    { id: "s", dataType: "s", position: Position.Right, type: "source" },
+    // Optional trigger input for conditional output
+    { id: "trigger", dataType: "b", position: Position.Left, type: "target" },
+    // String output for text content
+    { id: "output", dataType: "s", position: Position.Right, type: "source" },
+  ],
+  ...overrides,
+});
+
+/**
+ * CREATE SIMPLE TEXT NODE CONFIG
+ * For text nodes that only output text without triggers
+ */
+export const createSimpleTextNodeConfig = <T extends BaseNodeData>(
+  overrides: Partial<NodeFactoryConfig<T>>
+): Partial<NodeFactoryConfig<T>> => ({
+  size: DEFAULT_TEXT_NODE_SIZE,
+  handles: [
+    // Only string output - no trigger needed
+    { id: "output", dataType: "s", position: Position.Right, type: "source" },
   ],
   ...overrides,
 });
 
 /**
  * CREATE LOGIC NODE CONFIG
- * Helper for creating logic-based node configurations
+ * Helper for creating logic/processing node configurations
  */
 export const createLogicNodeConfig = <T extends BaseNodeData>(
   overrides: Partial<NodeFactoryConfig<T>>
 ): Partial<NodeFactoryConfig<T>> => ({
   size: DEFAULT_LOGIC_NODE_SIZE,
   handles: [
-    { id: "b", dataType: "b", position: Position.Left, type: "target" },
-    { id: "b", dataType: "b", position: Position.Right, type: "source" },
+    { id: "input", dataType: "x", position: Position.Left, type: "target" },
+    { id: "output", dataType: "x", position: Position.Right, type: "source" },
+  ],
+  ...overrides,
+});
+
+/**
+ * CREATE VIEW NODE CONFIG
+ * Helper for view/output nodes that display data
+ */
+export const createViewNodeConfig = <T extends BaseNodeData>(
+  overrides: Partial<NodeFactoryConfig<T>>
+): Partial<NodeFactoryConfig<T>> => ({
+  size: {
+    collapsed: { width: "w-[120px]", height: "h-[120px]" },
+    expanded: { width: "w-[180px]" },
+  },
+  handles: [
+    // Accept any data type for viewing
+    { id: "input", dataType: "x", position: Position.Left, type: "target" },
   ],
   ...overrides,
 });
 
 /**
  * CREATE UNIVERSAL NODE CONFIG
- * Creates a node configuration with automatic JSON input support
- * This is a convenience wrapper that automatically adds JSON input handling
+ * Helper for nodes that can handle any data type
  */
 export const createUniversalNodeConfig = <T extends BaseNodeData>(
-  config: NodeFactoryConfig<T>
-): NodeFactoryConfig<T> => {
-  return {
-    ...config,
-    // Note: JSON processing is automatically handled by the factory's Vibe Mode system
-  };
-};
+  overrides: Partial<NodeFactoryConfig<T>>
+): Partial<NodeFactoryConfig<T>> => ({
+  size: DEFAULT_LOGIC_NODE_SIZE,
+  handles: [
+    { id: "input", dataType: "x", position: Position.Left, type: "target" },
+    { id: "output", dataType: "x", position: Position.Right, type: "source" },
+  ],
+  ...overrides,
+});
+
+/**
+ * CREATE TRIGGERED NODE CONFIG
+ * Helper for nodes that respond to boolean triggers
+ */
+export const createTriggeredNodeConfig = <T extends BaseNodeData>(
+  overrides: Partial<NodeFactoryConfig<T>>
+): Partial<NodeFactoryConfig<T>> => ({
+  size: DEFAULT_LOGIC_NODE_SIZE,
+  handles: [
+    { id: "trigger", dataType: "b", position: Position.Left, type: "target" },
+    { id: "data", dataType: "x", position: Position.Left, type: "target" },
+    { id: "output", dataType: "x", position: Position.Right, type: "source" },
+  ],
+  ...overrides,
+});
 
 // ============================================================================
-// TRIGGER SUPPORT HELPERS
+// HANDLE UTILITY FUNCTIONS
 // ============================================================================
 
 /**
  * ADD TRIGGER SUPPORT
- * Universal helper to add boolean trigger support to any node
- * This allows nodes to be turned on/off via boolean connections
+ * Add trigger handle to existing handle configuration
  */
-export const addTriggerSupport = <T extends BaseNodeData>(
-  handles: HandleConfig[]
-): HandleConfig[] => {
-  // Check if node already has a boolean trigger input handle
-  const hasTriggerInput = handles.some(
-    (h: HandleConfig) => h.type === "target" && h.dataType === "b"
-  );
+export const addTriggerSupport = (handles: HandleConfig[]): HandleConfig[] => [
+  { id: "trigger", dataType: "b", position: Position.Left, type: "target" },
+  ...handles,
+];
 
-  if (!hasTriggerInput) {
-    // Add a boolean trigger input handle positioned at the left
-    return [
-      { id: "b", dataType: "b", position: Position.Left, type: "target" },
-      ...handles,
-    ];
+/**
+ * CREATE STRING INPUT OUTPUT HANDLES
+ * Common pattern for string processing nodes
+ */
+export const createStringInputOutputHandles = (): HandleConfig[] => [
+  { id: "input", dataType: "s", position: Position.Left, type: "target" },
+  { id: "output", dataType: "s", position: Position.Right, type: "source" },
+];
+
+/**
+ * CREATE MULTI-INPUT HANDLES
+ * For nodes that accept multiple inputs
+ */
+export const createMultiInputHandles = (
+  inputCount: number = 2
+): HandleConfig[] => {
+  const handles: HandleConfig[] = [];
+
+  // Create multiple input handles
+  for (let i = 0; i < inputCount; i++) {
+    handles.push({
+      id: `input${i + 1}`,
+      dataType: "s", // Default to string, can be overridden
+      position: Position.Left,
+      type: "target",
+    });
   }
+
+  // Add single output
+  handles.push({
+    id: "output",
+    dataType: "s",
+    position: Position.Right,
+    type: "source",
+  });
 
   return handles;
 };
 
+// ============================================================================
+// VALIDATION HELPERS
+// ============================================================================
+
 /**
- * SHOULD NODE BE ACTIVE
- * Check if a node should be triggered based on trigger connections
- * Returns true if no trigger is connected OR if trigger is active
+ * VALIDATE HANDLE CONFIGURATION
+ * Ensure handle configuration is valid
  */
-export const shouldNodeBeActive = (
-  connections: any[],
-  nodesData: Record<string, any>
-): boolean => {
-  // Get trigger connections (connections to trigger handles)
-  const triggerConnections = connections.filter(
-    (conn) => conn.targetHandle === "trigger"
-  );
+export const validateHandleConfig = (handles: HandleConfig[]): boolean => {
+  if (!Array.isArray(handles)) return false;
 
-  // No trigger connections means node should be active
-  if (triggerConnections.length === 0) {
-    return true;
-  }
-
-  // Check if any connected trigger node is active
-  return triggerConnections.some((conn) => {
-    const sourceNode = nodesData[conn.source];
-    if (!sourceNode) return false;
-
-    // For trigger nodes, check their 'triggered' state
-    if (
-      sourceNode.type?.includes("trigger") ||
-      sourceNode.type?.includes("pulse") ||
-      sourceNode.type?.includes("toggle")
-    ) {
-      return Boolean(sourceNode.data?.triggered);
-    }
-
-    // For other nodes, check if they have meaningful output
-    const outputValue =
-      sourceNode.data?.text ||
-      sourceNode.data?.value ||
-      sourceNode.data?.output;
-    return Boolean(outputValue);
+  return handles.every((handle) => {
+    return (
+      typeof handle.id === "string" &&
+      typeof handle.dataType === "string" &&
+      typeof handle.position === "string" &&
+      (handle.type === "source" || handle.type === "target")
+    );
   });
 };
 
 /**
- * WITH TRIGGER SUPPORT
- * Create a process logic wrapper that respects trigger state
- * Wraps existing processing logic with trigger checking
+ * SHOULD NODE BE ACTIVE
+ * Helper to determine if a node should be active based on trigger logic
  */
-export const withTriggerSupport = <T extends BaseNodeData>(
-  originalProcessLogic: (props: {
-    id: string;
-    data: T;
-    connections: any[];
-    nodesData: any[];
-    updateNodeData: (id: string, data: Partial<T>) => void;
-    setError: (error: string | null) => void;
-  }) => void,
-  inactiveOutputValue?: any
-) => {
-  return (props: {
-    id: string;
-    data: T;
-    connections: any[];
-    nodesData: any[];
-    updateNodeData: (id: string, data: Partial<T>) => void;
-    setError: (error: string | null) => void;
-  }) => {
-    const { connections, nodesData, updateNodeData, id } = props;
+export const shouldNodeBeActive = (
+  connections: any[],
+  nodesData: any[],
+  defaultActive: boolean = true
+): boolean => {
+  // Filter for trigger connections
+  const triggerConnections = connections.filter(
+    (c) => c.targetHandle === "trigger"
+  );
 
-    // Check if node should be triggered based on connections
-    const isActive = shouldNodeBeActive(connections, nodesData);
+  // If no trigger connections, use default state
+  if (triggerConnections.length === 0) {
+    return defaultActive;
+  }
 
-    if (!isActive) {
-      // Node is disabled by trigger - clear outputs or set to inactive state
-      if (inactiveOutputValue !== undefined) {
-        // Set specific inactive output value
-        updateNodeData(id, {
-          output: inactiveOutputValue,
-        } as unknown as Partial<T>);
-      } else {
-        // Default behavior: clear common output properties
-        const clearOutputs: Partial<T> = {};
+  // Get trigger value from connected nodes
+  const triggerValue = nodesData.find((node) => node?.data)?.data;
 
-        // Clear common output properties
-        const outputKeys = ["text", "value", "output", "result"];
-        outputKeys.forEach((key) => {
-          if (key in props.data) {
-            (clearOutputs as any)[key] = "";
-          }
-        });
-
-        // Special handling for JSON properties
-        if ("json" in props.data) {
-          (clearOutputs as any)["json"] = "";
-        }
-
-        // Special handling for parsedJson properties
-        if ("parsedJson" in props.data) {
-          (clearOutputs as any)["parsedJson"] = null;
-        }
-
-        if (Object.keys(clearOutputs).length > 0) {
-          updateNodeData(id, clearOutputs);
-        }
-      }
-
-      // Clear any existing errors when inactive
-      props.setError(null);
-      return;
-    }
-
-    // Node is triggered - run original processing logic
-    originalProcessLogic(props);
-  };
+  // Convert to boolean (truthy values activate the node)
+  return Boolean(triggerValue);
 };
 
 /**
- * CREATE TRIGGERED NODE CONFIG
- * Create a node configuration with automatic trigger support
- * This is a convenience wrapper that automatically adds trigger handling
+ * WITH TRIGGER SUPPORT
+ * Higher-order function to add trigger support to existing config
  */
-export const createTriggeredNodeConfig = <T extends BaseNodeData>(
-  config: NodeFactoryConfig<T>,
-  inactiveOutputValue?: any
-): NodeFactoryConfig<T> => {
-  return {
-    ...config,
-    handles: addTriggerSupport(config.handles),
-    processLogic: withTriggerSupport(config.processLogic, inactiveOutputValue),
-  };
-};
+export const withTriggerSupport = <T extends BaseNodeData>(
+  config: Partial<NodeFactoryConfig<T>>
+): Partial<NodeFactoryConfig<T>> => ({
+  ...config,
+  handles: config.handles
+    ? addTriggerSupport(config.handles)
+    : [
+        {
+          id: "trigger",
+          dataType: "b",
+          position: Position.Left,
+          type: "target",
+        },
+      ],
+});

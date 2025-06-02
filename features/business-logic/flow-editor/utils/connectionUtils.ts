@@ -1,6 +1,55 @@
 import type { Connection } from "@xyflow/react";
-import { parseTypes } from "../../handles/TypesafeHandle";
 import { TYPE_MAP } from "../constants";
+
+/**
+ * HELPER: Check if string is a valid data type
+ */
+function isDataType(str: string): boolean {
+  return /^[snjabNfxuS∅]$/.test(str) && str.length === 1;
+}
+
+/**
+ * HELPER: Map handle IDs to data types
+ */
+function mapHandleToDataType(handleId: string): string {
+  // If it's already a data type, return it
+  if (isDataType(handleId)) {
+    return handleId;
+  }
+
+  // Common handle ID to data type mappings
+  const handleToTypeMap: Record<string, string> = {
+    output: "s", // String output
+    trigger: "b", // Boolean trigger
+    input: "x", // Any input
+    json: "j", // JSON input
+    result: "x", // Any result
+    data: "x", // Any data
+    b: "b", // Boolean (legacy)
+    s: "s", // String (legacy)
+  };
+
+  return handleToTypeMap[handleId] || "x"; // Default to 'any'
+}
+
+/**
+ * HELPER: Parse union types safely
+ */
+function parseTypes(typeStr?: string | null): string[] {
+  if (!typeStr) return ["x"]; // Default to 'any'
+
+  // If it looks like a handle ID, map it first
+  if (!isDataType(typeStr)) {
+    const mappedType = mapHandleToDataType(typeStr);
+    return [mappedType];
+  }
+
+  // Parse union types (e.g., 's|n')
+  return typeStr
+    .split("|")
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+}
 
 /**
  * Validates if a connection between two handles is valid
@@ -30,10 +79,13 @@ export function getConnectionDataType(connection: Connection): string {
     return "s"; // fallback to string
   }
 
-  // Use parseTypes to support union/any/custom
-  const types = parseTypes(connection.sourceHandle);
-  // Use first type for color (or 'x' for any)
-  return types[0] || "s";
+  // Map handle ID to data type properly
+  const dataType = mapHandleToDataType(connection.sourceHandle);
+  console.log(
+    `[ConnectionUtils] Mapped handle "${connection.sourceHandle}" to type "${dataType}"`
+  );
+
+  return dataType;
 }
 
 /**

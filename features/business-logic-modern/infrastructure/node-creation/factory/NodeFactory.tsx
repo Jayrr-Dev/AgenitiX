@@ -20,7 +20,7 @@ import type { Node, NodeProps } from "@xyflow/react";
 import React, { memo, useRef } from "react";
 
 // TYPE DEFINITIONS
-import type { BaseNodeData, NodeFactoryConfig } from "./types";
+import type { BaseNodeData, HandleConfig, NodeFactoryConfig } from "./types";
 import { validateNodeSize } from "./types";
 
 // MODULAR HOOKS - FOCUSED RESPONSIBILITIES
@@ -292,15 +292,8 @@ function initializeSafetyStyles() {
 // ============================================================================
 
 /**
- * CREATE NODE COMPONENT
- * Enterprise factory function that creates optimized React Flow node components
- * with full safety layer integration and modular architecture
- *
- * ✨ ENHANCED WITH VIBE MODE ERROR INJECTION SUPPORT
- * - Nodes created with this factory can receive error states from Error Generator
- * - Supports warning/error/critical error types with proper visual styling
- * - Automatic error clearing when Error Generator disconnects
- *
+ * ENHANCED NODE FACTORY
+ * Creates a memoized React component with enterprise features
  * @param config - Node configuration object
  * @returns Memoized React component with enterprise features
  */
@@ -308,28 +301,136 @@ export function createNodeComponent<T extends BaseNodeData>(
   config: NodeFactoryConfig<T>
 ) {
   // ============================================================================
+  // HANDLE CONFIGURATION SETUP
+  // ============================================================================
+
+  // Use handles from config - registry loading should happen outside this function
+  let safeHandles: HandleConfig[] = [];
+
+  // First try to use handles from config (these should come from registry)
+  if (Array.isArray(config.handles) && config.handles.length > 0) {
+    safeHandles = config.handles;
+    console.log(
+      `🔗 [NodeFactory] ${config.nodeType}: Using ${safeHandles.length} handles from config`,
+      safeHandles
+    );
+  } else {
+    console.warn(
+      `⚠️ [NodeFactory] ${config.nodeType}: No handles in config. Config.handles:`,
+      config.handles
+    );
+  }
+
+  // EMERGENCY FALLBACK: Provide default handles if everything fails
+  if (safeHandles.length === 0) {
+    console.warn(
+      `🚨 [NodeFactory] ${config.nodeType}: No handles found, using emergency defaults`
+    );
+
+    // Provide sensible defaults based on node type
+    if (config.nodeType === "createText") {
+      safeHandles.push(
+        {
+          id: "trigger",
+          dataType: "b",
+          position: require("@xyflow/react").Position.Left,
+          type: "target",
+        },
+        {
+          id: "output",
+          dataType: "s",
+          position: require("@xyflow/react").Position.Right,
+          type: "source",
+        }
+      );
+      console.log(
+        `🛟 [NodeFactory] CreateText: Added trigger input (b) and string output (s) handles`
+      );
+    } else if (config.nodeType === "viewOutput") {
+      safeHandles.push({
+        id: "input",
+        dataType: "x",
+        position: require("@xyflow/react").Position.Left,
+        type: "target",
+      });
+      console.log(`🛟 [NodeFactory] ViewOutput: Added generic input handle`);
+    } else {
+      // Generic default for unknown nodes
+      safeHandles.push(
+        {
+          id: "input",
+          dataType: "x",
+          position: require("@xyflow/react").Position.Left,
+          type: "target",
+        },
+        {
+          id: "output",
+          dataType: "x",
+          position: require("@xyflow/react").Position.Right,
+          type: "source",
+        }
+      );
+      console.log(
+        `🛟 [NodeFactory] ${config.nodeType}: Added generic input/output handles`
+      );
+    }
+
+    console.log(
+      `🛟 [NodeFactory] ${config.nodeType}: Added ${safeHandles.length} emergency handles:`,
+      safeHandles
+    );
+  }
+
+  // ============================================================================
+  // ADD JSON INPUT SUPPORT - After handles are determined
+  // ============================================================================
+
+  // Import JSON processor
+  const { addJsonInputSupport } = require("./utils/jsonProcessor");
+
+  // Add JSON input support to the handles (this won't override existing handles)
+  const handlesWithJsonSupport = addJsonInputSupport(safeHandles);
+
+  // Create enhanced config with determined handles and JSON support
+  const enhancedConfig: NodeFactoryConfig<T> & { handles: HandleConfig[] } = {
+    ...config,
+    handles: handlesWithJsonSupport,
+  };
+
+  console.log(
+    `🔗 [NodeFactory] ${config.nodeType}: Added JSON input support, final handle count: ${handlesWithJsonSupport.length}`,
+    handlesWithJsonSupport
+  );
+
+  // ============================================================================
   // SIZE VALIDATION - PREVENT SIZING ISSUES
   // ============================================================================
 
-  if (config.size && !validateNodeSize(config.size)) {
+  if (enhancedConfig.size && !validateNodeSize(enhancedConfig.size)) {
     console.error(
-      `❌ [NodeFactory] Invalid size configuration for ${config.nodeType}`
+      `❌ [NodeFactory] Invalid size configuration for ${enhancedConfig.nodeType}`
     );
     console.error('   Expected: Tailwind classes like "w-[60px]", "h-[60px]"');
-    console.error("   Received:", config.size);
+    console.error("   Received:", enhancedConfig.size);
     console.error("   Using default size instead.");
 
     // Remove invalid size to fall back to defaults
-    config.size = undefined;
+    enhancedConfig.size = undefined;
   }
 
   // INITIALIZE ENTERPRISE FEATURES
   initializeSafetyStyles();
 
+  // ============================================================================
+  // ERROR INJECTION SUPPORT - Enterprise Error Management
+  // ============================================================================
+
   // LOG ERROR INJECTION SUPPORT
-  if (ERROR_INJECTION_SUPPORTED_NODES.includes(config.nodeType as any)) {
+  if (
+    ERROR_INJECTION_SUPPORTED_NODES.includes(enhancedConfig.nodeType as any)
+  ) {
     console.log(
-      `✨ [RefactoredFactory] ${config.nodeType}: Error injection support ENABLED`
+      `✨ [RefactoredFactory] ${enhancedConfig.nodeType}: Error injection support ENABLED`
     );
   }
 
@@ -347,7 +448,7 @@ export function createNodeComponent<T extends BaseNodeData>(
     // ========================================================================
 
     // REGISTRATION: Handle inspector and type registration
-    const enhancedConfig = useNodeRegistration(config);
+    const registrationConfig = useNodeRegistration(enhancedConfig);
 
     // SAFETY LAYER INTEGRATION
     const safetyLayerRef = useRef({
@@ -357,23 +458,23 @@ export function createNodeComponent<T extends BaseNodeData>(
     });
 
     // STATE MANAGEMENT: Centralized state handling with safety integration
-    const nodeState = useNodeState<T>(id, data, enhancedConfig);
+    const nodeState = useNodeState<T>(id, data, registrationConfig);
 
     // CONNECTION HANDLING: Optimized connection processing
-    const connectionData = useNodeConnections(id, enhancedConfig.handles);
+    const connectionData = useNodeConnections(id, registrationConfig.handles!);
 
     // PROCESSING LOGIC: Unified processing with enterprise safety
     const processingState = useNodeProcessing<T>(
       id,
       nodeState,
       connectionData,
-      enhancedConfig,
+      registrationConfig,
       safetyLayerRef.current // Pass safety layers
     );
 
     // STYLING: Consolidated theming and styling with error injection support
     const styling = useNodeStyling(
-      enhancedConfig.nodeType,
+      registrationConfig.nodeType,
       selected,
       processingState.error,
       processingState.isActive,
@@ -382,7 +483,7 @@ export function createNodeComponent<T extends BaseNodeData>(
 
     // HANDLE MANAGEMENT: Smart handle filtering and display
     const handles = useNodeHandles(
-      enhancedConfig.handles,
+      registrationConfig.handles!,
       connectionData.connections,
       connectionData.allNodes
     );
@@ -426,7 +527,7 @@ export function createNodeComponent<T extends BaseNodeData>(
         id={id}
         styling={styling}
         nodeState={nodeState}
-        enhancedConfig={enhancedConfig}
+        enhancedConfig={registrationConfig}
         isEnterprise={true}
       >
         <NodeContent
@@ -435,7 +536,7 @@ export function createNodeComponent<T extends BaseNodeData>(
           processingState={processingState}
           styling={styling}
           handles={handles}
-          enhancedConfig={enhancedConfig}
+          enhancedConfig={registrationConfig}
         />
       </NodeContainer>
     );

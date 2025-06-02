@@ -16,14 +16,14 @@ import {
   registerNodeTypeConfig,
 } from "../../node-registry/inspectorRegistry";
 import type { BaseNodeData, NodeFactoryConfig } from "../types";
-import { addJsonInputSupport } from "../utils/jsonProcessor";
 
 /**
  * USE NODE REGISTRATION
  * Handles node type and inspector registration
+ * Note: JSON input support is now handled in NodeFactory after registry handles are loaded
  *
  * @param config - Original node configuration
- * @returns Enhanced configuration with JSON support
+ * @returns Enhanced configuration without modifying handles (handles are managed in NodeFactory)
  */
 export function useNodeRegistration<T extends BaseNodeData>(
   config: NodeFactoryConfig<T>
@@ -45,12 +45,11 @@ export function useNodeRegistration<T extends BaseNodeData>(
       );
     }
 
-    // ENHANCE CONFIG: Add automatic JSON input support
-    const enhancedConfig = {
-      ...config,
-      handles: addJsonInputSupport(config.handles),
-    };
+    // RETURN CONFIG: Without modifying handles - this is now handled in NodeFactory
+    console.log(
+      `📝 [NodeRegistration] ${config.nodeType}: Registered with inspector system`
+    );
 
-    return enhancedConfig;
+    return config;
   }, [config]);
 }

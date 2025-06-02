@@ -19,39 +19,23 @@ import type { BaseNodeData, HandleConfig } from "../types";
 
 /**
  * ADD JSON INPUT SUPPORT
- * Universal helper to add JSON input support to any node
- * This allows nodes to be programmatically updated via JSON data
+ * Automatically adds JSON input handle to nodes for Vibe Mode integration
+ * Enhanced with null safety for registry-driven handle systems
  */
-export const addJsonInputSupport = <T extends BaseNodeData>(
-  handles: HandleConfig[]
+export const addJsonInputSupport = (
+  handles: HandleConfig[] | undefined
 ): HandleConfig[] => {
-  // Check if node already has a JSON input handle
-  const hasJsonInput = handles.some(
-    (h: HandleConfig) => h.type === "target" && h.dataType === "j"
-  );
+  // SAFETY CHECK: Handle undefined handles from registry integration
+  if (!handles || !Array.isArray(handles)) {
+    console.warn(
+      "⚠️ [JsonProcessor] Handles are undefined or invalid, returning only JSON input handle as fallback"
+    );
 
-  if (!hasJsonInput) {
-    // Check for handle ID conflicts and generate unique ID
-    const existingIds = handles.map((h) => h.id);
-    let jsonInputId = "j";
-
-    // If 'j' is already used, try alternative IDs
-    if (existingIds.includes("j")) {
-      const alternatives = ["json", "j_in", "j_input", "json_in"];
-      jsonInputId =
-        alternatives.find((id) => !existingIds.includes(id)) ||
-        `j_${Date.now()}`;
-
-      console.log(
-        `🔧 Handle ID conflict detected: 'j' already exists. Using '${jsonInputId}' for JSON input handle.`
-      );
-    }
-
-    // Add a JSON input handle positioned at the top center with unique ID
+    // Return minimal fallback with only JSON input
+    // This is a safety measure - the proper handles should come from registry or emergency fallback in NodeFactory
     return [
-      ...handles,
       {
-        id: jsonInputId,
+        id: "json",
         dataType: "j",
         position: Position.Top,
         type: "target",
@@ -59,7 +43,26 @@ export const addJsonInputSupport = <T extends BaseNodeData>(
     ];
   }
 
-  return handles;
+  // Check if node already has a JSON input handle
+  const hasJsonInput = handles.some(
+    (h: HandleConfig) => h.type === "target" && h.dataType === "j"
+  );
+
+  // If already has JSON input, return handles as-is
+  if (hasJsonInput) {
+    return handles;
+  }
+
+  // Add JSON input handle for Vibe Mode support
+  return [
+    ...handles,
+    {
+      id: "json",
+      dataType: "j",
+      position: Position.Top,
+      type: "target",
+    },
+  ];
 };
 
 /**

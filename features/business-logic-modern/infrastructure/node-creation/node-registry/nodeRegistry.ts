@@ -181,8 +181,14 @@ export const MODERN_NODE_REGISTRY: Record<NodeType, EnhancedNodeRegistration> =
       expandedHeight: 120,
       icon: "📝",
 
-      // FACTORY CONFIGURATION
+      // FACTORY CONFIGURATION - Corrected handles to match expected behavior
       handles: [
+        {
+          id: "trigger",
+          dataType: "b",
+          position: Position.Left,
+          type: "target",
+        },
         {
           id: "output",
           dataType: "s",
@@ -191,8 +197,8 @@ export const MODERN_NODE_REGISTRY: Record<NodeType, EnhancedNodeRegistration> =
         },
       ],
       size: {
-        collapsed: { width: "120px", height: "60px" },
-        expanded: { width: "200px" },
+        collapsed: { width: "w-[120px]", height: "h-[60px]" },
+        expanded: { width: "w-[200px]" },
       },
 
       // TYPED DEFAULT DATA
@@ -234,13 +240,13 @@ export const MODERN_NODE_REGISTRY: Record<NodeType, EnhancedNodeRegistration> =
       expandedHeight: 150,
       icon: "👁️",
 
-      // FACTORY CONFIGURATION
+      // FACTORY CONFIGURATION - Corrected to accept any input type
       handles: [
-        { id: "input", dataType: "u", position: Position.Left, type: "target" },
+        { id: "input", dataType: "x", position: Position.Left, type: "target" },
       ],
       size: {
-        collapsed: { width: "60px", height: "60px" },
-        expanded: { width: "200px" },
+        collapsed: { width: "w-[60px]", height: "h-[60px]" },
+        expanded: { width: "w-[200px]" },
       },
 
       // TYPED DEFAULT DATA
@@ -306,8 +312,8 @@ export const MODERN_NODE_REGISTRY: Record<NodeType, EnhancedNodeRegistration> =
         },
       ],
       size: {
-        collapsed: { width: "60px", height: "60px" },
-        expanded: { width: "120px" },
+        collapsed: { width: "w-[60px]", height: "h-[60px]" },
+        expanded: { width: "w-[120px]" },
       },
 
       // TYPED DEFAULT DATA
@@ -369,8 +375,8 @@ export const MODERN_NODE_REGISTRY: Record<NodeType, EnhancedNodeRegistration> =
         },
       ],
       size: {
-        collapsed: { width: "60px", height: "60px" },
-        expanded: { width: "150px" },
+        collapsed: { width: "w-[60px]", height: "h-[60px]" },
+        expanded: { width: "w-[150px]" },
       },
 
       // TYPED DEFAULT DATA
@@ -886,8 +892,8 @@ export function createNodeTemplate<T extends BaseNodeData>(config: {
     // FACTORY INTEGRATION
     handles: [], // To be filled when configuring handles
     size: {
-      collapsed: { width: `${iconWidth}px`, height: `${iconHeight}px` },
-      expanded: { width: `${expandedWidth}px` },
+      collapsed: { width: "w-[120px]", height: "h-[60px]" },
+      expanded: { width: "w-[200px]" },
     },
 
     // DATA CONFIGURATION
@@ -1266,7 +1272,7 @@ export function createFullFactoryNode<T extends BaseNodeData>(
     errorRecoveryData: factoryConfig.errorRecoveryData,
 
     // Factory data integration
-    handles: factoryConfig.handles,
+    handles: factoryConfig.handles || [],
     size: factoryConfig.size,
     defaultData: factoryConfig.defaultData,
 
@@ -1286,7 +1292,7 @@ export function createFullFactoryNode<T extends BaseNodeData>(
     icon: registryConfig.icon,
 
     // Legacy compatibility
-    hasOutput: factoryConfig.handles.some((h) => h.type === "source"),
+    hasOutput: (factoryConfig.handles || []).some((h) => h.type === "source"),
     hasControls: !!factoryConfig.renderInspectorControls,
     factoryLabel: factoryConfig.displayName,
     factoryDefaultData: {
