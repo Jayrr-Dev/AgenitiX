@@ -1,6 +1,6 @@
 {
-  "version": "1.0.17",
-  "timestamp": 1748842808781,
+  "version": "1.0.18",
+  "timestamp": 1748843798865,
   "hashes": [
     [
       "features\\business-logic-modern\\infrastructure\\components\\ActionToolbar.tsx",
@@ -52,7 +52,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\hooks\\useErrorLogging.ts",
-      "df5a1ce77f97b73deb90af61a1b3881a"
+      "fc30985b501a68fd7936bebdbcfa8480"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\hooks\\useFlowEditorHandlers.ts",
@@ -97,6 +97,10 @@
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\utils\\connectionUtils.ts",
       "72ef893a29c1d0629606b5cfea9e01a1"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\flow-engine\\utils\\dataMigration.ts",
+      "ac94f4991390214ec45febe28d87e728"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\utils\\memoryCleanup.ts",
@@ -276,7 +280,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\TypesafeHandle.tsx",
-      "39366c6f1b6d888045c3702c5da7f434"
+      "89643d5c7c0bd612915c93edf18170ea"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\node-registry\\inspectorRegistry.ts",
@@ -448,7 +452,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "fdc13d1886c42f1dd101126768b8e391"
+      "7f1c580a33586ca5f9d07716421f0eb0"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
