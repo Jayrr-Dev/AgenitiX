@@ -12,8 +12,8 @@
 
 "use client";
 
+import { useFlowStore } from "@flow-engine/stores/flowStore";
 import React from "react";
-import { useFlowStore } from "../../../stores/flowStore";
 import { BaseControlProps } from "../types";
 import { ActionButton, BaseControl, StatusBadge } from "./BaseControl";
 

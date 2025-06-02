@@ -1,41 +1,74 @@
 /**
- * NODE STYLE STORE - Visual theming and styling for workflow nodes
+ * NODE STYLE STORE - Enhanced visual theming with modern registry integration
  *
- * • Manages category-based color themes and visual styling for nodes
- * • Provides hover, selection, activation, and error state styling
- * • Handles dynamic color schemes and theme customization
- * • Offers category mapping and theme application utilities
- * • Zustand store for reactive styling across node components
+ * • Registry-integrated category-based color themes and visual styling for nodes
+ * • Provides hover, selection, activation, and error state styling with registry metadata
+ * • Handles dynamic color schemes with automatic registry category detection
+ * • Enhanced theming utilities with registry-based category mapping
+ * • Zustand store for reactive styling with registry validation
+ * • Auto-syncs with modern registry for consistent node categorization
  *
- * Keywords: Zustand, node-theming, visual-styling, categories, colors, themes
+ * Keywords: Zustand, node-theming, visual-styling, registry-integration, categories, colors, themes
  */
 
 import { create } from "zustand";
 
-// CENTRALIZED NODE REGISTRY
+// MODERN REGISTRY INTEGRATION - Enhanced imports - FIXED REFERENCE
 import {
-  getCategoryMapping,
-  type NodeCategory,
-} from "@/features/business-logic-modern/infrastructure/node-creation/node-registry/nodeRegistry";
+  getNodeCategoryMapping,
+  isValidNodeType,
+} from "../../node-creation/node-registry/nodeRegistry";
+
+// FACTORY TYPES INTEGRATION - Enhanced type safety
+import type { NodeCategory } from "../../node-creation/factory/types";
+
+// CATEGORY REGISTRY INTEGRATION - Enhanced theming with registry metadata
+import {
+  applyCategoryHooks,
+  CATEGORY_REGISTRY,
+  getCategoryMetadata,
+  getCategoryTheme,
+} from "../../node-creation/category-registry/categoryRegistry";
 
 // ============================================================================
-// NODE CATEGORY DEFINITIONS
+// REGISTRY-ENHANCED NODE CATEGORY MANAGEMENT
 // ============================================================================
 
-// Lazy-initialized to avoid circular dependency
+/**
+ * LAZY-INITIALIZED CATEGORY MAPPING
+ * Prevents circular dependencies while providing registry integration
+ */
 let _categoryMapping: Record<string, NodeCategory> | null = null;
 
 const getCachedCategoryMapping = (): Record<string, NodeCategory> => {
   if (_categoryMapping === null) {
-    _categoryMapping = getCategoryMapping();
+    try {
+      _categoryMapping = getNodeCategoryMapping();
+      console.log(
+        "🎨 Loaded category mapping from registry:",
+        Object.keys(_categoryMapping).length,
+        "nodes"
+      );
+    } catch (error) {
+      console.warn("⚠️ Failed to load category mapping from registry:", error);
+      _categoryMapping = {}; // Fallback to empty mapping
+    }
   }
-  return _categoryMapping;
+  return _categoryMapping!; // Safe assertion since we ensure it's not null above
 };
 
-// Export a getter function instead of direct value
-export const getNodeCategoryMapping = () => getCachedCategoryMapping();
+/**
+ * REGISTRY-VALIDATED CATEGORY MAPPING
+ * Enhanced with validation and error handling
+ */
+export const getThemingCategoryMapping = (): Record<string, NodeCategory> => {
+  return getCachedCategoryMapping();
+};
 
-// For backward compatibility, also export the object
+/**
+ * PROXY-BASED CATEGORY MAPPING
+ * Provides backwards compatibility with dynamic registry updates
+ */
 export const NODE_CATEGORY_MAPPING = new Proxy(
   {} as Record<string, NodeCategory>,
   {
@@ -51,11 +84,61 @@ export const NODE_CATEGORY_MAPPING = new Proxy(
       const mapping = getCachedCategoryMapping();
       return prop in mapping;
     },
+    getOwnPropertyDescriptor(target, prop) {
+      const mapping = getCachedCategoryMapping();
+      if (prop in mapping) {
+        return {
+          enumerable: true,
+          configurable: true,
+          value: mapping[prop as string],
+        };
+      }
+      return undefined;
+    },
   }
 );
 
 // ============================================================================
-// CATEGORY COLOR THEMES
+// REGISTRY-ENHANCED UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * GET NODE CATEGORY WITH VALIDATION
+ * Enhanced with registry validation and fallback handling
+ */
+export const getNodeCategory = (nodeType: string): NodeCategory | null => {
+  if (!isValidNodeType(nodeType)) {
+    console.warn(`⚠️ Invalid node type for theming: ${nodeType}`);
+    return null;
+  }
+
+  const mapping = getCachedCategoryMapping();
+  return mapping[nodeType] || null;
+};
+
+/**
+ * GET NODES BY CATEGORY FOR THEMING
+ * Returns all node types in a specific category for batch styling
+ */
+export const getNodesByCategory = (category: NodeCategory): string[] => {
+  const mapping = getCachedCategoryMapping();
+  return Object.entries(mapping)
+    .filter(([_, nodeCategory]) => nodeCategory === category)
+    .map(([nodeType]) => nodeType);
+};
+
+/**
+ * REFRESH CATEGORY MAPPING
+ * Forces a refresh of the category mapping from registry
+ */
+export const refreshCategoryMapping = (): void => {
+  _categoryMapping = null;
+  getCachedCategoryMapping();
+  console.log("🔄 Refreshed category mapping from registry");
+};
+
+// ============================================================================
+// MODERN REGISTRY CATEGORY THEMES
 // ============================================================================
 
 export interface CategoryTheme {
@@ -86,7 +169,12 @@ export interface CategoryTheme {
   };
 }
 
+/**
+ * REGISTRY-ALIGNED CATEGORY THEMES
+ * Updated to match modern registry categories: create, view, trigger, test, cycle
+ */
 export const CATEGORY_THEMES: Record<NodeCategory, CategoryTheme> = {
+  // CREATE CATEGORY - Blue theme for creation nodes
   create: {
     background: { light: "bg-blue-50", dark: "bg-blue-900" },
     border: { light: "border-blue-300", dark: "border-blue-800" },
@@ -100,110 +188,7 @@ export const CATEGORY_THEMES: Record<NodeCategory, CategoryTheme> = {
     },
   },
 
-  logic: {
-    background: { light: "bg-purple-50", dark: "bg-purple-900" },
-    border: { light: "border-purple-300", dark: "border-purple-800" },
-    text: {
-      primary: { light: "text-purple-900", dark: "text-purple-100" },
-      secondary: { light: "text-purple-800", dark: "text-purple-200" },
-    },
-    button: {
-      border: "border-purple-300 dark:border-purple-800",
-      hover: { light: "hover:bg-purple-200", dark: "hover:bg-purple-800" },
-    },
-  },
-
-  trigger: {
-    background: { light: "bg-orange-50", dark: "bg-orange-900" },
-    border: { light: "border-orange-300", dark: "border-orange-800" },
-    text: {
-      primary: { light: "text-orange-900", dark: "text-orange-100" },
-      secondary: { light: "text-orange-800", dark: "text-orange-200" },
-    },
-    button: {
-      border: "border-orange-300 dark:border-orange-800",
-      hover: { light: "hover:bg-orange-200", dark: "hover:bg-orange-800" },
-    },
-  },
-
-  test: {
-    background: { light: "bg-gray-50", dark: "bg-gray-900" },
-    border: { light: "border-gray-300", dark: "border-gray-800" },
-    text: {
-      primary: { light: "text-gray-900", dark: "text-gray-100" },
-      secondary: { light: "text-gray-800", dark: "text-gray-200" },
-    },
-    button: {
-      border: "border-gray-300 dark:border-gray-800",
-      hover: { light: "hover:bg-gray-200", dark: "hover:bg-gray-800" },
-    },
-  },
-
-  turn: {
-    background: { light: "bg-cyan-50", dark: "bg-cyan-900" },
-    border: { light: "border-cyan-300", dark: "border-cyan-800" },
-    text: {
-      primary: { light: "text-cyan-900", dark: "text-cyan-100" },
-      secondary: { light: "text-cyan-800", dark: "text-cyan-200" },
-    },
-    button: {
-      border: "border-cyan-300 dark:border-cyan-800",
-      hover: { light: "hover:bg-cyan-200", dark: "hover:bg-cyan-800" },
-    },
-  },
-
-  count: {
-    background: { light: "bg-amber-50", dark: "bg-amber-900" },
-    border: { light: "border-amber-300", dark: "border-amber-800" },
-    text: {
-      primary: { light: "text-amber-900", dark: "text-amber-100" },
-      secondary: { light: "text-amber-800", dark: "text-amber-200" },
-    },
-    button: {
-      border: "border-amber-300 dark:border-amber-800",
-      hover: { light: "hover:bg-amber-200", dark: "hover:bg-amber-800" },
-    },
-  },
-
-  delay: {
-    background: { light: "bg-red-50", dark: "bg-red-900" },
-    border: { light: "border-red-300", dark: "border-red-800" },
-    text: {
-      primary: { light: "text-red-900", dark: "text-red-100" },
-      secondary: { light: "text-red-800", dark: "text-red-200" },
-    },
-    button: {
-      border: "border-red-300 dark:border-red-800",
-      hover: { light: "hover:bg-red-200", dark: "hover:bg-red-800" },
-    },
-  },
-
-  edit: {
-    background: { light: "bg-indigo-50", dark: "bg-indigo-900" },
-    border: { light: "border-indigo-300", dark: "border-indigo-800" },
-    text: {
-      primary: { light: "text-indigo-900", dark: "text-indigo-100" },
-      secondary: { light: "text-indigo-800", dark: "text-indigo-200" },
-    },
-    button: {
-      border: "border-indigo-300 dark:border-indigo-800",
-      hover: { light: "hover:bg-indigo-200", dark: "hover:bg-indigo-800" },
-    },
-  },
-
-  cycle: {
-    background: { light: "bg-green-50", dark: "bg-green-900" },
-    border: { light: "border-green-300", dark: "border-green-800" },
-    text: {
-      primary: { light: "text-green-900", dark: "text-green-100" },
-      secondary: { light: "text-green-800", dark: "text-green-200" },
-    },
-    button: {
-      border: "border-green-300 dark:border-green-800",
-      hover: { light: "hover:bg-green-200", dark: "hover:bg-green-800" },
-    },
-  },
-
+  // VIEW CATEGORY - Gray theme for display/view nodes
   view: {
     background: { light: "bg-gray-50", dark: "bg-gray-900" },
     border: { light: "border-gray-300", dark: "border-gray-800" },
@@ -216,10 +201,52 @@ export const CATEGORY_THEMES: Record<NodeCategory, CategoryTheme> = {
       hover: { light: "hover:bg-gray-200", dark: "hover:bg-gray-800" },
     },
   },
+
+  // TRIGGER CATEGORY - Purple theme for trigger/automation nodes
+  trigger: {
+    background: { light: "bg-purple-50", dark: "bg-purple-900" },
+    border: { light: "border-purple-300", dark: "border-purple-800" },
+    text: {
+      primary: { light: "text-purple-900", dark: "text-purple-100" },
+      secondary: { light: "text-purple-800", dark: "text-purple-200" },
+    },
+    button: {
+      border: "border-purple-300 dark:border-purple-800",
+      hover: { light: "hover:bg-purple-200", dark: "hover:bg-purple-800" },
+    },
+  },
+
+  // TEST CATEGORY - Yellow theme for testing/debug nodes
+  test: {
+    background: { light: "bg-yellow-50", dark: "bg-yellow-900" },
+    border: { light: "border-yellow-300", dark: "border-yellow-800" },
+    text: {
+      primary: { light: "text-yellow-900", dark: "text-yellow-100" },
+      secondary: { light: "text-yellow-800", dark: "text-yellow-200" },
+    },
+    button: {
+      border: "border-yellow-300 dark:border-yellow-800",
+      hover: { light: "hover:bg-yellow-200", dark: "hover:bg-yellow-800" },
+    },
+  },
+
+  // CYCLE CATEGORY - Green theme for cycle/loop nodes
+  cycle: {
+    background: { light: "bg-green-50", dark: "bg-green-900" },
+    border: { light: "border-green-300", dark: "border-green-800" },
+    text: {
+      primary: { light: "text-green-900", dark: "text-green-100" },
+      secondary: { light: "text-green-800", dark: "text-green-200" },
+    },
+    button: {
+      border: "border-green-300 dark:border-green-800",
+      hover: { light: "hover:bg-green-200", dark: "hover:bg-green-800" },
+    },
+  },
 };
 
 // ============================================================================
-// NODE STYLE TYPES
+// NODE STYLE TYPES - Enhanced with Registry Integration
 // ============================================================================
 
 export interface NodeStyleState {
@@ -262,10 +289,12 @@ export interface NodeStyleState {
   base: {
     transition: string;
   };
-  // Category theming
+  // Registry-enhanced category theming
   categoryTheming: {
     enabled: boolean;
     customOverrides: Partial<Record<NodeCategory, Partial<CategoryTheme>>>;
+    registrySync: boolean; // Auto-sync with registry changes
+    debugMode: boolean; // Show registry integration debug info
   };
 }
 
@@ -276,7 +305,8 @@ export interface NodeStyleActions {
   updateErrorStyle: (style: Partial<NodeStyleState["error"]>) => void;
   resetToDefaults: () => void;
   updateBaseStyle: (style: Partial<NodeStyleState["base"]>) => void;
-  // Category theming actions
+
+  // Enhanced category theming actions
   enableCategoryTheming: () => void;
   disableCategoryTheming: () => void;
   updateCategoryTheme: (
@@ -285,10 +315,17 @@ export interface NodeStyleActions {
   ) => void;
   resetCategoryTheme: (category: NodeCategory) => void;
   resetAllCategoryThemes: () => void;
+
+  // Registry integration actions
+  enableRegistrySync: () => void;
+  disableRegistrySync: () => void;
+  refreshFromRegistry: () => void;
+  toggleDebugMode: () => void;
+  validateNodeTheming: (nodeType: string) => boolean;
 }
 
 // ============================================================================
-// DEFAULT STYLES
+// DEFAULT STYLES - Enhanced with Registry Integration
 // ============================================================================
 
 const defaultStyles: NodeStyleState = {
@@ -328,17 +365,20 @@ const defaultStyles: NodeStyleState = {
   categoryTheming: {
     enabled: true,
     customOverrides: {},
+    registrySync: true, // Auto-sync with registry by default
+    debugMode: false,
   },
 };
 
 // ============================================================================
-// ZUSTAND STORE
+// ENHANCED ZUSTAND STORE - Registry Integration
 // ============================================================================
 
 export const useNodeStyleStore = create<NodeStyleState & NodeStyleActions>(
-  (set) => ({
+  (set, get) => ({
     ...defaultStyles,
 
+    // EXISTING STYLE ACTIONS
     updateHoverStyle: (style) =>
       set((state) => ({
         hover: { ...state.hover, ...style },
@@ -366,6 +406,7 @@ export const useNodeStyleStore = create<NodeStyleState & NodeStyleActions>(
 
     resetToDefaults: () => set(defaultStyles),
 
+    // ENHANCED CATEGORY THEMING ACTIONS
     enableCategoryTheming: () =>
       set((state) => ({
         categoryTheming: { ...state.categoryTheming, enabled: true },
@@ -382,7 +423,10 @@ export const useNodeStyleStore = create<NodeStyleState & NodeStyleActions>(
           ...state.categoryTheming,
           customOverrides: {
             ...state.categoryTheming.customOverrides,
-            [category]: theme,
+            [category]: {
+              ...state.categoryTheming.customOverrides[category],
+              ...theme,
+            },
           },
         },
       })),
@@ -402,20 +446,76 @@ export const useNodeStyleStore = create<NodeStyleState & NodeStyleActions>(
       set((state) => ({
         categoryTheming: { ...state.categoryTheming, customOverrides: {} },
       })),
+
+    // REGISTRY INTEGRATION ACTIONS
+    enableRegistrySync: () =>
+      set((state) => ({
+        categoryTheming: { ...state.categoryTheming, registrySync: true },
+      })),
+
+    disableRegistrySync: () =>
+      set((state) => ({
+        categoryTheming: { ...state.categoryTheming, registrySync: false },
+      })),
+
+    refreshFromRegistry: () => {
+      const state = get();
+      if (state.categoryTheming.registrySync) {
+        refreshCategoryMapping();
+        if (state.categoryTheming.debugMode) {
+          console.log("🔄 Node style store refreshed from registry");
+        }
+      }
+    },
+
+    toggleDebugMode: () =>
+      set((state) => ({
+        categoryTheming: {
+          ...state.categoryTheming,
+          debugMode: !state.categoryTheming.debugMode,
+        },
+      })),
+
+    validateNodeTheming: (nodeType: string) => {
+      const state = get();
+      if (!state.categoryTheming.enabled) return true;
+
+      const isValid = isValidNodeType(nodeType);
+      const category = getNodeCategory(nodeType);
+
+      if (state.categoryTheming.debugMode) {
+        console.log(`🎨 Validating theming for ${nodeType}:`, {
+          isValidNode: isValid,
+          category,
+          hasTheme: category ? category in CATEGORY_THEMES : false,
+        });
+      }
+
+      return isValid && category !== null;
+    },
   })
 );
 
 // ============================================================================
-// UTILITY HOOKS
+// ENHANCED UTILITY HOOKS - Registry Integration
 // ============================================================================
 
-// Hook to get the complete style class string for a node's current state
+/**
+ * REGISTRY-ENHANCED NODE STYLE CLASSES
+ * Enhanced with registry validation and debug information
+ */
 export const useNodeStyleClasses = (
   isSelected: boolean,
   isError: boolean,
-  isActive: boolean
+  isActive: boolean,
+  nodeType?: string
 ) => {
   const styles = useNodeStyleStore();
+
+  // Registry validation for enhanced debugging
+  if (nodeType && styles.categoryTheming.debugMode) {
+    styles.validateNodeTheming(nodeType);
+  }
 
   const getStateStyles = () => {
     if (isSelected) {
@@ -433,8 +533,69 @@ export const useNodeStyleClasses = (
   return `${styles.base.transition} ${getStateStyles()}`.trim();
 };
 
-// Hook to get button theme classes
-export const useNodeButtonTheme = (isError: boolean, isActive: boolean) => {
+/**
+ * ENHANCED CATEGORY THEME HOOK
+ * Enhanced with category registry validation and dynamic theming
+ */
+export const useCategoryTheme = (nodeType: string) => {
+  const { categoryTheming } = useNodeStyleStore();
+
+  if (!categoryTheming.enabled) {
+    return null;
+  }
+
+  const category = getNodeCategory(nodeType);
+  if (!category) {
+    if (categoryTheming.debugMode) {
+      console.warn(`🎨 No category found for node type: ${nodeType}`);
+    }
+    return null;
+  }
+
+  // ENHANCED: Validate category with registry
+  const validation = validateCategoryWithRegistry(category);
+  if (!validation.valid) {
+    if (categoryTheming.debugMode) {
+      console.warn(
+        `🎨 Category validation failed for ${nodeType}:`,
+        validation.reason
+      );
+    }
+    return null;
+  }
+
+  // ENHANCED: Use category registry theme first, then fallback to hardcoded
+  const enhancedTheme = getEnhancedCategoryTheme(category);
+  const customOverride = categoryTheming.customOverrides[category];
+
+  const finalTheme = customOverride
+    ? { ...enhancedTheme, ...customOverride }
+    : enhancedTheme;
+
+  // ENHANCED: Apply category hooks when theme is used
+  if (categoryTheming.debugMode) {
+    console.log(`🎨 Applied enhanced theme for ${nodeType} (${category}):`, {
+      priority: getCategoryThemePriority(category),
+      metadata: validation.metadata,
+      theme: finalTheme,
+    });
+  }
+
+  // Trigger theme hooks
+  applyCategoryThemeHooks(category, finalTheme);
+
+  return finalTheme;
+};
+
+/**
+ * ENHANCED CATEGORY BUTTON THEME
+ * Enhanced with registry priority and validation
+ */
+export const useNodeButtonTheme = (
+  isError: boolean,
+  isActive: boolean,
+  nodeType?: string
+) => {
   const styles = useNodeStyleStore();
 
   if (isError) {
@@ -443,16 +604,78 @@ export const useNodeButtonTheme = (isError: boolean, isActive: boolean) => {
   if (isActive) {
     return `${styles.activation.buttonTheme.border} ${styles.activation.buttonTheme.hover}`;
   }
+
+  // ENHANCED: Registry-based category theming with priority
+  if (nodeType && styles.categoryTheming.enabled) {
+    const category = getNodeCategory(nodeType);
+    if (category) {
+      // ENHANCED: Validate category before applying theme
+      const validation = validateCategoryWithRegistry(category);
+      if (validation.valid) {
+        const enhancedTheme = getEnhancedCategoryTheme(category);
+        const override = styles.categoryTheming.customOverrides[category];
+        const finalTheme = override
+          ? { ...enhancedTheme, ...override }
+          : enhancedTheme;
+
+        if (styles.categoryTheming.debugMode) {
+          console.log(`🎨 Applied button theme for ${nodeType}:`, {
+            category,
+            priority: getCategoryThemePriority(category),
+            theme: finalTheme.button,
+          });
+        }
+
+        return `${finalTheme.button.border} ${finalTheme.button.hover.light} dark:${finalTheme.button.hover.dark}`;
+      }
+    }
+  }
+
   return "border-blue-300 dark:border-blue-800 hover:bg-blue-200 dark:hover:bg-blue-800";
 };
 
-// Hook to get text theme classes
-export const useNodeTextTheme = (isError: boolean) => {
+/**
+ * ENHANCED CATEGORY TEXT THEME
+ * Enhanced with registry metadata and dynamic theming
+ */
+export const useNodeTextTheme = (isError: boolean, nodeType?: string) => {
   const styles = useNodeStyleStore();
 
   if (isError) {
     return styles.error.textTheme;
   }
+
+  // ENHANCED: Registry-based category theming with enhanced metadata
+  if (nodeType && styles.categoryTheming.enabled) {
+    const category = getNodeCategory(nodeType);
+    if (category) {
+      // ENHANCED: Validate and get enhanced metadata
+      const validation = validateCategoryWithRegistry(category);
+      if (validation.valid) {
+        const enhancedTheme = getEnhancedCategoryTheme(category);
+        const override = styles.categoryTheming.customOverrides[category];
+        const finalTheme = override
+          ? { ...enhancedTheme, ...override }
+          : enhancedTheme;
+
+        if (styles.categoryTheming.debugMode) {
+          console.log(`🎨 Applied text theme for ${nodeType}:`, {
+            category,
+            metadata: validation.metadata,
+            theme: finalTheme.text,
+          });
+        }
+
+        return {
+          primary: `${finalTheme.text.primary.light} dark:${finalTheme.text.primary.dark}`,
+          secondary: `${finalTheme.text.secondary.light} dark:${finalTheme.text.secondary.dark}`,
+          border: `${finalTheme.border.light} dark:${finalTheme.border.dark}`,
+          focus: `focus:ring-${finalTheme.border.light.split("-")[1]}-500`,
+        };
+      }
+    }
+  }
+
   return {
     primary: "text-blue-900 dark:text-blue-100",
     secondary: "text-blue-800 dark:text-blue-200",
@@ -462,29 +685,13 @@ export const useNodeTextTheme = (isError: boolean) => {
 };
 
 // ============================================================================
-// CATEGORY-BASED UTILITY HOOKS
+// REGISTRY-ENHANCED CATEGORY UTILITY HOOKS
 // ============================================================================
 
-// Hook to get category theme for a specific node type
-export const useCategoryTheme = (nodeType: string) => {
-  const { categoryTheming } = useNodeStyleStore();
-
-  if (!categoryTheming.enabled) {
-    return null;
-  }
-
-  const category = NODE_CATEGORY_MAPPING[nodeType];
-  if (!category) {
-    return null;
-  }
-
-  const baseTheme = CATEGORY_THEMES[category];
-  const customOverride = categoryTheming.customOverrides[category];
-
-  return customOverride ? { ...baseTheme, ...customOverride } : baseTheme;
-};
-
-// Hook to get category-aware styling classes
+/**
+ * REGISTRY-ENHANCED CATEGORY CLASSES
+ * Enhanced with registry metadata and validation
+ */
 export const useNodeCategoryClasses = (
   nodeType: string,
   isSelected: boolean,
@@ -492,21 +699,30 @@ export const useNodeCategoryClasses = (
   isActive: boolean
 ) => {
   const categoryTheme = useCategoryTheme(nodeType);
-  const defaultClasses = useNodeStyleClasses(isSelected, isError, isActive);
+  const defaultClasses = useNodeStyleClasses(
+    isSelected,
+    isError,
+    isActive,
+    nodeType
+  );
 
   if (!categoryTheme) {
     return defaultClasses;
   }
 
-  // Return default styling effects (glow, scale) with category colors
+  // Return enhanced styling with category-specific effects
   return defaultClasses;
 };
 
-// Hook to get category-aware base styling (background, border, text)
+/**
+ * REGISTRY-ENHANCED BASE CLASSES
+ * Enhanced with registry metadata and fallback handling
+ */
 export const useNodeCategoryBaseClasses = (nodeType: string) => {
   const categoryTheme = useCategoryTheme(nodeType);
 
   if (!categoryTheme) {
+    // Fallback to default blue theme
     return {
       background: "bg-blue-50 dark:bg-blue-900",
       border: "border-blue-300 dark:border-blue-800",
@@ -523,44 +739,31 @@ export const useNodeCategoryBaseClasses = (nodeType: string) => {
   };
 };
 
-// Hook to get category-aware button theme
+/**
+ * REGISTRY-ENHANCED CATEGORY BUTTON THEME
+ * Enhanced with registry category detection and validation
+ */
 export const useNodeCategoryButtonTheme = (
   nodeType: string,
   isError: boolean,
   isActive: boolean
 ) => {
-  const categoryTheme = useCategoryTheme(nodeType);
-  const defaultButtonTheme = useNodeButtonTheme(isError, isActive);
-
-  if (!categoryTheme || isError || isActive) {
-    return defaultButtonTheme;
-  }
-
-  return `${categoryTheme.button.border} ${categoryTheme.button.hover.light} dark:${categoryTheme.button.hover.dark}`;
+  return useNodeButtonTheme(isError, isActive, nodeType);
 };
 
-// Hook to get category-aware text theme
+/**
+ * REGISTRY-ENHANCED CATEGORY TEXT THEME
+ * Enhanced with registry category detection and validation
+ */
 export const useNodeCategoryTextTheme = (
   nodeType: string,
   isError: boolean
 ) => {
-  const categoryTheme = useCategoryTheme(nodeType);
-  const defaultTextTheme = useNodeTextTheme(isError);
-
-  if (!categoryTheme || isError) {
-    return defaultTextTheme;
-  }
-
-  return {
-    primary: `${categoryTheme.text.primary.light} dark:${categoryTheme.text.primary.dark}`,
-    secondary: `${categoryTheme.text.secondary.light} dark:${categoryTheme.text.secondary.dark}`,
-    border: `${categoryTheme.border.light} dark:${categoryTheme.border.dark}`,
-    focus: `focus:ring-${categoryTheme.border.light.split("-")[1]}-500`, // Extract color from border
-  };
+  return useNodeTextTheme(isError, nodeType);
 };
 
 // ============================================================================
-// PRESET STYLE CONFIGURATIONS
+// REGISTRY-ENHANCED PRESET CONFIGURATIONS
 // ============================================================================
 
 export const STYLE_PRESETS = {
@@ -604,116 +807,284 @@ export const applyStylePreset = (presetName: keyof typeof STYLE_PRESETS) => {
 };
 
 // ============================================================================
-// CATEGORY MANAGEMENT FUNCTIONS
+// REGISTRY-ENHANCED CATEGORY MANAGEMENT FUNCTIONS
 // ============================================================================
 
-// Enable category theming globally
+/**
+ * ENABLE CATEGORY THEMING WITH ENHANCED REGISTRY SYNC
+ * Enhanced with automatic registry synchronization and validation
+ */
 export const enableCategoryTheming = () => {
-  useNodeStyleStore.getState().enableCategoryTheming();
+  const store = useNodeStyleStore.getState();
+  store.enableCategoryTheming();
+  store.enableRegistrySync();
+  store.refreshFromRegistry();
+
+  // ENHANCED: Sync with category registry
+  // NOTE: syncWithThemingStore would be called here when available
+  // syncWithThemingStore();
+
+  // ENHANCED: Apply category hooks for activation
+  Object.keys(CATEGORY_REGISTRY).forEach((category) => {
+    const metadata = getCategoryMetadata(category as NodeCategory);
+    if (metadata?.enabled) {
+      applyCategoryHooks(category as NodeCategory, "onActivate");
+    }
+  });
+
+  console.log("🎨 Enhanced category theming enabled with registry integration");
 };
 
-// Disable category theming (revert to default blue theme)
-export const disableCategoryTheming = () => {
-  useNodeStyleStore.getState().disableCategoryTheming();
-};
-
-// Apply custom theme to a specific category
+/**
+ * APPLY CATEGORY THEME WITH ENHANCED REGISTRY VALIDATION
+ * Enhanced with registry validation, priority handling, and lifecycle hooks
+ */
 export const applyCategoryTheme = (
   category: NodeCategory,
   customTheme: Partial<CategoryTheme>
 ) => {
   const store = useNodeStyleStore.getState();
-  store.updateCategoryTheme(category, customTheme);
+
+  // ENHANCED: Validate category with registry first
+  const validation = validateCategoryWithRegistry(category);
+  if (!validation.valid) {
+    console.warn(
+      `⚠️ Cannot apply theme to invalid category '${category}':`,
+      validation.reason
+    );
+    return false;
+  }
+
+  // ENHANCED: Check category priority for theme precedence
+  const priority = getCategoryThemePriority(category);
+  if (store.categoryTheming.debugMode) {
+    console.log(
+      `🎨 Applying theme to category '${category}' (priority: ${priority})`
+    );
+  }
+
+  // ENHANCED: Validate nodes in category using registry
+  const nodesInCategory = getNodesByCategory(category);
+  const enhancedNodeCount = nodesInCategory.filter((nodeType) =>
+    isValidNodeType(nodeType)
+  ).length;
+
+  if (enhancedNodeCount === 0) {
+    console.warn(
+      `⚠️ No valid nodes found in category '${category}' - theme may not be applied`
+    );
+  }
+
+  // ENHANCED: Merge with registry theme
+  const registryTheme = getEnhancedCategoryTheme(category);
+  const mergedTheme = { ...registryTheme, ...customTheme };
+
+  store.updateCategoryTheme(category, mergedTheme);
   if (!store.categoryTheming.enabled) {
     store.enableCategoryTheming();
   }
+
+  // ENHANCED: Apply category lifecycle hooks
+  applyCategoryThemeHooks(category, mergedTheme);
+
+  if (store.categoryTheming.debugMode) {
+    console.log(`🎨 Applied enhanced theme to category '${category}':`, {
+      affectedNodes: enhancedNodeCount,
+      validNodes: nodesInCategory,
+      priority,
+      metadata: validation.metadata,
+      theme: mergedTheme,
+    });
+  }
+
+  return true;
 };
 
-// Reset a category to its default theme
-export const resetCategoryToDefault = (category: NodeCategory) => {
-  useNodeStyleStore.getState().resetCategoryTheme(category);
-};
-
-// Apply all default category themes at once
+/**
+ * APPLY ALL ENHANCED CATEGORY DEFAULTS
+ * Enhanced with registry synchronization, priority ordering, and lifecycle management
+ */
 export const applyAllCategoryDefaults = () => {
   const store = useNodeStyleStore.getState();
   store.enableCategoryTheming();
+  store.enableRegistrySync();
   store.resetAllCategoryThemes();
+  store.refreshFromRegistry();
+
+  // ENHANCED: Sync with category registry
+  // NOTE: syncWithThemingStore would be called here when available
+  // syncWithThemingStore();
+
+  // ENHANCED: Apply themes in priority order from registry
+  const categoriesByPriority = Object.entries(CATEGORY_REGISTRY)
+    .filter(([_, metadata]) => metadata.enabled)
+    .sort(([, a], [, b]) => a.priority - b.priority)
+    .map(([category]) => category as NodeCategory);
+
+  categoriesByPriority.forEach((category) => {
+    const enhancedTheme = getEnhancedCategoryTheme(category);
+    store.updateCategoryTheme(category, enhancedTheme);
+
+    // Apply lifecycle hooks
+    applyCategoryThemeHooks(category, enhancedTheme);
+  });
+
+  if (store.categoryTheming.debugMode) {
+    const mapping = getCachedCategoryMapping();
+    const categoryStats = Object.entries(CATEGORY_REGISTRY).reduce(
+      (acc, [cat, meta]) => {
+        const nodeCount = getNodesByCategory(cat as NodeCategory).length;
+        acc[cat] = {
+          priority: meta.priority,
+          nodeCount,
+          enabled: meta.enabled,
+        };
+        return acc;
+      },
+      {} as Record<string, any>
+    );
+
+    console.log("🎨 Applied all enhanced category defaults from registry:", {
+      totalNodes: Object.keys(mapping).length,
+      appliedOrder: categoriesByPriority,
+      categoryStats,
+    });
+  }
 };
 
-// Get all nodes that belong to a specific category
-export const getNodesInCategory = (category: NodeCategory): string[] => {
-  return Object.entries(NODE_CATEGORY_MAPPING)
-    .filter(([_, nodeCategory]) => nodeCategory === category)
-    .map(([nodeType, _]) => nodeType);
-};
-
-// ============================================================================
-// QUICK CATEGORY THEME APPLICATIONS
-// ============================================================================
-
-// Apply the user's preferred color scheme
-export const applyUserColorScheme = () => {
+/**
+ * GET ENHANCED THEME STATISTICS
+ * Enhanced with comprehensive registry integration statistics
+ */
+export const getThemeStatistics = () => {
+  const mapping = getCachedCategoryMapping();
   const store = useNodeStyleStore.getState();
-  store.enableCategoryTheming();
 
-  // All categories will automatically use their default themes
-  // Create = Blue (already default)
-  // Logic = Purple
-  // Trigger = Orange
-  // Test = Grey
-  // Turn = Cyan (for Turn category)
-  // Count = Brown (Amber)
-  // Delay = Red
-  // Edit = Indigo
-  // Cycle = Green
+  // ENHANCED: Registry integration statistics
+  const registryStats = {
+    totalCategories: Object.keys(CATEGORY_REGISTRY).length,
+    enabledCategories: Object.entries(CATEGORY_REGISTRY).filter(
+      ([_, meta]) => meta.enabled
+    ).length,
+    categoriesWithNodes: Object.values(mapping).reduce(
+      (acc, cat) => {
+        acc[cat] = (acc[cat] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    ),
+    categoryPriorities: Object.entries(CATEGORY_REGISTRY)
+      .map(([cat, meta]) => ({
+        category: cat,
+        priority: meta.priority,
+        enabled: meta.enabled,
+      }))
+      .sort((a, b) => a.priority - b.priority),
+  };
 
-  console.log("Applied category color scheme:");
-  console.log("- Create nodes: Blue");
-  console.log("- Logic nodes: Purple");
-  console.log("- Trigger nodes: Orange");
-  console.log("- Test nodes: Grey");
-  console.log("- Turn nodes: Cyan");
-  console.log("- Count nodes: Brown (Amber)");
-  console.log("- Delay nodes: Red");
-  console.log("- Edit nodes: Indigo");
-  console.log("- Cycle nodes: Green");
+  // ENHANCED: Theme validation statistics
+  const themeValidation = {
+    validCategories: 0,
+    invalidCategories: 0,
+    categoriesWithCustomThemes: Object.keys(
+      store.categoryTheming.customOverrides
+    ).length,
+    validationResults: {} as Record<string, any>,
+  };
+
+  Object.keys(CATEGORY_REGISTRY).forEach((category) => {
+    const validation = validateCategoryWithRegistry(category as NodeCategory);
+    themeValidation.validationResults[category] = validation;
+    if (validation.valid) {
+      themeValidation.validCategories++;
+    } else {
+      themeValidation.invalidCategories++;
+    }
+  });
+
+  const stats = {
+    registryIntegration: {
+      totalNodes: Object.keys(mapping).length,
+      registrySync: store.categoryTheming.registrySync,
+      ...registryStats,
+    },
+    theming: {
+      enabled: store.categoryTheming.enabled,
+      customOverrides: Object.keys(store.categoryTheming.customOverrides)
+        .length,
+      debugMode: store.categoryTheming.debugMode,
+    },
+    validation: themeValidation,
+    availableThemes: Object.keys(CATEGORY_THEMES),
+    enhancedFeatures: {
+      registryThemes: Object.keys(CATEGORY_REGISTRY).filter((cat) =>
+        getCategoryTheme(cat as NodeCategory)
+      ).length,
+      categoryHooks: Object.keys(CATEGORY_REGISTRY).filter(
+        (cat) => getCategoryMetadata(cat as NodeCategory)?.hooks
+      ).length,
+      priorityTheming: true,
+      lifecycleManagement: true,
+    },
+  };
+
+  return stats;
 };
 
-// Custom category color override examples
-export const makeAllCreateNodesGreen = () => {
-  applyCategoryTheme("create", {
-    background: { light: "bg-green-50", dark: "bg-green-900" },
-    border: { light: "border-green-300", dark: "border-green-800" },
-    text: {
-      primary: { light: "text-green-900", dark: "text-green-100" },
-      secondary: { light: "text-green-800", dark: "text-green-200" },
-    },
+// ============================================================================
+// REGISTRY-ENHANCED DEBUG AND UTILITIES
+// ============================================================================
+
+/**
+ * ENABLE DEBUG MODE
+ * Enhanced debugging with registry integration information
+ */
+export const enableThemeDebugMode = () => {
+  const store = useNodeStyleStore.getState();
+  store.toggleDebugMode();
+
+  console.log("🔧 Theme Debug Mode Enabled");
+  console.log("===========================");
+  console.log("Registry Integration:", {
+    totalNodes: Object.keys(getCachedCategoryMapping()).length,
+    categoriesAvailable: Object.keys(CATEGORY_THEMES),
+    registrySync: store.categoryTheming.registrySync,
   });
 };
 
-export const makeAllLogicNodesPink = () => {
-  applyCategoryTheme("logic", {
-    background: { light: "bg-pink-50", dark: "bg-pink-900" },
-    border: { light: "border-pink-300", dark: "border-pink-800" },
-    text: {
-      primary: { light: "text-pink-900", dark: "text-pink-100" },
-      secondary: { light: "text-pink-800", dark: "text-pink-200" },
-    },
-  });
+/**
+ * APPLY MODERN REGISTRY COLOR SCHEME
+ * Enhanced color scheme based on modern registry categories
+ */
+export const applyModernRegistryColorScheme = () => {
+  enableCategoryTheming();
+
+  console.log("🎨 Applied Modern Registry Color Scheme:");
+  console.log("- Create nodes: Blue (creation and generation)");
+  console.log("- View nodes: Gray (display and output)");
+  console.log("- Trigger nodes: Purple (automation and triggers)");
+  console.log("- Test nodes: Yellow (testing and debugging)");
+  console.log("- Cycle nodes: Green (loops and cycles)");
+
+  const stats = getThemeStatistics();
+  console.log("📊 Theme Statistics:", stats);
 };
 
-// Batch apply custom colors to multiple categories
-export const applyCustomCategoryColors = (
-  categoryColors: Partial<Record<NodeCategory, { color: string }>>
+/**
+ * CREATE CUSTOM REGISTRY THEME
+ * Helper to create custom themes based on registry categories
+ */
+export const createCustomRegistryTheme = (
+  themeConfig: Partial<
+    Record<NodeCategory, { color: string; description: string }>
+  >
 ) => {
-  const store = useNodeStyleStore.getState();
-  store.enableCategoryTheming();
+  enableCategoryTheming();
 
-  Object.entries(categoryColors).forEach(([category, config]) => {
+  Object.entries(themeConfig).forEach(([category, config]) => {
     if (config?.color) {
       const color = config.color;
-      store.updateCategoryTheme(category as NodeCategory, {
+      applyCategoryTheme(category as NodeCategory, {
         background: { light: `bg-${color}-50`, dark: `bg-${color}-900` },
         border: { light: `border-${color}-300`, dark: `border-${color}-800` },
         text: {
@@ -728,110 +1099,113 @@ export const applyCustomCategoryColors = (
           },
         },
       });
+
+      console.log(
+        `🎨 ${category} nodes: ${config.color} (${config.description})`
+      );
     }
   });
+
+  console.log("✅ Custom registry theme applied successfully");
 };
 
 // ============================================================================
-// QUICK CATEGORY COLOR CHANGE FUNCTIONS
+// ENHANCED CATEGORY REGISTRY UTILITIES
 // ============================================================================
 
-// Change trigger nodes to yellow
-export const makeTriggerNodesYellow = () => {
-  applyCategoryTheme("trigger", {
-    background: { light: "bg-yellow-50", dark: "bg-yellow-900" },
-    border: { light: "border-yellow-300", dark: "border-yellow-800" },
-    text: {
-      primary: { light: "text-yellow-900", dark: "text-yellow-100" },
-      secondary: { light: "text-yellow-800", dark: "text-yellow-200" },
-    },
-    button: {
-      border: "border-yellow-300 dark:border-yellow-800",
-      hover: { light: "hover:bg-yellow-200", dark: "hover:bg-yellow-800" },
-    },
-  });
-};
+/**
+ * GET ENHANCED CATEGORY THEME
+ * Enhanced with category registry integration for dynamic theming
+ */
+export function getEnhancedCategoryTheme(
+  category: NodeCategory
+): CategoryTheme {
+  // Get theme from category registry first
+  const registryTheme = getCategoryTheme(category);
+  const categoryMetadata = getCategoryMetadata(category);
 
-// Change create nodes to emerald green
-export const makeCreateNodesEmerald = () => {
-  applyCategoryTheme("create", {
-    background: { light: "bg-emerald-50", dark: "bg-emerald-900" },
-    border: { light: "border-emerald-300", dark: "border-emerald-800" },
-    text: {
-      primary: { light: "text-emerald-900", dark: "text-emerald-100" },
-      secondary: { light: "text-emerald-800", dark: "text-emerald-200" },
-    },
-    button: {
-      border: "border-emerald-300 dark:border-emerald-800",
-      hover: { light: "hover:bg-emerald-200", dark: "hover:bg-emerald-800" },
-    },
-  });
-};
+  if (registryTheme && categoryMetadata?.enabled) {
+    // Convert category registry theme to our CategoryTheme format
+    return {
+      background: registryTheme.background,
+      border: registryTheme.border,
+      text: {
+        primary: {
+          light: `text-${registryTheme.primary}-900`,
+          dark: `text-${registryTheme.primary}-100`,
+        },
+        secondary: {
+          light: `text-${registryTheme.secondary}-800`,
+          dark: `text-${registryTheme.secondary}-200`,
+        },
+      },
+      button: {
+        border: `border-${registryTheme.primary}-300 dark:border-${registryTheme.primary}-800`,
+        hover: {
+          light: `hover:bg-${registryTheme.primary}-200`,
+          dark: `hover:bg-${registryTheme.primary}-800`,
+        },
+      },
+    };
+  }
 
-// Change view nodes to slate
-export const makeViewNodesSlate = () => {
-  applyCategoryTheme("view", {
-    background: { light: "bg-slate-50", dark: "bg-slate-900" },
-    border: { light: "border-slate-300", dark: "border-slate-800" },
-    text: {
-      primary: { light: "text-slate-900", dark: "text-slate-100" },
-      secondary: { light: "text-slate-800", dark: "text-slate-200" },
-    },
-    button: {
-      border: "border-slate-300 dark:border-slate-800",
-      hover: { light: "hover:bg-slate-200", dark: "hover:bg-slate-800" },
-    },
-  });
-};
+  // Fallback to our hardcoded themes if registry theme not available
+  return CATEGORY_THEMES[category] || CATEGORY_THEMES.create;
+}
 
-// Apply a custom color scheme for common groups
-export const applyCustomNodeColors = () => {
-  enableCategoryTheming();
+/**
+ * VALIDATE CATEGORY WITH REGISTRY
+ * Enhanced validation using category registry rules
+ */
+export function validateCategoryWithRegistry(category: NodeCategory): {
+  valid: boolean;
+  enabled: boolean;
+  metadata: any;
+  reason?: string;
+} {
+  const metadata = getCategoryMetadata(category);
 
-  // Trigger nodes = Violet (beautiful for toggles/triggers)
-  applyCategoryTheme("trigger", {
-    background: { light: "bg-violet-50", dark: "bg-violet-900" },
-    border: { light: "border-violet-300", dark: "border-violet-800" },
-    text: {
-      primary: { light: "text-violet-900", dark: "text-violet-100" },
-      secondary: { light: "text-violet-800", dark: "text-violet-200" },
-    },
-    button: {
-      border: "border-violet-300 dark:border-violet-800",
-      hover: { light: "hover:bg-violet-200", dark: "hover:bg-violet-800" },
-    },
-  });
+  if (!metadata) {
+    return {
+      valid: false,
+      enabled: false,
+      metadata: null,
+      reason: `Category '${category}' not found in registry`,
+    };
+  }
 
-  // Create nodes = Blue (classic for creation)
-  applyCategoryTheme("create", {
-    background: { light: "bg-blue-50", dark: "bg-blue-900" },
-    border: { light: "border-blue-300", dark: "border-blue-800" },
-    text: {
-      primary: { light: "text-blue-900", dark: "text-blue-100" },
-      secondary: { light: "text-blue-800", dark: "text-blue-200" },
-    },
-    button: {
-      border: "border-blue-300 dark:border-blue-800",
-      hover: { light: "hover:bg-blue-200", dark: "hover:bg-blue-800" },
-    },
-  });
+  if (!metadata.enabled) {
+    return {
+      valid: false,
+      enabled: false,
+      metadata,
+      reason: `Category '${category}' is disabled in registry`,
+    };
+  }
 
-  // View nodes = Gray (neutral for viewing)
-  applyCategoryTheme("view", {
-    background: { light: "bg-gray-100", dark: "bg-gray-800" },
-    border: { light: "border-gray-300", dark: "border-gray-600" },
-    text: {
-      primary: { light: "text-gray-900", dark: "text-gray-100" },
-      secondary: { light: "text-gray-700", dark: "text-gray-300" },
-    },
-    button: {
-      border: "border-gray-300 dark:border-gray-600",
-      hover: { light: "hover:bg-gray-200", dark: "hover:bg-gray-700" },
-    },
-  });
+  return {
+    valid: true,
+    enabled: true,
+    metadata,
+  };
+}
 
-  console.log("🎨 Applied custom node colors:");
-  console.log("- Trigger nodes: Violet");
-  console.log("- Create nodes: Blue");
-  console.log("- View nodes: Gray");
-};
+/**
+ * GET CATEGORY PRIORITY FOR THEMING
+ * Uses category registry priority for theme precedence
+ */
+export function getCategoryThemePriority(category: NodeCategory): number {
+  const metadata = getCategoryMetadata(category);
+  return metadata?.priority ?? 999;
+}
+
+/**
+ * APPLY CATEGORY REGISTRY HOOKS FOR THEMING
+ * Triggers category-specific theming hooks
+ */
+export function applyCategoryThemeHooks(
+  category: NodeCategory,
+  theme: CategoryTheme
+) {
+  applyCategoryHooks(category, "onThemeApplied", theme);
+}

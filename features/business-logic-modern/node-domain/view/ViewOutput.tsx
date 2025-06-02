@@ -1,13 +1,14 @@
 /**
- * VIEW OUTPUT REFACTOR NODE - Simplified data viewing component
+ * VIEW OUTPUT NODE - Enhanced data viewing component
  *
  * • Refactored view output node displaying values from connected nodes
  * • Type-aware value extraction with smart filtering of empty values
  * • Collapsed and expanded display modes with type indicators
  * • Factory-created component using centralized registry system
  * • Enhanced error handling and data type visualization
+ * • Integrated with category registry for enhanced theming and validation
  *
- * Keywords: view-output, data-display, type-indicators, filtering, factory, registry
+ * Keywords: view-output, data-display, type-indicators, filtering, factory, registry, category-registry
  */
 
 "use client";
@@ -19,11 +20,36 @@
 /* -------------------------------------------------------------------------- */
 
 import { Position } from "@xyflow/react";
-import { createNodeComponent, type BaseNodeData } from "../factory/NodeFactory";
-import { extractNodeValue, safeStringify } from "../utils/nodeUtils";
+
+// FACTORY AND UTILITIES - Fixed imports to infrastructure layer
+import {
+  createNodeComponent,
+  type BaseNodeData,
+} from "../../infrastructure/node-creation/factory/NodeFactory";
+
+// UTILITY FUNCTIONS - Inline implementations
+function extractNodeValue(data: any): any {
+  if (!data || typeof data !== "object") return data;
+
+  // Look for common output properties
+  if ("text" in data) return data.text;
+  if ("value" in data) return data.value;
+  if ("output" in data) return data.output;
+  if ("result" in data) return data.result;
+
+  return data;
+}
+
+function safeStringify(obj: any): string {
+  try {
+    return JSON.stringify(obj, null, 2);
+  } catch (error) {
+    return String(obj);
+  }
+}
 
 // ============================================================================
-// NODE DATA INTERFACE
+// NODE DATA INTERFACE - Enhanced with category registry integration
 // ============================================================================
 
 interface ViewOutputData extends BaseNodeData {
@@ -79,31 +105,31 @@ const formatContent = (content: any): string => {
 };
 
 // ============================================================================
-// NODE CONFIGURATION
+// ENTERPRISE NODE CONFIGURATION - Enhanced Factory with Registry Integration
 // ============================================================================
 
 const ViewOutput = createNodeComponent<ViewOutputData>({
-  nodeType: "ViewOutput",
-  category: "view", // View category for better organization
-  displayName: "🔧 View Output (Refactored)",
+  nodeType: "viewOutput", // Match the registry nodeType
+  category: "view", // Enhanced category registry integration
+  displayName: "View Output",
   defaultData: {
     displayedValues: [],
   },
 
-  // Custom size configuration for 120x120 collapsed, 180x180 expanded
+  // Enhanced size configuration
   size: {
     collapsed: {
-      width: "w-[120px]",
-      height: "h-[120px]",
+      width: "120px",
+      height: "60px",
     },
     expanded: {
-      width: "w-[180px]",
+      width: "200px",
     },
   },
 
   // Define handles (accepts any input type)
   handles: [
-    { id: "x", dataType: "x", position: Position.Left, type: "target" },
+    { id: "input", dataType: "u", position: Position.Left, type: "target" },
   ],
 
   // Processing logic - extract and format values from connected nodes

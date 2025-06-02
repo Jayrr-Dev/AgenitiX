@@ -6,6 +6,7 @@
  * • Includes base types, configuration interfaces, and utility types
  * • Supports extensible type system for custom node implementations
  * • Centralizes all factory-related type definitions for consistency
+ * • Integrated with registry system for unified node creation
  *
  * Keywords: factory-types, typescript, interfaces, type-safety, configuration, extensible
  */
@@ -14,7 +15,6 @@
 // FACTORY NODE TYPE DEFINITIONS
 // ============================================================================
 
-import type { NodeCategory } from "@node-creation/node-registry/nodeRegistry";
 import { Position, type Connection, type Node } from "@xyflow/react";
 import { ReactNode } from "react";
 
@@ -63,6 +63,13 @@ export interface NodeSize {
     width: string;
   };
 }
+
+// ============================================================================
+// CATEGORY AND FOLDER TYPES - Registry Integration
+// ============================================================================
+
+export type NodeCategory = "create" | "view" | "trigger" | "test" | "cycle";
+export type SidebarFolder = "main" | "automation" | "testing" | "visualization";
 
 // ============================================================================
 // INSPECTOR INTERFACES
@@ -247,6 +254,17 @@ export interface FilteredHandles {
 }
 
 // ============================================================================
+// NODE TYPE DEFINITIONS
+// ============================================================================
+
+export type NodeType =
+  | "createText"
+  | "viewOutput"
+  | "triggerOnToggle"
+  | "testError"
+  | "cyclePulse";
+
+// ============================================================================
 // BASE NODE TYPES
 // ============================================================================
 
@@ -258,17 +276,6 @@ export interface AgenNode extends Node {
   deletable?: boolean;
   targetPosition?: Position;
 }
-
-// ============================================================================
-// NODE TYPE DEFINITIONS
-// ============================================================================
-
-export type NodeType =
-  | "createText"
-  | "viewOutput"
-  | "triggerToggle"
-  | "testError"
-  | "cyclePulse";
 
 // ============================================================================
 // NODE DATA INTERFACE
@@ -312,3 +319,65 @@ export interface NodeFactory {
     offset?: { x: number; y: number }
   ) => AgenNode;
 }
+
+// ============================================================================
+// REGISTRY INTEGRATION TYPES
+// ============================================================================
+
+export type InspectorControlType =
+  | "text"
+  | "textarea"
+  | "number"
+  | "boolean"
+  | "select"
+  | "range"
+  | "none";
+
+export interface ControlField {
+  key: string;
+  type: InspectorControlType;
+  label: string;
+  placeholder?: string;
+  options?: Array<{ value: any; label: string }>;
+  min?: number;
+  max?: number;
+  step?: number;
+  rows?: number;
+}
+
+export interface ControlGroup {
+  title: string;
+  fields: ControlField[];
+}
+
+export interface InspectorControlConfig {
+  type: "factory" | "legacy" | "none";
+  controlGroups?: ControlGroup[];
+  legacyControlType?: string;
+}
+
+// ============================================================================
+// INTEGRATION NOTES
+// ============================================================================
+
+/**
+ * REGISTRY INTEGRATION:
+ *
+ * This file serves as the source of truth for factory types.
+ * The registry imports these types and adds its own enhanced interfaces.
+ *
+ * BENEFITS:
+ * • Single source of truth for core factory types
+ * • No circular dependencies
+ * • Registry can extend and enhance these base types
+ * • Full TypeScript intellisense and type safety
+ * • Clean separation of concerns
+ *
+ * USAGE:
+ * ```typescript
+ * import { BaseNodeData, NodeFactoryConfig } from './factory/types';
+ * import { EnhancedNodeRegistration } from './node-registry/nodeRegistry';
+ * ```
+ */
+
+console.log("✅ Factory Types - Core type definitions loaded");

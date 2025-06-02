@@ -1,3 +1,4 @@
+"use client";
 import { Connection } from "@xyflow/react";
 import { useCallback, useEffect, useRef } from "react";
 import { unstable_batchedUpdates } from "react-dom";
@@ -13,8 +14,6 @@ import { unstable_batchedUpdates } from "react-dom";
  *
  * Keywords: ultra-fast, propagation, GPU-accelerated, caching, atomic-operations, performance
  */
-
-("use client");
 
 // ============================================================================
 // ULTRA-FAST PROPAGATION ENGINE

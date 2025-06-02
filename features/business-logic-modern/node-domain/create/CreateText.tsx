@@ -6,8 +6,9 @@
  * • Factory-created component with comprehensive error handling
  * • Enhanced input validation and memory-safe text processing
  * • Vibe mode error injection support for testing scenarios
+ * • Integrated with category registry for enhanced theming and validation
  *
- * Keywords: text-creation, inline-editing, triggers, error-handling, factory, validation
+ * Keywords: text-creation, inline-editing, triggers, error-handling, factory, validation, category-registry
  */
 
 "use client";
@@ -20,14 +21,41 @@
 
 import { Position } from "@xyflow/react";
 import React, { useRef } from "react";
-import { createNodeComponent, type BaseNodeData } from "../factory/NodeFactory";
-import { getSingleInputValue, isTruthyValue } from "../utils/nodeUtils";
+
+// FACTORY AND UTILITIES - Fixed imports to infrastructure layer
+import {
+  createNodeComponent,
+  type BaseNodeData,
+} from "../../infrastructure/node-creation/factory/NodeFactory";
+
+// UTILITY FUNCTIONS - Inline implementations since utils don't exist
+function getSingleInputValue(nodesData: any[]): any {
+  if (!nodesData || nodesData.length === 0) return null;
+  // Get the first node's output value
+  const firstNode = nodesData[0];
+  if (!firstNode || !firstNode.data) return null;
+
+  // Look for common output properties
+  if ("text" in firstNode.data) return firstNode.data.text;
+  if ("value" in firstNode.data) return firstNode.data.value;
+  if ("output" in firstNode.data) return firstNode.data.output;
+
+  return null;
+}
+
+function isTruthyValue(value: any): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return value.trim() !== "";
+  if (typeof value === "number") return value !== 0 && !isNaN(value);
+  return Boolean(value);
+}
 
 // ============================================================================
-// NODE DATA INTERFACE - IDENTICAL TO ORIGINAL
+// NODE DATA INTERFACE - Enhanced with category registry integration
 // ============================================================================
 
-interface CreateTextRefactorData extends BaseNodeData {
+interface CreateTextData extends BaseNodeData {
   text: string;
   heldText: string;
   // Vibe Mode error injection properties (set by Error Generator)
@@ -37,25 +65,25 @@ interface CreateTextRefactorData extends BaseNodeData {
 }
 
 // ============================================================================
-// ENTERPRISE NODE CONFIGURATION - ENHANCED FACTORY
+// ENTERPRISE NODE CONFIGURATION - Enhanced Factory with Registry Integration
 // ============================================================================
 
-const CreateTextRefactor = createNodeComponent<CreateTextRefactorData>({
-  nodeType: "createTextRefactor",
-  category: "create", // Blue styling category
-  displayName: "Create Text (Refactored)",
+const CreateText = createNodeComponent<CreateTextData>({
+  nodeType: "createText", // Match the registry nodeType
+  category: "create", // Enhanced category registry integration
+  displayName: "Create Text",
   defaultData: {
     text: "",
     heldText: "",
   },
 
-  // HANDLES: Boolean trigger input, string output (JSON input added automatically)
+  // HANDLES: Boolean trigger input, string output
   handles: [
-    { id: "b", dataType: "b", position: Position.Left, type: "target" },
-    { id: "s", dataType: "s", position: Position.Right, type: "source" },
+    { id: "trigger", dataType: "b", position: Position.Left, type: "target" },
+    { id: "output", dataType: "s", position: Position.Right, type: "source" },
   ],
 
-  // PROCESSING LOGIC: Preserve exact original trigger logic + JSON updates
+  // PROCESSING LOGIC: Enhanced trigger logic with registry integration
   processLogic: ({
     data,
     connections,
@@ -65,16 +93,16 @@ const CreateTextRefactor = createNodeComponent<CreateTextRefactorData>({
     setError,
   }) => {
     try {
-      // Filter for trigger connections (boolean handle 'b')
+      // Filter for trigger connections (boolean handle 'trigger')
       const triggerConnections = connections.filter(
-        (c) => c.targetHandle === "b"
+        (c) => c.targetHandle === "trigger"
       );
 
       // Get trigger value from connected trigger nodes
       const triggerValue = getSingleInputValue(nodesData);
       const isActive = isTruthyValue(triggerValue);
 
-      // Get the held text (what user has typed or received via JSON in Vibe Mode)
+      // Get the held text (what user has typed)
       const outputText = typeof data.heldText === "string" ? data.heldText : "";
 
       // Validate text length (prevent memory issues)
@@ -89,8 +117,11 @@ const CreateTextRefactor = createNodeComponent<CreateTextRefactorData>({
       updateNodeData(id, {
         text: finalOutput,
       });
+
+      // Clear any existing errors
+      setError(null);
     } catch (updateError) {
-      console.error(`CreateTextRefactor ${id} - Update error:`, updateError);
+      console.error(`CreateText ${id} - Update error:`, updateError);
       const errorMessage =
         updateError instanceof Error ? updateError.message : "Unknown error";
       setError(errorMessage);
@@ -165,7 +196,7 @@ const CreateTextRefactor = createNodeComponent<CreateTextRefactorData>({
               </span>
             </div>
           ) : (
-            "Create Text (Refactored)"
+            "Create Text"
           )}
         </div>
         {finalError && errorStyle ? (
@@ -178,7 +209,7 @@ const CreateTextRefactor = createNodeComponent<CreateTextRefactorData>({
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
           >
-            <CreateTextRefactorInput
+            <CreateTextInput
               data={data}
               updateNodeData={updateNodeData}
               id={id}
@@ -242,7 +273,7 @@ const CreateTextRefactor = createNodeComponent<CreateTextRefactorData>({
           <span>
             {finalError
               ? `${finalErrorType === "local" ? "Error" : finalErrorType.toUpperCase()}`
-              : "Create Text (Refactored)"}
+              : "Create Text"}
           </span>
           {finalError && errorStyle && (
             <span className={`text-xs ${errorStyle.text}`}>
@@ -275,7 +306,7 @@ const CreateTextRefactor = createNodeComponent<CreateTextRefactorData>({
           onMouseDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
         >
-          <CreateTextRefactorExpanded
+          <CreateTextExpanded
             data={data}
             error={finalError}
             errorStyle={errorStyle}
@@ -300,13 +331,13 @@ const CreateTextRefactor = createNodeComponent<CreateTextRefactorData>({
 // ============================================================================
 
 // COLLAPSED TEXT INPUT: Identical styling and behavior
-const CreateTextRefactorInput = ({
+const CreateTextInput = ({
   data,
   updateNodeData,
   id,
 }: {
-  data: CreateTextRefactorData;
-  updateNodeData: (id: string, data: Partial<CreateTextRefactorData>) => void;
+  data: CreateTextData;
+  updateNodeData: (id: string, data: Partial<CreateTextData>) => void;
   id: string;
 }) => {
   const currentText = typeof data.heldText === "string" ? data.heldText : "";
@@ -323,7 +354,7 @@ const CreateTextRefactorInput = ({
       // Update held text via enterprise factory's updateNodeData
       updateNodeData(id, { heldText: newText });
     } catch (inputError) {
-      console.error("CreateTextRefactor - Input error:", inputError);
+      console.error("CreateText - Input error:", inputError);
     }
   };
 
@@ -344,7 +375,7 @@ const CreateTextRefactorInput = ({
 };
 
 // EXPANDED TEXT INPUT: Full-featured text editing with error support
-const CreateTextRefactorExpanded = ({
+const CreateTextExpanded = ({
   data,
   error,
   errorStyle,
@@ -352,7 +383,7 @@ const CreateTextRefactorExpanded = ({
   updateNodeData,
   id,
 }: {
-  data: CreateTextRefactorData;
+  data: CreateTextData;
   error: string | null;
   errorStyle: {
     text: string;
@@ -362,7 +393,7 @@ const CreateTextRefactorExpanded = ({
     ringColor: string;
   } | null;
   categoryTextTheme: any;
-  updateNodeData: (id: string, data: Partial<CreateTextRefactorData>) => void;
+  updateNodeData: (id: string, data: Partial<CreateTextData>) => void;
   id: string;
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -380,7 +411,7 @@ const CreateTextRefactorExpanded = ({
       // Update held text via enterprise factory's updateNodeData
       updateNodeData(id, { heldText: newText });
     } catch (inputError) {
-      console.error("CreateTextRefactor - Input error:", inputError);
+      console.error("CreateText - Input error:", inputError);
     }
   };
 
@@ -408,4 +439,4 @@ const CreateTextRefactorExpanded = ({
   );
 };
 
-export default CreateTextRefactor;
+export default CreateText;

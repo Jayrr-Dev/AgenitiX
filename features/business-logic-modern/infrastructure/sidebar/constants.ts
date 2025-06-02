@@ -1,3 +1,17 @@
+/**
+ * SIDEBAR CONSTANTS - Enhanced with Category Registry Integration
+ *
+ * • Auto-generates sidebar stencils from modern node registry
+ * • Enhanced with centralized category registry for rich metadata and validation
+ * • Provides category-based organization with business rules and themes
+ * • Includes type-safe tab configurations and node mappings
+ * • Supports dynamic sidebar organization with category registry validation
+ * • Advanced category validation and enhanced metadata integration
+ *
+ * Keywords: sidebar, stencils, tabs, auto-generation, registry-integration,
+ * categories, validation, enhanced-metadata, category-registry
+ */
+
 import {
   NodeStencil,
   TAB_CONFIG_A,
@@ -13,123 +27,337 @@ import {
   VariantConfig,
 } from "./types";
 
-// CENTRALIZED NODE REGISTRY
+// MODERN REGISTRY INTEGRATION - Updated imports for enhanced category system
+import type { NodeType } from "../flow-engine/types/nodeData";
+import type {
+  NodeCategory,
+  SidebarFolder,
+} from "../node-creation/factory/types";
 import {
-  autoGenerateStencils,
-  getAvailableNodes,
-  getTestingNodes,
-} from "../../node-domain/nodeRegistry";
+  MODERN_NODE_REGISTRY,
+  getNodeMetadata, // MIGRATED: was getNodesByCategory
+  getNodesByFolder,
+  getNodesInCategory,
+  isValidNodeType,
+} from "../node-creation/node-registry/nodeRegistry";
+
+// CATEGORY REGISTRY INTEGRATION - Enhanced metadata and validation
+import { getCategoryMetadata } from "../node-creation/category-registry/categoryRegistry";
 
 export const STORAGE_PREFIX = "sidebar-stencil-order";
 
 // ============================================================================
-// AVAILABLE NODES MAPPING (AUTO-GENERATED)
+// ENHANCED CATEGORY REGISTRY UTILITIES
 // ============================================================================
-// Auto-generated from centralized node registry for better maintainability
 
-export const AVAILABLE_NODES = getAvailableNodes();
+/**
+ * GET CATEGORY DISPLAY DATA
+ * Enhanced with category registry metadata
+ */
+export function getCategoryDisplayData(category: NodeCategory) {
+  const categoryMetadata = getCategoryMetadata(category);
+  return {
+    id: category,
+    displayName: categoryMetadata?.displayName || category,
+    icon: categoryMetadata?.icon || "📁",
+    description: categoryMetadata?.description || `${category} nodes`,
+    enabled: categoryMetadata?.enabled ?? true,
+    priority: categoryMetadata?.priority ?? 999,
+    theme: categoryMetadata?.theme,
+  };
+}
+
+/**
+ * VALIDATE CATEGORY FOR SIDEBAR
+ * Enhanced validation with category registry rules
+ */
+export function validateCategoryForSidebar(category: NodeCategory): {
+  valid: boolean;
+  reason?: string;
+  nodeCount: number;
+  categoryData: ReturnType<typeof getCategoryDisplayData>;
+} {
+  const categoryData = getCategoryDisplayData(category);
+  const nodeCount = getNodesInCategory(category).length;
+
+  if (!categoryData.enabled) {
+    return {
+      valid: false,
+      reason: `Category '${category}' is disabled in registry`,
+      nodeCount,
+      categoryData,
+    };
+  }
+
+  if (nodeCount === 0) {
+    return {
+      valid: false,
+      reason: `No nodes available in '${category}' category`,
+      nodeCount,
+      categoryData,
+    };
+  }
+
+  return { valid: true, nodeCount, categoryData };
+}
 
 // ============================================================================
-// AVAILABLE NODES MAPPING
+// REGISTRY-ENHANCED AUTO-GENERATION UTILITIES
 // ============================================================================
-// Key-value mapping of all available nodes by filename for better readability
 
-// Helper functions
-export const getNodeType = (filename: keyof typeof AVAILABLE_NODES) =>
-  AVAILABLE_NODES[filename].nodeType;
-
-// Auto-generate stencil from filename with custom prefix
-export const createStencil = (
-  filename: keyof typeof AVAILABLE_NODES,
+/**
+ * CREATE STENCIL FROM NODE TYPE
+ * Creates a stencil using modern registry metadata
+ */
+export function createStencilFromNodeType(
+  nodeType: NodeType,
   prefix: string,
   index: number = 1
-): NodeStencil => {
-  const node = AVAILABLE_NODES[filename];
+): NodeStencil {
+  const metadata = getNodeMetadata(nodeType);
+
+  if (!metadata) {
+    throw new Error(`No metadata found for node type: ${nodeType}`);
+  }
+
   return {
-    id: `${prefix}-${filename.toLowerCase()}-${index}`,
-    nodeType: node.nodeType,
-    label: node.label,
-    description: node.description,
+    id: `${prefix}-${nodeType.toLowerCase()}-${index}`,
+    nodeType: nodeType,
+    label: metadata.displayName,
+    description: metadata.description,
+    icon: metadata.icon, // Enhanced with icon from registry
+    category: metadata.category, // Enhanced with category from registry
+    folder: metadata.folder, // Enhanced with folder from registry
   };
-};
+}
 
-// Batch create stencils from array of filenames
-export const createStencils = (
-  filenames: (keyof typeof AVAILABLE_NODES)[],
+/**
+ * CREATE STENCILS BY CATEGORY
+ * Auto-generates stencils for nodes in a specific category
+ */
+export function createStencilsByCategory(
+  category: NodeCategory,
   prefix: string
-): NodeStencil[] => {
-  return filenames.map((filename, index) =>
-    createStencil(filename, prefix, index + 1)
+): NodeStencil[] {
+  const nodeTypes = getNodesInCategory(category);
+  return nodeTypes.map((nodeType, index) =>
+    createStencilFromNodeType(nodeType, prefix, index + 1)
   );
+}
+
+/**
+ * CREATE STENCILS BY FOLDER
+ * Auto-generates stencils for nodes in a specific sidebar folder
+ */
+export function createStencilsByFolder(
+  folder: SidebarFolder,
+  prefix: string
+): NodeStencil[] {
+  const nodeTypes = getNodesByFolder(folder);
+  return nodeTypes.map((nodeType, index) =>
+    createStencilFromNodeType(nodeType, prefix, index + 1)
+  );
+}
+
+/**
+ * CREATE STENCILS BY FILTER
+ * Advanced filtering for stencil generation
+ */
+export function createStencilsByFilter(
+  filter: {
+    category?: NodeCategory;
+    folder?: SidebarFolder;
+    hasToggle?: boolean;
+    nodeTypes?: NodeType[];
+  },
+  prefix: string
+): NodeStencil[] {
+  let nodeTypes: NodeType[] = [];
+
+  if (filter.nodeTypes) {
+    nodeTypes = filter.nodeTypes;
+  } else if (filter.category && filter.folder) {
+    // Get intersection of category and folder
+    const categoryNodes = getNodesInCategory(filter.category);
+    const folderNodes = getNodesByFolder(filter.folder);
+    nodeTypes = categoryNodes.filter((nodeType) =>
+      folderNodes.includes(nodeType)
+    );
+  } else if (filter.category) {
+    nodeTypes = getNodesInCategory(filter.category);
+  } else if (filter.folder) {
+    nodeTypes = getNodesByFolder(filter.folder);
+  } else {
+    nodeTypes = Object.keys(MODERN_NODE_REGISTRY) as NodeType[];
+  }
+
+  // Apply hasToggle filter if specified
+  if (filter.hasToggle !== undefined) {
+    nodeTypes = nodeTypes.filter((nodeType) => {
+      const metadata = getNodeMetadata(nodeType);
+      return metadata?.hasToggle === filter.hasToggle;
+    });
+  }
+
+  return nodeTypes.map((nodeType, index) =>
+    createStencilFromNodeType(nodeType, prefix, index + 1)
+  );
+}
+
+// ============================================================================
+// REGISTRY-GENERATED AVAILABLE NODES MAPPING
+// ============================================================================
+
+/**
+ * AVAILABLE NODES MAPPING
+ * Auto-generated from modern registry with rich metadata
+ */
+export const AVAILABLE_NODES = Object.fromEntries(
+  Object.entries(MODERN_NODE_REGISTRY).map(([nodeType, metadata]) => [
+    nodeType,
+    {
+      nodeType: nodeType as NodeType,
+      label: metadata.displayName,
+      description: metadata.description,
+      icon: metadata.icon,
+      category: metadata.category,
+      folder: metadata.folder,
+      hasToggle: metadata.hasToggle,
+    },
+  ])
+);
+
+/**
+ * NODES BY CATEGORY MAPPING
+ * Organized by category for easy access
+ */
+export const NODES_BY_CATEGORY = {
+  create: getNodesInCategory("create"),
+  view: getNodesInCategory("view"),
+  trigger: getNodesInCategory("trigger"),
+  test: getNodesInCategory("test"),
+  cycle: getNodesInCategory("cycle"),
+};
+
+/**
+ * NODES BY FOLDER MAPPING
+ * Organized by sidebar folder for easy access
+ */
+export const NODES_BY_FOLDER = {
+  main: getNodesByFolder("main"),
+  automation: getNodesByFolder("automation"),
+  testing: getNodesByFolder("testing"),
+  visualization: getNodesByFolder("visualization"),
 };
 
 // ============================================================================
-// STENCIL DEFINITIONS - AUTO-GENERATED WHERE POSSIBLE
+// ENHANCED STENCIL DEFINITIONS - REGISTRY AUTO-GENERATED
 // ============================================================================
 
-// Variant A: Core, Logic, Stores, Testing, Time
+/**
+ * VARIANT A: Core, Logic, Stores, Testing, Time
+ * Enhanced with registry-based auto-generation
+ */
 export const DEFAULT_STENCILS_A: Record<TabKeyA, NodeStencil[]> = {
-  // Core: Main folder nodes (production-ready)
-  core: autoGenerateStencils({ folder: "main" }, "core"),
+  // Core: Main folder nodes (production-ready create & view nodes)
+  core: createStencilsByFolder("main", "core"),
 
-  // Logic: Already in core, keep empty for now
-  logic: [],
+  // Logic: Trigger nodes for workflow logic
+  logic: createStencilsByCategory("trigger", "logic"),
 
-  // Stores: Keep empty for now
-  stores: [],
+  // Stores: Create nodes for data storage
+  stores: createStencilsByFilter(
+    { category: "create", folder: "main" },
+    "stores"
+  ),
 
-  // Testing: Auto-generated from testing folder
-  testing: getTestingNodes(),
+  // Testing: Testing folder nodes
+  testing: createStencilsByFolder("testing", "testing"),
 
-  // Time: Keep empty for now
-  time: [],
+  // Time: Cycle nodes for time-based operations
+  time: createStencilsByCategory("cycle", "time"),
 };
 
-// Variant B: Images, Audio, Text, Interface, Transform
+/**
+ * VARIANT B: Images, Audio, Text, Interface, Transform
+ * Media and interface focused organization
+ */
 export const DEFAULT_STENCILS_B: Record<TabKeyB, NodeStencil[]> = {
-  images: [],
-  audio: [],
-  // Text: Media folder nodes
-  text: autoGenerateStencils({ folder: "media" }, "text"),
-  interface: [],
-  transform: [],
+  images: [], // Reserved for future image nodes
+  audio: [], // Reserved for future audio nodes
+
+  // Text: Text-based create nodes
+  text: createStencilsByFilter({ category: "create" }, "text"),
+
+  // Interface: View nodes for user interface
+  interface: createStencilsByCategory("view", "interface"),
+
+  transform: [], // Reserved for future transform nodes
 };
 
-// Variant C: API, Web, Email, Files, Crypto
+/**
+ * VARIANT C: API, Web, Email, Files, Crypto
+ * Integration and external service focused
+ */
 export const DEFAULT_STENCILS_C: Record<TabKeyC, NodeStencil[]> = {
-  api: [],
-  web: [],
-  email: [],
-  files: [],
-  crypto: [],
+  api: [], // Reserved for future API nodes
+  web: [], // Reserved for future web nodes
+  email: [], // Reserved for future email nodes
+  files: [], // Reserved for future file nodes
+  crypto: [], // Reserved for future crypto nodes
 };
 
-// Variant D: Triggers, Flow, Cyclers, Smart, Tools
+/**
+ * VARIANT D: Triggers, Flow, Cyclers, Smart, Tools
+ * Automation and workflow focused organization
+ */
 export const DEFAULT_STENCILS_D: Record<TabKeyD, NodeStencil[]> = {
-  // Triggers: Automation folder trigger nodes
-  triggers: autoGenerateStencils(
-    { folder: "automation", category: "trigger" },
+  // Triggers: All trigger nodes from automation folder
+  triggers: createStencilsByFilter(
+    { category: "trigger", folder: "automation" },
     "triggers"
   ),
-  flow: [],
-  // Cyclers: Automation folder cycle nodes
-  cyclers: autoGenerateStencils(
-    { folder: "automation", category: "cycle" },
+
+  // Flow: View nodes for flow visualization
+  flow: createStencilsByFilter(
+    { category: "view", folder: "visualization" },
+    "flow"
+  ),
+
+  // Cyclers: All cycle nodes from automation folder
+  cyclers: createStencilsByFilter(
+    { category: "cycle", folder: "automation" },
     "cyclers"
   ),
-  smart: [],
-  tools: [],
+
+  // Smart: Nodes with toggle functionality
+  smart: createStencilsByFilter({ hasToggle: true }, "smart"),
+
+  // Tools: Testing and utility nodes
+  tools: createStencilsByFolder("testing", "tools"),
 };
 
-// Variant E: Special, Math, Stuff, Filler, Custom
+/**
+ * VARIANT E: Special, Math, Stuff, Filler, Custom
+ * Specialized and custom organization
+ */
 export const DEFAULT_STENCILS_E: Record<TabKeyE, NodeStencil[]> = {
-  special: [],
-  // Math: Count/number related nodes
-  math: autoGenerateStencils({ category: "count" }, "math"),
-  stuff: [],
-  filler: [],
-  custom: [], // Always empty - populated by user
+  // Special: Test nodes for special functionality
+  special: createStencilsByCategory("test", "special"),
+
+  // Math: Reserved for future math nodes (placeholder with create nodes)
+  math: createStencilsByFilter({ category: "create" }, "math"),
+
+  // Stuff: Mixed category nodes
+  stuff: createStencilsByFilter({ folder: "main" }, "stuff"),
+
+  filler: [], // Reserved for filler nodes
+  custom: [], // Always empty - populated by user customization
 };
+
+// ============================================================================
+// ENHANCED VARIANT CONFIGURATION
+// ============================================================================
 
 export const VARIANT_CONFIG = {
   a: { tabs: TAB_CONFIG_A, defaults: DEFAULT_STENCILS_A } as VariantConfig<"a">,
@@ -138,3 +366,163 @@ export const VARIANT_CONFIG = {
   d: { tabs: TAB_CONFIG_D, defaults: DEFAULT_STENCILS_D } as VariantConfig<"d">,
   e: { tabs: TAB_CONFIG_E, defaults: DEFAULT_STENCILS_E } as VariantConfig<"e">,
 } as const;
+
+// ============================================================================
+// REGISTRY STATISTICS AND DEBUG INFO
+// ============================================================================
+
+/**
+ * GET SIDEBAR STATISTICS
+ * Returns statistics about sidebar organization
+ */
+export function getSidebarStatistics() {
+  const totalNodes = Object.keys(MODERN_NODE_REGISTRY).length;
+  const nodesByCategory = Object.fromEntries(
+    Object.entries(NODES_BY_CATEGORY).map(([category, nodes]) => [
+      category,
+      nodes.length,
+    ])
+  );
+  const nodesByFolder = Object.fromEntries(
+    Object.entries(NODES_BY_FOLDER).map(([folder, nodes]) => [
+      folder,
+      nodes.length,
+    ])
+  );
+
+  return {
+    totalNodes,
+    nodesByCategory,
+    nodesByFolder,
+    totalStencilsA: Object.values(DEFAULT_STENCILS_A).flat().length,
+    totalStencilsB: Object.values(DEFAULT_STENCILS_B).flat().length,
+    totalStencilsC: Object.values(DEFAULT_STENCILS_C).flat().length,
+    totalStencilsD: Object.values(DEFAULT_STENCILS_D).flat().length,
+    totalStencilsE: Object.values(DEFAULT_STENCILS_E).flat().length,
+  };
+}
+
+/**
+ * VALIDATE SIDEBAR CONFIGURATION
+ * Ensures all stencils reference valid node types
+ */
+export function validateSidebarConfiguration(): {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+  statistics: ReturnType<typeof getSidebarStatistics>;
+} {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Check all stencils across all variants
+  const allVariants = [
+    DEFAULT_STENCILS_A,
+    DEFAULT_STENCILS_B,
+    DEFAULT_STENCILS_C,
+    DEFAULT_STENCILS_D,
+    DEFAULT_STENCILS_E,
+  ];
+
+  allVariants.forEach((variant, variantIndex) => {
+    Object.entries(variant).forEach(([tabKey, stencils]) => {
+      stencils.forEach((stencil, stencilIndex) => {
+        if (!isValidNodeType(stencil.nodeType)) {
+          errors.push(
+            `Invalid node type '${stencil.nodeType}' in variant ${String.fromCharCode(97 + variantIndex).toUpperCase()}, tab '${tabKey}', stencil ${stencilIndex}`
+          );
+        }
+      });
+    });
+  });
+
+  // Check for empty tabs
+  allVariants.forEach((variant, variantIndex) => {
+    Object.entries(variant).forEach(([tabKey, stencils]) => {
+      if (stencils.length === 0) {
+        warnings.push(
+          `Empty tab '${tabKey}' in variant ${String.fromCharCode(97 + variantIndex).toUpperCase()}`
+        );
+      }
+    });
+  });
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+    statistics: getSidebarStatistics(),
+  };
+}
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * GET NODE TYPE FROM STENCIL ID
+ * Extracts node type from stencil ID
+ */
+export function getNodeTypeFromStencilId(stencilId: string): NodeType | null {
+  // Format: "prefix-nodetype-index"
+  const parts = stencilId.split("-");
+  if (parts.length < 2) return null;
+
+  const nodeType = parts.slice(1, -1).join("-"); // Handle node types with dashes
+  return isValidNodeType(nodeType) ? (nodeType as NodeType) : null;
+}
+
+/**
+ * REFRESH STENCILS
+ * Regenerates all stencils from current registry state
+ */
+export function refreshStencils(): typeof VARIANT_CONFIG {
+  console.log("🔄 Refreshing sidebar stencils from registry...");
+
+  // This would regenerate all the stencil configurations
+  // In a real implementation, this could be used to dynamically update
+  // the sidebar when new nodes are added to the registry
+
+  const statistics = getSidebarStatistics();
+  console.log("📊 Sidebar Statistics:", statistics);
+
+  return VARIANT_CONFIG;
+}
+
+// ============================================================================
+// DEVELOPMENT AND DEBUG UTILITIES
+// ============================================================================
+
+/**
+ * LOG SIDEBAR DEBUG INFO
+ * Logs comprehensive sidebar information for development
+ */
+export function logSidebarDebugInfo(): void {
+  if (process.env.NODE_ENV !== "development") return;
+
+  console.log("🔧 SIDEBAR DEBUG INFO");
+  console.log("=====================");
+
+  const validation = validateSidebarConfiguration();
+  const statistics = getSidebarStatistics();
+
+  console.log("\n📊 Statistics:", statistics);
+  console.log("\n✅ Validation:", validation.isValid ? "PASSED" : "FAILED");
+
+  if (validation.errors.length > 0) {
+    console.log("\n❌ Errors:", validation.errors);
+  }
+
+  if (validation.warnings.length > 0) {
+    console.log("\n⚠️ Warnings:", validation.warnings);
+  }
+
+  console.log("\n🎯 Registry Integration: ENABLED");
+  console.log("📁 Available Folders:", Object.keys(NODES_BY_FOLDER));
+  console.log("🏷️ Available Categories:", Object.keys(NODES_BY_CATEGORY));
+}
+
+// Auto-run debug info in development
+if (process.env.NODE_ENV === "development") {
+  logSidebarDebugInfo();
+}

@@ -30,7 +30,7 @@ import { useInspectorState } from "./hooks/useInspectorState";
 import { JsonHighlighter } from "./utils/JsonHighlighter";
 
 // ============================================================================
-// REGISTRY INTEGRATION - Import registry for type safety
+// ENHANCED REGISTRY INTEGRATION - Import registry for type safety and category features
 // ============================================================================
 
 import type { NodeType } from "../flow-engine/types/nodeData";
@@ -40,6 +40,14 @@ import {
   getRegistryStats,
   isValidNodeType,
 } from "../node-creation/node-registry/nodeRegistry";
+
+// CATEGORY REGISTRY INTEGRATION - Enhanced debugging and validation
+import {
+  CATEGORY_REGISTRY,
+  getCategoryBehavior,
+  getCategoryMetadata,
+  getCategoryTheme,
+} from "../node-creation/category-registry/categoryRegistry";
 
 const NodeInspector = React.memo(function NodeInspector() {
   // ============================================================================
@@ -97,10 +105,10 @@ const NodeInspector = React.memo(function NodeInspector() {
   );
 
   // ============================================================================
-  // REGISTRY-BASED VALIDATION AND DEBUGGING
+  // ENHANCED CATEGORY REGISTRY DEBUGGING AND VALIDATION
   // ============================================================================
 
-  // ENHANCED DEBUGGING - Using registry for validation
+  // ENHANCED DEBUGGING - Using both registries for comprehensive validation
   const debugSelectedNode = useMemo(() => {
     if (!selectedNode) return null;
 
@@ -109,9 +117,20 @@ const NodeInspector = React.memo(function NodeInspector() {
     const registryEntry = getNodeMetadata(nodeType);
     const configEntry = NODE_TYPE_CONFIG[nodeType];
 
+    // ENHANCED CATEGORY VALIDATION
+    const categoryMetadata = registryEntry
+      ? getCategoryMetadata(registryEntry.category)
+      : null;
+    const categoryTheme = registryEntry
+      ? getCategoryTheme(registryEntry.category)
+      : null;
+    const categoryBehavior = registryEntry
+      ? getCategoryBehavior(registryEntry.category)
+      : null;
+
     // REGISTRY-VALIDATED DEBUGGING - Only debug valid nodes
     if (isValidType && registryEntry) {
-      console.log(`🔍 [NodeInspector] REGISTRY-VALIDATED DEBUG ${nodeType}:`, {
+      console.log(`🔍 [NodeInspector] ENHANCED REGISTRY DEBUG ${nodeType}:`, {
         nodeType,
         isValidInRegistry: isValidType,
         registryMetadata: registryEntry,
@@ -121,15 +140,29 @@ const NodeInspector = React.memo(function NodeInspector() {
         hasControls: registryEntry.hasControls,
         category: registryEntry.category,
         folder: registryEntry.folder,
+
+        // ENHANCED CATEGORY DATA
+        categoryMetadata,
+        categoryTheme,
+        categoryBehavior,
+        categoryEnabled: categoryMetadata?.enabled,
+        categoryPriority: categoryMetadata?.priority,
+        categoryRules: categoryMetadata?.rules,
       });
 
       // Show all valid registry entries for comparison
       const stats = getRegistryStats();
-      console.log("🔍 [NodeInspector] REGISTRY STATS:", {
+      console.log("🔍 [NodeInspector] ENHANCED REGISTRY STATS:", {
         totalNodes: stats.totalNodes,
         byCategory: stats.byCategory,
         byFolder: stats.byFolder,
         validNodeTypes: Object.keys(MODERN_NODE_REGISTRY),
+        enabledCategories: Object.entries(CATEGORY_REGISTRY)
+          .filter(([_, meta]) => meta.enabled)
+          .map(([cat]) => cat),
+        categoryPriorities: Object.entries(CATEGORY_REGISTRY)
+          .map(([cat, meta]) => ({ category: cat, priority: meta.priority }))
+          .sort((a, b) => a.priority - b.priority),
       });
 
       return {
@@ -137,6 +170,9 @@ const NodeInspector = React.memo(function NodeInspector() {
         isValid: true,
         metadata: registryEntry,
         config: configEntry,
+        categoryMetadata,
+        categoryTheme,
+        categoryBehavior,
       };
     }
 
@@ -146,6 +182,7 @@ const NodeInspector = React.memo(function NodeInspector() {
       isValidInRegistry: isValidType,
       availableTypes: Object.keys(MODERN_NODE_REGISTRY),
       selectedNodeData: selectedNode.data,
+      availableCategories: Object.keys(CATEGORY_REGISTRY),
     });
 
     return {
@@ -153,6 +190,9 @@ const NodeInspector = React.memo(function NodeInspector() {
       isValid: false,
       metadata: null,
       config: null,
+      categoryMetadata: null,
+      categoryTheme: null,
+      categoryBehavior: null,
     };
   }, [selectedNode]);
 

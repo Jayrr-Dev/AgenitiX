@@ -1,11 +1,11 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useFlowStore } from "../../stores/flowStore";
 import {
   HoveredStencil,
   StencilInfoPanel,
 } from "../components/StencilInfoPanel";
+import { useFlowStore } from "../flow-engine/stores/flowStore";
 import { NodeSearchModal } from "./components/NodeSearchModal";
 import { SearchBar } from "./components/SearchBar";
 import { TabContent } from "./components/TabContent";

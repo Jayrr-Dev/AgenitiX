@@ -6,17 +6,29 @@
  * • Shows node status indicators and validation states
  * • Includes inspector lock controls and keyboard shortcut support
  * • Renders node metadata and connection information
+ * • Enhanced with modern registry integration for rich metadata
  *
- * Keywords: node-header, inline-editing, actions, status, shortcuts, metadata
+ * Keywords: node-header, inline-editing, actions, status, shortcuts, metadata, registry-integration
  */
 
 "use client";
 
+import { useNodeDisplay } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/NodeDisplayContext";
+import { useTextInputShortcuts } from "@/features/business-logic/hooks/useTextInputShortcuts";
 import React, { useCallback, useMemo, useState } from "react";
-import { useNodeDisplay } from "../../../flow-editor/contexts/NodeDisplayContext";
-import type { AgenNode } from "../../../flow-editor/types";
-import { useTextInputShortcuts } from "../../../hooks/useTextInputShortcuts";
-import { NODE_TYPE_CONFIG } from "../constants";
+
+// MODERN REGISTRY INTEGRATION - Import proper types and registry
+import { NODE_TYPE_CONFIG } from "../../flow-engine/constants";
+import type { AgenNode, NodeType } from "../../flow-engine/types/nodeData";
+import {
+  getNodeMetadata,
+  isValidNodeType,
+  type EnhancedNodeRegistration,
+} from "../../node-creation/node-registry/nodeRegistry";
+
+// ============================================================================
+// COMPONENT INTERFACE
+// ============================================================================
 
 interface NodeHeaderProps {
   node: AgenNode;
@@ -29,6 +41,66 @@ interface NodeHeaderProps {
   };
 }
 
+// ============================================================================
+// ENHANCED METADATA HELPERS
+// ============================================================================
+
+/**
+ * GET ENHANCED NODE METADATA
+ * Retrieves comprehensive metadata from the modern registry
+ */
+function getEnhancedNodeMetadata(nodeType: string): {
+  displayName: string;
+  description?: string;
+  icon?: string;
+  category?: string;
+  isValid: boolean;
+  metadata: EnhancedNodeRegistration | null;
+} {
+  // Validate node type
+  if (!isValidNodeType(nodeType)) {
+    return {
+      displayName: nodeType,
+      isValid: false,
+      metadata: null,
+    };
+  }
+
+  // Get metadata from registry
+  const metadata = getNodeMetadata(nodeType as NodeType);
+  if (!metadata) {
+    return {
+      displayName: nodeType,
+      isValid: false,
+      metadata: null,
+    };
+  }
+
+  return {
+    displayName: metadata.displayName,
+    description: metadata.description,
+    icon: metadata.icon,
+    category: metadata.category,
+    isValid: true,
+    metadata,
+  };
+}
+
+/**
+ * GET SAFE NODE CONFIG
+ * Gets node config with proper type safety
+ */
+function getSafeNodeConfig(nodeType: string) {
+  if (!isValidNodeType(nodeType)) {
+    return null;
+  }
+  return NODE_TYPE_CONFIG[nodeType as NodeType] || null;
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 export const NodeHeader: React.FC<NodeHeaderProps> = ({
   node,
   onUpdateNodeId,
@@ -36,60 +108,54 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
   onDuplicateNode,
   inspectorState,
 }) => {
-  const nodeConfig = NODE_TYPE_CONFIG[node.type];
+  // STATE MANAGEMENT
   const [isEditingId, setIsEditingId] = useState(false);
   const [editingId, setEditingId] = useState(node.id);
   const { showNodeIds, setShowNodeIds } = useNodeDisplay();
 
-  // ENHANCED REGISTRY INTEGRATION - Get additional metadata
-  const registryMetadata = useMemo(() => {
-    try {
-      // Lazy import to avoid circular dependency
-      const { ENHANCED_NODE_REGISTRY } = require("../../../nodes/nodeRegistry");
-      return ENHANCED_NODE_REGISTRY[node.type] || null;
-    } catch (error) {
-      // Fallback to static config if registry unavailable
-      return null;
-    }
+  // ENHANCED REGISTRY METADATA - Safe access with fallbacks
+  const nodeMetadata = useMemo(() => {
+    return getEnhancedNodeMetadata(node.type);
   }, [node.type]);
 
-  // GET DISPLAY NAME WITH REGISTRY FALLBACK
-  const displayName = useMemo(() => {
-    // Priority 1: Enhanced registry display name
-    if (registryMetadata?.ui?.label) {
-      return registryMetadata.ui.label;
-    }
+  // LEGACY CONFIG - For backwards compatibility
+  const nodeConfig = useMemo(() => {
+    return getSafeNodeConfig(node.type);
+  }, [node.type]);
 
-    // Priority 2: Static config display name
-    if (nodeConfig?.displayName) {
-      return nodeConfig.displayName;
-    }
+  // COMPUTED DISPLAY VALUES - Registry-first with fallbacks
+  const displayValues = useMemo(() => {
+    return {
+      displayName:
+        nodeMetadata.displayName || nodeConfig?.displayName || node.type,
+      description: nodeMetadata.description,
+      icon: nodeMetadata.icon,
+      category: nodeMetadata.category,
+    };
+  }, [nodeMetadata, nodeConfig, node.type]);
 
-    // Priority 3: Fallback to node type
-    return node.type;
-  }, [registryMetadata, nodeConfig, node.type]);
+  // NODE STATUS INDICATORS
+  const statusInfo = useMemo(() => {
+    const isRegistryValid = nodeMetadata.isValid;
+    const hasConfig = !!nodeConfig;
+    const hasEnhancedMetadata = !!nodeMetadata.metadata;
 
-  // GET NODE DESCRIPTION FROM REGISTRY
-  const nodeDescription = useMemo(() => {
-    return registryMetadata?.ui?.description || null;
-  }, [registryMetadata]);
+    return {
+      isRegistryValid,
+      hasConfig,
+      hasEnhancedMetadata,
+      statusIcon:
+        isRegistryValid && hasEnhancedMetadata ? "✅" : hasConfig ? "⚠️" : "❌",
+      statusTooltip:
+        isRegistryValid && hasEnhancedMetadata
+          ? "Registry-enhanced node"
+          : hasConfig
+            ? "Legacy configuration only"
+            : "Missing configuration",
+    };
+  }, [nodeMetadata, nodeConfig]);
 
-  // GET NODE ICON FROM REGISTRY
-  const nodeIcon = useMemo(() => {
-    if (registryMetadata?.ui?.icon) {
-      return registryMetadata.ui.icon;
-    }
-
-    // Fallback icons based on node type patterns
-    if (node.type.includes("trigger")) return "⚡";
-    if (node.type.includes("logic")) return "🧮";
-    if (node.type.includes("text") || node.type.includes("Text")) return "📝";
-    if (node.type.includes("view") || node.type.includes("View")) return "👁️";
-    if (node.type.includes("cycle")) return "🔄";
-
-    return null;
-  }, [registryMetadata, node.type]);
-
+  // EVENT HANDLERS
   const handleIdEdit = useCallback(() => {
     setIsEditingId(true);
     setEditingId(node.id);
@@ -142,31 +208,61 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
     [handleIdSave, handleIdCancel, textInputShortcuts]
   );
 
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+
   return (
     <div className="border-b border-gray-200 dark:border-gray-700 pb-2">
+      {/* HEADER ROW - Icon, Name, Status */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {/* ENHANCED REGISTRY ICON */}
-          {nodeIcon && (
-            <span className="text-lg" title="Node Type Icon">
-              {nodeIcon}
+          {/* REGISTRY-ENHANCED ICON */}
+          {displayValues.icon && (
+            <span
+              className="text-lg"
+              title={`${displayValues.displayName} • Category: ${displayValues.category}`}
+            >
+              {displayValues.icon}
             </span>
           )}
 
+          {/* DISPLAY NAME - Registry-enhanced */}
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {displayName}
+            {displayValues.displayName}
           </h3>
+
+          {/* STATUS INDICATOR - Shows registry integration status */}
+          <span
+            className="text-xs cursor-help"
+            title={statusInfo.statusTooltip}
+          >
+            {statusInfo.statusIcon}
+          </span>
         </div>
       </div>
 
-      {/* ENHANCED REGISTRY DESCRIPTION */}
-      {nodeDescription && (
+      {/* ENHANCED DESCRIPTION - From registry metadata */}
+      {displayValues.description && (
         <div className="mt-1 text-xs text-gray-600 dark:text-gray-400 italic">
-          {nodeDescription}
+          {displayValues.description}
         </div>
       )}
 
-      <div className="flex items-center gap-2 mt-1">
+      {/* NODE CATEGORY BADGE - From registry */}
+      {displayValues.category && (
+        <div className="mt-1">
+          <span
+            className="inline-block px-2 py-0.5 text-[10px] bg-blue-100 dark:bg-blue-900
+                          text-blue-800 dark:text-blue-200 rounded-full capitalize"
+          >
+            {displayValues.category}
+          </span>
+        </div>
+      )}
+
+      {/* NODE ID EDITING INTERFACE */}
+      <div className="flex items-center gap-2 mt-2">
         <span className="text-[10px] text-gray-500 dark:text-gray-400">
           Node ID:
         </span>
@@ -219,8 +315,8 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
         )}
       </div>
 
-      {/* Show Node IDs Setting */}
-      <div className="mt-0">
+      {/* GLOBAL SETTINGS */}
+      <div className="mt-2">
         <label className="flex items-center gap-2 text-[10px]">
           <span className="text-gray-500 dark:text-gray-400">
             Show Node IDs
@@ -233,6 +329,26 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
           />
         </label>
       </div>
+
+      {/* DEBUG INFO - Show registry integration status in development */}
+      {process.env.NODE_ENV === "development" && (
+        <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded text-[10px]">
+          <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">
+            🔧 Registry Debug Info:
+          </div>
+          <div className="space-y-0.5 text-gray-600 dark:text-gray-400">
+            <div>
+              Node Type: <code>{node.type}</code>
+            </div>
+            <div>Valid: {statusInfo.isRegistryValid ? "✅" : "❌"}</div>
+            <div>Enhanced: {statusInfo.hasEnhancedMetadata ? "✅" : "❌"}</div>
+            <div>Legacy Config: {statusInfo.hasConfig ? "✅" : "❌"}</div>
+            {nodeMetadata.metadata && (
+              <div>Handles: {nodeMetadata.metadata.handles.length}</div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

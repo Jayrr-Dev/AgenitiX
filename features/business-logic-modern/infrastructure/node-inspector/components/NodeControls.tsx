@@ -13,11 +13,11 @@
 "use client";
 
 import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
-import React from "react";
 import {
   getNodeInspectorControls,
   hasFactoryInspectorControls,
 } from "@factory/NodeFactory";
+import type React from "react";
 import { TextNodeControl } from "../controls/TextNodeControl";
 import {
   CyclePulseControl,
@@ -26,10 +26,18 @@ import {
   TriggerOnPulseControl,
   TriggerOnToggleControl,
 } from "../controls/TriggerControls";
-import { ErrorType } from "../types";
+import type { ErrorType } from "../types";
 
-// ENHANCED REGISTRY INTEGRATION - Direct import instead of require()
-import { generateInspectorControlMapping } from "@node-creation/node-registry/nodeRegistry";
+// ============================================================================
+// REGISTRY INTEGRATION - Import registry for type-safe control resolution
+// ============================================================================
+
+import {
+  generateInspectorControlMapping,
+  getNodeMetadata,
+  isValidNodeType,
+  safeNodeTypeCast,
+} from "../../node-creation/node-registry/nodeRegistry";
 
 interface NodeControlsProps {
   node: AgenNode;
@@ -58,118 +66,164 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
   onLogError,
   inspectorState,
 }) => {
-  // ENHANCED REGISTRY CONTROL RESOLUTION
+  // ============================================================================
+  // REGISTRY-BASED CONTROL RESOLUTION
+  // ============================================================================
+
   const getControlFromRegistry = (nodeType: string) => {
     try {
-      // DEBUG: Log attempt to resolve registry control
-      console.log(
-        `[NodeControls] Attempting to resolve registry control for ${nodeType}`
-      );
-
-      // Direct function call instead of require()
-      console.log(
-        `[NodeControls] generateInspectorControlMapping type:`,
-        typeof generateInspectorControlMapping
-      );
-
-      if (typeof generateInspectorControlMapping !== "function") {
+      // VALIDATE NODE TYPE FIRST
+      const validNodeType = safeNodeTypeCast(nodeType);
+      if (!validNodeType) {
         console.warn(
-          `[NodeControls] generateInspectorControlMapping is not a function:`,
-          generateInspectorControlMapping
+          `[NodeControls] ⚠️ Invalid node type: ${nodeType}. Available types:`,
+          ["createText", "viewOutput", "triggerOnToggle", "testError"]
         );
-        return null;
+        return (
+          <div className="text-xs text-red-500 p-2 bg-red-50 dark:bg-red-900/20 rounded border">
+            <div className="font-semibold">Invalid Node Type</div>
+            <div>Type '{nodeType}' not found in modern registry</div>
+            <div className="mt-1 text-xs">
+              Valid types: createText, viewOutput, triggerOnToggle, testError
+            </div>
+          </div>
+        );
       }
 
+      console.log(
+        `[NodeControls] ✅ Resolving registry control for valid node type: ${validNodeType}`
+      );
+
+      // GET REGISTRY MAPPING
       const registryMapping = generateInspectorControlMapping();
+      const controlConfig = registryMapping[validNodeType];
 
-      // DEBUG: Log the full mapping
-      console.log(
-        `[NodeControls] Registry mapping keys:`,
-        Object.keys(registryMapping)
-      );
-      console.log(
-        `[NodeControls] Registry mapping for ${nodeType}:`,
-        registryMapping[nodeType]
-      );
-
-      const controlConfig = registryMapping[nodeType];
-
-      if (controlConfig?.type === "legacy" && controlConfig.legacyControlType) {
+      if (!controlConfig) {
         console.log(
-          `[NodeControls] ✅ Found legacy control for ${nodeType}:`,
-          controlConfig.legacyControlType
+          `[NodeControls] 📝 No inspector control config found for ${validNodeType}, checking metadata...`
         );
 
-        const baseProps = { node, updateNodeData };
-
-        switch (controlConfig.legacyControlType) {
-          case "TextNodeControl":
-            return <TextNodeControl {...baseProps} />;
-          case "TriggerOnClickControl":
-            return <TriggerOnClickControl {...baseProps} />;
-          case "TriggerOnToggleControl":
-            return <TriggerOnToggleControl {...baseProps} />;
-          case "TriggerOnPulseControl":
-            return (
-              <TriggerOnPulseControl
-                {...baseProps}
-                durationInput={inspectorState.durationInput}
-                setDurationInput={inspectorState.setDurationInput}
-              />
-            );
-          case "CyclePulseControl":
-            return <CyclePulseControl {...baseProps} />;
-          case "CycleToggleControl":
-            return <CycleToggleControl {...baseProps} />;
-          default:
-            console.warn(
-              `[NodeControls] ❌ Unknown legacy control type: ${controlConfig.legacyControlType}`
-            );
-            return null;
+        const metadata = getNodeMetadata(validNodeType);
+        if (metadata?.hasControls) {
+          console.log(
+            "[NodeControls] 🔧 Node has controls but no config, using default TextNodeControl"
+          );
+          return (
+            <TextNodeControl node={node} updateNodeData={updateNodeData} />
+          );
         }
-      } else if (controlConfig?.type === "factory") {
+
         console.log(
-          `[NodeControls] 🏭 Found factory control for ${nodeType}, deferring to NodeFactory`
+          `[NodeControls] 🚫 Node ${validNodeType} has no controls configured`
         );
-        return null; // Let NodeFactory handle it
-      } else if (controlConfig?.type === "none") {
-        console.log(
-          `[NodeControls] 🚫 Node ${nodeType} explicitly has no controls`
+        return (
+          <div className="text-xs text-gray-500">
+            No controls available for this node type
+          </div>
         );
-        return null;
-      } else {
-        console.log(
-          `[NodeControls] ❓ No registry control config found for ${nodeType}. Config:`,
-          controlConfig
-        );
-        return null;
+      }
+
+      // HANDLE DIFFERENT CONTROL TYPES
+      const baseProps = { node, updateNodeData };
+
+      switch (controlConfig.type) {
+        case "legacy":
+          if (controlConfig.legacyControlType) {
+            console.log(
+              `[NodeControls] 🔄 Using legacy control: ${controlConfig.legacyControlType} for ${validNodeType}`
+            );
+
+            switch (controlConfig.legacyControlType) {
+              case "TextNodeControl":
+                return <TextNodeControl {...baseProps} />;
+              case "TriggerOnClickControl":
+                return <TriggerOnClickControl {...baseProps} />;
+              case "TriggerOnToggleControl":
+                return <TriggerOnToggleControl {...baseProps} />;
+              case "TriggerOnPulseControl":
+                return (
+                  <TriggerOnPulseControl
+                    {...baseProps}
+                    durationInput={inspectorState.durationInput}
+                    setDurationInput={inspectorState.setDurationInput}
+                  />
+                );
+              case "CyclePulseControl":
+                return <CyclePulseControl {...baseProps} />;
+              case "CycleToggleControl":
+                return <CycleToggleControl {...baseProps} />;
+              default:
+                console.warn(
+                  `[NodeControls] ❌ Unknown legacy control type: ${controlConfig.legacyControlType}`
+                );
+                return (
+                  <div className="text-xs text-orange-500">
+                    Unknown control type: {controlConfig.legacyControlType}
+                  </div>
+                );
+            }
+          }
+          break;
+
+        case "factory":
+          console.log(
+            `[NodeControls] 🏭 Using factory control for ${validNodeType}`
+          );
+          return null; // Let factory handle it
+
+        case "none":
+          console.log(
+            `[NodeControls] 🚫 Node ${validNodeType} explicitly has no controls`
+          );
+          return (
+            <div className="text-xs text-gray-500">
+              This node type does not require controls
+            </div>
+          );
+
+        default:
+          console.warn(
+            `[NodeControls] ❓ Unknown control type: ${controlConfig.type}`
+          );
+          return (
+            <div className="text-xs text-orange-500">
+              Unknown control configuration type
+            </div>
+          );
       }
     } catch (error) {
       console.error(
         `[NodeControls] ❌ Registry control resolution failed for ${nodeType}:`,
         error
       );
-      console.error(
-        `[NodeControls] Error stack:`,
-        error instanceof Error ? error.stack : "No stack trace available"
+      return (
+        <div className="text-xs text-red-500 p-2 bg-red-50 dark:bg-red-900/20 rounded border">
+          <div className="font-semibold">Control Resolution Error</div>
+          <div>Failed to load controls for node type: {nodeType}</div>
+        </div>
       );
-      return null;
     }
+
+    return null;
   };
+
+  // ============================================================================
+  // MAIN CONTROL RENDERING LOGIC
+  // ============================================================================
 
   const renderControlsForNodeType = () => {
     console.log(
       `[NodeControls] 🔍 Rendering controls for node type: ${node.type}`
     );
 
-    // PRIORITY 1: Enhanced Registry Auto-Resolution
+    // PRIORITY 1: Registry-Based Control Resolution (Type-Safe)
     const registryControl = getControlFromRegistry(node.type);
     if (registryControl) {
       console.log(`[NodeControls] ✅ Using REGISTRY control for ${node.type}`);
       return registryControl;
     }
 
-    // PRIORITY 2: NodeFactory-created nodes
+    // PRIORITY 2: Factory Controls (for nodes created via NodeFactory)
     if (hasFactoryInspectorControls(node.type)) {
       console.log(`[NodeControls] 🏭 Using FACTORY control for ${node.type}`);
       const FactoryControlsComponent = getNodeInspectorControls(node.type);
@@ -185,102 +239,32 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
       }
     }
 
-    // PRIORITY 3: Legacy manual switch statement (deprecated)
-    console.log(`[NodeControls] 🔄 Using LEGACY switch for ${node.type}`);
-    const baseProps = { node, updateNodeData };
+    // PRIORITY 3: Fallback for unknown/legacy nodes
+    console.log(
+      `[NodeControls] ⚠️ No registry or factory control found for ${node.type}`
+    );
 
-    switch (node.type) {
-      case "createText":
-      case "createTextRefactor":
-        return <TextNodeControl {...baseProps} />;
-
-      case "triggerOnClick":
-        return <TriggerOnClickControl {...baseProps} />;
-
-      case "triggerOnToggle":
-        return <TriggerOnToggleControl {...baseProps} />;
-
-      case "triggerOnToggleRefactor":
-        return <TriggerOnToggleControl {...baseProps} />;
-
-      case "triggerOnPulse":
-        return (
-          <TriggerOnPulseControl
-            {...baseProps}
-            durationInput={inspectorState.durationInput}
-            setDurationInput={inspectorState.setDurationInput}
-          />
-        );
-
-      case "cyclePulse":
-        return <CyclePulseControl {...baseProps} />;
-
-      case "cycleToggle":
-        return <CycleToggleControl {...baseProps} />;
-
-      // Text processing nodes
-      case "turnToText":
-        return <TextNodeControl {...baseProps} />;
-
-      // Boolean conversion nodes
-      case "turnToBoolean":
-        return <TextNodeControl {...baseProps} />;
-
-      // Input/testing nodes
-      case "testInput":
-        return <TextNodeControl {...baseProps} />;
-
-      // Object/array editors
-      case "editObject":
-      case "editArray":
-        return <TextNodeControl {...baseProps} />;
-
-      // Counter and delay nodes
-      case "countInput":
-      case "delayInput":
-        return <TextNodeControl {...baseProps} />;
-
-      // Processing nodes (no controls needed)
-      case "turnToUppercase":
-        return (
-          <div className="text-xs text-gray-500">
-            Processing node - connect text inputs to use
+    // Check if it's a valid modern node type
+    const isValidModern = isValidNodeType(node.type);
+    if (!isValidModern) {
+      return (
+        <div className="text-xs text-amber-600 dark:text-amber-400 p-2 bg-amber-50 dark:bg-amber-900/20 rounded border">
+          <div className="font-semibold">Legacy Node Type</div>
+          <div>Node type '{node.type}' is not part of the modern system</div>
+          <div className="mt-1 text-xs">
+            Consider migrating to: createText, viewOutput, triggerOnToggle, or
+            testError
           </div>
-        );
-
-      // Logic nodes (use base controls for now)
-      case "logicAnd":
-      case "logicOr":
-      case "logicNot":
-      case "logicXor":
-      case "logicXnor":
-        return (
-          <div className="text-xs text-gray-500">
-            Logic node - no additional controls needed
-          </div>
-        );
-
-      // View nodes
-      case "viewOutput":
-      case "viewOutputRefactor":
-        return (
-          <div className="text-xs text-gray-500">
-            View node - no additional controls needed
-          </div>
-        );
-
-      // Test nodes
-      case "testError":
-      case "testJson":
-        return <TextNodeControl {...baseProps} />;
-
-      default:
-        return (
-          <div className="text-xs text-gray-500 italic">
-            No controls available for this node type: {node.type}
-          </div>
-        );
+        </div>
+      );
     }
+
+    // Default fallback for valid but unconfigured nodes
+    return (
+      <div className="text-xs text-gray-500 italic">
+        No controls configured for this node type: {node.type}
+      </div>
+    );
   };
 
   return (
