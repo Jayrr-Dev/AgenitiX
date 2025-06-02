@@ -1,6 +1,6 @@
 {
-  "version": "1.1.1",
-  "timestamp": 1748869088509,
+  "version": "1.1.2",
+  "timestamp": 1748869952383,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -232,7 +232,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\NodeFactory.tsx",
-      "ab7776d1869ea0a42e373aea4d069160"
+      "5f27d1c322645b93700ecb17141ae380"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\templates\\CreateTextTemplate.tsx",
@@ -447,6 +447,10 @@
       "a4aa68d66573eed0415761942e4c37f4"
     ],
     [
+      "features\\business-logic-modern\\infrastructure\\theming\\init\\themeInitializer.ts",
+      "1d980897a6919401011c3875b5d24e2b"
+    ],
+    [
       "features\\business-logic-modern\\infrastructure\\theming\\stores\\categoryThemeDemo.ts",
       "82c119ada0d91a9f18bc80dc42d55afb"
     ],
@@ -472,7 +476,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "a55d27448dda0f3ba29772ff3f210d0d"
+      "bd562b9daa4ab7dc6b5994a436d68e68"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
@@ -492,7 +496,7 @@
     ],
     [
       "features\\business-logic-modern\\node-domain\\view\\ViewOutput.tsx",
-      "373d70077ee417fe6cf8577295e0c193"
+      "e1c25b1a699d2d40b5583a7b4a1eed48"
     ],
     [
       "features\\business-logic-modern\\tooling\\dev-scripts\\generate-from-registry.ts",
