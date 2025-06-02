@@ -24,7 +24,7 @@ import { ActionType } from "./UndoRedoManager";
 // TYPES
 export interface UndoRedoContextType {
   undo: () => boolean;
-  redo: () => boolean;
+  redo: (childId?: string) => boolean;
   recordAction: (type: ActionType, metadata?: Record<string, unknown>) => void;
   recordActionDebounced: (
     type: ActionType,
@@ -36,6 +36,10 @@ export interface UndoRedoContextType {
     currentIndex: number;
     canUndo: boolean;
     canRedo: boolean;
+    // Additional graph-specific properties (optional for backward compatibility)
+    branchOptions?: string[];
+    graphStats?: any;
+    currentNode?: any;
   };
 }
 
@@ -63,8 +67,8 @@ export const UndoRedoProvider: React.FC<UndoRedoProviderProps> = ({
     return managerRef.current?.undo() || false;
   }, []);
 
-  const redo = useCallback(() => {
-    return managerRef.current?.redo() || false;
+  const redo = useCallback((childId?: string) => {
+    return managerRef.current?.redo(childId) || false;
   }, []);
 
   const recordAction = useCallback(

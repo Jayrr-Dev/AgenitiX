@@ -1,13 +1,13 @@
 /**
- * UNDO REDO MANAGER V2 - Robust undo/redo system for workflow editor
+ * UNDO REDO MANAGER V3 - Graph-based multi-branch undo/redo system
  *
- * • Clean action separation with proper timing control
- * • Reliable state capture with validation and conflict resolution
- * • Predictable undo/redo operations with detailed logging
- * • Memory-efficient with automatic compression and cleanup
- * • Type-safe with comprehensive error handling
+ * • Graph structure supporting multiple redo branches instead of linear history
+ * • Each action creates a new node in the history graph
+ * • Undo navigates to parent node, redo can choose between multiple children
+ * • Maintains all existing APIs for seamless integration
+ * • Persistent storage with localStorage integration
  *
- * Keywords: undo-redo, state-management, action-tracking, reliability, performance
+ * Keywords: undo-redo, multi-branch, graph-structure, state-management, workflow-editor
  */
 
 "use client";
@@ -15,6 +15,22 @@
 import { useReactFlow, type Edge, type Node } from "@xyflow/react";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useRegisterUndoRedoManager } from "./UndoRedoContext";
+import { 
+  HistoryGraph, 
+  FlowState, 
+  NodeId 
+} from "./historyGraph";
+import {
+  createRootGraph,
+  createChildNode,
+  saveGraph,
+  loadGraph,
+  cloneFlowState,
+  areStatesEqual,
+  getPathToCursor,
+  getGraphStats,
+  clearPersistedGraph
+} from "./graphHelpers";
 
 // ============================================================================
 // CONFIGURATION & CONSTANTS
@@ -23,11 +39,9 @@ import { useRegisterUndoRedoManager } from "./UndoRedoContext";
 const DEBUG_MODE = process.env.NODE_ENV === "development";
 const ACTION_SEPARATOR_DELAY = 150; // ms between distinct actions
 const POSITION_DEBOUNCE_DELAY = 300; // ms for position changes
-const MAX_HISTORY_SIZE = 100;
-const COMPRESSION_THRESHOLD = 80;
 
 // ============================================================================
-// TYPES
+// TYPES (keeping existing ones for compatibility)
 // ============================================================================
 
 export type ActionType = 
@@ -39,22 +53,6 @@ export type ActionType =
   | "duplicate" 
   | "bulk_update"
   | "paste";
-
-export interface FlowState {
-  nodes: Node[];
-  edges: Edge[];
-  viewport?: { x: number; y: number; zoom: number };
-}
-
-export interface ActionEntry {
-  id: string;
-  timestamp: number;
-  type: ActionType;
-  description: string;
-  beforeState: FlowState;
-  afterState: FlowState;
-  metadata: Record<string, unknown>;
-}
 
 export interface UndoRedoConfig {
   maxHistorySize?: number;
@@ -70,15 +68,12 @@ export interface UndoRedoManagerProps {
   onNodesChange: (nodes: Node[]) => void;
   onEdgesChange: (edges: Edge[]) => void;
   config?: UndoRedoConfig;
-  onHistoryChange?: (history: ActionEntry[], currentIndex: number) => void;
+  onHistoryChange?: (history: any[], currentIndex: number) => void;
 }
 
 // ============================================================================
 // UTILITIES
 // ============================================================================
-
-let actionCounter = 0;
-const generateActionId = (): string => `action_${Date.now()}_${++actionCounter}`;
 
 const createFlowState = (
   nodes: Node[],
@@ -96,13 +91,6 @@ const createFlowState = (
   })),
   viewport: viewport ? { ...viewport } : undefined,
 });
-
-const areStatesEqual = (state1: FlowState, state2: FlowState): boolean => {
-  return (
-    JSON.stringify(state1.nodes) === JSON.stringify(state2.nodes) &&
-    JSON.stringify(state1.edges) === JSON.stringify(state2.edges)
-  );
-};
 
 const getActionDescription = (type: ActionType, metadata: Record<string, unknown>): string => {
   switch (type) {
@@ -142,7 +130,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
   const reactFlowInstance = useReactFlow();
   const finalConfig = useMemo(
     () => ({
-      maxHistorySize: config.maxHistorySize ?? MAX_HISTORY_SIZE,
+      maxHistorySize: config.maxHistorySize ?? 100,
       positionDebounceMs: config.positionDebounceMs ?? POSITION_DEBOUNCE_DELAY,
       actionSeparatorMs: config.actionSeparatorMs ?? ACTION_SEPARATOR_DELAY,
       enableViewportTracking: config.enableViewportTracking ?? false,
@@ -157,8 +145,23 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
   // STATE MANAGEMENT
   // ============================================================================
 
-  const historyRef = useRef<ActionEntry[]>([]);
-  const currentIndexRef = useRef(-1);
+  const initialState = useMemo<FlowState>(
+    () => createFlowState(nodes, edges),
+    [] // Only compute once on mount
+  );
+
+  const initialGraph = useMemo(() => {
+    const persisted = loadGraph();
+    return persisted ?? createRootGraph(initialState);
+  }, [initialState]);
+
+  const graphRef = useRef<HistoryGraph>(initialGraph);
+  
+  // Helper to get graph
+  const getGraph = useCallback(() => {
+    return graphRef.current;
+  }, []);
+
   const isUndoRedoOperationRef = useRef(false);
   const lastCapturedStateRef = useRef<FlowState | null>(null);
   const lastActionTimestampRef = useRef(0);
@@ -181,81 +184,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     return createFlowState(nodes, edges, viewport);
   }, [nodes, edges, finalConfig.enableViewportTracking, reactFlowInstance]);
 
-  const addToHistory = useCallback(
-    (
-      type: ActionType,
-      beforeState: FlowState,
-      afterState: FlowState,
-      metadata: Record<string, unknown> = {}
-    ) => {
-      // Skip if states are identical
-      if (areStatesEqual(beforeState, afterState)) {
-        if (DEBUG_MODE) {
-          console.log("🚫 [UndoRedo] Skipping identical states");
-        }
-        return;
-      }
-
-      // Skip if this is an undo/redo operation
-      if (isUndoRedoOperationRef.current) {
-        if (DEBUG_MODE) {
-          console.log("🚫 [UndoRedo] Skipping during undo/redo operation");
-        }
-        return;
-      }
-
-      const entry: ActionEntry = {
-        id: generateActionId(),
-        timestamp: Date.now(),
-        type,
-        description: getActionDescription(type, metadata),
-        beforeState,
-        afterState,
-        metadata,
-      };
-
-      if (DEBUG_MODE) {
-        console.log("📝 [UndoRedo] Adding to history:", entry.description);
-      }
-
-      // Remove any history after current index (when adding new action after undo)
-      const newHistory = historyRef.current.slice(0, currentIndexRef.current + 1);
-      newHistory.push(entry);
-
-      // Apply compression if enabled and needed
-      if (finalConfig.enableCompression && newHistory.length > COMPRESSION_THRESHOLD) {
-        // Keep recent actions and compress older ones
-        const recentActions = newHistory.slice(-50);
-        const compressedCount = newHistory.length - recentActions.length;
-        
-        if (DEBUG_MODE) {
-          console.log(`🗜️ [UndoRedo] Compressed ${compressedCount} older actions`);
-        }
-        
-        historyRef.current = recentActions;
-      } else {
-        historyRef.current = newHistory;
-      }
-
-      // Limit total history size
-      if (historyRef.current.length > finalConfig.maxHistorySize) {
-        const removedCount = historyRef.current.length - finalConfig.maxHistorySize;
-        historyRef.current = historyRef.current.slice(-finalConfig.maxHistorySize);
-        
-        if (DEBUG_MODE) {
-          console.log(`✂️ [UndoRedo] Trimmed ${removedCount} oldest actions`);
-        }
-      }
-
-      currentIndexRef.current = historyRef.current.length - 1;
-      lastActionTimestampRef.current = Date.now();
-
-      // Notify history change
-      onHistoryChange?.(historyRef.current, currentIndexRef.current);
-    },
-    [finalConfig.enableCompression, finalConfig.maxHistorySize, onHistoryChange]
-  );
-
   const applyState = useCallback(
     (state: FlowState, actionType: string) => {
       if (DEBUG_MODE) {
@@ -277,7 +205,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
       } catch (error) {
         console.error("❌ [UndoRedo] Error applying state:", error);
       } finally {
-        // Use a longer timeout to ensure ReactFlow fully processes the changes
+        // Use a timeout to ensure ReactFlow fully processes the changes
         setTimeout(() => {
           isUndoRedoOperationRef.current = false;
           if (DEBUG_MODE) {
@@ -289,48 +217,116 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     [onNodesChange, onEdgesChange, finalConfig.enableViewportTracking, reactFlowInstance]
   );
 
+  const push = useCallback(
+    (label: string, nextState: FlowState, metadata: Record<string, unknown> = {}) => {
+      const graph = getGraph();
+      const cursorNode = graph.nodes[graph.cursor];
+
+      // Skip if states are identical
+      if (areStatesEqual(cursorNode.after, nextState)) {
+        if (DEBUG_MODE) {
+          console.log("🚫 [UndoRedo] Skipping identical states");
+        }
+        return;
+      }
+
+      // Skip if this is an undo/redo operation
+      if (isUndoRedoOperationRef.current) {
+        if (DEBUG_MODE) {
+          console.log("🚫 [UndoRedo] Skipping during undo/redo operation");
+        }
+        return;
+      }
+
+      const newId = createChildNode(
+        graph,
+        cursorNode.id,
+        label,
+        cursorNode.after,
+        nextState,
+        metadata
+      );
+      
+      graph.cursor = newId;
+      saveGraph(graph);
+      lastActionTimestampRef.current = Date.now();
+
+      if (DEBUG_MODE) {
+        console.log(`📝 [UndoRedo] Push: ${label}`, getGraphStats(graph));
+      }
+
+      // Notify history change with compatible format
+      const path = getPathToCursor(graph);
+      onHistoryChange?.(path, path.length - 1);
+    },
+    [onHistoryChange, getGraph]
+  );
+
   // ============================================================================
   // PUBLIC API
   // ============================================================================
 
-  const undo = useCallback(() => {
-    if (currentIndexRef.current < 0) {
+  const undo = useCallback((): boolean => {
+    const graph = getGraph();
+    const current = graph.nodes[graph.cursor];
+    
+    if (!current.parentId) {
       if (DEBUG_MODE) {
-        console.log("❌ [UndoRedo] Cannot undo, no history");
+        console.log("❌ [UndoRedo] Cannot undo, at root");
       }
       return false;
     }
 
-    const entry = historyRef.current[currentIndexRef.current];
+    graph.cursor = current.parentId;
+    const parent = graph.nodes[graph.cursor];
+    applyState(parent.after, `undo ${current.label}`);
+    saveGraph(graph);
+
     if (DEBUG_MODE) {
-      console.log(`↩️ [UndoRedo] Undoing: ${entry.description}`);
+      console.log(`↩️ [UndoRedo] Undo: ${current.label}`);
     }
 
-    applyState(entry.beforeState, `undo ${entry.description}`);
-    currentIndexRef.current--;
-
-    onHistoryChange?.(historyRef.current, currentIndexRef.current);
+    // Notify history change
+    const path = getPathToCursor(graph);
+    onHistoryChange?.(path, path.length - 1);
     return true;
-  }, [applyState, onHistoryChange]);
+  }, [applyState, onHistoryChange, getGraph]);
 
-  const redo = useCallback(() => {
-    if (currentIndexRef.current >= historyRef.current.length - 1) {
+  const redo = useCallback((childId?: string): boolean => {
+    const graph = getGraph();
+    const current = graph.nodes[graph.cursor];
+    
+    if (!current.childrenIds.length) {
       if (DEBUG_MODE) {
-        console.log("❌ [UndoRedo] Cannot redo, no future history");
+        console.log("❌ [UndoRedo] Cannot redo, no children");
       }
       return false;
     }
 
-    currentIndexRef.current++;
-    const entry = historyRef.current[currentIndexRef.current];
-    if (DEBUG_MODE) {
-      console.log(`↪️ [UndoRedo] Redoing: ${entry.description}`);
+    // Use provided childId or default to first child
+    const targetId = childId ?? current.childrenIds[0];
+    
+    if (!graph.nodes[targetId]) {
+      if (DEBUG_MODE) {
+        console.log(`❌ [UndoRedo] Invalid child ID: ${targetId}`);
+      }
+      return false;
     }
 
-    applyState(entry.afterState, `redo ${entry.description}`);
-    onHistoryChange?.(historyRef.current, currentIndexRef.current);
+    graph.cursor = targetId;
+    const target = graph.nodes[targetId];
+    applyState(target.after, `redo ${target.label}`);
+    saveGraph(graph);
+
+    if (DEBUG_MODE) {
+      console.log(`↪️ [UndoRedo] Redo: ${target.label}`);
+    }
+
+    // Notify history change
+    const path = getPathToCursor(graph);
+    onHistoryChange?.(path, path.length - 1);
     return true;
-  }, [applyState, onHistoryChange]);
+  }, [applyState, onHistoryChange, getGraph]);
 
   const recordAction = useCallback(
     (type: ActionType, metadata: Record<string, unknown> = {}) => {
@@ -342,17 +338,10 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
       }
 
       const currentState = captureCurrentState();
-      
-      if (lastCapturedStateRef.current) {
-        if (DEBUG_MODE) {
-          console.log(`📝 [UndoRedo] Recording action: ${type}`);
-        }
-        addToHistory(type, lastCapturedStateRef.current, currentState, metadata);
-      }
-
-      lastCapturedStateRef.current = currentState;
+      const description = getActionDescription(type, metadata);
+      push(description, currentState, { ...metadata, actionType: type });
     },
-    [captureCurrentState, addToHistory]
+    [captureCurrentState, push]
   );
 
   const recordActionImmediate = useCallback(
@@ -370,26 +359,39 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
   );
 
   const clearHistory = useCallback(() => {
-    historyRef.current = [];
-    currentIndexRef.current = -1;
+    const graph = getGraph();
+    graphRef.current = createRootGraph(captureCurrentState());
     lastCapturedStateRef.current = null;
     lastActionTimestampRef.current = 0;
+    saveGraph(graphRef.current);
     onHistoryChange?.([], -1);
     
     if (DEBUG_MODE) {
-      console.log("🧹 [UndoRedo] History cleared");
+      console.log("�� [UndoRedo] History cleared");
     }
-  }, [onHistoryChange]);
+  }, [captureCurrentState, onHistoryChange, getGraph]);
 
-  const getHistory = useCallback(
-    () => ({
-      entries: [...historyRef.current],
-      currentIndex: currentIndexRef.current,
-      canUndo: currentIndexRef.current >= 0,
-      canRedo: currentIndexRef.current < historyRef.current.length - 1,
-    }),
-    []
-  );
+  const getHistory = useCallback(() => {
+    const graph = getGraph();
+    const path = getPathToCursor(graph);
+    const current = graph.nodes[graph.cursor];
+    
+    return {
+      entries: path,
+      currentIndex: path.length - 1,
+      canUndo: current.parentId !== null,
+      canRedo: current.childrenIds.length > 0,
+      // Additional graph-specific data
+      branchOptions: current.childrenIds,
+      graphStats: getGraphStats(graph),
+      currentNode: current,
+    };
+  }, [getGraph]);
+
+  const getBranchOptions = useCallback((): string[] => {
+    const graph = getGraph();
+    return [...graph.nodes[graph.cursor].childrenIds];
+  }, [getGraph]);
 
   // ============================================================================
   // AUTO-DETECTION SYSTEM
@@ -449,15 +451,12 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
             console.log(`🎯 [UndoRedo] Recording position change for ${movedNodeCount} nodes`);
           }
 
-          addToHistory(
-            "node_move",
-            lastCapturedStateRef.current!,
-            captureCurrentState(),
-            {
-              nodeCount: movedNodeCount,
-              movedNodes: Array.from(pendingPositionActionRef.current.movedNodes),
-            }
-          );
+          const description = movedNodeCount > 1 ? `Move ${movedNodeCount} nodes` : "Move node";
+          push(description, captureCurrentState(), {
+            actionType: "node_move",
+            nodeCount: movedNodeCount,
+            movedNodes: Array.from(pendingPositionActionRef.current.movedNodes),
+          });
 
           lastCapturedStateRef.current = captureCurrentState();
         }
@@ -475,30 +474,37 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
       const edgeCountDiff = currentState.edges.length - lastCapturedStateRef.current.edges.length;
 
       let actionType: ActionType = "bulk_update";
+      let description = "Bulk update";
       const metadata: Record<string, unknown> = {};
 
       if (nodeCountDiff > 0) {
         actionType = "node_add";
+        description = nodeCountDiff > 1 ? `Add ${nodeCountDiff} nodes` : "Add node";
         metadata.nodeCount = nodeCountDiff;
       } else if (nodeCountDiff < 0) {
         actionType = "node_delete";
-        metadata.nodeCount = Math.abs(nodeCountDiff);
+        const deletedCount = Math.abs(nodeCountDiff);
+        description = deletedCount > 1 ? `Delete ${deletedCount} nodes` : "Delete node";
+        metadata.nodeCount = deletedCount;
       } else if (edgeCountDiff > 0) {
         actionType = "edge_add";
+        description = edgeCountDiff > 1 ? `Add ${edgeCountDiff} connections` : "Add connection";
         metadata.edgeCount = edgeCountDiff;
       } else if (edgeCountDiff < 0) {
         actionType = "edge_delete";
-        metadata.edgeCount = Math.abs(edgeCountDiff);
+        const deletedCount = Math.abs(edgeCountDiff);
+        description = deletedCount > 1 ? `Delete ${deletedCount} connections` : "Delete connection";
+        metadata.edgeCount = deletedCount;
       }
 
       if (DEBUG_MODE) {
-        console.log(`🔍 [UndoRedo] Auto-detected: ${actionType}`, metadata);
+        console.log(`🔍 [UndoRedo] Auto-detected: ${description}`, metadata);
       }
 
-      addToHistory(actionType, lastCapturedStateRef.current, currentState, metadata);
+      push(description, currentState, { ...metadata, actionType });
       lastCapturedStateRef.current = currentState;
     }
-  }, [nodes, edges, captureCurrentState, addToHistory, finalConfig.positionDebounceMs, finalConfig.actionSeparatorMs]);
+  }, [nodes, edges, captureCurrentState, push, finalConfig.positionDebounceMs, finalConfig.actionSeparatorMs]);
 
   // ============================================================================
   // KEYBOARD SHORTCUTS
@@ -558,21 +564,37 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
       redo,
       recordAction,
       recordActionDebounced: recordAction, // Same as recordAction now
-      recordActionImmediate,
       clearHistory,
       getHistory,
+      // Additional graph-specific APIs
+      getBranchOptions,
+      redoSpecificBranch: redo, // Alias for clarity
     };
 
     registerManager(managerAPI);
 
     if (typeof window !== "undefined" && DEBUG_MODE) {
-      (window as any).undoRedoManager = managerAPI;
+      (window as any).undoRedoManager = {
+        ...managerAPI,
+        getGraph: () => getGraph(),
+        exportGraph: () => JSON.stringify(getGraph(), null, 2),
+        importGraph: (jsonString: string) => {
+          try {
+            const graph = JSON.parse(jsonString);
+            graphRef.current = graph;
+            const current = graph.nodes[graph.cursor];
+            applyState(current.after, "import graph");
+            saveGraph(graph);
+          } catch (error) {
+            console.error("Failed to import graph:", error);
+          }
+        },
+        clearPersisted: clearPersistedGraph,
+      };
     }
-  }, [undo, redo, recordAction, recordActionImmediate, clearHistory, getHistory, registerManager]);
+  }, [undo, redo, recordAction, clearHistory, getHistory, getBranchOptions, applyState, getGraph]);
 
   return null;
 };
 
 export default UndoRedoManager;
-
-// NOTE: useUndoRedo hook is now provided by UndoRedoContext.tsx
