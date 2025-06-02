@@ -14,9 +14,9 @@
 // FACTORY NODE TYPE DEFINITIONS
 // ============================================================================
 
+import type { NodeCategory } from "@node-creation/node-registry/nodeRegistry";
 import { Position, type Connection, type Node } from "@xyflow/react";
 import { ReactNode } from "react";
-import type { NodeCategory } from "../../nodeRegistry";
 
 // ============================================================================
 // BASE INTERFACES

@@ -7,7 +7,8 @@
  * • Features performance testing and memory leak detection
  * • Validates enterprise-grade reliability and error handling
  *
- * Keywords: enterprise-testing, unit-tests, integration-tests, performance-testing, memory-leak-detection, reliability
+ * Keywords: enterprise-testing, unit-tests, integration-tests, performance-testing,
+ * memory-leak-detection, reliability, bulletproof-testing, validation
  */
 
 // ============================================================================
@@ -24,34 +25,80 @@ import {
 } from "../core/BulletproofNodeBase";
 
 // ============================================================================
-// TESTING UTILITIES
+// TYPE DEFINITIONS FOR TESTING FRAMEWORK
+// ============================================================================
+
+/**
+ * VALIDATION TEST CASE DEFINITION
+ */
+interface ValidationTestCase<T> {
+  name: string;
+  data: T;
+  expectedError: string | null;
+}
+
+/**
+ * COMPUTATION TEST CASE DEFINITION
+ */
+interface ComputationTestCase<T> {
+  name: string;
+  data: T;
+  inputs: Record<string, any>;
+  expectedOutput: Partial<T>;
+}
+
+/**
+ * COMPONENT TEST CASE DEFINITION
+ */
+interface ComponentTestCase<T> {
+  name: string;
+  props: {
+    data: T;
+    isExpanded: boolean;
+    isActive?: boolean;
+    error?: string;
+  };
+  assertions: (container: HTMLElement) => void;
+}
+
+/**
+ * PERFORMANCE BENCHMARK CONFIGURATION
+ */
+interface PerformanceBenchmarks {
+  maxValidationTime?: number; // ms
+  maxComputationTime?: number; // ms
+  maxRenderTime?: number; // ms
+}
+
+/**
+ * TEST CASES CONFIGURATION
+ */
+interface TestCasesConfig<T> {
+  validation?: ValidationTestCase<T>[];
+  computation?: ComputationTestCase<T>[];
+}
+
+// ============================================================================
+// PURE FUNCTION TESTING UTILITIES
 // ============================================================================
 
 /**
  * PURE FUNCTION TESTER
  * Tests validation and computation functions in isolation
  */
-export function testPureFunctions<T extends Record<string, any>>(
+function createPureFunctionTests<T extends Record<string, any>>(
   config: EnterpriseNodeConfig<T>,
-  testCases: {
-    validation?: Array<{
-      name: string;
-      data: T;
-      expectedError: string | null;
-    }>;
-    computation?: Array<{
-      name: string;
-      data: T;
-      inputs: Record<string, any>;
-      expectedOutput: Partial<T>;
-    }>;
-  }
+  testCases: TestCasesConfig<T>
 ) {
   describe(`${config.displayName} Pure Functions`, () => {
     // VALIDATION TESTS
-    if (config.validate && testCases.validation) {
+    if (
+      config.validate &&
+      testCases.validation &&
+      testCases.validation.length > 0
+    ) {
       describe("Validation", () => {
-        testCases.validation.forEach(({ name, data, expectedError }) => {
+        testCases.validation!.forEach(({ name, data, expectedError }) => {
           test(name, () => {
             const result = config.validate!(data);
             expect(result).toBe(expectedError);
@@ -61,9 +108,13 @@ export function testPureFunctions<T extends Record<string, any>>(
     }
 
     // COMPUTATION TESTS
-    if (config.compute && testCases.computation) {
+    if (
+      config.compute &&
+      testCases.computation &&
+      testCases.computation.length > 0
+    ) {
       describe("Computation", () => {
-        testCases.computation.forEach(
+        testCases.computation!.forEach(
           ({ name, data, inputs, expectedOutput }) => {
             test(name, () => {
               const result = config.compute!(data, inputs);
@@ -76,21 +127,17 @@ export function testPureFunctions<T extends Record<string, any>>(
   });
 }
 
+// ============================================================================
+// COMPONENT TESTING UTILITIES
+// ============================================================================
+
 /**
  * COMPONENT TESTER
  * Tests rendering behavior without side effects
  */
-export function testNodeComponent<T extends Record<string, any>>(
+function createComponentTests<T extends Record<string, any>>(
   config: EnterpriseNodeConfig<T>,
-  testCases: Array<{
-    name: string;
-    props: {
-      data: T;
-      isExpanded: boolean;
-      error?: string;
-    };
-    assertions: (container: HTMLElement) => void;
-  }>
+  testCases: ComponentTestCase<T>[]
 ) {
   describe(`${config.displayName} Component`, () => {
     testCases.forEach(({ name, props, assertions }) => {
@@ -98,14 +145,18 @@ export function testNodeComponent<T extends Record<string, any>>(
         const mockUpdate = jest.fn();
         const mockToggle = jest.fn();
 
+        // ENSURE ALL REQUIRED PROPS ARE PROVIDED
+        const renderProps = {
+          data: props.data,
+          isExpanded: props.isExpanded,
+          isActive: props.isActive ?? false, // DEFAULT TO FALSE IF NOT PROVIDED
+          onUpdate: mockUpdate,
+          onToggle: mockToggle,
+          ...(props.error && { error: props.error }), // ONLY ADD ERROR IF PROVIDED
+        };
+
         const { container } = render(
-          <div>
-            {config.renderNode({
-              ...props,
-              onUpdate: mockUpdate,
-              onToggle: mockToggle,
-            })}
-          </div>
+          <div>{config.renderNode(renderProps)}</div>
         );
 
         assertions(container);
@@ -114,11 +165,15 @@ export function testNodeComponent<T extends Record<string, any>>(
   });
 }
 
+// ============================================================================
+// INTEGRATION TESTING UTILITIES
+// ============================================================================
+
 /**
  * INTEGRATION TESTER
  * Tests registration and auto-discovery
  */
-export function testNodeIntegration<T extends Record<string, any>>(
+function createIntegrationTests<T extends Record<string, any>>(
   config: EnterpriseNodeConfig<T>
 ) {
   describe(`${config.displayName} Integration`, () => {
@@ -126,24 +181,29 @@ export function testNodeIntegration<T extends Record<string, any>>(
       registerNode(config);
     });
 
+    // NODE TYPE REGISTRATION TEST
     test("registers in node types", () => {
       const nodeTypes = getNodeTypes();
       expect(nodeTypes[config.nodeType]).toBeDefined();
     });
 
+    // SIDEBAR INTEGRATION TEST
     test("appears in sidebar items", () => {
       const sidebarItems = getSidebarItems();
       const item = sidebarItems.find((item) => item.type === config.nodeType);
+
       expect(item).toBeDefined();
       expect(item?.label).toBe(config.displayName);
       expect(item?.category).toBe(config.category);
     });
 
+    // DEFAULT DATA VALIDATION TEST
     test("has valid default data", () => {
       expect(config.defaultData).toBeDefined();
       expect(typeof config.defaultData).toBe("object");
     });
 
+    // VALIDATION FUNCTION PURITY TEST
     test("validation function is pure", () => {
       if (config.validate) {
         const data1 = { ...config.defaultData };
@@ -152,15 +212,16 @@ export function testNodeIntegration<T extends Record<string, any>>(
         const result1 = config.validate(data1);
         const result2 = config.validate(data2);
 
-        // Same input should produce same output (pure function)
+        // SAME INPUT SHOULD PRODUCE SAME OUTPUT (PURE FUNCTION)
         expect(result1).toBe(result2);
 
-        // Original data should not be modified
+        // ORIGINAL DATA SHOULD NOT BE MODIFIED
         expect(data1).toEqual(config.defaultData);
         expect(data2).toEqual(config.defaultData);
       }
     });
 
+    // COMPUTATION FUNCTION PURITY TEST
     test("compute function is pure", () => {
       if (config.compute) {
         const data1 = { ...config.defaultData };
@@ -170,10 +231,10 @@ export function testNodeIntegration<T extends Record<string, any>>(
         const result1 = config.compute(data1, inputs);
         const result2 = config.compute(data2, inputs);
 
-        // Same input should produce same output (pure function)
+        // SAME INPUT SHOULD PRODUCE SAME OUTPUT (PURE FUNCTION)
         expect(result1).toEqual(result2);
 
-        // Original data should not be modified
+        // ORIGINAL DATA SHOULD NOT BE MODIFIED
         expect(data1).toEqual(config.defaultData);
         expect(data2).toEqual(config.defaultData);
       }
@@ -182,111 +243,26 @@ export function testNodeIntegration<T extends Record<string, any>>(
 }
 
 // ============================================================================
-// EXAMPLE: CREATE TEXT ENTERPRISE TESTS
-// ============================================================================
-
-// Import the CreateText template we created
-// import { createTextConfig } from '../templates/CreateTextTemplate';
-
-/*
-// Example usage:
-describe('CreateText Enterprise Node', () => {
-  // Test pure functions
-  testPureFunctions(createTextConfig, {
-    validation: [
-      {
-        name: 'accepts valid text',
-        data: { text: 'hello', output: '', isEnabled: true, maxLength: 1000 },
-        expectedError: null
-      },
-      {
-        name: 'rejects text too long',
-        data: { text: 'a'.repeat(1001), output: '', isEnabled: true, maxLength: 1000 },
-        expectedError: 'Text too long (1001/1000)'
-      }
-    ],
-    computation: [
-      {
-        name: 'outputs text when enabled and triggered',
-        data: { text: 'hello', output: '', isEnabled: true, maxLength: 1000 },
-        inputs: { trigger: true },
-        expectedOutput: { output: 'hello' }
-      },
-      {
-        name: 'outputs empty when disabled',
-        data: { text: 'hello', output: '', isEnabled: false, maxLength: 1000 },
-        inputs: { trigger: true },
-        expectedOutput: { output: '' }
-      }
-    ]
-  });
-
-  // Test component rendering
-  testNodeComponent(createTextConfig, [
-    {
-      name: 'renders collapsed view',
-      props: {
-        data: { text: 'hello', output: 'hello', isEnabled: true, maxLength: 1000 },
-        isExpanded: false
-      },
-      assertions: (container) => {
-        expect(container.textContent).toContain('hello');
-        expect(container.querySelector('textarea')).toBeNull();
-      }
-    },
-    {
-      name: 'renders expanded view',
-      props: {
-        data: { text: 'hello', output: 'hello', isEnabled: true, maxLength: 1000 },
-        isExpanded: true
-      },
-      assertions: (container) => {
-        expect(container.querySelector('textarea')).toBeTruthy();
-        expect(container.textContent).toContain('Create Text');
-      }
-    },
-    {
-      name: 'renders error state',
-      props: {
-        data: { text: 'hello', output: 'hello', isEnabled: true, maxLength: 1000 },
-        isExpanded: false,
-        error: 'Test error'
-      },
-      assertions: (container) => {
-        expect(container.textContent).toContain('Test error');
-        expect(container.querySelector('.bg-red-50')).toBeTruthy();
-      }
-    }
-  ]);
-
-  // Test integration
-  testNodeIntegration(createTextConfig);
-});
-*/
-
-// ============================================================================
-// PERFORMANCE TESTING
+// PERFORMANCE TESTING UTILITIES
 // ============================================================================
 
 /**
  * PERFORMANCE BENCHMARKS
  * Tests that nodes perform well at enterprise scale
  */
-export function testNodePerformance<T extends Record<string, any>>(
+function createPerformanceTests<T extends Record<string, any>>(
   config: EnterpriseNodeConfig<T>,
-  benchmarks: {
-    maxValidationTime?: number; // ms
-    maxComputationTime?: number; // ms
-    maxRenderTime?: number; // ms
-  } = {}
+  benchmarks: PerformanceBenchmarks = {}
 ) {
   describe(`${config.displayName} Performance`, () => {
+    // PERFORMANCE BENCHMARK DEFAULTS
     const {
       maxValidationTime = 1,
       maxComputationTime = 1,
       maxRenderTime = 5,
     } = benchmarks;
 
+    // VALIDATION PERFORMANCE TEST
     test("validation performance", () => {
       if (!config.validate) return;
 
@@ -303,6 +279,7 @@ export function testNodePerformance<T extends Record<string, any>>(
       expect(avgTime).toBeLessThan(maxValidationTime);
     });
 
+    // COMPUTATION PERFORMANCE TEST
     test("computation performance", () => {
       if (!config.compute) return;
 
@@ -320,6 +297,7 @@ export function testNodePerformance<T extends Record<string, any>>(
       expect(avgTime).toBeLessThan(maxComputationTime);
     });
 
+    // RENDER PERFORMANCE TEST
     test("render performance", () => {
       const mockUpdate = jest.fn();
       const mockToggle = jest.fn();
@@ -332,6 +310,7 @@ export function testNodePerformance<T extends Record<string, any>>(
             {config.renderNode({
               data: config.defaultData,
               isExpanded: false,
+              isActive: false, // REQUIRED PROPERTY ADDED
               onUpdate: mockUpdate,
               onToggle: mockToggle,
             })}
@@ -347,19 +326,20 @@ export function testNodePerformance<T extends Record<string, any>>(
 }
 
 // ============================================================================
-// BULK TESTING FOR 1000+ NODES
+// ENTERPRISE SCALE TESTING
 // ============================================================================
 
 /**
  * BULK NODE TESTING
  * Verifies the system works with enterprise scale (1000+ nodes)
  */
-export function testEnterpriseScale() {
+function createEnterpriseScaleTests() {
   describe("Enterprise Scale Testing", () => {
+    // LARGE SCALE REGISTRATION TEST
     test("handles 1000+ registered nodes", () => {
       const initialCount = Object.keys(getAllNodes()).length;
 
-      // Register 1000 test nodes
+      // REGISTER 1000 TEST NODES
       for (let i = 0; i < 1000; i++) {
         const testConfig: EnterpriseNodeConfig<{ id: number }> = {
           nodeType: `testNode${i}`,
@@ -376,10 +356,11 @@ export function testEnterpriseScale() {
       expect(finalCount - initialCount).toBe(1000);
     });
 
+    // AUTO-DISCOVERY PERFORMANCE TEST
     test("auto-discovery scales well", () => {
       const start = performance.now();
 
-      // These should be fast even with 1000+ nodes
+      // THESE SHOULD BE FAST EVEN WITH 1000+ NODES
       const nodeTypes = getNodeTypes();
       const sidebarItems = getSidebarItems();
 
@@ -387,19 +368,159 @@ export function testEnterpriseScale() {
 
       expect(Object.keys(nodeTypes).length).toBeGreaterThan(1000);
       expect(sidebarItems.length).toBeGreaterThan(1000);
-      expect(end - start).toBeLessThan(10); // Should take less than 10ms
+      expect(end - start).toBeLessThan(10); // SHOULD TAKE LESS THAN 10MS
     });
   });
 }
 
 // ============================================================================
-// EXPORTS
+// MAIN TESTING FUNCTIONS - PUBLIC API
 // ============================================================================
 
-export {
-  testEnterpriseScale,
-  testNodeComponent,
-  testNodeIntegration,
-  testNodePerformance,
-  testPureFunctions,
-};
+/**
+ * COMPLETE NODE TEST SUITE
+ * Runs all tests for a given node configuration
+ */
+export function testEnterpriseNode<T extends Record<string, any>>(
+  config: EnterpriseNodeConfig<T>,
+  options: {
+    testCases?: TestCasesConfig<T>;
+    componentTests?: ComponentTestCase<T>[];
+    performanceBenchmarks?: PerformanceBenchmarks;
+    skipIntegration?: boolean;
+    skipPerformance?: boolean;
+  } = {}
+) {
+  const {
+    testCases = {},
+    componentTests = [],
+    performanceBenchmarks = {},
+    skipIntegration = false,
+    skipPerformance = false,
+  } = options;
+
+  describe(`Enterprise Node: ${config.displayName}`, () => {
+    // PURE FUNCTION TESTS
+    if (testCases.validation || testCases.computation) {
+      createPureFunctionTests(config, testCases);
+    }
+
+    // COMPONENT TESTS
+    if (componentTests.length > 0) {
+      createComponentTests(config, componentTests);
+    }
+
+    // INTEGRATION TESTS
+    if (!skipIntegration) {
+      createIntegrationTests(config);
+    }
+
+    // PERFORMANCE TESTS
+    if (!skipPerformance) {
+      createPerformanceTests(config, performanceBenchmarks);
+    }
+  });
+}
+
+/**
+ * ENTERPRISE SCALE TESTING SUITE
+ */
+export function testEnterpriseScale() {
+  createEnterpriseScaleTests();
+}
+
+// ============================================================================
+// INDIVIDUAL TEST CREATORS - FOR GRANULAR CONTROL
+// ============================================================================
+
+export const testPureFunctions = createPureFunctionTests;
+export const testNodeComponent = createComponentTests;
+export const testNodeIntegration = createIntegrationTests;
+export const testNodePerformance = createPerformanceTests;
+
+// ============================================================================
+// EXAMPLE USAGE TEMPLATE
+// ============================================================================
+
+/*
+// EXAMPLE: Complete test suite for a CreateText node
+describe('CreateText Enterprise Node', () => {
+  testEnterpriseNode(createTextConfig, {
+    testCases: {
+      validation: [
+        {
+          name: 'accepts valid text',
+          data: { text: 'hello', output: '', isEnabled: true, maxLength: 1000 },
+          expectedError: null
+        },
+        {
+          name: 'rejects text too long',
+          data: { text: 'a'.repeat(1001), output: '', isEnabled: true, maxLength: 1000 },
+          expectedError: 'Text too long (1001/1000)'
+        }
+      ],
+      computation: [
+        {
+          name: 'outputs text when enabled and triggered',
+          data: { text: 'hello', output: '', isEnabled: true, maxLength: 1000 },
+          inputs: { trigger: true },
+          expectedOutput: { output: 'hello' }
+        },
+        {
+          name: 'outputs empty when disabled',
+          data: { text: 'hello', output: '', isEnabled: false, maxLength: 1000 },
+          inputs: { trigger: true },
+          expectedOutput: { output: '' }
+        }
+      ]
+    },
+    componentTests: [
+      {
+        name: 'renders collapsed view',
+        props: {
+          data: { text: 'hello', output: 'hello', isEnabled: true, maxLength: 1000 },
+          isExpanded: false,
+          isActive: true
+        },
+        assertions: (container) => {
+          expect(container.textContent).toContain('hello');
+          expect(container.querySelector('textarea')).toBeNull();
+        }
+      },
+      {
+        name: 'renders expanded view',
+        props: {
+          data: { text: 'hello', output: 'hello', isEnabled: true, maxLength: 1000 },
+          isExpanded: true,
+          isActive: true
+        },
+        assertions: (container) => {
+          expect(container.querySelector('textarea')).toBeTruthy();
+          expect(container.textContent).toContain('Create Text');
+        }
+      },
+      {
+        name: 'renders error state',
+        props: {
+          data: { text: 'hello', output: 'hello', isEnabled: true, maxLength: 1000 },
+          isExpanded: false,
+          isActive: false,
+          error: 'Test error'
+        },
+        assertions: (container) => {
+          expect(container.textContent).toContain('Test error');
+          expect(container.querySelector('.bg-red-50')).toBeTruthy();
+        }
+      }
+    ],
+    performanceBenchmarks: {
+      maxValidationTime: 0.5,
+      maxComputationTime: 0.5,
+      maxRenderTime: 3
+    }
+  });
+});
+
+// ENTERPRISE SCALE TESTING
+testEnterpriseScale();
+*/

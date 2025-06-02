@@ -10,7 +10,7 @@
  * Keywords: error-injection, simulation, testing, debugging, validation, safety-systems
  */
 
-import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
+import { useFlowStore } from "@flow-engine/stores/flowStore";
 import { useEffect } from "react";
 import { ERROR_INJECTION_SUPPORTED_NODES } from "../constants";
 import { getJsonInputValues, hasJsonConnections } from "../utils/jsonProcessor";

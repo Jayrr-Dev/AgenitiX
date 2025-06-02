@@ -17,7 +17,7 @@ import React from "react";
 import {
   getNodeInspectorControls,
   hasFactoryInspectorControls,
-} from "../../../node-domain/factory/NodeFactory";
+} from "@factory/NodeFactory";
 import { TextNodeControl } from "../controls/TextNodeControl";
 import {
   CyclePulseControl,
@@ -29,7 +29,7 @@ import {
 import { ErrorType } from "../types";
 
 // ENHANCED REGISTRY INTEGRATION - Direct import instead of require()
-import { generateInspectorControlMapping } from "../../../node-domain/nodeRegistry";
+import { generateInspectorControlMapping } from "@node-creation/node-registry/nodeRegistry";
 
 interface NodeControlsProps {
   node: AgenNode;

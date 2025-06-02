@@ -29,6 +29,18 @@ import { NodeOutput } from "./components/NodeOutput";
 import { useInspectorState } from "./hooks/useInspectorState";
 import { JsonHighlighter } from "./utils/JsonHighlighter";
 
+// ============================================================================
+// REGISTRY INTEGRATION - Import registry for type safety
+// ============================================================================
+
+import type { NodeType } from "../flow-engine/types/nodeData";
+import {
+  MODERN_NODE_REGISTRY,
+  getNodeMetadata,
+  getRegistryStats,
+  isValidNodeType,
+} from "../node-creation/node-registry/nodeRegistry";
+
 const NodeInspector = React.memo(function NodeInspector() {
   // ============================================================================
   // ZUSTAND STORE STATE
@@ -83,6 +95,66 @@ const NodeInspector = React.memo(function NodeInspector() {
     }),
     [inspectorState, inspectorLocked, setInspectorLocked]
   );
+
+  // ============================================================================
+  // REGISTRY-BASED VALIDATION AND DEBUGGING
+  // ============================================================================
+
+  // ENHANCED DEBUGGING - Using registry for validation
+  const debugSelectedNode = useMemo(() => {
+    if (!selectedNode) return null;
+
+    const nodeType = selectedNode.type as NodeType;
+    const isValidType = isValidNodeType(nodeType);
+    const registryEntry = getNodeMetadata(nodeType);
+    const configEntry = NODE_TYPE_CONFIG[nodeType];
+
+    // REGISTRY-VALIDATED DEBUGGING - Only debug valid nodes
+    if (isValidType && registryEntry) {
+      console.log(`🔍 [NodeInspector] REGISTRY-VALIDATED DEBUG ${nodeType}:`, {
+        nodeType,
+        isValidInRegistry: isValidType,
+        registryMetadata: registryEntry,
+        configEntry: configEntry,
+        hasRegistryConfig: !!registryEntry,
+        hasOutput: registryEntry.hasOutput,
+        hasControls: registryEntry.hasControls,
+        category: registryEntry.category,
+        folder: registryEntry.folder,
+      });
+
+      // Show all valid registry entries for comparison
+      const stats = getRegistryStats();
+      console.log("🔍 [NodeInspector] REGISTRY STATS:", {
+        totalNodes: stats.totalNodes,
+        byCategory: stats.byCategory,
+        byFolder: stats.byFolder,
+        validNodeTypes: Object.keys(MODERN_NODE_REGISTRY),
+      });
+
+      return {
+        nodeType,
+        isValid: true,
+        metadata: registryEntry,
+        config: configEntry,
+      };
+    }
+
+    // WARN FOR INVALID NODE TYPES
+    console.warn(`⚠️ [NodeInspector] INVALID NODE TYPE: ${nodeType}`, {
+      nodeType,
+      isValidInRegistry: isValidType,
+      availableTypes: Object.keys(MODERN_NODE_REGISTRY),
+      selectedNodeData: selectedNode.data,
+    });
+
+    return {
+      nodeType,
+      isValid: false,
+      metadata: null,
+      config: null,
+    };
+  }, [selectedNode]);
 
   // ============================================================================
   // NODE ACTION HANDLERS
@@ -157,6 +229,7 @@ const NodeInspector = React.memo(function NodeInspector() {
     return (
       <div className="flex items-center justify-center h-5 w-4">
         <button
+          type="button"
           aria-label="Unlock Inspector"
           title="Unlock Inspector (Alt+A)"
           onClick={() => setInspectorLocked(false)}
@@ -174,33 +247,23 @@ const NodeInspector = React.memo(function NodeInspector() {
 
   // Show node inspector if node is selected (prioritize nodes over edges)
   if (selectedNode) {
-    const nodeConfig = NODE_TYPE_CONFIG[selectedNode.type];
-    const hasRightColumn =
-      (nodeConfig?.hasOutput || nodeConfig?.hasControls) ?? false;
+    // REGISTRY-BASED CONFIG LOOKUP - Type-safe and validated
+    const nodeType = selectedNode.type as NodeType;
+    const nodeConfig = NODE_TYPE_CONFIG[nodeType];
+    const registryMetadata = getNodeMetadata(nodeType);
 
-    // DEBUG: Enhanced logging for troubleshooting
-    if (
-      selectedNode.type === "createTextRefactor" ||
-      selectedNode.type === "createText" ||
-      selectedNode.type === "testInput"
-    ) {
-      console.log(`🔍 [NodeInspector] DEBUG ${selectedNode.type} config:`, {
-        nodeType: selectedNode.type,
-        nodeConfig,
-        hasOutput: nodeConfig?.hasOutput,
-        hasControls: nodeConfig?.hasControls,
-        hasRightColumn,
-        isConfigDefined: !!nodeConfig,
-        configKeys: nodeConfig ? Object.keys(nodeConfig) : "undefined",
-      });
+    // Enhanced validation using registry
+    const hasRightColumn = Boolean(
+      nodeConfig?.hasOutput ||
+        nodeConfig?.hasControls ||
+        registryMetadata?.hasOutput ||
+        registryMetadata?.hasControls
+    );
 
-      // Show specific NODE_TYPE_CONFIG entries for comparison
-      console.log(`🔍 [NodeInspector] NODE_TYPE_CONFIG entries:`, {
-        createText: NODE_TYPE_CONFIG["createText"],
-        createTextRefactor: NODE_TYPE_CONFIG["createTextRefactor"],
-        testInput: NODE_TYPE_CONFIG["testInput"],
-        totalConfigKeys: Object.keys(NODE_TYPE_CONFIG).length,
-      });
+    // REGISTRY-ENHANCED DEBUG INFO - Only for valid nodes
+    if (debugSelectedNode?.isValid) {
+      // Removed problematic node type checks
+      // Now only logs for nodes that actually exist in the registry
     }
 
     return (
@@ -227,6 +290,48 @@ const NodeInspector = React.memo(function NodeInspector() {
               />
             </div>
           </div>
+
+          {/* REGISTRY VALIDATION INFO - Development only */}
+          {process.env.NODE_ENV === "development" && (
+            <div className="text-xs text-gray-500 dark:text-gray-400 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border">
+              <div className="font-mono">
+                <div>
+                  Type:{" "}
+                  <span className="text-blue-600 dark:text-blue-400">
+                    {nodeType}
+                  </span>
+                </div>
+                <div>
+                  Valid:{" "}
+                  <span
+                    className={
+                      debugSelectedNode?.isValid
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }
+                  >
+                    {debugSelectedNode?.isValid ? "✓" : "✗"}
+                  </span>
+                </div>
+                {registryMetadata && (
+                  <>
+                    <div>
+                      Category:{" "}
+                      <span className="text-purple-600 dark:text-purple-400">
+                        {registryMetadata.category}
+                      </span>
+                    </div>
+                    <div>
+                      Folder:{" "}
+                      <span className="text-orange-600 dark:text-orange-400">
+                        {registryMetadata.folder}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* COLUMN 2: ACTION BUTTONS + OUTPUT + CONTROLS */}
@@ -236,6 +341,7 @@ const NodeInspector = React.memo(function NodeInspector() {
             <div className="flex items-center justify-end gap-2">
               {/* Lock Button */}
               <button
+                type="button"
                 onClick={() => setInspectorLocked(!inspectorLocked)}
                 className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                 title={
@@ -252,6 +358,7 @@ const NodeInspector = React.memo(function NodeInspector() {
               </button>
 
               <button
+                type="button"
                 onClick={() => handleDuplicateNode(selectedNode.id)}
                 className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
                 title="Duplicate Node (Alt+W)"
@@ -261,7 +368,9 @@ const NodeInspector = React.memo(function NodeInspector() {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
+                  <title>Duplicate</title>
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -272,6 +381,7 @@ const NodeInspector = React.memo(function NodeInspector() {
               </button>
 
               <button
+                type="button"
                 onClick={() => handleDeleteNode(selectedNode.id)}
                 className="flex items-center gap-1 px-2 py-1 text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
                 title="Delete Node (Alt+Q)"
@@ -281,7 +391,9 @@ const NodeInspector = React.memo(function NodeInspector() {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
+                  <title>Delete</title>
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -292,11 +404,11 @@ const NodeInspector = React.memo(function NodeInspector() {
               </button>
             </div>
 
-            {nodeConfig?.hasOutput && (
+            {(nodeConfig?.hasOutput || registryMetadata?.hasOutput) && (
               <NodeOutput output={output} nodeType={selectedNode.type} />
             )}
 
-            {nodeConfig?.hasControls && (
+            {(nodeConfig?.hasControls || registryMetadata?.hasControls) && (
               <NodeControls
                 node={selectedNode}
                 updateNodeData={updateNodeData}
@@ -344,6 +456,7 @@ const NodeInspector = React.memo(function NodeInspector() {
   return (
     <div className="flex items-center justify-center h-5 w-4">
       <button
+        type="button"
         aria-label="Lock Inspector"
         title="Lock Inspector - Keep current view when selecting nodes"
         onClick={() => setInspectorLocked(true)}

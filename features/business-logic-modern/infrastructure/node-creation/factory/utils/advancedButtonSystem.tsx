@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
+import { useFlowStore } from "@flow-engine/stores/flowStore";
 import { useNodeConnections, useNodesData } from "@xyflow/react";
 import React from "react";
 

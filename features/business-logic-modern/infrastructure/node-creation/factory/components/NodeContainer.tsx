@@ -13,8 +13,8 @@
 "use client";
 
 import React from "react";
-import { ExpandCollapseButton } from "../../../components/ExpandCollapseButton";
-import { FloatingNodeId } from "../../../components/FloatingNodeId";
+import { ExpandCollapseButton } from "./ExpandCollapseButton";
+import { FloatingNodeId } from "./FloatingNodeId";
 import {
   DEFAULT_LOGIC_NODE_SIZE,
   DEFAULT_TEXT_NODE_SIZE,

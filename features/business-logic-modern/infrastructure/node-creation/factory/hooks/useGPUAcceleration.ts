@@ -10,8 +10,8 @@
  * Keywords: gpu-acceleration, webgl, parallel-processing, hardware-optimization, fallback, ultra-fast
  */
 
-import { useCallback, useEffect, useRef } from 'react';
-import { useUltraFastPropagation } from '../UltraFastPropagationEngine';
+import { useUltraFastPropagation } from "@factory/core/UltraFastPropagationEngine";
+import { useEffect } from "react";
 
 // ============================================================================
 // GPU ACCELERATION TYPES
@@ -39,13 +39,13 @@ interface GPUAccelerationResult {
 // ============================================================================
 
 const GPU_ACCELERATION_PATTERNS = [
-  'trigger',
-  'cycle',
-  'delay',
-  'pulse',
-  'timer',
-  'frequency',
-  'oscillator'
+  "trigger",
+  "cycle",
+  "delay",
+  "pulse",
+  "timer",
+  "frequency",
+  "oscillator",
 ];
 
 // ============================================================================
@@ -94,9 +94,13 @@ export function useGPUAcceleration(
 
       // ENTERPRISE SAFETY INTEGRATION
       if (safetyLayers) {
-        console.log(`🚀 Enterprise GPU acceleration enabled for ${config.nodeType} ${config.nodeId}`);
+        console.log(
+          `🚀 Enterprise GPU acceleration enabled for ${config.nodeType} ${config.nodeId}`
+        );
       } else {
-        console.log(`⚡ GPU acceleration enabled for ${config.nodeType} ${config.nodeId}`);
+        console.log(
+          `⚡ GPU acceleration enabled for ${config.nodeType} ${config.nodeId}`
+        );
       }
     }
   }, [
@@ -104,13 +108,13 @@ export function useGPUAcceleration(
     config.nodeType,
     isGPUEnabled,
     enableGPUAcceleration,
-    safetyLayers
+    safetyLayers,
   ]);
 
   return {
     propagateUltraFast,
     enableGPUAcceleration,
-    isGPUEnabled
+    isGPUEnabled,
   };
 }
 
@@ -123,7 +127,7 @@ export function useGPUAcceleration(
  * Determine if a node type should use GPU acceleration
  */
 function checkIfGPUEnabled(nodeType: string): boolean {
-  return GPU_ACCELERATION_PATTERNS.some(pattern =>
+  return GPU_ACCELERATION_PATTERNS.some((pattern) =>
     nodeType.toLowerCase().includes(pattern)
   );
 }
@@ -138,17 +142,13 @@ export function createGPUAccelerationConfig(
 ): GPUAccelerationConfig {
   return {
     nodeType,
-    nodeId
+    nodeId,
   };
 }
 
 /**
  * GET GPU ACCELERATION PATTERNS
  * Get list of node patterns that support GPU acceleration
- */
-export function getGPUAccelerationPatterns(): string[] {
-  return [...GPU_ACCELERATION_PATTERNS];
-}
  */
 export function getGPUAccelerationPatterns(): string[] {
   return [...GPU_ACCELERATION_PATTERNS];

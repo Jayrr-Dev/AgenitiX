@@ -145,7 +145,6 @@ export const HEAD_NODE_PATTERNS = [
  * Keywords: constants, node-config, factory-patterns, toggle-states, sizing
  */
 
-import { Position } from "@xyflow/react";
 import type { NodeConfig, NodeType } from "../types";
 
 // ============================================================================
@@ -169,96 +168,60 @@ export const NODE_SIZES = {
 } as const;
 
 // ============================================================================
-// NODE TYPE CONFIGURATION
+// REGISTRY AUTO-SYNC - Single Source of Truth
 // ============================================================================
 
-export const NODE_TYPE_CONFIG: Record<NodeType, NodeConfig> = {
-  // CREATE DOMAIN NODES
-  createText: {
-    label: "Create Text",
-    icon: "📝",
-    defaultData: {
-      label: "Create Text",
-      showUI: false,
-      icon: "📝",
-      text: "",
-      output: "",
-    },
-    width: NODE_SIZES.ICON.TEXT.width,
-    height: NODE_SIZES.ICON.TEXT.height,
-    hasTargetPosition: true,
-    targetPosition: Position.Bottom,
-  },
+/**
+ * AUTO-SYNC FACTORY CONFIG WITH REGISTRY
+ * The registry is now the single source of truth for all factory data
+ */
+function initializeFactoryConfig() {
+  try {
+    // Import registry functions dynamically to avoid circular dependency
+    const {
+      generateFactoryConstants,
+      generateFactoryNodeConfig,
+      generateFactoryNodeSizes,
+    } = require("../../node-registry/nodeRegistry");
 
-  // VIEW DOMAIN NODES
-  viewOutput: {
-    label: "View Output",
-    icon: "👁️",
-    defaultData: {
-      label: "View Output",
-      showUI: false,
-      icon: "👁️",
-      input: "",
-      display: "",
-    },
-    width: NODE_SIZES.ICON.DEFAULT.width,
-    height: NODE_SIZES.ICON.DEFAULT.height,
-    hasTargetPosition: true,
-    targetPosition: Position.Top,
-  },
+    if (typeof generateFactoryConstants === "function") {
+      const generated = generateFactoryConstants();
 
-  // TRIGGER DOMAIN NODES
-  triggerToggle: {
-    label: "Trigger Toggle",
-    icon: "🎯",
-    defaultData: {
-      label: "Trigger Toggle",
-      showUI: false,
-      icon: "🎯",
-      enabled: false,
-      output: false,
-    },
-    width: NODE_SIZES.ICON.DEFAULT.width,
-    height: NODE_SIZES.ICON.DEFAULT.height,
-    hasTargetPosition: true,
-    targetPosition: Position.Bottom,
-  },
+      // Sync generated config into exported constants
+      Object.assign(NODE_TYPE_CONFIG, generated.NODE_TYPE_CONFIG);
+      Object.assign(NODE_SIZES, generated.NODE_SIZES);
+      Object.assign(VALID_NODE_TYPES, generated.VALID_NODE_TYPES);
 
-  // TEST DOMAIN NODES
-  testError: {
-    label: "Test Error",
-    icon: "🧪",
-    defaultData: {
-      label: "Test Error",
-      showUI: false,
-      icon: "🧪",
-      errorMessage: "Test error",
-      triggerError: false,
-    },
-    width: NODE_SIZES.ICON.DEFAULT.width,
-    height: NODE_SIZES.ICON.DEFAULT.height,
-    hasTargetPosition: true,
-    targetPosition: Position.Bottom,
-  },
+      console.log(
+        "✅ [Factory] Auto-synced with registry:",
+        Object.keys(generated.NODE_TYPE_CONFIG).length,
+        "factory node types"
+      );
 
-  // CYCLE DOMAIN NODES
-  cyclePulse: {
-    label: "Cycle Pulse",
-    icon: "🔄",
-    defaultData: {
-      label: "Cycle Pulse",
-      showUI: false,
-      icon: "🔄",
-      interval: 1000,
-      enabled: false,
-      pulse: false,
-    },
-    width: NODE_SIZES.ICON.DEFAULT.width,
-    height: NODE_SIZES.ICON.DEFAULT.height,
-    hasTargetPosition: true,
-    targetPosition: Position.Bottom,
-  },
-};
+      return true;
+    } else {
+      console.warn("⚠️ [Factory] Registry auto-generation not available");
+      return false;
+    }
+  } catch (error) {
+    console.error("❌ [Factory] Failed to sync with registry:", error);
+    return false;
+  }
+}
+
+// ============================================================================
+// NODE TYPE CONFIGURATION - Auto-Generated from Registry
+// ============================================================================
+
+// Initialize as empty object - will be populated from registry
+export const NODE_TYPE_CONFIG: Record<NodeType, NodeConfig> = {} as any;
+
+// Auto-sync with registry on module load
+initializeFactoryConfig();
+
+// SYNC: Factory configuration is now auto-generated from MODERN_NODE_REGISTRY
+// All factory data comes from the registry - no manual duplication needed!
+// Icons, sizes, labels, and configs are all centrally managed.
 
 // ============================================================================
 // TOGGLE BUTTON CONSTANTS
@@ -270,7 +233,8 @@ export const TOGGLE_SYMBOLS = {
 } as const;
 
 // ============================================================================
-// VALIDATION CONSTANTS
+// VALIDATION CONSTANTS - Auto-Generated from Registry
 // ============================================================================
 
-export const VALID_NODE_TYPES = Object.keys(NODE_TYPE_CONFIG) as NodeType[];
+// Initialize as empty array - will be populated from registry
+export let VALID_NODE_TYPES: NodeType[] = [];

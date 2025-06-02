@@ -103,27 +103,29 @@ export const INITIAL_EDGES: AgenEdge[] = [
 ];
 
 // ============================================================================
-// REGISTRY INTEGRATION
+// REGISTRY INTEGRATION - Single Source of Truth
 // ============================================================================
 
 /**
- * SYNC NODE TYPE CONFIG WITH REGISTRY
- * Ensures NODE_TYPE_CONFIG is up-to-date with registry data
+ * AUTO-SYNC NODE TYPE CONFIG WITH REGISTRY
+ * Now the registry is the single source of truth for all node data
  */
-export function syncNodeTypeConfigWithRegistry() {
+function initializeNodeTypeConfig() {
   try {
-    // Lazy import to avoid circular dependency
-    const { generateNodeTypeConfig } = require("../../nodes/nodeRegistry");
+    // Import registry functions dynamically to avoid circular dependency
+    const {
+      generateNodeTypeConfig,
+    } = require("../../node-creation/node-registry/nodeRegistry");
 
     if (typeof generateNodeTypeConfig === "function") {
-      const registryConfig = generateNodeTypeConfig();
+      const generatedConfig = generateNodeTypeConfig();
 
-      // Merge registry data into the existing NODE_TYPE_CONFIG
-      Object.assign(NODE_TYPE_CONFIG, registryConfig);
+      // Merge generated config into exported constant
+      Object.assign(NODE_TYPE_CONFIG, generatedConfig);
 
       console.log(
-        "✅ [Constants] Synced NODE_TYPE_CONFIG with registry:",
-        Object.keys(registryConfig).length,
+        "✅ [Constants] NODE_TYPE_CONFIG auto-synced with registry:",
+        Object.keys(generatedConfig).length,
         "node types"
       );
 
@@ -138,74 +140,28 @@ export function syncNodeTypeConfigWithRegistry() {
   }
 }
 
+/**
+ * SYNC NODE TYPE CONFIG WITH REGISTRY
+ * Ensures NODE_TYPE_CONFIG is up-to-date with registry data
+ * @deprecated Use initializeNodeTypeConfig instead
+ */
+export function syncNodeTypeConfigWithRegistry() {
+  return initializeNodeTypeConfig();
+}
+
 // ============================================================================
-// NODE TYPE CONFIGURATIONS (Synchronized with Node Domain)
+// NODE TYPE CONFIGURATIONS - Auto-Generated from Registry
 // ============================================================================
 
-export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {
-  // CREATE DOMAIN
-  createText: {
-    defaultData: { text: "", heldText: "", isActive: false },
-    hasControls: true,
-    hasOutput: true,
-    displayName: "Create Text",
-  },
+// Initialize as empty object - will be populated from registry
+export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {} as NodeTypeConfigMap;
 
-  // VIEW DOMAIN
-  viewOutput: {
-    defaultData: {
-      label: "Result",
-      displayedValues: [],
-      maxHistory: 10,
-      autoScroll: true,
-      showTypeIcons: true,
-      groupSimilar: false,
-      filterEmpty: true,
-      filterDuplicates: false,
-      includedTypes: [],
-      isActive: false,
-    },
-    hasTargetPosition: true,
-    targetPosition: Position.Top,
-    hasOutput: true,
-    hasControls: true,
-    displayName: "View Output",
-  },
+// Auto-sync with registry on module load
+initializeNodeTypeConfig();
 
-  // TRIGGER DOMAIN
-  triggerOnToggle: {
-    defaultData: {
-      triggered: false,
-      value: false,
-      outputValue: false,
-      type: "TriggerOnToggle",
-      label: "Toggle Trigger",
-      inputCount: 0,
-      hasExternalInputs: false,
-      isActive: false,
-    },
-    hasControls: true,
-    displayName: "Trigger On Toggle",
-  },
-
-  // TEST DOMAIN
-  testError: {
-    defaultData: {
-      errorMessage: "Custom error message",
-      errorType: "error",
-      triggerMode: "trigger_on",
-      isGeneratingError: false,
-      text: "",
-      json: "",
-      isActive: false,
-    },
-    hasControls: true,
-    displayName: "Test Error",
-  },
-};
-
-// SYNC: Node type configuration is now synchronized with node-domain structure
+// SYNC: Node type configuration is now auto-generated from MODERN_NODE_REGISTRY
 // Available node types: createText, viewOutput, triggerOnToggle, testError
+// All data comes from the registry - no manual duplication needed!
 
 // ============================================================================
 // CONFIGURATION CONSTANTS

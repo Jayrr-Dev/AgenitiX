@@ -23,19 +23,19 @@ import React, { memo, useRef } from "react";
 import type { BaseNodeData, NodeFactoryConfig } from "./types";
 
 // MODULAR HOOKS - FOCUSED RESPONSIBILITIES
-import { useNodeConnections } from "@/features/business-logic-modern/infrastructure/node-creation/factory/hooks/useNodeConnections";
-import { useNodeHandles } from "@/features/business-logic-modern/infrastructure/node-creation/factory/hooks/useNodeHandles";
-import { useNodeProcessing } from "@/features/business-logic-modern/infrastructure/node-creation/factory/hooks/useNodeProcessing";
-import { useNodeRegistration } from "@/features/business-logic-modern/infrastructure/node-creation/factory/hooks/useNodeRegistration";
-import { useNodeState } from "@/features/business-logic-modern/infrastructure/node-creation/factory/hooks/useNodeState";
-import { useNodeStyling } from "@/features/business-logic-modern/infrastructure/node-creation/factory/hooks/useNodeStyling";
+import { useNodeConnections } from "@factory/hooks/useNodeConnections";
+import { useNodeHandles } from "@factory/hooks/useNodeHandles";
+import { useNodeProcessing } from "@factory/hooks/useNodeProcessing";
+import { useNodeRegistration } from "@factory/hooks/useNodeRegistration";
+import { useNodeState } from "@factory/hooks/useNodeState";
+import { useNodeStyling } from "@factory/hooks/useNodeStyling";
 
 // CONSTANTS & CONFIGURATIONS
-import { ERROR_INJECTION_SUPPORTED_NODES } from "@/features/business-logic-modern/infrastructure/node-creation/factory/constants";
+import { ERROR_INJECTION_SUPPORTED_NODES } from "@factory/constants";
 
 // COMPONENT MODULES
-import { NodeContainer } from "@/features/business-logic-modern/infrastructure/node-creation/factory/components/NodeContainer";
-import { NodeContent } from "@/features/business-logic-modern/infrastructure/node-creation/factory/components/NodeContent";
+import { NodeContainer } from "@factory/components/NodeContainer";
+import { NodeContent } from "@factory/components/NodeContent";
 
 // ENTERPRISE INTEGRATION
 

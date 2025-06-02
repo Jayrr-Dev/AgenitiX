@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
+import { useFlowStore } from "@flow-engine/stores/flowStore";
 import { type Connection, type Node, type NodeProps } from "@xyflow/react";
 import React, {
   memo,
@@ -27,158 +27,6 @@ import { useUltraFastPropagation } from "./UltraFastPropagationEngine";
 // ============================================================================
 // ENTERPRISE NODE STATE MANAGEMENT WITH ACTIVATION CONTROL
 // ============================================================================
-
-/**
- * BULLETPROOF NODE STATE HOOK WITH ACTIVATION LOGIC
- * Eliminates all state synchronization issues + blocks data flow from inactive nodes
- */
-export function useBulletproofNodeState<T extends Record<string, any>>(
-  nodeId: string,
-  defaultData: T,
-  propagateUltraFast?: (nodeId: string, isActive: boolean) => void
-) {
-  const updateNodeData = useFlowStore((state: any) => state.updateNodeData);
-  const nodes = useFlowStore((state: any) => state.nodes);
-  const connections = useFlowStore((state: any) => state.edges);
-  const lastUpdateRef = useRef<number>(0);
-
-  // Get current node data
-  const currentNode = nodes.find((n: any) => n.id === nodeId);
-  const currentData = currentNode?.data || defaultData;
-
-  // ACTIVATION STATE MANAGEMENT
-  const [localIsActive, setLocalIsActive] = useState(
-    currentData.isActive || false
-  );
-
-  // ATOMIC UPDATE FUNCTION - No race conditions possible + activation handling
-  const atomicUpdate = useCallback(
-    (updates: Partial<T>) => {
-      const timestamp = Date.now();
-
-      // Handle activation state changes with ultra-fast propagation
-      const wasActive = currentData.isActive || false;
-      const willBeActive = updates.hasOwnProperty("isActive")
-        ? updates.isActive
-        : wasActive;
-
-      // Check if we need to calculate meaningful output for activation
-      const hasMeaningfulOutput =
-        updates.hasOwnProperty("text") && updates.text !== undefined;
-      const shouldActivate = willBeActive || hasMeaningfulOutput;
-
-      // Ultra-fast visual feedback for activation changes
-      if (shouldActivate !== wasActive && propagateUltraFast) {
-        propagateUltraFast(nodeId, shouldActivate);
-      }
-
-      // Update local state immediately for visual consistency
-      if (updates.hasOwnProperty("isActive")) {
-        setLocalIsActive(updates.isActive as boolean);
-      }
-
-      // Prevent rapid-fire updates (batching)
-      if (timestamp - lastUpdateRef.current < 16) {
-        // 60fps limit
-        requestAnimationFrame(() => {
-          updateNodeData(nodeId, {
-            ...updates,
-            isActive: shouldActivate,
-          } as Partial<Record<string, unknown>>);
-        });
-      } else {
-        updateNodeData(nodeId, {
-          ...updates,
-          isActive: shouldActivate,
-        } as Partial<Record<string, unknown>>);
-      }
-
-      lastUpdateRef.current = timestamp;
-    },
-    [nodeId, updateNodeData, currentData.isActive, propagateUltraFast]
-  );
-
-  // COMPUTED STATE WITH DATA FLOW BLOCKING
-  const computeState = useCallback(
-    (
-      rawData: T,
-      computationFn?: (
-        data: T,
-        connectedInputs: Record<string, any>
-      ) => Partial<T>
-    ) => {
-      if (!computationFn) return rawData;
-
-      // GET CONNECTED INPUTS WITH ACTIVATION FILTERING
-      const connectedInputs = getActiveConnectedInputs(
-        nodeId,
-        connections,
-        nodes
-      );
-
-      // Only compute if we have active inputs or this is a source node
-      const hasActiveInputs = Object.keys(connectedInputs).length > 0;
-      const isSourceNode = !connections.some(
-        (conn: Connection) => conn.target === nodeId
-      );
-
-      if (!hasActiveInputs && !isSourceNode) {
-        // No active inputs - this node should be inactive
-        const inactiveUpdates = {
-          isActive: false,
-          text: undefined,
-          output: undefined,
-        } as unknown as Partial<T>;
-
-        atomicUpdate(inactiveUpdates);
-        return { ...rawData, ...inactiveUpdates };
-      }
-
-      // Compute with active inputs only
-      const computed = computationFn(rawData, connectedInputs);
-
-      // Check if computation produced meaningful output
-      const hasMeaningfulOutput =
-        computed.hasOwnProperty("text") && computed.text !== undefined;
-      const computedWithActivation = {
-        ...computed,
-        isActive: hasMeaningfulOutput || isSourceNode,
-      };
-
-      // Only update if something actually changed
-      const hasChanges = Object.keys(computedWithActivation).some(
-        (key) => computedWithActivation[key] !== rawData[key]
-      );
-
-      if (hasChanges) {
-        atomicUpdate(computedWithActivation);
-      }
-
-      return { ...rawData, ...computedWithActivation };
-    },
-    [nodeId, connections, nodes, atomicUpdate]
-  );
-
-  // DATA FLOW BLOCKING FOR INACTIVE NODES
-  const getOutputValue = useCallback(() => {
-    const isActive = currentData.isActive || localIsActive;
-
-    if (!isActive) {
-      // CRITICAL: Inactive nodes must not pass any data
-      return undefined;
-    }
-
-    // Return the actual output value
-    return currentData.text || currentData.output || currentData.value;
-  }, [currentData, localIsActive]);
-
-  return {
-    atomicUpdate,
-    computeState,
-    getOutputValue,
-    isActive: currentData.isActive || localIsActive,
-  };
-}
 
 /**
  * GET ACTIVE CONNECTED INPUTS - Only from active upstream nodes
@@ -196,7 +44,7 @@ function getActiveConnectedInputs(
   );
 
   incomingConnections.forEach((conn) => {
-    const sourceNode = nodes.find((n) => n.id === conn.source);
+    const sourceNode = nodes.find((n: any) => n.id === conn.source);
     if (!sourceNode) return;
 
     // CRITICAL: Only get data from ACTIVE source nodes
@@ -217,6 +65,186 @@ function getActiveConnectedInputs(
   });
 
   return inputs;
+}
+
+/**
+ * BULLETPROOF NODE STATE HOOK WITH ACTIVATION LOGIC
+ * Eliminates all state synchronization issues + blocks data flow from inactive nodes
+ */
+export function useBulletproofNodeState<T extends Record<string, any>>(
+  nodeId: string,
+  defaultData: T,
+  outputKey: keyof T = "text" as keyof T,
+  propagateUltraFast?: (nodeId: string, isActive: boolean) => void
+) {
+  const updateNodeData = useFlowStore((state: any) => state.updateNodeData);
+  const nodes = useFlowStore((state: any) => state.nodes);
+  const connections = useFlowStore((state: any) => state.edges);
+  const lastUpdateRef = useRef<number>(0);
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Get current node data
+  const currentNode = nodes.find((n: any) => n.id === nodeId);
+  const currentData = currentNode?.data || defaultData;
+
+  // ACTIVATION STATE MANAGEMENT WITH SYNC
+  const [localIsActive, setLocalIsActive] = useState(
+    currentData.isActive || false
+  );
+
+  // SYNC LOCAL STATE WITH STORE
+  useEffect(() => {
+    setLocalIsActive(currentData.isActive ?? false);
+  }, [currentData.isActive]);
+
+  // CLEANUP ANIMATION FRAME ON UNMOUNT
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
+
+  // ATOMIC UPDATE FUNCTION - No race conditions possible + activation handling
+  const atomicUpdate = useCallback(
+    (updates: Partial<T>) => {
+      const timestamp = Date.now();
+
+      // Handle activation state changes with ultra-fast propagation
+      const willBeActive = Object.prototype.hasOwnProperty.call(
+        updates,
+        "isActive"
+      )
+        ? updates.isActive
+        : currentData.isActive || false;
+
+      // Check if we need to calculate meaningful output for activation
+      const hasMeaningfulOutput =
+        Object.prototype.hasOwnProperty.call(updates, outputKey as string) &&
+        updates[outputKey] !== undefined;
+      const shouldActivate = willBeActive || hasMeaningfulOutput;
+
+      // Ultra-fast visual feedback for activation changes
+      if (
+        shouldActivate !== (currentData.isActive || false) &&
+        propagateUltraFast
+      ) {
+        propagateUltraFast(nodeId, shouldActivate);
+      }
+
+      // Update local state immediately for visual consistency - FIXED STALE CLOSURE
+      if (Object.prototype.hasOwnProperty.call(updates, "isActive")) {
+        setLocalIsActive(updates.isActive as boolean);
+      }
+
+      // Prevent rapid-fire updates (batching) - IMPROVED WITH CLEANUP
+      if (timestamp - lastUpdateRef.current < 16) {
+        // Cancel previous frame if exists
+        if (animationFrameRef.current !== null) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+
+        animationFrameRef.current = requestAnimationFrame(() => {
+          updateNodeData(nodeId, {
+            ...updates,
+            isActive: shouldActivate,
+          } as Partial<Record<string, unknown>>);
+          animationFrameRef.current = null;
+        });
+      } else {
+        updateNodeData(nodeId, {
+          ...updates,
+          isActive: shouldActivate,
+        } as Partial<Record<string, unknown>>);
+      }
+
+      lastUpdateRef.current = timestamp;
+    },
+    [
+      nodeId,
+      updateNodeData,
+      currentData.isActive,
+      propagateUltraFast,
+      outputKey,
+    ]
+  );
+
+  // COMPUTED STATE WITH DATA FLOW BLOCKING - NOW ACCEPTS PRE-COMPUTED INPUTS
+  const computeState = useCallback(
+    (
+      rawData: T,
+      activeInputs: Record<string, any>,
+      computationFn?: (
+        data: T,
+        connectedInputs: Record<string, any>
+      ) => Partial<T>
+    ) => {
+      if (!computationFn) return rawData;
+
+      // Only compute if we have active inputs or this is a source node
+      const hasActiveInputs = Object.keys(activeInputs).length > 0;
+      const hasIncomingConnections = connections.some(
+        (conn: Connection) => conn.target === nodeId
+      );
+
+      if (!hasActiveInputs && hasIncomingConnections) {
+        // No active inputs - this node should be inactive
+        const inactiveUpdates = {
+          isActive: false,
+          [outputKey]: undefined,
+          output: undefined,
+        } as unknown as Partial<T>;
+
+        atomicUpdate(inactiveUpdates);
+        return { ...rawData, ...inactiveUpdates };
+      }
+
+      // Compute with active inputs only
+      const computed = computationFn(rawData, activeInputs);
+
+      // Check if computation produced meaningful output
+      const hasMeaningfulOutput =
+        Object.prototype.hasOwnProperty.call(computed, outputKey as string) &&
+        computed[outputKey] !== undefined;
+      const computedWithActivation = {
+        ...computed,
+        isActive: hasMeaningfulOutput || !hasIncomingConnections,
+      };
+
+      // Only update if something actually changed
+      const hasChanges = Object.keys(computedWithActivation).some(
+        (key) => (computedWithActivation as any)[key] !== (rawData as any)[key]
+      );
+
+      if (hasChanges) {
+        atomicUpdate(computedWithActivation);
+      }
+
+      return { ...rawData, ...computedWithActivation };
+    },
+    [nodeId, connections, atomicUpdate, outputKey]
+  );
+
+  // DATA FLOW BLOCKING FOR INACTIVE NODES
+  const getOutputValue = useCallback(() => {
+    const isActive = currentData.isActive || localIsActive;
+
+    if (!isActive) {
+      // CRITICAL: Inactive nodes must not pass any data
+      return undefined;
+    }
+
+    // Return the actual output value using configured output key
+    return currentData[outputKey] || currentData.output || currentData.value;
+  }, [currentData, localIsActive, outputKey]);
+
+  return {
+    atomicUpdate,
+    computeState,
+    getOutputValue,
+    isActive: currentData.isActive || localIsActive,
+  };
 }
 
 // ============================================================================
@@ -241,6 +269,7 @@ export interface EnterpriseNodeConfig<T extends Record<string, any>> {
 
   // DATA & VALIDATION
   defaultData: T;
+  outputKey?: keyof T; // CONFIGURABLE OUTPUT KEY
   validate?: (data: T) => string | null; // Return error message or null
 
   // COMPUTATION (Pure Functions Only) - Now receives filtered active inputs
@@ -304,20 +333,30 @@ export function createBulletproofNode<T extends Record<string, any>>(
   }
 
   const NodeComponent = memo(({ id, data, selected }: NodeProps<Node<T>>) => {
+    const updateNodeData = useFlowStore((state: any) => state.updateNodeData);
     const nodes = useFlowStore((state: any) => state.nodes);
     const connections = useFlowStore((state: any) => state.edges);
-    const updateNodeData = useFlowStore((state: any) => state.updateNodeData);
 
-    // ULTRA-FAST PROPAGATION INTEGRATION
+    // ULTRA-FAST PROPAGATION INTEGRATION WITH CLEANUP
     const { propagateUltraFast, enableGPUAcceleration } =
       useUltraFastPropagation(nodes, connections, updateNodeData);
 
     // BULLETPROOF STATE MANAGEMENT
     const { atomicUpdate, computeState, getOutputValue, isActive } =
-      useBulletproofNodeState(id, config.defaultData, propagateUltraFast);
+      useBulletproofNodeState(
+        id,
+        config.defaultData,
+        config.outputKey || ("text" as keyof T),
+        propagateUltraFast
+      );
 
     const [isExpanded, setIsExpanded] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // OPTIMIZED: Cache active inputs to avoid multiple calculations
+    const activeInputs = useMemo(() => {
+      return getActiveConnectedInputs(id, connections, nodes);
+    }, [id, connections, nodes]);
 
     // Enable GPU acceleration for this node
     useEffect(() => {
@@ -328,17 +367,12 @@ export function createBulletproofNode<T extends Record<string, any>>(
     const validationError = config.validate ? config.validate(data as T) : null;
     const finalError = error || validationError;
 
-    // INPUT PROCESSING (Only from active nodes)
-    const activeInputs = useMemo(() => {
-      return getActiveConnectedInputs(id, connections, nodes);
-    }, [id, connections, nodes]);
-
-    // COMPUTATION WITH ACTIVATION CONTROL
+    // COMPUTATION WITH ACTIVATION CONTROL - USING CACHED INPUTS
     const computedData = useMemo(() => {
       if (!config.compute) return data as T;
 
       try {
-        return computeState(data as T, (currentData) => {
+        return computeState(data as T, activeInputs, (currentData) => {
           const computed = config.compute!(currentData, activeInputs);
 
           // Apply custom activation logic if provided
@@ -361,20 +395,30 @@ export function createBulletproofNode<T extends Record<string, any>>(
     // OUTPUT VALUE (Blocked if inactive)
     const outputValue = getOutputValue();
 
+    // OPTIMIZED CLASS NAME GENERATION
+    const baseClassName = useMemo(
+      () => `bulletproof-node category-${config.category}`,
+      [config.category]
+    );
+
+    const dynamicClassName = useMemo(() => {
+      const classes = [baseClassName];
+      if (isExpanded) classes.push("expanded");
+      else classes.push("collapsed");
+      if (selected) classes.push("selected");
+      if (finalError) classes.push("error");
+      if (isActive) classes.push("node-active");
+      else classes.push("node-inactive");
+      return classes.join(" ");
+    }, [baseClassName, isExpanded, selected, finalError, isActive]);
+
     // RENDER
     return (
       <div
         data-node-id={id}
         data-node-type={config.nodeType}
         data-propagation-layer="ultra-fast"
-        className={`
-          bulletproof-node
-          ${isExpanded ? "expanded" : "collapsed"}
-          ${selected ? "selected" : ""}
-          ${finalError ? "error" : ""}
-          ${isActive ? "node-active" : "node-inactive"}
-          category-${config.category}
-        `}
+        className={dynamicClassName}
       >
         {config.renderNode({
           data: computedData,
@@ -403,17 +447,22 @@ export function createBulletproofNode<T extends Record<string, any>>(
 }
 
 // ============================================================================
-// AUTO-REGISTRATION SYSTEM
+// TYPE-SAFE AUTO-REGISTRATION SYSTEM
 // ============================================================================
 
-interface NodeRegistry {
-  [nodeType: string]: {
-    component: React.ComponentType<any>;
-    config: EnterpriseNodeConfig<any>;
-  };
-}
+// DISCRIMINATED UNION TYPE FOR NODE CONFIGS
+type NodeTypeMap = {
+  [K: string]: EnterpriseNodeConfig<any>;
+};
 
-const nodeRegistry: NodeRegistry = {};
+type NodeRegistry<T extends NodeTypeMap> = {
+  [K in keyof T]: {
+    component: React.ComponentType<NodeProps<Node<T[K]["defaultData"]>>>;
+    config: T[K];
+  };
+};
+
+const nodeRegistry: NodeRegistry<any> = {};
 
 /**
  * REGISTER NODE (Single source of truth)
