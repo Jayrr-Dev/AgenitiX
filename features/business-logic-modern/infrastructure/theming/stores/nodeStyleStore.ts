@@ -1212,33 +1212,37 @@ export const createCustomRegistryTheme = (
 export function getEnhancedCategoryTheme(
   category: NodeCategory
 ): CategoryTheme {
-  // Get theme from category registry first
-  const registryTheme = getCategoryTheme(category);
-  const categoryMetadata = getCategoryMetadata(category);
+  try {
+    // Get theme from category registry first
+    const registryTheme = getCategoryTheme(category);
+    const categoryMetadata = getCategoryMetadata(category);
 
-  if (registryTheme && categoryMetadata?.enabled) {
-    // Convert category registry theme to our CategoryTheme format
-    return {
-      background: registryTheme.background,
-      border: registryTheme.border,
-      text: {
-        primary: {
-          light: `text-${registryTheme.primary}-900`,
-          dark: `text-${registryTheme.primary}-100`,
+    if (registryTheme && categoryMetadata?.enabled) {
+      // Convert category registry theme to our CategoryTheme format
+      return {
+        background: registryTheme.background,
+        border: registryTheme.border,
+        text: {
+          primary: {
+            light: `text-${registryTheme.primary}-900`,
+            dark: `text-${registryTheme.primary}-100`,
+          },
+          secondary: {
+            light: `text-${registryTheme.secondary}-800`,
+            dark: `text-${registryTheme.secondary}-200`,
+          },
         },
-        secondary: {
-          light: `text-${registryTheme.secondary}-800`,
-          dark: `text-${registryTheme.secondary}-200`,
+        button: {
+          border: `border-${registryTheme.primary}-300 dark:border-${registryTheme.primary}-800`,
+          hover: {
+            light: `hover:bg-${registryTheme.primary}-200`,
+            dark: `hover:bg-${registryTheme.primary}-800`,
+          },
         },
-      },
-      button: {
-        border: `border-${registryTheme.primary}-300 dark:border-${registryTheme.primary}-800`,
-        hover: {
-          light: `hover:bg-${registryTheme.primary}-200`,
-          dark: `hover:bg-${registryTheme.primary}-800`,
-        },
-      },
-    };
+      };
+    }
+  } catch (error) {
+    console.warn(`⚠️ Failed to get enhanced theme for ${category}:`, error);
   }
 
   // Fallback to our hardcoded themes if registry theme not available
@@ -1255,31 +1259,41 @@ export function validateCategoryWithRegistry(category: NodeCategory): {
   metadata: any;
   reason?: string;
 } {
-  const metadata = getCategoryMetadata(category);
+  try {
+    const metadata = getCategoryMetadata(category);
 
-  if (!metadata) {
+    if (!metadata) {
+      return {
+        valid: false,
+        enabled: false,
+        metadata: null,
+        reason: `Category '${category}' not found in registry`,
+      };
+    }
+
+    if (!metadata.enabled) {
+      return {
+        valid: false,
+        enabled: false,
+        metadata,
+        reason: `Category '${category}' is disabled in registry`,
+      };
+    }
+
+    return {
+      valid: true,
+      enabled: true,
+      metadata,
+    };
+  } catch (error) {
+    console.warn(`⚠️ Failed to validate category ${category}:`, error);
     return {
       valid: false,
       enabled: false,
       metadata: null,
-      reason: `Category '${category}' not found in registry`,
+      reason: `Registry validation failed: ${error}`,
     };
   }
-
-  if (!metadata.enabled) {
-    return {
-      valid: false,
-      enabled: false,
-      metadata,
-      reason: `Category '${category}' is disabled in registry`,
-    };
-  }
-
-  return {
-    valid: true,
-    enabled: true,
-    metadata,
-  };
 }
 
 /**
@@ -1287,8 +1301,13 @@ export function validateCategoryWithRegistry(category: NodeCategory): {
  * Uses category registry priority for theme precedence
  */
 export function getCategoryThemePriority(category: NodeCategory): number {
-  const metadata = getCategoryMetadata(category);
-  return metadata?.priority ?? 999;
+  try {
+    const metadata = getCategoryMetadata(category);
+    return metadata?.priority ?? 999;
+  } catch (error) {
+    console.warn(`⚠️ Failed to get priority for ${category}:`, error);
+    return 999; // Default low priority
+  }
 }
 
 /**
@@ -1299,5 +1318,9 @@ export function applyCategoryThemeHooks(
   category: NodeCategory,
   theme: CategoryTheme
 ) {
-  applyCategoryHooks(category, "onThemeApplied", theme);
+  try {
+    applyCategoryHooks(category, "onThemeApplied", theme);
+  } catch (error) {
+    console.warn(`⚠️ Failed to apply theme hooks for ${category}:`, error);
+  }
 }

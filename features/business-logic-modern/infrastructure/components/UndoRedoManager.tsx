@@ -16,6 +16,9 @@ import { useReactFlow, type Edge, type Node } from "@xyflow/react";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useRegisterUndoRedoManager } from "./UndoRedoContext";
 
+// PERFORMANCE OPTIMIZATION - Debug logging only in development
+const DEBUG_MODE = process.env.NODE_ENV === "development";
+
 // TYPES
 export interface ActionHistoryEntry {
   id: string;
@@ -71,18 +74,19 @@ export interface UndoRedoManagerProps {
   ) => void;
 }
 
-// DEFAULT CONFIGURATION
+// DEFAULT CONFIGURATION - Optimized for speed with ultra-fast response
 const DEFAULT_CONFIG: Required<UndoRedoConfig> = {
   maxHistorySize: 100,
-  debounceMs: 300,
+  debounceMs: 50, // Ultra-fast 50ms for responsive feel during fast movements
   enableViewportTracking: false,
   enableAutoSave: true,
   compressionThreshold: 50, // Compress history when it exceeds this size
 };
 
-// UTILITY FUNCTIONS
+// PERFORMANCE OPTIMIZED ID GENERATION
+let actionCounter = 0;
 const generateActionId = (): string =>
-  `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  `action_${Date.now()}_${++actionCounter}`;
 
 /**
  * Safe deep clone function that handles BigInt and other non-serializable values
@@ -119,13 +123,28 @@ const safeDeepClone = (obj: any): any => {
   return obj;
 };
 
+/**
+ * REACTFLOW-OPTIMIZED STATE CREATION - Proper deep cloning for nested objects
+ * ReactFlow nodes/edges have nested objects (position, data) that need deep cloning
+ */
 const createFlowState = (
   nodes: Node[],
   edges: Edge[],
   viewport?: { x: number; y: number; zoom: number }
 ): FlowState => ({
-  nodes: safeDeepClone(nodes), // Safe deep clone that handles BigInt
-  edges: safeDeepClone(edges),
+  // DEEP CLONE NODES - ReactFlow nodes have nested position/data objects
+  nodes: nodes.map((node) => ({
+    ...node,
+    position: { ...node.position },
+    data: node.data ? { ...node.data } : node.data,
+    style: node.style ? { ...node.style } : node.style,
+  })),
+  // DEEP CLONE EDGES - ReactFlow edges can have nested data
+  edges: edges.map((edge) => ({
+    ...edge,
+    data: edge.data ? { ...edge.data } : edge.data,
+    style: edge.style ? { ...edge.style } : edge.style,
+  })),
   viewport: viewport ? { ...viewport } : undefined,
 });
 
@@ -145,13 +164,79 @@ const safeStringify = (obj: any): string => {
   }
 };
 
+/**
+ * REACTFLOW-OPTIMIZED STATE COMPARISON - Handles node order and nested properties
+ * Optimized but thorough comparison for ReactFlow state integrity
+ */
 const areStatesEqual = (state1: FlowState, state2: FlowState): boolean => {
   try {
-    return (
-      safeStringify(state1.nodes) === safeStringify(state2.nodes) &&
-      safeStringify(state1.edges) === safeStringify(state2.edges) &&
-      safeStringify(state1.viewport) === safeStringify(state2.viewport)
-    );
+    // FAST LENGTH CHECKS - Early exit for different array sizes
+    if (
+      state1.nodes.length !== state2.nodes.length ||
+      state1.edges.length !== state2.edges.length
+    ) {
+      return false;
+    }
+
+    // NODES COMPARISON - Create maps by ID to handle order changes
+    const nodes1Map = new Map(state1.nodes.map((n) => [n.id, n]));
+    const nodes2Map = new Map(state2.nodes.map((n) => [n.id, n]));
+
+    // Check if all node IDs match
+    if (nodes1Map.size !== nodes2Map.size) return false;
+
+    // Compare each node by ID (handles order changes)
+    const nodeIds1 = Array.from(nodes1Map.keys());
+    for (const id of nodeIds1) {
+      const node1 = nodes1Map.get(id)!;
+      const node2 = nodes2Map.get(id);
+      if (!node2) return false;
+
+      // Check critical node properties
+      if (
+        node1.type !== node2.type ||
+        node1.selected !== node2.selected ||
+        node1.position.x !== node2.position.x ||
+        node1.position.y !== node2.position.y
+      ) {
+        return false;
+      }
+    }
+
+    // EDGES COMPARISON - Create maps by ID to handle order changes
+    const edges1Map = new Map(state1.edges.map((e) => [e.id, e]));
+    const edges2Map = new Map(state2.edges.map((e) => [e.id, e]));
+
+    // Check if all edge IDs match
+    if (edges1Map.size !== edges2Map.size) return false;
+
+    // Compare each edge by ID (handles order changes)
+    const edgeIds1 = Array.from(edges1Map.keys());
+    for (const id of edgeIds1) {
+      const edge1 = edges1Map.get(id)!;
+      const edge2 = edges2Map.get(id);
+      if (!edge2) return false;
+
+      // Check critical edge properties
+      if (
+        edge1.source !== edge2.source ||
+        edge1.target !== edge2.target ||
+        edge1.selected !== edge2.selected
+      ) {
+        return false;
+      }
+    }
+
+    // VIEWPORT COMPARISON - Quick object check
+    if (state1.viewport && state2.viewport) {
+      return (
+        state1.viewport.x === state2.viewport.x &&
+        state1.viewport.y === state2.viewport.y &&
+        state1.viewport.zoom === state2.viewport.zoom
+      );
+    }
+
+    return !state1.viewport && !state2.viewport;
   } catch {
     return false;
   }
@@ -248,11 +333,19 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     metadata?: Record<string, unknown>;
   } | null>(null);
 
+  // DRAG-AWARE STATE MANAGEMENT - Track drag operations for better undo/redo
+  const isDraggingRef = useRef(false);
+  const dragStartStateRef = useRef<FlowState | null>(null);
+  const dragEndTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // MEMORY MANAGEMENT
   useEffect(() => {
     return () => {
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
+      }
+      if (dragEndTimeoutRef.current) {
+        clearTimeout(dragEndTimeoutRef.current);
       }
     };
   }, []);
@@ -336,10 +429,10 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
           reactFlowInstance.setViewport(state.viewport);
         }
       } finally {
-        // Use minimal delay for instant feel - just enough for React state updates
+        // INSTANT PERFORMANCE - Use minimal timeout for ReactFlow state sync
         setTimeout(() => {
           isUndoRedoOperationRef.current = false;
-        }, 10); // Reduced from 50ms to 10ms for instant feeling
+        }, 1); // Minimal delay to ensure ReactFlow processes the state change
       }
     },
     [
@@ -352,67 +445,89 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
   // PUBLIC API
   const undo = useCallback(() => {
-    console.log(
-      "↩️ [UndoRedoManager] Undo called, currentIndex:",
-      currentIndexRef.current
-    );
+    if (DEBUG_MODE) {
+      console.log(
+        "↩️ [UndoRedoManager] Undo called, currentIndex:",
+        currentIndexRef.current
+      );
+    }
 
     if (currentIndexRef.current < 0) {
-      console.log("❌ [UndoRedoManager] Cannot undo, no history");
+      if (DEBUG_MODE) {
+        console.log("❌ [UndoRedoManager] Cannot undo, no history");
+      }
       return false;
     }
 
     const entry = historyRef.current[currentIndexRef.current];
-    console.log("🔄 [UndoRedoManager] Applying undo state:", entry.type);
+    if (DEBUG_MODE) {
+      console.log("🔄 [UndoRedoManager] Applying undo state:", entry.type);
+    }
     applyState(entry.beforeState);
     currentIndexRef.current--;
 
     onHistoryChange?.(historyRef.current, currentIndexRef.current);
-    console.log(
-      "✅ [UndoRedoManager] Undo completed, new index:",
-      currentIndexRef.current
-    );
+    if (DEBUG_MODE) {
+      console.log(
+        "✅ [UndoRedoManager] Undo completed, new index:",
+        currentIndexRef.current
+      );
+    }
     return true;
   }, [applyState, onHistoryChange]);
 
   const redo = useCallback(() => {
-    console.log(
-      "↪️ [UndoRedoManager] Redo called, currentIndex:",
-      currentIndexRef.current
-    );
+    if (DEBUG_MODE) {
+      console.log(
+        "↪️ [UndoRedoManager] Redo called, currentIndex:",
+        currentIndexRef.current
+      );
+    }
 
     if (currentIndexRef.current >= historyRef.current.length - 1) {
-      console.log("❌ [UndoRedoManager] Cannot redo, no future history");
+      if (DEBUG_MODE) {
+        console.log("❌ [UndoRedoManager] Cannot redo, no future history");
+      }
       return false;
     }
 
     currentIndexRef.current++;
     const entry = historyRef.current[currentIndexRef.current];
-    console.log("🔄 [UndoRedoManager] Applying redo state:", entry.type);
+    if (DEBUG_MODE) {
+      console.log("🔄 [UndoRedoManager] Applying redo state:", entry.type);
+    }
     applyState(entry.afterState);
 
     onHistoryChange?.(historyRef.current, currentIndexRef.current);
-    console.log(
-      "✅ [UndoRedoManager] Redo completed, new index:",
-      currentIndexRef.current
-    );
+    if (DEBUG_MODE) {
+      console.log(
+        "✅ [UndoRedoManager] Redo completed, new index:",
+        currentIndexRef.current
+      );
+    }
     return true;
   }, [applyState, onHistoryChange]);
 
   const recordAction = useCallback(
     (type: ActionType, metadata?: Record<string, unknown>) => {
-      console.log("🔄 [UndoRedoManager] Recording action:", type, metadata);
+      if (DEBUG_MODE) {
+        console.log("🔄 [UndoRedoManager] Recording action:", type, metadata);
+      }
 
       const currentState = captureCurrentState();
-      console.log(
-        "📸 [UndoRedoManager] Current state captured, nodes:",
-        currentState.nodes.length
-      );
+      if (DEBUG_MODE) {
+        console.log(
+          "📸 [UndoRedoManager] Current state captured, nodes:",
+          currentState.nodes.length
+        );
+      }
 
       if (lastStateRef.current) {
-        console.log("✅ [UndoRedoManager] Adding to history");
+        if (DEBUG_MODE) {
+          console.log("✅ [UndoRedoManager] Adding to history");
+        }
         addToHistory(type, lastStateRef.current, currentState, metadata);
-      } else {
+      } else if (DEBUG_MODE) {
         console.log("⚠️ [UndoRedoManager] No lastState, skipping history");
       }
 
@@ -445,6 +560,25 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     [recordAction, finalConfig.debounceMs]
   );
 
+  // IMMEDIATE RECORDING - For ultra-fast movements (no debounce)
+  const recordActionImmediate = useCallback(
+    (type: ActionType, metadata?: Record<string, unknown>) => {
+      if (DEBUG_MODE) {
+        console.log("⚡ [UndoRedoManager] IMMEDIATE recording action:", type);
+      }
+
+      // Clear any pending debounced actions
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+        pendingActionRef.current = null;
+      }
+
+      // Record immediately
+      recordAction(type, metadata);
+    },
+    [recordAction]
+  );
+
   const clearHistory = useCallback(() => {
     historyRef.current = [];
     currentIndexRef.current = -1;
@@ -461,6 +595,54 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     }),
     []
   );
+
+  // DRAG-AWARE DETECTION FUNCTIONS
+  const detectDragStart = useCallback(() => {
+    if (!isDraggingRef.current) {
+      isDraggingRef.current = true;
+      dragStartStateRef.current = captureCurrentState();
+
+      if (DEBUG_MODE) {
+        console.log(
+          "🎯 [UndoRedoManager] Drag operation detected - capturing start state"
+        );
+      }
+    }
+  }, [captureCurrentState]);
+
+  const detectDragEnd = useCallback(() => {
+    if (isDraggingRef.current) {
+      // Clear any existing drag end timeout
+      if (dragEndTimeoutRef.current) {
+        clearTimeout(dragEndTimeoutRef.current);
+      }
+
+      // Set a short timeout to ensure drag is actually finished
+      dragEndTimeoutRef.current = setTimeout(() => {
+        if (isDraggingRef.current && dragStartStateRef.current) {
+          const endState = captureCurrentState();
+
+          // Only record if position actually changed
+          if (!areStatesEqual(dragStartStateRef.current, endState)) {
+            if (DEBUG_MODE) {
+              console.log(
+                "🎯 [UndoRedoManager] Drag completed - recording movement"
+              );
+            }
+            addToHistory("node_move", dragStartStateRef.current, endState, {
+              dragOperation: true,
+              nodeCount: endState.nodes.length,
+            });
+            lastStateRef.current = endState;
+          }
+
+          // Reset drag state
+          isDraggingRef.current = false;
+          dragStartStateRef.current = null;
+        }
+      }, 100); // Short delay to ensure drag is complete
+    }
+  }, [addToHistory, captureCurrentState]);
 
   // KEYBOARD SHORTCUTS
   useEffect(() => {
@@ -500,7 +682,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [undo, redo]);
 
-  // TRACK STATE CHANGES
+  // ENHANCED STATE TRACKING WITH DRAG DETECTION
   useEffect(() => {
     if (isUndoRedoOperationRef.current) return;
 
@@ -512,21 +694,61 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
       return;
     }
 
-    // Auto-record changes if enabled
-    if (
-      finalConfig.enableAutoSave &&
-      !areStatesEqual(lastStateRef.current, currentState)
-    ) {
-      recordActionDebounced("bulk_update", {
-        nodeCount: nodes.length,
-        edgeCount: edges.length,
+    // Check if nodes changed (potential drag operation)
+    const nodesChanged = !areStatesEqual(lastStateRef.current, currentState);
+
+    if (nodesChanged && finalConfig.enableAutoSave) {
+      // SMART DRAG DETECTION - Check if any node position changed significantly
+      const hasPositionChange = currentState.nodes.some((node) => {
+        const lastNode = lastStateRef.current?.nodes.find(
+          (n) => n.id === node.id
+        );
+        if (!lastNode) return true; // New node
+
+        const deltaX = Math.abs(node.position.x - lastNode.position.x);
+        const deltaY = Math.abs(node.position.y - lastNode.position.y);
+        return deltaX > 1 || deltaY > 1; // Threshold for meaningful movement
       });
+
+      if (hasPositionChange) {
+        // DRAG OPERATION DETECTED
+        detectDragStart();
+
+        // Use faster recording for position changes (less debounce)
+        pendingActionRef.current = {
+          type: "node_move",
+          metadata: {
+            nodeCount: nodes.length,
+            fastMovement: true,
+          },
+        };
+
+        if (debounceTimeoutRef.current) {
+          clearTimeout(debounceTimeoutRef.current);
+        }
+
+        // Ultra-fast recording for movements (25ms)
+        debounceTimeoutRef.current = setTimeout(() => {
+          if (pendingActionRef.current) {
+            detectDragEnd(); // This will handle the actual recording
+            pendingActionRef.current = null;
+          }
+        }, 25);
+      } else {
+        // NON-POSITION CHANGES - Use normal debounced recording
+        recordActionDebounced("bulk_update", {
+          nodeCount: nodes.length,
+          edgeCount: edges.length,
+        });
+      }
     }
   }, [
     nodes,
     edges,
     captureCurrentState,
     recordActionDebounced,
+    detectDragStart,
+    detectDragEnd,
     finalConfig.enableAutoSave,
   ]);
 
@@ -537,8 +759,12 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
       redo,
       recordAction,
       recordActionDebounced,
+      recordActionImmediate,
       clearHistory,
       getHistory,
+      // DRAG-AWARE FUNCTIONS - Exposed for external use if needed
+      detectDragStart,
+      detectDragEnd,
     };
 
     registerManager(managerAPI);
@@ -555,8 +781,11 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     redo,
     recordAction,
     recordActionDebounced,
+    recordActionImmediate,
     clearHistory,
     getHistory,
+    detectDragStart,
+    detectDragEnd,
     registerManager,
   ]);
 
