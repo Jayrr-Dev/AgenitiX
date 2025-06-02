@@ -1,306 +1,211 @@
-# 🚀 Zero-Maintenance Versioning System
+# 🚀 Agenitix Auto-Versioning System with Git Integration
 
-**Status: ✅ WORKING** - Successfully tested and deployed!
+**STATUS: ✅ FULLY OPERATIONAL WITH GIT HOOKS**
 
-## 📊 **Current System Status**
+## 🎯 Current System Status
 
-```
-📦 Current Version: 1.0.2
-🕒 Last Changed: 6/1/2025, 10:35:03 PM
-📁 Files Tracked: 116 TypeScript files
-💚 System Health: HEALTHY
-```
+- **Version:** 1.0.5 (Auto-bumped)
+- **Files Tracked:** 116 TypeScript files in `features/business-logic-modern/`
+- **Git Integration:** ✅ ACTIVE
+- **Auto-bump on Push:** ✅ ENABLED
+- **Zero Maintenance:** ✅ CONFIRMED
 
----
+## 🔧 New Git Integration Features
 
-## 🔥 **What You Get (Zero Setup Required)**
+### **Automatic Version Updates on Git Actions**
 
-✅ **Automatic version bumping** - File changes → version bumps
-✅ **Smart bump detection** - Major/minor/patch based on file patterns
-✅ **Real-time monitoring** - See what's happening instantly
-✅ **Auto-generated constants** - Use `VERSION.full` in your code
-✅ **History tracking** - Know what changed and when
-✅ **Error recovery** - System continues working even if something fails
+The system now automatically updates versions when you:
 
----
+- **Commit changes** → Post-commit hook validates version tracking
+- **Push to remote** → Pre-push hook bumps version and includes in push
+- **File changes detected** → Smart detection with git commit information
 
-## 🎯 **How to Use It**
+### **Enhanced Version Information**
 
-### **Instant Commands (Working Now!)**
-
-```bash
-# Check current status
-pnpm version:simple status
-
-# Check for changes and auto-bump
-pnpm version:simple check
-
-# Run system tests
-pnpm version:simple test
-
-# View version history
-pnpm version:simple history
-```
-
-### **Development Integration (Already Setup!)**
-
-```bash
-# Your normal commands now auto-check versions
-pnpm dev     # Auto-version check + start dev server
-pnpm build   # Auto-version check + build for production
-```
-
----
-
-## 🧠 **How It Works (You Don't Need to Care)**
-
-### **Automatic Version Bumping Rules**
-
-- **MAJOR** (1.0.0 → 2.0.0): Changes to core types, factory, or registry
-- **MINOR** (1.0.0 → 1.1.0): New nodes or infrastructure features
-- **PATCH** (1.0.0 → 1.0.1): Everything else (bug fixes, docs, etc.)
-
-### **File Monitoring**
-
-- Tracks 116 TypeScript files in `features/business-logic-modern/`
-- Creates MD5 hash fingerprints of each file
-- Compares against previous state to detect changes
-- Automatically categorizes changes by impact level
-
-### **Generated Files**
-
-- **`.version-cache.json`** - System state (don't edit)
-- **`features/.../version.ts`** - Version constants (auto-generated)
-
----
-
-## 📈 **Monitoring & Status**
-
-### **Real-Time Status Dashboard**
-
-```bash
-pnpm version:simple status
-```
-
-**Shows:**
-
-- Current version number
-- Last change timestamp
-- Number of files being tracked
-- System health status
-- Available commands
-
-### **Change Detection**
-
-```bash
-pnpm version:simple check
-```
-
-**Output Example:**
-
-```
-🔍 Checking for changes...
-✅ Changes detected! New version: 1.0.3
-📊 Bump type: minor
-📁 Changed files: 3
-   • features/business-logic-modern/node-domain/create/NewNode.tsx
-   • features/business-logic-modern/infrastructure/sidebar/Sidebar.tsx
-   • features/business-logic-modern/infrastructure/node-registry/nodeRegistry.ts
-```
-
-### **System Health Tests**
-
-```bash
-pnpm version:simple test
-```
-
-**Tests:**
-
-- File detection (found 116 TypeScript files ✅)
-- Version bump logic (1.0.0 → 1.1.0 ✅)
-- File operations (read/write permissions ✅)
-
----
-
-## 🔧 **Using Versions in Your Code**
-
-### **Import Version Constants**
+Your version constants now include git information:
 
 ```typescript
-import { VERSION } from "@/features/business-logic-modern/infrastructure/versioning/version";
-
-console.log(`App Version: ${VERSION.full}`);
-console.log(
-  `Major: ${VERSION.major}, Minor: ${VERSION.minor}, Patch: ${VERSION.patch}`
-);
-console.log(`Generated: ${VERSION.generated}`);
+export const VERSION = {
+  major: 1,
+  minor: 0,
+  patch: 5,
+  full: "1.0.5",
+  generated: "2025-06-02T04:47:10.063Z",
+  git: {
+    hash: "8b30b519153a75aebdc1e3ee0759d32d31d258c9",
+    shortHash: "8b30b51",
+    branch: "main",
+    author: "Jayrr-Dev",
+    date: "2025-06-01 22:42:41 -0600",
+    available: true,
+  },
+} as const;
 ```
 
-### **Example Usage**
+## 🎮 Available Commands
+
+### **Git-Integrated Versioning**
+
+```bash
+pnpm git-version status     # Show status with git info
+pnpm git-version check      # Check for changes + git integration
+pnpm version:git-status     # Alias for git-version status
+pnpm version:git-check      # Alias for git-version check
+```
+
+### **Original Versioning (Still Available)**
+
+```bash
+pnpm version:simple status  # Original simple version
+pnpm version:simple check   # Original file-based detection
+pnpm version:status        # Advanced TypeScript version
+```
+
+## 🪝 Git Hooks Created
+
+### **Pre-Push Hook** (`.git/hooks/pre-push`)
+
+- **Triggers:** Before every `git push`
+- **Action:** Checks for file changes and bumps version
+- **Integration:** Auto-commits version updates to the push
+- **Smart Detection:** Avoids infinite loops with version commits
+
+### **Post-Commit Hook** (`.git/hooks/post-commit`)
+
+- **Triggers:** After every `git commit`
+- **Action:** Updates version tracking and validates system
+- **Efficiency:** Lightweight validation without duplicate version bumps
+
+## 🎯 How It Works
+
+### **Typical Git Workflow:**
+
+1. **Make code changes** to TypeScript files
+2. **Commit changes:** `git commit -m "Add new feature"`
+   - → Post-commit hook validates versioning
+3. **Push changes:** `git push origin main`
+   - → Pre-push hook detects changes
+   - → Auto-bumps version (1.0.4 → 1.0.5)
+   - → Updates version.ts with git information
+   - → Auto-commits version update
+   - → Pushes both your changes + version update
+
+### **Smart Bump Detection:**
+
+- **Major bump:** Core types, factory, or registry changes
+- **Minor bump:** New nodes or infrastructure additions
+- **Patch bump:** Everything else + git-only changes
+
+## 🔍 Monitoring & Status
+
+### **Quick Status Check:**
+
+```bash
+pnpm git-version status
+```
+
+**Sample Output:**
+
+```
+🔧 GIT-INTEGRATED VERSIONING STATUS
+════════════════════════════════════════
+📦 Current Version: 1.0.5
+🕒 Last Changed: 6/2/2025, 4:47:10 AM
+📁 Files Tracked: 116
+
+📝 Git Information:
+   Branch: main
+   Commit: 8b30b51
+   Author: Jayrr-Dev
+   Date: 6/1/2025, 10:42:41 PM
+
+🔄 Last Change:
+   Type: patch
+   Reason: file_changes
+   Files: 1
+```
+
+## 📋 Business Logic Page Integration
+
+The version is automatically displayed on your business logic page:
 
 ```typescript
-// In your components
-export function AppFooter() {
-  return (
-    <footer>
-      <p>Version {VERSION.full} - Generated {new Date(VERSION.generated).toLocaleDateString()}</p>
-    </footer>
-  );
-}
-
-// In your API
-export function GET() {
-  return Response.json({
-    version: VERSION.full,
-    build: VERSION.generated
-  });
-}
+// Bottom-right corner of business-logic page
+<span className="text-xs text-gray-400/60 font-mono">
+  v{VERSION.full}  // Shows: v1.0.5
+</span>
 ```
 
----
+**Git information** is also available:
 
-## 🚨 **Troubleshooting**
+- `VERSION.git.shortHash` → "8b30b51"
+- `VERSION.git.branch` → "main"
+- `VERSION.git.author` → "Jayrr-Dev"
 
-### **System Not Working?**
+## 🚀 Pro Tips
+
+### **Zero-Maintenance Operation**
+
+- Just code and push as normal
+- Versions auto-update seamlessly
+- Git hooks handle everything
+
+### **Version History Tracking**
+
+- Every version includes full git context
+- Track exact commits for each version
+- Author and timestamp information preserved
+
+### **Development Integration**
+
+- Version visible during development
+- Real-time updates in browser
+- Git information for debugging
+
+### **Troubleshooting**
+
+If hooks aren't working:
 
 ```bash
-# 1. Run diagnostics
-pnpm version:simple test
+# Check hook permissions (Windows)
+icacls .git\hooks\pre-push
+icacls .git\hooks\post-commit
 
-# 2. Check status
-pnpm version:simple status
-
-# 3. Force a check
-pnpm version:simple check
+# Test hooks manually
+pnpm git-version check
 ```
 
-### **Common Issues & Fixes**
+## 📁 System Files
 
-**"No changes detected" when you know files changed:**
+### **Created/Modified Files:**
 
-- System may be working correctly - only tracks `.ts` and `.tsx` files
-- Check if changes are in tracked directory: `features/business-logic-modern/`
+- `.git/hooks/pre-push` → Auto-version on push
+- `.git/hooks/post-commit` → Post-commit validation
+- `scripts/git-version.js` → Git-integrated version detector
+- `package.json` → Added git-version commands
+- `.version-cache.json` → Enhanced with git information
 
-**Version file not updating:**
+### **Auto-Generated:**
 
-- Check file permissions in the project directory
-- Make sure you have write access to `.version-cache.json`
+- `features/business-logic-modern/infrastructure/versioning/version.ts`
 
-**Commands not found:**
+## ✅ Success Indicators
 
-- Make sure you're running commands from the project root
-- Try `pnpm install` to ensure dependencies are installed
+- ✅ **Version bumps automatically on push**
+- ✅ **Git information included in versions**
+- ✅ **Zero manual maintenance required**
+- ✅ **116 TypeScript files tracked**
+- ✅ **Real-time version display on page**
+- ✅ **Complete git integration**
 
 ---
 
-## 📁 **File Structure**
+**🎯 The system is now fully git-integrated and maintenance-free!**
 
-```
-project-root/
-├── .version-cache.json                    # System state (auto-generated)
-├── scripts/
-│   ├── version-simple.js                  # Main versioning system
-│   ├── version-commands.ts                # Advanced TypeScript commands
-│   └── auto-version.js                    # Build integration
-├── features/business-logic-modern/
-│   └── infrastructure/versioning/
-│       ├── version.ts                     # Auto-generated version constants
-│       ├── auto-version.ts               # Configuration
-│       ├── version-detector.ts           # Change detection logic
-│       ├── auto-migrate.ts               # Migration system
-│       └── status-dashboard.ts           # Monitoring dashboard
-└── package.json                          # pnpm scripts
-```
+Just commit and push your code as normal. The versioning system will:
 
----
-
-## 🎮 **Advanced Features**
-
-### **TypeScript Commands (Optional)**
-
-If you want the full-featured TypeScript system:
-
-```bash
-# Install required dependencies (already done)
-pnpm add -D ts-node chokidar
-
-# Use advanced commands
-pnpm version:status     # Enhanced status with activity logs
-pnpm version:watch      # Real-time file watching
-pnpm version:init       # Full system initialization
-```
-
-### **Auto-Migration System**
-
-The system includes automatic data migration:
-
-- Detects schema changes between versions
-- Applies transformations to stored data
-- Maintains backwards compatibility
-
-### **Health Monitoring**
-
-- Tracks recent errors and warnings
-- Provides system health indicators
-- Maintains activity logs for debugging
-
----
-
-## ✨ **Success Indicators**
-
-**✅ You know it's working when:**
-
-1. **Status shows version > 1.0.0**
-
-   ```bash
-   pnpm version:simple status  # Should show 1.0.2 or higher
-   ```
-
-2. **Files are being tracked**
-
-   ```bash
-   # Should show: "📁 Files Tracked: 116" or similar number
-   ```
-
-3. **Changes trigger version bumps**
-
-   ```bash
-   # Edit a file, then run:
-   pnpm version:simple check  # Should detect the change
-   ```
-
-4. **Version constants exist**
-   ```bash
-   # This file should exist and have recent timestamp:
-   ls features/business-logic-modern/infrastructure/versioning/version.ts
-   ```
-
----
-
-## 💡 **Pro Tips**
-
-1. **Keep `pnpm version:simple status` handy** - Your go-to health check
-2. **Use version constants in your UI** - Show users the current version
-3. **Check versions before releases** - `pnpm version:simple history`
-4. **Don't edit generated files** - They'll be overwritten automatically
-5. **Run tests after updates** - `pnpm version:simple test` ensures everything works
-
----
-
-## 🏆 **That's It!**
-
-Your versioning system is now:
-
-- ✅ **Working** (tested with 116 files)
-- ✅ **Monitoring** (real-time status dashboard)
-- ✅ **Automatic** (integrated with dev/build commands)
-- ✅ **Powerful** (smart bump detection)
-- ✅ **Simple** (just use pnpm commands)
-
-**Most important command to remember:**
-
-```bash
-pnpm version:simple status
-```
-
-**Next time you want to check what's happening, just run that! 🎉**
+- Detect your changes automatically
+- Bump versions intelligently
+- Include git commit information
+- Display current version in your app
+- Track everything with zero effort from you!
