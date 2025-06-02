@@ -1,0 +1,1 @@
+pnpm version:simple force-minor

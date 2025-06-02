@@ -12,6 +12,9 @@
 
 "use client";
 
+// THEME SYSTEM INITIALIZATION - Auto-enables category theming
+import "../../theming/init/themeInitializer";
+
 // ============================================================================
 // IMPORTS & TYPE DEFINITIONS
 // ============================================================================

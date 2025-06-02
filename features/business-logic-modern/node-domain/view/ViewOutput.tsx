@@ -120,7 +120,7 @@ console.log(
 
 const ViewOutput = createNodeComponent<ViewOutputData>({
   nodeType: "viewOutput", // Match the registry nodeType
-  category: "test", // Test/debug theme for utility nodes (same as legacy)
+  category: "view", // VIEW category for gray theme (was incorrectly set to "test")
   displayName: "View Output",
   defaultData: {
     displayedValues: [],
