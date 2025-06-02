@@ -1,6 +1,6 @@
 {
-  "version": "1.1.2",
-  "timestamp": 1748869952383,
+  "version": "1.1.3",
+  "timestamp": 1748871116351,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -243,6 +243,10 @@
       "6db5ea82e27f07419b569e6aa3991b1b"
     ],
     [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\types\\connections.ts",
+      "eb887ac64f38f84f4750b8922e7dea4f"
+    ],
+    [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\types\\index.ts",
       "2b03f811cb1d448ff4a4e91806c13c15"
     ],
@@ -280,7 +284,11 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\propagationEngine.ts",
-      "c932753d6f46c79a0a668706cdf8fcac"
+      "913acc72eddfc37cc3e51080b54ab9e3"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\typeSafeConnections.ts",
+      "5072ad67eee294afe1d901f765fb3115"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\updateManager.ts",
@@ -476,11 +484,11 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "bd562b9daa4ab7dc6b5994a436d68e68"
+      "aa0af71b583ae38e922b8022eaec479c"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
-      "2cbcfb0c59ba6913a561e9ddaa24cd3d"
+      "2ac73bc3c8888d234f316933e918104f"
     ],
     [
       "features\\business-logic-modern\\node-domain\\index.ts",
