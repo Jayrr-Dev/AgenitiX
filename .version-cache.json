@@ -1,6 +1,6 @@
 {
-  "version": "1.1.0",
-  "timestamp": 1748868708691,
+  "version": "1.1.1",
+  "timestamp": 1748869088509,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -85,6 +85,10 @@
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\hooks\\useReactFlowHandlers.ts",
       "f9681805222643c611f537e61a2fb132"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\flow-engine\\hooks\\useTextInputShortcuts.ts",
+      "aa19f37b742d86ca3affcb363c24d5a0"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\index.ts",
@@ -336,7 +340,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\components\\NodeHeader.tsx",
-      "50166b1e4b2ca2e8280d01bf657be091"
+      "b06f433a6e9edc4288dc6b5213c9ce60"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\components\\NodeOutput.tsx",
@@ -468,7 +472,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "770a23c1f2cbcb9c422afc231a5fc734"
+      "a55d27448dda0f3ba29772ff3f210d0d"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
@@ -495,6 +499,6 @@
       "27140e9ca71c870d4111a37dbb1a2167"
     ]
   ],
-  "manualBump": true,
-  "reason": "New infrastructure: Standardized size constants system with Tailwind CSS integration"
+  "bumpType": "patch",
+  "detectedInfrastructure": false
 }
