@@ -1,6 +1,6 @@
 {
-  "version": "1.0.4",
-  "timestamp": 1748839220799,
+  "version": "1.0.5",
+  "timestamp": 1748839630063,
   "hashes": [
     [
       "features\\business-logic-modern\\infrastructure\\components\\ActionToolbar.tsx",
@@ -440,7 +440,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "aa288df8c944370bb016436e1b3517e1"
+      "e98ff6d83d2d8fcfb664476f317c4e39"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
@@ -466,5 +466,21 @@
       "features\\business-logic-modern\\tooling\\dev-scripts\\generate-from-registry.ts",
       "27140e9ca71c870d4111a37dbb1a2167"
     ]
-  ]
+  ],
+  "gitInfo": {
+    "hash": "8b30b519153a75aebdc1e3ee0759d32d31d258c9",
+    "shortHash": "8b30b51",
+    "message": "Enhance Versioning and Layout in Business Logic\n\n- Updated package.json to include versioning scripts for better version management and tracking.\n- Added version display to the BusinessLogicPage component for debugging and user awareness.\n- Refactored LayoutWrapper to include additional paths for UI hiding, improving user experience in specific routes.\n- Improved import organization for consistency and readability across components.\n\nKeywords: versioning, layout, BusinessLogicPage, LayoutWrapper, user experience, TypeScript, React",
+    "branch": "main",
+    "date": "2025-06-01 22:42:41 -0600",
+    "author": "Jayrr-Dev",
+    "available": true
+  },
+  "changes": {
+    "files": [
+      "features\\business-logic-modern\\infrastructure\\versioning\\version.ts"
+    ],
+    "bumpType": "patch",
+    "reason": "file_changes"
+  }
 }

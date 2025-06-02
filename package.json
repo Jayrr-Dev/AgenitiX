@@ -11,7 +11,12 @@
     "version:history": "npx ts-node scripts/version-commands.ts history",
     "version:help": "npx ts-node scripts/version-commands.ts help",
     "version:init": "npx ts-node scripts/version-commands.ts init",
-    "version:simple": "node scripts/version-simple.js"
+    "version:simple": "node scripts/version-simple.js",
+    "git-version": "node scripts/git-version.js",
+    "version:git-status": "node scripts/git-version.js status",
+    "version:git-check": "node scripts/git-version.js check",
+    "precommit": "node scripts/git-version.js check",
+    "prepush": "node scripts/git-version.js check"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
