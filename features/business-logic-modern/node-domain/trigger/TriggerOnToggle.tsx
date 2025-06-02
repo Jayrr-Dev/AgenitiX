@@ -13,13 +13,12 @@
 
 "use client";
 
-import { Position } from "@xyflow/react";
-
 // FACTORY AND UTILITIES - Fixed imports to infrastructure layer
 import {
   createNodeComponent,
   type BaseNodeData,
 } from "../../infrastructure/node-creation/factory/NodeFactory";
+import { getNodeHandles } from "../../infrastructure/node-creation/factory/constants/handles";
 
 // ICON COMPONENT - Simple inline toggle icon
 const IconForToggle = ({
@@ -76,6 +75,13 @@ interface TriggerOnToggleData extends BaseNodeData {
 // ENTERPRISE NODE CONFIGURATION - Enhanced Factory with Registry Integration
 // ============================================================================
 
+// LOAD HANDLES FROM CENTRALIZED CONSTANTS - Consistent with other components
+const nodeHandles = getNodeHandles("triggerOnToggle");
+console.log(
+  `🔗 [TriggerOnToggle] Loaded ${nodeHandles.length} handles from centralized constants:`,
+  nodeHandles
+);
+
 const TriggerOnToggle = createNodeComponent<TriggerOnToggleData>({
   nodeType: "triggerOnToggle", // Match the registry nodeType
   category: "trigger", // Enhanced category registry integration
@@ -101,11 +107,8 @@ const TriggerOnToggle = createNodeComponent<TriggerOnToggleData>({
     },
   },
 
-  // HANDLE CONFIGURATION - Updated with correct IDs
-  handles: [
-    { id: "trigger", dataType: "b", position: Position.Left, type: "target" },
-    { id: "output", dataType: "b", position: Position.Right, type: "source" },
-  ],
+  // HANDLES LOADED FROM CENTRALIZED CONSTANTS (above)
+  handles: nodeHandles,
 
   // PROCESSING LOGIC - Enhanced with registry integration
   processLogic: ({

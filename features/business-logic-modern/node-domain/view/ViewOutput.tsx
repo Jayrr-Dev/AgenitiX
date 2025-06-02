@@ -19,12 +19,12 @@
 /* -------------------------------------------------------------------------- */
 
 // FACTORY AND UTILITIES - Fixed imports to infrastructure layer
-import { Position } from "@xyflow/react";
 import {
   createNodeComponent,
   type BaseNodeData,
   type HandleConfig,
 } from "../../infrastructure/node-creation/factory/NodeFactory";
+import { getNodeHandles } from "../../infrastructure/node-creation/factory/constants/handles";
 
 // KEY UTILITIES - Standardized React key generation
 import { generateDisplayValueKey } from "../../infrastructure/node-creation/factory/utils/keyUtils";
@@ -110,30 +110,12 @@ const formatContent = (content: any): string => {
 // NODE CONFIGURATION - Carbon Copy of Legacy
 // ============================================================================
 
-// Load handles from registry to avoid circular imports in factory
-let nodeHandles: HandleConfig[] = [];
-try {
-  const {
-    getNodeHandles,
-  } = require("@node-creation/node-registry/nodeRegistry");
-  nodeHandles = getNodeHandles("viewOutput") || [];
-  console.log(
-    `🔗 [ViewOutput] Loaded ${nodeHandles.length} handles from registry:`,
-    nodeHandles
-  );
-} catch (error) {
-  console.error(`❌ [ViewOutput] Failed to load handles from registry:`, error);
-  // Provide fallback handles
-  nodeHandles = [
-    {
-      id: "input",
-      dataType: "x",
-      position: Position.Left,
-      type: "target",
-    },
-  ];
-  console.log(`🛟 [ViewOutput] Using fallback handles:`, nodeHandles);
-}
+// LOAD HANDLES FROM CENTRALIZED CONSTANTS - No circular dependency
+const nodeHandles: HandleConfig[] = getNodeHandles("viewOutput");
+console.log(
+  `🔗 [ViewOutput] Loaded ${nodeHandles.length} handles from centralized constants:`,
+  nodeHandles
+);
 
 const ViewOutput = createNodeComponent<ViewOutputData>({
   nodeType: "viewOutput", // Match the registry nodeType
@@ -143,7 +125,7 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
     displayedValues: [],
   },
 
-  // ✨ HANDLES LOADED FROM REGISTRY (above)
+  // ✨ HANDLES LOADED FROM CENTRALIZED CONSTANTS (above)
   handles: nodeHandles,
 
   // Custom size configuration for 120x120 collapsed, 180x180 expanded (same as legacy)

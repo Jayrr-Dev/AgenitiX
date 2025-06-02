@@ -21,6 +21,7 @@ import {
 
 import {
   CATEGORY_REGISTRY,
+  CategoryMetadata,
   getCategoryMetadata,
   getCategoryTheme,
   validateCategoryConnection,

@@ -237,13 +237,16 @@ class AutoVersionDetector {
   private updateVersionConstants(version: string): void {
     try {
       const [major, minor, patch] = version.split(".").map(Number);
+      const timestamp = new Date().toISOString();
+
+      // UPDATE VERSION CONSTANTS
       const content = `// AUTO-GENERATED - DO NOT EDIT MANUALLY
 export const VERSION = {
   major: ${major},
   minor: ${minor},
   patch: ${patch},
   full: "${version}",
-  generated: "${new Date().toISOString()}"
+  generated: "${timestamp}"
 } as const;
 `;
 
@@ -259,9 +262,78 @@ export const VERSION = {
         content
       );
 
+      // UPDATE AI CONTEXT JSON
+      this.updateAIContextJson(version, timestamp);
+
       console.log(`✅ Updated version constants to ${version}`);
     } catch (error) {
       console.error("❌ Could not update version constants:", error);
+    }
+  }
+
+  private updateAIContextJson(version: string, timestamp: string): void {
+    try {
+      const aiContextPath = "features/business-logic-modern/ai-context.json";
+
+      // Read current context or create default
+      let context: any = {
+        project: "Agenitix - Modern Node-Based Workflow System",
+        domain: "business-logic-modern",
+        nodeTypes: ["createText", "viewOutput", "triggerOnToggle", "testError"],
+        architecture: {
+          status: "stable",
+          circularDependencies: "resolved",
+          centralizedHandles: true,
+          nodeCount: 4,
+        },
+        criticalFiles: {
+          version: "infrastructure/versioning/version.ts",
+          types: "infrastructure/node-creation/factory/types/index.ts",
+          handles: "infrastructure/node-creation/factory/constants/handles.ts",
+          registry:
+            "infrastructure/node-creation/node-registry/nodeRegistry.ts",
+        },
+        constraints: {
+          isolation: "NEVER edit legacy files outside business-logic-modern/",
+          packaging: "Use pnpm only",
+          architecture: "Follow factory pattern for new nodes",
+          handles: "Use centralized handle system",
+          versioning: "NEVER manually edit version.ts - auto-generated",
+        },
+        versionRules: {
+          major: "Type changes, Factory changes, Registry structure",
+          minor: "New nodes, New infrastructure",
+          patch: "Bug fixes, docs, other changes",
+        },
+        documentation: {
+          location: "documentation/claude-reports/",
+          versionReference: "Import from infrastructure/versioning/version.ts",
+          format: "Markdown with auto-version integration",
+        },
+      };
+
+      // Try to read existing context to preserve any updates
+      if (fs.existsSync(aiContextPath)) {
+        try {
+          const existing = JSON.parse(fs.readFileSync(aiContextPath, "utf8"));
+          context = { ...context, ...existing };
+        } catch (error) {
+          console.warn("⚠️ Could not read existing AI context, using defaults");
+        }
+      }
+
+      // Update version and timestamp
+      context.version = version;
+      context.lastUpdated =
+        new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
+      context.generated = timestamp;
+
+      // Write updated context
+      fs.writeFileSync(aiContextPath, JSON.stringify(context, null, 2));
+
+      console.log(`✅ Updated AI context JSON to version ${version}`);
+    } catch (error) {
+      console.error("❌ Could not update AI context JSON:", error);
     }
   }
 }

@@ -326,8 +326,7 @@ export type NodeType =
   | "createText"
   | "viewOutput"
   | "triggerOnToggle"
-  | "testError"
-  | "cyclePulse";
+  | "testError";
 
 // ============================================================================
 // BASE NODE TYPES

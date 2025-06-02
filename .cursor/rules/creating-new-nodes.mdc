@@ -1,13 +1,62 @@
 ---
-description: 
+description:
 globs: *node*
 alwaysApply: false
 ---
-The new nodes must have a toggle button and Icon. After Creating a new node you must REGISTER the NODE in FlowEditor.tsx , then add the NODE to the Sidebar.tsx then finally add to NodeInspector.tsx. There's a common issue with the Nodeinspector where you need to use UseEffect to SYNC the inputs to the NODES local storage.
+All Nodes are stardardize.
+All Nodes
+Have two visual states
+1. Collapsed
+2. Expanded
 
-Nodes have two state 1. ICON state and EXPANDED State
-The Toggle button is {showUI ? '⦿' : '⦾'} when press expands the nodes. The default state is the ICON state. 
+Which toggled by a button to the top left
 
-ICON node always have a width of 60px and height of 60px. Unless its a text based node it has a width of 120px - height of 60. 
-EXPANDED nodes are 120px by 120px unless otherwise stated
+All Nodes
+Have a JSON input which let other node programmatically change its values.
 
+All Nodes
+Have a JSON input which let other node programmatically change its internal parameter.
+
+All Nodes
+Have a Display Name which is human readable.
+
+All Nodes
+have a category which is function based and determines their BG color.
+Ex. Create, Count, Delay etc
+
+All Nodes
+are selectable.
+
+When a node is selected it glows white
+
+All Nodes
+are activatable.
+
+When a node is activated it glows green
+and passes on its data.
+
+
+All Nodes
+can be in an error state.
+
+When a node is activated it glows green
+and passes on its data
+
+All Nodes
+have data that it could passes on.
+
+All Nodes
+have internal data which it doesn't pass on.
+
+All Nodes have standard sizing of 60x60 or 120x120 or 120x 60 when collasped
+
+All Nodes are type safe.
+All Nodes Data are backed up incase of error.
+All Nodes are controllable by the Node Inspector.
+All Nodes have specific data types they output.
+All Nodes have variable data type that it can take in or inputted.
+Most Node have a Boolean input which can activate or inactivate the node.
+Most Nodes have outputs which will pass on their values.
+
+Active nodes can do the following:
+1. Pass their Data to other nodes.

@@ -47,6 +47,9 @@ import type {
   SidebarFolder,
 } from "../factory/types";
 
+// IMPORT CENTRALIZED HANDLE DEFINITIONS - Prevents circular dependency
+import { getNodeHandles as getNodeHandlesFromConstants } from "../factory/constants/handles";
+
 // ============================================================================
 // CATEGORY REGISTRY INTEGRATION - FIXED CONFLICTS
 // ============================================================================
@@ -97,7 +100,7 @@ export interface EnhancedNodeRegistration<
   /** Full factory configuration for advanced nodes */
   factoryConfig?: NodeFactoryConfig<T>;
 
-  /** Input/output handle definitions (from factory types) */
+  /** Input/output handle definitions (from centralized constants) */
   handles: HandleConfig[];
 
   /** Responsive sizing configuration (from factory types) */
@@ -181,21 +184,8 @@ export const MODERN_NODE_REGISTRY: Record<NodeType, EnhancedNodeRegistration> =
       expandedHeight: 120,
       icon: "📝",
 
-      // FACTORY CONFIGURATION - Corrected handles to match expected behavior
-      handles: [
-        {
-          id: "trigger",
-          dataType: "b",
-          position: Position.Left,
-          type: "target",
-        },
-        {
-          id: "output",
-          dataType: "s",
-          position: Position.Right,
-          type: "source",
-        },
-      ],
+      // FACTORY CONFIGURATION - Loaded from centralized constants
+      handles: getNodeHandlesFromConstants("createText"),
       size: {
         collapsed: { width: "w-[120px]", height: "h-[60px]" },
         expanded: { width: "w-[200px]" },
@@ -240,10 +230,8 @@ export const MODERN_NODE_REGISTRY: Record<NodeType, EnhancedNodeRegistration> =
       expandedHeight: 150,
       icon: "👁️",
 
-      // FACTORY CONFIGURATION - Corrected to accept any input type
-      handles: [
-        { id: "input", dataType: "x", position: Position.Left, type: "target" },
-      ],
+      // FACTORY CONFIGURATION - Loaded from centralized constants
+      handles: getNodeHandlesFromConstants("viewOutput"),
       size: {
         collapsed: { width: "w-[60px]", height: "h-[60px]" },
         expanded: { width: "w-[200px]" },
@@ -296,21 +284,8 @@ export const MODERN_NODE_REGISTRY: Record<NodeType, EnhancedNodeRegistration> =
       expandedHeight: 120,
       icon: "🎯",
 
-      // FACTORY CONFIGURATION
-      handles: [
-        {
-          id: "trigger",
-          dataType: "b",
-          position: Position.Left,
-          type: "target",
-        },
-        {
-          id: "output",
-          dataType: "b",
-          position: Position.Right,
-          type: "source",
-        },
-      ],
+      // FACTORY CONFIGURATION - Loaded from centralized constants
+      handles: getNodeHandlesFromConstants("triggerOnToggle"),
       size: {
         collapsed: { width: "w-[60px]", height: "h-[60px]" },
         expanded: { width: "w-[120px]" },
@@ -359,21 +334,8 @@ export const MODERN_NODE_REGISTRY: Record<NodeType, EnhancedNodeRegistration> =
       expandedHeight: 140,
       icon: "⚠️",
 
-      // FACTORY CONFIGURATION
-      handles: [
-        {
-          id: "trigger",
-          dataType: "b",
-          position: Position.Left,
-          type: "target",
-        },
-        {
-          id: "error",
-          dataType: "S",
-          position: Position.Right,
-          type: "source",
-        },
-      ],
+      // FACTORY CONFIGURATION - Loaded from centralized constants
+      handles: getNodeHandlesFromConstants("testError"),
       size: {
         collapsed: { width: "w-[60px]", height: "h-[60px]" },
         expanded: { width: "w-[150px]" },
@@ -726,11 +688,10 @@ export function getFactoryConfig<T extends BaseNodeData>(
 
 /**
  * GET HANDLES FOR NODE TYPE
- * Retrieves handle configuration for a node type
+ * Retrieves handle configuration for a node type from centralized constants
  */
 export function getNodeHandles(nodeType: NodeType): HandleConfig[] {
-  const registration = MODERN_NODE_REGISTRY[nodeType];
-  return registration?.handles || [];
+  return getNodeHandlesFromConstants(nodeType);
 }
 
 /**

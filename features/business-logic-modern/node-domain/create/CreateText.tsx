@@ -19,12 +19,12 @@
 /*  – Preserves all styling, functionality, and error handling               */
 /* -------------------------------------------------------------------------- */
 
+import { getNodeHandles } from "@factory/constants/handles";
 import {
   createNodeComponent,
   type BaseNodeData,
   type HandleConfig,
 } from "@node-creation/factory/NodeFactory";
-import { Position } from "@xyflow/react";
 import React, { useRef } from "react";
 
 // MODERN FACTORY INTEGRATION
@@ -52,36 +52,12 @@ interface CreateTextData extends BaseNodeData {
 // ENTERPRISE NODE CONFIGURATION - Enhanced Factory with Registry Integration
 // ============================================================================
 
-// Load handles from registry to avoid circular imports in factory
-let nodeHandles: HandleConfig[] = [];
-try {
-  const {
-    getNodeHandles,
-  } = require("@node-creation/node-registry/nodeRegistry");
-  nodeHandles = getNodeHandles("createText") || [];
-  console.log(
-    `🔗 [CreateText] Loaded ${nodeHandles.length} handles from registry:`,
-    nodeHandles
-  );
-} catch (error) {
-  console.error(`❌ [CreateText] Failed to load handles from registry:`, error);
-  // Provide fallback handles
-  nodeHandles = [
-    {
-      id: "trigger",
-      dataType: "b",
-      position: Position.Left,
-      type: "target",
-    },
-    {
-      id: "output",
-      dataType: "s",
-      position: Position.Right,
-      type: "source",
-    },
-  ];
-  console.log(`🛟 [CreateText] Using fallback handles:`, nodeHandles);
-}
+// LOAD HANDLES FROM CENTRALIZED CONSTANTS - No circular dependency
+const nodeHandles: HandleConfig[] = getNodeHandles("createText");
+console.log(
+  `🔗 [CreateText] Loaded ${nodeHandles.length} handles from centralized constants:`,
+  nodeHandles
+);
 
 const CreateText = createNodeComponent<CreateTextData>({
   nodeType: "createText", // Match the registry nodeType
@@ -92,7 +68,7 @@ const CreateText = createNodeComponent<CreateTextData>({
     heldText: "",
   },
 
-  // ✨ HANDLES LOADED FROM REGISTRY (above)
+  // ✨ HANDLES LOADED FROM CENTRALIZED CONSTANTS (above)
   handles: nodeHandles,
 
   // PROCESSING LOGIC: Enhanced trigger logic with registry integration

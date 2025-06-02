@@ -11,13 +11,12 @@
  * Keywords: error-testing, debugging, error-propagation, activation, factory, configurable, category-registry
  */
 
-import { Position } from "@xyflow/react";
-
 // FACTORY AND UTILITIES - Fixed imports to infrastructure layer
 import {
   createNodeComponent,
   type BaseNodeData,
 } from "../../infrastructure/node-creation/factory/NodeFactory";
+import { getNodeHandles } from "../../infrastructure/node-creation/factory/constants/handles";
 
 // UTILITY FUNCTIONS - Inline implementations
 function getSingleInputValue(nodesData: any[]): any {
@@ -109,6 +108,13 @@ const SimpleActivateButton = ({
 // ENTERPRISE NODE CONFIGURATION - Enhanced Factory with Registry Integration
 // ============================================================================
 
+// LOAD HANDLES FROM CENTRALIZED CONSTANTS - Consistent with other components
+const nodeHandles = getNodeHandles("testError");
+console.log(
+  `🔗 [TestError] Loaded ${nodeHandles.length} handles from centralized constants:`,
+  nodeHandles
+);
+
 const TestError = createNodeComponent<TestErrorData>({
   nodeType: "testError", // Match the registry nodeType
   category: "test", // Enhanced category registry integration
@@ -133,11 +139,8 @@ const TestError = createNodeComponent<TestErrorData>({
     },
   },
 
-  // HANDLE CONFIGURATION
-  handles: [
-    { id: "trigger", dataType: "b", position: Position.Left, type: "target" },
-    { id: "error", dataType: "S", position: Position.Right, type: "source" },
-  ],
+  // HANDLES LOADED FROM CENTRALIZED CONSTANTS (above)
+  handles: nodeHandles,
 
   // PROCESSING LOGIC - Enhanced with registry integration
   processLogic: ({
