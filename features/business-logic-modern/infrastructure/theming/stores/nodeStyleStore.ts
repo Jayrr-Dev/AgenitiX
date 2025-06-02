@@ -13,12 +13,6 @@
 
 import { create } from "zustand";
 
-// MODERN REGISTRY INTEGRATION - Enhanced imports - FIXED REFERENCE
-import {
-  getNodeCategoryMapping,
-  isValidNodeType,
-} from "../../node-creation/node-registry/nodeRegistry";
-
 // FACTORY TYPES INTEGRATION - Enhanced type safety
 import type { NodeCategory } from "../../node-creation/factory/types";
 
@@ -31,6 +25,40 @@ import {
 } from "../../node-creation/category-registry/categoryRegistry";
 
 // ============================================================================
+// LAZY REGISTRY INTEGRATION - Fixes circular dependency
+// ============================================================================
+
+/**
+ * LAZY REGISTRY IMPORTS - Prevents circular dependencies
+ * Import registry functions only when needed to avoid initialization issues
+ */
+const lazyGetNodeCategoryMapping = (): Record<string, NodeCategory> => {
+  try {
+    // Dynamic import prevents circular dependency during module initialization
+    const {
+      getNodeCategoryMapping,
+    } = require("../../node-creation/node-registry/nodeRegistry");
+    return getNodeCategoryMapping();
+  } catch (error) {
+    console.warn("⚠️ Failed to load category mapping from registry:", error);
+    return {}; // Fallback to empty mapping
+  }
+};
+
+const lazyIsValidNodeType = (nodeType: string): boolean => {
+  try {
+    // Dynamic import prevents circular dependency during module initialization
+    const {
+      isValidNodeType,
+    } = require("../../node-creation/node-registry/nodeRegistry");
+    return isValidNodeType(nodeType);
+  } catch (error) {
+    console.warn(`⚠️ Failed to validate node type ${nodeType}:`, error);
+    return false; // Conservative fallback
+  }
+};
+
+// ============================================================================
 // REGISTRY-ENHANCED NODE CATEGORY MANAGEMENT
 // ============================================================================
 
@@ -39,22 +67,29 @@ import {
  * Prevents circular dependencies while providing registry integration
  */
 let _categoryMapping: Record<string, NodeCategory> | null = null;
+let _mappingLoadError: boolean = false;
 
 const getCachedCategoryMapping = (): Record<string, NodeCategory> => {
+  // If we've already had an error, don't try again during initialization
+  if (_mappingLoadError) {
+    return {};
+  }
+
   if (_categoryMapping === null) {
     try {
-      _categoryMapping = getNodeCategoryMapping();
+      _categoryMapping = lazyGetNodeCategoryMapping();
       console.log(
         "🎨 Loaded category mapping from registry:",
         Object.keys(_categoryMapping).length,
         "nodes"
       );
     } catch (error) {
-      console.warn("⚠️ Failed to load category mapping from registry:", error);
-      _categoryMapping = {}; // Fallback to empty mapping
+      console.warn("⚠️ Registry not ready yet, using fallback mapping:", error);
+      _mappingLoadError = true;
+      _categoryMapping = {};
     }
   }
-  return _categoryMapping!; // Safe assertion since we ensure it's not null above
+  return _categoryMapping;
 };
 
 /**
@@ -73,27 +108,47 @@ export const NODE_CATEGORY_MAPPING = new Proxy(
   {} as Record<string, NodeCategory>,
   {
     get(target, prop) {
-      const mapping = getCachedCategoryMapping();
-      return mapping[prop as string];
+      try {
+        const mapping = getCachedCategoryMapping();
+        return mapping[prop as string];
+      } catch (error) {
+        console.warn(`⚠️ Failed to get category for ${String(prop)}:`, error);
+        return undefined;
+      }
     },
     ownKeys() {
-      const mapping = getCachedCategoryMapping();
-      return Object.keys(mapping);
+      try {
+        const mapping = getCachedCategoryMapping();
+        return Object.keys(mapping);
+      } catch (error) {
+        console.warn("⚠️ Failed to get category keys:", error);
+        return [];
+      }
     },
     has(target, prop) {
-      const mapping = getCachedCategoryMapping();
-      return prop in mapping;
+      try {
+        const mapping = getCachedCategoryMapping();
+        return prop in mapping;
+      } catch (error) {
+        console.warn(`⚠️ Failed to check category ${String(prop)}:`, error);
+        return false;
+      }
     },
     getOwnPropertyDescriptor(target, prop) {
-      const mapping = getCachedCategoryMapping();
-      if (prop in mapping) {
-        return {
-          enumerable: true,
-          configurable: true,
-          value: mapping[prop as string],
-        };
+      try {
+        const mapping = getCachedCategoryMapping();
+        if (prop in mapping) {
+          return {
+            enumerable: true,
+            configurable: true,
+            value: mapping[prop as string],
+          };
+        }
+        return undefined;
+      } catch (error) {
+        console.warn(`⚠️ Failed to get descriptor for ${String(prop)}:`, error);
+        return undefined;
       }
-      return undefined;
     },
   }
 );
@@ -107,13 +162,18 @@ export const NODE_CATEGORY_MAPPING = new Proxy(
  * Enhanced with registry validation and fallback handling
  */
 export const getNodeCategory = (nodeType: string): NodeCategory | null => {
-  if (!isValidNodeType(nodeType)) {
-    console.warn(`⚠️ Invalid node type for theming: ${nodeType}`);
+  try {
+    if (!lazyIsValidNodeType(nodeType)) {
+      console.warn(`⚠️ Invalid node type for theming: ${nodeType}`);
+      return null;
+    }
+
+    const mapping = getCachedCategoryMapping();
+    return mapping[nodeType] || null;
+  } catch (error) {
+    console.warn(`⚠️ Failed to get category for ${nodeType}:`, error);
     return null;
   }
-
-  const mapping = getCachedCategoryMapping();
-  return mapping[nodeType] || null;
 };
 
 /**
@@ -121,10 +181,15 @@ export const getNodeCategory = (nodeType: string): NodeCategory | null => {
  * Returns all node types in a specific category for batch styling
  */
 export const getNodesByCategory = (category: NodeCategory): string[] => {
-  const mapping = getCachedCategoryMapping();
-  return Object.entries(mapping)
-    .filter(([_, nodeCategory]) => nodeCategory === category)
-    .map(([nodeType]) => nodeType);
+  try {
+    const mapping = getCachedCategoryMapping();
+    return Object.entries(mapping)
+      .filter(([_, nodeCategory]) => nodeCategory === category)
+      .map(([nodeType]) => nodeType);
+  } catch (error) {
+    console.warn(`⚠️ Failed to get nodes for category ${category}:`, error);
+    return [];
+  }
 };
 
 /**
@@ -133,6 +198,7 @@ export const getNodesByCategory = (category: NodeCategory): string[] => {
  */
 export const refreshCategoryMapping = (): void => {
   _categoryMapping = null;
+  _mappingLoadError = false;
   getCachedCategoryMapping();
   console.log("🔄 Refreshed category mapping from registry");
 };
@@ -480,18 +546,25 @@ export const useNodeStyleStore = create<NodeStyleState & NodeStyleActions>(
       const state = get();
       if (!state.categoryTheming.enabled) return true;
 
-      const isValid = isValidNodeType(nodeType);
-      const category = getNodeCategory(nodeType);
+      try {
+        const isValid = lazyIsValidNodeType(nodeType);
+        const category = getNodeCategory(nodeType);
 
-      if (state.categoryTheming.debugMode) {
-        console.log(`🎨 Validating theming for ${nodeType}:`, {
-          isValidNode: isValid,
-          category,
-          hasTheme: category ? category in CATEGORY_THEMES : false,
-        });
+        if (state.categoryTheming.debugMode) {
+          console.log(`🎨 Validating theming for ${nodeType}:`, {
+            isValidNode: isValid,
+            category,
+            hasTheme: category ? category in CATEGORY_THEMES : false,
+          });
+        }
+
+        return isValid && category !== null;
+      } catch (error) {
+        if (state.categoryTheming.debugMode) {
+          console.warn(`⚠️ Failed to validate theming for ${nodeType}:`, error);
+        }
+        return true; // Return true to allow fallback rendering
       }
-
-      return isValid && category !== null;
     },
   })
 );
@@ -544,47 +617,54 @@ export const useCategoryTheme = (nodeType: string) => {
     return null;
   }
 
-  const category = getNodeCategory(nodeType);
-  if (!category) {
+  try {
+    const category = getNodeCategory(nodeType);
+    if (!category) {
+      if (categoryTheming.debugMode) {
+        console.warn(`🎨 No category found for node type: ${nodeType}`);
+      }
+      return null;
+    }
+
+    // ENHANCED: Validate category with registry
+    const validation = validateCategoryWithRegistry(category);
+    if (!validation.valid) {
+      if (categoryTheming.debugMode) {
+        console.warn(
+          `🎨 Category validation failed for ${nodeType}:`,
+          validation.reason
+        );
+      }
+      return null;
+    }
+
+    // ENHANCED: Use category registry theme first, then fallback to hardcoded
+    const enhancedTheme = getEnhancedCategoryTheme(category);
+    const customOverride = categoryTheming.customOverrides[category];
+
+    const finalTheme = customOverride
+      ? { ...enhancedTheme, ...customOverride }
+      : enhancedTheme;
+
+    // ENHANCED: Apply category hooks when theme is used
     if (categoryTheming.debugMode) {
-      console.warn(`🎨 No category found for node type: ${nodeType}`);
+      console.log(`🎨 Applied enhanced theme for ${nodeType} (${category}):`, {
+        priority: getCategoryThemePriority(category),
+        metadata: validation.metadata,
+        theme: finalTheme,
+      });
+    }
+
+    // Trigger theme hooks
+    applyCategoryThemeHooks(category, finalTheme);
+
+    return finalTheme;
+  } catch (error) {
+    if (categoryTheming.debugMode) {
+      console.warn(`⚠️ Failed to get category theme for ${nodeType}:`, error);
     }
     return null;
   }
-
-  // ENHANCED: Validate category with registry
-  const validation = validateCategoryWithRegistry(category);
-  if (!validation.valid) {
-    if (categoryTheming.debugMode) {
-      console.warn(
-        `🎨 Category validation failed for ${nodeType}:`,
-        validation.reason
-      );
-    }
-    return null;
-  }
-
-  // ENHANCED: Use category registry theme first, then fallback to hardcoded
-  const enhancedTheme = getEnhancedCategoryTheme(category);
-  const customOverride = categoryTheming.customOverrides[category];
-
-  const finalTheme = customOverride
-    ? { ...enhancedTheme, ...customOverride }
-    : enhancedTheme;
-
-  // ENHANCED: Apply category hooks when theme is used
-  if (categoryTheming.debugMode) {
-    console.log(`🎨 Applied enhanced theme for ${nodeType} (${category}):`, {
-      priority: getCategoryThemePriority(category),
-      metadata: validation.metadata,
-      theme: finalTheme,
-    });
-  }
-
-  // Trigger theme hooks
-  applyCategoryThemeHooks(category, finalTheme);
-
-  return finalTheme;
 };
 
 /**
@@ -607,26 +687,32 @@ export const useNodeButtonTheme = (
 
   // ENHANCED: Registry-based category theming with priority
   if (nodeType && styles.categoryTheming.enabled) {
-    const category = getNodeCategory(nodeType);
-    if (category) {
-      // ENHANCED: Validate category before applying theme
-      const validation = validateCategoryWithRegistry(category);
-      if (validation.valid) {
-        const enhancedTheme = getEnhancedCategoryTheme(category);
-        const override = styles.categoryTheming.customOverrides[category];
-        const finalTheme = override
-          ? { ...enhancedTheme, ...override }
-          : enhancedTheme;
+    try {
+      const category = getNodeCategory(nodeType);
+      if (category) {
+        // ENHANCED: Validate category before applying theme
+        const validation = validateCategoryWithRegistry(category);
+        if (validation.valid) {
+          const enhancedTheme = getEnhancedCategoryTheme(category);
+          const override = styles.categoryTheming.customOverrides[category];
+          const finalTheme = override
+            ? { ...enhancedTheme, ...override }
+            : enhancedTheme;
 
-        if (styles.categoryTheming.debugMode) {
-          console.log(`🎨 Applied button theme for ${nodeType}:`, {
-            category,
-            priority: getCategoryThemePriority(category),
-            theme: finalTheme.button,
-          });
+          if (styles.categoryTheming.debugMode) {
+            console.log(`🎨 Applied button theme for ${nodeType}:`, {
+              category,
+              priority: getCategoryThemePriority(category),
+              theme: finalTheme.button,
+            });
+          }
+
+          return `${finalTheme.button.border} ${finalTheme.button.hover.light} dark:${finalTheme.button.hover.dark}`;
         }
-
-        return `${finalTheme.button.border} ${finalTheme.button.hover.light} dark:${finalTheme.button.hover.dark}`;
+      }
+    } catch (error) {
+      if (styles.categoryTheming.debugMode) {
+        console.warn(`⚠️ Failed to get button theme for ${nodeType}:`, error);
       }
     }
   }
@@ -647,31 +733,37 @@ export const useNodeTextTheme = (isError: boolean, nodeType?: string) => {
 
   // ENHANCED: Registry-based category theming with enhanced metadata
   if (nodeType && styles.categoryTheming.enabled) {
-    const category = getNodeCategory(nodeType);
-    if (category) {
-      // ENHANCED: Validate and get enhanced metadata
-      const validation = validateCategoryWithRegistry(category);
-      if (validation.valid) {
-        const enhancedTheme = getEnhancedCategoryTheme(category);
-        const override = styles.categoryTheming.customOverrides[category];
-        const finalTheme = override
-          ? { ...enhancedTheme, ...override }
-          : enhancedTheme;
+    try {
+      const category = getNodeCategory(nodeType);
+      if (category) {
+        // ENHANCED: Validate and get enhanced metadata
+        const validation = validateCategoryWithRegistry(category);
+        if (validation.valid) {
+          const enhancedTheme = getEnhancedCategoryTheme(category);
+          const override = styles.categoryTheming.customOverrides[category];
+          const finalTheme = override
+            ? { ...enhancedTheme, ...override }
+            : enhancedTheme;
 
-        if (styles.categoryTheming.debugMode) {
-          console.log(`🎨 Applied text theme for ${nodeType}:`, {
-            category,
-            metadata: validation.metadata,
-            theme: finalTheme.text,
-          });
+          if (styles.categoryTheming.debugMode) {
+            console.log(`🎨 Applied text theme for ${nodeType}:`, {
+              category,
+              metadata: validation.metadata,
+              theme: finalTheme.text,
+            });
+          }
+
+          return {
+            primary: `${finalTheme.text.primary.light} dark:${finalTheme.text.primary.dark}`,
+            secondary: `${finalTheme.text.secondary.light} dark:${finalTheme.text.secondary.dark}`,
+            border: `${finalTheme.border.light} dark:${finalTheme.border.dark}`,
+            focus: `focus:ring-${finalTheme.border.light.split("-")[1]}-500`,
+          };
         }
-
-        return {
-          primary: `${finalTheme.text.primary.light} dark:${finalTheme.text.primary.dark}`,
-          secondary: `${finalTheme.text.secondary.light} dark:${finalTheme.text.secondary.dark}`,
-          border: `${finalTheme.border.light} dark:${finalTheme.border.dark}`,
-          focus: `focus:ring-${finalTheme.border.light.split("-")[1]}-500`,
-        };
+      }
+    } catch (error) {
+      if (styles.categoryTheming.debugMode) {
+        console.warn(`⚠️ Failed to get text theme for ${nodeType}:`, error);
       }
     }
   }
@@ -866,7 +958,7 @@ export const applyCategoryTheme = (
   // ENHANCED: Validate nodes in category using registry
   const nodesInCategory = getNodesByCategory(category);
   const enhancedNodeCount = nodesInCategory.filter((nodeType) =>
-    isValidNodeType(nodeType)
+    lazyIsValidNodeType(nodeType)
   ).length;
 
   if (enhancedNodeCount === 0) {

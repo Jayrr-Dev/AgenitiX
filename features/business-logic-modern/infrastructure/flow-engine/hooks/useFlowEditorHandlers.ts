@@ -3,14 +3,16 @@
  *
  * • Manages ReactFlow node and edge change events with Zustand integration
  * • Handles node creation, deletion, duplication, and position updates
+ * • Records user actions for undo/redo functionality
  * • Provides type-safe event handlers with proper cleanup and validation
  * • Integrates with Zustand store actions for state synchronization
  * • Supports selection management and instance initialization
  *
- * Keywords: ReactFlow, handlers, Zustand, nodes, edges, events, state-sync
+ * Keywords: ReactFlow, handlers, Zustand, nodes, edges, events, state-sync, undo-redo
  */
 
 import { useCallback } from "react";
+import { useUndoRedo } from "../../components/UndoRedoContext";
 import type { AgenEdge, AgenNode } from "../types/nodeData";
 
 // ============================================================================
@@ -154,6 +156,9 @@ export function useFlowEditorHandlers({
     addNode,
   } = zustandActions;
 
+  // UNDO/REDO SYSTEM
+  const { recordAction } = useUndoRedo();
+
   // ============================================================================
   // REACTFLOW CHANGE HANDLERS
   // ============================================================================
@@ -202,14 +207,29 @@ export function useFlowEditorHandlers({
 
   const handleDeleteNode = useCallback(
     (nodeId: string) => {
+      const nodeToDelete = nodes.find((n) => n.id === nodeId);
+      if (!nodeToDelete) return;
+
+      // Store metadata before deletion
+      const nodeMetadata = {
+        nodeId,
+        nodeType: nodeToDelete.type,
+        nodeLabel: nodeToDelete.data?.label || nodeToDelete.type,
+      };
+
+      // Perform the deletion first (updates Zustand state)
       removeNode(nodeId);
+
       // Clear selection if the deleted node was selected
       const currentSelectedId = nodes.find((n) => n.selected)?.id;
       if (currentSelectedId === nodeId) {
         clearSelection();
       }
+
+      // Record action after state is updated (proper flow)
+      recordAction("node_delete", nodeMetadata);
     },
-    [removeNode, nodes, clearSelection]
+    [removeNode, nodes, clearSelection, recordAction]
   );
 
   const handleDuplicateNode = useCallback(
@@ -229,10 +249,19 @@ export function useFlowEditorHandlers({
         data: { ...nodeToDuplicate.data },
       } as AgenNode;
 
+      // Perform the duplication first (updates Zustand state)
       addNode(newNode);
       selectNode(newId);
+
+      // Record action after state is updated (proper flow)
+      recordAction("duplicate", {
+        originalNodeId: nodeId,
+        newNodeId: newId,
+        nodeType: nodeToDuplicate.type,
+        nodeLabel: nodeToDuplicate.data?.label || nodeToDuplicate.type,
+      });
     },
-    [nodes, addNode, selectNode]
+    [nodes, addNode, selectNode, recordAction]
   );
 
   const handleUpdateNodeId = useCallback((oldId: string, newId: string) => {

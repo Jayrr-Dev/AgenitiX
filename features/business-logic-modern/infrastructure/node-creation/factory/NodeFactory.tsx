@@ -21,6 +21,7 @@ import React, { memo, useRef } from "react";
 
 // TYPE DEFINITIONS
 import type { BaseNodeData, NodeFactoryConfig } from "./types";
+import { validateNodeSize } from "./types";
 
 // MODULAR HOOKS - FOCUSED RESPONSIBILITIES
 import { useNodeConnections } from "@factory/hooks/useNodeConnections";
@@ -306,6 +307,22 @@ function initializeSafetyStyles() {
 export function createNodeComponent<T extends BaseNodeData>(
   config: NodeFactoryConfig<T>
 ) {
+  // ============================================================================
+  // SIZE VALIDATION - PREVENT SIZING ISSUES
+  // ============================================================================
+
+  if (config.size && !validateNodeSize(config.size)) {
+    console.error(
+      `❌ [NodeFactory] Invalid size configuration for ${config.nodeType}`
+    );
+    console.error('   Expected: Tailwind classes like "w-[60px]", "h-[60px]"');
+    console.error("   Received:", config.size);
+    console.error("   Using default size instead.");
+
+    // Remove invalid size to fall back to defaults
+    config.size = undefined;
+  }
+
   // INITIALIZE ENTERPRISE FEATURES
   initializeSafetyStyles();
 

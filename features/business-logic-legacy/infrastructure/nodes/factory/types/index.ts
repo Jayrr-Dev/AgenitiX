@@ -2,9 +2,9 @@
 // FACTORY NODE TYPE DEFINITIONS
 // ============================================================================
 
-import { ReactNode } from 'react';
-import { Position, type Connection, type Node } from '@xyflow/react';
-import type { NodeCategory } from '../../nodeRegistry';
+import { Position, type Connection } from "@xyflow/react";
+import { ReactNode } from "react";
+import type { NodeCategory } from "../../nodeRegistry";
 
 // ============================================================================
 // BASE INTERFACES
@@ -31,26 +31,91 @@ export interface HandleConfig {
   /** Unique identifier for the handle */
   id: string;
   /** Data type: string, number, boolean, json, array, etc. */
-  dataType: 's' | 'n' | 'b' | 'j' | 'a' | 'N' | 'f' | 'x' | 'u' | 'S' | '∅';
+  dataType: "s" | "n" | "b" | "j" | "a" | "N" | "f" | "x" | "u" | "S" | "∅";
   /** Position on the node */
   position: Position;
   /** Handle type: input or output */
-  type: 'source' | 'target';
+  type: "source" | "target";
 }
 
 /**
  * NODE SIZE CONFIGURATION
  * Defines responsive sizing for collapsed and expanded states
+ *
+ * IMPORTANT: All width and height values MUST be Tailwind CSS classes
+ * Examples: "w-[60px]", "h-[120px]", "w-[180px]"
+ * DO NOT use plain CSS values like "60px" or "120px"
  */
+
+// TAILWIND SIZE TYPE VALIDATION
+// These branded types ensure only Tailwind classes are used
+type TailwindWidth = `w-[${string}]` | `w-${string}`;
+type TailwindHeight = `h-[${string}]` | `h-${string}`;
+
 export interface NodeSize {
   collapsed: {
-    width: string;
-    height: string;
+    /** Tailwind CSS width class (e.g., "w-[60px]") */
+    width: TailwindWidth;
+    /** Tailwind CSS height class (e.g., "h-[60px]") */
+    height: TailwindHeight;
   };
   expanded: {
-    width: string;
+    /** Tailwind CSS width class (e.g., "w-[120px]") */
+    width: TailwindWidth;
+    /** Optional: Tailwind CSS height class for expanded state */
+    height?: TailwindHeight;
   };
 }
+
+// SIZE VALIDATION UTILITY FUNCTION
+export function validateNodeSize(size: NodeSize): boolean {
+  const { collapsed, expanded } = size;
+
+  // Validate collapsed state
+  if (!collapsed.width.startsWith("w-") || !collapsed.height.startsWith("h-")) {
+    console.error(
+      "❌ NodeSize validation failed: Collapsed size must use Tailwind classes (w-[*] and h-[*])"
+    );
+    return false;
+  }
+
+  // Validate expanded state
+  if (!expanded.width.startsWith("w-")) {
+    console.error(
+      "❌ NodeSize validation failed: Expanded width must use Tailwind classes (w-[*])"
+    );
+    return false;
+  }
+
+  if (expanded.height && !expanded.height.startsWith("h-")) {
+    console.error(
+      "❌ NodeSize validation failed: Expanded height must use Tailwind classes (h-[*])"
+    );
+    return false;
+  }
+
+  return true;
+}
+
+// COMMON SIZE CONSTANTS WITH PROPER TYPING
+export const COMMON_NODE_SIZES = {
+  SMALL_TRIGGER: {
+    collapsed: { width: "w-[50px]" as const, height: "h-[50px]" as const },
+    expanded: { width: "w-[120px]" as const },
+  },
+  STANDARD_TRIGGER: {
+    collapsed: { width: "w-[60px]" as const, height: "h-[60px]" as const },
+    expanded: { width: "w-[120px]" as const },
+  },
+  LARGE_TRIGGER: {
+    collapsed: { width: "w-[80px]" as const, height: "h-[80px]" as const },
+    expanded: { width: "w-[160px]" as const },
+  },
+  TEXT_NODE: {
+    collapsed: { width: "w-[120px]" as const, height: "h-[60px]" as const },
+    expanded: { width: "w-[240px]" as const },
+  },
+} as const;
 
 // ============================================================================
 // INSPECTOR INTERFACES
@@ -66,7 +131,12 @@ export interface InspectorControlProps<T extends BaseNodeData> {
   /** Function to update node data */
   updateNodeData: (id: string, patch: Record<string, unknown>) => void;
   /** Optional error logging function */
-  onLogError?: (nodeId: string, message: string, type?: any, source?: string) => void;
+  onLogError?: (
+    nodeId: string,
+    message: string,
+    type?: any,
+    source?: string
+  ) => void;
   /** Optional inspector state for complex controls */
   inspectorState?: {
     durationInput: string;
@@ -227,4 +297,4 @@ export interface ErrorState {
 export interface FilteredHandles {
   inputHandlesFiltered: HandleConfig[];
   outputHandles: HandleConfig[];
-} 
+}

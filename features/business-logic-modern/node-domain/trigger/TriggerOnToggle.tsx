@@ -93,11 +93,11 @@ const TriggerOnToggle = createNodeComponent<TriggerOnToggleData>({
   // Enhanced size configuration
   size: {
     collapsed: {
-      width: "60px",
-      height: "60px",
+      width: "w-[60px]",
+      height: "h-[60px]",
     },
     expanded: {
-      width: "120px",
+      width: "w-[120px]",
     },
   },
 

@@ -28,7 +28,6 @@ import type { AgenEdge, AgenNode } from "../types/nodeData";
 // Import other components - Using clean aliases
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/components/ActionToolbar";
 import HistoryPanel from "@/features/business-logic-modern/infrastructure/components/HistoryPanel";
-import { ActionHistoryEntry } from "@/features/business-logic-modern/infrastructure/components/UndoRedoManager";
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
 
 // Import multi-selection copy/paste hook
@@ -44,8 +43,6 @@ interface FlowCanvasProps {
   selectedOutput: string | null;
   nodeErrors: Record<string, any[]>;
   showHistoryPanel: boolean;
-  actionHistory: ActionHistoryEntry[];
-  historyIndex: number;
   wrapperRef: React.RefObject<HTMLDivElement | null>;
   updateNodeData: (id: string, patch: Record<string, unknown>) => void;
   updateNodeId?: (oldId: string, newId: string) => void;
@@ -84,8 +81,6 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   selectedOutput,
   nodeErrors,
   showHistoryPanel,
-  actionHistory,
-  historyIndex,
   wrapperRef,
   updateNodeData,
   updateNodeId,
@@ -104,10 +99,11 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   const { resolvedTheme } = useTheme();
 
   // ============================================================================
-  // RESPONSIVE STATE MANAGEMENT
+  // STATE FOR MOBILE RESPONSIVENESS & ERROR TRACKING
   // ============================================================================
 
   const [isMobile, setIsMobile] = useState(false);
+  const [hasFilteredNodes, setHasFilteredNodes] = useState(false);
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -121,6 +117,58 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     window.addEventListener("resize", checkScreenSize);
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
+
+  // ============================================================================
+  // DEFENSIVE FILTERING - PREVENT UNDEFINED POSITION ERRORS
+  // ============================================================================
+
+  const safeNodes = useMemo(() => {
+    const filteredNodes = nodes.filter((node) => {
+      // Check if node is valid and has proper position
+      if (!node || typeof node !== "object") {
+        console.warn("🔍 [FlowCanvas] Filtered out invalid node:", node);
+        return false;
+      }
+
+      if (
+        !node.position ||
+        typeof node.position.x !== "number" ||
+        typeof node.position.y !== "number"
+      ) {
+        console.warn(
+          "🔍 [FlowCanvas] Filtered out node with invalid position:",
+          node
+        );
+        return false;
+      }
+
+      if (!node.id || !node.type) {
+        console.warn(
+          "🔍 [FlowCanvas] Filtered out node missing id or type:",
+          node
+        );
+        return false;
+      }
+
+      return true;
+    });
+
+    // Log filtering results if any nodes were filtered
+    if (filteredNodes.length !== nodes.length) {
+      const filteredCount = nodes.length - filteredNodes.length;
+      console.warn(
+        `🔍 [FlowCanvas] Filtered ${filteredCount} invalid nodes. Kept ${filteredNodes.length} valid nodes.`
+      );
+      console.warn(
+        "💡 If this error persists, you may need to reset your workspace."
+      );
+      setHasFilteredNodes(true);
+    } else {
+      setHasFilteredNodes(false);
+    }
+
+    return filteredNodes;
+  }, [nodes]);
 
   // ============================================================================
   // DYNAMIC POSITIONING VARIABLES
@@ -175,7 +223,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       style={{ touchAction: "none" }}
     >
       <ReactFlow
-        nodes={nodes}
+        nodes={safeNodes}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -293,11 +341,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
             style={{ marginTop: "70px" }}
           >
             <div className="w-80 max-h-96">
-              <HistoryPanel
-                history={actionHistory}
-                currentIndex={historyIndex}
-                className="shadow-lg"
-              />
+              <HistoryPanel className="shadow-lg" />
             </div>
           </Panel>
         )}

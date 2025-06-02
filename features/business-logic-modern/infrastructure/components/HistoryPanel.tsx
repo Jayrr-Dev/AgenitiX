@@ -22,27 +22,20 @@ import {
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { useUndoRedo } from "./UndoRedoContext";
-import { ActionHistoryEntry } from "./UndoRedoManager";
 
 interface HistoryPanelProps {
-  history: ActionHistoryEntry[];
-  currentIndex: number;
-  onJumpToState?: (index: number) => void;
   className?: string;
 }
 
-const HistoryPanel: React.FC<HistoryPanelProps> = ({
-  history,
-  currentIndex,
-  onJumpToState,
-  className = "",
-}) => {
+const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
   const { undo, redo, clearHistory, getHistory } = useUndoRedo();
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<string | null>(null);
 
+  // GET HISTORY FROM CONTEXT
+  const { entries: history, currentIndex, canUndo, canRedo } = getHistory();
+
   // COMPUTED VALUES
-  const { canUndo, canRedo } = getHistory();
   const visibleHistory = useMemo(() => {
     // Show last 20 entries for performance
     return history.slice(-20);
@@ -98,20 +91,16 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({
 
   // EVENT HANDLERS
   const handleJumpToState = (index: number) => {
-    if (onJumpToState) {
-      onJumpToState(index);
-    } else {
-      // Default behavior: undo/redo to reach the target state
-      const targetIndex = history.findIndex(
-        (entry) => entry === visibleHistory[index]
-      );
-      if (targetIndex !== -1) {
-        const diff = targetIndex - currentIndex;
-        if (diff > 0) {
-          for (let i = 0; i < diff; i++) redo();
-        } else if (diff < 0) {
-          for (let i = 0; i < Math.abs(diff); i++) undo();
-        }
+    // Default behavior: undo/redo to reach the target state
+    const targetIndex = history.findIndex(
+      (entry) => entry === visibleHistory[index]
+    );
+    if (targetIndex !== -1) {
+      const diff = targetIndex - currentIndex;
+      if (diff > 0) {
+        for (let i = 0; i < diff; i++) redo();
+      } else if (diff < 0) {
+        for (let i = 0; i < Math.abs(diff); i++) undo();
       }
     }
   };

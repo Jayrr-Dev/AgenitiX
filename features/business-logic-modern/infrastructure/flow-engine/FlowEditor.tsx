@@ -34,6 +34,7 @@ import { useFlowStore } from "@infrastructure/flow-engine/stores/flowStore";
 import { useVibeModeStore } from "@infrastructure/node-creation/stores/vibeModeStore";
 
 // HOOK IMPORTS
+import { useUndoRedo } from "../components/UndoRedoContext";
 import { useDragAndDrop } from "./hooks/useDragAndDrop";
 import { useErrorLogging } from "./hooks/useErrorLogging";
 import { useFlowEditorHandlers } from "./hooks/useFlowEditorHandlers";
@@ -169,11 +170,58 @@ function FlowEditorContent() {
   // Multi-selection copy/paste functionality
   const multiSelectionCopyPaste = useMultiSelectionCopyPaste();
 
+  // Drag and drop functionality with action recording
+  const { recordAction } = useUndoRedo();
+
+  // Enhanced addNode with action recording
+  const addNodeWithHistory = useCallback(
+    (node: AgenNode) => {
+      console.log("🎯 [FlowEditor] Adding node:", node.id);
+
+      // Add the node first (this updates Zustand state)
+      addNode(node);
+
+      // Record action after state is updated (proper flow)
+      console.log("📝 [FlowEditor] Recording node_add action");
+      recordAction("node_add", {
+        nodeId: node.id,
+        nodeType: node.type,
+        nodeLabel: node.data?.label || node.type,
+        position: node.position,
+      });
+    },
+    [addNode, recordAction]
+  );
+
+  // Enhanced removeEdge with action recording
+  const removeEdgeWithHistory = useCallback(
+    (edgeId: string) => {
+      const edgeToDelete = edges.find((e) => e.id === edgeId);
+      if (!edgeToDelete) return;
+
+      // Record action metadata before removal
+      const edgeMetadata = {
+        edgeId,
+        sourceNode: edgeToDelete.source,
+        targetNode: edgeToDelete.target,
+        sourceHandle: edgeToDelete.sourceHandle,
+        targetHandle: edgeToDelete.targetHandle,
+      };
+
+      // Remove edge first (this updates Zustand state)
+      removeEdge(edgeId);
+
+      // Record action after state is updated (proper flow)
+      recordAction("edge_delete", edgeMetadata);
+    },
+    [edges, removeEdge, recordAction]
+  );
+
   // Drag and drop functionality
   const dragAndDrop = useDragAndDrop({
     flowInstance: flowInstanceRef,
     wrapperRef,
-    onNodeAdd: addNode,
+    onNodeAdd: addNodeWithHistory,
   });
 
   // Error logging setup
@@ -284,7 +332,9 @@ function FlowEditorContent() {
 
   const handleHistoryChange = useCallback(
     (history: ActionHistoryEntry[], currentIndex: number) => {
-      // Note: This could be moved to Zustand store in future iterations
+      // Update local state so HistoryPanel can display the history
+      setActionHistory(history);
+      setHistoryIndex(currentIndex);
     },
     []
   );
@@ -324,6 +374,12 @@ function FlowEditorContent() {
           onNodesChange={handleNodesChangeWithHistory}
           onEdgesChange={handleEdgesChangeWithHistory}
           onHistoryChange={handleHistoryChange}
+          config={{
+            debounceMs: 100, // Faster than default 300ms but not too aggressive
+            enableAutoSave: true, // Re-enable for move/drag operations
+            maxHistorySize: 150, // More history for better UX
+            compressionThreshold: 75, // Compress less aggressively
+          }}
         />
 
         {/* FLOW CANVAS */}
@@ -335,8 +391,6 @@ function FlowEditorContent() {
           selectedOutput={selectedOutput}
           nodeErrors={nodeErrors}
           showHistoryPanel={showHistoryPanel}
-          actionHistory={actionHistory}
-          historyIndex={historyIndex}
           wrapperRef={wrapperRef}
           updateNodeData={updateNodeData}
           updateNodeId={flowHandlers.handleUpdateNodeId}
@@ -347,7 +401,7 @@ function FlowEditorContent() {
           onDrop={dragAndDrop.onDrop}
           onDeleteNode={flowHandlers.handleDeleteNode}
           onDuplicateNode={flowHandlers.handleDuplicateNode}
-          onDeleteEdge={removeEdge}
+          onDeleteEdge={removeEdgeWithHistory}
           inspectorLocked={inspectorLocked}
           setInspectorLocked={setInspectorLocked}
           reactFlowHandlers={reactFlowHandlers}

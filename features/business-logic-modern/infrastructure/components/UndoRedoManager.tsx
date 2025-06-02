@@ -336,10 +336,10 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
           reactFlowInstance.setViewport(state.viewport);
         }
       } finally {
-        // Reset flag after a brief delay to ensure all related updates complete
+        // Use minimal delay for instant feel - just enough for React state updates
         setTimeout(() => {
           isUndoRedoOperationRef.current = false;
-        }, 50);
+        }, 10); // Reduced from 50ms to 10ms for instant feeling
       }
     },
     [
@@ -352,37 +352,68 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
   // PUBLIC API
   const undo = useCallback(() => {
+    console.log(
+      "↩️ [UndoRedoManager] Undo called, currentIndex:",
+      currentIndexRef.current
+    );
+
     if (currentIndexRef.current < 0) {
+      console.log("❌ [UndoRedoManager] Cannot undo, no history");
       return false;
     }
 
     const entry = historyRef.current[currentIndexRef.current];
+    console.log("🔄 [UndoRedoManager] Applying undo state:", entry.type);
     applyState(entry.beforeState);
     currentIndexRef.current--;
 
     onHistoryChange?.(historyRef.current, currentIndexRef.current);
+    console.log(
+      "✅ [UndoRedoManager] Undo completed, new index:",
+      currentIndexRef.current
+    );
     return true;
   }, [applyState, onHistoryChange]);
 
   const redo = useCallback(() => {
+    console.log(
+      "↪️ [UndoRedoManager] Redo called, currentIndex:",
+      currentIndexRef.current
+    );
+
     if (currentIndexRef.current >= historyRef.current.length - 1) {
+      console.log("❌ [UndoRedoManager] Cannot redo, no future history");
       return false;
     }
 
     currentIndexRef.current++;
     const entry = historyRef.current[currentIndexRef.current];
+    console.log("🔄 [UndoRedoManager] Applying redo state:", entry.type);
     applyState(entry.afterState);
 
     onHistoryChange?.(historyRef.current, currentIndexRef.current);
+    console.log(
+      "✅ [UndoRedoManager] Redo completed, new index:",
+      currentIndexRef.current
+    );
     return true;
   }, [applyState, onHistoryChange]);
 
   const recordAction = useCallback(
     (type: ActionType, metadata?: Record<string, unknown>) => {
+      console.log("🔄 [UndoRedoManager] Recording action:", type, metadata);
+
       const currentState = captureCurrentState();
+      console.log(
+        "📸 [UndoRedoManager] Current state captured, nodes:",
+        currentState.nodes.length
+      );
 
       if (lastStateRef.current) {
+        console.log("✅ [UndoRedoManager] Adding to history");
         addToHistory(type, lastStateRef.current, currentState, metadata);
+      } else {
+        console.log("⚠️ [UndoRedoManager] No lastState, skipping history");
       }
 
       lastStateRef.current = currentState;
