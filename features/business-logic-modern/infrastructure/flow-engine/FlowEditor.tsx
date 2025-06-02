@@ -20,7 +20,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import DebugTool from "@infrastructure/components/DebugTool";
 import { UndoRedoProvider } from "@infrastructure/components/UndoRedoContext";
 import UndoRedoManager, {
-  ActionHistoryEntry,
+  ActionEntry,
 } from "@infrastructure/components/UndoRedoManager";
 import Sidebar, { SidebarRef } from "@infrastructure/sidebar/Sidebar";
 
@@ -126,7 +126,7 @@ function FlowEditorContent() {
   // LOCAL STATE
   // ============================================================================
 
-  const [actionHistory, setActionHistory] = useState<ActionHistoryEntry[]>([]);
+  const [actionHistory, setActionHistory] = useState<ActionEntry[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   // ============================================================================
@@ -331,7 +331,7 @@ function FlowEditorContent() {
   // ============================================================================
 
   const handleHistoryChange = useCallback(
-    (history: ActionHistoryEntry[], currentIndex: number) => {
+    (history: ActionEntry[], currentIndex: number) => {
       // Update local state so HistoryPanel can display the history
       setActionHistory(history);
       setHistoryIndex(currentIndex);
@@ -375,10 +375,11 @@ function FlowEditorContent() {
           onEdgesChange={handleEdgesChangeWithHistory}
           onHistoryChange={handleHistoryChange}
           config={{
-            debounceMs: 100, // Faster than default 300ms but not too aggressive
-            enableAutoSave: true, // Re-enable for move/drag operations
-            maxHistorySize: 150, // More history for better UX
-            compressionThreshold: 75, // Compress less aggressively
+            positionDebounceMs: 300, // Better debouncing for movements
+            actionSeparatorMs: 200, // Proper separation between distinct actions
+            maxHistorySize: 100, // Reasonable history size
+            enableCompression: true, // Enable automatic compression
+            enableViewportTracking: false, // Disable for better performance
           }}
         />
 

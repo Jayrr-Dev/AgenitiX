@@ -28,7 +28,7 @@ interface VibeModeState {
 
 export const useVibeModeStore = create<VibeModeState>()((set) => ({
   isVibeModeActive: false,
-  showJsonHandles: true, // Default to true so JSON handles are visible
+  showJsonHandles: false, // Default to false so vibe mode is completely off at startup
   // _hasHydrated: true, // Always hydrated in non-persistent mode
 
   // X Button - toggles BOTH Vibe Mode AND JSON handles together

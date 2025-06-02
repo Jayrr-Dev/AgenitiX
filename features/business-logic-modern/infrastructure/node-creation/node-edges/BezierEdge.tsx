@@ -18,7 +18,7 @@ export default function BezierEdge({
   targetX: number;
   targetY: number;
 }) {
-  const { setEdges } = useReactFlow();
+  const reactFlowInstance = useReactFlow();
 
   // Calculate bezier curve path and label position
   const [edgePath, labelX, labelY] = getBezierPath({
@@ -28,9 +28,11 @@ export default function BezierEdge({
     targetY,
   });
 
-  // Delete edge handler
+  // Delete edge handler using ReactFlow's standard deletion
   const handleDelete = () => {
-    setEdges((es) => es.filter((e) => e.id !== id));
+    // Use ReactFlow's built-in deletion which will trigger the proper change handlers
+    // and automatically be detected by UndoRedoManager
+    reactFlowInstance.deleteElements({ edges: [{ id }] });
   };
 
   return (
