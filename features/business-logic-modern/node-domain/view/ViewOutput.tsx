@@ -14,9 +14,8 @@
 "use client";
 
 /* -------------------------------------------------------------------------- */
-/*  ViewOutput - Centralized Registry Demo                           */
-/*  – Carbon copy of ViewOutput using new registration system               */
-/*  – Displays values from connected nodes with type indicators             */
+/*  ViewOutput - Converted to NodeFactory                                    */
+/*  – Displays values from connected nodes with type indicators               */
 /* -------------------------------------------------------------------------- */
 
 import { Position } from "@xyflow/react";
@@ -26,6 +25,9 @@ import {
   createNodeComponent,
   type BaseNodeData,
 } from "../../infrastructure/node-creation/factory/NodeFactory";
+
+// KEY UTILITIES - Standardized React key generation
+import { generateDisplayValueKey } from "../../infrastructure/node-creation/factory/utils/keyUtils";
 
 // UTILITY FUNCTIONS - Inline implementations
 function extractNodeValue(data: any): any {
@@ -105,31 +107,31 @@ const formatContent = (content: any): string => {
 };
 
 // ============================================================================
-// ENTERPRISE NODE CONFIGURATION - Enhanced Factory with Registry Integration
+// NODE CONFIGURATION - Carbon Copy of Legacy
 // ============================================================================
 
 const ViewOutput = createNodeComponent<ViewOutputData>({
   nodeType: "viewOutput", // Match the registry nodeType
-  category: "view", // Enhanced category registry integration
+  category: "test", // Test/debug theme for utility nodes (same as legacy)
   displayName: "View Output",
   defaultData: {
     displayedValues: [],
   },
 
-  // Enhanced size configuration
+  // Custom size configuration for 120x120 collapsed, 180x180 expanded (same as legacy)
   size: {
     collapsed: {
-      width: "120px",
-      height: "60px",
+      width: "w-[120px]",
+      height: "h-[120px]",
     },
     expanded: {
-      width: "200px",
+      width: "w-[180px]",
     },
   },
 
-  // Define handles (accepts any input type)
+  // Define handles (accepts any input type, same as legacy)
   handles: [
-    { id: "input", dataType: "u", position: Position.Left, type: "target" },
+    { id: "x", dataType: "x", position: Position.Left, type: "target" },
   ],
 
   // Processing logic - extract and format values from connected nodes
@@ -142,24 +144,65 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
     setError,
   }) => {
     try {
+      // SAFETY CHECK - Ensure nodesData is valid
+      if (!Array.isArray(nodesData)) {
+        console.warn(
+          `ViewOutput ${id} - nodesData is not an array:`,
+          nodesData
+        );
+        return; // Exit early if nodesData is invalid
+      }
+
+      // SAFETY CHECK - Ensure connections exist before processing
+      if (!connections || connections.length === 0) {
+        // No connections, clear displayed values if they exist
+        if (data.displayedValues && data.displayedValues.length > 0) {
+          updateNodeData(id, {
+            displayedValues: [],
+          });
+        }
+        return;
+      }
+
       // Extract values from connected nodes using safe extraction
       const values = nodesData
+        .filter((node) => {
+          // SAFETY CHECK - Ensure node has required properties
+          return node && typeof node === "object" && node.id && node.type;
+        })
         .map((node) => {
-          // Special handling for TestInput nodes - use 'value' property directly
-          let extractedValue;
-          if (node.type === "testInput") {
-            extractedValue = node.data?.value;
-          } else {
-            extractedValue = extractNodeValue(node.data);
-          }
+          try {
+            // Special handling for TestInput nodes - use 'value' property directly
+            let extractedValue;
+            if (node.type === "testInput") {
+              extractedValue = node.data?.value;
+            } else {
+              extractedValue = extractNodeValue(node.data);
+            }
 
-          return {
-            type: node.type,
-            content: extractedValue,
-            id: node.id,
-          };
+            return {
+              type: node.type,
+              content: extractedValue,
+              id: node.id,
+            };
+          } catch (nodeError) {
+            console.warn(
+              `ViewOutput ${id} - Error processing node ${node.id}:`,
+              nodeError
+            );
+            return {
+              type: node.type || "unknown",
+              content: "Error processing node",
+              id: node.id || "unknown",
+            };
+          }
         })
         .filter((item) => {
+          // SAFETY CHECK - Ensure item is valid
+          if (!item || typeof item !== "object") {
+            return false;
+          }
+
           // Filter out truly meaningless values
           const content = item.content;
 
@@ -174,31 +217,53 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
           }
 
           // For objects/arrays, exclude empty ones
-          if (typeof content === "object") {
-            if (Array.isArray(content)) {
-              return content.length > 0;
+          if (typeof content === "object" && content !== null) {
+            try {
+              if (Array.isArray(content)) {
+                return content.length > 0;
+              }
+              // For objects, check if they have enumerable properties
+              return Object.keys(content).length > 0;
+            } catch (objError) {
+              console.warn(
+                `ViewOutput ${id} - Error checking object content:`,
+                objError
+              );
+              return false;
             }
-            // For objects, check if they have enumerable properties
-            return Object.keys(content).length > 0;
           }
 
           // Include meaningful values: numbers (including 0), booleans (including false), etc.
           return true;
         });
 
+      // SAFETY CHECK - Ensure we have valid current data
+      const currentValues = Array.isArray(data.displayedValues)
+        ? data.displayedValues
+        : [];
+
       // Only update if the values have actually changed
-      const currentValues = data.displayedValues || [];
-      const hasChanged =
-        values.length !== currentValues.length ||
-        values.some((value, index) => {
-          const current = currentValues[index];
-          return (
-            !current ||
-            current.id !== value.id ||
-            current.type !== value.type ||
-            current.content !== value.content
-          );
-        });
+      let hasChanged = false;
+
+      try {
+        hasChanged =
+          values.length !== currentValues.length ||
+          values.some((value, index) => {
+            const current = currentValues[index];
+            return (
+              !current ||
+              current.id !== value.id ||
+              current.type !== value.type ||
+              current.content !== value.content
+            );
+          });
+      } catch (comparisonError) {
+        console.warn(
+          `ViewOutput ${id} - Error comparing values:`,
+          comparisonError
+        );
+        hasChanged = true; // Force update on comparison error
+      }
 
       if (hasChanged) {
         updateNodeData(id, {
@@ -206,19 +271,32 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
         });
       }
     } catch (updateError) {
-      console.error(`ViewOutput ${id} - Update error:`, updateError);
+      console.error(`ViewOutput ${id} - Critical update error:`, updateError);
       const errorMessage =
-        updateError instanceof Error ? updateError.message : "Unknown error";
-      setError(errorMessage);
+        updateError instanceof Error
+          ? updateError.message
+          : "Unknown processing error";
 
-      // Try to update with error state
-      updateNodeData(id, {
-        displayedValues: [],
-      });
+      // Set error state
+      if (setError) {
+        setError(errorMessage);
+      }
+
+      // Try to update with safe error state
+      try {
+        updateNodeData(id, {
+          displayedValues: [],
+        });
+      } catch (recoveryError) {
+        console.error(
+          `ViewOutput ${id} - Recovery update failed:`,
+          recoveryError
+        );
+      }
     }
   },
 
-  // Collapsed state rendering - show preview of values
+  // Collapsed state rendering - show preview of values (same as legacy)
   renderCollapsed: ({ data, error }) => {
     const values = data.displayedValues || [];
 
@@ -226,7 +304,7 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
       <div className="absolute inset-0 flex flex-col px-2 py-2 overflow-hidden">
         <div className="flex items-center justify-center mb-1">
           <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">
-            {error ? "Error" : "🔧 View Refactor"}
+            {error ? "Error" : "📤 View Output"}
           </div>
         </div>
 
@@ -236,9 +314,9 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
           </div>
         ) : values.length ? (
           <div className="space-y-1 flex-1 overflow-hidden">
-            {values.map((item) => (
+            {values.map((item, index) => (
               <div
-                key={item.id}
+                key={generateDisplayValueKey(item, index, "collapsed")}
                 className="bg-white/50 dark:bg-black/20 rounded px-1 py-0.5 overflow-hidden"
                 style={{
                   display: "-webkit-box",
@@ -260,7 +338,7 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
     );
   },
 
-  // Expanded state rendering - full UI with type indicators
+  // Expanded state rendering - full UI with type indicators (same as legacy)
   renderExpanded: ({ data, error, categoryTextTheme }) => {
     const values = data.displayedValues || [];
 
@@ -269,7 +347,7 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
         <div
           className={`font-semibold mb-2 flex items-center justify-between ${categoryTextTheme.primary}`}
         >
-          <span>{error ? "Error" : "🔧 View Refactor"}</span>
+          <span>{error ? "Error" : "View Output"}</span>
           {error ? (
             <span className="text-xs text-red-600 dark:text-red-400">
               ● {error}
@@ -297,11 +375,11 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
             onMouseDown={(e) => e.stopPropagation()}
             style={{ touchAction: "pan-y" }}
           >
-            {values.map((item) => {
+            {values.map((item, index) => {
               const typeInfo = getDataTypeInfo(item.content);
               return (
                 <div
-                  key={item.id}
+                  key={generateDisplayValueKey(item, index, "expanded")}
                   className="bg-white/50 dark:bg-black/20 rounded px-2 py-2"
                 >
                   {/* Type indicator with colored icon */}
