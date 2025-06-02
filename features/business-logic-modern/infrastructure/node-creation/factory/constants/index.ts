@@ -11,10 +11,15 @@
  */
 
 // ============================================================================
-// FACTORY NODE CONSTANTS
+// IMPORTS
 // ============================================================================
 
-import type { NodeSize } from "../types";
+import { NodeSize } from "../types";
+import { STANDARD_SIZE_PATTERNS } from "./sizes";
+
+// ============================================================================
+// FACTORY NODE CONSTANTS
+// ============================================================================
 
 // ============================================================================
 // CACHE CONFIGURATION
@@ -49,37 +54,16 @@ export const PROCESSING_THROTTLE_MS = 5; // ms minimum between processing calls
 
 /**
  * DEFAULT NODE SIZES
- * Standard sizing configurations for different node types
+ * Standard sizing configurations for different node types using new standardized patterns
  */
-export const DEFAULT_TEXT_NODE_SIZE: NodeSize = {
-  collapsed: {
-    width: "w-[120px]",
-    height: "h-[60px]",
-  },
-  expanded: {
-    width: "w-[180px]",
-  },
-};
+export const DEFAULT_TEXT_NODE_SIZE: NodeSize =
+  STANDARD_SIZE_PATTERNS.STANDARD_TEXT;
 
-export const DEFAULT_LOGIC_NODE_SIZE: NodeSize = {
-  collapsed: {
-    width: "w-[60px]",
-    height: "h-[60px]",
-  },
-  expanded: {
-    width: "w-[120px]",
-  },
-};
+export const DEFAULT_LOGIC_NODE_SIZE: NodeSize =
+  STANDARD_SIZE_PATTERNS.SMALL_TRIGGER;
 
-export const DEFAULT_TRIGGER_NODE_SIZE: NodeSize = {
-  collapsed: {
-    width: "w-[60px]",
-    height: "h-[60px]",
-  },
-  expanded: {
-    width: "w-[120px]",
-  },
-};
+export const DEFAULT_TRIGGER_NODE_SIZE: NodeSize =
+  STANDARD_SIZE_PATTERNS.SMALL_TRIGGER;
 
 // ============================================================================
 // ERROR INJECTION SUPPORT
@@ -154,9 +138,12 @@ import type { NodeConfig, NodeType } from "../types";
 export const NODE_ID_PREFIX = "node_";
 
 // ============================================================================
-// NODE SIZING CONSTANTS
+// NODE SIZING CONSTANTS (LEGACY - DEPRECATED)
 // ============================================================================
 
+/**
+ * @deprecated Use new STANDARD_SIZE_PATTERNS instead
+ */
 export const NODE_SIZES = {
   ICON: {
     DEFAULT: { width: 60, height: 60 },

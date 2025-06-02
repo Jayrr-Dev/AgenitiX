@@ -59,9 +59,12 @@ class SimpleVersionDetector {
         return null; // No changes
       }
 
-      // Determine bump type
+      // Enhanced bump type detection
       let bumpType = "patch";
+      let detectedInfrastructure = false;
+
       for (const file of changedFiles) {
+        // Major version changes
         if (
           file.includes("types/nodeData.ts") ||
           file.includes("factory/NodeFactory.tsx") ||
@@ -69,12 +72,34 @@ class SimpleVersionDetector {
         ) {
           bumpType = "major";
           break;
-        } else if (
+        }
+        // Minor version changes - Enhanced infrastructure detection
+        else if (
           file.includes("node-domain/") ||
-          file.includes("infrastructure/")
+          file.includes("infrastructure/") ||
+          file.includes("/constants/sizes.ts") ||
+          file.includes("/factory/constants/") ||
+          file.includes("/factory/types/")
         ) {
           bumpType = "minor";
+          detectedInfrastructure = true;
         }
+      }
+
+      // Enhanced logging for infrastructure detection
+      if (detectedInfrastructure) {
+        console.log(
+          "🏗️ New infrastructure detected - triggering minor version bump"
+        );
+        const infraFiles = changedFiles.filter(
+          (f) =>
+            f.includes("infrastructure/") ||
+            f.includes("/constants/sizes.ts") ||
+            f.includes("/factory/constants/") ||
+            f.includes("/factory/types/")
+        );
+        console.log(`📦 Infrastructure files: ${infraFiles.length}`);
+        infraFiles.forEach((f) => console.log(`   • ${f}`));
       }
 
       // Bump version
@@ -85,16 +110,20 @@ class SimpleVersionDetector {
         version: newVersion,
         timestamp: Date.now(),
         hashes: Array.from(currentHashes.entries()),
+        bumpType,
+        detectedInfrastructure,
       };
 
       fs.writeFileSync(this.versionFile, JSON.stringify(cache, null, 2));
       this.updateVersionConstants(newVersion);
+      this.updateAIContext(newVersion);
 
       return {
         version: newVersion,
         bumpType,
         changedFiles,
         timestamp: Date.now(),
+        detectedInfrastructure,
       };
     } catch (error) {
       console.error("❌ Version detection failed:", error.message);
@@ -186,6 +215,105 @@ export const VERSION = {
     }
     return "1.0.0";
   }
+
+  // Manual version correction method
+  async forceMinorBump(reason = "Infrastructure changes") {
+    console.log(`🔧 Force bumping to minor version: ${reason}`);
+
+    const currentVersion = this.getCurrentVersion();
+    const newVersion = this.bumpVersion(currentVersion, "minor");
+
+    // Update version files
+    this.updateVersionConstants(newVersion);
+    this.updateAIContext(newVersion);
+
+    // Update cache to reflect manual bump
+    let cache = { version: newVersion, timestamp: Date.now(), hashes: [] };
+    if (fs.existsSync(this.versionFile)) {
+      try {
+        const existing = JSON.parse(fs.readFileSync(this.versionFile, "utf8"));
+        cache = {
+          ...existing,
+          version: newVersion,
+          timestamp: Date.now(),
+          manualBump: true,
+          reason,
+        };
+      } catch (error) {
+        console.warn("⚠️ Could not read existing cache");
+      }
+    }
+
+    fs.writeFileSync(this.versionFile, JSON.stringify(cache, null, 2));
+
+    console.log(`✅ Manually bumped version to ${newVersion}`);
+    return newVersion;
+  }
+
+  updateAIContext(version) {
+    try {
+      const aiContextPath = "features/business-logic-modern/ai-context.json";
+
+      let context = {
+        project: "Agenitix - Modern Node-Based Workflow System",
+        domain: "business-logic-modern",
+        nodeTypes: ["createText", "viewOutput", "triggerOnToggle", "testError"],
+        architecture: {
+          status: "stable",
+          circularDependencies: "resolved",
+          centralizedHandles: true,
+          nodeCount: 4,
+        },
+        criticalFiles: {
+          version: "infrastructure/versioning/version.ts",
+          types: "infrastructure/node-creation/factory/types/index.ts",
+          handles: "infrastructure/node-creation/factory/constants/handles.ts",
+          registry:
+            "infrastructure/node-creation/node-registry/nodeRegistry.ts",
+        },
+        constraints: {
+          isolation: "NEVER edit legacy files outside business-logic-modern/",
+          packaging: "Use pnpm only",
+          architecture: "Follow factory pattern for new nodes",
+          handles: "Use centralized handle system",
+          versioning: "NEVER manually edit version.ts - auto-generated",
+        },
+        versionRules: {
+          major: "Type changes, Factory changes, Registry structure",
+          minor: "New nodes, New infrastructure",
+          patch: "Bug fixes, docs, other changes",
+        },
+        documentation: {
+          location: "documentation/claude-reports/",
+          versionReference: "Import from infrastructure/versioning/version.ts",
+          format: "Markdown with auto-version integration",
+        },
+      };
+
+      // Try to read existing context to preserve any updates
+      if (fs.existsSync(aiContextPath)) {
+        try {
+          const existing = JSON.parse(fs.readFileSync(aiContextPath, "utf8"));
+          context = { ...context, ...existing };
+        } catch (error) {
+          console.warn("⚠️ Could not read existing AI context, using defaults");
+        }
+      }
+
+      // Update version and timestamp
+      context.version = version;
+      context.lastUpdated =
+        new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
+      context.generated = new Date().toISOString();
+
+      // Write updated context
+      fs.writeFileSync(aiContextPath, JSON.stringify(context, null, 2));
+
+      console.log(`✅ Updated AI context JSON to version ${version}`);
+    } catch (error) {
+      console.error("❌ Could not update AI context JSON:", error.message);
+    }
+  }
 }
 
 // ============================================================================
@@ -214,6 +342,14 @@ async function handleCommand(command) {
 
     case "history":
       showHistory();
+      break;
+
+    case "force-minor":
+      await forceMinorBump();
+      break;
+
+    case "fix-infrastructure":
+      await fixInfrastructureVersion();
       break;
 
     default:
@@ -335,19 +471,47 @@ function showHelp() {
 🔧 SIMPLE VERSIONING SYSTEM
 
 Available commands:
-  status    Show current system status
-  check     Check for version changes now
-  init      Initialize versioning system
-  test      Run basic tests
-  history   Show version history
+  status       Show current system status
+  check        Check for version changes now
+  init         Initialize versioning system
+  test         Run basic tests
+  history      Show version history
+  force-minor  Force a minor version bump
+  fix-infrastructure  Fix version for infrastructure changes
 
 Usage:
-  pnpm version:simple status    # Show current status
-  pnpm version:simple check     # Check for changes
-  pnpm version:simple init      # Initialize system
+  pnpm version:simple status         # Show current status
+  pnpm version:simple init           # Initialize system
+  pnpm version:simple check          # Check for changes
+  pnpm version:simple fix-infrastructure  # Fix infrastructure version
+
+Version Rules:
+  • Major: Type changes, Factory changes, Registry structure
+  • Minor: New nodes, New infrastructure
+  • Patch: Bug fixes, docs, other changes
 
 💡 This is a simplified version that works without TypeScript compilation.
+💡 Use 'fix-infrastructure' to properly bump for the new size constants system.
 `);
+}
+
+async function forceMinorBump() {
+  console.log("🔧 Forcing minor version bump...");
+  const newVersion = await detector.forceMinorBump(
+    "New infrastructure: Standardized size constants system"
+  );
+  console.log(`✅ Version updated to ${newVersion}`);
+}
+
+async function fixInfrastructureVersion() {
+  console.log("🏗️ Fixing version for infrastructure changes...");
+  console.log("   Reason: Added new standardized size constants system");
+  const newVersion = await detector.forceMinorBump(
+    "New infrastructure: Standardized size constants system with Tailwind CSS integration"
+  );
+  console.log(
+    `✅ Version corrected to ${newVersion} (minor bump for infrastructure)`
+  );
 }
 
 // Handle command line arguments

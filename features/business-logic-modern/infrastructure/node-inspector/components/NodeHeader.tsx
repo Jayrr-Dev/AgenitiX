@@ -14,7 +14,7 @@
 "use client";
 
 import { useNodeDisplay } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/NodeDisplayContext";
-import { useTextInputShortcuts } from "@/features/business-logic/hooks/useTextInputShortcuts";
+import { useTextInputShortcuts } from "@flow-engine/hooks/useTextInputShortcuts";
 import React, { useCallback, useMemo, useState } from "react";
 
 // MODERN REGISTRY INTEGRATION - Import proper types and registry

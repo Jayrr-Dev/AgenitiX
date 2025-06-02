@@ -25,6 +25,7 @@ import {
   type HandleConfig,
 } from "../../infrastructure/node-creation/factory/NodeFactory";
 import { getNodeHandles } from "../../infrastructure/node-creation/factory/constants/handles";
+import { STANDARD_SIZE_PATTERNS } from "../../infrastructure/node-creation/factory/constants/sizes";
 
 // KEY UTILITIES - Standardized React key generation
 import { generateDisplayValueKey } from "../../infrastructure/node-creation/factory/utils/keyUtils";
@@ -128,16 +129,8 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
   // ✨ HANDLES LOADED FROM CENTRALIZED CONSTANTS (above)
   handles: nodeHandles,
 
-  // Custom size configuration for 120x120 collapsed, 180x180 expanded (same as legacy)
-  size: {
-    collapsed: {
-      width: "w-[120px]",
-      height: "h-[120px]",
-    },
-    expanded: {
-      width: "w-[180px]",
-    },
-  },
+  // Enhanced size configuration using new standards (large interactive node pattern)
+  size: STANDARD_SIZE_PATTERNS.LARGE_INTERACTIVE,
 
   // Processing logic - extract and format values from connected nodes
   processLogic: ({

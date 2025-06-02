@@ -25,6 +25,7 @@ import {
   type BaseNodeData,
   type HandleConfig,
 } from "@node-creation/factory/NodeFactory";
+import { STANDARD_SIZE_PATTERNS } from "@node-creation/factory/constants/sizes";
 import React, { useRef } from "react";
 
 // MODERN FACTORY INTEGRATION
@@ -67,6 +68,9 @@ const CreateText = createNodeComponent<CreateTextData>({
     text: "",
     heldText: "",
   },
+
+  // Enhanced size configuration using new standards (wide text node pattern)
+  size: STANDARD_SIZE_PATTERNS.WIDE_TEXT,
 
   // ✨ HANDLES LOADED FROM CENTRALIZED CONSTANTS (above)
   handles: nodeHandles,

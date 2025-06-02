@@ -17,6 +17,7 @@ import {
   type BaseNodeData,
 } from "../../infrastructure/node-creation/factory/NodeFactory";
 import { getNodeHandles } from "../../infrastructure/node-creation/factory/constants/handles";
+import { STANDARD_SIZE_PATTERNS } from "../../infrastructure/node-creation/factory/constants/sizes";
 
 // UTILITY FUNCTIONS - Inline implementations
 function getSingleInputValue(nodesData: any[]): any {
@@ -128,16 +129,8 @@ const TestError = createNodeComponent<TestErrorData>({
     json: "",
   },
 
-  // Enhanced size configuration
-  size: {
-    collapsed: {
-      width: "w-[60px]",
-      height: "h-[60px]",
-    },
-    expanded: {
-      width: "w-[150px]",
-    },
-  },
+  // Enhanced size configuration using new standards
+  size: STANDARD_SIZE_PATTERNS.SMALL_TRIGGER,
 
   // HANDLES LOADED FROM CENTRALIZED CONSTANTS (above)
   handles: nodeHandles,

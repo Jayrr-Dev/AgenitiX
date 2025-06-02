@@ -1,35 +1,35 @@
 // app/dashboard/page.tsx
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import type { Flow } from '@/features/business-logic/types'
-import { Loading } from '@/components/Loading'
+import { Loading } from "@/components/Loading";
+import type { Flow } from "@/features/business-logic-modern/dashboard/types";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 // Shadcn UI primitives
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { IconPlus } from '@tabler/icons-react'
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { IconPlus } from "@tabler/icons-react";
 
 export default function DashboardPage() {
-  const [flows, setFlows] = useState<Flow[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [flows, setFlows] = useState<Flow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch all flows on mount
   useEffect(() => {
-    fetch('/api/flows')
+    fetch("/api/flows")
       .then((res) => {
-        if (!res.ok) throw new Error('Failed to load flows')
-        return res.json() as Promise<Flow[]>
+        if (!res.ok) throw new Error("Failed to load flows");
+        return res.json() as Promise<Flow[]>;
       })
       .then(setFlows)
       .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [])
+      .finally(() => setLoading(false));
+  }, []);
 
-  if (loading) return <Loading />
-  if (error) return <p className="p-8 text-red-600">Error: {error}</p>
+  if (loading) return <Loading />;
+  if (error) return <p className="p-8 text-red-600">Error: {error}</p>;
 
   return (
     <div className="p-8">
@@ -74,10 +74,9 @@ export default function DashboardPage() {
                 </Button>
               </Link>
             </CardContent>
-            
           </Card>
         ))}
       </div>
     </div>
-  )
+  );
 }

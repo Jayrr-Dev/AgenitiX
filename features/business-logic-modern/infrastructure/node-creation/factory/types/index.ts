@@ -12,11 +12,20 @@
  */
 
 // ============================================================================
-// FACTORY NODE TYPE DEFINITIONS
+// IMPORTS
 // ============================================================================
 
 import { Position, type Connection, type Node } from "@xyflow/react";
 import { ReactNode } from "react";
+import {
+  LEGACY_COMMON_NODE_SIZES,
+  STANDARD_SIZE_PATTERNS,
+  validateSizeConfig,
+} from "../constants/sizes";
+
+// ============================================================================
+// FACTORY NODE TYPE DEFINITIONS
+// ============================================================================
 
 // ============================================================================
 // BASE INTERFACES
@@ -79,55 +88,17 @@ export interface NodeSize {
   };
 }
 
-// SIZE VALIDATION UTILITY FUNCTION
-export function validateNodeSize(size: NodeSize): boolean {
-  const { collapsed, expanded } = size;
-
-  // Validate collapsed state
-  if (!collapsed.width.startsWith("w-") || !collapsed.height.startsWith("h-")) {
-    console.error(
-      "❌ NodeSize validation failed: Collapsed size must use Tailwind classes (w-[*] and h-[*])"
-    );
-    return false;
-  }
-
-  // Validate expanded state
-  if (!expanded.width.startsWith("w-")) {
-    console.error(
-      "❌ NodeSize validation failed: Expanded width must use Tailwind classes (w-[*])"
-    );
-    return false;
-  }
-
-  if (expanded.height && !expanded.height.startsWith("h-")) {
-    console.error(
-      "❌ NodeSize validation failed: Expanded height must use Tailwind classes (h-[*])"
-    );
-    return false;
-  }
-
-  return true;
-}
-
 // COMMON SIZE CONSTANTS WITH PROPER TYPING
 export const COMMON_NODE_SIZES = {
-  SMALL_TRIGGER: {
-    collapsed: { width: "w-[50px]" as const, height: "h-[50px]" as const },
-    expanded: { width: "w-[120px]" as const },
-  },
-  STANDARD_TRIGGER: {
-    collapsed: { width: "w-[60px]" as const, height: "h-[60px]" as const },
-    expanded: { width: "w-[120px]" as const },
-  },
-  LARGE_TRIGGER: {
-    collapsed: { width: "w-[80px]" as const, height: "h-[80px]" as const },
-    expanded: { width: "w-[160px]" as const },
-  },
-  TEXT_NODE: {
-    collapsed: { width: "w-[120px]" as const, height: "h-[60px]" as const },
-    expanded: { width: "w-[240px]" as const },
-  },
+  ...LEGACY_COMMON_NODE_SIZES,
+  // New standardized patterns
+  ...STANDARD_SIZE_PATTERNS,
 } as const;
+
+// SIZE VALIDATION UTILITY FUNCTION
+export function validateNodeSize(size: NodeSize): boolean {
+  return validateSizeConfig(size);
+}
 
 // ============================================================================
 // CATEGORY AND FOLDER TYPES - Registry Integration

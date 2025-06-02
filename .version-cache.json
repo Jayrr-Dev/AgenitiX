@@ -1,7 +1,15 @@
 {
-  "version": "1.0.19",
-  "timestamp": 1748866172275,
+  "version": "1.1.0",
+  "timestamp": 1748868708691,
   "hashes": [
+    [
+      "features\\business-logic-modern\\dashboard\\data.ts",
+      "737f0678900cacd480188b2e486bce03"
+    ],
+    [
+      "features\\business-logic-modern\\dashboard\\types.ts",
+      "1ccfe39232111ef72c374941876ecb82"
+    ],
     [
       "features\\business-logic-modern\\infrastructure\\components\\ActionToolbar.tsx",
       "ca6fbfedcb8fd24bc813fd1f77cfa4ad"
@@ -148,7 +156,11 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\constants\\index.ts",
-      "734b19f43049426460e982f1ffc78518"
+      "f4ee35097367f65d66a8a31134cf1346"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\constants\\sizes.ts",
+      "e54952bbd14d6f1965acebc8143297ba"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\core\\BulletproofNodeBase.tsx",
@@ -228,7 +240,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\types\\index.ts",
-      "cb9fdfc0f6597628bd6bc6ce9eb9ce2b"
+      "2b03f811cb1d448ff4a4e91806c13c15"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\advancedButtonSystem.tsx",
@@ -456,11 +468,11 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "7a9d65fc9b32d8be6daf77aa7b2fbbcf"
+      "770a23c1f2cbcb9c422afc231a5fc734"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
-      "6f37315ee416e42d6908df9c206bc279"
+      "2cbcfb0c59ba6913a561e9ddaa24cd3d"
     ],
     [
       "features\\business-logic-modern\\node-domain\\index.ts",
@@ -468,19 +480,21 @@
     ],
     [
       "features\\business-logic-modern\\node-domain\\test\\TestError.tsx",
-      "e8f71126f9b3af8aa1dcd66c6abad34c"
+      "a8f640706c708b1597fcbedc17d3a5dc"
     ],
     [
       "features\\business-logic-modern\\node-domain\\trigger\\TriggerOnToggle.tsx",
-      "3e64ca4d4a23e8f933fc1446489a5a0b"
+      "fbded02123aad92164aa1c101fe24d29"
     ],
     [
       "features\\business-logic-modern\\node-domain\\view\\ViewOutput.tsx",
-      "4cf2f705748a1c59bb9ec51401ac2d35"
+      "373d70077ee417fe6cf8577295e0c193"
     ],
     [
       "features\\business-logic-modern\\tooling\\dev-scripts\\generate-from-registry.ts",
       "27140e9ca71c870d4111a37dbb1a2167"
     ]
-  ]
+  ],
+  "manualBump": true,
+  "reason": "New infrastructure: Standardized size constants system with Tailwind CSS integration"
 }

@@ -19,6 +19,7 @@ import {
   type BaseNodeData,
 } from "../../infrastructure/node-creation/factory/NodeFactory";
 import { getNodeHandles } from "../../infrastructure/node-creation/factory/constants/handles";
+import { STANDARD_SIZE_PATTERNS } from "../../infrastructure/node-creation/factory/constants/sizes";
 
 // ICON COMPONENT - Simple inline toggle icon
 const IconForToggle = ({
@@ -96,16 +97,8 @@ const TriggerOnToggle = createNodeComponent<TriggerOnToggleData>({
     hasExternalInputs: false,
   },
 
-  // Enhanced size configuration
-  size: {
-    collapsed: {
-      width: "w-[60px]",
-      height: "h-[60px]",
-    },
-    expanded: {
-      width: "w-[120px]",
-    },
-  },
+  // Enhanced size configuration using new standards
+  size: STANDARD_SIZE_PATTERNS.SMALL_TRIGGER,
 
   // HANDLES LOADED FROM CENTRALIZED CONSTANTS (above)
   handles: nodeHandles,

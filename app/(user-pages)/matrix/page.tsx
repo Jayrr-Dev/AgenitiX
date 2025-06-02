@@ -7,13 +7,13 @@
 
 // app/build/[flowId]/page.tsx
 
-import { notFound } from 'next/navigation'
-import type { Flow } from '@/features/business-logic/types'
+// import { notFound } from 'next/navigation'
+// import type { Flow } from '@/features/business-logic-modern/dashboard/types'
 
 type Props = {
-  params: { flowId: string }
-  searchParams: { [key: string]: string | string[] | undefined }
-}
+  params: { flowId: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+};
 
 /**
  * Fetches a single flow by ID and renders your flow‐builder.
