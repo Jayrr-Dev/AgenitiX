@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import type { AgenNode } from "../../../flow-editor/types";
+import type { AgenNode } from "../../flow-engine/types/nodeData";
 import { DEFAULT_VALUES } from "../constants";
 
 export function useInspectorState(node: AgenNode | null) {
@@ -34,47 +34,12 @@ export function useInspectorState(node: AgenNode | null) {
   useEffect(() => {
     if (!node) return;
 
-    // Sync trigger pulse duration
-    if (node.type === "triggerOnPulse") {
-      const newDurationValue =
-        typeof node.data.duration === "number"
-          ? node.data.duration.toString()
-          : DEFAULT_VALUES.DURATION;
-      setDurationInput(newDurationValue);
-    }
+    // Note: Only valid node types are: createText, viewOutput, triggerOnToggle, testError
+    // Legacy node types (countInput, delayInput, triggerOnPulse) have been removed
 
-    // Sync counter inputs (only when not actively editing)
-    if (node.type === "countInput") {
-      if (!isEditingCount.current) {
-        const newCountValue =
-          typeof node.data.count === "number"
-            ? node.data.count.toString()
-            : DEFAULT_VALUES.COUNT;
-        setCountInput(newCountValue);
-      }
-      if (!isEditingMultiplier.current) {
-        const newMultiplierValue =
-          typeof node.data.multiplier === "number"
-            ? node.data.multiplier.toString()
-            : DEFAULT_VALUES.MULTIPLIER;
-        setMultiplierInput(newMultiplierValue);
-      }
-    }
-
-    // Sync delay input
-    if (node.type === "delayInput") {
-      const newDelayValue =
-        typeof node.data.delay === "number"
-          ? node.data.delay.toString()
-          : DEFAULT_VALUES.DELAY;
-      setDelayInput(newDelayValue);
-    }
-
-    // Reset editing flags when switching nodes
-    if (node.type !== "countInput") {
-      isEditingCount.current = false;
-      isEditingMultiplier.current = false;
-    }
+    // Reset editing flags when switching between any nodes
+    isEditingCount.current = false;
+    isEditingMultiplier.current = false;
   }, [node?.data, node?.type, node?.id]);
 
   return {

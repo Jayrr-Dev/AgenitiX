@@ -17,10 +17,10 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
+  GitBranch,
   RotateCcw,
   RotateCw,
   Trash2,
-  GitBranch,
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { useUndoRedo } from "./UndoRedoContext";
@@ -36,14 +36,14 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 
   // GET HISTORY FROM CONTEXT - Updated for graph-based system
   const historyData = getHistory();
-  const { 
-    entries: historyPath = [], 
-    currentIndex, 
-    canUndo, 
+  const {
+    entries: historyPath = [],
+    currentIndex,
+    canUndo,
     canRedo,
     branchOptions = [],
     currentNode,
-    graphStats
+    graphStats,
   } = historyData;
 
   // COMPUTED VALUES
@@ -57,12 +57,12 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
     if (!timestamp || isNaN(timestamp)) {
       return "Unknown time";
     }
-    
+
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) {
       return "Invalid date";
     }
-    
+
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -89,7 +89,9 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
       duplicate: <div className="w-2 h-2 bg-indigo-500 rounded-full" />,
     };
     return (
-      iconMap[actionType] || <div className="w-2 h-2 bg-gray-500 rounded-full" />
+      iconMap[actionType] || (
+        <div className="w-2 h-2 bg-gray-500 rounded-full" />
+      )
     );
   };
 
@@ -200,7 +202,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 
           <div className="flex items-center gap-1">
             <button
-              onClick={undo}
+              onClick={() => undo()}
               disabled={!canUndo}
               className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               title="Undo (Ctrl+Z)"
