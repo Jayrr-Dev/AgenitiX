@@ -92,6 +92,7 @@ function applyNodeChanges(
   setNodes(updatedNodes);
 
   // Update Zustand store for specific operations
+  // Note: UndoRedoManager automatically detects and records these changes
   changes.forEach((change) => {
     if (change.type === "position" && change.position) {
       updateNodePosition(change.id, change.position);
@@ -122,6 +123,7 @@ function applyEdgeChanges(
   setEdges(updatedEdges);
 
   // Update Zustand store for specific operations
+  // Note: UndoRedoManager automatically detects and records these changes
   changes.forEach((change) => {
     if (change.type === "remove") {
       removeEdge(change.id);
@@ -215,6 +217,7 @@ export function useFlowEditorHandlers({
         nodeId,
         nodeType: nodeToDelete.type,
         nodeLabel: nodeToDelete.data?.label || nodeToDelete.type,
+        position: nodeToDelete.position,
       };
 
       // Perform the deletion first (updates Zustand state)
@@ -259,6 +262,7 @@ export function useFlowEditorHandlers({
         newNodeId: newId,
         nodeType: nodeToDuplicate.type,
         nodeLabel: nodeToDuplicate.data?.label || nodeToDuplicate.type,
+        position: offsetPosition,
       });
     },
     [nodes, addNode, selectNode, recordAction]

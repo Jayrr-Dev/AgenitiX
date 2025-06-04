@@ -18,7 +18,7 @@ export default function CustomEdge({
   targetX: number;
   targetY: number;
 }) {
-  const { setEdges } = useReactFlow();
+  const reactFlowInstance = useReactFlow();
 
   const [edgePath, labelX, labelY] = getStraightPath({
     sourceX,
@@ -27,8 +27,11 @@ export default function CustomEdge({
     targetY,
   });
 
+  // Delete edge handler using ReactFlow's standard deletion
   const handleDelete = () => {
-    setEdges((es) => es.filter((e) => e.id !== id));
+    // Use ReactFlow's built-in deletion which will trigger the proper change handlers
+    // and automatically be detected by UndoRedoManager
+    reactFlowInstance.deleteElements({ edges: [{ id }] });
   };
 
   return (
