@@ -1,5 +1,15 @@
 import { Providers } from "@/app/provider";
 import LayoutWrapper from "@/app/wrapper/LayoutWrapper";
+import { AnubisControlPanel } from "@/components/anubis/AnubisControlPanel";
+import { AnubisDebugger } from "@/components/anubis/AnubisDebugger";
+import {
+  AnubisProvider,
+  AnubisStatus,
+} from "@/components/anubis/AnubisProvider";
+import { OptimisticVerificationProvider } from "@/components/anubis/OptimisticVerification";
+import { RiskDashboard } from "@/components/anubis/RiskDashboard";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import PWAStatus from "@/components/PWAStatus";
 import { Analytics } from "@vercel/analytics/react";
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "next-themes";
@@ -92,22 +102,22 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {/* TEMPORARILY DISABLED ANUBIS PROVIDERS FOR DEBUGGING */}
-          {/* <AnubisProvider>
-            <OptimisticVerificationProvider> */}
-          <Providers>
-            <Suspense fallback={<Loading />}>
-              <LayoutWrapper>{children}</LayoutWrapper>
-            </Suspense>
-          </Providers>
-          {/* <PWAInstallPrompt />
+          <AnubisProvider>
+            <OptimisticVerificationProvider>
+              <Providers>
+                <Suspense fallback={<Loading />}>
+                  <LayoutWrapper>{children}</LayoutWrapper>
+                </Suspense>
+              </Providers>
+              <PWAInstallPrompt />
               <PWAStatus />
+              {/* <AnubisToggle /> */}
               <AnubisStatus />
               <AnubisControlPanel />
-              {process.env.NODE_ENV === 'development' && <AnubisDebugger />}
-              {process.env.NODE_ENV === 'development' && <RiskDashboard />}
+              {process.env.NODE_ENV === "development" && <AnubisDebugger />}
+              {process.env.NODE_ENV === "development" && <RiskDashboard />}
             </OptimisticVerificationProvider>
-          </AnubisProvider> */}
+          </AnubisProvider>
           <Toaster position="top-right" />
 
           <Analytics />

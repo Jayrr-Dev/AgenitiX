@@ -1,6 +1,5 @@
 "use client";
 
-// import { useAnubisProtection } from '@/hooks/useAnubisProtection';
 import FAQ from "@/features/home-page/components/FAQ";
 import FeatureBoxesBento from "@/features/home-page/components/FeatureBoxesBento";
 import FeatureBoxesIconed from "@/features/home-page/components/FeatureBoxesIconed";
@@ -17,13 +16,14 @@ import {
   featureBoxesIconed,
   featureBoxesPlain,
 } from "@/features/home-page/data";
+import { useAnubisProtection } from "@/hooks/useAnubisProtection";
 
 export default function Home() {
-  // ENABLE ANUBIS PROTECTION FOR HOME PAGE - TEMPORARILY DISABLED
-  // useAnubisProtection({
-  //   autoProtect: true,
-  //   description: 'Home page protection against bots and scrapers'
-  // });
+  // ENABLE ANUBIS PROTECTION FOR HOME PAGE
+  useAnubisProtection({
+    autoProtect: true,
+    description: "Home page protection against bots and scrapers",
+  });
 
   return (
     <main className="grid grid-cols-12">
