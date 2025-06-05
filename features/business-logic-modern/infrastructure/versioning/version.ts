@@ -2,7 +2,7 @@
 export const VERSION = {
   major: 1,
   minor: 1,
-  patch: 4,
-  full: "1.1.4",
-  generated: "2025-06-02T13:33:57.586Z"
+  patch: 10,
+  full: "1.1.10",
+  generated: "2025-06-05T05:32:37.561Z"
 } as const;

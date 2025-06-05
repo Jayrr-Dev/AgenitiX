@@ -35,6 +35,10 @@ import NodeInspector from "@/features/business-logic-modern/infrastructure/node-
 // CENTRALIZED NODE REGISTRY - Using clean alias
 import { getNodeTypes } from "@node-creation/node-registry/nodeRegistry";
 
+// ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention & cleanup
+import { useCleanupInvalidConnections } from "@node-creation/node-handles/CleanupInvalidConnections";
+import { useUltimateFlowConnectionPrevention } from "@node-creation/node-handles/UltimateTypesafeHandle";
+
 interface FlowCanvasProps {
   nodes: AgenNode[];
   edges: AgenEdge[];
@@ -97,6 +101,18 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   reactFlowHandlers,
 }) => {
   const { resolvedTheme } = useTheme();
+
+  // ============================================================================
+  // ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention
+  // ============================================================================
+
+  const { isValidConnection } = useUltimateFlowConnectionPrevention();
+
+  // ============================================================================
+  // CLEANUP INVALID CONNECTIONS - Remove existing invalid connections
+  // ============================================================================
+
+  useCleanupInvalidConnections();
 
   // ============================================================================
   // STATE FOR MOBILE RESPONSIVENESS & ERROR TRACKING
@@ -228,6 +244,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         snapToGrid
+        isValidConnection={isValidConnection}
         onReconnect={reactFlowHandlers.onReconnect}
         onReconnectStart={reactFlowHandlers.onReconnectStart}
         onReconnectEnd={reactFlowHandlers.onReconnectEnd}

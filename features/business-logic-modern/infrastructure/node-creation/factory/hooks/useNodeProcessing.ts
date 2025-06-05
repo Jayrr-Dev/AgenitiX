@@ -96,7 +96,7 @@ export function useNodeProcessing<T extends BaseNodeData>(
 
   const errorInjectionConfig = createErrorInjectionConfig(config.nodeType);
   const jsonProcessingConfig = createJsonProcessingConfig(
-    config.handles,
+    config.handles || [],
     config.nodeType
   );
   const activationConfig = createActivationConfig(config.nodeType);

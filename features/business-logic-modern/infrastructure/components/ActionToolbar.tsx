@@ -125,7 +125,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
       className={`flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-1 ${className}`}
     >
       <button
-        onClick={undo}
+        onClick={() => undo()}
         disabled={!canUndo}
         className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         title="Undo (Ctrl+Z)"
@@ -134,7 +134,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
       </button>
 
       <button
-        onClick={redo}
+        onClick={() => redo()}
         disabled={!canRedo}
         className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         title="Redo (Ctrl+Y)"

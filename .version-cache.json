@@ -1,6 +1,6 @@
 {
-  "version": "1.1.4",
-  "timestamp": 1748871237585,
+  "version": "1.1.10",
+  "timestamp": 1749101557560,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -12,15 +12,27 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\components\\ActionToolbar.tsx",
-      "ca6fbfedcb8fd24bc813fd1f77cfa4ad"
+      "228feb368c814a528f5524cdeb0450e3"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\components\\BranchSelector.tsx",
+      "b9d51a3e80003038d1d49b0346eba8e6"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\components\\DebugTool.tsx",
       "9e307991d916d10128c59ed144f97b51"
     ],
     [
+      "features\\business-logic-modern\\infrastructure\\components\\graphHelpers.ts",
+      "b75530ee8fb9117c353b1007bd6d8ef8"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\components\\historyGraph.ts",
+      "cc2fa6e7f6ff2c051efb4dd05675a19d"
+    ],
+    [
       "features\\business-logic-modern\\infrastructure\\components\\HistoryPanel.tsx",
-      "488a52dfcbcca415a6d327e4401b4578"
+      "4ee33868a2c71ae9503df43b95316a70"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\components\\StencilInfoPanel.tsx",
@@ -28,15 +40,15 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\components\\UndoRedoContext.tsx",
-      "bc072885192da45bdc80c8e6bdd0ed97"
+      "7ae5c2facd654cc8d161ab0ff58fab73"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\components\\UndoRedoManager.tsx",
-      "e178e20b22e768478cd5baf4e9027f76"
+      "1774ae58ce3e6c0bb24d21cf089d359f"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\components\\FlowCanvas.tsx",
-      "8c083ad9416c3035eb58bd1967fe9c85"
+      "ffa6aad8d2c9c2161a6eaaae24633e49"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\components\\FlowEditorLoading.tsx",
@@ -44,7 +56,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\constants\\index.ts",
-      "69fcb6271fd79e7d2c3f5b02535c5927"
+      "a8454e2e4b601d624209ec2b7d1a7118"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\contexts\\NodeDisplayContext.tsx",
@@ -52,7 +64,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\FlowEditor.tsx",
-      "22e27745b4fba3900e33a6c63013d31e"
+      "f5682eef50b950900c7057e6665011f1"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\hooks\\useDragAndDrop.ts",
@@ -64,7 +76,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\hooks\\useFlowEditorHandlers.ts",
-      "dd70462f38c13482033d4a66ab5eaf97"
+      "a92a223587d76be765b3a0f728ee28db"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\hooks\\useFlowEditorState.ts",
@@ -84,7 +96,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\hooks\\useReactFlowHandlers.ts",
-      "f9681805222643c611f537e61a2fb132"
+      "30fb6a7298a4a17d170803f3fd90da2a"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\hooks\\useTextInputShortcuts.ts",
@@ -108,7 +120,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\utils\\connectionUtils.ts",
-      "72ef893a29c1d0629606b5cfea9e01a1"
+      "1b66e51f462059798750f26814a0eca0"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\utils\\dataMigration.ts",
@@ -152,7 +164,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\components\\NodeContent.tsx",
-      "aeb54d6722af56eeab1de748a21b788e"
+      "32a8647ee0df32a6123f49e67abe1703"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\constants\\handles.ts",
@@ -212,7 +224,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useNodeProcessing.ts",
-      "df99424713f5dd67a1146e27065026bf"
+      "612ef3932645d74a8d26f0bec69829e8"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useNodeRegistration.ts",
@@ -296,7 +308,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\node-edges\\BezierEdge.tsx",
-      "b4207efec26db3574883b27ea3d7072a"
+      "e6a1b807ab2d72324c2c26f79412e1e0"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\node-edges\\StepEdge.tsx",
@@ -304,11 +316,35 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\node-edges\\StraightPath.tsx",
-      "f8d69f6f68fd37d2b3fad299c6c8ffac"
+      "10ef6207ce42d7821279aabaa6231dda"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\TypesafeHandle.tsx",
-      "89643d5c7c0bd612915c93edf18170ea"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\CleanupInvalidConnections.tsx",
+      "740eeeef5ddcafb6388de4d95958903d"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\ConnectionPrevention.tsx",
+      "a42a84bc8166ef0ff12cbe6f17539482"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\FlowConnectionPrevention.tsx",
+      "609bf55cd9e2dd31319e5eabb4cbe87d"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\handleConfig.ts",
+      "0b9300844189d3f3544d3ebb127ce337"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\handleTestSuite.ts",
+      "f66d729cb213d2aa7f29350ead51cea7"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\ReactFlowIntegration.tsx",
+      "fb0a68f82301de2819a1e2959af3ca16"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\UltimateTypesafeHandle.tsx",
+      "aa66823a304bed47a4db7eaefbe050f2"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\node-registry\\inspectorRegistry.ts",
@@ -320,7 +356,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\stores\\vibeModeStore.ts",
-      "a7b4f14df61311691827cf4c44afd5ee"
+      "0d3487c7e1b6761e37f9d2f5ef947ed2"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\utils\\memoryCleanup.ts",
@@ -372,7 +408,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\hooks\\useInspectorState.ts",
-      "bb3409c193f694435580ea38dd9348ee"
+      "2dd739c4703ed406ab436c42b47e6d57"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\index.ts",
@@ -484,7 +520,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "79951208beaba39293a442e5b7ce1897"
+      "6aab938121871f9c0de10840bad673d5"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
@@ -500,7 +536,7 @@
     ],
     [
       "features\\business-logic-modern\\node-domain\\trigger\\TriggerOnToggle.tsx",
-      "fbded02123aad92164aa1c101fe24d29"
+      "c3361e7bdcbfdc95421d0b4dab2f24d3"
     ],
     [
       "features\\business-logic-modern\\node-domain\\view\\ViewOutput.tsx",
