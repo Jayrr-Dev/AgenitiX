@@ -1,4 +1,4 @@
-import type { AnubisConfig, RouteProtectionConfig } from '@/types/anubis';
+import type { AnubisConfig, RouteProtectionConfig } from '../types/anubis';
 
 // DEFAULT ANUBIS CONFIGURATION
 const DEFAULT_CONFIG: AnubisConfig = {

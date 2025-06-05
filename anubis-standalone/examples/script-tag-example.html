@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anubis Script Tag Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        .status.protected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.working {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .status.blocked {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .challenge-info {
+            background: #e2e3e5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #007bff;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .log {
+            background: #212529;
+            color: #ffffff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐺 Anubis Bot Protection - Script Tag Example</h1>
+        <p>This page demonstrates client-side bot protection using Anubis loaded via script tag.</p>
+        
+        <div id="status" class="status">
+            ⏳ Initializing Anubis...
+        </div>
+        
+        <div id="challenge-info" class="challenge-info" style="display: none;">
+            <h4>Challenge Information:</h4>
+            <div id="challenge-details"></div>
+        </div>
+        
+        <div id="progress-container" style="display: none;">
+            <h4>Solving Challenge:</h4>
+            <div class="progress">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            <div id="progress-text">Starting...</div>
+        </div>
+        
+        <div>
+            <button id="refresh-btn" onclick="refreshProtection()">🔄 Refresh Protection</button>
+            <button id="check-btn" onclick="checkStatus()">🔍 Check Status</button>
+            <button id="clear-btn" onclick="clearToken()">🗑️ Clear Token</button>
+        </div>
+        
+        <div id="log" class="log"></div>
+    </div>
+
+    <!-- Load Anubis from CDN or local build -->
+    <script src="../dist/browser/anubis.min.js"></script>
+    
+    <script>
+        let anubisInstance = null;
+        let progressInterval = null;
+        let startTime = null;
+
+        // Initialize Anubis when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeAnubis();
+        });
+
+        function initializeAnubis() {
+            log('🚀 Initializing Anubis browser protection...');
+            
+            // Configuration for Anubis
+            const config = {
+                apiEndpoint: '/api/anubis', // Your backend API endpoint
+                difficulty: 4,              // Challenge difficulty
+                autoChallenge: true,        // Auto-start protection
+                debug: true,               // Enable debug logging
+                
+                // Callback functions
+                onChallenge: function(challenge) {
+                    log('🎯 Challenge received:', JSON.stringify(challenge, null, 2));
+                    showChallenge(challenge);
+                    startProgress();
+                },
+                
+                onVerified: function(token) {
+                    log('✅ Protection verified! Token received.');
+                    hideProgress();
+                    updateStatus('protected', '🛡️ Protected - Bot protection active');
+                    showToken(token);
+                },
+                
+                onBlocked: function(reason) {
+                    log('🚫 Protection blocked:', reason);
+                    hideProgress();
+                    updateStatus('blocked', `❌ Blocked - ${reason}`);
+                }
+            };
+
+            // Create Anubis instance
+            try {
+                anubisInstance = new window.Anubis(config);
+                log('✅ Anubis instance created successfully');
+            } catch (error) {
+                log('❌ Error creating Anubis instance:', error.message);
+                updateStatus('blocked', '❌ Failed to initialize protection');
+            }
+        }
+
+        function updateStatus(type, message) {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `status ${type}`;
+            statusEl.textContent = message;
+        }
+
+        function showChallenge(challenge) {
+            const infoEl = document.getElementById('challenge-info');
+            const detailsEl = document.getElementById('challenge-details');
+            
+            detailsEl.innerHTML = `
+                <strong>Challenge:</strong> ${challenge.challenge}<br>
+                <strong>Difficulty:</strong> ${challenge.difficulty} (requires ${challenge.difficulty} leading zeros)<br>
+                <strong>Timestamp:</strong> ${new Date(challenge.timestamp).toLocaleString()}<br>
+                <strong>Fingerprint:</strong> ${challenge.clientFingerprint}
+            `;
+            
+            infoEl.style.display = 'block';
+            updateStatus('working', '⚙️ Solving proof-of-work challenge...');
+        }
+
+        function startProgress() {
+            const container = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            
+            container.style.display = 'block';
+            startTime = Date.now();
+            
+            // Simulate progress (since we can't get real progress from Web Worker easily)
+            let progress = 0;
+            progressInterval = setInterval(() => {
+                progress += Math.random() * 5;
+                if (progress > 95) progress = 95; // Cap at 95% until solved
+                
+                progressBar.style.width = progress + '%';
+                const elapsed = Math.round((Date.now() - startTime) / 1000);
+                progressText.textContent = `Progress: ${Math.round(progress)}% - Elapsed: ${elapsed}s`;
+            }, 500);
+        }
+
+        function hideProgress() {
+            const container = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            
+            progressBar.style.width = '100%';
+            setTimeout(() => {
+                container.style.display = 'none';
+                progressBar.style.width = '0%';
+            }, 1000);
+        }
+
+        function showToken(token) {
+            // Decode JWT payload to show info (for demo purposes)
+            try {
+                const parts = token.split('.');
+                const payload = JSON.parse(atob(parts[1]));
+                const expiry = new Date(payload.exp * 1000);
+                
+                log('🔑 Token payload:', JSON.stringify(payload, null, 2));
+                log('⏰ Token expires:', expiry.toLocaleString());
+            } catch (error) {
+                log('❌ Error decoding token:', error.message);
+            }
+        }
+
+        function refreshProtection() {
+            log('🔄 Refreshing protection...');
+            if (anubisInstance) {
+                anubisInstance.refresh();
+            } else {
+                initializeAnubis();
+            }
+        }
+
+        function checkStatus() {
+            if (anubisInstance) {
+                const isProtected = anubisInstance.isProtected();
+                log(`🔍 Status check: ${isProtected ? 'PROTECTED' : 'NOT PROTECTED'}`);
+                
+                if (isProtected) {
+                    updateStatus('protected', '🛡️ Protected - Valid token found');
+                } else {
+                    updateStatus('working', '⚠️ Not protected - No valid token');
+                }
+            } else {
+                log('❌ No Anubis instance available');
+            }
+        }
+
+        function clearToken() {
+            localStorage.removeItem('anubis-token');
+            document.cookie = 'anubis-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            log('🗑️ Token cleared from storage');
+            updateStatus('working', '⚠️ Token cleared - Protection reset');
+        }
+
+        function log(message, data = null) {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            let logMessage = `[${timestamp}] ${message}`;
+            
+            if (data) {
+                if (typeof data === 'object') {
+                    logMessage += '\n' + JSON.stringify(data, null, 2);
+                } else {
+                    logMessage += ' ' + data;
+                }
+            }
+            
+            logEl.textContent += logMessage + '\n';
+            logEl.scrollTop = logEl.scrollHeight;
+            
+            // Also log to console if available
+            if (console && console.log) {
+                console.log('[Anubis Demo]', message, data || '');
+            }
+        }
+
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && anubisInstance) {
+                // Page became visible, check protection status
+                checkStatus();
+            }
+        });
+    </script>
+</body>
+</html> 
