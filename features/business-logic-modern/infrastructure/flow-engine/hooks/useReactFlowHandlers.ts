@@ -24,7 +24,6 @@ import {
   type OnSelectionChangeFunc,
 } from "@xyflow/react";
 import { useCallback, useRef } from "react";
-import { toast } from "sonner";
 import type { AgenEdge, AgenNode } from "../types/nodeData";
 import {
   createEdgeStyle,
@@ -108,7 +107,7 @@ export function useReactFlowHandlers({
     (connection: Connection) => {
       // Validate connection
       if (!validateConnection(connection)) {
-        toast.error("Type mismatch: cannot connect these handles.");
+        // Don't show toast here - Ultimate system handles it
         return;
       }
 

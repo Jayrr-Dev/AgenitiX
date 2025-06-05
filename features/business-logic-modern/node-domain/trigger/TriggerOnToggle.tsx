@@ -21,6 +21,10 @@ import {
 import { getNodeHandles } from "../../infrastructure/node-creation/factory/constants/handles";
 import { STANDARD_SIZE_PATTERNS } from "../../infrastructure/node-creation/factory/constants/sizes";
 
+// ADD THEME DEBUGGING
+import React from "react";
+import { useCategoryTheme } from "../../infrastructure/theming/stores/nodeStyleStore";
+
 // ICON COMPONENT - Simple inline toggle icon
 const IconForToggle = ({
   isOn,
@@ -50,6 +54,52 @@ const IconForToggle = ({
       {isOn ? "●" : "○"}
     </button>
   );
+};
+
+// ADD THEME DEBUG COMPONENT
+const ThemeDebugInfo = ({ nodeType }: { nodeType: string }) => {
+  const categoryTheme = useCategoryTheme(nodeType);
+
+  // Log theme information
+  React.useEffect(() => {
+    console.log(`🎨 [${nodeType}] Category theme debug:`, {
+      nodeType,
+      categoryTheme,
+      hasTheme: !!categoryTheme,
+      background: categoryTheme?.background,
+      border: categoryTheme?.border,
+    });
+
+    // EXPANDED DEBUG: Show actual CSS classes
+    if (categoryTheme) {
+      console.log(`🎨 [${nodeType}] DETAILED CSS CLASSES:`, {
+        backgroundLight: categoryTheme.background?.light,
+        backgroundDark: categoryTheme.background?.dark,
+        borderLight: categoryTheme.border?.light,
+        borderDark: categoryTheme.border?.dark,
+        textPrimary: categoryTheme.text?.primary,
+        textSecondary: categoryTheme.text?.secondary,
+        fullTheme: categoryTheme,
+      });
+    }
+
+    // SUPER DEBUG: Check DOM element
+    setTimeout(() => {
+      const triggerNode = document.querySelector('[data-id*="trigger"]');
+      if (triggerNode) {
+        console.log(`🎨 [${nodeType}] DOM ELEMENT CLASSES:`, {
+          classList: Array.from(triggerNode.classList),
+          computedStyles: {
+            backgroundColor: getComputedStyle(triggerNode).backgroundColor,
+            borderColor: getComputedStyle(triggerNode).borderColor,
+          },
+          element: triggerNode,
+        });
+      }
+    }, 100);
+  }, [nodeType, categoryTheme]);
+
+  return null; // This component is just for debugging
 };
 
 // ============================================================================
@@ -176,6 +226,7 @@ const TriggerOnToggle = createNodeComponent<TriggerOnToggleData>({
 
     return (
       <div className="absolute inset-0 flex items-center justify-center">
+        <ThemeDebugInfo nodeType="triggerOnToggle" />
         <IconForToggle
           isOn={data.triggered || false}
           onClick={handleToggle}

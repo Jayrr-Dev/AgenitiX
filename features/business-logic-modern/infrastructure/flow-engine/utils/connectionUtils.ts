@@ -75,9 +75,24 @@ export function getConnectionDataType(connection: Connection): string {
   }
 
   try {
-    // Get the source node from React Flow instance
-    // For now, we'll need to find another way to get the node type
-    // Let's use a fallback approach for edge styling
+    // Try to get the React Flow instance to access nodes
+    const reactFlowInstance = (window as any).__ultimateReactFlowInstance;
+    if (reactFlowInstance) {
+      const nodes = reactFlowInstance.getNodes();
+      const sourceNode = nodes.find((n: any) => n.id === connection.source);
+
+      if (sourceNode) {
+        // Get the actual data type from the node registry
+        const dataType = getHandleDataType(
+          sourceNode.type,
+          connection.sourceHandle
+        );
+        console.log(
+          `[ConnectionUtils] Found handle "${connection.sourceHandle}" with type "${dataType}" from registry`
+        );
+        return dataType;
+      }
+    }
 
     // If the sourceHandle looks like a data type (single character), use it
     if (

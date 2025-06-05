@@ -12,7 +12,7 @@
 
 "use client";
 
-import CustomHandle from "@node-creation/node-handles/TypesafeHandle";
+import UltimateTypesafeHandle from "@node-creation/node-handles/UltimateTypesafeHandle";
 import type { BaseNodeData, NodeFactoryConfig } from "../types";
 import {
   calculateRenderError,
@@ -130,7 +130,7 @@ function InputHandlesSection({ handles }: { handles: any[] }) {
         });
 
         return (
-          <CustomHandle
+          <UltimateTypesafeHandle
             key={handle.id}
             type="target"
             position={handle.position}
@@ -240,7 +240,7 @@ function OutputHandlesSection({ handles }: { handles: any[] }) {
         });
 
         return (
-          <CustomHandle
+          <UltimateTypesafeHandle
             key={handle.id}
             type="source"
             position={handle.position}

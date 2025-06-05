@@ -38,8 +38,8 @@ const DEBUG_MODE = process.env.NODE_ENV === "development";
 // CONFIGURATION & CONSTANTS
 // ============================================================================
 
-const ACTION_SEPARATOR_DELAY = 150; // ms between distinct actions
-const POSITION_DEBOUNCE_DELAY = 50; // ms for position changes
+const ACTION_SEPARATOR_DELAY = 200; // ms between distinct actions
+const POSITION_DEBOUNCE_DELAY = 0; // ms for position changes
 
 // ============================================================================
 // TYPES (keeping existing ones for compatibility)
