@@ -1,6 +1,6 @@
 {
-  "version": "1.1.7",
-  "timestamp": 1749012029420,
+  "version": "1.1.8",
+  "timestamp": 1749086122897,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -44,7 +44,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\components\\UndoRedoManager.tsx",
-      "6e3bba6d15f23969835d4814bb073e30"
+      "6ed11674407143230206e31c48c80985"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\components\\FlowCanvas.tsx",
@@ -496,7 +496,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "8176fa648210db5bfaa79634d06b30b7"
+      "37290eb4c92d459114bf3f7cd9f1397d"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
