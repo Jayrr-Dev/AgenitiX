@@ -1,6 +1,6 @@
 {
-  "version": "1.1.8",
-  "timestamp": 1749086122897,
+  "version": "1.1.9",
+  "timestamp": 1749101352917,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -44,11 +44,11 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\components\\UndoRedoManager.tsx",
-      "6ed11674407143230206e31c48c80985"
+      "1774ae58ce3e6c0bb24d21cf089d359f"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\components\\FlowCanvas.tsx",
-      "8c083ad9416c3035eb58bd1967fe9c85"
+      "ffa6aad8d2c9c2161a6eaaae24633e49"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\components\\FlowEditorLoading.tsx",
@@ -56,7 +56,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\constants\\index.ts",
-      "69fcb6271fd79e7d2c3f5b02535c5927"
+      "a8454e2e4b601d624209ec2b7d1a7118"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\contexts\\NodeDisplayContext.tsx",
@@ -96,7 +96,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\hooks\\useReactFlowHandlers.ts",
-      "f9681805222643c611f537e61a2fb132"
+      "30fb6a7298a4a17d170803f3fd90da2a"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\hooks\\useTextInputShortcuts.ts",
@@ -120,7 +120,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\utils\\connectionUtils.ts",
-      "72ef893a29c1d0629606b5cfea9e01a1"
+      "80b8165f497abdaf790fbd90b7edf974"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\utils\\dataMigration.ts",
@@ -164,7 +164,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\components\\NodeContent.tsx",
-      "aeb54d6722af56eeab1de748a21b788e"
+      "32a8647ee0df32a6123f49e67abe1703"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\constants\\handles.ts",
@@ -319,8 +319,32 @@
       "10ef6207ce42d7821279aabaa6231dda"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\TypesafeHandle.tsx",
-      "89643d5c7c0bd612915c93edf18170ea"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\CleanupInvalidConnections.tsx",
+      "740eeeef5ddcafb6388de4d95958903d"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\ConnectionPrevention.tsx",
+      "a42a84bc8166ef0ff12cbe6f17539482"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\FlowConnectionPrevention.tsx",
+      "609bf55cd9e2dd31319e5eabb4cbe87d"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\handleConfig.ts",
+      "0b9300844189d3f3544d3ebb127ce337"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\handleTestSuite.ts",
+      "f66d729cb213d2aa7f29350ead51cea7"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\ReactFlowIntegration.tsx",
+      "fb0a68f82301de2819a1e2959af3ca16"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\UltimateTypesafeHandle.tsx",
+      "cb5d4833ada90c2e7ef43fa2bf73cb11"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\node-registry\\inspectorRegistry.ts",
@@ -496,7 +520,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "37290eb4c92d459114bf3f7cd9f1397d"
+      "a9965b09bcb490a857e1d680a5c2883b"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
@@ -512,7 +536,7 @@
     ],
     [
       "features\\business-logic-modern\\node-domain\\trigger\\TriggerOnToggle.tsx",
-      "fbded02123aad92164aa1c101fe24d29"
+      "c3361e7bdcbfdc95421d0b4dab2f24d3"
     ],
     [
       "features\\business-logic-modern\\node-domain\\view\\ViewOutput.tsx",
