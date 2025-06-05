@@ -1,6 +1,6 @@
 {
-  "version": "1.1.9",
-  "timestamp": 1749101352917,
+  "version": "1.1.10",
+  "timestamp": 1749101557560,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -120,7 +120,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\utils\\connectionUtils.ts",
-      "80b8165f497abdaf790fbd90b7edf974"
+      "1b66e51f462059798750f26814a0eca0"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\utils\\dataMigration.ts",
@@ -344,7 +344,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\UltimateTypesafeHandle.tsx",
-      "cb5d4833ada90c2e7ef43fa2bf73cb11"
+      "aa66823a304bed47a4db7eaefbe050f2"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\node-registry\\inspectorRegistry.ts",
@@ -520,7 +520,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "a9965b09bcb490a857e1d680a5c2883b"
+      "6aab938121871f9c0de10840bad673d5"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
