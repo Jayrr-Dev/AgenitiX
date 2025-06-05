@@ -594,17 +594,8 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
     }
   }, [invalid, displayInfo, props.type, dataType]);
 
-  // STYLE GENERATION - Detailed debugging
+  // STYLE GENERATION
   const handleStyle = useMemo(() => {
-    // Debug: Log EVERYTHING about this handle
-    console.group(`🎨 Handle Debug: ${id}`);
-    console.log("dataType:", dataType);
-    console.log("displayInfo:", displayInfo);
-    console.log("ULTIMATE_TYPE_MAP lookup:", ULTIMATE_TYPE_MAP[dataType]);
-    console.log("Final color being applied:", displayInfo.color);
-    console.log("props.style override:", props.style);
-    console.groupEnd();
-
     const style = {
       backgroundColor: displayInfo.color,
       color: "#fff",
@@ -613,7 +604,7 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
     };
 
     return style;
-  }, [displayInfo.color, props.style, id, dataType]);
+  }, [displayInfo.color, props.style]);
 
   const handleClassName = useMemo(() => {
     const baseClasses =
@@ -623,11 +614,8 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
     const finalClassName =
       `${baseClasses} ${invalidClass} ${unionClass} ${className}`.trim();
 
-    // Debug: Log what classes are being applied
-    console.log(`🎨 Handle ${id} classes:`, finalClassName);
-
     return finalClassName;
-  }, [invalid, dataType, className, id]);
+  }, [invalid, dataType, className]);
 
   // RENDER - Force inline styles to override any CSS
   return (
@@ -638,14 +626,7 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
       isValidConnection={isValidConnection as IsValidConnection}
       isConnectable={handleIsConnectable}
       className={handleClassName}
-      style={{
-        ...handleStyle,
-        // Force the background color to override any CSS
-        backgroundColor: displayInfo.color,
-        // TEMPORARY: Add a unique border to confirm this component is being used
-        border: `3px solid ${displayInfo.color}`,
-        boxShadow: `0 0 10px ${displayInfo.color}`,
-      }}
+      style={handleStyle}
       title={tooltip}
     >
       <span
@@ -662,8 +643,6 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
           justifyContent: "center",
           width: "100%",
           height: "100%",
-          marginBottom: "1.5px",
-          textAlign: "center",
         }}
       >
         {displayInfo.label}

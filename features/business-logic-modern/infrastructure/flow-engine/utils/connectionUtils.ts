@@ -87,9 +87,6 @@ export function getConnectionDataType(connection: Connection): string {
           sourceNode.type,
           connection.sourceHandle
         );
-        console.log(
-          `[ConnectionUtils] Found handle "${connection.sourceHandle}" with type "${dataType}" from registry`
-        );
         return dataType;
       }
     }
@@ -113,10 +110,6 @@ export function getConnectionDataType(connection: Connection): string {
     };
 
     const dataType = handleToTypeMap[connection.sourceHandle];
-    console.log(
-      `[ConnectionUtils] Mapped handle "${connection.sourceHandle}" to type "${dataType || "s"}"`
-    );
-
     return dataType || "s"; // Default to string
   } catch (error) {
     console.warn(
