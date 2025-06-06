@@ -1,6 +1,6 @@
 {
-  "version": "1.1.12",
-  "timestamp": 1749174293321,
+  "version": "1.1.13",
+  "timestamp": 1749180993040,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -144,7 +144,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\category-registry\\categoryRegistry.ts",
-      "5f450222fd4ffe69c9d7da211aa61438"
+      "e5b74a4b307f93ceea0abb2ed455818f"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\category-registry\\validate-migration.ts",
@@ -164,7 +164,11 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\components\\NodeContent.tsx",
-      "32a8647ee0df32a6123f49e67abe1703"
+      "a031b3d87e5c7c26d671acb1d462a8a3"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\components\\TextInputPerformanceMonitor.tsx",
+      "57e1076a334536a2c2057e3dd50a8df2"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\constants\\handles.ts",
@@ -188,7 +192,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\helpers\\inspectorControlHelpers.tsx",
-      "aeda89013d60788d6e4b788061fc7680"
+      "1eab1a7042aee9ee540173536cf0a577"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\helpers\\nodeConfigHelpers.ts",
@@ -220,11 +224,11 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useNodeHandles.ts",
-      "caf07a190e320c3c238f3bc7ba964709"
+      "e0d4fe80cd950e1419ff2fa4fe9b5946"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useNodeProcessing.ts",
-      "612ef3932645d74a8d26f0bec69829e8"
+      "358e75022677311e37e0504f89fc44aa"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useNodeRegistration.ts",
@@ -239,12 +243,16 @@
       "0fbd9bde679fdd4e8da67cc71476a29f"
     ],
     [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useOptimizedTextInput.ts",
+      "1f754d6fb6001b366201aa5c64cf9b73"
+    ],
+    [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\integrations\\factoryIntegration.ts",
       "a0f74a641924fc9948937bf6fecb772b"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\NodeFactory.tsx",
-      "5f27d1c322645b93700ecb17141ae380"
+      "d1b000eb39312f41844c080b5025e1e5"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\templates\\CreateTextTemplate.tsx",
@@ -296,7 +304,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\propagationEngine.ts",
-      "913acc72eddfc37cc3e51080b54ab9e3"
+      "295b869bf4e6afdd3bb045d85f086c80"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\typeSafeConnections.ts",
@@ -324,7 +332,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\ConnectionPrevention.tsx",
-      "be7c048c94066082bf4dde28d471b377"
+      "0e67cdd9c655f41be4622887ac1804b5"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\FlowConnectionPrevention.tsx",
@@ -344,7 +352,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\UltimateTypesafeHandle.tsx",
-      "aa66823a304bed47a4db7eaefbe050f2"
+      "b3286e5a29383f7dd77804a1e0e10976"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\node-registry\\inspectorRegistry.ts",
@@ -500,7 +508,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\theming\\stores\\nodeStyleStore.ts",
-      "a74937cfb91081e9567c9fdbe6931ef7"
+      "9dd8225815474511aa30af624613bc16"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\auto-migrate.ts",
@@ -520,11 +528,11 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "adb4d26bce202033433cc5d7d4771016"
+      "5267e5d4f4e136520ae2235d4435cd3e"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
-      "2ac73bc3c8888d234f316933e918104f"
+      "38aa834b869359c631ec0556a83b3993"
     ],
     [
       "features\\business-logic-modern\\node-domain\\index.ts",
