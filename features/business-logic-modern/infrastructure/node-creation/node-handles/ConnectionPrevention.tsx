@@ -441,9 +441,46 @@ export function useConnectionPrevention() {
 // ===== USER FEEDBACK FUNCTIONS =====
 
 /**
- * Show feedback when connection is blocked
+ * Show feedback when connection is blocked with spam prevention
  */
+let lastToastTime = 0;
+let lastToastReason = "";
+const TOAST_COOLDOWN = 1000; // 1 second cooldown between toasts
+
 function showConnectionBlockedFeedback(compatibility: CompatibilityInfo) {
+  const now = Date.now();
+
+  // Prevent spam: check if we just showed the same toast recently
+  if (
+    now - lastToastTime < TOAST_COOLDOWN &&
+    lastToastReason === compatibility.reason
+  ) {
+    return;
+  }
+
+  // Check if there's already a toast visible
+  const existingToast = document.querySelector(".connection-blocked-toast");
+  if (existingToast) {
+    // Update existing toast instead of creating a new one
+    const contentElement = existingToast.querySelector(".toast-content");
+    if (contentElement) {
+      contentElement.innerHTML = `
+        <strong>Connection Blocked</strong>
+        <p>${compatibility.reason}</p>
+        ${
+          compatibility.suggestedTypes
+            ? `<small>Compatible types: ${compatibility.suggestedTypes.map(getTypeLabel).join(", ")}</small>`
+            : ""
+        }
+      `;
+    }
+    return;
+  }
+
+  // Update spam prevention tracking
+  lastToastTime = now;
+  lastToastReason = compatibility.reason;
+
   // Create temporary toast notification
   const toast = document.createElement("div");
   toast.className = "connection-blocked-toast";
@@ -478,8 +515,14 @@ function showConnectionBlockedFeedback(compatibility: CompatibilityInfo) {
 
   // Remove after 3 seconds
   setTimeout(() => {
-    toast.style.animation = "slideOut 0.3s ease-in";
-    setTimeout(() => document.body.removeChild(toast), 300);
+    if (toast.parentNode) {
+      toast.style.animation = "slideOut 0.3s ease-in";
+      setTimeout(() => {
+        if (toast.parentNode) {
+          document.body.removeChild(toast);
+        }
+      }, 300);
+    }
   }, 3000);
 }
 

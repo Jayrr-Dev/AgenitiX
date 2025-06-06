@@ -117,18 +117,9 @@ function InputHandlesSection({ handles }: { handles: any[] }) {
     return null;
   }
 
-  // DEBUG: Log handle data to see what's being passed
-  console.log("🎨 [InputHandlesSection] Rendering handles:", handles);
-
   return (
     <>
       {handles.map((handle: any) => {
-        console.log(`🎨 [InputHandle] Rendering handle ${handle.id}:`, {
-          dataType: handle.dataType,
-          position: handle.position,
-          type: "target",
-        });
-
         return (
           <UltimateTypesafeHandle
             key={handle.id}
@@ -227,18 +218,9 @@ function OutputHandlesSection({ handles }: { handles: any[] }) {
     return null;
   }
 
-  // DEBUG: Log handle data to see what's being passed
-  console.log("🎨 [OutputHandlesSection] Rendering handles:", handles);
-
   return (
     <>
       {handles.map((handle: any) => {
-        console.log(`🎨 [OutputHandle] Rendering handle ${handle.id}:`, {
-          dataType: handle.dataType,
-          position: handle.position,
-          type: "source",
-        });
-
         return (
           <UltimateTypesafeHandle
             key={handle.id}

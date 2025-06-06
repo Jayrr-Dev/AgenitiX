@@ -243,49 +243,18 @@ export const checkTriggerState = (
 ): boolean => {
   const triggerConnections = getTriggerConnections(connections, nodeId);
 
-  // DEBUG: Log trigger connections
-  console.log(`🔍 [CheckTriggerState] Node ${nodeId}:`, {
-    triggerConnectionCount: triggerConnections.length,
-    hasConnections: triggerConnections.length > 0,
-  });
-
   // No trigger connections means always allowed
   if (triggerConnections.length === 0) {
-    console.log(
-      `🔍 [CheckTriggerState] Node ${nodeId}: No triggers, allowing activation`
-    );
     return true;
   }
 
   const triggerNodesData = getSourceNodesData(triggerConnections, nodesData);
-
-  // DEBUG: Log trigger node states
-  triggerNodesData.forEach((triggerNode, index) => {
-    const triggerData = triggerNode.data || {};
-    const isActive = isNodeActive(triggerData);
-    console.log(
-      `🔍 [CheckTriggerState] Node ${nodeId} - Trigger ${index + 1}:`,
-      {
-        triggerId: triggerNode.id,
-        triggerData: {
-          triggered: triggerData.triggered,
-          isActive: triggerData.isActive,
-          value: triggerData.value,
-          output: triggerData.output,
-        },
-        evaluatedAsActive: isActive,
-      }
-    );
-  });
 
   const result = triggerNodesData.some((triggerNode) => {
     const triggerData = triggerNode.data || {};
     return isNodeActive(triggerData);
   });
 
-  console.log(
-    `🔍 [CheckTriggerState] Node ${nodeId}: Final result = ${result}`
-  );
   return result;
 };
 
@@ -301,40 +270,11 @@ export const hasActiveInputNodes = (
   const inputConnections = getInputConnections(connections, nodeId);
   const nonJsonInputs = filterNonJsonConnections(inputConnections);
 
-  // DEBUG: Log input analysis
-  console.log(`🔍 [hasActiveInputNodes] Node ${nodeId}:`, {
-    inputConnectionCount: inputConnections.length,
-    nonJsonInputCount: nonJsonInputs.length,
-  });
-
   if (nonJsonInputs.length === 0) {
-    console.log(
-      `🔍 [hasActiveInputNodes] Node ${nodeId}: No non-JSON inputs, returning false`
-    );
     return false;
   }
 
   const sourceNodesData = getSourceNodesData(nonJsonInputs, nodesData);
-
-  // DEBUG: Log each source node analysis
-  sourceNodesData.forEach((sourceNode, index) => {
-    const sourceData = sourceNode.data || {};
-    const isNodeDataActiveResult = isNodeDataActive(sourceData);
-    console.log(
-      `🔍 [hasActiveInputNodes] Node ${nodeId} - Source ${index + 1}:`,
-      {
-        sourceId: sourceNode.id,
-        sourceData: {
-          isActive: sourceData.isActive,
-          triggered: sourceData.triggered,
-          value: sourceData.value,
-          text: sourceData.text,
-          output: sourceData.output,
-        },
-        evaluatedAsActive: isNodeDataActiveResult,
-      }
-    );
-  });
 
   const result = sourceNodesData.some((sourceNode) => {
     const sourceData = sourceNode.data || {};

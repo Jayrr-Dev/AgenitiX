@@ -647,13 +647,6 @@ export const useCategoryTheme = (nodeType: string) => {
       : enhancedTheme;
 
     // ENHANCED: Apply category hooks when theme is used
-    if (categoryTheming.debugMode) {
-      console.log(`🎨 Applied enhanced theme for ${nodeType} (${category}):`, {
-        priority: getCategoryThemePriority(category),
-        metadata: validation.metadata,
-        theme: finalTheme,
-      });
-    }
 
     // Trigger theme hooks
     applyCategoryThemeHooks(category, finalTheme);
@@ -699,14 +692,6 @@ export const useNodeButtonTheme = (
             ? { ...enhancedTheme, ...override }
             : enhancedTheme;
 
-          if (styles.categoryTheming.debugMode) {
-            console.log(`🎨 Applied button theme for ${nodeType}:`, {
-              category,
-              priority: getCategoryThemePriority(category),
-              theme: finalTheme.button,
-            });
-          }
-
           return `${finalTheme.button.border} ${finalTheme.button.hover.light} dark:${finalTheme.button.hover.dark}`;
         }
       }
@@ -744,14 +729,6 @@ export const useNodeTextTheme = (isError: boolean, nodeType?: string) => {
           const finalTheme = override
             ? { ...enhancedTheme, ...override }
             : enhancedTheme;
-
-          if (styles.categoryTheming.debugMode) {
-            console.log(`🎨 Applied text theme for ${nodeType}:`, {
-              category,
-              metadata: validation.metadata,
-              theme: finalTheme.text,
-            });
-          }
 
           return {
             primary: `${finalTheme.text.primary.light} dark:${finalTheme.text.primary.dark}`,

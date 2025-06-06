@@ -182,17 +182,6 @@ export function useNodeProcessing<T extends BaseNodeData>(
         );
       }
 
-      // LOGGING FOR DIFFERENT ACTIVATION TYPES
-      if (activationChange.isDeactivating) {
-        console.log(
-          `UFS ${config.nodeType} ${id}: DEACTIVATING - Using ultra-fast instant propagation`
-        );
-      } else if (activationChange.isActivating) {
-        console.log(
-          `UFS ${config.nodeType} ${id}: ACTIVATING - Using ultra-fast smooth propagation`
-        );
-      }
-
       // ULTRA-FAST PROPAGATION
       gpuAcceleration.propagateUltraFast(
         id,

@@ -220,7 +220,7 @@ export const CATEGORY_REGISTRY: Record<NodeCategory, CategoryMetadata> = {
 
     hooks: {
       onActivate: () => console.log("🏭 Create category activated"),
-      onThemeApplied: (theme) => console.log("🎨 Applied create theme:", theme),
+      onThemeApplied: (theme) => {},
     },
 
     lifecycle: {
