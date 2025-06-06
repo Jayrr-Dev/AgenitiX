@@ -1,0 +1,127 @@
+# IMAGE TRANSFORM NODE METADATA
+# Complex image processing with multiple operations and filters
+
+nodeType: "imageTransform"
+category: "media"
+displayName: "Image Transform"
+description: "Apply transformations, filters, and effects to images with real-time preview"
+icon: "Image"
+folder: "advanced"
+order: 1
+
+# Legacy dimensions
+iconWidth: 140
+iconHeight: 100
+expandedWidth: 480
+expandedHeight: 400
+
+# Modern size configuration
+size:
+  collapsed:
+    width: "w-[140px]"
+    height: "h-[100px]"
+  expanded:
+    width: "w-[480px]"
+    height: "h-[400px]"
+
+# UI Configuration
+hasToggle: true
+isEnabled: true
+isExperimental: true
+
+# Base handles
+handles:
+  - id: "image-input"
+    type: "target"
+    dataType: "image"
+    position: "Left"
+    label: "Source Image"
+    isConnectable: true
+  - id: "processed-output"
+    type: "source"
+    dataType: "image"
+    position: "Right"
+    label: "Processed Image"
+    isConnectable: true
+  - id: "metadata-output"
+    type: "source"
+    dataType: "object"
+    position: "Bottom"
+    label: "Image Metadata"
+    isConnectable: true
+
+# Dynamic handles for operation parameters
+dynamicHandles: "./dynamicHandles/imageTransformHandles"
+
+# Inspector configuration
+inspector:
+  type: "custom"
+  renderer: "./ImageTransformInspector"
+  priority: 3
+  isCollapsible: true
+
+# Complex default data with multiple operation types
+defaultData:
+  # Input/Output
+  sourceImage: null
+  processedImage: null
+
+  # Transform operations stack
+  operations:
+    - id: "resize"
+      type: "resize"
+      enabled: true
+      params:
+        width: 800
+        height: 600
+        maintainAspectRatio: true
+        resizeMode: "cover"
+    - id: "brightness"
+      type: "filter"
+      enabled: false
+      params:
+        brightness: 1.0
+        contrast: 1.0
+        saturation: 1.0
+        hue: 0
+    - id: "crop"
+      type: "crop"
+      enabled: false
+      params:
+        x: 0
+        y: 0
+        width: 100
+        height: 100
+        unit: "percent"
+
+  # Processing settings
+  processing:
+    quality: 0.85
+    format: "webp"
+    progressive: true
+    preserveMetadata: false
+
+  # Preview settings
+  preview:
+    enabled: true
+    realTime: false
+    showGrid: false
+    zoom: 1.0
+
+  # Performance
+  cache:
+    enabled: true
+    maxSize: "50MB"
+    ttl: 3600
+
+# Component paths
+component: "./ImageTransformNode"
+inspectorComponent: "./ImageTransformInspector"
+
+# Advanced features
+features:
+  - "real-time-preview"
+  - "batch-processing"
+  - "undo-redo"
+  - "operation-presets"
+  - "performance-monitoring"

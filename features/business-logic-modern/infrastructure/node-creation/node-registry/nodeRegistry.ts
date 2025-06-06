@@ -55,7 +55,7 @@ import { getNodeHandles as getNodeHandlesFromConstants } from "../factory/consta
 // ============================================================================
 
 // Import category registry functions with proper naming to avoid conflicts
-import { getCategoryMetadata as getCategoryRegistryMetadata } from "../category-registry/categoryRegistry";
+import { getCategoryMetadata as getCategoryRegistryMetadata } from "./category-registry/categoryRegistry";
 
 // ============================================================================
 // ENHANCED NODE REGISTRATION INTERFACE - Factory Types Integration

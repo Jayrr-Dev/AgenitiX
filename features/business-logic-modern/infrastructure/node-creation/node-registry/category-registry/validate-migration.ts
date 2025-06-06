@@ -17,7 +17,7 @@ import {
   getNodesInCategory,
   getRegistryStats,
   MODERN_NODE_REGISTRY,
-} from "../node-registry/nodeRegistry";
+} from "../nodeRegistry";
 
 import {
   CATEGORY_REGISTRY,

@@ -46,7 +46,7 @@ import {
   getCategoryBehavior,
   getCategoryMetadata,
   getCategoryTheme,
-} from "../node-creation/category-registry/categoryRegistry";
+} from "../node-creation/node-registry/category-registry/categoryRegistry";
 
 const NodeInspector = React.memo(function NodeInspector() {
   // ============================================================================

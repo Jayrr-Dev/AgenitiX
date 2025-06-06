@@ -11,7 +11,7 @@
  * Keywords: category-registry, metadata, centralized, dynamic, extensible, validation
  */
 
-import type { NodeCategory } from "../factory/types";
+import type { NodeCategory } from "../../factory/types";
 
 // ============================================================================
 // ENHANCED CATEGORY METADATA INTERFACE

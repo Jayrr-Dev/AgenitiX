@@ -22,7 +22,7 @@ import {
   CATEGORY_REGISTRY,
   getCategoryMetadata,
   getCategoryTheme,
-} from "../../node-creation/category-registry/categoryRegistry";
+} from "../../node-creation/node-registry/category-registry/categoryRegistry";
 
 // ============================================================================
 // LAZY REGISTRY INTEGRATION - Fixes circular dependency
