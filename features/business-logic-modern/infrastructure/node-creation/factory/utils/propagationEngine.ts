@@ -281,9 +281,6 @@ export const hasActiveInputNodes = (
     return isNodeDataActive(sourceData);
   });
 
-  console.log(
-    `🔍 [hasActiveInputNodes] Node ${nodeId}: Final result = ${result}`
-  );
   return result;
 };
 
@@ -472,11 +469,6 @@ export const handleTransformationNodeActivation = <T extends BaseNodeData>(
   const hasOutput = hasValidOutput(data as NodeOutputData);
   const isNodeActive = hasActiveInput && hasOutput;
 
-  // Debug logging for transformation nodes
-  console.log(
-    `UFS Debug ${nodeType} ${nodeId}: hasActiveInput=${hasActiveInput}, hasOutput=${hasOutput}, result=${isNodeActive}`
-  );
-
   return isNodeActive;
 };
 
@@ -493,34 +485,17 @@ export const determineDownstreamNodeState = <T extends BaseNodeData>(
 ): boolean => {
   const { nodeType, data, connections, nodesData, nodeId } = params;
 
-  console.log(
-    `🔍 [determineDownstreamNodeState] Node ${nodeId} (${nodeType}): Starting evaluation`
-  );
-
   const hasActiveInput = hasActiveInputNodes(connections, nodesData, nodeId);
-
-  console.log(
-    `🔍 [determineDownstreamNodeState] Node ${nodeId}: hasActiveInput = ${hasActiveInput}`
-  );
 
   // Early return if no active input
   if (!hasActiveInput) {
-    console.log(
-      `🔍 [determineDownstreamNodeState] Node ${nodeId}: No active input, returning false`
-    );
     return false;
   }
 
   // Early return if triggers don't allow activation
   const triggerAllows = checkTriggerState(connections, nodesData, nodeId);
-  console.log(
-    `🔍 [determineDownstreamNodeState] Node ${nodeId}: triggerAllows = ${triggerAllows}`
-  );
 
   if (!triggerAllows) {
-    console.log(
-      `🔍 [determineDownstreamNodeState] Node ${nodeId}: Triggers don't allow, returning false`
-    );
     return false;
   }
 
@@ -532,25 +507,16 @@ export const determineDownstreamNodeState = <T extends BaseNodeData>(
       hasActiveInput,
       nodeId
     );
-    console.log(
-      `🔍 [determineDownstreamNodeState] Node ${nodeId}: Transformation node result = ${result}`
-    );
     return result;
   }
 
   // Handle view output nodes
   if (nodeType === "viewOutput") {
     const result = handleViewOutputActivation(data as ViewOutputNodeData);
-    console.log(
-      `🔍 [determineDownstreamNodeState] Node ${nodeId}: ViewOutput node result = ${result}`
-    );
     return result;
   }
 
   // Default activation based on input activity
-  console.log(
-    `🔍 [determineDownstreamNodeState] Node ${nodeId}: Using default activation = ${hasActiveInput}`
-  );
   return hasActiveInput;
 };
 

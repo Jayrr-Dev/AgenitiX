@@ -37,7 +37,6 @@ import type { NodeType } from "../flow-engine/types/nodeData";
 import {
   MODERN_NODE_REGISTRY,
   getNodeMetadata,
-  getRegistryStats,
   isValidNodeType,
 } from "../node-creation/node-registry/nodeRegistry";
 
@@ -128,43 +127,7 @@ const NodeInspector = React.memo(function NodeInspector() {
       ? getCategoryBehavior(registryEntry.category)
       : null;
 
-    // REGISTRY-VALIDATED DEBUGGING - Only debug valid nodes
     if (isValidType && registryEntry) {
-      console.log(`🔍 [NodeInspector] ENHANCED REGISTRY DEBUG ${nodeType}:`, {
-        nodeType,
-        isValidInRegistry: isValidType,
-        registryMetadata: registryEntry,
-        configEntry: configEntry,
-        hasRegistryConfig: !!registryEntry,
-        hasOutput: registryEntry.hasOutput,
-        hasControls: registryEntry.hasControls,
-        category: registryEntry.category,
-        folder: registryEntry.folder,
-
-        // ENHANCED CATEGORY DATA
-        categoryMetadata,
-        categoryTheme,
-        categoryBehavior,
-        categoryEnabled: categoryMetadata?.enabled,
-        categoryPriority: categoryMetadata?.priority,
-        categoryRules: categoryMetadata?.rules,
-      });
-
-      // Show all valid registry entries for comparison
-      const stats = getRegistryStats();
-      console.log("🔍 [NodeInspector] ENHANCED REGISTRY STATS:", {
-        totalNodes: stats.totalNodes,
-        byCategory: stats.byCategory,
-        byFolder: stats.byFolder,
-        validNodeTypes: Object.keys(MODERN_NODE_REGISTRY),
-        enabledCategories: Object.entries(CATEGORY_REGISTRY)
-          .filter(([_, meta]) => meta.enabled)
-          .map(([cat]) => cat),
-        categoryPriorities: Object.entries(CATEGORY_REGISTRY)
-          .map(([cat, meta]) => ({ category: cat, priority: meta.priority }))
-          .sort((a, b) => a.priority - b.priority),
-      });
-
       return {
         nodeType,
         isValid: true,

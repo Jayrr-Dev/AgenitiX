@@ -160,7 +160,7 @@ const performanceMonitor = new TextInputPerformanceMonitor();
 // ============================================================================
 
 class SmartDebouncer {
-  private timeouts = new Map<string, NodeJS.Timeout>();
+  private timeouts = new Map<string, Timer>();
   private lastCallTimes = new Map<string, number>();
 
   debounce<T extends (...args: any[]) => void>(
@@ -274,9 +274,9 @@ export function useOptimizedTextInput(
 ): OptimizedTextInputReturn {
   // Configuration with smart defaults
   const {
-    debounceMs = 150, // Optimized for smooth typing
+    debounceMs = 50, // Reduced for faster deletion (was 150ms)
     maxLength = 100000,
-    minUpdateInterval = 50,
+    minUpdateInterval = 25, // Reduced for faster updates (was 50ms)
     enableMetrics = process.env.NODE_ENV === "development",
     updateStrategy = "debounced",
     validator = defaultValidator,
@@ -442,7 +442,7 @@ export function useOptimizedTextInput(
 // ============================================================================
 
 /**
- * Hook for text input with automatic performance optimization
+ * Hook for text input with automatic performance optimization (faster deletion)
  */
 export function useAutoOptimizedTextInput(
   nodeId: string,
@@ -450,15 +450,16 @@ export function useAutoOptimizedTextInput(
   updateCallback: (nodeId: string, data: { heldText: string }) => void
 ) {
   return useOptimizedTextInput(nodeId, initialValue, updateCallback, {
-    // Smart defaults based on node type and content length
-    debounceMs: initialValue.length > 1000 ? 300 : 150,
+    // Faster defaults optimized for deletion speed
+    debounceMs: initialValue.length > 1000 ? 50 : 25, // Reduced from 300/150ms
+    minUpdateInterval: initialValue.length > 1000 ? 16 : 8, // Added faster updates
     updateStrategy: initialValue.length > 5000 ? "throttled" : "debounced",
     enableMetrics: true,
   });
 }
 
 /**
- * Hook for high-performance text input (minimal delays)
+ * Hook for high-performance text input (ultra-fast for deletion)
  */
 export function useHighPerformanceTextInput(
   nodeId: string,
@@ -466,8 +467,8 @@ export function useHighPerformanceTextInput(
   updateCallback: (nodeId: string, data: { heldText: string }) => void
 ) {
   return useOptimizedTextInput(nodeId, initialValue, updateCallback, {
-    debounceMs: 100,
-    minUpdateInterval: 25,
+    debounceMs: 16, // Reduced from 100ms to 16ms (1 frame at 60fps)
+    minUpdateInterval: 8, // Reduced from 25ms to 8ms
     updateStrategy: "debounced",
     enableMetrics: true,
   });
@@ -482,10 +483,26 @@ export function useLargeTextInput(
   updateCallback: (nodeId: string, data: { heldText: string }) => void
 ) {
   return useOptimizedTextInput(nodeId, initialValue, updateCallback, {
-    debounceMs: 500,
-    minUpdateInterval: 100,
+    debounceMs: 100, // Reduced from 500ms for faster deletion
+    minUpdateInterval: 25, // Reduced from 100ms
     updateStrategy: "throttled",
     maxLength: 1000000,
+    enableMetrics: true,
+  });
+}
+
+/**
+ * Hook for instant text input (no debouncing for maximum deletion speed)
+ */
+export function useInstantTextInput(
+  nodeId: string,
+  initialValue: string,
+  updateCallback: (nodeId: string, data: { heldText: string }) => void
+) {
+  return useOptimizedTextInput(nodeId, initialValue, updateCallback, {
+    debounceMs: 0, // No debouncing
+    minUpdateInterval: 0, // No throttling
+    updateStrategy: "immediate", // Instant updates
     enableMetrics: true,
   });
 }

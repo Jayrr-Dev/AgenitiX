@@ -51,10 +51,6 @@ export function useCleanupInvalidConnections() {
 
       if (edges.length === 0) return;
 
-      console.log(
-        `🧹 [CleanupInvalidConnections] Checking ${edges.length} connections...`
-      );
-
       const validEdges = edges.filter((edge: any) => {
         const sourceType = getHandleDataType(
           edge.source,
@@ -98,9 +94,6 @@ export function useCleanupInvalidConnections() {
         );
         setEdges(validEdges);
       } else {
-        console.log(
-          `✅ [CleanupInvalidConnections] All ${edges.length} connections are valid`
-        );
       }
     }, 1000); // Wait 1 second for everything to load
 

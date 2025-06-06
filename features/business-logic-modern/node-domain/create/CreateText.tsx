@@ -31,14 +31,13 @@ import {
 } from "@node-creation/factory/NodeFactory";
 import { STANDARD_SIZE_PATTERNS } from "@node-creation/factory/constants/sizes";
 import { useRef } from "react";
+import { useTextInputShortcuts } from "../../infrastructure/flow-engine/hooks/useTextInputShortcuts";
 
 // MODERN FACTORY INTEGRATION
 
 // ============================================================================
 // DEBUG: IDENTIFY COMPONENT USAGE
 // ============================================================================
-
-console.log("🏭 [MODERN CreateText] Component is being loaded/imported!");
 
 // ============================================================================
 // NODE DATA INTERFACE - Enhanced with category registry integration
@@ -345,13 +344,27 @@ const CreateTextInput = ({
     updateNodeData
   );
 
+  // Add ergonomic text input shortcuts for fast deletion
+  const textInputShortcuts = useTextInputShortcuts({
+    value: currentText,
+    setValue: (value: string) => updateNodeData(id, { heldText: value }),
+  });
+
+  // Combined keyboard handler for textarea
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Cast to work with the hook's expected type
+    textInputShortcuts.handleKeyDown(e as any);
+  };
+
   return (
     <div className="relative">
       <textarea
         className="w-full h-8 px-2 py-2 mb-2 text-xs text-center rounded border bg-transparent placeholder-opacity-60 resize-none focus:outline-none focus:ring-1 focus:border-transparent transition-colors overflow-y-auto border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100 focus:ring-blue-500"
         value={optimizedInput.value}
         onChange={optimizedInput.onChange}
+        onKeyDown={handleKeyDown}
         placeholder="Enter text..."
+        title="Fast deletion: Alt+Q = backspace • Alt+Shift+Q = delete word • Alt+Ctrl+Q = delete to start"
         style={{
           lineHeight: "1.2",
           fontFamily: "inherit",
@@ -407,6 +420,18 @@ const CreateTextExpanded = ({
     updateNodeData
   );
 
+  // Add ergonomic text input shortcuts for fast deletion
+  const textInputShortcuts = useTextInputShortcuts({
+    value: currentText,
+    setValue: (value: string) => updateNodeData(id, { heldText: value }),
+  });
+
+  // Combined keyboard handler for textarea
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Cast to work with the hook's expected type
+    textInputShortcuts.handleKeyDown(e as any);
+  };
+
   return (
     <div className="relative">
       <textarea
@@ -418,11 +443,13 @@ const CreateTextExpanded = ({
         }`}
         value={optimizedInput.value}
         onChange={optimizedInput.onChange}
+        onKeyDown={handleKeyDown}
         placeholder={
           error
             ? "Error state active - text editing disabled"
             : "Enter your text here..."
         }
+        title="Fast deletion: Alt+Q = backspace • Alt+Shift+Q = delete word • Alt+Ctrl+Q = delete to start"
         disabled={!!error}
         style={{
           lineHeight: "1.4",

@@ -44,9 +44,9 @@ export const INSTANT_PRIORITY_DELAY = 0; // ms for instant updates
 
 /**
  * PROCESSING THROTTLE
- * Prevent rapid successive processing calls
+ * Prevent rapid successive processing calls (reduced for faster deletion)
  */
-export const PROCESSING_THROTTLE_MS = 5; // ms minimum between processing calls
+export const PROCESSING_THROTTLE_MS = 1; // ms minimum between processing calls (reduced from 5ms)
 
 // ============================================================================
 // DEFAULT NODE SIZES
