@@ -6,8 +6,9 @@
  * • Supports schema validation and complex data structure handling
  * • Features performance-optimized parsing with caching capabilities
  * • Integrates with factory systems for seamless data processing
+ * • Enhanced with superjson for Date, BigInt, Map, Set support
  *
- * Keywords: json-processing, validation, transformation, error-recovery, schema-validation, caching
+ * Keywords: json-processing, validation, transformation, error-recovery, schema-validation, caching, superjson
  */
 
 import { Position } from "@xyflow/react";
@@ -80,12 +81,23 @@ export const validateJsonInput = (jsonData: any, nodeId: string): boolean => {
 
   if (typeof jsonData === "string") {
     try {
-      const parsed = JSON.parse(jsonData);
+      // Try superjson first for enhanced parsing
+      const parsed = superjson.parse(jsonData);
       return (
         typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
       );
     } catch {
-      return false;
+      // Fallback to regular JSON parsing
+      try {
+        const parsed = JSON.parse(jsonData);
+        return (
+          typeof parsed === "object" &&
+          parsed !== null &&
+          !Array.isArray(parsed)
+        );
+      } catch {
+        return false;
+      }
     }
   }
 
@@ -112,22 +124,44 @@ export const parseJsonSafely = (jsonData: any, nodeId: string): any | null => {
     }
 
     if (typeof jsonData === "string") {
-      const parsed = JSON.parse(jsonData);
-
-      // Validate object structure
-      if (
-        typeof parsed !== "object" ||
-        parsed === null ||
-        Array.isArray(parsed)
-      ) {
-        console.warn(
-          `parseJsonSafely ${nodeId}: JSON input must be an object, got:`,
-          typeof parsed
-        );
-        return null;
+      // Try superjson first for enhanced parsing of complex types
+      try {
+        const parsed = superjson.parse(jsonData);
+        // Validate object structure
+        if (
+          typeof parsed !== "object" ||
+          parsed === null ||
+          Array.isArray(parsed)
+        ) {
+          console.warn(
+            `parseJsonSafely ${nodeId}: JSON input must be an object, got:`,
+            typeof parsed
+          );
+          return null;
+        }
+        return parsed;
+      } catch {
+        // Fallback to regular JSON parsing
+        try {
+          const parsed = JSON.parse(jsonData);
+          // Validate object structure
+          if (
+            typeof parsed !== "object" ||
+            parsed === null ||
+            Array.isArray(parsed)
+          ) {
+            console.warn(
+              `parseJsonSafely ${nodeId}: JSON input must be an object, got:`,
+              typeof parsed
+            );
+            return null;
+          }
+          return parsed;
+        } catch {
+          // If both fail, return null
+          return null;
+        }
       }
-
-      return parsed;
     }
 
     console.warn(

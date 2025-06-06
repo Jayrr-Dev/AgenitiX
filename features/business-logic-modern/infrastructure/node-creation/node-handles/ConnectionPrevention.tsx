@@ -13,6 +13,7 @@
 
 import { Connection, Node, OnConnectStart, useReactFlow } from "@xyflow/react";
 import { useCallback, useState } from "react";
+import superjson from "superjson";
 import { getHandleConfig } from "./handleConfig";
 
 // ===== TYPES =====
@@ -31,6 +32,29 @@ interface CompatibilityInfo {
   reason: string;
   confidence: "high" | "medium" | "low";
   suggestedTypes?: string[];
+}
+
+// ===== SUPERJSON UTILITIES =====
+
+/**
+ * Serialize connection state for persistence or debugging
+ */
+function serializeConnectionState(state: ConnectionState): string {
+  return superjson.stringify(state);
+}
+
+/**
+ * Deserialize connection state from stored data
+ */
+function deserializeConnectionState(serialized: string): ConnectionState {
+  return superjson.parse(serialized);
+}
+
+/**
+ * Create a deep copy of connection state using superjson serialization
+ */
+function cloneConnectionState(state: ConnectionState): ConnectionState {
+  return superjson.parse(superjson.stringify(state));
 }
 
 // ===== ENHANCED COMPATIBILITY CHECKING =====
@@ -223,13 +247,15 @@ export function useConnectionPrevention() {
   const calculateCompatibleTargets = useCallback(
     (
       sourceNodeId: string,
-      sourceHandleId: string
+      sourceHandleId: string,
+      sourceType?: string | null
     ): {
       compatible: Set<string>;
       incompatible: Map<string, string>;
     } => {
-      const sourceType = getHandleType(sourceNodeId, sourceHandleId, "source");
-      if (!sourceType)
+      const actualSourceType =
+        sourceType || getHandleType(sourceNodeId, sourceHandleId, "source");
+      if (!actualSourceType)
         return {
           compatible: new Set<string>(),
           incompatible: new Map<string, string>(),
@@ -252,7 +278,7 @@ export function useConnectionPrevention() {
 
             const targetKey = `${node.id}-${handle.id}`;
             const compatibility = checkHandleCompatibility(
-              sourceType,
+              actualSourceType,
               handle.dataType,
               undefined,
               node
@@ -282,12 +308,13 @@ export function useConnectionPrevention() {
    */
   const onConnectStart: OnConnectStart = useCallback(
     (event, { nodeId, handleId, handleType }) => {
-      if (handleType !== "source" || !handleId) return;
+      if (handleType !== "source" || !handleId || !nodeId) return;
 
       const sourceType = getHandleType(nodeId, handleId as string, "source");
       const { compatible, incompatible } = calculateCompatibleTargets(
         nodeId,
-        handleId as string
+        handleId as string,
+        sourceType
       );
 
       setConnectionState({
@@ -369,14 +396,14 @@ export function useConnectionPrevention() {
       if (!sourceType || !targetType) {
         console.warn(
           "[ConnectionPrevention] Could not determine handle types:",
-          {
+          superjson.stringify({
             source,
             sourceHandle,
             sourceType,
             target,
             targetHandle,
             targetType,
-          }
+          })
         );
         return false;
       }
@@ -404,6 +431,10 @@ export function useConnectionPrevention() {
     onConnectEnd,
     isValidConnection,
     checkHandleCompatibility,
+    // Superjson utilities for external use
+    serializeConnectionState,
+    deserializeConnectionState,
+    cloneConnectionState,
   };
 }
 

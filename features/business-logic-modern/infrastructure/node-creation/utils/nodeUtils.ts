@@ -6,9 +6,12 @@
  * • Input validation and truthiness checking for node connections
  * • Debounced update helpers for performance optimization
  * • Shared utilities for consistent node behavior across components
+ * • Enhanced with superjson for complex data type serialization
  *
- * Keywords: node-data, value-extraction, validation, comparison, debouncing
+ * Keywords: node-data, value-extraction, validation, comparison, debouncing, superjson
  */
+
+import superjson from "superjson";
 
 /**
  * SHARED NODE UTILITIES
@@ -45,16 +48,12 @@ export const extractNodeValue = (nodeData: any): unknown => {
 
 // SAFE COMPARISON UTILITIES
 /**
- * Safe JSON stringify that handles BigInt and other non-serializable values
+ * Safe JSON stringify using superjson for comprehensive data type support
+ * Handles BigInt, Date, Map, Set, and other complex types
  */
 export const safeStringify = (obj: unknown): string => {
   try {
-    return JSON.stringify(obj, (key, value) => {
-      if (typeof value === "bigint") {
-        return value.toString();
-      }
-      return value;
-    });
+    return superjson.stringify(obj);
   } catch {
     return "null";
   }
