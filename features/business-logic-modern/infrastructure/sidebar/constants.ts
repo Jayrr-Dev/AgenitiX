@@ -42,7 +42,7 @@ import {
 } from "../node-creation/node-registry/nodeRegistry";
 
 // CATEGORY REGISTRY INTEGRATION - Enhanced metadata and validation
-import { getCategoryMetadata } from "../node-creation/category-registry/categoryRegistry";
+import { getCategoryMetadata } from "../node-creation/node-registry/category-registry/categoryRegistry";
 
 export const STORAGE_PREFIX = "sidebar-stencil-order";
 

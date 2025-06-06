@@ -9,15 +9,16 @@
  * Keywords: graph-utilities, node-creation, persistence, validation
  */
 
-import { HistoryGraph, HistoryNode, NodeId, FlowState } from './historyGraph';
+import { FlowState, HistoryGraph, HistoryNode, NodeId } from "./historyGraph";
 
 // Generate unique IDs for history nodes
 let nodeCounter = 0;
-export const generateNodeId = (): NodeId => `node_${Date.now()}_${++nodeCounter}`;
+export const generateNodeId = (): NodeId =>
+  `node_${Date.now()}_${++nodeCounter}`;
 
 // Create the initial root graph with starting state
 export const createRootGraph = (initialState: FlowState): HistoryGraph => {
-  const rootId: NodeId = 'root';
+  const rootId: NodeId = "root";
   return {
     root: rootId,
     cursor: rootId,
@@ -26,7 +27,7 @@ export const createRootGraph = (initialState: FlowState): HistoryGraph => {
         id: rootId,
         parentId: null,
         childrenIds: [],
-        label: 'INIT',
+        label: "INIT",
         before: initialState,
         after: initialState,
         createdAt: Date.now(),
@@ -55,23 +56,23 @@ export const createChildNode = (
     createdAt: Date.now(),
     metadata,
   };
-  
+
   // Add child to parent's children list
   graph.nodes[parentId].childrenIds.push(id);
   // Add node to graph
   graph.nodes[id] = node;
-  
+
   return id;
 };
 
 // Deep clone a FlowState to avoid reference issues
 export const cloneFlowState = (state: FlowState): FlowState => ({
-  nodes: state.nodes.map(node => ({
+  nodes: state.nodes.map((node) => ({
     ...node,
     position: { ...node.position },
     data: node.data ? { ...node.data } : node.data,
   })),
-  edges: state.edges.map(edge => ({
+  edges: state.edges.map((edge) => ({
     ...edge,
     data: edge.data ? { ...edge.data } : edge.data,
   })),
@@ -79,7 +80,10 @@ export const cloneFlowState = (state: FlowState): FlowState => ({
 });
 
 // Check if two FlowStates are equal
-export const areStatesEqual = (state1: FlowState, state2: FlowState): boolean => {
+export const areStatesEqual = (
+  state1: FlowState,
+  state2: FlowState
+): boolean => {
   return (
     JSON.stringify(state1.nodes) === JSON.stringify(state2.nodes) &&
     JSON.stringify(state1.edges) === JSON.stringify(state2.edges)
@@ -90,40 +94,61 @@ export const areStatesEqual = (state1: FlowState, state2: FlowState): boolean =>
 export const getPathToCursor = (graph: HistoryGraph): HistoryNode[] => {
   const path: HistoryNode[] = [];
   let currentId: NodeId | null = graph.cursor;
-  
+
   while (currentId) {
     const node: HistoryNode = graph.nodes[currentId];
     if (!node) break;
     path.unshift(node);
     currentId = node.parentId;
   }
-  
+
   return path;
 };
 
 // Get all leaf nodes (endpoints) in the graph
 export const getLeafNodes = (graph: HistoryGraph): HistoryNode[] => {
-  return Object.values(graph.nodes).filter(node => node.childrenIds.length === 0);
+  return Object.values(graph.nodes).filter(
+    (node) => node.childrenIds.length === 0
+  );
 };
 
 // Persistence helpers
-const STORAGE_KEY = 'workflow-history-graph-v3';
+const STORAGE_KEY = "workflow-history-graph-v3";
 
 export const saveGraph = (graph: HistoryGraph): void => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(graph));
+    // Use superjson for better serialization of complex types
+    const superjson = require("superjson");
+    localStorage.setItem(STORAGE_KEY, superjson.stringify(graph));
   } catch (error) {
-    console.warn('[GraphHelpers] Failed to save graph to localStorage:', error);
+    console.warn("[GraphHelpers] Failed to save graph to localStorage:", error);
+    // Fallback to regular JSON
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(graph));
+    } catch (fallbackError) {
+      console.error("[GraphHelpers] Fallback save also failed:", fallbackError);
+    }
   }
 };
 
 export const loadGraph = (): HistoryGraph | null => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as HistoryGraph) : null;
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+
+    // Try superjson first for enhanced deserialization
+    const superjson = require("superjson");
+    return superjson.parse(stored);
   } catch (error) {
-    console.warn('[GraphHelpers] Failed to load graph from localStorage:', error);
-    return null;
+    console.warn("[GraphHelpers] Failed to load graph with superjson:", error);
+    // Fallback to regular JSON
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch (fallbackError) {
+      console.error("[GraphHelpers] Fallback load also failed:", fallbackError);
+      return null;
+    }
   }
 };
 
@@ -131,17 +156,19 @@ export const clearPersistedGraph = (): void => {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
-    console.warn('[GraphHelpers] Failed to clear persisted graph:', error);
+    console.warn("[GraphHelpers] Failed to clear persisted graph:", error);
   }
 };
 
 // Graph statistics for debugging/UI
 export const getGraphStats = (graph: HistoryGraph) => {
   const totalNodes = Object.keys(graph.nodes).length;
-  const branches = Object.values(graph.nodes).filter(node => node.childrenIds.length > 1).length;
+  const branches = Object.values(graph.nodes).filter(
+    (node) => node.childrenIds.length > 1
+  ).length;
   const leafNodes = getLeafNodes(graph).length;
   const maxDepth = getPathToCursor(graph).length - 1; // -1 to exclude root
-  
+
   return {
     totalNodes,
     branches,
@@ -149,4 +176,4 @@ export const getGraphStats = (graph: HistoryGraph) => {
     maxDepth,
     currentDepth: maxDepth,
   };
-}; 
+};

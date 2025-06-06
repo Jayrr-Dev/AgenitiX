@@ -243,49 +243,18 @@ export const checkTriggerState = (
 ): boolean => {
   const triggerConnections = getTriggerConnections(connections, nodeId);
 
-  // DEBUG: Log trigger connections
-  console.log(`🔍 [CheckTriggerState] Node ${nodeId}:`, {
-    triggerConnectionCount: triggerConnections.length,
-    hasConnections: triggerConnections.length > 0,
-  });
-
   // No trigger connections means always allowed
   if (triggerConnections.length === 0) {
-    console.log(
-      `🔍 [CheckTriggerState] Node ${nodeId}: No triggers, allowing activation`
-    );
     return true;
   }
 
   const triggerNodesData = getSourceNodesData(triggerConnections, nodesData);
-
-  // DEBUG: Log trigger node states
-  triggerNodesData.forEach((triggerNode, index) => {
-    const triggerData = triggerNode.data || {};
-    const isActive = isNodeActive(triggerData);
-    console.log(
-      `🔍 [CheckTriggerState] Node ${nodeId} - Trigger ${index + 1}:`,
-      {
-        triggerId: triggerNode.id,
-        triggerData: {
-          triggered: triggerData.triggered,
-          isActive: triggerData.isActive,
-          value: triggerData.value,
-          output: triggerData.output,
-        },
-        evaluatedAsActive: isActive,
-      }
-    );
-  });
 
   const result = triggerNodesData.some((triggerNode) => {
     const triggerData = triggerNode.data || {};
     return isNodeActive(triggerData);
   });
 
-  console.log(
-    `🔍 [CheckTriggerState] Node ${nodeId}: Final result = ${result}`
-  );
   return result;
 };
 
@@ -301,49 +270,17 @@ export const hasActiveInputNodes = (
   const inputConnections = getInputConnections(connections, nodeId);
   const nonJsonInputs = filterNonJsonConnections(inputConnections);
 
-  // DEBUG: Log input analysis
-  console.log(`🔍 [hasActiveInputNodes] Node ${nodeId}:`, {
-    inputConnectionCount: inputConnections.length,
-    nonJsonInputCount: nonJsonInputs.length,
-  });
-
   if (nonJsonInputs.length === 0) {
-    console.log(
-      `🔍 [hasActiveInputNodes] Node ${nodeId}: No non-JSON inputs, returning false`
-    );
     return false;
   }
 
   const sourceNodesData = getSourceNodesData(nonJsonInputs, nodesData);
-
-  // DEBUG: Log each source node analysis
-  sourceNodesData.forEach((sourceNode, index) => {
-    const sourceData = sourceNode.data || {};
-    const isNodeDataActiveResult = isNodeDataActive(sourceData);
-    console.log(
-      `🔍 [hasActiveInputNodes] Node ${nodeId} - Source ${index + 1}:`,
-      {
-        sourceId: sourceNode.id,
-        sourceData: {
-          isActive: sourceData.isActive,
-          triggered: sourceData.triggered,
-          value: sourceData.value,
-          text: sourceData.text,
-          output: sourceData.output,
-        },
-        evaluatedAsActive: isNodeDataActiveResult,
-      }
-    );
-  });
 
   const result = sourceNodesData.some((sourceNode) => {
     const sourceData = sourceNode.data || {};
     return isNodeDataActive(sourceData);
   });
 
-  console.log(
-    `🔍 [hasActiveInputNodes] Node ${nodeId}: Final result = ${result}`
-  );
   return result;
 };
 
@@ -532,11 +469,6 @@ export const handleTransformationNodeActivation = <T extends BaseNodeData>(
   const hasOutput = hasValidOutput(data as NodeOutputData);
   const isNodeActive = hasActiveInput && hasOutput;
 
-  // Debug logging for transformation nodes
-  console.log(
-    `UFS Debug ${nodeType} ${nodeId}: hasActiveInput=${hasActiveInput}, hasOutput=${hasOutput}, result=${isNodeActive}`
-  );
-
   return isNodeActive;
 };
 
@@ -553,34 +485,17 @@ export const determineDownstreamNodeState = <T extends BaseNodeData>(
 ): boolean => {
   const { nodeType, data, connections, nodesData, nodeId } = params;
 
-  console.log(
-    `🔍 [determineDownstreamNodeState] Node ${nodeId} (${nodeType}): Starting evaluation`
-  );
-
   const hasActiveInput = hasActiveInputNodes(connections, nodesData, nodeId);
-
-  console.log(
-    `🔍 [determineDownstreamNodeState] Node ${nodeId}: hasActiveInput = ${hasActiveInput}`
-  );
 
   // Early return if no active input
   if (!hasActiveInput) {
-    console.log(
-      `🔍 [determineDownstreamNodeState] Node ${nodeId}: No active input, returning false`
-    );
     return false;
   }
 
   // Early return if triggers don't allow activation
   const triggerAllows = checkTriggerState(connections, nodesData, nodeId);
-  console.log(
-    `🔍 [determineDownstreamNodeState] Node ${nodeId}: triggerAllows = ${triggerAllows}`
-  );
 
   if (!triggerAllows) {
-    console.log(
-      `🔍 [determineDownstreamNodeState] Node ${nodeId}: Triggers don't allow, returning false`
-    );
     return false;
   }
 
@@ -592,25 +507,16 @@ export const determineDownstreamNodeState = <T extends BaseNodeData>(
       hasActiveInput,
       nodeId
     );
-    console.log(
-      `🔍 [determineDownstreamNodeState] Node ${nodeId}: Transformation node result = ${result}`
-    );
     return result;
   }
 
   // Handle view output nodes
   if (nodeType === "viewOutput") {
     const result = handleViewOutputActivation(data as ViewOutputNodeData);
-    console.log(
-      `🔍 [determineDownstreamNodeState] Node ${nodeId}: ViewOutput node result = ${result}`
-    );
     return result;
   }
 
   // Default activation based on input activity
-  console.log(
-    `🔍 [determineDownstreamNodeState] Node ${nodeId}: Using default activation = ${hasActiveInput}`
-  );
   return hasActiveInput;
 };
 

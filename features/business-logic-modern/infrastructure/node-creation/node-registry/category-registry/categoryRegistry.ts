@@ -11,7 +11,7 @@
  * Keywords: category-registry, metadata, centralized, dynamic, extensible, validation
  */
 
-import type { NodeCategory } from "../factory/types";
+import type { NodeCategory } from "../../factory/types";
 
 // ============================================================================
 // ENHANCED CATEGORY METADATA INTERFACE
@@ -220,7 +220,7 @@ export const CATEGORY_REGISTRY: Record<NodeCategory, CategoryMetadata> = {
 
     hooks: {
       onActivate: () => console.log("🏭 Create category activated"),
-      onThemeApplied: (theme) => console.log("🎨 Applied create theme:", theme),
+      onThemeApplied: (theme) => {},
     },
 
     lifecycle: {

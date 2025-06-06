@@ -21,20 +21,23 @@
 
 import { getNodeHandles } from "@factory/constants/handles";
 import {
+  useAutoOptimizedTextInput,
+  useHighPerformanceTextInput,
+} from "@factory/hooks/useOptimizedTextInput";
+import {
   createNodeComponent,
   type BaseNodeData,
   type HandleConfig,
 } from "@node-creation/factory/NodeFactory";
 import { STANDARD_SIZE_PATTERNS } from "@node-creation/factory/constants/sizes";
-import React, { useRef } from "react";
+import { useRef } from "react";
+import { useTextInputShortcuts } from "../../infrastructure/flow-engine/hooks/useTextInputShortcuts";
 
 // MODERN FACTORY INTEGRATION
 
 // ============================================================================
 // DEBUG: IDENTIFY COMPONENT USAGE
 // ============================================================================
-
-console.log("🏭 [MODERN CreateText] Component is being loaded/imported!");
 
 // ============================================================================
 // NODE DATA INTERFACE - Enhanced with category registry integration
@@ -90,28 +93,9 @@ const CreateText = createNodeComponent<CreateTextData>({
         (c) => c.targetHandle === "trigger"
       );
 
-      // DEBUG: Log trigger connection state
-      console.log(`🔍 [CreateText ${id}] Trigger analysis:`, {
-        hasConnections: triggerConnections.length > 0,
-        connectionCount: triggerConnections.length,
-        nodesDataCount: nodesData.length,
-        nodesData: nodesData.map((n) => ({
-          id: n.id,
-          type: n.type,
-          data: n.data,
-        })),
-      });
-
       // Get trigger value from connected trigger nodes
       const triggerValue = getSingleInputValue(nodesData);
       const isActive = isTruthyValue(triggerValue);
-
-      // DEBUG: Log trigger logic evaluation
-      console.log(`🔍 [CreateText ${id}] Trigger evaluation:`, {
-        triggerValue,
-        isActive,
-        shouldOutput: triggerConnections.length === 0 || isActive,
-      });
 
       // Get the held text (what user has typed)
       const outputText = typeof data.heldText === "string" ? data.heldText : "";
@@ -124,15 +108,6 @@ const CreateText = createNodeComponent<CreateTextData>({
       // Output logic: output text if no trigger connected OR trigger is active
       const shouldOutput = triggerConnections.length === 0 || isActive;
       const finalOutput = shouldOutput ? outputText : "";
-
-      // DEBUG: Log final output decision
-      console.log(`🔍 [CreateText ${id}] Final output:`, {
-        shouldOutput,
-        outputText:
-          outputText.substring(0, 20) + (outputText.length > 20 ? "..." : ""),
-        finalOutput:
-          finalOutput.substring(0, 20) + (finalOutput.length > 20 ? "..." : ""),
-      });
 
       updateNodeData(id, {
         text: finalOutput,
@@ -350,7 +325,7 @@ const CreateText = createNodeComponent<CreateTextData>({
 // HELPER COMPONENTS FOR TEXT EDITING - CARBON COPY WITH ENTERPRISE BENEFITS
 // ============================================================================
 
-// COLLAPSED TEXT INPUT: Identical styling and behavior
+// COLLAPSED TEXT INPUT: Enterprise-optimized with debouncing and performance monitoring
 const CreateTextInput = ({
   data,
   updateNodeData,
@@ -362,39 +337,58 @@ const CreateTextInput = ({
 }) => {
   const currentText = typeof data.heldText === "string" ? data.heldText : "";
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    try {
-      const newText = e.target.value;
+  // Use optimized text input hook with smart defaults
+  const optimizedInput = useHighPerformanceTextInput(
+    id,
+    currentText,
+    updateNodeData
+  );
 
-      // Validate input
-      if (newText.length > 100000) {
-        return; // Just ignore if too long
-      }
+  // Add ergonomic text input shortcuts for fast deletion
+  const textInputShortcuts = useTextInputShortcuts({
+    value: currentText,
+    setValue: (value: string) => updateNodeData(id, { heldText: value }),
+  });
 
-      // Update held text via enterprise factory's updateNodeData
-      updateNodeData(id, { heldText: newText });
-    } catch (inputError) {
-      console.error("CreateText - Input error:", inputError);
-    }
+  // Combined keyboard handler for textarea
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Cast to work with the hook's expected type
+    textInputShortcuts.handleKeyDown(e as any);
   };
 
   return (
-    <textarea
-      className="w-full h-8 px-2 py-2 mb-2 text-xs text-center rounded border bg-transparent placeholder-opacity-60 resize-none focus:outline-none focus:ring-1 focus:border-transparent transition-colors overflow-y-auto border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100 focus:ring-blue-500"
-      value={currentText}
-      onChange={handleTextChange}
-      placeholder="Enter text..."
-      style={{
-        lineHeight: "1.2",
-        fontFamily: "inherit",
-      }}
-      onFocus={(e) => e.target.select()}
-      onWheel={(e) => e.stopPropagation()}
-    />
+    <div className="relative">
+      <textarea
+        className="w-full h-8 px-2 py-2 mb-2 text-xs text-center rounded border bg-transparent placeholder-opacity-60 resize-none focus:outline-none focus:ring-1 focus:border-transparent transition-colors overflow-y-auto border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100 focus:ring-blue-500"
+        value={optimizedInput.value}
+        onChange={optimizedInput.onChange}
+        onKeyDown={handleKeyDown}
+        placeholder="Enter text..."
+        title="Fast deletion: Alt+Q = backspace • Alt+Shift+Q = delete word • Alt+Ctrl+Q = delete to start"
+        style={{
+          lineHeight: "1.2",
+          fontFamily: "inherit",
+        }}
+        onFocus={(e) => e.target.select()}
+        onWheel={(e) => e.stopPropagation()}
+      />
+      {/* Performance indicator */}
+      {optimizedInput.isPending && (
+        <div className="absolute top-0 right-1 text-xs text-blue-500 opacity-75">
+          ⚡
+        </div>
+      )}
+      {/* Validation error */}
+      {optimizedInput.validationError && (
+        <div className="text-xs text-red-500 mt-1">
+          {optimizedInput.validationError}
+        </div>
+      )}
+    </div>
   );
 };
 
-// EXPANDED TEXT INPUT: Full-featured text editing with error support
+// EXPANDED TEXT INPUT: Full-featured text editing with enterprise optimizations
 const CreateTextExpanded = ({
   data,
   error,
@@ -419,43 +413,93 @@ const CreateTextExpanded = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const currentText = typeof data.heldText === "string" ? data.heldText : "";
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    try {
-      const newText = e.target.value;
+  // Use auto-optimized text input for larger text areas
+  const optimizedInput = useAutoOptimizedTextInput(
+    id,
+    currentText,
+    updateNodeData
+  );
 
-      // Validate input
-      if (newText.length > 100000) {
-        return; // Just ignore if too long
-      }
+  // Add ergonomic text input shortcuts for fast deletion
+  const textInputShortcuts = useTextInputShortcuts({
+    value: currentText,
+    setValue: (value: string) => updateNodeData(id, { heldText: value }),
+  });
 
-      // Update held text via enterprise factory's updateNodeData
-      updateNodeData(id, { heldText: newText });
-    } catch (inputError) {
-      console.error("CreateText - Input error:", inputError);
-    }
+  // Combined keyboard handler for textarea
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Cast to work with the hook's expected type
+    textInputShortcuts.handleKeyDown(e as any);
   };
 
   return (
-    <textarea
-      ref={textareaRef}
-      className={`w-full text-xs min-h-[65px] px-3 py-2 rounded border bg-white dark:bg-blue-800 placeholder-blue-400 dark:placeholder-blue-500 resize-both focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
-        error && errorStyle
-          ? `${errorStyle.border} ${errorStyle.text} ${errorStyle.ringColor}`
-          : `${categoryTextTheme.border} ${categoryTextTheme.primary} ${categoryTextTheme.focus}`
-      }`}
-      value={currentText}
-      onChange={handleTextChange}
-      placeholder={
-        error
-          ? "Error state active - text editing disabled"
-          : "Enter your text here..."
-      }
-      disabled={!!error}
-      style={{
-        lineHeight: "1.4",
-        fontFamily: "inherit",
-      }}
-    />
+    <div className="relative">
+      <textarea
+        ref={textareaRef}
+        className={`w-full text-xs min-h-[65px] px-3 py-2 rounded border bg-white dark:bg-blue-800 placeholder-blue-400 dark:placeholder-blue-500 resize-both focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
+          error && errorStyle
+            ? `${errorStyle.border} ${errorStyle.text} ${errorStyle.ringColor}`
+            : `${categoryTextTheme.border} ${categoryTextTheme.primary} ${categoryTextTheme.focus}`
+        }`}
+        value={optimizedInput.value}
+        onChange={optimizedInput.onChange}
+        onKeyDown={handleKeyDown}
+        placeholder={
+          error
+            ? "Error state active - text editing disabled"
+            : "Enter your text here..."
+        }
+        title="Fast deletion: Alt+Q = backspace • Alt+Shift+Q = delete word • Alt+Ctrl+Q = delete to start"
+        disabled={!!error}
+        style={{
+          lineHeight: "1.4",
+          fontFamily: "inherit",
+        }}
+      />
+      {/* Performance metrics and indicators */}
+      <div className="absolute top-1 right-1 flex space-x-1 text-xs opacity-60">
+        {optimizedInput.isPending && (
+          <span className="text-blue-500" title="Update pending">
+            ⚡
+          </span>
+        )}
+        {optimizedInput.metrics.charactersPerSecond > 10 && (
+          <span className="text-green-500" title="High-speed typing detected">
+            🚀
+          </span>
+        )}
+        {optimizedInput.metrics.errorCount > 0 && (
+          <span
+            className="text-red-500"
+            title={`${optimizedInput.metrics.errorCount} errors`}
+          >
+            ⚠️
+          </span>
+        )}
+      </div>
+      {/* Validation error display */}
+      {optimizedInput.validationError && (
+        <div className="text-xs text-red-500 mt-1 p-1 bg-red-50 dark:bg-red-900/20 rounded">
+          <span className="font-medium">Input Error:</span>{" "}
+          {optimizedInput.validationError}
+        </div>
+      )}
+      {/* Performance metrics (development only) */}
+      {process.env.NODE_ENV === "development" &&
+        optimizedInput.metrics.updateCount > 0 && (
+          <div className="text-xs text-gray-500 mt-1 space-y-1">
+            <div>Updates: {optimizedInput.metrics.updateCount}</div>
+            <div>
+              Avg time: {optimizedInput.metrics.averageUpdateTime.toFixed(1)}ms
+            </div>
+            {optimizedInput.metrics.charactersPerSecond > 0 && (
+              <div>
+                Speed: {optimizedInput.metrics.charactersPerSecond} chars/sec
+              </div>
+            )}
+          </div>
+        )}
+    </div>
   );
 };
 

@@ -79,7 +79,7 @@ export function SidebarTabs({
   // Keyboard shortcuts for tab navigation and node creation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // PREVENT KEY REPEAT SPAM - Block browser key repeat events
+      // PREVENT KEY REPEAT SPAM - Block browser key repeat events (EXCEPT Alt+Q for fast deletion)
       if (e.repeat) {
         // Browser detected key repeat - block it completely for node creation keys
         const nodeCreationKeys = [
@@ -99,24 +99,33 @@ export function SidebarTabs({
           "v",
           "b",
         ];
+
+        // Allow Alt+Q repeats for fast text deletion
+        const isAltQBackspace = e.altKey && e.key.toLowerCase() === "q";
+
         if (
           nodeCreationKeys.includes(e.key.toLowerCase()) &&
           !e.ctrlKey &&
           !e.metaKey &&
           !e.altKey &&
-          !e.shiftKey
+          !e.shiftKey &&
+          !isAltQBackspace
         ) {
           e.preventDefault();
           return; // Block all repeat events for node creation
         }
       }
 
-      // PREVENT RAPID KEY SPAM - Throttle same key presses
+      // PREVENT RAPID KEY SPAM - Throttle same key presses (EXCEPT Alt+Q for fast deletion)
       const currentTime = Date.now();
       const currentKey = e.key.toLowerCase();
       const lastKeyPress = lastKeyPressRef.current;
 
+      // Allow Alt+Q to bypass throttling for fast text deletion
+      const isAltQBackspace = e.altKey && currentKey === "q";
+
       if (
+        !isAltQBackspace &&
         lastKeyPress &&
         lastKeyPress.key === currentKey &&
         currentTime - lastKeyPress.timestamp < KEY_REPEAT_COOLDOWN
@@ -126,8 +135,10 @@ export function SidebarTabs({
         return;
       }
 
-      // Update last key press for throttling
-      lastKeyPressRef.current = { key: currentKey, timestamp: currentTime };
+      // Update last key press for throttling (except Alt+Q)
+      if (!isAltQBackspace) {
+        lastKeyPressRef.current = { key: currentKey, timestamp: currentTime };
+      }
 
       // Check if user is typing in an input field
       const activeElement = document.activeElement;

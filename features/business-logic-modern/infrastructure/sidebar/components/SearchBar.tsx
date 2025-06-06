@@ -95,7 +95,7 @@ export function SearchBar({
       // Only handle events when search is visible
       if (!isVisible) return;
 
-      // PREVENT KEY REPEAT SPAM - Block browser key repeat events
+      // PREVENT KEY REPEAT SPAM - Block browser key repeat events (EXCEPT Alt+Q for fast deletion)
       if (e.repeat) {
         const nodeCreationKeys = [
           "q",
@@ -114,24 +114,33 @@ export function SearchBar({
           "v",
           "b",
         ];
+
+        // Allow Alt+Q repeats for fast text deletion
+        const isAltQBackspace = e.altKey && e.key.toLowerCase() === "q";
+
         if (
           nodeCreationKeys.includes(e.key.toLowerCase()) &&
           !e.ctrlKey &&
           !e.metaKey &&
           !e.altKey &&
-          !e.shiftKey
+          !e.shiftKey &&
+          !isAltQBackspace
         ) {
           e.preventDefault();
           return;
         }
       }
 
-      // PREVENT RAPID KEY SPAM - Throttle same key presses
+      // PREVENT RAPID KEY SPAM - Throttle same key presses (EXCEPT Alt+Q for fast deletion)
       const currentTime = Date.now();
       const currentKey = e.key.toLowerCase();
       const lastKeyPress = lastKeyPressRef.current;
 
+      // Allow Alt+Q to bypass throttling for fast text deletion
+      const isAltQBackspace = e.altKey && currentKey === "q";
+
       if (
+        !isAltQBackspace &&
         lastKeyPress &&
         lastKeyPress.key === currentKey &&
         currentTime - lastKeyPress.timestamp < KEY_REPEAT_COOLDOWN
@@ -140,7 +149,10 @@ export function SearchBar({
         return;
       }
 
-      lastKeyPressRef.current = { key: currentKey, timestamp: currentTime };
+      // Only update throttling timestamp for non-Alt+Q keys
+      if (!isAltQBackspace) {
+        lastKeyPressRef.current = { key: currentKey, timestamp: currentTime };
+      }
 
       // ESCAPE KEY - Close search completely (works even when typing)
       if (e.key === "Escape") {
@@ -181,25 +193,84 @@ export function SearchBar({
           return;
         }
 
-        // ALT+Q - Backspace when typing (ergonomic text editing)
+        // ALT+Q - Enhanced backspace when typing (ergonomic text editing)
         if (e.altKey && e.key.toLowerCase() === "q") {
           e.preventDefault();
           e.stopPropagation(); // Prevent event from bubbling to SidebarTabs
           const input = inputRef.current;
           if (input) {
-            const cursorPos = input.selectionStart || 0;
-            if (cursorPos > 0) {
+            const start = input.selectionStart || 0;
+            const end = input.selectionEnd || 0;
+
+            // If there's a selection, delete the selected text
+            if (start !== end) {
               const newValue =
-                searchQuery.slice(0, cursorPos - 1) +
-                searchQuery.slice(cursorPos);
+                searchQuery.slice(0, start) + searchQuery.slice(end);
               setSearchQuery(newValue);
-              // Restore cursor position after state update
-              setTimeout(() => {
+              // Immediate cursor positioning for fast deletion
+              requestAnimationFrame(() => {
                 if (input) {
-                  input.setSelectionRange(cursorPos - 1, cursorPos - 1);
+                  input.setSelectionRange(start, start);
                 }
-              }, 0);
+              });
+              return;
             }
+
+            // If cursor is at the beginning, do nothing
+            if (start === 0) return;
+
+            // Alt+Ctrl+Q - Delete from cursor to beginning of line
+            if (e.ctrlKey) {
+              const newValue = searchQuery.slice(start);
+              setSearchQuery(newValue);
+              // Immediate cursor positioning for fast deletion
+              requestAnimationFrame(() => {
+                if (input) {
+                  input.setSelectionRange(0, 0);
+                }
+              });
+              return;
+            }
+
+            // Alt+Shift+Q - Delete entire word
+            if (e.shiftKey) {
+              const beforeCursor = searchQuery.slice(0, start);
+              const afterCursor = searchQuery.slice(start);
+
+              // Find the start of the current word by looking backwards
+              let wordStart = beforeCursor.length;
+
+              // Skip trailing whitespace
+              while (wordStart > 0 && /\s/.test(beforeCursor[wordStart - 1])) {
+                wordStart--;
+              }
+
+              // Find the start of the word (non-whitespace to whitespace boundary)
+              while (wordStart > 0 && !/\s/.test(beforeCursor[wordStart - 1])) {
+                wordStart--;
+              }
+
+              const newValue = beforeCursor.slice(0, wordStart) + afterCursor;
+              setSearchQuery(newValue);
+              // Immediate cursor positioning for fast deletion
+              requestAnimationFrame(() => {
+                if (input) {
+                  input.setSelectionRange(wordStart, wordStart);
+                }
+              });
+              return;
+            }
+
+            // Alt+Q - Delete single character (standard behavior)
+            const newValue =
+              searchQuery.slice(0, start - 1) + searchQuery.slice(start);
+            setSearchQuery(newValue);
+            // Immediate cursor positioning for fast deletion
+            requestAnimationFrame(() => {
+              if (input) {
+                input.setSelectionRange(start - 1, start - 1);
+              }
+            });
           }
           return;
         }
@@ -345,7 +416,8 @@ export function SearchBar({
             )}
             {isInputFocused && (
               <div className="text-xs text-gray-500 mt-1">
-                💡 Press Alt+Q = backspace • Alt+W = enter
+                💡 Alt+Q = backspace • Alt+Shift+Q = delete word • Alt+Ctrl+Q =
+                delete to start • Alt+W = enter
               </div>
             )}
           </div>

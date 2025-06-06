@@ -430,6 +430,17 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
   const [invalid, setInvalid] = useState(false);
   const { getNodes, getEdges, setEdges } = useReactFlow();
 
+  // Auto-hide error state after 5 seconds
+  useEffect(() => {
+    if (invalid) {
+      const timeout = setTimeout(() => {
+        setInvalid(false);
+      }, 5000); // 5 seconds
+
+      return () => clearTimeout(timeout);
+    }
+  }, [invalid]);
+
   // Store React Flow instance globally
   useEffect(() => {
     (window as any).__ultimateReactFlowInstance = {
@@ -610,8 +621,12 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
   const handleClassName = useMemo(() => {
     const baseClasses =
       "w-8 h-8 flex items-center justify-center rounded-full p-1 shadow";
-    const invalidClass = invalid ? "ring-2 ring-red-500" : "";
-    const unionClass = isUnionType(dataType) ? "ring-1 ring-white/30" : "";
+    const invalidClass = invalid
+      ? "outline-1 outline-red-500/20  shadow-[0_0_2px_2px_rgba(239,68,68,0.6)]"
+      : "";
+    const unionClass = isUnionType(dataType)
+      ? "outline-1 outline-red-500/20 shadow-[0_0_2px_2px_rgba(239,68,68,0.6)]"
+      : "";
     const finalClassName =
       `${baseClasses} ${invalidClass} ${unionClass} ${className}`.trim();
 
@@ -749,9 +764,9 @@ function disconnectIncompatibleConnections(
 // ============================================================================
 
 let lastToastKey = "";
+let lastDirectionToastKey = "";
 let toastTimeout: number | null = null;
-let globalToastThrottle: number | null = null;
-let lastToastTime = 0;
+let directionToastTimeout: number | null = null;
 
 /**
  * Enhanced toast deduplication with global throttling for rapid hover events
@@ -793,57 +808,21 @@ function shouldShowToast(sourceType: string, targetType: string): boolean {
 }
 
 /**
- * Close all active connection-related toasts
+ * Prevent duplicate direction error toasts (input/output handle errors)
  */
-function closeAllConnectionToasts() {
-  // Clear any pending debounced toasts
-  if (hoverToastDebounce) {
-    clearTimeout(hoverToastDebounce);
-    hoverToastDebounce = null;
+function shouldShowDirectionToast(toastKey: string): boolean {
+  if (lastDirectionToastKey === toastKey && directionToastTimeout) {
+    return false; // Duplicate toast, skip
   }
-  
-  // Reset throttling timers
-  if (toastTimeout) {
-    clearTimeout(toastTimeout);
-    toastTimeout = null;
-  }
-  
-  if (globalToastThrottle) {
-    clearTimeout(globalToastThrottle);
-    globalToastThrottle = null;
-  }
-  
-  // Reset tracking variables
-  lastToastKey = "";
-  lastToastTime = 0;
-  
-  // Dismiss all active toasts using Sonner's dismiss method
-  toast.dismiss();
-}
 
-/**
- * Debounced toast for hover scenarios - prevents rapid-fire toasts during hover
- * 
- * Use this for:
- * - Handle hover events
- * - Drag operations over handles
- * - Any rapid/repeated interaction scenarios
- * 
- * This adds a 150ms debounce on top of the global throttling system.
- */
-let hoverToastDebounce: number | null = null;
+  lastDirectionToastKey = toastKey;
+  if (directionToastTimeout) clearTimeout(directionToastTimeout);
+  directionToastTimeout = window.setTimeout(() => {
+    lastDirectionToastKey = "";
+    directionToastTimeout = null;
+  }, 1500); // Reset after 1.5 seconds
 
-function showHoverDebouncedToast(sourceType: string, targetType: string) {
-  // Clear any existing hover debounce
-  if (hoverToastDebounce) {
-    clearTimeout(hoverToastDebounce);
-  }
-  
-  // Set a debounce for hover scenarios
-  hoverToastDebounce = window.setTimeout(() => {
-    showOriginalStyledToast(sourceType, targetType);
-    hoverToastDebounce = null;
-  }, 150); // 150ms debounce for hover scenarios
+  return true;
 }
 
 /**
@@ -943,13 +922,15 @@ export function useUltimateFlowConnectionPrevention() {
       console.warn(
         `[UltimateFlowConnectionPrevention] BLOCKED: Source handle "${sourceHandle}" is not a valid output handle`
       );
-      toast.error("🚫 Cannot connect from input handles", {
-        description:
-          "Start your connection from an output handle (○ on the right side of nodes)",
-        duration: 5000,
-        dismissible: true,
-        closeButton: true,
-      });
+
+      // Only show toast if not recently shown
+      if (shouldShowDirectionToast("input-handle-error")) {
+        toast.error("🚫 Cannot connect from input handles", {
+          description:
+            "Start your connection from an output handle (○ on the right side of nodes)",
+          duration: 5000,
+        });
+      }
       return false;
     }
 
@@ -957,13 +938,15 @@ export function useUltimateFlowConnectionPrevention() {
       console.warn(
         `[UltimateFlowConnectionPrevention] BLOCKED: Target handle "${targetHandle}" is not a valid input handle`
       );
-      toast.error("🚫 Cannot connect to output handles", {
-        description:
-          "End your connection at an input handle (○ on the left side of nodes)",
-        duration: 5000,
-        dismissible: true,
-        closeButton: true,
-      });
+
+      // Only show toast if not recently shown
+      if (shouldShowDirectionToast("output-handle-error")) {
+        toast.error("🚫 Cannot connect to output handles", {
+          description:
+            "End your connection at an input handle (○ on the left side of nodes)",
+          duration: 5000,
+        });
+      }
       return false;
     }
 

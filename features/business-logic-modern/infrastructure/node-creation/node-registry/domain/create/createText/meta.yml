@@ -1,0 +1,53 @@
+# CREATE TEXT NODE METADATA
+# Simple text creation node configuration
+
+nodeType: "createText"
+category: "create"
+displayName: "Create Text"
+description: "Create and hold a text string that can be passed to other nodes"
+icon: "Type"
+folder: "main"
+order: 1
+
+# Legacy dimensions for compatibility
+iconWidth: 80
+iconHeight: 80
+expandedWidth: 200
+expandedHeight: 120
+
+# Modern size configuration
+size:
+  collapsed:
+    width: "w-[80px]"
+    height: "h-[80px]"
+  expanded:
+    width: "w-[200px]"
+
+# UI Configuration
+hasToggle: true
+isEnabled: true
+isExperimental: false
+
+# Handles
+handles:
+  - id: "text-output"
+    type: "source"
+    dataType: "text"
+    position: "Right"
+    label: "Text Output"
+
+# Inspector configuration
+inspector:
+  type: "factory"
+  priority: 1
+  isCollapsible: false
+
+# Default data structure
+defaultData:
+  text: ""
+  heldText: ""
+  isActive: false
+
+# Component paths
+component: "./CreateTextNode"
+inspectorComponent: "./CreateTextInspector"

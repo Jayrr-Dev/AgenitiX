@@ -22,7 +22,7 @@ import {
   validateWorkflowCategories,
 } from "./categoryRegistry";
 
-import type { NodeCategory } from "../factory/types";
+import type { NodeCategory } from "../../factory/types";
 
 // ============================================================================
 // MASSIVE BENEFIT #1: CENTRALIZED CATEGORY CONFIGURATION

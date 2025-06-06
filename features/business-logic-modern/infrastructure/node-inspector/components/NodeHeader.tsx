@@ -275,7 +275,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
               onChange={(e) => setEditingId(e.target.value)}
               onBlur={handleIdSave}
               onKeyDown={handleKeyDown}
-              title="Edit node ID • Alt+Q = backspace • Alt+W = enter"
+              title="Edit node ID • Alt+Q = backspace • Alt+Shift+Q = delete word • Alt+Ctrl+Q = delete to start • Alt+W = enter"
               className="text-[10px] px-1 py-0.5 border border-blue-300 dark:border-blue-600 rounded
                          bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
                          focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-0 flex-1"

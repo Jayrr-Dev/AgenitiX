@@ -1,0 +1,53 @@
+# VIEW OUTPUT NODE METADATA
+# Displays output text from other nodes
+
+nodeType: "viewOutput"
+category: "view"
+displayName: "View Output"
+description: "Display text output from connected nodes"
+icon: "Eye"
+folder: "main"
+order: 1
+
+# Legacy dimensions
+iconWidth: 80
+iconHeight: 80
+expandedWidth: 240
+expandedHeight: 100
+
+# Modern size configuration
+size:
+  collapsed:
+    width: "w-[80px]"
+    height: "h-[80px]"
+  expanded:
+    width: "w-[240px]"
+
+# UI Configuration
+hasToggle: true
+isEnabled: true
+isExperimental: false
+
+# Handles
+handles:
+  - id: "text-input"
+    type: "target"
+    dataType: "text"
+    position: "Left"
+    label: "Text Input"
+
+# Inspector configuration
+inspector:
+  type: "factory"
+  priority: 1
+  isCollapsible: false
+
+# Default data structure
+defaultData:
+  inputText: ""
+  displayText: ""
+  isActive: false
+
+# Component paths
+component: "./ViewOutputNode"
+inspectorComponent: "./ViewOutputInspector"
