@@ -1,6 +1,6 @@
 {
-  "version": "1.2.7",
-  "timestamp": 1749320954173,
+  "version": "1.2.8",
+  "timestamp": 1749322565667,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -487,6 +487,22 @@
       "195b006ccac0cc386a32829b737ffc2c"
     ],
     [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\visual-builder\\CodeGenerator.ts",
+      "29b064009ba98cff50b18e82b60cff52"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\visual-builder\\FileExporter.ts",
+      "42125ae5b3fd55e2386e8778a772f6dd"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\visual-builder\\index.ts",
+      "3d70ed52d59e79cc3861f7c95e701d8d"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\visual-builder\\VisualNodeBuilder.tsx",
+      "5987b3857d56a959b86a2a368f547add"
+    ],
+    [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\components\\EdgeInspector.tsx",
       "f016d01258bfee7e9b339186731b0bed"
     ],
@@ -636,7 +652,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "4a029d259a81d89c9a27e069fd17e49b"
+      "dc731d79efb9d4a8e3c2e422d930d7d9"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
