@@ -1,0 +1,235 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>V2U Node System DevTools Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body>
+    <div id="v2u-devtools" class="v2u-panel">
+      <!-- Header with tabs -->
+      <header class="panel-header">
+        <div class="header-content">
+          <div class="logo">
+            <img src="icons/icon32.png" alt="V2U" class="logo-icon" />
+            <h1>V2U Node System</h1>
+          </div>
+          <div class="connection-status">
+            <span class="status-indicator" id="connection-status"></span>
+            <span id="status-text">Connecting...</span>
+          </div>
+        </div>
+
+        <nav class="panel-tabs">
+          <button class="tab active" data-tab="registry">
+            Registry Inspector
+          </button>
+          <button class="tab" data-tab="performance">
+            Performance Profiler
+          </button>
+          <button class="tab" data-tab="validator">
+            Configuration Validator
+          </button>
+          <button class="tab" data-tab="editor">Live Editor</button>
+          <button class="tab" data-tab="events">Event Monitor</button>
+        </nav>
+      </header>
+
+      <!-- Registry Inspector Tab -->
+      <div id="registry-tab" class="tab-content active">
+        <div class="tab-header">
+          <h2>Registry Inspector</h2>
+          <div class="tab-actions">
+            <button id="refresh-registry" class="btn btn-primary">
+              Refresh
+            </button>
+            <button id="export-registry" class="btn btn-secondary">
+              Export
+            </button>
+          </div>
+        </div>
+
+        <div class="registry-overview">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <h3>Total Nodes</h3>
+              <span id="total-nodes" class="stat-value">-</span>
+            </div>
+            <div class="stat-card">
+              <h3>Active Nodes</h3>
+              <span id="active-nodes" class="stat-value">-</span>
+            </div>
+            <div class="stat-card">
+              <h3>Categories</h3>
+              <span id="total-categories" class="stat-value">-</span>
+            </div>
+            <div class="stat-card">
+              <h3>Registry Health</h3>
+              <span id="registry-health" class="stat-value health-indicator"
+                >-</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="registry-content">
+          <div class="sidebar">
+            <div class="search-box">
+              <input
+                type="text"
+                id="node-search"
+                placeholder="Search nodes..."
+                class="search-input"
+              />
+            </div>
+
+            <div class="filter-section">
+              <h4>Filter by Category</h4>
+              <div id="category-filters" class="filter-list">
+                <!-- Dynamic category filters -->
+              </div>
+            </div>
+
+            <div class="node-list" id="node-list">
+              <!-- Dynamic node list -->
+            </div>
+          </div>
+
+          <div class="main-content">
+            <div id="node-details" class="node-details">
+              <div class="empty-state">
+                <p>Select a node to view details</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Profiler Tab -->
+      <div id="performance-tab" class="tab-content">
+        <div class="tab-header">
+          <h2>Performance Profiler</h2>
+          <div class="tab-actions">
+            <button id="start-profiling" class="btn btn-primary">
+              Start Profiling
+            </button>
+            <button id="clear-metrics" class="btn btn-secondary">Clear</button>
+          </div>
+        </div>
+
+        <div class="performance-dashboard">
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <h3>Registry Lookups</h3>
+              <div class="metric-value" id="lookup-time">0ms avg</div>
+              <div class="metric-chart" id="lookup-chart"></div>
+            </div>
+            <div class="metric-card">
+              <h3>Node Rendering</h3>
+              <div class="metric-value" id="render-time">0ms avg</div>
+              <div class="metric-chart" id="render-chart"></div>
+            </div>
+            <div class="metric-card">
+              <h3>Memory Usage</h3>
+              <div class="metric-value" id="memory-usage">0MB</div>
+              <div class="metric-chart" id="memory-chart"></div>
+            </div>
+            <div class="metric-card">
+              <h3>Event Queue</h3>
+              <div class="metric-value" id="event-queue">0 pending</div>
+              <div class="metric-chart" id="event-chart"></div>
+            </div>
+          </div>
+
+          <div class="performance-log">
+            <h3>Performance Log</h3>
+            <div id="performance-log-content" class="log-content">
+              <!-- Dynamic performance entries -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Configuration Validator Tab -->
+      <div id="validator-tab" class="tab-content">
+        <div class="tab-header">
+          <h2>Configuration Validator</h2>
+          <div class="tab-actions">
+            <button id="run-validation" class="btn btn-primary">
+              Validate All
+            </button>
+            <button id="fix-issues" class="btn btn-success">Auto-Fix</button>
+          </div>
+        </div>
+
+        <div class="validation-results">
+          <div class="validation-summary" id="validation-summary">
+            <!-- Validation summary -->
+          </div>
+
+          <div class="validation-details" id="validation-details">
+            <!-- Detailed validation results -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Editor Tab -->
+      <div id="editor-tab" class="tab-content">
+        <div class="tab-header">
+          <h2>Live Node Editor</h2>
+          <div class="tab-actions">
+            <button id="save-changes" class="btn btn-primary">
+              Save Changes
+            </button>
+            <button id="reset-editor" class="btn btn-secondary">Reset</button>
+          </div>
+        </div>
+
+        <div class="editor-layout">
+          <div class="editor-panel" id="code-editor">
+            <!-- Code editor will be initialized here -->
+          </div>
+          <div class="preview-panel" id="live-preview">
+            <!-- Live preview of node changes -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Event Monitor Tab -->
+      <div id="events-tab" class="tab-content">
+        <div class="tab-header">
+          <h2>Event Monitor</h2>
+          <div class="tab-actions">
+            <button id="clear-events" class="btn btn-secondary">Clear</button>
+            <button id="pause-events" class="btn btn-secondary">Pause</button>
+          </div>
+        </div>
+
+        <div class="event-monitor">
+          <div class="event-filters">
+            <select id="event-type-filter">
+              <option value="all">All Events</option>
+              <option value="node">Node Events</option>
+              <option value="registry">Registry Events</option>
+              <option value="performance">Performance Events</option>
+              <option value="error">Error Events</option>
+            </select>
+          </div>
+
+          <div class="event-list" id="event-list">
+            <!-- Real-time event list -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+      <div class="spinner"></div>
+      <p>Loading V2U DevTools...</p>
+    </div>
+
+    <script src="panel.js"></script>
+  </body>
+</html>
