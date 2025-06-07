@@ -204,7 +204,7 @@ function validateHandle(handle: HandleConfig, node: Node): string[] {
     "s",
     "n",
     "b",
-    "j",
+    "{}",
     "a",
     "N",
     "f",
@@ -212,6 +212,7 @@ function validateHandle(handle: HandleConfig, node: Node): string[] {
     "u",
     "S",
     "∅",
+    "V",
   ];
   if (!validDataTypes.includes(handle.dataType)) {
     issues.push(`Invalid data type: ${handle.dataType}`);

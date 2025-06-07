@@ -439,7 +439,7 @@ const CreateTextV2 = createNodeComponent<CreateTextV2Data>({
     const errorStyle = finalError ? getV2ErrorStyling(finalErrorType) : null;
 
     return (
-      <div className="flex text-xs flex-col w-auto">
+      <div className="flex text-xs flex-col w-auto" key={`createtext-v2-${id}`}>
         {/* V2 HEADER: Enhanced with registry information */}
         <div
           className={`font-semibold mb-2 flex items-center justify-between ${categoryTextTheme.primary}`}

@@ -51,8 +51,20 @@ export interface BaseNodeData {
 export interface HandleConfig {
   /** Unique identifier for the handle */
   id: string;
-  /** Data type: string, number, boolean, json, array, etc. */
-  dataType: "s" | "n" | "b" | "j" | "a" | "N" | "f" | "x" | "u" | "S" | "∅";
+  /** Data type: string, number, boolean, json, array, vibe handles, etc. */
+  dataType:
+    | "s"
+    | "n"
+    | "b"
+    | "{}"
+    | "a"
+    | "N"
+    | "f"
+    | "x"
+    | "u"
+    | "S"
+    | "∅"
+    | "V";
   /** Position on the node */
   position: Position;
   /** Handle type: input or output */

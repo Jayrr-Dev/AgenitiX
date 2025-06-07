@@ -6,32 +6,37 @@
  * • Supports typed handle validation and connection rules
  * • Implements handle positioning and styling optimization
  * • Features automatic handle generation and cleanup
+ * • Supports vibe handles with opacity control
  *
- * Keywords: node-handles, connections, typed-validation, positioning, auto-generation, cleanup
+ * Keywords: node-handles, connections, typed-validation, positioning, auto-generation, cleanup, vibe-handles
  */
 
 import { useMemo } from "react";
 import { useVibeModeStore } from "../../stores/vibeModeStore";
 import type { FilteredHandles, HandleConfig } from "../types";
-import { shouldShowJsonHandle } from "../utils/conditionalRendering";
+import {
+  getVibeHandleOpacity,
+  shouldShowVibeHandle,
+} from "../utils/conditionalRendering";
 
 /**
  * USE NODE HANDLES
- * Smart handle filtering and display logic
+ * Smart handle filtering and display logic with vibe handle support
  * Refactored with extracted conditional logic utilities
  *
  * @param handles - Handle configuration array
  * @param connections - Current connections
  * @param allNodes - All nodes in the flow
- * @returns Filtered input and output handles
+ * @returns Filtered input and output handles with opacity information
  */
 export function useNodeHandles(
   handles: HandleConfig[],
   connections: any[],
   allNodes: any[]
-): FilteredHandles {
+): FilteredHandles & { handleOpacities: Record<string, number> } {
   // VIBE MODE STATE
-  const { isVibeModeActive, showJsonHandles } = useVibeModeStore();
+  const { isVibeModeActive, showVibeHandles, vibeHandleOpacity } =
+    useVibeModeStore();
 
   // ========================================================================
   // HANDLE VALIDATION AND DEBUGGING
@@ -54,28 +59,57 @@ export function useNodeHandles(
   // HANDLE FILTERING LOGIC WITH EXTRACTED UTILITIES
   // ========================================================================
 
-  const { inputHandlesFiltered, outputHandles }: FilteredHandles =
+  const {
+    inputHandlesFiltered,
+    outputHandles,
+    handleOpacities,
+  }: FilteredHandles & { handleOpacities: Record<string, number> } =
     useMemo(() => {
-      // FILTER INPUT HANDLES with extracted logic
+      const handleOpacities: Record<string, number> = {};
+
+      // FILTER INPUT HANDLES with vibe handle logic
       const inputHandlesFiltered = handles
         .filter((handle) => handle.type === "target")
-        .filter((handle) =>
-          shouldShowJsonHandle(
-            handle,
-            connections,
-            allNodes,
-            showJsonHandles,
-            isVibeModeActive
-          )
-        );
+        .filter((handle) => {
+          // Check vibe handles (V only)
+          if (handle.dataType === "V") {
+            const shouldShow = shouldShowVibeHandle(
+              handle,
+              connections,
+              allNodes,
+              showVibeHandles,
+              isVibeModeActive
+            );
+
+            // Calculate opacity for vibe handles
+            handleOpacities[handle.id] = getVibeHandleOpacity(
+              handle,
+              showVibeHandles,
+              vibeHandleOpacity
+            );
+
+            return shouldShow || !showVibeHandles; // Show with opacity even when "hidden"
+          }
+
+          // All other handles (including {}) are always visible with full opacity
+          handleOpacities[handle.id] = 1.0;
+          return true;
+        });
 
       // FILTER OUTPUT HANDLES (simpler logic)
-      const outputHandles = filterOutputHandles(handles);
+      const outputHandles = filterOutputHandles(handles, handleOpacities);
 
-      return { inputHandlesFiltered, outputHandles };
-    }, [handles, connections, showJsonHandles, isVibeModeActive, allNodes]);
+      return { inputHandlesFiltered, outputHandles, handleOpacities };
+    }, [
+      handles,
+      connections,
+      showVibeHandles,
+      isVibeModeActive,
+      allNodes,
+      vibeHandleOpacity,
+    ]);
 
-  return { inputHandlesFiltered, outputHandles };
+  return { inputHandlesFiltered, outputHandles, handleOpacities };
 }
 
 // ============================================================================
@@ -84,9 +118,19 @@ export function useNodeHandles(
 
 /**
  * FILTER OUTPUT HANDLES
- * Simple output handle filtering with early return
+ * Simple output handle filtering with opacity support
  */
-function filterOutputHandles(handles: HandleConfig[]): HandleConfig[] {
-  const outputHandles = handles.filter((handle) => handle.type === "source");
+function filterOutputHandles(
+  handles: HandleConfig[],
+  handleOpacities: Record<string, number>
+): HandleConfig[] {
+  const outputHandles = handles.filter((handle) => {
+    if (handle.type === "source") {
+      // Set opacity for output handles (all full opacity for now)
+      handleOpacities[handle.id] = 1.0;
+      return true;
+    }
+    return false;
+  });
   return outputHandles;
 }

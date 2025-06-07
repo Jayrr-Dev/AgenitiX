@@ -79,6 +79,13 @@ export const NODE_HANDLE_DEFINITIONS: Record<NodeType, HandleConfig[]> = {
       position: Position.Right,
       type: "source",
     },
+    // Vibe handle for enhanced debugging
+    {
+      id: "vibe",
+      dataType: "V",
+      position: Position.Top,
+      type: "target",
+    },
   ],
 };
 

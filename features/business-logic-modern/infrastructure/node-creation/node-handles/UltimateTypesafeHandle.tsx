@@ -75,8 +75,8 @@ const ULTIMATE_TYPE_MAP: Record<string, TypeMapEntry> = {
   },
 
   // === COMPLEX DATA TYPES ===
-  j: {
-    label: "j",
+  "{}": {
+    label: "{}",
     color: "#6366f1",
     description: "JSON - JavaScript objects and JSON data",
     category: "complex",
@@ -233,6 +233,14 @@ const ULTIMATE_TYPE_MAP: Record<string, TypeMapEntry> = {
     label: "ev",
     color: "#fb7185",
     description: "Event - DOM or custom events",
+    category: "special",
+  },
+
+  // === VIBE HANDLE TYPES ===
+  V: {
+    label: "V",
+    color: "#8b5cf6",
+    description: "Vibe Handle - Enhanced debugging connection",
     category: "special",
   },
 } as const;

@@ -240,7 +240,7 @@ const HANDLE_MAP = new Map<string, string>([
   // Complex
   ["object", "o"],
   ["array", "a"],
-  ["json", "j"],
+  ["json", "{}"],
   ["map", "m"],
   ["set", "st"],
   ["tuple", "t"],
@@ -269,6 +269,9 @@ const HANDLE_MAP = new Map<string, string>([
   ["event", "ev"],
   // Custom
   ["image", "o"],
+  // Vibe handles
+  ["vibe", "V"],
+  ["vibeobject", "{}"],
 ]);
 
 /** Convert arbitrary JSON dataType to Ultimate handle compact code. */

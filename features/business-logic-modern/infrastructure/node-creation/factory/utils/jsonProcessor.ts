@@ -37,7 +37,7 @@ export const addJsonInputSupport = (
     return [
       {
         id: "json",
-        dataType: "j",
+        dataType: "{}",
         position: Position.Top,
         type: "target",
       },
@@ -46,7 +46,7 @@ export const addJsonInputSupport = (
 
   // Check if node already has a JSON input handle
   const hasJsonInput = handles.some(
-    (h: HandleConfig) => h.type === "target" && h.dataType === "j"
+    (h: HandleConfig) => h.type === "target" && h.dataType === "{}"
   );
 
   // If already has JSON input, return handles as-is
@@ -54,12 +54,12 @@ export const addJsonInputSupport = (
     return handles;
   }
 
-  // Add JSON input handle for Vibe Mode support
+  // Add vibe handle for enhanced debugging
   return [
     ...handles,
     {
-      id: "json",
-      dataType: "j",
+      id: "vibe",
+      dataType: "V",
       position: Position.Top,
       type: "target",
     },
@@ -258,12 +258,10 @@ export const getJsonConnections = (connections: any[], nodeId: string) => {
   return connections.filter(
     (conn) =>
       conn.target === nodeId &&
-      (conn.targetHandle === "j" ||
+      (conn.targetHandle === "{}" ||
         conn.targetHandle === "json" ||
-        conn.targetHandle === "j_in" ||
-        conn.targetHandle === "j_input" ||
         conn.targetHandle === "json_in" ||
-        conn.targetHandle?.startsWith("j_")) // Handle timestamp-based IDs
+        conn.targetHandle?.startsWith("json_")) // Handle timestamp-based IDs
   );
 };
 
@@ -302,12 +300,10 @@ export const hasJsonConnections = (
   return connections.some(
     (conn) =>
       conn.target === nodeId &&
-      (conn.targetHandle === "j" ||
+      (conn.targetHandle === "{}" ||
         conn.targetHandle === "json" ||
-        conn.targetHandle === "j_in" ||
-        conn.targetHandle === "j_input" ||
         conn.targetHandle === "json_in" ||
-        conn.targetHandle?.startsWith("j_")) // Handle timestamp-based IDs
+        conn.targetHandle?.startsWith("json_")) // Handle timestamp-based IDs
   );
 };
 

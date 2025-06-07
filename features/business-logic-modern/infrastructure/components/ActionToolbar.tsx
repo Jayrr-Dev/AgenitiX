@@ -14,12 +14,12 @@
 
 import { useVibeModeStore } from "@node-creation/stores/vibeModeStore";
 import {
+  Braces,
   History,
   Maximize,
   Minimize,
   RotateCcw,
   RotateCw,
-  X,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useUndoRedo } from "./UndoRedoContext";
@@ -41,7 +41,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
   const [isBrowserEnvironment, setIsBrowserEnvironment] = useState(false);
 
   // Vibe Mode state
-  const { isVibeModeActive, showJsonHandles, toggleVibeMode } =
+  const { isVibeModeActive, showVibeHandles, toggleVibeMode } =
     useVibeModeStore();
 
   // Detect if running in browser vs desktop/Electron app
@@ -186,17 +186,19 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
       <button
         onClick={toggleVibeMode}
         className={`p-2 rounded transition-colors ${
-          showJsonHandles
+          showVibeHandles || isVibeModeActive
             ? "bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 ring-2 ring-purple-300 dark:ring-purple-700"
             : "hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400"
         }`}
         title={
-          showJsonHandles
-            ? "Hide JSON Handles (Vibe Mode)"
-            : "Show JSON Handles (Vibe Mode)"
+          showVibeHandles || isVibeModeActive
+            ? "Hide Vibe Handles (Vibe Mode)"
+            : "Show Vibe Handles (Vibe Mode)"
         }
       >
-        <X className={`w-4 h-4 ${showJsonHandles ? "animate-pulse" : ""}`} />
+        <Braces
+          className={`w-4 h-4 ${showVibeHandles || isVibeModeActive ? "animate-pulse" : ""}`}
+        />
       </button>
     </div>
   );

@@ -154,8 +154,59 @@ export function selectTextTheme(
 // ============================================================================
 
 /**
- * SHOULD SHOW JSON HANDLE
- * Extract complex JSON handle visibility logic
+ * SHOULD SHOW VIBE HANDLE
+ * Handles vibe handle visibility logic (V handles only)
+ */
+export function shouldShowVibeHandle(
+  handle: any,
+  connections: any[],
+  allNodes: any[],
+  showVibeHandles: boolean,
+  isVibeModeActive: boolean
+): boolean {
+  // EARLY RETURN: Not a vibe handle (using V as identifier)
+  if (handle.dataType !== "V") {
+    return true;
+  }
+
+  // CHECK FOR EXISTING CONNECTION
+  const hasVibeConnection = connections.some(
+    (c) => c.targetHandle === handle.id
+  );
+
+  // EARLY RETURN: Already connected (always visible)
+  if (hasVibeConnection) {
+    return true;
+  }
+
+  // VISIBILITY PRIORITY ORDER:
+  // 1. Explicit show vibe handles setting
+  // 2. Vibe Mode active
+  return showVibeHandles || isVibeModeActive;
+}
+
+/**
+ * GET VIBE HANDLE OPACITY
+ * Returns the opacity value for vibe handles when they should be dimmed
+ */
+export function getVibeHandleOpacity(
+  handle: any,
+  showVibeHandles: boolean,
+  vibeHandleOpacity: number
+): number {
+  // EARLY RETURN: Not a vibe handle or should be fully visible
+  if (handle.dataType !== "V" || showVibeHandles) {
+    return 1.0;
+  }
+
+  // Return the configured opacity for dimmed vibe handles
+  return vibeHandleOpacity;
+}
+
+/**
+ * SHOULD SHOW JSON HANDLE (LEGACY)
+ * Legacy function maintained for backwards compatibility
+ * Now only handles vibe handles - all other handles (including {}) show normally
  */
 export function shouldShowJsonHandle(
   handle: any,
@@ -164,35 +215,19 @@ export function shouldShowJsonHandle(
   showJsonHandles: boolean,
   isVibeModeActive: boolean
 ): boolean {
-  // EARLY RETURN: Not a JSON handle
-  if (handle.dataType !== "j") {
-    return true;
+  // Check if it's a vibe handle
+  if (handle.dataType === "V") {
+    return shouldShowVibeHandle(
+      handle,
+      connections,
+      allNodes,
+      showJsonHandles,
+      isVibeModeActive
+    );
   }
 
-  // CHECK FOR EXISTING CONNECTION
-  const hasJsonConnection = connections.some(
-    (c) => c.targetHandle === handle.id
-  );
-
-  // EARLY RETURN: Already connected (always visible)
-  if (hasJsonConnection) {
-    return true;
-  }
-
-  // CHECK FOR JSON SOURCES
-  const hasJsonSources = allNodes.some(
-    (node) =>
-      node.type === "testJson" ||
-      node.type === "testError" ||
-      (node.data &&
-        (node.data.json !== undefined || node.data.parsedJson !== undefined))
-  );
-
-  // VISIBILITY PRIORITY ORDER:
-  // 1. Explicit show JSON handles setting
-  // 2. Vibe Mode active (legacy support)
-  // 3. Smart auto-show when JSON sources exist
-  return showJsonHandles || isVibeModeActive || hasJsonSources;
+  // For all other handles (including {}), show them normally
+  return true;
 }
 
 // ============================================================================

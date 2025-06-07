@@ -13,11 +13,46 @@
 "use client";
 
 import UltimateTypesafeHandle from "@node-creation/node-handles/UltimateTypesafeHandle";
+import React from "react";
 import type { BaseNodeData, NodeFactoryConfig } from "../types";
 import {
   calculateRenderError,
   logErrorInjectionState,
 } from "../utils/conditionalRendering";
+
+// Simple Error Boundary to catch React reconciliation errors
+class NodeRenderErrorBoundary extends React.Component<
+  { children: React.ReactNode; nodeType: string },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; nodeType: string }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.warn(
+      `[NodeContent] Caught render error for ${this.props.nodeType}:`,
+      error
+    );
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="text-xs text-red-500 p-2 bg-red-50 border border-red-200 rounded">
+          ⚠️ Render Error - Please refresh
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 // ============================================================================
 // NODE CONTENT COMPONENT TYPES
@@ -76,7 +111,10 @@ export function NodeContent<T extends BaseNodeData>({
   return (
     <>
       {/* INPUT HANDLES SECTION */}
-      <InputHandlesSection handles={handles.inputHandlesFiltered} />
+      <InputHandlesSection
+        handles={handles.inputHandlesFiltered}
+        handleOpacities={handles.handleOpacities || {}}
+      />
 
       {/* COLLAPSED STATE SECTION */}
       <CollapsedStateSection
@@ -98,7 +136,10 @@ export function NodeContent<T extends BaseNodeData>({
       />
 
       {/* OUTPUT HANDLES SECTION */}
-      <OutputHandlesSection handles={handles.outputHandles} />
+      <OutputHandlesSection
+        handles={handles.outputHandles}
+        handleOpacities={handles.handleOpacities || {}}
+      />
     </>
   );
 }
@@ -109,9 +150,15 @@ export function NodeContent<T extends BaseNodeData>({
 
 /**
  * INPUT HANDLES SECTION
- * Renders input handles with early return
+ * Renders input handles with opacity support
  */
-function InputHandlesSection({ handles }: { handles: any[] }) {
+function InputHandlesSection({
+  handles,
+  handleOpacities,
+}: {
+  handles: any[];
+  handleOpacities: Record<string, number>;
+}) {
   // EARLY RETURN: No input handles
   if (!handles || handles.length === 0) {
     return null;
@@ -120,6 +167,7 @@ function InputHandlesSection({ handles }: { handles: any[] }) {
   return (
     <>
       {handles.map((handle: any) => {
+        const opacity = handleOpacities[handle.id] || 1.0;
         return (
           <UltimateTypesafeHandle
             key={handle.id}
@@ -127,6 +175,7 @@ function InputHandlesSection({ handles }: { handles: any[] }) {
             position={handle.position}
             id={handle.id}
             dataType={handle.dataType}
+            style={{ opacity }}
           />
         );
       })}
@@ -194,7 +243,7 @@ function ExpandedStateSection({
   }
 
   return (
-    <>
+    <NodeRenderErrorBoundary nodeType={enhancedConfig.nodeType}>
       {enhancedConfig.renderExpanded({
         data: nodeState.data,
         error: renderError,
@@ -204,15 +253,21 @@ function ExpandedStateSection({
         updateNodeData: nodeState.updateNodeData,
         id: id,
       })}
-    </>
+    </NodeRenderErrorBoundary>
   );
 }
 
 /**
  * OUTPUT HANDLES SECTION
- * Renders output handles with early return
+ * Renders output handles with opacity support
  */
-function OutputHandlesSection({ handles }: { handles: any[] }) {
+function OutputHandlesSection({
+  handles,
+  handleOpacities,
+}: {
+  handles: any[];
+  handleOpacities: Record<string, number>;
+}) {
   // EARLY RETURN: No output handles
   if (!handles || handles.length === 0) {
     return null;
@@ -221,6 +276,7 @@ function OutputHandlesSection({ handles }: { handles: any[] }) {
   return (
     <>
       {handles.map((handle: any) => {
+        const opacity = handleOpacities[handle.id] || 1.0;
         return (
           <UltimateTypesafeHandle
             key={handle.id}
@@ -228,6 +284,7 @@ function OutputHandlesSection({ handles }: { handles: any[] }) {
             position={handle.position}
             id={handle.id}
             dataType={handle.dataType}
+            style={{ opacity }}
           />
         );
       })}
