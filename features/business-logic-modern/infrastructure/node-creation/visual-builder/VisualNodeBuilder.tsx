@@ -6,7 +6,7 @@ import React, {
   useState,
 } from "react";
 import { NodeConfiguration } from "../defineNode/index";
-import { NodeErrorBoundary } from "../error-handling/NodeErrorBoundary";
+// Removed NodeErrorBoundary import due to encoding issues
 
 // Position enum for handles
 export const Position = {
@@ -511,105 +511,89 @@ export const VisualNodeBuilder: React.FC<{
   }
 
   return (
-    <NodeErrorBoundary
-      nodeType="visual-builder"
-      enableAutoRecovery={true}
-      onError={(error) => {
-        console.error("Visual Builder Error:", error);
-        setState((prev) => ({
-          ...prev,
-          errors: [...prev.errors, error.message],
-        }));
-      }}
+    <div
+      className={`visual-node-builder ${builderConfig.theme} ${className}`}
+      data-testid="visual-node-builder"
+      role={builderConfig.enableAccessibility ? "application" : undefined}
+      aria-label={
+        builderConfig.enableAccessibility ? "Visual Node Builder" : undefined
+      }
     >
-      <div
-        className={`visual-node-builder ${builderConfig.theme} ${className}`}
-        data-testid="visual-node-builder"
-        role={builderConfig.enableAccessibility ? "application" : undefined}
-        aria-label={
-          builderConfig.enableAccessibility ? "Visual Node Builder" : undefined
-        }
-      >
-        {/* Toolbar */}
-        <ToolbarComponent
-          config={builderConfig}
-          state={state}
-          onUndo={undo}
-          onRedo={redo}
-          onSave={saveNode}
-          onPreview={togglePreview}
-          onAddHandle={addHandle}
-          canUndo={state.historyIndex > 0}
-          canRedo={state.historyIndex < state.history.length - 1}
-        />
+      {/* Toolbar */}
+      <ToolbarComponent
+        config={builderConfig}
+        state={state}
+        onUndo={undo}
+        onRedo={redo}
+        onSave={saveNode}
+        onPreview={togglePreview}
+        onAddHandle={addHandle}
+        canUndo={state.historyIndex > 0}
+        canRedo={state.historyIndex < state.history.length - 1}
+      />
 
-        {/* Main workspace */}
-        <div className="builder-workspace">
-          {/* Properties panel */}
-          <PropertiesPanel
-            nodeConfig={state.currentNode}
-            selectedHandle={state.selectedHandle}
-            onUpdateNode={updateNode}
-            onUpdateHandle={updateHandle}
-            onSelectHandle={(handle) =>
-              setState((prev) => ({
-                ...prev,
-                selectedHandle: handle,
-              }))
-            }
-          />
-
-          {/* Canvas */}
-          <CanvasComponent
-            ref={canvasRef}
-            config={builderConfig}
-            nodeConfig={state.currentNode}
-            selectedHandle={state.selectedHandle}
-            onUpdateNode={updateNode}
-            onUpdateHandle={updateHandle}
-            onRemoveHandle={removeHandle}
-            onSelectHandle={(handle) =>
-              setState((prev) => ({
-                ...prev,
-                selectedHandle: handle,
-              }))
-            }
-            previewMode={state.previewMode}
-          />
-
-          {/* Handle library */}
-          <HandleLibrary
-            onAddHandle={addHandle}
-            isDragging={state.isDragging}
-            onDragStart={() =>
-              setState((prev) => ({ ...prev, isDragging: true }))
-            }
-            onDragEnd={() =>
-              setState((prev) => ({ ...prev, isDragging: false }))
-            }
-          />
-        </div>
-
-        {/* Status bar */}
-        <StatusBar
-          errors={state.errors}
-          warnings={state.warnings}
-          unsavedChanges={state.unsavedChanges}
+      {/* Main workspace */}
+      <div className="builder-workspace">
+        {/* Properties panel */}
+        <PropertiesPanel
           nodeConfig={state.currentNode}
+          selectedHandle={state.selectedHandle}
+          onUpdateNode={updateNode}
+          onUpdateHandle={updateHandle}
+          onSelectHandle={(handle) =>
+            setState((prev) => ({
+              ...prev,
+              selectedHandle: handle,
+            }))
+          }
         />
 
-        {/* Preview panel (if enabled) */}
-        {state.previewMode && builderConfig.enableRealTimePreview && (
-          <PreviewPanel
-            nodeConfig={state.currentNode}
-            generatedConfig={generateNodeConfig()}
-            onClose={() =>
-              setState((prev) => ({ ...prev, previewMode: false }))
-            }
-          />
-        )}
+        {/* Canvas */}
+        <CanvasComponent
+          ref={canvasRef}
+          config={builderConfig}
+          nodeConfig={state.currentNode}
+          selectedHandle={state.selectedHandle}
+          onUpdateNode={updateNode}
+          onUpdateHandle={updateHandle}
+          onRemoveHandle={removeHandle}
+          onSelectHandle={(handle) =>
+            setState((prev) => ({
+              ...prev,
+              selectedHandle: handle,
+            }))
+          }
+          previewMode={state.previewMode}
+        />
+
+        {/* Handle library */}
+        <HandleLibrary
+          onAddHandle={addHandle}
+          isDragging={state.isDragging}
+          onDragStart={() =>
+            setState((prev) => ({ ...prev, isDragging: true }))
+          }
+          onDragEnd={() => setState((prev) => ({ ...prev, isDragging: false }))}
+        />
       </div>
-    </NodeErrorBoundary>
+
+      {/* Status bar */}
+      <StatusBar
+        errors={state.errors}
+        warnings={state.warnings}
+        unsavedChanges={state.unsavedChanges}
+        nodeConfig={state.currentNode}
+      />
+
+      {/* Preview panel (if enabled) */}
+      {state.previewMode && builderConfig.enableRealTimePreview && (
+        <PreviewPanel
+          nodeConfig={state.currentNode}
+          generatedConfig={generateNodeConfig()}
+          onClose={() => setState((prev) => ({ ...prev, previewMode: false }))}
+        />
+      )}
+    </div>
   );
 };
 

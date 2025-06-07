@@ -16,6 +16,9 @@ import { ReactFlowProvider } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+// VISUAL NODE BUILDER STYLES
+import "@infrastructure/node-creation/visual-builder/VisualBuilder.css";
+
 // COMPONENT IMPORTS
 import DebugTool from "@infrastructure/components/DebugTool";
 import { UndoRedoProvider } from "@infrastructure/components/UndoRedoContext";
@@ -28,6 +31,13 @@ import Sidebar, { SidebarRef } from "@infrastructure/sidebar/Sidebar";
 import { FlowCanvas } from "./components/FlowCanvas";
 import { FlowEditorLoading } from "./components/FlowEditorLoading";
 import { NodeDisplayProvider } from "./contexts/NodeDisplayContext";
+
+// VISUAL NODE BUILDER IMPORTS
+import {
+  VisualNodeBuilderProvider,
+  useVisualNodeBuilder,
+} from "@infrastructure/node-creation/contexts/VisualNodeBuilderContext";
+import { VisualNodeBuilder } from "@infrastructure/node-creation/visual-builder/VisualNodeBuilder";
 
 // STORE IMPORTS
 import { useFlowStore } from "@infrastructure/flow-engine/stores/flowStore";
@@ -305,6 +315,12 @@ function FlowEditorContent() {
   };
 
   // ============================================================================
+  // VISUAL NODE BUILDER INTEGRATION
+  // ============================================================================
+
+  const { isVisible: isBuilderVisible, toggleBuilder } = useVisualNodeBuilder();
+
+  // ============================================================================
   // KEYBOARD SHORTCUTS SETUP
   // ============================================================================
 
@@ -320,6 +336,27 @@ function FlowEditorContent() {
     onSelectAll: keyboardHandlers.handleSelectAllNodes,
     onClearSelection: keyboardHandlers.handleClearSelection,
   });
+
+  // ============================================================================
+  // KEYBOARD SHORTCUT FOR DEV BUILDER (Ctrl/Cmd + B)
+  // ============================================================================
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key === "b" &&
+        !event.shiftKey &&
+        !event.altKey
+      ) {
+        event.preventDefault();
+        toggleBuilder();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [toggleBuilder]);
 
   // ============================================================================
   // MOUSE TRACKING FOR PASTE POSITIONING
@@ -368,6 +405,87 @@ function FlowEditorContent() {
       {/* DEBUG TOOLS */}
       <DebugTool />
 
+      {/* DEV ONLY - VISUAL NODE BUILDER OVERLAY */}
+      {isBuilderVisible && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-[95vw] h-[95vh] relative">
+            {/* Builder Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                🛠️ Visual Node Builder (Dev Only)
+              </h2>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  Press Ctrl+B to toggle
+                </span>
+                <button
+                  onClick={toggleBuilder}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title="Close Builder"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Builder Content */}
+            <div className="h-[calc(100%-4rem)]">
+              <VisualNodeBuilder
+                className="w-full h-full"
+                onSave={(nodeConfig) => {
+                  console.log(
+                    "🎯 [Dev Builder] Generated node config:",
+                    nodeConfig
+                  );
+                  // You can add logic here to automatically register the node
+                }}
+                onPreview={(visualConfig) => {
+                  console.log("👁️ [Dev Builder] Preview node:", visualConfig);
+                }}
+                onValidate={(nodeConfig) => {
+                  // Basic validation
+                  const errors: string[] = [];
+                  const warnings: string[] = [];
+
+                  if (!nodeConfig.nodeType) {
+                    errors.push("Node type is required");
+                  }
+
+                  if (!nodeConfig.displayName) {
+                    errors.push("Display name is required");
+                  }
+
+                  if (nodeConfig.handles.length === 0) {
+                    warnings.push("Node has no input/output handles");
+                  }
+
+                  return { errors, warnings };
+                }}
+                config={{
+                  theme: "auto",
+                  enableRealTimePreview: true,
+                  enableAutoSave: true,
+                  showGrid: true,
+                  snapToGrid: true,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col">
         {/* UNDO/REDO TOOLBAR */}
@@ -385,6 +503,30 @@ function FlowEditorContent() {
             enableViewportTracking: false, // Disable for better performance
           }}
         />
+
+        {/* DEV BUILDER TOGGLE BUTTON - Floating Action Button */}
+        <button
+          onClick={toggleBuilder}
+          className="fixed bottom-6 right-6 z-40 bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-110 group"
+          title="Toggle Visual Node Builder (Ctrl+B)"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+            />
+          </svg>
+          <span className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+            Dev Builder
+          </span>
+        </button>
 
         {/* FLOW CANVAS */}
         <FlowCanvas
@@ -481,9 +623,11 @@ export default function FlowEditor() {
   return (
     <ReactFlowProvider>
       <UndoRedoProvider>
-        <NodeDisplayProvider>
-          <FlowEditorContent />
-        </NodeDisplayProvider>
+        <VisualNodeBuilderProvider>
+          <NodeDisplayProvider>
+            <FlowEditorContent />
+          </NodeDisplayProvider>
+        </VisualNodeBuilderProvider>
       </UndoRedoProvider>
     </ReactFlowProvider>
   );
