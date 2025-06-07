@@ -35,7 +35,7 @@ graph TD
     E9 --> E10[Add fallback case to NodeControls.tsx]
 
     E10 --> F[Phase 5: Testing]
-    F --> F1[Build project: npm run build]
+    F --> F1[Build project: pnpm run build]
     F1 --> F2[Check console for V2 registry logs]
     F2 --> F3[Verify node appears in sidebar]
     F3 --> F4{Node renders correctly?}
@@ -581,7 +581,7 @@ switch (validNodeType) {
 
 #### 5.1 Verify Registration
 
-1. **Build the project**: `npm run build`
+1. **Build the project**: `pnpm run build`
 2. **Check console**: Look for V2 registry initialization logs
 3. **Test sidebar**: Node should appear in the correct folder
 4. **Create node**: Should render properly (not grey box)

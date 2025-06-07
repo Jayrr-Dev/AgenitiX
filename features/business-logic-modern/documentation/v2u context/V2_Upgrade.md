@@ -27,7 +27,7 @@ Reviewing the recommendations document, the original plan missed several critica
 
    - Install and configure Plop.js
    - Create handlebars templates for node generation
-   - Add package.json scripts (`npm run create-node`)
+   - Add package.json scripts (`pnpm run create-node`)
 
 2. **Zod Schema Validation** (1.5 days)
 
@@ -48,7 +48,7 @@ Reviewing the recommendations document, the original plan missed several critica
 
 **Deliverables:**
 
-- ✅ `npm run create-node` command working
+- ✅ `pnpm run create-node` command working
 - ✅ Build fails on invalid node configs
 - ✅ VS Code autocomplete for node creation
 - ✅ CI validation pipeline
@@ -414,7 +414,7 @@ interface NodeDevTools {
 
 ```bash
 # Core Dependencies
-npm install --save-dev \
+pnpm add -D \
   plop \
   zod \
   vitest \
@@ -426,7 +426,7 @@ npm install --save-dev \
   chrome-extension-cli
 
 # Advanced Features
-npm install \
+pnpm add \
   comlink \          # Web Worker communication
   idb \             # IndexedDB for caching
   fuse.js \         # Fuzzy search
@@ -469,13 +469,13 @@ git checkout -b v2u-implementation
 mkdir -p src/v2u/{core,plugins,visual-builder,devtools}
 
 # Install complete dependency stack
-npm install --save-dev [all dependencies above]
+pnpm add -D [all dependencies above]
 
 # Create project structure
 mkdir -p {templates,scripts,tests/{unit,e2e,visual},docs,examples}
 
 # Begin Week 1 implementation
-npm run v2u:init
+pnpm run v2u:init
 ```
 
 ## 📋 **Quality Gates (Enhanced)**

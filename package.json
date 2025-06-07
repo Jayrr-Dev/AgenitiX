@@ -9,6 +9,8 @@
     "migrate-nodes": "node features/business-logic-modern/infrastructure/node-creation/node-registry/scripts/migrate-node-domain.js",
     "build-registry:prod": "NODE_ENV=production node features/business-logic-modern/infrastructure/node-creation/node-registry/scripts/build-registry.js production",
     "build-registry:dev": "NODE_ENV=development node features/business-logic-modern/infrastructure/node-creation/node-registry/scripts/build-registry.js development",
+    "create-node": "plop node",
+    "node:validate": "node scripts/validate-registry.js",
     "version:status": "npx ts-node scripts/version-commands.ts status",
     "version:watch": "npx ts-node scripts/version-commands.ts watch",
     "version:check": "npx ts-node scripts/version-commands.ts check",
@@ -81,6 +83,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@playwright/test": "^1.52.0",
     "@tailwindcss/postcss": "^4.1.4",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -94,14 +97,17 @@
     "@types/three": "^0.176.0",
     "chokidar": "^4.0.3",
     "cssnano": "^6",
+    "handlebars": "^4.7.8",
     "jest": "^29.7.0",
+    "plop": "^4.0.1",
     "postcss": "8.4.49",
     "tailwind-merge": "^2.6.0",
     "tailwind-scrollbar": "^4.0.2",
     "tailwindcss": "4.1.4",
     "tailwindcss-animate": "^1.0.7",
     "ts-node": "^10.9.2",
-    "typescript": "5.7.2"
+    "typescript": "5.7.2",
+    "vitest": "^2.1.9"
   },
   "name": "utilitek-website"
 }

@@ -775,7 +775,7 @@ interface NodeValidation {
   recommendations: string[];
 }
 
-// CLI tool: npm run validate-nodes
+// CLI tool: pnpm run validate-nodes
 // ✅ createText: Complete
 // ❌ yourNode: Missing inspector config
 // ⚠️ testNode: Component not exported
@@ -879,7 +879,7 @@ const loadedCategories = useLoadedCategories();
 
 ```bash
 # Interactive node creation
-npm run create-node
+pnpm run create-node
 
 ? Node name: MyAwesomeNode
 ? Category: (create/transform/output/custom)

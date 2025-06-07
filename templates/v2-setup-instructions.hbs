@@ -1,0 +1,211 @@
+# {{componentName}} - V2 Node Setup Instructions
+
+🎉 **Congratulations!** Your V2 node `{{componentName}}` has been generated successfully.
+
+## 📋 Next Steps
+
+The Plop generator has created the basic structure, but you'll need to complete a few manual steps to fully integrate your node into the system.
+
+### ✅ Already Completed
+
+- [x] **Component file**: `features/business-logic-modern/node-domain/{{category}}/{{componentName}}.tsx`
+- [x] **Registry entry**: Added to `nodeRegistry.ts` with basic configuration
+- [x] **Type interface**: Added `{{interfaceName}}` to type system
+{{#ifeq controlType "custom"}}
+- [x] **Custom control**: `{{componentName}}Control.tsx` created
+{{/ifeq}}
+
+### 🔧 Manual Steps Required
+
+Please complete these steps to make your node fully functional:
+
+#### 1. Update Unified Registry Components
+
+Add your component to the COMPONENTS mapping in:
+`features/business-logic-modern/infrastructure/node-creation/json-node-registry/unifiedRegistry.ts`
+
+```typescript
+// Add import
+import {{componentName}} from "../../../node-domain/{{category}}/{{componentName}}";
+
+// Add to COMPONENTS mapping (around line 52)
+const COMPONENTS: Record<string, any> = {
+  // ... existing components
+  {{nodeType}}: {{componentName}}, // Add this line
+};
+```
+
+#### 2. Configure Inspector Controls
+
+In the same `unifiedRegistry.ts` file, add inspector control configuration:
+
+```typescript
+// Add to V2_CONTROLS (around line 139)
+const V2_CONTROLS = {
+  // ... existing controls
+  {{nodeType}}: {
+    controlType: "v2",
+    {{#ifeq controlType "custom"}}
+    v2ControlType: "{{componentName}}Control",
+    {{else}}
+    v2ControlType: "TextNodeControl", // or "TriggerOnToggleControl"
+    {{/ifeq}}
+    hasControls: true,
+  },
+};
+
+// Add to controlConfigs (around line 488)
+const controlConfigs = {
+  // ... existing configs
+  {{nodeType}}: {
+    type: "v2",
+    {{#ifeq controlType "custom"}}
+    v2ControlType: "{{componentName}}Control",
+    {{else}}
+    v2ControlType: "TextNodeControl", // or "TriggerOnToggleControl"
+    {{/ifeq}}
+  },
+};
+```
+
+#### 3. Export from Node Domain
+
+Update `features/business-logic-modern/node-domain/index.ts`:
+
+```typescript
+// Add export
+export { default as {{componentName}} } from "./{{category}}/{{componentName}}";
+
+// Add to registry mapping
+export const NODE_DOMAIN_REGISTRY = {
+  // ... existing mappings
+  {{componentName}}: "{{nodeType}}",
+};
+
+// Add to category mapping
+export const NODES_BY_CATEGORY = {
+  // ... existing categories
+  [DOMAIN_CATEGORIES.{{uppercase category}}]: [
+    // ... existing nodes
+    "{{componentName}}",
+  ],
+};
+
+// Add to folder mapping
+export const NODES_BY_FOLDER = {
+  // ... existing folders
+  [SIDEBAR_FOLDERS.{{uppercase folder}}]: [
+    // ... existing nodes
+    "{{componentName}}",
+  ],
+};
+```
+
+#### 4. Add to Flow Canvas
+
+Update `features/business-logic-modern/infrastructure/flow-engine/components/FlowCanvas.tsx`:
+
+```typescript
+// Add import
+import { {{componentName}} } from "@/features/business-logic-modern/node-domain";
+
+// Add to nodeTypes mapping
+const nodeTypes = useMemo(
+  () => ({
+    // ... existing types
+    {{nodeType}}: {{componentName}}, // Add this line
+  }),
+  []
+);
+```
+
+#### 5. Add Fallback Controls
+
+Update `features/business-logic-modern/infrastructure/node-inspector/components/NodeControls.tsx`:
+
+```typescript
+// Add to fallback strategy switch statement
+switch (validNodeType) {
+  // ... existing cases
+  case "{{nodeType}}":
+    return (
+      <div>
+        <div className="text-xs text-amber-600 dark:text-amber-400 mb-2 p-1 bg-amber-50 dark:bg-amber-900/20 rounded border">
+          ⚠️ FALLBACK: V2 Registry control failed for {{nodeType}}
+        </div>
+        {{#ifeq controlType "custom"}}
+        <{{componentName}}Control node={node} updateNodeData={updateNodeData} />
+        {{else}}
+        <TextNodeControl node={node} updateNodeData={updateNodeData} />
+        {{/ifeq}}
+      </div>
+    );
+  // ... other cases
+}
+```
+
+{{#ifeq controlType "custom"}}
+#### 6. Register Custom Control
+
+If you haven't already, make sure to import and register your custom control in the appropriate places.
+
+{{/ifeq}}
+
+### 🧪 Testing Your Node
+
+1. **Build the project**: `pnpm run build`
+2. **Check console**: Look for V2 registry initialization logs
+3. **Test sidebar**: Node should appear in the "{{folder}}" folder
+4. **Create node**: Should render properly (not grey box)
+5. **Check controls**: Should show {{#ifeq controlType "none"}}no controls{{else}}{{controlType}} controls{{/ifeq}}
+
+### 🐛 Debugging Common Issues
+
+#### Grey Box Rendering
+- ✅ Check if component is in `FlowCanvas.tsx` nodeTypes mapping
+- ✅ Verify component is exported from `node-domain/index.ts`
+
+#### No Inspector Controls
+- ✅ Check `V2_CONTROLS` in `unifiedRegistry.ts`
+- ✅ Verify fallback case in `NodeControls.tsx`
+
+#### Registry Errors
+- ✅ Check console for V2 registry initialization logs
+- ✅ Verify node registry entry has correct syntax
+- ✅ Check for circular dependency errors
+
+### 📚 What This Node Includes
+
+This V2 node includes all the modern features:
+
+- ✅ **V2 Registry Integration**: Uses `useV2Registry()` and `useV2NodeMetadata()`
+- ✅ **Type Safety**: Proper TypeScript interfaces with V2 metadata
+- ✅ **Error Handling**: Enhanced error states and fallback patterns
+- ✅ **Status Indicators**: Visual V2 status indicators
+- ✅ **Debug Info**: Built-in debugging information
+- ✅ **Modern UI**: Responsive design with dark mode support
+- ✅ **V2 Metadata**: Versioning and creation timestamps
+
+### 🎯 Node Configuration
+
+- **Node Type**: `{{nodeType}}`
+- **Category**: `{{category}}`
+- **Control Type**: `{{controlType}}`
+- **Has Input**: {{hasInput}}
+- **Has Output**: {{hasOutput}}
+- **Folder**: `{{folder}}`
+
+### 📞 Need Help?
+
+If you encounter issues:
+
+1. Check the console for error messages
+2. Verify all manual steps are completed
+3. Look for amber "FALLBACK" labels in inspector
+4. Check that imports and exports are correct
+
+---
+
+**🚀 Once completed, your node will be fully functional in the V2 system!**
+
+Delete this instruction file after setup is complete.
