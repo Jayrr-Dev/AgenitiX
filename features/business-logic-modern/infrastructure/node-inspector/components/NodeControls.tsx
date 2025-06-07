@@ -28,6 +28,9 @@ import {
 } from "../controls/TriggerControls";
 import type { ErrorType } from "../types";
 
+// V2U Enhanced Controls Import
+import { autoResolveControl } from "../controls/V2UAutoControls";
+
 // ============================================================================
 // REGISTRY INTEGRATION - Import registry for type-safe control resolution
 // ============================================================================
@@ -57,6 +60,9 @@ interface NodeControlsProps {
     delayInput: string;
     setDelayInput: (value: string) => void;
   };
+  // V2U Enhanced props
+  v2uState?: any; // V2UNodeState from types
+  debugMode?: boolean;
 }
 
 export const NodeControls: React.FC<NodeControlsProps> = ({
@@ -64,9 +70,37 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
   updateNodeData,
   onLogError,
   inspectorState,
+  v2uState,
+  debugMode = false,
 }) => {
   // ============================================================================
-  // REGISTRY-BASED CONTROL RESOLUTION
+  // ZERO-REGISTRATION CONTROL RESOLUTION - V2U FIRST
+  // ============================================================================
+
+  // Auto-resolve control without manual registries!
+  const autoResolution = autoResolveControl(node);
+
+  if (autoResolution.ControlComponent) {
+    const ControlComponent = autoResolution.ControlComponent;
+    console.log(
+      `[NodeControls] 🚀 ZERO-REG: Auto-resolved ${autoResolution.method} control for ${node.type} (V2U: ${autoResolution.isV2U})`
+    );
+
+    return (
+      <div>
+        {debugMode && (
+          <div className="text-xs text-blue-600 dark:text-blue-400 mb-2 p-1 bg-blue-50 dark:bg-blue-900/20 rounded border">
+            🎯 ZERO-REG: {autoResolution.method} →{" "}
+            {autoResolution.isV2U ? "V2U" : "Legacy"} control for {node.type}
+          </div>
+        )}
+        <ControlComponent node={node} updateNodeData={updateNodeData} />
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // LEGACY REGISTRY-BASED CONTROL RESOLUTION - FALLBACK
   // ============================================================================
 
   const getControlFromRegistry = (nodeType: string) => {

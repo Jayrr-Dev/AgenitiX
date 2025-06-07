@@ -123,7 +123,9 @@ export type NodeCategory =
   | "test"
   | "cycle"
   | "data"
-  | "media";
+  | "media"
+  | "utility"
+  | "testing";
 export type SidebarFolder = "main" | "automation" | "testing" | "visualization";
 
 // ============================================================================

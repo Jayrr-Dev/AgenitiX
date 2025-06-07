@@ -369,7 +369,190 @@ export function validateNodeForInspector(nodeType: string): {
  * Get legacy MODERN_NODE_REGISTRY for backward compatibility
  */
 export function getLegacyModernNodeRegistry(): Record<string, any> {
-  return getLegacyNodeRegistry();
+  // Start with the legacy registry
+  const registry: Record<string, any> = { ...getLegacyNodeRegistry() };
+
+  // Add V2U nodes from defineNode registry
+  try {
+    const { NodeRegistry } = require("../defineNode/index.tsx");
+    const modernRegistry = NodeRegistry.getInstance();
+    const defineNodeResults = modernRegistry.getAll();
+
+    // Merge V2U nodes into the registry with FACTORY INTEGRATION
+    for (const [nodeType, nodeConfig] of defineNodeResults) {
+      console.log(
+        `🔗 [getLegacyModernNodeRegistry] Creating factory-wrapped V2U node: ${nodeType}`
+      );
+
+      try {
+        // Import factory system for proper integration
+        const { createNodeComponent } = require("../factory/NodeFactory");
+
+        // Import standardized sizing system
+        const {
+          convertV2UNodeSize,
+          logV2USizeConversion,
+        } = require("../factory/constants/sizes");
+
+        // Convert defineNode configuration to factory-compatible format
+        const standardizedSize = convertV2UNodeSize(
+          nodeConfig.metadata.nodeType,
+          nodeConfig.size
+        );
+
+        // Log the conversion for debugging
+        logV2USizeConversion(
+          nodeConfig.metadata.nodeType,
+          nodeConfig.size,
+          standardizedSize
+        );
+
+        console.log(
+          `✅ [V2U Factory Bridge] Size validation for ${nodeConfig.metadata.nodeType}:`,
+          standardizedSize?.collapsed?.width,
+          standardizedSize?.collapsed?.height
+        );
+
+        const factoryConfig = {
+          nodeType: nodeConfig.metadata.nodeType,
+          category: nodeConfig.metadata.category,
+          displayName: nodeConfig.metadata.displayName,
+          defaultData: nodeConfig.defaultData,
+          size: standardizedSize,
+          handles:
+            nodeConfig.handles?.map((handle: any) => ({
+              id: handle.id,
+              dataType:
+                handle.dataType === "boolean"
+                  ? "b"
+                  : handle.dataType === "string"
+                    ? "s"
+                    : handle.dataType === "any"
+                      ? "x"
+                      : handle.dataType,
+              position: handle.position,
+              type: handle.type,
+            })) || [],
+
+          // Bridge defineNode logic to factory patterns
+          processLogic: async ({ data, updateNodeData, id, setError }: any) => {
+            try {
+              // Create context for defineNode processLogic
+              const context = {
+                nodeId: id,
+                data,
+                updateNodeData: (newData: any) => updateNodeData(id, newData),
+                setError,
+                getConnections: () => [], // Simplified for now
+                emitEvent: () => {},
+                performance: { startTime: Date.now(), executionCount: 0 },
+                security: { permissions: [], canExecute: true },
+              };
+
+              await nodeConfig.processLogic(context);
+            } catch (error) {
+              console.error(
+                `[V2U Factory Bridge] Error in ${nodeType}:`,
+                error
+              );
+              setError(
+                error instanceof Error ? error.message : "Processing error"
+              );
+            }
+          },
+
+          // Bridge defineNode render functions to factory patterns
+          renderCollapsed: ({ data, error, updateNodeData, id }: any) => {
+            const context = {
+              data,
+              error,
+              updateNodeData: (newData: any) => updateNodeData(id, newData),
+              id,
+              isSelected: false,
+              isExpanded: false,
+            };
+            return nodeConfig.renderCollapsed(context);
+          },
+
+          renderExpanded: ({ data, error, updateNodeData, id }: any) => {
+            const context = {
+              data,
+              error,
+              updateNodeData: (newData: any) => updateNodeData(id, newData),
+              id,
+              isSelected: false,
+              isExpanded: true,
+            };
+            return nodeConfig.renderExpanded(context);
+          },
+        };
+
+        // Create factory-wrapped component
+        const FactoryComponent = createNodeComponent(factoryConfig);
+
+        // Add to registry with full factory integration
+        registry[nodeType] = {
+          nodeType: nodeConfig.metadata.nodeType,
+          component: FactoryComponent, // Use factory component for proper styling
+          category: nodeConfig.metadata.category,
+          folder: nodeConfig.metadata.folder,
+          displayName: nodeConfig.metadata.displayName,
+          description: nodeConfig.metadata.description,
+          icon: nodeConfig.metadata.icon,
+          hasToggle: true,
+          iconWidth: nodeConfig.size?.collapsed?.width || 200,
+          iconHeight: nodeConfig.size?.collapsed?.height || 80,
+          expandedWidth: nodeConfig.size?.expanded?.width || 300,
+          expandedHeight: nodeConfig.size?.expanded?.height || 160,
+          handles: factoryConfig.handles,
+          defaultData: nodeConfig.defaultData,
+          hasOutput: true,
+          hasControls: true,
+          size: {
+            width: nodeConfig.size?.collapsed?.width || 200,
+            height: nodeConfig.size?.collapsed?.height || 80,
+          },
+          factoryConfig: factoryConfig,
+        };
+
+        console.log(
+          `✅ [getLegacyModernNodeRegistry] V2U Factory Bridge created: ${nodeType}`
+        );
+      } catch (error) {
+        console.error(
+          `❌ [getLegacyModernNodeRegistry] Failed to create factory bridge for ${nodeType}:`,
+          error
+        );
+
+        // Fallback to direct component if factory bridge fails
+        registry[nodeType] = {
+          nodeType: nodeConfig.metadata.nodeType,
+          component: nodeConfig.component,
+          category: nodeConfig.metadata.category,
+          folder: nodeConfig.metadata.folder,
+          displayName: nodeConfig.metadata.displayName,
+          description: nodeConfig.metadata.description,
+          icon: nodeConfig.metadata.icon,
+          hasToggle: true,
+          iconWidth: nodeConfig.size?.collapsed?.width || 200,
+          iconHeight: nodeConfig.size?.collapsed?.height || 80,
+          expandedWidth: nodeConfig.size?.expanded?.width || 300,
+          expandedHeight: nodeConfig.size?.expanded?.height || 160,
+          handles: nodeConfig.handles || [],
+          defaultData: nodeConfig.defaultData,
+          hasOutput: true,
+          hasControls: true,
+        };
+      }
+    }
+  } catch (error) {
+    console.warn(
+      `⚠️ [getLegacyModernNodeRegistry] Could not access defineNode registry:`,
+      error
+    );
+  }
+
+  return registry;
 }
 
 /**
@@ -737,7 +920,6 @@ export function validateUnifiedRegistry(): {
     },
   };
 }
-
 /**
  * Get unified registry statistics
  */
@@ -888,28 +1070,70 @@ export interface EnhancedNodeRegistration {
 export function getEnhancedNodeRegistration(
   nodeType: string
 ): EnhancedNodeRegistration | null {
+  // First check the unified registry
   const registration = Node.get(nodeType);
-  if (!registration) return null;
+  if (registration) {
+    return {
+      nodeType: registration.nodeType,
+      component: registration.component,
+      category: registration.category,
+      folder: registration.folder,
+      displayName: registration.displayName,
+      description: registration.description,
+      icon: registration.icon,
+      hasToggle: registration.hasToggle,
+      iconWidth: registration.iconWidth,
+      iconHeight: registration.iconHeight,
+      expandedWidth: registration.expandedWidth,
+      expandedHeight: registration.expandedHeight,
+      defaultData: registration.defaultData,
+      handles: registration.handles,
+      hasControls: registration.hasControls,
+      hasOutput: registration.hasOutput,
+      factoryConfig: registration.factoryConfig,
+    };
+  }
 
-  return {
-    nodeType: registration.nodeType,
-    component: registration.component,
-    category: registration.category,
-    folder: registration.folder,
-    displayName: registration.displayName,
-    description: registration.description,
-    icon: registration.icon,
-    hasToggle: registration.hasToggle,
-    iconWidth: registration.iconWidth,
-    iconHeight: registration.iconHeight,
-    expandedWidth: registration.expandedWidth,
-    expandedHeight: registration.expandedHeight,
-    defaultData: registration.defaultData,
-    handles: registration.handles,
-    hasControls: registration.hasControls,
-    hasOutput: registration.hasOutput,
-    factoryConfig: registration.factoryConfig,
-  };
+  // Then check the defineNode registry for V2U nodes
+  try {
+    const { NodeRegistry } = require("../defineNode/index.tsx");
+    const modernRegistry = NodeRegistry.getInstance();
+    const defineNodeConfig = modernRegistry.get(nodeType);
+
+    if (defineNodeConfig) {
+      console.log(
+        `✅ [getEnhancedNodeRegistration] Found V2U node: ${nodeType}`
+      );
+
+      // Return a minimal registration that the drag-and-drop system can use
+      return {
+        nodeType: defineNodeConfig.metadata.nodeType,
+        component: defineNodeConfig.component, // The defineNode result includes a component
+        category: defineNodeConfig.metadata.category,
+        folder: defineNodeConfig.metadata.folder,
+        displayName: defineNodeConfig.metadata.displayName,
+        description: defineNodeConfig.metadata.description,
+        icon: defineNodeConfig.metadata.icon,
+        hasToggle: true,
+        iconWidth: defineNodeConfig.size?.collapsed?.width || 200,
+        iconHeight: defineNodeConfig.size?.collapsed?.height || 80,
+        expandedWidth: defineNodeConfig.size?.expanded?.width || 300,
+        expandedHeight: defineNodeConfig.size?.expanded?.height || 160,
+        defaultData: defineNodeConfig.defaultData,
+        handles: defineNodeConfig.handles || [],
+        hasControls: true,
+        hasOutput: true,
+        factoryConfig: null, // V2U nodes don't use factory config
+      };
+    }
+  } catch (error) {
+    console.warn(
+      `⚠️ [getEnhancedNodeRegistration] Could not access defineNode registry:`,
+      error
+    );
+  }
+
+  return null;
 }
 
 /* -------------------------------------------------------------------------

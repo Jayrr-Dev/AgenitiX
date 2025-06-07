@@ -57,6 +57,7 @@ export function calculateRenderError(
 /**
  * GET NODE SIZE WITH SMART DEFAULTS
  * Simplified size calculation with early returns
+ * Enhanced to handle variable height expanded sizes
  */
 export function getNodeSize(
   configSize: any,
@@ -65,7 +66,33 @@ export function getNodeSize(
 ): { width: string; height: string } {
   // EARLY RETURN: Custom size provided
   if (configSize) {
-    return showUI ? configSize.expanded : configSize.collapsed;
+    const targetSize = showUI ? configSize.expanded : configSize.collapsed;
+
+    // Handle variable height sizes (expanded sizes without height)
+    if (showUI && configSize.expanded && !configSize.expanded.height) {
+      console.log(
+        `🎯 [getNodeSize] Variable height detected for ${nodeType}:`,
+        configSize.expanded
+      );
+      return {
+        width: configSize.expanded.width,
+        height: "auto", // Let content determine height
+      };
+    }
+
+    // Handle regular fixed sizes
+    if (targetSize && targetSize.width && targetSize.height) {
+      return {
+        width: targetSize.width,
+        height: targetSize.height,
+      };
+    }
+
+    // Fallback if size structure is unexpected
+    console.warn(
+      `[getNodeSize] Unexpected size structure for ${nodeType}:`,
+      configSize
+    );
   }
 
   // SMART DEFAULT SIZE SELECTION

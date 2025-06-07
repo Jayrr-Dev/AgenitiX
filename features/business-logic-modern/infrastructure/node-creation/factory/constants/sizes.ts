@@ -265,3 +265,132 @@ export const LEGACY_COMMON_NODE_SIZES = {
   LARGE_TRIGGER: STANDARD_SIZE_PATTERNS.LARGE_INTERACTIVE,
   TEXT_NODE: STANDARD_SIZE_PATTERNS.WIDE_TEXT,
 } as const;
+
+// ============================================================================
+// V2U NODE SIZE CONVERSION UTILITIES
+// ============================================================================
+
+/**
+ * CONVERT V2U NODE SIZES
+ * Converts numerical pixel values from V2U defineNode configurations
+ * to standardized Tailwind size patterns
+ */
+
+/**
+ * Map V2U numerical sizes to standardized size patterns
+ * Based on the V2U node configurations found in the codebase
+ */
+export function convertV2UNodeSize(nodeType: string, v2uSize: any): any {
+  if (!v2uSize || typeof v2uSize !== "object") {
+    console.warn(
+      `[V2U Size Conversion] Invalid size config for ${nodeType}, using default`
+    );
+    return STANDARD_SIZE_PATTERNS.SMALL_TRIGGER;
+  }
+
+  const { collapsed, expanded } = v2uSize;
+
+  // Map based on V2U node types and their specific requirements
+  switch (nodeType) {
+    case "createTextV2U":
+      // CreateTextV2U: 200x80 collapsed, 300x160 expanded
+      // Maps to: WIDE_TEXT pattern (120x60 → 180w)
+      return STANDARD_SIZE_PATTERNS.WIDE_TEXT;
+
+    case "viewOutputV2U":
+      // ViewOutputV2U: 180x100 collapsed, 320x240 expanded
+      // Maps to: LARGE_INTERACTIVE pattern (120x120 → 240x240)
+      return STANDARD_SIZE_PATTERNS.LARGE_INTERACTIVE;
+
+    case "triggerOnToggleV2U":
+      // TriggerOnToggleV2U: 80x80 collapsed, 200x120 expanded
+      // Maps to: SMALL_TRIGGER pattern (60x60 → 120x120)
+      return STANDARD_SIZE_PATTERNS.SMALL_TRIGGER;
+
+    case "testErrorV2U":
+      // TestErrorV2U: 120x100 collapsed, 300x200 expanded
+      // Maps to: LARGE_INTERACTIVE pattern (120x120 → 240x240)
+      return STANDARD_SIZE_PATTERNS.LARGE_INTERACTIVE;
+
+    default:
+      // Fallback: Analyze dimensions and map to closest pattern
+      return mapDimensionsToPattern(collapsed, expanded);
+  }
+}
+
+/**
+ * Map dimensions to the closest standardized pattern
+ * Fallback function for unknown node types
+ */
+function mapDimensionsToPattern(collapsed: any, expanded: any): any {
+  if (!collapsed) return STANDARD_SIZE_PATTERNS.SMALL_TRIGGER;
+
+  const collapsedWidth = collapsed.width || 120;
+  const collapsedHeight = collapsed.height || 80;
+
+  // Small nodes (≤ 80px)
+  if (collapsedWidth <= 80 && collapsedHeight <= 80) {
+    return STANDARD_SIZE_PATTERNS.SMALL_TRIGGER;
+  }
+
+  // Wide text nodes (width > height)
+  if (collapsedWidth > collapsedHeight && collapsedWidth <= 200) {
+    return STANDARD_SIZE_PATTERNS.WIDE_TEXT;
+  }
+
+  // Large interactive nodes (width ≥ 120px, square-ish)
+  if (
+    collapsedWidth >= 120 &&
+    Math.abs(collapsedWidth - collapsedHeight) <= 40
+  ) {
+    return STANDARD_SIZE_PATTERNS.LARGE_INTERACTIVE;
+  }
+
+  // Extra large nodes (width > 180px)
+  if (collapsedWidth > 180) {
+    return STANDARD_SIZE_PATTERNS.EXTRA_LARGE;
+  }
+
+  // Default fallback
+  return STANDARD_SIZE_PATTERNS.SMALL_TRIGGER;
+}
+
+/**
+ * Convert numerical pixel values to Tailwind classes
+ * @deprecated Use convertV2UNodeSize instead for proper pattern mapping
+ */
+export function convertPixelsToTailwind(
+  pixels: number,
+  dimension: "width" | "height"
+): string {
+  const prefix = dimension === "width" ? "w-" : "h-";
+
+  // Common size mappings
+  const sizeMap: Record<number, string> = {
+    60: `${prefix}[60px]`,
+    80: `${prefix}[80px]`,
+    100: `${prefix}[100px]`,
+    120: `${prefix}[120px]`,
+    160: `${prefix}[160px]`,
+    180: `${prefix}[180px]`,
+    200: `${prefix}[200px]`,
+    240: `${prefix}[240px]`,
+    300: `${prefix}[300px]`,
+    320: `${prefix}[320px]`,
+  };
+
+  return sizeMap[pixels] || `${prefix}[${pixels}px]`;
+}
+
+/**
+ * Log V2U size conversion for debugging
+ */
+export function logV2USizeConversion(
+  nodeType: string,
+  originalSize: any,
+  convertedSize: any
+): void {
+  console.log(`🎯 [V2U Size Conversion] ${nodeType}:`);
+  console.log(`   Original:`, originalSize);
+  console.log(`   Converted:`, convertedSize);
+}

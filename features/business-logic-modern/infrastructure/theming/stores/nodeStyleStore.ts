@@ -410,6 +410,20 @@ export const CATEGORY_THEMES: Record<NodeCategory, CategoryTheme> = {
       hover: { light: "hover:bg-slate-200", dark: "hover:bg-slate-800" },
     },
   },
+
+  // TESTING CATEGORY - Orange theme for testing nodes
+  testing: {
+    background: { light: "bg-orange-50", dark: "bg-orange-900" },
+    border: { light: "border-orange-300", dark: "border-orange-800" },
+    text: {
+      primary: { light: "text-orange-900", dark: "text-orange-100" },
+      secondary: { light: "text-orange-800", dark: "text-orange-200" },
+    },
+    button: {
+      border: "border-orange-300 dark:border-orange-800",
+      hover: { light: "hover:bg-orange-200", dark: "hover:bg-orange-800" },
+    },
+  },
 };
 
 // ============================================================================

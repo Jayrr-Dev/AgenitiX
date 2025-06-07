@@ -16,8 +16,40 @@ import { useCallback } from "react";
 // USE UNIFIED TYPES FROM FLOW ENGINE
 import type { AgenNode } from "@infrastructure/flow-engine/types/nodeData";
 
-// USE INTEGRATED JSON REGISTRY + FACTORY SYSTEM
-import { NodeFactory } from "@/features/business-logic-modern/infrastructure/node-creation/factory";
+// USE MODERN UNIFIED REGISTRY DIRECTLY
+import {
+  getEnhancedNodeRegistration,
+  getLegacyModernNodeRegistry,
+  isValidNodeType,
+} from "@/features/business-logic-modern/infrastructure/node-creation/json-node-registry/unifiedRegistry";
+
+// DEBUG: Make modern registry available globally for testing
+if (typeof window !== "undefined") {
+  (window as any).UnifiedRegistry = {
+    isValidNodeType,
+    getEnhancedNodeRegistration,
+    getLegacyModernNodeRegistry,
+  };
+  (window as any).testV2UNodes = () => {
+    const v2uNodes = [
+      "createTextV2U",
+      "viewOutputV2U",
+      "triggerOnToggleV2U",
+      "testErrorV2U",
+    ];
+    console.log("🧪 Testing V2U Node Modern Registry:");
+    v2uNodes.forEach((nodeType) => {
+      const isValid = isValidNodeType(nodeType);
+      const registration = getEnhancedNodeRegistration(nodeType);
+      console.log(`  - ${nodeType}: ${isValid ? "VALID ✅" : "INVALID ❌"}`);
+      if (registration) {
+        console.log(
+          `    Category: ${registration.category}, Folder: ${registration.folder}`
+        );
+      }
+    });
+  };
+}
 
 interface DragAndDropProps {
   flowInstance: React.RefObject<ReactFlowInstance<AgenNode, any> | null>;
@@ -61,8 +93,23 @@ export function useDragAndDrop({
       console.log("🔍 Validating node type:", nodeType);
 
       // VALIDATE USING INTEGRATED JSON REGISTRY + FACTORY
-      if (!nodeType || !NodeFactory.isValidNodeType(nodeType)) {
+      if (!nodeType) {
+        console.log("❌ Node type is empty:", nodeType);
+        return;
+      }
+
+      const isValid = isValidNodeType(nodeType);
+      console.log("🎯 Modern Registry validation result:", {
+        nodeType,
+        isValid,
+      });
+
+      if (!isValid) {
         console.log("❌ Invalid node type:", nodeType);
+        console.log(
+          "🔍 Available in unified registry:",
+          !!getEnhancedNodeRegistration(nodeType)
+        );
         return;
       }
 
@@ -76,19 +123,29 @@ export function useDragAndDrop({
       console.log("📍 Creating node at position:", { nodeType, position });
 
       try {
-        // CREATE NODE USING INTEGRATED JSON REGISTRY + FACTORY
-        const flowNode = NodeFactory.createNode(nodeType, position, {
-          isActive: false,
-          showUI: false,
-        });
-
-        if (!flowNode) {
-          console.error("❌ Failed to create node:", nodeType);
+        // CREATE NODE USING MODERN UNIFIED REGISTRY
+        const registration = getEnhancedNodeRegistration(nodeType);
+        if (!registration) {
+          console.error("❌ No registration found for:", nodeType);
           return;
         }
 
-        console.log("✅ Created node:", flowNode);
-        onNodeAdd(flowNode as AgenNode);
+        // Create node with modern registry data
+        const id = `node_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        const flowNode: AgenNode = {
+          id,
+          type: nodeType as any,
+          position,
+          deletable: true,
+          data: {
+            ...registration.defaultData,
+            isActive: false,
+            showUI: false,
+          },
+        };
+
+        console.log("✅ Created node using modern registry:", flowNode);
+        onNodeAdd(flowNode);
       } catch (error) {
         console.error("❌ Failed to create node:", error);
       }

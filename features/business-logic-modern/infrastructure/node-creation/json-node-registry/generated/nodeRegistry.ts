@@ -121,6 +121,231 @@ export const GENERATED_NODE_REGISTRY = {
     // V2 Component - uses modern factory system
     // component: () => import("../../../node-domain/create/CreateTextV2"),
   },
+  createTextV2U: {
+    nodeType: "createTextV2U",
+    category: "create",
+    displayName: "Create Text (V2U)",
+    description:
+      "V2U enhanced text creation node with modern defineNode() architecture and enterprise features",
+    icon: "text",
+    folder: "main",
+    order: 3,
+
+    // Legacy dimensions (derived from modern size)
+    iconWidth: 200,
+    iconHeight: 80,
+    expandedWidth: 300,
+    expandedHeight: 160,
+
+    // Modern size
+    size: {
+      width: 200,
+      height: 80,
+    },
+
+    // UI Configuration
+    hasToggle: true,
+    isEnabled: true,
+    isExperimental: false,
+
+    // Handles
+    handles: [
+      {
+        id: "trigger",
+        type: "target",
+        position: "left",
+        dataType: "boolean",
+        description:
+          "Optional trigger input - when connected, text outputs only when trigger is active",
+      },
+      {
+        id: "text",
+        type: "source",
+        position: "right",
+        dataType: "string",
+        description: "Text output - outputs held text when conditions are met",
+      },
+    ],
+
+    // Default data (V2U enhanced)
+    defaultData: {
+      text: "",
+      heldText: "",
+      _v2uMigrated: true,
+      _v2uMigrationDate: Date.now(),
+    },
+  },
+  viewOutputV2U: {
+    nodeType: "viewOutputV2U",
+    category: "view",
+    displayName: "View Output (V2U)",
+    description:
+      "V2U enhanced data viewing component with type indicators and professional visualization",
+    icon: "eye",
+    folder: "main",
+    order: 3,
+
+    // Legacy dimensions (derived from modern size)
+    iconWidth: 180,
+    iconHeight: 100,
+    expandedWidth: 320,
+    expandedHeight: 240,
+
+    // Modern size
+    size: {
+      width: 180,
+      height: 100,
+    },
+
+    // UI Configuration
+    hasToggle: true,
+    isEnabled: true,
+    isExperimental: false,
+
+    // Handles
+    handles: [
+      {
+        id: "input",
+        type: "target",
+        position: "left",
+        dataType: "any",
+        description:
+          "Data input from any node - automatically extracts and displays values",
+      },
+    ],
+
+    // Default data (V2U enhanced)
+    defaultData: {
+      displayedValues: [],
+      _v2uMigrated: true,
+      _v2uMigrationDate: Date.now(),
+    },
+  },
+  triggerOnToggleV2U: {
+    nodeType: "triggerOnToggleV2U",
+    category: "utility",
+    displayName: "Trigger On Toggle (V2U)",
+    description:
+      "V2U enhanced boolean state toggle with external triggering and accessibility features",
+    icon: "toggle",
+    folder: "main",
+    order: 3,
+
+    // Legacy dimensions (derived from modern size)
+    iconWidth: 80,
+    iconHeight: 80,
+    expandedWidth: 200,
+    expandedHeight: 120,
+
+    // Modern size
+    size: {
+      width: 80,
+      height: 80,
+    },
+
+    // UI Configuration
+    hasToggle: true,
+    isEnabled: true,
+    isExperimental: false,
+
+    // Handles
+    handles: [
+      {
+        id: "trigger",
+        type: "target",
+        position: "left",
+        dataType: "boolean",
+        description:
+          "External trigger input - toggles state when receiving true values",
+      },
+      {
+        id: "output",
+        type: "source",
+        position: "right",
+        dataType: "boolean",
+        description: "Boolean output - current toggle state",
+      },
+    ],
+
+    // Default data (V2U enhanced)
+    defaultData: {
+      triggered: false,
+      value: false,
+      outputValue: false,
+      type: "TriggerOnToggleV2U",
+      label: "Toggle Trigger V2U",
+      inputCount: 0,
+      hasExternalInputs: false,
+      _v2uMigrated: true,
+      _v2uMigrationDate: Date.now(),
+    },
+  },
+  testErrorV2U: {
+    nodeType: "testErrorV2U",
+    category: "testing",
+    displayName: "Test Error (V2U)",
+    description:
+      "V2U enhanced error generation and testing with configurable error types and tracking",
+    icon: "bug",
+    folder: "main",
+    order: 3,
+
+    // Legacy dimensions (derived from modern size)
+    iconWidth: 120,
+    iconHeight: 100,
+    expandedWidth: 300,
+    expandedHeight: 200,
+
+    // Modern size
+    size: {
+      width: 120,
+      height: 100,
+    },
+
+    // UI Configuration
+    hasToggle: true,
+    isEnabled: true,
+    isExperimental: false,
+
+    // Handles
+    handles: [
+      {
+        id: "trigger",
+        type: "target",
+        position: "left",
+        dataType: "boolean",
+        description:
+          "Trigger input - controls error generation based on trigger mode",
+      },
+      {
+        id: "text",
+        type: "source",
+        position: "right",
+        dataType: "string",
+        description: "Error message output as text",
+      },
+      {
+        id: "json",
+        type: "source",
+        position: "right",
+        dataType: "object",
+        description: "Error data output as JSON object",
+      },
+    ],
+
+    // Default data (V2U enhanced)
+    defaultData: {
+      errorMessage: "Custom error message",
+      errorType: "error",
+      triggerMode: "trigger_on",
+      isGeneratingError: false,
+      text: "",
+      json: "",
+      _v2uMigrated: true,
+      _v2uMigrationDate: Date.now(),
+      _errorCount: 0,
+    },
+  },
   dataTable: {
     nodeType: "dataTable",
     category: "data",

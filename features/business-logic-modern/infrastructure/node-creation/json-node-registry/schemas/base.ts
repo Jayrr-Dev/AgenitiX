@@ -33,6 +33,7 @@ export const NodeCategorySchema = z.enum([
   "media",
   "control",
   "utility",
+  "testing",
 ]);
 
 /**

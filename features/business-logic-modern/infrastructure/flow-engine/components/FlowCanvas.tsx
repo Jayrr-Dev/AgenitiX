@@ -39,9 +39,8 @@ import {
   ViewOutput,
 } from "@/features/business-logic-modern/node-domain";
 
-// Import multi-selection copy/paste hook
-
-// CENTRALIZED JSON NODE REGISTRY - Using clean alias
+// Import unified registry for automated V2U node resolution
+import { getLegacyModernNodeRegistry } from "@/features/business-logic-modern/infrastructure/node-creation/json-node-registry/unifiedRegistry";
 
 // ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention & cleanup
 import { useCleanupInvalidConnections } from "@node-creation/node-handles/CleanupInvalidConnections";
@@ -206,19 +205,75 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     : { marginTop: "70px" };
 
   // ============================================================================
-  // NODE TYPES REGISTRY (CENTRALIZED) - JSON REGISTRY
+  // NODE TYPES REGISTRY (AUTOMATED) - V2U Enhanced Registry Bridge
   // ============================================================================
 
-  const nodeTypes = useMemo(
-    () => ({
-      createText: CreateText,
-      createTextV2: CreateTextV2,
-      viewOutput: ViewOutput,
-      triggerOnToggle: TriggerOnToggle,
-      testError: TestError,
-    }),
-    []
-  );
+  const nodeTypes = useMemo(() => {
+    // Get the unified registry which includes both legacy and V2U nodes
+    const unifiedRegistry = getLegacyModernNodeRegistry();
+
+    console.log("🔄 [FlowCanvas] Building automated nodeTypes registry...");
+    console.log(
+      "📋 [FlowCanvas] Available nodes:",
+      Object.keys(unifiedRegistry)
+    );
+
+    // Create the ReactFlow-compatible component mapping
+    const componentMapping: Record<string, any> = {};
+
+    for (const [nodeType, nodeConfig] of Object.entries(unifiedRegistry)) {
+      if (nodeConfig) {
+        // Check if it's a modern defineNode() result with .component property
+        if (
+          typeof nodeConfig === "object" &&
+          "component" in nodeConfig &&
+          nodeConfig.component
+        ) {
+          componentMapping[nodeType] = nodeConfig.component;
+          console.log(`✅ [FlowCanvas] Registered V2U node: ${nodeType}`);
+        }
+        // Check if it's a legacy direct component (function)
+        else if (typeof nodeConfig === "function") {
+          componentMapping[nodeType] = nodeConfig;
+          console.log(`✅ [FlowCanvas] Registered legacy node: ${nodeType}`);
+        }
+        // Check if it's a React component object
+        else if (typeof nodeConfig === "object" && "$$typeof" in nodeConfig) {
+          componentMapping[nodeType] = nodeConfig;
+          console.log(
+            `✅ [FlowCanvas] Registered React component: ${nodeType}`
+          );
+        }
+        // Fallback for other structures
+        else {
+          console.warn(
+            `⚠️ [FlowCanvas] Unknown node structure for ${nodeType}:`,
+            typeof nodeConfig,
+            nodeConfig
+          );
+        }
+      }
+    }
+
+    // Fallback to legacy components if registry is empty
+    if (Object.keys(componentMapping).length === 0) {
+      console.warn(
+        "⚠️ [FlowCanvas] No nodes found in unified registry, falling back to legacy hardcoded components"
+      );
+      return {
+        createText: CreateText,
+        createTextV2: CreateTextV2,
+        viewOutput: ViewOutput,
+        triggerOnToggle: TriggerOnToggle,
+        testError: TestError,
+      };
+    }
+
+    console.log(
+      `🎉 [FlowCanvas] Automated registry ready with ${Object.keys(componentMapping).length} nodes`
+    );
+    return componentMapping;
+  }, []);
 
   const edgeTypes = useMemo(() => ({}), []);
 

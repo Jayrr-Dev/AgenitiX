@@ -13,8 +13,6 @@
 "use client";
 
 import React from "react";
-import { ExpandCollapseButton } from "./ExpandCollapseButton";
-import { FloatingNodeId } from "./FloatingNodeId";
 import {
   DEFAULT_LOGIC_NODE_SIZE,
   DEFAULT_TEXT_NODE_SIZE,
@@ -23,6 +21,8 @@ import {
 } from "../constants";
 import type { BaseNodeData, NodeFactoryConfig } from "../types";
 import { getNodeSize, selectButtonTheme } from "../utils/conditionalRendering";
+import { ExpandCollapseButton } from "./ExpandCollapseButton";
+import { FloatingNodeId } from "./FloatingNodeId";
 
 // ============================================================================
 // NODE CONTAINER COMPONENT TYPES
@@ -63,6 +63,15 @@ export function NodeContainer<T extends BaseNodeData>({
     enhancedConfig.nodeType,
     nodeState.showUI
   );
+
+  // Debug size configuration for V2U nodes
+  if (enhancedConfig.nodeType.includes("V2U")) {
+    console.log(`🎯 [NodeContainer] ${enhancedConfig.nodeType} size config:`, {
+      showUI: nodeState.showUI,
+      configSize: enhancedConfig.size,
+      calculatedSize: nodeSize,
+    });
+  }
 
   // ========================================================================
   // THEME SELECTION WITH EXTRACTED LOGIC
@@ -173,6 +182,7 @@ function logErrorInjectionDebug(
 /**
  * BUILD CONTAINER CLASSES
  * Construct container CSS classes with conditional logic
+ * Enhanced to handle variable height sizing
  */
 function buildContainerClasses(
   showUI: boolean,
@@ -181,9 +191,11 @@ function buildContainerClasses(
   nodeStyleClasses: string,
   isEnterprise: boolean
 ): string {
-  // BASE SIZING CLASSES
+  // BASE SIZING CLASSES with variable height support
   const sizeClasses = showUI
-    ? `px-4 py-3 ${nodeSize.width}`
+    ? nodeSize.height === "auto"
+      ? `px-4 py-3 ${nodeSize.width} min-h-[120px]` // Variable height with minimum
+      : `px-4 py-3 ${nodeSize.width} ${nodeSize.height}` // Fixed height
     : `${nodeSize.width} ${nodeSize.height} flex items-center justify-center`;
 
   // ENTERPRISE CLASS

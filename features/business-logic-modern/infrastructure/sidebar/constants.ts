@@ -128,6 +128,20 @@ export function getCategoryMetadata(category: NodeCategory) {
       enabled: true,
       priority: 7,
     },
+    utility: {
+      displayName: "Utility",
+      icon: "🔧",
+      description: "Utility nodes",
+      enabled: true,
+      priority: 8,
+    },
+    testing: {
+      displayName: "Testing",
+      icon: "🧪",
+      description: "Testing nodes",
+      enabled: true,
+      priority: 9,
+    },
   };
 
   return (
@@ -341,6 +355,8 @@ export const NODES_BY_CATEGORY = {
   cycle: getNodesInCategory("cycle"),
   data: getNodesInCategory("data"),
   media: getNodesInCategory("media"),
+  utility: getNodesInCategory("utility"),
+  testing: getNodesInCategory("testing"),
 };
 
 /**
