@@ -73,6 +73,14 @@
       "@factory/*": [
         "./features/business-logic-modern/infrastructure/node-creation/factory/*"
       ],
+
+      // Registry Systems
+      "@node-registry/*": [
+        "./features/business-logic-modern/infrastructure/node-creation/node-registry/*"
+      ],
+      "@json-node-registry/*": [
+        "./features/business-logic-modern/infrastructure/node-creation/json-node-registry/*"
+      ],
       "@node-inspector/*": [
         "./features/business-logic-modern/infrastructure/node-inspector/*"
       ],

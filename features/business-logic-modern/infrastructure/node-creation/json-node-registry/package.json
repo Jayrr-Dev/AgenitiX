@@ -1,0 +1,24 @@
+{
+  "name": "@json-node-registry",
+  "version": "1.0.0",
+  "description": "Modern JSON-driven node registry system for Agenitix",
+  "main": "index.ts",
+  "scripts": {
+    "build": "node scripts/gen-registry.js",
+    "build:verbose": "node scripts/gen-registry.js --verbose",
+    "convert:yaml-to-json": "node scripts/convert-yaml-to-json.js",
+    "cleanup:yaml": "node scripts/cleanup-yaml.js",
+    "cleanup:yaml:dry-run": "node scripts/cleanup-yaml.js --dry-run",
+    "cleanup:yaml:force": "node scripts/cleanup-yaml.js --force --no-backup",
+    "dev": "node scripts/gen-registry.js --verbose",
+    "watch": "node scripts/gen-registry.js --watch",
+    "validate": "node scripts/gen-registry.js --validate"
+  },
+  "keywords": [
+    "json",
+    "node-registry",
+    "code-generation",
+    "typescript",
+    "reactflow"
+  ]
+}

@@ -20,14 +20,12 @@ function getHandleDataType(
   nodes: any[]
 ): string | null {
   try {
-    const registry = require("../node-registry/nodeRegistry");
+    const registry = require("../json-node-registry/unifiedRegistry");
     const node = nodes.find((n: any) => n.id === nodeId);
     if (!node) return null;
 
-    const handles = registry.getNodeHandles(node.type);
-    const handle = handles.find(
-      (h: any) => h.id === handleId && h.type === handleType
-    );
+    // Use the new normalized handle access function
+    const handle = registry.getNodeHandle(node.type, handleId, handleType);
     return handle?.dataType || null;
   } catch (error) {
     console.warn(

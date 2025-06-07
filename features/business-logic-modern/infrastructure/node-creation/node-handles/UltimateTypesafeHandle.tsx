@@ -382,7 +382,70 @@ function getCompatibleTypes(sourceType: string): string[] {
 // ===== REGISTRY INTEGRATION =====
 
 /**
- * Get handle type from node registry
+ * DATA TYPE MAPPING - Convert between JSON registry full names and Ultimate handle short codes
+ */
+const DATATYPE_MAPPING: Record<string, string> = {
+  // Primitive types
+  boolean: "b",
+  string: "s",
+  number: "n",
+  bigint: "N",
+  undefined: "u",
+  null: "∅",
+  symbol: "S",
+
+  // Complex types
+  object: "o",
+  array: "a",
+  json: "j",
+  map: "m",
+  set: "st",
+  tuple: "t",
+
+  // Special types
+  date: "d",
+  regexp: "r",
+  error: "e",
+  weakmap: "w",
+  weakset: "ws",
+
+  // Functional types
+  function: "fn",
+  asyncfunction: "af",
+  generatorfunction: "gf",
+  promise: "p",
+
+  // Typed arrays
+  typedarray: "ta",
+  arraybuffer: "ab",
+
+  // Meta types
+  any: "x",
+  void: "v",
+  never: "nv",
+  unknown: "uk",
+
+  // Flow control
+  trigger: "tr",
+  signal: "sg",
+  event: "ev",
+
+  // Custom/Extended types for compatibility
+  image: "o", // Treat images as objects for now
+};
+
+/**
+ * Convert full dataType name to short code
+ */
+function normalizeDataType(dataType: string): string {
+  if (!dataType) return "x"; // Default to "any"
+
+  const normalized = dataType.toLowerCase().trim();
+  return DATATYPE_MAPPING[normalized] || dataType; // Return original if no mapping found
+}
+
+/**
+ * Get handle type from node registry with proper dataType normalization
  */
 function getHandleDataType(
   nodeId: string,
@@ -390,18 +453,50 @@ function getHandleDataType(
   handleType: "source" | "target"
 ): string | null {
   try {
-    const registry = require("../node-registry/nodeRegistry");
+    const registry = require("../json-node-registry/unifiedRegistry");
     const reactFlowInstance = (window as any).__ultimateReactFlowInstance;
     if (!reactFlowInstance) return null;
 
     const node = reactFlowInstance.getNodes().find((n: any) => n.id === nodeId);
     if (!node) return null;
 
-    const handles = registry.getNodeHandles(node.type);
-    const handle = handles.find(
-      (h: any) => h.id === handleId && h.type === handleType
+    // Use the new normalized handle access function
+    const handle = registry.getNodeHandle(node.type, handleId, handleType);
+
+    if (!handle?.dataType) {
+      console.debug(
+        `[UltimateTypesafeHandle] Handle not found: ${node.type}.${handleId} (${handleType})`
+      );
+
+      // Fallback: try to get handles from factory constants
+      try {
+        const factoryHandles = require("../factory/constants/handles");
+        const fallbackHandles = factoryHandles.getNodeHandles(node.type);
+        const fallbackHandle = fallbackHandles.find(
+          (h: any) => h.id === handleId && h.type === handleType
+        );
+
+        if (fallbackHandle?.dataType) {
+          console.debug(
+            `[UltimateTypesafeHandle] Using fallback handle: ${node.type}.${handleId} → ${fallbackHandle.dataType}`
+          );
+          return fallbackHandle.dataType;
+        }
+      } catch (fallbackError) {
+        console.debug(
+          `[UltimateTypesafeHandle] Fallback handle lookup failed:`,
+          fallbackError
+        );
+      }
+
+      return null;
+    }
+
+    console.debug(
+      `[UltimateTypesafeHandle] Handle found: ${node.type}.${handleId} → ${handle.dataType} (original: ${handle.originalDataType || "N/A"})`
     );
-    return handle?.dataType || null;
+
+    return handle.dataType;
   } catch (error) {
     console.warn("[UltimateTypesafeHandle] Failed to get handle type:", error);
     return null;
@@ -452,6 +547,15 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
 
   // HANDLE UNION TYPE DISPLAY
   const displayInfo = useMemo(() => {
+    // DEBUG: Log what we're working with
+    console.log(
+      `[UltimateHandle] Rendering handle with dataType: "${dataType}"`
+    );
+    console.log(
+      `[UltimateHandle] Type mapping lookup:`,
+      ULTIMATE_TYPE_MAP[dataType]
+    );
+
     if (isUnionType(dataType)) {
       const types = parseUnionTypes(dataType);
       const firstType = types[0] || "x";
@@ -607,6 +711,10 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
 
   // STYLE GENERATION
   const handleStyle = useMemo(() => {
+    console.log(
+      `[UltimateHandle] Applying color: ${displayInfo.color} for dataType: ${dataType}`
+    );
+
     const style = {
       backgroundColor: displayInfo.color,
       color: "#fff",
@@ -615,7 +723,7 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
     };
 
     return style;
-  }, [displayInfo.color, props.style]);
+  }, [displayInfo.color, props.style, dataType]);
 
   const handleClassName = useMemo(() => {
     const baseClasses =

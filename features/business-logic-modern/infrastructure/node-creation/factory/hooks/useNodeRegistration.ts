@@ -14,7 +14,7 @@ import { useMemo } from "react";
 import {
   registerNodeInspectorControls,
   registerNodeTypeConfig,
-} from "../../node-registry/inspectorRegistry";
+} from "../../json-node-registry/unifiedRegistry";
 import type { BaseNodeData, NodeFactoryConfig } from "../types";
 
 /**
@@ -30,7 +30,8 @@ export function useNodeRegistration<T extends BaseNodeData>(
 ) {
   return useMemo(() => {
     // REGISTER NODE CONFIGURATION: For inspector compatibility
-    registerNodeTypeConfig(config.nodeType, {
+    registerNodeTypeConfig({
+      nodeType: config.nodeType,
       defaultData: config.defaultData,
       displayName: config.displayName,
       hasControls: !!config.renderInspectorControls,
@@ -39,10 +40,15 @@ export function useNodeRegistration<T extends BaseNodeData>(
 
     // REGISTER INSPECTOR CONTROLS: If provided
     if (config.renderInspectorControls) {
-      registerNodeInspectorControls(
-        config.nodeType,
-        config.renderInspectorControls
-      );
+      registerNodeInspectorControls({
+        nodeType: config.nodeType,
+        renderControls: config.renderInspectorControls,
+        displayName: `${config.displayName} Controls`,
+        controlType: "factory",
+        defaultData: config.defaultData,
+        hasControls: true,
+        hasOutput: false,
+      });
     }
 
     // RETURN CONFIG: Without modifying handles - this is now handled in NodeFactory

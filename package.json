@@ -6,6 +6,7 @@
     "start": "next start",
     "gen-registry": "node features/business-logic-modern/infrastructure/node-creation/node-registry/scripts/gen-registry.js",
     "build-registry": "node features/business-logic-modern/infrastructure/node-creation/node-registry/scripts/build-registry.js",
+    "migrate-nodes": "node features/business-logic-modern/infrastructure/node-creation/node-registry/scripts/migrate-node-domain.js",
     "build-registry:prod": "NODE_ENV=production node features/business-logic-modern/infrastructure/node-creation/node-registry/scripts/build-registry.js production",
     "build-registry:dev": "NODE_ENV=development node features/business-logic-modern/infrastructure/node-creation/node-registry/scripts/build-registry.js development",
     "version:status": "npx ts-node scripts/version-commands.ts status",

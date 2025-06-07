@@ -27,24 +27,126 @@ import {
   VariantConfig,
 } from "./types";
 
-// MODERN REGISTRY INTEGRATION - Updated imports for enhanced category system
+// JSON REGISTRY INTEGRATION - Updated imports for JSON-based registry system
 import type { NodeType } from "../flow-engine/types/nodeData";
 import type {
   NodeCategory,
   SidebarFolder,
 } from "../node-creation/factory/types";
 import {
-  MODERN_NODE_REGISTRY,
-  getNodeMetadata, // MIGRATED: was getNodesByCategory
-  getNodesByFolder,
-  getNodesInCategory,
-  isValidNodeType,
-} from "../node-creation/node-registry/nodeRegistry";
-
-// CATEGORY REGISTRY INTEGRATION - Enhanced metadata and validation
-import { getCategoryMetadata } from "../node-creation/node-registry/category-registry/categoryRegistry";
+  GENERATED_NODE_REGISTRY,
+  NODE_TYPES,
+} from "../node-creation/json-node-registry/generated/nodeRegistry";
 
 export const STORAGE_PREFIX = "sidebar-stencil-order";
+
+// ============================================================================
+// JSON REGISTRY UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Get node metadata from JSON registry
+ */
+export function getNodeMetadata(nodeType: NodeType) {
+  return GENERATED_NODE_REGISTRY[
+    nodeType as keyof typeof GENERATED_NODE_REGISTRY
+  ];
+}
+
+/**
+ * Get nodes by category from JSON registry
+ */
+export function getNodesInCategory(category: NodeCategory): NodeType[] {
+  return NODE_TYPES.filter((nodeType) => {
+    const metadata = getNodeMetadata(nodeType as NodeType);
+    return metadata?.category === category;
+  }) as NodeType[];
+}
+
+/**
+ * Get nodes by folder from JSON registry
+ */
+export function getNodesByFolder(folder: SidebarFolder): NodeType[] {
+  return NODE_TYPES.filter((nodeType) => {
+    const metadata = getNodeMetadata(nodeType as NodeType);
+    return metadata?.folder === folder;
+  }) as NodeType[];
+}
+
+/**
+ * Get category metadata (simplified version for JSON registry)
+ */
+export function getCategoryMetadata(category: NodeCategory) {
+  // Basic category metadata - can be expanded with a dedicated category registry
+  const categoryConfig = {
+    create: {
+      displayName: "Create",
+      icon: "📝",
+      description: "Creation nodes",
+      enabled: true,
+      priority: 1,
+    },
+    view: {
+      displayName: "View",
+      icon: "👁️",
+      description: "Display nodes",
+      enabled: true,
+      priority: 2,
+    },
+    trigger: {
+      displayName: "Trigger",
+      icon: "⚡",
+      description: "Trigger nodes",
+      enabled: true,
+      priority: 3,
+    },
+    test: {
+      displayName: "Test",
+      icon: "🧪",
+      description: "Testing nodes",
+      enabled: true,
+      priority: 4,
+    },
+    cycle: {
+      displayName: "Cycle",
+      icon: "🔄",
+      description: "Cycle nodes",
+      enabled: true,
+      priority: 5,
+    },
+    data: {
+      displayName: "Data",
+      icon: "📊",
+      description: "Data nodes",
+      enabled: true,
+      priority: 6,
+    },
+    media: {
+      displayName: "Media",
+      icon: "🎬",
+      description: "Media nodes",
+      enabled: true,
+      priority: 7,
+    },
+  };
+
+  return (
+    categoryConfig[category] || {
+      displayName: category,
+      icon: "📁",
+      description: `${category} nodes`,
+      enabled: true,
+      priority: 999,
+    }
+  );
+}
+
+/**
+ * Check if a node type is valid in the JSON registry
+ */
+export function isValidNodeType(nodeType: string): nodeType is NodeType {
+  return nodeType in GENERATED_NODE_REGISTRY;
+}
 
 // ============================================================================
 // ENHANCED CATEGORY REGISTRY UTILITIES
@@ -63,7 +165,7 @@ export function getCategoryDisplayData(category: NodeCategory) {
     description: categoryMetadata?.description || `${category} nodes`,
     enabled: categoryMetadata?.enabled ?? true,
     priority: categoryMetadata?.priority ?? 999,
-    theme: categoryMetadata?.theme,
+    // theme: categoryMetadata?.theme, // Optional theme property
   };
 }
 
@@ -188,7 +290,7 @@ export function createStencilsByFilter(
   } else if (filter.folder) {
     nodeTypes = getNodesByFolder(filter.folder);
   } else {
-    nodeTypes = Object.keys(MODERN_NODE_REGISTRY) as NodeType[];
+    nodeTypes = Object.keys(GENERATED_NODE_REGISTRY) as NodeType[];
   }
 
   // Apply hasToggle filter if specified
@@ -213,7 +315,7 @@ export function createStencilsByFilter(
  * Auto-generated from modern registry with rich metadata
  */
 export const AVAILABLE_NODES = Object.fromEntries(
-  Object.entries(MODERN_NODE_REGISTRY).map(([nodeType, metadata]) => [
+  Object.entries(GENERATED_NODE_REGISTRY).map(([nodeType, metadata]) => [
     nodeType,
     {
       nodeType: nodeType as NodeType,
@@ -237,6 +339,8 @@ export const NODES_BY_CATEGORY = {
   trigger: getNodesInCategory("trigger"),
   test: getNodesInCategory("test"),
   cycle: getNodesInCategory("cycle"),
+  data: getNodesInCategory("data"),
+  media: getNodesInCategory("media"),
 };
 
 /**
@@ -376,7 +480,7 @@ export const VARIANT_CONFIG = {
  * Returns statistics about sidebar organization
  */
 export function getSidebarStatistics() {
-  const totalNodes = Object.keys(MODERN_NODE_REGISTRY).length;
+  const totalNodes = Object.keys(GENERATED_NODE_REGISTRY).length;
   const nodesByCategory = Object.fromEntries(
     Object.entries(NODES_BY_CATEGORY).map(([category, nodes]) => [
       category,

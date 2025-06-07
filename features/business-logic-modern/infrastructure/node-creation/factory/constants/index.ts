@@ -171,32 +171,46 @@ function initializeFactoryConfig() {
   }
 
   try {
-    // Import registry functions dynamically to avoid circular dependency
+    // Import JSON registry data directly
     const {
-      generateFactoryConstants,
-      generateFactoryNodeConfig,
-      generateFactoryNodeSizes,
-    } = require("../../node-registry/nodeRegistry");
+      GENERATED_NODE_REGISTRY,
+    } = require("../../json-node-registry/generated/nodeRegistry");
 
-    if (typeof generateFactoryConstants === "function") {
-      const generated = generateFactoryConstants();
+    if (GENERATED_NODE_REGISTRY) {
+      // Generate factory config from JSON registry
+      const factoryConfig: Record<string, any> = {};
+      const validNodeTypes: string[] = [];
+
+      Object.entries(GENERATED_NODE_REGISTRY).forEach(
+        ([nodeType, config]: [string, any]) => {
+          factoryConfig[nodeType] = {
+            label: config.displayName,
+            icon: config.icon,
+            defaultData: config.defaultData || {},
+            width: config.iconWidth || 60,
+            height: config.iconHeight || 60,
+            hasTargetPosition: true, // Most nodes have target positions
+            targetPosition: "top", // Default position
+          };
+          validNodeTypes.push(nodeType);
+        }
+      );
 
       // Sync generated config into exported constants
-      Object.assign(NODE_TYPE_CONFIG, generated.NODE_TYPE_CONFIG);
-      Object.assign(NODE_SIZES, generated.NODE_SIZES);
+      Object.assign(NODE_TYPE_CONFIG, factoryConfig);
       VALID_NODE_TYPES.length = 0; // Clear array
-      VALID_NODE_TYPES.push(...generated.VALID_NODE_TYPES); // Add all items
+      VALID_NODE_TYPES.push(...validNodeTypes); // Add all items
 
       console.log(
-        "✅ [Factory] Auto-synced with registry:",
-        Object.keys(generated.NODE_TYPE_CONFIG).length,
+        "✅ [Factory] Auto-synced with JSON registry:",
+        Object.keys(factoryConfig).length,
         "factory node types"
       );
 
       isFactoryConfigInitialized = true;
       return true;
     } else {
-      console.warn("⚠️ [Factory] Registry auto-generation not available");
+      console.warn("⚠️ [Factory] JSON registry not available");
       return false;
     }
   } catch (error) {
@@ -220,7 +234,7 @@ function getNodeTypeConfig(): Record<NodeType, NodeConfig> {
  * LAZY GETTER FOR VALID NODE TYPES
  * Ensures registry is loaded before accessing valid types
  */
-function getValidNodeTypes(): NodeType[] {
+function getValidNodeTypes(): string[] {
   if (!isFactoryConfigInitialized) {
     initializeFactoryConfig();
   }
@@ -256,4 +270,4 @@ export const TOGGLE_SYMBOLS = {
 // ============================================================================
 
 // Initialize as empty array - will be populated from registry when needed
-export let VALID_NODE_TYPES: NodeType[] = [];
+export let VALID_NODE_TYPES: string[] = [];

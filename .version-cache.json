@@ -1,6 +1,6 @@
 {
-  "version": "1.1.14",
-  "timestamp": 1749217553972,
+  "version": "1.2.0",
+  "timestamp": 1749218143832,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -636,5 +636,7 @@
     ]
   ],
   "bumpType": "patch",
-  "detectedInfrastructure": false
+  "detectedInfrastructure": false,
+  "manualBump": true,
+  "reason": "New infrastructure: Standardized size constants system"
 }

@@ -30,7 +30,9 @@ function testHandleRegistry() {
   nodeTypes.forEach((nodeType) => {
     try {
       // Test dynamic import of registry
-      const { getNodeHandles } = require("../../node-registry/nodeRegistry");
+      const {
+        getNodeHandles,
+      } = require("../../json-node-registry/unifiedRegistry");
       const handles = getNodeHandles(nodeType) || [];
 
       console.log(`✅ ${nodeType}: ${handles.length} handles`, handles);
@@ -206,7 +208,9 @@ function testConnectionValidation() {
 
     // Test registry access
     console.log("Testing registry access...");
-    const { getNodeHandles } = require("../../node-registry/nodeRegistry");
+    const {
+      getNodeHandles,
+    } = require("../../json-node-registry/unifiedRegistry");
     const createTextHandles = getNodeHandles("createText");
     const viewOutputHandles = getNodeHandles("viewOutput");
 

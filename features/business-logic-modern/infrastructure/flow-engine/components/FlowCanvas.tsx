@@ -30,10 +30,17 @@ import ActionToolbar from "@/features/business-logic-modern/infrastructure/compo
 import HistoryPanel from "@/features/business-logic-modern/infrastructure/components/HistoryPanel";
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
 
+// Import actual node components from node-domain
+import {
+  CreateText,
+  TestError,
+  TriggerOnToggle,
+  ViewOutput,
+} from "@/features/business-logic-modern/node-domain";
+
 // Import multi-selection copy/paste hook
 
-// CENTRALIZED NODE REGISTRY - Using clean alias
-import { getNodeTypes } from "@node-creation/node-registry/nodeRegistry";
+// CENTRALIZED JSON NODE REGISTRY - Using clean alias
 
 // ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention & cleanup
 import { useCleanupInvalidConnections } from "@node-creation/node-handles/CleanupInvalidConnections";
@@ -198,10 +205,18 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     : { marginTop: "70px" };
 
   // ============================================================================
-  // NODE TYPES REGISTRY (CENTRALIZED)
+  // NODE TYPES REGISTRY (CENTRALIZED) - JSON REGISTRY
   // ============================================================================
 
-  const nodeTypes = useMemo(() => getNodeTypes(), []);
+  const nodeTypes = useMemo(
+    () => ({
+      createText: CreateText,
+      viewOutput: ViewOutput,
+      triggerOnToggle: TriggerOnToggle,
+      testError: TestError,
+    }),
+    []
+  );
 
   const edgeTypes = useMemo(() => ({}), []);
 

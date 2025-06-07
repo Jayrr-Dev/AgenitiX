@@ -2,16 +2,25 @@
  * CONNECTION UTILS - Handle validation and edge styling utilities
  *
  * • Validates connections between handles based on data type compatibility
- * • Provides edge styling and coloring based on data types
+ * • Provides edge styling and coloring based on data types and node categories
  * • Supports union types and any-type connections
  * • Generates unique edge IDs and styling configurations
- * • Integrates with type mapping system for consistent visuals
+ * • Integrates with type mapping system and category theming for consistent visuals
  *
- * Keywords: connections, validation, edge-styling, data-types, union-types, type-mapping
+ * Keywords: connections, validation, edge-styling, data-types, union-types, type-mapping, category-theming
  */
 
 import type { Connection } from "@xyflow/react";
 import { TYPE_MAP } from "../constants";
+
+// CATEGORY COLOR MAPPING
+const CATEGORY_EDGE_COLORS = {
+  create: "#3b82f6", // Blue - matches create category
+  view: "#6b7280", // Gray - matches view category
+  trigger: "#8b5cf6", // Purple - matches trigger category
+  test: "#eab308", // Yellow - matches test category
+  cycle: "#10b981", // Green - matches cycle category
+} as const;
 
 /**
  * HELPER: Get handle data type from registry
@@ -20,14 +29,67 @@ import { TYPE_MAP } from "../constants";
 function getHandleDataType(nodeType: string, handleId: string): string {
   try {
     const {
-      getNodeHandles,
-    } = require("../../node-creation/node-registry/nodeRegistry");
-    const handles = getNodeHandles(nodeType) || [];
-    const handle = handles.find((h: any) => h.id === handleId);
+      GENERATED_NODE_REGISTRY,
+    } = require("../../node-creation/json-node-registry/generated/nodeRegistry");
+
+    const nodeConfig = GENERATED_NODE_REGISTRY[nodeType];
+    if (!nodeConfig || !nodeConfig.handles) {
+      return "x"; // Default to 'any' if not found
+    }
+
+    const handle = nodeConfig.handles.find((h: any) => h.id === handleId);
     return handle?.dataType || "x"; // Default to 'any' if not found
   } catch (error) {
     console.warn("[ConnectionUtils] Failed to get handle data type:", error);
     return "x"; // Default to 'any' type
+  }
+}
+
+/**
+ * HELPER: Get source node category for edge coloring
+ * Looks up the category of the source node from the registry
+ */
+function getSourceNodeCategory(
+  connection: Connection,
+  nodes?: any[]
+): string | null {
+  if (!connection.source) {
+    return null;
+  }
+
+  try {
+    let sourceNodes = nodes;
+
+    // If nodes not provided, try to get from ReactFlow instance
+    if (!sourceNodes) {
+      const reactFlowInstance = (window as any).__ultimateReactFlowInstance;
+      if (reactFlowInstance) {
+        sourceNodes = reactFlowInstance.getNodes();
+      }
+    }
+
+    if (sourceNodes) {
+      const sourceNode = sourceNodes.find(
+        (n: any) => n.id === connection.source
+      );
+
+      if (sourceNode && sourceNode.type) {
+        // Get the category from the node registry
+        const {
+          GENERATED_NODE_REGISTRY,
+        } = require("../../node-creation/json-node-registry/generated/nodeRegistry");
+
+        const nodeConfig = GENERATED_NODE_REGISTRY[sourceNode.type];
+        return nodeConfig?.category || null;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.warn(
+      "[ConnectionUtils] Failed to get source node category:",
+      error
+    );
+    return null;
   }
 }
 
@@ -121,18 +183,42 @@ export function getConnectionDataType(connection: Connection): string {
 }
 
 /**
- * Gets the color for an edge based on data type
+ * Gets the color for an edge based on data type and optionally source node category
  */
-export function getEdgeColor(dataType: string): string {
+export function getEdgeColor(
+  dataType: string,
+  sourceCategory?: string | null
+): string {
+  // Prioritize category-based coloring if available
+  if (
+    sourceCategory &&
+    CATEGORY_EDGE_COLORS[sourceCategory as keyof typeof CATEGORY_EDGE_COLORS]
+  ) {
+    return CATEGORY_EDGE_COLORS[
+      sourceCategory as keyof typeof CATEGORY_EDGE_COLORS
+    ];
+  }
+
+  // Fallback to data type coloring
   return TYPE_MAP[dataType]?.color || "#6b7280";
 }
 
 /**
- * Creates edge style object for a given data type
+ * Creates edge style object for a given data type and connection
  */
-export function createEdgeStyle(dataType: string, strokeWidth: number = 2) {
+export function createEdgeStyle(
+  dataType: string,
+  strokeWidth: number = 2,
+  connection?: Connection,
+  nodes?: any[]
+) {
+  // Get source node category for enhanced coloring
+  const sourceCategory = connection
+    ? getSourceNodeCategory(connection, nodes)
+    : null;
+
   return {
-    stroke: getEdgeColor(dataType),
+    stroke: getEdgeColor(dataType, sourceCategory),
     strokeWidth,
   };
 }

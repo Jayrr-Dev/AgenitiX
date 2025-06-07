@@ -104,7 +104,14 @@ export function validateNodeSize(size: NodeSize): boolean {
 // CATEGORY AND FOLDER TYPES - Registry Integration
 // ============================================================================
 
-export type NodeCategory = "create" | "view" | "trigger" | "test" | "cycle";
+export type NodeCategory =
+  | "create"
+  | "view"
+  | "trigger"
+  | "test"
+  | "cycle"
+  | "data"
+  | "media";
 export type SidebarFolder = "main" | "automation" | "testing" | "visualization";
 
 // ============================================================================

@@ -13,11 +13,11 @@
 "use client";
 
 import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
+import type React from "react";
 import {
   getNodeInspectorControls,
   hasFactoryInspectorControls,
-} from "@factory/NodeFactory";
-import type React from "react";
+} from "../../node-creation/factory/NodeFactory";
 import { TextNodeControl } from "../controls/TextNodeControl";
 import {
   CyclePulseControl,
@@ -34,10 +34,9 @@ import type { ErrorType } from "../types";
 
 import {
   generateInspectorControlMapping,
-  getNodeMetadata,
   isValidNodeType,
   safeNodeTypeCast,
-} from "../../node-creation/node-registry/nodeRegistry";
+} from "../../node-creation/json-node-registry/unifiedRegistry";
 
 interface NodeControlsProps {
   node: AgenNode;
@@ -100,27 +99,42 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
 
       if (!controlConfig) {
         console.log(
-          `[NodeControls] 📝 No inspector control config found for ${validNodeType}, checking metadata...`
+          `[NodeControls] 📝 No inspector control config found for ${validNodeType}, using fallback strategy...`
         );
 
-        const metadata = getNodeMetadata(validNodeType);
-        if (metadata?.hasControls) {
-          console.log(
-            "[NodeControls] 🔧 Node has controls but no config, using default TextNodeControl"
-          );
-          return (
-            <TextNodeControl node={node} updateNodeData={updateNodeData} />
-          );
+        // FALLBACK STRATEGY: Use appropriate control based on node type
+        switch (validNodeType) {
+          case "createText":
+            return (
+              <TextNodeControl node={node} updateNodeData={updateNodeData} />
+            );
+          case "viewOutput":
+            return (
+              <div className="text-xs text-gray-500 p-2">
+                View Output nodes display data and do not require controls
+              </div>
+            );
+          case "triggerOnToggle":
+            return (
+              <TriggerOnToggleControl
+                node={node}
+                updateNodeData={updateNodeData}
+              />
+            );
+          case "testError":
+            return (
+              <TextNodeControl node={node} updateNodeData={updateNodeData} />
+            );
+          default:
+            console.log(
+              `[NodeControls] 🚫 No controls available for ${validNodeType}`
+            );
+            return (
+              <div className="text-xs text-gray-500 p-2">
+                No controls available for this node type
+              </div>
+            );
         }
-
-        console.log(
-          `[NodeControls] 🚫 Node ${validNodeType} has no controls configured`
-        );
-        return (
-          <div className="text-xs text-gray-500">
-            No controls available for this node type
-          </div>
-        );
       }
 
       // HANDLE DIFFERENT CONTROL TYPES

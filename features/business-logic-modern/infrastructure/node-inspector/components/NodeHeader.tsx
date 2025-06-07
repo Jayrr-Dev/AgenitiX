@@ -24,7 +24,7 @@ import {
   getNodeMetadata,
   isValidNodeType,
   type EnhancedNodeRegistration,
-} from "../../node-creation/node-registry/nodeRegistry";
+} from "../../node-creation/json-node-registry/unifiedRegistry";
 
 // ============================================================================
 // COMPONENT INTERFACE

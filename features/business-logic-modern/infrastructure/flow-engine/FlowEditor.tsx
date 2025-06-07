@@ -51,6 +51,9 @@ import { getNodeOutput } from "./utils/outputUtils";
 // UTILITY IMPORTS
 import { syncNodeTypeConfigWithRegistry } from "./constants";
 
+// THEME INITIALIZATION IMPORT
+import { initializeThemeSystem } from "@infrastructure/theming/init/themeInitializer";
+
 // ============================================================================
 // TYPESCRIPT INTERFACES
 // ============================================================================
@@ -431,14 +434,26 @@ export default function FlowEditor() {
   const { _hasHydrated } = useFlowStore();
 
   // ============================================================================
-  // REGISTRY INITIALIZATION
+  // JSON REGISTRY INITIALIZATION
   // ============================================================================
 
   useEffect(() => {
     const syncSuccess = syncNodeTypeConfigWithRegistry();
     if (!syncSuccess) {
       console.warn(
-        "⚠️ [FlowEditor] Registry sync failed - some controls may not appear"
+        "⚠️ [FlowEditor] JSON Registry sync failed - some controls may not appear"
+      );
+    }
+
+    // Initialize theme system with category colors
+    const themeSuccess = initializeThemeSystem({
+      enableDebug: false, // Set to true for debugging
+      logStatistics: true,
+    });
+
+    if (!themeSuccess) {
+      console.warn(
+        "⚠️ [FlowEditor] Theme system initialization failed - nodes may appear with default colors"
       );
     }
   }, []);

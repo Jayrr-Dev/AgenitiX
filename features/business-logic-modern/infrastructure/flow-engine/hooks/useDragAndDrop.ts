@@ -16,14 +16,8 @@ import { useCallback } from "react";
 // USE UNIFIED TYPES FROM FLOW ENGINE
 import type { AgenNode } from "@infrastructure/flow-engine/types/nodeData";
 
-// USE MODERN REGISTRY SYSTEM
-import {
-  getNodeMetadata,
-  isValidNodeType,
-} from "@node-creation/node-registry/nodeRegistry";
-
-// USE FACTORY UTILITIES
-import { NodeFactory } from "@factory/utils/nodeFactory";
+// USE INTEGRATED JSON REGISTRY + FACTORY SYSTEM
+import { NodeFactory } from "@/features/business-logic-modern/infrastructure/node-creation/factory";
 
 interface DragAndDropProps {
   flowInstance: React.RefObject<ReactFlowInstance<AgenNode, any> | null>;
@@ -46,7 +40,7 @@ export function useDragAndDrop({
   }, []);
 
   // ============================================================================
-  // DROP HANDLER - Using Modern Registry System
+  // DROP HANDLER - Using Integrated JSON Registry + Factory System
   // ============================================================================
 
   const onDrop = useCallback(
@@ -66,8 +60,8 @@ export function useDragAndDrop({
       const nodeType = e.dataTransfer.getData("application/reactflow");
       console.log("🔍 Validating node type:", nodeType);
 
-      // VALIDATE USING MODERN REGISTRY
-      if (!nodeType || !isValidNodeType(nodeType)) {
+      // VALIDATE USING INTEGRATED JSON REGISTRY + FACTORY
+      if (!nodeType || !NodeFactory.isValidNodeType(nodeType)) {
         console.log("❌ Invalid node type:", nodeType);
         return;
       }
@@ -82,27 +76,19 @@ export function useDragAndDrop({
       console.log("📍 Creating node at position:", { nodeType, position });
 
       try {
-        // CREATE NODE USING FACTORY
-        const factoryNode = NodeFactory.createNode(nodeType as any, position);
+        // CREATE NODE USING INTEGRATED JSON REGISTRY + FACTORY
+        const flowNode = NodeFactory.createNode(nodeType, position, {
+          isActive: false,
+          showUI: false,
+        });
 
-        // GET REGISTRY METADATA
-        const metadata = getNodeMetadata(nodeType);
-
-        // TRANSFORM TO FLOW ENGINE FORMAT
-        const flowNode: AgenNode = {
-          ...factoryNode,
-          type: nodeType,
-          data: {
-            ...factoryNode.data,
-            // Ensure isActive is set
-            isActive: false,
-            // Add any domain-specific defaults based on metadata
-            ...(metadata?.hasToggle && { showUI: false }),
-          },
-        } as AgenNode;
+        if (!flowNode) {
+          console.error("❌ Failed to create node:", nodeType);
+          return;
+        }
 
         console.log("✅ Created node:", flowNode);
-        onNodeAdd(flowNode);
+        onNodeAdd(flowNode as AgenNode);
       } catch (error) {
         console.error("❌ Failed to create node:", error);
       }

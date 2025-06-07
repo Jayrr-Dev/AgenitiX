@@ -19,19 +19,19 @@
 /*  – Preserves all styling, functionality, and error handling               */
 /* -------------------------------------------------------------------------- */
 
-import { getNodeHandles } from "@factory/constants/handles";
+import { useRef } from "react";
+import { useTextInputShortcuts } from "../../infrastructure/flow-engine/hooks/useTextInputShortcuts";
+import { getNodeHandles } from "../../infrastructure/node-creation/factory/constants/handles";
+import { STANDARD_SIZE_PATTERNS } from "../../infrastructure/node-creation/factory/constants/sizes";
 import {
   useAutoOptimizedTextInput,
   useHighPerformanceTextInput,
-} from "@factory/hooks/useOptimizedTextInput";
+} from "../../infrastructure/node-creation/factory/hooks/useOptimizedTextInput";
 import {
   createNodeComponent,
   type BaseNodeData,
   type HandleConfig,
-} from "@node-creation/factory/NodeFactory";
-import { STANDARD_SIZE_PATTERNS } from "@node-creation/factory/constants/sizes";
-import { useRef } from "react";
-import { useTextInputShortcuts } from "../../infrastructure/flow-engine/hooks/useTextInputShortcuts";
+} from "../../infrastructure/node-creation/factory/NodeFactory";
 
 // MODERN FACTORY INTEGRATION
 

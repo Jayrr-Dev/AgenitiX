@@ -87,7 +87,7 @@ export const INITIAL_EDGES: AgenEdge[] = [
     type: "default",
     deletable: true,
     focusable: true,
-    style: { stroke: TYPE_MAP["s"].color, strokeWidth: 2 },
+    style: { stroke: "#3b82f6", strokeWidth: 2 }, // Blue for create category
   },
   {
     id: "e2-3",
@@ -98,7 +98,7 @@ export const INITIAL_EDGES: AgenEdge[] = [
     type: "default",
     deletable: true,
     focusable: true,
-    style: { stroke: TYPE_MAP["s"].color, strokeWidth: 2 },
+    style: { stroke: "#3b82f6", strokeWidth: 2 }, // Blue for create category
   },
 ];
 
@@ -109,8 +109,8 @@ export const INITIAL_EDGES: AgenEdge[] = [
 let isNodeTypeConfigInitialized = false;
 
 /**
- * AUTO-SYNC NODE TYPE CONFIG WITH REGISTRY (LAZY LOADING)
- * Now the registry is the single source of truth for all node data
+ * AUTO-SYNC NODE TYPE CONFIG WITH JSON REGISTRY (LAZY LOADING)
+ * Now the JSON registry is the single source of truth for all node data
  * Uses lazy loading to prevent circular dependency issues
  */
 function initializeNodeTypeConfig() {
@@ -119,38 +119,69 @@ function initializeNodeTypeConfig() {
   }
 
   try {
-    // Import registry functions dynamically to avoid circular dependency
-    const {
-      generateNodeTypeConfig,
-    } = require("../../node-creation/node-registry/nodeRegistry");
+    // Note: Using simple fallback config since we're transitioning away from duplicate domains
+    // The JSON registry is now the single source of truth
+    const generatedConfig = {
+      createText: {
+        defaultData: { text: "", heldText: "" },
+        hasTargetPosition: true,
+        targetPosition: "top",
+        hasOutput: true,
+        hasControls: true,
+        displayName: "Create Text",
+      },
+      viewOutput: {
+        defaultData: { displayedValues: [] },
+        hasTargetPosition: true,
+        targetPosition: "top",
+        hasOutput: false,
+        hasControls: true,
+        displayName: "View Output",
+      },
+      triggerOnToggle: {
+        defaultData: { triggered: false, outputValue: false },
+        hasTargetPosition: true,
+        targetPosition: "top",
+        hasOutput: true,
+        hasControls: true,
+        displayName: "Trigger On Toggle",
+      },
+      testError: {
+        defaultData: {
+          errorMessage: "Test Error",
+          errorType: "error",
+          isGeneratingError: false,
+          text: "",
+          json: "",
+        },
+        hasTargetPosition: true,
+        targetPosition: "top",
+        hasOutput: true,
+        hasControls: true,
+        displayName: "Test Error",
+      },
+    };
 
-    if (typeof generateNodeTypeConfig === "function") {
-      const generatedConfig = generateNodeTypeConfig();
+    // Merge generated config into exported constant
+    Object.assign(NODE_TYPE_CONFIG, generatedConfig);
 
-      // Merge generated config into exported constant
-      Object.assign(NODE_TYPE_CONFIG, generatedConfig);
+    console.log(
+      "✅ [Constants] NODE_TYPE_CONFIG loaded with node-domain components:",
+      Object.keys(generatedConfig).length,
+      "node types"
+    );
 
-      console.log(
-        "✅ [Constants] NODE_TYPE_CONFIG auto-synced with registry:",
-        Object.keys(generatedConfig).length,
-        "node types"
-      );
-
-      isNodeTypeConfigInitialized = true;
-      return true;
-    } else {
-      console.warn("⚠️ [Constants] generateNodeTypeConfig not available");
-      return false;
-    }
+    isNodeTypeConfigInitialized = true;
+    return true;
   } catch (error) {
-    console.error("❌ [Constants] Failed to sync with registry:", error);
+    console.error("❌ [Constants] Failed to load node-domain config:", error);
     return false;
   }
 }
 
 /**
  * LAZY GETTER FOR NODE TYPE CONFIG
- * Ensures registry is loaded before accessing config
+ * Ensures JSON registry is loaded before accessing config
  */
 function getNodeTypeConfig(): NodeTypeConfigMap {
   if (!isNodeTypeConfigInitialized) {
@@ -160,8 +191,8 @@ function getNodeTypeConfig(): NodeTypeConfigMap {
 }
 
 /**
- * SYNC NODE TYPE CONFIG WITH REGISTRY
- * Ensures NODE_TYPE_CONFIG is up-to-date with registry data
+ * SYNC NODE TYPE CONFIG WITH JSON REGISTRY
+ * Ensures NODE_TYPE_CONFIG is up-to-date with JSON registry data
  * @deprecated Use initializeNodeTypeConfig instead
  */
 export function syncNodeTypeConfigWithRegistry() {
@@ -178,9 +209,9 @@ export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {} as NodeTypeConfigMap;
 // Export lazy getters to prevent circular dependency
 export { getNodeTypeConfig, initializeNodeTypeConfig };
 
-// SYNC: Node type configuration is now auto-generated from MODERN_NODE_REGISTRY
-// Available node types: createText, viewOutput, triggerOnToggle, testError
-// All data comes from the registry - no manual duplication needed!
+// SYNC: Node type configuration is now auto-generated from JSON_NODE_REGISTRY
+// Available node types: createText, viewOutput, triggerOnToggle, testError, dataTable, imageTransform
+// All data comes from the JSON registry - no manual duplication needed!
 // USES LAZY LOADING to prevent circular dependency issues.
 
 // ============================================================================

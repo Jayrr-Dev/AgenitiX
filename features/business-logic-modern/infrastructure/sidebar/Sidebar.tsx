@@ -32,12 +32,15 @@ import type { NodeType } from "@/features/business-logic-modern/infrastructure/f
 
 // REGISTRY INTEGRATION - Enhanced imports
 import {
+  getLegacyModernNodeRegistry,
   getNodeCapabilities,
   getNodeMetadata,
-  MODERN_NODE_REGISTRY,
   safeNodeTypeCast,
   validateNodeForInspector,
-} from "../node-creation/node-registry/nodeRegistry";
+} from "../node-creation/json-node-registry/unifiedRegistry";
+
+// Create the MODERN_NODE_REGISTRY alias for backward compatibility
+const MODERN_NODE_REGISTRY = getLegacyModernNodeRegistry();
 
 // FACTORY INTEGRATION - Enhanced node creation
 import { createNode } from "@/features/business-logic-modern/infrastructure/node-creation/factory/utils/nodeFactory";

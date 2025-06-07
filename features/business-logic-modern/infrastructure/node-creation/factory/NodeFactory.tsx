@@ -999,6 +999,41 @@ const handleStringCache = new Map<string, HandleConfig[]>();
  * Create default handles based on node type with object pooling
  */
 function createDefaultHandles(nodeType: string): HandleConfig[] {
+  // Try to get handles from JSON registry first
+  try {
+    const registry = require("../json-node-registry/unifiedRegistry");
+    const registryHandles = registry.getNodeHandlesNormalized(nodeType);
+
+    if (registryHandles && registryHandles.length > 0) {
+      debug(
+        `${nodeType}: Using ${registryHandles.length} handles from JSON registry`
+      );
+
+      // Convert registry handles to factory format
+      return registryHandles.map((handle: any) => ({
+        id: handle.id,
+        dataType: handle.dataType, // Already normalized by getNodeHandlesNormalized
+        position:
+          handle.position === "left"
+            ? Position.Left
+            : handle.position === "right"
+              ? Position.Right
+              : handle.position === "top"
+                ? Position.Top
+                : handle.position === "bottom"
+                  ? Position.Bottom
+                  : handle.position, // Use as-is if already Position enum
+        type: handle.type,
+      }));
+    }
+  } catch (error) {
+    debug(
+      `${nodeType}: Failed to load from JSON registry, using fallback handles:`,
+      error
+    );
+  }
+
+  // Fallback to hardcoded handles if registry fails
   const handleConfigs: Record<string, HandleConfig[]> = {
     createText: [
       {
@@ -1022,6 +1057,28 @@ function createDefaultHandles(nodeType: string): HandleConfig[] {
         type: "target",
       },
     ],
+    triggerOnToggle: [
+      {
+        id: "output",
+        dataType: "b",
+        position: Position.Right,
+        type: "source",
+      },
+    ],
+    testError: [
+      {
+        id: "trigger",
+        dataType: "b",
+        position: Position.Left,
+        type: "target",
+      },
+      {
+        id: "error-output",
+        dataType: "o",
+        position: Position.Right,
+        type: "source",
+      },
+    ],
     default: [
       {
         id: "input",
@@ -1038,7 +1095,9 @@ function createDefaultHandles(nodeType: string): HandleConfig[] {
     ],
   };
 
-  return handleConfigs[nodeType] || handleConfigs.default;
+  const fallbackHandles = handleConfigs[nodeType] || handleConfigs.default;
+  debug(`${nodeType}: Using ${fallbackHandles.length} fallback handles`);
+  return fallbackHandles;
 }
 
 /**
@@ -1290,11 +1349,13 @@ export { addJsonInputSupport, processJsonInput } from "./utils/jsonProcessor";
 
 // Export registry functions
 export {
+  getLegacyInspectorRegistry,
   getNodeInspectorControls,
   hasFactoryInspectorControls,
+  inspectorRegistry,
   NODE_INSPECTOR_REGISTRY,
   registerNodeInspectorControls,
-} from "../node-registry/inspectorRegistry";
+} from "../json-node-registry/unifiedRegistry";
 
 // Export safety layers for advanced usage
 export {

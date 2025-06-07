@@ -30,23 +30,21 @@ import { useInspectorState } from "./hooks/useInspectorState";
 import { JsonHighlighter } from "./utils/JsonHighlighter";
 
 // ============================================================================
-// ENHANCED REGISTRY INTEGRATION - Import registry for type safety and category features
+// JSON REGISTRY INTEGRATION - Import JSON registry for type safety and category features
 // ============================================================================
 
 import type { NodeType } from "../flow-engine/types/nodeData";
+
+// JSON REGISTRY UTILITY FUNCTIONS
 import {
-  MODERN_NODE_REGISTRY,
+  GENERATED_NODE_REGISTRY,
+  NODE_TYPES,
+} from "../node-creation/json-node-registry/generated/nodeRegistry";
+import {
+  getCategoryMetadata,
   getNodeMetadata,
   isValidNodeType,
-} from "../node-creation/node-registry/nodeRegistry";
-
-// CATEGORY REGISTRY INTEGRATION - Enhanced debugging and validation
-import {
-  CATEGORY_REGISTRY,
-  getCategoryBehavior,
-  getCategoryMetadata,
-  getCategoryTheme,
-} from "../node-creation/node-registry/category-registry/categoryRegistry";
+} from "../sidebar/constants";
 
 const NodeInspector = React.memo(function NodeInspector() {
   // ============================================================================
@@ -107,7 +105,7 @@ const NodeInspector = React.memo(function NodeInspector() {
   // ENHANCED CATEGORY REGISTRY DEBUGGING AND VALIDATION
   // ============================================================================
 
-  // ENHANCED DEBUGGING - Using both registries for comprehensive validation
+  // JSON REGISTRY DEBUGGING AND VALIDATION
   const debugSelectedNode = useMemo(() => {
     if (!selectedNode) return null;
 
@@ -116,15 +114,9 @@ const NodeInspector = React.memo(function NodeInspector() {
     const registryEntry = getNodeMetadata(nodeType);
     const configEntry = NODE_TYPE_CONFIG[nodeType];
 
-    // ENHANCED CATEGORY VALIDATION
+    // JSON REGISTRY CATEGORY VALIDATION
     const categoryMetadata = registryEntry
-      ? getCategoryMetadata(registryEntry.category)
-      : null;
-    const categoryTheme = registryEntry
-      ? getCategoryTheme(registryEntry.category)
-      : null;
-    const categoryBehavior = registryEntry
-      ? getCategoryBehavior(registryEntry.category)
+      ? getCategoryMetadata(registryEntry.category as any)
       : null;
 
     if (isValidType && registryEntry) {
@@ -134,8 +126,6 @@ const NodeInspector = React.memo(function NodeInspector() {
         metadata: registryEntry,
         config: configEntry,
         categoryMetadata,
-        categoryTheme,
-        categoryBehavior,
       };
     }
 
@@ -143,9 +133,9 @@ const NodeInspector = React.memo(function NodeInspector() {
     console.warn(`⚠️ [NodeInspector] INVALID NODE TYPE: ${nodeType}`, {
       nodeType,
       isValidInRegistry: isValidType,
-      availableTypes: Object.keys(MODERN_NODE_REGISTRY),
+      availableTypes: NODE_TYPES,
       selectedNodeData: selectedNode.data,
-      availableCategories: Object.keys(CATEGORY_REGISTRY),
+      registryKeys: Object.keys(GENERATED_NODE_REGISTRY),
     });
 
     return {
@@ -154,8 +144,6 @@ const NodeInspector = React.memo(function NodeInspector() {
       metadata: null,
       config: null,
       categoryMetadata: null,
-      categoryTheme: null,
-      categoryBehavior: null,
     };
   }, [selectedNode]);
 
@@ -255,12 +243,9 @@ const NodeInspector = React.memo(function NodeInspector() {
     const nodeConfig = NODE_TYPE_CONFIG[nodeType];
     const registryMetadata = getNodeMetadata(nodeType);
 
-    // Enhanced validation using registry
+    // Enhanced validation using registry - simplified for JSON registry
     const hasRightColumn = Boolean(
-      nodeConfig?.hasOutput ||
-        nodeConfig?.hasControls ||
-        registryMetadata?.hasOutput ||
-        registryMetadata?.hasControls
+      nodeConfig?.hasOutput || nodeConfig?.hasControls || registryMetadata // Show right column if node has registry metadata
     );
 
     // REGISTRY-ENHANCED DEBUG INFO - Only for valid nodes
@@ -407,11 +392,11 @@ const NodeInspector = React.memo(function NodeInspector() {
               </button>
             </div>
 
-            {(nodeConfig?.hasOutput || registryMetadata?.hasOutput) && (
+            {(nodeConfig?.hasOutput || output !== null) && (
               <NodeOutput output={output} nodeType={selectedNode.type} />
             )}
 
-            {(nodeConfig?.hasControls || registryMetadata?.hasControls) && (
+            {(nodeConfig?.hasControls || registryMetadata) && (
               <NodeControls
                 node={selectedNode}
                 updateNodeData={updateNodeData}

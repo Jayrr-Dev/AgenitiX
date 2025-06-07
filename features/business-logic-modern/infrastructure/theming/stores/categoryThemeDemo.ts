@@ -25,7 +25,7 @@ import {
   getCategoryMetadata,
   getCategoryTheme,
   validateCategoryConnection,
-} from "../../node-creation/node-registry/category-registry/categoryRegistry";
+} from "../../node-creation/json-node-registry/unifiedRegistry";
 
 // ============================================================================
 // ENHANCED THEMING BENEFITS DEMONSTRATION

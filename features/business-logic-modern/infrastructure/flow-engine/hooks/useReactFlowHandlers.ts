@@ -119,7 +119,7 @@ export function useReactFlowHandlers({
           {
             ...connection,
             type: "default",
-            style: createEdgeStyle(dataType),
+            style: createEdgeStyle(dataType, 2, connection, nodes),
           },
           eds
         )

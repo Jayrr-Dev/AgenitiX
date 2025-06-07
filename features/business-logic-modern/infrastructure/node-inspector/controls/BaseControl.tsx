@@ -18,7 +18,7 @@ import type { NodeType } from "../../flow-engine/types/nodeData";
 import {
   getNodeMetadata,
   isValidNodeType,
-} from "../../node-creation/node-registry/nodeRegistry";
+} from "../../node-creation/json-node-registry/unifiedRegistry";
 
 // PROPER TYPES IMPORT - Use the correct BaseControlProps from types
 import type { BaseControlProps } from "../types";
