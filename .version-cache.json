@@ -1,6 +1,6 @@
 {
-  "version": "1.2.4",
-  "timestamp": 1749314819162,
+  "version": "1.2.5",
+  "timestamp": 1749315128611,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -584,7 +584,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "b7a350a06c71618fcc809d1a5f1a369d"
+      "3fa6f6c01c9464d54d7f47e55d1e925d"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
