@@ -3,6 +3,13 @@ import React from "react";
 import { BaseNodeData } from "../../flow-engine/types/nodeData";
 import { nodeSystemEvents } from "../events/NodeSystemEvents";
 
+// CATEGORY THEMING INTEGRATION
+import {
+  enableCategoryTheming,
+  useCategoryTheme,
+  useNodeCategoryBaseClasses,
+} from "../../theming/stores/nodeStyleStore";
+
 // Enhanced type definitions for defineNode
 export interface NodeHandle {
   id: string;
@@ -89,6 +96,14 @@ export interface NodeRenderContext<TData extends BaseNodeData> {
   isSelected: boolean;
   isExpanded: boolean;
   context: NodeExecutionContext<TData>;
+  // Category theming support
+  categoryTheme?: any;
+  categoryClasses?: {
+    background: string;
+    border: string;
+    textPrimary: string;
+    textSecondary: string;
+  };
 }
 
 export interface NodeConfiguration<TData extends BaseNodeData> {
@@ -273,6 +288,17 @@ export function defineNode<TData extends BaseNodeData>(
     const [executionContext, setExecutionContext] =
       React.useState<NodeExecutionContext<TData>>();
 
+    // CATEGORY THEMING: Get theme for this node's category
+    const categoryTheme = useCategoryTheme(config.metadata.nodeType);
+    const categoryClasses = useNodeCategoryBaseClasses(
+      config.metadata.nodeType
+    );
+
+    // Enable category theming system if not already enabled
+    React.useEffect(() => {
+      enableCategoryTheming();
+    }, []);
+
     // Create execution context
     React.useEffect(() => {
       const context: NodeExecutionContext<TData> = {
@@ -324,7 +350,7 @@ export function defineNode<TData extends BaseNodeData>(
       }
     }, [data, executionContext]);
 
-    // Create render context
+    // Create render context with category theming
     const renderContext: NodeRenderContext<TData> = {
       data: data || enhancedDefaultData,
       error,
@@ -333,6 +359,8 @@ export function defineNode<TData extends BaseNodeData>(
       isSelected,
       isExpanded,
       context: executionContext || ({} as NodeExecutionContext<TData>),
+      categoryTheme,
+      categoryClasses,
     };
 
     const toggleExpanded = () => setIsExpanded(!isExpanded);
@@ -347,11 +375,11 @@ export function defineNode<TData extends BaseNodeData>(
           {isExpanded ? "−" : "+"}
         </button>
 
-        {/* Node content - following cursor rules for collapsed/expanded states */}
+        {/* Node content - following cursor rules with category theming */}
         <div
-          className={`${isSelected ? "ring-2 ring-white" : ""} ${
-            error ? "ring-2 ring-red-500" : ""
-          }`}
+          className={`${categoryClasses.background} ${categoryClasses.border} rounded-lg ${
+            isSelected ? "ring-2 ring-white" : ""
+          } ${error ? "ring-2 ring-red-500" : ""}`}
           style={{
             width: isExpanded
               ? config.size.expanded.width

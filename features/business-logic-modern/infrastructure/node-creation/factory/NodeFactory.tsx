@@ -67,6 +67,7 @@ import React, {
   ReactNode,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -77,6 +78,8 @@ import { produce } from "immer";
 // Type definitions
 import type { BaseNodeData, HandleConfig, NodeFactoryConfig } from "./types";
 import { validateNodeSize } from "./types";
+
+// ENHANCED: Import defineNode theming hooks for synchronization
 
 // Modular hooks
 import { useNodeConnections } from "@factory/hooks/useNodeConnections";
@@ -1208,14 +1211,20 @@ export function createNodeComponent<T extends BaseNodeData>(
     const safetyLayersRef = useRef<SafetyLayerInstance>(safetyLayers);
 
     // Initialize all hooks
-    const registrationConfig = useNodeRegistration(enhancedConfig);
-    const nodeState = useNodeState<T>(id, data, registrationConfig);
+    const registrationConfig = useNodeRegistration(
+      enhancedConfig as NodeFactoryConfig<BaseNodeData>
+    );
+    const nodeState = useNodeState<T>(
+      id,
+      data,
+      registrationConfig as NodeFactoryConfig<T>
+    );
     const connectionData = useNodeConnections(id, registrationConfig.handles!);
     const processingState = useNodeProcessing<T>(
       id,
       nodeState,
       connectionData,
-      registrationConfig,
+      registrationConfig as NodeFactoryConfig<T>,
       safetyLayersRef.current
     );
     const styling = useNodeStyling(
@@ -1225,6 +1234,38 @@ export function createNodeComponent<T extends BaseNodeData>(
       processingState.isActive,
       nodeState.data
     );
+
+    // UNIFIED THEMING INTEGRATION
+    // Enhanced theming system that auto-detects categories and provides consistent styling
+    // The styling hook now includes unified theme support with backward compatibility
+
+    // Enhanced styling with unified theming data
+    const enhancedStyling = useMemo(() => {
+      return {
+        // Original styling (backward compatibility)
+        nodeStyleClasses: styling.nodeStyleClasses,
+        buttonTheme: styling.buttonTheme,
+        textTheme: styling.textTheme,
+
+        // Enhanced theming data
+        categoryClasses: styling.categoryClasses,
+        categoryButtonTheme: styling.categoryButtonTheme,
+        categoryTextTheme: styling.categoryTextTheme,
+        combinedClasses: styling.combinedClasses,
+
+        // Theme metadata
+        themeInfo: styling.themeInfo,
+        errorState: styling.errorState,
+
+        // Legacy compatibility
+        categoryBaseClasses: styling.categoryClasses,
+
+        // Enhanced flags
+        isUnifiedTheme: styling.themeInfo?.isUnifiedTheme || false,
+        v2uEnhanced: true,
+      };
+    }, [styling]);
+
     const handles = useNodeHandles(
       registrationConfig.handles!,
       connectionData.connections,

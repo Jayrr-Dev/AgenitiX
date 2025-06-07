@@ -155,6 +155,95 @@ const CreateTextV2UInput: React.FC<{
   );
 };
 
+/**
+ * V2U Expanded Input Component
+ * Enhanced input for expanded node view
+ */
+const CreateTextV2UExpandedInput: React.FC<{
+  data: CreateTextV2UData;
+  error: string | null | undefined;
+  errorStyle: any;
+  updateNodeData: (newData: Partial<CreateTextV2UData>) => void;
+  id: string;
+}> = ({ data, error, errorStyle, updateNodeData, id }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const currentText = typeof data.heldText === "string" ? data.heldText : "";
+
+  // V2U optimized input hooks
+  const optimizedInput = useAutoOptimizedTextInput(
+    id,
+    currentText,
+    (nodeId: string, data: { heldText: string }) => {
+      updateNodeData(data);
+    }
+  );
+
+  // Enhanced keyboard shortcuts
+  const shortcuts = useTextInputShortcuts({
+    value: optimizedInput.value,
+    setValue: (newValue: string) => {
+      updateNodeData({ heldText: newValue });
+    },
+    onEnter: () => {
+      if (textareaRef.current) {
+        textareaRef.current.blur();
+      }
+    },
+  });
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Tab" && !e.shiftKey) {
+      e.preventDefault();
+    }
+  };
+
+  return (
+    <div className="relative">
+      <textarea
+        ref={textareaRef}
+        className={`w-full text-xs min-h-[65px] px-3 py-2 rounded border bg-white dark:bg-blue-800 placeholder-blue-400 dark:placeholder-blue-500 resize-both focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
+          error && errorStyle
+            ? `border-red-300 dark:border-red-700 text-red-900 dark:text-red-100 focus:ring-red-500`
+            : `border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500`
+        }`}
+        value={optimizedInput.value}
+        onChange={optimizedInput.onChange}
+        onKeyDown={handleKeyDown}
+        placeholder={
+          error
+            ? "V2U Error state active - text editing disabled"
+            : "Enter your text here... (V2U Enhanced)"
+        }
+        title="V2U Enhanced: Alt+Q = backspace • Alt+Shift+Q = delete word • Alt+Ctrl+Q = delete to start"
+        disabled={!!error}
+        style={{
+          lineHeight: "1.4",
+          fontFamily: "inherit",
+        }}
+      />
+
+      {/* V2U Status indicators */}
+      <div className="absolute top-1 right-1 flex space-x-1 text-xs opacity-60">
+        {optimizedInput.isPending && (
+          <span className="text-blue-500" title="V2U Update pending">
+            ⚡
+          </span>
+        )}
+        <span className="text-green-500" title="V2U Enhanced">
+          ✓
+        </span>
+      </div>
+
+      {/* Character count */}
+      {currentText.length > 0 && (
+        <div className="text-xs text-gray-500 mt-1">
+          {currentText.length} characters
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ============================================================================
 // DEFINE NODE - V2U ARCHITECTURE
 // ============================================================================
@@ -279,8 +368,8 @@ export default defineNode<CreateTextV2UData>({
     }
   },
 
-  // COLLAPSED RENDER: Enhanced with V2U styling
-  renderCollapsed: ({ data, error, updateNodeData, id, isSelected }) => {
+  // COLLAPSED RENDER: Clean V2 styling (no overlay)
+  renderCollapsed: ({ data, error, updateNodeData, id }) => {
     const currentText = typeof data.heldText === "string" ? data.heldText : "";
     const previewText =
       currentText.length > 20
@@ -294,26 +383,45 @@ export default defineNode<CreateTextV2UData>({
 
     const finalError = error || (isVibeError ? vibeErrorMessage : null);
     const finalErrorType = error ? "local" : vibeErrorType;
+
+    // V2U ERROR STYLING: Simplified to match V2
+    const getV2UErrorStyling = (errorType: string) => {
+      switch (errorType) {
+        case "warning":
+          return {
+            text: "text-yellow-700 dark:text-yellow-300",
+            indicator: "⚠️",
+          };
+        case "critical":
+          return {
+            text: "text-red-700 dark:text-red-300",
+            indicator: "💥",
+          };
+        case "error":
+        case "local":
+        default:
+          return {
+            text: "text-orange-700 dark:text-orange-300",
+            indicator: "🚨",
+          };
+      }
+    };
+
     const errorStyle = finalError ? getV2UErrorStyling(finalErrorType) : null;
 
     return (
-      <div
-        className={`absolute inset-0 flex flex-col items-center justify-center px-2 ${
-          errorStyle ? errorStyle.bg : ""
-        } ${isSelected ? "ring-2 ring-blue-500" : ""}`}
-      >
-        {/* V2U Header */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-2">
+        {/* V2U Header - Clean styling */}
         <div
           className={`text-xs font-semibold mt-1 mb-1 ${
-            finalError && errorStyle
-              ? errorStyle.text
-              : "text-gray-700 dark:text-gray-300"
+            finalError && errorStyle ? errorStyle.text : ""
           }`}
         >
           {finalError && errorStyle ? (
             <div className="flex items-center gap-1">
               <span>{errorStyle.indicator}</span>
               <span>
+                V2U{" "}
                 {finalErrorType === "local"
                   ? "Error"
                   : finalErrorType.toUpperCase()}
@@ -327,20 +435,32 @@ export default defineNode<CreateTextV2UData>({
           )}
         </div>
 
-        {/* Content Display */}
+        {/* Content Display - Clean styling */}
         {finalError && errorStyle ? (
-          <div className={`text-xs text-center break-words ${errorStyle.text}`}>
-            {finalError}
+          <div
+            className={`text-xs text-center break-words ${errorStyle.text} p-1 rounded`}
+          >
+            <div className="font-medium">V2U System Error:</div>
+            <div>{finalError}</div>
           </div>
         ) : (
-          <div className="text-xs text-center text-gray-600 dark:text-gray-400 break-words">
-            {previewText || "Enter text..."}
+          <div
+            className="nodrag nowheel w-full flex-1 flex items-center justify-center"
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+          >
+            <CreateTextV2UInput
+              data={data}
+              updateNodeData={updateNodeData}
+              id={id}
+              isV2U={true}
+            />
           </div>
         )}
 
-        {/* V2U Migration Indicator */}
-        {data._v2uMigrated && (
-          <div className="absolute top-1 right-1 text-xs text-blue-500 opacity-75">
+        {/* V2U Debug Info - Development only */}
+        {process.env.NODE_ENV === "development" && data._v2uMigrated && (
+          <div className="absolute bottom-0 right-0 text-xs text-blue-500 opacity-75">
             V2U
           </div>
         )}
@@ -348,85 +468,116 @@ export default defineNode<CreateTextV2UData>({
     );
   },
 
-  // EXPANDED RENDER: Enhanced with V2U features
-  renderExpanded: ({ data, error, updateNodeData, id, isSelected }) => {
+  // EXPANDED RENDER: Clean V2 styling with category theming
+  renderExpanded: ({
+    data,
+    error,
+    updateNodeData,
+    id,
+    categoryTheme,
+    categoryClasses,
+  }) => {
     const finalError = error || (data.isErrorState ? data.error : null);
     const finalErrorType = error ? "local" : data.errorType || "error";
+
+    // V2U ERROR STYLING: Simplified to match V2
+    const getV2UErrorStyling = (errorType: string) => {
+      switch (errorType) {
+        case "warning":
+          return {
+            text: "text-yellow-700 dark:text-yellow-300",
+            indicator: "⚠️",
+          };
+        case "critical":
+          return {
+            text: "text-red-700 dark:text-red-300",
+            indicator: "💥",
+          };
+        case "error":
+        case "local":
+        default:
+          return {
+            text: "text-orange-700 dark:text-orange-300",
+            indicator: "🚨",
+          };
+      }
+    };
+
     const errorStyle = finalError ? getV2UErrorStyling(finalErrorType) : null;
 
     return (
       <div
-        className={`absolute inset-0 flex flex-col ${
-          errorStyle ? errorStyle.bg : "bg-white dark:bg-gray-800"
-        } border rounded-lg ${
-          errorStyle
-            ? errorStyle.border
-            : "border-gray-300 dark:border-gray-600"
-        } ${isSelected ? `ring-2 ${errorStyle?.ringColor || "ring-blue-500"}` : ""}`}
+        className="flex text-xs flex-col w-auto"
+        key={`createtext-v2u-${id}`}
       >
-        {/* V2U Header */}
-        <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2">
-            <span className="text-sm">📝</span>
-            <span
-              className={`text-sm font-medium ${
-                errorStyle
-                  ? errorStyle.text
-                  : "text-gray-700 dark:text-gray-300"
-              }`}
-            >
-              Create Text V2U
-            </span>
+        {/* V2U Header - Clean styling with automatic category theme */}
+        <div
+          className={`font-semibold mb-2 flex items-center justify-between ${categoryClasses?.textPrimary || "text-green-700 dark:text-green-300"}`}
+        >
+          <div className="flex items-center gap-1">
+            <span>📝</span>
+            <span>Create Text V2U</span>
           </div>
-          {data._v2uMigrated && (
-            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-              V2U
+          {finalError && errorStyle && (
+            <span
+              className={`text-xs ${errorStyle.text} flex items-center gap-1`}
+            >
+              <span>{errorStyle.indicator}</span>
+              <span>
+                {finalError.substring(0, 20)}
+                {finalError.length > 20 ? "..." : ""}
+              </span>
             </span>
           )}
         </div>
 
-        {/* Error Display */}
-        {finalError && errorStyle && (
-          <div
-            className={`px-2 py-1 text-xs ${errorStyle.text} ${errorStyle.bg} border-b ${errorStyle.border}`}
-          >
-            <div className="flex items-center gap-1">
-              <span>{errorStyle.indicator}</span>
-              <span className="font-medium">
-                {finalErrorType === "local"
-                  ? "Error"
-                  : finalErrorType.toUpperCase()}
-                :
-              </span>
-              <span>{finalError}</span>
+        {/* V2U Debug Info - Development only */}
+        {process.env.NODE_ENV === "development" && data._v2uMigrated && (
+          <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded text-xs">
+            <div className="font-semibold text-blue-700 dark:text-blue-300 mb-1">
+              🚀 V2U Status:
+            </div>
+            <div className="space-y-1 text-blue-600 dark:text-blue-400">
+              <div>Migrated: {data._v2uMigrated ? "✓" : "✗"}</div>
+              {data._v2uMigrationDate && (
+                <div>
+                  Date: {new Date(data._v2uMigrationDate).toLocaleDateString()}
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Input Area */}
-        <div className="flex-1 p-2">
-          <CreateTextV2UInput
+        {/* V2U Error Display - Clean styling */}
+        {finalError && errorStyle && (
+          <div className="mb-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded text-xs">
+            <div className="font-semibold mb-1 flex items-center gap-1">
+              <span>{errorStyle.indicator}</span>
+              <span>
+                V2U{" "}
+                {finalErrorType === "local"
+                  ? "Error"
+                  : finalErrorType.toUpperCase()}{" "}
+                Details:
+              </span>
+            </div>
+            <div className="mb-2">{finalError}</div>
+          </div>
+        )}
+
+        {/* V2U Input Component - Clean styling */}
+        <div
+          className="nodrag nowheel"
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          <CreateTextV2UExpandedInput
             data={data}
+            error={finalError}
+            errorStyle={errorStyle}
             updateNodeData={updateNodeData}
             id={id}
-            isV2U={true}
           />
-        </div>
-
-        {/* V2U Footer */}
-        <div className="px-2 py-1 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-            <span>
-              {typeof data.heldText === "string" ? data.heldText.length : 0}{" "}
-              chars
-            </span>
-            {data._v2uMigrationDate && (
-              <span>
-                Migrated:{" "}
-                {new Date(data._v2uMigrationDate).toLocaleDateString()}
-              </span>
-            )}
-          </div>
         </div>
       </div>
     );
