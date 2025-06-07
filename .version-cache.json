@@ -1,6 +1,6 @@
 {
-  "version": "1.2.1",
-  "timestamp": 1749300933485,
+  "version": "1.2.2",
+  "timestamp": 1749308040234,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -48,7 +48,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\components\\FlowCanvas.tsx",
-      "c4bc730f9851eca226caa994ea0196d2"
+      "f8bd7117b8425f5680b838793fec3b16"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\components\\FlowEditorLoading.tsx",
@@ -116,11 +116,11 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\types\\nodeData.ts",
-      "f790fb7bce0ff7fe03c371979f8c1ed2"
+      "4ea3fc2ef708d164fd8e7cf6ce634b0e"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\utils\\connectionUtils.ts",
-      "983586f9c30f6ff69d6cfc3ac05157ec"
+      "e7fb95e8fc219ee882829793c4012dcb"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\utils\\dataMigration.ts",
@@ -224,7 +224,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useNodeRegistration.ts",
-      "a87842a2f726fb7f65b7e2b03549ab4c"
+      "277dabf6399df8dad0f4f7ba344aad8f"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useNodeState.ts",
@@ -248,7 +248,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\NodeFactory.tsx",
-      "5ec4d76a15f25619442e9ff5eebe35b0"
+      "b9ab470c8e359c45bac6e3a84d73dcbb"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\templates\\CreateTextTemplate.tsx",
@@ -340,11 +340,11 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\generated\\nodeRegistry.ts",
-      "8f6bb3b0c92cf9a772369ab7188ff9b8"
+      "88952337208206b7f2f710776224f3a6"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\inspector.ts",
-      "817dc04306d56ccbe367967d5191391b"
+      "cd0be1519dc20f8d332c95aa58de0e9a"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\node.ts",
@@ -368,7 +368,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\unifiedRegistry.ts",
-      "f61ebccc50b3c782f318d711478fdb44"
+      "c4f4c4720543c9984177ac798521080b"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\utils\\logger.ts",
@@ -416,7 +416,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\UltimateTypesafeHandle.tsx",
-      "2a6f16de18639350e873a888701723a5"
+      "84ccab8dd559bc2b5837b346ca8a1802"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\stores\\vibeModeStore.ts",
@@ -444,7 +444,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\components\\NodeControls.tsx",
-      "ac9ae73f9116e81e66b272ee47217869"
+      "728838c898b2acda55c870dcd3ff3db5"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\components\\NodeHeader.tsx",
@@ -584,15 +584,19 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "79a7a639b0d57a03e968c8fb336282c4"
+      "5caa9f22a9bf57fcb78c01d53afb52eb"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
       "d456dd9ce72fb029e6e8061e4c362000"
     ],
     [
+      "features\\business-logic-modern\\node-domain\\create\\CreateTextV2.tsx",
+      "5580fad6f228520be01e5f3d1f2d9070"
+    ],
+    [
       "features\\business-logic-modern\\node-domain\\index.ts",
-      "da55e7e675ad98e394c14085c7b86cd1"
+      "da913b62a1f14ab99b97d3c965c7eac8"
     ],
     [
       "features\\business-logic-modern\\node-domain\\test\\TestError.tsx",
