@@ -36,7 +36,7 @@
     "versionReference": "Import from infrastructure/versioning/version.ts",
     "format": "Markdown with auto-version integration"
   },
-  "version": "1.2.3",
+  "version": "1.2.4",
   "lastUpdated": "2025-06-07T00:00:00.000Z",
-  "generated": "2025-06-07T16:42:00.698Z"
+  "generated": "2025-06-07T16:46:59.164Z"
 }
