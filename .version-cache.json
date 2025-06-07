@@ -1,6 +1,6 @@
 {
-  "version": "1.2.8",
-  "timestamp": 1749322565667,
+  "version": "1.2.9",
+  "timestamp": 1749325171241,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -64,7 +64,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\FlowEditor.tsx",
-      "7b4dd4723d745fe3f95c97b7c0c14181"
+      "576b157a3566d5924b8b45018f37e863"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\hooks\\useDragAndDrop.ts",
@@ -139,6 +139,14 @@
       "a07333524664c3060bcf8ae4f8e82e5d"
     ],
     [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\contexts\\VisualNodeBuilderContext.tsx",
+      "133e7afdb64d8842507d0cf469608c94"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\dashboard\\V2UDashboard.tsx",
+      "1da0db562c00b6658b662efda19d164b"
+    ],
+    [
       "features\\business-logic-modern\\infrastructure\\node-creation\\defineNode\\index.ts",
       "88073662bf3051b29cffe4f324a426ea"
     ],
@@ -148,7 +156,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\error-handling\\NodeErrorBoundary.tsx",
-      "a27975488350a8090c9670e7ea3efe75"
+      "020f0b39935c1042dc0f12a3420949e6"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\events\\NodeSystemEvents.ts",
@@ -500,7 +508,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\visual-builder\\VisualNodeBuilder.tsx",
-      "5987b3857d56a959b86a2a368f547add"
+      "a8c1251336a4af7cb23141647f439f48"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\components\\EdgeInspector.tsx",
@@ -652,7 +660,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "dc731d79efb9d4a8e3c2e422d930d7d9"
+      "e4cd886d73582bbc080abfb1285bb749"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
