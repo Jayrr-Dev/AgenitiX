@@ -1,6 +1,6 @@
 {
-  "version": "1.2.10",
-  "timestamp": 1749333707865,
+  "version": "1.2.11",
+  "timestamp": 1749336249670,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -148,7 +148,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\defineNode\\index.tsx",
-      "97bbaf3927dfb3d0a0fcbad2a07b934a"
+      "6c14cd4d0c8947da8fbdb482bba829a0"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\error-handling\\NodeErrorBoundary.tsx",
@@ -264,7 +264,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useNodeStyling.ts",
-      "0fbd9bde679fdd4e8da67cc71476a29f"
+      "ee64284ed874739f3e5fbe0f6137b435"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useOptimizedTextInput.ts",
@@ -280,7 +280,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\NodeFactory.tsx",
-      "b9ab470c8e359c45bac6e3a84d73dcbb"
+      "311be9c08bf08e2788931dc52b2c6b37"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\templates\\CreateTextTemplate.tsx",
@@ -655,8 +655,28 @@
       "a4aa68d66573eed0415761942e4c37f4"
     ],
     [
+      "features\\business-logic-modern\\infrastructure\\theming\\core\\UnifiedThemeSystem.ts",
+      "2e49dad792c31a6d6e2f26a73c3b2e04"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\theming\\hooks\\useUnifiedTheme.ts",
+      "bd30bd1e28eb0422559b399c9da644fc"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\theming\\index.ts",
+      "47370506699ff954f64268da3f41cd24"
+    ],
+    [
       "features\\business-logic-modern\\infrastructure\\theming\\init\\themeInitializer.ts",
       "1d980897a6919401011c3875b5d24e2b"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\theming\\init.ts",
+      "7433ac4c28b3c2ac2755dc2ab06fa460"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\theming\\integration\\V2UThemeIntegration.ts",
+      "5e6337a36bcf22df043b932afe77750c"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\theming\\stores\\categoryThemeDemo.ts",
@@ -684,7 +704,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "1ac998f3555fdbb781e4dde740c14743"
+      "d0e7befad5049932c67791d1a7644e77"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
@@ -696,7 +716,7 @@
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateTextV2U.tsx",
-      "890471f013dc328c41738b6a5760177c"
+      "04ef1aada644255df08f264e7314103b"
     ],
     [
       "features\\business-logic-modern\\node-domain\\index.ts",
