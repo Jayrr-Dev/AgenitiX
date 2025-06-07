@@ -629,7 +629,8 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
       console.info(
         `[UltimateTypesafeHandle] Blocked connection: ${sourceHandleType} → ${targetHandleType}`
       );
-      showOriginalStyledToast(sourceHandleType, targetHandleType);
+      // Use debounced version for handle interactions (hover/drag scenarios)
+      showHoverDebouncedToast(sourceHandleType, targetHandleType);
 
       setTimeout(() => {
         disconnectIncompatibleConnections(target, targetHandle);
@@ -755,8 +756,8 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
       <span
         style={{
           fontSize:
-            isUnionType(dataType) && unionDisplay === "all" ? "6px" : "8px",
-          fontWeight: 200,
+            isUnionType(dataType) && unionDisplay === "all" ? "6px" : "10px",
+          fontWeight: 100, // Slightly bolder for better visibility
           lineHeight: 1,
           pointerEvents: "none",
           color: "#fff",
@@ -766,7 +767,14 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
           justifyContent: "center",
           width: "100%",
           height: "100%",
-        }}
+          // Perfect centering adjustments
+          textAlign: "center",
+          margin: 0,
+          padding: 0,
+          position: "relative",
+          top: "0px", // Fine-tune vertical centering (accounts for font baseline)
+          transform: "translateY(-0.2px)",
+         }}
       >
         {displayInfo.label}
       </span>
@@ -787,6 +795,11 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
             justifyContent: "center",
             color: displayInfo.color,
             fontWeight: "bold",
+            // Perfect centering for union symbol
+            textAlign: "center",
+            lineHeight: "6px",
+            padding: 0,
+            margin: 0,
           }}
         >
           ∪
@@ -855,7 +868,7 @@ function disconnectIncompatibleConnections(
 }
 
 // ============================================================================
-// TOAST DEDUPLICATION SYSTEM
+// ENHANCED TOAST DEDUPLICATION SYSTEM
 // ============================================================================
 
 let lastToastKey = "";
@@ -864,20 +877,40 @@ let toastTimeout: number | null = null;
 let directionToastTimeout: number | null = null;
 
 /**
- * Prevent duplicate toasts from showing too quickly
+ * Enhanced toast deduplication with global throttling for rapid hover events
  */
 function shouldShowToast(sourceType: string, targetType: string): boolean {
+  const now = Date.now();
   const toastKey = `${sourceType}-${targetType}`;
+  
+  // Global throttling: Prevent ANY toast from showing more than once per 500ms
+  // This is crucial for rapid hover scenarios
+  if (globalToastThrottle && now - lastToastTime < 500) {
+    return false;
+  }
+  
+  // Specific key deduplication: Prevent same type combo from showing within 3s
   if (lastToastKey === toastKey && toastTimeout) {
     return false; // Duplicate toast, skip
   }
 
+  // Update tracking variables
   lastToastKey = toastKey;
+  lastToastTime = now;
+  
+  // Clear existing timeouts
   if (toastTimeout) clearTimeout(toastTimeout);
+  if (globalToastThrottle) clearTimeout(globalToastThrottle);
+  
+  // Set new timeouts
   toastTimeout = window.setTimeout(() => {
     lastToastKey = "";
     toastTimeout = null;
-  }, 2000); // Reset after 2 seconds
+  }, 3000); // Longer specific key timeout (3s)
+  
+  globalToastThrottle = window.setTimeout(() => {
+    globalToastThrottle = null;
+  }, 500); // Short global throttle (500ms)
 
   return true;
 }
@@ -902,6 +935,13 @@ function shouldShowDirectionToast(toastKey: string): boolean {
 
 /**
  * Show user feedback using Sonner toast system (integrated with app)
+ * 
+ * Use this for:
+ * - Final connection attempts (deliberate user actions)
+ * - Critical error notifications
+ * - When immediate feedback is required
+ * 
+ * This version only uses the global throttling system (no additional debouncing).
  */
 function showOriginalStyledToast(sourceType: string, targetType: string) {
   // Prevent duplicate toasts
@@ -939,10 +979,18 @@ function showOriginalStyledToast(sourceType: string, targetType: string) {
     ? ` and ${compatibleTypes.length - 4} more`
     : "";
 
-  // More descriptive toast message
+  // More descriptive toast message with close functionality
   toast.error(`🚫 Cannot connect ${sourceLabel} to ${targetLabel}`, {
     description: `${sourceLabel} outputs can connect to: ${compatibleTypeNames}${moreTypesText}`,
     duration: 5000,
+    dismissible: true, // Enable close button
+    closeButton: true, // Show explicit close button
+    action: {
+      label: "Dismiss",
+      onClick: () => {
+        // Optional: Add any cleanup logic here if needed
+      },
+    },
   });
 }
 
@@ -1035,6 +1083,9 @@ export {
   isTypeCompatible,
   ULTIMATE_COMPATIBILITY_RULES,
   ULTIMATE_TYPE_MAP,
+  showHoverDebouncedToast, // For hover/drag scenarios
+  showOriginalStyledToast, // For immediate feedback scenarios
+  closeAllConnectionToasts, // Close all active toasts
 };
 
 export default UltimateTypesafeHandle;
