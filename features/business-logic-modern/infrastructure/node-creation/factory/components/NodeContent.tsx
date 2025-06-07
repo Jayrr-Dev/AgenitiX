@@ -20,32 +20,93 @@ import {
   logErrorInjectionState,
 } from "../utils/conditionalRendering";
 
+// ============================================================================
+// UTILITY FUNCTIONS FOR STABLE KEYS
+// ============================================================================
+
+/**
+ * Generate stable keys for React components to prevent reconciliation issues
+ */
+function generateStableKey(
+  prefix: string,
+  id: string,
+  suffix?: string
+): string {
+  const parts = [prefix, id, suffix].filter(Boolean);
+  return parts.join("-");
+}
+
+/**
+ * Ensure handles have stable keys based on their properties
+ */
+function getHandleKey(handle: any, type: "input" | "output"): string {
+  return `${type}-handle-${handle.id}-${handle.position || "default"}`;
+}
+
 // Simple Error Boundary to catch React reconciliation errors
 class NodeRenderErrorBoundary extends React.Component<
   { children: React.ReactNode; nodeType: string },
-  { hasError: boolean }
+  { hasError: boolean; errorInfo?: string }
 > {
   constructor(props: { children: React.ReactNode; nodeType: string }) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, errorInfo: undefined };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error) {
+    // Specifically handle React reconciliation errors
+    if (
+      error.message?.includes("Expected static flag was missing") ||
+      error.message?.includes("reconciliation") ||
+      error.message?.includes("fiber")
+    ) {
+      console.warn(
+        "[NodeRenderErrorBoundary] React reconciliation error detected:",
+        error.message
+      );
+    }
+    return { hasError: true, errorInfo: error.message };
   }
 
-  componentDidCatch(error: Error) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.warn(
       `[NodeContent] Caught render error for ${this.props.nodeType}:`,
-      error
+      error,
+      errorInfo
     );
+
+    // Log specific React reconciliation issues
+    if (error.message?.includes("Expected static flag was missing")) {
+      console.warn(
+        "[NodeRenderErrorBoundary] This is a React reconciliation error. Component structure may be unstable."
+      );
+    }
+  }
+
+  componentDidUpdate(prevProps: {
+    children: React.ReactNode;
+    nodeType: string;
+  }) {
+    // Reset error state if props change (allows recovery)
+    if (
+      this.state.hasError &&
+      (prevProps.nodeType !== this.props.nodeType ||
+        prevProps.children !== this.props.children)
+    ) {
+      this.setState({ hasError: false, errorInfo: undefined });
+    }
   }
 
   render() {
     if (this.state.hasError) {
       return (
         <div className="text-xs text-red-500 p-2 bg-red-50 border border-red-200 rounded">
-          ⚠️ Render Error - Please refresh
+          <div>⚠️ Render Error - Please refresh</div>
+          {this.state.errorInfo && (
+            <div className="text-xs opacity-70 mt-1">
+              {this.state.errorInfo.slice(0, 100)}...
+            </div>
+          )}
         </div>
       );
     }
@@ -76,7 +137,9 @@ interface NodeContentProps<T extends BaseNodeData> {
  * Handles content rendering and handle placement
  * Refactored with early returns and extracted conditional logic
  */
-export function NodeContent<T extends BaseNodeData>({
+export const NodeContent = React.memo(function NodeContent<
+  T extends BaseNodeData,
+>({
   id,
   nodeState,
   processingState,
@@ -105,19 +168,21 @@ export function NodeContent<T extends BaseNodeData>({
   );
 
   // ========================================================================
-  // RENDER NODE CONTENT
+  // RENDER NODE CONTENT - Stabilized structure for React reconciliation
   // ========================================================================
 
   return (
-    <>
+    <React.Fragment key={generateStableKey("node-content", id)}>
       {/* INPUT HANDLES SECTION */}
       <InputHandlesSection
+        key={generateStableKey("input-handles", id)}
         handles={handles.inputHandlesFiltered}
         handleOpacities={handles.handleOpacities || {}}
       />
 
       {/* COLLAPSED STATE SECTION */}
       <CollapsedStateSection
+        key={generateStableKey("collapsed", id)}
         showUI={nodeState.showUI}
         enhancedConfig={enhancedConfig}
         nodeState={nodeState}
@@ -127,6 +192,7 @@ export function NodeContent<T extends BaseNodeData>({
 
       {/* EXPANDED STATE SECTION */}
       <ExpandedStateSection
+        key={generateStableKey("expanded", id)}
         showUI={nodeState.showUI}
         enhancedConfig={enhancedConfig}
         nodeState={nodeState}
@@ -137,12 +203,13 @@ export function NodeContent<T extends BaseNodeData>({
 
       {/* OUTPUT HANDLES SECTION */}
       <OutputHandlesSection
+        key={generateStableKey("output-handles", id)}
         handles={handles.outputHandles}
         handleOpacities={handles.handleOpacities || {}}
       />
-    </>
+    </React.Fragment>
   );
-}
+});
 
 // ============================================================================
 // EXTRACTED RENDERING COMPONENTS
@@ -152,7 +219,7 @@ export function NodeContent<T extends BaseNodeData>({
  * INPUT HANDLES SECTION
  * Renders input handles with opacity support
  */
-function InputHandlesSection({
+const InputHandlesSection = React.memo(function InputHandlesSection({
   handles,
   handleOpacities,
 }: {
@@ -165,12 +232,12 @@ function InputHandlesSection({
   }
 
   return (
-    <>
+    <React.Fragment>
       {handles.map((handle: any) => {
         const opacity = handleOpacities[handle.id] || 1.0;
         return (
           <UltimateTypesafeHandle
-            key={handle.id}
+            key={getHandleKey(handle, "input")}
             type="target"
             position={handle.position}
             id={handle.id}
@@ -179,15 +246,15 @@ function InputHandlesSection({
           />
         );
       })}
-    </>
+    </React.Fragment>
   );
-}
+});
 
 /**
  * COLLAPSED STATE SECTION
  * Renders collapsed state with early return
  */
-function CollapsedStateSection({
+const CollapsedStateSection = React.memo(function CollapsedStateSection({
   showUI,
   enhancedConfig,
   nodeState,
@@ -200,29 +267,38 @@ function CollapsedStateSection({
   renderError: string | null;
   id: string;
 }) {
-  // EARLY RETURN: UI is expanded
+  // EARLY RETURN: UI is expanded - return consistent structure
   if (showUI) {
-    return null;
+    return <React.Fragment key={generateStableKey("collapsed-empty", id)} />;
   }
 
-  return (
-    <>
-      {enhancedConfig.renderCollapsed({
-        data: nodeState.data,
-        error: renderError,
-        nodeType: enhancedConfig.nodeType,
-        updateNodeData: nodeState.updateNodeData,
-        id: id,
-      })}
-    </>
-  );
-}
+  try {
+    return (
+      <React.Fragment key={generateStableKey("collapsed-content", id)}>
+        {enhancedConfig.renderCollapsed({
+          data: nodeState.data,
+          error: renderError,
+          nodeType: enhancedConfig.nodeType,
+          updateNodeData: nodeState.updateNodeData,
+          id: id,
+        })}
+      </React.Fragment>
+    );
+  } catch (error) {
+    console.warn(`[CollapsedStateSection] Render error for node ${id}:`, error);
+    return (
+      <React.Fragment key={generateStableKey("collapsed-error", id)}>
+        <div className="text-xs text-red-500 p-1">⚠️ Render Error</div>
+      </React.Fragment>
+    );
+  }
+});
 
 /**
  * EXPANDED STATE SECTION
  * Renders expanded state with early return
  */
-function ExpandedStateSection({
+const ExpandedStateSection = React.memo(function ExpandedStateSection({
   showUI,
   enhancedConfig,
   nodeState,
@@ -237,31 +313,42 @@ function ExpandedStateSection({
   renderError: string | null;
   id: string;
 }) {
-  // EARLY RETURN: UI is collapsed
+  // EARLY RETURN: UI is collapsed - return consistent structure
   if (!showUI) {
-    return null;
+    return <React.Fragment key={generateStableKey("expanded-empty", id)} />;
   }
 
-  return (
-    <NodeRenderErrorBoundary nodeType={enhancedConfig.nodeType}>
-      {enhancedConfig.renderExpanded({
-        data: nodeState.data,
-        error: renderError,
-        nodeType: enhancedConfig.nodeType,
-        categoryTextTheme: styling.categoryTextTheme,
-        textTheme: styling.textTheme,
-        updateNodeData: nodeState.updateNodeData,
-        id: id,
-      })}
-    </NodeRenderErrorBoundary>
-  );
-}
+  try {
+    return (
+      <React.Fragment key={generateStableKey("expanded-content", id)}>
+        <NodeRenderErrorBoundary nodeType={enhancedConfig.nodeType}>
+          {enhancedConfig.renderExpanded({
+            data: nodeState.data,
+            error: renderError,
+            nodeType: enhancedConfig.nodeType,
+            categoryTextTheme: styling.categoryTextTheme,
+            textTheme: styling.textTheme,
+            updateNodeData: nodeState.updateNodeData,
+            id: id,
+          })}
+        </NodeRenderErrorBoundary>
+      </React.Fragment>
+    );
+  } catch (error) {
+    console.warn(`[ExpandedStateSection] Render error for node ${id}:`, error);
+    return (
+      <React.Fragment key={generateStableKey("expanded-error", id)}>
+        <div className="text-xs text-red-500 p-1">⚠️ Render Error</div>
+      </React.Fragment>
+    );
+  }
+});
 
 /**
  * OUTPUT HANDLES SECTION
  * Renders output handles with opacity support
  */
-function OutputHandlesSection({
+const OutputHandlesSection = React.memo(function OutputHandlesSection({
   handles,
   handleOpacities,
 }: {
@@ -274,12 +361,12 @@ function OutputHandlesSection({
   }
 
   return (
-    <>
+    <React.Fragment>
       {handles.map((handle: any) => {
         const opacity = handleOpacities[handle.id] || 1.0;
         return (
           <UltimateTypesafeHandle
-            key={handle.id}
+            key={getHandleKey(handle, "output")}
             type="source"
             position={handle.position}
             id={handle.id}
@@ -288,6 +375,6 @@ function OutputHandlesSection({
           />
         );
       })}
-    </>
+    </React.Fragment>
   );
-}
+});
