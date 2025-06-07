@@ -1,6 +1,6 @@
 {
-  "version": "1.2.6",
-  "timestamp": 1749319088624,
+  "version": "1.2.7",
+  "timestamp": 1749320954173,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -447,6 +447,14 @@
       "13976952944ab2b737dcaa9ee6af60ea"
     ],
     [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\performance\\BackgroundWorker.ts",
+      "fd3eb27153330ab5bae9a99ca5550a4f"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\performance\\LazyNodeLoader.tsx",
+      "f5714ce6782fad5233bc154071214641"
+    ],
+    [
       "features\\business-logic-modern\\infrastructure\\node-creation\\plugins\\examples\\AnalyticsPlugin.example.ts",
       "548af6923b799d83d1e872a1497db20c"
     ],
@@ -628,7 +636,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "1f02faf3b525c071867ec09a82dfc1e5"
+      "4a029d259a81d89c9a27e069fd17e49b"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
