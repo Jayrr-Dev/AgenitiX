@@ -37,6 +37,14 @@ export interface CreateTextData extends BaseNodeData {
   heldText: string;
 }
 
+export interface CreateTextV2Data extends BaseNodeData {
+  text: string;
+  heldText: string;
+  // V2 metadata tracking
+  _v2RegistryVersion?: string;
+  _v2CreatedAt?: number;
+}
+
 // ============================================================================
 // VIEW DOMAIN NODE DATA INTERFACES
 // ============================================================================
@@ -107,6 +115,9 @@ export type AgenNode =
   // Create Domain
   | (Node<CreateTextData & Record<string, unknown>> & {
       type: "createText";
+    })
+  | (Node<CreateTextV2Data & Record<string, unknown>> & {
+      type: "createTextV2";
     })
 
   // View Domain

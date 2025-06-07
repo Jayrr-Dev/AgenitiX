@@ -44,10 +44,11 @@ export function useNodeRegistration<T extends BaseNodeData>(
         nodeType: config.nodeType,
         renderControls: config.renderInspectorControls,
         displayName: `${config.displayName} Controls`,
-        controlType: "factory",
+        controlType: "factory", // Keep as factory type since we're providing factoryConfig
         defaultData: config.defaultData,
         hasControls: true,
         hasOutput: false,
+        factoryConfig: config, // Provide the factory config to satisfy validation
       });
     }
 

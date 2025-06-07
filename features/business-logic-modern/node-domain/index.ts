@@ -16,6 +16,7 @@
 
 // CREATE DOMAIN
 export { default as CreateText } from "./create/CreateText";
+export { default as CreateTextV2 } from "./create/CreateTextV2";
 
 // TRIGGER DOMAIN
 export { default as TriggerOnToggle } from "./trigger/TriggerOnToggle";
@@ -34,6 +35,7 @@ export { default as ViewOutput } from "./view/ViewOutput";
 export const NODE_DOMAIN_REGISTRY = {
   // Create Domain
   CreateText: "createText",
+  CreateTextV2: "createTextV2",
 
   // Trigger Domain
   TriggerOnToggle: "triggerOnToggle",
@@ -64,7 +66,7 @@ export const SIDEBAR_FOLDERS = {
 
 // NODES BY CATEGORY - Updated to match actual available nodes
 export const NODES_BY_CATEGORY = {
-  [DOMAIN_CATEGORIES.CREATE]: ["CreateText"],
+  [DOMAIN_CATEGORIES.CREATE]: ["CreateText", "CreateTextV2"],
   [DOMAIN_CATEGORIES.TRIGGER]: ["TriggerOnToggle"],
   [DOMAIN_CATEGORIES.TEST]: ["TestError"],
   [DOMAIN_CATEGORIES.VIEW]: ["ViewOutput"],
@@ -75,7 +77,7 @@ export const NODES_BY_CATEGORY = {
 export const NODES_BY_FOLDER = {
   [SIDEBAR_FOLDERS.MAIN]: ["CreateText"],
   [SIDEBAR_FOLDERS.AUTOMATION]: ["TriggerOnToggle"],
-  [SIDEBAR_FOLDERS.TESTING]: ["TestError"],
+  [SIDEBAR_FOLDERS.TESTING]: ["TestError", "CreateTextV2"], // CreateTextV2 in testing folder
   [SIDEBAR_FOLDERS.VISUALIZATION]: ["ViewOutput"],
 } as const;
 

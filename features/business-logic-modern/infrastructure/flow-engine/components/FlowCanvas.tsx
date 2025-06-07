@@ -33,6 +33,7 @@ import NodeInspector from "@/features/business-logic-modern/infrastructure/node-
 // Import actual node components from node-domain
 import {
   CreateText,
+  CreateTextV2,
   TestError,
   TriggerOnToggle,
   ViewOutput,
@@ -211,6 +212,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   const nodeTypes = useMemo(
     () => ({
       createText: CreateText,
+      createTextV2: CreateTextV2,
       viewOutput: ViewOutput,
       triggerOnToggle: TriggerOnToggle,
       testError: TestError,

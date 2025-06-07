@@ -37,7 +37,7 @@ export interface InspectorRegistration<T extends BaseNodeData = BaseNodeData> {
   factoryConfig?: NodeFactoryConfig<T>;
 
   // Control metadata
-  controlType: "factory" | "legacy" | "custom";
+  controlType: "factory" | "legacy" | "custom" | "v2";
   priority?: number; // For ordering controls
 }
 
@@ -218,7 +218,7 @@ export class InspectorRegistry extends MemoizedTypedRegistry<
     if (!registration.controlType) errors.push("controlType is required");
 
     // Control type validation
-    const validControlTypes = ["factory", "legacy", "custom"];
+    const validControlTypes = ["factory", "legacy", "custom", "v2"];
     if (!validControlTypes.includes(registration.controlType)) {
       errors.push(
         `Invalid controlType. Must be one of: ${validControlTypes.join(", ")}`

@@ -774,7 +774,7 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
           position: "relative",
           top: "0px", // Fine-tune vertical centering (accounts for font baseline)
           transform: "translateY(-0.2px)",
-         }}
+        }}
       >
         {displayInfo.label}
       </span>
@@ -873,8 +873,10 @@ function disconnectIncompatibleConnections(
 
 let lastToastKey = "";
 let lastDirectionToastKey = "";
+let lastToastTime = 0;
 let toastTimeout: number | null = null;
 let directionToastTimeout: number | null = null;
+let globalToastThrottle: number | null = null;
 
 /**
  * Enhanced toast deduplication with global throttling for rapid hover events
@@ -882,13 +884,13 @@ let directionToastTimeout: number | null = null;
 function shouldShowToast(sourceType: string, targetType: string): boolean {
   const now = Date.now();
   const toastKey = `${sourceType}-${targetType}`;
-  
+
   // Global throttling: Prevent ANY toast from showing more than once per 500ms
   // This is crucial for rapid hover scenarios
   if (globalToastThrottle && now - lastToastTime < 500) {
     return false;
   }
-  
+
   // Specific key deduplication: Prevent same type combo from showing within 3s
   if (lastToastKey === toastKey && toastTimeout) {
     return false; // Duplicate toast, skip
@@ -897,17 +899,17 @@ function shouldShowToast(sourceType: string, targetType: string): boolean {
   // Update tracking variables
   lastToastKey = toastKey;
   lastToastTime = now;
-  
+
   // Clear existing timeouts
   if (toastTimeout) clearTimeout(toastTimeout);
   if (globalToastThrottle) clearTimeout(globalToastThrottle);
-  
+
   // Set new timeouts
   toastTimeout = window.setTimeout(() => {
     lastToastKey = "";
     toastTimeout = null;
   }, 3000); // Longer specific key timeout (3s)
-  
+
   globalToastThrottle = window.setTimeout(() => {
     globalToastThrottle = null;
   }, 500); // Short global throttle (500ms)
@@ -935,12 +937,12 @@ function shouldShowDirectionToast(toastKey: string): boolean {
 
 /**
  * Show user feedback using Sonner toast system (integrated with app)
- * 
+ *
  * Use this for:
  * - Final connection attempts (deliberate user actions)
  * - Critical error notifications
  * - When immediate feedback is required
- * 
+ *
  * This version only uses the global throttling system (no additional debouncing).
  */
 function showOriginalStyledToast(sourceType: string, targetType: string) {
@@ -992,6 +994,78 @@ function showOriginalStyledToast(sourceType: string, targetType: string) {
       },
     },
   });
+}
+
+/**
+ * Show user feedback with debouncing for hover/drag scenarios
+ *
+ * Use this for:
+ * - Hover interactions over incompatible handles
+ * - Drag operations before connection attempts
+ * - Rapid interaction scenarios that need debouncing
+ *
+ * This version includes additional debouncing for hover scenarios.
+ */
+function showHoverDebouncedToast(sourceType: string, targetType: string) {
+  // Use the same throttling system but with a shorter duration for hover scenarios
+  if (!shouldShowToast(sourceType, targetType)) {
+    return;
+  }
+
+  const sourceTypes = parseUnionTypes(sourceType);
+  const targetTypes = parseUnionTypes(targetType);
+
+  const sourceLabel =
+    sourceTypes.length > 1
+      ? `${sourceTypes.map((t) => ULTIMATE_TYPE_MAP[t]?.label || t).join("|")}`
+      : ULTIMATE_TYPE_MAP[sourceType]?.label || sourceType;
+
+  const targetLabel =
+    targetTypes.length > 1
+      ? `${targetTypes.map((t) => ULTIMATE_TYPE_MAP[t]?.label || t).join("|")}`
+      : ULTIMATE_TYPE_MAP[targetType]?.label || targetType;
+
+  // Shorter, less intrusive message for hover scenarios
+  toast.error(`🚫 ${sourceLabel} → ${targetLabel}`, {
+    description: `Cannot connect these handle types`,
+    duration: 2000, // Shorter duration for hover interactions
+    dismissible: true,
+    closeButton: false, // No close button for hover toasts to reduce UI clutter
+  });
+}
+
+/**
+ * Close all active connection-related toasts
+ *
+ * Use this for:
+ * - Cleanup when user navigates away
+ * - Reset toast state when needed
+ * - Clear all toast notifications at once
+ */
+function closeAllConnectionToasts() {
+  // Clear all timeouts
+  if (toastTimeout) {
+    clearTimeout(toastTimeout);
+    toastTimeout = null;
+  }
+
+  if (globalToastThrottle) {
+    clearTimeout(globalToastThrottle);
+    globalToastThrottle = null;
+  }
+
+  if (directionToastTimeout) {
+    clearTimeout(directionToastTimeout);
+    directionToastTimeout = null;
+  }
+
+  // Reset tracking variables
+  lastToastKey = "";
+  lastToastTime = 0;
+  lastDirectionToastKey = "";
+
+  // Dismiss all active toasts (this dismisses all toasts globally)
+  toast.dismiss();
 }
 
 // ===== FLOW-LEVEL CONNECTION PREVENTION HOOK =====
@@ -1079,13 +1153,13 @@ export function useUltimateFlowConnectionPrevention() {
 // ===== EXPORTS =====
 
 export {
+  closeAllConnectionToasts,
   getCompatibleTypes,
   isTypeCompatible,
+  showHoverDebouncedToast, // For hover/drag scenarios
+  showOriginalStyledToast,
   ULTIMATE_COMPATIBILITY_RULES,
   ULTIMATE_TYPE_MAP,
-  showHoverDebouncedToast, // For hover/drag scenarios
-  showOriginalStyledToast, // For immediate feedback scenarios
-  closeAllConnectionToasts, // Close all active toasts
 };
 
 export default UltimateTypesafeHandle;

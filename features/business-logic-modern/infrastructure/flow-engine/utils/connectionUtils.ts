@@ -17,7 +17,7 @@ import { TYPE_MAP } from "../constants";
 const CATEGORY_EDGE_COLORS = {
   create: "#3b82f6", // Blue - matches create category
   view: "#6b7280", // Gray - matches view category
-  trigger: "#8b5cf6", // Purple - matches trigger category
+  trigger: "#6b7280", // Gray - let data types determine color (boolean = green)
   test: "#eab308", // Yellow - matches test category
   cycle: "#10b981", // Green - matches cycle category
 } as const;
@@ -28,6 +28,20 @@ const CATEGORY_EDGE_COLORS = {
  */
 function getHandleDataType(nodeType: string, handleId: string): string {
   try {
+    // Use the unified registry for proper data type normalization
+    const registry = require("../../node-creation/json-node-registry/unifiedRegistry");
+    const handle =
+      registry.getNodeHandle(nodeType, handleId, "source") ||
+      registry.getNodeHandle(nodeType, handleId, "target");
+
+    if (handle?.dataType) {
+      console.log(
+        `[ConnectionUtils] Found handle ${nodeType}.${handleId}: ${handle.dataType} (original: ${handle.originalDataType})`
+      );
+      return handle.dataType; // Already normalized (e.g., "boolean" -> "b")
+    }
+
+    // Fallback to direct registry lookup
     const {
       GENERATED_NODE_REGISTRY,
     } = require("../../node-creation/json-node-registry/generated/nodeRegistry");
@@ -37,8 +51,13 @@ function getHandleDataType(nodeType: string, handleId: string): string {
       return "x"; // Default to 'any' if not found
     }
 
-    const handle = nodeConfig.handles.find((h: any) => h.id === handleId);
-    return handle?.dataType || "x"; // Default to 'any' if not found
+    const handle2 = nodeConfig.handles.find((h: any) => h.id === handleId);
+    const rawDataType = handle2?.dataType || "x";
+
+    // Normalize the data type using the same system as the registry
+    const normalizeType =
+      registry.normaliseHandleType || registry.normalizeHandleDataType;
+    return normalizeType ? normalizeType(rawDataType) : rawDataType;
   } catch (error) {
     console.warn("[ConnectionUtils] Failed to get handle data type:", error);
     return "x"; // Default to 'any' type
@@ -189,7 +208,17 @@ export function getEdgeColor(
   dataType: string,
   sourceCategory?: string | null
 ): string {
-  // Prioritize category-based coloring if available
+  // PRIORITY 1: Boolean types should always be green when active (per cursor rules)
+  if (dataType === "b" || dataType === "boolean") {
+    return "#10b981"; // Green for boolean/triggers (activation state)
+  }
+
+  // PRIORITY 2: Data type coloring for consistency
+  if (TYPE_MAP[dataType]?.color) {
+    return TYPE_MAP[dataType].color;
+  }
+
+  // PRIORITY 3: Category-based coloring as fallback for unknown types
   if (
     sourceCategory &&
     CATEGORY_EDGE_COLORS[sourceCategory as keyof typeof CATEGORY_EDGE_COLORS]
@@ -199,8 +228,8 @@ export function getEdgeColor(
     ];
   }
 
-  // Fallback to data type coloring
-  return TYPE_MAP[dataType]?.color || "#6b7280";
+  // Final fallback to gray
+  return "#6b7280";
 }
 
 /**

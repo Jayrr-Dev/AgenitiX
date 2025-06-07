@@ -1074,7 +1074,7 @@ function createDefaultHandles(nodeType: string): HandleConfig[] {
       },
       {
         id: "error-output",
-        dataType: "o",
+        dataType: "∅",
         position: Position.Right,
         type: "source",
       },

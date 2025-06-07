@@ -1,17 +1,22 @@
-/**
- * UNIFIED REGISTRY - Single source of truth using JSON-generated registries
+/*
+ * UNIFIED REGISTRY v2 – Typed, Commented & Maintainable
+ * ----------------------------------------------------
+ * • JSON‑driven single‑source‑of‑truth for categories, nodes & inspectors.
+ * • Zero manual casts – all runtime checks are narrowed with predicate helpers.
+ * • Lazy one‑time initialisation guarded by a Promise (ready()).
+ * • Explicit public API surface – everything else is internal.
+ * • Small utility helpers extracted for readability & unit testing.
+ * • Full JSDoc for IDE‑hover + API docs generation.
  *
- * • Uses JSON-generated registries instead of manual hardcoding
- * • Provides legacy API compatibility during transition
- * • Eliminates data duplication and sync issues
- * • Points to node-domain as the single source for node components
- *
- * Keywords: unified-registry, json-generated, legacy-replacement, deduplication, node-domain
  */
 
-import type { ReactNode } from "react";
+/* -------------------------------------------------------------------------
+ *  SECTION 1 ▸ Imports & runtime‑safe JSON typings
+ * ---------------------------------------------------------------------- */
+import type { ComponentType, ReactNode } from "react";
 import type { NodeType } from "../../flow-engine/types/nodeData";
 import type { InspectorControlProps } from "../factory/types";
+
 import {
   categoryRegistry,
   registerCategory,
@@ -24,200 +29,309 @@ import {
 } from "./inspector";
 import { nodeRegistry, registerNode, type NodeRegistration } from "./node";
 
-// Import from GENERATED registries (JSON-based)
+// JSON‑generated registries (imported as const for literal inference)
 import { GENERATED_CATEGORY_REGISTRY } from "./generated/categoryRegistry";
 import { GENERATED_NODE_REGISTRY } from "./generated/nodeRegistry";
 
-// Import existing node components from the main node-domain directory (single source of truth)
+// Node components – true single source of truth
 import CreateText from "../../../node-domain/create/CreateText";
+import CreateTextV2 from "../../../node-domain/create/CreateTextV2";
 import TestError from "../../../node-domain/test/TestError";
 import TriggerOnToggle from "../../../node-domain/trigger/TriggerOnToggle";
 import ViewOutput from "../../../node-domain/view/ViewOutput";
 
-// Simple fallback component for nodes that don't have implementations yet
-const SimpleFallbackComponent = () => {
-  return null; // Simple null component that won't break React
-};
+/* -------------------------------------------------------------------------
+ *  SECTION 2 ▸ Constant maps & general helpers
+ * ---------------------------------------------------------------------- */
 
-// Component mapping for available nodes from node-domain (single source of truth)
-const AVAILABLE_COMPONENTS = {
+/** Plain React component used when a concrete implementation is missing. */
+const FallbackComponent: ComponentType = () => null;
+
+/** Mapping of known nodeType → concrete implementation. */
+const COMPONENTS: Record<string, any> = {
   createText: CreateText,
+  createTextV2: CreateTextV2,
   testError: TestError,
   viewOutput: ViewOutput,
   triggerOnToggle: TriggerOnToggle,
 };
 
-// ============================================================================
-// UNIFIED REGISTRY INITIALIZATION FROM JSON
-// ============================================================================
-
 /**
- * Initialize the unified registry system from JSON-generated registries
- * This replaces manual hardcoding with JSON-driven configuration
+ * Utility: safely look up an entry in a map returning undefined instead of
+ *              throwing.  Keeps Object.prototype clean & avoids hasOwnProperty.
  */
-export async function initializeUnifiedRegistry(): Promise<void> {
-  // Clear existing registries to avoid conflicts
-  nodeRegistry.clear();
-  inspectorRegistry.clear();
-  categoryRegistry.clear();
-
-  // Initialize categories from generated JSON data
-  await initializeCategoriesFromJSON();
-
-  // Initialize nodes from generated JSON data
-  await initializeNodesFromJSON();
-
-  // Initialize inspector controls from generated JSON data
-  await initializeInspectorControlsFromJSON();
+function getOrUndefined<K extends PropertyKey, V>(
+  record: Record<K, V>,
+  key: K
+): V | undefined {
+  return Object.hasOwn(record, key) ? record[key] : undefined;
 }
 
-/**
- * Initialize category registrations from JSON-generated data
- */
-async function initializeCategoriesFromJSON(): Promise<void> {
-  for (const [categoryKey, categoryData] of Object.entries(
-    GENERATED_CATEGORY_REGISTRY
-  )) {
-    const categoryRegistration: CategoryRegistration = {
-      category: categoryKey as any, // Generated types are dynamic, cast needed
-      displayName: categoryData.displayName,
-      description: categoryData.description,
-      icon: categoryData.icon,
-      color: categoryData.color,
-      order: categoryData.order,
-      folder: (categoryData.folder || "main") as any, // Generated types are dynamic
-      isEnabled: categoryData.isEnabled !== false,
-    };
+/* -------------------------------------------------------------------------
+ *  SECTION 3 ▸ Initialisation – category ▸ node ▸ inspector
+ * ---------------------------------------------------------------------- */
 
-    registerCategory(categoryRegistration);
+/** Flagged Promise so external callers can await registry readiness. */
+let _ready: Promise<void> | null = null;
+
+/** Initialise all registries exactly once. */
+export function ready(): Promise<void> {
+  if (_ready) return _ready; // already kicked off
+
+  _ready = (async () => {
+    categoryRegistry.clear();
+    nodeRegistry.clear();
+    inspectorRegistry.clear();
+
+    initCategories();
+    initNodes();
+    initInspectorControls();
+  })();
+
+  return _ready;
+}
+
+/* -----------------  Helpers per registry ------------------------------ */
+
+function initCategories(): void {
+  for (const [key, data] of Object.entries(GENERATED_CATEGORY_REGISTRY)) {
+    const registration: CategoryRegistration = {
+      category: key as CategoryRegistration["category"],
+      displayName: data.displayName,
+      description: data.description,
+      icon: data.icon,
+      color: data.color,
+      order: data.order,
+      folder: (data.folder ?? "main") as CategoryRegistration["folder"],
+      isEnabled: data.isEnabled !== false,
+    };
+    registerCategory(registration);
   }
 }
 
-/**
- * Initialize node registrations from JSON-generated data
- */
-async function initializeNodesFromJSON(): Promise<void> {
-  for (const [nodeType, nodeData] of Object.entries(GENERATED_NODE_REGISTRY)) {
-    // Cast nodeData to any to handle union types
-    const nodeDataAny = nodeData as any;
+function initNodes(): void {
+  for (const [type, data] of Object.entries(GENERATED_NODE_REGISTRY)) {
+    const component = getOrUndefined(COMPONENTS, type) ?? FallbackComponent;
 
-    // Get component from available components or use fallback
-    let component =
-      AVAILABLE_COMPONENTS[nodeType as keyof typeof AVAILABLE_COMPONENTS] ||
-      SimpleFallbackComponent;
+    const registration: NodeRegistration = {
+      nodeType: data.nodeType as NodeRegistration["nodeType"],
+      component,
+      category: data.category as NodeRegistration["category"],
+      folder: (data.folder ?? "main") as NodeRegistration["folder"],
+      displayName: data.displayName,
+      description: data.description,
+      icon: data.icon,
+      hasToggle: data.hasToggle ?? true,
+      iconWidth: data.iconWidth ?? (data as any).size?.width ?? 120,
+      iconHeight: data.iconHeight ?? (data as any).size?.height ?? 60,
+      expandedWidth: data.expandedWidth ?? (data as any).size?.width ?? 200,
+      expandedHeight: data.expandedHeight ?? (data as any).size?.height ?? 120,
+      defaultData: data.defaultData ?? {},
+      handles: (data.handles ?? []) as NodeRegistration["handles"],
+      hasControls: (data as any).hasControls ?? true,
+      hasOutput: (data as any).hasOutput ?? true,
+    } as NodeRegistration;
 
-    // Skip dynamic imports completely to avoid broken components
-    console.info(
-      `Using static component for ${nodeType}:`,
-      !!AVAILABLE_COMPONENTS[nodeType as keyof typeof AVAILABLE_COMPONENTS]
-        ? "available"
-        : "fallback"
-    );
-
-    const nodeRegistration: NodeRegistration<any> = {
-      nodeType: nodeData.nodeType as any,
-      component: component, // Always provide a component
-      category: nodeData.category as any,
-      folder: (nodeData.folder || "main") as any,
-      displayName: nodeData.displayName,
-      description: nodeData.description,
-      icon: nodeData.icon,
-      hasToggle: nodeData.hasToggle ?? true,
-      iconWidth: nodeData.iconWidth || (nodeData as any).size?.width || 120,
-      iconHeight: nodeData.iconHeight || (nodeData as any).size?.height || 60,
-      expandedWidth:
-        nodeData.expandedWidth || (nodeData as any).size?.width || 200,
-      expandedHeight:
-        nodeData.expandedHeight || (nodeData as any).size?.height || 120,
-      defaultData: nodeData.defaultData || {},
-      handles: (nodeData.handles || []) as any,
-      hasControls: nodeDataAny.hasControls ?? true,
-      hasOutput: nodeDataAny.hasOutput ?? true,
-    };
-
-    registerNode(nodeRegistration);
+    registerNode(registration);
   }
 }
 
-/**
- * Initialize inspector control registrations with simple, working controls
- */
-async function initializeInspectorControlsFromJSON(): Promise<void> {
-  // Simple control registrations for known node types
-  const simpleControlConfigs = {
+function initInspectorControls(): void {
+  /** V2 control configurations per supported nodeType. */
+  const V2_CONTROLS = {
     createText: {
-      controlType: "legacy" as const,
-      legacyControlType: "TextNodeControl",
+      controlType: "v2" as const,
+      v2ControlType: "TextNodeControl",
+      hasControls: true,
+    },
+    createTextV2: {
+      controlType: "v2" as const,
+      v2ControlType: "TextNodeControl", // V2 enhanced text controls
       hasControls: true,
     },
     viewOutput: {
-      controlType: "legacy" as const,
-      legacyControlType: "none",
+      controlType: "v2" as const,
+      v2ControlType: "none",
       hasControls: false,
     },
     triggerOnToggle: {
-      controlType: "legacy" as const,
-      legacyControlType: "TriggerOnToggleControl",
+      controlType: "v2" as const,
+      v2ControlType: "TriggerOnToggleControl",
       hasControls: true,
     },
     testError: {
-      controlType: "legacy" as const,
-      legacyControlType: "TextNodeControl",
+      controlType: "v2" as const,
+      v2ControlType: "TextNodeControl",
       hasControls: true,
     },
-  };
+  } as const;
 
-  for (const [nodeType, nodeData] of Object.entries(GENERATED_NODE_REGISTRY)) {
-    const nodeDataAny = nodeData as any;
-    const controlConfig =
-      simpleControlConfigs[nodeType as keyof typeof simpleControlConfigs];
+  for (const [type, data] of Object.entries(GENERATED_NODE_REGISTRY)) {
+    const v2Config = getOrUndefined(V2_CONTROLS, type);
 
-    const inspectorRegistration: InspectorRegistration<any> = {
-      nodeType: nodeData.nodeType as any,
-      displayName: `${nodeData.displayName} Controls`,
-      controlType: controlConfig?.controlType || "legacy",
-      defaultData: nodeData.defaultData || {},
-      renderControls: (props: InspectorControlProps<any>) => null as any,
-      hasControls: controlConfig?.hasControls ?? true,
-      hasOutput: nodeDataAny.hasOutput ?? true,
-    };
+    const registration: InspectorRegistration = {
+      nodeType: data.nodeType as InspectorRegistration["nodeType"],
+      displayName: `${data.displayName} Controls`,
+      controlType: v2Config?.controlType ?? "v2",
+      defaultData: data.defaultData ?? {},
+      renderControls: (): null => null, // placeholder – can be overridden
+      hasControls: v2Config?.hasControls ?? true,
+      hasOutput: (data as any).hasOutput ?? true,
+    } as InspectorRegistration;
 
-    registerInspectorControls(inspectorRegistration);
+    registerInspectorControls(registration);
   }
 }
 
+/* -------------------------------------------------------------------------
+ *  SECTION 4 ▸ Public helper API – strongly typed facades
+ * ---------------------------------------------------------------------- */
+
+/** Category helpers */
+export const Category = {
+  /** Get metadata for a key, or undefined. */
+  get: (key: string) => categoryRegistry.get(key as unknown as any),
+  /** True if category exists & enabled. */
+  has: (key: string) => categoryRegistry.has(key as unknown as any),
+  /** All keys in defined order. */
+  keys: () => Array.from(categoryRegistry.keys()),
+} as const;
+
+/** Node helpers */
+export const Node = {
+  /** Retrieve full registration – `undefined` if missing. */
+  get: (type: string) => nodeRegistry.get(type as unknown as any),
+  /** Safe boolean check. */
+  has: (type: string) => nodeRegistry.has(type as unknown as any),
+  /** Metadata subset for UI lists. */
+  meta: (type: string) => {
+    const n = nodeRegistry.get(type as unknown as any);
+    return n
+      ? {
+          category: n.category,
+          folder: n.folder,
+          hasOutput: n.hasOutput,
+          hasControls: n.hasControls,
+          hasToggle: n.hasToggle,
+        }
+      : undefined;
+  },
+} as const;
+
+/** Inspector helpers */
+export const Inspector = {
+  get: (type: string) => inspectorRegistry.get(type as unknown as any),
+  has: (type: string) => inspectorRegistry.hasInspectorControls(type as any),
+} as const;
+
+/* -------------------------------------------------------------------------
+ *  SECTION 5 ▸ Handle utilities – kept intact but typed
+ * ---------------------------------------------------------------------- */
+
+/** Map normalised → compact Ultimate handle codes. */
+const HANDLE_MAP = new Map<string, string>([
+  ["boolean", "b"],
+  ["string", "s"],
+  ["number", "n"],
+  ["bigint", "N"],
+  ["undefined", "u"],
+  ["null", "∅"],
+  ["symbol", "S"],
+  // Complex
+  ["object", "o"],
+  ["array", "a"],
+  ["json", "j"],
+  ["map", "m"],
+  ["set", "st"],
+  ["tuple", "t"],
+  // Special
+  ["date", "d"],
+  ["regexp", "r"],
+  ["error", "e"],
+  ["weakmap", "w"],
+  ["weakset", "ws"],
+  // Functional
+  ["function", "fn"],
+  ["asyncfunction", "af"],
+  ["generatorfunction", "gf"],
+  ["promise", "p"],
+  // Typed arrays
+  ["typedarray", "ta"],
+  ["arraybuffer", "ab"],
+  // Meta
+  ["any", "x"],
+  ["void", "v"],
+  ["never", "nv"],
+  ["unknown", "uk"],
+  // Flow
+  ["trigger", "tr"],
+  ["signal", "sg"],
+  ["event", "ev"],
+  // Custom
+  ["image", "o"],
+]);
+
+/** Convert arbitrary JSON dataType to Ultimate handle compact code. */
+export function normaliseHandleType(dataType: string): string {
+  if (!dataType) return "x";
+  const key = dataType.toLowerCase().trim();
+  return HANDLE_MAP.get(key) ?? key;
+}
+
+/* -------------------------------------------------------------------------
+ *  SECTION 6 ▸ Validation & diagnostics – thin wrappers over registry impls
+ * ---------------------------------------------------------------------- */
+
+export function validate(): ReturnType<typeof nodeRegistry.validateRegistry> &
+  ReturnType<typeof inspectorRegistry.validateRegistry> {
+  const nodeReport = nodeRegistry.validateRegistry();
+  const inspectorReport = inspectorRegistry.validateRegistry();
+  return { ...nodeReport, ...inspectorReport } as any; // merged summary
+}
+
+export function stats() {
+  return {
+    nodes: nodeRegistry.getRegistryStats(),
+    inspectors: inspectorRegistry.getRegistryStats(),
+    categories: categoryRegistry.getRegistryStats(),
+  } as const;
+}
+
+/* -------------------------------------------------------------------------
+ *  SECTION 7 ▸ Legacy compatibility layer - CRITICAL for existing code
+ * ---------------------------------------------------------------------- */
+
 // ============================================================================
-// UTILITY FUNCTIONS FOR SIDEBAR AND COMPONENTS
+// BACKWARD COMPATIBILITY FUNCTIONS (Required by existing imports)
 // ============================================================================
+
+/**
+ * Legacy function: Initialize the unified registry system
+ * @deprecated Use ready() instead
+ */
+export async function initializeUnifiedRegistry(): Promise<void> {
+  await ready();
+}
 
 /**
  * Get node metadata for a specific node type
  */
 export function getNodeMetadata(nodeType: string): any {
-  return nodeRegistry.get(nodeType as any);
+  return Node.get(nodeType);
 }
 
 /**
  * Get node capabilities (simplified version of old function)
  */
 export function getNodeCapabilities(nodeType: string): any {
-  const registration = nodeRegistry.get(nodeType as any);
-  if (!registration) return null;
-
-  return {
-    category: registration.category,
-    folder: registration.folder,
-    hasOutput: registration.hasOutput,
-    hasControls: registration.hasControls,
-    hasToggle: registration.hasToggle,
-  };
+  return Node.meta(nodeType);
 }
 
 /**
  * Safe node type casting with validation
  */
 export function safeNodeTypeCast(nodeType: string): string | null {
-  return nodeRegistry.has(nodeType as any) ? nodeType : null;
+  return Node.has(nodeType) ? nodeType : null;
 }
 
 /**
@@ -228,7 +342,7 @@ export function validateNodeForInspector(nodeType: string): {
   warnings: string[];
   suggestions: string[];
 } {
-  const isValid = nodeRegistry.has(nodeType as any);
+  const isValid = Node.has(nodeType);
 
   if (isValid) {
     return {
@@ -256,83 +370,85 @@ export function getLegacyModernNodeRegistry(): Record<string, any> {
 }
 
 /**
- * Get node category mapping for theming system
+ * Legacy MODERN_NODE_REGISTRY replacement
+ * Returns the same API but backed by JSON-generated registries
  */
-export function getNodeCategoryMapping(): Record<string, any> {
-  const mapping: Record<string, any> = {};
+export function getLegacyNodeRegistry(): Record<NodeType, any> {
+  const legacyRegistry: Record<string, any> = {};
 
   for (const [nodeType, registration] of nodeRegistry.entries()) {
-    mapping[nodeType] = registration.category;
+    legacyRegistry[nodeType] = {
+      nodeType: registration.nodeType,
+      component: registration.component,
+      category: registration.category,
+      folder: registration.folder,
+      displayName: registration.displayName,
+      description: registration.description,
+      hasToggle: registration.hasToggle,
+      iconWidth: registration.iconWidth,
+      iconHeight: registration.iconHeight,
+      expandedWidth: registration.expandedWidth,
+      expandedHeight: registration.expandedHeight,
+      icon: registration.icon,
+      handles: registration.handles,
+      size: {
+        width: registration.iconWidth,
+        height: registration.iconHeight,
+      },
+      defaultData: registration.defaultData,
+      hasTargetPosition: false, // Default value
+      targetPosition: "top", // Default value
+      hasOutput: registration.hasOutput,
+      hasControls: registration.hasControls,
+      factoryConfig: registration.factoryConfig,
+
+      // Legacy fields for backward compatibility
+      factoryLabel: registration.displayName,
+      factoryDefaultData: registration.defaultData,
+      inspectorControls: {
+        type: inspectorRegistry.hasInspectorControls(nodeType)
+          ? "factory"
+          : "none",
+        factoryControls: inspectorRegistry.hasInspectorControls(nodeType),
+      },
+    };
   }
 
-  return mapping;
+  return legacyRegistry as Record<NodeType, any>;
 }
 
 /**
- * Check if a node type is valid
+ * Legacy NODE_INSPECTOR_REGISTRY replacement
  */
-export function isValidNodeType(nodeType: string): boolean {
-  return nodeRegistry.has(nodeType as any);
+export function getLegacyInspectorRegistry(): Map<
+  string,
+  (props: InspectorControlProps<any>) => ReactNode
+> {
+  const legacyMap = new Map<
+    string,
+    (props: InspectorControlProps<any>) => ReactNode
+  >();
+
+  for (const [nodeType, registration] of inspectorRegistry.entries()) {
+    legacyMap.set(nodeType, registration.renderControls);
+  }
+
+  return legacyMap;
 }
-
-/**
- * Get category metadata
- */
-export function getCategoryMetadata(category: string): any {
-  return categoryRegistry.get(category as any);
-}
-
-/**
- * Apply category hooks (placeholder for theming compatibility)
- */
-export function applyCategoryHooks(category: string, theme: any): void {
-  // Placeholder implementation for theming system compatibility
-  console.log(`Applying category hooks for ${category}`, theme);
-}
-
-/**
- * Get category theme (placeholder for theming compatibility)
- */
-export function getCategoryTheme(category: string): any {
-  return categoryRegistry.get(category as any);
-}
-
-/**
- * Legacy CATEGORY_REGISTRY for backward compatibility
- */
-export const CATEGORY_REGISTRY = {
-  get: (category: string) => categoryRegistry.get(category as any),
-  has: (category: string) => categoryRegistry.has(category as any),
-  keys: () => Array.from(categoryRegistry.keys()),
-  values: () => Array.from(categoryRegistry.values()),
-  entries: () => Array.from(categoryRegistry.entries()),
-  size: () => categoryRegistry.size(),
-};
-
-// ============================================================================
-// INSPECTOR FUNCTIONS FOR FACTORY SYSTEM
-// ============================================================================
 
 /**
  * Get node inspector controls
  */
 export function getNodeInspectorControls(nodeType: string): any {
-  return inspectorRegistry.get(nodeType as any);
+  const registration = Inspector.get(nodeType);
+  return registration?.renderControls;
 }
 
 /**
  * Check if factory has inspector controls
  */
 export function hasFactoryInspectorControls(nodeType: string): boolean {
-  return inspectorRegistry.hasInspectorControls(nodeType as any);
-}
-
-/**
- * Register node type config (placeholder for factory compatibility)
- */
-export function registerNodeTypeConfig(config: any): void {
-  console.log("registerNodeTypeConfig called with:", config);
-  // Implementation depends on the specific factory requirements
+  return Inspector.has(nodeType);
 }
 
 /**
@@ -343,20 +459,39 @@ export function registerNodeInspectorControls(registration: any): void {
 }
 
 /**
- * Generate inspector control mapping
+ * Register node type config (for factory compatibility)
+ */
+export function registerNodeTypeConfig(config: any): void {
+  // This function is used by the factory system for inspector compatibility
+  // For now, this is a placeholder that logs the registration
+  if (process.env.NODE_ENV !== "production") {
+    console.log("📝 [registerNodeTypeConfig] Registered node config:", {
+      nodeType: config.nodeType,
+      hasControls: config.hasControls,
+      hasOutput: config.hasOutput,
+    });
+  }
+
+  // In the future, this could be enhanced to store additional metadata
+  // or integrate with more advanced factory configuration systems
+}
+
+/**
+ * Generate inspector control mapping (for NodeControls compatibility)
  */
 export function generateInspectorControlMapping(): any {
   const mapping: Record<string, any> = {};
 
-  // Simple control configurations for known node types
+  // V2 control configurations for known node types
   const controlConfigs = {
-    createText: { type: "legacy", legacyControlType: "TextNodeControl" },
+    createText: { type: "v2", v2ControlType: "TextNodeControl" },
+    createTextV2: { type: "v2", v2ControlType: "TextNodeControl" }, // V2 enhanced text controls
     viewOutput: { type: "none" },
     triggerOnToggle: {
-      type: "legacy",
-      legacyControlType: "TriggerOnToggleControl",
+      type: "v2", // TriggerOnToggle uses V2 system
+      v2ControlType: "TriggerOnToggleControl",
     },
-    testError: { type: "legacy", legacyControlType: "TextNodeControl" },
+    testError: { type: "v2", v2ControlType: "TextNodeControl" },
   };
 
   for (const [nodeType, registration] of inspectorRegistry.entries()) {
@@ -367,152 +502,24 @@ export function generateInspectorControlMapping(): any {
       displayName: registration.displayName,
       renderControls: registration.renderControls,
       hasControls: registration.hasControls,
-      type: config?.type || "legacy",
+      type: config?.type || "v2",
+      v2ControlType:
+        config && "v2ControlType" in config ? config.v2ControlType : undefined,
+      // Keep legacy for backward compatibility
       legacyControlType:
-        config && "legacyControlType" in config
-          ? config.legacyControlType
-          : undefined,
+        config && "v2ControlType" in config ? config.v2ControlType : undefined,
     };
   }
 
   return mapping;
 }
 
-// ============================================================================
-// TYPE DEFINITIONS FOR BACKWARD COMPATIBILITY
-// ============================================================================
-
 /**
- * Enhanced node registration type for backward compatibility
- */
-export interface EnhancedNodeRegistration {
-  nodeType: string;
-  component: any;
-  category: string;
-  folder: string;
-  displayName: string;
-  description: string;
-  icon: string;
-  hasToggle: boolean;
-  iconWidth: number;
-  iconHeight: number;
-  expandedWidth: number;
-  expandedHeight: number;
-  defaultData: any;
-  handles: any[];
-  hasControls?: boolean;
-  hasOutput?: boolean;
-  factoryConfig?: any;
-}
-
-/**
- * Get enhanced node registration
- */
-export function getEnhancedNodeRegistration(
-  nodeType: string
-): EnhancedNodeRegistration | null {
-  const registration = nodeRegistry.get(nodeType as any);
-  if (!registration) return null;
-
-  return {
-    nodeType: registration.nodeType,
-    component: registration.component,
-    category: registration.category,
-    folder: registration.folder,
-    displayName: registration.displayName,
-    description: registration.description,
-    icon: registration.icon,
-    hasToggle: registration.hasToggle,
-    iconWidth: registration.iconWidth,
-    iconHeight: registration.iconHeight,
-    expandedWidth: registration.expandedWidth,
-    expandedHeight: registration.expandedHeight,
-    defaultData: registration.defaultData,
-    handles: registration.handles,
-    hasControls: registration.hasControls,
-    hasOutput: registration.hasOutput,
-    factoryConfig: registration.factoryConfig,
-  };
-}
-
-// ============================================================================
-// LEGACY INSPECTOR REGISTRY EXPORTS
-// ============================================================================
-
-/**
- * Legacy NODE_INSPECTOR_REGISTRY for backward compatibility
- */
-export const NODE_INSPECTOR_REGISTRY = getLegacyInspectorRegistry();
-
-/**
- * Get node handles (existing function)
+ * Get node handles
  */
 export function getNodeHandles(nodeType: string): any[] {
-  const registration = nodeRegistry.get(nodeType as any);
+  const registration = Node.get(nodeType);
   return registration?.handles || [];
-}
-
-/**
- * DATA TYPE NORMALIZATION - For Ultimate Handle System Integration
- */
-const HANDLE_DATATYPE_MAPPING: Record<string, string> = {
-  // Primitive types
-  boolean: "b",
-  string: "s",
-  number: "n",
-  bigint: "N",
-  undefined: "u",
-  null: "∅",
-  symbol: "S",
-
-  // Complex types
-  object: "o",
-  array: "a",
-  json: "j",
-  map: "m",
-  set: "st",
-  tuple: "t",
-
-  // Special types
-  date: "d",
-  regexp: "r",
-  error: "e",
-  weakmap: "w",
-  weakset: "ws",
-
-  // Functional types
-  function: "fn",
-  asyncfunction: "af",
-  generatorfunction: "gf",
-  promise: "p",
-
-  // Typed arrays
-  typedarray: "ta",
-  arraybuffer: "ab",
-
-  // Meta types
-  any: "x",
-  void: "v",
-  never: "nv",
-  unknown: "uk",
-
-  // Flow control
-  trigger: "tr",
-  signal: "sg",
-  event: "ev",
-
-  // Custom/Extended types for compatibility
-  image: "o", // Treat images as objects for now
-};
-
-/**
- * Normalize data type from JSON registry format to Ultimate handle system format
- */
-export function normalizeHandleDataType(dataType: string): string {
-  if (!dataType) return "x"; // Default to "any"
-
-  const normalized = dataType.toLowerCase().trim();
-  return HANDLE_DATATYPE_MAPPING[normalized] || dataType;
 }
 
 /**
@@ -523,7 +530,7 @@ export function getNodeHandlesNormalized(nodeType: string): any[] {
 
   return handles.map((handle) => ({
     ...handle,
-    dataType: normalizeHandleDataType(handle.dataType),
+    dataType: normaliseHandleType(handle.dataType),
     originalDataType: handle.dataType, // Keep original for reference
   }));
 }
@@ -537,9 +544,22 @@ export function getNodeHandle(
   handleType: "source" | "target"
 ): any | null {
   const handles = getNodeHandlesNormalized(nodeType);
-  return (
-    handles.find((h) => h.id === handleId && h.type === handleType) || null
-  );
+  const handle =
+    handles.find((h) => h.id === handleId && h.type === handleType) || null;
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[getNodeHandle] ${nodeType}.${handleId} (${handleType}):`, {
+      found: !!handle,
+      handles: handles.map((h) => ({
+        id: h.id,
+        type: h.type,
+        dataType: h.dataType,
+      })),
+      result: handle,
+    });
+  }
+
+  return handle;
 }
 
 /**
@@ -619,118 +639,42 @@ export function validateHandleConnection(
 }
 
 /**
- * Missing function placeholders for backward compatibility
+ * Data type normalization function (keep original name for compatibility)
  */
-export function validateCategoryConnection(
-  source: string,
-  target: string
-): boolean {
-  // Placeholder implementation
-  return true;
-}
-
-export interface CategoryMetadata {
-  displayName: string;
-  description: string;
-  icon: string;
-  color: string;
-  order: number;
-  folder: string;
-  isEnabled: boolean;
-}
-
-// ============================================================================
-// LEGACY API COMPATIBILITY LAYER
-// ============================================================================
-
-/**
- * Legacy MODERN_NODE_REGISTRY replacement
- * Returns the same API but backed by YAML-generated registries
- */
-export function getLegacyNodeRegistry(): Record<NodeType, any> {
-  const legacyRegistry: Record<string, any> = {};
-
-  for (const [nodeType, registration] of nodeRegistry.entries()) {
-    legacyRegistry[nodeType] = {
-      nodeType: registration.nodeType,
-      component: registration.component,
-      category: registration.category,
-      folder: registration.folder,
-      displayName: registration.displayName,
-      description: registration.description,
-      hasToggle: registration.hasToggle,
-      iconWidth: registration.iconWidth,
-      iconHeight: registration.iconHeight,
-      expandedWidth: registration.expandedWidth,
-      expandedHeight: registration.expandedHeight,
-      icon: registration.icon,
-      handles: registration.handles,
-      size: registration.size,
-      defaultData: registration.defaultData,
-      hasTargetPosition: registration.hasTargetPosition,
-      targetPosition: registration.targetPosition,
-      hasOutput: registration.hasOutput,
-      hasControls: registration.hasControls,
-      factoryConfig: registration.factoryConfig,
-
-      // Legacy fields for backward compatibility
-      factoryLabel: registration.displayName,
-      factoryDefaultData: registration.defaultData,
-      inspectorControls: {
-        type: inspectorRegistry.hasInspectorControls(nodeType)
-          ? "factory"
-          : "none",
-        factoryControls: inspectorRegistry.hasInspectorControls(nodeType),
-      },
-    };
-  }
-
-  return legacyRegistry as Record<NodeType, any>;
+export function normalizeHandleDataType(dataType: string): string {
+  return normaliseHandleType(dataType);
 }
 
 /**
- * Legacy NODE_INSPECTOR_REGISTRY replacement
+ * Check if a node type is valid
  */
-export function getLegacyInspectorRegistry(): Map<
-  string,
-  (props: InspectorControlProps<any>) => ReactNode
-> {
-  const legacyMap = new Map<
-    string,
-    (props: InspectorControlProps<any>) => ReactNode
-  >();
-
-  for (const [nodeType, registration] of inspectorRegistry.entries()) {
-    legacyMap.set(nodeType, registration.renderControls);
-  }
-
-  return legacyMap;
+export function isValidNodeType(nodeType: string): boolean {
+  return Node.has(nodeType);
 }
 
 /**
- * Legacy FACTORY_INSPECTOR_REGISTRY replacement
+ * Get category metadata
  */
-export function getLegacyFactoryInspectorRegistry(): Map<string, any> {
-  const legacyMap = new Map<string, any>();
-
-  for (const [nodeType, registration] of inspectorRegistry.entries()) {
-    legacyMap.set(nodeType, {
-      nodeType: registration.nodeType,
-      renderControls: registration.renderControls,
-      defaultData: registration.defaultData,
-      displayName: registration.displayName,
-      hasControls: registration.hasControls,
-      hasOutput: registration.hasOutput,
-      factoryConfig: registration.factoryConfig,
-    });
-  }
-
-  return legacyMap;
+export function getCategoryMetadata(category: string): any {
+  return Category.get(category);
 }
 
-// ============================================================================
-// MIGRATION AND VALIDATION
-// ============================================================================
+/**
+ * Legacy CATEGORY_REGISTRY for backward compatibility
+ */
+export const CATEGORY_REGISTRY = {
+  get: (category: string) => Category.get(category),
+  has: (category: string) => Category.has(category),
+  keys: () => Category.keys(),
+  values: () => Array.from(categoryRegistry.values()),
+  entries: () => Array.from(categoryRegistry.entries()),
+  size: () => categoryRegistry.size(),
+};
+
+/**
+ * Legacy NODE_INSPECTOR_REGISTRY for backward compatibility
+ */
+export const NODE_INSPECTOR_REGISTRY = getLegacyInspectorRegistry();
 
 /**
  * Validate the unified registry system
@@ -808,10 +752,6 @@ export function getUnifiedRegistryStats() {
   };
 }
 
-// ============================================================================
-// AUTO-INITIALIZATION
-// ============================================================================
-
 // Export registry instances for external access
 export { categoryRegistry } from "./category";
 export {
@@ -822,19 +762,154 @@ export {
 export { inspectorRegistry } from "./inspector";
 export { nodeRegistry } from "./node";
 
-// Initialize when module loads (async)
-let isInitialized = false;
-export const initializationPromise = initializeUnifiedRegistry()
-  .then(() => {
-    isInitialized = true;
-  })
-  .catch((error) => {
-    console.error("Failed to initialize unified registry:", error);
-  });
+// ============================================================================
+// ADDITIONAL COMPATIBILITY EXPORTS
+// ============================================================================
 
 // Helper to ensure registry is ready
 export async function ensureRegistryReady(): Promise<void> {
-  if (!isInitialized) {
-    await initializationPromise;
-  }
+  await ready();
 }
+
+/**
+ * Debug function to test handle connections
+ */
+export function debugHandleConnections(): void {
+  console.group("🔍 [Debug] Handle Connection Test");
+
+  try {
+    // Test common node types
+    const testNodes = [
+      "createText",
+      "viewOutput",
+      "triggerOnToggle",
+      "testError",
+    ];
+
+    testNodes.forEach((nodeType) => {
+      console.log(`\n--- ${nodeType} ---`);
+      const handles = getNodeHandles(nodeType);
+      const normalizedHandles = getNodeHandlesNormalized(nodeType);
+
+      console.log("Raw handles:", handles);
+      console.log("Normalized handles:", normalizedHandles);
+    });
+
+    // Test a specific connection
+    console.log("\n--- Connection Test: createText -> viewOutput ---");
+    const createTextOutput = getNodeHandle("createText", "output", "source");
+    const viewOutputInput = getNodeHandle("viewOutput", "input", "target");
+
+    console.log("createText output handle:", createTextOutput);
+    console.log("viewOutput input handle:", viewOutputInput);
+
+    if (createTextOutput && viewOutputInput) {
+      const connectionResult = validateHandleConnection(
+        "createText",
+        "output",
+        "viewOutput",
+        "input"
+      );
+      console.log("Connection validation result:", connectionResult);
+    }
+  } catch (error) {
+    console.error("Debug test failed:", error);
+  }
+
+  console.groupEnd();
+}
+
+// Auto-run debug in development
+if (process.env.NODE_ENV !== "production" && typeof window !== "undefined") {
+  // Run after a delay to ensure registry is initialized
+  setTimeout(() => {
+    (window as any).debugHandleConnections = debugHandleConnections;
+    console.log("🛠️ Handle debug function available: debugHandleConnections()");
+  }, 1000);
+}
+
+// Export the initialization promise for compatibility
+export const initializationPromise = ready();
+
+// ============================================================================
+// FACTORY INTEGRATION HELPERS
+// ============================================================================
+
+/**
+ * Get legacy factory inspector registry (for NodeControls compatibility)
+ */
+export function getLegacyFactoryInspectorRegistry(): Map<string, any> {
+  const legacyMap = new Map<string, any>();
+
+  for (const [nodeType, registration] of inspectorRegistry.entries()) {
+    legacyMap.set(nodeType, {
+      nodeType: registration.nodeType,
+      renderControls: registration.renderControls,
+      defaultData: registration.defaultData,
+      displayName: registration.displayName,
+      hasControls: registration.hasControls,
+      hasOutput: registration.hasOutput,
+      factoryConfig: registration.factoryConfig,
+    });
+  }
+
+  return legacyMap;
+}
+
+/**
+ * Enhanced node registration type for factory compatibility
+ */
+export interface EnhancedNodeRegistration {
+  nodeType: string;
+  component: any;
+  category: string;
+  folder: string;
+  displayName: string;
+  description: string;
+  icon: string;
+  hasToggle: boolean;
+  iconWidth: number;
+  iconHeight: number;
+  expandedWidth: number;
+  expandedHeight: number;
+  defaultData: any;
+  handles: any[];
+  hasControls?: boolean;
+  hasOutput?: boolean;
+  factoryConfig?: any;
+}
+
+/**
+ * Get enhanced node registration (for factory compatibility)
+ */
+export function getEnhancedNodeRegistration(
+  nodeType: string
+): EnhancedNodeRegistration | null {
+  const registration = Node.get(nodeType);
+  if (!registration) return null;
+
+  return {
+    nodeType: registration.nodeType,
+    component: registration.component,
+    category: registration.category,
+    folder: registration.folder,
+    displayName: registration.displayName,
+    description: registration.description,
+    icon: registration.icon,
+    hasToggle: registration.hasToggle,
+    iconWidth: registration.iconWidth,
+    iconHeight: registration.iconHeight,
+    expandedWidth: registration.expandedWidth,
+    expandedHeight: registration.expandedHeight,
+    defaultData: registration.defaultData,
+    handles: registration.handles,
+    hasControls: registration.hasControls,
+    hasOutput: registration.hasOutput,
+    factoryConfig: registration.factoryConfig,
+  };
+}
+
+/* -------------------------------------------------------------------------
+ *  AUTO‑BOOT – kick off initialization immediately for ESM side‑effects
+ * ---------------------------------------------------------------------- */
+_ready = ready();

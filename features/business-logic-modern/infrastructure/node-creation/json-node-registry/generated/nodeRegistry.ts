@@ -64,6 +64,63 @@ export const GENERATED_NODE_REGISTRY = {
     // Component imports (removed - using factory system)
     // component: () => import("../domain/create/createText/CreateTextComponent"),
   },
+  createTextV2: {
+    nodeType: "createTextV2",
+    category: "create",
+    displayName: "Create Text V2",
+    description:
+      "V2 text creation node demonstrating the modern registry system with enhanced features",
+    icon: "text",
+    folder: "testing",
+    order: 2,
+
+    // Legacy dimensions (derived from modern size)
+    iconWidth: 240,
+    iconHeight: 120,
+    expandedWidth: 240,
+    expandedHeight: 120,
+
+    // Modern size
+    size: {
+      width: 240,
+      height: 120,
+    },
+
+    // UI Configuration
+    hasToggle: true,
+    isEnabled: true,
+    isExperimental: true,
+
+    // Handles (same as createText for compatibility)
+    handles: [
+      {
+        id: "trigger",
+        type: "target",
+        position: "left",
+        dataType: "boolean",
+        description:
+          "Optional trigger input - if connected, text only outputs when trigger is active (V2 Enhanced)",
+      },
+      {
+        id: "output",
+        type: "source",
+        position: "right",
+        dataType: "string",
+        description: "Text output (V2 Enhanced)",
+      },
+    ],
+
+    // Default data (enhanced with V2 metadata)
+    defaultData: {
+      text: "",
+      heldText: "",
+      _v2RegistryVersion: "2.0.0",
+      _v2CreatedAt: Date.now(),
+    },
+
+    // V2 Component - uses modern factory system
+    // component: () => import("../../../node-domain/create/CreateTextV2"),
+  },
   dataTable: {
     nodeType: "dataTable",
     category: "data",
@@ -257,6 +314,13 @@ export const GENERATED_NODE_REGISTRY = {
 
     // Handles
     handles: [
+      {
+        id: "trigger",
+        type: "target",
+        position: "left",
+        dataType: "boolean",
+        description: "Optional external trigger input",
+      },
       {
         id: "output",
         type: "source",
