@@ -113,11 +113,11 @@ export interface CyclePulseData extends BaseNodeData {
 
 export type AgenNode =
   // Create Domain
+  // | (Node<CreateTextV2Data & Record<string, unknown>> & {
+  //     type: "createTextV2";
+  //   })
   | (Node<CreateTextData & Record<string, unknown>> & {
       type: "createText";
-    })
-  | (Node<CreateTextV2Data & Record<string, unknown>> & {
-      type: "createTextV2";
     })
 
   // View Domain

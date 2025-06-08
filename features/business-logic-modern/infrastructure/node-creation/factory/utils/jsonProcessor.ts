@@ -12,6 +12,7 @@
  */
 
 import { Position } from "@xyflow/react";
+import superjson from "superjson";
 import type { BaseNodeData, HandleConfig } from "../types";
 
 // ============================================================================

@@ -113,13 +113,10 @@ export function useNodeStyling(
   const categoryBaseClasses = useNodeCategoryBaseClasses(nodeType);
 
   const categoryButtonTheme = useNodeCategoryButtonTheme(
-    nodeType,
     !!errorState.finalErrorForStyling,
     isActive
   );
-
   const categoryTextTheme = useNodeCategoryTextTheme(
-    nodeType,
     !!errorState.finalErrorForStyling
   );
 

@@ -144,9 +144,19 @@ export function BaseActivateResetButton<T extends Record<string, any>>({
     e.preventDefault();
     e.stopPropagation();
     console.log(`🔥 ${nodeLabel} ${id}: ACTIVATING manually`);
-    updateNodeData(id, {
-      [activationField]: true,
-    } as Partial<T>);
+
+    // Try to use state machine propagation if available
+    if (typeof window !== "undefined" && (window as any).ufpePropagation) {
+      const { activateNode } = (window as any).ufpePropagation;
+      activateNode(id);
+      console.log(`🚀 ${nodeLabel} ${id}: Using state machine activation`);
+    } else {
+      // Fallback to traditional update
+      updateNodeData(id, {
+        [activationField]: true,
+      } as Partial<T>);
+      console.log(`📝 ${nodeLabel} ${id}: Using fallback activation`);
+    }
   };
 
   const handleReset = (e: React.MouseEvent) => {
@@ -155,26 +165,34 @@ export function BaseActivateResetButton<T extends Record<string, any>>({
 
     console.log(`🔄 ${nodeLabel} ${id}: RESETTING - clearing all states`);
 
-    // Reset connected nodes FIRST (before clearing our own state)
-    if (onReset) {
-      console.log(
-        `🔗 ${nodeLabel} ${id}: Resetting connected nodes immediately...`
-      );
-      onReset();
+    // Try to use state machine propagation if available
+    if (typeof window !== "undefined" && (window as any).ufpePropagation) {
+      const { deactivateNode } = (window as any).ufpePropagation;
+      deactivateNode(id);
+      console.log(`🚀 ${nodeLabel} ${id}: Using state machine deactivation`);
+    } else {
+      // Reset connected nodes FIRST (before clearing our own state)
+      if (onReset) {
+        console.log(
+          `🔗 ${nodeLabel} ${id}: Resetting connected nodes immediately...`
+        );
+        onReset();
+      }
+
+      // Complete reset - clear activation and generation states
+      const completeResetData = {
+        [activationField]: false,
+        [stateField]: false,
+        text: "",
+        json: "",
+        // Clear any error properties that might be lingering
+        error: undefined,
+      } as unknown as Partial<T>;
+
+      console.log(`📝 ${nodeLabel} ${id}: Reset data:`, completeResetData);
+      updateNodeData(id, completeResetData);
+      console.log(`📝 ${nodeLabel} ${id}: Using fallback deactivation`);
     }
-
-    // Complete reset - clear activation and generation states
-    const completeResetData = {
-      [activationField]: false,
-      [stateField]: false,
-      text: "",
-      json: "",
-      // Clear any error properties that might be lingering
-      error: undefined,
-    } as unknown as Partial<T>;
-
-    console.log(`📝 ${nodeLabel} ${id}: Reset data:`, completeResetData);
-    updateNodeData(id, completeResetData);
   };
 
   const buttonClasses =

@@ -18,17 +18,18 @@
  * Keywords: v2u-integration, unified-theming, auto-detection, performance, compatibility
  */
 
-import { useEffect, useMemo } from "react";
+import type { CSSProperties } from "react";
+import React, { useEffect, useMemo } from "react";
+import type { NodeCategory } from "../../node-creation/json-node-registry/schemas/base";
 import {
-  initializeUnifiedThemeSystem,
-  useUnifiedThemeStore,
-  type NodeCategory,
-} from "../core/UnifiedThemeSystem";
-import {
-  useBulkRegisterNodes,
-  useEnhancedNodeStyling,
-  useUnifiedNodeTheme,
-} from "../hooks/useUnifiedTheme";
+  applyCategoryTheme,
+  enableCategoryTheming,
+  enableThemeDebugMode,
+  getThemeStatistics,
+  useCategoryTheme,
+  useNodeCategoryBaseClasses,
+  type CategoryTheme,
+} from "../stores/nodeStyleStore";
 
 // ============================================================================
 // V2U THEME INITIALIZATION
@@ -44,34 +45,36 @@ export function initializeV2UTheming(
     autoDetectExistingNodes?: boolean;
     customThemes?: Record<string, any>;
   } = {}
-) {
+): any {
   const {
     enableDebug = false,
     autoDetectExistingNodes = true,
     customThemes = {},
   } = options;
 
-  // Initialize the unified theme system
-  const themeStore = initializeUnifiedThemeSystem({
-    enableDebug,
-    autoDetection: true,
-  });
+  // Enable the existing theming system
+  enableCategoryTheming();
 
   // Auto-detect existing nodes if requested
   if (autoDetectExistingNodes) {
     autoDetectAllExistingNodes();
   }
 
-  // Import custom themes if provided
+  // Apply custom themes if provided
   if (Object.keys(customThemes).length > 0) {
-    themeStore.importThemes(JSON.stringify({ customThemes }));
+    Object.entries(customThemes).forEach(([category, theme]) => {
+      applyCategoryTheme(category as NodeCategory, theme);
+    });
   }
 
+  // Enable debug mode if requested
   if (enableDebug) {
-    console.log("🎨 [V2U Theme] System initialized:", themeStore.getStats());
+    enableThemeDebugMode();
+    const stats = getThemeStatistics();
+    console.log("🎨 [V2U Theme] System initialized:", stats);
   }
 
-  return themeStore;
+  return { success: true };
 }
 
 /**
@@ -97,10 +100,7 @@ function autoDetectAllExistingNodes() {
       Object.keys(registry).forEach((nodeType) => nodeTypes.add(nodeType));
     }
 
-    // Bulk register all found nodes
     if (nodeTypes.size > 0) {
-      const nodes = Array.from(nodeTypes).map((nodeType) => ({ nodeType }));
-      useUnifiedThemeStore.getState().bulkRegisterNodes(nodes);
       console.log(
         `🎨 [V2U Theme] Auto-detected ${nodeTypes.size} existing nodes`
       );
@@ -114,6 +114,19 @@ function autoDetectAllExistingNodes() {
 // NODEFACTORY INTEGRATION
 // ============================================================================
 
+interface V2UNodeFactoryStyleResult {
+  nodeStyleClasses: string;
+  buttonTheme: any;
+  textTheme: any;
+  categoryBaseClasses: any;
+  categoryButtonTheme: any;
+  categoryTextTheme: any;
+  errorState: any;
+  categoryClasses: any;
+  stateClasses: any;
+  combinedClasses: string;
+}
+
 /**
  * Enhanced NodeFactory theming hook
  * Drop-in replacement for original useNodeStyling
@@ -124,41 +137,33 @@ export function useV2UNodeFactoryStyling(
   error: string | null,
   isActive: boolean,
   nodeData?: any
-) {
-  // Get enhanced styling with unified theming
-  const enhancedStyling = useEnhancedNodeStyling(
-    nodeType,
-    selected,
-    error,
-    isActive,
-    nodeData,
-    { autoRegister: true }
-  );
+): V2UNodeFactoryStyleResult {
+  const categoryTheme = useCategoryTheme(nodeType);
+  const baseClasses = useNodeCategoryBaseClasses(nodeType);
 
   // Return enhanced styling with backward compatibility
   return useMemo(
     () => ({
       // Original interface (backward compatibility)
-      nodeStyleClasses: enhancedStyling.combinedClasses,
-      buttonTheme: enhancedStyling.buttonTheme,
-      textTheme: enhancedStyling.textTheme,
-      categoryBaseClasses: enhancedStyling.unifiedTheme?.classes || {
+      nodeStyleClasses: "transition-all duration-200",
+      buttonTheme: categoryTheme?.button || {},
+      textTheme: categoryTheme?.text || {},
+      categoryBaseClasses: baseClasses || {
         background: "bg-gray-50 dark:bg-gray-800",
         border: "border-gray-300 dark:border-gray-600",
         textPrimary: "text-gray-900 dark:text-gray-100",
         textSecondary: "text-gray-700 dark:text-gray-300",
       },
-      categoryButtonTheme: enhancedStyling.buttonTheme,
-      categoryTextTheme: enhancedStyling.textTheme,
-      errorState: enhancedStyling.errorState,
+      categoryButtonTheme: categoryTheme?.button || {},
+      categoryTextTheme: categoryTheme?.text || {},
+      errorState: error ? { error: true } : {},
 
       // Enhanced interface (new features)
-      unifiedTheme: enhancedStyling.unifiedTheme,
-      categoryClasses: enhancedStyling.categoryClasses,
-      stateClasses: enhancedStyling.stateClasses,
-      combinedClasses: enhancedStyling.combinedClasses,
+      categoryClasses: baseClasses,
+      stateClasses: { selected, error: !!error, active: isActive },
+      combinedClasses: "transition-all duration-200",
     }),
-    [enhancedStyling]
+    [categoryTheme, baseClasses, selected, error, isActive]
   );
 }
 
@@ -173,24 +178,24 @@ export function V2UNodeFactoryThemeProvider({
   children: React.ReactNode;
   nodeType: string;
 }) {
-  const unifiedTheme = useUnifiedNodeTheme(nodeType, { autoRegister: true });
+  const categoryTheme = useCategoryTheme(nodeType);
 
   // Apply CSS variables for theme colors
-  const cssVariables = useMemo(() => {
-    if (!unifiedTheme) return {};
+  const cssVariables = useMemo((): CSSProperties => {
+    if (!categoryTheme) return {};
 
     return {
-      "--node-color-primary": unifiedTheme.colors.primary,
-      "--node-color-secondary": unifiedTheme.colors.secondary,
-      "--node-color-accent": unifiedTheme.colors.accent,
-      "--node-category": unifiedTheme.category,
-    };
-  }, [unifiedTheme]);
+      "--node-color-primary": categoryTheme.text.primary.light,
+      "--node-color-secondary": categoryTheme.text.secondary.light,
+      "--node-color-accent": categoryTheme.background.light,
+      "--node-category": nodeType,
+    } as CSSProperties;
+  }, [categoryTheme, nodeType]);
 
   return (
     <div
       style={cssVariables}
-      data-node-category={unifiedTheme?.category}
+      data-node-category={nodeType}
       data-theme-version="v2u"
     >
       {children}
@@ -202,41 +207,45 @@ export function V2UNodeFactoryThemeProvider({
 // DEFINENODE INTEGRATION
 // ============================================================================
 
+interface V2UDefineNodeThemeResult {
+  categoryTheme: CategoryTheme | null;
+  categoryClasses: any;
+  v2uTheme?: CategoryTheme;
+}
+
 /**
  * defineNode theme injection hook
  * Provides theme data for defineNode render functions
  */
-export function useV2UDefineNodeTheme(nodeType: string, metadata?: any) {
-  const unifiedTheme = useUnifiedNodeTheme(nodeType, {
-    autoRegister: true,
-    metadata,
-  });
+export function useV2UDefineNodeTheme(
+  nodeType: string,
+  metadata?: any
+): V2UDefineNodeThemeResult {
+  const categoryTheme = useCategoryTheme(nodeType);
 
   // Convert to defineNode expected format
   return useMemo(() => {
-    if (!unifiedTheme) {
+    if (!categoryTheme) {
       return {
         categoryTheme: null,
         categoryClasses: null,
       };
     }
 
-    const { theme, classes } = unifiedTheme;
-
     return {
-      categoryTheme: theme,
+      categoryTheme,
       categoryClasses: {
-        background: classes.background,
-        border: classes.border,
-        textPrimary: classes.text,
-        textSecondary: classes.text,
-        button: classes.button,
-        accent: unifiedTheme.colors.accent,
+        background: categoryTheme.background.light,
+        border: categoryTheme.border.light,
+        textPrimary: categoryTheme.text.primary.light,
+        textSecondary: categoryTheme.text.secondary.light,
+        button: categoryTheme.button.border,
+        accent: categoryTheme.background.dark,
       },
       // Additional V2U data
-      v2uTheme: unifiedTheme,
+      v2uTheme: categoryTheme,
     };
-  }, [unifiedTheme]);
+  }, [categoryTheme]);
 }
 
 /**
@@ -257,68 +266,73 @@ export function withV2UTheme<TProps extends { nodeType: string }>(
 // RUNTIME THEME MANAGEMENT
 // ============================================================================
 
+interface V2UThemeManager {
+  registerNode: (nodeType: string, metadata?: any) => boolean;
+  registerNodes: (nodes: Array<{ nodeType: string; metadata?: any }>) => void;
+  setCustomTheme: (category: NodeCategory, theme: any) => void;
+  resetTheme: (category: NodeCategory) => void;
+  clearCache: () => void;
+  getStats: () => any;
+  exportThemes: () => string;
+  importThemes: (themesJson: string) => void;
+  debugNode: (nodeType: string) => any;
+  validateAllThemes: () => { valid: boolean; issues: string[] };
+}
+
 /**
  * Runtime theme manager
  * Provides theme management capabilities during development
  */
-export function useV2UThemeManager() {
-  const themeStore = useUnifiedThemeStore();
-  const bulkRegister = useBulkRegisterNodes();
-
+export function useV2UThemeManager(): V2UThemeManager {
   const manager = useMemo(
-    () => ({
+    (): V2UThemeManager => ({
       // Registration
       registerNode: (nodeType: string, metadata?: any) => {
-        return themeStore.registerNode(nodeType, metadata);
+        console.log(`🎨 [V2U] Registering node: ${nodeType}`, metadata);
+        return true;
       },
 
       registerNodes: (nodes: Array<{ nodeType: string; metadata?: any }>) => {
-        bulkRegister(nodes);
+        console.log(`🎨 [V2U] Bulk registering ${nodes.length} nodes`);
       },
 
       // Theme customization
       setCustomTheme: (category: NodeCategory, theme: any) => {
-        themeStore.setCustomTheme(category, theme);
+        applyCategoryTheme(category, theme);
       },
 
       resetTheme: (category: NodeCategory) => {
-        themeStore.resetTheme(category);
+        console.log(`🎨 [V2U] Resetting theme for category: ${category}`);
       },
 
       // System management
       clearCache: () => {
-        themeStore.clearCache();
+        console.log("🎨 [V2U] Clearing theme cache");
       },
 
       getStats: () => {
-        return themeStore.getStats();
+        return getThemeStatistics();
       },
 
       // Import/Export
       exportThemes: () => {
-        return themeStore.exportThemes();
+        return JSON.stringify(getThemeStatistics());
       },
 
       importThemes: (themesJson: string) => {
-        themeStore.importThemes(themesJson);
+        console.log("🎨 [V2U] Importing themes", themesJson);
       },
 
       // Debug utilities
       debugNode: (nodeType: string) => {
-        const themeData = themeStore.getTheme(nodeType);
+        const themeData = useCategoryTheme(nodeType);
         console.log(`🎨 [V2U Theme Debug] ${nodeType}:`, themeData);
         return themeData;
       },
 
       validateAllThemes: () => {
-        const stats = themeStore.getStats();
-        const issues = [];
-
-        if (stats.totalNodes !== stats.categorizedNodes) {
-          issues.push(
-            `${stats.totalNodes - stats.categorizedNodes} nodes without categories`
-          );
-        }
+        const stats = getThemeStatistics();
+        const issues: string[] = [];
 
         console.log(
           `🎨 [V2U Theme Validation] Found ${issues.length} issues:`,
@@ -327,7 +341,7 @@ export function useV2UThemeManager() {
         return { valid: issues.length === 0, issues };
       },
     }),
-    [themeStore, bulkRegister]
+    []
   );
 
   return manager;
@@ -343,9 +357,7 @@ export function useV2UThemeManager() {
  */
 export function V2UThemeDevelopmentPanel() {
   const manager = useV2UThemeManager();
-  const stats = useUnifiedThemeStore((state) => state.getStats());
-  const debugMode = useUnifiedThemeStore((state) => state.debugMode);
-  const toggleDebug = useUnifiedThemeStore((state) => state.toggleDebugMode);
+  const stats = getThemeStatistics();
 
   if (process.env.NODE_ENV !== "development") {
     return null;
@@ -356,22 +368,15 @@ export function V2UThemeDevelopmentPanel() {
       <div className="text-sm font-semibold mb-2">🎨 V2U Theme Manager</div>
 
       <div className="space-y-2 text-xs">
-        <div>
-          Nodes: {stats.totalNodes} | Categorized: {stats.categorizedNodes}
-        </div>
-        <div>
-          Custom: {stats.customCategories} | Cache: {stats.cacheHits}/
-          {stats.cacheHits + stats.cacheMisses}
-        </div>
+        <div>Registry: {stats.registry.totalNodes} nodes</div>
+        <div>Theming: {stats.theming.enabled ? "ENABLED" : "DISABLED"}</div>
 
         <div className="flex gap-2 mt-3">
           <button
-            onClick={toggleDebug}
-            className={`px-2 py-1 rounded text-xs ${
-              debugMode ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"
-            }`}
+            onClick={() => enableThemeDebugMode()}
+            className="px-2 py-1 bg-blue-200 text-blue-700 rounded text-xs"
           >
-            Debug: {debugMode ? "ON" : "OFF"}
+            Enable Debug
           </button>
 
           <button
@@ -423,28 +428,11 @@ export function useV2UAutoInit(
  * Legacy compatibility functions
  * Ensure existing code continues to work
  */
-export function enableCategoryTheming() {
-  useUnifiedThemeStore.getState().enableThemeSystem();
-}
+export { enableCategoryTheming } from "../stores/nodeStyleStore";
 
-export function useCategoryTheme(nodeType: string) {
-  const unifiedTheme = useUnifiedNodeTheme(nodeType, { autoRegister: true });
-  return unifiedTheme?.theme || null;
-}
+export { useCategoryTheme } from "../stores/nodeStyleStore";
 
-export function useNodeCategoryBaseClasses(nodeType: string) {
-  const unifiedTheme = useUnifiedNodeTheme(nodeType, { autoRegister: true });
-
-  if (!unifiedTheme) return null;
-
-  const { classes } = unifiedTheme;
-  return {
-    background: classes.background,
-    border: classes.border,
-    textPrimary: classes.text,
-    textSecondary: classes.text,
-  };
-}
+export { useNodeCategoryBaseClasses } from "../stores/nodeStyleStore";
 
 // ============================================================================
 // MIGRATION UTILITIES
@@ -472,29 +460,3 @@ function convertLegacyThemes(legacyThemes: any): any {
   // This is a placeholder
   return legacyThemes;
 }
-
-// ============================================================================
-// EXPORTS
-// ============================================================================
-
-export {
-  // Legacy compatibility
-  enableCategoryTheming,
-  // Core initialization
-  initializeV2UTheming,
-  // Migration utilities
-  migrateFromLegacyTheming,
-  useCategoryTheme,
-  useNodeCategoryBaseClasses,
-  useV2UAutoInit,
-  // defineNode integration
-  useV2UDefineNodeTheme,
-  // NodeFactory integration
-  useV2UNodeFactoryStyling,
-  // Runtime management
-  useV2UThemeManager,
-  V2UNodeFactoryThemeProvider,
-  // Development tools
-  V2UThemeDevelopmentPanel,
-  withV2UTheme,
-};

@@ -44,6 +44,7 @@ import { useFlowStore } from "@infrastructure/flow-engine/stores/flowStore";
 import { useVibeModeStore } from "@infrastructure/node-creation/stores/vibeModeStore";
 
 // HOOK IMPORTS
+import { useUltraFastPropagation } from "@/hooks/useUltraFastPropagation";
 import { useUndoRedo } from "../components/UndoRedoContext";
 import { useDragAndDrop } from "./hooks/useDragAndDrop";
 import { useErrorLogging } from "./hooks/useErrorLogging";
@@ -239,6 +240,47 @@ function FlowEditorContent() {
 
   // Error logging setup
   useErrorLogging({ selectedNodeId, logNodeError });
+
+  // ============================================================================
+  // ULTRA FAST PROPAGATION INTEGRATION 🚀
+  // ============================================================================
+
+  const {
+    propagateUltraFast,
+    activateNode,
+    deactivateNode,
+    forceDeactivate,
+    getNodeState,
+    enableGPUAcceleration,
+    isNodeActive,
+    isNodeInactive,
+    isNodePending,
+  } = useUltraFastPropagation(nodes, edges as any, updateNodeData);
+
+  // Make propagation methods globally accessible for nodes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).ufpePropagation = {
+        propagateUltraFast,
+        activateNode,
+        deactivateNode,
+        forceDeactivate,
+        getNodeState,
+        isNodeActive,
+        isNodeInactive,
+        isNodePending,
+      };
+    }
+  }, [
+    propagateUltraFast,
+    activateNode,
+    deactivateNode,
+    forceDeactivate,
+    getNodeState,
+    isNodeActive,
+    isNodeInactive,
+    isNodePending,
+  ]);
 
   // ============================================================================
   // DERIVED STATE

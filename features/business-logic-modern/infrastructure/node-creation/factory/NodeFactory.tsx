@@ -51,8 +51,11 @@
 
 // Initialize theme system
 import "../../theming/init/themeInitializer";
-// UFPE 🔌
-import { UltraFastPropagationEngine } from "@/features/business-logic-modern/infrastructure/node-creation/factory/visuals/UltraFastPropagationEngine";
+// UFPE 🔌 - Enhanced State Machine Integration
+import {
+  NodeState,
+  UltraFastPropagationEngine,
+} from "@/features/business-logic-modern/infrastructure/node-creation/factory/visuals/UltraFastPropagationEngine";
 
 // ============================================================================
 // IMPORTS
@@ -430,32 +433,65 @@ let globalStyleSentinel = false;
 
 // Static CSS that gets inlined at build time for better SSR performance
 const ENTERPRISE_STYLES = `
-  /* Enterprise Node Factory Styles */
-    .node-active-instant {
-      box-shadow: 0 0 8px 2px rgba(34, 197, 94, 0.8);
-      transform: translateZ(0) scale(1.02);
-      transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+  /* Enterprise Node Factory Styles with State Machine Support */
+  .node-active-instant {
+    box-shadow: 0 0 8px 2px rgba(34, 197, 94, 0.8);
+    transform: translateZ(0) scale(1.02);
+    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 
-    .node-inactive-instant {
-      box-shadow: none;
-      transform: translateZ(0) scale(1);
-      opacity: 0.9;
-      transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+  .node-inactive-instant {
+    box-shadow: none;
+    transform: translateZ(0) scale(1);
+    opacity: 0.9;
+    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 
-    [data-enterprise-factory="true"] {
-      will-change: transform, opacity, box-shadow;
-      transform: translateZ(0);
+  /* State Machine Visual Feedback */
+  [data-node-state="ACTIVE"] {
+    border: 2px solid rgba(34, 197, 94, 0.8);
+    box-shadow: 0 0 12px 3px rgba(34, 197, 94, 0.4);
+  }
+
+  [data-node-state="INACTIVE"] {
+    border: 2px solid rgba(156, 163, 175, 0.3);
+    opacity: 0.8;
+  }
+
+  [data-node-state="PENDING_ACTIVATION"] {
+    border: 2px solid rgba(255, 193, 7, 0.8);
+    box-shadow: 0 0 8px 2px rgba(255, 193, 7, 0.3);
+    animation: pending-pulse 1.5s ease-in-out infinite;
+  }
+
+  [data-node-state="PENDING_DEACTIVATION"] {
+    border: 2px solid rgba(255, 107, 0, 0.8);
+    box-shadow: 0 0 8px 2px rgba(255, 107, 0, 0.3);
+    animation: deactivating-pulse 1s ease-in-out infinite;
+  }
+
+  @keyframes pending-pulse {
+    0%, 100% { opacity: 0.8; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.01); }
+  }
+
+  @keyframes deactivating-pulse {
+    0%, 100% { opacity: 0.9; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(0.99); }
+  }
+
+  [data-enterprise-factory="true"] {
+    will-change: transform, opacity, box-shadow;
+    transform: translateZ(0);
     backface-visibility: hidden;
     perspective: 1000px;
-    }
+  }
 
   .safety-indicator {
-      background: linear-gradient(45deg, #10B981, #059669);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      backdrop-filter: blur(4px);
-    }
+    background: linear-gradient(45deg, #10B981, #059669);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    backdrop-filter: blur(4px);
+  }
 
   .loading-placeholder {
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -583,6 +619,14 @@ interface SafetyLayerInstance {
   scheduler?: SchedulerFunction;
   parkingManager: NodeParkingManager;
   propagationEngine: UltraFastPropagationEngine;
+  // State Machine Integration
+  getNodeState: (nodeId: string) => NodeState | undefined;
+  forceDeactivate: (nodeId: string) => void;
+  propagateUltraFast: (
+    nodeId: string,
+    active: boolean,
+    isButtonDriven?: boolean
+  ) => void;
 }
 
 // ============================================================================
@@ -841,6 +885,27 @@ export function SafetyLayersProvider({
     scheduler,
     parkingManager,
     propagationEngine,
+    // State Machine Integration Methods
+    getNodeState: (nodeId: string) => propagationEngine.getNodeState(nodeId),
+    forceDeactivate: (nodeId: string) => {
+      const state = new SafeStateLayer();
+      propagationEngine.forceDeactivate(nodeId, (id, data) =>
+        state.updateState(id, data)
+      );
+    },
+    propagateUltraFast: (
+      nodeId: string,
+      active: boolean,
+      isButtonDriven = true
+    ) => {
+      const state = new SafeStateLayer();
+      propagationEngine.propagate(
+        nodeId,
+        active,
+        (id, data) => state.updateState(id, data),
+        isButtonDriven
+      );
+    },
   };
 
   return (
@@ -868,6 +933,51 @@ function useSafetyLayers(): SafetyLayerInstance {
   return context;
 }
 
+/**
+ * Hook for easy access to state machine functionality
+ * @param nodeId - The node ID to control
+ * @returns State machine control functions
+ * @description Hook for easy access to state machine functionality
+ * @example
+ * ```ts
+ * const { propagateUltraFast, forceDeactivate, getNodeState, currentState } = useNodeStateMachine(nodeId);
+ * ```
+ */
+export function useNodeStateMachine(nodeId: string) {
+  const { propagateUltraFast, forceDeactivate, getNodeState } =
+    useSafetyLayers();
+  const [currentState, setCurrentState] = useState<NodeState | undefined>(
+    undefined
+  );
+
+  // Update current state when it changes
+  useEffect(() => {
+    const updateState = () => {
+      const state = getNodeState(nodeId);
+      setCurrentState(state);
+    };
+
+    updateState(); // Initial state
+
+    // Poll for state changes (in a real implementation you'd use an observable)
+    const interval = setInterval(updateState, 100);
+    return () => clearInterval(interval);
+  }, [nodeId, getNodeState]);
+
+  return {
+    propagateUltraFast: (active: boolean, isButtonDriven = true) =>
+      propagateUltraFast(nodeId, active, isButtonDriven),
+    forceDeactivate: () => forceDeactivate(nodeId),
+    getNodeState: () => getNodeState(nodeId),
+    currentState,
+    // State helper functions
+    isActive: currentState === NodeState.ACTIVE,
+    isInactive: currentState === NodeState.INACTIVE,
+    isPendingActivation: currentState === NodeState.PENDING_ACTIVATION,
+    isPendingDeactivation: currentState === NodeState.PENDING_DEACTIVATION,
+  };
+}
+
 // ============================================================================
 // GLOBAL SAFETY INSTANCES (Backward Compatibility)
 // ============================================================================
@@ -880,12 +990,34 @@ function useSafetyLayers(): SafetyLayerInstance {
  * const globalSafetyLayers = new SafetyLayersProvider();
  * ```
  */
+const _propagationEngine = new UltraFastPropagationEngine();
+const _state = new SafeStateLayer();
+
 const globalSafetyLayers: SafetyLayerInstance = {
-  state: new SafeStateLayer(),
+  state: _state,
   dataFlow: new SafeDataFlowController(),
   scheduler: createScheduler(),
   parkingManager: createNodeParkingManager(),
-  propagationEngine: new UltraFastPropagationEngine(),
+  propagationEngine: _propagationEngine,
+  // State Machine Integration Methods
+  getNodeState: (nodeId: string) => _propagationEngine.getNodeState(nodeId),
+  forceDeactivate: (nodeId: string) => {
+    _propagationEngine.forceDeactivate(nodeId, (id, data) =>
+      _state.updateState(id, data)
+    );
+  },
+  propagateUltraFast: (
+    nodeId: string,
+    active: boolean,
+    isButtonDriven = true
+  ) => {
+    _propagationEngine.propagate(
+      nodeId,
+      active,
+      (id, data) => _state.updateState(id, data),
+      isButtonDriven
+    );
+  },
 };
 
 // ============================================================================
@@ -1288,21 +1420,17 @@ export function createNodeComponent<T extends BaseNodeData>(
       connectionData.allNodes
     );
 
-    // Enterprise safety integration
+    // Enhanced State Machine Integration 🎯
     useEffect(() => {
-      const { state, dataFlow, propagationEngine } = safetyLayersRef.current;
+      const { state, dataFlow, propagationEngine, propagateUltraFast } =
+        safetyLayersRef.current;
 
       // Register with safety layers
       state.registerNode(id, nodeState.data as T, nodeState.updateNodeDataSafe);
       dataFlow.setNodeActivation(id, processingState.isActive);
 
-      // 🔌 UFPE fan-out & visual flash
-      propagationEngine.propagate(
-        id,
-        processingState.isActive,
-        (targetId: string, partial: Partial<{ isActive: boolean }>) =>
-          state.updateState(targetId, partial as any)
-      );
+      // Initialize node in state machine and propagate with deterministic transitions
+      propagateUltraFast(id, processingState.isActive, false); // Not button-driven for initial state
 
       // Cleanup on unmount
       return () => {
@@ -1316,6 +1444,28 @@ export function createNodeComponent<T extends BaseNodeData>(
       nodeState.data,
       nodeState.updateNodeDataSafe,
     ]);
+
+    // Listen for state machine state changes and apply visual feedback
+    useEffect(() => {
+      const { getNodeState } = safetyLayersRef.current;
+      const currentNodeState = getNodeState(id);
+
+      if (currentNodeState !== undefined) {
+        // Apply visual feedback based on state machine state
+        const element = document.querySelector(`[data-id="${id}"]`);
+        if (element) {
+          element.setAttribute("data-node-state", currentNodeState);
+
+          // Debug state transitions
+          if (
+            typeof window !== "undefined" &&
+            window.location?.search?.includes("debug=factory")
+          ) {
+            console.log(`🏭 NodeFactory ${id}: State = ${currentNodeState}`);
+          }
+        }
+      }
+    }, [id, processingState.isActive]);
 
     // Render enterprise node with all optimizations
     /**
@@ -1433,6 +1583,12 @@ export {
 // Export safety layers for advanced usage
 export { globalSafetyLayers, SafeDataFlowController, SafeStateLayer };
 
+// Export state machine types and utilities
+export {
+  NodeState,
+  TransitionEvent,
+} from "@/features/business-logic-modern/infrastructure/node-creation/factory/visuals/UltraFastPropagationEngine";
+
 // Export new advanced optimization utilities
 export {
   DeferUntilIdle,
@@ -1491,4 +1647,76 @@ export function cleanupNode(nodeId: string): void {
   propagationEngine.cleanupNode(nodeId);
   state.cleanup(nodeId);
   dataFlow.cleanup(nodeId);
+}
+
+// ============================================================================
+// STATE MACHINE UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Propagate node state with deterministic state machine logic
+ * @param nodeId - Node to propagate from
+ * @param active - Whether to activate or deactivate
+ * @param isButtonDriven - Whether this is user-initiated (default: true)
+ * @description Propagate node state with deterministic state machine logic
+ * @example
+ * ```ts
+ * propagateNodeState("node-1", true, true); // User clicked activate
+ * propagateNodeState("node-2", false, false); // Auto-deactivation
+ * ```
+ */
+export function propagateNodeState(
+  nodeId: string,
+  active: boolean,
+  isButtonDriven: boolean = true
+): void {
+  const { propagateUltraFast } = globalSafetyLayers;
+  propagateUltraFast(nodeId, active, isButtonDriven);
+}
+
+/**
+ * Force deactivate a node (ignores multiple input logic)
+ * @param nodeId - Node to force deactivate
+ * @description Force deactivate a node (ignores multiple input logic)
+ * @example
+ * ```ts
+ * forceDeactivateNode("node-1"); // Emergency stop
+ * ```
+ */
+export function forceDeactivateNode(nodeId: string): void {
+  const { forceDeactivate } = globalSafetyLayers;
+  forceDeactivate(nodeId);
+}
+
+/**
+ * Get current state machine state of a node
+ * @param nodeId - Node to check
+ * @returns Current NodeState or undefined if not found
+ * @description Get current state machine state of a node
+ * @example
+ * ```ts
+ * const state = getNodeState("node-1");
+ * if (state === NodeState.ACTIVE) { ... }
+ * ```
+ */
+export function getNodeState(nodeId: string): NodeState | undefined {
+  const { getNodeState } = globalSafetyLayers;
+  return getNodeState(nodeId);
+}
+
+/**
+ * Check if a node is in an active state (ACTIVE or PENDING_DEACTIVATION)
+ * @param nodeId - Node to check
+ * @returns True if node is considered active
+ * @description Check if a node is in an active state
+ * @example
+ * ```ts
+ * if (isNodeActive("node-1")) {
+ *   // Node is processing data
+ * }
+ * ```
+ */
+export function isNodeActive(nodeId: string): boolean {
+  const state = getNodeState(nodeId);
+  return state === NodeState.ACTIVE || state === NodeState.PENDING_DEACTIVATION;
 }

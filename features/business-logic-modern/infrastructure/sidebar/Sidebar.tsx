@@ -198,7 +198,10 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
           const flowPosition = screenToFlowPosition(targetPosition);
 
           // STEP 5: Create node using factory with registry defaults
-          const factoryNode = createNode(validNodeType, flowPosition);
+          const factoryNode = createNode(
+            validNodeType as NodeType,
+            flowPosition
+          );
 
           // STEP 6: Enhance factory node with registry metadata (preserve original structure)
           if (metadata) {
@@ -229,7 +232,7 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
           }
 
           // STEP 9: Optional callback
-          onNodeCreated?.(validNodeType, factoryNode.id);
+          onNodeCreated?.(validNodeType as NodeType, factoryNode.id);
 
           return true;
         } catch (error) {

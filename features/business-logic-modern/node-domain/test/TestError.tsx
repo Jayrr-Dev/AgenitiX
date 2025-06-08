@@ -73,20 +73,36 @@ const SimpleActivateButton = ({
     e.preventDefault();
     e.stopPropagation();
 
-    if (isActive) {
-      // Reset/deactivate
-      updateNodeData(id, {
-        isGeneratingError: false,
-        isManuallyActivated: false,
-        text: "",
-        json: "",
-      });
+    // Try to use state machine propagation if available
+    if (typeof window !== "undefined" && (window as any).ufpePropagation) {
+      const { activateNode, deactivateNode } = (window as any).ufpePropagation;
+
+      if (isActive) {
+        deactivateNode(id);
+        console.log(`🚀 TestError ${id}: Using state machine deactivation`);
+      } else {
+        activateNode(id);
+        console.log(`🚀 TestError ${id}: Using state machine activation`);
+      }
     } else {
-      // Activate
-      updateNodeData(id, {
-        isGeneratingError: true,
-        isManuallyActivated: true,
-      });
+      // Fallback to traditional update
+      if (isActive) {
+        // Reset/deactivate
+        updateNodeData(id, {
+          isGeneratingError: false,
+          isManuallyActivated: false,
+          text: "",
+          json: "",
+        });
+        console.log(`📝 TestError ${id}: Using fallback deactivation`);
+      } else {
+        // Activate
+        updateNodeData(id, {
+          isGeneratingError: true,
+          isManuallyActivated: true,
+        });
+        console.log(`📝 TestError ${id}: Using fallback activation`);
+      }
     }
   };
 

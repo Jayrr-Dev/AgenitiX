@@ -3,18 +3,16 @@
 // ULTRA-FAST PROPAGATION ENGINE  ★  Enterprise-grade data-flow processor
 // ============================================================================
 // This file consolidates the complete ultra-fast propagation system in a single
-// module.  For production you may wish to split each class into its own file,
-// e.g. `VisualPropagationLayer.ts`, but keeping everything here helps with
-// quick copy-paste testing.  All original commentary blocks are preserved.
+// module with deterministic state machine architecture.
 // ----------------------------------------------------------------------------
 // • GPU-accelerated dual-layer visual feedback (0.1 ms)
-// • Instant signal propagation (≤ 0.01 ms)
+// • Deterministic state machine transitions (no race conditions)
 // • Pre-computed network traversal (≈ 0.05 ms)
 // • Batched React state sync (next animation frame)
 // • Bullet-proof type-safety throughout
-// •  OPTIONAL - Split to modules for production
+// • Comprehensive error handling with recovery strategies
 // ----------------------------------------------------------------------------
-// Keywords: ultra-fast, propagation, GPU, caching, atomic-operations, performance
+// Keywords: ultra-fast, propagation, GPU, state-machine, atomic-operations, performance, error-handling
 // ============================================================================
 
 import { Connection, Node } from "@xyflow/react";
@@ -22,48 +20,235 @@ import { useCallback, useEffect, useRef } from "react";
 import { unstable_batchedUpdates } from "react-dom";
 
 // ============================================================================
+// 🎯 ERROR HANDLING & RECOVERY
+// ============================================================================
+
+/**
+ * Base error for the propagation engine for easy type checking.
+ */
+class PropagationEngineError extends Error {
+  constructor(message: string) {
+    super(`[UltraFastPropagationEngine] ${message}`);
+    this.name = "PropagationEngineError";
+  }
+}
+
+/**
+ * Error during pre-computation of propagation paths.
+ */
+class PropagationBuildError extends PropagationEngineError {
+  constructor(originalError: unknown) {
+    super(`Failed to build propagation paths.`);
+    this.name = "PropagationBuildError";
+    if (originalError instanceof Error) {
+      this.stack = originalError.stack;
+    }
+  }
+}
+
+/**
+ * Error during a visual update (DOM interaction).
+ */
+class VisualUpdateError extends PropagationEngineError {
+  constructor(
+    public nodeId: string,
+    public attemptedState: NodeState,
+    originalError: unknown
+  ) {
+    super(
+      `Failed to apply visual state '${attemptedState}' to node '${nodeId}'.`
+    );
+    this.name = "VisualUpdateError";
+    if (originalError instanceof Error) {
+      this.stack = originalError.stack;
+    }
+  }
+}
+
+/**
+ * Error during a state machine transition.
+ */
+class StateTransitionError extends PropagationEngineError {
+  constructor(
+    public nodeId: string,
+    public fromState: NodeState,
+    public event: TransitionEvent,
+    originalError: unknown
+  ) {
+    super(
+      `State transition failed for node '${nodeId}' from '${fromState}' on event '${event}'.`
+    );
+    this.name = "StateTransitionError";
+    if (originalError instanceof Error) {
+      this.stack = originalError.stack;
+    }
+  }
+}
+
+// ============================================================================
+// 🎯 STATE MACHINE DEFINITIONS
+// ============================================================================
+
+/**
+ * Node states in the propagation state machine
+ */
+enum NodeState {
+  INACTIVE = "INACTIVE",
+  PENDING_ACTIVATION = "PENDING_ACTIVATION",
+  ACTIVE = "ACTIVE",
+  PENDING_DEACTIVATION = "PENDING_DEACTIVATION",
+}
+
+/**
+ * Transition events that can occur
+ */
+enum TransitionEvent {
+  BUTTON_ACTIVATE = "BUTTON_ACTIVATE",
+  BUTTON_DEACTIVATE = "BUTTON_DEACTIVATE",
+  INPUT_ACTIVATED = "INPUT_ACTIVATED",
+  INPUT_DEACTIVATED = "INPUT_DEACTIVATED",
+  FORCE_DEACTIVATE = "FORCE_DEACTIVATE",
+}
+
+/**
+ * State transition rules - defines valid transitions and their outcomes
+ */
+const STATE_TRANSITIONS: Record<
+  NodeState,
+  Partial<Record<TransitionEvent, NodeState>>
+> = {
+  [NodeState.INACTIVE]: {
+    [TransitionEvent.BUTTON_ACTIVATE]: NodeState.ACTIVE,
+    [TransitionEvent.INPUT_ACTIVATED]: NodeState.ACTIVE,
+  },
+  [NodeState.PENDING_ACTIVATION]: {
+    [TransitionEvent.BUTTON_ACTIVATE]: NodeState.ACTIVE,
+    [TransitionEvent.INPUT_ACTIVATED]: NodeState.ACTIVE,
+    [TransitionEvent.BUTTON_DEACTIVATE]: NodeState.INACTIVE,
+    [TransitionEvent.FORCE_DEACTIVATE]: NodeState.INACTIVE,
+  },
+  [NodeState.ACTIVE]: {
+    [TransitionEvent.BUTTON_DEACTIVATE]: NodeState.INACTIVE,
+    [TransitionEvent.INPUT_DEACTIVATED]: NodeState.PENDING_DEACTIVATION,
+    [TransitionEvent.FORCE_DEACTIVATE]: NodeState.INACTIVE,
+  },
+  [NodeState.PENDING_DEACTIVATION]: {
+    [TransitionEvent.BUTTON_ACTIVATE]: NodeState.ACTIVE,
+    [TransitionEvent.INPUT_ACTIVATED]: NodeState.ACTIVE,
+    [TransitionEvent.BUTTON_DEACTIVATE]: NodeState.INACTIVE,
+    [TransitionEvent.FORCE_DEACTIVATE]: NodeState.INACTIVE,
+  },
+};
+
+/**
+ * Node state machine instance
+ */
+interface NodeStateMachine {
+  id: string;
+  state: NodeState;
+  activeInputs: Set<string>;
+  lastTransition: TransitionEvent | null;
+  transitionTimestamp: number;
+}
+
+// ============================================================================
 // 1️⃣  VISUAL UPDATE LAYER (direct DOM - 0.1 ms)
 // ============================================================================
 
 /**
- * Handles ultra-fast CSS-based visual feedback.  Manipulating class-lists and
- * CSS custom properties avoids React reconciliation & forces GPU rasterization.
+ * Handles ultra-fast CSS-based visual feedback with state-aware updates
  */
 class VisualPropagationLayer {
   private styleSheet: CSSStyleSheet | null = null;
-  private visualStates = new Map<string, boolean>();
+  private visualStates = new Map<string, NodeState>();
   private ruleCache = new Map<string, number>(); // <selector, css-rule-index>
+  private onError: (error: PropagationEngineError) => void;
 
-  constructor() {
+  constructor(onError: (error: PropagationEngineError) => void) {
+    this.onError = onError;
     this.setupGPUAcceleration();
   }
 
-  /** Update visual state immediately (⚡ 0.1 ms). */
-  updateVisualState(nodeId: string, isActive: boolean) {
-    this.visualStates.set(nodeId, isActive);
-    this.applyInstantVisual(nodeId, isActive);
+  /** Update visual state based on state machine state (⚡ 0.1 ms). */
+  updateVisualState(nodeId: string, state: NodeState) {
+    const previousState = this.visualStates.get(nodeId);
+    if (previousState === state) return; // No visual change needed
+
+    this.visualStates.set(nodeId, state);
+    this.applyInstantVisual(nodeId, state);
   }
 
   // ------------------------------------------------------------------------
   // Internal helpers
   // ------------------------------------------------------------------------
 
-  private applyInstantVisual(nodeId: string, isActive: boolean) {
-    // SSR safety check - only run in browser environment
-    if (typeof window === "undefined") return;
-    const element = document.querySelector(`[data-id="${nodeId}"]`);
-    if (!element) return;
+  private applyInstantVisual(nodeId: string, state: NodeState) {
+    try {
+      // SSR safety check - only run in browser environment
+      if (typeof window === "undefined") return;
+      const element = document.querySelector(`[data-id="${nodeId}"]`);
+      if (!element) return;
 
-    // Direct class toggle is faster than setAttribute under high churn.
-    element.classList.toggle("node-active-instant", isActive);
-    element.classList.toggle("node-inactive-instant", !isActive);
+      const htmlEl = element as HTMLElement;
 
-    const htmlEl = element as HTMLElement;
-    htmlEl.style.setProperty("--activation-state", isActive ? "1" : "0");
-    htmlEl.style.setProperty("--activation-intensity", isActive ? "1" : "0");
+      // Clear all state classes first
+      element.classList.remove(
+        "node-active-instant",
+        "node-inactive-instant",
+        "node-pending-activation",
+        "node-pending-deactivation"
+      );
+
+      // Apply state-specific visuals
+      switch (state) {
+        case NodeState.ACTIVE:
+          element.classList.add("node-active-instant");
+          htmlEl.style.setProperty("--activation-state", "1");
+          htmlEl.style.setProperty("--activation-intensity", "1");
+          break;
+
+        case NodeState.INACTIVE:
+          element.classList.add("node-inactive-instant");
+          htmlEl.style.setProperty("--activation-state", "0");
+          htmlEl.style.setProperty("--activation-intensity", "0");
+          break;
+
+        case NodeState.PENDING_ACTIVATION:
+          element.classList.add("node-pending-activation");
+          htmlEl.style.setProperty("--activation-state", "0.5");
+          htmlEl.style.setProperty("--activation-intensity", "0.3");
+          break;
+
+        case NodeState.PENDING_DEACTIVATION:
+          element.classList.add("node-pending-deactivation");
+          htmlEl.style.setProperty("--activation-state", "0.8");
+          htmlEl.style.setProperty("--activation-intensity", "0.7");
+          break;
+      }
+    } catch (e) {
+      // Recovery Strategy: Log the error and attempt to reset the visual state.
+      this.onError(new VisualUpdateError(nodeId, state, e));
+      try {
+        const element = document.querySelector(`[data-id="${nodeId}"]`);
+        if (element) {
+          element.classList.remove(
+            "node-active-instant",
+            "node-pending-activation",
+            "node-pending-deactivation"
+          );
+          element.classList.add("node-inactive-instant");
+        }
+      } catch (recoveryError) {
+        // If recovery fails, log it but don't crash.
+        console.error(
+          `[UltraFastPropagationEngine] Visual recovery failed for node ${nodeId}`,
+          recoveryError
+        );
+      }
+    }
   }
 
-  /** Inject a dedicated <style> tag once per session. */
+  /** Inject a dedicated <style> tag with state-machine aware styles. */
   private setupGPUAcceleration() {
     // SSR safety check - only run in browser environment
     if (typeof window === "undefined") return;
@@ -78,7 +263,8 @@ class VisualPropagationLayer {
         will-change: transform, opacity, box-shadow;
         transition: all 0.1s ease-out;
       }
-      /* Instant activation visual feedback */
+
+      /* Active state */
       .node-active-instant {
         --glow-color: rgba(34, 197, 94, 0.8);
         --glow-intensity: var(--activation-intensity, 1);
@@ -88,12 +274,34 @@ class VisualPropagationLayer {
         transform: translateZ(0) scale(calc(1 + 0.02 * var(--activation-intensity)));
         border-radius: 10px;
       }
-      /* Instant deactivation */
+
+      /* Inactive state */
       .node-inactive-instant {
         box-shadow: none;
         transform: translateZ(0) scale(1);
         opacity: 0.95;
       }
+
+      /* Pending activation state */
+      .node-pending-activation {
+        --glow-color: rgba(255, 193, 7, 0.6);
+        --glow-intensity: var(--activation-intensity, 0.3);
+        box-shadow:
+          0 0 calc(6px * var(--glow-intensity)) calc(1px * var(--glow-intensity)) var(--glow-color);
+        transform: translateZ(0) scale(calc(1 + 0.01 * var(--activation-intensity)));
+        border-radius: 8px;
+      }
+
+      /* Pending deactivation state */
+      .node-pending-deactivation {
+        --glow-color: rgba(255, 107, 0, 0.7);
+        --glow-intensity: var(--activation-intensity, 0.7);
+        box-shadow:
+          0 0 calc(7px * var(--glow-intensity)) calc(1px * var(--glow-intensity)) var(--glow-color);
+        transform: translateZ(0) scale(calc(1 + 0.015 * var(--glow-intensity)));
+        border-radius: 9px;
+      }
+
       /* Ultra-smooth transitions */
       .node-component[data-propagation-layer="ultra-fast"] {
         transition: box-shadow 0.1s cubic-bezier(0.4, 0, 0.2, 1),
@@ -112,6 +320,7 @@ class VisualPropagationLayer {
 
 interface PropagationPathMeta {
   downstreamNodes: string[];
+  upstreamNodes: string[];
   depthMap: Map<string, number>;
 }
 
@@ -121,52 +330,81 @@ class PreComputedPropagationLayer {
 
   /** Build adjacency lists & depth maps (O(N + E)). */
   build(nodes: Node[], connections: Connection[]) {
-    const newHash = this.hashGraph(nodes, connections);
-    if (newHash === this.lastHash) return; // No structural change.
-    this.lastHash = newHash;
-    this.paths.clear();
+    try {
+      const newHash = this.hashGraph(nodes, connections);
+      if (newHash === this.lastHash) return; // No structural change.
+      this.lastHash = newHash;
+      this.paths.clear();
 
-    // Build forward adjacency.
-    const graph = new Map<string, string[]>();
-    connections.forEach(({ source, target }) => {
-      if (!graph.has(source)) graph.set(source, []);
-      graph.get(source)!.push(target);
-    });
+      // Build forward and reverse adjacency maps
+      const forwardGraph = new Map<string, string[]>();
+      const reverseGraph = new Map<string, string[]>();
 
-    // For every head-node compute DFS once.
-    nodes.forEach((n) => {
-      if (this.isHeadNode(n.id, connections)) {
+      connections.forEach(({ source, target }) => {
+        if (!forwardGraph.has(source)) forwardGraph.set(source, []);
+        if (!reverseGraph.has(target)) reverseGraph.set(target, []);
+
+        forwardGraph.get(source)!.push(target);
+        reverseGraph.get(target)!.push(source);
+      });
+
+      // Compute paths for all nodes
+      nodes.forEach((n) => {
         const downstream: string[] = [];
+        const upstream: string[] = [];
         const depth = new Map<string, number>();
-        const dfs = (id: string, d = 0) => {
+
+        // DFS for downstream nodes
+        const dfsDown = (id: string, d = 0) => {
           depth.set(id, d);
-          (graph.get(id) || []).forEach((child) => {
+          (forwardGraph.get(id) || []).forEach((child) => {
             downstream.push(child);
-            dfs(child, d + 1);
+            dfsDown(child, d + 1);
           });
         };
-        dfs(n.id);
-        this.paths.set(n.id, { downstreamNodes: downstream, depthMap: depth });
-      }
-    });
+
+        // DFS for upstream nodes
+        const dfsUp = (id: string, d = 0) => {
+          (reverseGraph.get(id) || []).forEach((parent) => {
+            if (!upstream.includes(parent)) {
+              upstream.push(parent);
+              dfsUp(parent, d + 1);
+            }
+          });
+        };
+
+        dfsDown(n.id);
+        dfsUp(n.id);
+
+        this.paths.set(n.id, {
+          downstreamNodes: downstream,
+          upstreamNodes: upstream,
+          depthMap: depth,
+        });
+      });
+    } catch (e) {
+      throw new PropagationBuildError(e);
+    }
   }
 
   /** Return downstream nodes sorted by ascending depth. */
-  propagate(headId: string): string[] {
-    const meta = this.paths.get(headId);
+  getDownstream(nodeId: string): string[] {
+    const meta = this.paths.get(nodeId);
     if (!meta) return [];
     return [...meta.downstreamNodes].sort(
       (a, b) => (meta.depthMap.get(a) ?? 0) - (meta.depthMap.get(b) ?? 0)
     );
   }
 
+  /** Return upstream nodes for a given node. */
+  getUpstream(nodeId: string): string[] {
+    const meta = this.paths.get(nodeId);
+    return meta?.upstreamNodes ?? [];
+  }
+
   // ------------------------------------------------------------------------
   // Internal helpers
   // ------------------------------------------------------------------------
-
-  private isHeadNode(id: string, connections: Connection[]) {
-    return !connections.some((c) => c.target === id);
-  }
 
   private hashGraph(nodes: Node[], connections: Connection[]) {
     const nodeIds = nodes
@@ -182,171 +420,220 @@ class PreComputedPropagationLayer {
 }
 
 // ============================================================================
-// 3️⃣  SIGNAL LAYER (observer pattern - 0.01 ms)
+// 3️⃣  STATE MACHINE LAYER (deterministic transitions)
 // ============================================================================
 
-interface Signal<T> {
-  readonly value: T;
-  subscribe(cb: (v: T) => void): () => void;
-  /** Internal helpers */
-  _set(newValue: T): void;
-}
-
-const createSignal = <T,>(initial: T): Signal<T> => {
-  let val = initial;
-  const subs = new Set<(v: T) => void>();
-  return {
-    get value() {
-      return val;
-    },
-    subscribe(cb) {
-      subs.add(cb);
-      return () => subs.delete(cb);
-    },
-    _set(newVal: T) {
-      if (newVal === val) return;
-      val = newVal;
-      subs.forEach((cb) => cb(val));
-    },
-  } as Signal<T>;
-};
-
-class SignalPropagationLayer {
-  private signals = new Map<string, Signal<boolean>>();
-  private edges = new Map<string, Set<string>>();
-  private reverseEdges = new Map<string, Set<string>>(); // target -> sources
+class StateMachinePropagationLayer {
+  private machines = new Map<string, NodeStateMachine>();
+  private connections = new Map<string, string[]>(); // source -> targets
+  private reverseConnections = new Map<string, string[]>(); // target -> sources
 
   // Callbacks for external integrations
-  private onVisualUpdate?: (id: string, active: boolean) => void;
+  private onVisualUpdate?: (id: string, state: NodeState) => void;
   private onStateUpdate?: (id: string, active: boolean) => void;
+  private onError?: (error: PropagationEngineError) => void;
 
-  createNode(id: string, active = false) {
-    this.signals.set(id, createSignal(active));
+  /**
+   * Initialize state machines for all nodes
+   */
+  initialize(nodes: Node[], connections: Connection[]) {
+    this.machines.clear();
+    this.connections.clear();
+    this.reverseConnections.clear();
+
+    // Create state machines for all nodes
+    nodes.forEach((node) => {
+      this.machines.set(node.id, {
+        id: node.id,
+        state: node.data?.isActive ? NodeState.ACTIVE : NodeState.INACTIVE,
+        activeInputs: new Set(),
+        lastTransition: null,
+        transitionTimestamp: Date.now(),
+      });
+    });
+
+    // Build connection maps
+    connections.forEach(({ source, target }) => {
+      if (!this.connections.has(source)) this.connections.set(source, []);
+      if (!this.reverseConnections.has(target))
+        this.reverseConnections.set(target, []);
+
+      this.connections.get(source)!.push(target);
+      this.reverseConnections.get(target)!.push(source);
+    });
   }
 
-  connect(source: string, target: string) {
-    if (!this.edges.has(source)) this.edges.set(source, new Set());
-    if (!this.reverseEdges.has(target))
-      this.reverseEdges.set(target, new Set());
+  /**
+   * Set callbacks for external integrations
+   */
+  setCallbacks(
+    onVisualUpdate: (id: string, state: NodeState) => void,
+    onStateUpdate: (id: string, active: boolean) => void,
+    onError: (error: PropagationEngineError) => void
+  ) {
+    this.onVisualUpdate = onVisualUpdate;
+    this.onStateUpdate = onStateUpdate;
+    this.onError = onError;
+  }
 
-    this.edges.get(source)!.add(target);
-    this.reverseEdges.get(target)!.add(source);
+  /**
+   * Trigger a state transition for a node
+   */
+  transition(
+    nodeId: string,
+    event: TransitionEvent,
+    sourceNodeId?: string
+  ): boolean {
+    const machine = this.machines.get(nodeId);
+    if (!machine) return false;
 
-    // Wire automatic propagation with safety checks
-    const srcSig = this.signals.get(source);
-    const tgtSig = this.signals.get(target);
-
-    // Only connect if both signals exist
-    if (srcSig && tgtSig) {
-      srcSig.subscribe((v) => {
-        if (v && !tgtSig.value) {
-          // Only activate if target is not already active
-          tgtSig._set(true);
-          this.onVisualUpdate?.(target, true);
-          this.onStateUpdate?.(target, true);
+    try {
+      const newState = STATE_TRANSITIONS[machine.state]?.[event];
+      if (!newState) {
+        // Invalid transition - log for debugging
+        if (
+          typeof window !== "undefined" &&
+          window.location?.search?.includes("debug=state")
+        ) {
+          console.warn(
+            `❌ Invalid transition: ${machine.state} + ${event} for node ${nodeId}`
+          );
         }
+        return false;
+      }
+
+      // Update active inputs tracking
+      if (sourceNodeId) {
+        if (event === TransitionEvent.INPUT_ACTIVATED) {
+          machine.activeInputs.add(sourceNodeId);
+        } else if (event === TransitionEvent.INPUT_DEACTIVATED) {
+          machine.activeInputs.delete(sourceNodeId);
+        }
+      }
+
+      // Special logic for pending deactivation
+      if (
+        machine.state === NodeState.PENDING_DEACTIVATION &&
+        event === TransitionEvent.INPUT_DEACTIVATED
+      ) {
+        // Only deactivate if no active inputs remain
+        if (machine.activeInputs.size > 0) {
+          return false; // Stay in current state
+        }
+        // Proceed with deactivation
+      }
+
+      // Apply the transition
+      const previousState = machine.state;
+      machine.state = newState;
+      machine.lastTransition = event;
+      machine.transitionTimestamp = Date.now();
+
+      // Debug logging
+      if (
+        typeof window !== "undefined" &&
+        window.location?.search?.includes("debug=state")
+      ) {
+        console.log(`🔄 ${nodeId}: ${previousState} → ${newState} (${event})`);
+      }
+
+      // Notify callbacks
+      this.onVisualUpdate?.(nodeId, newState);
+      this.onStateUpdate?.(nodeId, this.isNodeActive(newState));
+
+      // Propagate to connected nodes
+      this.propagateTransition(nodeId, newState, previousState);
+
+      return true;
+    } catch (e) {
+      // Recovery Strategy: Log the error and force the node to a safe INACTIVE state.
+      this.onError?.(new StateTransitionError(nodeId, machine.state, event, e));
+      this.forceDeactivateMachine(machine);
+      return false;
+    }
+  }
+
+  /**
+   * Get current state of a node
+   */
+  getNodeState(nodeId: string): NodeState | undefined {
+    return this.machines.get(nodeId)?.state;
+  }
+
+  /**
+   * Check if a node is considered "active" (for React state)
+   */
+  private isNodeActive(state: NodeState): boolean {
+    return (
+      state === NodeState.ACTIVE || state === NodeState.PENDING_DEACTIVATION
+    );
+  }
+
+  /**
+   * Propagate state changes to connected nodes
+   */
+  private propagateTransition(
+    nodeId: string,
+    newState: NodeState,
+    previousState: NodeState
+  ) {
+    const targets = this.connections.get(nodeId) ?? [];
+
+    // Handle activation propagation
+    if (newState === NodeState.ACTIVE && previousState !== NodeState.ACTIVE) {
+      targets.forEach((targetId) => {
+        this.transition(targetId, TransitionEvent.INPUT_ACTIVATED, nodeId);
+      });
+    }
+
+    // Handle deactivation propagation
+    if (newState === NodeState.INACTIVE && this.isNodeActive(previousState)) {
+      targets.forEach((targetId) => {
+        this.transition(targetId, TransitionEvent.INPUT_DEACTIVATED, nodeId);
       });
     }
   }
 
-  setActive(id: string, val: boolean, isButtonDriven = false) {
-    const sig = this.signals.get(id);
-    if (!sig) return;
+  /**
+   * Force deactivate a node and all its downstream nodes
+   */
+  forceDeactivate(nodeId: string) {
+    const visited = new Set<string>();
 
-    // Debug logging for troubleshooting
-    if (
-      typeof window !== "undefined" &&
-      window.location?.search?.includes("debug=signals")
-    ) {
-      console.log(
-        `🔄 Signal setActive: ${id} = ${val} (was: ${sig.value}) ${isButtonDriven ? "[BUTTON]" : "[AUTO]"}`
-      );
+    const deactivateRecursive = (id: string) => {
+      if (visited.has(id)) return;
+      visited.add(id);
+
+      this.transition(id, TransitionEvent.FORCE_DEACTIVATE);
+
+      const targets = this.connections.get(id) ?? [];
+      targets.forEach(deactivateRecursive);
+    };
+
+    deactivateRecursive(nodeId);
+  }
+
+  /**
+   * Recovery helper: forces a single state machine to INACTIVE.
+   */
+  private forceDeactivateMachine(machine: NodeStateMachine) {
+    if (machine.state !== NodeState.INACTIVE) {
+      const previousState = machine.state;
+      machine.state = NodeState.INACTIVE;
+      machine.activeInputs.clear();
+      machine.lastTransition = TransitionEvent.FORCE_DEACTIVATE;
+      machine.transitionTimestamp = Date.now();
+
+      this.onVisualUpdate?.(machine.id, NodeState.INACTIVE);
+      this.onStateUpdate?.(machine.id, false);
+
+      this.propagateTransition(machine.id, NodeState.INACTIVE, previousState);
     }
-
-    sig._set(val);
-    if (!val) this.propagateDeactivation(id, isButtonDriven);
-  }
-
-  // Set callbacks for external integrations
-  setCallbacks(
-    onVisualUpdate: (id: string, active: boolean) => void,
-    onStateUpdate: (id: string, active: boolean) => void
-  ) {
-    this.onVisualUpdate = onVisualUpdate;
-    this.onStateUpdate = onStateUpdate;
-  }
-
-  // Get current signal state for a node
-  getNodeState(id: string): boolean | undefined {
-    return this.signals.get(id)?.value;
-  }
-
-  // Force update a node's signal state (for external node logic)
-  forceUpdateNodeState(id: string, active: boolean) {
-    const sig = this.signals.get(id);
-    if (sig && sig.value !== active) {
-      sig._set(active);
-      this.onVisualUpdate?.(id, active);
-      this.onStateUpdate?.(id, active);
-    }
-  }
-
-  private propagateDeactivation(id: string, isButtonDriven = false) {
-    (this.edges.get(id) ?? new Set()).forEach((child) => {
-      const targetSig = this.signals.get(child);
-      if (targetSig?.value) {
-        // Check if this child has any other active inputs
-        const sources = this.reverseEdges.get(child) ?? new Set();
-        const hasOtherActiveInputs = Array.from(sources).some((sourceId) => {
-          if (sourceId === id) return false; // Exclude the current deactivating source
-          const sourceSig = this.signals.get(sourceId);
-          return sourceSig?.value === true;
-        });
-
-        // Button-driven deactivation is authoritative, auto-deactivation respects multiple inputs
-        const shouldDeactivate = isButtonDriven || !hasOtherActiveInputs;
-
-        if (shouldDeactivate) {
-          // Debug logging
-          if (
-            typeof window !== "undefined" &&
-            window.location?.search?.includes("debug=signals")
-          ) {
-            if (isButtonDriven) {
-              console.log(`🔻 Button forcing deactivation of ${child}`);
-            } else {
-              console.log(
-                `🔻 Auto-deactivating ${child} (no active inputs remaining)`
-              );
-            }
-          }
-
-          targetSig._set(false);
-          this.onVisualUpdate?.(child, false);
-          this.onStateUpdate?.(child, false);
-          this.propagateDeactivation(child, isButtonDriven);
-        } else {
-          // Debug logging for nodes that stay active
-          if (
-            typeof window !== "undefined" &&
-            window.location?.search?.includes("debug=signals")
-          ) {
-            const activeSources = Array.from(sources).filter((sourceId) => {
-              const sourceSig = this.signals.get(sourceId);
-              return sourceSig?.value === true;
-            });
-            console.log(
-              `🟢 ${child} staying active (other inputs active): ${activeSources.join(", ")}`
-            );
-          }
-        }
-      }
-    });
   }
 }
 
 // ============================================================================
-// 4️⃣  ORCHESTRATOR (hybrid engine)
+// 4️⃣  ORCHESTRATOR (hybrid engine with state machine)
 // ============================================================================
 
 type UpdateNodeData = (
@@ -355,47 +642,55 @@ type UpdateNodeData = (
 ) => void;
 
 export class UltraFastPropagationEngine {
-  private visual = new VisualPropagationLayer();
+  private visual: VisualPropagationLayer;
   private pre = new PreComputedPropagationLayer();
-  private signals = new SignalPropagationLayer();
+  private stateMachine = new StateMachinePropagationLayer();
 
   private queued: { id: string; active: boolean }[] = [];
   private raf: number | null = null;
   private updateCallback?: UpdateNodeData;
+  private errorCallback?: (error: PropagationEngineError) => void;
+
+  constructor() {
+    this.visual = new VisualPropagationLayer(this.handleError.bind(this));
+  }
 
   // ------------------------------------------------------------------------
   // Public API
   // ------------------------------------------------------------------------
 
-  initialize(nodes: Node[], connections: Connection[]) {
-    this.pre.build(nodes, connections);
-
-    // First, create all node signals
-    nodes.forEach((n) => this.signals.createNode(n.id, !!n.data?.isActive));
-
-    // Then, connect them (with safety checks for missing nodes)
-    connections.forEach((c) => {
-      // Only connect if both source and target nodes exist
-      const sourceExists = nodes.some((n) => n.id === c.source);
-      const targetExists = nodes.some((n) => n.id === c.target);
-
-      if (sourceExists && targetExists) {
-        this.signals.connect(c.source, c.target);
+  initialize(
+    nodes: Node[],
+    connections: Connection[],
+    onError?: (error: PropagationEngineError) => void
+  ) {
+    this.errorCallback = onError;
+    try {
+      this.pre.build(nodes, connections);
+    } catch (e) {
+      if (e instanceof PropagationEngineError) {
+        this.handleError(e);
+      } else {
+        this.handleError(new PropagationBuildError(e));
       }
-    });
+      // Recovery: Don't initialize state machine if pre-computation fails
+      return;
+    }
+    this.stateMachine.initialize(nodes, connections);
 
-    // Set up callbacks for signal-driven updates
-    this.signals.setCallbacks(
-      (id: string, active: boolean) => {
+    // Set up callbacks for state machine-driven updates
+    this.stateMachine.setCallbacks(
+      (id: string, state: NodeState) => {
         // Visual update callback
-        this.visual.updateVisualState(id, active);
+        this.visual.updateVisualState(id, state);
       },
       (id: string, active: boolean) => {
         // State update callback
         if (this.updateCallback) {
           this.queueReactSync([{ id, active }], this.updateCallback);
         }
-      }
+      },
+      this.handleError.bind(this)
     );
   }
 
@@ -406,19 +701,28 @@ export class UltraFastPropagationEngine {
     update: UpdateNodeData,
     isButtonDriven = true
   ) {
-    // Store the update callback for signal-driven updates
+    // Store the update callback for state machine-driven updates
     this.updateCallback = update;
 
-    // 1. Immediate DOM flash for the source node
-    this.visual.updateVisualState(id, active);
+    // Determine the appropriate transition event
+    const event = isButtonDriven
+      ? active
+        ? TransitionEvent.BUTTON_ACTIVATE
+        : TransitionEvent.BUTTON_DEACTIVATE
+      : active
+        ? TransitionEvent.INPUT_ACTIVATED
+        : TransitionEvent.INPUT_DEACTIVATED;
 
-    // 2. Signal-based propagation with button authority
-    // Button deactivations override node self-activation logic
-    this.signals.setActive(id, active, isButtonDriven);
+    // Execute state machine transition
+    this.stateMachine.transition(id, event);
+  }
 
-    // 3. Queue React state update for the source node
-    // Downstream updates will be handled by signal callbacks
-    this.queueReactSync([{ id, active }], update);
+  /**
+   * Force deactivate a node (ignores multiple input logic)
+   */
+  forceDeactivate(nodeId: string, update: UpdateNodeData) {
+    this.updateCallback = update;
+    this.stateMachine.forceDeactivate(nodeId);
   }
 
   enableGPUAcceleration(nodeIds: string[]) {
@@ -446,12 +750,31 @@ export class UltraFastPropagationEngine {
     );
 
     // Clean up any visual state
-    this.visual.updateVisualState(nodeId, false);
+    const currentState = this.stateMachine.getNodeState(nodeId);
+    if (currentState) {
+      this.visual.updateVisualState(nodeId, NodeState.INACTIVE);
+    }
+  }
+
+  /**
+   * Get current node state (for debugging/inspection)
+   */
+  getNodeState(nodeId: string): NodeState | undefined {
+    return this.stateMachine.getNodeState(nodeId);
   }
 
   // ------------------------------------------------------------------------
   // Internal helpers
   // ------------------------------------------------------------------------
+
+  private handleError(error: PropagationEngineError) {
+    if (this.errorCallback) {
+      this.errorCallback(error);
+    } else {
+      // Default behavior if no handler is provided
+      console.error(error);
+    }
+  }
 
   private queueReactSync(
     patch: { id: string; active: boolean }[],
@@ -479,7 +802,8 @@ export class UltraFastPropagationEngine {
 export const useUltraFastPropagation = (
   nodes: Node[],
   connections: Connection[],
-  updateNodeData: UpdateNodeData
+  updateNodeData: UpdateNodeData,
+  onError?: (error: PropagationEngineError) => void
 ) => {
   const engineRef = useRef<UltraFastPropagationEngine>(
     new UltraFastPropagationEngine()
@@ -488,40 +812,79 @@ export const useUltraFastPropagation = (
   // Lazily instantiate once.
   if (!engineRef.current) engineRef.current = new UltraFastPropagationEngine();
 
+  const engine = engineRef.current;
+
   // Rebuild on structural change.
   useEffect(() => {
-    engineRef.current!.initialize(nodes, connections);
-  }, [nodes, connections]);
+    engine.initialize(nodes, connections, onError);
+  }, [nodes, connections, engine, onError]);
 
   // Cleanup.
-  useEffect(() => () => engineRef.current!.cleanup(), []);
+  useEffect(() => () => engine.cleanup(), [engine]);
 
   const propagateUltraFast = useCallback(
-    (id: string, active: boolean) =>
-      engineRef.current!.propagate(id, active, updateNodeData),
-    [updateNodeData]
+    (id: string, active: boolean, isButtonDriven = true) =>
+      engine.propagate(id, active, updateNodeData, isButtonDriven),
+    [updateNodeData, engine]
+  );
+
+  const forceDeactivate = useCallback(
+    (id: string) => engine.forceDeactivate(id, updateNodeData),
+    [updateNodeData, engine]
   );
 
   const enableGPUAcceleration = useCallback(
-    (ids: string[]) => engineRef.current!.enableGPUAcceleration(ids),
-    []
+    (ids: string[]) => engine.enableGPUAcceleration(ids),
+    [engine]
   );
 
-  return { propagateUltraFast, enableGPUAcceleration } as const;
+  const getNodeState = useCallback(
+    (id: string) => engine.getNodeState(id),
+    [engine]
+  );
+
+  return {
+    propagateUltraFast,
+    forceDeactivate,
+    enableGPUAcceleration,
+    getNodeState,
+  } as const;
 };
 
 // ============================================================================
-// 6️⃣  DROP-IN REPLACEMENT INSTRUCTIONS
+// 6️⃣  EXPORT STATE ENUMS AND ERROR TYPES FOR EXTERNAL USE
+// ============================================================================
+
+export {
+  NodeState,
+  PropagationBuildError,
+  PropagationEngineError,
+  StateTransitionError,
+  TransitionEvent,
+  VisualUpdateError,
+};
+
+// ============================================================================
+// 7️⃣  DROP-IN REPLACEMENT INSTRUCTIONS
 // ============================================================================
 /**
  * Replace your existing `smartNodeUpdate` calls with:
  *
- *   propagateUltraFast(nodeId, newIsActive);
+ *   propagateUltraFast(nodeId, newIsActive, isButtonDriven);
+ *
+ * New Features:
+ * • Deterministic state machine transitions
+ * • Visual feedback for pending states
+ * • Force deactivation with `forceDeactivate(nodeId)`
+ * • State inspection with `getNodeState(nodeId)`
+ * • Comprehensive error handling with an `onError` callback
+ * • Impossible race conditions
  *
  * Benefits:
  * • 0.01 ms visual response  (⬇ ~100×)
  * • ≤ 2 ms network propagation
  * • GPU-powered smoothness
+ * • Deterministic state transitions
  * • React state remains canonical
  */
 
