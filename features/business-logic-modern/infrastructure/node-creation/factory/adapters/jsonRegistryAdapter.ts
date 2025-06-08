@@ -21,13 +21,47 @@ import type {
 // ============================================================================
 // JSON REGISTRY IMPORTS
 // ============================================================================
-
+/**
+ * Imports the generated node registry
+ * @description Imports the generated node registry
+ * @example
+ * ```ts
+ * import { GENERATED_NODE_REGISTRY } from "../../json-node-registry/generated/nodeRegistry";
+ * ```
+ */
 import { GENERATED_NODE_REGISTRY } from "../../json-node-registry/generated/nodeRegistry";
 
 // ============================================================================
 // ADAPTER TYPES
+/**
+ * JsonNodeConfig interface
+ * @description JsonNodeConfig interface
+ * @example
+ * ```ts
+ * interface JsonNodeConfig {
+ *   nodeType: string;
+ *   category: string;
+ *   displayName: string;
+ *   description: string;
+ *   icon: string;
+ *   folder: string;
+ *   order: number;
+ *   iconWidth: number;
+ *   iconHeight: number;
+ *   expandedWidth: number;
+ *   expandedHeight: number;
+ *   size?: { width: number; height: number };
+ *   hasToggle: boolean;
+ *   isEnabled: boolean;
+ *   isExperimental: boolean;
+ *   handles: HandleConfig[];
+ *   defaultData: Record<string, any>;
+ *   component: () => Promise<any>;
+ *   inspectorComponent?: () => Promise<any>;
+ * }
+ * ```
+ */
 // ============================================================================
-
 export interface JsonNodeConfig {
   nodeType: string;
   category: string;
@@ -52,6 +86,14 @@ export interface JsonNodeConfig {
 
 // ============================================================================
 // REGISTRY ADAPTER CLASS
+/**
+ * JsonRegistryAdapter class
+ * @description JsonRegistryAdapter class
+ * @example
+ * ```ts
+ * const adapter = new JsonRegistryAdapter();
+ * ```
+ */
 // ============================================================================
 
 export class JsonRegistryAdapter {
@@ -72,6 +114,15 @@ export class JsonRegistryAdapter {
 
   // ============================================================================
   // INITIALIZATION
+  /**
+   * Initializes the JSON registry adapter
+   * @description Initializes the JSON registry adapter
+   * @example
+   * ```ts
+   * const adapter = JsonRegistryAdapter.getInstance();
+   * adapter.initialize();
+   * ```
+   */
   // ============================================================================
 
   private initialize(): void {
@@ -80,7 +131,7 @@ export class JsonRegistryAdapter {
     try {
       // Cache all registry data for fast access
       Object.entries(GENERATED_NODE_REGISTRY).forEach(([nodeType, config]) => {
-        this.registryCache[nodeType] = config as JsonNodeConfig;
+        this.registryCache[nodeType] = config as unknown as JsonNodeConfig;
       });
 
       this.initialized = true;

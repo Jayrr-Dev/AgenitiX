@@ -15,7 +15,7 @@
 import {
   registerNode,
   type EnterpriseNodeConfig,
-} from "../core/BulletproofNodeBase";
+} from "../../../depreciated/BulletproofNodeBase";
 
 // ============================================================================
 // DATA INTERFACE - SINGLE SOURCE OF TRUTH

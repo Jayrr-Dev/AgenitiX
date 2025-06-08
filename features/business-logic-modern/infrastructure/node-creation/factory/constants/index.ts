@@ -1,78 +1,58 @@
 /**
- * FACTORY CONSTANTS INDEX - Configuration constants for node factory system
+ * FACTORY CONSTANTS INDEX
+ * 🧱 BUILD-TIME VALUES:
+ * - CACHE_TTL
+ * - SMOOTH_ACTIVATION_DELAY
+ * - INSTANT_PRIORITY_DELAY
+ * - PROCESSING_THROTTLE_MS
+ * - DEFAULT_TEXT_NODE_SIZE
+ * - DEFAULT_LOGIC_NODE_SIZE
+ * - DEFAULT_TRIGGER_NODE_SIZE
+ * - ERROR_INJECTION_SUPPORTED_NODES
+ * - TRANSFORMATION_NODE_PATTERNS
+ * - TRIGGER_NODE_PATTERNS
+ * - HEAD_NODE_PATTERNS
+ * - TOGGLE_SYMBOLS
+ * - NODE_ID_PREFIX
  *
- * • Defines all configuration constants and default values for factory
- * • Provides timing constants for performance optimization and caching
- * • Includes node type patterns and classification constants
- * • Supports error injection and testing configuration values
- * • Centralizes all factory-related constants for easy maintenance
+ * ⚙️ RUNTIME VALUES (Lazy-loaded from registry):
+ * - NODE_TYPE_CONFIG - Record<NodeType, NodeConfig> - Node configuration for all node types
+ * - VALID_NODE_TYPES - string[] - Valid node types
+ * - initializeFactoryConfig() - boolean - Initialize the factory config
+ * - getNodeTypeConfig() - Record<NodeType, NodeConfig> - Get the node type config
+ * - getValidNodeTypes() - string[] - Get the valid node types
+ * Configuration constants for the Node Factory System
  *
- * Keywords: factory-constants, configuration, timing, performance, node-patterns, error-injection
+ * • Build-time: Size patterns, node type patterns, static constants
+ * • Runtime: Lazy-loaded registry config, dynamic node type resolution
+ *
+ * Keywords: factory-constants, node-config, timing, error-injection, classification
  */
 
-// ============================================================================
-// IMPORTS
-// ============================================================================
-
+import { Position } from "@xyflow/react";
+import type { NodeConfig, NodeType } from "../types";
 import { NodeSize } from "../types";
 import { STANDARD_SIZE_PATTERNS } from "./sizes";
 
-// ============================================================================
-// FACTORY NODE CONSTANTS
-// ============================================================================
+// =============================================================================
+// 🔧 BUILD-TIME CONFIGURATION CONSTANTS
+// =============================================================================
 
-// ============================================================================
-// CACHE CONFIGURATION
-// ============================================================================
+// 🧠 General Cache/Timing Constants
+export const CACHE_TTL = 100; // ms - throttle update batches
+export const SMOOTH_ACTIVATION_DELAY = 8; // ms - visual debounce
+export const INSTANT_PRIORITY_DELAY = 0; // ms - instant changes
+export const PROCESSING_THROTTLE_MS = 1; // ms - prevent processing spam
 
-/**
- * CACHE CONFIGURATION
- * Settings for performance optimization caching
- */
-export const CACHE_TTL = 100; // Cache for 100ms to batch rapid updates
-
-// ============================================================================
-// TIMING CONFIGURATION
-// ============================================================================
-
-/**
- * DEBOUNCE TIMING
- * Optimized timing for smooth vs instant updates
- */
-export const SMOOTH_ACTIVATION_DELAY = 8; // ms for smooth activation
-export const INSTANT_PRIORITY_DELAY = 0; // ms for instant updates
-
-/**
- * PROCESSING THROTTLE
- * Prevent rapid successive processing calls (reduced for faster deletion)
- */
-export const PROCESSING_THROTTLE_MS = 1; // ms minimum between processing calls (reduced from 5ms)
-
-// ============================================================================
-// DEFAULT NODE SIZES
-// ============================================================================
-
-/**
- * DEFAULT NODE SIZES
- * Standard sizing configurations for different node types using new standardized patterns
- */
+// 🧱 Default Node Sizes (static patterns)
 export const DEFAULT_TEXT_NODE_SIZE: NodeSize =
   STANDARD_SIZE_PATTERNS.STANDARD_TEXT;
-
 export const DEFAULT_LOGIC_NODE_SIZE: NodeSize =
   STANDARD_SIZE_PATTERNS.SMALL_TRIGGER;
-
 export const DEFAULT_TRIGGER_NODE_SIZE: NodeSize =
   STANDARD_SIZE_PATTERNS.SMALL_TRIGGER;
 
-// ============================================================================
-// ERROR INJECTION SUPPORT
-// ============================================================================
-
-/**
- * NODES SUPPORTING ERROR INJECTION
- * Node types that support Vibe Mode error injection
- */
+// 🚨 Nodes that support error injection
 export const ERROR_INJECTION_SUPPORTED_NODES = [
   "createText",
   "createTextRefactor",
@@ -84,14 +64,7 @@ export const ERROR_INJECTION_SUPPORTED_NODES = [
   "viewOutputEnhanced",
 ] as const;
 
-// ============================================================================
-// NODE CLASSIFICATION
-// ============================================================================
-
-/**
- * TRANSFORMATION NODE PATTERNS
- * Patterns to identify transformation nodes
- */
+// 🧠 Node classification patterns
 export const TRANSFORMATION_NODE_PATTERNS = [
   "turnToUppercase",
   "transform",
@@ -99,16 +72,8 @@ export const TRANSFORMATION_NODE_PATTERNS = [
   "convert",
 ] as const;
 
-/**
- * TRIGGER NODE PATTERNS
- * Patterns to identify trigger nodes
- */
 export const TRIGGER_NODE_PATTERNS = ["trigger", "pulse", "toggle"] as const;
 
-/**
- * HEAD NODE PATTERNS
- * Patterns to identify head/source nodes
- */
 export const HEAD_NODE_PATTERNS = [
   "trigger",
   "cycle",
@@ -117,68 +82,46 @@ export const HEAD_NODE_PATTERNS = [
   "manual",
 ] as const;
 
-/**
- * NODE FACTORY CONSTANTS - Configuration constants for node creation
- *
- * • Defines node type configurations and default settings
- * • Provides consistent node creation parameters
- * • Supports toggle states and sizing specifications
- * • Implements enterprise-grade node factory patterns
- * • Ensures standardized node behavior across system
- *
- * Keywords: constants, node-config, factory-patterns, toggle-states, sizing
- */
-
-import type { NodeConfig, NodeType } from "../types";
-
-// ============================================================================
-// FACTORY CONSTANTS
-// ============================================================================
-
-export const NODE_ID_PREFIX = "node_";
-
-// ============================================================================
-// NODE SIZING CONSTANTS (LEGACY - DEPRECATED)
-// ============================================================================
-
-/**
- * @deprecated Use new STANDARD_SIZE_PATTERNS instead
- */
-export const NODE_SIZES = {
-  ICON: {
-    DEFAULT: { width: 60, height: 60 },
-    TEXT: { width: 120, height: 60 },
-  },
-  EXPANDED: {
-    DEFAULT: { width: 120, height: 120 },
-  },
+// 🎛 Toggle symbols for UI state
+export const TOGGLE_SYMBOLS = {
+  EXPANDED: "⦿",
+  COLLAPSED: "⦾",
 } as const;
 
-// ============================================================================
-// REGISTRY AUTO-SYNC - Single Source of Truth (LAZY LOADING)
-// ============================================================================
+// Used to prefix all generated node IDs
+export const NODE_ID_PREFIX = "node_";
+
+// =============================================================================
+// ⚙️ RUNTIME REGISTRY AUTO-SYNC SYSTEM
+// =============================================================================
+
+/**
+ * Automatically syncs factory config with the generated JSON registry
+ * - Lazy loaded to prevent circular import issues
+ * - Populates NODE_TYPE_CONFIG and VALID_NODE_TYPES at runtime
+ */
 
 let isFactoryConfigInitialized = false;
 
+// Internal store for config and valid types
+export const NODE_TYPE_CONFIG: Record<NodeType, NodeConfig> = {} as any;
+export let VALID_NODE_TYPES: string[] = [];
+
 /**
- * AUTO-SYNC FACTORY CONFIG WITH REGISTRY (LAZY LOADING)
- * The registry is now the single source of truth for all factory data
- * Uses lazy loading to prevent circular dependency issues
+ * Initialize the registry-to-factory config mapping
+ * Only runs once during runtime access
  */
-function initializeFactoryConfig() {
-  if (isFactoryConfigInitialized) {
-    return true; // Already initialized
-  }
+function initializeFactoryConfig(): boolean {
+  if (isFactoryConfigInitialized) return true;
 
   try {
-    // Import JSON registry data directly
+    // Runtime import to avoid circular imports
     const {
       GENERATED_NODE_REGISTRY,
     } = require("../../json-node-registry/generated/nodeRegistry");
 
     if (GENERATED_NODE_REGISTRY) {
-      // Generate factory config from JSON registry
-      const factoryConfig: Record<string, any> = {};
+      const factoryConfig: Record<string, NodeConfig> = {};
       const validNodeTypes: string[] = [];
 
       Object.entries(GENERATED_NODE_REGISTRY).forEach(
@@ -189,30 +132,29 @@ function initializeFactoryConfig() {
             defaultData: config.defaultData || {},
             width: config.iconWidth || 60,
             height: config.iconHeight || 60,
-            hasTargetPosition: true, // Most nodes have target positions
-            targetPosition: "top", // Default position
+            hasTargetPosition: true,
+            targetPosition: Position.Top,
           };
           validNodeTypes.push(nodeType);
         }
       );
 
-      // Sync generated config into exported constants
       Object.assign(NODE_TYPE_CONFIG, factoryConfig);
-      VALID_NODE_TYPES.length = 0; // Clear array
-      VALID_NODE_TYPES.push(...validNodeTypes); // Add all items
+      VALID_NODE_TYPES.length = 0;
+      VALID_NODE_TYPES.push(...validNodeTypes);
 
       console.log(
         "✅ [Factory] Auto-synced with JSON registry:",
-        Object.keys(factoryConfig).length,
-        "factory node types"
+        validNodeTypes.length,
+        "types"
       );
 
       isFactoryConfigInitialized = true;
       return true;
-    } else {
-      console.warn("⚠️ [Factory] JSON registry not available");
-      return false;
     }
+
+    console.warn("⚠️ [Factory] JSON registry not available");
+    return false;
   } catch (error) {
     console.error("❌ [Factory] Failed to sync with registry:", error);
     return false;
@@ -220,54 +162,20 @@ function initializeFactoryConfig() {
 }
 
 /**
- * LAZY GETTER FOR NODE TYPE CONFIG
- * Ensures registry is loaded before accessing config
+ * Lazy getter for all node configurations
  */
 function getNodeTypeConfig(): Record<NodeType, NodeConfig> {
-  if (!isFactoryConfigInitialized) {
-    initializeFactoryConfig();
-  }
+  if (!isFactoryConfigInitialized) initializeFactoryConfig();
   return NODE_TYPE_CONFIG;
 }
 
 /**
- * LAZY GETTER FOR VALID NODE TYPES
- * Ensures registry is loaded before accessing valid types
+ * Lazy getter for valid node type keys
  */
 function getValidNodeTypes(): string[] {
-  if (!isFactoryConfigInitialized) {
-    initializeFactoryConfig();
-  }
+  if (!isFactoryConfigInitialized) initializeFactoryConfig();
   return VALID_NODE_TYPES;
 }
 
-// ============================================================================
-// NODE TYPE CONFIGURATION - Auto-Generated from Registry (LAZY LOADING)
-// ============================================================================
-
-// Initialize as empty object - will be populated from registry when needed
-export const NODE_TYPE_CONFIG: Record<NodeType, NodeConfig> = {} as any;
-
-// Export lazy getters to prevent circular dependency
+// Export runtime accessors
 export { getNodeTypeConfig, getValidNodeTypes, initializeFactoryConfig };
-
-// SYNC: Factory configuration is now auto-generated from MODERN_NODE_REGISTRY
-// All factory data comes from the registry - no manual duplication needed!
-// Icons, sizes, labels, and configs are all centrally managed.
-// USES LAZY LOADING to prevent circular dependency issues.
-
-// ============================================================================
-// TOGGLE BUTTON CONSTANTS
-// ============================================================================
-
-export const TOGGLE_SYMBOLS = {
-  EXPANDED: "⦿",
-  COLLAPSED: "⦾",
-} as const;
-
-// ============================================================================
-// VALIDATION CONSTANTS - Auto-Generated from Registry (LAZY LOADING)
-// ============================================================================
-
-// Initialize as empty array - will be populated from registry when needed
-export let VALID_NODE_TYPES: string[] = [];

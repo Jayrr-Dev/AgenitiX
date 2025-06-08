@@ -10,7 +10,7 @@
  * Keywords: gpu-acceleration, webgl, parallel-processing, hardware-optimization, fallback, ultra-fast
  */
 
-import { useUltraFastPropagation } from "@factory/core/UltraFastPropagationEngine";
+import { useUltraFastPropagation } from "@/features/business-logic-modern/infrastructure/node-creation/factory/visuals/UltraFastPropagationEngine";
 import { useEffect } from "react";
 
 // ============================================================================
@@ -23,9 +23,9 @@ interface GPUAccelerationConfig {
 }
 
 interface SafetyLayers {
-  visual: any;
   state: any;
   dataFlow: any;
+  propagationEngine: any;
 }
 
 interface GPUAccelerationResult {

@@ -125,7 +125,7 @@ export function NodeContainer<T extends BaseNodeData>({
       <ExpandCollapseButton
         showUI={nodeState.showUI}
         onToggle={() => nodeState.setShowUI(!nodeState.showUI)}
-        className={buttonTheme}
+        // className={buttonTheme}
       />
 
       {children}

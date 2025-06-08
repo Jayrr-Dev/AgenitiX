@@ -16,13 +16,13 @@
 // ============================================================================
 
 import { render } from "@testing-library/react";
-import type { EnterpriseNodeConfig } from "../core/BulletproofNodeBase";
+import type { EnterpriseNodeConfig } from "../../../depreciated/BulletproofNodeBase";
 import {
   getAllNodes,
   getNodeTypes,
   getSidebarItems,
   registerNode,
-} from "../core/BulletproofNodeBase";
+} from "../../../depreciated/BulletproofNodeBase";
 
 // ============================================================================
 // TYPE DEFINITIONS FOR TESTING FRAMEWORK

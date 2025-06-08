@@ -41,12 +41,16 @@ import {
 // ============================================================================
 
 interface SafetyLayers {
-  visual: {
-    updateVisualState: (nodeId: string, isActive: boolean) => void;
-  };
   state: any;
   dataFlow: {
     setNodeActivation: (nodeId: string, isActive: boolean) => void;
+  };
+  propagationEngine: {
+    propagate: (
+      id: string,
+      active: boolean,
+      updateCallback: (id: string, data: any) => void
+    ) => void;
   };
 }
 
@@ -172,13 +176,15 @@ export function useNodeProcessing<T extends BaseNodeData>(
 
       // ENTERPRISE SAFETY LAYER INTEGRATION
       if (safetyLayers) {
-        safetyLayers.visual.updateVisualState(
-          id,
-          activationResult.calculatedIsActive
-        );
         safetyLayers.dataFlow.setNodeActivation(
           id,
           activationResult.calculatedIsActive
+        );
+        // Visual updates now handled by UFPE via propagation
+        safetyLayers.propagationEngine.propagate(
+          id,
+          activationResult.calculatedIsActive,
+          (targetId: string, data: any) => nodeState.updateNodeData(data)
         );
       }
 

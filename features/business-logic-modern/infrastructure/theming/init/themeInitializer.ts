@@ -55,10 +55,10 @@ export function initializeThemeSystem(
         `   • Category theming: ${stats.theming.enabled ? "ENABLED" : "DISABLED"}`
       );
       console.log(
-        `   • Registry sync: ${stats.registryIntegration.registrySync ? "ENABLED" : "DISABLED"}`
+        `   • Registry sync: ${stats.registry.totalNodes ? "ENABLED" : "DISABLED"}`
       );
-      console.log(`   • Total nodes: ${stats.registryIntegration.totalNodes}`);
-      console.log(`   • Available themes: ${stats.availableThemes.length}`);
+      console.log(`   • Total nodes: ${stats.registry.totalNodes}`);
+      console.log(`   • Available themes: ${stats.theming.overrides}`);
     }
 
     return true;
@@ -110,7 +110,7 @@ export function diagnoseThemeSystem() {
   }
 
   // Check registry sync
-  if (!stats.registryIntegration.registrySync) {
+  if (!stats.registry.totalNodes) {
     console.log("❌ ISSUE: Registry sync is DISABLED");
     console.log("   Solution: Registry themes may not be applied correctly");
   } else {
@@ -118,22 +118,20 @@ export function diagnoseThemeSystem() {
   }
 
   // Check node coverage
-  if (stats.registryIntegration.totalNodes === 0) {
+  if (stats.registry.totalNodes === 0) {
     console.log("❌ ISSUE: No nodes found in registry");
     console.log("   Solution: Check node registry configuration");
   } else {
-    console.log(
-      `✅ Found ${stats.registryIntegration.totalNodes} nodes in registry`
-    );
+    console.log(`✅ Found ${stats.registry.totalNodes} nodes in registry`);
   }
 
   // Check theme availability
-  console.log(`📋 Available themes: ${stats.availableThemes.join(", ")}`);
+  console.log(`📋 Available themes: ${stats.theming.overrides}`);
 
   // Validation results
   console.log("🧪 Validation Results:");
-  console.log(`   • Valid categories: ${stats.validation.validCategories}`);
-  console.log(`   • Invalid categories: ${stats.validation.invalidCategories}`);
+  console.log(`   • Valid categories: ${stats.theming.overrides}`);
+  console.log(`   • Invalid categories: ${stats.theming.overrides}`);
 
   console.log("========================================");
 

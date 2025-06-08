@@ -22,7 +22,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useUltraFastPropagation } from "./UltraFastPropagationEngine";
+import { useUltraFastPropagation } from "../node-creation/factory/visuals/UltraFastPropagationEngine";
 
 // ============================================================================
 // ENTERPRISE NODE STATE MANAGEMENT WITH ACTIVATION CONTROL

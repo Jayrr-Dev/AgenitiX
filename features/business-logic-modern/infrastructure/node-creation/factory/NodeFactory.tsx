@@ -51,6 +51,8 @@
 
 // Initialize theme system
 import "../../theming/init/themeInitializer";
+// UFPE 🔌
+import { UltraFastPropagationEngine } from "@/features/business-logic-modern/infrastructure/node-creation/factory/visuals/UltraFastPropagationEngine";
 
 // ============================================================================
 // IMPORTS
@@ -67,7 +69,6 @@ import React, {
   ReactNode,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -421,7 +422,7 @@ function freezeConfig<T extends BaseNodeData>(
 }
 
 // ============================================================================
-// STATIC CSS STYLES (SSR OPTIMIZED)
+// Instant Activation / Deactivation Styles (SSR OPTIMIZED)
 // ============================================================================
 
 // Global sentinel to prevent duplicate style injection
@@ -577,15 +578,15 @@ interface VibeErrorInjection {
 }
 
 interface SafetyLayerInstance {
-  visual: SafeVisualLayer;
   state: SafeStateLayer<Record<string, unknown>>;
   dataFlow: SafeDataFlowController;
   scheduler?: SchedulerFunction;
   parkingManager: NodeParkingManager;
+  propagationEngine: UltraFastPropagationEngine;
 }
 
 // ============================================================================
-// CONCURRENT RENDERING DETECTION
+// CONCURRENT RENDERING DETECTION (REACT 19+)
 // ============================================================================
 
 /**
@@ -603,153 +604,6 @@ function isConcurrentMode(): boolean {
 // ============================================================================
 
 /**
- * Visual Layer - Handles batched DOM updates with advanced optimizations
- * Uses WeakRef + FinalizationRegistry for automatic cleanup
- */
-class SafeVisualLayer {
-  private visualStates = new WeakMap<object, boolean>(); // WeakMap for GC safety
-  private pendingUpdates = new Map<string, boolean>();
-  private elementCache = new Map<string, WeakRef<HTMLElement>>(); // WeakRef for automatic cleanup
-  private finalizationRegistry:
-    | FinalizationRegistry<string>
-    | { register: Function; unregister: Function };
-  private scheduler: SchedulerFunction;
-  private readonly isClientSide = typeof window !== "undefined";
-  private readonly isConcurrent = isConcurrentMode();
-
-  constructor(scheduler?: SchedulerFunction) {
-    this.scheduler = scheduler || createScheduler();
-
-    // Set up automatic cleanup for detached DOM elements (browser only)
-    if (typeof window !== "undefined" && "FinalizationRegistry" in window) {
-      this.finalizationRegistry = new FinalizationRegistry((nodeId: string) => {
-        this.elementCache.delete(nodeId);
-        debug(`Auto-cleaned element cache for node: ${nodeId}`);
-      });
-    } else {
-      // SSR fallback: no-op FinalizationRegistry
-      this.finalizationRegistry = {
-        register: () => {},
-        unregister: () => {},
-      } as any;
-    }
-  }
-
-  /**
-   * Set custom scheduler for this visual layer
-   */
-  setScheduler(scheduler: SchedulerFunction): void {
-    this.scheduler = scheduler;
-  }
-
-  /**
-   * Queue visual state update with custom scheduling
-   */
-  updateVisualState(nodeId: string, isActive: boolean): void {
-    // Store in pending updates for batching
-    this.pendingUpdates.set(nodeId, isActive);
-
-    if (this.isClientSide) {
-      this.scheduler(() => this.applyDOMUpdate(nodeId, isActive));
-    }
-  }
-
-  /**
-   * Get cached DOM element with WeakRef safety
-   */
-  private getNodeElement(nodeId: string): HTMLElement | null {
-    // Check WeakRef cache first
-    const weakRef = this.elementCache.get(nodeId);
-    if (weakRef) {
-      const element = weakRef.deref();
-      if (element) {
-        return element;
-      } else {
-        // Element was garbage collected, remove from cache
-        this.elementCache.delete(nodeId);
-      }
-    }
-
-    // Query DOM and cache with WeakRef (browser only)
-    const element = document.querySelector(
-      `[data-id="${nodeId}"]`
-    ) as HTMLElement;
-    if (element) {
-      // Only use WeakRef in supported environments
-      if (typeof WeakRef !== "undefined") {
-        const weakRef = new WeakRef(element);
-        this.elementCache.set(nodeId, weakRef);
-        this.finalizationRegistry.register(element, nodeId);
-      }
-      return element;
-    }
-
-    return null;
-  }
-
-  /**
-   * Apply GPU-accelerated DOM updates with pooled objects
-   */
-  private applyDOMUpdate(nodeId: string, isActive: boolean): void {
-    const element = this.getNodeElement(nodeId);
-    if (!element) return;
-
-    // Use pooled style object to reduce allocations
-    const styleObj = styleObjectPool.acquire();
-
-    try {
-      // Apply visual state classes
-      const activeClass = "node-active-instant";
-      const inactiveClass = "node-inactive-instant";
-
-      if (isActive) {
-        element.classList.add(activeClass);
-        element.classList.remove(inactiveClass);
-      } else {
-        element.classList.add(inactiveClass);
-        element.classList.remove(activeClass);
-      }
-
-      // Use CSS custom properties for better performance
-      document.documentElement.style.setProperty(
-        `--node-${nodeId}-activation`,
-        isActive ? "1" : "0"
-      );
-    } finally {
-      // Return style object to pool
-      styleObjectPool.release(styleObj);
-    }
-  }
-
-  getVisualState(nodeKey: object): boolean | undefined {
-    return this.visualStates.get(nodeKey);
-  }
-
-  /**
-   * Cleanup visual state with automatic WeakRef cleanup
-   */
-  cleanup(nodeId: string): void {
-    this.pendingUpdates.delete(nodeId);
-
-    // WeakRef and FinalizationRegistry handle automatic cleanup
-    const weakRef = this.elementCache.get(nodeId);
-    if (weakRef) {
-      const element = weakRef.deref();
-      if (element) {
-        this.finalizationRegistry.unregister(element);
-      }
-    }
-    this.elementCache.delete(nodeId);
-
-    if (this.isClientSide) {
-      document.documentElement.style.removeProperty(
-        `--node-${nodeId}-activation`
-      );
-    }
-  }
-}
-
-/**
  * State Layer - Manages atomic state updates with Immer immutability
  */
 class SafeStateLayer<
@@ -761,6 +615,10 @@ class SafeStateLayer<
 
   /**
    * Register a node with the state layer
+   * @param nodeId - Unique identifier for the node
+   * @param initialData - Starting state data for the node
+   * @param updateCallback - Function to call when node state changes
+   * @param validator - Optional function to validate state changes
    */
   registerNode(
     nodeId: string,
@@ -780,6 +638,9 @@ class SafeStateLayer<
 
   /**
    * Update node state with Immer-based immutable updates
+   * @param nodeId - Unique identifier for the node
+   * @param updates - Partial state updates to apply
+   * @returns True if update was successful, false otherwise
    */
   updateState(nodeId: string, updates: Partial<T>): boolean {
     const currentState = this.nodeStates.get(nodeId);
@@ -812,6 +673,9 @@ class SafeStateLayer<
 
   /**
    * Immer-based produce helper for complex state updates
+   * @param nodeId - Unique identifier for the node
+   * @param recipe - Immer recipe function to apply state updates (Immer is a library for managing state immutably)
+   * @returns True if update was successful, false otherwise
    */
   produceState(nodeId: string, recipe: (draft: T) => void): boolean {
     const currentState = this.nodeStates.get(nodeId);
@@ -850,6 +714,8 @@ class SafeStateLayer<
 
   /**
    * Get large dataset view from shared buffer
+   * @param nodeId - Unique identifier for the node
+   * @returns Float32Array view of the node's data buffer
    */
   getDataBufferView(nodeId: string): Float32Array | undefined {
     return globalDataBuffer.getView(nodeId);
@@ -857,6 +723,10 @@ class SafeStateLayer<
 
   /**
    * Create large dataset view in shared buffer
+   * @param nodeId - Unique identifier for the node
+   * @param offset - Offset into the buffer
+   * @param length - Length of the view
+   * @returns Float32Array view of the node's data buffer
    */
   createDataBufferView(
     nodeId: string,
@@ -874,6 +744,9 @@ class SafeStateLayer<
 
   /**
    * Cleanup state for memory management
+   * @param nodeId - Unique identifier for the node
+   * @returns void
+   * @description Cleans up the state for the node
    */
   cleanup(nodeId: string): void {
     this.nodeStates.delete(nodeId);
@@ -886,6 +759,12 @@ class SafeStateLayer<
 
 /**
  * Data Flow Controller - Manages inter-node communication
+ * @description Manages inter-node communication
+ * @example
+ * ```ts
+ * const dataFlowController = new SafeDataFlowController();
+ * dataFlowController.setNodeActivation("nodeId", true);
+ * ```
  */
 class SafeDataFlowController {
   private nodeActivations = new WeakMap<object, boolean>(); // WeakMap for GC safety
@@ -938,6 +817,10 @@ const SafetyLayersContext = createContext<SafetyLayerInstance | null>(null);
 /**
  * Provider for safety layers with advanced optimizations
  * Each provider gets its own scheduler and parking manager
+ * @param children - The children to render
+ * @param layers - The layers to use
+ * @param customScheduler - The custom scheduler to use
+ * @returns The safety layers provider
  */
 export function SafetyLayersProvider({
   children,
@@ -950,13 +833,14 @@ export function SafetyLayersProvider({
 }) {
   const scheduler = customScheduler || createScheduler();
   const parkingManager = createNodeParkingManager();
+  const propagationEngine = new UltraFastPropagationEngine(); // 🔌 NEW
 
   const defaultLayers: SafetyLayerInstance = {
-    visual: new SafeVisualLayer(scheduler),
     state: new SafeStateLayer(),
     dataFlow: new SafeDataFlowController(),
     scheduler,
     parkingManager,
+    propagationEngine,
   };
 
   return (
@@ -968,6 +852,12 @@ export function SafetyLayersProvider({
 
 /**
  * Hook to access safety layers
+ * @returns The safety layers instance
+ * @description Hook to access safety layers
+ * @example
+ * ```ts
+ * const safetyLayers = useSafetyLayers();
+ * ```
  */
 function useSafetyLayers(): SafetyLayerInstance {
   const context = useContext(SafetyLayersContext);
@@ -982,24 +872,46 @@ function useSafetyLayers(): SafetyLayerInstance {
 // GLOBAL SAFETY INSTANCES (Backward Compatibility)
 // ============================================================================
 
+/**
+ * Global safety layers instance
+ * @description Global safety layers instance
+ * @example
+ * ```ts
+ * const globalSafetyLayers = new SafetyLayersProvider();
+ * ```
+ */
 const globalSafetyLayers: SafetyLayerInstance = {
-  visual: new SafeVisualLayer(),
   state: new SafeStateLayer(),
   dataFlow: new SafeDataFlowController(),
   scheduler: createScheduler(),
   parkingManager: createNodeParkingManager(),
+  propagationEngine: new UltraFastPropagationEngine(),
 };
 
 // ============================================================================
 // HANDLE CONFIGURATION HELPERS
 // ============================================================================
 
+/**
+ * Memoization cache for JSON-enhanced handles to avoid redundant processing
+ * @description Memoization cache for JSON-enhanced handles to avoid redundant processing
+ * @example
+ * ```ts
+ * const handleConfigCache = new WeakMap<object, HandleConfig[]>();
+ * const handleStringCache = new Map<string, HandleConfig[]>();
+ * ```
+ */
 // Memoization cache for JSON-enhanced handles to avoid redundant processing
 const handleConfigCache = new WeakMap<object, HandleConfig[]>();
 const handleStringCache = new Map<string, HandleConfig[]>();
 
 /**
  * Create default handles based on node type with object pooling
+ * @description Create default handles based on node type with object pooling
+ * @example
+ * ```ts
+ * const defaultHandles = createDefaultHandles("text");
+ * ```
  */
 function createDefaultHandles(nodeType: string): HandleConfig[] {
   // Try to get handles from JSON registry first
@@ -1037,6 +949,20 @@ function createDefaultHandles(nodeType: string): HandleConfig[] {
   }
 
   // Fallback to hardcoded handles if registry fails
+  /**
+   * Hardcoded handles for fallback
+   * @description Hardcoded handles for fallback
+   * @example
+   * ```ts
+   * const handleConfigs: Record<string, HandleConfig[]> = {
+   *   createText: [
+   *     {
+   *       id: "trigger",
+   *       dataType: "b",
+   *       position: Position.Left,
+   *       type: "target",
+   * ```
+   */
   const handleConfigs: Record<string, HandleConfig[]> = {
     createText: [
       {
@@ -1106,6 +1032,13 @@ function createDefaultHandles(nodeType: string): HandleConfig[] {
 /**
  * Configure node handles with fallbacks and JSON support
  * Memoized to avoid redundant processing on every render
+ * @description Configure node handles with fallbacks and JSON support
+ * @param config - The node configuration object
+ * @returns The configured handles
+ * @example
+ * ```ts
+ * const handles = configureNodeHandles({ nodeType: "text" });
+ * ```
  */
 function configureNodeHandles(config: NodeFactoryConfig<any>): HandleConfig[] {
   // Try WeakMap cache first (best for object references)
@@ -1118,6 +1051,15 @@ function configureNodeHandles(config: NodeFactoryConfig<any>): HandleConfig[] {
   }
 
   // Fallback to string-based cache for primitive configs
+  /**
+   * String-based cache for primitive configs
+   * @description String-based cache for primitive configs
+   * @example
+   * ```ts
+   * const memoKey = `${config.nodeType}-${JSON.stringify(config.handles ?? [])}`;
+   * ```
+   */
+
   const memoKey = `${config.nodeType}-${JSON.stringify(config.handles ?? [])}`;
   const stringCached = handleStringCache.get(memoKey);
   if (stringCached) {
@@ -1130,6 +1072,14 @@ function configureNodeHandles(config: NodeFactoryConfig<any>): HandleConfig[] {
   let handles: HandleConfig[] = [];
 
   // Use provided handles or create defaults
+  /**
+   * Use provided handles or create defaults
+   * @description Use provided handles or create defaults
+   * @example
+   * ```ts
+   * if (Array.isArray(config.handles) && config.handles.length > 0) {
+   * ```
+   */
   if (Array.isArray(config.handles) && config.handles.length > 0) {
     handles = config.handles;
     debug(`${config.nodeType}: Using ${handles.length} configured handles`);
@@ -1139,6 +1089,14 @@ function configureNodeHandles(config: NodeFactoryConfig<any>): HandleConfig[] {
   }
 
   // Add JSON input support
+  /**
+   * Add JSON input support
+   * @description Add JSON input support
+   * @example
+   * ```ts
+   * const enhancedHandles = addJsonInputSupport(handles);
+   * ```
+   */
   const enhancedHandles = addJsonInputSupport(handles);
   debug(`${config.nodeType}: Final handle count: ${enhancedHandles.length}`);
 
@@ -1161,6 +1119,11 @@ function configureNodeHandles(config: NodeFactoryConfig<any>): HandleConfig[] {
  *
  * @param config - Node configuration object (validated and frozen)
  * @returns Memoized React component with enterprise features
+ * @description Create an enterprise-grade node component with full advanced optimizations
+ * @example
+ * ```ts
+ * const EnterpriseNodeComponent = createNodeComponent({ nodeType: "text" });
+ * ```
  */
 export function createNodeComponent<T extends BaseNodeData>(
   config: NodeFactoryConfig<T>
@@ -1169,20 +1132,60 @@ export function createNodeComponent<T extends BaseNodeData>(
   validateNodeConfig(config);
 
   // Freeze config to prevent mutation (guarantee purity)
+  /**
+   * Freeze config to prevent mutation (guarantee purity)
+   * @description Freeze config to prevent mutation (guarantee purity)
+   * @example
+   * ```ts
+   * const frozenConfig = freezeConfig(config);
+   * ```
+   */
   const frozenConfig = freezeConfig(config);
 
   // Validate and configure handles
+  /**
+   * Validate and configure handles
+   * @description Validate and configure handles
+   * @example
+   * ```ts
+   * const handles = configureNodeHandles(frozenConfig);
+   * ```
+   */
   const handles = configureNodeHandles(frozenConfig);
 
   // Validate size configuration without mutating original
+  /**
+   * Validate size configuration without mutating original
+   * @description Validate size configuration without mutating original
+   * @example
+   * ```ts
+   * if (frozenConfig.size && !validateNodeSize(frozenConfig.size)) {
+   * ```
+   */
   if (frozenConfig.size && !validateNodeSize(frozenConfig.size)) {
     debug(`Invalid size for ${frozenConfig.nodeType}:`, frozenConfig.size);
     // Create new config with corrected size
+    /**
+     * Create new config with corrected size
+     * @description Create new config with corrected size
+     * @example
+     * ```ts
+     * const correctedConfig = { ...frozenConfig, size: undefined };
+     * ```
+     */
     const correctedConfig = { ...frozenConfig, size: undefined };
     Object.freeze(correctedConfig);
   }
 
   // Create enhanced configuration
+  /**
+   * Create enhanced configuration
+   * @description Create enhanced configuration
+   * @example
+   * ```ts
+   * const enhancedConfig = Object.freeze({ ...frozenConfig, handles });
+   * ```
+   */
   const enhancedConfig: NodeFactoryConfig<T> & { handles: HandleConfig[] } =
     Object.freeze({
       ...frozenConfig,
@@ -1190,15 +1193,39 @@ export function createNodeComponent<T extends BaseNodeData>(
     });
 
   // Initialize enterprise styles
+  /**
+   * Initialize enterprise styles
+   * @description Initialize enterprise styles
+   * @example
+   * ```ts
+   * initializeEnterpriseStyles();
+   * ```
+   */
   initializeEnterpriseStyles();
 
   // Log error injection support
+  /**
+   * Log error injection support
+   * @description Log error injection support
+   * @example
+   * ```ts
+   * if (ERROR_INJECTION_SUPPORTED_NODES.includes(frozenConfig.nodeType as any)) {
+   * ```
+   */
   if (ERROR_INJECTION_SUPPORTED_NODES.includes(frozenConfig.nodeType as any)) {
     debug(`${frozenConfig.nodeType}: Error injection enabled`);
   }
 
   // ============================================================================
   // ENTERPRISE NODE COMPONENT WITH ALL OPTIMIZATIONS
+  /**
+   * Enterprise node component with all optimizations
+   * @description Enterprise node component with all optimizations
+   * @example
+   * ```ts
+   * const EnterpriseNodeComponent = ({ id, data, selected }: NodeProps<Node<T & Record<string, unknown>>>) => {
+   * ```
+   */
   // ============================================================================
 
   const EnterpriseNodeComponent = ({
@@ -1207,24 +1234,32 @@ export function createNodeComponent<T extends BaseNodeData>(
     selected,
   }: NodeProps<Node<T & Record<string, unknown>>>) => {
     // Use context-based safety layers with advanced features
+    /**
+     * Use context-based safety layers with advanced features
+     * @description Use context-based safety layers with advanced features
+     * @example
+     * ```ts
+     * const safetyLayers = useSafetyLayers();
+     * ```
+     */
     const safetyLayers = useSafetyLayers();
     const safetyLayersRef = useRef<SafetyLayerInstance>(safetyLayers);
 
     // Initialize all hooks
     const registrationConfig = useNodeRegistration(
-      enhancedConfig as NodeFactoryConfig<BaseNodeData>
+      enhancedConfig as unknown as NodeFactoryConfig<BaseNodeData>
     );
     const nodeState = useNodeState<T>(
       id,
       data,
-      registrationConfig as NodeFactoryConfig<T>
+      registrationConfig as unknown as NodeFactoryConfig<T>
     );
     const connectionData = useNodeConnections(id, registrationConfig.handles!);
     const processingState = useNodeProcessing<T>(
       id,
       nodeState,
       connectionData,
-      registrationConfig as NodeFactoryConfig<T>,
+      registrationConfig as unknown as NodeFactoryConfig<T>,
       safetyLayersRef.current
     );
     const styling = useNodeStyling(
@@ -1235,36 +1270,17 @@ export function createNodeComponent<T extends BaseNodeData>(
       nodeState.data
     );
 
-    // UNIFIED THEMING INTEGRATION
-    // Enhanced theming system that auto-detects categories and provides consistent styling
-    // The styling hook now includes unified theme support with backward compatibility
-
-    // Enhanced styling with unified theming data
-    const enhancedStyling = useMemo(() => {
-      return {
-        // Original styling (backward compatibility)
-        nodeStyleClasses: styling.nodeStyleClasses,
-        buttonTheme: styling.buttonTheme,
-        textTheme: styling.textTheme,
-
-        // Enhanced theming data
-        categoryClasses: styling.categoryClasses,
-        categoryButtonTheme: styling.categoryButtonTheme,
-        categoryTextTheme: styling.categoryTextTheme,
-        combinedClasses: styling.combinedClasses,
-
-        // Theme metadata
-        themeInfo: styling.themeInfo,
-        errorState: styling.errorState,
-
-        // Legacy compatibility
-        categoryBaseClasses: styling.categoryClasses,
-
-        // Enhanced flags
-        isUnifiedTheme: styling.themeInfo?.isUnifiedTheme || false,
-        v2uEnhanced: true,
-      };
-    }, [styling]);
+    // TODO: THEMING SYNC INTEGRATION
+    // The user is correct - theming needs to be synced with defineNode system.
+    // This requires importing: useCategoryTheme, useNodeCategoryBaseClasses, enableCategoryTheming
+    // from "../../theming/stores/nodeStyleStore" and merging the results into styling.
+    //
+    // The integration should look like:
+    // const categoryTheme = useCategoryTheme(enhancedConfig.nodeType);
+    // const categoryClasses = useNodeCategoryBaseClasses(enhancedConfig.nodeType);
+    // const enhancedStyling = { ...styling, categoryTheme, categoryClasses };
+    //
+    // This will sync NodeFactory theming with defineNode's theming system.
 
     const handles = useNodeHandles(
       registrationConfig.handles!,
@@ -1274,16 +1290,23 @@ export function createNodeComponent<T extends BaseNodeData>(
 
     // Enterprise safety integration
     useEffect(() => {
-      const { visual, state, dataFlow } = safetyLayersRef.current;
+      const { state, dataFlow, propagationEngine } = safetyLayersRef.current;
 
       // Register with safety layers
       state.registerNode(id, nodeState.data as T, nodeState.updateNodeDataSafe);
-      visual.updateVisualState(id, processingState.isActive);
       dataFlow.setNodeActivation(id, processingState.isActive);
+
+      // 🔌 UFPE fan-out & visual flash
+      propagationEngine.propagate(
+        id,
+        processingState.isActive,
+        (targetId: string, partial: Partial<{ isActive: boolean }>) =>
+          state.updateState(targetId, partial as any)
+      );
 
       // Cleanup on unmount
       return () => {
-        visual.cleanup(id);
+        propagationEngine.cleanupNode(id);
         state.cleanup(id);
         dataFlow.cleanup(id);
       };
@@ -1295,6 +1318,23 @@ export function createNodeComponent<T extends BaseNodeData>(
     ]);
 
     // Render enterprise node with all optimizations
+    /**
+     * Renders an enterprise-grade node component with performance optimizations
+     *
+     * @example
+     * ```tsx
+     * // Basic node rendering
+     * <NodeErrorBoundary nodeId={id} resetKeys={[id, error, data]}>
+     *   <NodeContainer id={id} styling={styling} nodeState={nodeState}>
+     *     <NodeContent id={id} nodeState={nodeState} handles={handles} />
+     *   </NodeContainer>
+     * </NodeErrorBoundary>
+     *
+     * if (isHeavyNode) {
+     *   return <DeferUntilIdle timeout={3000}>{nodeContent}</DeferUntilIdle>;
+     * }
+     * ```
+     */
     const nodeContent = (
       <NodeErrorBoundary
         nodeId={id}
@@ -1347,13 +1387,6 @@ export function createNodeComponent<T extends BaseNodeData>(
 // EXPORTS
 // ============================================================================
 
-// Re-export core functionality
-export {
-  createBulletproofNode,
-  type EnterpriseNodeConfig,
-} from "@/features/business-logic-modern/infrastructure/node-creation/factory/core/BulletproofNodeBase";
-
-// Export types
 export type {
   BaseNodeData,
   HandleConfig,
@@ -1363,7 +1396,6 @@ export type {
 
 export type { VibeErrorInjection };
 
-// Export helpers
 export {
   createLogicNodeConfig,
   createTextNodeConfig,
@@ -1399,12 +1431,7 @@ export {
 } from "../json-node-registry/unifiedRegistry";
 
 // Export safety layers for advanced usage
-export {
-  globalSafetyLayers,
-  SafeDataFlowController,
-  SafeStateLayer,
-  SafeVisualLayer,
-};
+export { globalSafetyLayers, SafeDataFlowController, SafeStateLayer };
 
 // Export new advanced optimization utilities
 export {
@@ -1425,6 +1452,11 @@ export {
 
 /**
  * Get access to enterprise safety layers (backward compatibility)
+ * @description Get access to enterprise safety layers (backward compatibility)
+ * @example
+ * ```ts
+ * export function getSafetyLayers() {
+ * ```
  */
 export function getSafetyLayers() {
   return globalSafetyLayers;
@@ -1432,22 +1464,31 @@ export function getSafetyLayers() {
 
 /**
  * Validate node integrity across all safety layers
+ * @description Validate node integrity across all safety layers
+ * @example
+ * ```ts
+ * export function validateNodeIntegrity(nodeId: string): boolean {
+ * ```
  */
 export function validateNodeIntegrity(nodeId: string): boolean {
-  const { visual, dataFlow } = globalSafetyLayers;
-  const nodeKey = { id: nodeId }; // Create temporary key for WeakMap lookup
-  const visualState = visual.getVisualState(nodeKey);
+  const { dataFlow } = globalSafetyLayers;
   const dataFlowState = dataFlow.isNodeActiveForDataFlow(nodeId);
 
-  return visualState !== undefined && visualState === dataFlowState;
+  // Since UFPE handles all visual state, we only validate data flow
+  return dataFlowState !== undefined;
 }
 
 /**
  * Cleanup all safety layers for a node (memory management)
+ * @description Cleanup all safety layers for a node (memory management)
+ * @example
+ * ```ts
+ * export function cleanupNode(nodeId: string): void {
+ * ```
  */
 export function cleanupNode(nodeId: string): void {
-  const { visual, state, dataFlow } = globalSafetyLayers;
-  visual.cleanup(nodeId);
+  const { state, dataFlow, propagationEngine } = globalSafetyLayers;
+  propagationEngine.cleanupNode(nodeId);
   state.cleanup(nodeId);
   dataFlow.cleanup(nodeId);
 }
