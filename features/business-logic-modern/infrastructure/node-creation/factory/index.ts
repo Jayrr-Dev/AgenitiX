@@ -14,13 +14,23 @@
 // MAIN FACTORY EXPORTS
 // ============================================================================
 
-// Integrated NodeFactory (recommended)
-export { IntegratedNodeFactory as NodeFactory } from "./utils/nodeFactoryIntegrated";
-export * from "./utils/nodeFactoryIntegrated";
-
-// JSON Registry Adapter
+// Unified Integration (recommended)
 export {
-  JsonNodeFactory,
+  createIntegratedFactory,
+  createUnifiedFactory,
+  IntegratedNodeFactory,
+  IntegratedNodeFactory as NodeFactory,
+  unifiedFactory,
+} from "./core/UnifiedIntegration";
+
+export type {
+  IntegrationConfig,
+  UnifiedNodeFactory,
+} from "./core/UnifiedIntegration";
+
+// JSON Registry Adapter (legacy compatibility)
+export {
+  JsonRegistryAdapter,
   jsonRegistryAdapter,
 } from "./adapters/jsonRegistryAdapter";
 export type { JsonNodeConfig } from "./adapters/jsonRegistryAdapter";
@@ -33,33 +43,45 @@ export type * from "./types";
 
 // Factory Constants
 export {
-  initializeFactoryConfig,
+  CACHE_TTL,
+  ERROR_INJECTION_SUPPORTED_NODES,
   getNodeTypeConfig,
   getValidNodeTypes,
-  NODE_ID_PREFIX,
-  TOGGLE_SYMBOLS,
-  ERROR_INJECTION_SUPPORTED_NODES,
-  CACHE_TTL,
-  SMOOTH_ACTIVATION_DELAY,
+  initializeFactoryConfig,
   INSTANT_PRIORITY_DELAY,
+  NODE_ID_PREFIX,
   PROCESSING_THROTTLE_MS,
+  SMOOTH_ACTIVATION_DELAY,
+  TOGGLE_SYMBOLS,
 } from "./constants";
 
 // Factory Components
 export { NodeContainer } from "./components/NodeContainer";
 export { NodeContent } from "./components/NodeContent";
 
-// Factory Hooks
-export { useNodeConnections } from "./hooks/useNodeConnections";
-export { useNodeHandles } from "./hooks/useNodeHandles";
-export { useNodeProcessing } from "./hooks/useNodeProcessing";
-export { useNodeRegistration } from "./hooks/useNodeRegistration";
-export { useNodeState } from "./hooks/useNodeState";
-export { useNodeStyling } from "./hooks/useNodeStyling";
+// Factory Systems (Phase 1 reorganization)
+export {
+  createNodeParkingManager,
+  createScheduler,
+  freezeConfig,
+  NodeDataBuffer,
+  // Safety System
+  NodeErrorBoundary,
+  // Performance System
+  ObjectPool,
+  PriorityScheduler,
+  // Propagation System
+  UltraFastPropagationEngine,
+  useUltraFastPropagation,
+  validateNodeConfig,
+} from "./systems";
+
+// Factory Hooks (organized by responsibility - Phase 2)
+export * from "./hooks";
 
 // Factory Utilities
-export { addJsonInputSupport } from "./utils/jsonProcessor";
 export { validateSizeConfig } from "./constants/sizes";
+export { addJsonInputSupport } from "./utils/jsonProcessor";
 
 // ============================================================================
 // CONVENIENCE EXPORTS
@@ -67,13 +89,13 @@ export { validateSizeConfig } from "./constants/sizes";
 
 // Re-export common patterns for easy access
 export {
+  copyNode,
   createNode,
-  isValidNodeType,
-  getNodeDefaultData,
   getNodeConfig,
+  getNodeDefaultData,
   getNodeHandles,
   getNodeMetadata,
-  copyNode,
-  toggleNodeUI,
   getNodeSize,
-} from "./utils/nodeFactoryIntegrated";
+  isValidNodeType,
+  toggleNodeUI,
+} from "./core/UnifiedIntegration";
