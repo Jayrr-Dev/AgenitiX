@@ -12,7 +12,7 @@
  */
 
 import { useMemo } from "react";
-import { useVibeModeStore } from "../../../stores/vibeModeStore";
+import { useVibeModeStore } from "../../../../systems/intergration/stores/vibeModeStore";
 import type { FilteredHandles, HandleConfig } from "../../types";
 import {
   getVibeHandleOpacity,
@@ -91,7 +91,7 @@ export function useNodeHandles(
             return shouldShow || !showVibeHandles; // Show with opacity even when "hidden"
           }
 
-          // All other handles (including {}) are always visible with full opacity
+          // All other handles (including { }) are always visible with full opacity
           handleOpacities[handle.id] = 1.0;
           return true;
         });

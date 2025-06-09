@@ -243,152 +243,61 @@ export default defineNode<TriggerOnToggleV2UData>({
     }
   },
 
-  // COLLAPSED RENDER: Enhanced with V2U styling
-  renderCollapsed: ({ data, updateNodeData, error, isSelected }) => {
+  // COLLAPSED RENDER: Carbon copy of TriggerOnToggle styling
+  renderCollapsed: ({ data, updateNodeData }) => {
     const handleToggle = () => {
       const newTriggered = !data.triggered;
       updateNodeData({
         triggered: newTriggered,
         value: newTriggered,
         outputValue: newTriggered,
-        _v2uMigrated: true,
       });
     };
 
     return (
-      <div
-        className={`absolute inset-0 flex flex-col items-center justify-center ${
-          error ? "bg-red-50 dark:bg-red-900/30" : ""
-        } ${isSelected ? "ring-2 ring-blue-500" : ""} border rounded`}
-      >
-        {/* Error indicator */}
-        {error && (
-          <div className="absolute top-1 left-1 w-2 h-2 bg-red-500 rounded-full" />
-        )}
-
-        {/* Main toggle */}
+      <div className="absolute inset-0 flex items-center justify-center">
         <ToggleIconV2U
           isOn={data.triggered || false}
           onClick={handleToggle}
           size={40}
-          disabled={!!error}
         />
-
-        {/* V2U label */}
-        <div className="text-xs mt-1 text-gray-600 dark:text-gray-400 font-medium">
-          Toggle V2U
-        </div>
-
-        {/* V2U Migration Indicator */}
-        {data._v2uMigrated && (
-          <div className="absolute top-1 right-1 text-xs text-blue-500 opacity-75">
-            V2U
-          </div>
-        )}
       </div>
     );
   },
 
-  // EXPANDED RENDER: Enhanced with V2U features
-  renderExpanded: ({ data, updateNodeData, error, isSelected }) => {
+  // EXPANDED RENDER: Carbon copy of TriggerOnToggle styling
+  renderExpanded: ({ data, updateNodeData, error }) => {
     const handleToggle = () => {
       const newTriggered = !data.triggered;
       updateNodeData({
         triggered: newTriggered,
         value: newTriggered,
         outputValue: newTriggered,
-        _v2uMigrated: true,
       });
     };
 
     return (
-      <div
-        className={`absolute inset-0 flex flex-col ${
-          error ? "bg-red-50 dark:bg-red-900/30" : "bg-white dark:bg-gray-800"
-        } border rounded-lg ${
-          error
-            ? "border-red-300 dark:border-red-700"
-            : "border-gray-300 dark:border-gray-600"
-        } ${isSelected ? "ring-2 ring-blue-500" : ""}`}
-      >
-        {/* V2U Header */}
-        <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2">
-            <span className="text-sm">🔘</span>
-            <span
-              className={`text-sm font-medium ${
-                error
-                  ? "text-red-700 dark:text-red-300"
-                  : "text-gray-700 dark:text-gray-300"
-              }`}
-            >
-              Toggle Trigger V2U
-            </span>
-          </div>
-          {data._v2uMigrated && (
-            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-              V2U
-            </span>
-          )}
+      <div className="flex flex-col items-center">
+        <div className="font-semibold text-purple-900 dark:text-purple-100 mb-3">
+          Trigger On Toggle
         </div>
-
-        {/* Error Display */}
+        <ToggleIconV2U
+          isOn={data.triggered || false}
+          onClick={handleToggle}
+          size={48}
+        />
+        <div className="text-xs text-purple-800 dark:text-purple-200 mt-2">
+          Status:{" "}
+          <span className="font-mono">{data.triggered ? "ON" : "OFF"}</span>
+        </div>
+        <div className="text-xs text-purple-600 dark:text-purple-300 mt-1 italic">
+          Enhanced Registry Integration
+        </div>
         {error && (
-          <div className="px-2 py-1 text-xs text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border-b border-red-300 dark:border-red-700">
-            <div className="flex items-center gap-1">
-              <span>●</span>
-              <span className="font-medium">Error:</span>
-              <span>{error}</span>
-            </div>
+          <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+            {error}
           </div>
         )}
-
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col items-center justify-center p-4">
-          {/* Toggle Control */}
-          <ToggleIconV2U
-            isOn={data.triggered || false}
-            onClick={handleToggle}
-            size={60}
-            disabled={!!error}
-          />
-
-          {/* State Display */}
-          <div className="mt-3 text-center">
-            <div
-              className={`text-lg font-semibold ${
-                data.triggered
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-gray-500 dark:text-gray-400"
-              }`}
-            >
-              {data.triggered ? "ON" : "OFF"}
-            </div>
-
-            {/* Additional Info */}
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              <div>Output: {data.outputValue ? "true" : "false"}</div>
-              {data.hasExternalInputs && (
-                <div className="text-blue-600 dark:text-blue-400">
-                  External trigger connected
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* V2U Footer */}
-        <div className="px-2 py-1 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-            <span>Boolean Trigger</span>
-            {data._v2uMigrationDate && (
-              <span>
-                Migrated:{" "}
-                {new Date(data._v2uMigrationDate).toLocaleDateString()}
-              </span>
-            )}
-          </div>
-        </div>
       </div>
     );
   },

@@ -75,8 +75,8 @@ const ULTIMATE_TYPE_MAP: Record<string, TypeMapEntry> = {
   },
 
   // === COMPLEX DATA TYPES ===
-  "{}": {
-    label: "{}",
+  "{ }": {
+    label: "{ }",
     color: "#6366f1",
     description: "JSON - JavaScript objects and JSON data",
     category: "complex",
@@ -405,7 +405,7 @@ const DATATYPE_MAPPING: Record<string, string> = {
   // Complex types
   object: "o",
   array: "a",
-  json: "j",
+  json: "{ }",
   map: "m",
   set: "st",
   tuple: "t",
@@ -461,7 +461,7 @@ function getHandleDataType(
   handleType: "source" | "target"
 ): string | null {
   try {
-    const registry = require("../json-node-registry/unifiedRegistry");
+    const registry = require("../../../core/registries/json-node-registry/unifiedRegistry");
     const reactFlowInstance = (window as any).__ultimateReactFlowInstance;
     if (!reactFlowInstance) return null;
 
@@ -478,7 +478,7 @@ function getHandleDataType(
 
       // Fallback: try to get handles from factory constants
       try {
-        const factoryHandles = require("../factory/constants/handles");
+        const factoryHandles = require("../../../core/factory/constants/handles");
         const fallbackHandles = factoryHandles.getNodeHandles(node.type);
         const fallbackHandle = fallbackHandles.find(
           (h: any) => h.id === handleId && h.type === handleType
@@ -533,6 +533,15 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
   const [invalid, setInvalid] = useState(false);
   const { getNodes, getEdges, setEdges } = useReactFlow();
 
+  // Normalize the dataType prop to ensure consistent short codes
+  const normalizedDataType = useMemo(() => {
+    const normalized = normalizeDataType(dataType);
+    console.log(
+      `[UltimateHandle] Normalizing dataType: "${dataType}" → "${normalized}"`
+    );
+    return normalized;
+  }, [dataType]);
+
   // Auto-hide error state after 5 seconds
   useEffect(() => {
     if (invalid) {
@@ -553,19 +562,19 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
     };
   }, [getNodes, getEdges, setEdges]);
 
-  // HANDLE UNION TYPE DISPLAY
+  // HANDLE UNION TYPE DISPLAY - Use normalized dataType
   const displayInfo = useMemo(() => {
     // DEBUG: Log what we're working with
     console.log(
-      `[UltimateHandle] Rendering handle with dataType: "${dataType}"`
+      `[UltimateHandle] Rendering handle with dataType: "${dataType}" (normalized: "${normalizedDataType}")`
     );
     console.log(
       `[UltimateHandle] Type mapping lookup:`,
-      ULTIMATE_TYPE_MAP[dataType]
+      ULTIMATE_TYPE_MAP[normalizedDataType]
     );
 
-    if (isUnionType(dataType)) {
-      const types = parseUnionTypes(dataType);
+    if (isUnionType(normalizedDataType)) {
+      const types = parseUnionTypes(normalizedDataType);
       const firstType = types[0] || "x";
       const firstTypeInfo = ULTIMATE_TYPE_MAP[firstType] || ULTIMATE_TYPE_MAP.x;
 
@@ -592,13 +601,14 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
       }
     }
 
-    const typeInfo = ULTIMATE_TYPE_MAP[dataType] || ULTIMATE_TYPE_MAP.x;
+    const typeInfo =
+      ULTIMATE_TYPE_MAP[normalizedDataType] || ULTIMATE_TYPE_MAP.x;
     return {
       label: typeInfo.label,
       color: typeInfo.color,
       description: typeInfo.description,
     };
-  }, [dataType, unionDisplay]);
+  }, [dataType, normalizedDataType, unionDisplay]);
 
   // ENHANCED CONNECTION VALIDATION
   const isValidConnection = useCallback((connection: any): boolean => {
@@ -677,8 +687,8 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
     const typeDescription = displayInfo.description;
 
     // For union types, show all component types
-    if (isUnionType(dataType)) {
-      const unionTypes = parseUnionTypes(dataType);
+    if (isUnionType(normalizedDataType)) {
+      const unionTypes = parseUnionTypes(normalizedDataType);
       const unionLabels = unionTypes
         .map((t) => ULTIMATE_TYPE_MAP[t]?.label || t)
         .join(" | ");
@@ -688,7 +698,7 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
     // For single types, show compatibility info
     if (props.type === "source") {
       // For outputs, show what they can connect TO
-      const compatibleTypes = getCompatibleTypes(dataType);
+      const compatibleTypes = getCompatibleTypes(normalizedDataType);
       const compatibleLabels = compatibleTypes
         .slice(0, 4)
         .map((t) => ULTIMATE_TYPE_MAP[t]?.label || t)
@@ -703,7 +713,7 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
       // For inputs, show what can connect TO them
       const allTypes = Object.keys(ULTIMATE_TYPE_MAP);
       const compatibleSources = allTypes.filter((sourceType) =>
-        isTypeCompatible(sourceType, dataType)
+        isTypeCompatible(sourceType, normalizedDataType)
       );
       const sourceLabels = compatibleSources
         .slice(0, 4)
@@ -716,12 +726,12 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
 
       return `${direction}: ${typeLabel}\n${typeDescription}\n\nAccepts from: ${sourceLabels}${moreText}`;
     }
-  }, [invalid, displayInfo, props.type, dataType]);
+  }, [invalid, displayInfo, props.type, normalizedDataType]);
 
   // STYLE GENERATION
   const handleStyle = useMemo(() => {
     console.log(
-      `[UltimateHandle] Applying color: ${displayInfo.color} for dataType: ${dataType}`
+      `[UltimateHandle] Applying color: ${displayInfo.color} for dataType: ${dataType} (normalized: ${normalizedDataType})`
     );
 
     const style = {
@@ -732,22 +742,22 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
     };
 
     return style;
-  }, [displayInfo.color, props.style, dataType]);
+  }, [displayInfo.color, props.style, dataType, normalizedDataType]);
 
   const handleClassName = useMemo(() => {
     const baseClasses =
-      "w-8 h-8 flex items-center justify-center rounded-full p-1 shadow";
+      "w-8 h-8 flex items-center justify-center rounded-full p-1.5 shadow z-50";
     const invalidClass = invalid
       ? "outline-1 outline-red-500/20  shadow-[0_0_2px_2px_rgba(239,68,68,0.6)]"
       : "";
-    const unionClass = isUnionType(dataType)
+    const unionClass = isUnionType(normalizedDataType)
       ? "outline-1 outline-red-500/20 shadow-[0_0_2px_2px_rgba(239,68,68,0.6)]"
       : "";
     const finalClassName =
       `${baseClasses} ${invalidClass} ${unionClass} ${className}`.trim();
 
     return finalClassName;
-  }, [invalid, dataType, className]);
+  }, [invalid, normalizedDataType, className]);
 
   // RENDER - Force inline styles to override any CSS
   return (
@@ -764,7 +774,9 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
       <span
         style={{
           fontSize:
-            isUnionType(dataType) && unionDisplay === "all" ? "6px" : "10px",
+            isUnionType(normalizedDataType) && unionDisplay === "all"
+              ? "6px"
+              : "10px",
           fontWeight: 100, // Slightly bolder for better visibility
           lineHeight: 1,
           pointerEvents: "none",
@@ -787,7 +799,7 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
         {displayInfo.label}
       </span>
       {/* Union indicator */}
-      {isUnionType(dataType) && (
+      {isUnionType(normalizedDataType) && (
         <div
           style={{
             position: "absolute",
@@ -880,11 +892,11 @@ function disconnectIncompatibleConnections(
 // ============================================================================
 
 let lastToastKey = "";
-let lastDirectionToastKey = "";
 let lastToastTime = 0;
 let toastTimeout: number | null = null;
 let directionToastTimeout: number | null = null;
 let globalToastThrottle: number | null = null;
+let lastDirectionToastKey = "";
 
 /**
  * Enhanced toast deduplication with global throttling for rapid hover events

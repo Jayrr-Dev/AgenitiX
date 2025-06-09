@@ -20,7 +20,7 @@ function getHandleDataType(
   nodes: any[]
 ): string | null {
   try {
-    const registry = require("../json-node-registry/unifiedRegistry");
+    const registry = require("../../../core/registries/json-node-registry/unifiedRegistry");
     const node = nodes.find((n: any) => n.id === nodeId);
     if (!node) return null;
 

@@ -14,7 +14,7 @@ import { useMemo } from "react";
 import {
   registerNodeInspectorControls,
   registerNodeTypeConfig,
-} from "../../../json-node-registry/unifiedRegistry";
+} from "../../../registries/json-node-registry/unifiedRegistry";
 import type { BaseNodeData, NodeFactoryConfig } from "../../types";
 
 /**

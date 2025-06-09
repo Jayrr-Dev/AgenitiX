@@ -18,7 +18,7 @@ import {
   useNodeCategoryTextTheme,
   useNodeStyleClasses,
   useNodeTextTheme,
-} from "../../../../theming/stores/nodeStyleStore";
+} from "../../../../../theming/stores/nodeStyleStore";
 import { ERROR_INJECTION_SUPPORTED_NODES } from "../../config/constants";
 
 // TYPES

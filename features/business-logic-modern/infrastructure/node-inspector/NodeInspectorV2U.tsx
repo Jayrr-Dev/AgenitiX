@@ -46,7 +46,7 @@ import type { NodeType } from "../flow-engine/types/nodeData";
 import {
   GENERATED_NODE_REGISTRY,
   NODE_TYPES,
-} from "../node-creation/json-node-registry/generated/nodeRegistry";
+} from "../node-creation/core/registries/json-node-registry/generated/nodeRegistry";
 import {
   getCategoryMetadata,
   getNodeMetadata,

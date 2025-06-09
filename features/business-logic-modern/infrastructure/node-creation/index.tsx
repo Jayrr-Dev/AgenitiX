@@ -273,7 +273,125 @@ export function defineNode<TData extends BaseNodeData>(
     registry.register(config);
   }
 
-  // Create enhanced default data with V2 metadata
+  // 🚀 BRIDGE: Check if we should use enterprise factory styling
+  const shouldUseEnterpriseStyling =
+    config.metadata.nodeType.endsWith("V2U") ||
+    config.metadata.tags?.includes("enterprise-ready");
+
+  if (shouldUseEnterpriseStyling) {
+    console.log(
+      `🏭 [defineNode] Using enterprise styling with standardized sizes for ${config.metadata.nodeType}`
+    );
+
+    try {
+      // Dynamic import to avoid circular dependencies
+      const { createNodeComponent } = require("./core/factory");
+
+      // Dynamic import for size utilities to avoid circular dependencies
+      const {
+        convertV2UNodeSize,
+        logV2USizeConversion,
+        validateSizeConfig,
+      } = require("./core/factory/constants/sizes");
+
+      // Convert V2U size using standardized conversion
+      const standardizedSize = convertV2UNodeSize(
+        config.metadata.nodeType,
+        config.size
+      );
+
+      // Log the conversion for debugging
+      logV2USizeConversion(
+        config.metadata.nodeType,
+        config.size,
+        standardizedSize
+      );
+
+      // Validate the converted size
+      if (!validateSizeConfig(standardizedSize)) {
+        console.warn(
+          `⚠️ [defineNode] Size validation failed for ${config.metadata.nodeType}, using fallback`
+        );
+      }
+
+      // Convert defineNode config to enterprise factory config
+      const factoryConfig = {
+        nodeType: config.metadata.nodeType,
+        category: config.metadata.category as any,
+        displayName: config.metadata.displayName,
+        defaultData: config.defaultData,
+        handles:
+          config.handles?.map((handle) => ({
+            id: handle.id,
+            type: handle.type,
+            position: handle.position,
+            dataType: mapDataType(handle.dataType),
+          })) || [],
+        size: standardizedSize, // ✨ Use standardized V2U size conversion!
+        processLogic: ({ data, updateNodeData, id, connections }: any) => {
+          // Adapt the enterprise factory processLogic to defineNode context
+          const context: NodeExecutionContext<TData> = {
+            nodeId: id,
+            data,
+            updateNodeData: (partial: Partial<TData>) =>
+              updateNodeData(id, partial),
+            setError: () => {}, // TODO: Wire up error handling
+            getConnections: () => connections || [],
+            emitEvent: () => {},
+            performance: { startTime: Date.now(), executionCount: 0 },
+            security: { permissions: [], canExecute: true },
+          };
+
+          if (config.processLogic) {
+            config.processLogic(context);
+          }
+        },
+        renderCollapsed: ({ data, updateNodeData, id, error }: any) => {
+          const renderContext: NodeRenderContext<TData> = {
+            data,
+            error,
+            updateNodeData: (partial: Partial<TData>) =>
+              updateNodeData(id, partial),
+            id,
+            isSelected: false,
+            isExpanded: false,
+            context: {} as any,
+          };
+          return config.renderCollapsed(renderContext);
+        },
+        renderExpanded: ({ data, updateNodeData, id, error }: any) => {
+          const renderContext: NodeRenderContext<TData> = {
+            data,
+            error,
+            updateNodeData: (partial: Partial<TData>) =>
+              updateNodeData(id, partial),
+            id,
+            isSelected: false,
+            isExpanded: true,
+            context: {} as any,
+          };
+          return config.renderExpanded(renderContext);
+        },
+      };
+
+      // Create enterprise component
+      const EnterpriseComponent = createNodeComponent(factoryConfig);
+
+      return {
+        nodeType: config.metadata.nodeType,
+        component: EnterpriseComponent, // ✨ Enterprise-styled component!
+        configuration: config,
+      };
+    } catch (error) {
+      console.warn(
+        `⚠️ [defineNode] Enterprise styling failed for ${config.metadata.nodeType}, falling back to basic styling:`,
+        error
+      );
+      // Fall through to basic defineNode implementation
+    }
+  }
+
+  // 📦 BASIC: Original defineNode implementation for non-enterprise nodes
   const enhancedDefaultData = {
     ...config.defaultData,
     _v2RegistryVersion: "2.0.0",
@@ -402,6 +520,19 @@ export function defineNode<TData extends BaseNodeData>(
     component: NodeComponent,
     configuration: config,
   };
+}
+
+// Helper function to map defineNode data types to enterprise factory data types
+function mapDataType(defineNodeType: string): string {
+  const typeMap: Record<string, string> = {
+    string: "s",
+    number: "n",
+    boolean: "b",
+    object: "{ }",
+    array: "a",
+    any: "x",
+  };
+  return typeMap[defineNodeType] || "x"; // default to 'any'
 }
 
 // Utility functions for easier node creation

@@ -9,7 +9,20 @@
 // ============================================================================
 
 import { create } from "zustand";
-import type { NodeCategory } from "../../node-creation/json-node-registry/schemas/base";
+import type { NodeCategory } from "../../node-creation/core/registries/json-node-registry/schemas/base";
+
+// Static import to avoid webpack warnings
+let unifiedRegistryModule: any = null;
+
+// Initialize registry module at module load time
+try {
+  unifiedRegistryModule = require("../../node-creation/core/registries/json-node-registry/unifiedRegistry");
+} catch (err) {
+  console.warn("Failed to load unified registry module:", err);
+}
+
+// Simple getter function
+const getUnifiedRegistry = () => unifiedRegistryModule;
 
 // -----------------------------------------------------------------------------
 // 1.  Lazy-loaded registry helpers – avoid circular deps during init
@@ -30,47 +43,77 @@ function safeRequire<T = unknown>(
   }
 }
 
-const lazyGetNodeCategoryMapping = () =>
-  safeRequire<Record<string, NodeCategory>>(
-    "../../node-creation/json-node-registry/unifiedRegistry",
-    (m) => m.getNodeCategoryMapping(),
-    {}
-  );
+const lazyGetNodeCategoryMapping = (): Record<string, NodeCategory> => {
+  const module = getUnifiedRegistry();
+  if (module && module.getNodeCategoryMapping) {
+    try {
+      return module.getNodeCategoryMapping() || {};
+    } catch (err) {
+      console.warn("Failed to get node category mapping:", err);
+    }
+  }
+  return {};
+};
 
-const lazyIsValidNodeType = (nodeType: string) =>
-  safeRequire<boolean>(
-    "../../node-creation/json-node-registry/unifiedRegistry",
-    (m) => m.isValidNodeType(nodeType),
-    false
-  );
+const lazyIsValidNodeType = (nodeType: string) => {
+  const module = getUnifiedRegistry();
+  if (module && module.isValidNodeType) {
+    try {
+      return module.isValidNodeType(nodeType);
+    } catch (err) {
+      console.warn("Failed to validate node type:", err);
+    }
+  }
+  return false;
+};
 
-const lazyCategoryRegistry = () =>
-  safeRequire<Record<string, unknown>>(
-    "../../node-creation/json-node-registry/unifiedRegistry",
-    (m) => m.CATEGORY_REGISTRY,
-    {}
-  );
+const lazyCategoryRegistry = () => {
+  const module = getUnifiedRegistry();
+  if (module && module.CATEGORY_REGISTRY) {
+    try {
+      return module.CATEGORY_REGISTRY;
+    } catch (err) {
+      console.warn("Failed to get category registry:", err);
+    }
+  }
+  return {};
+};
 
-const lazyGetCategoryMetadata = (category: string) =>
-  safeRequire<any>(
-    "../../node-creation/json-node-registry/unifiedRegistry",
-    (m) => m.getCategoryMetadata(category),
-    null
-  );
+const lazyGetCategoryMetadata = (category: string) => {
+  const module = getUnifiedRegistry();
+  if (module && module.getCategoryMetadata) {
+    try {
+      return module.getCategoryMetadata(category);
+    } catch (err) {
+      console.warn("Failed to get category metadata:", err);
+    }
+  }
+  return null;
+};
 
-const lazyApplyCategoryHooks = (category: string, theme: unknown) =>
-  safeRequire<void>(
-    "../../node-creation/json-node-registry/unifiedRegistry",
-    (m) => m.applyCategoryHooks(category, theme),
-    undefined
-  );
+const lazyApplyCategoryHooks = (category: string, theme: unknown) => {
+  const module = getUnifiedRegistry();
+  if (module && module.applyCategoryHooks) {
+    try {
+      return module.applyCategoryHooks(category, theme);
+    } catch (err) {
+      console.warn("Failed to apply category hooks:", err);
+    }
+  }
+  return undefined;
+};
 
-const lazyGetCategoryTheme = (category: string) =>
-  safeRequire<any>(
-    "../../node-creation/json-node-registry/unifiedRegistry",
-    (m) => m.getCategoryTheme(category),
-    null
-  );
+const lazyGetCategoryTheme = (category: string) => {
+  const module = getUnifiedRegistry();
+  if (module && module.getCategoryTheme) {
+    try {
+      return module.getCategoryTheme(category);
+    } catch (err) {
+      console.warn("Failed to get category theme:", err);
+    }
+  }
+  return null;
+};
 
 // Expose registry proxy for BC.
 export const CATEGORY_REGISTRY = new Proxy({} as Record<string, unknown>, {

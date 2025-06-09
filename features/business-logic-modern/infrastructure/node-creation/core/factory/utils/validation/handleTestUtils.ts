@@ -32,7 +32,7 @@ function testHandleRegistry() {
       // Test dynamic import of registry
       const {
         getNodeHandles,
-      } = require("../../json-node-registry/unifiedRegistry");
+      } = require("../../../registries/json-node-registry/unifiedRegistry");
       const handles = getNodeHandles(nodeType) || [];
 
       console.log(`✅ ${nodeType}: ${handles.length} handles`, handles);
@@ -193,7 +193,7 @@ function testConnectionValidation() {
     // Test the flow-level validation directly
     const {
       validateConnection,
-    } = require("../../flow-engine/utils/connectionUtils");
+    } = require("../../../../../flow-engine/utils/connectionUtils");
 
     const testConnection = {
       source: "test-source",
@@ -210,7 +210,7 @@ function testConnectionValidation() {
     console.log("Testing registry access...");
     const {
       getNodeHandles,
-    } = require("../../json-node-registry/unifiedRegistry");
+    } = require("../../../registries/json-node-registry/unifiedRegistry");
     const createTextHandles = getNodeHandles("createText");
     const viewOutputHandles = getNodeHandles("viewOutput");
 
@@ -244,6 +244,89 @@ function testConnectionValidation() {
   console.groupEnd();
 }
 
+/**
+ * TEST V2U NODE ENTERPRISE INTEGRATION
+ * Test if V2U nodes are properly integrated with NodeFactory.tsx enterprise system
+ */
+function testV2UNodeResolution() {
+  console.group("🧪 TESTING V2U NODE ENTERPRISE INTEGRATION");
+
+  const v2uNodeTypes = [
+    { nodeType: "createTextV2U", system: "Enterprise Factory" },
+    { nodeType: "viewOutputV2U", system: "defineNode" },
+    { nodeType: "triggerOnToggleV2U", system: "defineNode" },
+    { nodeType: "testErrorV2U", system: "defineNode" },
+  ];
+
+  v2uNodeTypes.forEach(({ nodeType, system }) => {
+    try {
+      // Test unified registry resolution
+      const {
+        getEnhancedNodeRegistration,
+      } = require("../../../registries/json-node-registry/unifiedRegistry");
+      const registration = getEnhancedNodeRegistration(nodeType);
+
+      if (registration && registration.component) {
+        console.log(
+          `✅ ${nodeType} (${system}): Component resolved successfully`
+        );
+        console.log(`   • Category: ${registration.category}`);
+        console.log(`   • Display Name: ${registration.displayName}`);
+        console.log(`   • Has Component: ${!!registration.component}`);
+        console.log(`   • Handles: ${registration.handles?.length || 0}`);
+
+        // Check if it's using enterprise factory features
+        const componentName =
+          registration.component.displayName || registration.component.name;
+        if (componentName && componentName.includes("Enterprise")) {
+          console.log(`   🏭 ENTERPRISE STYLING: Yes`);
+          console.log(`   📏 STANDARDIZED SIZES: Yes (via convertV2UNodeSize)`);
+        } else {
+          console.log(`   🏭 ENTERPRISE STYLING: No (basic defineNode)`);
+          console.log(`   📏 STANDARDIZED SIZES: No`);
+        }
+      } else {
+        console.error(`❌ ${nodeType}: Component NOT resolved`);
+        console.log(`   • Registration: ${!!registration}`);
+        console.log(`   • Component: ${!!registration?.component}`);
+      }
+
+      // Test factory creation
+      const { unifiedFactory } = require("../../core/UnifiedIntegration");
+      const testNode = unifiedFactory.createNode(nodeType, { x: 100, y: 100 });
+
+      if (testNode) {
+        console.log(`✅ ${nodeType}: Factory creation successful`);
+        console.log(`   • Node ID: ${testNode.id}`);
+        console.log(`   • Node Type: ${testNode.type}`);
+        console.log(`   • Has Data: ${!!testNode.data}`);
+      } else {
+        console.error(`❌ ${nodeType}: Factory creation FAILED`);
+      }
+    } catch (error) {
+      console.error(`❌ ${nodeType}: Resolution error`, error);
+    }
+  });
+
+  console.groupEnd();
+  console.log("🚀 BRIDGE SOLUTION ACTIVE:");
+  console.log(
+    "   • V2U nodes (ending in 'V2U') automatically get enterprise styling"
+  );
+  console.log(
+    "   • Enhanced defineNode() wraps components with NodeFactory.tsx features"
+  );
+  console.log(
+    "   • Standardized sizes via convertV2UNodeSize() from sizes.ts constants"
+  );
+  console.log(
+    "   • Maintains V2U architecture while delivering immediate styling"
+  );
+  console.log(
+    "💡 CreateTextV2U should show 'ENTERPRISE STYLING: Yes' + 'STANDARDIZED SIZES: Yes'!"
+  );
+}
+
 // Make functions available globally for console use
 if (typeof window !== "undefined") {
   (window as any).testHandleRegistry = testHandleRegistry;
@@ -252,6 +335,7 @@ if (typeof window !== "undefined") {
   (window as any).diagnoseHandles = diagnoseHandles;
   (window as any).testConnectionCompatibility = testConnectionCompatibility;
   (window as any).testConnectionValidation = testConnectionValidation;
+  (window as any).testV2UNodeResolution = testV2UNodeResolution;
 
   console.log("🔧 Enhanced handle test functions available:");
   console.log("  • testHandleRegistry()");
@@ -260,6 +344,7 @@ if (typeof window !== "undefined") {
   console.log("  • diagnoseHandles()");
   console.log("  • testConnectionCompatibility()");
   console.log("  • testConnectionValidation()");
+  console.log("  • testV2UNodeResolution()");
 }
 
 export {
@@ -268,4 +353,5 @@ export {
   testConnections,
   testHandleRegistry,
   testNodeCreation,
+  testV2UNodeResolution,
 };

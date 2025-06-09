@@ -16,7 +16,6 @@
 import { Position } from "@xyflow/react";
 import { BaseNodeData } from "../../infrastructure/flow-engine/types/nodeData";
 import { defineNode } from "../../infrastructure/node-creation";
-import { generateDisplayValueKey } from "../../infrastructure/node-creation/factory/utils/ui/keyUtils";
 
 // ============================================================================
 // NODE DATA INTERFACE
@@ -257,203 +256,129 @@ export default defineNode<ViewOutputV2UData>({
     }
   },
 
-  // COLLAPSED RENDER: Enhanced with V2U styling
-  renderCollapsed: ({ data, error, isSelected }) => {
-    const valueCount = data.displayedValues?.length || 0;
-    const hasValues = valueCount > 0;
+  // COLLAPSED RENDER: Carbon copy of ViewOutput styling
+  renderCollapsed: ({ data, error }) => {
+    const values = data.displayedValues || [];
 
     return (
-      <div
-        className={`absolute inset-0 flex flex-col items-center justify-center px-2 ${
-          error ? "bg-red-50 dark:bg-red-900/30" : "bg-white dark:bg-gray-800"
-        } ${isSelected ? "ring-2 ring-blue-500" : ""} border rounded`}
-      >
-        {/* V2U Header */}
-        <div
-          className={`text-xs font-semibold mt-1 mb-1 ${
-            error
-              ? "text-red-700 dark:text-red-300"
-              : "text-gray-700 dark:text-gray-300"
-          }`}
-        >
-          <div className="flex items-center gap-1">
-            <span>👁️</span>
-            <span>View Output V2U</span>
+      <div className="absolute inset-0 flex flex-col px-2 py-2 overflow-hidden">
+        <div className="flex items-center justify-center mb-1">
+          <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+            {error ? "Error" : "📤 View Output"}
           </div>
         </div>
 
-        {/* Content Display */}
         {error ? (
-          <div className="text-xs text-center text-red-600 dark:text-red-400 break-words">
+          <div className="text-xs text-center text-red-600 dark:text-red-400 break-words flex-1 flex items-center justify-center">
             {error}
           </div>
-        ) : hasValues ? (
-          <div className="text-xs text-center text-gray-600 dark:text-gray-400">
-            {valueCount} value{valueCount !== 1 ? "s" : ""} displayed
-            <div className="flex items-center justify-center gap-1 mt-1">
-              {data.displayedValues.slice(0, 3).map((item, index) => {
-                const typeInfo = getDataTypeInfo(item.content);
-                return (
-                  <span
-                    key={index}
-                    className="inline-block w-3 h-3 rounded-full text-white text-xs leading-3 text-center"
-                    style={{ backgroundColor: typeInfo.color, fontSize: "8px" }}
-                    title={`${typeInfo.label}: ${formatContent(item.content).substring(0, 50)}`}
-                  >
-                    {typeInfo.type}
-                  </span>
-                );
-              })}
-              {valueCount > 3 && (
-                <span className="text-xs text-gray-500">+{valueCount - 3}</span>
-              )}
-            </div>
+        ) : values.length ? (
+          <div className="space-y-1 flex-1 overflow-hidden">
+            {values.map((item, index) => (
+              <div
+                key={`${item.id}-${index}`}
+                className="bg-white/50 dark:bg-black/20 rounded px-1 py-0.5 overflow-hidden"
+                style={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
+                {formatContent(item.content)}
+              </div>
+            ))}
           </div>
         ) : (
-          <div className="text-xs text-center text-gray-500 dark:text-gray-500">
-            No connected values
-          </div>
-        )}
-
-        {/* V2U Migration Indicator */}
-        {data._v2uMigrated && (
-          <div className="absolute top-1 right-1 text-xs text-blue-500 opacity-75">
-            V2U
+          <div className="text-xs italic text-gray-600 dark:text-gray-400 flex-1 flex items-center justify-center text-center">
+            Connect nodes
           </div>
         )}
       </div>
     );
   },
 
-  // EXPANDED RENDER: Enhanced with V2U features
-  renderExpanded: ({ data, error, isSelected }) => {
-    const hasValues = data.displayedValues?.length > 0;
+  // EXPANDED RENDER: Carbon copy of ViewOutput styling
+  renderExpanded: ({ data, error }) => {
+    const values = data.displayedValues || [];
+    const categoryTextTheme = {
+      primary: "text-gray-900 dark:text-gray-100",
+      secondary: "text-gray-600 dark:text-gray-400",
+    };
 
     return (
-      <div
-        className={`absolute inset-0 flex flex-col ${
-          error ? "bg-red-50 dark:bg-red-900/30" : "bg-white dark:bg-gray-800"
-        } border rounded-lg ${
-          error
-            ? "border-red-300 dark:border-red-700"
-            : "border-gray-300 dark:border-gray-600"
-        } ${isSelected ? "ring-2 ring-blue-500" : ""}`}
-      >
-        {/* V2U Header */}
-        <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2">
-            <span className="text-sm">👁️</span>
-            <span
-              className={`text-sm font-medium ${
-                error
-                  ? "text-red-700 dark:text-red-300"
-                  : "text-gray-700 dark:text-gray-300"
-              }`}
-            >
-              View Output V2U
+      <div className="flex text-xs flex-col w-full h-[156px] overflow-hidden">
+        <div
+          className={`font-semibold mb-2 flex items-center justify-between ${categoryTextTheme.primary}`}
+        >
+          <span>{error ? "Error" : "View Output"}</span>
+          {error ? (
+            <span className="text-xs text-red-600 dark:text-red-400">
+              ● {error}
             </span>
-          </div>
-          {data._v2uMigrated && (
-            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-              V2U
+          ) : (
+            <span className="text-xs text-gray-600 dark:text-gray-400">
+              {values.length} input{values.length !== 1 ? "s" : ""}
             </span>
           )}
         </div>
 
-        {/* Error Display */}
         {error && (
-          <div className="px-2 py-1 text-xs text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border-b border-red-300 dark:border-red-700">
-            <div className="flex items-center gap-1">
-              <span>●</span>
-              <span className="font-medium">Error:</span>
-              <span>{error}</span>
-            </div>
+          <div className="mb-2 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-300">
+            <div className="font-semibold mb-1">Error Details:</div>
+            <div className="mb-2">{error}</div>
           </div>
         )}
 
-        {/* Content Area */}
-        <div className="flex-1 p-2 overflow-auto">
-          {hasValues ? (
-            <div className="space-y-2">
-              {data.displayedValues.map((item, index) => {
-                const typeInfo = getDataTypeInfo(item.content);
-                const formattedContent = formatContent(item.content);
-                const isLongContent = formattedContent.length > 100;
-
-                return (
-                  <div
-                    key={generateDisplayValueKey(item, index)}
-                    className="p-2 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-900/50"
-                  >
-                    {/* Type indicator and source */}
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="inline-block px-2 py-1 rounded text-white text-xs font-medium"
-                          style={{ backgroundColor: typeInfo.color }}
-                        >
-                          {typeInfo.label}
-                        </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          from {item.type}
-                        </span>
-                      </div>
-                      <span className="text-xs text-gray-400 dark:text-gray-500">
-                        {item.id}
-                      </span>
+        {values.length ? (
+          <div
+            className="nodrag nowheel space-y-2 flex-1 overflow-y-auto max-h-[120px] pr-1"
+            onWheel={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{ touchAction: "pan-y" }}
+          >
+            {values.map((item, index) => {
+              const typeInfo = getDataTypeInfo(item.content);
+              return (
+                <div
+                  key={`${item.id}-${index}`}
+                  className="bg-white/50 dark:bg-black/20 rounded px-2 py-2"
+                >
+                  {/* Type indicator with colored icon */}
+                  <div className="flex items-center gap-2 mb-1">
+                    <div
+                      className="w-3 h-3 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                      style={{ backgroundColor: typeInfo.color }}
+                      title={typeInfo.label}
+                    >
+                      {typeInfo.type}
                     </div>
-
-                    {/* Content display */}
-                    <div className="text-sm font-mono bg-white dark:bg-gray-800 p-2 rounded border">
-                      {isLongContent ? (
-                        <details>
-                          <summary className="cursor-pointer text-blue-600 dark:text-blue-400">
-                            {formattedContent.substring(0, 100)}...
-                          </summary>
-                          <div className="mt-2 whitespace-pre-wrap break-words">
-                            {formattedContent}
-                          </div>
-                        </details>
-                      ) : (
-                        <div className="whitespace-pre-wrap break-words">
-                          {formattedContent}
-                        </div>
-                      )}
-                    </div>
+                    <span
+                      className={`text-xs font-medium ${categoryTextTheme.secondary}`}
+                    >
+                      {typeInfo.label}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-              <div className="text-center">
-                <div className="text-2xl mb-2">🔗</div>
-                <div className="text-sm">
-                  Connect nodes to view their output
-                </div>
-                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  V2U Enhanced Data Viewer
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
 
-        {/* V2U Footer */}
-        {hasValues && (
-          <div className="px-2 py-1 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-              <span>
-                {data.displayedValues.length} value
-                {data.displayedValues.length !== 1 ? "s" : ""}
-              </span>
-              {data._v2uMigrationDate && (
-                <span>
-                  Migrated:{" "}
-                  {new Date(data._v2uMigrationDate).toLocaleDateString()}
-                </span>
-              )}
-            </div>
+                  {/* Content */}
+                  <div
+                    className={`text-xs font-mono break-all ${categoryTextTheme.primary}`}
+                  >
+                    {formatContent(item.content)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div
+            className={`text-xs italic ${categoryTextTheme.secondary} flex-1 flex items-center justify-center text-center`}
+          >
+            {error
+              ? "Fix error to view outputs"
+              : "Connect any node with output"}
           </div>
         )}
       </div>

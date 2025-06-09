@@ -15,8 +15,9 @@ The Node Factory is a **declarative node creation system** that transforms simpl
 ```
 
 **Benefits**:
+
 - **🔄 Consistency**: All factory nodes follow the same patterns
-- **⚡ Productivity**: Minimal boilerplate, maximum functionality  
+- **⚡ Productivity**: Minimal boilerplate, maximum functionality
 - **🛡️ Safety**: Built-in error handling and recovery
 - **🎨 Styling**: Automatic theme integration and visual feedback
 - **🔌 Integration**: Seamless Vibe Mode and trigger support
@@ -72,7 +73,7 @@ The Node Factory transforms configurations through a sophisticated pipeline:
 ```typescript
 export function createNodeComponent<T extends BaseNodeData>(
   config: NodeFactoryConfig<T>
-): React.ComponentType<NodeProps<Node<T & Record<string, unknown>>>>
+): React.ComponentType<NodeProps<Node<T & Record<string, unknown>>>>;
 ```
 
 **Purpose**: Transforms a configuration object into a fully-featured React node component.
@@ -81,17 +82,17 @@ export function createNodeComponent<T extends BaseNodeData>(
 
 ```typescript
 export interface NodeFactoryConfig<T extends BaseNodeData> {
-  nodeType: string;                    // Unique identifier
-  category: NodeCategory;              // Visual theme category
-  displayName: string;                 // Human-readable name
-  size?: NodeSize;                     // Custom sizing
-  handles: HandleConfig[];             // Input/output handles
-  defaultData: T;                      // Initial node data
-  processLogic: ProcessLogicFunction;  // Data processing logic
-  renderCollapsed: RenderFunction;     // Collapsed state UI
-  renderExpanded: RenderFunction;      // Expanded state UI
+  nodeType: string; // Unique identifier
+  category: NodeCategory; // Visual theme category
+  displayName: string; // Human-readable name
+  size?: NodeSize; // Custom sizing
+  handles: HandleConfig[]; // Input/output handles
+  defaultData: T; // Initial node data
+  processLogic: ProcessLogicFunction; // Data processing logic
+  renderCollapsed: RenderFunction; // Collapsed state UI
+  renderExpanded: RenderFunction; // Expanded state UI
   renderInspectorControls?: RenderFunction; // Inspector controls
-  errorRecoveryData?: Partial<T>;      // Error recovery defaults
+  errorRecoveryData?: Partial<T>; // Error recovery defaults
 }
 ```
 
@@ -99,9 +100,9 @@ export interface NodeFactoryConfig<T extends BaseNodeData> {
 
 ```typescript
 export interface BaseNodeData {
-  error?: string;                      // Error message
-  isActive?: boolean;                  // Activation state
-  [key: string]: any;                  // Additional properties
+  error?: string; // Error message
+  isActive?: boolean; // Activation state
+  [key: string]: any; // Additional properties
 }
 ```
 
@@ -114,14 +115,20 @@ export interface BaseNodeData {
 The factory automatically integrates with the visual feedback system:
 
 #### **Category-Based Themes**
+
 ```typescript
 // Automatic theme application based on category
 const categoryBaseClasses = useNodeCategoryBaseClasses(nodeType);
-const categoryButtonTheme = useNodeCategoryButtonTheme(nodeType, !!error, isActive);
+const categoryButtonTheme = useNodeCategoryButtonTheme(
+  nodeType,
+  !!error,
+  isActive
+);
 const categoryTextTheme = useNodeCategoryTextTheme(nodeType, !!error);
 ```
 
 #### **State-Based Styling**
+
 ```typescript
 // Automatic glow effects based on node state
 const nodeStyleClasses = useNodeStyleClasses(!!selected, !!error, isActive);
@@ -132,26 +139,28 @@ const textTheme = useNodeTextTheme(!!error);
 ### **Size Management**
 
 #### **Default Sizes**
+
 ```typescript
 // Text nodes (CreateText, TurnToUppercase)
 const DEFAULT_TEXT_NODE_SIZE: NodeSize = {
-  collapsed: { width: 'w-[120px]', height: 'h-[60px]' },
-  expanded: { width: 'w-[180px]' }
+  collapsed: { width: "w-[120px]", height: "h-[60px]" },
+  expanded: { width: "w-[180px]" },
 };
 
 // Logic nodes (LogicAnd, LogicOr)
 const DEFAULT_LOGIC_NODE_SIZE: NodeSize = {
-  collapsed: { width: 'w-[60px]', height: 'h-[60px]' },
-  expanded: { width: 'w-[120px]' }
+  collapsed: { width: "w-[60px]", height: "h-[60px]" },
+  expanded: { width: "w-[120px]" },
 };
 ```
 
 #### **Custom Sizing**
+
 ```typescript
 // Custom size configuration
 const customSize: NodeSize = {
-  collapsed: { width: 'w-[100px]', height: 'h-[80px]' },
-  expanded: { width: 'w-[200px]' }
+  collapsed: { width: "w-[100px]", height: "h-[80px]" },
+  expanded: { width: "w-[200px]" },
 };
 ```
 
@@ -167,31 +176,31 @@ Every factory node automatically gets JSON input capability:
 // Automatically added to all factory nodes
 const enhancedConfig = {
   ...config,
-  handles: addJsonInputSupport(config.handles) // Adds 'j' handle at top
+  handles: addJsonInputSupport(config.handles), // Adds 'j' handle at top
 };
 ```
 
 **JSON Processing Logic**:
+
 ```typescript
 // Automatic Vibe Mode processing in separate useEffect
 useEffect(() => {
   if (!isVibeModeActive) return;
-  
+
   // Find JSON connections
-  const vibeConnections = connections.filter(c => 
-    allJsonHandleIds.includes(c.targetHandle || '')
+  const vibeConnections = connections.filter((c) =>
+    allJsonHandleIds.includes(c.targetHandle || "")
   );
-  
+
   // Process JSON inputs
-  jsonInputs.forEach(jsonInput => {
+  jsonInputs.forEach((jsonInput) => {
     try {
-      let parsedData = typeof jsonInput === 'object' 
-        ? jsonInput 
-        : JSON.parse(jsonInput);
-      
+      let parsedData =
+        typeof jsonInput === "object" ? jsonInput : JSON.parse(jsonInput);
+
       // Filter out unsafe properties
       const { error: _, ...safeData } = parsedData;
-      
+
       // Only update if there are actual changes
       if (hasChanges) {
         updateNodeData(id, safeData);
@@ -211,13 +220,13 @@ Factory nodes automatically handle boolean trigger inputs:
 // Automatic trigger evaluation
 const triggerInfo = (() => {
   // Filter for trigger connections (boolean handle 'b')
-  const triggerConnections = connections.filter(c => c.targetHandle === 'b');
+  const triggerConnections = connections.filter((c) => c.targetHandle === "b");
   const hasTrigger = triggerConnections.length > 0;
-  
+
   if (!hasTrigger) {
     return true; // No trigger = always allow data
   }
-  
+
   // Get trigger value from connected trigger nodes
   const triggerValue = getSingleInputValue(triggerNodesData);
   return isTruthyValue(triggerValue);
@@ -234,30 +243,32 @@ Automatic activation state based on semantic data analysis:
 ```typescript
 const hasOutputData = (() => {
   const currentData = data as T;
-  
+
   // Special handling for specific node types
-  if (nodeType === 'testJson') {
-    return testJsonData?.parsedJson !== null && 
-           testJsonData?.parseError === null;
+  if (nodeType === "testJson") {
+    return (
+      testJsonData?.parsedJson !== null && testJsonData?.parseError === null
+    );
   }
-  
-  if (nodeType === 'viewOutput') {
-    return displayedValues?.some(item => {
+
+  if (nodeType === "viewOutput") {
+    return displayedValues?.some((item) => {
       const content = item.content;
       // Complex meaningful content detection...
       return isContentMeaningful(content);
     });
   }
-  
+
   // General rule: check priority properties
-  const outputValue = currentData?.text ?? 
-                     currentData?.value ?? 
-                     currentData?.output ?? 
-                     currentData?.result;
-  
-  return outputValue !== undefined && 
-         outputValue !== null && 
-         outputValue !== '';
+  const outputValue =
+    currentData?.text ??
+    currentData?.value ??
+    currentData?.output ??
+    currentData?.result;
+
+  return (
+    outputValue !== undefined && outputValue !== null && outputValue !== ""
+  );
 })();
 ```
 
@@ -271,20 +282,20 @@ const recoverFromError = () => {
   try {
     setIsRecovering(true);
     setError(null);
-    
+
     // Reset to safe defaults
     const recoveryData = {
       ...config.defaultData,
       ...config.errorRecoveryData,
       error: null,
-      isActive: false
+      isActive: false,
     };
-    
+
     updateNodeData(id, recoveryData);
     setTimeout(() => setIsRecovering(false), 1000);
   } catch (recoveryError) {
     console.error(`Recovery failed:`, recoveryError);
-    setError('Recovery failed. Please refresh.');
+    setError("Recovery failed. Please refresh.");
   }
 };
 ```
@@ -298,7 +309,7 @@ Automatic registration of node inspector controls:
 const NODE_INSPECTOR_REGISTRY = new Map<string, Function>();
 
 export const registerNodeInspectorControls = <T extends BaseNodeData>(
-  nodeType: string, 
+  nodeType: string,
   renderControls: (props: InspectorControlProps<T>) => ReactNode
 ) => {
   NODE_INSPECTOR_REGISTRY.set(nodeType, renderControls);
@@ -306,7 +317,10 @@ export const registerNodeInspectorControls = <T extends BaseNodeData>(
 
 // Automatic registration during node creation
 if (config.renderInspectorControls) {
-  registerNodeInspectorControls(config.nodeType, config.renderInspectorControls);
+  registerNodeInspectorControls(
+    config.nodeType,
+    config.renderInspectorControls
+  );
 }
 ```
 
@@ -331,20 +345,20 @@ const UppercaseNode = createNodeComponent<UppercaseNodeData>({
   nodeType: 'uppercaseNode',
   category: 'turn', // Blue theme
   displayName: 'Uppercase',
-  
+
   // Default data
-  defaultData: { 
-    text: '', 
-    inputText: '' 
+  defaultData: {
+    text: '',
+    inputText: ''
   },
-  
+
   // Handle configuration
   handles: [
     { id: 'b', dataType: 'b', position: Position.Left, type: 'target' },  // Trigger
     { id: 's', dataType: 's', position: Position.Left, type: 'target' },  // String input
     { id: 's', dataType: 's', position: Position.Right, type: 'source' }  // String output
   ],
-  
+
   // Processing logic
   processLogic: ({ data, nodesData, updateNodeData, id, setError }) => {
     try {
@@ -353,21 +367,21 @@ const UppercaseNode = createNodeComponent<UppercaseNodeData>({
         .map(node => extractNodeValue(node.data))
         .filter(value => typeof value === 'string')
         .join(' ');
-      
+
       // Process: convert to uppercase
       const uppercased = inputText.toUpperCase();
-      
+
       // Update node data
-      updateNodeData(id, { 
-        text: uppercased, 
-        inputText 
+      updateNodeData(id, {
+        text: uppercased,
+        inputText
       });
-      
+
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Processing error');
     }
   },
-  
+
   // Collapsed state rendering
   renderCollapsed: ({ data, error }) => (
     <div className="absolute inset-0 flex flex-col items-center justify-center px-2">
@@ -379,14 +393,14 @@ const UppercaseNode = createNodeComponent<UppercaseNodeData>({
       </div>
     </div>
   ),
-  
+
   // Expanded state rendering
   renderExpanded: ({ data, error, categoryTextTheme }) => (
     <div className="flex text-xs flex-col w-auto">
       <div className={`font-semibold mb-2 ${categoryTextTheme.primary}`}>
         {error ? 'Error' : 'Uppercase Node'}
       </div>
-      
+
       {error ? (
         <div className="text-red-600 text-xs">{error}</div>
       ) : (
@@ -403,7 +417,7 @@ const UppercaseNode = createNodeComponent<UppercaseNodeData>({
       )}
     </div>
   ),
-  
+
   // Optional: Inspector controls
   renderInspectorControls: ({ node, updateNodeData }) => (
     <div className="space-y-2">
@@ -418,7 +432,7 @@ const UppercaseNode = createNodeComponent<UppercaseNodeData>({
       </label>
     </div>
   ),
-  
+
   // Optional: Error recovery data
   errorRecoveryData: {
     text: '',
@@ -442,51 +456,51 @@ const LogicAndNode = createNodeComponent<LogicAndNodeData>({
   nodeType: 'logicAnd',
   category: 'logic', // Purple theme
   displayName: 'Logic AND',
-  
+
   // Use logic node defaults
   size: {
     collapsed: { width: 'w-[60px]', height: 'h-[60px]' },
     expanded: { width: 'w-[120px]' }
   },
-  
-  defaultData: { 
-    value: false, 
-    inputCount: 0, 
-    trueInputs: 0 
+
+  defaultData: {
+    value: false,
+    inputCount: 0,
+    trueInputs: 0
   },
-  
+
   handles: [
     { id: 'b', dataType: 'b', position: Position.Left, type: 'target' },   // Trigger
     { id: 'b1', dataType: 'b', position: Position.Left, type: 'target' },  // Boolean input 1
     { id: 'b2', dataType: 'b', position: Position.Left, type: 'target' },  // Boolean input 2
     { id: 'b', dataType: 'b', position: Position.Right, type: 'source' }   // Boolean output
   ],
-  
+
   processLogic: ({ data, connections, nodesData, updateNodeData, id }) => {
     // Get boolean input connections (excluding trigger)
-    const boolInputConnections = connections.filter(c => 
+    const boolInputConnections = connections.filter(c =>
       c.targetHandle?.startsWith('b') && c.targetHandle !== 'b'
     );
-    
+
     // Get boolean values from connected nodes
     const booleanInputs = nodesData
       .filter(node => boolInputConnections.some(c => c.source === node.id))
       .map(node => Boolean(extractNodeValue(node.data)))
       .filter(value => typeof value === 'boolean');
-    
+
     const inputCount = booleanInputs.length;
     const trueInputs = booleanInputs.filter(Boolean).length;
-    
+
     // AND logic: all inputs must be true
     const result = inputCount > 0 ? booleanInputs.every(Boolean) : false;
-    
+
     updateNodeData(id, {
       value: result,
       inputCount,
       trueInputs
     });
   },
-  
+
   renderCollapsed: ({ data, error }) => (
     <div className="absolute inset-0 flex items-center justify-center">
       {error ? (
@@ -500,13 +514,13 @@ const LogicAndNode = createNodeComponent<LogicAndNodeData>({
       )}
     </div>
   ),
-  
+
   renderExpanded: ({ data, error, categoryTextTheme }) => (
     <div className="flex text-xs flex-col w-auto">
       <div className={`font-semibold mb-2 ${categoryTextTheme.primary}`}>
         Logic AND
       </div>
-      
+
       {error ? (
         <div className="text-red-600">{error}</div>
       ) : (
@@ -528,47 +542,56 @@ const LogicAndNode = createNodeComponent<LogicAndNodeData>({
 ### **Configuration Helpers**
 
 #### **Text Node Configuration**
+
 ```typescript
 export const createTextNodeConfig = <T extends BaseNodeData>(
   overrides: Partial<NodeFactoryConfig<T>>
 ): Partial<NodeFactoryConfig<T>> => ({
   size: DEFAULT_TEXT_NODE_SIZE,
   handles: [
-    { id: 'b', dataType: 'b', position: Position.Left, type: 'target' },
-    { id: 's', dataType: 's', position: Position.Right, type: 'source' }
+    { id: "b", dataType: "b", position: Position.Left, type: "target" },
+    { id: "s", dataType: "s", position: Position.Right, type: "source" },
   ],
-  ...overrides
+  ...overrides,
 });
 
 // Usage
 const MyTextNode = createNodeComponent({
-  nodeType: 'myTextNode',
-  category: 'create',
-  displayName: 'My Text Node',
-  defaultData: { text: '' },
+  nodeType: "myTextNode",
+  category: "create",
+  displayName: "My Text Node",
+  defaultData: { text: "" },
   ...createTextNodeConfig({
-    processLogic: ({ /* ... */ }) => { /* custom logic */ }
-  })
+    processLogic: (
+      {
+        /* ... */
+      }
+    ) => {
+      /* custom logic */
+    },
+  }),
 });
 ```
 
 #### **Logic Node Configuration**
+
 ```typescript
 export const createLogicNodeConfig = <T extends BaseNodeData>(
   overrides: Partial<NodeFactoryConfig<T>>
 ): Partial<NodeFactoryConfig<T>> => ({
   size: DEFAULT_LOGIC_NODE_SIZE,
   handles: [
-    { id: 'b', dataType: 'b', position: Position.Left, type: 'target' },
-    { id: 'b', dataType: 'b', position: Position.Right, type: 'source' }
+    { id: "b", dataType: "b", position: Position.Left, type: "target" },
+    { id: "b", dataType: "b", position: Position.Right, type: "source" },
   ],
-  ...overrides
+  ...overrides,
 });
 ```
 
 ### **Inspector Control Helpers**
 
 #### **Text Input Control**
+
 ```typescript
 export const createTextInputControl = (
   label: string,
@@ -596,6 +619,7 @@ renderInspectorControls: createTextInputControl('Label', 'customLabel', 'Enter l
 ```
 
 #### **Number Input Control**
+
 ```typescript
 export const createNumberInputControl = (
   label: string,
@@ -610,6 +634,7 @@ renderInspectorControls: createNumberInputControl('Count', 'count', 0, 100, 1)
 ```
 
 #### **Checkbox Control**
+
 ```typescript
 export const createCheckboxControl = (
   label: string,
@@ -623,39 +648,45 @@ renderInspectorControls: createCheckboxControl('Enabled', 'enabled')
 ### **Advanced Feature Helpers**
 
 #### **JSON Input Support**
+
 ```typescript
 // Automatically adds JSON input handle
 export const addJsonInputSupport = <T extends BaseNodeData>(
   handles: HandleConfig[]
 ): HandleConfig[] => {
-  const hasJsonInput = handles.some(h => h.type === 'target' && h.dataType === 'j');
-  
+  const hasJsonInput = handles.some(
+    (h) => h.type === "target" && h.dataType === "{ }"
+  );
+
   if (!hasJsonInput) {
     return [
       ...handles,
-      { id: 'j', dataType: 'j', position: Position.Top, type: 'target' }
+      { id: "json", dataType: "{ }", position: Position.Top, type: "target" },
     ];
   }
-  
+
   return handles;
 };
 ```
 
 #### **Trigger Support**
+
 ```typescript
 // Adds boolean trigger input
 export const addTriggerSupport = <T extends BaseNodeData>(
   handles: HandleConfig[]
 ): HandleConfig[] => {
-  const hasTriggerInput = handles.some(h => h.type === 'target' && h.dataType === 'b');
-  
+  const hasTriggerInput = handles.some(
+    (h) => h.type === "target" && h.dataType === "b"
+  );
+
   if (!hasTriggerInput) {
     return [
-      { id: 'b', dataType: 'b', position: Position.Left, type: 'target' },
-      ...handles
+      { id: "b", dataType: "b", position: Position.Left, type: "target" },
+      ...handles,
     ];
   }
-  
+
   return handles;
 };
 
@@ -666,14 +697,16 @@ export const withTriggerSupport = <T extends BaseNodeData>(
 ) => {
   return (props) => {
     const isActive = shouldNodeBeActive(props.connections, props.nodesData);
-    
+
     if (!isActive) {
       // Clear outputs when inactive
-      const clearOutputs = { /* ... */ };
+      const clearOutputs = {
+        /* ... */
+      };
       props.updateNodeData(props.id, clearOutputs);
       return;
     }
-    
+
     // Run original logic when active
     originalProcessLogic(props);
   };
@@ -712,7 +745,7 @@ const NODE_INSPECTOR_REGISTRY = new Map<string, Function>();
 
 // Registration function
 export const registerNodeInspectorControls = <T extends BaseNodeData>(
-  nodeType: string, 
+  nodeType: string,
   renderControls: (props: InspectorControlProps<T>) => ReactNode
 ) => {
   NODE_INSPECTOR_REGISTRY.set(nodeType, renderControls);
@@ -738,14 +771,14 @@ The factory automatically applies styling based on node category:
 
 ```typescript
 // Available categories and their themes
-type NodeCategory = 
-  | 'create'     // Blue theme - creation nodes
-  | 'turn'       // Sky theme - transformation nodes  
-  | 'logic'      // Purple theme - logic nodes
-  | 'automation' // Green theme - automation nodes
-  | 'test'       // Gray theme - testing/utility nodes
-  | 'media'      // Orange theme - media nodes
-  | 'main';      // Default theme
+type NodeCategory =
+  | "create" // Blue theme - creation nodes
+  | "turn" // Sky theme - transformation nodes
+  | "logic" // Purple theme - logic nodes
+  | "automation" // Green theme - automation nodes
+  | "test" // Gray theme - testing/utility nodes
+  | "media" // Orange theme - media nodes
+  | "main"; // Default theme
 ```
 
 ### **Automatic Style Application**
@@ -753,7 +786,11 @@ type NodeCategory =
 ```typescript
 // Applied automatically by factory
 const categoryBaseClasses = useNodeCategoryBaseClasses(nodeType);
-const categoryButtonTheme = useNodeCategoryButtonTheme(nodeType, !!error, isActive);
+const categoryButtonTheme = useNodeCategoryButtonTheme(
+  nodeType,
+  !!error,
+  isActive
+);
 const categoryTextTheme = useNodeCategoryTextTheme(nodeType, !!error);
 
 // State-based styling
@@ -771,12 +808,12 @@ renderExpanded: ({ data, error, categoryTextTheme, textTheme }) => (
     <div className={`font-semibold mb-2 ${categoryTextTheme.primary}`}>
       Node Title
     </div>
-    
+
     {/* Use category theme for secondary text */}
     <div className={`text-xs ${categoryTextTheme.secondary}`}>
       Subtitle or description
     </div>
-    
+
     {/* Use error-aware text theme */}
     <div className={`text-xs ${textTheme.primary}`}>
       Content that adapts to error state
@@ -799,20 +836,20 @@ const recoverFromError = () => {
   try {
     setIsRecovering(true);
     setError(null);
-    
+
     // Reset to safe defaults
     const recoveryData = {
-      ...config.defaultData,           // Original defaults
-      ...config.errorRecoveryData,     // Custom recovery data
+      ...config.defaultData, // Original defaults
+      ...config.errorRecoveryData, // Custom recovery data
       error: null,
-      isActive: false
+      isActive: false,
     };
-    
+
     updateNodeData(id, recoveryData);
     setTimeout(() => setIsRecovering(false), 1000);
   } catch (recoveryError) {
-    console.error('Recovery failed:', recoveryError);
-    setError('Recovery failed. Please refresh.');
+    console.error("Recovery failed:", recoveryError);
+    setError("Recovery failed. Please refresh.");
   }
 };
 ```
@@ -826,18 +863,17 @@ processLogic: ({ data, updateNodeData, id, setError }) => {
     // Your processing logic here
     const result = processData(data);
     updateNodeData(id, { result });
-    
   } catch (error) {
     // Set error state
-    setError(error instanceof Error ? error.message : 'Processing error');
-    
+    setError(error instanceof Error ? error.message : "Processing error");
+
     // Optional: Update node data with error state
-    updateNodeData(id, { 
+    updateNodeData(id, {
       result: null,
-      error: error.message 
+      error: error.message,
     });
   }
-}
+};
 ```
 
 ### **Error Recovery Data**
@@ -847,11 +883,11 @@ processLogic: ({ data, updateNodeData, id, setError }) => {
 const MyNode = createNodeComponent({
   // ... other config
   errorRecoveryData: {
-    text: '',           // Clear text on recovery
-    count: 0,           // Reset count to zero
-    enabled: false,     // Disable on recovery
-    customProperty: 'safe-default'
-  }
+    text: "", // Clear text on recovery
+    count: 0, // Reset count to zero
+    enabled: false, // Disable on recovery
+    customProperty: "safe-default",
+  },
 });
 ```
 
@@ -865,7 +901,7 @@ The factory includes comprehensive logging:
 
 ```typescript
 // Automatic activation state logging
-console.log(`Factory ${nodeType} ${id}: Setting isActive to ${finalIsActive} 
+console.log(`Factory ${nodeType} ${id}: Setting isActive to ${finalIsActive}
   (hasOutput: ${hasOutputData}, triggerAllows: ${triggerInfo})`);
 
 // Vibe Mode processing logging
@@ -878,27 +914,33 @@ console.error(`${nodeType} ${id} - Processing error:`, processingError);
 ### **Development Tools**
 
 #### **Inspector Integration**
+
 ```typescript
 // Factory nodes automatically appear in Node Inspector
 // with their custom controls and state information
 ```
 
 #### **Console Debugging**
+
 ```typescript
 // Check factory node state
-const node = useFlowStore.getState().nodes.find(n => n.id === 'your-node-id');
-console.log('Node data:', node.data);
-console.log('Is active:', node.data?.isActive);
-console.log('Has error:', !!node.data?.error);
+const node = useFlowStore.getState().nodes.find((n) => n.id === "your-node-id");
+console.log("Node data:", node.data);
+console.log("Is active:", node.data?.isActive);
+console.log("Has error:", !!node.data?.error);
 ```
 
 #### **Registry Inspection**
+
 ```typescript
 // Check registered inspector controls
-console.log('Registered controls:', Array.from(NODE_INSPECTOR_REGISTRY.keys()));
+console.log("Registered controls:", Array.from(NODE_INSPECTOR_REGISTRY.keys()));
 
 // Check if node has factory controls
-console.log('Has factory controls:', hasFactoryInspectorControls('yourNodeType'));
+console.log(
+  "Has factory controls:",
+  hasFactoryInspectorControls("yourNodeType")
+);
 ```
 
 ---
@@ -912,7 +954,7 @@ console.log('Has factory controls:', hasFactoryInspectorControls('yourNodeType')
 interface MyNodeData extends BaseNodeData {
   inputText: string;
   outputText: string;
-  processingMode: 'uppercase' | 'lowercase' | 'capitalize';
+  processingMode: "uppercase" | "lowercase" | "capitalize";
   isEnabled: boolean;
 }
 
@@ -932,28 +974,30 @@ processLogic: ({ data, nodesData, updateNodeData, id, setError }) => {
   try {
     // 1. Extract inputs
     const inputs = extractInputs(nodesData);
-    
+
     // 2. Validate inputs
     if (!validateInputs(inputs)) {
-      throw new Error('Invalid input data');
+      throw new Error("Invalid input data");
     }
-    
+
     // 3. Process data
     const result = processData(inputs, data.processingMode);
-    
+
     // 4. Update outputs
     updateNodeData(id, { outputText: result });
-    
   } catch (error) {
-    setError(error instanceof Error ? error.message : 'Processing failed');
+    setError(error instanceof Error ? error.message : "Processing failed");
   }
-}
+};
 
 // ❌ AVOID - Monolithic, unhandled logic
 processLogic: ({ data, nodesData, updateNodeData, id }) => {
-  const result = nodesData.map(n => n.data.text).join('').toUpperCase();
+  const result = nodesData
+    .map((n) => n.data.text)
+    .join("")
+    .toUpperCase();
   updateNodeData(id, { text: result });
-}
+};
 ```
 
 ### **3. Render Function Best Practices**
@@ -966,7 +1010,7 @@ renderExpanded: ({ data, error, categoryTextTheme }) => (
     <div className={`font-semibold mb-2 ${categoryTextTheme.primary}`}>
       {error ? 'Error' : 'Node Title'}
     </div>
-    
+
     {/* Error handling */}
     {error ? (
       <div className="text-red-600 text-xs p-2 bg-red-50 rounded">
@@ -999,18 +1043,23 @@ renderExpanded: ({ data }) => (
 ```typescript
 // ✅ GOOD - Clear, descriptive handles
 handles: [
-  { id: 'trigger', dataType: 'b', position: Position.Left, type: 'target' },
-  { id: 'textInput', dataType: 's', position: Position.Left, type: 'target' },
-  { id: 'textOutput', dataType: 's', position: Position.Right, type: 'source' },
-  { id: 'statusOutput', dataType: 'b', position: Position.Right, type: 'source' }
-]
+  { id: "trigger", dataType: "b", position: Position.Left, type: "target" },
+  { id: "textInput", dataType: "s", position: Position.Left, type: "target" },
+  { id: "textOutput", dataType: "s", position: Position.Right, type: "source" },
+  {
+    id: "statusOutput",
+    dataType: "b",
+    position: Position.Right,
+    type: "source",
+  },
+];
 
 // ❌ AVOID - Generic, confusing handles
 handles: [
-  { id: 'b', dataType: 'b', position: Position.Left, type: 'target' },
-  { id: 's', dataType: 's', position: Position.Left, type: 'target' },
-  { id: 'out', dataType: 'x', position: Position.Right, type: 'source' }
-]
+  { id: "b", dataType: "b", position: Position.Left, type: "target" },
+  { id: "s", dataType: "s", position: Position.Left, type: "target" },
+  { id: "out", dataType: "x", position: Position.Right, type: "source" },
+];
 ```
 
 ---
@@ -1023,23 +1072,23 @@ handles: [
 processLogic: ({ connections, nodesData, updateNodeData, id }) => {
   // Group inputs by handle type
   const textInputs = connections
-    .filter(c => c.targetHandle === 'textInput')
-    .map(c => nodesData.find(n => n.id === c.source))
+    .filter((c) => c.targetHandle === "textInput")
+    .map((c) => nodesData.find((n) => n.id === c.source))
     .filter(Boolean)
-    .map(node => extractNodeValue(node.data))
-    .filter(value => typeof value === 'string');
-  
+    .map((node) => extractNodeValue(node.data))
+    .filter((value) => typeof value === "string");
+
   const numberInputs = connections
-    .filter(c => c.targetHandle === 'numberInput')
-    .map(c => nodesData.find(n => n.id === c.source))
+    .filter((c) => c.targetHandle === "numberInput")
+    .map((c) => nodesData.find((n) => n.id === c.source))
     .filter(Boolean)
-    .map(node => extractNodeValue(node.data))
-    .filter(value => typeof value === 'number');
-  
+    .map((node) => extractNodeValue(node.data))
+    .filter((value) => typeof value === "number");
+
   // Process combined inputs
   const result = processMultipleInputs(textInputs, numberInputs);
   updateNodeData(id, { result });
-}
+};
 ```
 
 ### **2. Conditional Handle Visibility**
@@ -1053,12 +1102,12 @@ processLogic: ({ connections, nodesData, updateNodeData, id }) => {
     if (handle.id === 'advancedInput') {
       return data.advancedMode === true;
     }
-    
+
     // Hide JSON handles when Vibe Mode is off
-    if (handle.dataType === 'j') {
+    if (handle.dataType === '{ }') {
       return isVibeModeActive;
     }
-    
+
     return true;
   })
   .map(handle => (
@@ -1071,7 +1120,7 @@ processLogic: ({ connections, nodesData, updateNodeData, id }) => {
 ```typescript
 renderInspectorControls: ({ node, updateNodeData }) => {
   const data = node.data;
-  
+
   return (
     <div className="space-y-3">
       {/* Basic controls always visible */}
@@ -1086,7 +1135,7 @@ renderInspectorControls: ({ node, updateNodeData }) => {
           <option value="advanced">Advanced</option>
         </select>
       </div>
-      
+
       {/* Advanced controls only visible in advanced mode */}
       {data.mode === 'advanced' && (
         <div>
@@ -1095,8 +1144,8 @@ renderInspectorControls: ({ node, updateNodeData }) => {
             type="number"
             className="w-full rounded border px-2 py-1 text-xs"
             value={data.advancedSetting || 0}
-            onChange={(e) => updateNodeData(node.id, { 
-              advancedSetting: Number(e.target.value) 
+            onChange={(e) => updateNodeData(node.id, {
+              advancedSetting: Number(e.target.value)
             })}
           />
         </div>
@@ -1120,13 +1169,13 @@ processLogic: ({ data, updateNodeData, id }) => {
     cache: updateCache(data.cache, newData),
     metadata: {
       lastUpdated: Date.now(),
-      version: data.metadata?.version + 1 || 1
-    }
+      version: data.metadata?.version + 1 || 1,
+    },
   };
-  
+
   // Persist complex state
   updateNodeData(id, { complexState });
-}
+};
 ```
 
 ---
@@ -1153,4 +1202,4 @@ When working with the Node Factory:
 
 ---
 
-*This documentation is maintained alongside the codebase and should be updated when Node Factory functionality changes.* 
+_This documentation is maintained alongside the codebase and should be updated when Node Factory functionality changes._

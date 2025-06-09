@@ -20,7 +20,7 @@
 
 import type { CSSProperties } from "react";
 import React, { useEffect, useMemo } from "react";
-import type { NodeCategory } from "../../node-creation/json-node-registry/schemas/base";
+import type { NodeCategory } from "../../node-creation/core/registries/json-node-registry/schemas/base";
 import {
   applyCategoryTheme,
   enableCategoryTheming,

@@ -38,6 +38,7 @@ interface NodeContainerProps<T extends BaseNodeData> {
   enhancedConfig: NodeFactoryConfig<T>;
   isEnterprise?: boolean;
   children: React.ReactNode;
+  onNodeIdChange?: (oldId: string, newId: string) => boolean;
 }
 
 // ============================================================================
@@ -56,6 +57,7 @@ export function NodeContainer<T extends BaseNodeData>({
   enhancedConfig,
   isEnterprise = false,
   children,
+  onNodeIdChange,
 }: NodeContainerProps<T>) {
   // ========================================================================
   // SIZE CALCULATION WITH EXTRACTED LOGIC
@@ -122,7 +124,7 @@ export function NodeContainer<T extends BaseNodeData>({
   return (
     <div data-id={id} {...enterpriseAttributes} className={containerClasses}>
       {/* FLOATING NODE ID */}
-      <FloatingNodeId nodeId={id} />
+      <FloatingNodeId nodeId={id} onNodeIdChange={onNodeIdChange} />
 
       {/* EXPAND/COLLAPSE BUTTON */}
       <ExpandCollapseButton

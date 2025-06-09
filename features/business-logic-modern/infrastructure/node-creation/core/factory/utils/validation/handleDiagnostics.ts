@@ -204,7 +204,7 @@ function validateHandle(handle: HandleConfig, node: Node): string[] {
     "s",
     "n",
     "b",
-    "{}",
+    "{ }",
     "a",
     "N",
     "f",
@@ -309,8 +309,8 @@ function areTypesCompatible(sourceType: string, targetType: string): boolean {
     n: ["n", "f", "x"], // Number can go to number, float, or any
     f: ["n", "f", "x"], // Float can go to number, float, or any
     b: ["b", "x"], // Boolean can go to boolean or any
-    j: ["j", "x"], // JSON can go to JSON or any
-    a: ["a", "j", "x"], // Array can go to array, JSON, or any
+    "{ }": ["{ }", "x"], // JSON can go to JSON or any
+    a: ["a", "{ }", "x"], // Array can go to array, JSON, or any
   };
 
   const compatibleTargets = compatibilityMap[sourceType] || [];

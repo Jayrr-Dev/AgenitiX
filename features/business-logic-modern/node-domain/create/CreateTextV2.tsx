@@ -30,24 +30,24 @@ import {
   normaliseHandleType,
   ready,
   stats,
-} from "../../infrastructure/node-creation/json-node-registry/unifiedRegistry";
+} from "../../infrastructure/node-creation/core/registries/json-node-registry/unifiedRegistry";
 
 // FACTORY INTEGRATION - Modern factory system
 import {
   createNodeComponent,
   type BaseNodeData,
   type HandleConfig,
-} from "../../infrastructure/node-creation/factory/NodeFactory";
+} from "../../infrastructure/node-creation/core/factory/NodeFactory";
 
 // MODERN HOOKS - Factory hooks for optimized input handling
 import { useTextInputShortcuts } from "../../infrastructure/flow-engine/hooks/useTextInputShortcuts";
 import {
   useAutoOptimizedTextInput,
   useHighPerformanceTextInput,
-} from "../../infrastructure/node-creation/factory/hooks/performance/useOptimizedTextInput";
+} from "../../infrastructure/node-creation/core/factory/hooks/performance/useOptimizedTextInput";
 
 // MODERN CONSTANTS - Factory size patterns
-import { STANDARD_SIZE_PATTERNS } from "../../infrastructure/node-creation/factory/constants/sizes";
+import { STANDARD_SIZE_PATTERNS } from "../../infrastructure/node-creation/core/factory/constants/sizes";
 
 // ============================================================================
 // V2 REGISTRY INITIALIZATION & DEBUGGING

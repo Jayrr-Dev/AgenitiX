@@ -26,10 +26,10 @@ import type {
  * @description Imports the generated node registry
  * @example
  * ```ts
- * import { GENERATED_NODE_REGISTRY } from "../../json-node-registry/generated/nodeRegistry";
+ * import { GENERATED_NODE_REGISTRY } from "../../registries/json-node-registry/generated/nodeRegistry";
  * ```
  */
-import { GENERATED_NODE_REGISTRY } from "../../json-node-registry/generated/nodeRegistry";
+import { GENERATED_NODE_REGISTRY } from "../../registries/json-node-registry/generated";
 
 // ============================================================================
 // ADAPTER TYPES

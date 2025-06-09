@@ -17,9 +17,9 @@
 import {
   createNodeComponent,
   type BaseNodeData,
-} from "../../infrastructure/node-creation/factory/NodeFactory";
-import { getNodeHandles } from "../../infrastructure/node-creation/factory/constants/handles";
-import { STANDARD_SIZE_PATTERNS } from "../../infrastructure/node-creation/factory/constants/sizes";
+} from "../../infrastructure/node-creation/core/factory/NodeFactory";
+import { getNodeHandles } from "../../infrastructure/node-creation/core/factory/constants/handles";
+import { STANDARD_SIZE_PATTERNS } from "../../infrastructure/node-creation/core/factory/constants/sizes";
 
 // ADD THEME DEBUGGING
 import { useCategoryTheme } from "../../infrastructure/theming/stores/nodeStyleStore";

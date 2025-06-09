@@ -1,9 +1,9 @@
 /**
- * CREATE TEXT V2U – Fully-migrated defineNode() implementation
+ * CREATE TEXT V2U – Enhanced defineNode() with V2U Architecture
  *
- * ▸ Week-8 migration from createNodeComponent
- * ▸ Single-file architecture, enterprise features
- * ▸ Integrated V2U DevTools, monitoring, and rich lifecycle hooks
+ * ▸ Bridge solution: defineNode() + enterprise styling integration
+ * ▸ Maintains V2U architectural integrity
+ * ▸ Gets enterprise styling automatically via enhanced defineNode()
  */
 
 "use client";
@@ -14,7 +14,7 @@ import React, { useRef } from "react";
 import { useTextInputShortcuts } from "../../infrastructure/flow-engine/hooks/useTextInputShortcuts";
 import { BaseNodeData } from "../../infrastructure/flow-engine/types/nodeData";
 import { defineNode } from "../../infrastructure/node-creation";
-import { useAutoOptimizedTextInput } from "../../infrastructure/node-creation/factory/hooks/performance/useOptimizedTextInput";
+import { useAutoOptimizedTextInput } from "../../infrastructure/node-creation/core/factory/hooks/performance/useOptimizedTextInput";
 
 // -----------------------------------------------------------------------------
 // 1 ▸ Type Definitions
@@ -105,34 +105,56 @@ const TextInput: React.FC<{
     updateNodeData(d)
   );
 
-  useTextInputShortcuts({
+  // Add ergonomic text input shortcuts for fast deletion (matching CreateText)
+  const textInputShortcuts = useTextInputShortcuts({
     value: optimised.value,
-    setValue: (v) => updateNodeData({ heldText: v }),
-    onEnter: () => ref.current?.blur(),
+    setValue: (value: string) => updateNodeData({ heldText: value }),
   });
 
+  // Combined keyboard handler for textarea
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Cast to work with the hook's expected type
+    textInputShortcuts.handleKeyDown(e as any);
+  };
+
   return (
-    <textarea
-      ref={ref}
-      value={optimised.value}
-      onChange={optimised.onChange}
-      onKeyDown={(e) => {
-        if (e.key === "Tab" && !e.shiftKey) e.preventDefault();
-      }}
-      spellCheck
-      disabled={disabled}
-      placeholder={placeholder}
-      className={
-        className ??
-        "w-full h-full resize-none bg-transparent outline-none text-sm leading-relaxed p-1"
-      }
-      style={{ minHeight: 60 }}
-    />
+    <div className="relative">
+      <textarea
+        ref={ref}
+        value={optimised.value}
+        onChange={optimised.onChange}
+        onKeyDown={handleKeyDown}
+        spellCheck={false}
+        disabled={disabled}
+        placeholder={placeholder}
+        className={className}
+        style={{
+          lineHeight: "1.4",
+          fontFamily: "inherit",
+          overflow: "auto",
+        }}
+        onFocus={(e) => e.target.select()}
+        onWheel={(e) => e.stopPropagation()}
+        title="Fast deletion: Alt+Q = backspace • Alt+Shift+Q = delete word • Alt+Ctrl+Q = delete to start"
+      />
+      {/* Performance indicator */}
+      {optimised.isPending && (
+        <div className="absolute top-0 right-1 text-xs text-blue-500 opacity-75">
+          ⚡
+        </div>
+      )}
+      {/* Validation error */}
+      {optimised.validationError && (
+        <div className="text-xs text-red-500 mt-1">
+          {optimised.validationError}
+        </div>
+      )}
+    </div>
   );
 };
 
 // -----------------------------------------------------------------------------
-// 4 ▸ Node renderers (collapse / expanded)
+// 4 ▸ Node Renderers
 // -----------------------------------------------------------------------------
 
 function CollapsedView(props: {
@@ -143,47 +165,86 @@ function CollapsedView(props: {
 }) {
   const { data, error, updateNodeData, id } = props;
 
-  const runtimeError = error || (data.isErrorState && data.error);
-  const level: ErrorLevel = error ? "local" : data.errorType || "error";
-  const style = runtimeError ? errorStyles[level] : null;
+  const currentText = typeof data.heldText === "string" ? data.heldText : "";
+  const previewText =
+    currentText.length > 20
+      ? currentText.substring(0, 20) + "..."
+      : currentText;
+
+  // Check for Vibe Mode injected error state
+  const isVibeError = data.isErrorState === true;
+  const vibeErrorMessage = data.error || "Error state active";
+  const vibeErrorType = data.errorType || "error";
+
+  // Determine final error state and styling
+  const finalError = error || (isVibeError ? vibeErrorMessage : null);
+  const finalErrorType = error ? "local" : vibeErrorType;
+
+  // Get error-specific styling (matching CreateText)
+  const getErrorStyling = (errorType: string) => {
+    switch (errorType) {
+      case "warning":
+        return {
+          text: "text-yellow-700 dark:text-yellow-300",
+          bg: "bg-yellow-50 dark:bg-yellow-900/30",
+          border: "border-yellow-300 dark:border-yellow-700",
+          indicator: "●",
+        };
+      case "critical":
+        return {
+          text: "text-red-700 dark:text-red-300",
+          bg: "bg-red-50 dark:bg-red-900/30",
+          border: "border-red-300 dark:border-red-700",
+          indicator: "●",
+        };
+      case "error":
+      case "local":
+      default:
+        return {
+          text: "text-orange-700 dark:text-orange-300",
+          bg: "bg-orange-50 dark:bg-orange-900/30",
+          border: "border-orange-300 dark:border-orange-700",
+          indicator: "●",
+        };
+    }
+  };
+
+  const errorStyle = finalError ? getErrorStyling(finalErrorType) : null;
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center px-2">
-      {/* Header */}
       <div
-        className={`text-xs font-semibold mb-1 flex items-center gap-1 ${
-          style?.text ?? ""
-        }`}
+        className={`text-xs font-semibold mt-1 mb-0 ${finalError && errorStyle ? errorStyle.text : ""}`}
       >
-        {style ? (
-          <>
-            <span>{style.indicator}</span>
-            <span>V2U {level.toUpperCase()}</span>
-          </>
+        {finalError && errorStyle ? (
+          <div className="flex items-center gap-1">
+            <span>{errorStyle.indicator}</span>
+            <span>
+              {finalErrorType === "local"
+                ? "Error"
+                : finalErrorType.toUpperCase()}
+            </span>
+          </div>
         ) : (
-          <>
-            {/* <span></span> */}
-            <span>Create Text</span>
-          </>
+          "Create Text"
         )}
       </div>
-
-      {/* Body */}
-      {runtimeError ? (
-        <p className={`text-xs text-center break-words ${style!.text}`}>
-          {runtimeError}
-        </p>
+      {finalError && errorStyle ? (
+        <div className={`text-xs text-center break-words ${errorStyle.text}`}>
+          {finalError}
+        </div>
       ) : (
         <div
           className="nodrag nowheel w-full flex-1 flex items-center justify-center"
           onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
         >
           <TextInput
             id={id}
             data={data}
             updateNodeData={updateNodeData}
-            placeholder="Enter your text…"
-            className="w-full h-full resize-none bg-transparent outline-none text-gray-800 dark:text-gray-200 text-sm leading-relaxed p-1"
+            placeholder="Enter text..."
+            className="w-full h-8 px-2 pt-2 mb-2 text-xs text-center rounded border bg-transparent placeholder-opacity-60 resize-none focus:outline-none focus:ring-1 focus:border-transparent transition-colors overflow-y-auto border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100 focus:ring-blue-500"
           />
         </div>
       )}
@@ -201,43 +262,90 @@ function ExpandedView(props: {
 }) {
   const { data, error, updateNodeData, id, categoryClasses } = props;
 
-  const runtimeError = error || (data.isErrorState && data.error);
-  const level: ErrorLevel = error ? "local" : data.errorType || "error";
-  const style = runtimeError ? errorStyles[level] : null;
+  // Check for Vibe Mode injected error state
+  const isVibeError = data.isErrorState === true;
+  const vibeErrorMessage = data.error || "Error state active";
+  const vibeErrorType = data.errorType || "error";
+
+  // Determine final error state and styling
+  const finalError = error || (isVibeError ? vibeErrorMessage : null);
+  const finalErrorType = error ? "local" : vibeErrorType;
+
+  // Get error-specific styling (matching CreateText)
+  const getErrorStyling = (errorType: string) => {
+    switch (errorType) {
+      case "warning":
+        return {
+          text: "text-yellow-700 dark:text-yellow-300",
+          bg: "bg-yellow-50 dark:bg-yellow-900/30",
+          border: "border-yellow-300 dark:border-yellow-700",
+          indicator: "●",
+          ringColor: "focus:ring-yellow-500",
+        };
+      case "critical":
+        return {
+          text: "text-red-700 dark:text-red-300",
+          bg: "bg-red-50 dark:bg-red-900/30",
+          border: "border-red-300 dark:border-red-700",
+          indicator: "●",
+          ringColor: "focus:ring-red-500",
+        };
+      case "error":
+      case "local":
+      default:
+        return {
+          text: "text-orange-700 dark:text-orange-300",
+          bg: "bg-orange-50 dark:bg-orange-900/30",
+          border: "border-orange-300 dark:border-orange-700",
+          indicator: "●",
+          ringColor: "focus:ring-orange-500",
+        };
+    }
+  };
+
+  const errorStyle = finalError ? getErrorStyling(finalErrorType) : null;
+  const categoryTextTheme = categoryClasses || {
+    primary: "text-blue-900 dark:text-blue-100",
+    border: "border-blue-300 dark:border-blue-700",
+    focus: "focus:ring-blue-500",
+  };
 
   return (
-    <div className="flex flex-col text-xs w-auto" key={`ct-v2u-${id}`}>
-      {/* Header */}
+    <div className="flex text-xs flex-col w-auto">
       <div
-        className={`font-semibold mb-2 flex items-center justify-between ${
-          categoryClasses?.textPrimary ?? "text-green-700 dark:text-green-300"
-        }`}
+        className={`font-semibold mb-2 flex items-center justify-between ${categoryTextTheme.primary}`}
       >
-        <span className="flex items-center gap-1">
-          📝<span>Create Text V2U</span>
+        <span>
+          {finalError
+            ? `${finalErrorType === "local" ? "Error" : finalErrorType.toUpperCase()}`
+            : "Create Text"}
         </span>
-
-        {runtimeError && (
-          <span className={`flex items-center gap-1 ${style!.text}`}>
-            {style!.indicator}
-            {runtimeError.slice(0, 20)}
-            {runtimeError.length > 20 ? "…" : ""}
+        {finalError && errorStyle && (
+          <span className={`text-xs ${errorStyle.text}`}>
+            {errorStyle.indicator} {finalError.substring(0, 30)}
+            {finalError.length > 30 ? "..." : ""}
           </span>
         )}
       </div>
 
-      {/* Error panel */}
-      {runtimeError && (
-        <div className="mb-2 p-2 rounded bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700">
-          <div className="font-semibold mb-1 flex items-center gap-1">
-            {style!.indicator}
-            <span>V2U {level.toUpperCase()} Details:</span>
+      {finalError && errorStyle && (
+        <div
+          className={`mb-2 p-2 ${errorStyle.bg} border ${errorStyle.border} rounded text-xs ${errorStyle.text}`}
+        >
+          <div className="font-semibold mb-1">
+            {finalErrorType === "local"
+              ? "Error Details:"
+              : `${finalErrorType.toUpperCase()} Details:`}
           </div>
-          <p>{runtimeError}</p>
+          <div className="mb-2">{finalError}</div>
+          {isVibeError && (
+            <div className="text-xs opacity-75 mt-1">
+              ⚡ Set via Vibe Mode from Error Generator
+            </div>
+          )}
         </div>
       )}
 
-      {/* TextArea */}
       <div
         className="nodrag nowheel"
         onMouseDown={(e) => e.stopPropagation()}
@@ -247,16 +355,16 @@ function ExpandedView(props: {
           id={id}
           data={data}
           updateNodeData={updateNodeData}
-          disabled={!!runtimeError}
+          disabled={!!finalError}
           placeholder={
-            runtimeError
-              ? "V2U error – editing disabled"
-              : "Enter your text… (V2U)"
+            finalError
+              ? "Error state active - text editing disabled"
+              : "Enter your text here..."
           }
-          className={`w-full text-xs min-h-[65px] px-3 py-2 rounded border resize-both focus:outline-none focus:ring-2 bg-white dark:bg-blue-800 transition-colors ${
-            runtimeError
-              ? "border-red-300 dark:border-red-700 text-red-900 dark:text-red-100 focus:ring-red-500"
-              : "border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500"
+          className={`w-full text-xs min-h-[65px] px-3 py-2 rounded border bg-white dark:bg-blue-800 placeholder-blue-400 dark:placeholder-blue-500 resize-both focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
+            finalError && errorStyle
+              ? `${errorStyle.border} ${errorStyle.text} ${errorStyle.ringColor}`
+              : `${categoryTextTheme.border} ${categoryTextTheme.primary} ${categoryTextTheme.focus}`
           }`}
         />
       </div>
@@ -265,7 +373,7 @@ function ExpandedView(props: {
 }
 
 // -----------------------------------------------------------------------------
-// 5 ▸ defineNode()  (config & business logic)
+// 5 ▸ Enhanced defineNode() with V2U Architecture
 // -----------------------------------------------------------------------------
 
 export default defineNode<CreateTextV2UData>({
@@ -275,12 +383,12 @@ export default defineNode<CreateTextV2UData>({
     category: "create",
     displayName: "Create Text (V2U)",
     description:
-      "Enhanced text creation node with V2U architecture – supports conditional output via triggers",
+      "Enhanced text creation node with V2U architecture – auto-integrated with enterprise styling",
     icon: "📝",
     folder: "main",
     version: "2.0.0",
     author: "V2U Migration Team",
-    tags: ["text", "input", "v2u", "migrated"],
+    tags: ["text", "input", "v2u", "enterprise-ready"],
   },
 
   // ─────────────────────────────────────────── Handles
@@ -292,8 +400,6 @@ export default defineNode<CreateTextV2UData>({
       dataType: "boolean",
       description:
         "Optional trigger – when connected, text outputs only when trigger is true",
-      validation: (d) =>
-        typeof d === "boolean" || d === null || d === undefined,
     },
     {
       id: "text",
@@ -329,7 +435,7 @@ export default defineNode<CreateTextV2UData>({
       const triggerConns = getConnections().filter(
         (c) => c.targetHandle === "trigger"
       );
-      const triggerVal = getSingleInputValue([]); // TODO: supply inputs
+      const triggerVal = getSingleInputValue([]);
       const isActive = isTruthy(triggerVal);
 
       const text = data.heldText ?? "";
@@ -358,39 +464,25 @@ export default defineNode<CreateTextV2UData>({
   renderCollapsed: CollapsedView,
   renderExpanded: ExpandedView,
 
-  // ─────────────────────────────────────────── Lifecycle
+  // ─────────────────────────────────────────── V2U Features
   lifecycle: {
     onMount: async ({ nodeId, emitEvent }) =>
       emitEvent("v2u:node-mounted", { nodeType: "createTextV2U", nodeId }),
     onUnmount: async ({ nodeId, emitEvent }) =>
       emitEvent("v2u:node-unmounted", { nodeType: "createTextV2U", nodeId }),
-    onDataChange: (n, o, { nodeId, emitEvent }) =>
-      n.heldText !== o.heldText &&
-      emitEvent("v2u:text-changed", {
-        nodeId,
-        oldLength: o.heldText?.length ?? 0,
-        newLength: n.heldText?.length ?? 0,
-      }),
-    onValidation: (d) =>
-      typeof d.heldText !== "string"
-        ? "heldText must be a string"
-        : d.heldText.length > 100_000
-          ? "Text too long (100 k max)"
-          : true,
+    onDataChange: async (n, o, { nodeId, emitEvent }) => {
+      if (n.heldText !== o.heldText) {
+        await emitEvent("v2u:text-changed", {
+          nodeId,
+          oldLength: o.heldText?.length ?? 0,
+          newLength: n.heldText?.length ?? 0,
+        });
+      }
+    },
   },
 
-  // ─────────────────────────────────────────── Security / Perf
-  security: {
-    requiresAuth: false,
-    permissions: ["node:read", "node:write"],
-    dataAccessLevel: "write",
-  },
-  performance: {
-    timeout: 5_000,
-    maxMemoryMB: 10,
-    retryAttempts: 2,
-    retryDelay: 1_000,
-  },
+  // ─────────────────────────────────────────── Enhanced Bridge Features
+  // 🚀 Bridge: Enterprise features automatically added by enhanced defineNode()
 
   // ─────────────────────────────────────────── Registry
   autoRegister: true,

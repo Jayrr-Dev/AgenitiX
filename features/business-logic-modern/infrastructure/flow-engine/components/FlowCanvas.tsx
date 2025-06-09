@@ -43,7 +43,7 @@ import {
 import { getLegacyModernNodeRegistry } from "../../node-creation/core/registries/json-node-registry/unifiedRegistry";
 
 // ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention & cleanup
-import { useCleanupInvalidConnections } from "@/features/business-logic-modern/infrastructure/node-creation/systems/ui/node-handles/CleanupInvalidConnections";
+import { useCleanupInvalidConnections } from "@/features/business-logic-modern/infrastructure/node-creation/systems/ui/node-handles/UtilityCleanupInvalidConnections";
 import { useUltimateFlowConnectionPrevention } from "@/features/business-logic-modern/infrastructure/node-creation/systems/ui/node-handles/UltimateTypesafeHandle";
 
 interface FlowCanvasProps {

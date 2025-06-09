@@ -22,7 +22,7 @@
  */
 
 /* ─────────────────────────── Theme bootstrap ─────────────────────────── */
-import "../../theming/init/themeInitializer";
+import "../../../theming/init/themeInitializer";
 import {
   NodeState,
   UltraFastPropagationEngine,
@@ -74,6 +74,9 @@ import { globalSafetyLayers } from "./utils/management/nodeUtilities";
 /* ───────────────────────────── Performance ─────────────────────────────── */
 import { createNodeParkingManager } from "./systems/performance/NodeParkingManager";
 import { createScheduler } from "./systems/performance/Scheduler";
+
+/* ───────────────────────────── Flow Store ──────────────────────────────── */
+import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 
 /* ======================================================================== */
 /* Context & hooks                                                          */
@@ -236,6 +239,9 @@ export function createNodeComponent<T extends BaseNodeData>(
       connData.allNodes
     );
 
+    /* Flow store for node operations */
+    const updateNodeId = useFlowStore((state) => state.updateNodeId);
+
     /* Register with state machine */
     useEffect(() => {
       const { state, dataFlow, propagationEngine, propagateUltraFast } =
@@ -282,6 +288,7 @@ export function createNodeComponent<T extends BaseNodeData>(
           nodeState={nodeState}
           enhancedConfig={regCfg}
           isEnterprise
+          onNodeIdChange={updateNodeId}
         >
           <NodeContent
             id={id}

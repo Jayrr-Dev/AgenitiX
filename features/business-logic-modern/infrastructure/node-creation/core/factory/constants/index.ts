@@ -118,7 +118,7 @@ function initializeFactoryConfig(): boolean {
     // Runtime import to avoid circular imports
     const {
       GENERATED_NODE_REGISTRY,
-    } = require("../../json-node-registry/generated/nodeRegistry");
+    } = require("../../registries/json-node-registry/generated/nodeRegistry");
 
     if (GENERATED_NODE_REGISTRY) {
       const factoryConfig: Record<string, NodeConfig> = {};

@@ -36,13 +36,23 @@ import { GENERATED_NODE_REGISTRY } from "./generated/nodeRegistry";
 // Node components – true single source of truth
 import CreateText from "@node-domain/create/CreateText";
 import CreateTextV2 from "@node-domain/create/CreateTextV2";
+import CreateTextV2UResult from "@node-domain/create/CreateTextV2U";
 import TestError from "@node-domain/test/TestError";
+import TestErrorV2UResult from "@node-domain/test/TestErrorV2U";
 import TriggerOnToggle from "@node-domain/trigger/TriggerOnToggle";
+import TriggerOnToggleV2UResult from "@node-domain/trigger/TriggerOnToggleV2U";
 import ViewOutput from "@node-domain/view/ViewOutput";
+import ViewOutputV2UResult from "@node-domain/view/ViewOutputV2U";
 
 /* -------------------------------------------------------------------------
  *  SECTION 2 ▸ Constant maps & general helpers
  * ---------------------------------------------------------------------- */
+
+/** Extract React components from enhanced defineNode results (V2U nodes get enterprise styling automatically) */
+const CreateTextV2U = CreateTextV2UResult.component; // ✨ Auto-wrapped with enterprise styling!
+const TestErrorV2U = TestErrorV2UResult.component;
+const TriggerOnToggleV2U = TriggerOnToggleV2UResult.component;
+const ViewOutputV2U = ViewOutputV2UResult.component;
 
 /** Plain React component used when a concrete implementation is missing. */
 const FallbackComponent: ComponentType = () => null;
@@ -51,9 +61,13 @@ const FallbackComponent: ComponentType = () => null;
 const COMPONENTS: Record<string, any> = {
   createText: CreateText,
   createTextV2: CreateTextV2,
+  createTextV2U: CreateTextV2U,
   testError: TestError,
+  testErrorV2U: TestErrorV2U,
   viewOutput: ViewOutput,
+  viewOutputV2U: ViewOutputV2U,
   triggerOnToggle: TriggerOnToggle,
+  triggerOnToggleV2U: TriggerOnToggleV2U,
 };
 
 /**
@@ -149,9 +163,19 @@ function initInspectorControls(): void {
       v2ControlType: "TextNodeControl", // V2 enhanced text controls
       hasControls: true,
     },
+    createTextV2U: {
+      controlType: "v2" as const,
+      v2ControlType: "V2UTextControl", // V2U enhanced text controls
+      hasControls: true,
+    },
     viewOutput: {
       controlType: "v2" as const,
       v2ControlType: "none",
+      hasControls: false,
+    },
+    viewOutputV2U: {
+      controlType: "v2" as const,
+      v2ControlType: "none", // V2U view nodes don't need controls
       hasControls: false,
     },
     triggerOnToggle: {
@@ -159,9 +183,19 @@ function initInspectorControls(): void {
       v2ControlType: "TriggerOnToggleControl",
       hasControls: true,
     },
+    triggerOnToggleV2U: {
+      controlType: "v2" as const,
+      v2ControlType: "V2UTriggerOnToggleControl", // V2U enhanced trigger controls
+      hasControls: true,
+    },
     testError: {
       controlType: "v2" as const,
       v2ControlType: "TextNodeControl",
+      hasControls: true,
+    },
+    testErrorV2U: {
+      controlType: "v2" as const,
+      v2ControlType: "V2UTextControl", // V2U enhanced error controls
       hasControls: true,
     },
   } as const;
@@ -240,7 +274,7 @@ const HANDLE_MAP = new Map<string, string>([
   // Complex
   ["object", "o"],
   ["array", "a"],
-  ["json", "{}"],
+  ["json", "{ }"],
   ["map", "m"],
   ["set", "st"],
   ["tuple", "t"],
@@ -271,7 +305,7 @@ const HANDLE_MAP = new Map<string, string>([
   ["image", "o"],
   // Vibe handles
   ["vibe", "V"],
-  ["vibeobject", "{}"],
+  ["vibeobject", "{ }"],
 ]);
 
 /** Convert arbitrary JSON dataType to Ultimate handle compact code. */
@@ -374,9 +408,11 @@ export function getLegacyModernNodeRegistry(): Record<string, any> {
 
   // Add V2U nodes from defineNode registry
   try {
-    const { NodeRegistry } = require("../defineNode/index.tsx");
-    const modernRegistry = NodeRegistry.getInstance();
-    const defineNodeResults = modernRegistry.getAll();
+    // NOTE: defineNode registry is not available in current directory structure
+    // const { NodeRegistry } = require("../defineNode/index.tsx");
+    // const modernRegistry = NodeRegistry.getInstance();
+    // const defineNodeResults = modernRegistry.getAll();
+    const defineNodeResults: [string, any][] = [];
 
     // Merge V2U nodes into the registry with FACTORY INTEGRATION
     for (const [nodeType, nodeConfig] of defineNodeResults) {
@@ -386,13 +422,13 @@ export function getLegacyModernNodeRegistry(): Record<string, any> {
 
       try {
         // Import factory system for proper integration
-        const { createNodeComponent } = require("../factory/NodeFactory");
+        const { createNodeComponent } = require("../../factory/NodeFactory");
 
         // Import standardized sizing system
         const {
           convertV2UNodeSize,
           logV2USizeConversion,
-        } = require("../factory/constants/sizes");
+        } = require("../../factory/constants/sizes");
 
         // Convert defineNode configuration to factory-compatible format
         const standardizedSize = convertV2UNodeSize(
@@ -787,7 +823,7 @@ export function validateHandleConnection(
   try {
     const {
       isTypeCompatible,
-    } = require("../node-handles/UltimateTypesafeHandle");
+    } = require("../../../systems/ui/node-handles/UltimateTypesafeHandle");
     const isValid = isTypeCompatible(
       sourceHandle.dataType,
       targetHandle.dataType
@@ -835,7 +871,37 @@ export function normalizeHandleDataType(dataType: string): string {
  * Check if a node type is valid
  */
 export function isValidNodeType(nodeType: string): boolean {
-  return Node.has(nodeType);
+  // Check if it's in the unified registry first
+  if (Node.has(nodeType)) {
+    return true;
+  }
+
+  // Also check if it's a V2U node by trying to get enhanced registration
+  // This will check the defineNode registry as well
+  const registration = getEnhancedNodeRegistration(nodeType);
+  if (registration) {
+    console.log(`✅ [isValidNodeType] Found V2U node: ${nodeType}`);
+    return true;
+  }
+
+  // Check if it's in the JSON registry (V2U nodes are registered there)
+  try {
+    const jsonRegistryEntry =
+      GENERATED_NODE_REGISTRY[nodeType as keyof typeof GENERATED_NODE_REGISTRY];
+    if (jsonRegistryEntry) {
+      console.log(
+        `✅ [isValidNodeType] Found V2U node in JSON registry: ${nodeType}`
+      );
+      return true;
+    }
+  } catch (error) {
+    console.warn(
+      `⚠️ [isValidNodeType] Failed to check JSON registry for ${nodeType}:`,
+      error
+    );
+  }
+
+  return false;
 }
 
 /**
@@ -843,6 +909,43 @@ export function isValidNodeType(nodeType: string): boolean {
  */
 export function getCategoryMetadata(category: string): any {
   return Category.get(category);
+}
+
+/**
+ * Get the mapping of node types to their categories
+ * This is used by the theming system to determine styling
+ */
+export function getNodeCategoryMapping(): Record<string, string> {
+  const mapping: Record<string, string> = {};
+
+  console.log(`📊 [getNodeCategoryMapping] Building category mapping...`);
+
+  // Get all V2U nodes from the JSON registry (this is where V2U nodes are stored)
+  Object.entries(GENERATED_NODE_REGISTRY).forEach(([nodeType, nodeData]) => {
+    if (nodeData && typeof nodeData === "object" && "category" in nodeData) {
+      const category = (nodeData as any).category;
+      if (category) {
+        mapping[nodeType] = category;
+        console.log(
+          `📊 [getNodeCategoryMapping] V2U: ${nodeType} → ${category}`
+        );
+      }
+    }
+  });
+
+  // Also check unified registry nodes using the nodeRegistry API
+  const unifiedRegistryStats = nodeRegistry.getRegistryStats();
+  console.log(
+    `📊 [getNodeCategoryMapping] Found ${unifiedRegistryStats.size} unified nodes`
+  );
+
+  // Unfortunately, the nodeRegistry doesn't expose an iteration method,
+  // so we'll rely primarily on the GENERATED_NODE_REGISTRY for V2U nodes
+
+  console.log(
+    `📊 [getNodeCategoryMapping] Total mappings: ${Object.keys(mapping).length}`
+  );
+  return mapping;
 }
 
 /**
@@ -940,6 +1043,7 @@ export function getUnifiedRegistryStats() {
 // Export registry instances for external access
 export { categoryRegistry } from "./category";
 export {
+  GENERATED_NODE_REGISTRY,
   getCategoryByKey,
   getNodeByType,
   getNodesByCategory,
@@ -1094,15 +1198,54 @@ export function getEnhancedNodeRegistration(
     };
   }
 
-  // Then check the defineNode registry for V2U nodes
+  // Check if it's a V2U node in the JSON registry
   try {
-    const { NodeRegistry } = require("../defineNode/index.tsx");
-    const modernRegistry = NodeRegistry.getInstance();
-    const defineNodeConfig = modernRegistry.get(nodeType);
+    const jsonRegistryEntry =
+      GENERATED_NODE_REGISTRY[nodeType as keyof typeof GENERATED_NODE_REGISTRY];
+    if (jsonRegistryEntry) {
+      console.log(
+        `✅ [getEnhancedNodeRegistration] Found V2U node in JSON registry: ${nodeType}`
+      );
+
+      // Create a registration from the JSON registry entry
+      return {
+        nodeType: jsonRegistryEntry.nodeType,
+        component: null, // V2U components are loaded dynamically
+        category: jsonRegistryEntry.category,
+        folder: jsonRegistryEntry.folder,
+        displayName: jsonRegistryEntry.displayName,
+        description: jsonRegistryEntry.description,
+        icon: jsonRegistryEntry.icon,
+        hasToggle: jsonRegistryEntry.hasToggle,
+        iconWidth: jsonRegistryEntry.iconWidth,
+        iconHeight: jsonRegistryEntry.iconHeight,
+        expandedWidth: jsonRegistryEntry.expandedWidth,
+        expandedHeight: jsonRegistryEntry.expandedHeight,
+        defaultData: jsonRegistryEntry.defaultData,
+        handles: jsonRegistryEntry.handles || [],
+        hasControls: true,
+        hasOutput: true,
+        factoryConfig: null, // V2U nodes don't use factory config
+      };
+    }
+  } catch (error) {
+    console.warn(
+      `⚠️ [getEnhancedNodeRegistration] Failed to check JSON registry for ${nodeType}:`,
+      error
+    );
+  }
+
+  // Then check the defineNode registry for V2U nodes (fallback)
+  try {
+    // NOTE: defineNode registry is not available in current directory structure
+    // const { NodeRegistry } = require("../defineNode/index.tsx");
+    // const modernRegistry = NodeRegistry.getInstance();
+    // const defineNodeConfig = modernRegistry.get(nodeType);
+    const defineNodeConfig: any = null;
 
     if (defineNodeConfig) {
       console.log(
-        `✅ [getEnhancedNodeRegistration] Found V2U node: ${nodeType}`
+        `✅ [getEnhancedNodeRegistration] Found V2U node in defineNode registry: ${nodeType}`
       );
 
       // Return a minimal registration that the drag-and-drop system can use

@@ -23,12 +23,12 @@ import {
   createNodeComponent,
   type BaseNodeData,
   type HandleConfig,
-} from "../../infrastructure/node-creation/factory/NodeFactory";
-import { getNodeHandles } from "../../infrastructure/node-creation/factory/constants/handles";
-import { STANDARD_SIZE_PATTERNS } from "../../infrastructure/node-creation/factory/constants/sizes";
+} from "../../infrastructure/node-creation/core/factory/NodeFactory";
+import { getNodeHandles } from "../../infrastructure/node-creation/core/factory/constants/handles";
+import { STANDARD_SIZE_PATTERNS } from "../../infrastructure/node-creation/core/factory/constants/sizes";
 
 // KEY UTILITIES - Standardized React key generation
-import { generateDisplayValueKey } from "../../infrastructure/node-creation/factory/utils/ui/keyUtils";
+import { generateDisplayValueKey } from "../../infrastructure/node-creation/core/factory/utils/ui/keyUtils";
 
 // UTILITY FUNCTIONS - Inline implementations
 function extractNodeValue(data: any): any {

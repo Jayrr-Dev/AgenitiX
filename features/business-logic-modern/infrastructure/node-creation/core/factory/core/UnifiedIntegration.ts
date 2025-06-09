@@ -74,7 +74,7 @@ import { NodeFactory as BasicNodeFactory } from "../utils/creation/nodeFactory";
 import {
   getNodeInspectorControls as registryGetNodeInspectorControls,
   hasFactoryInspectorControls as registryHasFactoryInspectorControls,
-} from "../../json-node-registry/unifiedRegistry";
+} from "../../registries/json-node-registry/unifiedRegistry";
 
 // ============================================================================
 // UNIFIED INTEGRATION INTERFACE

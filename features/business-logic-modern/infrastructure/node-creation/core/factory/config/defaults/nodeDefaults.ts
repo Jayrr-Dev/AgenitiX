@@ -48,7 +48,7 @@ export const DEFAULT_JSON_INPUT_HANDLE: HandleConfig = {
   id: "json-input",
   type: "target",
   position: Position.Left,
-  dataType: "{}",
+  dataType: "{ }",
 };
 
 // ============================================================================

@@ -29,7 +29,7 @@ const CATEGORY_EDGE_COLORS = {
 function getHandleDataType(nodeType: string, handleId: string): string {
   try {
     // Use the unified registry for proper data type normalization
-    const registry = require("../../node-creation/json-node-registry/unifiedRegistry");
+    const registry = require("../../node-creation/core/registries/json-node-registry/unifiedRegistry");
     const handle =
       registry.getNodeHandle(nodeType, handleId, "source") ||
       registry.getNodeHandle(nodeType, handleId, "target");
@@ -44,7 +44,7 @@ function getHandleDataType(nodeType: string, handleId: string): string {
     // Fallback to direct registry lookup
     const {
       GENERATED_NODE_REGISTRY,
-    } = require("../../node-creation/json-node-registry/generated/nodeRegistry");
+    } = require("../../node-creation/core/registries/json-node-registry/generated/nodeRegistry");
 
     const nodeConfig = GENERATED_NODE_REGISTRY[nodeType];
     if (!nodeConfig || !nodeConfig.handles) {
@@ -96,7 +96,7 @@ function getSourceNodeCategory(
         // Get the category from the node registry
         const {
           GENERATED_NODE_REGISTRY,
-        } = require("../../node-creation/json-node-registry/generated/nodeRegistry");
+        } = require("../../node-creation/core/registries/json-node-registry/generated/nodeRegistry");
 
         const nodeConfig = GENERATED_NODE_REGISTRY[sourceNode.type];
         return nodeConfig?.category || null;

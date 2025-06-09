@@ -47,7 +47,7 @@ export const NODE_HANDLE_DEFINITIONS: Record<NodeType, HandleConfig[]> = {
   // 🧪 TEST / DEBUG DOMAIN
   testError: [
     { id: "trigger", dataType: "b", position: Position.Left, type: "target" },
-    { id: "error", dataType: "{}", position: Position.Right, type: "source" },
+    { id: "error", dataType: "{ }", position: Position.Right, type: "source" },
     { id: "vibe", dataType: "V", position: Position.Top, type: "target" },
   ],
 };

@@ -38,7 +38,7 @@ export const addJsonInputSupport = (
     return [
       {
         id: "json",
-        dataType: "{}",
+        dataType: "{ }",
         position: Position.Top,
         type: "target",
       },
@@ -47,7 +47,7 @@ export const addJsonInputSupport = (
 
   // Check if node already has a JSON input handle
   const hasJsonInput = handles.some(
-    (h: HandleConfig) => h.type === "target" && h.dataType === "{}"
+    (h: HandleConfig) => h.type === "target" && h.dataType === "{ }"
   );
 
   // If already has JSON input, return handles as-is

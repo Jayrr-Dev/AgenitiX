@@ -56,7 +56,7 @@ export interface HandleConfig {
     | "s"
     | "n"
     | "b"
-    | "{}"
+    | "{ }"
     | "a"
     | "N"
     | "f"

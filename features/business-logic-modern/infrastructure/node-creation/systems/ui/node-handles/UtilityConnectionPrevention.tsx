@@ -14,7 +14,7 @@
 import { Connection, Node, OnConnectStart, useReactFlow } from "@xyflow/react";
 import { useCallback, useState } from "react";
 import superjson from "superjson";
-import { getHandleConfig } from "./handleConfig";
+import { getHandleConfig } from "./configHandle";
 
 // ===== TYPES =====
 

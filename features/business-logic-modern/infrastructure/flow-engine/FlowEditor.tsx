@@ -190,19 +190,38 @@ function FlowEditorContent() {
   // Enhanced addNode with action recording
   const addNodeWithHistory = useCallback(
     (node: AgenNode) => {
-      console.log("🎯 [FlowEditor] Adding node:", node.id);
-
-      // Add the node first (this updates Zustand state)
-      addNode(node);
-
-      // Record action after state is updated (proper flow)
-      console.log("📝 [FlowEditor] Recording node_add action");
-      recordAction("node_add", {
-        nodeId: node.id,
-        nodeType: node.type,
-        nodeLabel: node.data?.label || node.type,
+      console.log("🎯 [FlowEditor] Adding node:", {
+        id: node.id,
+        type: node.type,
         position: node.position,
+        isV2U: node.type.includes("V2U"),
+        dataKeys: Object.keys(node.data || {}),
       });
+
+      try {
+        // Add the node first (this updates Zustand state)
+        console.log("🏗️ [FlowEditor] Calling Zustand addNode...");
+        addNode(node);
+        console.log("✅ [FlowEditor] Zustand addNode completed successfully");
+
+        // Record action after state is updated (proper flow)
+        console.log("📝 [FlowEditor] Recording node_add action");
+        recordAction("node_add", {
+          nodeId: node.id,
+          nodeType: node.type,
+          nodeLabel: node.data?.label || node.type,
+          position: node.position,
+        });
+        console.log("✅ [FlowEditor] Action recording completed");
+      } catch (error) {
+        console.error("❌ [FlowEditor] Failed to add node:", error);
+        console.error("🔍 [FlowEditor] Node details:", {
+          id: node.id,
+          type: node.type,
+          isV2U: node.type.includes("V2U"),
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+      }
     },
     [addNode, recordAction]
   );
