@@ -35,6 +35,7 @@ import { ErrorLog } from "./components/ErrorLog";
 import { NodeControls } from "./components/NodeControls";
 import { NodeHeader } from "./components/NodeHeader";
 import { NodeOutput } from "./components/NodeOutput";
+import type { ErrorType } from "./types";
 import { JsonHighlighter } from "./utils/JsonHighlighter";
 
 // V2U Inspector Components
@@ -208,6 +209,31 @@ const NodeInspectorV2U = React.memo(function NodeInspectorV2U() {
   // ============================================================================
   // NODE ACTION HANDLERS (Enhanced with V2U integration)
   // ============================================================================
+
+  // Wrapper function to handle ErrorType compatibility
+  const handleLogError = useCallback(
+    (nodeId: string, message: string, type?: ErrorType, source?: string) => {
+      // Convert broader ErrorType to limited type expected by logNodeError
+      let mappedType: "error" | "warning" | "info";
+      switch (type) {
+        case "warning":
+          mappedType = "warning";
+          break;
+        case "info":
+          mappedType = "info";
+          break;
+        case "performance":
+        case "security":
+        case "lifecycle":
+        case "error":
+        default:
+          mappedType = "error";
+          break;
+      }
+      logNodeError(nodeId, message, mappedType, source);
+    },
+    [logNodeError]
+  );
 
   const handleUpdateNodeId = useCallback(
     (oldId: string, newId: string) => {
@@ -624,9 +650,10 @@ const NodeInspectorV2U = React.memo(function NodeInspectorV2U() {
                 onUpdateNodeId={handleUpdateNodeId}
                 onDeleteNode={handleDeleteNode}
                 onDuplicateNode={handleDuplicateNode}
-                debugInfo={debugSelectedNode}
-                v2uState={v2uState}
-                debugMode={v2uDebugMode}
+                inspectorState={{
+                  locked: inspectorLocked,
+                  setLocked: setInspectorLocked,
+                }}
               />
 
               {/* Node Controls */}
@@ -634,7 +661,17 @@ const NodeInspectorV2U = React.memo(function NodeInspectorV2U() {
                 <NodeControls
                   node={selectedNode}
                   updateNodeData={updateNodeData}
-                  onLogError={logNodeError}
+                  onLogError={handleLogError}
+                  inspectorState={{
+                    durationInput: "",
+                    setDurationInput: () => {},
+                    countInput: "",
+                    setCountInput: () => {},
+                    multiplierInput: "",
+                    setMultiplierInput: () => {},
+                    delayInput: "",
+                    setDelayInput: () => {},
+                  }}
                   v2uState={v2uState}
                   debugMode={v2uDebugMode}
                 />
@@ -643,7 +680,10 @@ const NodeInspectorV2U = React.memo(function NodeInspectorV2U() {
               {/* Node Output */}
               {output && (
                 <div className="p-3 border-t border-gray-200 dark:border-gray-700">
-                  <NodeOutput output={output} />
+                  <NodeOutput
+                    output={output}
+                    nodeType={selectedNode.type as NodeType}
+                  />
                 </div>
               )}
 

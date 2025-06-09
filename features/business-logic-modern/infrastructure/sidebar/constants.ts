@@ -32,11 +32,11 @@ import type { NodeType } from "../flow-engine/types/nodeData";
 import type {
   NodeCategory,
   SidebarFolder,
-} from "../node-creation/factory/types";
+} from "../node-creation/core/factory/types";
 import {
   GENERATED_NODE_REGISTRY,
   NODE_TYPES,
-} from "../node-creation/json-node-registry/generated/nodeRegistry";
+} from "../node-creation/core/registries/json-node-registry/generated/nodeRegistry";
 
 export const STORAGE_PREFIX = "sidebar-stencil-order";
 

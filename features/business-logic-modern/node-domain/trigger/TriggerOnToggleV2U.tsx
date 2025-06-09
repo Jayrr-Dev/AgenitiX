@@ -15,7 +15,7 @@
 
 import { Position } from "@xyflow/react";
 import { BaseNodeData } from "../../infrastructure/flow-engine/types/nodeData";
-import { defineNode } from "../../infrastructure/node-creation/defineNode";
+import { defineNode } from "../../infrastructure/node-creation";
 
 // ============================================================================
 // NODE DATA INTERFACE

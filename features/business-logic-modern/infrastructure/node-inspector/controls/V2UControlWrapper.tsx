@@ -18,7 +18,7 @@ import {
   getV2UMetadata,
   isV2UNode,
   resolveV2UControl,
-} from "./V2UControlRegistry";
+} from "../V2UControlRegistry";
 
 // ============================================================================
 // V2U CONTROL WRAPPER INTERFACES
@@ -136,7 +136,7 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
               </div>
               <div className="flex flex-wrap gap-1">
                 {metadata.controlConfig.enhancedFeatures.map(
-                  (feature, index) => (
+                  (feature: string, index: number) => (
                     <span
                       key={index}
                       className="px-1 py-0.5 bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-300 rounded text-xs"

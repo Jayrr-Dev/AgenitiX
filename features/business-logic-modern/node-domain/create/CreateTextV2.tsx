@@ -44,7 +44,7 @@ import { useTextInputShortcuts } from "../../infrastructure/flow-engine/hooks/us
 import {
   useAutoOptimizedTextInput,
   useHighPerformanceTextInput,
-} from "../../infrastructure/node-creation/factory/hooks/useOptimizedTextInput";
+} from "../../infrastructure/node-creation/factory/hooks/performance/useOptimizedTextInput";
 
 // MODERN CONSTANTS - Factory size patterns
 import { STANDARD_SIZE_PATTERNS } from "../../infrastructure/node-creation/factory/constants/sizes";

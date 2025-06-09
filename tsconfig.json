@@ -70,6 +70,8 @@
       "@node-creation/*": [
         "./features/business-logic-modern/infrastructure/node-creation/*"
       ],
+
+      // Factory Components
       "@factory/*": [
         "./features/business-logic-modern/infrastructure/node-creation/factory/*"
       ],
@@ -84,6 +86,7 @@
       "@node-inspector/*": [
         "./features/business-logic-modern/infrastructure/node-inspector/*"
       ],
+      "@node-domain/*": ["./features/business-logic-modern/node-domain/*"],
       "@sidebar/*": [
         "./features/business-logic-modern/infrastructure/sidebar/*"
       ],

@@ -37,13 +37,13 @@ import {
   getNodeMetadata,
   safeNodeTypeCast,
   validateNodeForInspector,
-} from "../node-creation/json-node-registry/unifiedRegistry";
+} from "../node-creation/core/registries/json-node-registry/unifiedRegistry";
 
 // Create the MODERN_NODE_REGISTRY alias for backward compatibility
 const MODERN_NODE_REGISTRY = getLegacyModernNodeRegistry();
 
 // FACTORY INTEGRATION - Enhanced node creation
-import { createNode } from "@/features/business-logic-modern/infrastructure/node-creation/factory/utils/nodeFactory";
+import { createNode } from "../node-creation/core/factory/utils";
 
 import { SidebarTabs } from "./SidebarTabs";
 import { ToggleButton } from "./ToggleButton";

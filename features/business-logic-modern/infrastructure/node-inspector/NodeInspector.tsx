@@ -39,7 +39,7 @@ import type { NodeType } from "../flow-engine/types/nodeData";
 import {
   GENERATED_NODE_REGISTRY,
   NODE_TYPES,
-} from "../node-creation/json-node-registry/generated/nodeRegistry";
+} from "../node-creation/core/registries/json-node-registry/generated/nodeRegistry";
 import {
   getCategoryMetadata,
   getNodeMetadata,
@@ -150,6 +150,31 @@ const NodeInspector = React.memo(function NodeInspector() {
   // ============================================================================
   // NODE ACTION HANDLERS
   // ============================================================================
+
+  // Wrapper function to handle ErrorType compatibility
+  const handleLogError = useCallback(
+    (nodeId: string, message: string, type?: any, source?: string) => {
+      // Convert broader ErrorType to limited type expected by logNodeError
+      let mappedType: "error" | "warning" | "info";
+      switch (type) {
+        case "warning":
+          mappedType = "warning";
+          break;
+        case "info":
+          mappedType = "info";
+          break;
+        case "performance":
+        case "security":
+        case "lifecycle":
+        case "error":
+        default:
+          mappedType = "error";
+          break;
+      }
+      logNodeError(nodeId, message, mappedType, source);
+    },
+    [logNodeError]
+  );
 
   const handleUpdateNodeId = useCallback(
     (oldId: string, newId: string) => {
@@ -400,8 +425,17 @@ const NodeInspector = React.memo(function NodeInspector() {
               <NodeControls
                 node={selectedNode}
                 updateNodeData={updateNodeData}
-                onLogError={logNodeError}
-                inspectorState={combinedInspectorState}
+                onLogError={handleLogError}
+                inspectorState={{
+                  durationInput: "",
+                  setDurationInput: () => {},
+                  countInput: "",
+                  setCountInput: () => {},
+                  multiplierInput: "",
+                  setMultiplierInput: () => {},
+                  delayInput: "",
+                  setDelayInput: () => {},
+                }}
               />
             )}
           </div>

@@ -17,7 +17,7 @@ import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // VISUAL NODE BUILDER STYLES
-import "@infrastructure/node-creation/visual-builder/VisualBuilder.css";
+import "../node-creation/systems/ui/visual-builder/VisualBuilder.css";
 
 // COMPONENT IMPORTS
 import DebugTool from "@infrastructure/components/DebugTool";
@@ -36,12 +36,12 @@ import { NodeDisplayProvider } from "./contexts/NodeDisplayContext";
 import {
   VisualNodeBuilderProvider,
   useVisualNodeBuilder,
-} from "@infrastructure/node-creation/contexts/VisualNodeBuilderContext";
-import { VisualNodeBuilder } from "@infrastructure/node-creation/visual-builder/VisualNodeBuilder";
+} from "../node-creation/systems/intergration/contexts/VisualNodeBuilderContext";
+import { VisualNodeBuilder } from "../node-creation/systems/ui/visual-builder";
 
 // STORE IMPORTS
 import { useFlowStore } from "@infrastructure/flow-engine/stores/flowStore";
-import { useVibeModeStore } from "@infrastructure/node-creation/stores/vibeModeStore";
+import { useVibeModeStore } from "../node-creation/systems/intergration/stores/vibeModeStore";
 
 // HOOK IMPORTS
 import { useUltraFastPropagation } from "@/hooks/useUltraFastPropagation";

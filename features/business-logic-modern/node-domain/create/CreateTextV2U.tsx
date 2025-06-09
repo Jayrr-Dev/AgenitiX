@@ -13,8 +13,8 @@ import React, { useRef } from "react";
 
 import { useTextInputShortcuts } from "../../infrastructure/flow-engine/hooks/useTextInputShortcuts";
 import { BaseNodeData } from "../../infrastructure/flow-engine/types/nodeData";
-import { defineNode } from "../../infrastructure/node-creation/defineNode";
-import { useAutoOptimizedTextInput } from "../../infrastructure/node-creation/factory/hooks/useOptimizedTextInput";
+import { defineNode } from "../../infrastructure/node-creation";
+import { useAutoOptimizedTextInput } from "../../infrastructure/node-creation/factory/hooks/performance/useOptimizedTextInput";
 
 // -----------------------------------------------------------------------------
 // 1 ▸ Type Definitions

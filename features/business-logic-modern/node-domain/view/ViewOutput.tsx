@@ -28,7 +28,7 @@ import { getNodeHandles } from "../../infrastructure/node-creation/factory/const
 import { STANDARD_SIZE_PATTERNS } from "../../infrastructure/node-creation/factory/constants/sizes";
 
 // KEY UTILITIES - Standardized React key generation
-import { generateDisplayValueKey } from "../../infrastructure/node-creation/factory/utils/keyUtils";
+import { generateDisplayValueKey } from "../../infrastructure/node-creation/factory/utils/ui/keyUtils";
 
 // UTILITY FUNCTIONS - Inline implementations
 function extractNodeValue(data: any): any {

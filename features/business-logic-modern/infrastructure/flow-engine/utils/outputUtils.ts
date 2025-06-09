@@ -13,7 +13,7 @@
 import {
   extractNodeValue,
   safeStringify,
-} from "@node-creation/utils/nodeUtils";
+} from "@/features/business-logic-modern/infrastructure/node-creation/shared/utils/nodeUtils";
 import type { AgenEdge, AgenNode } from "../types/nodeData";
 
 /**

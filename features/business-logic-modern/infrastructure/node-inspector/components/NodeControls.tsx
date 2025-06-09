@@ -17,7 +17,7 @@ import type React from "react";
 import {
   getNodeInspectorControls,
   hasFactoryInspectorControls,
-} from "../../node-creation/factory/NodeFactory";
+} from "../../node-creation/core/registries/json-node-registry/unifiedRegistry";
 import { TextNodeControl } from "../controls/TextNodeControl";
 import {
   CyclePulseControl,
@@ -39,7 +39,7 @@ import {
   generateInspectorControlMapping,
   isValidNodeType,
   safeNodeTypeCast,
-} from "../../node-creation/json-node-registry/unifiedRegistry";
+} from "../../node-creation/core/registries/json-node-registry/unifiedRegistry";
 
 interface NodeControlsProps {
   node: AgenNode;

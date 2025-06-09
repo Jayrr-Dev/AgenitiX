@@ -21,7 +21,7 @@ import {
   getEnhancedNodeRegistration,
   getLegacyModernNodeRegistry,
   isValidNodeType,
-} from "@/features/business-logic-modern/infrastructure/node-creation/json-node-registry/unifiedRegistry";
+} from "../../node-creation/core/registries/json-node-registry/unifiedRegistry";
 
 // DEBUG: Make modern registry available globally for testing
 if (typeof window !== "undefined") {

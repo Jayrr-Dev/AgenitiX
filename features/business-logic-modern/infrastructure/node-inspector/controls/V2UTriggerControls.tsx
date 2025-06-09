@@ -325,11 +325,16 @@ export const V2UTriggerOnToggleControl: React.FC<V2UTriggerControlProps> = ({
   const [toggleCount, setToggleCount] = useState(0);
   const [lastToggleTime, setLastToggleTime] = useState<number | null>(null);
 
-  const isToggled = !!node.data.triggered;
+  const isToggled = !!node.data.triggered || !!node.data.outputValue;
   const isV2UNode = !!(node.data as any)._v2uMigrated;
 
   const handleToggle = useCallback(() => {
-    updateNodeData(node.id, { triggered: !isToggled });
+    const newTriggered = !isToggled;
+    updateNodeData(node.id, {
+      triggered: newTriggered,
+      value: newTriggered,
+      outputValue: newTriggered,
+    });
     setToggleCount((prev) => prev + 1);
     setLastToggleTime(Date.now());
   }, [node.id, isToggled, updateNodeData]);
@@ -363,6 +368,16 @@ export const V2UTriggerOnToggleControl: React.FC<V2UTriggerControlProps> = ({
         >
           🔄 Toggle
         </ActionButton>
+
+        {/* Current Output Value Display */}
+        <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+          Output Value:{" "}
+          <span
+            className={`font-mono ${node.data.outputValue ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+          >
+            {node.data.outputValue ? "true" : "false"}
+          </span>
+        </div>
       </ControlGroup>
 
       {/* Toggle Metrics */}
@@ -399,6 +414,11 @@ export const V2UTriggerOnToggleControl: React.FC<V2UTriggerControlProps> = ({
               <div>V2U Migrated: {isV2UNode ? "Yes" : "No"}</div>
               <div>Current State: {isToggled ? "ON" : "OFF"}</div>
               <div>Toggle Count: {toggleCount}</div>
+              <div>Triggered: {node.data.triggered ? "true" : "false"}</div>
+              <div>Value: {node.data.value ? "true" : "false"}</div>
+              <div>
+                Output Value: {node.data.outputValue ? "true" : "false"}
+              </div>
             </div>
           </div>
         </ControlGroup>

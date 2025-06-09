@@ -15,8 +15,8 @@
 
 import { Position } from "@xyflow/react";
 import { BaseNodeData } from "../../infrastructure/flow-engine/types/nodeData";
-import { defineNode } from "../../infrastructure/node-creation/defineNode";
-import { generateDisplayValueKey } from "../../infrastructure/node-creation/factory/utils/keyUtils";
+import { defineNode } from "../../infrastructure/node-creation";
+import { generateDisplayValueKey } from "../../infrastructure/node-creation/factory/utils/ui/keyUtils";
 
 // ============================================================================
 // NODE DATA INTERFACE

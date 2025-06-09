@@ -40,11 +40,11 @@ import {
 } from "@/features/business-logic-modern/node-domain";
 
 // Import unified registry for automated V2U node resolution
-import { getLegacyModernNodeRegistry } from "@/features/business-logic-modern/infrastructure/node-creation/json-node-registry/unifiedRegistry";
+import { getLegacyModernNodeRegistry } from "../../node-creation/core/registries/json-node-registry/unifiedRegistry";
 
 // ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention & cleanup
-import { useCleanupInvalidConnections } from "@node-creation/node-handles/CleanupInvalidConnections";
-import { useUltimateFlowConnectionPrevention } from "@node-creation/node-handles/UltimateTypesafeHandle";
+import { useCleanupInvalidConnections } from "@/features/business-logic-modern/infrastructure/node-creation/systems/ui/node-handles/CleanupInvalidConnections";
+import { useUltimateFlowConnectionPrevention } from "@/features/business-logic-modern/infrastructure/node-creation/systems/ui/node-handles/UltimateTypesafeHandle";
 
 interface FlowCanvasProps {
   nodes: AgenNode[];

@@ -3,7 +3,7 @@
 import {
   NodeState,
   useUltraFastPropagation as useNewUltraFastPropagation,
-} from "@/features/business-logic-modern/infrastructure/node-creation/factory/visuals/UltraFastPropagationEngine";
+} from "@/features/business-logic-modern/infrastructure/node-creation/factory/systems/propagation/UltraFastPropagationEngine";
 import { Connection, Node } from "@xyflow/react";
 import { useCallback } from "react";
 

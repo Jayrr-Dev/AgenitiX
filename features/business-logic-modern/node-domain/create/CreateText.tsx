@@ -21,17 +21,17 @@
 
 import { useRef } from "react";
 import { useTextInputShortcuts } from "../../infrastructure/flow-engine/hooks/useTextInputShortcuts";
-import { getNodeHandles } from "../../infrastructure/node-creation/factory/constants/handles";
-import { STANDARD_SIZE_PATTERNS } from "../../infrastructure/node-creation/factory/constants/sizes";
+import { getNodeHandles } from "../../infrastructure/node-creation/core/factory";
+import { STANDARD_SIZE_PATTERNS } from "../../infrastructure/node-creation/core/factory/constants/sizes";
 import {
   useAutoOptimizedTextInput,
   useHighPerformanceTextInput,
-} from "../../infrastructure/node-creation/factory/hooks/useOptimizedTextInput";
+} from "../../infrastructure/node-creation/core/factory/hooks/performance/useOptimizedTextInput";
 import {
   createNodeComponent,
   type BaseNodeData,
   type HandleConfig,
-} from "../../infrastructure/node-creation/factory/NodeFactory";
+} from "../../infrastructure/node-creation/core/factory/NodeFactory";
 
 // MODERN FACTORY INTEGRATION
 
