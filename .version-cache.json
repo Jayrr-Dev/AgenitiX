@@ -1,6 +1,6 @@
 {
-  "version": "1.2.13",
-  "timestamp": 1749413633045,
+  "version": "1.2.14",
+  "timestamp": 1749474594294,
   "hashes": [
     [
       "features\\business-logic-modern\\dashboard\\data.ts",
@@ -12,7 +12,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\components\\ActionToolbar.tsx",
-      "b7ab8818e66b261ee87b62a319c7bcfa"
+      "ff3a49a5b9ecbc2a76463743dca86387"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\components\\BranchSelector.tsx",
@@ -47,12 +47,32 @@
       "1774ae58ce3e6c0bb24d21cf089d359f"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\depreciated\\BulletproofNodeBase.tsx",
-      "6d6b3b8acedf470c2dceefe2fb757d27"
+      "features\\business-logic-modern\\infrastructure\\depreciated\\examples\\AIProcessingNode.example.tsx",
+      "33651df7943e1b15d91ec2bbb8fa693a"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\depreciated\\examples\\APIIntegrationNode.example.tsx",
+      "69ff6766ff8749092d126d0841a3a648"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\depreciated\\examples\\DatabaseQueryNode.example.tsx",
+      "ddf7b7c1f38409d208de18e202e7b895"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\depreciated\\templates\\CreateTextTemplate.tsx",
+      "c4eea8d2389970e5adcf6e90d75253c1"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\depreciated\\testing\\EnterpriseNodeTesting.test.tsx",
+      "1bfabc39eca13e7a3265435a88898560"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\depreciated\\testing\\TextInputPerformanceMonitor.tsx",
+      "57e1076a334536a2c2057e3dd50a8df2"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\components\\FlowCanvas.tsx",
-      "82aea2ac33c97562517fa991b2fa4448"
+      "1e11d1cc512bd9ee5646745506845df1"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\components\\FlowEditorLoading.tsx",
@@ -68,11 +88,11 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\FlowEditor.tsx",
-      "f307153ea5f95e1f514b18bc424cf7ad"
+      "24c394f812c4d5fb770e862f58cdb78b"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\hooks\\useDragAndDrop.ts",
-      "7e0477d66df8cfce8da781878e9918b1"
+      "daaa80bea0225768bc76360a012ade0d"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\hooks\\useErrorLogging.ts",
@@ -124,7 +144,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\utils\\connectionUtils.ts",
-      "e7fb95e8fc219ee882829793c4012dcb"
+      "a12a862466bc1d048a4be21f6c37a0a6"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\utils\\dataMigration.ts",
@@ -136,327 +156,407 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\utils\\outputUtils.ts",
-      "6672314b16984f66c2b9765e159dc96e"
+      "218c953131f4c72a73a03af375e59b23"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\flow-engine\\utils\\timerCleanup.ts",
       "a07333524664c3060bcf8ae4f8e82e5d"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\contexts\\VisualNodeBuilderContext.tsx",
-      "133e7afdb64d8842507d0cf469608c94"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\adapters\\jsonRegistryAdapter.ts",
+      "9c2d2ac5bbe831703ab6860258e4ff25"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\dashboard\\V2UDashboard.tsx",
-      "1da0db562c00b6658b662efda19d164b"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\defineNode\\index.tsx",
-      "6c14cd4d0c8947da8fbdb482bba829a0"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\error-handling\\NodeErrorBoundary.tsx",
-      "020f0b39935c1042dc0f12a3420949e6"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\events\\NodeSystemEvents.ts",
-      "a041a77131471a067a1d3794dd74abf0"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\examples\\AIProcessingNode.example.tsx",
-      "838acf4d7286f0f7753b5cfdb486bf11"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\examples\\APIIntegrationNode.example.tsx",
-      "84681f6af062e0c7ac385761320d3583"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\examples\\DatabaseQueryNode.example.tsx",
-      "ddf7b7c1f38409d208de18e202e7b895"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\adapters\\jsonRegistryAdapter.ts",
-      "41fe028507884925629e41c4ebe5631a"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\components\\ExpandCollapseButton.tsx",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\components\\ExpandCollapseButton.tsx",
       "ef07df5474a06f75c942f3503cc861c7"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\components\\FloatingNodeId.tsx",
-      "09e74b040a137633bed2ed377e52dd72"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\components\\FloatingNodeId.tsx",
+      "f28c70fcf8f05d518275d3224eb0aa2b"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\components\\NodeContainer.tsx",
-      "8641971e7f261ce939d68ff34d5882ca"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\components\\NodeContainer.tsx",
+      "1fe1afcb9d1eb9ed8384e0051c68abd9"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\components\\NodeContent.tsx",
-      "6bb8e0a5426aa2c02c73c6d32e232399"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\components\\NodeContent.tsx",
+      "c1e5d552c20375e8cde0575a8a7e39f3"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\constants\\handles.ts",
-      "516154384835f8f9e509aaa11aaea050"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\config\\constants\\handles.ts",
+      "d1a565b3da6b31623676412bb6e19f4a"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\constants\\index.ts",
-      "e2bf197d9ce71ba888fd4f114be995be"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\config\\constants\\index.ts",
+      "d4c9abfb0a06e63ae152911ba30cb0b0"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\constants\\sizes.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\config\\constants\\nodeTypes.ts",
+      "a9be739c7d29f24a84b5a1e840a57f51"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\config\\constants\\sizes.ts",
       "ecf037f6ce4184b2bcdf8602205741db"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\helpers\\inspectorControlHelpers.tsx",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\config\\defaults\\index.ts",
+      "6557627073ed9ebcccdbe5211178e5c2"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\config\\defaults\\nodeDefaults.ts",
+      "d7b37bba62410e7c431f4b1773a44b2f"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\config\\index.ts",
+      "cc370524a51341c62896ad819b0e47d5"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\config\\validation\\configValidation.ts",
+      "afec17c705202f3adefcf869146b15f3"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\constants\\handles.ts",
+      "dedf9ff6788c287b8c3f555bc91e7baa"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\constants\\index.ts",
+      "22311a806f4d3d21f8fcd92dfc306cbc"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\constants\\sizes.ts",
+      "ecf037f6ce4184b2bcdf8602205741db"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\core\\index.ts",
+      "96a7aae60d7350de2d6c2d03a4d1d9b1"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\core\\StyleInitializer.ts",
+      "2e75732bea3d7ee6bcaea2f762114080"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\core\\UnifiedIntegration.ts",
+      "f2aeef0ff767c86b07b7f284f90e8d95"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\helpers\\inspectorControlHelpers.tsx",
       "1eab1a7042aee9ee540173536cf0a577"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\helpers\\nodeConfigHelpers.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\helpers\\nodeConfigHelpers.ts",
       "a0392cdc1240a0cdd1351113ea457b38"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useActivationCalculation.ts",
-      "272457bf086c86636ca8b8afb13661a0"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\error\\index.ts",
+      "812d5095dae1425929abcbd0801ff46c"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useErrorInjectionProcessing.ts",
-      "c38e61a610cdaf4f3052c574873a36c1"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\error\\useErrorInjectionProcessing.ts",
+      "76601570c6d313d0a5e72cbbee0ba423"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useGPUAcceleration.ts",
-      "9a8b409bd7b6d74f2077b9b455980c51"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\index.ts",
+      "c9793e21ef59521f1c5d2b43e5fae45e"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useJsonInputProcessing.ts",
-      "e5b3e806b80f0c68a33b422626d9e3d4"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\performance\\index.ts",
+      "9048fdbba1aca81bc1f76a64a9370463"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useMainProcessingLogic.ts",
-      "e562d7b132fffcf4579741837cf1eeb3"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\performance\\useGPUAcceleration.ts",
+      "03c0b91fa7fe207e6d228611ee8c9533"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useNodeConnections.ts",
-      "f76be0a5ff557a584d1c26964075fc71"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useNodeHandles.ts",
-      "b91fcaba4a621a9e8ed03548b4c1e79e"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useNodeProcessing.ts",
-      "d809ae2a252d815babb9aac896c013af"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useNodeRegistration.ts",
-      "277dabf6399df8dad0f4f7ba344aad8f"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useNodeState.ts",
-      "9093edc0d01b1ed31ef12d1f8398e9b9"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useNodeStyling.ts",
-      "d36af52e7d62957102c01862937ed92d"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\hooks\\useOptimizedTextInput.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\performance\\useOptimizedTextInput.ts",
       "0d39ba28d4cce4e2b63fa0ccbe91cfde"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\index.ts",
-      "e7f08413af4fe1e45349efd9a65c21c5"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\processing\\index.ts",
+      "3af1cf6239ac528266ef06914d45a775"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\integrations\\factoryIntegration.ts",
-      "a0f74a641924fc9948937bf6fecb772b"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\processing\\useActivationCalculation.ts",
+      "a4c86629220e33b14d825fa65b6c0c51"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\NodeFactory.tsx",
-      "4bc653fd5e058e6022ad4c6328956a85"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\processing\\useJsonInputProcessing.ts",
+      "0ab0c7dd72ae8ddfdeb69267944d8e6d"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\templates\\CreateTextTemplate.tsx",
-      "a5b17b388984b9c0f986e1d3371afdbb"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\processing\\useMainProcessingLogic.ts",
+      "68f7cef6b2bf12b4558641a9b282a9dc"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\testing\\EnterpriseNodeTesting.test.tsx",
-      "1bfabc39eca13e7a3265435a88898560"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\processing\\useNodeProcessing.ts",
+      "27e434455389e75535fb4effc599e2b3"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\testing\\TextInputPerformanceMonitor.tsx",
-      "57e1076a334536a2c2057e3dd50a8df2"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\state\\index.ts",
+      "252e1c8c5bedb35a5fdc10d5a2c25433"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\types\\connections.ts",
-      "eb887ac64f38f84f4750b8922e7dea4f"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\state\\useNodeRegistration.ts",
+      "7eb77adf99df47b851c658ddc93dbec7"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\types\\index.ts",
-      "15a80f210185ebe836d73b4618444419"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\state\\useNodeState.ts",
+      "2c352b61e2840a39b2ef32520567497d"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\advancedButtonSystem.tsx",
-      "3e8c93b7a4ef14878fa847cf3304badb"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\ui\\index.ts",
+      "be2275a86d178ab40df0a566a5c7ffa2"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\cacheManager.ts",
-      "89b5bed0137e1a672f32e3e3e1e29b6e"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\ui\\useNodeConnections.ts",
+      "d3c63bca08c93abae4662d518c24b8cc"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\conditionalRendering.ts",
-      "6a79e9b0875185bf8475eb18169dc48a"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\ui\\useNodeHandles.ts",
+      "363a24d9cb013b5a05e8d753d9b13d51"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\handleDiagnostics.ts",
-      "a74ff61bfc6630600434ecb4b0db41e4"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\hooks\\ui\\useNodeStyling.ts",
+      "0a9a0d3a5f20fb86dd53363fcf26e387"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\handleTestUtils.ts",
-      "1906addaeb72517fa92f0d9e1f01d442"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\index.ts",
+      "f54ed5399d9cc2963ef012d003e4985e"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\jsonProcessor.ts",
-      "bd82172c862cb44092bb30c10c4a8282"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\NodeFactory.tsx",
+      "caffab089c1028f73440e0242d945452"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\keyUtils.ts",
-      "4554d5856c6afa2c7b5a01c95f2123fc"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\providers\\DataFlowProvider.tsx",
+      "69a5ca8e67be4f927f1db5832453f744"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\nodeFactory.ts",
-      "9bb4d93700730080a2c0a1e9f33b0a5f"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\providers\\index.ts",
+      "e25a8f1f96f4e2c7afba49cd3790dd41"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\nodeFactoryIntegrated.ts",
-      "0f3f786add065ae27c07dfc2a7cd7b4a"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\providers\\SafeStateProvider.tsx",
+      "75c36d6fbcb053f7e7c4ee8b4410a867"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\propagationEngine.ts",
-      "22c34a73e96eddc91daf426703032686"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\systems\\index.ts",
+      "3d3bdb79ad6072038cd5cd4b8e667193"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\typeSafeConnections.ts",
-      "5072ad67eee294afe1d901f765fb3115"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\systems\\performance\\IdleHydration.tsx",
+      "1bdc7f0a51a8a5166851ee4a5e50f024"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\utils\\updateManager.ts",
-      "674a0b48b37bb610fb1b32da3e5d8804"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\systems\\performance\\index.ts",
+      "378e72d42ecc50b5001f0fe2f2c1dc8a"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\factory\\visuals\\UltraFastPropagationEngine.tsx",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\systems\\performance\\NodeDataBuffer.ts",
+      "acbeb82b1d48a5c18a213a1657d72286"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\systems\\performance\\NodeParkingManager.ts",
+      "20fbbfb21eb7662c6d46018e77d5115d"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\systems\\performance\\ObjectPool.ts",
+      "33a1069131ddeac9fe8c45724fff24bd"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\systems\\performance\\Scheduler.ts",
+      "e00118753c52c02a893ed9b2f457c292"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\systems\\propagation\\index.ts",
+      "221f07f00674a22161c494cde5f9deb3"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\systems\\propagation\\UltraFastPropagationEngine.tsx",
       "e1937f7873f9df8168d2d33f9dce4605"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\base\\TypedRegistry.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\systems\\safety\\DebugSystem.ts",
+      "f54e288fb93b01016f73365c8a3ce77c"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\systems\\safety\\ErrorBoundary.tsx",
+      "400e184beb1ac4083d8b1e668f1de0b1"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\systems\\safety\\index.ts",
+      "3552146c910ef8b562b6c97b5acc0165"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\systems\\safety\\ValidationLayer.ts",
+      "f5015a5e64632367fb54fb6d88bc8ddf"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\types\\connections.ts",
+      "eb887ac64f38f84f4750b8922e7dea4f"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\types\\index.ts",
+      "71dc0e4b73ebb35a63d0305f6097c2f4"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\creation\\index.ts",
+      "0b73e90ecd2b4547353c09827cad3713"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\creation\\nodeFactory.ts",
+      "3e428667e5fbfe291ab291b568b91d2a"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\creation\\nodeFactoryIntegrated.ts",
+      "95aa305fc3d003f33de409a47360bd93"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\handles\\handleConfiguration.ts",
+      "c6d8640a842ffa0a497808184e284c1a"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\handles\\handleFactory.ts",
+      "376ac429173ba0b1f29269c9e47fdf59"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\handles\\index.ts",
+      "76d796f4370ddcb70137c0aae9cb917d"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\index.ts",
+      "de6d376430702e2eb477ee8de31d0d45"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\management\\index.ts",
+      "48a55b118adb5ec80d7e6d8fa90eac3f"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\management\\nodeUtilities.ts",
+      "bfe17b79d2d3f208d9c9df6b9636d1d5"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\optimization\\cacheManager.ts",
+      "8a668622a9c3669a380fe0f1b7fabd03"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\optimization\\index.ts",
+      "46d519433a0f21ce7840131dd79454dd"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\optimization\\updateManager.ts",
+      "65bcc7967ca5116717e3ca1d4deba2bd"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\processing\\index.ts",
+      "3c22ecf2a5bb243b91aca0baf4187cf6"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\processing\\jsonProcessor.ts",
+      "f85886037277a3abdea4732ce3c5a2b1"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\processing\\propagationEngine.ts",
+      "1693e7c7244fe2d29b358ef929d3f1f8"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\ui\\advancedButtonSystem.tsx",
+      "3e8c93b7a4ef14878fa847cf3304badb"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\ui\\conditionalRendering.ts",
+      "2b0a58f298728e30b1ce35b4086b615e"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\ui\\index.ts",
+      "d11ca922c1cc3cdbbc7112d4cd22afd8"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\ui\\keyUtils.ts",
+      "4554d5856c6afa2c7b5a01c95f2123fc"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\validation\\handleDiagnostics.ts",
+      "1188f5785477ecc2095aa813526c354d"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\validation\\handleTestUtils.ts",
+      "5e697a56502f0e5f9dc57d8e0eb3930b"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\validation\\index.ts",
+      "5f562a0b85c4482f84583ea6d1ab1708"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\factory\\utils\\validation\\typeSafeConnections.ts",
+      "5d97f76b8e6d77b2fca51421d3de6689"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\base\\TypedRegistry.ts",
       "ea34f81f7354d7aa507c678f8fd719c9"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\category.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\category.ts",
       "92e6896b96869f9f76e924ebcfbd8b6c"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\components\\PlaceholderComponent.tsx",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\components\\PlaceholderComponent.tsx",
       "e31f91384da713221a990f3a0cc0f5c5"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\config\\registry.config.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\config\\registry.config.ts",
       "524f76c9efdfb7c3f8e20c2f04a0aa87"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\generated\\categoryRegistry.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\generated\\categoryRegistry.ts",
       "cbd2a4e170f3421ab1ef3244e357de6d"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\generated\\index.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\generated\\index.ts",
       "41b56707648301137824c2c20c0e4d70"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\generated\\nodeRegistry.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\generated\\nodeRegistry.ts",
       "1cba18bb0d0c3f156449c99e31273176"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\inspector.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\inspector.ts",
       "cd0be1519dc20f8d332c95aa58de0e9a"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\node.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\node.ts",
       "e0e73e8017b0a85810228d88cc6eb057"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\schemas\\base.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\schemas\\base.ts",
       "b97f082481d9b1a88322e0cb8813c073"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\schemas\\families.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\schemas\\families.ts",
       "0df497de282d2bfee9b3f5eb066d9409"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\scripts\\gen-registry.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\scripts\\gen-registry.ts",
       "3f9639d4ba028b3da3c7846a5209b2a7"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\types\\shared.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\types\\shared.ts",
       "fe73022d47bce8fe4ade107713d9642a"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\unifiedRegistry.ts",
-      "e1a69d6743289969302b6c42b318b671"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\unifiedRegistry.ts",
+      "6722ecfda782002df64f6c8af076578e"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\utils\\logger.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\utils\\logger.ts",
       "1f32db23b19db815e2ca28c1aed42e18"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\json-node-registry\\utils\\validation.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\core\\registries\\json-node-registry\\utils\\validation.ts",
       "19409c30bb74b140016309563ef5f61d"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\node-edges\\BezierEdge.tsx",
-      "e6a1b807ab2d72324c2c26f79412e1e0"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\node-edges\\StepEdge.tsx",
-      "0d05b779463cbab886bf737b99f5e105"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\node-edges\\StraightPath.tsx",
-      "10ef6207ce42d7821279aabaa6231dda"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\CleanupInvalidConnections.tsx",
-      "7684ac2c113c3641f9ed36c040e9b525"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\ConnectionPrevention.tsx",
-      "0e67cdd9c655f41be4622887ac1804b5"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\FlowConnectionPrevention.tsx",
-      "609bf55cd9e2dd31319e5eabb4cbe87d"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\handleConfig.ts",
-      "0b9300844189d3f3544d3ebb127ce337"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\handleTestSuite.ts",
-      "f66d729cb213d2aa7f29350ead51cea7"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\ReactFlowIntegration.tsx",
-      "fb0a68f82301de2819a1e2959af3ca16"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\node-handles\\UltimateTypesafeHandle.tsx",
-      "13976952944ab2b737dcaa9ee6af60ea"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\performance\\BackgroundWorker.ts",
-      "fd3eb27153330ab5bae9a99ca5550a4f"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\performance\\LazyNodeLoader.tsx",
-      "f5714ce6782fad5233bc154071214641"
+      "features\\business-logic-modern\\infrastructure\\node-creation\\index.tsx",
+      "77c4fb9a1165fc2d186acc3cc748e83b"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-creation\\plugins\\examples\\AnalyticsPlugin.example.ts",
@@ -471,39 +571,103 @@
       "832ac83899eba24334060fd26775ed5d"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\stores\\vibeModeStore.ts",
-      "83ad919747c5080e8595b18971e51c5e"
-    ],
-    [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\utils\\memoryCleanup.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\shared\\utils\\memoryCleanup.ts",
       "31749f5410ae198e6ac6248833ecdec9"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\utils\\nodeUtils.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\shared\\utils\\nodeUtils.ts",
       "fc21053d913fc9760c155daa155b5de0"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\utils\\timerCleanup.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\shared\\utils\\timerCleanup.ts",
       "417104aa2872e2266a11b67a8c9b52d1"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\validation\\enhanced-schemas.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\intergration\\contexts\\VisualNodeBuilderContext.tsx",
+      "133e7afdb64d8842507d0cf469608c94"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\intergration\\events\\NodeSystemEvents.ts",
+      "1f3ffa40c9c6dec4bab8db0398d33fab"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\intergration\\stores\\vibeModeStore.ts",
+      "83ad919747c5080e8595b18971e51c5e"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\processing\\error-handling\\NodeErrorBoundary.tsx",
+      "020f0b39935c1042dc0f12a3420949e6"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\processing\\performance\\BackgroundWorker.ts",
+      "27897c1beb1b2a878a5ec2883c06dabc"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\processing\\performance\\LazyNodeLoader.tsx",
+      "f5714ce6782fad5233bc154071214641"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\processing\\validation\\enhanced-schemas.ts",
       "195b006ccac0cc386a32829b737ffc2c"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\visual-builder\\CodeGenerator.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\ui\\dashboard\\V2UDashboard.tsx",
+      "1da0db562c00b6658b662efda19d164b"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\ui\\node-edges\\BezierEdge.tsx",
+      "e6a1b807ab2d72324c2c26f79412e1e0"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\ui\\node-edges\\StepEdge.tsx",
+      "0d05b779463cbab886bf737b99f5e105"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\ui\\node-edges\\StraightPath.tsx",
+      "10ef6207ce42d7821279aabaa6231dda"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\ui\\node-handles\\configHandle.ts",
+      "0b9300844189d3f3544d3ebb127ce337"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\ui\\node-handles\\FlowConnectionPrevention.tsx",
+      "609bf55cd9e2dd31319e5eabb4cbe87d"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\ui\\node-handles\\IntegrateReactFlow.tsx",
+      "fb0a68f82301de2819a1e2959af3ca16"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\ui\\node-handles\\testingHandleSuite.ts",
+      "2d1437ec4a3cefd831e0905ade06bc7c"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\ui\\node-handles\\UltimateTypesafeHandle.tsx",
+      "2044264394eda87e62743c7dea5916e7"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\ui\\node-handles\\UtilityCleanupInvalidConnections.tsx",
+      "50e2cce06239cefed9e9e0f1822d93c3"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\ui\\node-handles\\UtilityConnectionPrevention.tsx",
+      "78350c7a8e3707e4b7edd550a6aa79be"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\ui\\visual-builder\\CodeGenerator.ts",
       "29b064009ba98cff50b18e82b60cff52"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\visual-builder\\FileExporter.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\ui\\visual-builder\\FileExporter.ts",
       "42125ae5b3fd55e2386e8778a772f6dd"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\visual-builder\\index.ts",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\ui\\visual-builder\\index.ts",
       "3d70ed52d59e79cc3861f7c95e701d8d"
     ],
     [
-      "features\\business-logic-modern\\infrastructure\\node-creation\\visual-builder\\VisualNodeBuilder.tsx",
+      "features\\business-logic-modern\\infrastructure\\node-creation\\systems\\ui\\visual-builder\\VisualNodeBuilder.tsx",
       "a8c1251336a4af7cb23141647f439f48"
     ],
     [
@@ -516,15 +680,15 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\components\\NodeControls.tsx",
-      "529a6c1a1be1153963e2d24255b1d7b4"
+      "72279f1626a4e79013b1b7a077177d99"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\components\\NodeHeader.tsx",
-      "fb6374479558bbf5e64021ff27ef6417"
+      "aa38b43e42881a2455d0431896a34576"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\components\\NodeOutput.tsx",
-      "577a9e57b9b2b3e07f92e5d7009bd764"
+      "764245b01304ce7578f302c844dcb419"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\components\\v2u\\V2ULifecycleInspector.tsx",
@@ -536,7 +700,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\controls\\BaseControl.tsx",
-      "debd6e28d75922a9824da3508bc744f7"
+      "12dec783999e5377c99368bedb28f719"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\controls\\TextNodeControl.tsx",
@@ -552,7 +716,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\controls\\V2UControlWrapper.tsx",
-      "8a7b14103b90a556b85da7992dc94365"
+      "746ba185b9822f67397726b99101c937"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\controls\\V2UTextControl.tsx",
@@ -560,7 +724,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\controls\\V2UTriggerControls.tsx",
-      "5b9f84df308e2f3cf13e52336b157323"
+      "be0faab3f5decd7ccff40cc9b108353e"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\hooks\\useInspectorState.ts",
@@ -576,11 +740,11 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\NodeInspector.tsx",
-      "0f8295be1492e682faeb25dc003fe02a"
+      "07c4d3b18c2bd834d74d3f44d4f811dd"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\NodeInspectorV2U.tsx",
-      "f0101b347093d586adab26f21d100b74"
+      "680309f7a293510005eca9ed9ebdb722"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\types.ts",
@@ -589,6 +753,10 @@
     [
       "features\\business-logic-modern\\infrastructure\\node-inspector\\utils\\JsonHighlighter.tsx",
       "660318243902017eac8898da2ce8e0e4"
+    ],
+    [
+      "features\\business-logic-modern\\infrastructure\\node-inspector\\V2UControlRegistry.ts",
+      "ecf69760f393ccd7064b30b5ad652713"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\sidebar\\components\\AddNodeButton.tsx",
@@ -608,7 +776,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\sidebar\\constants.ts",
-      "e1fb5fd1c15023fae9cba03ae7f106e1"
+      "5fbb7521b4ef43aea79b6af4c7e65f98"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\sidebar\\hooks\\useDragSensors.ts",
@@ -628,7 +796,7 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\sidebar\\Sidebar.tsx",
-      "6219e6df651c251ce2b0c4158816c69b"
+      "fac128ad84ad6bcd8d84a9543af08309"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\sidebar\\SidebarTabs.tsx",
@@ -660,11 +828,11 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\theming\\integration\\V2UThemeIntegration.tsx",
-      "f10c4022ebc381a698807cfdf555d2d9"
+      "9af2b736eb2c2b625183b140d128f3e6"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\theming\\stores\\nodeStyleStore.ts",
-      "825ae6cf6e538b1ba98f82e76a13bba1"
+      "849693cb5cb3c50154cd45dbacdb44a7"
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\auto-migrate.ts",
@@ -684,19 +852,19 @@
     ],
     [
       "features\\business-logic-modern\\infrastructure\\versioning\\version.ts",
-      "da459704e8622f6d2d28ab826a3aa6c3"
+      "b9e640975e1d3c42f693b6b1b0c5ccba"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateText.tsx",
-      "d456dd9ce72fb029e6e8061e4c362000"
+      "e5b8b077e6dc1a368e8008e6329d3231"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateTextV2.tsx",
-      "51a62737c7bd150734679f0b1e587a0e"
+      "b0fcb09dc2db0aa6256d6a2a570c6df4"
     ],
     [
       "features\\business-logic-modern\\node-domain\\create\\CreateTextV2U.tsx",
-      "a427b35162e5653a99dc9975edd550dd"
+      "1bee3789ff6f64a86a8bc4be835a0e97"
     ],
     [
       "features\\business-logic-modern\\node-domain\\index.ts",
@@ -704,27 +872,27 @@
     ],
     [
       "features\\business-logic-modern\\node-domain\\test\\TestError.tsx",
-      "fddaf25dcae97880c38798682af2f8ea"
+      "8d006c0dc32951333e99e7fed7771119"
     ],
     [
       "features\\business-logic-modern\\node-domain\\test\\TestErrorV2U.tsx",
-      "068d9fde4c43346124fed815c996b018"
+      "20fe28b2be56fb7490bb69b918665cfb"
     ],
     [
       "features\\business-logic-modern\\node-domain\\trigger\\TriggerOnToggle.tsx",
-      "85a623dfeba7cc6d74ed43741c9f8011"
+      "2f453b56a21116e6dba5a82151962c18"
     ],
     [
       "features\\business-logic-modern\\node-domain\\trigger\\TriggerOnToggleV2U.tsx",
-      "3aa1cd0089907f9a61431f794e71bae8"
+      "541e5d5e04de2b845416b372e75f9f54"
     ],
     [
       "features\\business-logic-modern\\node-domain\\view\\ViewOutput.tsx",
-      "e1c25b1a699d2d40b5583a7b4a1eed48"
+      "d95792eae5d6594b3ea6a3edb0bcede6"
     ],
     [
       "features\\business-logic-modern\\node-domain\\view\\ViewOutputV2U.tsx",
-      "ea51142f5d32b5bb73482b5c3a931fd2"
+      "d6718ea138be1714c7a124f8361f57c4"
     ],
     [
       "features\\business-logic-modern\\tooling\\dev-scripts\\generate-from-registry.ts",
