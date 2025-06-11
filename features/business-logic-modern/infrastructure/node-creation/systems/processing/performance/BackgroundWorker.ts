@@ -123,8 +123,8 @@ export class BackgroundWorkerManager {
   private stats: WorkerPoolStats;
 
   // Monitoring and cleanup
-  private healthCheckInterval: number | null = null;
-  private cleanupInterval: number | null = null;
+  private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
+  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(maxWorkers = navigator.hardwareConcurrency || 4) {
     this.maxWorkers = Math.min(maxWorkers, 8); // Cap at 8 workers
@@ -710,14 +710,14 @@ self.onerror = function(error) {
     let idleWorkers = 0;
     let errorWorkers = 0;
 
-    for (const [workerId, health] of this.workerHealth.entries()) {
+    this.workerHealth.forEach((health, workerId) => {
       // Check for stale workers
       const timeSinceActivity = Date.now() - health.lastActivity;
       if (timeSinceActivity > 300000 && health.status === "busy") {
         // Worker has been busy for > 5 minutes, might be stuck
         console.warn(`Worker ${workerId} appears to be stuck, restarting`);
         this.restartWorker(workerId);
-        continue;
+        return;
       }
 
       switch (health.status) {
@@ -731,7 +731,7 @@ self.onerror = function(error) {
           errorWorkers++;
           break;
       }
-    }
+    });
 
     // Update stats
     this.stats.activeWorkers = activeWorkers;
@@ -743,12 +743,12 @@ self.onerror = function(error) {
   private cleanupCompletedTasks(): void {
     const cutoffTime = Date.now() - 3600000; // 1 hour ago
 
-    for (const [taskId, result] of this.completedTasks.entries()) {
+    this.completedTasks.forEach((result, taskId) => {
       // Remove old completed tasks
       if (Date.now() - cutoffTime > 3600000) {
         this.completedTasks.delete(taskId);
       }
-    }
+    });
   }
 
   // Public API methods
@@ -781,9 +781,9 @@ self.onerror = function(error) {
   // Cleanup method
   destroy(): void {
     // Terminate all workers
-    for (const [workerId, worker] of this.workers.entries()) {
+    this.workers.forEach((worker, workerId) => {
       worker.terminate();
-    }
+    });
 
     // Clear intervals
     if (this.healthCheckInterval) {
