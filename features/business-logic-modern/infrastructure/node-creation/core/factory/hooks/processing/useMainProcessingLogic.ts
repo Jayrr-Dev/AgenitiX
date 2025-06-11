@@ -99,6 +99,12 @@ export function useMainProcessingLogic<T extends BaseNodeData>(
     (nodeData as any)?.isManuallyActivated, // Include manual activation changes for test nodes
     (nodeData as any)?.triggerMode, // Include trigger mode changes
     (nodeData as any)?.value, // Include value changes for output nodes
+    // CRITICAL FIX - Include upstream node activation states to trigger processLogic
+    // when connected nodes activate/deactivate (fixes ViewOutput data persistence issue)
+    JSON.stringify(connectionData.nodesData.map(node => ({ 
+      id: node.id, 
+      isActive: node.data?.isActive 
+    }))),
   ]);
 
   // ========================================================================

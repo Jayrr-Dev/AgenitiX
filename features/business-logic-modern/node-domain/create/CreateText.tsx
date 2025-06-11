@@ -85,10 +85,12 @@ const CreateText = createNodeComponent<CreateTextData>({
     setError,
   }) => {
     try {
-      // Filter for trigger connections (boolean handle 'trigger')
-      const triggerConnections = connections.filter(
-        (c) => c.targetHandle === "trigger"
-      );
+      // Filter for trigger connections.
+      // Some legacy edges use the data-type letter ("b") instead of the handle id ("trigger").
+      const triggerConnections = connections.filter((c) => {
+        if (!c.targetHandle) return false;
+        return c.targetHandle === "trigger" || c.targetHandle === "b";
+      });
 
       // Get trigger value from connected trigger nodes
       const triggerValue = getSingleInputValue(nodesData);

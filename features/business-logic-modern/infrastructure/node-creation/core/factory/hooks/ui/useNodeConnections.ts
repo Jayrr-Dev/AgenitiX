@@ -49,13 +49,19 @@ export function useNodeConnections(
   );
 
   // SOURCE NODE IDENTIFICATION
-  const sourceIds = useMemo(
-    () =>
-      connections
-        .filter((c) => inputHandles.some((h) => h.id === c.targetHandle))
-        .map((c) => c.source),
-    [connections, inputHandles]
-  );
+  const sourceIds = useMemo(() => {
+    return connections
+      .filter((c) => {
+        if (!c.targetHandle) return false;
+        return inputHandles.some((h) => {
+          return (
+            h.id === c.targetHandle ||
+            (h.dataType && h.dataType.length === 1 && h.dataType === c.targetHandle)
+          );
+        });
+      })
+      .map((c) => c.source);
+  }, [connections, inputHandles]);
 
   // NODE DATA RETRIEVAL
   const nodesData = useNodesData(sourceIds);

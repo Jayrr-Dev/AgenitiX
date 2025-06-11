@@ -51,6 +51,47 @@ function safeStringify(obj: any): string {
   }
 }
 
+/**
+ * IS NODE ACTIVE BY DATA - Same logic as propagation system
+ * Checks if a node is in an active state based on its data
+ */
+function isNodeActiveByData(nodeData: any): boolean {
+  // Primary trigger fields (boolean checks)
+  if (nodeData.triggered === true || nodeData.isActive === true) {
+    return true;
+  }
+
+  // Secondary value fields with proper boolean conversion
+  if (nodeData.value !== undefined && nodeData.value !== null) {
+    if (typeof nodeData.value === "boolean") {
+      return nodeData.value;
+    }
+    if (typeof nodeData.value === "string") {
+      const lowercased = nodeData.value.toLowerCase().trim();
+      return lowercased === "true";
+    }
+    if (typeof nodeData.value === "number") {
+      return nodeData.value !== 0 && !isNaN(nodeData.value);
+    }
+  }
+
+  // Tertiary output field with proper boolean conversion
+  if (nodeData.output !== undefined && nodeData.output !== null) {
+    if (typeof nodeData.output === "boolean") {
+      return nodeData.output;
+    }
+    if (typeof nodeData.output === "string") {
+      const lowercased = nodeData.output.toLowerCase().trim();
+      return lowercased === "true";
+    }
+    if (typeof nodeData.output === "number") {
+      return nodeData.output !== 0 && !isNaN(nodeData.output);
+    }
+  }
+
+  return false;
+}
+
 // ============================================================================
 // NODE DATA INTERFACE - Enhanced with category registry integration
 // ============================================================================
@@ -148,22 +189,37 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
         return; // Exit early if nodesData is invalid
       }
 
-      // SAFETY CHECK - Ensure connections exist before processing
-      if (!connections || connections.length === 0) {
-        // No connections, clear displayed values if they exist
+      // Build list of source node IDs that connect into this ViewOutput
+      const connectedSourceIds = (Array.isArray(connections) ? connections : [])
+        .filter((c) => c && c.target === id)
+        .map((c) => c.source);
+
+      // If no connections *now*, clear data and exit early
+      if (connectedSourceIds.length === 0) {
         if (data.displayedValues && data.displayedValues.length > 0) {
-          updateNodeData(id, {
-            displayedValues: [],
-          });
+          updateNodeData(id, { displayedValues: [] });
         }
         return;
       }
 
-      // Extract values from connected nodes using safe extraction
+      // Extract values from *connected* nodes only using safe extraction
+      // ONLY PROCESS DATA FROM CURRENTLY ACTIVE NODES
       const values = nodesData
         .filter((node) => {
           // SAFETY CHECK - Ensure node has required properties
-          return node && typeof node === "object" && node.id && node.type;
+          if (!node || typeof node !== "object" || !node.id || !node.type) {
+            return false;
+          }
+
+          // Only include nodes that are actually connected to this ViewOutput
+          if (!connectedSourceIds.includes(node.id)) {
+            return false;
+          }
+
+          // Only include nodes that produce meaningful content
+          // Deactivated upstream nodes typically clear their outputs (e.g., text becomes empty)
+          // so we simply keep nodes that still have a non-empty value after extraction.
+          return true; // keep for now; we'll filter meaningless later
         })
         .map((node) => {
           try {
