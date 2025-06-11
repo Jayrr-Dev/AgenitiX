@@ -1,0 +1,35 @@
+{
+  "nodeType": "createTextV2",
+  "category": "create",
+  "displayName": "Create Text V2",
+  "description": "Enhanced text creation with V2 features and improved editing",
+  "component": "../CreateTextV2.tsx",
+  "icon": "text",
+  "ui": {
+    "size": { "width": 260, "height": 140 },
+    "defaultCollapsed": false
+  },
+  "sidebar": {
+    "folder": "main",
+    "order": 2
+  },
+  "handles": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "dataType": "boolean",
+      "position": "left"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "dataType": "string",
+      "position": "right"
+    }
+  ],
+  "data": {
+    "text": { "type": "string", "default": "" },
+    "heldText": { "type": "string", "default": "" },
+    "v2Features": { "type": "object", "default": {} }
+  }
+} 

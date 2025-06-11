@@ -1,0 +1,43 @@
+{
+  "nodeType": "testErrorV2U",
+  "category": "test",
+  "displayName": "Test Error V2U",
+  "description": "Ultimate V2U testing node with advanced error simulation and debugging features",
+  "component": "../TestErrorV2U.tsx",
+  "icon": "alert-triangle",
+  "ui": {
+    "size": { "width": 220, "height": 120 },
+    "defaultCollapsed": false
+  },
+  "sidebar": {
+    "folder": "testing",
+    "order": 2
+  },
+  "handles": [
+    {
+      "id": "input",
+      "type": "target",
+      "dataType": "string",
+      "position": "left"
+    },
+    {
+      "id": "error",
+      "type": "source",
+      "dataType": "string",
+      "position": "right"
+    },
+    {
+      "id": "debug",
+      "type": "source",
+      "dataType": "object",
+      "position": "right"
+    }
+  ],
+  "data": {
+    "errorMessage": { "type": "string", "default": "Test error V2U" },
+    "shouldThrow": { "type": "boolean", "default": false },
+    "errorType": { "type": "string", "default": "validation" },
+    "v2uFeatures": { "type": "object", "default": {} },
+    "debugInfo": { "type": "object", "default": {} }
+  }
+} 

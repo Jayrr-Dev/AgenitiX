@@ -1,0 +1,36 @@
+{
+  "nodeType": "triggerOnToggleV2U",
+  "category": "trigger",
+  "displayName": "Trigger On Toggle V2U",
+  "description": "Ultimate V2U trigger with advanced toggle states and enhanced workflow control",
+  "component": "../TriggerOnToggleV2U.tsx",
+  "icon": "play",
+  "ui": {
+    "size": { "width": 200, "height": 100 },
+    "defaultCollapsed": false
+  },
+  "sidebar": {
+    "folder": "main",
+    "order": 2
+  },
+  "handles": [
+    {
+      "id": "trigger",
+      "type": "source",
+      "dataType": "boolean",
+      "position": "right"
+    },
+    {
+      "id": "state",
+      "type": "source",
+      "dataType": "string",
+      "position": "right"
+    }
+  ],
+  "data": {
+    "isActive": { "type": "boolean", "default": false },
+    "triggerState": { "type": "string", "default": "inactive" },
+    "v2uFeatures": { "type": "object", "default": {} },
+    "advancedTriggers": { "type": "array", "default": [] }
+  }
+} 
