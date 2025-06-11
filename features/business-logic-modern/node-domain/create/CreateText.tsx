@@ -58,10 +58,7 @@ interface CreateTextData extends BaseNodeData {
 
 // LOAD HANDLES FROM CENTRALIZED CONSTANTS - No circular dependency
 const nodeHandles: HandleConfig[] = getNodeHandles("createText");
-console.log(
-  `🔗 [CreateText] Loaded ${nodeHandles.length} handles from centralized constants:`,
-  nodeHandles
-);
+// Debug logging removed for cleaner console
 
 const CreateText = createNodeComponent<CreateTextData>({
   nodeType: "createText", // Match the registry nodeType

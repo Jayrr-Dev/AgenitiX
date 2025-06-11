@@ -9,7 +9,7 @@
  * Keywords: category-registry, typed-registry, domain-specific, hierarchy
  */
 
-import type { NodeCategory, SidebarFolder } from "../factory/types";
+import type { NodeCategory, SidebarFolder } from "../../factory/types";
 import { TypedRegistry } from "./base/TypedRegistry";
 
 // ============================================================================
@@ -79,9 +79,7 @@ export class CategoryRegistry extends TypedRegistry<
 
     this.set(registration.category, registration);
 
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`✅ Registered category: ${registration.category}`);
-    }
+    // Debug logging removed for cleaner console
   }
 
   /**

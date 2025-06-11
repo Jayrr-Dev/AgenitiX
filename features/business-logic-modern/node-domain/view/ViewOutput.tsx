@@ -113,10 +113,7 @@ const formatContent = (content: any): string => {
 
 // LOAD HANDLES FROM CENTRALIZED CONSTANTS - No circular dependency
 const nodeHandles: HandleConfig[] = getNodeHandles("viewOutput");
-console.log(
-  `🔗 [ViewOutput] Loaded ${nodeHandles.length} handles from centralized constants:`,
-  nodeHandles
-);
+// Debug logging removed for cleaner console
 
 const ViewOutput = createNodeComponent<ViewOutputData>({
   nodeType: "viewOutput", // Match the registry nodeType

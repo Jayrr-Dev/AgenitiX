@@ -594,7 +594,7 @@ export function getThemeStatistics() {
 export function enableThemeDebugMode(): void {
   const s = useNodeStyleStore.getState();
   s.toggleDebugMode();
-  console.log("🔧  Theme debug mode", getThemeStatistics());
+  // Debug logging removed for cleaner console
 }
 
 // -----------------------------------------------------------------------------

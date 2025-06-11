@@ -618,31 +618,7 @@ export function refreshStencils(): typeof VARIANT_CONFIG {
  * Logs comprehensive sidebar information for development
  */
 export function logSidebarDebugInfo(): void {
-  if (process.env.NODE_ENV !== "development") return;
-
-  console.log("🔧 SIDEBAR DEBUG INFO");
-  console.log("=====================");
-
-  const validation = validateSidebarConfiguration();
-  const statistics = getSidebarStatistics();
-
-  console.log("\n📊 Statistics:", statistics);
-  console.log("\n✅ Validation:", validation.isValid ? "PASSED" : "FAILED");
-
-  if (validation.errors.length > 0) {
-    console.log("\n❌ Errors:", validation.errors);
-  }
-
-  if (validation.warnings.length > 0) {
-    console.log("\n⚠️ Warnings:", validation.warnings);
-  }
-
-  console.log("\n🎯 Registry Integration: ENABLED");
-  console.log("📁 Available Folders:", Object.keys(NODES_BY_FOLDER));
-  console.log("🏷️ Available Categories:", Object.keys(NODES_BY_CATEGORY));
+  // Debug logging removed for cleaner console
 }
 
-// Auto-run debug info in development
-if (process.env.NODE_ENV === "development") {
-  logSidebarDebugInfo();
-}
+// Auto-run debug info in development - disabled for cleaner console

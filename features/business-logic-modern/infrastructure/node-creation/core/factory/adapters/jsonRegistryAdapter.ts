@@ -135,9 +135,7 @@ export class JsonRegistryAdapter {
       });
 
       this.initialized = true;
-      console.log(
-        `✅ [JsonRegistryAdapter] Initialized with ${Object.keys(this.registryCache).length} node types`
-      );
+          // Debug logging removed for cleaner console
     } catch (error) {
       console.error("❌ [JsonRegistryAdapter] Failed to initialize:", error);
     }

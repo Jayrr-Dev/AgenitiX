@@ -337,14 +337,7 @@ if (typeof window !== "undefined") {
   (window as any).testConnectionValidation = testConnectionValidation;
   (window as any).testV2UNodeResolution = testV2UNodeResolution;
 
-  console.log("🔧 Enhanced handle test functions available:");
-  console.log("  • testHandleRegistry()");
-  console.log("  • testNodeCreation()");
-  console.log("  • testConnections()");
-  console.log("  • diagnoseHandles()");
-  console.log("  • testConnectionCompatibility()");
-  console.log("  • testConnectionValidation()");
-  console.log("  • testV2UNodeResolution()");
+  // Debug logging removed for cleaner console - functions still available for manual testing
 }
 
 export {

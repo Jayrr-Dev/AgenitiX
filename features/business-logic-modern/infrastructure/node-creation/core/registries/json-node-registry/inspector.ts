@@ -10,12 +10,12 @@
  */
 
 import type { ReactNode } from "react";
-import type { NodeType } from "../../flow-engine/types/nodeData";
+import type { NodeType } from "../../../../flow-engine/types/nodeData";
 import type {
   BaseNodeData,
   InspectorControlProps,
   NodeFactoryConfig,
-} from "../factory/types";
+} from "../../factory/types";
 import { MemoizedTypedRegistry } from "./base/TypedRegistry";
 
 // ============================================================================
@@ -76,9 +76,7 @@ export class InspectorRegistry extends MemoizedTypedRegistry<
 
     this.set(registration.nodeType, registration as InspectorRegistration<any>);
 
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`✅ Registered inspector controls: ${registration.nodeType}`);
-    }
+    // Debug logging removed for cleaner console
   }
 
   /**

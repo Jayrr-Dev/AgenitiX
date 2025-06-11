@@ -33,7 +33,7 @@ export function initializeThemeSystem(
 ) {
   const { enableDebug = false, logStatistics = true } = options;
 
-  console.log("🎨 Initializing theme system...");
+  // Debug logging removed for cleaner console
 
   try {
     // Enable category theming with registry sync
@@ -47,18 +47,10 @@ export function initializeThemeSystem(
       enableThemeDebugMode();
     }
 
-    // Log theme statistics
+    // Log theme statistics silently for internal tracking
     if (logStatistics) {
       const stats = getThemeStatistics();
-      console.log("✅ Theme system initialized successfully:");
-      console.log(
-        `   • Category theming: ${stats.theming.enabled ? "ENABLED" : "DISABLED"}`
-      );
-      console.log(
-        `   • Registry sync: ${stats.registry.totalNodes ? "ENABLED" : "DISABLED"}`
-      );
-      console.log(`   • Total nodes: ${stats.registry.totalNodes}`);
-      console.log(`   • Available themes: ${stats.theming.overrides}`);
+      // Theme statistics tracked silently
     }
 
     return true;

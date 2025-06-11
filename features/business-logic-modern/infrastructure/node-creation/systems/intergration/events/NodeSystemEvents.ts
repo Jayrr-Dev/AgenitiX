@@ -126,10 +126,7 @@ class NodeSystemEventEmitter extends EventEmitter {
       this.eventHistory = this.eventHistory.slice(-this.maxHistorySize);
     }
 
-    // Log in development
-    if (process.env.NODE_ENV === "development") {
-      console.log(`[V2 Event] ${event}:`, args);
-    }
+    // Debug logging removed for cleaner console
 
     // Emit the event
     return this.emit(event, ...args);

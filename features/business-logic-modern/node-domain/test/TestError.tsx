@@ -127,10 +127,7 @@ const SimpleActivateButton = ({
 
 // LOAD HANDLES FROM CENTRALIZED CONSTANTS - Consistent with other components
 const nodeHandles = getNodeHandles("testError");
-console.log(
-  `🔗 [TestError] Loaded ${nodeHandles.length} handles from centralized constants:`,
-  nodeHandles
-);
+// Debug logging removed for cleaner console
 
 const TestError = createNodeComponent<TestErrorData>({
   nodeType: "testError", // Match the registry nodeType

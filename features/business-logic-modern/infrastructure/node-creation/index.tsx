@@ -178,7 +178,7 @@ class NodeRegistry {
       this.scheduleRegistryUpdate();
     }
 
-    console.log(`[defineNode] Registered node: ${nodeType}`);
+    // Debug logging removed for cleaner console
   }
 
   get(nodeType: string): NodeConfiguration<any> | undefined {
@@ -279,9 +279,7 @@ export function defineNode<TData extends BaseNodeData>(
     config.metadata.tags?.includes("enterprise-ready");
 
   if (shouldUseEnterpriseStyling) {
-    console.log(
-      `🏭 [defineNode] Using enterprise styling with standardized sizes for ${config.metadata.nodeType}`
-    );
+    // Debug logging removed for cleaner console
 
     try {
       // Dynamic import to avoid circular dependencies

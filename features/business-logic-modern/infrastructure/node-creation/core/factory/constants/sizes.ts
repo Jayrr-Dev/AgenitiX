@@ -266,7 +266,5 @@ export function logV2USizeConversion(
   originalSize: any,
   convertedSize: any
 ): void {
-  console.log(`🎯 [V2U Size Conversion] ${nodeType}:`);
-  console.log(`   Original:`, originalSize);
-  console.log(`   Converted:`, convertedSize);
+  // Debug logging removed for cleaner console
 }
