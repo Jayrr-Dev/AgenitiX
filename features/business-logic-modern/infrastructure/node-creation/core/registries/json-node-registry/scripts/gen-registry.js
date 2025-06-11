@@ -293,21 +293,17 @@ export const CATEGORY_COUNT = CATEGORY_KEYS.length;
 export { GENERATED_NODE_REGISTRY, NODE_TYPES, NODE_COUNT, REGISTRY_STATS } from "./nodeRegistry";
 export { GENERATED_CATEGORY_REGISTRY, CATEGORY_KEYS, CATEGORY_COUNT } from "./categoryRegistry";
 
-// Re-export schemas for validation
-export * from "../schemas/base";
-export * from "../schemas/families";
-
-// Registry utilities
-export function getNodeByType(nodeType) {
-  return GENERATED_NODE_REGISTRY[nodeType];
+// Registry utilities with proper TypeScript types
+export function getNodeByType(nodeType: string): any {
+  return GENERATED_NODE_REGISTRY[nodeType as keyof typeof GENERATED_NODE_REGISTRY];
 }
 
-export function getCategoryByKey(categoryKey) {
-  return GENERATED_CATEGORY_REGISTRY[categoryKey];
+export function getCategoryByKey(categoryKey: string): any {
+  return GENERATED_CATEGORY_REGISTRY[categoryKey as keyof typeof GENERATED_CATEGORY_REGISTRY];
 }
 
-export function getNodesByCategory(category) {
-  return Object.values(GENERATED_NODE_REGISTRY).filter(node => node.category === category);
+export function getNodesByCategory(category: string): any[] {
+  return Object.values(GENERATED_NODE_REGISTRY).filter((node: any) => node.category === category);
 }
 `;
 

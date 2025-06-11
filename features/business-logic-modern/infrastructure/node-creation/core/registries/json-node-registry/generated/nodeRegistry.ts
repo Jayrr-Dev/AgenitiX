@@ -5,7 +5,7 @@
  * This file is auto-generated from JSON configurations.
  * DO NOT EDIT MANUALLY - changes will be overwritten.
  *
- * Generated at: 2025-06-11T21:45:40.991Z
+ * Generated at: 2025-06-11T21:48:14.385Z
  * Source files: 0 meta.json files
  */
 
@@ -17,7 +17,7 @@ export const NODE_COUNT = NODE_TYPES.length;
 
 // Registry statistics
 export const REGISTRY_STATS = {
-  generatedAt: "2025-06-11T21:45:40.992Z",
+  generatedAt: "2025-06-11T21:48:14.386Z",
   nodeCount: NODE_COUNT,
   categoryCount: 8,
   sourceFiles: 0,
