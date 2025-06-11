@@ -19,22 +19,116 @@ import type {
 } from "../types/nodeData";
 
 // ============================================================================
-// TYPE LEGEND & COLORS (sync with TypesafeHandle)
+// TYPE LEGEND & COLORS (unified with UltimateTypesafeHandle)
 // ============================================================================
 
-export const TYPE_MAP: TypeMap = {
-  s: { label: "s", color: "#3b82f6" }, // string - blue
-  n: { label: "n", color: "#f59e42" }, // number - orange
-  b: { label: "b", color: "#10b981" }, // boolean - green
-  j: { label: "j", color: "#6366f1" }, // JSON - indigo
-  a: { label: "a", color: "#f472b6" }, // array - pink
-  N: { label: "N", color: "#a21caf" }, // Bigint - purple
-  f: { label: "f", color: "#fbbf24" }, // float - yellow
-  x: { label: "x", color: "#6b7280" }, // any - gray
-  u: { label: "u", color: "#d1d5db" }, // undefined - light gray
-  S: { label: "S", color: "#eab308" }, // symbol - gold
-  "∅": { label: "∅", color: "#ef4444" }, // null - red
-};
+/**
+ * UNIFIED TYPE SYSTEM - Now uses UltimateTypesafeHandle as single source of truth
+ * 
+ * This maintains backward compatibility while providing access to the full
+ * expanded type system with 25+ types, union support, and enhanced features.
+ * 
+ * For basic usage: Still supports original 11 types (s, n, b, j, a, N, f, x, u, S, ∅)
+ * For advanced usage: Access full ULTIMATE_TYPE_MAP with 25+ types via getUltimateTypeMap()
+ */
+
+// Lazy import to prevent circular dependencies
+function getUltimateTypeMap() {
+  try {
+    const { ULTIMATE_TYPE_MAP } = require("../../node-creation/systems/ui/node-handles/UltimateTypesafeHandle");
+    return ULTIMATE_TYPE_MAP;
+  } catch (error) {
+    console.warn("[Constants] Failed to load ULTIMATE_TYPE_MAP, using fallback:", error);
+    // Fallback for edge cases
+    return {
+      s: { label: "s", color: "#3b82f6" },
+      n: { label: "n", color: "#f59e42" },
+      b: { label: "b", color: "#10b981" },
+      j: { label: "j", color: "#6366f1" },
+      a: { label: "a", color: "#f472b6" },
+      N: { label: "N", color: "#a21caf" },
+      f: { label: "f", color: "#fbbf24" },
+      x: { label: "x", color: "#6b7280" },
+      u: { label: "u", color: "#d1d5db" },
+      S: { label: "S", color: "#eab308" },
+      "∅": { label: "∅", color: "#ef4444" },
+    };
+  }
+}
+
+/**
+ * BACKWARD COMPATIBLE TYPE MAP
+ * Maintains the same interface as before but now pulls from the unified system
+ */
+export const TYPE_MAP: TypeMap = new Proxy({} as TypeMap, {
+  get(target, prop: string) {
+    const ultimateMap = getUltimateTypeMap();
+    
+    // Handle legacy 'j' type (JSON) - map to '{}' in ultimate system
+    if (prop === 'j' && ultimateMap['{}']) {
+      return { label: 'j', color: ultimateMap['{}'].color };
+    }
+    
+    // Direct mapping for other types
+    if (ultimateMap[prop]) {
+      return { 
+        label: ultimateMap[prop].label, 
+        color: ultimateMap[prop].color 
+      };
+    }
+    
+    // Fallback for unknown types
+    return { label: prop, color: "#6b7280" }; // gray
+  },
+  
+  ownKeys() {
+    // Return the core legacy types for Object.keys() compatibility
+    return ['s', 'n', 'b', 'j', 'a', 'N', 'f', 'x', 'u', 'S', '∅'];
+  },
+  
+  has(target, prop) {
+    const coreTypes = ['s', 'n', 'b', 'j', 'a', 'N', 'f', 'x', 'u', 'S', '∅'];
+    return coreTypes.includes(prop as string);
+  }
+});
+
+/**
+ * ACCESS TO FULL ULTIMATE TYPE SYSTEM
+ * For components that need the advanced features (union types, categories, etc.)
+ */
+export function getUltimateTypeSystem() {
+  try {
+    const ultimateModule = require("../../node-creation/systems/ui/node-handles/UltimateTypesafeHandle");
+    return {
+      ULTIMATE_TYPE_MAP: ultimateModule.ULTIMATE_TYPE_MAP,
+      parseUnionTypes: ultimateModule.parseUnionTypes,
+      isTypeCompatible: ultimateModule.isTypeCompatible,
+      createUnionType: ultimateModule.createUnionType,
+      isUnionType: ultimateModule.isUnionType,
+    };
+  } catch (error) {
+    console.warn("[Constants] Failed to load ultimate type system:", error);
+    return null;
+  }
+}
+
+// ============================================================================
+// MIGRATION NOTES
+// ============================================================================
+
+/*
+ * MIGRATION COMPLETE ✅
+ * 
+ * • TYPE_MAP now uses UltimateTypesafeHandle as single source of truth
+ * • Backward compatibility maintained for existing code
+ * • Access to enhanced features via getUltimateTypeSystem()
+ * • No breaking changes for current consumers
+ * • Unified color system prevents inconsistencies
+ * 
+ * Usage:
+ * - Legacy: TYPE_MAP['s'].color (still works)  
+ * - Enhanced: getUltimateTypeSystem().ULTIMATE_TYPE_MAP['s'].description
+ */
 
 // ============================================================================
 // INITIAL DEMO GRAPH

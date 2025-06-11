@@ -91,7 +91,7 @@ export function useNodeHandles(
             return shouldShow || !showVibeHandles; // Show with opacity even when "hidden"
           }
 
-          // All other handles (including { }) are always visible with full opacity
+          // All other handles (including {}) are always visible with full opacity
           handleOpacities[handle.id] = 1.0;
           return true;
         });

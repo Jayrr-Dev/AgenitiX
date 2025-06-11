@@ -323,7 +323,7 @@ function normalizePosition(position: any): Position {
 function addJsonInputSupport(handles: HandleConfig[]): HandleConfig[] {
   // Check if JSON input already exists
   const hasJsonInput = handles.some(
-    (handle) => handle.id === "json-input" || handle.dataType === "{ }"
+    (handle) => handle.id === "json-input" || handle.dataType === "{}"
   );
 
   if (hasJsonInput) {
@@ -333,7 +333,7 @@ function addJsonInputSupport(handles: HandleConfig[]): HandleConfig[] {
   // Add JSON input handle
   const jsonHandle: HandleConfig = {
     id: "json-input",
-    dataType: "{ }",
+    dataType: "{}",
     position: Position.Left,
     type: "target",
   };

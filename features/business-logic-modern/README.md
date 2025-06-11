@@ -215,7 +215,7 @@ interface MyNewNodeProps {
 }
 
 // COMPONENT
-export const MyNewNode: React.FC<MyNewNodeProps> = ({ }) => {
+export const MyNewNode: React.FC<MyNewNodeProps> = ({}) => {
   // HOOKS
 
   // HANDLERS

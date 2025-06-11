@@ -38,7 +38,7 @@ export const addJsonInputSupport = (
     return [
       {
         id: "json",
-        dataType: "{ }",
+        dataType: "{}",
         position: Position.Top,
         type: "target",
       },
@@ -47,7 +47,7 @@ export const addJsonInputSupport = (
 
   // Check if node already has a JSON input handle
   const hasJsonInput = handles.some(
-    (h: HandleConfig) => h.type === "target" && h.dataType === "{ }"
+    (h: HandleConfig) => h.type === "target" && h.dataType === "{}"
   );
 
   // If already has JSON input, return handles as-is
@@ -238,7 +238,7 @@ export const processJsonInput = <T extends BaseNodeData>(
   const hasChanges = detectJsonChanges(safeData, currentData);
 
   if (hasChanges) {
-    console.log(`processJsonInput ${nodeId}: Applying JSON data:`, safeData);
+    // Debug logging removed for cleaner console
     updateNodeData(nodeId, safeData as Partial<T>);
     return true;
   }

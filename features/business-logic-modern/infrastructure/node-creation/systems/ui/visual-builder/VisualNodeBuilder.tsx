@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { NodeConfiguration } from "../defineNode/index";
+import { NodeConfiguration } from "../../..";
 // Removed NodeErrorBoundary import due to encoding issues
 
 // Position enum for handles
@@ -13,7 +13,7 @@ export const Position = {
   Top: "top",
   Right: "right",
   Bottom: "bottom",
-  Left: "left",
+  Left: "left", 
 } as const;
 
 export type Position = (typeof Position)[keyof typeof Position];

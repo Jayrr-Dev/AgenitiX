@@ -65,27 +65,11 @@ export function useConnectedNodeReset(id: string, nodeLabel: string = "Node") {
   return () => {
     // Reset connected nodes that have error states
     if (targetNodesData.length > 0) {
-      console.log(
-        `🔗 ${nodeLabel} ${id}: Found ${targetNodesData.length} connected nodes to check for reset`
-      );
+      // Debug logging removed for cleaner console
 
       targetNodesData.forEach((node) => {
         if (node.data?.isErrorState) {
-          console.log(
-            `🧹 ${nodeLabel} ${id}: Resetting error state on node ${node.id}`,
-            {
-              before: {
-                isErrorState: node.data.isErrorState,
-                errorType: node.data.errorType,
-                error: node.data.error,
-              },
-              after: {
-                isErrorState: false,
-                errorType: undefined,
-                error: undefined,
-              },
-            }
-          );
+          // Debug logging removed for cleaner console
 
           updateFlowNodeData(node.id, {
             isErrorState: false,
@@ -93,13 +77,11 @@ export function useConnectedNodeReset(id: string, nodeLabel: string = "Node") {
             error: undefined,
           });
         } else {
-          console.log(
-            `⭕ ${nodeLabel} ${id}: Node ${node.id} has no error state to reset`
-          );
+          // Debug logging removed for cleaner console
         }
       });
     } else {
-      console.log(`🔗 ${nodeLabel} ${id}: No connected nodes found to reset`);
+      // Debug logging removed for cleaner console
     }
   };
 }
@@ -143,19 +125,19 @@ export function BaseActivateResetButton<T extends Record<string, any>>({
   const handleActivate = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log(`🔥 ${nodeLabel} ${id}: ACTIVATING manually`);
+    // Debug logging removed for cleaner console
 
     // Try to use state machine propagation if available
     if (typeof window !== "undefined" && (window as any).ufpePropagation) {
       const { activateNode } = (window as any).ufpePropagation;
       activateNode(id);
-      console.log(`🚀 ${nodeLabel} ${id}: Using state machine activation`);
+      // Debug logging removed for cleaner console
     } else {
       // Fallback to traditional update
       updateNodeData(id, {
         [activationField]: true,
       } as Partial<T>);
-      console.log(`📝 ${nodeLabel} ${id}: Using fallback activation`);
+      // Debug logging removed for cleaner console
     }
   };
 
@@ -163,19 +145,17 @@ export function BaseActivateResetButton<T extends Record<string, any>>({
     e.preventDefault();
     e.stopPropagation();
 
-    console.log(`🔄 ${nodeLabel} ${id}: RESETTING - clearing all states`);
+    // Debug logging removed for cleaner console
 
     // Try to use state machine propagation if available
     if (typeof window !== "undefined" && (window as any).ufpePropagation) {
       const { deactivateNode } = (window as any).ufpePropagation;
       deactivateNode(id);
-      console.log(`🚀 ${nodeLabel} ${id}: Using state machine deactivation`);
+      // Debug logging removed for cleaner console
     } else {
       // Reset connected nodes FIRST (before clearing our own state)
       if (onReset) {
-        console.log(
-          `🔗 ${nodeLabel} ${id}: Resetting connected nodes immediately...`
-        );
+        // Debug logging removed for cleaner console
         onReset();
       }
 
@@ -189,9 +169,9 @@ export function BaseActivateResetButton<T extends Record<string, any>>({
         error: undefined,
       } as unknown as Partial<T>;
 
-      console.log(`📝 ${nodeLabel} ${id}: Reset data:`, completeResetData);
+      // Debug logging removed for cleaner console
       updateNodeData(id, completeResetData);
-      console.log(`📝 ${nodeLabel} ${id}: Using fallback deactivation`);
+      // Debug logging removed for cleaner console
     }
   };
 

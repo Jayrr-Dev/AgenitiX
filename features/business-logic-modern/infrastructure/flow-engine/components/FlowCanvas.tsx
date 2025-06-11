@@ -311,40 +311,51 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       style={{ touchAction: "none" }}
     >
       <ReactFlow
+        // Core Data
         nodes={safeNodes}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        snapToGrid
+        
+        // Connection Handling
         isValidConnection={isValidConnection}
+        connectionMode={ConnectionMode.Loose}
+        onConnect={reactFlowHandlers.onConnect}
         onReconnect={reactFlowHandlers.onReconnect}
         onReconnectStart={reactFlowHandlers.onReconnectStart}
         onReconnectEnd={reactFlowHandlers.onReconnectEnd}
-        onConnect={reactFlowHandlers.onConnect}
+        
+        // Change Handlers
         onNodesChange={reactFlowHandlers.onNodesChange}
         onEdgesChange={reactFlowHandlers.onEdgesChange}
         onSelectionChange={reactFlowHandlers.onSelectionChange}
         onInit={reactFlowHandlers.onInit}
-        fitView
+        
+        // Selection Configuration
         selectionMode={SelectionMode.Partial}
-        proOptions={{ hideAttribution: true }}
-        deleteKeyCode={["Delete", "Backspace"]}
         selectionKeyCode={selectionKeys.selectionKeyCode}
         multiSelectionKeyCode={selectionKeys.multiSelectionKeyCode}
-        colorMode={
-          resolvedTheme === "dark" ? "dark" : ("light" satisfies ColorMode)
-        }
-        panOnDrag={true}
-        panOnScroll={true}
-        zoomOnScroll={true}
-        zoomOnPinch={true}
+        deleteKeyCode={["Delete", "Backspace"]}
+        
+        // Interaction Settings
+        snapToGrid
+        panOnDrag
+        panOnScroll
         panOnScrollMode={PanOnScrollMode.Free}
+        zoomOnScroll
+        zoomOnPinch
         zoomOnDoubleClick={false}
-        nodesDraggable={true}
-        nodesConnectable={true}
-        elementsSelectable={true}
-        edgesReconnectable={true}
-        connectionMode={ConnectionMode.Loose}
+        
+        // Node/Edge Behavior
+        nodesDraggable
+        nodesConnectable
+        elementsSelectable
+        edgesReconnectable
+        
+        // Visual Settings
+        fitView
+        colorMode={resolvedTheme === "dark" ? "dark" : ("light" satisfies ColorMode)}
+        proOptions={{ hideAttribution: true }}
         defaultEdgeOptions={{
           type: "default",
           deletable: true,

@@ -274,7 +274,7 @@ const HANDLE_MAP = new Map<string, string>([
   // Complex
   ["object", "o"],
   ["array", "a"],
-  ["json", "{ }"],
+  ["json", "{}"],
   ["map", "m"],
   ["set", "st"],
   ["tuple", "t"],
@@ -305,7 +305,7 @@ const HANDLE_MAP = new Map<string, string>([
   ["image", "o"],
   // Vibe handles
   ["vibe", "V"],
-  ["vibeobject", "{ }"],
+  ["vibeobject", "{}"],
 ]);
 
 /** Convert arbitrary JSON dataType to Ultimate handle compact code. */
@@ -769,17 +769,7 @@ export function getNodeHandle(
   const handle =
     handles.find((h) => h.id === handleId && h.type === handleType) || null;
 
-  if (process.env.NODE_ENV !== "production") {
-    console.log(`[getNodeHandle] ${nodeType}.${handleId} (${handleType}):`, {
-      found: !!handle,
-      handles: handles.map((h) => ({
-        id: h.id,
-        type: h.type,
-        dataType: h.dataType,
-      })),
-      result: handle,
-    });
-  }
+  // Debug logging removed for cleaner console
 
   return handle;
 }
@@ -880,7 +870,6 @@ export function isValidNodeType(nodeType: string): boolean {
   // This will check the defineNode registry as well
   const registration = getEnhancedNodeRegistration(nodeType);
   if (registration) {
-    console.log(`✅ [isValidNodeType] Found V2U node: ${nodeType}`);
     return true;
   }
 
@@ -889,16 +878,10 @@ export function isValidNodeType(nodeType: string): boolean {
     const jsonRegistryEntry =
       GENERATED_NODE_REGISTRY[nodeType as keyof typeof GENERATED_NODE_REGISTRY];
     if (jsonRegistryEntry) {
-      console.log(
-        `✅ [isValidNodeType] Found V2U node in JSON registry: ${nodeType}`
-      );
       return true;
     }
   } catch (error) {
-    console.warn(
-      `⚠️ [isValidNodeType] Failed to check JSON registry for ${nodeType}:`,
-      error
-    );
+    // Silent error handling for cleaner console
   }
 
   return false;
@@ -918,7 +901,7 @@ export function getCategoryMetadata(category: string): any {
 export function getNodeCategoryMapping(): Record<string, string> {
   const mapping: Record<string, string> = {};
 
-  console.log(`📊 [getNodeCategoryMapping] Building category mapping...`);
+  // Debug logging removed for cleaner console
 
   // Get all V2U nodes from the JSON registry (this is where V2U nodes are stored)
   Object.entries(GENERATED_NODE_REGISTRY).forEach(([nodeType, nodeData]) => {
@@ -926,25 +909,15 @@ export function getNodeCategoryMapping(): Record<string, string> {
       const category = (nodeData as any).category;
       if (category) {
         mapping[nodeType] = category;
-        console.log(
-          `📊 [getNodeCategoryMapping] V2U: ${nodeType} → ${category}`
-        );
       }
     }
   });
 
   // Also check unified registry nodes using the nodeRegistry API
   const unifiedRegistryStats = nodeRegistry.getRegistryStats();
-  console.log(
-    `📊 [getNodeCategoryMapping] Found ${unifiedRegistryStats.size} unified nodes`
-  );
 
   // Unfortunately, the nodeRegistry doesn't expose an iteration method,
   // so we'll rely primarily on the GENERATED_NODE_REGISTRY for V2U nodes
-
-  console.log(
-    `📊 [getNodeCategoryMapping] Total mappings: ${Object.keys(mapping).length}`
-  );
   return mapping;
 }
 
@@ -1109,11 +1082,10 @@ export function debugHandleConnections(): void {
 }
 
 // Auto-run debug in development
-if (process.env.NODE_ENV !== "production" && typeof window !== "undefined") {
+if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
   // Run after a delay to ensure registry is initialized
   setTimeout(() => {
     (window as any).debugHandleConnections = debugHandleConnections;
-    console.log("🛠️ Handle debug function available: debugHandleConnections()");
   }, 1000);
 }
 
@@ -1203,9 +1175,7 @@ export function getEnhancedNodeRegistration(
     const jsonRegistryEntry =
       GENERATED_NODE_REGISTRY[nodeType as keyof typeof GENERATED_NODE_REGISTRY];
     if (jsonRegistryEntry) {
-      console.log(
-        `✅ [getEnhancedNodeRegistration] Found V2U node in JSON registry: ${nodeType}`
-      );
+      // Debug logging removed for cleaner console
 
       // Create a registration from the JSON registry entry
       return {
@@ -1229,10 +1199,7 @@ export function getEnhancedNodeRegistration(
       };
     }
   } catch (error) {
-    console.warn(
-      `⚠️ [getEnhancedNodeRegistration] Failed to check JSON registry for ${nodeType}:`,
-      error
-    );
+    // Silent error handling for cleaner console
   }
 
   // Then check the defineNode registry for V2U nodes (fallback)
@@ -1244,9 +1211,7 @@ export function getEnhancedNodeRegistration(
     const defineNodeConfig: any = null;
 
     if (defineNodeConfig) {
-      console.log(
-        `✅ [getEnhancedNodeRegistration] Found V2U node in defineNode registry: ${nodeType}`
-      );
+      // Debug logging removed for cleaner console
 
       // Return a minimal registration that the drag-and-drop system can use
       return {
@@ -1270,10 +1235,7 @@ export function getEnhancedNodeRegistration(
       };
     }
   } catch (error) {
-    console.warn(
-      `⚠️ [getEnhancedNodeRegistration] Could not access defineNode registry:`,
-      error
-    );
+    // Silent error handling for cleaner console
   }
 
   return null;

@@ -655,13 +655,13 @@ export const addJsonInputSupport = <T extends BaseNodeData>(
   handles: HandleConfig[]
 ): HandleConfig[] => {
   const hasJsonInput = handles.some(
-    (h) => h.type === "target" && h.dataType === "{ }"
+    (h) => h.type === "target" && h.dataType === "{}"
   );
 
   if (!hasJsonInput) {
     return [
       ...handles,
-      { id: "json", dataType: "{ }", position: Position.Top, type: "target" },
+      { id: "json", dataType: "{}", position: Position.Top, type: "target" },
     ];
   }
 
@@ -1104,7 +1104,7 @@ processLogic: ({ connections, nodesData, updateNodeData, id }) => {
     }
 
     // Hide JSON handles when Vibe Mode is off
-    if (handle.dataType === '{ }') {
+    if (handle.dataType === '{}') {
       return isVibeModeActive;
     }
 

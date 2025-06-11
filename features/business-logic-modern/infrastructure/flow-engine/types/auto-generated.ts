@@ -11,8 +11,8 @@
  */
 
 import type { Node, Position } from "@xyflow/react";
-import { getNodeTypeConfig } from "../../node-creation/factory/constants";
-import type { NodeConfig, NodeType } from "../../node-creation/factory/types";
+import { getNodeTypeConfig } from "@/features/business-logic-modern/infrastructure/node-creation/core/factory/constants";
+import type { NodeConfig, NodeType } from "@/features/business-logic-modern/infrastructure/node-creation/core/factory/types";
 
 // ============================================================================
 // AUTO-GENERATED FROM FACTORY CONFIGURATION

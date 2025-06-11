@@ -82,9 +82,7 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
 
   if (autoResolution.ControlComponent) {
     const ControlComponent = autoResolution.ControlComponent;
-    console.log(
-      `[NodeControls] 🚀 ZERO-REG: Auto-resolved ${autoResolution.method} control for ${node.type} (V2U: ${autoResolution.isV2U})`
-    );
+    // Debug logging removed for cleaner console
 
     return (
       <div>
@@ -108,10 +106,7 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
       // VALIDATE NODE TYPE FIRST
       const validNodeType = safeNodeTypeCast(nodeType);
       if (!validNodeType) {
-        console.warn(
-          `[NodeControls] ⚠️ Invalid node type: ${nodeType}. Available types:`,
-          ["createText", "viewOutput", "triggerOnToggle", "testError"]
-        );
+        // Silent invalid node type handling
         return (
           <div className="text-xs text-red-500 p-2 bg-red-50 dark:bg-red-900/20 rounded border">
             <div className="font-semibold">Invalid Node Type</div>
@@ -123,18 +118,14 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
         );
       }
 
-      console.log(
-        `[NodeControls] ✅ Resolving registry control for valid node type: ${validNodeType}`
-      );
+      // Debug logging removed for cleaner console
 
       // GET REGISTRY MAPPING
       const registryMapping = generateInspectorControlMapping();
       const controlConfig = registryMapping[validNodeType];
 
       if (!controlConfig) {
-        console.log(
-          `[NodeControls] 📝 No inspector control config found for ${validNodeType}, using fallback strategy...`
-        );
+        // Debug logging removed for cleaner console
 
         // FALLBACK STRATEGY: Use appropriate control based on node type
         switch (validNodeType) {
@@ -189,9 +180,7 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
               </div>
             );
           default:
-            console.log(
-              `[NodeControls] 🚫 No controls available for ${validNodeType}`
-            );
+            // Debug logging removed for cleaner console
             return (
               <div className="text-xs text-gray-500 p-2">
                 No controls available for this node type
@@ -208,9 +197,7 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
           if (controlConfig.v2ControlType || controlConfig.legacyControlType) {
             const controlType =
               controlConfig.v2ControlType || controlConfig.legacyControlType;
-            console.log(
-              `[NodeControls] ✅ Using V2 control: ${controlType} for ${validNodeType}`
-            );
+            // Debug logging removed for cleaner console
 
             switch (controlType) {
               case "TextNodeControl":
@@ -272,9 +259,7 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
                   </div>
                 );
               default:
-                console.warn(
-                  `[NodeControls] ❌ Unknown V2 control type: ${controlType}`
-                );
+                // Silent unknown control type handling
                 return (
                   <div className="text-xs text-orange-500">
                     Unknown control type: {controlType}
@@ -351,10 +336,7 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
           );
       }
     } catch (error) {
-      console.error(
-        `[NodeControls] ❌ Registry control resolution failed for ${nodeType}:`,
-        error
-      );
+      // Silent error handling for cleaner console
       return (
         <div className="text-xs text-red-500 p-2 bg-red-50 dark:bg-red-900/20 rounded border">
           <div className="font-semibold">Control Resolution Error</div>
@@ -371,20 +353,18 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
   // ============================================================================
 
   const renderControlsForNodeType = () => {
-    console.log(
-      `[NodeControls] 🔍 Rendering controls for node type: ${node.type}`
-    );
+    // Debug logging removed for cleaner console
 
     // PRIORITY 1: Registry-Based Control Resolution (Type-Safe)
     const registryControl = getControlFromRegistry(node.type);
     if (registryControl) {
-      console.log(`[NodeControls] ✅ Using REGISTRY control for ${node.type}`);
+      // Debug logging removed for cleaner console
       return registryControl;
     }
 
     // PRIORITY 2: Factory Controls (for nodes created via NodeFactory)
     if (hasFactoryInspectorControls(node.type)) {
-      console.log(`[NodeControls] 🏭 Using FACTORY control for ${node.type}`);
+      // Debug logging removed for cleaner console
       const FactoryControlsComponent = getNodeInspectorControls(node.type);
       if (FactoryControlsComponent) {
         return (
@@ -399,9 +379,7 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
     }
 
     // PRIORITY 3: Fallback for unknown/legacy nodes
-    console.log(
-      `[NodeControls] ⚠️ No registry or factory control found for ${node.type}`
-    );
+    // Debug logging removed for cleaner console
 
     // Check if it's a valid modern node type
     const isValidModern = isValidNodeType(node.type);

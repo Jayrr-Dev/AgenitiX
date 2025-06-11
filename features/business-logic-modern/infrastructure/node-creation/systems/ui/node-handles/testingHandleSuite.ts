@@ -132,12 +132,12 @@ export function testTypeCompatibility(): TestSuite {
   // Test cases: [source, target, expectedResult, testName]
   const testCases: [string, string, boolean, string][] = [
     ["s", "s", true, "String to String"],
-    ["s", "{ }", true, "String to JSON"],
-    ["{ }", "s", true, "JSON to String"],
+    ["s", "{}", true, "String to JSON"],
+    ["{}", "s", true, "JSON to String"],
     ["n", "f", true, "Number to Float"],
     ["f", "n", true, "Float to Number"],
-    ["a", "{ }", true, "Array to JSON"],
-    ["{ }", "a", true, "JSON to Array"],
+    ["a", "{}", true, "Array to JSON"],
+    ["{}", "a", true, "JSON to Array"],
     ["x", "s", true, "Any to String"],
     ["s", "x", true, "String to Any"],
     ["s", "n", false, "String to Number (incompatible)"],
@@ -211,13 +211,13 @@ export function testRuntimeValidation(): TestSuite {
     ["hello", "s", true, "Valid string"],
     [42, "n", true, "Valid number"],
     [true, "b", true, "Valid boolean"],
-    [{}, "{ }", true, "Valid JSON object"],
+    [{}, "{}", true, "Valid JSON object"],
     [[], "a", true, "Valid array"],
     [null, "∅", true, "Valid null"],
     [undefined, "u", true, "Valid undefined"],
     ["hello", "n", false, "String as number"],
     [42, "s", false, "Number as string"],
-    [[], "{ }", false, "Array as JSON object"],
+    [[], "{}", false, "Array as JSON object"],
     [null, "s", false, "Null as string"],
   ];
 
@@ -322,7 +322,7 @@ export function testPerformance(): TestSuite {
   for (let i = 0; i < iterations; i++) {
     try {
       const { checkTypeCompatibilityEnhanced } = require("./TypesafeHandle");
-      checkTypeCompatibilityEnhanced("s", "{ }");
+      checkTypeCompatibilityEnhanced("s", "{}");
     } catch (error) {
       // Expected for some cases
     }

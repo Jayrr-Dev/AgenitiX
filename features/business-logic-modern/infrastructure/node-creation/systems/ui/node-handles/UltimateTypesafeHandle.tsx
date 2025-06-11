@@ -75,8 +75,8 @@ const ULTIMATE_TYPE_MAP: Record<string, TypeMapEntry> = {
   },
 
   // === COMPLEX DATA TYPES ===
-  "{ }": {
-    label: "{ }",
+  "{}": {
+    label: "{}",
     color: "#6366f1",
     description: "JSON - JavaScript objects and JSON data",
     category: "complex",
@@ -405,7 +405,7 @@ const DATATYPE_MAPPING: Record<string, string> = {
   // Complex types
   object: "o",
   array: "a",
-  json: "{ }",
+  json: "{}",
   map: "m",
   set: "st",
   tuple: "t",

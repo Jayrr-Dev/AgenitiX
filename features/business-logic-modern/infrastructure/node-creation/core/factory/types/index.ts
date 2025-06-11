@@ -56,7 +56,7 @@ export interface HandleConfig {
     | "s"
     | "n"
     | "b"
-    | "{ }"
+    | "{}"
     | "a"
     | "N"
     | "f"
@@ -436,4 +436,4 @@ export interface InspectorControlConfig {
  * ```
  */
 
-console.log("✅ Factory Types - Core type definitions loaded");
+// Debug logging removed for cleaner console

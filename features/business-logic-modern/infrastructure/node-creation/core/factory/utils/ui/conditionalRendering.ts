@@ -233,7 +233,7 @@ export function getVibeHandleOpacity(
 /**
  * SHOULD SHOW JSON HANDLE (LEGACY)
  * Legacy function maintained for backwards compatibility
- * Now only handles vibe handles - all other handles (including { }) show normally
+ * Now only handles vibe handles - all other handles (including {}) show normally
  */
 export function shouldShowJsonHandle(
   handle: any,
@@ -253,7 +253,7 @@ export function shouldShowJsonHandle(
     );
   }
 
-  // For all other handles (including { }), show them normally
+  // For all other handles (including {}), show them normally
   return true;
 }
 

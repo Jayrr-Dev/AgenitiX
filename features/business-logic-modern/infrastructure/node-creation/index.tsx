@@ -528,7 +528,7 @@ function mapDataType(defineNodeType: string): string {
     string: "s",
     number: "n",
     boolean: "b",
-    object: "{ }",
+    object: "{}",
     array: "a",
     any: "x",
   };
