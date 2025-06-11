@@ -13,7 +13,6 @@
 
 import { Connection, Node, OnConnectStart, useReactFlow } from "@xyflow/react";
 import { useCallback, useState } from "react";
-import superjson from "superjson";
 import { getHandleConfig } from "./configHandle";
 
 // ===== TYPES =====
@@ -34,27 +33,36 @@ interface CompatibilityInfo {
   suggestedTypes?: string[];
 }
 
-// ===== SUPERJSON UTILITIES =====
+// ===== JSON UTILITIES =====
 
 /**
  * Serialize connection state for persistence or debugging
  */
 function serializeConnectionState(state: ConnectionState): string {
-  return superjson.stringify(state);
+  return JSON.stringify({
+    ...state,
+    compatibleTargets: Array.from(state.compatibleTargets),
+    incompatibleTargets: Array.from(state.incompatibleTargets.entries()),
+  });
 }
 
 /**
  * Deserialize connection state from stored data
  */
 function deserializeConnectionState(serialized: string): ConnectionState {
-  return superjson.parse(serialized);
+  const parsed = JSON.parse(serialized);
+  return {
+    ...parsed,
+    compatibleTargets: new Set(parsed.compatibleTargets),
+    incompatibleTargets: new Map(parsed.incompatibleTargets),
+  };
 }
 
 /**
- * Create a deep copy of connection state using superjson serialization
+ * Create a deep copy of connection state using JSON serialization
  */
 function cloneConnectionState(state: ConnectionState): ConnectionState {
-  return superjson.parse(superjson.stringify(state));
+  return deserializeConnectionState(serializeConnectionState(state));
 }
 
 // ===== ENHANCED COMPATIBILITY CHECKING =====
@@ -396,7 +404,7 @@ export function useConnectionPrevention() {
       if (!sourceType || !targetType) {
         console.warn(
           "[ConnectionPrevention] Could not determine handle types:",
-          superjson.stringify({
+          JSON.stringify({
             source,
             sourceHandle,
             sourceType,
@@ -431,7 +439,7 @@ export function useConnectionPrevention() {
     onConnectEnd,
     isValidConnection,
     checkHandleCompatibility,
-    // Superjson utilities for external use
+    // JSON utilities for external use
     serializeConnectionState,
     deserializeConnectionState,
     cloneConnectionState,
