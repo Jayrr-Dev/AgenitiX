@@ -139,7 +139,8 @@
     "build",
     "coverage",
     "*.config.js",
-    "*.config.ts"
+    "*.config.ts",
+    "anubis-standalone/examples/**/*"
   ],
 
   // ============================================================================
