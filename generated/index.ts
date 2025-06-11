@@ -5,7 +5,7 @@
  * Main entry point for generated registries.
  * DO NOT EDIT MANUALLY - changes will be overwritten.
  *
- * Generated at: 2025-06-11T21:45:40.992Z
+ * Generated at: 2025-06-11T21:43:28.708Z
  */
 
 export { GENERATED_NODE_REGISTRY, NODE_TYPES, NODE_COUNT, REGISTRY_STATS } from "./nodeRegistry";

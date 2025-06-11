@@ -12,9 +12,9 @@ const path = require("path");
 
 const BUILD_CONFIG = {
   development: {
-    metaDir: "./meta",
-    domainDir: "./domain",
-    outputDir: "./generated",
+    metaDir: path.join(__dirname, "../meta"),
+    domainDir: path.join(process.cwd(), "features/business-logic-modern/node-domain"),
+    outputDir: path.join(__dirname, "../generated"),
     verbose: true,
     validate: true,
     watch: false,
@@ -23,9 +23,9 @@ const BUILD_CONFIG = {
   },
 
   production: {
-    metaDir: "./meta",
-    domainDir: "./domain",
-    outputDir: "./generated",
+    metaDir: path.join(__dirname, "../meta"),
+    domainDir: path.join(process.cwd(), "features/business-logic-modern/node-domain"),
+    outputDir: path.join(__dirname, "../generated"),
     verbose: false,
     validate: true,
     watch: false,
@@ -34,9 +34,9 @@ const BUILD_CONFIG = {
   },
 
   test: {
-    metaDir: "./meta",
-    domainDir: "./domain",
-    outputDir: "./test-generated",
+    metaDir: path.join(__dirname, "../meta"),
+    domainDir: path.join(process.cwd(), "features/business-logic-modern/node-domain"),
+    outputDir: path.join(__dirname, "../test-generated"),
     verbose: false,
     validate: true,
     watch: false,

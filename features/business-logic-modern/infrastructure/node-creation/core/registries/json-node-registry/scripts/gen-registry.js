@@ -20,9 +20,9 @@ const { glob } = require("fast-glob");
 
 const DEFAULT_CONFIG = {
   baseDir: process.cwd(),
-  metaDir: "./meta",
-  domainDir: "./domain",
-  outputDir: "./generated",
+  metaDir: path.join(__dirname, "../meta"),
+  domainDir: path.join(process.cwd(), "features/business-logic-modern/node-domain"),
+  outputDir: path.join(__dirname, "../generated"),
   verbose: false,
   watch: false,
   validate: true,

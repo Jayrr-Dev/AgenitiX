@@ -2,10 +2,10 @@
 /**
  * GENERATED CATEGORY REGISTRY
  *
- * This file is auto-generated from YAML configurations.
+ * This file is auto-generated from JSON configurations.
  * DO NOT EDIT MANUALLY - changes will be overwritten.
  *
- * Generated at: 2025-06-07T02:52:04.456Z
+ * Generated at: 2025-06-11T21:45:40.992Z
  */
 
 export const GENERATED_CATEGORY_REGISTRY = {

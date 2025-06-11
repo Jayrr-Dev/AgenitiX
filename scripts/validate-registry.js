@@ -322,7 +322,7 @@ async function validateNodeRegistry() {
   // Default registry path
   const registryPath = path.join(
     process.cwd(),
-    "features/business-logic-modern/infrastructure/node-creation/json-node-registry/generated/nodeRegistry.ts"
+    "features/business-logic-modern/infrastructure/node-creation/core/registries/json-node-registry/generated/nodeRegistry.ts"
   );
 
   // Allow custom path from command line
