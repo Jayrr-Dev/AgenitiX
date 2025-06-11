@@ -97,7 +97,7 @@ function generateNodeRegistryEntry(nodeData, domainPath) {
 
   const relativeComponentPath = path
     .relative(
-      path.join(process.cwd(), "generated"),
+      path.dirname(__filename),
       path.join(domainPath, componentFile)
     )
     .replace(/\\/g, "/");
@@ -105,7 +105,7 @@ function generateNodeRegistryEntry(nodeData, domainPath) {
   const relativeInspectorPath = inspectorFile
     ? path
         .relative(
-          path.join(process.cwd(), "generated"),
+          path.dirname(__filename),
           path.join(domainPath, inspectorFile)
         )
         .replace(/\\/g, "/")
