@@ -16,6 +16,7 @@ import {
   registerNodeTypeConfig,
 } from "../../../registries/json-node-registry/unifiedRegistry";
 import type { BaseNodeData, NodeFactoryConfig } from "../../types";
+
 /**
  * USE NODE REGISTRATION
  * Handles node type and inspector registration
