@@ -290,8 +290,19 @@ export const CATEGORY_COUNT = CATEGORY_KEYS.length;
  * Generated at: ${new Date().toISOString()}
  */
 
-export { GENERATED_NODE_REGISTRY, NODE_TYPES, NODE_COUNT, REGISTRY_STATS } from "./nodeRegistry";
-export { GENERATED_CATEGORY_REGISTRY, CATEGORY_KEYS, CATEGORY_COUNT } from "./categoryRegistry";
+import { GENERATED_NODE_REGISTRY, NODE_TYPES, NODE_COUNT, REGISTRY_STATS } from "./nodeRegistry";
+import { GENERATED_CATEGORY_REGISTRY, CATEGORY_KEYS, CATEGORY_COUNT } from "./categoryRegistry";
+
+// Re-export all registries
+export { 
+  GENERATED_NODE_REGISTRY, 
+  NODE_TYPES, 
+  NODE_COUNT, 
+  REGISTRY_STATS, 
+  GENERATED_CATEGORY_REGISTRY, 
+  CATEGORY_KEYS, 
+  CATEGORY_COUNT 
+};
 
 // Registry utilities with proper TypeScript types
 export function getNodeByType(nodeType: string): any {

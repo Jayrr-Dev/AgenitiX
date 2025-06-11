@@ -124,7 +124,13 @@ function initCategories(): void {
 }
 
 function initNodes(): void {
-  for (const [type, data] of Object.entries(GENERATED_NODE_REGISTRY)) {
+  // Skip initialization if registry is empty to avoid TypeScript errors
+  if (Object.keys(GENERATED_NODE_REGISTRY).length === 0) {
+    return;
+  }
+  
+  for (const [type, dataUnknown] of Object.entries(GENERATED_NODE_REGISTRY)) {
+    const data = dataUnknown as any; // Type assertion to handle unknown data
     const component = getOrUndefined(COMPONENTS, type) ?? FallbackComponent;
 
     const registration: NodeRegistration = {
@@ -136,14 +142,14 @@ function initNodes(): void {
       description: data.description,
       icon: data.icon,
       hasToggle: data.hasToggle ?? true,
-      iconWidth: data.iconWidth ?? (data as any).size?.width ?? 120,
-      iconHeight: data.iconHeight ?? (data as any).size?.height ?? 60,
-      expandedWidth: data.expandedWidth ?? (data as any).size?.width ?? 200,
-      expandedHeight: data.expandedHeight ?? (data as any).size?.height ?? 120,
+      iconWidth: data.iconWidth ?? data.size?.width ?? 120,
+      iconHeight: data.iconHeight ?? data.size?.height ?? 60,
+      expandedWidth: data.expandedWidth ?? data.size?.width ?? 200,
+      expandedHeight: data.expandedHeight ?? data.size?.height ?? 120,
       defaultData: data.defaultData ?? {},
       handles: (data.handles ?? []) as NodeRegistration["handles"],
-      hasControls: (data as any).hasControls ?? true,
-      hasOutput: (data as any).hasOutput ?? true,
+      hasControls: data.hasControls ?? true,
+      hasOutput: data.hasOutput ?? true,
     } as NodeRegistration;
 
     registerNode(registration);
@@ -200,7 +206,8 @@ function initInspectorControls(): void {
     },
   } as const;
 
-  for (const [type, data] of Object.entries(GENERATED_NODE_REGISTRY)) {
+  for (const [type, dataUnknown] of Object.entries(GENERATED_NODE_REGISTRY)) {
+    const data = dataUnknown as any; // Type assertion to handle unknown data
     const v2Config = getOrUndefined(V2_CONTROLS, type);
 
     const registration: InspectorRegistration = {
@@ -210,7 +217,7 @@ function initInspectorControls(): void {
       defaultData: data.defaultData ?? {},
       renderControls: (): null => null, // placeholder – can be overridden
       hasControls: v2Config?.hasControls ?? true,
-      hasOutput: (data as any).hasOutput ?? true,
+      hasOutput: data.hasOutput ?? true,
     } as InspectorRegistration;
 
     registerInspectorControls(registration);
