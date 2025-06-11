@@ -30,21 +30,21 @@ import ActionToolbar from "@/features/business-logic-modern/infrastructure/compo
 import HistoryPanel from "@/features/business-logic-modern/infrastructure/components/HistoryPanel";
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
 
-// Import actual node components from node-domain
-import {
-  CreateText,
-  CreateTextV2,
-  TestError,
-  TriggerOnToggle,
-  ViewOutput,
-} from "@/features/business-logic-modern/node-domain";
-
 // Import unified registry for automated V2U node resolution
-import { getLegacyModernNodeRegistry } from "../../node-creation/core/registries/json-node-registry/unifiedRegistry";
+import { getLegacyModernNodeRegistry } from "@/features/business-logic-modern/infrastructure/node-creation/core/registries/json-node-registry/unifiedRegistry";
+
+// Legacy component imports for fallback
+import CreateTextLegacy from "@/features/business-logic-modern/node-domain/create/CreateText";
+import CreateTextV2Legacy from "@/features/business-logic-modern/node-domain/create/CreateTextV2";
+import ViewOutputLegacy from "@/features/business-logic-modern/node-domain/view/ViewOutput";
+import TriggerOnToggleLegacy from "@/features/business-logic-modern/node-domain/trigger/TriggerOnToggle";
+import TestErrorLegacy from "@/features/business-logic-modern/node-domain/test/TestError";
 
 // ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention & cleanup
 import { useCleanupInvalidConnections } from "@/features/business-logic-modern/infrastructure/node-creation/systems/ui/node-handles/UtilityCleanupInvalidConnections";
 import { useUltimateFlowConnectionPrevention } from "@/features/business-logic-modern/infrastructure/node-creation/systems/ui/node-handles/UltimateTypesafeHandle";
+
+import { NODE_TYPE_CONFIG } from '../constants';
 
 interface FlowCanvasProps {
   nodes: AgenNode[];
@@ -212,12 +212,6 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     // Get the unified registry which includes both legacy and V2U nodes
     const unifiedRegistry = getLegacyModernNodeRegistry();
 
-    console.log("🔄 [FlowCanvas] Building automated nodeTypes registry...");
-    console.log(
-      "📋 [FlowCanvas] Available nodes:",
-      Object.keys(unifiedRegistry)
-    );
-
     // Create the ReactFlow-compatible component mapping
     const componentMapping: Record<string, any> = {};
 
@@ -230,19 +224,14 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
           nodeConfig.component
         ) {
           componentMapping[nodeType] = nodeConfig.component;
-          console.log(`✅ [FlowCanvas] Registered V2U node: ${nodeType}`);
         }
         // Check if it's a legacy direct component (function)
         else if (typeof nodeConfig === "function") {
           componentMapping[nodeType] = nodeConfig;
-          console.log(`✅ [FlowCanvas] Registered legacy node: ${nodeType}`);
         }
         // Check if it's a React component object
         else if (typeof nodeConfig === "object" && "$$typeof" in nodeConfig) {
           componentMapping[nodeType] = nodeConfig;
-          console.log(
-            `✅ [FlowCanvas] Registered React component: ${nodeType}`
-          );
         }
         // Fallback for other structures
         else {
@@ -261,17 +250,14 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         "⚠️ [FlowCanvas] No nodes found in unified registry, falling back to legacy hardcoded components"
       );
       return {
-        createText: CreateText,
-        createTextV2: CreateTextV2,
-        viewOutput: ViewOutput,
-        triggerOnToggle: TriggerOnToggle,
-        testError: TestError,
+        createText: CreateTextLegacy,
+        createTextV2: CreateTextV2Legacy,
+        viewOutput: ViewOutputLegacy,
+        triggerOnToggle: TriggerOnToggleLegacy,
+        testError: TestErrorLegacy,
       };
     }
 
-    console.log(
-      `🎉 [FlowCanvas] Automated registry ready with ${Object.keys(componentMapping).length} nodes`
-    );
     return componentMapping;
   }, []);
 

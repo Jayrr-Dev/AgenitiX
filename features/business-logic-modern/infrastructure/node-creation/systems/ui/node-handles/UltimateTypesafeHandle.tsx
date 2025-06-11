@@ -536,9 +536,6 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
   // Normalize the dataType prop to ensure consistent short codes
   const normalizedDataType = useMemo(() => {
     const normalized = normalizeDataType(dataType);
-    console.log(
-      `[UltimateHandle] Normalizing dataType: "${dataType}" → "${normalized}"`
-    );
     return normalized;
   }, [dataType]);
 
@@ -564,15 +561,6 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
 
   // HANDLE UNION TYPE DISPLAY - Use normalized dataType
   const displayInfo = useMemo(() => {
-    // DEBUG: Log what we're working with
-    console.log(
-      `[UltimateHandle] Rendering handle with dataType: "${dataType}" (normalized: "${normalizedDataType}")`
-    );
-    console.log(
-      `[UltimateHandle] Type mapping lookup:`,
-      ULTIMATE_TYPE_MAP[normalizedDataType]
-    );
-
     if (isUnionType(normalizedDataType)) {
       const types = parseUnionTypes(normalizedDataType);
       const firstType = types[0] || "x";
@@ -730,10 +718,6 @@ const UltimateTypesafeHandle: React.FC<UltimateHandleProps> = ({
 
   // STYLE GENERATION
   const handleStyle = useMemo(() => {
-    console.log(
-      `[UltimateHandle] Applying color: ${displayInfo.color} for dataType: ${dataType} (normalized: ${normalizedDataType})`
-    );
-
     const style = {
       backgroundColor: displayInfo.color,
       color: "#fff",

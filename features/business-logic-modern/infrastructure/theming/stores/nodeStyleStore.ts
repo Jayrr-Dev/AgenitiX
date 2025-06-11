@@ -28,21 +28,6 @@ const getUnifiedRegistry = () => unifiedRegistryModule;
 // 1.  Lazy-loaded registry helpers – avoid circular deps during init
 // -----------------------------------------------------------------------------
 
-// Generic helper to wrap require calls & swallow errors.
-function safeRequire<T = unknown>(
-  path: string,
-  pick: (m: any) => T,
-  fallback: T
-): T {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return pick(require(path));
-  } catch (err) {
-    console.warn(`⚠️  Registry helper failed (${path}):`, err);
-    return fallback;
-  }
-}
-
 const lazyGetNodeCategoryMapping = (): Record<string, NodeCategory> => {
   const module = getUnifiedRegistry();
   if (module && module.getNodeCategoryMapping) {
@@ -307,8 +292,6 @@ export const useNodeStyleStore = create<NodeStyleState & NodeStyleActions>(
       const st = get();
       if (st.categoryTheming.registrySync) {
         refreshCategoryMapping();
-        st.categoryTheming.debugMode &&
-          console.log("🔄  NodeStyleStore refreshed from registry");
       }
     },
     toggleDebugMode: () =>
@@ -391,7 +374,7 @@ export const getNodesByCategory = (c: NodeCategory): string[] =>
 // 5.  Public hooks  ▸  components import these
 // -----------------------------------------------------------------------------
 
-/** Tailwind classes for a node’s outer container (hover/selected/etc.). */
+/** Tailwind classes for a node's outer container (hover/selected/etc.). */
 export function useNodeStyleClasses(
   isSelected: boolean,
   isError: boolean,
@@ -415,7 +398,7 @@ export function useNodeStyleClasses(
   return `${s.base.transition} ${stateClass}`.trim();
 }
 
-/** Registry-aware palette for the node’s category (or null). */
+/** Registry-aware palette for the node's category (or null). */
 export function useCategoryTheme(nodeType: string): CategoryTheme | null {
   const { categoryTheming } = useNodeStyleStore();
   if (!categoryTheming.enabled) return null;
@@ -491,7 +474,7 @@ export function useNodeTextTheme(isError: boolean, nodeType?: string) {
   };
 }
 
-// Convenience aliases for callers that already know they want “category aware”.
+// Convenience aliases for callers that already know they want "category aware".
 export const useNodeCategoryButtonTheme = useNodeButtonTheme;
 export const useNodeCategoryTextTheme = useNodeTextTheme;
 export function useNodeCategoryBaseClasses(nodeType: string) {

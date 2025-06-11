@@ -683,19 +683,12 @@ export function registerNodeInspectorControls(registration: any): void {
 /**
  * Register node type config (for factory compatibility)
  */
-export function registerNodeTypeConfig(config: any): void {
-  // This function is used by the factory system for inspector compatibility
-  // For now, this is a placeholder that logs the registration
-  if (process.env.NODE_ENV !== "production") {
-    console.log("📝 [registerNodeTypeConfig] Registered node config:", {
-      nodeType: config.nodeType,
-      hasControls: config.hasControls,
-      hasOutput: config.hasOutput,
-    });
+export function registerNodeTypeConfig(config: NodeTypeConfig) {
+  try {
+    nodeTypeConfigs.set(config.nodeType, config);
+  } catch (error) {
+    console.error(`[registerNodeTypeConfig] Failed to register node config: ${config.nodeType}`, error);
   }
-
-  // In the future, this could be enhanced to store additional metadata
-  // or integrate with more advanced factory configuration systems
 }
 
 /**
@@ -1245,3 +1238,13 @@ export function getEnhancedNodeRegistration(
  *  AUTO‑BOOT – kick off initialization immediately for ESM side‑effects
  * ---------------------------------------------------------------------- */
 _ready = ready();
+
+interface NodeTypeConfig {
+  nodeType: string;
+  hasControls: boolean;
+  hasOutput: boolean;
+  defaultData?: any;
+  displayName?: string;
+}
+
+const nodeTypeConfigs = new Map<string, NodeTypeConfig>();

@@ -259,12 +259,6 @@ function initializeNodeTypeConfig() {
     // Merge generated config into exported constant
     Object.assign(NODE_TYPE_CONFIG, generatedConfig);
 
-    console.log(
-      "✅ [Constants] NODE_TYPE_CONFIG loaded with node-domain components:",
-      Object.keys(generatedConfig).length,
-      "node types"
-    );
-
     isNodeTypeConfigInitialized = true;
     return true;
   } catch (error) {

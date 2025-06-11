@@ -249,13 +249,15 @@ class NodeRegistry {
     }
   }
 
-  private generateRegistryFiles(): void {
-    // TODO: Implement auto-generation of registry files
-    console.log("[defineNode] Auto-generating registry files...");
-
-    // This would generate the traditional registry format
-    // for backward compatibility with existing systems
-  }
+  private generateRegistryFiles = async () => {
+    try {
+      // TODO: Implement auto-generation of registry files
+      // This would generate the traditional registry format
+      // for backward compatibility with existing systems
+    } catch (error) {
+      console.error('[defineNode] Failed to generate registry files:', error);
+    }
+  };
 }
 
 export function defineNode<TData extends BaseNodeData>(

@@ -90,26 +90,18 @@ export function useGPUAcceleration(
 
   useEffect(() => {
     if (isGPUEnabled) {
-      enableGPUAcceleration([config.nodeId]);
-
-      // ENTERPRISE SAFETY INTEGRATION
-      if (safetyLayers) {
-        console.log(
-          `🚀 Enterprise GPU acceleration enabled for ${config.nodeType} ${config.nodeId}`
-        );
-      } else {
-        console.log(
-          `⚡ GPU acceleration enabled for ${config.nodeType} ${config.nodeId}`
-        );
+      try {
+        // Enable GPU acceleration
+        const element = document.getElementById(config.nodeId);
+        if (element) {
+          element.style.transform = 'translate3d(0,0,0)';
+          element.style.willChange = 'transform';
+        }
+      } catch (error) {
+        console.error(`[GPUAcceleration] Failed to enable GPU acceleration for node: ${config.nodeId}`, error);
       }
     }
-  }, [
-    config.nodeId,
-    config.nodeType,
-    isGPUEnabled,
-    enableGPUAcceleration,
-    safetyLayers,
-  ]);
+  }, [isGPUEnabled, config.nodeId]);
 
   return {
     propagateUltraFast,

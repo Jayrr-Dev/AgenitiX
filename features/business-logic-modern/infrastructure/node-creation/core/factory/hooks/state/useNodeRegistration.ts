@@ -10,7 +10,7 @@
  * Keywords: node-registration, lifecycle, safety-layers, monitoring, metadata, enterprise
  */
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import {
   registerNodeInspectorControls,
   registerNodeTypeConfig,
@@ -28,6 +28,18 @@ import type { BaseNodeData, NodeFactoryConfig } from "../../types";
 export function useNodeRegistration<T extends BaseNodeData>(
   config: NodeFactoryConfig<T>
 ) {
+  const registerNode = useCallback((nodeType: string) => {
+    try {
+      registerNodeTypeConfig({
+        nodeType,
+        hasControls: false,
+        hasOutput: false,
+      });
+    } catch (error) {
+      console.error(`[NodeRegistration] Failed to register node: ${nodeType}`, error);
+    }
+  }, []);
+
   return useMemo(() => {
     // REGISTER NODE CONFIGURATION: For inspector compatibility
     registerNodeTypeConfig({
@@ -53,10 +65,6 @@ export function useNodeRegistration<T extends BaseNodeData>(
     }
 
     // RETURN CONFIG: Without modifying handles - this is now handled in NodeFactory
-    console.log(
-      `📝 [NodeRegistration] ${config.nodeType}: Registered with inspector system`
-    );
-
     return config;
   }, [config]);
 }

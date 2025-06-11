@@ -62,16 +62,6 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 
       // Only show fullscreen in browsers (not desktop apps)
       setIsBrowserEnvironment(!isDesktopApp);
-
-      if (!isDesktopApp) {
-        console.log(
-          "🌐 Browser environment detected - Fullscreen button enabled"
-        );
-      } else {
-        console.log(
-          "🖥️ Desktop app environment detected - Fullscreen button hidden"
-        );
-      }
     };
 
     detectBrowserEnvironment();
