@@ -1,0 +1,27 @@
+{
+  "nodeType": "viewOutput",
+  "category": "view",
+  "displayName": "View Output",
+  "description": "Display output data in a formatted view",
+  "component": "ViewOutput.tsx",
+  "icon": "eye",
+  "ui": {
+    "size": { "width": 200, "height": 100 },
+    "defaultCollapsed": false
+  },
+  "sidebar": {
+    "folder": "main",
+    "order": 2
+  },
+  "handles": [
+    {
+      "id": "input",
+      "type": "target",
+      "dataType": "string",
+      "position": "left"
+    }
+  ],
+  "data": {
+    "outputValue": { "type": "string", "default": "" }
+  }
+} 
