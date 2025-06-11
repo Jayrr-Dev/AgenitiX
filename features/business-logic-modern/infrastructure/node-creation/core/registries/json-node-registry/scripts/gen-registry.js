@@ -100,7 +100,8 @@ function generateNodeRegistryEntry(nodeData, domainPath) {
       path.dirname(__filename),
       path.join(domainPath, componentFile)
     )
-    .replace(/\\/g, "/");
+    .replace(/\\/g, "/")
+    .replace(/\.tsx?$/, ""); // Remove .tsx/.ts extension
 
   const relativeInspectorPath = inspectorFile
     ? path
@@ -109,6 +110,7 @@ function generateNodeRegistryEntry(nodeData, domainPath) {
           path.join(domainPath, inspectorFile)
         )
         .replace(/\\/g, "/")
+        .replace(/\.tsx?$/, "") // Remove .tsx/.ts extension
     : null;
 
   // Extract values from new JSON structure
