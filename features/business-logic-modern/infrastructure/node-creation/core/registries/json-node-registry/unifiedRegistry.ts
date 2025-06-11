@@ -191,7 +191,7 @@ function initInspectorControls(): void {
     },
     triggerOnToggleV2U: {
       controlType: "v2" as const,
-      v2ControlType: "V2UTriggerOnToggleControl", // V2U enhanced trigger controls
+      v2ControlType: "V2UTriggerControls", // V2U enhanced trigger controls
       hasControls: true,
     },
     testError: {

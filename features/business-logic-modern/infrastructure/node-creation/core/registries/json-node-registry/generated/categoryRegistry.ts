@@ -5,7 +5,7 @@
  * This file is auto-generated from JSON configurations.
  * DO NOT EDIT MANUALLY - changes will be overwritten.
  *
- * Generated at: 2025-06-11T22:11:15.651Z
+ * Generated at: 2025-06-11T22:22:18.062Z
  */
 
 export const GENERATED_CATEGORY_REGISTRY = {

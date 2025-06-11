@@ -274,6 +274,7 @@ function FlowEditorContent() {
     isNodeActive,
     isNodeInactive,
     isNodePending,
+    updateNodeDataWithBusinessLogic,
   } = useUltraFastPropagation(nodes, edges as any, updateNodeData);
 
   // Make propagation methods globally accessible for nodes
@@ -288,6 +289,7 @@ function FlowEditorContent() {
         isNodeActive,
         isNodeInactive,
         isNodePending,
+        updateNodeDataWithBusinessLogic,
       };
     }
   }, [
@@ -299,6 +301,7 @@ function FlowEditorContent() {
     isNodeActive,
     isNodeInactive,
     isNodePending,
+    updateNodeDataWithBusinessLogic,
   ]);
 
   // ============================================================================

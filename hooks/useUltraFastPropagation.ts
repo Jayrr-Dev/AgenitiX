@@ -34,6 +34,7 @@ export const useUltraFastPropagation = (
     forceDeactivate,
     enableGPUAcceleration,
     getNodeState,
+    updateNodeDataWithBusinessLogic,
   } = useNewUltraFastPropagation(nodes, connections, updateNodeData);
 
   // ULTRA-FAST propagation function with backward compatibility
@@ -79,6 +80,7 @@ export const useUltraFastPropagation = (
     forceDeactivate,
     getNodeState,
     enableGPUAcceleration,
+    updateNodeDataWithBusinessLogic,
 
     // State helpers
     isNodeActive: (nodeId: string) => {

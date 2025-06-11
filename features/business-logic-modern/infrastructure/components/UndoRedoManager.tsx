@@ -354,6 +354,29 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
       const graph = getGraph();
       const cursorNode = graph.nodes[graph.cursor];
 
+      // Safety check: if cursor points to non-existent node, reset to root
+      if (!cursorNode) {
+        console.warn(`⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in push, resetting to root`);
+        graph.cursor = graph.root;
+        const rootNode = graph.nodes[graph.root];
+        saveGraph(graph);
+        // Use root node as cursor node for this operation
+        const newId = createChildNode(
+          graph,
+          rootNode.id,
+          label,
+          rootNode.after,
+          nextState,
+          metadata
+        );
+        graph.cursor = newId;
+        saveGraph(graph);
+        lastActionTimestampRef.current = Date.now();
+        const path = getPathToCursor(graph);
+        onHistoryChange?.(path, path.length - 1);
+        return;
+      }
+
       // Skip if states are identical
       if (areStatesEqualOptimized(cursorNode.after, nextState)) {
         if (DEBUG_MODE) {
@@ -402,6 +425,14 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     const graph = getGraph();
     const current = graph.nodes[graph.cursor];
 
+    // Safety check: if cursor points to non-existent node, reset to root
+    if (!current) {
+      console.warn(`⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in undo, resetting to root`);
+      graph.cursor = graph.root;
+      saveGraph(graph);
+      return false;
+    }
+
     if (!current.parentId) {
       if (DEBUG_MODE) {
         console.log("❌ [UndoRedo] Cannot undo, at root");
@@ -428,6 +459,14 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     (childId?: string): boolean => {
       const graph = getGraph();
       const current = graph.nodes[graph.cursor];
+
+      // Safety check: if cursor points to non-existent node, reset to root
+      if (!current) {
+        console.warn(`⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in redo, resetting to root`);
+        graph.cursor = graph.root;
+        saveGraph(graph);
+        return false;
+      }
 
       if (!current.childrenIds.length) {
         if (DEBUG_MODE) {
@@ -511,6 +550,24 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     const path = getPathToCursor(graph);
     const current = graph.nodes[graph.cursor];
 
+    // Safety check: if cursor points to non-existent node, reset to root
+    if (!current) {
+      console.warn(`⚠️ [UndoRedo] Invalid cursor "${graph.cursor}", resetting to root`);
+      graph.cursor = graph.root;
+      const rootNode = graph.nodes[graph.root];
+      saveGraph(graph);
+      
+      return {
+        entries: [rootNode],
+        currentIndex: 0,
+        canUndo: false,
+        canRedo: rootNode.childrenIds.length > 0,
+        branchOptions: rootNode.childrenIds,
+        graphStats: getGraphStats(graph),
+        currentNode: rootNode,
+      };
+    }
+
     return {
       entries: path,
       currentIndex: path.length - 1,
@@ -525,7 +582,17 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
   const getBranchOptions = useCallback((): string[] => {
     const graph = getGraph();
-    return [...graph.nodes[graph.cursor].childrenIds];
+    const current = graph.nodes[graph.cursor];
+    
+    // Safety check: if cursor points to non-existent node, reset to root
+    if (!current) {
+      console.warn(`⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in getBranchOptions, resetting to root`);
+      graph.cursor = graph.root;
+      saveGraph(graph);
+      return [...graph.nodes[graph.root].childrenIds];
+    }
+    
+    return [...current.childrenIds];
   }, [getGraph]);
 
   // ============================================================================

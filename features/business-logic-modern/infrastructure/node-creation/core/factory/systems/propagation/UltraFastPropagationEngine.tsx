@@ -18,6 +18,7 @@
 import { Connection, Node } from "@xyflow/react";
 import { useCallback, useEffect, useRef } from "react";
 import { unstable_batchedUpdates } from "react-dom";
+import { TRANSFORMATION_NODE_PATTERNS } from "../../constants";
 
 // ============================================================================
 // 🎯 ERROR HANDLING & RECOVERY
@@ -84,6 +85,263 @@ class StateTransitionError extends PropagationEngineError {
     }
   }
 }
+
+// ============================================================================
+// BUSINESS LOGIC INTEGRATION - Advanced node activation rules
+// ============================================================================
+
+// Enhanced node data interfaces from propagationEngine.ts
+interface NodeWithData {
+  id: string;
+  data: Record<string, any>;
+  type?: string;
+}
+
+interface TriggerNodeData {
+  triggered?: boolean;
+  isActive?: boolean;
+  value?: boolean | string | number;
+  output?: boolean | string | number;
+}
+
+interface CyclNodeData extends TriggerNodeData {
+  isOn?: boolean;
+  phase?: boolean;
+  pulsing?: boolean;
+}
+
+interface TestJsonNodeData {
+  parsedJson?: any;
+  parseError?: string | null;
+}
+
+interface ViewOutputNodeData {
+  displayedValues?: Array<{ content: any }>;
+}
+
+interface NodeOutputData {
+  text?: string;
+  value?: any;
+  output?: any;
+  heldText?: string;
+}
+
+// ============================================================================
+// BUSINESS LOGIC UTILITIES (from propagationEngine.ts)
+// ============================================================================
+
+/**
+ * IS HEAD NODE - Determines if a node is a source/trigger node
+ */
+const isHeadNode = (connections: Connection[], nodeId: string): boolean => {
+  const inputConnections = connections.filter(conn => conn.target === nodeId);
+  const nonJsonInputs = inputConnections.filter(conn => conn.targetHandle !== "j");
+  return nonJsonInputs.length === 0;
+};
+
+/**
+ * IS TRANSFORMATION NODE - Identifies nodes that transform input data
+ */
+const isTransformationNode = (nodeType: string): boolean => {
+  const normalizedNodeType = nodeType.toLowerCase();
+  return TRANSFORMATION_NODE_PATTERNS.some(pattern =>
+    normalizedNodeType.includes(pattern)
+  );
+};
+
+/**
+ * HAS MEANINGFUL CONTENT - Checks if a value represents meaningful content
+ */
+const hasMeaningfulContent = (value: any): boolean => {
+  return value !== undefined && value !== null && value !== "";
+};
+
+/**
+ * HAS VALID OUTPUT - Checks if node has meaningful output data
+ */
+const hasValidOutput = (data: NodeOutputData): boolean => {
+  const outputFields = [data.text, data.value, data.output, data.heldText];
+  return outputFields.some(hasMeaningfulContent);
+};
+
+/**
+ * IS NODE ACTIVE - Checks if a node is in an active state based on its data
+ */
+const isNodeActive = (nodeData: TriggerNodeData): boolean => {
+  // Primary trigger fields (boolean checks)
+  if (nodeData.triggered === true || nodeData.isActive === true) {
+    return true;
+  }
+
+  // Secondary value fields with proper boolean conversion
+  if (nodeData.value !== undefined && nodeData.value !== null) {
+    if (typeof nodeData.value === "boolean") {
+      return nodeData.value;
+    }
+    if (typeof nodeData.value === "string") {
+      const lowercased = nodeData.value.toLowerCase().trim();
+      return lowercased === "true";
+    }
+    if (typeof nodeData.value === "number") {
+      return nodeData.value !== 0 && !isNaN(nodeData.value);
+    }
+  }
+
+  // Tertiary output field with proper boolean conversion
+  if (nodeData.output !== undefined && nodeData.output !== null) {
+    if (typeof nodeData.output === "boolean") {
+      return nodeData.output;
+    }
+    if (typeof nodeData.output === "string") {
+      const lowercased = nodeData.output.toLowerCase().trim();
+      return lowercased === "true";
+    }
+    if (typeof nodeData.output === "number") {
+      return nodeData.output !== 0 && !isNaN(nodeData.output);
+    }
+  }
+
+  return false;
+};
+
+/**
+ * SPECIALIZED NODE HANDLERS
+ */
+const handleTriggerNode = (data: TriggerNodeData): boolean => {
+  return !!data.triggered;
+};
+
+const handleCycleNode = (data: CyclNodeData): boolean => {
+  const isNodeOn = !!data.isOn;
+  const hasActiveState = !!(data.triggered || data.phase || data.pulsing);
+  return isNodeOn && hasActiveState;
+};
+
+const handleManualTriggerNode = (data: { isManuallyActivated?: boolean }): boolean => {
+  return !!data.isManuallyActivated;
+};
+
+const handleJsonTestNode = (data: TestJsonNodeData): boolean => {
+  const hasValidJson = data.parsedJson !== null && data.parsedJson !== undefined;
+  const hasNoParseError = data.parseError === null;
+  return hasValidJson && hasNoParseError;
+};
+
+const handleViewOutputActivation = (data: ViewOutputNodeData): boolean => {
+  const displayedValues = data.displayedValues;
+
+  if (!Array.isArray(displayedValues) || displayedValues.length === 0) {
+    return false;
+  }
+
+  return displayedValues.some((item) => {
+    if (!hasMeaningfulContent(item.content)) return false;
+    if (typeof item.content === "string" && item.content.trim() === "") return false;
+    if (Array.isArray(item.content)) return item.content.length > 0;
+    if (typeof item.content === "object") return Object.keys(item.content).length > 0;
+    return true;
+  });
+};
+
+/**
+ * CHECK TRIGGER STATE - Verifies if trigger nodes allow activation
+ */
+const checkTriggerState = (
+  connections: Connection[],
+  nodesData: NodeWithData[],
+  nodeId: string
+): boolean => {
+  const triggerConnections = connections.filter(
+    conn => conn.targetHandle === "trigger" && conn.target === nodeId
+  );
+
+  if (triggerConnections.length === 0) return true;
+
+  const sourceNodeIds = triggerConnections.map(conn => conn.source);
+  const triggerNodesData = nodesData.filter(node => sourceNodeIds.includes(node.id));
+
+  return triggerNodesData.some(triggerNode => {
+    const triggerData = triggerNode.data || {};
+    return isNodeActive(triggerData);
+  });
+};
+
+/**
+ * HAS ACTIVE INPUT NODES - Determines if any input nodes are currently active
+ */
+const hasActiveInputNodes = (
+  connections: Connection[],
+  nodesData: NodeWithData[],
+  nodeId: string
+): boolean => {
+  const inputConnections = connections.filter(conn => conn.target === nodeId);
+  const nonJsonInputs = inputConnections.filter(conn => conn.targetHandle !== "j");
+
+  if (nonJsonInputs.length === 0) return false;
+
+  const sourceNodeIds = nonJsonInputs.map(conn => conn.source);
+  const sourceNodesData = nodesData.filter(node => sourceNodeIds.includes(node.id));
+
+  return sourceNodesData.some(sourceNode => {
+    const sourceData = sourceNode.data || {};
+    return isNodeActive(sourceData) || hasValidOutput(sourceData);
+  });
+};
+
+/**
+ * DETERMINE HEAD NODE STATE - Core logic for head node activation
+ */
+const determineHeadNodeState = (nodeType: string, data: any): boolean => {
+  const normalizedNodeType = nodeType.toLowerCase();
+
+  if (normalizedNodeType.includes("trigger")) {
+    return handleTriggerNode(data);
+  }
+
+  if (normalizedNodeType.includes("cycle")) {
+    return handleCycleNode(data);
+  }
+
+  if (data.isManuallyActivated !== undefined) {
+    return handleManualTriggerNode(data);
+  }
+
+  if (nodeType === "testJson") {
+    return handleJsonTestNode(data);
+  }
+
+  return hasValidOutput(data);
+};
+
+/**
+ * DETERMINE DOWNSTREAM NODE STATE - Core logic for downstream node activation
+ */
+const determineDownstreamNodeState = (
+  nodeType: string,
+  data: any,
+  connections: Connection[],
+  nodesData: NodeWithData[],
+  nodeId: string
+): boolean => {
+  const hasActiveInput = hasActiveInputNodes(connections, nodesData, nodeId);
+
+  if (!hasActiveInput) return false;
+
+  const triggerAllows = checkTriggerState(connections, nodesData, nodeId);
+  if (!triggerAllows) return false;
+
+  // Handle transformation nodes
+  if (isTransformationNode(nodeType)) {
+    return hasActiveInput && hasValidOutput(data);
+  }
+
+  // Handle view output nodes
+  if (nodeType === "viewOutput" || nodeType === "viewOutputV2U") {
+    return handleViewOutputActivation(data as ViewOutputNodeData);
+  }
+
+  return hasActiveInput;
+};
 
 // ============================================================================
 // 🎯 STATE MACHINE DEFINITIONS
@@ -427,6 +685,8 @@ class StateMachinePropagationLayer {
   private machines = new Map<string, NodeStateMachine>();
   private connections = new Map<string, string[]>(); // source -> targets
   private reverseConnections = new Map<string, string[]>(); // target -> sources
+  private nodes: Node[] = []; // Store node data for business logic
+  private connectionsList: Connection[] = []; // Store connections for business logic
 
   // Callbacks for external integrations
   private onVisualUpdate?: (id: string, state: NodeState) => void;
@@ -434,18 +694,22 @@ class StateMachinePropagationLayer {
   private onError?: (error: PropagationEngineError) => void;
 
   /**
-   * Initialize state machines for all nodes
+   * Initialize state machines for all nodes with business logic evaluation
    */
   initialize(nodes: Node[], connections: Connection[]) {
     this.machines.clear();
     this.connections.clear();
     this.reverseConnections.clear();
+    this.nodes = nodes;
+    this.connectionsList = connections;
 
-    // Create state machines for all nodes
+    // Create state machines for all nodes with smart initial state
     nodes.forEach((node) => {
+      const initialActive = this.calculateInitialNodeState(node, nodes, connections);
+      
       this.machines.set(node.id, {
         id: node.id,
-        state: node.data?.isActive ? NodeState.ACTIVE : NodeState.INACTIVE,
+        state: initialActive ? NodeState.ACTIVE : NodeState.INACTIVE,
         activeInputs: new Set(),
         lastTransition: null,
         transitionTimestamp: Date.now(),
@@ -477,7 +741,33 @@ class StateMachinePropagationLayer {
   }
 
   /**
-   * Trigger a state transition for a node
+   * Calculate initial node state using advanced business logic
+   */
+  private calculateInitialNodeState(
+    node: Node,
+    allNodes: Node[],
+    connections: Connection[]
+  ): boolean {
+    const nodeType = node.type || "unknown";
+    const nodeData = node.data || {};
+    
+    // Convert nodes to the format expected by business logic
+    const nodesData: NodeWithData[] = allNodes.map(n => ({
+      id: n.id,
+      data: n.data || {},
+      type: n.type
+    }));
+
+    // Check if it's a head node (no non-JSON inputs)
+    if (isHeadNode(connections, node.id)) {
+      return determineHeadNodeState(nodeType, nodeData);
+    } else {
+      return determineDownstreamNodeState(nodeType, nodeData, connections, nodesData, node.id);
+    }
+  }
+
+  /**
+   * Trigger a state transition for a node using advanced business logic
    */
   transition(
     nodeId: string,
@@ -488,21 +778,7 @@ class StateMachinePropagationLayer {
     if (!machine) return false;
 
     try {
-      const newState = STATE_TRANSITIONS[machine.state]?.[event];
-      if (!newState) {
-        // Invalid transition - log for debugging
-        if (
-          typeof window !== "undefined" &&
-          window.location?.search?.includes("debug=state")
-        ) {
-          console.warn(
-            `❌ Invalid transition: ${machine.state} + ${event} for node ${nodeId}`
-          );
-        }
-        return false;
-      }
-
-      // Update active inputs tracking
+      // Update active inputs tracking first
       if (sourceNodeId) {
         if (event === TransitionEvent.INPUT_ACTIVATED) {
           machine.activeInputs.add(sourceNodeId);
@@ -511,16 +787,52 @@ class StateMachinePropagationLayer {
         }
       }
 
-      // Special logic for pending deactivation
-      if (
-        machine.state === NodeState.PENDING_DEACTIVATION &&
-        event === TransitionEvent.INPUT_DEACTIVATED
-      ) {
-        // Only deactivate if no active inputs remain
-        if (machine.activeInputs.size > 0) {
-          return false; // Stay in current state
+      // Use business logic to determine the actual desired state
+      const currentNode = this.nodes.find(n => n.id === nodeId);
+      if (!currentNode) return false;
+
+      let shouldBeActive = false;
+
+      // For button-driven events, use simple activation logic
+      if (event === TransitionEvent.BUTTON_ACTIVATE) {
+        shouldBeActive = true;
+      } else if (event === TransitionEvent.BUTTON_DEACTIVATE || event === TransitionEvent.FORCE_DEACTIVATE) {
+        shouldBeActive = false;
+      } else {
+        // For input-driven events, use sophisticated business logic
+        const nodeType = currentNode.type || "unknown";
+        const nodeData = currentNode.data || {};
+        
+        const nodesData: NodeWithData[] = this.nodes.map(n => ({
+          id: n.id,
+          data: n.data || {},
+          type: n.type
+        }));
+
+        if (isHeadNode(this.connectionsList, nodeId)) {
+          shouldBeActive = determineHeadNodeState(nodeType, nodeData);
+        } else {
+          shouldBeActive = determineDownstreamNodeState(
+            nodeType, 
+            nodeData, 
+            this.connectionsList, 
+            nodesData, 
+            nodeId
+          );
         }
-        // Proceed with deactivation
+      }
+
+      // Determine the appropriate state based on business logic result
+      let newState: NodeState;
+      if (shouldBeActive) {
+        newState = NodeState.ACTIVE;
+      } else {
+        newState = NodeState.INACTIVE;
+      }
+
+      // Check if this is actually a state change
+      if (machine.state === newState) {
+        return false; // No change needed
       }
 
       // Apply the transition
@@ -534,7 +846,7 @@ class StateMachinePropagationLayer {
         typeof window !== "undefined" &&
         window.location?.search?.includes("debug=state")
       ) {
-        console.log(`🔄 ${nodeId}: ${previousState} → ${newState} (${event})`);
+        console.log(`🔄 ${nodeId}: ${previousState} → ${newState} (${event}) [Business Logic: ${shouldBeActive}]`);
       }
 
       // Notify callbacks
@@ -558,6 +870,27 @@ class StateMachinePropagationLayer {
    */
   getNodeState(nodeId: string): NodeState | undefined {
     return this.machines.get(nodeId)?.state;
+  }
+
+  /**
+   * Update node data and re-evaluate state using business logic
+   */
+  updateNodeData(nodeId: string, newData: Record<string, any>) {
+    // Update the stored node data
+    const nodeIndex = this.nodes.findIndex(n => n.id === nodeId);
+    if (nodeIndex >= 0) {
+      this.nodes[nodeIndex] = {
+        ...this.nodes[nodeIndex],
+        data: { ...this.nodes[nodeIndex].data, ...newData }
+      };
+
+      // Re-evaluate the node's state based on new data
+      const machine = this.machines.get(nodeId);
+      if (machine) {
+        // Use INPUT_ACTIVATED/DEACTIVATED to trigger business logic evaluation
+        this.transition(nodeId, TransitionEvent.INPUT_ACTIVATED);
+      }
+    }
   }
 
   /**
@@ -718,6 +1051,14 @@ export class UltraFastPropagationEngine {
   }
 
   /**
+   * Update node data and trigger business logic re-evaluation
+   */
+  updateNodeData(nodeId: string, newData: Record<string, any>, update: UpdateNodeData) {
+    this.updateCallback = update;
+    this.stateMachine.updateNodeData(nodeId, newData);
+  }
+
+  /**
    * Force deactivate a node (ignores multiple input logic)
    */
   forceDeactivate(nodeId: string, update: UpdateNodeData) {
@@ -843,12 +1184,19 @@ export const useUltraFastPropagation = (
     [engine]
   );
 
-  return {
-    propagateUltraFast,
-    forceDeactivate,
-    enableGPUAcceleration,
-    getNodeState,
-  } as const;
+  const updateNodeDataWithBusinessLogic = useCallback(
+    (nodeId: string, newData: Record<string, any>) => 
+      engine.updateNodeData(nodeId, newData, updateNodeData),
+    [engine, updateNodeData]
+  );
+
+      return {
+      propagateUltraFast,
+      forceDeactivate,
+      enableGPUAcceleration,
+      getNodeState,
+      updateNodeDataWithBusinessLogic,
+    } as const;
 };
 
 // ============================================================================

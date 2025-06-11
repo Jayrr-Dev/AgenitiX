@@ -12,8 +12,8 @@
 // JSON Processing utilities
 export * from "./jsonProcessor";
 
-// Propagation Engine utilities
-export * from "./propagationEngine";
+// Propagation Engine utilities (DEPRECATED - now integrated into UltraFastPropagationEngine)
+// export * from "./propagationEngine"; // Removed - functionality moved to UltraFastPropagationEngine
 
 // Module version
 export const PROCESSING_UTILS_VERSION = "1.0.0";

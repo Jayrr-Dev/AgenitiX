@@ -107,9 +107,16 @@ export const globalSafetyLayers = {
     // Safe wrapper for propagation engine operations
     cleanupNode: (nodeId: string): void => {
       debug(
-        `Safe cleanup for node: ${nodeId} (propagation engine not initialized)`
+        `Safe cleanup for node: ${nodeId} (using unified propagation engine)`
       );
-      // Placeholder - will be connected to actual propagation engine
+      // Connected to unified propagation engine with business logic
+      if (typeof window !== "undefined" && (window as any).ufpePropagation) {
+        try {
+          (window as any).ufpePropagation.cleanupNode?.(nodeId);
+        } catch (error) {
+          debug(`Error cleaning up node ${nodeId}:`, error);
+        }
+      }
     },
     propagate: (
       nodeId: string,
@@ -117,10 +124,17 @@ export const globalSafetyLayers = {
       callback?: any,
       isButtonDriven = true
     ): void => {
-      debug(`Safe propagate for node ${nodeId}: ${active}`, {
+      debug(`Unified propagate for node ${nodeId}: ${active}`, {
         isButtonDriven,
       });
-      // Placeholder - will be connected to actual propagation engine
+      // Connected to unified propagation engine with business logic
+      if (typeof window !== "undefined" && (window as any).ufpePropagation) {
+        try {
+          (window as any).ufpePropagation.propagateUltraFast(nodeId, active, isButtonDriven);
+        } catch (error) {
+          debug(`Error propagating node ${nodeId}:`, error);
+        }
+      }
     },
   } as PropagationEngineInterface,
   // State Machine Integration Methods (will be enhanced with actual implementations)

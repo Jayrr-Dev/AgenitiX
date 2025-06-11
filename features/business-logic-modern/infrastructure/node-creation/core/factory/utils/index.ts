@@ -51,15 +51,16 @@ export * from "./ui/conditionalRendering";
 // LEGACY BACKWARD COMPATIBILITY EXPORTS
 // ============================================================================
 
-// Re-export commonly used utilities for backward compatibility
-export {
-  calculateDownstreamNodeActivation,
-  calculateHeadNodeActivation,
-  checkTriggerState,
-  determineDownstreamNodeState,
-  determineHeadNodeState,
-  hasActiveInputNodes,
-} from "./processing/propagationEngine";
+// DEPRECATED: Re-export commonly used utilities for backward compatibility
+// These functions are now integrated into UltraFastPropagationEngine
+// export {
+//   calculateDownstreamNodeActivation,
+//   calculateHeadNodeActivation,
+//   checkTriggerState,
+//   determineDownstreamNodeState,
+//   determineHeadNodeState,
+//   hasActiveInputNodes,
+// } from "./processing/propagationEngine";
 
 export {
   clearCache,
