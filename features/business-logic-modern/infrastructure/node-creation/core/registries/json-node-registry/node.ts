@@ -11,7 +11,7 @@
 
 import type { Position } from "@xyflow/react";
 import type { ComponentType } from "react";
-import type { NodeType } from "../../flow-engine/types/nodeData";
+import type { NodeType } from "../../../../flow-engine/types/nodeData";
 import type {
   BaseNodeData,
   HandleConfig,
@@ -19,7 +19,7 @@ import type {
   NodeFactoryConfig,
   NodeSize,
   SidebarFolder,
-} from "../factory/types";
+} from "../../factory/types";
 import { MemoizedTypedRegistry } from "./base/TypedRegistry";
 
 // ============================================================================
