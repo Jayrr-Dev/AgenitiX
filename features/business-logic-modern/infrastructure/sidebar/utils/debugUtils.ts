@@ -3,7 +3,7 @@
  * These functions can be called from the browser console for debugging
  */
 
-import { modernNodeRegistry, getAllNodeMetadata } from "../../node-registry/modern-node-registry";
+import { modernNodeRegistry, getAllNodeMetadata } from "../../node-registry/nodespec-registry";
 import { VARIANT_CONFIG, getSidebarStatistics, validateSidebarConfiguration } from "../constants";
 
 /**

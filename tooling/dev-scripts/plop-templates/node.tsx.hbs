@@ -10,6 +10,7 @@ import {
   reportValidationError,
   useNodeDataValidation 
 } from '@/features/business-logic-modern/infrastructure/node-core/validation';
+import { SafeSchemas, createSafeInitialData } from '@/features/business-logic-modern/infrastructure/node-core/schema-helpers';
 import { CATEGORIES } from '@/features/business-logic-modern/infrastructure/theming/categories';
 import { EXPANDED_FIXED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
 import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
@@ -21,13 +22,16 @@ import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
  * Define your node's data structure with validation rules
  */
 const {{pascalCase kind}}DataSchema = z.object({
-  // Example fields - customize as needed:
-  // text: CommonSchemas.text.default('Default text'),
-  // number: CommonSchemas.number.default(0),
-  // isEnabled: CommonSchemas.boolean,
-  // url: CommonSchemas.url,
+  // Default schema with common fields - customize as needed:
+  text: SafeSchemas.text('Default text'),
+  isEnabled: SafeSchemas.boolean(true),
+  // Standard flow-engine activation flag – required by all nodes
+  isActive: SafeSchemas.boolean(false),
   
-  // Add your specific fields here
+  // Add your specific fields here using SafeSchemas:
+  // number: SafeSchemas.number(0, 0, 100),
+  // url: SafeSchemas.url(),
+  // email: SafeSchemas.email(),
   
 }).strict(); // Prevents unexpected properties
 
@@ -44,8 +48,8 @@ const spec: NodeSpec = {
   displayName: '{{titleCase kind}}',
   category: CATEGORIES.{{constantCase category}},
   size: {
-    expanded: EXPANDED_FIXED_SIZES.FE1,
-    collapsed: COLLAPSED_SIZES.C1,
+    expanded: {{expandedSizeConstant expandedSize}},
+    collapsed: {{collapsedSizeConstant collapsedSize}},
   },
   handles: [
     // Standard JSON input for programmatic control
@@ -61,7 +65,7 @@ const spec: NodeSpec = {
   inspector: {
     key: '{{pascalCase kind}}Inspector',
   },
-  initialData: {{pascalCase kind}}DataSchema.parse({}), // Use schema defaults
+  initialData: createSafeInitialData({{pascalCase kind}}DataSchema), // Auto-generated safe defaults
 };
 
 /**
@@ -75,7 +79,8 @@ const spec: NodeSpec = {
  * - Metrics collection
  */
 const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
-  const [isExpanded, setExpanded] = useState(true);
+  // Nodes start collapsed by default per design guidelines
+  const [isExpanded, setExpanded] = useState(false);
   
   // Enterprise validation with comprehensive error handling
   const validationResult = validateNodeData(data);
@@ -113,7 +118,7 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
   return (
     <>
       <ExpandCollapseButton 
-        isExpanded={isExpanded} 
+        isCollapsed={!isExpanded} 
         onToggle={onToggle} 
       />
 
@@ -129,14 +134,9 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
               )}
             </div>
             
-            {/* Add your expanded UI controls here */}
-            <div className="text-xs text-gray-600">
-              Configure your {{titleCase kind}} node controls here
-            </div>
-            
-            {/* Example text input - customize as needed:
+            {/* Default UI controls - customize as needed */}
             <div>
-              <label className="text-xs font-semibold">Text Input</label>
+              <label className="text-xs font-semibold">Text</label>
               <input
                 type="text"
                 value={nodeData.text || ''}
@@ -145,7 +145,16 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
                 placeholder="Enter text..."
               />
             </div>
-            */}
+            
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={nodeData.isEnabled || false}
+                onChange={(e) => handleDataUpdate({ isEnabled: e.target.checked })}
+                className="rounded"
+              />
+              <label className="text-xs">Enabled</label>
+            </div>
             
             {/* Example number input:
             <div>

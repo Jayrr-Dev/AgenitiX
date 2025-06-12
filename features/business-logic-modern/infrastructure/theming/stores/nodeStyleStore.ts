@@ -10,7 +10,7 @@
 
 import { create } from "zustand";
 import { useMemo } from "react";
-import { getNodeMetadata } from "../../node-registry/modern-node-registry";
+import { getNodeMetadata } from "../../node-registry/nodespec-registry";
 
 // -----------------------------------------------------------------------------
 // 1. Theme constants & helpers

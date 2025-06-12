@@ -1,3 +1,5 @@
++'use client';
+
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import React, { type KeyboardEvent, useCallback, useRef } from "react";
@@ -37,8 +39,8 @@ export const SortableStencil = React.memo<SortableStencilProps>(
     const isDragging = useRef<boolean>(false);
 
     const style: React.CSSProperties = {
-      transform: CSS.Translate.toString(transform),
-      transition,
+      transform: transform ? CSS.Translate.toString(transform) : undefined,
+      transition: transition ?? undefined,
       touchAction: "none",
     };
 

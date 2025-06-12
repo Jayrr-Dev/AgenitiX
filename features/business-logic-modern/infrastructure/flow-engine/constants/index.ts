@@ -52,7 +52,7 @@ export const TYPE_MAP: TypeMap = new Proxy({} as TypeMap, {
 // NODE TYPE CONFIGURATION - Modern Registry Integration
 // ============================================================================
 
-import { modernNodeRegistry, getNodeMetadata } from "../../node-registry/modern-node-registry";
+import { modernNodeRegistry, getNodeMetadata } from "../../node-registry/nodespec-registry";
 
 /**
  * NODE_TYPE_CONFIG - Dynamic configuration based on modern node registry
@@ -71,7 +71,7 @@ export const NODE_TYPE_CONFIG = new Proxy({} as Record<string, NodeTypeConfig>, 
       defaultData: Object.fromEntries(
         Object.entries(metadata.data || {}).map(([key, config]) => [
           key,
-          config.default,
+          (config as any)?.default || null,
         ])
       ),
       hasTargetPosition: false,
@@ -102,64 +102,11 @@ export const getNodeTypeConfig = (nodeType: string): NodeTypeConfig | undefined 
 // ============================================================================
 
 export const INITIAL_NODES: AgenNode[] = [
-  {
-    id: "1",
-    type: "createTextV2U",
-    position: { x: -100, y: -50 },
-    deletable: true,
-    data: {
-      text: "hello",
-      heldText: "hello",
-      isActive: true,
-    },
-  },
-  {
-    id: "2",
-    type: "createTextV2U",
-    position: { x: 0, y: 100 },
-    deletable: true,
-    data: {
-      text: "world",
-      heldText: "world",
-      isActive: true,
-    },
-  },
-  {
-    id: "3",
-    type: "viewOutputV2U",
-    position: { x: 300, y: -25 },
-    deletable: true,
-    data: {
-      label: "Result",
-      displayedValues: [],
-      isActive: true,
-    },
-  },
+  // Nodes will be added here after recreation via Plop
 ];
 
 export const INITIAL_EDGES: AgenEdge[] = [
-  {
-    id: "e1-3",
-    source: "1",
-    target: "3",
-    sourceHandle: "output",
-    targetHandle: "input",
-    type: "default",
-    deletable: true,
-    focusable: true,
-    style: { stroke: "#3b82f6", strokeWidth: 2 }, // Blue for create category
-  },
-  {
-    id: "e2-3",
-    source: "2",
-    target: "3",
-    sourceHandle: "output",
-    targetHandle: "input",
-    type: "default",
-    deletable: true,
-    focusable: true,
-    style: { stroke: "#3b82f6", strokeWidth: 2 }, // Blue for create category
-  },
+  // Edges will be added here after recreation via Plop
 ];
 
 // ============================================================================

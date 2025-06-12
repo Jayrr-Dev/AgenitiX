@@ -12,7 +12,7 @@
 
 import type { Connection } from "@xyflow/react";
 import { TYPE_MAP } from "../constants";
-import { getNodeMetadata } from "../../node-registry/modern-node-registry";
+import { getNodeMetadata } from "../../node-registry/nodespec-registry";
 import type { AgenNode } from "../types/nodeData";
 
 // CATEGORY COLOR MAPPING

@@ -17,7 +17,7 @@ import React, { useCallback, useMemo } from "react";
 
 // MODERN REGISTRY INTEGRATION - Import proper types and registry
 import type { NodeType } from "../../flow-engine/types/nodeData";
-import { getNodeMetadata } from "../../node-registry/modern-node-registry";
+import { getNodeMetadata } from "../../node-registry/nodespec-registry";
 import type { NodeMetadata } from "../../node-registry/types";
 
 // ============================================================================

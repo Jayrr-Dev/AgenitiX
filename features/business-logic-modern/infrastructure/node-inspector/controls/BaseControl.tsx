@@ -15,7 +15,7 @@ import React, { useMemo } from "react";
 
 // REGISTRY INTEGRATION - Import for enhanced theming
 import type { NodeType } from "../../flow-engine/types/nodeData";
-import { getNodeMetadata } from "../../node-registry/modern-node-registry";
+import { getNodeMetadata } from "../../node-registry/nodespec-registry";
 
 // PROPER TYPES IMPORT - Use the correct BaseControlProps from types
 import type { BaseControlProps } from "../types";

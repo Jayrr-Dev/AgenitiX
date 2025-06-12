@@ -9,34 +9,28 @@ import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sid
 import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
 
-// Helper function to get node spec from the new NodeSpec system
+// Import the new NodeSpec registry
+import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
+
+// Helper function to get node spec from the new NodeSpec registry system
 const getNodeSpecForType = async (nodeType: string) => {
   try {
-    // Map common node types to their domain exports
-    const nodeTypeMap: Record<string, () => Promise<any>> = {
-      'createText': () => import('@/features/business-logic-modern/node-domain/create/createText.node'),
-      'testErrorV2U': () => import('@/features/business-logic-modern/node-domain/test/testErrorV2U.node'),
-      'triggerOnToggleV2U': () => import('@/features/business-logic-modern/node-domain/trigger/triggerOnToggleV2U.node'),
-      'viewOutputV2U': () => import('@/features/business-logic-modern/node-domain/view/viewOutputV2U.node'),
-    };
-
-    const loader = nodeTypeMap[nodeType];
-    if (!loader) {
-      console.warn(`No loader found for node type: ${nodeType}`);
+    // Get metadata from the new NodeSpec registry
+    const metadata = getNodeSpecMetadata(nodeType);
+    if (!metadata) {
+      console.warn(`No metadata found for node type: ${nodeType}`);
       return null;
     }
 
-    const module = await loader();
-    const component = module.default;
-    
-    // The withNodeScaffold HOC attaches the spec to the component
-    if (component && typeof component === 'function' && 'spec' in component) {
-      return (component as any).spec;
-    }
-    
-    return null;
+    // Return spec format for initial data
+    return {
+      kind: metadata.kind,
+      displayName: metadata.displayName,
+      category: metadata.category,
+      initialData: metadata.initialData,
+    };
   } catch (error) {
-    console.error(`Failed to load spec for node type: ${nodeType}`, error);
+    console.error(`Failed to get spec for node type: ${nodeType}`, error);
     return null;
   }
 };

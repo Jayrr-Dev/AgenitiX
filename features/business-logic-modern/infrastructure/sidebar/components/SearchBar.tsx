@@ -1,7 +1,7 @@
 import { Search, X } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { HoveredStencil } from "../../components/StencilInfoPanel";
-import { getAllNodeMetadata } from "../../node-registry/modern-node-registry";
+import { getAllNodeMetadata } from "../../node-registry/nodespec-registry";
 import type { NodeMetadata } from "../../node-registry/types";
 import { StencilGrid } from "../StencilGrid";
 

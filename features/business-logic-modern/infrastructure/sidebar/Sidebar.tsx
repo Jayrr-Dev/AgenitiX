@@ -30,19 +30,21 @@ import {
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import type { NodeType } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 
-// REGISTRY INTEGRATION - Imports from the new modern node registry
+// REGISTRY INTEGRATION - Imports from the new NodeSpec registry
 import {
-  modernNodeRegistry,
-  getNodeMetadata,
-  validateNode,
-} from "@/features/business-logic-modern/infrastructure/node-registry/modern-node-registry";
+  getNodeSpecMetadata as getNodeMetadata,
+  hasNodeSpec,
+  getAllNodeTypes,
+} from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 // import { nanoid } from "nanoid"; // Removed due to resolver issues
 import type { Node as ReactFlowNode } from "@xyflow/react";
 
-// Create the MODERN_NODE_REGISTRY alias by converting the new registry
-const MODERN_NODE_REGISTRY: Record<string, any> = Object.fromEntries(
-  modernNodeRegistry.entries()
-);
+// Simple validation function to replace validateNode
+const validateNode = (nodeType: string) => ({
+  isValid: hasNodeSpec(nodeType),
+  warnings: hasNodeSpec(nodeType) ? [] : [`Node type '${nodeType}' not found in registry`],
+  suggestions: hasNodeSpec(nodeType) ? [] : ['Check available node types in the registry'],
+});
 
 // FACTORY INTEGRATION - REMOVED
 
@@ -180,11 +182,11 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
           }
 
           if (enableDebug) {
-            console.log("🏭 Creating node with modern registry metadata:", {
-              nodeType: metadata.nodeType,
+            console.log("🏭 Creating node with NodeSpec registry metadata:", {
+              nodeType: metadata.kind,
               displayName: metadata.displayName,
               category: metadata.category,
-              folder: metadata.sidebar.folder,
+              folder: metadata.ui?.folder,
             });
           }
 
@@ -201,16 +203,11 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
           // STEP 4: Create a new node object directly
           const newNode: ReactFlowNode = {
             id: `node_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-            type: metadata.nodeType,
+            type: metadata.kind,
             position: flowPosition,
             data: {
               // Populate initial data from metadata defaults
-              ...Object.fromEntries(
-                Object.entries(metadata.data).map(([key, value]) => [
-                  key,
-                  value.default,
-                ])
-              ),
+              ...metadata.initialData,
             },
           };
 
@@ -227,7 +224,7 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
           }
 
           // STEP 7: Optional callback
-          onNodeCreated?.(metadata.nodeType as NodeType, newNode.id);
+          onNodeCreated?.(metadata.kind as NodeType, newNode.id);
 
           return true;
         } catch (error) {
@@ -293,7 +290,7 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
         console.log("✅ Validation:", validationResults);
         console.log(
           "🎯 Available Node Types:",
-          Object.keys(MODERN_NODE_REGISTRY)
+          getAllNodeTypes()
         );
       }
     }, [enableDebug, registryStats, validationResults]);
@@ -312,13 +309,13 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
             </div>
             {registryStats && (
               <div className="space-y-1">
-                <div>Total Nodes: {registryStats.totalRegisteredNodes}</div>
+                <div>Total Nodes: {registryStats.totalNodes}</div>
                 <div>
                   Categories:{" "}
-                  {Object.keys(registryStats.categoryNames).length}
+                  {registryStats.categories.length}
                 </div>
                 <div>
-                  Folders: {Object.keys(registryStats.folderNames).length}
+                  Folders: {registryStats.folders.length}
                 </div>
               </div>
             )}

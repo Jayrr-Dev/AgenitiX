@@ -22,7 +22,7 @@ import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
 import {
   getNodeMetadata,
   validateNode,
-} from "../node-registry/modern-node-registry";
+} from "../node-registry/nodespec-registry";
 
 import { EdgeInspector } from "./components/EdgeInspector";
 import { ErrorLog } from "./components/ErrorLog";

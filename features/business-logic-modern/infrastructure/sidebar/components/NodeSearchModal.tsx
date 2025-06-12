@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { getAllNodeMetadata } from '../../node-registry/modern-node-registry';
+import { getAllNodeMetadata } from '../../node-registry/nodespec-registry';
 import type { NodeMetadata } from '../../node-registry/types';
 import type { NodeStencil } from '../types';
 

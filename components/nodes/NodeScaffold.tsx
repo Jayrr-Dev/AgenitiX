@@ -3,8 +3,9 @@ import { Position } from "@xyflow/react";
 import { ExpandCollapseButton } from "./ExpandCollapseButton";
 import { FloatingNodeId } from "./FloatingNodeId";
 import TypeSafeHandle from "./handles/TypeSafeHandle";
-import { getNodeMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/modern-node-registry";
+import { getNodeMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 import { useNodeStyleClasses, useCategoryTheme } from "@/features/business-logic-modern/infrastructure/theming/stores/nodeStyleStore";
+import type { NodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 
 interface NodeScaffoldProps {
   children: React.ReactNode;
@@ -50,7 +51,8 @@ export const NodeScaffold: React.FC<NodeScaffoldProps> = ({
   isActive = false,
 }) => {
   const meta = getNodeMetadata(nodeType);
-  const handles = meta?.handles || [];
+  type HandleSpec = NodeSpecMetadata['handles'][number];
+  const handles: HandleSpec[] = (meta?.handles ?? []) as HandleSpec[];
   
   // Get theming from the theming system
   const categoryTheme = useCategoryTheme(nodeType);
@@ -88,7 +90,7 @@ export const NodeScaffold: React.FC<NodeScaffoldProps> = ({
     <div className={nodeClasses}>
       <FloatingNodeId nodeId={nodeId} show={showNodeId} />
       <ExpandCollapseButton isCollapsed={isCollapsed} onToggle={onToggleCollapse} />
-      {handles.map((handle) => (
+      {handles.map((handle: HandleSpec) => (
         <TypeSafeHandle
           key={handle.id}
           type={handle.type}
