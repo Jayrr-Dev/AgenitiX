@@ -42,6 +42,8 @@ import ViewOutputV2U from "@/features/business-logic-modern/node-domain/view/Vie
 import { useUltimateFlowConnectionPrevention } from "@/components/nodes/handles/TypeSafeHandle";
 
 import { NODE_TYPE_CONFIG } from '../constants';
+import { useShallow } from "zustand/react/shallow";
+import { useDynamicNodeTypes } from '../hooks/useDynamicNodeTypes';
 
 interface FlowCanvasProps {
   nodes: AgenNode[];
@@ -217,15 +219,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   // NODE TYPES REGISTRY (INLINE) - A temporary, hardcoded manifest
   // ============================================================================
 
-  const nodeTypes = useMemo(
-    () => ({
-      createTextV2U: CreateTextV2U,
-      viewOutputV2U: ViewOutputV2U,
-      triggerOnToggleV2U: TriggerOnToggleV2U,
-      testErrorV2U: TestErrorV2U,
-    }),
-    []
-  ) as any;
+  const nodeTypes = useDynamicNodeTypes();
 
   const edgeTypes = useMemo(() => ({}), []);
 

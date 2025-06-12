@@ -9,6 +9,7 @@ import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sid
 import { getNodeMetadata } from "../node-registry/modern-node-registry";
 import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
+import { useDynamicNodeTypes } from './hooks/useDynamicNodeTypes';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
@@ -57,6 +58,7 @@ class ErrorBoundary extends React.Component<
 const FlowEditorInternal = () => {
   const flowWrapperRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
+  const nodeTypes = useDynamicNodeTypes();
 
   console.log("🚀 FlowEditorInternal rendering...");
 
@@ -252,6 +254,7 @@ const FlowEditorInternal = () => {
           onReconnectStart: () => {},
           onReconnectEnd: () => {},
         }}
+        nodeTypes={nodeTypes}
       />
       <Sidebar className="z-50" enableDebug={true} />
     </div>

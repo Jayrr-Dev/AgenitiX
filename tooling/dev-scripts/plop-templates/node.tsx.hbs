@@ -1,0 +1,54 @@
+import type { NodeProps } from '@xyflow/react';
+import { useState } from 'react';
+
+import { withNodeScaffold } from '@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold';
+import type { NodeSpec } from '@/features/business-logic-modern/infrastructure/node-core/NodeSpec';
+import { CATEGORIES } from '@/features/business-logic-modern/infrastructure/theming/categories';
+import { EXPANDED_FIXED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
+import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
+
+// -- PLOP-INJECTED-IMPORTS --
+
+const spec: NodeSpec = {
+  kind: '{{camelCase kind}}',
+  displayName: '{{titleCase kind}}',
+  category: CATEGORIES.{{constantCase category}},
+  size: {
+    expanded: EXPANDED_FIXED_SIZES.FE1,
+    collapsed: COLLAPSED_SIZES.C1,
+  },
+  handles: [
+    // { id: 'input-1', dataType: 's', position: 'left', type: 'target' },
+    // { id: 'output-1', dataType: 's', position: 'right', type: 'source' },
+  ],
+  inspector: {
+    key: '{{pascalCase kind}}Inspector',
+  },
+  initialData: {},
+};
+
+const {{pascalCase kind}}NodeComponent = ({ data, updateData }: NodeProps) => {
+  const [isExpanded, setExpanded] = useState(true);
+
+  return (
+    <>
+      <ExpandCollapseButton 
+        isExpanded={isExpanded} 
+        onToggle={() => setExpanded(!isExpanded)} 
+      />
+
+      {isExpanded ? (
+        <div className="p-4">
+          <p>{{titleCase kind}} Node</p>
+          {/* Add your expanded UI here */}
+        </div>
+      ) : (
+        <div className="flex items-center justify-center h-full">
+          {/* Add your collapsed UI here (e.g., an icon) */}
+        </div>
+      )}
+    </>
+  );
+};
+
+export default withNodeScaffold(spec, {{pascalCase kind}}NodeComponent); 
