@@ -47,7 +47,7 @@ features/business-logic-modern/infrastructure/node-creation/factory/constants/si
 **Key Exports:**
 
 - `COLLAPSED_SIZES`: Icon state dimensions
-- `EXPANDED_FIXED_SIZES`: Fixed UI state dimensions
+- `EXPANDED_SIZES`: Fixed UI state dimensions
 - `EXPANDED_VARIABLE_SIZES`: Variable height dimensions
 - `STANDARD_SIZE_PATTERNS`: Pre-configured combinations
 - Utility functions for validation and custom combinations
@@ -100,7 +100,7 @@ features/business-logic-modern/node-domain/create/CreateText.tsx
 // Small trigger nodes - 60x60 collapsed, 120x120 expanded
 SMALL_TRIGGER: {
   collapsed: COLLAPSED_SIZES.C1,     // size-c1
-  expanded: EXPANDED_FIXED_SIZES.FE1 // size-fe1
+  expanded: EXPANDED_SIZES.FE1 // size-fe1
 }
 
 // Wide text nodes - 120x60 collapsed, 180w expanded
@@ -112,7 +112,7 @@ WIDE_TEXT: {
 // Large interactive nodes - 120x120 collapsed, 240x240 expanded
 LARGE_INTERACTIVE: {
   collapsed: COLLAPSED_SIZES.C2,     // size-c2
-  expanded: EXPANDED_FIXED_SIZES.FE3 // size-fe3
+  expanded: EXPANDED_SIZES.FE3 // size-fe3
 }
 ```
 
@@ -294,7 +294,7 @@ The system is designed for easy extension:
 export const CUSTOM_PATTERNS = {
   EXTRA_LARGE: {
     collapsed: COLLAPSED_SIZES.C3,
-    expanded: EXPANDED_FIXED_SIZES.FE3,
+    expanded: EXPANDED_SIZES.FE3,
   },
 } as const;
 ```

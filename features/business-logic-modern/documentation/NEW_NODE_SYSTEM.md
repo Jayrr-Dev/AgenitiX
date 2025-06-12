@@ -36,7 +36,7 @@ const spec: NodeSpec = {
   displayName: 'My Awesome Node',
   category: CATEGORIES.CREATE,
   size: {
-    expanded: EXPANDED_FIXED_SIZES.FE1,
+    expanded: EXPANDED_SIZES.FE1,
     collapsed: COLLAPSED_SIZES.C1,
   },
   handles: [
@@ -150,10 +150,10 @@ pnpm dev
 - `COLLAPSED_SIZES.C3` - 180×180px (large previews)
 
 ### Expanded Fixed Sizes
-- `EXPANDED_FIXED_SIZES.FE1` - 120×120px (standard)
-- `EXPANDED_FIXED_SIZES.FE1H` - 120×180px (tall forms)
-- `EXPANDED_FIXED_SIZES.FE2` - 180×180px (rich editors)
-- `EXPANDED_FIXED_SIZES.FE3` - 240×240px (dashboards)
+- `EXPANDED_SIZES.FE1` - 120×120px (standard)
+- `EXPANDED_SIZES.FE1H` - 120×180px (tall forms)
+- `EXPANDED_SIZES.FE2` - 180×180px (rich editors)
+- `EXPANDED_SIZES.FE3` - 240×240px (dashboards)
 
 ### Expanded Variable Sizes
 - `EXPANDED_VARIABLE_SIZES.VE1` - 120px wide × auto height

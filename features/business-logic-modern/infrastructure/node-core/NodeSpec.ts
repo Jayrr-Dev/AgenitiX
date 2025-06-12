@@ -1,13 +1,19 @@
 import type { NodeCategory } from '@/features/business-logic-modern/infrastructure/theming/categories';
-import type { COLLAPSED_SIZES, EXPANDED_FIXED_SIZES, EXPANDED_VARIABLE_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
+import type { COLLAPSED_SIZES, EXPANDED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
 
 /**
  * Defines the static contract for a node handle (an input or output port).
  */
 export interface NodeHandleSpec {
+  /** Unique handle id */
   id: string;
-  dataType: string; // e.g., 's', 'n', 'b', 'j', 's|n'
-  position: 'left' | 'right';
+  /** Legacy single-letter data type code (mutually exclusive with tsSymbol) */
+  dataType?: string;
+  /** New dual-contract system: optional TypeScript symbol referencing real type */
+  tsSymbol?: string;
+  /** Optional fallback code when tsSymbol provided */
+  code?: string;
+  position: 'top' | 'bottom' | 'left' | 'right';
   type: 'source' | 'target';
 }
 
@@ -35,7 +41,7 @@ export interface NodeSpec {
    * The sizing contract for the node's visual representation.
    */
   size: {
-    expanded: (typeof EXPANDED_FIXED_SIZES)[keyof typeof EXPANDED_FIXED_SIZES] | (typeof EXPANDED_VARIABLE_SIZES)[keyof typeof EXPANDED_VARIABLE_SIZES];
+    expanded: (typeof EXPANDED_SIZES)[keyof typeof EXPANDED_SIZES];
     collapsed: (typeof COLLAPSED_SIZES)[keyof typeof COLLAPSED_SIZES];
   };
 

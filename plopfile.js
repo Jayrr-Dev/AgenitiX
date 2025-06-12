@@ -4,7 +4,7 @@ const path = require('path');
 module.exports = function (plop) {
   // Helpers to resolve size constants for templates
   plop.setHelper('collapsedSizeConstant', (key) => `COLLAPSED_SIZES.${key}`);
-  plop.setHelper('expandedSizeConstant', (key) => key.startsWith('V') ? `EXPANDED_VARIABLE_SIZES.${key}` : `EXPANDED_FIXED_SIZES.${key}`);
+  plop.setHelper('expandedSizeConstant', (key) => key.startsWith('V') ? `EXPANDED_VARIABLE_SIZES.${key}` : `EXPANDED_SIZES.${key}`);
 
   plop.setGenerator('node', {
     description: 'Create a new node using the NodeSpec architecture',
@@ -37,6 +37,11 @@ module.exports = function (plop) {
         name: 'expandedSize',
         message: 'Select expanded size',
         choices: ['FE0', 'FE1', 'FE1H', 'FE2', 'FE3', 'VE0', 'VE1', 'VE2', 'VE3'],
+      },
+      {
+        type: 'input',
+        name: 'tsSymbol',
+        message: 'Optional: TypeScript symbol for primary output handle (leave blank for none)',
       },
     ],
     actions: [

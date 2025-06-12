@@ -1,18 +1,35 @@
-import type { NodeProps } from '@xyflow/react';
+import type { NodeProps, Position } from '@xyflow/react';
 import React from 'react';
 import type { NodeSpec } from './NodeSpec';
+import TypeSafeHandle from '@/components/nodes/handles/TypeSafeHandle';
 
-// This is a placeholder for the real NodeScaffold component.
-// In a real implementation, this would be your styled wrapper.
-const NodeScaffoldWrapper = ({ children, style }: { children: React.ReactNode, style: React.CSSProperties }) => (
-  <div style={{...style, border: '1px solid #ccc', borderRadius: '8px', background: '#f9f9f9'}}>
-      <div style={{background: '#eee', padding: '4px 8px', borderBottom: '1px solid #ccc', fontWeight: 'bold'}}>
-        Node Header
-      </div>
-      {children}
+/**
+ * Lightweight scaffold wrapper that provides sizing and a minimal border while
+ * delegating full visual rendering to the wrapped node component.
+ *
+ * ‑ Removes the hard-coded white/gray backgrounds that caused unwanted backdrops.
+ * ‑ Makes the background transparent so the node component can define its own
+ *   theme-aware styling.
+ * ‑ Keeps a subtle border and radius for hit-testing but they can be overridden.
+ */
+const NodeScaffoldWrapper = ({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style: React.CSSProperties;
+}) => (
+  <div
+    style={{
+      ...style,
+      border: '1px solid transparent', // Keep minimal border for selection outline
+      borderRadius: '8px',
+      background: 'transparent', // Remove the white/gray backdrop
+    }}
+  >
+    {children}
   </div>
 );
-
 
 /**
  * A Higher-Order Component that wraps a node's UI component.
@@ -26,18 +43,37 @@ const NodeScaffoldWrapper = ({ children, style }: { children: React.ReactNode, s
 export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>) {
   // The returned component is what React Flow will render.
   const WrappedComponent = (props: NodeProps) => {
-    // In a real implementation, you would get this from state.
-    const isExpanded = true; 
+    // TODO: Sync with actual expanded/collapsed state via context or props.
+    // Start with collapsed size by default.
+    const isExpandedDefault = false;
+    const size = isExpandedDefault ? spec.size.expanded : spec.size.collapsed;
 
-    const size = isExpanded ? spec.size.expanded : spec.size.collapsed;
-
+    const collapsedSize = spec.size.collapsed as any;
     const style: React.CSSProperties = {
-        width: `${size.width}px`,
-        height: typeof size.height === 'number' ? `${size.height}px` : size.height,
+        minWidth: `${collapsedSize.width}px`,
+        minHeight:
+          typeof collapsedSize.height === 'number'
+            ? `${collapsedSize.height}px`
+            : collapsedSize.height,
+        width: 'auto',
+        height: 'auto',
     };
 
     return (
       <NodeScaffoldWrapper style={style}>
+        {/* Render handles defined in the spec */}
+        {spec.handles?.map((handle) => (
+          <TypeSafeHandle
+            key={handle.id}
+            id={handle.id + '__' + ((handle.code ?? handle.dataType) ?? 'x')}
+            type={handle.type}
+            position={handle.position as Position}
+            dataType={handle.dataType}
+            code={(handle as any).code}
+            tsSymbol={(handle as any).tsSymbol}
+          />
+        ))}
+
         {/* Here you would inject ErrorBoundary, Suspense, PostHog, etc. */}
         <Component {...props} />
       </NodeScaffoldWrapper>

@@ -134,7 +134,7 @@ const spec: NodeSpec = {
   displayName: 'My Custom Node',
   category: CATEGORIES.CREATE,
   size: {
-    expanded: EXPANDED_FIXED_SIZES.FE1,
+    expanded: EXPANDED_SIZES.FE1,
     collapsed: COLLAPSED_SIZES.C1,
   },
   handles: [

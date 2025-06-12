@@ -2,7 +2,7 @@
 
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
-import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
+import { ReactFlowProvider, useReactFlow, reconnectEdge } from "@xyflow/react";
 import React, { useCallback, useEffect, useRef } from "react";
 
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
@@ -234,6 +234,26 @@ const FlowEditorInternal = () => {
 
   console.log("🎯 About to render FlowCanvas...");
 
+  const edgeReconnectSuccessful = React.useRef(true);
+
+  const handleReconnectStart = () => {
+    edgeReconnectSuccessful.current = false;
+  };
+
+  const handleReconnect = (oldEdge: any, newConnection: any) => {
+    edgeReconnectSuccessful.current = true;
+    // Update edges array via store util
+    removeEdge(oldEdge.id);
+    onConnect(newConnection);
+  };
+
+  const handleReconnectEnd = (_: any, edge: any) => {
+    if (!edgeReconnectSuccessful.current) {
+      removeEdge(edge.id);
+    }
+    edgeReconnectSuccessful.current = true;
+  };
+
   return (
     <div
       className="h-screen w-screen bg-gray-100 dark:bg-gray-900"
@@ -266,9 +286,9 @@ const FlowEditorInternal = () => {
           onConnect,
           onInit: () => {},
           onSelectionChange: () => {},
-          onReconnect: () => {},
-          onReconnectStart: () => {},
-          onReconnectEnd: () => {},
+          onReconnect: handleReconnect,
+          onReconnectStart: handleReconnectStart,
+          onReconnectEnd: handleReconnectEnd,
         }}
       />
       <Sidebar className="z-50" enableDebug={true} />

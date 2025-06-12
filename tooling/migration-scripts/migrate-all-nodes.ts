@@ -114,7 +114,7 @@ import {
   useNodeDataValidation 
 } from '@/features/business-logic-modern/infrastructure/node-core/validation';
 import { CATEGORIES } from '@/features/business-logic-modern/infrastructure/theming/categories';
-import { EXPANDED_FIXED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
+import { EXPANDED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
 
 /**
  * Enterprise-grade data schema for ${nodeType} node

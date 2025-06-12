@@ -12,7 +12,7 @@ import {
 } from '@/features/business-logic-modern/infrastructure/node-core/validation';
 import { SafeSchemas, createSafeInitialData } from '@/features/business-logic-modern/infrastructure/node-core/schema-helpers';
 import { CATEGORIES } from '@/features/business-logic-modern/infrastructure/theming/categories';
-import { EXPANDED_FIXED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
+import { EXPANDED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
 import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
 
 // -- PLOP-INJECTED-IMPORTS --
@@ -54,13 +54,17 @@ const spec: NodeSpec = {
   handles: [
     // Standard JSON input for programmatic control
     { id: 'json-input', dataType: 'j', position: 'left', type: 'target' },
-    
-    // Add your specific handles here:
+
+    // Primary output handle – uses tsSymbol if provided
+    {{#if tsSymbol}}
+    { id: 'output', code: 'x', tsSymbol: '{{tsSymbol}}', position: 'right', type: 'source' },
+    {{else}}
+    { id: 'output', dataType: 'x', position: 'right', type: 'source' },
+    {{/if}}
+
+    // Add additional handles here
     // { id: 'input-1', dataType: 's', position: 'left', type: 'target' },
-    // { id: 'output-1', dataType: 's', position: 'right', type: 'source' },
-    
-    // Boolean control for activation (if needed)
-    // { id: 'activate', dataType: 'b', position: 'left', type: 'target' },
+    // { id: 'secondary', dataType: 'b', position: 'right', type: 'source' },
   ],
   inspector: {
     key: '{{pascalCase kind}}Inspector',

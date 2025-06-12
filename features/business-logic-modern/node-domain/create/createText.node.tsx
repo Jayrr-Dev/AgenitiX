@@ -12,7 +12,7 @@ import {
 } from '@/features/business-logic-modern/infrastructure/node-core/validation';
 import { SafeSchemas, createSafeInitialData } from '@/features/business-logic-modern/infrastructure/node-core/schema-helpers';
 import { CATEGORIES } from '@/features/business-logic-modern/infrastructure/theming/categories';
-import { EXPANDED_FIXED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
+import { EXPANDED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
 import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
 
 // -- PLOP-INJECTED-IMPORTS --
@@ -48,19 +48,21 @@ const spec: NodeSpec = {
   displayName: 'createText',
   category: CATEGORIES.CREATE,
   size: {
-    expanded: EXPANDED_FIXED_SIZES.FE1,
+    expanded: EXPANDED_SIZES.FE1H,
     collapsed: COLLAPSED_SIZES.C1,
   },
   handles: [
     // Standard JSON input for programmatic control
-    { id: 'json-input', dataType: 'j', position: 'left', type: 'target' },
+    { id: 'json-input', code: 'j', position: 'top', type: 'target' },
     
-    // Add your specific handles here:
+    // Primary output handle using TS symbol
+    { id: 'output', code: 's', position: 'right', type: 'source' },
+    
+    // Additional handles can be added below
     // { id: 'input-1', dataType: 's', position: 'left', type: 'target' },
-    // { id: 'output-1', dataType: 's', position: 'right', type: 'source' },
     
     // Boolean control for activation (if needed)
-    // { id: 'activate', dataType: 'b', position: 'left', type: 'target' },
+    { id: 'activate', code: 'b', position: 'left', type: 'target' },
   ],
   inspector: {
     key: 'CreateTextInspector',
@@ -79,7 +81,7 @@ const spec: NodeSpec = {
  * - Metrics collection
  */
 const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
-  const [isExpanded, setExpanded] = useState(true);
+  const [isExpanded, setExpanded] = useState(false);
   
   // Enterprise validation with comprehensive error handling
   const validationResult = validateNodeData(data);
@@ -101,7 +103,7 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
     id
   );
 
-  const onToggle = () => setExpanded(!isExpanded);
+  const onToggle = () => setExpanded((prev) => !prev);
 
   // Handle data updates with validation
   const handleDataUpdate = (updates: Partial<CreateTextData>) => {
@@ -114,20 +116,33 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
     }
   };
 
+  // Use the spec.size for strict sizing
+  const { expanded, collapsed } = spec.size;
+  const nodeSize = isExpanded ? expanded : collapsed;
+  const dims = nodeSize as { width: number | string; height: number | string };
+  const width = typeof dims.width === 'number' ? `${dims.width}px` : dims.width;
+  const height = typeof dims.height === 'number' ? `${dims.height}px` : dims.height;
+
   return (
-    <>
-      <ExpandCollapseButton 
-        isCollapsed={!isExpanded} 
-        onToggle={onToggle} 
-      />
+    <div
+      className={`relative bg-white dark:bg-neutral-900 rounded-lg shadow-md border border-neutral-200 dark:border-neutral-700 transition-all duration-200 ${
+        isExpanded ? '' : 'flex items-center justify-center'
+      }`}
+      style={{ width, height, minWidth: width, minHeight: height }}
+      data-testid="create-text-node"
+    >
+      {/* Expand/Collapse Button - always top left */}
+     
+        <ExpandCollapseButton showUI={isExpanded} onToggle={onToggle} size="sm" />
+   
 
       {isExpanded ? (
-        <div className="p-4 pt-6">
+        <div className="p-4 pt-8 w-full h-full">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">createText</h3>
               {process.env.NODE_ENV === 'development' && (
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 absolute top-2">
                   Health: {getHealthScore()}%
                 </span>
               )}
@@ -140,7 +155,7 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
                 type="text"
                 value={nodeData.text || ''}
                 onChange={(e) => handleDataUpdate({ text: e.target.value })}
-                className="w-full p-1 border rounded text-sm"
+                className="w-full p-1 border rounded text-sm bg-white dark:bg-neutral-800 text-black dark:text-white border-neutral-300 dark:border-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter text..."
               />
             </div>
@@ -181,14 +196,12 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-center h-full">
-          {/* Add your collapsed UI icon here */}
-          <div className="text-2xl">
-            🔧
-          </div>
+        <div className="flex items-center justify-center w-full h-full">
+          {/* Collapsed state icon or minimal content */}
+          <span className="text-2xl" aria-label="Create Text Node">📝</span>
         </div>
       )}
-    </>
+    </div>
   );
 };
 

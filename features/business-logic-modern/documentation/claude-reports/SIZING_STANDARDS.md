@@ -24,7 +24,7 @@ export const COLLAPSED_SIZES = {
 
 ```typescript
 // EXPANDED FIXED SIZE CONSTANTS
-export const EXPANDED_FIXED_SIZES = {
+export const EXPANDED_SIZES = {
   FE0: { width: "w-[60px]", height: "h-[60px]" }, // size-fe0: 60x60
   FE0H: { width: "w-[60px]", height: "h-[120px]" }, // size-fe0h: 60x120
   FE1: { width: "w-[120px]", height: "h-[120px]" }, // size-fe1: 120x120
@@ -53,7 +53,7 @@ export const EXPANDED_VARIABLE_SIZES = {
 ```typescript
 size: {
   collapsed: COLLAPSED_SIZES.C1,     // 60x60
-  expanded: EXPANDED_FIXED_SIZES.FE1  // 120x120
+  expanded: EXPANDED_SIZES.FE1  // 120x120
 }
 ```
 
@@ -71,7 +71,7 @@ size: {
 ```typescript
 size: {
   collapsed: COLLAPSED_SIZES.C2,     // 120x120
-  expanded: EXPANDED_FIXED_SIZES.FE3  // 240x240
+  expanded: EXPANDED_SIZES.FE3  // 240x240
 }
 ```
 
@@ -80,7 +80,7 @@ size: {
 ```typescript
 size: {
   collapsed: COLLAPSED_SIZES.C3,     // 180x180
-  expanded: EXPANDED_FIXED_SIZES.FE3  // 240x240
+  expanded: EXPANDED_SIZES.FE3  // 240x240
 }
 ```
 
@@ -89,12 +89,12 @@ size: {
 ### Using Size Constants:
 
 ```typescript
-import { COLLAPSED_SIZES, EXPANDED_FIXED_SIZES, EXPANDED_VARIABLE_SIZES } from './constants/sizes';
+import { COLLAPSED_SIZES, EXPANDED_SIZES, EXPANDED_VARIABLE_SIZES } from './constants/sizes';
 
 // Small trigger node
 size: {
   collapsed: COLLAPSED_SIZES.C1,
-  expanded: EXPANDED_FIXED_SIZES.FE1
+  expanded: EXPANDED_SIZES.FE1
 }
 
 // Text node with variable width
@@ -177,12 +177,12 @@ if (config.size && !validateNodeSize(config.size)) {
 | size-c2                     | `COLLAPSED_SIZES.C2`          | 120x120    | Medium interactive nodes   |
 | size-c3                     | `COLLAPSED_SIZES.C3`          | 180x180    | Large complex nodes        |
 | **EXPANDED FIXED SIZES**    |
-| size-fe0                    | `EXPANDED_FIXED_SIZES.FE0`    | 60x60      | Minimal expanded           |
-| size-fe0h                   | `EXPANDED_FIXED_SIZES.FE0H`   | 60x120     | Narrow tall expanded       |
-| size-fe1                    | `EXPANDED_FIXED_SIZES.FE1`    | 120x120    | Standard expanded          |
-| size-fe1h                   | `EXPANDED_FIXED_SIZES.FE1H`   | 120x180    | Standard tall expanded     |
-| size-fe2                    | `EXPANDED_FIXED_SIZES.FE2`    | 180x180    | Large expanded             |
-| size-fe3                    | `EXPANDED_FIXED_SIZES.FE3`    | 240x240    | Extra large expanded       |
+| size-fe0                    | `EXPANDED_SIZES.FE0`    | 60x60      | Minimal expanded           |
+| size-fe0h                   | `EXPANDED_SIZES.FE0H`   | 60x120     | Narrow tall expanded       |
+| size-fe1                    | `EXPANDED_SIZES.FE1`    | 120x120    | Standard expanded          |
+| size-fe1h                   | `EXPANDED_SIZES.FE1H`   | 120x180    | Standard tall expanded     |
+| size-fe2                    | `EXPANDED_SIZES.FE2`    | 180x180    | Large expanded             |
+| size-fe3                    | `EXPANDED_SIZES.FE3`    | 240x240    | Extra large expanded       |
 | **EXPANDED VARIABLE SIZES** |
 | size-ve0                    | `EXPANDED_VARIABLE_SIZES.VE0` | 60w        | Narrow variable height     |
 | size-ve1                    | `EXPANDED_VARIABLE_SIZES.VE1` | 120w       | Standard variable height   |
@@ -193,9 +193,9 @@ if (config.size && !validateNodeSize(config.size)) {
 
 ### Common Issues:
 
-1. **Toggle appears too small**: Use `COLLAPSED_SIZES.C1` + `EXPANDED_FIXED_SIZES.FE1`
+1. **Toggle appears too small**: Use `COLLAPSED_SIZES.C1` + `EXPANDED_SIZES.FE1`
 2. **Text gets cut off**: Use `COLLAPSED_SIZES.C1W` + `EXPANDED_VARIABLE_SIZES.VE2`
-3. **Complex UI cramped**: Use `COLLAPSED_SIZES.C2` + `EXPANDED_FIXED_SIZES.FE3`
+3. **Complex UI cramped**: Use `COLLAPSED_SIZES.C2` + `EXPANDED_SIZES.FE3`
 
 ### Validation Errors:
 
@@ -223,7 +223,7 @@ if (config.size && !validateNodeSize(config.size)) {
 ```typescript
 import {
   COLLAPSED_SIZES,
-  EXPANDED_FIXED_SIZES,
+  EXPANDED_SIZES,
   EXPANDED_VARIABLE_SIZES,
 } from "../../infrastructure/node-creation/factory/constants/sizes";
 ```

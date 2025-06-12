@@ -1,4 +1,15 @@
 // features/business-logic-modern/infrastructure/theming/sizing.ts
+/**
+ * Standardized node sizes for collapsed state.
+ *
+ * - C1: 60x60 (default collapsed)
+ * - C1W: 120x60 (wide collapsed)
+ * - C2: 120x120 (large collapsed)
+ * - C3: 180x180 (extra large collapsed)
+ *
+ * Use these for the `collapsed` property in node specs.
+ * @readonly
+ */
 export const COLLAPSED_SIZES = {
   C1: { width: 60, height: 60 },
   C1W: { width: 120, height: 60 },
@@ -6,17 +17,39 @@ export const COLLAPSED_SIZES = {
   C3: { width: 180, height: 180 },
 } as const;
 
-export const EXPANDED_FIXED_SIZES = {
+/**
+ * Standardized node sizes for expanded state.
+ *
+ * - FE0: 60x60 (tiny expanded)
+ * - FE1: 120x120 (default expanded)
+ * - FE1H: 120x180 (tall expanded)
+ * - FE2: 180x180 (large expanded)
+ * - FE3: 240x240 (extra large expanded)
+ * - VE0: 60x'auto' (tiny, variable height)
+ * - VE1: 120x'auto' (default, variable height)
+ * - VE2: 180x'auto' (large, variable height)
+ * - VE3: 240x'auto' (extra large, variable height)
+ *
+ * Use these for the `expanded` property in node specs.
+ *
+ * @example
+ *   size: {
+ *     expanded: EXPANDED_SIZES.FE1, // 120x120
+ *     collapsed: COLLAPSED_SIZES.C1, // 60x60
+ *   }
+ *
+ * @readonly
+ */
+export const EXPANDED_SIZES = {
+  // Fixed sizes
   FE0: { width: 60, height: 60 },
   FE1: { width: 120, height: 120 },
   FE1H: { width: 120, height: 180 },
   FE2: { width: 180, height: 180 },
   FE3: { width: 240, height: 240 },
-} as const;
-
-export const EXPANDED_VARIABLE_SIZES = {
+  // Variable sizes
   VE0: { width: 60, height: 'auto' },
   VE1: { width: 120, height: 'auto' },
   VE2: { width: 180, height: 'auto' },
   VE3: { width: 240, height: 'auto' },
-} as const; 
+} as const;

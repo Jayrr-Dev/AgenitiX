@@ -11,13 +11,32 @@ import {
   Handle,
   type HandleProps,
   IsValidConnection,
-  useReactFlow,
   useStoreApi,
 } from "@xyflow/react";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback } from "react";
 import { toast } from "sonner";
+import Ajv from "ajv";
+// Auto-generated at build time (can be empty in dev before first build)
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore – file is generated post-install / build
+import schemaManifest from "@/generated/handle-types.manifest.json";
 
-// ... (Paste the entire content of UltimateTypesafeHandle.tsx here, from the ULTIMATE_TYPE_MAP constant down to the final hook)
+// ---------------------------------------------------------------------------
+// DISPLAY MAP – maps basic type names to icon text + colour
+// ---------------------------------------------------------------------------
+const DISPLAY_MAP: Record<string, { icon: string; color: string }> = {
+  string: { icon: "A", color: "#3b82f6" },
+  number: { icon: "#", color: "#f59e42" },
+  boolean: { icon: "✓", color: "#10b981" },
+  object: { icon: "{}", color: "#6366f1" },
+  array: { icon: "[]", color: "#f472b6" },
+  any: { icon: "?", color: "#6b7280" },
+  json: { icon: "J", color: "#6366f1" },
+};
+
+const HANDLE_SIZE_PX = 10
+
+const ajv = new Ajv({ allErrors: false, strict: false });
 
 const ULTIMATE_TYPE_MAP: Record<string, any> = {
   s: { color: "#3b82f6", label: "string" },
@@ -41,6 +60,10 @@ function isTypeCompatible(sourceType: string, targetType: string): boolean {
     return sourceTypes.some(s => targetTypes.includes(s));
 }
 
+// Simple debounce map to avoid toast spam
+const toastThrottle: Record<string, number> = {};
+const TOAST_DEBOUNCE_MS = 2000;
+
 export const useUltimateFlowConnectionPrevention = () => {
     const isValidConnection: IsValidConnection = useCallback(
     (connection) => {
@@ -59,9 +82,15 @@ export const useUltimateFlowConnectionPrevention = () => {
       const compatible = isTypeCompatible(sourceDataType, targetDataType);
 
       if (!compatible) {
-          toast.error("Incompatible connection", {
-              description: `Cannot connect type '${sourceDataType}' to '${targetDataType}'.`
-          });
+          const key = `${sourceDataType}->${targetDataType}`;
+          const now = Date.now();
+          if (!toastThrottle[key] || now - toastThrottle[key] > TOAST_DEBOUNCE_MS) {
+            toast.error("Incompatible connection", {
+              description: `Cannot connect type '${sourceDataType}' to '${targetDataType}'.`,
+              duration: 3000,
+            });
+            toastThrottle[key] = now;
+          }
       }
       return compatible;
     },
@@ -72,18 +101,41 @@ export const useUltimateFlowConnectionPrevention = () => {
 
 const UltimateTypesafeHandle: React.FC<any> = ({
   dataType,
+  tsSymbol,
+  code,
   ...props
 }) => {
-  const store = useStoreApi();
-  const handleColor = ULTIMATE_TYPE_MAP[parseUnionTypes(dataType)[0]]?.color || "#6b7280";
+  const handleTypeName = tsSymbol
+    ? tsSymbol.split(".").pop() // last segment for display
+    : ULTIMATE_TYPE_MAP[parseUnionTypes(dataType || code)[0]]?.label || "any";
+
+  const badge = DISPLAY_MAP[handleTypeName.toLowerCase()] || DISPLAY_MAP.any;
+
   const { isValidConnection } = useUltimateFlowConnectionPrevention();
+
+  const isSource = props.type === 'source';
+  const connectableStart = isSource; // only sources can start connections
+  const connectableEnd = !isSource;  // only targets can end connections
 
   return (
     <Handle
-      {...props}
-      style={{ backgroundColor: handleColor, ...props.style }}
+      {...(props as HandleProps)}
+      className="flex items-center justify-center rounded-sm text-[8px] font-bold uppercase select-none z-30 hover:text-white hover:bg-current"
+      style={{
+        width: HANDLE_SIZE_PX,
+        height: HANDLE_SIZE_PX,
+        borderWidth: 0,
+        boxShadow: "0 0 0.5px 0.5px " + badge.color,
+        borderColor: badge.color,
+        color: badge.color,
+        ...props.style,
+      }}
       isValidConnection={isValidConnection}
-    />
+      isConnectableStart={connectableStart}
+      isConnectableEnd={connectableEnd}
+    >
+      {badge.icon}
+    </Handle>
   );
 };
 

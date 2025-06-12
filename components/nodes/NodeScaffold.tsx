@@ -89,7 +89,7 @@ export const NodeScaffold: React.FC<NodeScaffoldProps> = ({
   return (
     <div className={nodeClasses}>
       <FloatingNodeId nodeId={nodeId} show={showNodeId} />
-      <ExpandCollapseButton isCollapsed={isCollapsed} onToggle={onToggleCollapse} />
+      <ExpandCollapseButton showUI={!isCollapsed} onToggle={onToggleCollapse} size="sm" />
       {handles.map((handle: HandleSpec) => (
         <TypeSafeHandle
           key={handle.id}
