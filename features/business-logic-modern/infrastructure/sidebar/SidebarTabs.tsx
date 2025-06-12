@@ -39,7 +39,21 @@ export function SidebarTabs({
   onVariantChange,
   onToggle,
 }: SidebarTabsProps) {
-  const { tabs } = VARIANT_CONFIG[variant];
+  // Defensive programming: Handle case where VARIANT_CONFIG[variant] might be undefined
+  // Also normalize lowercase variants to uppercase
+  const normalizedVariant = variant.toUpperCase() as SidebarVariant;
+  const variantConfig = VARIANT_CONFIG[normalizedVariant];
+  let tabs;
+  
+  if (!variantConfig) {
+    console.warn(`Invalid variant '${variant}' (normalized to '${normalizedVariant}') - not found in VARIANT_CONFIG. Available variants:`, Object.keys(VARIANT_CONFIG));
+    // Fallback to variant A if invalid variant is passed
+    const fallbackConfig = VARIANT_CONFIG['A'];
+    tabs = fallbackConfig.tabs;
+  } else {
+    tabs = variantConfig.tabs;
+  }
+  
   const [hovered, setHovered] = useState<HoveredStencil | null>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
@@ -165,11 +179,11 @@ export function SidebarTabs({
         e.preventDefault();
 
         const variantMap: Record<string, SidebarVariant> = {
-          "1": "a", // Main
-          "2": "b", // Media
-          "3": "c", // Integration
-          "4": "d", // Automation
-          "5": "e", // Misc
+          "1": "A", // Main
+          "2": "B", // Media
+          "3": "C", // Integration
+          "4": "D", // Automation
+          "5": "E", // Misc
         };
 
         const targetVariant = variantMap[e.key];
@@ -207,7 +221,7 @@ export function SidebarTabs({
         return; // Let SearchBar handle all QWERTY shortcuts
       }
 
-      const isCustomTab = variant === "e" && activeTab === "custom";
+      const isCustomTab = variant === "E" && activeTab === "custom";
 
       if (isCustomTab) {
         // Special mapping for custom tab: q = add node, w-b shifted positions
@@ -340,7 +354,7 @@ export function SidebarTabs({
 
         <div className="max-h-[150px] sm:max-h-[230px] overflow-y-auto scrollbar *:scrollbar-thumb-gray-400 *:scrollbar-track-transparent *:scrollbar-arrow-hidden pb-2">
           {tabs.map(({ key }) => {
-            const isCustomTab = variant === "e" && key === "custom";
+            const isCustomTab = variant === "E" && key === "custom";
 
             return (
               <TabContent

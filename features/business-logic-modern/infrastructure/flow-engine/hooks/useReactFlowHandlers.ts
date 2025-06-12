@@ -112,7 +112,7 @@ export function useReactFlowHandlers({
       }
 
       // Get data type for styling
-      const dataType = getConnectionDataType(connection);
+      const dataType = getConnectionDataType(connection, nodes);
 
       setEdges((eds) =>
         addEdge(

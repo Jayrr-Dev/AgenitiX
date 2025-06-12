@@ -1,5 +1,8 @@
 "use client";
 
+// Force dynamic rendering to avoid prerendering issues
+export const dynamic = 'force-dynamic';
+
 import FAQ from "@/features/home-page/components/FAQ";
 import FeatureBoxesBento from "@/features/home-page/components/FeatureBoxesBento";
 import FeatureBoxesIconed from "@/features/home-page/components/FeatureBoxesIconed";

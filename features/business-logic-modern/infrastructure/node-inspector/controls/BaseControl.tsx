@@ -15,10 +15,7 @@ import React, { useMemo } from "react";
 
 // REGISTRY INTEGRATION - Import for enhanced theming
 import type { NodeType } from "../../flow-engine/types/nodeData";
-import {
-  getNodeMetadata,
-  isValidNodeType,
-} from "../../node-creation/core/registries/json-node-registry/unifiedRegistry";
+import { getNodeMetadata } from "../../node-registry/modern-node-registry";
 
 // PROPER TYPES IMPORT - Use the correct BaseControlProps from types
 import type { BaseControlProps } from "../types";
@@ -68,28 +65,20 @@ function getCategoryTheme(nodeType?: string): {
   warning: string;
   danger: string;
 } {
-  if (!nodeType || !isValidNodeType(nodeType)) {
-    // Default theme
-    return {
-      primary: "blue",
-      secondary: "gray",
-      accent: "indigo",
-      success: "green",
-      warning: "yellow",
-      danger: "red",
-    };
-  }
+  const metadata = nodeType ? getNodeMetadata(nodeType as NodeType) : null;
+  
+  // Default theme
+  const defaultTheme = {
+    primary: "blue",
+    secondary: "gray",
+    accent: "indigo",
+    success: "green",
+    warning: "yellow",
+    danger: "red",
+  };
 
-  const metadata = getNodeMetadata(nodeType as NodeType);
   if (!metadata) {
-    return {
-      primary: "blue",
-      secondary: "gray",
-      accent: "indigo",
-      success: "green",
-      warning: "yellow",
-      danger: "red",
-    };
+    return defaultTheme;
   }
 
   // Category-based theming
@@ -406,15 +395,12 @@ export const RegistryDebugBadge: React.FC<RegistryDebugBadgeProps> = ({
     return null;
   }
 
-  const isRegistryValid = isValidNodeType(nodeType);
-  const metadata = isRegistryValid
-    ? getNodeMetadata(nodeType as NodeType)
-    : null;
+  const metadata = getNodeMetadata(nodeType as NodeType);
 
   return (
     <div className="mt-2 text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
       <span>🔧</span>
-      <span>Registry: {isRegistryValid ? "✅" : "❌"}</span>
+      <span>Registry: ✅</span>
       {metadata && <span>• Category: {metadata.category}</span>}
     </div>
   );

@@ -1,0 +1,37 @@
+{
+  "nodeType": "testErrorV2U",
+  "category": "testing",
+  "displayName": "Test Error (V2U)",
+  "description": "Enhanced error generation with V2U architecture",
+  "component": "../TestErrorV2U.tsx",
+  "icon": "🧪",
+  "ui": {
+    "size": { "width": 300, "height": 200 },
+    "defaultCollapsed": false
+  },
+  "sidebar": {
+    "folder": "testing",
+    "order": 1
+  },
+  "handles": [
+    {
+      "id": "text",
+      "type": "source",
+      "dataType": "string",
+      "position": "right",
+      "description": "Outputs the error message as a string"
+    },
+    {
+        "id": "json",
+        "type": "source",
+        "dataType": "json",
+        "position": "right",
+        "description": "Outputs the error details as a JSON object"
+    }
+  ],
+  "data": {
+    "errorMessage": { "type": "string", "default": "Custom error message" },
+    "errorType": { "type": "string", "default": "error" },
+    "isGeneratingError": { "type": "boolean", "default": false }
+  }
+} 

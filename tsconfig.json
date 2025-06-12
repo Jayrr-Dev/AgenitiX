@@ -28,9 +28,18 @@
       // ROOT ALIASES
       // ============================================================================
       "@/*": ["./*"],
-      "@/app/*": ["./app/*"],
-      "@/components/*": ["./components/*"],
-      "@/lib/*": ["./lib/*"],
+      "@/app/*": ["app/*"],
+      "@/components/*": ["components/*"],
+      "@/features/*": ["features/*"],
+      "@/hooks/*": ["hooks/*"],
+      "@/lib/*": ["lib/*"],
+      "@/public/*": ["public/*"],
+      "@/scripts/*": ["scripts/*"],
+      "@/store/*": ["store/*"],
+      "@/supabase/*": ["supabase/*"],
+      "@/templates/*": ["templates/*"],
+      "@/types/*": ["types/*"],
+      "@/utils/*": ["utils/*"],
 
       // ============================================================================
       // MODERN BUSINESS LOGIC SYSTEM
@@ -67,22 +76,8 @@
       "@flow-engine/*": [
         "./features/business-logic-modern/infrastructure/flow-engine/*"
       ],
-      "@node-creation/*": [
-        "./features/business-logic-modern/infrastructure/node-creation/*"
-      ],
-
-      // Factory Components
-      "@factory/*": [
-        "./features/business-logic-modern/infrastructure/node-creation/factory/*"
-      ],
 
       // Registry Systems
-      "@node-registry/*": [
-        "./features/business-logic-modern/infrastructure/node-creation/node-registry/*"
-      ],
-      "@json-node-registry/*": [
-        "./features/business-logic-modern/infrastructure/node-creation/json-node-registry/*"
-      ],
       "@node-inspector/*": [
         "./features/business-logic-modern/infrastructure/node-inspector/*"
       ],
@@ -110,9 +105,6 @@
       // ============================================================================
       // COMMON ALIASES FOR CONVENIENCE
       // ============================================================================
-      "@types/*": ["./types/*"],
-      "@hooks/*": ["./hooks/*"],
-      "@utils/*": ["./utils/*"],
       "@config/*": ["./config/*"]
     }
   },
@@ -139,7 +131,9 @@
     "build",
     "coverage",
     "*.config.js",
-    "*.config.ts"
+    "*.config.ts",
+    "anubis-standalone/examples/**/*",
+    "features/business-logic-modern/infrastructure/depreciated/**/*"
   ],
 
   // ============================================================================

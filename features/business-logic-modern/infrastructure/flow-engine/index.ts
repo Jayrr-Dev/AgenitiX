@@ -49,4 +49,4 @@ export { getNodeOutput } from "./utils/outputUtils";
 // CONSTANT EXPORTS
 // ============================================================================
 
-export { syncNodeTypeConfigWithRegistry } from "./constants";
+export { NODE_TYPE_CONFIG, getNodeTypeConfig, KEYBOARD_SHORTCUTS } from "./constants";

@@ -11,29 +11,90 @@
  */
 
 import { Position } from "@xyflow/react";
+import { ULTIMATE_TYPE_MAP } from "@/components/nodes/handles/TypeSafeHandle";
 import type {
   AgenEdge,
   AgenNode,
+  NodeType,
+  NodeTypeConfig,
   NodeTypeConfigMap,
   TypeMap,
 } from "../types/nodeData";
 
 // ============================================================================
-// TYPE LEGEND & COLORS (sync with TypesafeHandle)
+// TYPE LEGEND & COLORS (unified with UltimateTypesafeHandle)
 // ============================================================================
 
-export const TYPE_MAP: TypeMap = {
-  s: { label: "s", color: "#3b82f6" }, // string - blue
-  n: { label: "n", color: "#f59e42" }, // number - orange
-  b: { label: "b", color: "#10b981" }, // boolean - green
-  j: { label: "j", color: "#6366f1" }, // JSON - indigo
-  a: { label: "a", color: "#f472b6" }, // array - pink
-  N: { label: "N", color: "#a21caf" }, // Bigint - purple
-  f: { label: "f", color: "#fbbf24" }, // float - yellow
-  x: { label: "x", color: "#6b7280" }, // any - gray
-  u: { label: "u", color: "#d1d5db" }, // undefined - light gray
-  S: { label: "S", color: "#eab308" }, // symbol - gold
-  "∅": { label: "∅", color: "#ef4444" }, // null - red
+/**
+ * UNIFIED TYPE SYSTEM - Now uses UltimateTypesafeHandle as single source of truth
+ */
+export const TYPE_MAP: TypeMap = new Proxy({} as TypeMap, {
+  get(target, prop: string) {
+    // Direct mapping for types
+    if (ULTIMATE_TYPE_MAP[prop]) {
+      return {
+        label: ULTIMATE_TYPE_MAP[prop].label,
+        color: ULTIMATE_TYPE_MAP[prop].color,
+      };
+    }
+    // Fallback for unknown types
+    return { label: prop, color: "#6b7280" }; // gray
+  },
+  ownKeys() {
+    return Object.keys(ULTIMATE_TYPE_MAP);
+  },
+  has(target, prop) {
+    return prop in ULTIMATE_TYPE_MAP;
+  },
+});
+
+// ============================================================================
+// NODE TYPE CONFIGURATION - Modern Registry Integration
+// ============================================================================
+
+import { modernNodeRegistry, getNodeMetadata } from "../../node-registry/modern-node-registry";
+
+/**
+ * NODE_TYPE_CONFIG - Dynamic configuration based on modern node registry
+ * This creates a proxy that dynamically generates node configurations from the registry
+ */
+export const NODE_TYPE_CONFIG = new Proxy({} as Record<string, NodeTypeConfig>, {
+  get(target, nodeType: string) {
+    const metadata = getNodeMetadata(nodeType);
+    if (!metadata) {
+      console.warn(`No metadata found for node type: ${nodeType}`);
+      return undefined;
+    }
+
+    // Convert metadata to the expected configuration format
+    return {
+      defaultData: Object.fromEntries(
+        Object.entries(metadata.data || {}).map(([key, config]) => [
+          key,
+          config.default,
+        ])
+      ),
+      hasTargetPosition: false,
+      hasOutput: true,
+      hasControls: true,
+      displayName: metadata.displayName,
+    } as NodeTypeConfig;
+  },
+  has(target, nodeType) {
+    return modernNodeRegistry.has(nodeType as string);
+  },
+  ownKeys() {
+    return Array.from(modernNodeRegistry.keys());
+  },
+}) as NodeTypeConfigMap;
+
+/**
+ * Get node type configuration from the modern registry
+ * @param nodeType - The node type to get configuration for
+ * @returns Node configuration object or undefined if not found
+ */
+export const getNodeTypeConfig = (nodeType: string): NodeTypeConfig | undefined => {
+  return (NODE_TYPE_CONFIG as any)[nodeType];
 };
 
 // ============================================================================
@@ -43,7 +104,7 @@ export const TYPE_MAP: TypeMap = {
 export const INITIAL_NODES: AgenNode[] = [
   {
     id: "1",
-    type: "createText",
+    type: "createTextV2U",
     position: { x: -100, y: -50 },
     deletable: true,
     data: {
@@ -54,7 +115,7 @@ export const INITIAL_NODES: AgenNode[] = [
   },
   {
     id: "2",
-    type: "createText",
+    type: "createTextV2U",
     position: { x: 0, y: 100 },
     deletable: true,
     data: {
@@ -65,9 +126,8 @@ export const INITIAL_NODES: AgenNode[] = [
   },
   {
     id: "3",
-    type: "viewOutput",
+    type: "viewOutputV2U",
     position: { x: 300, y: -25 },
-    targetPosition: Position.Top,
     deletable: true,
     data: {
       label: "Result",
@@ -103,116 +163,23 @@ export const INITIAL_EDGES: AgenEdge[] = [
 ];
 
 // ============================================================================
-// REGISTRY INTEGRATION - Single Source of Truth (LAZY LOADING)
+// KEYBOARD & UI CONSTANTS
 // ============================================================================
 
-let isNodeTypeConfigInitialized = false;
-
-/**
- * AUTO-SYNC NODE TYPE CONFIG WITH JSON REGISTRY (LAZY LOADING)
- * Now the JSON registry is the single source of truth for all node data
- * Uses lazy loading to prevent circular dependency issues
- */
-function initializeNodeTypeConfig() {
-  if (isNodeTypeConfigInitialized) {
-    return true; // Already initialized
-  }
-
-  try {
-    // Note: Using simple fallback config since we're transitioning away from duplicate domains
-    // The JSON registry is now the single source of truth
-    const generatedConfig = {
-      createText: {
-        defaultData: { text: "", heldText: "" },
-        hasTargetPosition: true,
-        targetPosition: "top",
-        hasOutput: true,
-        hasControls: true,
-        displayName: "Create Text",
-      },
-      viewOutput: {
-        defaultData: { displayedValues: [] },
-        hasTargetPosition: true,
-        targetPosition: "top",
-        hasOutput: false,
-        hasControls: true,
-        displayName: "View Output",
-      },
-      triggerOnToggle: {
-        defaultData: { triggered: false, outputValue: false },
-        hasTargetPosition: true,
-        targetPosition: "top",
-        hasOutput: true,
-        hasControls: true,
-        displayName: "Trigger On Toggle",
-      },
-      testError: {
-        defaultData: {
-          errorMessage: "Test Error",
-          errorType: "error",
-          isGeneratingError: false,
-          text: "",
-          json: "",
-        },
-        hasTargetPosition: true,
-        targetPosition: "top",
-        hasOutput: true,
-        hasControls: true,
-        displayName: "Test Error",
-      },
-    };
-
-    // Merge generated config into exported constant
-    Object.assign(NODE_TYPE_CONFIG, generatedConfig);
-
-    console.log(
-      "✅ [Constants] NODE_TYPE_CONFIG loaded with node-domain components:",
-      Object.keys(generatedConfig).length,
-      "node types"
-    );
-
-    isNodeTypeConfigInitialized = true;
-    return true;
-  } catch (error) {
-    console.error("❌ [Constants] Failed to load node-domain config:", error);
-    return false;
-  }
-}
-
-/**
- * LAZY GETTER FOR NODE TYPE CONFIG
- * Ensures JSON registry is loaded before accessing config
- */
-function getNodeTypeConfig(): NodeTypeConfigMap {
-  if (!isNodeTypeConfigInitialized) {
-    initializeNodeTypeConfig();
-  }
-  return NODE_TYPE_CONFIG;
-}
-
-/**
- * SYNC NODE TYPE CONFIG WITH JSON REGISTRY
- * Ensures NODE_TYPE_CONFIG is up-to-date with JSON registry data
- * @deprecated Use initializeNodeTypeConfig instead
- */
-export function syncNodeTypeConfigWithRegistry() {
-  return initializeNodeTypeConfig();
-}
-
-// ============================================================================
-// NODE TYPE CONFIGURATIONS - Auto-Generated from Registry (LAZY LOADING)
-// ============================================================================
-
-// Initialize as empty object - will be populated from registry when needed
-export const NODE_TYPE_CONFIG: NodeTypeConfigMap = {} as NodeTypeConfigMap;
-
-// Export lazy getters to prevent circular dependency
-export { getNodeTypeConfig, initializeNodeTypeConfig };
-
-// SYNC: Node type configuration is now auto-generated from JSON_NODE_REGISTRY
-// Available node types: createText, viewOutput, triggerOnToggle, testError, dataTable, imageTransform
-// All data comes from the JSON registry - no manual duplication needed!
-// USES LAZY LOADING to prevent circular dependency issues.
+export const KEYBOARD_SHORTCUTS = {
+  DELETE: ["Delete", "Backspace"],
+  DUPLICATE: "d",
+  COPY: "c",
+  PASTE: "v",
+  LOCK_INSPECTOR: "a",
+  ESCAPE: "Escape",
+  TOGGLE_HISTORY: "h",
+  SELECT_ALL: "a",
+  DELETE_NODES: "q",
+  TOGGLE_INSPECTOR: "a",
+  DUPLICATE_NODE: "w",
+  TOGGLE_SIDEBAR: "s",
+};
 
 // ============================================================================
 // CONFIGURATION CONSTANTS
@@ -222,23 +189,6 @@ export const COPY_PASTE_OFFSET = 40;
 export const MAX_ERRORS_PER_NODE = 10;
 export const NODE_ID_PREFIX = "node-";
 export const EDGE_ID_PREFIX = "edge-";
-
-// ============================================================================
-// KEYBOARD SHORTCUTS
-// ============================================================================
-
-export const KEYBOARD_SHORTCUTS = {
-  COPY: "c",
-  PASTE: "v",
-  TOGGLE_HISTORY: "h",
-  SELECT_ALL: "a", // Ctrl+A
-  ESCAPE: "Escape", // Esc
-  // Alt-based shortcuts
-  DELETE_NODES: "q", // Alt+Q
-  TOGGLE_INSPECTOR: "a", // Alt+A
-  DUPLICATE_NODE: "w", // Alt+W
-  TOGGLE_SIDEBAR: "s", // Alt+S
-} as const;
 
 // ============================================================================
 // VALIDATION CONSTANTS

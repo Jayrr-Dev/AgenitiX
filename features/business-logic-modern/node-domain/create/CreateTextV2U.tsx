@@ -1,20 +1,19 @@
 /**
- * CREATE TEXT V2U – Enhanced defineNode() with V2U Architecture
+ * CREATE TEXT V2U – Pure React Component
  *
- * ▸ Bridge solution: defineNode() + enterprise styling integration
- * ▸ Maintains V2U architectural integrity
- * ▸ Gets enterprise styling automatically via enhanced defineNode()
+ * ▸ Modern, declarative node built with pure React and composed UI components.
+ * ▸ All configuration is driven by the associated `meta.json` file.
+ * ▸ Styling is handled directly with Tailwind CSS.
  */
 
 "use client";
 
-import { Position } from "@xyflow/react";
-import React, { useRef } from "react";
-
-import { useTextInputShortcuts } from "../../infrastructure/flow-engine/hooks/useTextInputShortcuts";
+import { NodeProps } from "@xyflow/react";
+import React, { useEffect, useRef, useState } from "react";
+import { useDebounce } from "use-debounce";
+import { NodeScaffold } from "@/components/nodes/NodeScaffold";
+import { useNodeData } from "@/hooks/useNodeData";
 import { BaseNodeData } from "../../infrastructure/flow-engine/types/nodeData";
-import { defineNode } from "../../infrastructure/node-creation";
-import { useAutoOptimizedTextInput } from "../../infrastructure/node-creation/core/factory/hooks/performance/useOptimizedTextInput";
 
 // -----------------------------------------------------------------------------
 // 1 ▸ Type Definitions
@@ -99,30 +98,29 @@ const TextInput: React.FC<{
   placeholder?: string;
   className?: string;
 }> = ({ id, data, updateNodeData, disabled, placeholder, className }) => {
-  const ref = useRef<HTMLTextAreaElement>(null);
+  const [localText, setLocalText] = useState(data.heldText || "");
+  const [debouncedText] = useDebounce(localText, 500);
 
-  const optimised = useAutoOptimizedTextInput(id, data.heldText || "", (_, d) =>
-    updateNodeData(d)
-  );
+  // Effect to update the global store when debounced text changes
+  useEffect(() => {
+    if (debouncedText !== data.heldText) {
+      updateNodeData({ heldText: debouncedText });
+    }
+  }, [debouncedText, data.heldText, updateNodeData]);
 
-  // Add ergonomic text input shortcuts for fast deletion (matching CreateText)
-  const textInputShortcuts = useTextInputShortcuts({
-    value: optimised.value,
-    setValue: (value: string) => updateNodeData({ heldText: value }),
-  });
-
-  // Combined keyboard handler for textarea
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Cast to work with the hook's expected type
-    textInputShortcuts.handleKeyDown(e as any);
+    // Blur on Enter, but allow Shift+Enter for newlines
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      (e.target as HTMLTextAreaElement).blur();
+    }
   };
 
   return (
     <div className="relative">
       <textarea
-        ref={ref}
-        value={optimised.value}
-        onChange={optimised.onChange}
+        value={localText}
+        onChange={(e) => setLocalText(e.target.value)}
         onKeyDown={handleKeyDown}
         spellCheck={false}
         disabled={disabled}
@@ -135,20 +133,8 @@ const TextInput: React.FC<{
         }}
         onFocus={(e) => e.target.select()}
         onWheel={(e) => e.stopPropagation()}
-        title="Fast deletion: Alt+Q = backspace • Alt+Shift+Q = delete word • Alt+Ctrl+Q = delete to start"
+        title="Press Enter to unfocus"
       />
-      {/* Performance indicator */}
-      {optimised.isPending && (
-        <div className="absolute top-0 right-1 text-xs text-blue-500 opacity-75">
-          ⚡
-        </div>
-      )}
-      {/* Validation error */}
-      {optimised.validationError && (
-        <div className="text-xs text-red-500 mt-1">
-          {optimised.validationError}
-        </div>
-      )}
     </div>
   );
 };
@@ -260,7 +246,7 @@ function ExpandedView(props: {
   categoryTheme?: Record<string, string>;
   categoryClasses?: Record<string, string>;
 }) {
-  const { data, error, updateNodeData, id, categoryClasses } = props;
+  const { data, error, updateNodeData, id, categoryTheme, categoryClasses } = props;
 
   // Check for Vibe Mode injected error state
   const isVibeError = data.isErrorState === true;
@@ -373,118 +359,62 @@ function ExpandedView(props: {
 }
 
 // -----------------------------------------------------------------------------
-// 5 ▸ Enhanced defineNode() with V2U Architecture
+// 5 ▸ Main Node Component
 // -----------------------------------------------------------------------------
 
-export default defineNode<CreateTextV2UData>({
-  // ─────────────────────────────────────────── Metadata
-  metadata: {
-    nodeType: "createTextV2U",
-    category: "create",
-    displayName: "Create Text (V2U)",
-    description:
-      "Enhanced text creation node with V2U architecture – auto-integrated with enterprise styling",
-    icon: "📝",
-    folder: "main",
-    version: "2.0.0",
-    author: "V2U Migration Team",
-    tags: ["text", "input", "v2u", "enterprise-ready"],
-  },
+const CreateTextV2UNode: React.FC<NodeProps> = ({
+  id,
+  data,
+  type,
+  selected = false,
+}) => {
+  const { nodeData, updateNodeData } = useNodeData(id, data);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // ─────────────────────────────────────────── Handles
-  handles: [
-    {
-      id: "trigger",
-      type: "target",
-      position: Position.Left,
-      dataType: "boolean",
-      description:
-        "Optional trigger – when connected, text outputs only when trigger is true",
-    },
-    {
-      id: "text",
-      type: "source",
-      position: Position.Right,
-      dataType: "string",
-      description: "Text output",
-    },
-  ],
-
-  // ─────────────────────────────────────────── Defaults & Size
-  defaultData: {
+  // Ensure nodeData has the correct type by merging with defaults
+  const safeNodeData: CreateTextV2UData = {
     text: "",
     heldText: "",
-    _v2uMigrated: true,
-    _v2uMigrationDate: Date.now(),
-  },
-  size: {
-    collapsed: { width: 200, height: 80 },
-    expanded: { width: 300, height: 160 },
-  },
+    isActive: true,
+    ...nodeData,
+  } as CreateTextV2UData;
 
-  // ─────────────────────────────────────────── Processing
-  async processLogic({
-    data,
-    updateNodeData,
-    getConnections,
-    setError,
-    nodeId,
-  }) {
-    const started = performance.now();
-    try {
-      const triggerConns = getConnections().filter(
-        (c) => c.targetHandle === "trigger"
-      );
-      const triggerVal = getSingleInputValue([]);
-      const isActive = isTruthy(triggerVal);
+  const derivedError =
+    safeNodeData.error || (safeNodeData.isErrorState ? "Error state active" : null);
 
-      const text = data.heldText ?? "";
-      if (text.length > 100_000) throw new Error("Text too long (100 k max)");
+  const onToggleCollapse = () => setIsCollapsed((prev) => !prev);
 
-      const out = triggerConns.length === 0 || isActive ? text : "";
-      updateNodeData({ text: out, _v2uMigrated: true });
-      setError(null);
-    } catch (err: any) {
-      console.error(`[CreateTextV2U] ${nodeId} –`, err);
-      setError(err.message ?? "Unknown error");
-      updateNodeData({
-        text: "",
-        isErrorState: true,
-        error: err.message,
-        errorType: "error",
-      });
-    } finally {
-      const ms = performance.now() - started;
-      if (ms > 50)
-        console.warn(`[CreateTextV2U] slow execution (${ms.toFixed(1)} ms)`);
-    }
-  },
+  // Determine node states for theming
+  const isError = !!derivedError;
+  const isActive = safeNodeData.isActive ?? true; // Default to active
 
-  // ─────────────────────────────────────────── Renderers
-  renderCollapsed: CollapsedView,
-  renderExpanded: ExpandedView,
+  return (
+    <NodeScaffold
+      nodeId={id}
+      nodeType={type}
+      isCollapsed={isCollapsed}
+      onToggleCollapse={onToggleCollapse}
+      isSelected={selected}
+      isError={isError}
+      isActive={isActive}
+    >
+      {isCollapsed ? (
+        <CollapsedView
+          id={id}
+          data={safeNodeData}
+          error={derivedError}
+          updateNodeData={updateNodeData}
+        />
+      ) : (
+        <ExpandedView
+          id={id}
+          data={safeNodeData}
+          error={derivedError}
+          updateNodeData={updateNodeData}
+        />
+      )}
+    </NodeScaffold>
+  );
+};
 
-  // ─────────────────────────────────────────── V2U Features
-  lifecycle: {
-    onMount: async ({ nodeId, emitEvent }) =>
-      emitEvent("v2u:node-mounted", { nodeType: "createTextV2U", nodeId }),
-    onUnmount: async ({ nodeId, emitEvent }) =>
-      emitEvent("v2u:node-unmounted", { nodeType: "createTextV2U", nodeId }),
-    onDataChange: async (n, o, { nodeId, emitEvent }) => {
-      if (n.heldText !== o.heldText) {
-        await emitEvent("v2u:text-changed", {
-          nodeId,
-          oldLength: o.heldText?.length ?? 0,
-          newLength: n.heldText?.length ?? 0,
-        });
-      }
-    },
-  },
-
-  // ─────────────────────────────────────────── Enhanced Bridge Features
-  // 🚀 Bridge: Enterprise features automatically added by enhanced defineNode()
-
-  // ─────────────────────────────────────────── Registry
-  autoRegister: true,
-  registryPath: "create/createTextV2U",
-});
+export default CreateTextV2UNode;

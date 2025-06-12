@@ -29,22 +29,19 @@ import type { AgenEdge, AgenNode } from "../types/nodeData";
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/components/ActionToolbar";
 import HistoryPanel from "@/features/business-logic-modern/infrastructure/components/HistoryPanel";
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
+import type { Node, NodeProps } from "@xyflow/react";
+import type { ComponentType } from "react";
 
-// Import actual node components from node-domain
-import {
-  CreateText,
-  CreateTextV2,
-  TestError,
-  TriggerOnToggle,
-  ViewOutput,
-} from "@/features/business-logic-modern/node-domain";
-
-// Import unified registry for automated V2U node resolution
-import { getLegacyModernNodeRegistry } from "../../node-creation/core/registries/json-node-registry/unifiedRegistry";
+// Modern V2U component imports for the inline manifest
+import CreateTextV2U from "@/features/business-logic-modern/node-domain/create/CreateTextV2U";
+import TestErrorV2U from "@/features/business-logic-modern/node-domain/test/TestErrorV2U";
+import TriggerOnToggleV2U from "@/features/business-logic-modern/node-domain/trigger/TriggerOnToggleV2U";
+import ViewOutputV2U from "@/features/business-logic-modern/node-domain/view/ViewOutputV2U";
 
 // ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention & cleanup
-import { useCleanupInvalidConnections } from "@/features/business-logic-modern/infrastructure/node-creation/systems/ui/node-handles/UtilityCleanupInvalidConnections";
-import { useUltimateFlowConnectionPrevention } from "@/features/business-logic-modern/infrastructure/node-creation/systems/ui/node-handles/UltimateTypesafeHandle";
+import { useUltimateFlowConnectionPrevention } from "@/components/nodes/handles/TypeSafeHandle";
+
+import { NODE_TYPE_CONFIG } from '../constants';
 
 interface FlowCanvasProps {
   nodes: AgenNode[];
@@ -107,19 +104,31 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   setInspectorLocked,
   reactFlowHandlers,
 }) => {
+  console.log("🎨 FlowCanvas rendering with:", {
+    nodesCount: nodes?.length || 0,
+    edgesCount: edges?.length || 0,
+    selectedNode: selectedNode?.id,
+    selectedEdge: selectedEdge?.id
+  });
+
   const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Fix hydration mismatch by only using theme after mount
+  useEffect(() => {
+    console.log("🎨 FlowCanvas mounted, theme:", resolvedTheme);
+    setMounted(true);
+  }, [resolvedTheme]);
+
+  // Use a stable colorMode that doesn't cause hydration issues
+  const colorMode: ColorMode = mounted && resolvedTheme === "light" ? "light" : "dark";
+  console.log("🎨 Using colorMode:", colorMode, "mounted:", mounted, "resolvedTheme:", resolvedTheme);
 
   // ============================================================================
   // ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention
   // ============================================================================
 
   const { isValidConnection } = useUltimateFlowConnectionPrevention();
-
-  // ============================================================================
-  // CLEANUP INVALID CONNECTIONS - Remove existing invalid connections
-  // ============================================================================
-
-  useCleanupInvalidConnections();
 
   // ============================================================================
   // STATE FOR MOBILE RESPONSIVENESS & ERROR TRACKING
@@ -205,75 +214,18 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     : { marginTop: "70px" };
 
   // ============================================================================
-  // NODE TYPES REGISTRY (AUTOMATED) - V2U Enhanced Registry Bridge
+  // NODE TYPES REGISTRY (INLINE) - A temporary, hardcoded manifest
   // ============================================================================
 
-  const nodeTypes = useMemo(() => {
-    // Get the unified registry which includes both legacy and V2U nodes
-    const unifiedRegistry = getLegacyModernNodeRegistry();
-
-    console.log("🔄 [FlowCanvas] Building automated nodeTypes registry...");
-    console.log(
-      "📋 [FlowCanvas] Available nodes:",
-      Object.keys(unifiedRegistry)
-    );
-
-    // Create the ReactFlow-compatible component mapping
-    const componentMapping: Record<string, any> = {};
-
-    for (const [nodeType, nodeConfig] of Object.entries(unifiedRegistry)) {
-      if (nodeConfig) {
-        // Check if it's a modern defineNode() result with .component property
-        if (
-          typeof nodeConfig === "object" &&
-          "component" in nodeConfig &&
-          nodeConfig.component
-        ) {
-          componentMapping[nodeType] = nodeConfig.component;
-          console.log(`✅ [FlowCanvas] Registered V2U node: ${nodeType}`);
-        }
-        // Check if it's a legacy direct component (function)
-        else if (typeof nodeConfig === "function") {
-          componentMapping[nodeType] = nodeConfig;
-          console.log(`✅ [FlowCanvas] Registered legacy node: ${nodeType}`);
-        }
-        // Check if it's a React component object
-        else if (typeof nodeConfig === "object" && "$$typeof" in nodeConfig) {
-          componentMapping[nodeType] = nodeConfig;
-          console.log(
-            `✅ [FlowCanvas] Registered React component: ${nodeType}`
-          );
-        }
-        // Fallback for other structures
-        else {
-          console.warn(
-            `⚠️ [FlowCanvas] Unknown node structure for ${nodeType}:`,
-            typeof nodeConfig,
-            nodeConfig
-          );
-        }
-      }
-    }
-
-    // Fallback to legacy components if registry is empty
-    if (Object.keys(componentMapping).length === 0) {
-      console.warn(
-        "⚠️ [FlowCanvas] No nodes found in unified registry, falling back to legacy hardcoded components"
-      );
-      return {
-        createText: CreateText,
-        createTextV2: CreateTextV2,
-        viewOutput: ViewOutput,
-        triggerOnToggle: TriggerOnToggle,
-        testError: TestError,
-      };
-    }
-
-    console.log(
-      `🎉 [FlowCanvas] Automated registry ready with ${Object.keys(componentMapping).length} nodes`
-    );
-    return componentMapping;
-  }, []);
+  const nodeTypes = useMemo(
+    () => ({
+      createTextV2U: CreateTextV2U,
+      viewOutputV2U: ViewOutputV2U,
+      triggerOnToggleV2U: TriggerOnToggleV2U,
+      testErrorV2U: TestErrorV2U,
+    }),
+    []
+  ) as any;
 
   const edgeTypes = useMemo(() => ({}), []);
 
@@ -302,49 +254,71 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   // RENDER
   // ============================================================================
 
+  console.log("🎯 FlowCanvas about to render ReactFlow...");
+
   return (
     <div
       ref={wrapperRef}
-      className="relative flex-1"
+      className="relative flex-1 w-full h-full"
       onDragOver={onDragOver}
       onDrop={onDrop}
-      style={{ touchAction: "none" }}
+      style={{ 
+        touchAction: "none",
+        width: "100%",
+        height: "100%",
+        minHeight: "100vh",
+        minWidth: "100vw"
+      }}
     >
       <ReactFlow
+        // Core Data
         nodes={safeNodes}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        snapToGrid
+        
+        // Explicit dimensions to fix sizing issue
+        style={{ width: "100%", height: "100%" }}
+        
+        // Connection Handling
         isValidConnection={isValidConnection}
+        connectionMode={ConnectionMode.Loose}
+        onConnect={reactFlowHandlers.onConnect}
         onReconnect={reactFlowHandlers.onReconnect}
         onReconnectStart={reactFlowHandlers.onReconnectStart}
         onReconnectEnd={reactFlowHandlers.onReconnectEnd}
-        onConnect={reactFlowHandlers.onConnect}
+        
+        // Change Handlers
         onNodesChange={reactFlowHandlers.onNodesChange}
         onEdgesChange={reactFlowHandlers.onEdgesChange}
         onSelectionChange={reactFlowHandlers.onSelectionChange}
         onInit={reactFlowHandlers.onInit}
-        fitView
+        
+        // Selection Configuration
         selectionMode={SelectionMode.Partial}
-        proOptions={{ hideAttribution: true }}
-        deleteKeyCode={["Delete", "Backspace"]}
         selectionKeyCode={selectionKeys.selectionKeyCode}
         multiSelectionKeyCode={selectionKeys.multiSelectionKeyCode}
-        colorMode={
-          resolvedTheme === "dark" ? "dark" : ("light" satisfies ColorMode)
-        }
-        panOnDrag={true}
-        panOnScroll={true}
-        zoomOnScroll={true}
-        zoomOnPinch={true}
+        deleteKeyCode={["Delete", "Backspace"]}
+        
+        // Interaction Settings
+        snapToGrid
+        panOnDrag
+        panOnScroll
         panOnScrollMode={PanOnScrollMode.Free}
+        zoomOnScroll
+        zoomOnPinch
         zoomOnDoubleClick={false}
-        nodesDraggable={true}
-        nodesConnectable={true}
-        elementsSelectable={true}
-        edgesReconnectable={true}
-        connectionMode={ConnectionMode.Loose}
+        
+        // Node/Edge Behavior
+        nodesDraggable
+        nodesConnectable
+        elementsSelectable
+        edgesReconnectable
+        
+        // Visual Settings
+        fitView
+        colorMode={colorMode}
+        proOptions={{ hideAttribution: true }}
         defaultEdgeOptions={{
           type: "default",
           deletable: true,

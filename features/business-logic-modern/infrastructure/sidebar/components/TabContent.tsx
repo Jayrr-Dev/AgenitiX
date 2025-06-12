@@ -12,7 +12,7 @@ import { StencilGrid } from "../StencilGrid";
 import { VARIANT_CONFIG } from "../constants";
 import { useDragSensors } from "../hooks/useDragSensors";
 import { useStencilStorage } from "../hooks/useStencilStorage";
-import { NodeStencil, SidebarVariant, TabKey } from "../types";
+import { NodeStencil, SidebarVariant, AnyTabKey, TabKey } from "../types";
 import { AddNodeButton } from "./AddNodeButton";
 
 interface TabContentProps {
@@ -47,7 +47,11 @@ export function TabContent({
   onReorderCustomNodes,
   onStencilsChange,
 }: TabContentProps) {
-  const { defaults } = VARIANT_CONFIG[variant];
+  // Defensive programming: Handle case where VARIANT_CONFIG[variant] might be undefined
+  // Also normalize lowercase variants to uppercase
+  const normalizedVariant = variant.toUpperCase() as SidebarVariant;
+  const variantConfig = VARIANT_CONFIG[normalizedVariant];
+  const stencilsConfig = variantConfig?.stencils;
   const sensors = useDragSensors();
 
   // KEYBOARD SHORTCUT MAPPING - Different for custom vs regular tabs
@@ -103,13 +107,23 @@ export function TabContent({
     [isCustomTab]
   );
 
-  // Get the correct defaults for this specific variant and tab
+  // Get the correct stencils for this specific variant and tab
   const getDefaultStencils = (): NodeStencil[] => {
     if (isCustomTab) return [];
 
-    // Safely access the defaults with proper type checking
-    const tabDefaults = defaults[tabKey as keyof typeof defaults];
-    return Array.isArray(tabDefaults) ? tabDefaults : [];
+    // Safely access the stencils with proper type checking
+    if (!stencilsConfig) {
+      console.warn(`No stencils config found for variant '${variant}' (normalized to '${normalizedVariant}')`);
+      return [];
+    }
+    
+    const tabStencils = stencilsConfig[tabKey as keyof typeof stencilsConfig];
+    if (!Array.isArray(tabStencils)) {
+      console.warn(`No stencils found for tab '${tabKey}' in variant '${variant}' (normalized to '${normalizedVariant}')`);
+      return [];
+    }
+    
+    return tabStencils;
   };
 
   // For custom tab, don't use stencil storage

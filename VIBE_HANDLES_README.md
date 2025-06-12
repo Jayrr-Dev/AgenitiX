@@ -69,7 +69,7 @@ const {
 // Standard JSON handle (replaces j)
 {
   id: "json",
-  dataType: "{ }",
+  dataType: "{}",
   position: Position.Top,
   type: "target",
 }

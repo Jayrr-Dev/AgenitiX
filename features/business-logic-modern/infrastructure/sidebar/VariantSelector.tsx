@@ -13,7 +13,7 @@ export function VariantSelector({
   onVariantChange, 
   isHidden 
 }: VariantSelectorProps) {
-  const variants: SidebarVariant[] = ['a', 'b', 'c', 'd', 'e'];
+  const variants: SidebarVariant[] = ['A', 'B', 'C', 'D', 'E'];
   const [hoveredVariant, setHoveredVariant] = useState<SidebarVariant | null>(null);
   const [showSwitchText, setShowSwitchText] = useState<SidebarVariant | null>(null);
 
@@ -34,11 +34,11 @@ export function VariantSelector({
   // Helper function to render the correct icon for each variant
   const renderIcon = (v: SidebarVariant) => {
     switch (v) {
-      case 'a': return <FaBolt className="w-4 h-4" />; // Main
-      case 'b': return <FaVideo className="w-4 h-4" />; // Media
-      case 'c': return <FaLink className="w-4 h-4" />; // Integration
-      case 'd': return <FaRobot className="w-4 h-4" />; // Automation
-      case 'e': return <FaBox className="w-4 h-4" />; // Misc
+      case 'A': return <FaBolt className="w-4 h-4" />; // Main
+      case 'B': return <FaVideo className="w-4 h-4" />; // Media
+      case 'C': return <FaLink className="w-4 h-4" />; // Integration
+      case 'D': return <FaRobot className="w-4 h-4" />; // Automation
+      case 'E': return <FaBox className="w-4 h-4" />; // Misc
       default: return null;
     }
   };

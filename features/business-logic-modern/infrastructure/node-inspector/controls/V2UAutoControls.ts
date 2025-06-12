@@ -154,6 +154,7 @@ export function autoResolveControl(node: AgenNode): {
   }
 
   // PRIORITY 2: Pattern matching (zero config)
+  if (node.type) {
   const patternControl = getControlByPattern(node.type, isV2U);
   if (patternControl) {
     return {
@@ -161,6 +162,7 @@ export function autoResolveControl(node: AgenNode): {
       isV2U,
       method: "pattern",
     };
+    }
   }
 
   // No control found

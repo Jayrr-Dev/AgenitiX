@@ -118,8 +118,7 @@ const STORAGE_KEY = "workflow-history-graph-v3";
 export const saveGraph = (graph: HistoryGraph): void => {
   try {
     // Use superjson for better serialization of complex types
-    const superjson = require("superjson");
-    localStorage.setItem(STORAGE_KEY, superjson.stringify(graph));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(graph));
   } catch (error) {
     console.warn("[GraphHelpers] Failed to save graph to localStorage:", error);
     // Fallback to regular JSON
@@ -136,19 +135,10 @@ export const loadGraph = (): HistoryGraph | null => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return null;
 
-    // Try superjson first for enhanced deserialization
-    const superjson = require("superjson");
-    return superjson.parse(stored);
+    return JSON.parse(stored);
   } catch (error) {
-    console.warn("[GraphHelpers] Failed to load graph with superjson:", error);
-    // Fallback to regular JSON
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : null;
-    } catch (fallbackError) {
-      console.error("[GraphHelpers] Fallback load also failed:", fallbackError);
-      return null;
-    }
+    console.error("[GraphHelpers] Failed to load graph:", error);
+    return null;
   }
 };
 

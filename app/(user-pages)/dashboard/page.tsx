@@ -1,6 +1,9 @@
 // app/dashboard/page.tsx
 "use client";
 
+// Force dynamic rendering to avoid prerendering issues
+export const dynamic = 'force-dynamic';
+
 import { Loading } from "@/components/Loading";
 import type { Flow } from "@/features/business-logic-modern/dashboard/types";
 import Link from "next/link";

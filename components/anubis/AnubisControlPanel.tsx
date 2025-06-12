@@ -24,6 +24,8 @@ export function AnubisControlPanel() {
   
   // LOAD PROTECTED ROUTES
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const loadRoutes = () => {
       try {
         const savedRoutes = localStorage.getItem('anubis-protected-routes');
@@ -84,15 +86,17 @@ export function AnubisControlPanel() {
     setProtectedRoutes(prev => prev.filter(route => route.path !== path));
     
     // REMOVE FROM LOCAL STORAGE
-    try {
-      const savedRoutes = localStorage.getItem('anubis-protected-routes');
-      if (savedRoutes) {
-        const routes = JSON.parse(savedRoutes) as RouteProtectionConfig[];
-        const filteredRoutes = routes.filter(route => route.path !== path);
-        localStorage.setItem('anubis-protected-routes', JSON.stringify(filteredRoutes));
+    if (typeof window !== 'undefined') {
+      try {
+        const savedRoutes = localStorage.getItem('anubis-protected-routes');
+        if (savedRoutes) {
+          const routes = JSON.parse(savedRoutes) as RouteProtectionConfig[];
+          const filteredRoutes = routes.filter(route => route.path !== path);
+          localStorage.setItem('anubis-protected-routes', JSON.stringify(filteredRoutes));
+        }
+      } catch (error) {
+        console.error('Failed to remove route:', error);
       }
-    } catch (error) {
-      console.error('Failed to remove route:', error);
     }
   };
   

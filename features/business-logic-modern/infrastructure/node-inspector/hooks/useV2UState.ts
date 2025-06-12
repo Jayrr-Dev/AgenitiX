@@ -65,9 +65,9 @@ export function useV2UState(node: AgenNode | null) {
     const nodeData = node.data as any;
 
     return {
-      nodeType: node.type,
+      nodeType: node.type || "unknown",
       category: nodeData._category || "unknown",
-      displayName: nodeData._displayName || node.type,
+      displayName: nodeData._displayName || node.type || "unknown",
       description: nodeData._description,
       icon: nodeData._icon,
       folder: nodeData._folder,

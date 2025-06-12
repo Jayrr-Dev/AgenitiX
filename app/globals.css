@@ -4,6 +4,7 @@
 
 /* 1 · Tailwind & Google Fonts --------------------------------------- */
 @import 'tailwindcss';
+@import '@xyflow/react/dist/style.css';
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Work+Sans:wght@400;600&family=Source+Serif+Pro:ital,wght@0,400;1,400&display=swap')
   layer(utilities);
 /* Scrollbar plugin plus customizations */
@@ -159,7 +160,7 @@
   background:
     linear-gradient(360deg, background, background) padding-box,
 
-    /* right sweep (sentinel stop so var() isn’t last) */
+    /* right sweep (sentinel stop so var() isn't last) */
     conic-gradient(
       from var(--fill-angle-right),
       transparent var(--fill-transparency-right),

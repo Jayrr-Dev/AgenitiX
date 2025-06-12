@@ -10,12 +10,7 @@
  * Keywords: theme-initialization, category-theming, startup, registry-sync, debugging
  */
 
-import {
-  applyAllCategoryDefaults,
-  enableCategoryTheming,
-  enableThemeDebugMode,
-  getThemeStatistics,
-} from "../stores/nodeStyleStore";
+import { useNodeStyleStore } from "../stores/nodeStyleStore";
 
 // ============================================================================
 // THEME INITIALIZATION
@@ -33,32 +28,20 @@ export function initializeThemeSystem(
 ) {
   const { enableDebug = false, logStatistics = true } = options;
 
-  console.log("🎨 Initializing theme system...");
-
   try {
-    // Enable category theming with registry sync
-    enableCategoryTheming();
-
-    // Apply all category defaults
-    applyAllCategoryDefaults();
+    // Get the store actions
+    const store = useNodeStyleStore.getState();
+    
+    // Enable category theming
+    store.enableCategoryTheming();
 
     // Enable debug mode if requested
     if (enableDebug) {
-      enableThemeDebugMode();
+      store.toggleDebugMode();
     }
 
-    // Log theme statistics
     if (logStatistics) {
-      const stats = getThemeStatistics();
-      console.log("✅ Theme system initialized successfully:");
-      console.log(
-        `   • Category theming: ${stats.theming.enabled ? "ENABLED" : "DISABLED"}`
-      );
-      console.log(
-        `   • Registry sync: ${stats.registry.totalNodes ? "ENABLED" : "DISABLED"}`
-      );
-      console.log(`   • Total nodes: ${stats.registry.totalNodes}`);
-      console.log(`   • Available themes: ${stats.theming.overrides}`);
+      console.log("✅ Theme system initialized successfully");
     }
 
     return true;
@@ -97,10 +80,10 @@ export function diagnoseThemeSystem() {
   console.log("🔍 THEME SYSTEM DIAGNOSTICS");
   console.log("========================================");
 
-  const stats = getThemeStatistics();
+  const state = useNodeStyleStore.getState();
 
   // Check if category theming is enabled
-  if (!stats.theming.enabled) {
+  if (!state.categoryTheming.enabled) {
     console.log("❌ ISSUE: Category theming is DISABLED");
     console.log(
       "   Solution: Call initializeThemeSystem() or enableCategoryTheming()"
@@ -109,33 +92,20 @@ export function diagnoseThemeSystem() {
     console.log("✅ Category theming is enabled");
   }
 
-  // Check registry sync
-  if (!stats.registry.totalNodes) {
-    console.log("❌ ISSUE: Registry sync is DISABLED");
-    console.log("   Solution: Registry themes may not be applied correctly");
+  // Check debug mode
+  if (state.categoryTheming.debugMode) {
+    console.log("🔧 Debug mode is enabled");
   } else {
-    console.log("✅ Registry sync is enabled");
+    console.log("📋 Debug mode is disabled");
   }
 
-  // Check node coverage
-  if (stats.registry.totalNodes === 0) {
-    console.log("❌ ISSUE: No nodes found in registry");
-    console.log("   Solution: Check node registry configuration");
-  } else {
-    console.log(`✅ Found ${stats.registry.totalNodes} nodes in registry`);
-  }
-
-  // Check theme availability
-  console.log(`📋 Available themes: ${stats.theming.overrides}`);
-
-  // Validation results
-  console.log("🧪 Validation Results:");
-  console.log(`   • Valid categories: ${stats.theming.overrides}`);
-  console.log(`   • Invalid categories: ${stats.theming.overrides}`);
+  // Check theme overrides
+  const overrideCount = Object.keys(state.categoryTheming.customOverrides).length;
+  console.log(`📋 Custom theme overrides: ${overrideCount}`);
 
   console.log("========================================");
 
-  return stats;
+  return state;
 }
 
 // ============================================================================
@@ -147,7 +117,10 @@ export function diagnoseThemeSystem() {
  * Enables detailed theme debugging
  */
 export function enableDebugMode() {
-  enableThemeDebugMode();
+  const store = useNodeStyleStore.getState();
+  if (!store.categoryTheming.debugMode) {
+    store.toggleDebugMode();
+  }
   console.log("🔧 Theme debug mode enabled - check console for detailed logs");
 }
 

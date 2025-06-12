@@ -111,20 +111,20 @@ export function resolveV2UControl(
     : ["basic-controls"];
 
   // Add specific features based on node type
-  if (nodeType.includes("trigger")) {
+  if (nodeType && nodeType.includes("trigger")) {
     enhancedFeatures.push("trigger-management", "event-propagation");
-  } else if (nodeType.includes("text")) {
+  } else if (nodeType && nodeType.includes("text")) {
     enhancedFeatures.push("rich-text", "validation");
   }
 
   const controlConfig: V2UControlConfig = {
-    category: getNodeCategory(nodeType),
+    category: getNodeCategory(nodeType || "unknown"),
     enhancedFeatures,
     priority: autoResolution.isV2U ? 10 : 5,
   };
 
   const metadata: V2UMetadata = {
-    nodeType,
+    nodeType: nodeType || "unknown",
     isV2UNode: autoResolution.isV2U,
     controlConfig,
     metadata: nodeMetadata.version
@@ -135,7 +135,7 @@ export function resolveV2UControl(
       : undefined,
   };
 
-  const controlType = getControlTypeName(nodeType, autoResolution.method);
+  const controlType = getControlTypeName(nodeType || "unknown", autoResolution.method);
 
   if (debugMode) {
     console.log(`[V2UControlRegistry] Resolved control for ${nodeType}:`, {

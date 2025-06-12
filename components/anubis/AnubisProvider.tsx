@@ -20,6 +20,9 @@ export function AnubisProvider({ children, initialConfig }: AnubisProviderProps)
   
   // INITIALIZE ANUBIS STATE
   useEffect(() => {
+    // Check if we're in the browser
+    if (typeof window === 'undefined') return;
+    
     // GET CURRENT ROUTE
     setCurrentRoute(window.location.pathname);
     
@@ -29,20 +32,22 @@ export function AnubisProvider({ children, initialConfig }: AnubisProviderProps)
     }
     
     // LOAD PROTECTED ROUTES FROM LOCAL STORAGE
-    const savedRoutes = localStorage.getItem('anubis-protected-routes');
-    if (savedRoutes) {
-      try {
+    try {
+      const savedRoutes = localStorage.getItem('anubis-protected-routes');
+      if (savedRoutes) {
         const routesArray = JSON.parse(savedRoutes) as RouteProtectionConfig[];
         const routesMap = new Map(routesArray.map(route => [route.path, route]));
         setProtectedRoutes(routesMap);
-      } catch (error) {
-        console.error('Failed to load saved routes:', error);
       }
+    } catch (error) {
+      console.error('Failed to load saved routes:', error);
     }
   }, [initialConfig]);
   
   // SAVE ROUTES TO LOCAL STORAGE
   const saveRoutesToStorage = (routes: Map<string, RouteProtectionConfig>) => {
+    if (typeof window === 'undefined') return;
+    
     try {
       const routesArray = Array.from(routes.values());
       localStorage.setItem('anubis-protected-routes', JSON.stringify(routesArray));
@@ -79,13 +84,15 @@ export function AnubisProvider({ children, initialConfig }: AnubisProviderProps)
     }
     
     // SAVE TO LOCAL STORAGE
-    try {
-      const savedConfig = localStorage.getItem('anubis-config') || '{}';
-      const currentConfig = JSON.parse(savedConfig);
-      const updatedConfig = { ...currentConfig, ...config };
-      localStorage.setItem('anubis-config', JSON.stringify(updatedConfig));
-    } catch (error) {
-      console.error('Failed to save config:', error);
+    if (typeof window !== 'undefined') {
+      try {
+        const savedConfig = localStorage.getItem('anubis-config') || '{}';
+        const currentConfig = JSON.parse(savedConfig);
+        const updatedConfig = { ...currentConfig, ...config };
+        localStorage.setItem('anubis-config', JSON.stringify(updatedConfig));
+      } catch (error) {
+        console.error('Failed to save config:', error);
+      }
     }
   };
   
@@ -130,8 +137,10 @@ export function AnubisStatus() {
   // CHECK IF UI IS ENABLED
   const [showUI, setShowUI] = useState(false);
   useEffect(() => {
-    const saved = localStorage.getItem('anubis-ui-enabled');
-    setShowUI(saved === 'true');
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('anubis-ui-enabled');
+      setShowUI(saved === 'true');
+    }
   }, []);
   
   if (!showUI || !isEnabled) return null;
