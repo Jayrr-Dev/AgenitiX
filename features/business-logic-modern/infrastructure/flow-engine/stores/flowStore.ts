@@ -150,9 +150,9 @@ export const useFlowStore = create<FlowStore>()(
           data: Partial<Record<string, unknown>>
         ) => {
           set((state) => {
-            const node = state.nodes.find((n: AgenNode) => n.id === nodeId);
+            const node = state.nodes.find((n) => n.id === nodeId);
             if (node) {
-              Object.assign(node.data, data);
+              node.data = { ...node.data, ...data };
             }
           });
         },
@@ -170,9 +170,9 @@ export const useFlowStore = create<FlowStore>()(
             }
 
             // Update the node ID
-            const node = state.nodes.find((n: AgenNode) => n.id === oldId);
-            if (node) {
-              node.id = newId;
+            const nodeIndex = state.nodes.findIndex((n) => n.id === oldId);
+            if (nodeIndex !== -1) {
+              state.nodes[nodeIndex].id = newId;
               success = true;
 
               // Update all edges that reference this node
@@ -227,7 +227,7 @@ export const useFlowStore = create<FlowStore>()(
           position: { x: number; y: number }
         ) => {
           set((state) => {
-            const node = state.nodes.find((n: AgenNode) => n.id === nodeId);
+            const node = state.nodes.find((n) => n.id === nodeId);
             if (node) {
               node.position = position;
             }
@@ -255,7 +255,7 @@ export const useFlowStore = create<FlowStore>()(
 
         updateEdge: (edgeId: string, updates: Partial<AgenEdge>) => {
           set((state) => {
-            const edge = state.edges.find((e: AgenEdge) => e.id === edgeId);
+            const edge = state.edges.find((e) => e.id === edgeId);
             if (edge) {
               Object.assign(edge, updates);
             }

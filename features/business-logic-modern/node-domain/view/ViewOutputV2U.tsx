@@ -147,6 +147,7 @@ export default defineNode<ViewOutputV2UData>({
   processLogic: async ({
     data,
     getConnections,
+    getNodes,
     updateNodeData,
     setError,
     nodeId,
@@ -156,52 +157,40 @@ export default defineNode<ViewOutputV2UData>({
       // Performance tracking
       const startTime = Date.now();
 
-      // Get connections and connected nodes data
-      const connections = getConnections();
+      // Get connections and all nodes from the context
+      const allConnections = getConnections();
+      const allNodes = getNodes();
 
-      // SAFETY CHECK - Ensure connections exist
-      if (!connections || connections.length === 0) {
-        // No connections, clear displayed values if they exist
+      // Find connections targeting this specific node
+      const incomingConnections = allConnections.filter(
+        (conn) => conn.target === nodeId
+      );
+
+      // If no connections, clear displayed values and exit
+      if (incomingConnections.length === 0) {
         if (data.displayedValues && data.displayedValues.length > 0) {
-          updateNodeData({
-            displayedValues: [],
-            _v2uMigrated: true,
-          });
+          updateNodeData({ displayedValues: [] });
         }
         return;
       }
 
-      // V2U: Enhanced node data extraction
-      // Note: In real implementation, this would get actual connected node data
-      // For now, we'll use mock data for demonstration
-      const mockConnectedNodes = [
-        {
-          id: "node1",
-          type: "createText",
-          data: { text: "Sample text output", heldText: "Sample text output" },
-        },
-        { id: "node2", type: "createNumber", data: { value: 42 } },
-        { id: "node3", type: "createBoolean", data: { value: true } },
-      ];
+      // Get the IDs of the source nodes
+      const sourceNodeIds = new Set(
+        incomingConnections.map((conn) => conn.source)
+      );
+
+      // Get the actual data from the connected source nodes
+      const connectedNodes = allNodes.filter((node) =>
+        sourceNodeIds.has(node.id)
+      );
 
       // Extract values from connected nodes using safe extraction
-      const values = mockConnectedNodes
-        .filter((node) => {
-          // SAFETY CHECK - Ensure node has required properties
-          return node && typeof node === "object" && node.id && node.type;
-        })
+      const values = connectedNodes
         .map((node) => {
           try {
-            // V2U: Enhanced value extraction
-            let extractedValue;
-            if (node.type === "testInput") {
-              extractedValue = node.data?.value;
-            } else {
-              extractedValue = extractNodeValue(node.data);
-            }
-
+            const extractedValue = extractNodeValue(node.data);
             return {
-              type: node.type,
+              type: node.type || "unknown",
               content: extractedValue,
               id: node.id,
             };
@@ -218,19 +207,22 @@ export default defineNode<ViewOutputV2UData>({
           }
         })
         .filter((item) => {
-          // V2U: Enhanced filtering - remove empty/undefined values
+          // V2U: Enhanced filtering - remove empty/undefined/inactive values
           if (!item || typeof item !== "object") return false;
+          // Do not display 'false' boolean values, as they indicate an off state
+          if (item.content === false) return false;
           if (item.content === undefined || item.content === null) return false;
           if (typeof item.content === "string" && item.content.trim() === "")
             return false;
           return true;
         });
 
-      // Update displayed values with V2U metadata
-      updateNodeData({
-        displayedValues: values,
-        _v2uMigrated: true,
-      });
+      // Update displayed values only if they have actually changed
+      if (safeStringify(data.displayedValues) !== safeStringify(values)) {
+        updateNodeData({
+          displayedValues: values,
+        });
+      }
 
       // Clear any existing errors
       setError(null);

@@ -14,6 +14,7 @@ import { useEffect, useRef } from "react";
 import { PROCESSING_THROTTLE_MS } from "../../config/constants";
 import type { BaseNodeData } from "../../types";
 import { createJsonProcessingTracker } from "../../utils/processing/jsonProcessor";
+import { useParentNodeData } from "./useParentNodeData";
 
 // ============================================================================
 // MAIN PROCESSING LOGIC TYPES
@@ -81,6 +82,13 @@ export function useMainProcessingLogic<T extends BaseNodeData>(
   // PROCESSING TRACKER for throttling
   const logicProcessingTracker = useRef(createJsonProcessingTracker());
 
+  // EFFICIENT PARENT DATA DEPENDENCY
+  const parentDataString = useParentNodeData(
+    id,
+    connectionData.connections,
+    connectionData.nodesData
+  );
+
   // ========================================================================
   // MAIN PROCESSING EFFECT
   // ========================================================================
@@ -101,9 +109,8 @@ export function useMainProcessingLogic<T extends BaseNodeData>(
     activationState.calculatedIsActive,
     // A stable summary of the connections.
     connectionData.relevantConnectionData,
-    // A stable summary of all nodes' data. The engine's fix ensures this
-    // hook re-runs when upstream data changes, so a simple stringify is sufficient.
-    JSON.stringify(connectionData.nodesData),
+    // A hyper-efficient, stable dependency on only direct parent data.
+    parentDataString,
     // Functions are stable.
     nodeState.updateNodeData,
     propagateUltraFast,

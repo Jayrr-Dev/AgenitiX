@@ -1,7 +1,9 @@
 import { Position } from "@xyflow/react";
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { BaseNodeData } from "../flow-engine/types/nodeData";
 import { nodeSystemEvents } from "./systems/intergration/events/NodeSystemEvents";
+import { useFlowStore } from "../flow-engine/stores/flowStore";
+import { useNodeDependencies } from "./core/factory/hooks/processing/useNodeDependencies";
 
 // CATEGORY THEMING INTEGRATION
 import {
@@ -75,6 +77,7 @@ export interface NodeExecutionContext<TData extends BaseNodeData> {
   updateNodeData: (newData: Partial<TData>) => void;
   setError: (error: string | null) => void;
   getConnections: () => any[]; // TODO: Type properly
+  getNodes: () => any[]; // TODO: Type properly
   emitEvent: (eventType: string, payload?: any) => void;
   performance: {
     startTime: number;
@@ -337,6 +340,7 @@ export function defineNode<TData extends BaseNodeData>(
               updateNodeData(id, partial),
             setError: () => {}, // TODO: Wire up error handling
             getConnections: () => connections || [],
+            getNodes: () => [], // TODO: Implement getNodes function
             emitEvent: () => {},
             performance: { startTime: Date.now(), executionCount: 0 },
             security: { permissions: [], canExecute: true },
@@ -401,10 +405,47 @@ export function defineNode<TData extends BaseNodeData>(
 
   // Create the React component
   const NodeComponent: React.FC<any> = (props) => {
-    const { data, error, updateNodeData, id, isSelected = false } = props;
-    const [isExpanded, setIsExpanded] = React.useState(false);
-    const [executionContext, setExecutionContext] =
-      React.useState<NodeExecutionContext<TData>>();
+    // ========================================================================
+    // HOOKS
+    // ========================================================================
+
+    const { nodes, edges, updateNodeData, logNodeError } = useFlowStore();
+    const [isExpanded, setIsExpanded] = useState(true);
+
+    // This is the key to the bulletproof system. It creates a stable dependency
+    // that only changes when an upstream parent's data changes.
+    const parentDataDependency = useNodeDependencies(props.id, nodes, edges);
+
+    const executionContext: NodeExecutionContext<TData> = useMemo(
+      () => ({
+        nodeId: props.id,
+        data: props.data,
+        updateNodeData: (newData: Partial<TData>) => {
+          updateNodeData(props.id, newData);
+        },
+        setError: (error: string | null) => logNodeError(props.id, error || "Unknown Error"),
+        getConnections: () => edges,
+        getNodes: () => nodes,
+        emitEvent: nodeSystemEvents.emit,
+        performance: {
+          startTime: Date.now(),
+          executionCount: 0,
+        },
+        security: {
+          canExecute: true,
+          permissions: [],
+        },
+      }),
+      [props.id, props.data, nodes, edges, updateNodeData, logNodeError]
+    );
+
+    useEffect(() => {
+      if (config.processLogic) {
+        config.processLogic(executionContext);
+      }
+    }, [executionContext, config.processLogic, parentDataDependency]);
+    
+    const { data, error, id, isSelected = false } = props;
 
     // CATEGORY THEMING: Get theme for this node's category
     const categoryTheme = useCategoryTheme(config.metadata.nodeType);
@@ -413,70 +454,19 @@ export function defineNode<TData extends BaseNodeData>(
     );
 
     // Enable category theming system if not already enabled
-    React.useEffect(() => {
+    useEffect(() => {
       enableCategoryTheming();
     }, []);
 
-    // Create execution context
-    React.useEffect(() => {
-      const context: NodeExecutionContext<TData> = {
-        nodeId: id,
-        data: data || enhancedDefaultData,
-        updateNodeData,
-        setError: () => {}, // Placeholder
-        getConnections: () => [], // Placeholder
-        emitEvent: (eventType, payload) => {
-          nodeSystemEvents.emitV2(
-            "node:processing-start",
-            id,
-            config.metadata.nodeType
-          );
-        },
-        performance: {
-          startTime: Date.now(),
-          executionCount: 0,
-          lastExecution: undefined,
-        },
-        security: {
-          userId: undefined,
-          permissions: config.security?.permissions || [],
-          canExecute: true,
-        },
-      };
-      setExecutionContext(context);
-
-      // Call lifecycle hooks
-      if (config.lifecycle?.onMount) {
-        config.lifecycle.onMount(context);
-      }
-
-      return () => {
-        if (config.lifecycle?.onUnmount) {
-          config.lifecycle.onUnmount(context);
-        }
-      };
-    }, [id, data, updateNodeData]);
-
-    // Handle data changes
-    React.useEffect(() => {
-      if (executionContext && config.lifecycle?.onDataChange) {
-        const oldData = executionContext.data;
-        const newData = data || enhancedDefaultData;
-        if (oldData !== newData) {
-          config.lifecycle.onDataChange(newData, oldData, executionContext);
-        }
-      }
-    }, [data, executionContext]);
-
     // Create render context with category theming
     const renderContext: NodeRenderContext<TData> = {
-      data: data || enhancedDefaultData,
+      data,
       error,
       updateNodeData,
       id,
       isSelected,
       isExpanded,
-      context: executionContext || ({} as NodeExecutionContext<TData>),
+      context: executionContext,
       categoryTheme,
       categoryClasses,
     };
