@@ -30,7 +30,6 @@ interface SafetyLayers {
 
 interface GPUAccelerationResult {
   propagateUltraFast: (nodeId: string, isActive: boolean) => void;
-  enableGPUAcceleration: (nodeIds: string[]) => void;
   isGPUEnabled: boolean;
 }
 
@@ -76,11 +75,7 @@ export function useGPUAcceleration(
   // ULTRA-FAST PROPAGATION SYSTEM SETUP
   // ========================================================================
 
-  const { propagateUltraFast, enableGPUAcceleration } = useUltraFastPropagation(
-    connectionData.allNodes || [],
-    connectionData.connections,
-    updateNodeData
-  );
+  const { propagateUltraFast } = useUltraFastPropagation(updateNodeData);
 
   // ========================================================================
   // GPU ACCELERATION DETECTION AND SETUP
@@ -105,7 +100,6 @@ export function useGPUAcceleration(
 
   return {
     propagateUltraFast,
-    enableGPUAcceleration,
     isGPUEnabled,
   };
 }

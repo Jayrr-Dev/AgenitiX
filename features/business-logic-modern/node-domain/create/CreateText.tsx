@@ -85,34 +85,46 @@ const CreateText = createNodeComponent<CreateTextData>({
     setError,
   }) => {
     try {
-      // Filter for trigger connections.
-      // Some legacy edges use the data-type letter ("b") instead of the handle id ("trigger").
-      const triggerConnections = connections.filter((c) => {
-        if (!c.targetHandle) return false;
-        return c.targetHandle === "trigger" || c.targetHandle === "b";
-      });
+      // 1. Find trigger connections. This is robustly checked.
+      const triggerConnections = connections.filter(
+        (c) => c && (c.targetHandle === "trigger" || c.targetHandle === "b")
+      );
 
-      // Get trigger value from connected trigger nodes
-      const triggerValue = getSingleInputValue(nodesData);
-      const isActive = isTruthyValue(triggerValue);
+      let shouldOutputText = true; // Default to ON if no trigger is connected.
 
-      // Get the held text (what user has typed)
-      const outputText = typeof data.heldText === "string" ? data.heldText : "";
+      // 2. If trigger connections exist, the node's output depends on them.
+      if (triggerConnections.length > 0) {
+        shouldOutputText = false; // Default to OFF unless an active trigger is found.
 
-      // Validate text length (prevent memory issues)
-      if (outputText.length > 100000) {
-        throw new Error("Text too long (max 100,000 characters)");
+        const triggerSourceIds = triggerConnections.map((c) => c.source);
+        const triggerNodesData = nodesData.filter(
+          (node) => node && triggerSourceIds.includes(node.id)
+        );
+
+        // 3. Check if ANY connected trigger source is active.
+        const isAnyTriggerActive = triggerNodesData.some((node) => {
+          if (!node.data) return false;
+          // Check common 'active' properties directly. Look for a strict 'true'.
+          const value =
+            node.data.outputValue ?? node.data.value ?? node.data.triggered;
+          return value === true;
+        });
+
+        if (isAnyTriggerActive) {
+          shouldOutputText = true;
+        }
       }
 
-      // Output logic: output text if no trigger connected OR trigger is active
-      const shouldOutput = triggerConnections.length === 0 || isActive;
-      const finalOutput = shouldOutput ? outputText : "";
+      const outputText = data.heldText || "";
+      const finalOutput = shouldOutputText ? outputText : "";
 
-      updateNodeData(id, {
-        text: finalOutput,
-      });
+      // 4. Only send an update if the output has actually changed.
+      if (data.text !== finalOutput) {
+        updateNodeData(id, {
+          text: finalOutput,
+        });
+      }
 
-      // Clear any existing errors
       setError(null);
     } catch (updateError) {
       console.error(`CreateText ${id} - Update error:`, updateError);

@@ -180,15 +180,6 @@ const ViewOutput = createNodeComponent<ViewOutputData>({
     setError,
   }) => {
     try {
-      // SAFETY CHECK - Ensure nodesData is valid
-      if (!Array.isArray(nodesData)) {
-        console.warn(
-          `ViewOutput ${id} - nodesData is not an array:`,
-          nodesData
-        );
-        return; // Exit early if nodesData is invalid
-      }
-
       // Build list of source node IDs that connect into this ViewOutput
       const connectedSourceIds = (Array.isArray(connections) ? connections : [])
         .filter((c) => c && c.target === id)

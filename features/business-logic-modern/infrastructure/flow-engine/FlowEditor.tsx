@@ -257,52 +257,13 @@ function FlowEditorContent() {
     onNodeAdd: addNodeWithHistory,
   });
 
-  // Error logging setup
+  // Error logging
   useErrorLogging({ selectedNodeId, logNodeError });
 
-  // ============================================================================
-  // ULTRA FAST PROPAGATION INTEGRATION 🚀
-  // ============================================================================
-
-  const {
-    propagateUltraFast,
-    activateNode,
-    deactivateNode,
-    forceDeactivate,
-    getNodeState,
-    enableGPUAcceleration,
-    isNodeActive,
-    isNodeInactive,
-    isNodePending,
-    updateNodeDataWithBusinessLogic,
-  } = useUltraFastPropagation(nodes, edges as any, updateNodeData);
-
-  // Make propagation methods globally accessible for nodes
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      (window as any).ufpePropagation = {
-        propagateUltraFast,
-        activateNode,
-        deactivateNode,
-        forceDeactivate,
-        getNodeState,
-        isNodeActive,
-        isNodeInactive,
-        isNodePending,
-        updateNodeDataWithBusinessLogic,
-      };
-    }
-  }, [
-    propagateUltraFast,
-    activateNode,
-    deactivateNode,
-    forceDeactivate,
-    getNodeState,
-    isNodeActive,
-    isNodeInactive,
-    isNodePending,
-    updateNodeDataWithBusinessLogic,
-  ]);
+  // Ultra-fast propagation engine - CORRECTED
+  // The engine is now stateless and only needs the update callback.
+  const { propagateUltraFast, forceDeactivate, updateNodeDataWithBusinessLogic } =
+    useUltraFastPropagation(updateNodeData);
 
   // ============================================================================
   // DERIVED STATE

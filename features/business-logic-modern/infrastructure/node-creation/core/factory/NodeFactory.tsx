@@ -224,7 +224,8 @@ export function createNodeComponent<T extends BaseNodeData>(
       nodeState,
       connData,
       regCfg as unknown as NodeFactoryConfig<T>,
-      safetyRef.current
+      safetyRef.current,
+      nodeState.updateNodeDataWithBusinessLogic
     );
     const styling = useNodeStyling(
       regCfg.nodeType,
@@ -246,7 +247,7 @@ export function createNodeComponent<T extends BaseNodeData>(
     useEffect(() => {
       const { state, dataFlow, propagationEngine, propagateUltraFast } =
         safetyRef.current;
-      state.registerNode(id, nodeState.data as T, nodeState.updateNodeDataSafe);
+      state.registerNode(id, nodeState.data as T, nodeState.updateNodeDataWithBusinessLogic);
       dataFlow.setNodeActivation(id, procState.isActive);
       propagateUltraFast(id, procState.isActive, false);
       return () => {
@@ -257,7 +258,7 @@ export function createNodeComponent<T extends BaseNodeData>(
         state.cleanup(id);
         dataFlow.cleanup(id);
       };
-    }, [id, nodeState.data, nodeState.updateNodeDataSafe, procState.isActive]);
+    }, [id, nodeState.data, nodeState.updateNodeDataWithBusinessLogic, procState.isActive]);
 
     /* Sync DOM with machine state */
     useEffect(() => {

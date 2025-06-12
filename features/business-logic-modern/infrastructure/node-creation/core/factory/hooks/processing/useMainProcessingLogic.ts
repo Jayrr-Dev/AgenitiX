@@ -54,6 +54,7 @@ interface ProcessingState {
  * @param nodeState - Node state management
  * @param activationState - Activation calculation result
  * @param propagateUltraFast - Ultra-fast propagation function
+ * @param updateNodeDataWithBusinessLogic - Engine's updater function
  */
 export function useMainProcessingLogic<T extends BaseNodeData>(
   id: string,
@@ -85,26 +86,28 @@ export function useMainProcessingLogic<T extends BaseNodeData>(
   // ========================================================================
 
   useEffect(() => {
-    processNodeLogic();
+    // Use a timeout to defer processing until the end of the current event loop tick.
+    // This is the definitive fix for the race condition where a node processes
+    // its inputs before its upstream dependencies have finished updating their own state.
+    const timerId = setTimeout(() => {
+      processNodeLogic();
+    }, 0);
+
+    return () => clearTimeout(timerId);
   }, [
     id,
-    connectionData.relevantConnectionData,
-    connectionData.nodesData,
     config.nodeType,
-    config.processLogic,
+    // The activation state of the node itself.
     activationState.calculatedIsActive,
+    // A stable summary of the connections.
+    connectionData.relevantConnectionData,
+    // A stable summary of all nodes' data. The engine's fix ensures this
+    // hook re-runs when upstream data changes, so a simple stringify is sufficient.
+    JSON.stringify(connectionData.nodesData),
+    // Functions are stable.
     nodeState.updateNodeData,
     propagateUltraFast,
-    (nodeData as any)?.heldText, // Include text changes for input nodes
-    (nodeData as any)?.isManuallyActivated, // Include manual activation changes for test nodes
-    (nodeData as any)?.triggerMode, // Include trigger mode changes
-    (nodeData as any)?.value, // Include value changes for output nodes
-    // CRITICAL FIX - Include upstream node activation states to trigger processLogic
-    // when connected nodes activate/deactivate (fixes ViewOutput data persistence issue)
-    JSON.stringify(connectionData.nodesData.map(node => ({ 
-      id: node.id, 
-      isActive: node.data?.isActive 
-    }))),
+    config.processLogic,
   ]);
 
   // ========================================================================
