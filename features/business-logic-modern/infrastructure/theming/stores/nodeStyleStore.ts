@@ -122,6 +122,9 @@ export interface NodeStyleActions {
   updateErrorStyle(s: Partial<NodeStyleState["error"]>): void;
   updateBaseStyle(s: Partial<NodeStyleState["base"]>): void;
   resetToDefaults(): void;
+  /* glow effect utilities */
+  setSelectionGlow(preset: keyof typeof GLOW_PRESETS | string): void;
+  setHoverGlow(preset: keyof typeof GLOW_PRESETS | string): void;
   /* category theming */
   enableCategoryTheming(): void;
   disableCategoryTheming(): void;
@@ -131,11 +134,68 @@ export interface NodeStyleActions {
   toggleDebugMode(): void;
 }
 
+// ============================================================================
+// GLOW CONFIGURATION - Easy to find and adjust visual effects
+// ============================================================================
+
+/**
+ * SELECTION GLOW CONFIGURATION
+ * 
+ * Easily adjustable glow effects for node selection states.
+ * Modify these values to change the visual appearance of node selection.
+ * 
+ * Format: shadow-[offsetX_offsetY_blurRadius_spreadRadius_color]
+ * - offsetX/Y: Shadow position (usually 0_0 for centered glow)
+ * - blurRadius: How soft/spread the glow is (higher = more diffuse)
+ * - spreadRadius: How far the glow extends (higher = larger glow)
+ * - color: RGBA color with alpha for transparency
+ */
+const GLOW_EFFECTS = {
+  /** Subtle hover glow - appears on mouse hover */
+  hover: "shadow-[0_0_3px_0px_rgba(255,255,255,0.1)]",
+  
+  /** Selection glow - faint white glow when node is selected */
+  selection: "shadow-[0_0_4px_1px_rgba(255,255,255,0.6)]",
+  
+  /** Active state glow - green glow for active/running nodes */
+  activation: "shadow-[0_0_8px_2px_rgba(34,197,94,0.8)]",
+  
+  /** Error state glow - red glow for nodes with errors */
+  error: "shadow-[0_0_8px_2px_rgba(239,68,68,0.8)]",
+} as const;
+
+/**
+ * GLOW UTILITY FUNCTIONS
+ * 
+ * Helper functions to create custom glow effects programmatically.
+ * Use these if you need to generate glow effects dynamically.
+ */
+export const createGlowEffect = (
+  blurRadius: number = 8,
+  spreadRadius: number = 2,
+  color: string = "255,255,255",
+  opacity: number = 0.8
+): string => {
+  return `shadow-[0_0_${blurRadius}px_${spreadRadius}px_rgba(${color},${opacity})]`;
+};
+
+/**
+ * Predefined glow presets for common use cases
+ */
+export const GLOW_PRESETS = {
+  subtle: createGlowEffect(4, 1, "255,255,255", 0.4),
+  normal: createGlowEffect(8, 2, "255,255,255", 0.8),
+  strong: createGlowEffect(12, 3, "255,255,255", 1.0),
+  blue: createGlowEffect(8, 2, "59,130,246", 0.8),
+  green: createGlowEffect(8, 2, "34,197,94", 0.8),
+  red: createGlowEffect(8, 2, "239,68,68", 0.8),
+} as const;
+
 const DEFAULT_STYLES: NodeStyleState = {
-  hover: { glow: "shadow-[0_0_3px_0px_rgba(255,255,255,0.3)]" },
-  selection: { glow: "shadow-[0_0_4px_1px_rgba(255,255,255,0.6)]" },
+  hover: { glow: GLOW_EFFECTS.hover },
+  selection: { glow: GLOW_EFFECTS.selection },
   activation: {
-    glow: "shadow-[0_0_8px_2px_rgba(34,197,94,0.8)]",
+    glow: GLOW_EFFECTS.activation,
     border: "border-green-300/60 dark:border-green-400/50",
     scale: "scale-[1.02]",
     buttonTheme: {
@@ -144,7 +204,7 @@ const DEFAULT_STYLES: NodeStyleState = {
     },
   },
   error: {
-    glow: "shadow-[0_0_8px_2px_rgba(239,68,68,0.8)]",
+    glow: GLOW_EFFECTS.error,
     border: "border-red-300/60 dark:border-red-400/50",
     scale: "scale-[1.02]",
     buttonTheme: {
@@ -179,6 +239,16 @@ export const useNodeStyleStore = create<NodeStyleState & NodeStyleActions>(
     updateErrorStyle: (s) => set((st) => ({ error: { ...st.error, ...s } })),
     updateBaseStyle: (s) => set((st) => ({ base: { ...st.base, ...s } })),
     resetToDefaults: () => set(DEFAULT_STYLES),
+
+    // Glow effect utilities for easy adjustment
+    setSelectionGlow: (preset) => {
+      const glowValue = preset in GLOW_PRESETS ? GLOW_PRESETS[preset as keyof typeof GLOW_PRESETS] : preset;
+      set((st) => ({ selection: { ...st.selection, glow: glowValue } }));
+    },
+    setHoverGlow: (preset) => {
+      const glowValue = preset in GLOW_PRESETS ? GLOW_PRESETS[preset as keyof typeof GLOW_PRESETS] : preset;
+      set((st) => ({ hover: { ...st.hover, glow: glowValue } }));
+    },
 
     enableCategoryTheming: () =>
       set((st) => ({

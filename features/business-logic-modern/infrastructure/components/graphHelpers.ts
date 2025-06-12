@@ -27,7 +27,7 @@ export const createRootGraph = (initialState: FlowState): HistoryGraph => {
         id: rootId,
         parentId: null,
         childrenIds: [],
-        label: "INIT",
+        label: "INITIAL",
         before: initialState,
         after: initialState,
         createdAt: Date.now(),
