@@ -30,20 +30,21 @@ import {
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import type { NodeType } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 
-// REGISTRY INTEGRATION - Enhanced imports
+// REGISTRY INTEGRATION - Imports from the new modern node registry
 import {
-  getLegacyModernNodeRegistry,
-  getNodeCapabilities,
+  modernNodeRegistry,
   getNodeMetadata,
-  safeNodeTypeCast,
-  validateNodeForInspector,
-} from "../node-creation/core/registries/json-node-registry/unifiedRegistry";
+  validateNode,
+} from "@/features/business-logic-modern/infrastructure/node-registry/modern-node-registry";
+// import { nanoid } from "nanoid"; // Removed due to resolver issues
+import type { Node as ReactFlowNode } from "@xyflow/react";
 
-// Create the MODERN_NODE_REGISTRY alias for backward compatibility
-const MODERN_NODE_REGISTRY = getLegacyModernNodeRegistry();
+// Create the MODERN_NODE_REGISTRY alias by converting the new registry
+const MODERN_NODE_REGISTRY: Record<string, any> = Object.fromEntries(
+  modernNodeRegistry.entries()
+);
 
-// FACTORY INTEGRATION - Enhanced node creation
-import { createNode } from "../node-creation/core/factory/utils";
+// FACTORY INTEGRATION - REMOVED
 
 import { SidebarTabs } from "./SidebarTabs";
 import { ToggleButton } from "./ToggleButton";
@@ -55,6 +56,9 @@ import {
   getSidebarStatistics,
   validateSidebarConfiguration,
 } from "./constants";
+
+// DEBUGGING UTILITIES - Development helpers
+import "./utils/debugUtils";
 
 // ============================================================================
 // ENHANCED INTERFACES - Registry Integration
@@ -154,89 +158,82 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
       (nodeType: string, customPosition?: { x: number; y: number }) => {
         try {
           // STEP 1: Registry validation with detailed feedback
-          const validation = validateNodeForInspector(nodeType);
+          const validation = validateNode(nodeType);
 
           if (!validation.isValid) {
-            const errorMsg = `Invalid node type '${nodeType}': ${validation.warnings.join(", ")}`;
+            const errorMsg = `Invalid node type '${nodeType}': ${validation.warnings.join(
+              ", "
+            )}`;
             console.error("❌ Node creation failed:", errorMsg);
             console.error("💡 Suggestions:", validation.suggestions);
             onCreationError?.(errorMsg, nodeType);
             return false;
           }
 
-          // STEP 2: Safe type casting with registry validation
-          const validNodeType = safeNodeTypeCast(nodeType);
-          if (!validNodeType) {
-            const errorMsg = `Failed to cast '${nodeType}' to valid NodeType`;
-            console.error("❌ Type casting failed:", errorMsg);
+          // STEP 2: Get enhanced metadata from the new registry
+          const metadata = getNodeMetadata(nodeType);
+          if (!metadata) {
+            const errorMsg = `Failed to get metadata for '${nodeType}'`;
+            console.error("❌ Metadata retrieval failed:", errorMsg);
             onCreationError?.(errorMsg, nodeType);
             return false;
           }
 
-          // STEP 3: Get enhanced metadata from registry
-          const metadata = getNodeMetadata(validNodeType);
-          const capabilities = getNodeCapabilities(validNodeType);
-
           if (enableDebug) {
-            console.log("🏭 Creating node with registry metadata:", {
-              nodeType: validNodeType,
-              displayName: metadata?.displayName,
-              category: capabilities.category,
-              folder: capabilities.folder,
-              hasOutput: capabilities.hasOutput,
-              hasControls: capabilities.hasControls,
+            console.log("🏭 Creating node with modern registry metadata:", {
+              nodeType: metadata.nodeType,
+              displayName: metadata.displayName,
+              category: metadata.category,
+              folder: metadata.sidebar.folder,
             });
           }
 
-          // STEP 4: Calculate position (custom or mouse-based)
-          const targetPosition = customPosition || {
-            x: mousePositionRef.current.x,
-            y: mousePositionRef.current.y,
-          };
+          // STEP 3: Calculate position (custom or mouse-based)
+          const targetPosition =
+            customPosition || {
+              x: mousePositionRef.current.x,
+              y: mousePositionRef.current.y,
+            };
 
           // Convert screen coordinates to flow coordinates
           const flowPosition = screenToFlowPosition(targetPosition);
 
-          // STEP 5: Create node using factory with registry defaults
-          const factoryNode = createNode(
-            validNodeType as NodeType,
-            flowPosition
-          );
+          // STEP 4: Create a new node object directly
+          const newNode: ReactFlowNode = {
+            id: `node_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            type: metadata.nodeType,
+            position: flowPosition,
+            data: {
+              // Populate initial data from metadata defaults
+              ...Object.fromEntries(
+                Object.entries(metadata.data).map(([key, value]) => [
+                  key,
+                  value.default,
+                ])
+              ),
+            },
+          };
 
-          // STEP 6: Enhance factory node with registry metadata (preserve original structure)
-          if (metadata) {
-            factoryNode.data = {
-              ...factoryNode.data,
-              // Registry metadata enhancement (non-breaking addition)
-              _registryMetadata: {
-                displayName: metadata.displayName,
-                description: metadata.description,
-                category: metadata.category,
-                folder: metadata.folder,
-                icon: metadata.icon,
-              },
-            };
-          }
+          // STEP 5: Add node to the store
+          addNode(newNode as any);
 
-          // STEP 7: Add node to store using factory node (compatible by design)
-          addNode(factoryNode as any); // Safe cast - factory nodes are designed to be compatible
-
-          // STEP 8: Success feedback
+          // STEP 6: Success feedback
           if (enableDebug) {
             console.log("✅ Node created successfully:", {
-              id: factoryNode.id,
-              type: factoryNode.type,
-              position: factoryNode.position,
-              hasRegistryData: !!factoryNode.data._registryMetadata,
+              id: newNode.id,
+              type: newNode.type,
+              position: newNode.position,
             });
           }
 
-          // STEP 9: Optional callback
-          onNodeCreated?.(validNodeType as NodeType, factoryNode.id);
+          // STEP 7: Optional callback
+          onNodeCreated?.(metadata.nodeType as NodeType, newNode.id);
 
           return true;
         } catch (error) {
-          const errorMsg = `Node creation failed: ${error instanceof Error ? error.message : String(error)}`;
+          const errorMsg = `Node creation failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`;
           console.error("❌ Critical node creation error:", error);
           onCreationError?.(errorMsg, nodeType);
           return false;
@@ -315,13 +312,13 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
             </div>
             {registryStats && (
               <div className="space-y-1">
-                <div>Total Nodes: {registryStats.totalNodes}</div>
+                <div>Total Nodes: {registryStats.totalRegisteredNodes}</div>
                 <div>
                   Categories:{" "}
-                  {Object.keys(registryStats.nodesByCategory).length}
+                  {Object.keys(registryStats.categoryNames).length}
                 </div>
                 <div>
-                  Folders: {Object.keys(registryStats.nodesByFolder).length}
+                  Folders: {Object.keys(registryStats.folderNames).length}
                 </div>
               </div>
             )}

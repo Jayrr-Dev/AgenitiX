@@ -4,17 +4,14 @@
  * • Provides undo/redo buttons with keyboard shortcut support
  * • History panel toggle for viewing action timeline
  * • Fullscreen mode toggle (browser environments only)
- * • Vibe mode toggle for JSON handle visibility
  * • Environment detection for desktop vs browser features
  *
- * Keywords: toolbar, undo-redo, history, fullscreen, vibe-mode, shortcuts
+ * Keywords: toolbar, undo-redo, history, fullscreen, shortcuts
  */
 
 "use client";
 
-import { useVibeModeStore } from "@/features/business-logic-modern/infrastructure/node-creation/systems/intergration/stores/vibeModeStore";
 import {
-  Braces,
   History,
   Maximize,
   Minimize,
@@ -39,10 +36,6 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
   const { canUndo, canRedo } = getHistory();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isBrowserEnvironment, setIsBrowserEnvironment] = useState(false);
-
-  // Vibe Mode state
-  const { isVibeModeActive, showVibeHandles, toggleVibeMode } =
-    useVibeModeStore();
 
   // Detect if running in browser vs desktop/Electron app
   useEffect(() => {
@@ -170,26 +163,6 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
           </button>
         </>
       )}
-
-      <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1" />
-
-      <button
-        onClick={toggleVibeMode}
-        className={`p-2 rounded transition-colors ${
-          showVibeHandles || isVibeModeActive
-            ? "bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 ring-2 ring-purple-300 dark:ring-purple-700"
-            : "hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400"
-        }`}
-        title={
-          showVibeHandles || isVibeModeActive
-            ? "Hide Vibe Handles (Vibe Mode)"
-            : "Show Vibe Handles (Vibe Mode)"
-        }
-      >
-        <Braces
-          className={`w-4 h-4 ${showVibeHandles || isVibeModeActive ? "animate-pulse" : ""}`}
-        />
-      </button>
     </div>
   );
 };

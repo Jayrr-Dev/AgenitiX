@@ -17,11 +17,8 @@ import React, { useCallback, useMemo } from "react";
 
 // MODERN REGISTRY INTEGRATION - Import proper types and registry
 import type { NodeType } from "../../flow-engine/types/nodeData";
-import {
-  getNodeMetadata,
-  isValidNodeType,
-  type EnhancedNodeRegistration,
-} from "../../node-creation/core/registries/json-node-registry/unifiedRegistry";
+import { getNodeMetadata } from "../../node-registry/modern-node-registry";
+import type { NodeMetadata } from "../../node-registry/types";
 
 // ============================================================================
 // COMPONENT INTERFACE
@@ -63,15 +60,8 @@ function getOutputFormattingPreferences(nodeType: string): {
   customIcon?: string;
   displayName?: string;
   category?: string;
-  metadata: EnhancedNodeRegistration | null;
+  metadata: NodeMetadata | null;
 } {
-  if (!isValidNodeType(nodeType)) {
-    return {
-      hasCustomFormatting: false,
-      metadata: null,
-    };
-  }
-
   const metadata = getNodeMetadata(nodeType as NodeType);
   if (!metadata) {
     return {

@@ -116,14 +116,21 @@ export default function (plop) {
               ? "void"
               : "any";
 
-      // 1. Create the main node component
+      // 1. Create the main node component in its own folder
       actions.push({
         type: "add",
-        path: "features/business-logic-modern/node-domain/{{category}}/{{componentName}}.tsx",
+        path: "features/business-logic-modern/node-domain/{{category}}/{{componentName}}/{{componentName}}.tsx",
         templateFile: "templates/v2-node-component.hbs",
       });
 
-      // 2. Create custom control component if needed
+      // 2. Create the meta.json file for the new node
+      actions.push({
+        type: "add",
+        path: "features/business-logic-modern/node-domain/{{category}}/{{componentName}}/meta.json",
+        templateFile: "templates/v2-meta-json.hbs",
+      });
+
+      // 3. Create custom control component if needed
       if (data.controlType === "custom") {
         actions.push({
           type: "add",
@@ -131,68 +138,6 @@ export default function (plop) {
           templateFile: "templates/v2-custom-control.hbs",
         });
       }
-
-      // 3. Update node registry (append to file)
-      actions.push({
-        type: "append",
-        path: "features/business-logic-modern/infrastructure/node-creation/json-node-registry/generated/nodeRegistry.ts",
-        pattern: "// V2U_PLOP_INSERTION_POINT",
-        template: `
-  {{nodeType}}: {
-    nodeType: "{{nodeType}}",
-    category: "{{category}}",
-    displayName: "{{displayName}}",
-    description: "{{description}}",
-    icon: "{{category}}-icon",
-    folder: "{{folder}}",
-    order: 999, // Will be adjusted in next registry build
-
-    // Dimensions
-    iconWidth: 240,
-    iconHeight: 120,
-    expandedWidth: 240,
-    expandedHeight: 120,
-
-    // UI Configuration
-    hasToggle: true,
-    isEnabled: true,
-    isExperimental: true, // V2 node
-
-    // Handles
-    handles: [
-      {{#if hasInput}}
-      {
-        id: "input",
-        type: "target",
-        position: "left",
-        dataType: "any",
-        description: "Input data",
-      },
-      {{/if}}
-      {{#if hasOutput}}
-      {
-        id: "output",
-        type: "source",
-        position: "right",
-        dataType: "{{outputType}}",
-        description: "Output data",
-      },
-      {{/if}}
-    ],
-
-    // Default data with V2 metadata
-    defaultData: {
-      {{#ifeq controlType "text"}}
-      text: "",
-      {{/ifeq}}
-      {{#ifeq controlType "toggle"}}
-      enabled: true,
-      {{/ifeq}}
-      _v2RegistryVersion: "2.0.0",
-      _v2CreatedAt: Date.now(),
-    },
-  },`,
-      });
 
       // 4. Update type system
       actions.push({

@@ -1,659 +1,182 @@
-/**
- * FLOW EDITOR - Complete visual workflow editor application
- *
- * • Main orchestrator component for node-based workflow creation
- * • Integrates sidebar, canvas, inspector, history, and debug tools
- * • Handles state management with Zustand and ReactFlow providers
- * • Manages keyboard shortcuts, drag-drop, copy-paste functionality
- * • Provides undo-redo, multi-selection, and responsive design
- *
- * Keywords: ReactFlow, Zustand, workflow-editor, state-management, providers, keyboard-shortcuts
- */
-
 "use client";
 
+import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
+import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import { ReactFlowProvider } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useEffect } from "react";
 
-// VISUAL NODE BUILDER STYLES
-import "../node-creation/systems/ui/visual-builder/VisualBuilder.css";
-
-// COMPONENT IMPORTS
-import DebugTool from "@infrastructure/components/DebugTool";
-import { UndoRedoProvider } from "@infrastructure/components/UndoRedoContext";
-import UndoRedoManager, {
-  ActionEntry,
-} from "@infrastructure/components/UndoRedoManager";
-import Sidebar, { SidebarRef } from "@infrastructure/sidebar/Sidebar";
-
-// LOCAL COMPONENT IMPORTS
+import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
 import { FlowCanvas } from "./components/FlowCanvas";
-import { FlowEditorLoading } from "./components/FlowEditorLoading";
-import { NodeDisplayProvider } from "./contexts/NodeDisplayContext";
-
-// VISUAL NODE BUILDER IMPORTS
-import {
-  VisualNodeBuilderProvider,
-  useVisualNodeBuilder,
-} from "../node-creation/systems/intergration/contexts/VisualNodeBuilderContext";
-import { VisualNodeBuilder } from "../node-creation/systems/ui/visual-builder";
-
-// STORE IMPORTS
-import { useFlowStore } from "@infrastructure/flow-engine/stores/flowStore";
-import { useVibeModeStore } from "../node-creation/systems/intergration/stores/vibeModeStore";
-
-// HOOK IMPORTS
-import { useUltraFastPropagation } from "../node-creation/core/factory/systems/propagation/UltraFastPropagationEngine";
-import { useUndoRedo } from "../components/UndoRedoContext";
-import { useDragAndDrop } from "./hooks/useDragAndDrop";
-import { useErrorLogging } from "./hooks/useErrorLogging";
-import { useFlowEditorHandlers } from "./hooks/useFlowEditorHandlers";
-import { useKeyboardShortcutHandlers } from "./hooks/useKeyboardShortcutHandlers";
-import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
-import { useMultiSelectionCopyPaste } from "./hooks/useMultiSelectionCopyPaste";
-import { useReactFlowHandlers } from "./hooks/useReactFlowHandlers";
-
-// TYPE IMPORTS
-import type { Edge, Node } from "@xyflow/react";
-import type { AgenEdge, AgenNode } from "./types/nodeData";
-import { getNodeOutput } from "./utils/outputUtils";
-
-// UTILITY IMPORTS
-import { syncNodeTypeConfigWithRegistry } from "./constants";
-
-// THEME INITIALIZATION IMPORT
-import { initializeThemeSystem } from "@infrastructure/theming/init/themeInitializer";
-
-// ============================================================================
-// TYPESCRIPT INTERFACES
-// ============================================================================
-
-interface ZustandActions {
-  setNodes: (nodes: AgenNode[]) => void;
-  setEdges: (edges: AgenEdge[]) => void;
-  updateNodePosition: (id: string, position: { x: number; y: number }) => void;
-  removeNode: (id: string) => void;
-  removeEdge: (id: string) => void;
-  selectNode: (id: string) => void;
-  selectEdge: (id: string) => void;
-  clearSelection: () => void;
-  addNode: (node: AgenNode) => void;
-  setInspectorLocked: (locked: boolean) => void;
-}
-
-// ============================================================================
-// FLOW EDITOR CONTENT COMPONENT
-// ============================================================================
-
-/**
- * FlowEditorContent - Main flow editor logic within ReactFlow context
- *
- * This component orchestrates all the flow editor functionality using
- * custom hooks for better separation of concerns and maintainability.
- */
-function FlowEditorContent() {
-  // ============================================================================
-  // REFS
-  // ============================================================================
-
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const flowInstanceRef = useRef<any>(null);
-  const sidebarRef = useRef<SidebarRef>(null);
-
-  // ============================================================================
-  // ZUSTAND STORE STATE
-  // ============================================================================
-
-  const {
-    // State
-    nodes,
-    edges,
-    selectedNodeId,
-    selectedEdgeId,
-    showHistoryPanel,
-    inspectorLocked,
-    nodeErrors,
-
-    // Actions
-    updateNodeData,
-    addNode,
-    removeNode,
-    updateNodePosition,
-    addEdge,
-    removeEdge,
-    selectNode,
-    selectEdge,
-    clearSelection,
-    toggleHistoryPanel,
-    setInspectorLocked,
-    logNodeError,
-    clearNodeErrors,
-    copySelectedNodes,
-    pasteNodes,
-    setNodes,
-    setEdges,
-    forceReset,
-  } = useFlowStore();
-
-  // ============================================================================
-  // LOCAL STATE
-  // ============================================================================
-
-  const [actionHistory, setActionHistory] = useState<ActionEntry[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-
-  // ============================================================================
-  // ZUSTAND ACTIONS OBJECT
-  // ============================================================================
-
-  const zustandActions: ZustandActions = {
-    setNodes,
-    setEdges,
-    updateNodePosition,
-    removeNode,
-    removeEdge,
-    selectNode,
-    selectEdge,
-    clearSelection,
-    addNode,
-    setInspectorLocked,
-  };
-
-  // ============================================================================
-  // CUSTOM HOOKS
-  // ============================================================================
-
-  // Flow editor handlers
-  const flowHandlers = useFlowEditorHandlers({
-    nodes,
-    edges,
-    flowInstanceRef,
-    zustandActions,
-  });
-
-  // Keyboard shortcut handlers
-  const keyboardHandlers = useKeyboardShortcutHandlers({
-    nodes,
-    edges,
-    sidebarRef,
-    zustandActions,
-    inspectorLocked,
-  });
-
-  // Multi-selection copy/paste functionality
-  const multiSelectionCopyPaste = useMultiSelectionCopyPaste();
-
-  // Drag and drop functionality with action recording
-  const { recordAction } = useUndoRedo();
-
-  // Enhanced addNode with action recording
-  const addNodeWithHistory = useCallback(
-    (node: AgenNode) => {
-      console.log("🎯 [FlowEditor] Adding node:", {
-        id: node.id,
-        type: node.type,
-        position: node.position,
-        isV2U: node.type.includes("V2U"),
-        dataKeys: Object.keys(node.data || {}),
-      });
-
-      try {
-        // Add the node first (this updates Zustand state)
-        console.log("🏗️ [FlowEditor] Calling Zustand addNode...");
-        addNode(node);
-        console.log("✅ [FlowEditor] Zustand addNode completed successfully");
-
-        // Record action after state is updated (proper flow)
-        console.log("📝 [FlowEditor] Recording node_add action");
-        recordAction("node_add", {
-          nodeId: node.id,
-          nodeType: node.type,
-          nodeLabel: node.data?.label || node.type,
-          position: node.position,
-        });
-        console.log("✅ [FlowEditor] Action recording completed");
-      } catch (error) {
-        console.error("❌ [FlowEditor] Failed to add node:", error);
-        console.error("🔍 [FlowEditor] Node details:", {
-          id: node.id,
-          type: node.type,
-          isV2U: node.type.includes("V2U"),
-          errorMessage: error instanceof Error ? error.message : String(error),
-        });
-      }
-    },
-    [addNode, recordAction]
-  );
-
-  // Enhanced removeEdge with action recording
-  const removeEdgeWithHistory = useCallback(
-    (edgeId: string) => {
-      const edgeToDelete = edges.find((e) => e.id === edgeId);
-      if (!edgeToDelete) return;
-
-      // Record action metadata before removal
-      const edgeMetadata = {
-        edgeId,
-        sourceNode: edgeToDelete.source,
-        targetNode: edgeToDelete.target,
-        sourceHandle: edgeToDelete.sourceHandle,
-        targetHandle: edgeToDelete.targetHandle,
-      };
-
-      // Remove edge first (this updates Zustand state)
-      removeEdge(edgeId);
-
-      // Record action after state is updated (proper flow)
-      recordAction("edge_delete", edgeMetadata);
-    },
-    [edges, removeEdge, recordAction]
-  );
-
-  // Drag and drop functionality
-  const dragAndDrop = useDragAndDrop({
-    flowInstance: flowInstanceRef,
-    wrapperRef,
-    onNodeAdd: addNodeWithHistory,
-  });
-
-  // Error logging
-  useErrorLogging({ selectedNodeId, logNodeError });
-
-  // Ultra-fast propagation engine - CORRECTED
-  // The engine is now stateless and only needs the update callback.
-  const { propagateUltraFast, forceDeactivate, updateNodeDataWithBusinessLogic } =
-    useUltraFastPropagation(updateNodeData);
-
-  // ============================================================================
-  // DERIVED STATE
-  // ============================================================================
-
-  const selectedNode = selectedNodeId
-    ? nodes.find((n) => n.id === selectedNodeId) || null
-    : null;
-  const selectedEdge = selectedEdgeId
-    ? edges.find((e) => e.id === selectedEdgeId) || null
-    : null;
-  const selectedOutput = selectedNode
-    ? getNodeOutput(selectedNode, nodes, edges)
-    : null;
-
-  // ============================================================================
-  // VIBE MODE
-  // ============================================================================
-
-  const { toggleVibeMode } = useVibeModeStore();
-
-  // ============================================================================
-  // REACTFLOW HANDLERS SETUP
-  // ============================================================================
-
-  // Wrapper functions for ReactFlow handlers
-  const setNodesWrapper = useCallback(
-    (nodesOrFn: AgenNode[] | ((prev: AgenNode[]) => AgenNode[])) => {
-      if (typeof nodesOrFn === "function") {
-        setNodes(nodesOrFn(nodes));
-      } else {
-        setNodes(nodesOrFn);
-      }
-    },
-    [nodes, setNodes]
-  );
-
-  const setEdgesWrapper = useCallback(
-    (edgesOrFn: AgenEdge[] | ((prev: AgenEdge[]) => AgenEdge[])) => {
-      if (typeof edgesOrFn === "function") {
-        setEdges(edgesOrFn(edges));
-      } else {
-        setEdges(edgesOrFn);
-      }
-    },
-    [edges, setEdges]
-  );
-
-  // Get color-coded connection handlers
-  const {
-    onConnect: colorCodedOnConnect,
-    onReconnectStart,
-    onReconnect,
-    onReconnectEnd,
-  } = useReactFlowHandlers({
-    nodes,
-    edges,
-    setNodes: setNodesWrapper,
-    setEdges: setEdgesWrapper,
-    onSelectionChange: selectNode,
-    onEdgeSelectionChange: selectEdge,
-  });
-
-  // Combine handlers for FlowCanvas
-  const reactFlowHandlers = {
-    onConnect: colorCodedOnConnect,
-    onReconnectStart,
-    onReconnect,
-    onReconnectEnd,
-    onNodesChange: flowHandlers.handleNodesChange,
-    onEdgesChange: flowHandlers.handleEdgesChange,
-    onSelectionChange: flowHandlers.handleSelectionChange,
-    onInit: flowHandlers.handleInit,
-  };
-
-  // ============================================================================
-  // VISUAL NODE BUILDER INTEGRATION
-  // ============================================================================
-
-  const { isVisible: isBuilderVisible, toggleBuilder } = useVisualNodeBuilder();
-
-  // ============================================================================
-  // KEYBOARD SHORTCUTS SETUP
-  // ============================================================================
-
-  useKeyboardShortcuts({
-    onCopy: multiSelectionCopyPaste.copySelectedElements,
-    onPaste: multiSelectionCopyPaste.pasteElements,
-    onDelete: keyboardHandlers.handleMultiDelete,
-    onToggleHistory: toggleHistoryPanel,
-    onToggleVibeMode: toggleVibeMode,
-    onToggleInspectorLock: keyboardHandlers.handleToggleInspectorLock,
-    onDuplicateNode: keyboardHandlers.handleDuplicateSelectedNode,
-    onToggleSidebar: keyboardHandlers.handleToggleSidebar,
-    onSelectAll: keyboardHandlers.handleSelectAllNodes,
-    onClearSelection: keyboardHandlers.handleClearSelection,
-  });
-
-  // ============================================================================
-  // KEYBOARD SHORTCUT FOR DEV BUILDER (Ctrl/Cmd + B)
-  // ============================================================================
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        (event.ctrlKey || event.metaKey) &&
-        event.key === "b" &&
-        !event.shiftKey &&
-        !event.altKey
-      ) {
-        event.preventDefault();
-        toggleBuilder();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [toggleBuilder]);
-
-  // ============================================================================
-  // MOUSE TRACKING FOR PASTE POSITIONING
-  // ============================================================================
-
-  useEffect(() => {
-    return multiSelectionCopyPaste.installMouseTracking();
-  }, [multiSelectionCopyPaste.installMouseTracking]);
-
-  // ============================================================================
-  // UNDO/REDO HANDLERS
-  // ============================================================================
-
-  const handleHistoryChange = useCallback(
-    (history: ActionEntry[], currentIndex: number) => {
-      // Update local state so HistoryPanel can display the history
-      setActionHistory(history);
-      setHistoryIndex(currentIndex);
-    },
-    []
-  );
-
-  const handleNodesChangeWithHistory = useCallback(
-    (newNodes: Node[]) => {
-      setNodes(newNodes as AgenNode[]);
-    },
-    [setNodes]
-  );
-
-  const handleEdgesChangeWithHistory = useCallback(
-    (newEdges: Edge[]) => {
-      setEdges(newEdges as AgenEdge[]);
-    },
-    [setEdges]
-  );
-
-  // ============================================================================
-  // RENDER
-  // ============================================================================
-
-  return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      {/* SIDEBAR */}
-      <Sidebar ref={sidebarRef} />
-
-      {/* DEBUG TOOLS */}
-      <DebugTool />
-
-      {/* DEV ONLY - VISUAL NODE BUILDER OVERLAY */}
-      {isBuilderVisible && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-[95vw] h-[95vh] relative">
-            {/* Builder Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                🛠️ Visual Node Builder (Dev Only)
-              </h2>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Press Ctrl+B to toggle
-                </span>
-                <button
-                  onClick={toggleBuilder}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  title="Close Builder"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Builder Content */}
-            <div className="h-[calc(100%-4rem)]">
-              <VisualNodeBuilder
-                className="w-full h-full"
-                onSave={(nodeConfig) => {
-                  console.log(
-                    "🎯 [Dev Builder] Generated node config:",
-                    nodeConfig
-                  );
-                  // You can add logic here to automatically register the node
-                }}
-                onPreview={(visualConfig) => {
-                  console.log("👁️ [Dev Builder] Preview node:", visualConfig);
-                }}
-                onValidate={(nodeConfig) => {
-                  // Basic validation
-                  const errors: string[] = [];
-                  const warnings: string[] = [];
-
-                  if (!nodeConfig.nodeType) {
-                    errors.push("Node type is required");
-                  }
-
-                  if (!nodeConfig.displayName) {
-                    errors.push("Display name is required");
-                  }
-
-                  if (nodeConfig.handles.length === 0) {
-                    warnings.push("Node has no input/output handles");
-                  }
-
-                  return { errors, warnings };
-                }}
-                config={{
-                  theme: "auto",
-                  enableRealTimePreview: true,
-                  enableAutoSave: true,
-                  showGrid: true,
-                  snapToGrid: true,
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MAIN CONTENT */}
-      <div className="flex-1 flex flex-col">
-        {/* UNDO/REDO TOOLBAR */}
-        <UndoRedoManager
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={handleNodesChangeWithHistory}
-          onEdgesChange={handleEdgesChangeWithHistory}
-          onHistoryChange={handleHistoryChange}
-          config={{
-            positionDebounceMs: 300, // Better debouncing for movements
-            actionSeparatorMs: 200, // Proper separation between distinct actions
-            maxHistorySize: 100, // Reasonable history size
-            enableCompression: true, // Enable automatic compression
-            enableViewportTracking: false, // Disable for better performance
-          }}
-        />
-
-        {/* DEV BUILDER TOGGLE BUTTON - Floating Action Button */}
-        <button
-          onClick={toggleBuilder}
-          className="fixed bottom-6 right-6 z-40 bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-110 group"
-          title="Toggle Visual Node Builder (Ctrl+B)"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
-            />
-          </svg>
-          <span className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-            Dev Builder
-          </span>
-        </button>
-
-        {/* FLOW CANVAS */}
-        <FlowCanvas
-          nodes={nodes}
-          edges={edges}
-          selectedNode={selectedNode}
-          selectedEdge={selectedEdge}
-          selectedOutput={selectedOutput}
-          nodeErrors={nodeErrors}
-          showHistoryPanel={showHistoryPanel}
-          wrapperRef={wrapperRef}
-          updateNodeData={updateNodeData}
-          updateNodeId={flowHandlers.handleUpdateNodeId}
-          logNodeError={logNodeError}
-          clearNodeErrors={clearNodeErrors}
-          onToggleHistory={toggleHistoryPanel}
-          onDragOver={dragAndDrop.onDragOver}
-          onDrop={dragAndDrop.onDrop}
-          onDeleteNode={flowHandlers.handleDeleteNode}
-          onDuplicateNode={flowHandlers.handleDuplicateNode}
-          onDeleteEdge={removeEdgeWithHistory}
-          inspectorLocked={inspectorLocked}
-          setInspectorLocked={setInspectorLocked}
-          reactFlowHandlers={reactFlowHandlers}
-        />
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// MAIN FLOW EDITOR COMPONENT
-// ============================================================================
-
-/**
- * FlowEditor - Main component for the visual flow editor
- *
- * Refactored to use Zustand for state management and modular architecture
- * for better maintainability and performance.
- */
-export default function FlowEditor() {
-  // ============================================================================
-  // MOUNT STATE AND HYDRATION
-  // ============================================================================
-
-  const [mounted, setMounted] = useState(false);
-  const { _hasHydrated } = useFlowStore();
-
-  // ============================================================================
-  // JSON REGISTRY INITIALIZATION
-  // ============================================================================
-
-  useEffect(() => {
-    const syncSuccess = syncNodeTypeConfigWithRegistry();
-    if (!syncSuccess) {
-      console.warn(
-        "⚠️ [FlowEditor] JSON Registry sync failed - some controls may not appear"
-      );
-    }
-
-    // Initialize theme system with category colors
-    const themeSuccess = initializeThemeSystem({
-      enableDebug: false, // Set to true for debugging
-      logStatistics: true,
-    });
-
-    if (!themeSuccess) {
-      console.warn(
-        "⚠️ [FlowEditor] Theme system initialization failed - nodes may appear with default colors"
-      );
-    }
-  }, []);
-
-  // ============================================================================
-  // MOUNT EFFECT
-  // ============================================================================
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // ============================================================================
-  // EARLY RETURN FOR LOADING STATE
-  // ============================================================================
-
-  if (!mounted || !_hasHydrated) {
-    return <FlowEditorLoading mounted={mounted} hasHydrated={_hasHydrated} />;
+import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
+
+// Error Boundary Component
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
   }
 
-  // ============================================================================
-  // RENDER MAIN FLOW EDITOR
-  // ============================================================================
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("FlowEditor Error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-screen w-screen flex items-center justify-center bg-red-50 dark:bg-red-900">
+          <div className="text-center p-8">
+            <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
+              Something went wrong
+            </h1>
+            <p className="text-red-500 dark:text-red-300 mb-4">
+              {this.state.error?.message || "Unknown error occurred"}
+            </p>
+            <button
+              onClick={() => this.setState({ hasError: false })}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+const FlowEditorInternal = () => {
+  const flowWrapperRef = useRef<HTMLDivElement>(null);
+  
+  console.log("🚀 FlowEditorInternal rendering...");
+  
+  // Initialize theme system on mount
+  useEffect(() => {
+    try {
+      console.log("🎨 Initializing theme system...");
+      // Enable category theming directly using the store
+      const store = useNodeStyleStore.getState();
+      store.enableCategoryTheming();
+      console.log("✅ Theme system initialized");
+    } catch (error) {
+      console.error("❌ Theme initialization failed:", error);
+    }
+  }, []);
+
+  const {
+    nodes,
+    edges,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    addNode,
+    // Pull all other necessary props from the store
+    selectedNodeId,
+    selectedEdgeId,
+    nodeErrors,
+    showHistoryPanel,
+    inspectorLocked,
+    updateNodeData,
+    updateNodeId,
+    logNodeError,
+    clearNodeErrors,
+    toggleHistoryPanel,
+    setInspectorLocked,
+    removeNode,
+    removeEdge,
+  } = useFlowStore();
+
+  console.log("📊 Store data:", { 
+    nodesCount: nodes?.length || 0, 
+    edgesCount: edges?.length || 0,
+    selectedNodeId,
+    selectedEdgeId 
+  });
+
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+
+      const type = event.dataTransfer.getData("application/reactflow");
+      if (typeof type === "undefined" || !type) return;
+
+      const position = JSON.parse(event.dataTransfer.getData("application/reactflow-position"));
+      const newNode: Partial<AgenNode> = {
+        id: `${type}-${Math.random()}`,
+        type: type as any,
+        position,
+        data: {} as any,
+      };
+
+      addNode(newNode as AgenNode);
+    },
+    [addNode]
+  );
+  
+  const selectedNode = React.useMemo(() => nodes.find(n => n.id === selectedNodeId) || null, [nodes, selectedNodeId]);
+  const selectedEdge = React.useMemo(() => edges.find(e => e.id === selectedEdgeId) || null, [edges, selectedEdgeId]);
+
+  console.log("🎯 About to render FlowCanvas...");
 
   return (
-    <ReactFlowProvider>
-      <UndoRedoProvider>
-        <VisualNodeBuilderProvider>
-          <NodeDisplayProvider>
-            <FlowEditorContent />
-          </NodeDisplayProvider>
-        </VisualNodeBuilderProvider>
-      </UndoRedoProvider>
-    </ReactFlowProvider>
+    <div className="h-screen w-screen bg-gray-100 dark:bg-gray-900" style={{ height: "100vh", width: "100vw" }}>
+      <FlowCanvas
+        nodes={nodes}
+        edges={edges}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        selectedNode={selectedNode}
+        selectedEdge={selectedEdge}
+        selectedOutput={null}
+        nodeErrors={nodeErrors}
+        showHistoryPanel={showHistoryPanel}
+        wrapperRef={flowWrapperRef}
+        updateNodeData={updateNodeData}
+        updateNodeId={updateNodeId}
+        logNodeError={logNodeError}
+        clearNodeErrors={clearNodeErrors}
+        onToggleHistory={toggleHistoryPanel}
+        onDeleteNode={removeNode}
+        onDuplicateNode={() => {}}
+        onDeleteEdge={removeEdge}
+        inspectorLocked={inspectorLocked}
+        setInspectorLocked={setInspectorLocked}
+        reactFlowHandlers={{
+          onNodesChange,
+          onEdgesChange,
+          onConnect,
+          onInit: () => {},
+          onSelectionChange: () => {},
+          onReconnect: () => {},
+          onReconnectStart: () => {},
+          onReconnectEnd: () => {},
+        }}
+      />
+    </div>
   );
-}
+};
+
+export default function FlowEditor() {
+  console.log("🏁 FlowEditor main component rendering...");
+  
+  return (
+    <ErrorBoundary>
+      <ReactFlowProvider>
+        <FlowEditorInternal />
+      </ReactFlowProvider>
+    </ErrorBoundary>
+  )
+}; 

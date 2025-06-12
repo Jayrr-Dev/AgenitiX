@@ -1,29 +1,31 @@
 {
   "nodeType": "viewOutputV2U",
-  "category": "view",
-  "displayName": "View Output V2U",
-  "description": "Ultimate V2U output viewer with enhanced formatting and display options",
+  "category": "output",
+  "displayName": "View Output (V2U)",
+  "description": "Enhanced data viewing component with V2U architecture - displays values from connected nodes with type indicators",
   "component": "../ViewOutputV2U.tsx",
-  "icon": "eye",
+  "icon": "👁️",
   "ui": {
-    "size": { "width": 220, "height": 120 },
+    "size": { "width": 320, "height": 240 },
     "defaultCollapsed": false
   },
   "sidebar": {
     "folder": "main",
-    "order": 3
+    "order": 99
   },
   "handles": [
     {
       "id": "input",
       "type": "target",
-      "dataType": "string",
-      "position": "left"
+      "dataType": "any",
+      "position": "left",
+      "description": "Data input from any node - automatically extracts and displays values"
     }
   ],
   "data": {
-    "outputValue": { "type": "string", "default": "" },
-    "v2uFormatting": { "type": "object", "default": {} },
-    "displayOptions": { "type": "object", "default": {} }
+    "displayedValues": {
+      "type": "array",
+      "default": []
+    }
   }
 } 

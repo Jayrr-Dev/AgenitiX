@@ -1,7 +1,8 @@
 import { Search, X } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { HoveredStencil } from "../../components/StencilInfoPanel";
-import { AVAILABLE_NODES } from "../constants";
+import { getAllNodeMetadata } from "../../node-registry/modern-node-registry";
+import type { NodeMetadata } from "../../node-registry/types";
 import { StencilGrid } from "../StencilGrid";
 
 interface SearchBarProps {
@@ -59,10 +60,11 @@ export function SearchBar({
 
   // Create searchable stencils from all available nodes
   const allStencils = useMemo(() => {
-    return Object.entries(AVAILABLE_NODES).map(([filename, node], index) => ({
-      id: `search-${filename.toLowerCase()}-${index}`,
+    const nodeMetadata = getAllNodeMetadata();
+    return nodeMetadata.map((node: NodeMetadata, index: number) => ({
+      id: `search-${node.nodeType.toLowerCase()}-${index}`,
       nodeType: node.nodeType,
-      label: node.label,
+      label: node.displayName,
       description: node.description,
     }));
   }, []);
@@ -73,7 +75,7 @@ export function SearchBar({
 
     const query = searchQuery.toLowerCase();
     return allStencils.filter(
-      (stencil) =>
+      (stencil: { id: string; nodeType: string; label: string; description: string }) =>
         stencil.label.toLowerCase().includes(query) ||
         stencil.description.toLowerCase().includes(query) ||
         stencil.nodeType.toLowerCase().includes(query)

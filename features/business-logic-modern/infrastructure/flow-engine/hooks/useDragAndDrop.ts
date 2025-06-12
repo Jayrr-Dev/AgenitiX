@@ -12,44 +12,8 @@
 
 import type { ReactFlowInstance } from "@xyflow/react";
 import { useCallback } from "react";
-
-// USE UNIFIED TYPES FROM FLOW ENGINE
 import type { AgenNode } from "@infrastructure/flow-engine/types/nodeData";
-
-// USE MODERN UNIFIED REGISTRY DIRECTLY
-import {
-  getEnhancedNodeRegistration,
-  getLegacyModernNodeRegistry,
-  isValidNodeType,
-} from "../../node-creation/core/registries/json-node-registry/unifiedRegistry";
-
-// DEBUG: Make modern registry available globally for testing
-if (typeof window !== "undefined") {
-  (window as any).UnifiedRegistry = {
-    isValidNodeType,
-    getEnhancedNodeRegistration,
-    getLegacyModernNodeRegistry,
-  };
-  (window as any).testV2UNodes = () => {
-    const v2uNodes = [
-      "createTextV2U",
-      "viewOutputV2U",
-      "triggerOnToggleV2U",
-      "testErrorV2U",
-    ];
-    console.log("🧪 Testing V2U Node Modern Registry:");
-    v2uNodes.forEach((nodeType) => {
-      const isValid = isValidNodeType(nodeType);
-      const registration = getEnhancedNodeRegistration(nodeType);
-      console.log(`  - ${nodeType}: ${isValid ? "VALID ✅" : "INVALID ❌"}`);
-      if (registration) {
-        console.log(
-          `    Category: ${registration.category}, Folder: ${registration.folder}`
-        );
-      }
-    });
-  };
-}
+import { getNodeMetadata } from "../../node-registry/modern-node-registry";
 
 interface DragAndDropProps {
   flowInstance: React.RefObject<ReactFlowInstance<AgenNode, any> | null>;
@@ -62,150 +26,64 @@ export function useDragAndDrop({
   wrapperRef,
   onNodeAdd,
 }: DragAndDropProps) {
-  // ============================================================================
-  // DRAG OVER HANDLER
-  // ============================================================================
-
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
   }, []);
 
-  // ============================================================================
-  // DROP HANDLER - Using Integrated JSON Registry + Factory System
-  // ============================================================================
-
   const onDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
 
-      console.log("🎯 [DragDrop] Drop event triggered");
-
       if (!wrapperRef.current || !flowInstance.current) {
-        console.log("❌ [DragDrop] Missing refs:", {
-          wrapper: !!wrapperRef.current,
-          flow: !!flowInstance.current,
-        });
         return;
       }
 
       const nodeType = e.dataTransfer.getData("application/reactflow");
-      console.log(
-        "🔍 [DragDrop] Extracted node type from drag data:",
-        nodeType
-      );
-
-      // VALIDATE USING INTEGRATED JSON REGISTRY + FACTORY
       if (!nodeType) {
-        console.log("❌ [DragDrop] Node type is empty:", nodeType);
         return;
       }
 
-      // Enhanced validation logging for V2U nodes
-      console.log("🧪 [DragDrop] Starting V2U validation for:", nodeType);
-      const isValid = isValidNodeType(nodeType);
-      console.log("🎯 [DragDrop] isValidNodeType result:", {
-        nodeType,
-        isValid,
-        isV2U: nodeType.includes("V2U"),
-      });
-
-      if (!isValid) {
-        console.log("❌ [DragDrop] Node type validation FAILED:", nodeType);
-
-        // Additional debugging for V2U nodes
-        const registration = getEnhancedNodeRegistration(nodeType);
-        console.log("🔍 [DragDrop] Enhanced registration check:", {
-          nodeType,
-          hasRegistration: !!registration,
-          registrationData: registration
-            ? {
-                category: registration.category,
-                folder: registration.folder,
-                displayName: registration.displayName,
-              }
-            : null,
-        });
+      const metadata = getNodeMetadata(nodeType);
+      if (!metadata) {
+        console.error(`[DragDrop] Invalid node type dropped: ${nodeType}`);
         return;
       }
 
-      console.log("✅ [DragDrop] Node type validation PASSED for:", nodeType);
-
-      // Calculate drop position
       const bounds = wrapperRef.current.getBoundingClientRect();
       const position = flowInstance.current.screenToFlowPosition({
         x: e.clientX - bounds.left,
         y: e.clientY - bounds.top,
       });
 
-      console.log("📍 [DragDrop] Calculated drop position:", {
-        nodeType,
-        position,
-      });
-
       try {
-        // CREATE NODE USING MODERN UNIFIED REGISTRY
-        console.log("🏭 [DragDrop] Fetching registration for node creation...");
-        const registration = getEnhancedNodeRegistration(nodeType);
+        const defaultData = metadata.data
+          ? Object.fromEntries(
+              Object.entries(metadata.data).map(([key, { default: defaultValue }]) => [
+                key,
+                defaultValue,
+              ])
+            )
+          : {};
 
-        if (!registration) {
-          console.error("❌ [DragDrop] No registration found for:", nodeType);
-          console.error(
-            "🔍 [DragDrop] This should not happen after validation passed!"
-          );
-          return;
-        }
-
-        console.log("✅ [DragDrop] Registration found:", {
-          nodeType: registration.nodeType,
-          category: registration.category,
-          folder: registration.folder,
-          hasDefaultData: !!registration.defaultData,
-          defaultDataKeys: registration.defaultData
-            ? Object.keys(registration.defaultData)
-            : [],
-        });
-
-        // Create node with modern registry data
         const id = `node_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-        const flowNode: AgenNode = {
+        const newNode = {
           id,
-          type: nodeType as any,
+          type: nodeType,
           position,
           deletable: true,
           data: {
-            ...registration.defaultData,
-            isActive: false,
-            showUI: false,
+            ...defaultData,
+            isActive: false, // Default state
           },
-        };
-
-        console.log("✅ [DragDrop] Created node object:", {
-          id: flowNode.id,
-          type: flowNode.type,
-          position: flowNode.position,
-          dataKeys: Object.keys(flowNode.data || {}),
-          isV2U: nodeType.includes("V2U"),
-        });
-
-        console.log("🚀 [DragDrop] Calling onNodeAdd with node...");
-        onNodeAdd(flowNode);
-        console.log("✅ [DragDrop] onNodeAdd call completed successfully");
+        } as AgenNode;
+        onNodeAdd(newNode);
       } catch (error) {
         console.error("❌ [DragDrop] Failed to create node:", error);
-        console.error("🔍 [DragDrop] Error details:", {
-          nodeType,
-          errorMessage: error instanceof Error ? error.message : String(error),
-          errorStack: error instanceof Error ? error.stack : undefined,
-        });
       }
     },
     [flowInstance, wrapperRef, onNodeAdd]
   );
-
-  // ============================================================================
-  // RETURN HANDLERS
-  // ============================================================================
 
   return {
     onDragOver,

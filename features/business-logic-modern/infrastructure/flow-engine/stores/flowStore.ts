@@ -24,6 +24,14 @@ import {
   cleanupNodeTimers,
   emergencyCleanupAllTimers,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/timerCleanup";
+import {
+  OnNodesChange,
+  OnEdgesChange,
+  OnConnect,
+  applyNodeChanges,
+  applyEdgeChanges,
+  addEdge as addEdgeHelper,
+} from "@xyflow/react";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
@@ -57,6 +65,11 @@ interface FlowState {
 }
 
 interface FlowActions {
+  // React Flow Event Handlers
+  onNodesChange: OnNodesChange;
+  onEdgesChange: OnEdgesChange;
+  onConnect: OnConnect;
+
   // Node Operations
   updateNodeData: (
     nodeId: string,
@@ -140,6 +153,28 @@ export const useFlowStore = create<FlowStore>()(
     persist(
       immer((set, get) => ({
         ...initialState,
+
+        // ============================================================================
+        // REACT FLOW EVENT HANDLERS
+        // ============================================================================
+        onNodesChange: (changes) => {
+          set((state) => {
+            state.nodes = applyNodeChanges(changes, state.nodes) as AgenNode[];
+          });
+        },
+        onEdgesChange: (changes) => {
+          set((state) => {
+            state.edges = applyEdgeChanges(changes, state.edges) as AgenEdge[];
+          });
+        },
+        onConnect: (connection) => {
+          set((state) => {
+            state.edges = addEdgeHelper(
+              connection,
+              state.edges
+            ) as AgenEdge[];
+          });
+        },
 
         // ============================================================================
         // NODE OPERATIONS

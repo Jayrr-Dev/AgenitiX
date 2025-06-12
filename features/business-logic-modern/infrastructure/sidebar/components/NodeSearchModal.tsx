@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { AVAILABLE_NODES } from '../constants';
+import { getAllNodeMetadata } from '../../node-registry/modern-node-registry';
+import type { NodeMetadata } from '../../node-registry/types';
 import type { NodeStencil } from '../types';
 
 interface NodeSearchModalProps {
@@ -45,23 +46,27 @@ export function NodeSearchModal({
   // Filter available nodes based on search term and exclude already added nodes
   const filteredNodes = useMemo(() => {
     const searchLower = searchTerm.toLowerCase();
+    const nodeMetadata = getAllNodeMetadata();
     
-    return Object.entries(AVAILABLE_NODES)
-      .filter(([filename, node]) => {
+    return nodeMetadata
+      .filter((node: NodeMetadata) => {
         // Exclude nodes already in custom section
         if (existingNodes.includes(node.nodeType)) return false;
         
-        // Search in filename, label, and description
+        // Search in nodeType, displayName, description, and folder
         return (
-          filename.toLowerCase().includes(searchLower) ||
-          node.label.toLowerCase().includes(searchLower) ||
+          node.nodeType.toLowerCase().includes(searchLower) ||
+          node.displayName.toLowerCase().includes(searchLower) ||
           node.description.toLowerCase().includes(searchLower) ||
-          node.folder.toLowerCase().includes(searchLower)
+          (node.sidebar?.folder || '').toLowerCase().includes(searchLower)
         );
       })
-      .map(([filename, node]) => ({
-        filename,
-        ...node
+      .map((node: NodeMetadata) => ({
+        filename: node.nodeType, // Use nodeType as filename equivalent
+        nodeType: node.nodeType,
+        label: node.displayName,
+        description: node.description,
+        folder: node.sidebar?.folder || 'unknown'
       }));
   }, [searchTerm, existingNodes]);
 

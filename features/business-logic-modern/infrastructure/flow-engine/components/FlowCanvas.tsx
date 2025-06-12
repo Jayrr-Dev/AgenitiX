@@ -29,20 +29,17 @@ import type { AgenEdge, AgenNode } from "../types/nodeData";
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/components/ActionToolbar";
 import HistoryPanel from "@/features/business-logic-modern/infrastructure/components/HistoryPanel";
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
+import type { Node, NodeProps } from "@xyflow/react";
+import type { ComponentType } from "react";
 
-// Import unified registry for automated V2U node resolution
-import { getLegacyModernNodeRegistry } from "@/features/business-logic-modern/infrastructure/node-creation/core/registries/json-node-registry/unifiedRegistry";
-
-// Legacy component imports for fallback
-import CreateTextLegacy from "@/features/business-logic-modern/node-domain/create/CreateText";
-import CreateTextV2Legacy from "@/features/business-logic-modern/node-domain/create/CreateTextV2";
-import ViewOutputLegacy from "@/features/business-logic-modern/node-domain/view/ViewOutput";
-import TriggerOnToggleLegacy from "@/features/business-logic-modern/node-domain/trigger/TriggerOnToggle";
-import TestErrorLegacy from "@/features/business-logic-modern/node-domain/test/TestError";
+// Modern V2U component imports for the inline manifest
+import CreateTextV2U from "@/features/business-logic-modern/node-domain/create/CreateTextV2U";
+import TestErrorV2U from "@/features/business-logic-modern/node-domain/test/TestErrorV2U";
+import TriggerOnToggleV2U from "@/features/business-logic-modern/node-domain/trigger/TriggerOnToggleV2U";
+import ViewOutputV2U from "@/features/business-logic-modern/node-domain/view/ViewOutputV2U";
 
 // ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention & cleanup
-import { useCleanupInvalidConnections } from "@/features/business-logic-modern/infrastructure/node-creation/systems/ui/node-handles/UtilityCleanupInvalidConnections";
-import { useUltimateFlowConnectionPrevention } from "@/features/business-logic-modern/infrastructure/node-creation/systems/ui/node-handles/UltimateTypesafeHandle";
+import { useUltimateFlowConnectionPrevention } from "@/components/nodes/handles/TypeSafeHandle";
 
 import { NODE_TYPE_CONFIG } from '../constants';
 
@@ -107,19 +104,31 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   setInspectorLocked,
   reactFlowHandlers,
 }) => {
+  console.log("🎨 FlowCanvas rendering with:", {
+    nodesCount: nodes?.length || 0,
+    edgesCount: edges?.length || 0,
+    selectedNode: selectedNode?.id,
+    selectedEdge: selectedEdge?.id
+  });
+
   const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Fix hydration mismatch by only using theme after mount
+  useEffect(() => {
+    console.log("🎨 FlowCanvas mounted, theme:", resolvedTheme);
+    setMounted(true);
+  }, [resolvedTheme]);
+
+  // Use a stable colorMode that doesn't cause hydration issues
+  const colorMode: ColorMode = mounted && resolvedTheme === "light" ? "light" : "dark";
+  console.log("🎨 Using colorMode:", colorMode, "mounted:", mounted, "resolvedTheme:", resolvedTheme);
 
   // ============================================================================
   // ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention
   // ============================================================================
 
   const { isValidConnection } = useUltimateFlowConnectionPrevention();
-
-  // ============================================================================
-  // CLEANUP INVALID CONNECTIONS - Remove existing invalid connections
-  // ============================================================================
-
-  useCleanupInvalidConnections();
 
   // ============================================================================
   // STATE FOR MOBILE RESPONSIVENESS & ERROR TRACKING
@@ -205,61 +214,18 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     : { marginTop: "70px" };
 
   // ============================================================================
-  // NODE TYPES REGISTRY (AUTOMATED) - V2U Enhanced Registry Bridge
+  // NODE TYPES REGISTRY (INLINE) - A temporary, hardcoded manifest
   // ============================================================================
 
-  const nodeTypes = useMemo(() => {
-    // Get the unified registry which includes both legacy and V2U nodes
-    const unifiedRegistry = getLegacyModernNodeRegistry();
-
-    // Create the ReactFlow-compatible component mapping
-    const componentMapping: Record<string, any> = {};
-
-    for (const [nodeType, nodeConfig] of Object.entries(unifiedRegistry)) {
-      if (nodeConfig) {
-        // Check if it's a modern defineNode() result with .component property
-        if (
-          typeof nodeConfig === "object" &&
-          "component" in nodeConfig &&
-          nodeConfig.component
-        ) {
-          componentMapping[nodeType] = nodeConfig.component;
-        }
-        // Check if it's a legacy direct component (function)
-        else if (typeof nodeConfig === "function") {
-          componentMapping[nodeType] = nodeConfig;
-        }
-        // Check if it's a React component object
-        else if (typeof nodeConfig === "object" && "$$typeof" in nodeConfig) {
-          componentMapping[nodeType] = nodeConfig;
-        }
-        // Fallback for other structures
-        else {
-          console.warn(
-            `⚠️ [FlowCanvas] Unknown node structure for ${nodeType}:`,
-            typeof nodeConfig,
-            nodeConfig
-          );
-        }
-      }
-    }
-
-    // Fallback to legacy components if registry is empty
-    if (Object.keys(componentMapping).length === 0) {
-      console.warn(
-        "⚠️ [FlowCanvas] No nodes found in unified registry, falling back to legacy hardcoded components"
-      );
-      return {
-        createText: CreateTextLegacy,
-        createTextV2: CreateTextV2Legacy,
-        viewOutput: ViewOutputLegacy,
-        triggerOnToggle: TriggerOnToggleLegacy,
-        testError: TestErrorLegacy,
-      };
-    }
-
-    return componentMapping;
-  }, []);
+  const nodeTypes = useMemo(
+    () => ({
+      createTextV2U: CreateTextV2U,
+      viewOutputV2U: ViewOutputV2U,
+      triggerOnToggleV2U: TriggerOnToggleV2U,
+      testErrorV2U: TestErrorV2U,
+    }),
+    []
+  ) as any;
 
   const edgeTypes = useMemo(() => ({}), []);
 
@@ -288,13 +254,21 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   // RENDER
   // ============================================================================
 
+  console.log("🎯 FlowCanvas about to render ReactFlow...");
+
   return (
     <div
       ref={wrapperRef}
-      className="relative flex-1"
+      className="relative flex-1 w-full h-full"
       onDragOver={onDragOver}
       onDrop={onDrop}
-      style={{ touchAction: "none" }}
+      style={{ 
+        touchAction: "none",
+        width: "100%",
+        height: "100%",
+        minHeight: "100vh",
+        minWidth: "100vw"
+      }}
     >
       <ReactFlow
         // Core Data
@@ -302,6 +276,9 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
+        
+        // Explicit dimensions to fix sizing issue
+        style={{ width: "100%", height: "100%" }}
         
         // Connection Handling
         isValidConnection={isValidConnection}
@@ -340,7 +317,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         
         // Visual Settings
         fitView
-        colorMode={resolvedTheme === "dark" ? "dark" : ("light" satisfies ColorMode)}
+        colorMode={colorMode}
         proOptions={{ hideAttribution: true }}
         defaultEdgeOptions={{
           type: "default",

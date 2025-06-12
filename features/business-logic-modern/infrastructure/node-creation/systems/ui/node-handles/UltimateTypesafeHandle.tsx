@@ -1166,4 +1166,5 @@ export {
   ULTIMATE_TYPE_MAP,
 };
 
-export default UltimateTypesafeHandle;
+// Rename the main component for export
+export { UltimateTypesafeHandle as TypeSafeHandle };
