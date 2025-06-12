@@ -12,6 +12,7 @@ import {
   type HandleProps,
   IsValidConnection,
   useStoreApi,
+  useStore,
 } from "@xyflow/react";
 import React, { useCallback } from "react";
 import { toast } from "sonner";
@@ -25,7 +26,7 @@ import schemaManifest from "@/generated/handle-types.manifest.json";
 // DISPLAY MAP – maps basic type names to icon text + colour
 // ---------------------------------------------------------------------------
 const DISPLAY_MAP: Record<string, { icon: string; color: string }> = {
-  string: { icon: "A", color: "#3b82f6" },
+  string: { icon: "T", color: "#3b82f6" },
   number: { icon: "#", color: "#f59e42" },
   boolean: { icon: "✓", color: "#10b981" },
   object: { icon: "{}", color: "#6366f1" },
@@ -113,14 +114,31 @@ const UltimateTypesafeHandle: React.FC<any> = ({
 
   const { isValidConnection } = useUltimateFlowConnectionPrevention();
 
+  // Check if this handle is connected by looking at edges
+  const edges = useStore((state) => state.edges);
+  const isConnected = edges.some((edge) => {
+    if (props.type === 'source') {
+      return edge.source === props.nodeId && edge.sourceHandle === props.id;
+    } else {
+      return edge.target === props.nodeId && edge.targetHandle === props.id;
+    }
+  });
+
   const isSource = props.type === 'source';
   const connectableStart = isSource; // only sources can start connections
   const connectableEnd = !isSource;  // only targets can end connections
 
+  // Use black background when connected, otherwise use the original logic
+  const backgroundColor = isConnected 
+    ? 'rgba(0,0,0,0.5)' 
+    : isSource 
+      ? 'rgba(0,0,0,0.5)' 
+      : 'rgba(255,255,255,0.1)';
+
   return (
     <Handle
       {...(props as HandleProps)}
-      className="flex items-center justify-center rounded-sm text-[8px] font-bold uppercase select-none z-30 hover:text-white hover:bg-current"
+      className="flex items-center justify-center rounded-sm text-[6px] font-semibold uppercase select-none z-30"
       style={{
         width: HANDLE_SIZE_PX,
         height: HANDLE_SIZE_PX,
@@ -128,6 +146,7 @@ const UltimateTypesafeHandle: React.FC<any> = ({
         boxShadow: "0 0 0.5px 0.5px " + badge.color,
         borderColor: badge.color,
         color: badge.color,
+        backgroundColor,
         ...props.style,
       }}
       isValidConnection={isValidConnection}

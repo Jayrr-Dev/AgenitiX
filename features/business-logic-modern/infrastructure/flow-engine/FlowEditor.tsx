@@ -8,6 +8,11 @@ import React, { useCallback, useEffect, useRef } from "react";
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
 import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { useMultiSelectionCopyPaste } from "./hooks/useMultiSelectionCopyPaste";
+import { UndoRedoProvider } from "../components/UndoRedoContext";
+import UndoRedoManager from "../components/UndoRedoManager";
+import { useUndoRedo } from "../components/UndoRedoContext";
 
 // Import the new NodeSpec registry
 import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
@@ -79,6 +84,40 @@ class ErrorBoundary extends React.Component<
   }
 }
 
+/**
+ * FLOW EDITOR INTERNAL COMPONENT
+ * 
+ * Main flow editor component with comprehensive keyboard shortcuts:
+ * 
+ * **Copy/Paste Operations:**
+ * • Ctrl+C / Cmd+C: Copy selected nodes and their connections
+ * • Ctrl+V / Cmd+V: Paste at mouse cursor location with preserved layout
+ * • Ctrl+A / Cmd+A: Select all nodes in canvas
+ * • Esc: Clear all selections
+ * 
+ * **Undo/Redo Operations:**
+ * • Ctrl+Z / Cmd+Z: Undo last action
+ * • Ctrl+Y / Cmd+Y: Redo next action (Windows/Linux)
+ * • Ctrl+Shift+Z / Cmd+Shift+Z: Redo next action (Mac alternative)
+ * 
+ * **Delete Operations:**
+ * • Delete/Backspace: Native ReactFlow deletion (recommended)
+ * • Alt+Q: Custom deletion with console feedback
+ * 
+ * **Utility Shortcuts:**
+ * • Ctrl+H / Cmd+H: Toggle history panel
+ * • Alt+A: Toggle inspector lock
+ * • Ctrl+X / Cmd+X: Toggle vibe mode (placeholder)
+ * 
+ * **Features:**
+ * • Smart mouse-aware paste positioning
+ * • Multi-selection support with Shift+drag and Ctrl+click
+ * • Automatic edge detection between copied nodes
+ * • Graph-based undo/redo with multi-branch support
+ * • Debounced action recording to prevent excessive history entries
+ * • Input field protection (shortcuts disabled when typing)
+ * • Platform-specific modifier keys (Cmd on Mac, Ctrl on Windows/Linux)
+ */
 const FlowEditorInternal = () => {
   const flowWrapperRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
@@ -119,6 +158,9 @@ const FlowEditorInternal = () => {
     setInspectorLocked,
     removeNode,
     removeEdge,
+    copySelectedNodes,
+    pasteNodesAtPosition,
+    clearSelection,
   } = useFlowStore();
 
   console.log("📊 Store data:", {
@@ -128,43 +170,141 @@ const FlowEditorInternal = () => {
     selectedEdgeId,
   });
 
-  // Simple Alt+Q keyboard shortcut for deleting selected nodes
+  // ============================================================================
+  // COPY/PASTE FUNCTIONALITY WITH MOUSE TRACKING
+  // ============================================================================
+  
+  const { copySelectedElements, pasteElements, installMouseTracking } = useMultiSelectionCopyPaste();
+
+  // Track mouse position for smart paste positioning
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Check if Alt+Q is pressed
-      if (event.altKey && event.key.toLowerCase() === "q") {
-        event.preventDefault();
+    return installMouseTracking();
+  }, [installMouseTracking]);
 
-        // Find selected nodes and edges
-        const selectedNodes = nodes.filter((node) => node.selected);
-        const selectedEdges = edges.filter((edge) => edge.selected);
+  // ============================================================================
+  // UNDO/REDO INTEGRATION
+  // ============================================================================
 
-        if (selectedNodes.length === 0 && selectedEdges.length === 0) {
-          console.log("⚠️ No nodes or edges selected to delete");
-          return;
-        }
+  const { undo, redo, recordAction } = useUndoRedo();
 
-        // Delete selected nodes
-        selectedNodes.forEach((node) => {
-          console.log(`🗑️ Deleting node: ${node.id} (Alt+Q)`);
-          removeNode(node.id);
-        });
+  const handleUndo = useCallback(() => {
+    const success = undo();
+    if (success) {
+      console.log("↩️ Undo successful (Ctrl+Z)");
+    } else {
+      console.log("⚠️ Cannot undo - at beginning of history");
+    }
+  }, [undo]);
 
-        // Delete selected edges
-        selectedEdges.forEach((edge) => {
-          console.log(`🗑️ Deleting edge: ${edge.id} (Alt+Q)`);
-          removeEdge(edge.id);
-        });
+  const handleRedo = useCallback(() => {
+    const success = redo();
+    if (success) {
+      console.log("↪️ Redo successful (Ctrl+Y)");
+    } else {
+      console.log("⚠️ Cannot redo - at end of history");
+    }
+  }, [redo]);
 
-        console.log(
-          `✅ Deleted ${selectedNodes.length} nodes and ${selectedEdges.length} edges (Alt+Q)`
-        );
-      }
-    };
+  // ============================================================================
+  // KEYBOARD SHORTCUTS INTEGRATION
+  // ============================================================================
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [nodes, edges, removeNode, removeEdge]);
+  const handleSelectAllNodes = useCallback(() => {
+    // Select all nodes in the canvas
+    const updatedNodes = nodes.map(node => ({ ...node, selected: true }));
+    useFlowStore.setState(state => ({ ...state, nodes: updatedNodes }));
+    console.log(`✅ Selected all ${nodes.length} nodes (Ctrl+A)`);
+  }, [nodes]);
+
+  const handleClearSelection = useCallback(() => {
+    clearSelection();
+    console.log("✅ Cleared all selections (Esc)");
+  }, [clearSelection]);
+
+  const handleCopy = useCallback(() => {
+    copySelectedElements();
+  }, [copySelectedElements]);
+
+  const handlePaste = useCallback(() => {
+    const { copiedNodes } = useFlowStore.getState();
+    pasteElements();
+    
+    // Record paste action for undo/redo
+    if (copiedNodes.length > 0) {
+      recordAction("paste", { 
+        nodeCount: copiedNodes.length,
+        nodeTypes: copiedNodes.map(n => n.type)
+      });
+    }
+  }, [pasteElements, recordAction]);
+
+  const handleMultiDelete = useCallback(() => {
+    // Find selected nodes and edges
+    const selectedNodes = nodes.filter((node) => node.selected);
+    const selectedEdges = edges.filter((edge) => edge.selected);
+
+    if (selectedNodes.length === 0 && selectedEdges.length === 0) {
+      console.log("⚠️ No nodes or edges selected to delete");
+      return;
+    }
+
+    // Record the delete action for undo/redo
+    if (selectedNodes.length > 0) {
+      recordAction("node_delete", { 
+        nodeCount: selectedNodes.length,
+        nodeIds: selectedNodes.map(n => n.id)
+      });
+    }
+    if (selectedEdges.length > 0) {
+      recordAction("edge_delete", { 
+        edgeCount: selectedEdges.length,
+        edgeIds: selectedEdges.map(e => e.id)
+      });
+    }
+
+    // Delete selected nodes
+    selectedNodes.forEach((node) => {
+      console.log(`🗑️ Deleting node: ${node.id} (Ctrl+Q)`);
+      removeNode(node.id);
+    });
+
+    // Delete selected edges
+    selectedEdges.forEach((edge) => {
+      console.log(`🗑️ Deleting edge: ${edge.id} (Ctrl+Q)`);
+      removeEdge(edge.id);
+    });
+
+    console.log(
+      `✅ Deleted ${selectedNodes.length} nodes and ${selectedEdges.length} edges (Ctrl+Q)`
+    );
+  }, [nodes, edges, removeNode, removeEdge, recordAction]);
+
+  // Initialize keyboard shortcuts
+  useKeyboardShortcuts({
+    onCopy: handleCopy,
+    onPaste: handlePaste,
+    onUndo: handleUndo,
+    onRedo: handleRedo,
+    onToggleHistory: toggleHistoryPanel,
+    onSelectAll: handleSelectAllNodes,
+    onClearSelection: handleClearSelection,
+    onDelete: handleMultiDelete,
+    onToggleVibeMode: () => {
+      console.log("🎨 Vibe mode toggle (Ctrl+X) - Not implemented yet");
+    },
+    onToggleInspectorLock: () => {
+      setInspectorLocked(!inspectorLocked);
+      console.log(`🔒 Inspector ${!inspectorLocked ? 'locked' : 'unlocked'} (Alt+A)`);
+    },
+    onDuplicateNode: () => {
+      console.log("📋 Node duplication (Alt+W) - Not implemented yet");
+    },
+    onToggleSidebar: () => {
+      console.log("📋 Sidebar toggle (Alt+S) - Not implemented yet");
+    },
+  });
+
+
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -216,11 +356,18 @@ const FlowEditorInternal = () => {
         });
 
         addNode(newNode);
+        
+        // Record node creation for undo/redo
+        recordAction("node_add", {
+          nodeType: nodeType,
+          nodeId: newNode.id,
+          position: position
+        });
       } catch (error) {
         console.error("❌ Failed to create node from drop:", error);
       }
     },
-    [screenToFlowPosition, addNode]
+    [screenToFlowPosition, addNode, recordAction]
   );
 
   const selectedNode = React.useMemo(
@@ -259,6 +406,30 @@ const FlowEditorInternal = () => {
       className="h-screen w-screen bg-gray-100 dark:bg-gray-900"
       style={{ height: "100vh", width: "100vw" }}
     >
+      {/* Undo/Redo Manager - tracks all node/edge changes */}
+      <UndoRedoManager
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={(newNodes) => {
+          // Convert from direct node array to ReactFlow change format
+          useFlowStore.setState(state => ({ ...state, nodes: newNodes }));
+        }}
+        onEdgesChange={(newEdges) => {
+          // Convert from direct edge array to ReactFlow change format
+          useFlowStore.setState(state => ({ ...state, edges: newEdges }));
+        }}
+        config={{
+          maxHistorySize: 100,
+          positionDebounceMs: 300,
+          actionSeparatorMs: 1000,
+          enableViewportTracking: false,
+          enableCompression: true,
+        }}
+        onHistoryChange={(path, currentIndex) => {
+          console.log(`📚 History updated: ${path.length} entries, current: ${currentIndex}`);
+        }}
+      />
+      
       <FlowCanvas
         nodes={nodes}
         edges={edges}
@@ -302,7 +473,9 @@ export default function FlowEditor() {
   return (
     <ErrorBoundary>
       <ReactFlowProvider>
-        <FlowEditorInternal />
+        <UndoRedoProvider>
+          <FlowEditorInternal />
+        </UndoRedoProvider>
       </ReactFlowProvider>
     </ErrorBoundary>
   );

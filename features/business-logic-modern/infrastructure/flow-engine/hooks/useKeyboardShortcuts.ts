@@ -17,6 +17,8 @@ interface KeyboardShortcutsProps {
   onCopy: () => void;
   onPaste: () => void;
   onToggleHistory: () => void;
+  onUndo?: () => void; // Optional undo handler for Ctrl+Z
+  onRedo?: () => void; // Optional redo handler for Ctrl+Y
   onSelectAll?: () => void; // Optional select all handler for Ctrl+A
   onClearSelection?: () => void; // Optional clear selection handler for Esc
   onDelete?: () => void; // Optional delete handler for Alt+Q
@@ -30,6 +32,8 @@ export function useKeyboardShortcuts({
   onCopy,
   onPaste,
   onToggleHistory,
+  onUndo,
+  onRedo,
   onSelectAll,
   onClearSelection,
   onDelete,
@@ -91,6 +95,25 @@ export function useKeyboardShortcuts({
             }
             break;
 
+          case "z":
+            // Ctrl+Z for undo (Ctrl+Shift+Z for redo on some platforms)
+            if (!e.shiftKey && onUndo) {
+              onUndo();
+              e.preventDefault();
+            } else if (e.shiftKey && onRedo) {
+              onRedo();
+              e.preventDefault();
+            }
+            break;
+
+          case "y":
+            // Ctrl+Y for redo (Windows/Linux style)
+            if (onRedo) {
+              onRedo();
+              e.preventDefault();
+            }
+            break;
+
           case "x":
             // Ctrl+X for vibe mode toggle (only when not in input field)
             if (onToggleVibeMode) {
@@ -145,6 +168,8 @@ export function useKeyboardShortcuts({
     onCopy,
     onPaste,
     onToggleHistory,
+    onUndo,
+    onRedo,
     onSelectAll,
     onClearSelection,
     onDelete,

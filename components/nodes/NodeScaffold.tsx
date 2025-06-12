@@ -97,6 +97,7 @@ export const NodeScaffold: React.FC<NodeScaffoldProps> = ({
           position={handle.position as Position}
           id={handle.id}
           dataType={handle.dataType}
+          nodeId={nodeId}
         />
       ))}
       {children}

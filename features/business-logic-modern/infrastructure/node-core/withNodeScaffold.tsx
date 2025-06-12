@@ -71,6 +71,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
             dataType={handle.dataType}
             code={(handle as any).code}
             tsSymbol={(handle as any).tsSymbol}
+            nodeId={props.id}
           />
         ))}
 

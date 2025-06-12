@@ -62,7 +62,7 @@ const spec: NodeSpec = {
     // { id: 'input-1', dataType: 's', position: 'left', type: 'target' },
     
     // Boolean control for activation (if needed)
-    { id: 'activate', code: 'b', position: 'left', type: 'target' },
+    { id: 'activate', code: 's', position: 'left', type: 'target' },
   ],
   inspector: {
     key: 'CreateTextInspector',
