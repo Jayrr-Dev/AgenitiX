@@ -111,6 +111,8 @@ export function useMainProcessingLogic<T extends BaseNodeData>(
     connectionData.relevantConnectionData,
     // A hyper-efficient, stable dependency on only direct parent data.
     parentDataString,
+    // FIX: Add the node's own data as a dependency to re-run logic on internal changes.
+    JSON.stringify(nodeData),
     // Functions are stable.
     nodeState.updateNodeData,
     propagateUltraFast,
