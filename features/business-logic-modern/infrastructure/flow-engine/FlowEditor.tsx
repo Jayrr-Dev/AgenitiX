@@ -2,10 +2,11 @@
 
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
-import { ReactFlowProvider } from "@xyflow/react";
+import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import React, { useCallback, useEffect, useRef } from "react";
 
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
+import { getNodeMetadata } from "../node-registry/modern-node-registry";
 import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
 
@@ -55,6 +56,7 @@ class ErrorBoundary extends React.Component<
 
 const FlowEditorInternal = () => {
   const flowWrapperRef = useRef<HTMLDivElement>(null);
+  const { screenToFlowPosition } = useReactFlow();
 
   console.log("🚀 FlowEditorInternal rendering...");
 
@@ -101,6 +103,44 @@ const FlowEditorInternal = () => {
     selectedEdgeId,
   });
 
+  // Simple Alt+Q keyboard shortcut for deleting selected nodes
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check if Alt+Q is pressed
+      if (event.altKey && event.key.toLowerCase() === "q") {
+        event.preventDefault();
+
+        // Find selected nodes and edges
+        const selectedNodes = nodes.filter((node) => node.selected);
+        const selectedEdges = edges.filter((edge) => edge.selected);
+
+        if (selectedNodes.length === 0 && selectedEdges.length === 0) {
+          console.log("⚠️ No nodes or edges selected to delete");
+          return;
+        }
+
+        // Delete selected nodes
+        selectedNodes.forEach((node) => {
+          console.log(`🗑️ Deleting node: ${node.id} (Alt+Q)`);
+          removeNode(node.id);
+        });
+
+        // Delete selected edges
+        selectedEdges.forEach((edge) => {
+          console.log(`🗑️ Deleting edge: ${edge.id} (Alt+Q)`);
+          removeEdge(edge.id);
+        });
+
+        console.log(
+          `✅ Deleted ${selectedNodes.length} nodes and ${selectedEdges.length} edges (Alt+Q)`
+        );
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [nodes, edges, removeNode, removeEdge]);
+
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
@@ -110,22 +150,59 @@ const FlowEditorInternal = () => {
     (event: React.DragEvent) => {
       event.preventDefault();
 
-      const type = event.dataTransfer.getData("application/reactflow");
-      if (typeof type === "undefined" || !type) return;
+      const nodeType = event.dataTransfer.getData("application/reactflow");
+      if (!nodeType) {
+        console.warn("No node type found in drag data");
+        return;
+      }
 
-      const position = JSON.parse(
-        event.dataTransfer.getData("application/reactflow-position")
-      );
-      const newNode: Partial<AgenNode> = {
-        id: `${type}-${Math.random()}`,
-        type: type as any,
-        position,
-        data: {} as any,
-      };
+      // Get node metadata from the registry
+      const metadata = getNodeMetadata(nodeType);
+      if (!metadata) {
+        console.error(`Invalid node type dropped: ${nodeType}`);
+        return;
+      }
 
-      addNode(newNode as AgenNode);
+      // Calculate position from drop event coordinates
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      try {
+        // Initialize node data with defaults from metadata
+        const defaultData = metadata.data
+          ? Object.fromEntries(
+              Object.entries(metadata.data).map(([key, valueConfig]) => [
+                key,
+                (valueConfig as any)?.default || null,
+              ])
+            )
+          : {};
+
+        const newNode: AgenNode = {
+          id: `node_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+          type: nodeType as any,
+          position,
+          deletable: true,
+          data: {
+            ...defaultData,
+            isActive: false, // Default state
+          },
+        } as AgenNode;
+
+        console.log("✅ Creating node from drag and drop:", {
+          type: nodeType,
+          position,
+          metadata: metadata.displayName,
+        });
+
+        addNode(newNode);
+      } catch (error) {
+        console.error("❌ Failed to create node from drop:", error);
+      }
     },
-    [addNode]
+    [screenToFlowPosition, addNode]
   );
 
   const selectedNode = React.useMemo(
