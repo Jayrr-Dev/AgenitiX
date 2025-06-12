@@ -3,11 +3,11 @@
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import { ReactFlowProvider } from "@xyflow/react";
-import React, { useCallback, useRef, useEffect } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
-import { FlowCanvas } from "./components/FlowCanvas";
 import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
+import { FlowCanvas } from "./components/FlowCanvas";
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
@@ -55,9 +55,9 @@ class ErrorBoundary extends React.Component<
 
 const FlowEditorInternal = () => {
   const flowWrapperRef = useRef<HTMLDivElement>(null);
-  
+
   console.log("🚀 FlowEditorInternal rendering...");
-  
+
   // Initialize theme system on mount
   useEffect(() => {
     try {
@@ -94,11 +94,11 @@ const FlowEditorInternal = () => {
     removeEdge,
   } = useFlowStore();
 
-  console.log("📊 Store data:", { 
-    nodesCount: nodes?.length || 0, 
+  console.log("📊 Store data:", {
+    nodesCount: nodes?.length || 0,
     edgesCount: edges?.length || 0,
     selectedNodeId,
-    selectedEdgeId 
+    selectedEdgeId,
   });
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -113,7 +113,9 @@ const FlowEditorInternal = () => {
       const type = event.dataTransfer.getData("application/reactflow");
       if (typeof type === "undefined" || !type) return;
 
-      const position = JSON.parse(event.dataTransfer.getData("application/reactflow-position"));
+      const position = JSON.parse(
+        event.dataTransfer.getData("application/reactflow-position")
+      );
       const newNode: Partial<AgenNode> = {
         id: `${type}-${Math.random()}`,
         type: type as any,
@@ -125,14 +127,23 @@ const FlowEditorInternal = () => {
     },
     [addNode]
   );
-  
-  const selectedNode = React.useMemo(() => nodes.find(n => n.id === selectedNodeId) || null, [nodes, selectedNodeId]);
-  const selectedEdge = React.useMemo(() => edges.find(e => e.id === selectedEdgeId) || null, [edges, selectedEdgeId]);
+
+  const selectedNode = React.useMemo(
+    () => nodes.find((n) => n.id === selectedNodeId) || null,
+    [nodes, selectedNodeId]
+  );
+  const selectedEdge = React.useMemo(
+    () => edges.find((e) => e.id === selectedEdgeId) || null,
+    [edges, selectedEdgeId]
+  );
 
   console.log("🎯 About to render FlowCanvas...");
 
   return (
-    <div className="h-screen w-screen bg-gray-100 dark:bg-gray-900" style={{ height: "100vh", width: "100vw" }}>
+    <div
+      className="h-screen w-screen bg-gray-100 dark:bg-gray-900"
+      style={{ height: "100vh", width: "100vw" }}
+    >
       <FlowCanvas
         nodes={nodes}
         edges={edges}
@@ -165,18 +176,19 @@ const FlowEditorInternal = () => {
           onReconnectEnd: () => {},
         }}
       />
+      <Sidebar className="z-50" enableDebug={true} />
     </div>
   );
 };
 
 export default function FlowEditor() {
   console.log("🏁 FlowEditor main component rendering...");
-  
+
   return (
     <ErrorBoundary>
       <ReactFlowProvider>
         <FlowEditorInternal />
       </ReactFlowProvider>
     </ErrorBoundary>
-  )
-}; 
+  );
+}
