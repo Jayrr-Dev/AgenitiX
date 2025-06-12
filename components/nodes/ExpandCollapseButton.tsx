@@ -6,23 +6,29 @@ const TOGGLE_SYMBOLS = {
 } as const;
 
 interface ExpandCollapseButtonProps {
-  isCollapsed: boolean;
+  showUI: boolean;
   onToggle: () => void;
+  className?: string;
+  size?: "sm" | "md";
 }
 
 export const ExpandCollapseButton: React.FC<ExpandCollapseButtonProps> = ({
-  isCollapsed,
+  showUI,
   onToggle,
+  className = "",
+  size = "sm",
 }) => {
+  const sizeClasses = size === "sm" ? "w-2 h-2" : "w-3 h-3";
+
   return (
     <button
-      aria-label={isCollapsed ? "Expand node" : "Collapse node"}
-      title={isCollapsed ? "Expand" : "Collapse"}
+      aria-label={showUI ? "Collapse node" : "Expand node"}
+      title={showUI ? "Collapse" : "Expand"}
       onClick={onToggle}
-      className="absolute top-2 right-2 cursor-pointer z-10 w-5 h-5 flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full border border-gray-300 dark:border-gray-500 text-xs transition-colors"
+      className={`absolute text-black top-1 left-1 cursor-pointer z-10 ${sizeClasses} flex items-center justify-center bg-transparent rounded-full border text-xs transition-colors ${className}`}
       type="button"
     >
-      {isCollapsed ? TOGGLE_SYMBOLS.COLLAPSED : TOGGLE_SYMBOLS.EXPANDED}
+      {showUI ? TOGGLE_SYMBOLS.EXPANDED : TOGGLE_SYMBOLS.COLLAPSED}
     </button>
   );
-}; 
+};
