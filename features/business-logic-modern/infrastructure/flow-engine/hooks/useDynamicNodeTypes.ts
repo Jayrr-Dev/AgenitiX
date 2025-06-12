@@ -1,41 +1,24 @@
-import { useMemo, Suspense, lazy, FC } from 'react';
-import type { NodeProps } from '@xyflow/react';
-import { lazyNodeLoaders } from '../../node-registry/modern-node-loader';
+import { useMemo } from 'react';
 
-const loadedNodes: Record<string, FC<NodeProps>> = {};
-
-const NodeSuspenseWrapper: FC<NodeProps & { kind: string }> = (props) => {
-  const { kind, ...rest } = props;
-  
-  if (!lazyNodeLoaders[kind]) {
-    return <div>Error: Node type "{kind}" is not registered.</div>;
-  }
-
-  const NodeComponent = loadedNodes[kind] || (loadedNodes[kind] = lazy(lazyNodeLoaders[kind] as any));
-
-  return (
-    <Suspense fallback={<div style={{ width: rest.width, height: rest.height }}>Loading...</div>}>
-      <NodeComponent {...rest} />
-    </Suspense>
-  );
-};
+// Import all available node components
+// This should be automatically updated when new nodes are created via Plop
+import testErrorV2U from '../../../node-domain/test/testErrorV2U.node';
+import viewOutputV2U from '../../../node-domain/view/viewOutputV2U.node';
+// Add new node imports here (Plop can auto-inject these)
 
 /**
- * A hook that provides a memoized `nodeTypes` object for React Flow.
- * It uses a Proxy to dynamically wrap node components with Suspense,
- * enabling lazy loading.
- *
- * @returns A `nodeTypes` object compatible with React Flow.
+ * Hook that provides nodeTypes for React Flow
+ * Maps node type strings to their actual components
+ * 
+ * When you create a new node with `pnpm new:node`, add the import above
+ * and include it in the nodeTypes object below.
  */
 export function useDynamicNodeTypes() {
-  const nodeTypes = useMemo(() => {
-    const kinds = Object.keys(lazyNodeLoaders);
-    const types: Record<string, FC<NodeProps>> = {};
-    for (const kind of kinds) {
-        types[kind] = (props: NodeProps) => <NodeSuspenseWrapper kind={kind} {...props} />;
-    }
-    return types;
-  }, []);
+  const nodeTypes = useMemo(() => ({
+    testErrorV2U,
+    viewOutputV2U,
+    // Add new node types here
+  }), []);
 
   return nodeTypes;
 } 

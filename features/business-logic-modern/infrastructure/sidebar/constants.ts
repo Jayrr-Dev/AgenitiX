@@ -46,7 +46,7 @@ export const STORAGE_PREFIX = "sidebar-stencil-order";
  * Get node metadata from the modern registry
  */
 export function getNodeMetadata(nodeType: NodeType): NodeMetadata | undefined {
-  return getNodeMetadataFromRegistry(nodeType);
+  return getNodeMetadataFromRegistry(nodeType) || undefined;
 }
 
 /**

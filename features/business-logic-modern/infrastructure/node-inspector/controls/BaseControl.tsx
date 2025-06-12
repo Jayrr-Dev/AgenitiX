@@ -81,8 +81,9 @@ function getCategoryTheme(nodeType?: string): {
     return defaultTheme;
   }
 
-  // Category-based theming
-  switch (metadata.category) {
+  // Category-based theming (handle both uppercase and lowercase)
+  const category = metadata.category.toLowerCase();
+  switch (category) {
     case "create":
       return {
         primary: "green",

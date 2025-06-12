@@ -46,7 +46,7 @@ type TriggerOnToggleV2UData = {
   "advancedTriggers": []
 };
 
-const TriggerOnToggleV2UComponent = ({ data, id }: NodeProps<TriggerOnToggleV2UData>) => {
+const TriggerOnToggleV2UComponent = ({ data, id }: NodeProps) => {
   const [isExpanded, setExpanded] = useState(true);
 
   // In a real implementation, this would come from a hook like useNodeData(id)
@@ -76,3 +76,6 @@ const TriggerOnToggleV2UComponent = ({ data, id }: NodeProps<TriggerOnToggleV2UD
 };
 
 export default withNodeScaffold(spec, TriggerOnToggleV2UComponent);
+
+// Export spec for registry access
+export { spec };

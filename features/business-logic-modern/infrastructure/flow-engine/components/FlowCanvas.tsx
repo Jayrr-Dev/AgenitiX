@@ -32,11 +32,8 @@ import NodeInspector from "@/features/business-logic-modern/infrastructure/node-
 import type { Node, NodeProps } from "@xyflow/react";
 import type { ComponentType } from "react";
 
-// Modern V2U component imports for the inline manifest
-import CreateTextV2U from "@/features/business-logic-modern/node-domain/create/CreateTextV2U";
-import TestErrorV2U from "@/features/business-logic-modern/node-domain/test/TestErrorV2U";
-import TriggerOnToggleV2U from "@/features/business-logic-modern/node-domain/trigger/TriggerOnToggleV2U";
-import ViewOutputV2U from "@/features/business-logic-modern/node-domain/view/ViewOutputV2U";
+// Node components are now loaded via useDynamicNodeTypes hook
+// No need for direct imports here
 
 // ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention & cleanup
 import { useUltimateFlowConnectionPrevention } from "@/components/nodes/handles/TypeSafeHandle";

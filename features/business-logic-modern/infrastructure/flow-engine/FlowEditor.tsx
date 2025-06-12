@@ -6,10 +6,40 @@ import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import React, { useCallback, useEffect, useRef } from "react";
 
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
-import { getNodeMetadata } from "../node-registry/modern-node-registry";
 import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
-import { useDynamicNodeTypes } from './hooks/useDynamicNodeTypes';
+
+// Helper function to get node spec from the new NodeSpec system
+const getNodeSpecForType = async (nodeType: string) => {
+  try {
+    // Map common node types to their domain exports
+    const nodeTypeMap: Record<string, () => Promise<any>> = {
+      'createText': () => import('@/features/business-logic-modern/node-domain/create/createText.node'),
+      'testErrorV2U': () => import('@/features/business-logic-modern/node-domain/test/testErrorV2U.node'),
+      'triggerOnToggleV2U': () => import('@/features/business-logic-modern/node-domain/trigger/triggerOnToggleV2U.node'),
+      'viewOutputV2U': () => import('@/features/business-logic-modern/node-domain/view/viewOutputV2U.node'),
+    };
+
+    const loader = nodeTypeMap[nodeType];
+    if (!loader) {
+      console.warn(`No loader found for node type: ${nodeType}`);
+      return null;
+    }
+
+    const module = await loader();
+    const component = module.default;
+    
+    // The withNodeScaffold HOC attaches the spec to the component
+    if (component && typeof component === 'function' && 'spec' in component) {
+      return (component as any).spec;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Failed to load spec for node type: ${nodeType}`, error);
+    return null;
+  }
+};
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
@@ -58,7 +88,6 @@ class ErrorBoundary extends React.Component<
 const FlowEditorInternal = () => {
   const flowWrapperRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
-  const nodeTypes = useDynamicNodeTypes();
 
   console.log("🚀 FlowEditorInternal rendering...");
 
@@ -149,19 +178,12 @@ const FlowEditorInternal = () => {
   }, []);
 
   const onDrop = useCallback(
-    (event: React.DragEvent) => {
+    async (event: React.DragEvent) => {
       event.preventDefault();
 
       const nodeType = event.dataTransfer.getData("application/reactflow");
       if (!nodeType) {
         console.warn("No node type found in drag data");
-        return;
-      }
-
-      // Get node metadata from the registry
-      const metadata = getNodeMetadata(nodeType);
-      if (!metadata) {
-        console.error(`Invalid node type dropped: ${nodeType}`);
         return;
       }
 
@@ -172,15 +194,15 @@ const FlowEditorInternal = () => {
       });
 
       try {
-        // Initialize node data with defaults from metadata
-        const defaultData = metadata.data
-          ? Object.fromEntries(
-              Object.entries(metadata.data).map(([key, valueConfig]) => [
-                key,
-                (valueConfig as any)?.default || null,
-              ])
-            )
-          : {};
+        // Get node spec from the new NodeSpec system
+        const spec = await getNodeSpecForType(nodeType);
+        if (!spec) {
+          console.error(`Invalid node type dropped: ${nodeType}`);
+          return;
+        }
+
+        // Initialize node data with defaults from spec
+        const defaultData = spec.initialData || {};
 
         const newNode: AgenNode = {
           id: `node_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -196,7 +218,7 @@ const FlowEditorInternal = () => {
         console.log("✅ Creating node from drag and drop:", {
           type: nodeType,
           position,
-          metadata: metadata.displayName,
+          spec: spec.displayName,
         });
 
         addNode(newNode);
@@ -254,7 +276,6 @@ const FlowEditorInternal = () => {
           onReconnectStart: () => {},
           onReconnectEnd: () => {},
         }}
-        nodeTypes={nodeTypes}
       />
       <Sidebar className="z-50" enableDebug={true} />
     </div>

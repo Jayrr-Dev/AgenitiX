@@ -1,12 +1,24 @@
 import type { NodeProps } from '@xyflow/react';
 import { useState } from 'react';
+import { z } from 'zod';
 
 import { withNodeScaffold } from '@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold';
 import type { NodeSpec } from '@/features/business-logic-modern/infrastructure/node-core/NodeSpec';
+import { createNodeValidator, CommonSchemas, reportValidationError } from '@/features/business-logic-modern/infrastructure/node-core/validation';
 import { CATEGORIES } from '@/features/business-logic-modern/infrastructure/theming/categories';
 import { EXPANDED_FIXED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
 // NOTE: This component does not exist yet. We are assuming it will be created.
 // import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
+
+// Enterprise-grade schema using common validation patterns
+const CreateTextDataSchema = z.object({
+  text: CommonSchemas.text.default('Hello, new system!'),
+}).strict();
+
+type CreateTextData = z.infer<typeof CreateTextDataSchema>;
+
+// Create enterprise validator instance
+const validateNodeData = createNodeValidator(CreateTextDataSchema, 'CreateText');
 
 const spec: NodeSpec = {
   kind: 'createText',
@@ -23,20 +35,29 @@ const spec: NodeSpec = {
   inspector: {
     key: 'CreateTextInspector',
   },
-  initialData: {
-      text: "Hello, new system!"
-  },
+  initialData: CreateTextDataSchema.parse({}),
 };
 
-type CreateTextData = {
-    text: string;
-};
-
-const CreateTextNodeComponent = ({ data, id }: NodeProps<CreateTextData>) => {
+const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
   const [isExpanded, setExpanded] = useState(true);
+  
+  // Enterprise validation with comprehensive error handling
+  const validationResult = validateNodeData(data);
+  const nodeData = validationResult.data;
+  
+  // Report validation errors for monitoring/debugging
+  if (!validationResult.success) {
+    reportValidationError('CreateText', id, validationResult.errors, {
+      originalData: validationResult.originalData,
+      component: 'CreateTextNode',
+    });
+  }
 
   // In a real implementation, this would come from a hook like useNodeData(id)
-  const updateData = (newData: Partial<CreateTextData>) => console.log(`Updating data for ${id}:`, newData);
+  const updateData = (newData: Partial<CreateTextData>) => {
+    console.log(`Updating data for ${id}:`, newData);
+    // TODO: Implement actual data update with validation
+  };
 
   const onToggle = () => setExpanded(!isExpanded);
 
@@ -50,7 +71,7 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps<CreateTextData>) => {
         <div className="p-4 pt-6">
             <label className="text-xs font-semibold">Output Text</label>
             <textarea
-                value={data.text}
+                value={nodeData.text}
                 onChange={(e) => updateData({ text: e.target.value })}
                 className="w-full h-16 p-1 border rounded"
             />

@@ -31,6 +31,18 @@ module.exports = function (plop) {
         path: 'features/business-logic-modern/node-domain/index.ts',
         template: `export { default as {{pascalCase kind}}Node } from './{{domain}}/{{camelCase kind}}.node';`,
       },
+      {
+        type: 'append',
+        path: 'features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts',
+        pattern: '// Add new node imports here (Plop can auto-inject these)',
+        template: `import {{camelCase kind}} from '../../../node-domain/{{domain}}/{{camelCase kind}}.node';`,
+      },
+      {
+        type: 'append',
+        path: 'features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts',
+        pattern: '    // Add new node types here',
+        template: `    {{camelCase kind}},`,
+      },
     ],
   });
 }; 
