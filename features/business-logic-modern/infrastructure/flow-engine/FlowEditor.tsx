@@ -44,7 +44,7 @@ import { useFlowStore } from "@infrastructure/flow-engine/stores/flowStore";
 import { useVibeModeStore } from "../node-creation/systems/intergration/stores/vibeModeStore";
 
 // HOOK IMPORTS
-import { useUltraFastPropagation } from "@/hooks/useUltraFastPropagation";
+import { useUltraFastPropagation } from "../node-creation/core/factory/systems/propagation/UltraFastPropagationEngine";
 import { useUndoRedo } from "../components/UndoRedoContext";
 import { useDragAndDrop } from "./hooks/useDragAndDrop";
 import { useErrorLogging } from "./hooks/useErrorLogging";

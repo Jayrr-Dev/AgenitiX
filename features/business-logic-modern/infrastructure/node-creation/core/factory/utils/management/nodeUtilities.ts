@@ -24,12 +24,23 @@
  */
 
 import { SafeDataFlowController, SafeStateLayer } from "../../providers";
-import { NodeState } from "../../systems/propagation/UltraFastPropagationEngine";
 import { debug } from "../../systems/safety";
 
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
+
+/**
+ * Node state enum for state machine compatibility.
+ * This was previously in UltraFastPropagationEngine but moved here for legacy support
+ * after the engine was made stateless.
+ */
+export enum NodeState {
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  PENDING_ACTIVATION = "PENDING_ACTIVATION",
+  PENDING_DEACTIVATION = "PENDING_DEACTIVATION",
+}
 
 /**
  * Interface for propagation engine operations used in safety layers
@@ -443,14 +454,6 @@ export function getNodeStateInfo(nodeId: string): NodeStateInfo {
   const { getNodeState } = globalSafetyLayers;
   const state = getNodeState(nodeId);
 
-  // Import NodeState enum for comparison
-  const NodeState = {
-    ACTIVE: "ACTIVE" as const,
-    INACTIVE: "INACTIVE" as const,
-    PENDING_ACTIVATION: "PENDING_ACTIVATION" as const,
-    PENDING_DEACTIVATION: "PENDING_DEACTIVATION" as const,
-  };
-
   const isActive =
     state === NodeState.ACTIVE || state === NodeState.PENDING_DEACTIVATION;
   const isTransitioning =
@@ -481,8 +484,8 @@ export function getNodeStateInfo(nodeId: string): NodeStateInfo {
  * ```
  */
 export function getNodeState(nodeId: string): NodeState | undefined {
-  const info = getNodeStateInfo(nodeId);
-  return info.state;
+  const { getNodeState } = globalSafetyLayers;
+  return getNodeState(nodeId);
 }
 
 /**
