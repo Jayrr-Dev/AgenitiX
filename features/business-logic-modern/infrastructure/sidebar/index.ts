@@ -1,6 +1,6 @@
 // Main components
 export { SidebarTabs } from './SidebarTabs';
-export { VariantSelector } from './VariantSelector';
+export { VariantSelector } from './SidebarVariantSelector';
 export { ToggleButton } from './ToggleButton';
 export { StencilGrid } from './StencilGrid';
 export { SortableStencil } from './SortableStencil';

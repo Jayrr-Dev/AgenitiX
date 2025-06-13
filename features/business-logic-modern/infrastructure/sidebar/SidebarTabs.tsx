@@ -1,6 +1,6 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import {
   HoveredStencil,
   StencilInfoPanel,
@@ -11,6 +11,7 @@ import { SearchBar } from "./components/SearchBar";
 import { TabContent } from "./components/TabContent";
 import { VARIANT_CONFIG } from "./constants";
 import { NodeStencil, SidebarVariant } from "./types";
+import { useComponentClasses, useComponentButtonClasses, useComponentTheme } from "../theming/components";
 
 interface SidebarTabsProps {
   variant: SidebarVariant;
@@ -39,40 +40,63 @@ export function SidebarTabs({
   onVariantChange,
   onToggle,
 }: SidebarTabsProps) {
-  // Defensive programming: Handle case where VARIANT_CONFIG[variant] might be undefined
-  // Also normalize lowercase variants to uppercase
-  const normalizedVariant = variant.toUpperCase() as SidebarVariant;
+  // IMPROVED VARIANT HANDLING - More defensive programming
+  const normalizedVariant = (typeof variant === 'string' ? variant.toUpperCase() : String(variant).toUpperCase()) as SidebarVariant;
   const variantConfig = VARIANT_CONFIG[normalizedVariant];
-  let tabs;
   
-  if (!variantConfig) {
+  // ROBUST FALLBACK LOGIC - Handle multiple failure cases
+  const tabs = useMemo(() => {
+    if (variantConfig?.tabs) {
+      return variantConfig.tabs;
+    }
+    
     console.warn(`Invalid variant '${variant}' (normalized to '${normalizedVariant}') - not found in VARIANT_CONFIG. Available variants:`, Object.keys(VARIANT_CONFIG));
-    // Fallback to variant A if invalid variant is passed
-    const fallbackConfig = VARIANT_CONFIG['A'];
-    tabs = fallbackConfig.tabs;
-  } else {
-    tabs = variantConfig.tabs;
-  }
+    
+    // Try fallback variants in order of preference
+    const fallbackVariants: SidebarVariant[] = ['A', 'B', 'C', 'D', 'E'];
+    for (const fallbackVariant of fallbackVariants) {
+      const fallbackConfig = VARIANT_CONFIG[fallbackVariant];
+      if (fallbackConfig?.tabs) {
+        console.warn(`Using fallback variant '${fallbackVariant}'`);
+        return fallbackConfig.tabs;
+      }
+    }
+    
+    // Ultimate fallback - empty array
+    console.error('No valid variant configurations found! Using empty tabs array.');
+    return [];
+  }, [variant, normalizedVariant, variantConfig]);
+
+  // Get themed classes
+  const theme = useComponentTheme('sidePanel');
+  const iconTheme = useComponentTheme('sidebarIcons');
+  const buttonClasses = useComponentButtonClasses('sidePanel', 'ghost', 'sm');
+  const iconButtonClasses = useComponentButtonClasses('sidebarIcons', 'ghost', 'sm');
   
-  const [hovered, setHovered] = useState<HoveredStencil | null>(null);
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  // CONSOLIDATED STATE MANAGEMENT
+  const [uiState, setUiState] = useState({
+    hovered: null as HoveredStencil | null,
+    isSearchModalOpen: false,
+    isSearchVisible: false,
+  });
 
   // Store current stencils for keyboard shortcuts
   const currentStencilsRef = useRef<Record<string, NodeStencil[]>>({});
 
-  // KEY REPEAT PREVENTION - Prevent spam node creation
-  const lastKeyPressRef = useRef<{ key: string; timestamp: number } | null>(
-    null
-  );
+  // SIMPLIFIED KEY REPEAT PREVENTION
+  const keyThrottleRef = useRef<Map<string, number>>(new Map());
   const KEY_REPEAT_COOLDOWN = 150; // 150ms cooldown between same key presses
 
   // Get flow store for node deletion
   const { selectedNodeId, removeNode } = useFlowStore();
 
   // Get existing node types in custom section to prevent duplicates
-  const existingCustomNodeTypes = customNodes.map((node) => node.nodeType);
+  const existingCustomNodeTypes = useMemo(() => 
+    customNodes.map((node) => node.nodeType), 
+    [customNodes]
+  );
 
+  // IMPROVED DRAG START HANDLER
   const handleNativeDragStart = useCallback(
     (e: React.DragEvent<HTMLDivElement>, nodeType: string) => {
       console.log("Drag start:", nodeType);
@@ -82,7 +106,7 @@ export function SidebarTabs({
     []
   );
 
-  // Callback to update current stencils for a tab
+  // IMPROVED STENCIL UPDATE CALLBACK
   const updateTabStencils = useCallback(
     (tabKey: string, stencils: NodeStencil[]) => {
       currentStencilsRef.current[tabKey] = stencils;
@@ -90,213 +114,136 @@ export function SidebarTabs({
     []
   );
 
-  // Keyboard shortcuts for tab navigation and node creation
+  // HELPER FUNCTIONS FOR UI STATE
+  const setHovered = useCallback((hovered: HoveredStencil | null) => {
+    setUiState(prev => ({ ...prev, hovered }));
+  }, []);
+
+  const setIsSearchModalOpen = useCallback((isSearchModalOpen: boolean) => {
+    setUiState(prev => ({ ...prev, isSearchModalOpen }));
+  }, []);
+
+  const setIsSearchVisible = useCallback((isSearchVisible: boolean) => {
+    setUiState(prev => ({ ...prev, isSearchVisible }));
+  }, []);
+
+  // IMPROVED KEY THROTTLING LOGIC
+  const isKeyThrottled = useCallback((key: string): boolean => {
+    const now = Date.now();
+    const lastTime = keyThrottleRef.current.get(key);
+    
+    if (lastTime && (now - lastTime) < KEY_REPEAT_COOLDOWN) {
+      return true; // Key is throttled
+    }
+    
+    keyThrottleRef.current.set(key, now);
+    return false; // Key is not throttled
+  }, []);
+
+  // IMPROVED KEYBOARD SHORTCUTS
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // PREVENT KEY REPEAT SPAM - Block browser key repeat events (EXCEPT Alt+Q for fast deletion)
+      // PREVENT BROWSER KEY REPEAT for node creation keys (except Alt+Q)
       if (e.repeat) {
-        // Browser detected key repeat - block it completely for node creation keys
-        const nodeCreationKeys = [
-          "q",
-          "w",
-          "e",
-          "r",
-          "t",
-          "a",
-          "s",
-          "d",
-          "f",
-          "g",
-          "z",
-          "x",
-          "c",
-          "v",
-          "b",
-        ];
-
-        // Allow Alt+Q repeats for fast text deletion
+        const nodeCreationKeys = ["q", "w", "e", "r", "t", "a", "s", "d", "f", "g", "z", "x", "c", "v", "b"];
         const isAltQBackspace = e.altKey && e.key.toLowerCase() === "q";
-
-        if (
-          nodeCreationKeys.includes(e.key.toLowerCase()) &&
-          !e.ctrlKey &&
-          !e.metaKey &&
-          !e.altKey &&
-          !e.shiftKey &&
-          !isAltQBackspace
-        ) {
+        
+        if (nodeCreationKeys.includes(e.key.toLowerCase()) && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && !isAltQBackspace) {
           e.preventDefault();
-          return; // Block all repeat events for node creation
+          return;
         }
       }
 
-      // PREVENT RAPID KEY SPAM - Throttle same key presses (EXCEPT Alt+Q for fast deletion)
-      const currentTime = Date.now();
+      // SIMPLIFIED THROTTLING - Only for non-Alt+Q keys
       const currentKey = e.key.toLowerCase();
-      const lastKeyPress = lastKeyPressRef.current;
-
-      // Allow Alt+Q to bypass throttling for fast text deletion
       const isAltQBackspace = e.altKey && currentKey === "q";
-
-      if (
-        !isAltQBackspace &&
-        lastKeyPress &&
-        lastKeyPress.key === currentKey &&
-        currentTime - lastKeyPress.timestamp < KEY_REPEAT_COOLDOWN
-      ) {
-        // Same key pressed too quickly - ignore it
+      
+      if (!isAltQBackspace && isKeyThrottled(currentKey)) {
         e.preventDefault();
         return;
       }
 
-      // Update last key press for throttling (except Alt+Q)
-      if (!isAltQBackspace) {
-        lastKeyPressRef.current = { key: currentKey, timestamp: currentTime };
-      }
-
       // Check if user is typing in an input field
       const activeElement = document.activeElement;
-      const isTyping =
-        activeElement &&
-        (activeElement.tagName === "INPUT" ||
-          activeElement.tagName === "TEXTAREA" ||
-          activeElement.getAttribute("contenteditable") === "true");
+      const isTyping = activeElement && (
+        activeElement.tagName === "INPUT" ||
+        activeElement.tagName === "TEXTAREA" ||
+        activeElement.getAttribute("contenteditable") === "true"
+      );
 
-      // If typing in input field, only allow system shortcuts (with modifier keys)
-      if (isTyping) {
-        // Allow system shortcuts to pass through (Ctrl+Q, Ctrl+C, etc.)
-        if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) {
-          // Let the system handle these shortcuts normally
-          return;
-        } else {
-          // Block plain letter shortcuts when typing
-          return;
-        }
+      // If typing, only allow system shortcuts
+      if (isTyping && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+        return;
       }
 
       // Variant switching shortcuts (Alt+1-5)
       if (e.altKey && e.key >= "1" && e.key <= "5") {
         e.preventDefault();
-
         const variantMap: Record<string, SidebarVariant> = {
-          "1": "A", // Main
-          "2": "B", // Media
-          "3": "C", // Integration
-          "4": "D", // Automation
-          "5": "E", // Misc
+          "1": "A", "2": "B", "3": "C", "4": "D", "5": "E",
         };
-
         const targetVariant = variantMap[e.key];
         if (targetVariant) {
           onVariantChange(targetVariant);
         }
-        return; // Exit early to avoid processing other shortcuts
+        return;
       }
 
       // Tab shortcuts (1-5 for tabs, 6 for search)
       if (e.key >= "1" && e.key <= "6") {
         e.preventDefault();
-
         if (e.key === "6") {
-          // Key 6 opens search
           setIsSearchVisible(true);
         } else {
-          // Keys 1-5 switch to corresponding tab
           const tabIndex = parseInt(e.key) - 1;
           if (tabIndex < tabs.length) {
-            const targetTab = tabs[tabIndex];
-            onTabChange(targetTab.key);
+            onTabChange(tabs[tabIndex].key);
           }
         }
+        return;
       }
 
-      // Node grid shortcuts (QWERTY layout)
-      // Skip if any modifier keys are pressed (to avoid conflicts with Ctrl+C, Ctrl+V, etc.)
-      if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) {
-        return; // Let system shortcuts work normally
+      // Skip QWERTY shortcuts with modifiers or when search is visible
+      if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || uiState.isSearchVisible) {
+        return;
       }
 
-      // Skip QWERTY shortcuts when search is visible to avoid conflicts
-      if (isSearchVisible) {
-        return; // Let SearchBar handle all QWERTY shortcuts
-      }
-
+      // Node grid shortcuts
       const isCustomTab = variant === "E" && activeTab === "custom";
-
+      
       if (isCustomTab) {
-        // Special mapping for custom tab: q = add node, w-b shifted positions
-        if (e.key.toLowerCase() === "q") {
+        // Custom tab: q = add node, w-b for positions
+        if (currentKey === "q") {
           e.preventDefault();
-          // Open the add node modal
           setIsSearchModalOpen(true);
           return;
         }
 
         const customGridKeyMap: Record<string, number> = {
-          // Row 1: wert (positions 0-3, shifted from qwer)
-          w: 0,
-          e: 1,
-          r: 2,
-          t: 3,
-          // Row 2: asdfg (positions 4-8, shifted from asdg)
-          a: 4,
-          s: 5,
-          d: 6,
-          f: 7,
-          g: 8,
-          // Row 3: zxcvb (positions 9-13, shifted from zxcv)
-          z: 9,
-          x: 10,
-          c: 11,
-          v: 12,
-          b: 13,
+          w: 0, e: 1, r: 2, t: 3,
+          a: 4, s: 5, d: 6, f: 7, g: 8,
+          z: 9, x: 10, c: 11, v: 12, b: 13,
         };
 
-        if (customGridKeyMap.hasOwnProperty(e.key.toLowerCase())) {
+        const position = customGridKeyMap[currentKey];
+        if (position !== undefined && position < customNodes.length) {
           e.preventDefault();
-
-          const position = customGridKeyMap[e.key.toLowerCase()];
-
-          // Check if there's a node at this position in custom nodes
-          if (position < customNodes.length) {
-            const stencil = customNodes[position];
-            onDoubleClickCreate(stencil.nodeType);
-          }
+          onDoubleClickCreate(customNodes[position].nodeType);
         }
       } else {
-        // Original mapping for all other tabs
+        // Regular tabs: full QWERTY grid
         const gridKeyMap: Record<string, number> = {
-          // Row 1: qwert (positions 0-4)
-          q: 0,
-          w: 1,
-          e: 2,
-          r: 3,
-          t: 4,
-          // Row 2: asdfg (positions 5-9)
-          a: 5,
-          s: 6,
-          d: 7,
-          f: 8,
-          g: 9,
-          // Row 3: zxcvb (positions 10-14)
-          z: 10,
-          x: 11,
-          c: 12,
-          v: 13,
-          b: 14,
+          q: 0, w: 1, e: 2, r: 3, t: 4,
+          a: 5, s: 6, d: 7, f: 8, g: 9,
+          z: 10, x: 11, c: 12, v: 13, b: 14,
         };
 
-        if (gridKeyMap.hasOwnProperty(e.key.toLowerCase())) {
-          e.preventDefault();
-
-          // Get current stencils from the active tab
+        const position = gridKeyMap[currentKey];
+        if (position !== undefined) {
           const currentStencils = currentStencilsRef.current[activeTab] || [];
-          const position = gridKeyMap[e.key.toLowerCase()];
-
-          // Check if there's a node at this position
           if (position < currentStencils.length) {
-            const stencil = currentStencils[position];
-            onDoubleClickCreate(stencil.nodeType);
+            e.preventDefault();
+            onDoubleClickCreate(currentStencils[position].nodeType);
           }
         }
       }
@@ -312,19 +259,20 @@ export function SidebarTabs({
     customNodes,
     onDoubleClickCreate,
     onVariantChange,
-    onToggle,
-    selectedNodeId,
-    removeNode,
+    uiState.isSearchVisible,
+    isKeyThrottled,
+    setIsSearchModalOpen,
+    setIsSearchVisible,
   ]);
 
   if (isHidden) return null;
 
   return (
     <Tabs value={activeTab} onValueChange={onTabChange}>
-      <aside className="absolute bottom-4 right-4 z-30 h-[200px] sm:h-[280px] w-full sm:w-[400px] lg:w-[450px] border bg-background pl-3 sm:pl-6 pr-3 sm:pr-5 pt-2 rounded-lg sm:rounded-lg rounded-b-none">
-        <StencilInfoPanel stencil={hovered} />
+      <aside className={`absolute bottom-4 right-4 z-30 h-[200px] sm:h-[280px] w-full sm:w-[400px] lg:w-[450px] pl-3 sm:pl-6 pr-3 sm:pr-5 pt-2 ${theme.borderRadius.panel}  ${theme.background.primary} ${theme.border.default} ${theme.glow.hover} ${theme.shadow.default}`}>
+        <StencilInfoPanel stencil={uiState.hovered} />
 
-        <TabsList className="bg-background  items-stretch justify-between w-full gap-1 ">
+        <TabsList className={`${theme.background.primary} items-stretch justify-between w-full gap-1 border-0 ${theme.border.default}`}>
           {tabs.map(({ key, label }, index) => {
             const shortcutNumber = index + 1;
 
@@ -333,7 +281,7 @@ export function SidebarTabs({
                 key={key}
                 value={key}
                 title={`${label} (${shortcutNumber})`}
-                className=" data-[state=active]:bg-white data-[state=active]:brightness-110 dark:data-[state=active]:bg-gray-700"
+                className={`${theme.text.primary} ${theme.background.hover} data-[state=active]:${theme.background.active} data-[state=active]:${theme.text.primary} ${theme.transition} ${theme.borderRadius.button} px-3 py-2`}
               >
                 {label}
               </TabsTrigger>
@@ -343,16 +291,16 @@ export function SidebarTabs({
           {/* Search Button */}
           <button
             onClick={() => setIsSearchVisible(true)}
-            className="px-3 py-1.5 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1"
+            className={`${iconButtonClasses} flex items-center gap-1 ${theme.borderRadius.button}`}
             title="Search all nodes (6)"
           >
-            <Search className="h-4 w-4" />
+            <Search className={`h-4 w-4 ${iconTheme.text.primary}`} />
             {/* <span className="hidden sm:inline">Search</span> */}
             {/* <span className="hidden lg:inline text-xs text-gray-500">⌘K</span> */}
           </button>
         </TabsList>
 
-        <div className="max-h-[150px] sm:max-h-[230px] overflow-y-auto scrollbar *:scrollbar-thumb-gray-400 *:scrollbar-track-transparent *:scrollbar-arrow-hidden pb-2">
+        <div className={`max-h-[150px] sm:max-h-[230px] overflow-y-auto scrollbar pb-2 border-0 ${theme.background.primary}`}>
           {tabs.map(({ key }) => {
             const isCustomTab = variant === "E" && key === "custom";
 
@@ -382,7 +330,7 @@ export function SidebarTabs({
 
           {/* Search Overlay */}
           <SearchBar
-            isVisible={isSearchVisible}
+            isVisible={uiState.isSearchVisible}
             onClose={() => setIsSearchVisible(false)}
             onNativeDragStart={handleNativeDragStart}
             onDoubleClickCreate={onDoubleClickCreate}
@@ -391,7 +339,7 @@ export function SidebarTabs({
         </div>
 
         <NodeSearchModal
-          isOpen={isSearchModalOpen}
+          isOpen={uiState.isSearchModalOpen}
           onClose={() => setIsSearchModalOpen(false)}
           onAddNode={onAddCustomNode}
           existingNodes={existingCustomNodeTypes}

@@ -50,7 +50,7 @@ const validateNode = (nodeType: string) => ({
 
 import { SidebarTabs } from "./SidebarTabs";
 import { ToggleButton } from "./ToggleButton";
-import { VariantSelector } from "./VariantSelector";
+import { VariantSelector } from "./SidebarVariantSelector";
 import { useSidebarState } from "./hooks/useSidebarState";
 
 // REGISTRY ENHANCEMENTS - Additional utility imports

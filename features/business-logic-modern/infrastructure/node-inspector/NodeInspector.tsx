@@ -32,6 +32,7 @@ import { NodeOutput } from "./components/NodeOutput";
 import { useInspectorState } from "./hooks/useInspectorState";
 import { JsonHighlighter } from "./utils/JsonHighlighter";
 import type { AgenNode, NodeType } from "../flow-engine/types/nodeData";
+import { useComponentClasses, useComponentButtonClasses, useComponentTheme } from "../theming/components";
 
 const NodeInspector = React.memo(function NodeInspector() {
   const {
@@ -50,6 +51,10 @@ const NodeInspector = React.memo(function NodeInspector() {
     addNode,
     selectNode,
   } = useFlowStore();
+
+  // Get themed classes
+  const theme = useComponentTheme('nodeInspector');
+  const buttonClasses = useComponentButtonClasses('nodeInspector', 'ghost', 'sm');
 
   const selectedNode = selectedNodeId
     ? nodes.find((n) => n.id === selectedNodeId) || null
@@ -163,15 +168,15 @@ const NodeInspector = React.memo(function NodeInspector() {
   }
 
   return (
-    <div className="node-inspector flex flex-col h-full bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-l border-gray-200 dark:border-gray-700">
-      <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700">
+    <div className={`node-inspector flex flex-col h-full ${theme.background.secondary} ${theme.text.primary} border-l ${theme.border.default}`}>
+      <div className={`flex items-center justify-between p-2 border-b ${theme.border.default}`}>
         <h2 className="text-lg font-semibold">Inspector</h2>
         <div className="flex items-center gap-2">
           <button
             type="button"
             aria-label="Search"
             title="Search (not implemented)"
-            className="p-1 rounded text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700"
+            className={`${buttonClasses} ${theme.text.muted}`}
           >
             <FaSearch />
           </button>
@@ -180,7 +185,7 @@ const NodeInspector = React.memo(function NodeInspector() {
             aria-label="Lock Inspector"
             title="Lock Inspector (Alt+A)"
             onClick={() => setInspectorLocked(true)}
-            className="p-1 rounded text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700"
+            className={`${buttonClasses} ${theme.text.muted}`}
           >
             <FaLock />
           </button>
@@ -203,7 +208,7 @@ const NodeInspector = React.memo(function NodeInspector() {
             />
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              <h3 className={`text-sm font-semibold ${theme.text.secondary} mb-2`}>
                 Configuration
               </h3>
               <NodeControls
@@ -215,14 +220,14 @@ const NodeInspector = React.memo(function NodeInspector() {
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              <h3 className={`text-sm font-semibold ${theme.text.secondary} mb-2`}>
                 Live Output
               </h3>
               <NodeOutput output={output} nodeType={selectedNode.type as NodeType} />
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              <h3 className={`text-sm font-semibold ${theme.text.secondary} mb-2`}>
                 Error Log
               </h3>
               <ErrorLog
@@ -232,10 +237,10 @@ const NodeInspector = React.memo(function NodeInspector() {
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              <h3 className={`text-sm font-semibold ${theme.text.secondary} mb-2`}>
                 Raw Data
               </h3>
-              <div className="p-2 bg-white dark:bg-gray-900 rounded-lg text-xs border border-gray-200 dark:border-gray-700">
+              <div className={`p-2 ${theme.background.primary} rounded-lg text-xs border ${theme.border.default}`}>
                 <JsonHighlighter data={selectedNode.data} />
               </div>
             </div>
@@ -248,10 +253,10 @@ const NodeInspector = React.memo(function NodeInspector() {
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="text-lg font-semibold text-gray-500 dark:text-gray-400">
+            <div className={`text-lg font-semibold ${theme.text.muted}`}>
               No Selection
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-500 mt-1">
+            <p className={`text-sm ${theme.text.secondary} mt-1`}>
               Select a node or edge to inspect its properties.
             </p>
           </div>

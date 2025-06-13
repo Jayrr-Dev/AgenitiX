@@ -4,9 +4,11 @@
  * • Provides undo/redo buttons with keyboard shortcut support
  * • History panel toggle for viewing action timeline
  * • Fullscreen mode toggle (browser environments only)
+ * • Theme switcher for light/dark/system mode selection
  * • Environment detection for desktop vs browser features
+ * • Now uses centralized component theming system
  *
- * Keywords: toolbar, undo-redo, history, fullscreen, shortcuts
+ * Keywords: toolbar, undo-redo, history, fullscreen, shortcuts, theming, theme-switcher
  */
 
 "use client";
@@ -20,6 +22,8 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useUndoRedo } from "./UndoRedoContext";
+import { useComponentClasses, useComponentButtonClasses } from "../theming/components";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 
 interface ActionToolbarProps {
   showHistoryPanel: boolean;
@@ -36,6 +40,11 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
   const { canUndo, canRedo } = getHistory();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isBrowserEnvironment, setIsBrowserEnvironment] = useState(false);
+
+  // Get themed classes
+  const containerClasses = useComponentClasses('actionToolbar', 'default', `flex items-center gap-1 p-1 ${className}`);
+  const buttonClasses = useComponentButtonClasses('actionToolbar', 'ghost', 'sm');
+  const activeButtonClasses = useComponentButtonClasses('actionToolbar', 'primary', 'sm');
 
   // Detect if running in browser vs desktop/Electron app
   useEffect(() => {
@@ -104,36 +113,30 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
   };
 
   return (
-    <div
-      className={`flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-1 ${className}`}
-    >
+    <div className={containerClasses}>
       <button
         onClick={() => undo()}
         disabled={!canUndo}
-        className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className={buttonClasses}
         title="Undo (Ctrl+Z)"
       >
-        <RotateCcw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+        <RotateCcw className="w-4 h-4" />
       </button>
 
       <button
         onClick={() => redo()}
         disabled={!canRedo}
-        className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className={buttonClasses}
         title="Redo (Ctrl+Y)"
       >
-        <RotateCw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+        <RotateCw className="w-4 h-4" />
       </button>
 
       <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1" />
 
       <button
         onClick={onToggleHistory}
-        className={`p-2 rounded transition-colors ${
-          showHistoryPanel
-            ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400"
-            : "hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400"
-        }`}
+        className={showHistoryPanel ? activeButtonClasses : buttonClasses}
         title="Toggle History Panel (Ctrl+H)"
       >
         <History className="w-4 h-4" />
@@ -144,13 +147,16 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
         <>
           <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1" />
 
+  {/* THEME SWITCHER */}
+  {/* <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1" /> */}
+      
+      <div className="flex items-center">
+        <ThemeSwitcher />
+      </div>
+
           <button
             onClick={toggleFullscreen}
-            className={`p-2 rounded transition-colors ${
-              isFullscreen
-                ? "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
-                : "hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400"
-            }`}
+            className={isFullscreen ? activeButtonClasses : buttonClasses}
             title={
               isFullscreen ? "Exit Fullscreen (F11)" : "Enter Fullscreen (F11)"
             }
@@ -163,6 +169,8 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
           </button>
         </>
       )}
+
+    
     </div>
   );
 };

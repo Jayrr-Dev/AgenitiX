@@ -31,6 +31,7 @@ import HistoryPanel from "@/features/business-logic-modern/infrastructure/compon
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
 import type { Node, NodeProps } from "@xyflow/react";
 import type { ComponentType } from "react";
+import { useComponentClasses, useComponentTheme, ThemedMiniMap } from "@/features/business-logic-modern/infrastructure/theming/components";
 
 // Node components are now loaded via useDynamicNodeTypes hook
 // No need for direct imports here
@@ -135,6 +136,9 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 
   const [isMobile, setIsMobile] = useState(false);
   const [hasFilteredNodes, setHasFilteredNodes] = useState(false);
+
+  // Get themed classes for components
+  const nodeInspectorTheme = useComponentTheme('nodeInspector');
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -320,13 +324,16 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         {/* NODE INSPECTOR PANEL */}
         <Panel
           position="bottom-center"
-          className="hidden md:block rounded bg-white/90 dark:bg-zinc-800/90 p-4 shadow max-w-4xl max-h-[250px] overflow-y-auto scrollbar-none"
+          className={`hidden md:block rounded ${nodeInspectorTheme.background.primary} p-4 ${nodeInspectorTheme.shadow.default} max-w-4xl max-h-[250px] overflow-y-auto scrollbar-none ${nodeInspectorTheme.glow.hover}`}
         >
           <NodeInspector />
         </Panel>
 
         {/* MINIMAP */}
-        <MiniMap position="bottom-left" className="hidden md:block" />
+        <ThemedMiniMap 
+          position="bottom-left" 
+          additionalClasses="hidden md:block"
+        />
 
         {/* CONTROLS */}
         <Controls

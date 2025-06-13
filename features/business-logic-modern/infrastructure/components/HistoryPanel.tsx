@@ -7,8 +7,9 @@
  * • Undo/redo controls with clear history option
  * • Multi-branch support with graph-based navigation
  * • Responsive design with collapsible interface and timestamps
+ * • Now uses centralized component theming system
  *
- * Keywords: history, timeline, actions, undo-redo, visual-indicators, panel, multi-branch
+ * Keywords: history, timeline, actions, undo-redo, visual-indicators, panel, multi-branch, theming
  */
 
 "use client";
@@ -24,6 +25,7 @@ import {
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { useUndoRedo } from "./UndoRedoContext";
+import { useComponentClasses, useComponentButtonClasses, useComponentTheme } from "../theming/components";
 
 interface HistoryPanelProps {
   className?: string;
@@ -33,6 +35,12 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
   const { undo, redo, clearHistory, getHistory } = useUndoRedo();
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<string | null>(null);
+
+  // GET THEMED CLASSES
+  const theme = useComponentTheme('historyPanel');
+  const panelClasses = useComponentClasses('historyPanel', 'default', className);
+  const buttonClasses = useComponentButtonClasses('historyPanel', 'ghost', 'sm');
+  const activeButtonClasses = useComponentButtonClasses('historyPanel', 'primary', 'sm');
 
   // GET HISTORY FROM CONTEXT - Updated for graph-based system
   const historyData = getHistory();
@@ -140,16 +148,14 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
   // RENDER
   if (!isExpanded) {
     return (
-      <div
-        className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm ${className}`}
-      >
+      <div className={panelClasses}>
         <button
           onClick={() => setIsExpanded(true)}
-          className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          className={`w-full p-3 flex items-center justify-between ${theme.background.hover} ${theme.transition}`}
         >
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <Clock className={`w-4 h-4 ${theme.text.muted}`} />
+            <span className={`text-sm font-medium ${theme.text.primary}`}>
               History ({historyPath.length})
             </span>
             {graphStats && graphStats.branches > 0 && (
@@ -161,26 +167,24 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
               </div>
             )}
           </div>
-          <ChevronRight className="w-4 h-4 text-gray-400" />
+          <ChevronRight className={`w-4 h-4 ${theme.text.muted}`} />
         </button>
       </div>
     );
   }
 
   return (
-    <div
-      className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm ${className}`}
-    >
+    <div className={panelClasses}>
       {/* HEADER */}
-      <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+      <div className={`p-3 ${theme.border.default} border-b`}>
         <div className="flex items-center justify-between">
           <button
             onClick={() => setIsExpanded(false)}
-            className="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 p-1 rounded transition-colors"
+            className={`flex items-center gap-2 ${theme.background.hover} p-1 ${theme.borderRadius.button} ${theme.transition}`}
           >
-            <ChevronDown className="w-4 h-4 text-gray-400" />
-            <Clock className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <ChevronDown className={`w-4 h-4 ${theme.text.muted}`} />
+            <Clock className={`w-4 h-4 ${theme.text.muted}`} />
+            <span className={`text-sm font-medium ${theme.text.primary}`}>
               History ({historyPath.length})
             </span>
             {graphStats && (
@@ -193,7 +197,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
                     </span>
                   </div>
                 )}
-                <span className="text-xs text-gray-400">
+                <span className={`text-xs ${theme.text.muted}`}>
                   {graphStats.totalNodes} total states
                 </span>
               </div>
@@ -204,27 +208,27 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
             <button
               onClick={() => undo()}
               disabled={!canUndo}
-              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className={buttonClasses}
               title="Undo (Ctrl+Z)"
             >
-              <RotateCcw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              <RotateCcw className="w-4 h-4" />
             </button>
 
             <button
               onClick={() => redo()}
               disabled={!canRedo}
-              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className={buttonClasses}
               title="Redo (Ctrl+Y)"
             >
-              <RotateCw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              <RotateCw className="w-4 h-4" />
             </button>
 
             <button
               onClick={handleClearHistory}
-              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+              className={buttonClasses}
               title="Clear History"
             >
-              <Trash2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -257,7 +261,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
       {/* HISTORY LIST */}
       <div className="max-h-80 overflow-y-auto">
         {visibleHistory.length === 0 ? (
-          <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+          <div className={`p-4 text-center ${theme.text.muted} text-sm`}>
             No history yet. Start making changes to see them here.
           </div>
         ) : (
@@ -276,12 +280,12 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
                     ${getActionColor(entry.metadata)}
                     ${
                       isCurrentState
-                        ? "bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-200 dark:ring-blue-800"
+                        ? `${theme.background.active} ring-1 ring-primary/20`
                         : isFutureState
-                          ? "bg-gray-50 dark:bg-gray-700/50 opacity-60"
-                          : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                          ? `${theme.background.secondary} opacity-60`
+                          : `${theme.background.hover}`
                     }
-                    ${isSelected ? "ring-1 ring-blue-300 dark:ring-blue-600" : ""}
+                    ${isSelected ? "ring-1 ring-primary/30" : ""}
                   `}
                   onClick={() => {
                     setSelectedEntry(isSelected ? null : entry.id);
@@ -297,21 +301,21 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        <span className={`text-sm font-medium ${theme.text.primary} truncate`}>
                           {entry.label || "Unknown action"}
                         </span>
                         {isCurrentState && (
-                          <span className="text-xs bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 px-1.5 py-0.5 rounded">
+                          <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
                             Current
                           </span>
                         )}
                       </div>
 
                       <div className="flex items-center justify-between mt-1">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                        <span className={`text-xs ${theme.text.secondary}`}>
                           {formatTimestamp(entry.createdAt)}
                         </span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">
+                        <span className={`text-xs ${theme.text.muted} font-mono`}>
                           #{globalIndex + 1}
                         </span>
                       </div>
@@ -330,15 +334,15 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 
                       {/* METADATA */}
                       {entry.metadata && isSelected && (
-                        <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-600 rounded text-xs">
-                          <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <div className={`mt-2 p-2 ${theme.background.secondary} rounded text-xs`}>
+                          <div className={`font-medium ${theme.text.primary} mb-1`}>
                             Details:
                           </div>
                           {Object.entries(entry.metadata).map(
                             ([key, value]) => (
                               <div
                                 key={key}
-                                className="text-gray-600 dark:text-gray-400"
+                                className={`${theme.text.secondary}`}
                               >
                                 <span className="font-medium">{key}:</span>{" "}
                                 {String(value)}
@@ -358,8 +362,8 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 
       {/* FOOTER */}
       {historyPath.length > visibleHistory.length && (
-        <div className="p-2 border-t border-gray-200 dark:border-gray-700 text-center">
-          <span className="text-xs text-gray-500 dark:text-gray-400">
+        <div className={`p-2 ${theme.border.default} border-t text-center`}>
+          <span className={`text-xs ${theme.text.muted}`}>
             Showing last {visibleHistory.length} of {historyPath.length} actions
           </span>
         </div>
