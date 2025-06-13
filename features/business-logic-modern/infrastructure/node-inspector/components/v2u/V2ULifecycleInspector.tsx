@@ -63,15 +63,15 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
   };
 
   const getHookStatusColor = (hook: any) => {
-    if (!hook || !hook.executed) return "text-gray-500 bg-gray-50";
-    if (hook.error) return "text-red-600 bg-red-50";
+    if (!hook || !hook.executed) return "text-node-view-text-secondary bg-node-view";
+    if (hook.error) return "text-error bg-error";
     if (
       hook.duration &&
       hook.duration > V2U_LIFECYCLE_CONFIG.SLOW_MOUNT_THRESHOLD_MS
     ) {
-      return "text-yellow-600 bg-yellow-50";
+      return "text-warning bg-warning";
     }
-    return "text-green-600 bg-green-50";
+    return "text-success bg-success";
   };
 
   const getHookStatusIcon = (hook: any) => {
@@ -109,11 +109,11 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-lg">🔄</span>
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+          <h3 className="text-sm font-semibold text-node-view">
             Lifecycle Hooks
           </h3>
           {hasExecutedHooks && (
-            <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
+            <span className="text-xs px-2 py-1 bg-success text-success-text rounded-full">
               Active
             </span>
           )}
@@ -122,7 +122,7 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={onRefresh}
-            className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+            className="text-xs px-2 py-1 bg-node-view-hover hover:bg-node-view-hover rounded transition-colors"
             title="Refresh lifecycle state"
           >
             🔄 Refresh
@@ -132,20 +132,20 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
 
       {/* Overview Stats */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded border">
-          <div className="text-xs text-gray-600 dark:text-gray-400">
+        <div className="p-3 bg-node-view rounded border-node-view">
+          <div className="text-xs text-node-view-text-secondary">
             Executed Hooks
           </div>
-          <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <div className="text-lg font-semibold text-node-view">
             {Object.values(lifecycle).filter((hook) => hook?.executed).length}
           </div>
         </div>
 
-        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded border">
-          <div className="text-xs text-gray-600 dark:text-gray-400">
+        <div className="p-3 bg-node-view rounded border-node-view">
+          <div className="text-xs text-node-view-text-secondary">
             Data Changes
           </div>
-          <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <div className="text-lg font-semibold text-node-view">
             {lifecycle.onDataChange?.executionCount || 0}
           </div>
         </div>
@@ -154,20 +154,20 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
       {/* Lifecycle Hooks List */}
       <div className="space-y-3">
         {/* onMount Hook */}
-        <div className="border border-gray-200 dark:border-gray-700 rounded">
+        <div className="border border-node-view rounded">
           <button
             onClick={() => toggleSection("onMount")}
-            className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800"
+            className="w-full flex items-center justify-between p-3 hover:bg-node-view-hover"
           >
             <div className="flex items-center gap-3">
               <span className="text-sm">
                 {getHookStatusIcon(lifecycle.onMount)}
               </span>
               <div className="text-left">
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <div className="text-sm font-medium text-node-view">
                   onMount
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="text-xs text-node-view-text-secondary">
                   {lifecycle.onMount?.executed
                     ? `Executed ${formatTimestamp(lifecycle.onMount.timestamp)}`
                     : "Not executed"}
@@ -183,18 +183,18 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
                   {formatDuration(lifecycle.onMount.duration)}
                 </span>
               )}
-              <span className="text-gray-400">
+              <span className="text-node-view-text-secondary">
                 {expandedSections.has("onMount") ? "▼" : "▶"}
               </span>
             </div>
           </button>
 
           {expandedSections.has("onMount") && (
-            <div className="px-3 pb-3 border-t border-gray-200 dark:border-gray-700">
+            <div className="px-3 pb-3 border-t border-node-view">
               <div className="space-y-2 mt-3">
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-node-view-text-secondary">
                       Status:{" "}
                     </span>
                     <span className={getHookStatusColor(lifecycle.onMount)}>
@@ -202,32 +202,32 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-node-view-text-secondary">
                       Duration:{" "}
                     </span>
-                    <span>{formatDuration(lifecycle.onMount?.duration)}</span>
+                    <span className="text-node-view">
+                      {formatDuration(lifecycle.onMount?.duration)}
+                    </span>
                   </div>
                 </div>
 
                 {lifecycle.onMount?.error && (
-                  <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                    <div className="font-medium">Error:</div>
-                    <div className="mt-1">{lifecycle.onMount.error}</div>
+                  <div className="p-2 bg-error rounded text-xs">
+                    <div className="font-medium text-error-text mb-1">Error:</div>
+                    <div className="text-error-text-secondary">
+                      {String(lifecycle.onMount.error)}
+                    </div>
                   </div>
                 )}
 
-                {debugMode && (
-                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <button
-                      onClick={() => handleTriggerHook("onMount")}
-                      disabled={isTriggering === "onMount"}
-                      className="text-xs px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors disabled:opacity-50"
-                    >
-                      {isTriggering === "onMount"
-                        ? "⏳ Triggering..."
-                        : "🧪 Test Hook"}
-                    </button>
-                  </div>
+                {debugMode && onTriggerLifecycle && (
+                  <button
+                    onClick={() => handleTriggerHook("onMount")}
+                    disabled={isTriggering === "onMount"}
+                    className="text-xs px-2 py-1 bg-node-trigger hover:bg-node-trigger-hover text-node-trigger-text rounded transition-colors disabled:opacity-50"
+                  >
+                    {isTriggering === "onMount" ? "Triggering..." : "🔄 Trigger"}
+                  </button>
                 )}
               </div>
             </div>
@@ -235,20 +235,20 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
         </div>
 
         {/* onUnmount Hook */}
-        <div className="border border-gray-200 dark:border-gray-700 rounded">
+        <div className="border border-node-view rounded">
           <button
             onClick={() => toggleSection("onUnmount")}
-            className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800"
+            className="w-full flex items-center justify-between p-3 hover:bg-node-view-hover"
           >
             <div className="flex items-center gap-3">
               <span className="text-sm">
                 {getHookStatusIcon(lifecycle.onUnmount)}
               </span>
               <div className="text-left">
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <div className="text-sm font-medium text-node-view">
                   onUnmount
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="text-xs text-node-view-text-secondary">
                   {lifecycle.onUnmount?.executed
                     ? `Executed ${formatTimestamp(lifecycle.onUnmount.timestamp)}`
                     : "Not executed"}
@@ -264,18 +264,18 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
                   {formatDuration(lifecycle.onUnmount.duration)}
                 </span>
               )}
-              <span className="text-gray-400">
+              <span className="text-node-view-text-secondary">
                 {expandedSections.has("onUnmount") ? "▼" : "▶"}
               </span>
             </div>
           </button>
 
           {expandedSections.has("onUnmount") && (
-            <div className="px-3 pb-3 border-t border-gray-200 dark:border-gray-700">
+            <div className="px-3 pb-3 border-t border-node-view">
               <div className="space-y-2 mt-3">
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-node-view-text-secondary">
                       Status:{" "}
                     </span>
                     <span className={getHookStatusColor(lifecycle.onUnmount)}>
@@ -283,32 +283,32 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-node-view-text-secondary">
                       Duration:{" "}
                     </span>
-                    <span>{formatDuration(lifecycle.onUnmount?.duration)}</span>
+                    <span className="text-node-view">
+                      {formatDuration(lifecycle.onUnmount?.duration)}
+                    </span>
                   </div>
                 </div>
 
                 {lifecycle.onUnmount?.error && (
-                  <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                    <div className="font-medium">Error:</div>
-                    <div className="mt-1">{lifecycle.onUnmount.error}</div>
+                  <div className="p-2 bg-error rounded text-xs">
+                    <div className="font-medium text-error-text mb-1">Error:</div>
+                    <div className="text-error-text-secondary">
+                      {String(lifecycle.onUnmount.error)}
+                    </div>
                   </div>
                 )}
 
-                {debugMode && (
-                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <button
-                      onClick={() => handleTriggerHook("onUnmount")}
-                      disabled={isTriggering === "onUnmount"}
-                      className="text-xs px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors disabled:opacity-50"
-                    >
-                      {isTriggering === "onUnmount"
-                        ? "⏳ Triggering..."
-                        : "🧪 Test Hook"}
-                    </button>
-                  </div>
+                {debugMode && onTriggerLifecycle && (
+                  <button
+                    onClick={() => handleTriggerHook("onUnmount")}
+                    disabled={isTriggering === "onUnmount"}
+                    className="text-xs px-2 py-1 bg-node-trigger hover:bg-node-trigger-hover text-node-trigger-text rounded transition-colors disabled:opacity-50"
+                  >
+                    {isTriggering === "onUnmount" ? "Triggering..." : "🔄 Trigger"}
+                  </button>
                 )}
               </div>
             </div>
@@ -316,20 +316,20 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
         </div>
 
         {/* onDataChange Hook */}
-        <div className="border border-gray-200 dark:border-gray-700 rounded">
+        <div className="border border-node-view rounded">
           <button
             onClick={() => toggleSection("onDataChange")}
-            className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800"
+            className="w-full flex items-center justify-between p-3 hover:bg-node-view-hover"
           >
             <div className="flex items-center gap-3">
               <span className="text-sm">
                 {lifecycle.onDataChange?.executionCount ? "✅" : "⭕"}
               </span>
               <div className="text-left">
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <div className="text-sm font-medium text-node-view">
                   onDataChange
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="text-xs text-node-view-text-secondary">
                   {lifecycle.onDataChange?.executionCount
                     ? `${lifecycle.onDataChange.executionCount} executions`
                     : "No executions"}
@@ -339,57 +339,55 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
 
             <div className="flex items-center gap-2">
               {lifecycle.onDataChange?.averageDuration && (
-                <span className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded">
+                <span className="text-xs px-2 py-1 bg-node-view-text-secondary text-node-view">
                   avg: {formatDuration(lifecycle.onDataChange.averageDuration)}
                 </span>
               )}
-              <span className="text-gray-400">
+              <span className="text-node-view-text-secondary">
                 {expandedSections.has("onDataChange") ? "▼" : "▶"}
               </span>
             </div>
           </button>
 
           {expandedSections.has("onDataChange") && (
-            <div className="px-3 pb-3 border-t border-gray-200 dark:border-gray-700">
+            <div className="px-3 pb-3 border-t border-node-view">
               <div className="space-y-2 mt-3">
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-node-view-text-secondary">
                       Executions:{" "}
                     </span>
-                    <span>{lifecycle.onDataChange?.executionCount || 0}</span>
+                    <span className="text-node-view">
+                      {lifecycle.onDataChange?.executionCount || 0}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-node-view-text-secondary">
                       Last Executed:{" "}
                     </span>
-                    <span>
+                    <span className="text-node-view">
                       {formatTimestamp(lifecycle.onDataChange?.lastExecuted)}
                     </span>
                   </div>
                 </div>
 
                 {lifecycle.onDataChange?.lastError && (
-                  <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                    <div className="font-medium">Last Error:</div>
-                    <div className="mt-1">
+                  <div className="p-2 bg-error rounded text-xs">
+                    <div className="font-medium text-error-text mb-1">Last Error:</div>
+                    <div className="text-error-text-secondary">
                       {lifecycle.onDataChange.lastError}
                     </div>
                   </div>
                 )}
 
-                {debugMode && (
-                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <button
-                      onClick={() => handleTriggerHook("onDataChange")}
-                      disabled={isTriggering === "onDataChange"}
-                      className="text-xs px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors disabled:opacity-50"
-                    >
-                      {isTriggering === "onDataChange"
-                        ? "⏳ Triggering..."
-                        : "🧪 Test Hook"}
-                    </button>
-                  </div>
+                {debugMode && onTriggerLifecycle && (
+                  <button
+                    onClick={() => handleTriggerHook("onDataChange")}
+                    disabled={isTriggering === "onDataChange"}
+                    className="text-xs px-2 py-1 bg-node-trigger hover:bg-node-trigger-hover text-node-trigger-text rounded transition-colors disabled:opacity-50"
+                  >
+                    {isTriggering === "onDataChange" ? "Triggering..." : "🔄 Trigger"}
+                  </button>
                 )}
               </div>
             </div>
@@ -397,20 +395,20 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
         </div>
 
         {/* onValidation Hook */}
-        <div className="border border-gray-200 dark:border-gray-700 rounded">
+        <div className="border border-node-view rounded">
           <button
             onClick={() => toggleSection("onValidation")}
-            className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800"
+            className="w-full flex items-center justify-between p-3 hover:bg-node-view-hover"
           >
             <div className="flex items-center gap-3">
               <span className="text-sm">
                 {lifecycle.onValidation?.executionCount ? "✅" : "⭕"}
               </span>
               <div className="text-left">
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <div className="text-sm font-medium text-node-view">
                   onValidation
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="text-xs text-node-view-text-secondary">
                   {lifecycle.onValidation?.executionCount
                     ? `${lifecycle.onValidation.executionCount} validations`
                     : "No validations"}
@@ -423,8 +421,8 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
                 <span
                   className={`text-xs px-2 py-1 rounded ${
                     lifecycle.onValidation.lastResult === true
-                      ? "bg-green-50 text-green-700"
-                      : "bg-red-50 text-red-700"
+                      ? "bg-success text-success-text"
+                      : "bg-error text-error-text"
                   }`}
                 >
                   {lifecycle.onValidation.lastResult === true
@@ -432,27 +430,29 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
                     : "Invalid"}
                 </span>
               )}
-              <span className="text-gray-400">
+              <span className="text-node-view-text-secondary">
                 {expandedSections.has("onValidation") ? "▼" : "▶"}
               </span>
             </div>
           </button>
 
           {expandedSections.has("onValidation") && (
-            <div className="px-3 pb-3 border-t border-gray-200 dark:border-gray-700">
+            <div className="px-3 pb-3 border-t border-node-view">
               <div className="space-y-2 mt-3">
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-node-view-text-secondary">
                       Validations:{" "}
                     </span>
-                    <span>{lifecycle.onValidation?.executionCount || 0}</span>
+                    <span className="text-node-view">
+                      {lifecycle.onValidation?.executionCount || 0}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-node-view-text-secondary">
                       Last Result:{" "}
                     </span>
-                    <span>
+                    <span className="text-node-view">
                       {lifecycle.onValidation?.lastResult === true
                         ? "Valid"
                         : lifecycle.onValidation?.lastResult === false
@@ -465,18 +465,14 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
                   </div>
                 </div>
 
-                {debugMode && (
-                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <button
-                      onClick={() => handleTriggerHook("onValidation")}
-                      disabled={isTriggering === "onValidation"}
-                      className="text-xs px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors disabled:opacity-50"
-                    >
-                      {isTriggering === "onValidation"
-                        ? "⏳ Triggering..."
-                        : "🧪 Test Hook"}
-                    </button>
-                  </div>
+                {debugMode && onTriggerLifecycle && (
+                  <button
+                    onClick={() => handleTriggerHook("onValidation")}
+                    disabled={isTriggering === "onValidation"}
+                    className="text-xs px-2 py-1 bg-node-trigger hover:bg-node-trigger-hover text-node-trigger-text rounded transition-colors disabled:opacity-50"
+                  >
+                    {isTriggering === "onValidation" ? "Triggering..." : "🔄 Trigger"}
+                  </button>
                 )}
               </div>
             </div>
@@ -486,7 +482,7 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
 
       {/* No Hooks Message */}
       {!hasExecutedHooks && (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+        <div className="text-center py-8 text-node-view-text-secondary">
           <div className="text-2xl mb-2">🔄</div>
           <div className="text-sm">
             No lifecycle hooks have been executed yet

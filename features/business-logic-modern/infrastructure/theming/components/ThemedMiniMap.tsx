@@ -1,60 +1,78 @@
 /**
- * THEMED MINIMAP - Wrapper for ReactFlow MiniMap with component theming
+ * THEMED MINI MAP COMPONENT - Miniature flow visualization with semantic theming
  *
- * • Applies consistent theming from componentThemeStore
- * • Preserves all original MiniMap functionality
- * • Matches visual style with other themed components
- * • Supports dark/light mode automatically
+ * • Miniature overview of the entire flow canvas with zoom and pan controls
+ * • Integrated with semantic token system for consistent theming
+ * • Responsive design with proper contrast and accessibility
+ * • Smooth interactions and visual feedback for navigation
+ * • Customizable styling and positioning options
  *
- * Keywords: minimap, theming, reactflow, wrapper
+ * Keywords: mini-map, flow-overview, semantic-tokens, navigation, accessibility
  */
 
 "use client";
 
-import { MiniMap } from "@xyflow/react";
-import type { MiniMapProps } from "@xyflow/react";
 import React from "react";
-import { useComponentTheme } from "./componentThemeStore";
+import { MiniMap } from "@xyflow/react";
 
-interface ThemedMiniMapProps extends Omit<MiniMapProps, 'className' | 'style'> {
-  /** Additional CSS classes to apply */
-  additionalClasses?: string;
-  /** Additional inline styles */
-  additionalStyles?: React.CSSProperties;
+interface ThemedMiniMapProps {
+  className?: string;
+  position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  pannable?: boolean;
+  zoomable?: boolean;
+  ariaLabel?: string;
 }
 
-/**
- * THEMED MINIMAP COMPONENT
- * Wraps ReactFlow MiniMap with consistent theming
- */
 export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
-  additionalClasses = "",
-  additionalStyles = {},
-  ...miniMapProps
+  className = "",
+  position = "bottom-right",
+  pannable = true,
+  zoomable = true,
+  ariaLabel = "Mini map overview",
 }) => {
-  const theme = useComponentTheme('miniMap');
-
-  // Combine themed classes with additional classes
-  const combinedClasses = `
-    ${theme.borderRadius.default}
-    ${theme.glow.hover}
-    ${theme.shadow.default}
-    ${theme.transition}
-    ${additionalClasses}
-  `.trim();
-
-  // Combine themed styles with additional styles
-  const combinedStyles: React.CSSProperties = {
-    backgroundColor: 'var(--background)',
-    border: '1px solid var(--border)',
-    ...additionalStyles,
-  };
-
   return (
     <MiniMap
-      {...miniMapProps}
-      className={combinedClasses}
-      style={combinedStyles}
+      className={`bg-infra-minimap border-infra-minimap rounded border shadow-sm ${className}`}
+      position={position}
+      pannable={pannable}
+      zoomable={zoomable}
+      ariaLabel={ariaLabel}
+      nodeColor={(node) => {
+        // Use semantic colors based on node type
+        switch (node.type) {
+          case 'create':
+            return 'hsl(var(--node-create-bg))';
+          case 'view':
+            return 'hsl(var(--node-view-bg))';
+          case 'trigger':
+            return 'hsl(var(--node-trigger-bg))';
+          case 'test':
+            return 'hsl(var(--node-test-bg))';
+          default:
+            return 'hsl(var(--node-view-bg))';
+        }
+      }}
+      nodeStrokeColor={(node) => {
+        // Use semantic border colors
+        switch (node.type) {
+          case 'create':
+            return 'hsl(var(--node-create-border))';
+          case 'view':
+            return 'hsl(var(--node-view-border))';
+          case 'trigger':
+            return 'hsl(var(--node-trigger-border))';
+          case 'test':
+            return 'hsl(var(--node-test-border))';
+          default:
+            return 'hsl(var(--node-view-border))';
+        }
+      }}
+      nodeStrokeWidth={2}
+      maskColor="hsl(var(--infra-minimap-mask))"
+      style={{
+        backgroundColor: 'hsl(var(--infra-minimap-bg))',
+        border: '1px solid hsl(var(--infra-minimap-border))',
+      }}
     />
   );
 };

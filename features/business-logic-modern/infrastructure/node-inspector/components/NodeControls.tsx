@@ -33,7 +33,7 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
 
   // Fallback for nodes with no registered controls
   return (
-    <div className="text-xs text-gray-500 p-2">
+    <div className="text-xs text-infra-inspector-text-secondary p-2">
       No controls available for this node type.
     </div>
   );

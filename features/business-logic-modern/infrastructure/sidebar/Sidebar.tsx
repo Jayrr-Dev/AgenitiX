@@ -50,7 +50,7 @@ const validateNode = (nodeType: string) => ({
 
 import { SidebarTabs } from "./SidebarTabs";
 import { ToggleButton } from "./ToggleButton";
-import { VariantSelector } from "./SidebarVariantSelector";
+import { SidebarVariantSelector as VariantSelector } from "./SidebarVariantSelector";
 import { useSidebarState } from "./hooks/useSidebarState";
 
 // REGISTRY ENHANCEMENTS - Additional utility imports
@@ -327,10 +327,10 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
           </div>
         )}
 
-        <VariantSelector
-          variant={variant}
+                        <VariantSelector
+          variants={['A', 'B', 'C', 'D', 'E']}
+          selectedVariant={variant}
           onVariantChange={setVariant}
-          isHidden={isHidden}
         />
 
         <SidebarTabs

@@ -1,10 +1,21 @@
+/**
+ * SEARCH BAR COMPONENT - Node search interface for sidebar
+ *
+ * • Search input with real-time filtering capabilities
+ * • Integrated with semantic token system for consistent theming
+ * • Accessible with proper keyboard navigation and screen reader support
+ * • Clear button and search icon for better UX
+ * • Responsive design with proper focus states
+ *
+ * Keywords: search-bar, filter, semantic-tokens, accessibility, responsive
+ */
+
+import React, { useState, useCallback } from "react";
 import { Search, X } from "lucide-react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
 import { HoveredStencil } from "../StencilInfoPanel";
 import { getAllNodeMetadata } from "../../node-registry/nodespec-registry";
 import type { NodeMetadata } from "../../node-registry/types";
 import { StencilGrid } from "../StencilGrid";
-import { useComponentTheme } from "../../theming/components";
 
 interface SearchBarProps {
   onNativeDragStart: (
@@ -15,22 +26,26 @@ interface SearchBarProps {
   setHovered: (s: HoveredStencil | null) => void;
   isVisible: boolean;
   onClose: () => void;
+  onSearch: (query: string) => void;
+  placeholder?: string;
+  className?: string;
 }
 
-export function SearchBar({
+export const SearchBar: React.FC<SearchBarProps> = ({
   onNativeDragStart,
   onDoubleClickCreate,
   setHovered,
   isVisible,
   onClose,
-}: SearchBarProps) {
-  const theme = useComponentTheme('sidePanel');
+  onSearch,
+  placeholder = "Search nodes...",
+  className = "",
+}) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isInputFocused, setIsInputFocused] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   // KEY REPEAT PREVENTION - Prevent spam node creation
-  const lastKeyPressRef = useRef<{ key: string; timestamp: number } | null>(
+  const lastKeyPressRef = React.useRef<{ key: string; timestamp: number } | null>(
     null
   );
   const KEY_REPEAT_COOLDOWN = 150; // 150ms cooldown between same key presses
@@ -61,7 +76,7 @@ export function SearchBar({
   };
 
   // Create searchable stencils from all available nodes
-  const allStencils = useMemo(() => {
+  const allStencils = React.useMemo(() => {
     const nodeMetadata = getAllNodeMetadata();
     return nodeMetadata.map((node: NodeMetadata, index: number) => ({
       id: `search-${node.nodeType.toLowerCase()}-${index}`,
@@ -72,7 +87,7 @@ export function SearchBar({
   }, []);
 
   // Filter stencils based on search query
-  const filteredStencils = useMemo(() => {
+  const filteredStencils = React.useMemo(() => {
     if (!searchQuery.trim()) return allStencils;
 
     const query = searchQuery.toLowerCase();
@@ -84,17 +99,31 @@ export function SearchBar({
     );
   }, [searchQuery, allStencils]);
 
-  const handleClearSearch = () => {
-    setSearchQuery("");
-  };
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setSearchQuery(value);
+      onSearch(value);
+    },
+    [onSearch]
+  );
 
-  const handleClose = () => {
+  const handleClear = useCallback(() => {
     setSearchQuery("");
-    onClose();
-  };
+    onSearch("");
+  }, [onSearch]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Escape") {
+        handleClear();
+      }
+    },
+    [handleClear]
+  );
 
   // KEYBOARD EVENT HANDLING - Enter to exit, QWERTY shortcuts for results
-  useEffect(() => {
+  React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only handle events when search is visible
       if (!isVisible) return;
@@ -162,7 +191,7 @@ export function SearchBar({
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation(); // Prevent event from bubbling to SidebarTabs
-        handleClose();
+        handleClear();
         return;
       }
 
@@ -170,7 +199,7 @@ export function SearchBar({
       if (e.altKey && e.key.toLowerCase() === "c") {
         e.preventDefault();
         e.stopPropagation(); // Prevent event from bubbling to SidebarTabs
-        handleClose();
+        handleClear();
         return;
       }
 
@@ -357,47 +386,54 @@ export function SearchBar({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isVisible, filteredStencils, onDoubleClickCreate, handleClose]);
+  }, [isVisible, filteredStencils, onDoubleClickCreate, handleClear]);
 
   // Focus management when search becomes visible
-  useEffect(() => {
+  React.useEffect(() => {
     if (isVisible && inputRef.current) {
       inputRef.current.focus();
       setIsInputFocused(true);
     }
   }, [isVisible]);
 
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
   if (!isVisible) return null;
 
   return (
-    <div className={`absolute inset-0 ${theme.background.primary} ${theme.border.default} ${theme.borderRadius.panel} z-40 flex flex-col`}>
+    <div className={`absolute inset-0 ${className}`}>
       {/* Search Header */}
-      <div className={`flex items-center gap-2 px-4 py-1 ${theme.border.default} border-b`}>
+      <div className="flex items-center gap-2 px-4 py-1 border-b">
         <div className="relative flex-1">
-          <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme.text.muted} h-4 w-4`} />
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+            <Search className="text-infra-sidebar-text-secondary w-4 h-4" />
+          </div>
           <input
             type="text"
-            placeholder="Search nodes..."
+            placeholder={placeholder}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleInputChange}
             onFocus={() => setIsInputFocused(true)}
             onBlur={() => setIsInputFocused(false)}
-            className={`w-full pl-10 pr-10 py-0.5 ${theme.border.default} border ${theme.borderRadius.button} ${theme.background.secondary} ${theme.text.primary} focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 ${theme.transition}`}
+            onKeyDown={handleKeyDown}
+            className="bg-infra-sidebar border-infra-sidebar text-infra-sidebar-text placeholder:text-infra-sidebar-text-secondary hover:bg-infra-sidebar-hover focus:bg-infra-sidebar-hover focus:border-infra-sidebar-border-hover focus:ring-2 focus:ring-primary w-full rounded border pl-10 pr-10 py-2 text-sm transition-colors"
             autoFocus
             ref={inputRef}
           />
           {searchQuery && (
             <button
-              onClick={handleClearSearch}
-              className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${theme.text.muted} ${theme.background.hover} ${theme.transition}`}
+              onClick={handleClear}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-infra-sidebar-text-secondary hover:text-infra-sidebar-text transition-colors"
+              aria-label="Clear search"
+              type="button"
             >
-              <X className="h-4 w-4" />
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
         <button
-          onClick={handleClose}
-          className={`p-2 ${theme.text.muted} ${theme.background.hover} ${theme.borderRadius.button} ${theme.transition}`}
+          onClick={handleClear}
+          className="p-2 text-infra-sidebar-text hover:bg-infra-sidebar-hover rounded transition-colors"
           title="Close search (Alt+C or Escape)"
         >
           <X className="h-4 w-4" />
@@ -408,18 +444,18 @@ export function SearchBar({
       <div className="flex-1 overflow-y-auto p-3 ">
         {searchQuery.trim() && (
           <div className="mb-3">
-            <div className={`text-sm ${theme.text.secondary}`}>
+            <div className="text-infra-sidebar-text-secondary text-xs">
               {filteredStencils.length} result
               {filteredStencils.length !== 1 ? "s" : ""} for "{searchQuery}"
             </div>
             {filteredStencils.length > 0 && !isInputFocused && (
-              <div className={`text-xs ${theme.text.primary} mt-1`}>
+              <div className="text-infra-sidebar-text-primary text-xs mt-1">
                 💡 Press Q, W, E, R, T, A, S, D, F, G, Z, X, C, V, B to create
                 nodes • Press 6 to return to input
               </div>
             )}
             {isInputFocused && (
-              <div className={`text-xs ${theme.text.muted} mt-1`}>
+              <div className="text-infra-sidebar-text-secondary text-xs mt-1">
                 💡 Alt+Q = backspace • Alt+Shift+Q = delete word • Alt+Ctrl+Q =
                 delete to start • Alt+W = enter
               </div>
@@ -437,19 +473,19 @@ export function SearchBar({
             getKeyboardShortcut={getKeyboardShortcut}
           />
         ) : searchQuery.trim() ? (
-          <div className={`text-center ${theme.text.muted} mt-8`}>
-            <Search className={`h-12 w-12 mx-auto mb-4 ${theme.text.muted}`} />
-            <p className={`text-lg font-medium ${theme.text.secondary}`}>No nodes found</p>
-            <p className={`text-sm ${theme.text.muted}`}>Try searching with different keywords</p>
+          <div className="text-center text-infra-sidebar-text mt-8">
+            <Search className="h-12 w-12 mx-auto mb-4 text-infra-sidebar-text" />
+            <p className="text-lg font-medium text-infra-sidebar-text">No nodes found</p>
+            <p className="text-sm text-infra-sidebar-text">Try searching with different keywords</p>
           </div>
         ) : (
-          <div className={`text-center ${theme.text.muted} mt-8`}>
-            <Search className={`h-12 w-12 mx-auto mb-4 ${theme.text.muted}`} />
-            <p className={`text-lg font-medium ${theme.text.secondary}`}>Search all nodes</p>
-            <p className={`text-sm mb-4 ${theme.text.secondary}`}>
+          <div className="text-center text-infra-sidebar-text mt-8">
+            <Search className="h-12 w-12 mx-auto mb-4 text-infra-sidebar-text" />
+            <p className="text-lg font-medium text-infra-sidebar-text">Search all nodes</p>
+            <p className="text-sm mb-4 text-infra-sidebar-text">
               Type to find nodes by name or description
             </p>
-            <div className={`text-xs ${theme.text.muted} max-w-xs mx-auto`}>
+            <div className="text-xs text-infra-sidebar-text max-w-xs mx-auto">
               <p>
                 💡 <strong>Quick workflow:</strong>
               </p>
@@ -464,4 +500,4 @@ export function SearchBar({
       </div>
     </div>
   );
-}
+};

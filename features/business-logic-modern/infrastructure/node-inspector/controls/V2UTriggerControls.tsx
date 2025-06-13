@@ -216,7 +216,7 @@ export const V2UTriggerOnClickControl: React.FC<V2UTriggerControlProps> = ({
           />
         </div>
         {metrics.isExecuting && (
-          <span className="text-xs text-blue-600 animate-pulse">
+          <span className="text-xs text-info animate-pulse">
             ⏳ Executing...
           </span>
         )}
@@ -224,7 +224,7 @@ export const V2UTriggerOnClickControl: React.FC<V2UTriggerControlProps> = ({
 
       {/* Error Display */}
       {metrics.hasError && metrics.errorMessage && (
-        <div className="mb-3 text-xs text-red-600 dark:text-red-400 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
+        <div className="mb-3 text-xs text-error p-2 bg-error rounded border-error">
           ⚠️ Error: {metrics.errorMessage}
         </div>
       )}
@@ -257,28 +257,28 @@ export const V2UTriggerOnClickControl: React.FC<V2UTriggerControlProps> = ({
       {showExecutionCount && metrics.executionCount > 0 && (
         <ControlGroup title="Execution Metrics" nodeType={node.type}>
           <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-              <div className="text-gray-600 dark:text-gray-400">Executions</div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <div className="p-2 bg-node-view rounded border-node-view">
+              <div className="text-node-view-text-secondary">Executions</div>
+              <div className="text-lg font-semibold text-node-view">
                 {metrics.executionCount}
               </div>
             </div>
 
             {showPerformanceMetrics && (
-              <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                <div className="text-gray-600 dark:text-gray-400">Avg Time</div>
-                <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <div className="p-2 bg-node-view rounded border-node-view">
+                <div className="text-node-view-text-secondary">Avg Time</div>
+                <div className="text-lg font-semibold text-node-view">
                   {metrics.averageResponseTime.toFixed(1)}ms
                 </div>
               </div>
             )}
 
             {lastTriggerTime && (
-              <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border col-span-2">
-                <div className="text-gray-600 dark:text-gray-400">
+              <div className="p-2 bg-node-view rounded border-node-view col-span-2">
+                <div className="text-node-view-text-secondary">
                   Last Triggered
                 </div>
-                <div className="text-sm text-gray-900 dark:text-gray-100">
+                <div className="text-sm text-node-view">
                   {new Date(lastTriggerTime).toLocaleTimeString()}
                 </div>
               </div>
@@ -291,7 +291,7 @@ export const V2UTriggerOnClickControl: React.FC<V2UTriggerControlProps> = ({
       {debugMode && v2uState && (
         <ControlGroup title="V2U Debug Info" nodeType={node.type}>
           <div className="text-xs space-y-1">
-            <div className="p-2 bg-gray-100 dark:bg-gray-900 rounded font-mono">
+            <div className="p-2 bg-infra-inspector rounded font-mono">
               <div>Node ID: {node.id}</div>
               <div>V2U Migrated: {isV2UNode ? "Yes" : "No"}</div>
               <div>
@@ -370,10 +370,10 @@ export const V2UTriggerOnToggleControl: React.FC<V2UTriggerControlProps> = ({
         </ActionButton>
 
         {/* Current Output Value Display */}
-        <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+        <div className="mt-2 text-xs text-node-view-text-secondary">
           Output Value:{" "}
           <span
-            className={`font-mono ${node.data.outputValue ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+            className={`font-mono ${node.data.outputValue ? "text-success" : "text-error"}`}
           >
             {node.data.outputValue ? "true" : "false"}
           </span>
@@ -384,19 +384,19 @@ export const V2UTriggerOnToggleControl: React.FC<V2UTriggerControlProps> = ({
       {showExecutionCount && toggleCount > 0 && (
         <ControlGroup title="Toggle Metrics" nodeType={node.type}>
           <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-              <div className="text-gray-600 dark:text-gray-400">Toggles</div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <div className="p-2 bg-node-view rounded border-node-view">
+              <div className="text-node-view-text-secondary">Toggles</div>
+              <div className="text-lg font-semibold text-node-view">
                 {toggleCount}
               </div>
             </div>
 
             {lastToggleTime && (
-              <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                <div className="text-gray-600 dark:text-gray-400">
+              <div className="p-2 bg-node-view rounded border-node-view">
+                <div className="text-node-view-text-secondary">
                   Last Toggle
                 </div>
-                <div className="text-sm text-gray-900 dark:text-gray-100">
+                <div className="text-sm text-node-view">
                   {new Date(lastToggleTime).toLocaleTimeString()}
                 </div>
               </div>
@@ -533,7 +533,7 @@ export const V2UTriggerOnPulseControl: React.FC<V2UTriggerControlProps> = ({
           />
         </div>
         {isPulsing && (
-          <span className="text-xs text-blue-600 animate-pulse">
+          <span className="text-xs text-info animate-pulse">
             ⏳ Pulsing...
           </span>
         )}
@@ -544,7 +544,7 @@ export const V2UTriggerOnPulseControl: React.FC<V2UTriggerControlProps> = ({
         <ControlGroup title="Pulse Configuration" nodeType={node.type}>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-600 dark:text-gray-400 w-16">
+              <span className="text-xs text-node-view-text-secondary w-16">
                 Duration:
               </span>
               <EnhancedInput
@@ -552,13 +552,13 @@ export const V2UTriggerOnPulseControl: React.FC<V2UTriggerControlProps> = ({
                 onChange={handleDurationChange}
                 type="text"
                 nodeType={node.type}
-                className={`flex-1 ${!isValidDuration ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
+                className={`flex-1 ${!isValidDuration ? "border-error bg-error" : ""}`}
               />
-              <span className="text-xs text-gray-500">ms</span>
+              <span className="text-xs text-node-view-text-secondary">ms</span>
             </div>
 
             {!isValidDuration && durationError && (
-              <div className="text-xs text-red-600 dark:text-red-400">
+              <div className="text-xs text-error">
                 ⚠️ {durationError}
               </div>
             )}
@@ -591,26 +591,26 @@ export const V2UTriggerOnPulseControl: React.FC<V2UTriggerControlProps> = ({
       {showExecutionCount && pulseCount > 0 && (
         <ControlGroup title="Pulse Metrics" nodeType={node.type}>
           <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-              <div className="text-gray-600 dark:text-gray-400">Pulses</div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <div className="p-2 bg-node-view rounded border-node-view">
+              <div className="text-node-view-text-secondary">Pulses</div>
+              <div className="text-lg font-semibold text-node-view">
                 {pulseCount}
               </div>
             </div>
 
-            <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-              <div className="text-gray-600 dark:text-gray-400">Duration</div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <div className="p-2 bg-node-view rounded border-node-view">
+              <div className="text-node-view-text-secondary">Duration</div>
+              <div className="text-lg font-semibold text-node-view">
                 {node.data.duration || 1000}ms
               </div>
             </div>
 
             {lastPulseTime && (
-              <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border col-span-2">
-                <div className="text-gray-600 dark:text-gray-400">
+              <div className="p-2 bg-node-view rounded border-node-view col-span-2">
+                <div className="text-node-view-text-secondary">
                   Last Pulse
                 </div>
-                <div className="text-sm text-gray-900 dark:text-gray-100">
+                <div className="text-sm text-node-view">
                   {new Date(lastPulseTime).toLocaleTimeString()}
                 </div>
               </div>
@@ -623,7 +623,7 @@ export const V2UTriggerOnPulseControl: React.FC<V2UTriggerControlProps> = ({
       {debugMode && v2uState && (
         <ControlGroup title="V2U Debug Info" nodeType={node.type}>
           <div className="text-xs space-y-1">
-            <div className="p-2 bg-gray-100 dark:bg-gray-900 rounded font-mono">
+            <div className="p-2 bg-infra-inspector rounded font-mono">
               <div>Node ID: {node.id}</div>
               <div>V2U Migrated: {isV2UNode ? "Yes" : "No"}</div>
               <div>Pulse Duration: {node.data.duration || 1000}ms</div>

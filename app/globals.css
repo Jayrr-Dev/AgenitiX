@@ -133,6 +133,7 @@
   --infra-minimap-border: var(--border);
   --infra-minimap-border-hover: var(--ring);
   --infra-minimap-text: var(--foreground);
+  --infra-minimap-mask: 0 0% 0% / 0.1;
 
   --infra-history-bg: var(--card);
   --infra-history-bg-hover: var(--accent);
@@ -188,6 +189,89 @@
   --status-special-bg: 0 0% 95%;
   --status-special-border: 0 0% 80%;
 
+  /* NEW: Control component tokens */
+  --control-input-bg: var(--background);
+  --control-input-bg-hover: var(--muted);
+  --control-input-bg-focus: var(--card);
+  --control-input-border: var(--border);
+  --control-input-border-hover: var(--ring);
+  --control-input-border-focus: var(--primary);
+  --control-input-text: var(--foreground);
+  --control-input-text-placeholder: var(--muted-foreground);
+
+  --control-button-bg: var(--secondary);
+  --control-button-bg-hover: var(--secondary);
+  --control-button-bg-active: var(--primary);
+  --control-button-border: var(--secondary);
+  --control-button-border-hover: var(--primary);
+  --control-button-text: var(--secondary-foreground);
+  --control-button-text-hover: var(--primary-foreground);
+
+  --control-danger-bg: var(--destructive);
+  --control-danger-bg-hover: var(--destructive);
+  --control-danger-border: var(--destructive);
+  --control-danger-text: var(--destructive-foreground);
+
+  --control-success-bg: 120 100% 95%;
+  --control-success-bg-hover: 120 100% 90%;
+  --control-success-border: 120 100% 80%;
+  --control-success-text: 120 100% 20%;
+
+  --control-warning-bg: 45 100% 95%;
+  --control-warning-bg-hover: 45 100% 90%;
+  --control-warning-border: 45 100% 80%;
+  --control-warning-text: 45 100% 20%;
+
+  --control-info-bg: 210 100% 95%;
+  --control-info-bg-hover: 210 100% 90%;
+  --control-info-border: 210 100% 80%;
+  --control-info-text: 210 100% 20%;
+
+  /* NEW: Modal component tokens */
+  --modal-bg: var(--popover);
+  --modal-bg-overlay: 0 0% 0% / 0.5;
+  --modal-border: var(--border);
+  --modal-border-hover: var(--ring);
+  --modal-text: var(--popover-foreground);
+  --modal-text-secondary: var(--muted-foreground);
+
+  /* NEW: Search component tokens */
+  --search-bg: var(--background);
+  --search-bg-hover: var(--muted);
+  --search-bg-focus: var(--card);
+  --search-border: var(--border);
+  --search-border-hover: var(--ring);
+  --search-border-focus: var(--primary);
+  --search-text: var(--foreground);
+  --search-text-placeholder: var(--muted-foreground);
+  --search-highlight-bg: var(--accent);
+  --search-highlight-text: var(--accent-foreground);
+
+  /* NEW: Error/validation tokens */
+  --error-bg: 0 100% 97%;
+  --error-bg-hover: 0 100% 95%;
+  --error-border: 0 100% 85%;
+  --error-text: 0 100% 20%;
+  --error-text-secondary: 0 80% 30%;
+
+  --warning-bg: 45 100% 97%;
+  --warning-bg-hover: 45 100% 95%;
+  --warning-border: 45 100% 85%;
+  --warning-text: 45 100% 20%;
+  --warning-text-secondary: 45 80% 30%;
+
+  --info-bg: 210 100% 97%;
+  --info-bg-hover: 210 100% 95%;
+  --info-border: 210 100% 85%;
+  --info-text: 210 100% 20%;
+  --info-text-secondary: 210 80% 30%;
+
+  --success-bg: 120 100% 97%;
+  --success-bg-hover: 120 100% 95%;
+  --success-border: 120 100% 85%;
+  --success-text: 120 100% 20%;
+  --success-text-secondary: 120 80% 30%;
+
   /* NEW: Sizing tokens for nodes */
   --node-size-fe1h-width: 240px;
   --node-size-fe1h-height: 120px;
@@ -209,6 +293,7 @@
   --control-debug-bg: var(--muted);
   --control-debug-text: var(--muted-foreground);
   --control-error-bg: 0 100% 97%;
+  --control-error-bg-hover: 0 100% 95%;
   --control-error-border: 0 100% 85%;
   --control-error-text: 0 100% 30%;
   --control-success-bg: 120 100% 97%;
@@ -365,6 +450,49 @@
 @utility text-node-test { color: hsl(var(--node-test-text)); }
 @utility text-node-test-secondary { color: hsl(var(--node-test-text-secondary)); }
 
+/* NEW: Additional semantic utilities */
+@utility text-node-view-text-secondary { color: hsl(var(--node-view-text-secondary)); }
+@utility text-node-create-text-secondary { color: hsl(var(--node-create-text-secondary)); }
+@utility text-node-trigger-text-secondary { color: hsl(var(--node-trigger-text-secondary)); }
+@utility text-node-test-text-secondary { color: hsl(var(--node-test-text-secondary)); }
+
+/* Error/validation utilities */
+@utility bg-error { background-color: hsl(var(--error-bg)); }
+@utility bg-error-hover { background-color: hsl(var(--error-bg-hover)); }
+@utility border-error { border-color: hsl(var(--error-border)); }
+@utility text-error { color: hsl(var(--error-text)); }
+@utility text-error-text { color: hsl(var(--error-text)); }
+@utility text-error-text-secondary { color: hsl(var(--error-text-secondary)); }
+
+@utility bg-warning { background-color: hsl(var(--warning-bg)); }
+@utility bg-warning-hover { background-color: hsl(var(--warning-bg-hover)); }
+@utility border-warning { border-color: hsl(var(--warning-border)); }
+@utility text-warning { color: hsl(var(--warning-text)); }
+@utility text-warning-secondary { color: hsl(var(--warning-text-secondary)); }
+@utility text-warning-text { color: hsl(var(--warning-text)); }
+@utility text-warning-text-secondary { color: hsl(var(--warning-text-secondary)); }
+
+@utility bg-info { background-color: hsl(var(--info-bg)); }
+@utility bg-info-hover { background-color: hsl(var(--info-bg-hover)); }
+@utility border-info { border-color: hsl(var(--info-border)); }
+@utility text-info { color: hsl(var(--info-text)); }
+@utility text-info-text { color: hsl(var(--info-text)); }
+@utility text-info-text-secondary { color: hsl(var(--info-text-secondary)); }
+
+@utility bg-success { background-color: hsl(var(--success-bg)); }
+@utility bg-success-hover { background-color: hsl(var(--success-bg-hover)); }
+@utility border-success { border-color: hsl(var(--success-border)); }
+@utility text-success { color: hsl(var(--success-text)); }
+@utility text-success-text { color: hsl(var(--success-text)); }
+@utility text-success-text-secondary { color: hsl(var(--success-text-secondary)); }
+
+/* Infrastructure inspector utilities */
+@utility bg-infra-inspector { background-color: hsl(var(--infra-inspector-bg)); }
+@utility bg-infra-inspector-hover { background-color: hsl(var(--infra-inspector-hover)); }
+@utility border-infra-inspector { border-color: hsl(var(--infra-inspector-border)); }
+@utility text-infra-inspector { color: hsl(var(--infra-inspector-text)); }
+@utility text-infra-inspector-text-secondary { color: hsl(var(--infra-inspector-text-secondary)); }
+
 /* NEW: Infrastructure component utilities */
 /* Inspector utilities */
 @utility bg-infra-inspector { background-color: hsl(var(--infra-inspector-bg)); }
@@ -460,23 +588,86 @@
 
 /* NEW: Control component utilities */
 @utility bg-control-input { background-color: hsl(var(--control-input-bg)); }
-@utility bg-control-input-dark { background-color: hsl(var(--control-input-bg-dark)); }
+@utility bg-control-input-hover { background-color: hsl(var(--control-input-bg-hover)); }
+@utility bg-control-input-focus { background-color: hsl(var(--control-input-bg-focus)); }
 @utility border-control-input { border-color: hsl(var(--control-input-border)); }
+@utility border-control-input-hover { border-color: hsl(var(--control-input-border-hover)); }
 @utility border-control-input-focus { border-color: hsl(var(--control-input-border-focus)); }
 @utility text-control-input { color: hsl(var(--control-input-text)); }
-@utility text-control-placeholder { color: hsl(var(--control-input-placeholder)); }
-@utility border-control-group { border-color: hsl(var(--control-group-border)); }
-@utility bg-control-debug { background-color: hsl(var(--control-debug-bg)); }
-@utility text-control-debug { color: hsl(var(--control-debug-text)); }
-@utility bg-control-error { background-color: hsl(var(--control-error-bg)); }
-@utility border-control-error { border-color: hsl(var(--control-error-border)); }
-@utility text-control-error { color: hsl(var(--control-error-text)); }
+@utility text-control-input-placeholder { color: hsl(var(--control-input-text-placeholder)); }
+
+@utility bg-control-button { background-color: hsl(var(--control-button-bg)); }
+@utility bg-control-button-hover { background-color: hsl(var(--control-button-bg-hover)); }
+@utility bg-control-button-active { background-color: hsl(var(--control-button-bg-active)); }
+@utility border-control-button { border-color: hsl(var(--control-button-border)); }
+@utility border-control-button-hover { border-color: hsl(var(--control-button-border-hover)); }
+@utility text-control-button { color: hsl(var(--control-button-text)); }
+@utility text-control-button-hover { color: hsl(var(--control-button-text-hover)); }
+
+@utility bg-control-danger { background-color: hsl(var(--control-danger-bg)); }
+@utility bg-control-danger-hover { background-color: hsl(var(--control-danger-bg-hover)); }
+@utility border-control-danger { border-color: hsl(var(--control-danger-border)); }
+@utility text-control-danger { color: hsl(var(--control-danger-text)); }
+
 @utility bg-control-success { background-color: hsl(var(--control-success-bg)); }
+@utility bg-control-success-hover { background-color: hsl(var(--control-success-bg-hover)); }
 @utility border-control-success { border-color: hsl(var(--control-success-border)); }
 @utility text-control-success { color: hsl(var(--control-success-text)); }
+
 @utility bg-control-warning { background-color: hsl(var(--control-warning-bg)); }
+@utility bg-control-warning-hover { background-color: hsl(var(--control-warning-bg-hover)); }
 @utility border-control-warning { border-color: hsl(var(--control-warning-border)); }
 @utility text-control-warning { color: hsl(var(--control-warning-text)); }
+
+@utility bg-control-info { background-color: hsl(var(--control-info-bg)); }
+@utility bg-control-info-hover { background-color: hsl(var(--control-info-bg-hover)); }
+@utility border-control-info { border-color: hsl(var(--control-info-border)); }
+@utility text-control-info { color: hsl(var(--control-info-text)); }
+
+/* NEW: Modal component utilities */
+@utility bg-modal { background-color: hsl(var(--modal-bg)); }
+@utility bg-modal-overlay { background-color: hsl(var(--modal-bg-overlay)); }
+@utility border-modal { border-color: hsl(var(--modal-border)); }
+@utility border-modal-hover { border-color: hsl(var(--modal-border-hover)); }
+@utility text-modal { color: hsl(var(--modal-text)); }
+@utility text-modal-secondary { color: hsl(var(--modal-text-secondary)); }
+
+/* NEW: Search component utilities */
+@utility bg-search { background-color: hsl(var(--search-bg)); }
+@utility bg-search-hover { background-color: hsl(var(--search-bg-hover)); }
+@utility bg-search-focus { background-color: hsl(var(--search-bg-focus)); }
+@utility border-search { border-color: hsl(var(--search-border)); }
+@utility border-search-hover { border-color: hsl(var(--search-border-hover)); }
+@utility border-search-focus { border-color: hsl(var(--search-border-focus)); }
+@utility text-search { color: hsl(var(--search-text)); }
+@utility text-search-placeholder { color: hsl(var(--search-text-placeholder)); }
+@utility bg-search-highlight { background-color: hsl(var(--search-highlight-bg)); }
+@utility text-search-highlight { color: hsl(var(--search-highlight-text)); }
+
+/* NEW: Error/validation utilities */
+@utility bg-error { background-color: hsl(var(--error-bg)); }
+@utility bg-error-hover { background-color: hsl(var(--error-bg-hover)); }
+@utility border-error { border-color: hsl(var(--error-border)); }
+@utility text-error { color: hsl(var(--error-text)); }
+@utility text-error-secondary { color: hsl(var(--error-text-secondary)); }
+
+@utility bg-warning { background-color: hsl(var(--warning-bg)); }
+@utility bg-warning-hover { background-color: hsl(var(--warning-bg-hover)); }
+@utility border-warning { border-color: hsl(var(--warning-border)); }
+@utility text-warning { color: hsl(var(--warning-text)); }
+@utility text-warning-secondary { color: hsl(var(--warning-text-secondary)); }
+
+@utility bg-info { background-color: hsl(var(--info-bg)); }
+@utility bg-info-hover { background-color: hsl(var(--info-bg-hover)); }
+@utility border-info { border-color: hsl(var(--info-border)); }
+@utility text-info { color: hsl(var(--info-text)); }
+@utility text-info-secondary { color: hsl(var(--info-text-secondary)); }
+
+@utility bg-success { background-color: hsl(var(--success-bg)); }
+@utility bg-success-hover { background-color: hsl(var(--success-bg-hover)); }
+@utility border-success { border-color: hsl(var(--success-border)); }
+@utility text-success { color: hsl(var(--success-text)); }
+@utility text-success-secondary { color: hsl(var(--success-text-secondary)); }
 
 /* Hover effects that adapt to theme */
 @utility hover-brighten  { 

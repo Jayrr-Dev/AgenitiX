@@ -31,7 +31,7 @@ import HistoryPanel from "@/features/business-logic-modern/infrastructure/compon
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
 import type { Node, NodeProps } from "@xyflow/react";
 import type { ComponentType } from "react";
-import { useComponentClasses, useComponentTheme, ThemedMiniMap } from "@/features/business-logic-modern/infrastructure/theming/components";
+import { useComponentClasses, ThemedMiniMap } from "@/features/business-logic-modern/infrastructure/theming/components";
 
 // Node components are now loaded via useDynamicNodeTypes hook
 // No need for direct imports here
@@ -137,8 +137,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const [hasFilteredNodes, setHasFilteredNodes] = useState(false);
 
-  // Get themed classes for components
-  const nodeInspectorTheme = useComponentTheme('nodeInspector');
+  // Removed useComponentTheme - now using semantic tokens directly
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -318,13 +317,13 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
           type: "default",
           deletable: true,
           focusable: true,
-          style: { strokeWidth: 2, stroke: "#3b82f6" },
+          style: { strokeWidth: 2, stroke: "hsl(var(--info))" },
         }}
       >
         {/* NODE INSPECTOR PANEL */}
         <Panel
           position="bottom-center"
-          className={`hidden md:block rounded ${nodeInspectorTheme.background.primary} p-4 ${nodeInspectorTheme.shadow.default} max-w-4xl max-h-[250px] overflow-y-auto scrollbar-none ${nodeInspectorTheme.glow.hover}`}
+          className="hidden md:block rounded bg-infra-inspector p-4 shadow-sm max-w-4xl max-h-[250px] overflow-y-auto scrollbar-none hover:shadow-effect-glow-hover"
         >
           <NodeInspector />
         </Panel>
@@ -332,7 +331,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         {/* MINIMAP */}
         <ThemedMiniMap 
           position="bottom-left" 
-          additionalClasses="hidden md:block"
+          className="hidden md:block"
         />
 
         {/* CONTROLS */}
@@ -343,7 +342,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         />
 
         {/* BACKGROUND */}
-        <Background gap={12} size={1} color="#aaa" />
+        <Background gap={12} size={1} color="hsl(var(--node-view-text-secondary))" />
 
         {/* ACTION TOOLBAR */}
         <Panel position="top-right" className="m-2">
@@ -362,7 +361,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
                 window.location.reload();
               }
             }}
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg transition-colors duration-200 flex items-center gap-2 text-sm font-medium"
+            className="bg-error hover:bg-error-hover text-error-text px-4 py-2 rounded-lg shadow-lg transition-colors duration-200 flex items-center gap-2 text-sm font-medium"
             title="Clear all local storage and reset workspace"
           >
             <svg
@@ -397,7 +396,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
                   onDeleteEdge?.(selectedEdge.id);
                 }
               }}
-              className="bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-lg transition-colors"
+              className="bg-error hover:bg-error-hover text-error-text p-1 rounded-full shadow-lg transition-colors"
               title={
                 selectedNode
                   ? `Delete ${selectedNode.data?.label || selectedNode.type} node`

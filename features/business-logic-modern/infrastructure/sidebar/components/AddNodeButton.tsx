@@ -16,17 +16,20 @@ interface AddNodeButtonProps {
   onClick: () => void;
   disabled?: boolean;
   className?: string;
+  title?: string;
 }
 
 export const AddNodeButton: React.FC<AddNodeButtonProps> = ({
   onClick,
   disabled = false,
   className = "",
+  title,
 }) => {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className={`
         group relative w-full p-3 rounded-lg border-2 border-dashed
         border-node-view hover:border-node-create

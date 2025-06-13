@@ -213,19 +213,19 @@ export const V2UTextControl: React.FC<V2UTextControlProps> = ({
             nodeType={node.type}
           />
           {v2uVersion && (
-            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+            <span className="text-xs px-2 py-1 bg-info text-info-text rounded-full">
               v{v2uVersion}
             </span>
           )}
         </div>
         <div className="flex items-center gap-1">
           {isDirty && (
-            <span className="text-xs text-orange-600 dark:text-orange-400">
+            <span className="text-xs text-warning">
               ● Unsaved
             </span>
           )}
           {lastSaved && !isDirty && (
-            <span className="text-xs text-green-600 dark:text-green-400">
+            <span className="text-xs text-success">
               ✓ Saved
             </span>
           )}
@@ -241,12 +241,12 @@ export const V2UTextControl: React.FC<V2UTextControlProps> = ({
             placeholder={placeholder}
             rows={rows}
             nodeType={node.type}
-            className={`${!metrics.isValid ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
+            className={`${!metrics.isValid ? "border-error bg-error" : ""}`}
           />
 
           {/* Validation Error */}
           {!metrics.isValid && metrics.validationMessage && (
-            <div className="text-xs text-red-600 dark:text-red-400 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
+            <div className="text-xs text-error p-2 bg-error rounded border-error">
               ⚠️ {metrics.validationMessage}
             </div>
           )}
@@ -258,48 +258,48 @@ export const V2UTextControl: React.FC<V2UTextControlProps> = ({
         <ControlGroup title="Text Analytics" nodeType={node.type}>
           <div className="grid grid-cols-2 gap-3 text-xs">
             {showCharacterCount && (
-              <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                <div className="text-gray-600 dark:text-gray-400">
+              <div className="p-2 bg-node-view rounded border-node-view">
+                <div className="text-node-view-text-secondary">
                   Characters
                 </div>
                 <div
                   className={`text-lg font-semibold ${
                     maxLength && metrics.characters > maxLength * 0.9
-                      ? "text-orange-600"
-                      : "text-gray-900 dark:text-gray-100"
+                      ? "text-warning"
+                      : "text-node-view"
                   }`}
                 >
                   {metrics.characters}
                   {maxLength && (
-                    <span className="text-xs text-gray-500">/{maxLength}</span>
+                    <span className="text-xs text-node-view-text-secondary">/{maxLength}</span>
                   )}
                 </div>
               </div>
             )}
 
             {showWordCount && (
-              <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                <div className="text-gray-600 dark:text-gray-400">Words</div>
-                <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <div className="p-2 bg-node-view rounded border-node-view">
+                <div className="text-node-view-text-secondary">Words</div>
+                <div className="text-lg font-semibold text-node-view">
                   {metrics.words}
                 </div>
               </div>
             )}
 
-            <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-              <div className="text-gray-600 dark:text-gray-400">Lines</div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <div className="p-2 bg-node-view rounded border-node-view">
+              <div className="text-node-view-text-secondary">Lines</div>
+              <div className="text-lg font-semibold text-node-view">
                 {metrics.lines}
               </div>
             </div>
 
-            <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-              <div className="text-gray-600 dark:text-gray-400">Status</div>
+            <div className="p-2 bg-node-view rounded border-node-view">
+              <div className="text-node-view-text-secondary">Status</div>
               <div
                 className={`text-sm font-medium ${
                   metrics.isValid
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-red-600 dark:text-red-400"
+                    ? "text-success"
+                    : "text-error"
                 }`}
               >
                 {metrics.isValid ? "✓ Valid" : "⚠️ Invalid"}
@@ -338,7 +338,7 @@ export const V2UTextControl: React.FC<V2UTextControlProps> = ({
       {debugMode && v2uState && (
         <ControlGroup title="V2U Debug Info" nodeType={node.type}>
           <div className="text-xs space-y-1">
-            <div className="p-2 bg-gray-100 dark:bg-gray-900 rounded font-mono">
+            <div className="p-2 bg-infra-inspector rounded font-mono">
               <div>Node ID: {node.id}</div>
               <div>V2U Migrated: {isV2UNode ? "Yes" : "No"}</div>
               <div>

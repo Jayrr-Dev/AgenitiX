@@ -95,32 +95,32 @@ function getNodeSpecificStyling(
     switch (metadata.category) {
       case "create":
         return {
-          color: "text-green-600 dark:text-green-400",
+          color: "text-node-create",
           icon: metadata.icon || "🏗️",
         };
       case "view":
         return {
-          color: "text-blue-600 dark:text-blue-400",
+          color: "text-node-view",
           icon: metadata.icon || "👁️",
         };
       case "trigger":
         return {
-          color: "text-purple-600 dark:text-purple-400",
+          color: "text-node-trigger",
           icon: metadata.icon || "⚡",
         };
       case "test":
         return {
-          color: "text-yellow-600 dark:text-yellow-400",
+          color: "text-node-test",
           icon: metadata.icon || "🧪",
         };
       case "cycle":
         return {
-          color: "text-cyan-600 dark:text-cyan-400",
+          color: "text-info",
           icon: metadata.icon || "🔄",
         };
       default:
         return {
-          color: "text-gray-600 dark:text-gray-400",
+          color: "text-node-view-text-secondary",
           icon: metadata.icon || "📄",
         };
     }
@@ -130,27 +130,27 @@ function getNodeSpecificStyling(
   switch (nodeType) {
     case "createText":
       return {
-        color: "text-green-600 dark:text-green-400",
+        color: "text-node-create",
         icon: "📝",
       };
     case "viewOutput":
       return {
-        color: "text-blue-600 dark:text-blue-400",
+        color: "text-node-view",
         icon: "👁️",
       };
     case "triggerOnToggle":
       return {
-        color: "text-purple-600 dark:text-purple-400",
+        color: "text-node-trigger",
         icon: "🎯",
       };
     case "testError":
       return {
-        color: "text-yellow-600 dark:text-yellow-400",
+        color: "text-node-test",
         icon: "⚠️",
       };
     default:
       return {
-        color: "text-gray-600 dark:text-gray-400",
+        color: "text-node-view-text-secondary",
         icon: "📄",
       };
   }
@@ -182,7 +182,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
     if (output === null || output === undefined) {
       return {
         text: "—",
-        color: "text-gray-400 dark:text-gray-500 italic",
+        color: "text-node-view-text-secondary italic",
         type: "null",
         icon: "∅",
         metadata: {
@@ -225,8 +225,8 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
         baseFormatting = {
           text: String(parsedValue),
           color: parsedValue
-            ? "text-green-600 dark:text-green-400"
-            : "text-red-600 dark:text-red-400",
+            ? "text-success"
+            : "text-error",
           type: "boolean",
           icon: parsedValue ? "✅" : "❌",
         };
@@ -235,7 +235,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
       case "number":
         baseFormatting = {
           text: String(parsedValue),
-          color: "text-orange-600 dark:text-orange-400",
+          color: "text-warning",
           type: "number",
           icon: "🔢",
         };
@@ -244,7 +244,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
       case "array":
         baseFormatting = {
           text: `[${parsedValue.length} items]`,
-          color: "text-pink-600 dark:text-pink-400",
+          color: "text-node-test",
           type: "array",
           icon: "📊",
           fullText: JSON.stringify(parsedValue, null, 2),
@@ -255,7 +255,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
         const keys = Object.keys(parsedValue);
         baseFormatting = {
           text: `{${keys.length} properties}`,
-          color: "text-indigo-600 dark:text-indigo-400",
+          color: "text-node-trigger",
           type: "object",
           icon: "📋",
           fullText: JSON.stringify(parsedValue, null, 2),
@@ -272,7 +272,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
         baseFormatting = {
           text: String(output),
           color:
-            nodeSpecificStyling.color || "text-gray-700 dark:text-gray-300",
+            nodeSpecificStyling.color || "text-node-view",
           type: "string",
           icon: nodeSpecificStyling.icon || "📝",
         };
@@ -296,7 +296,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
   return (
     <div className="text-xs space-y-2">
       {/* OUTPUT HEADER - Registry-enhanced */}
-      <div className="font-semibold text-gray-700 dark:text-gray-300 flex items-center justify-between">
+      <div className="font-semibold text-node-view flex items-center justify-between">
         <div className="flex items-center gap-1">
           <span>Output:</span>
 
@@ -327,7 +327,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
             onClick={() =>
               copyToClipboard(formatOutput.fullText || formatOutput.text)
             }
-            className="text-[10px] px-1 py-0.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600
+            className="text-[10px] px-1 py-0.5 bg-node-view-hover hover:bg-node-view-hover
                        rounded transition-colors cursor-pointer"
             title="Copy output to clipboard"
           >
@@ -338,7 +338,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
 
       {/* OUTPUT VALUE DISPLAY */}
       <div
-        className={`font-mono break-all bg-gray-100 dark:bg-gray-800 rounded-md px-3 py-2 border ${formatOutput.color} cursor-text`}
+        className={`font-mono break-all bg-node-view-hover rounded-md px-3 py-2 border-node-view ${formatOutput.color} cursor-text`}
         onClick={() =>
           output && copyToClipboard(formatOutput.fullText || formatOutput.text)
         }
@@ -350,25 +350,25 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
       {/* EXPANDED VIEW FOR COMPLEX TYPES */}
       {formatOutput.fullText && (
         <details className="mt-2">
-          <summary className="text-xs text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 select-none">
+          <summary className="text-xs text-node-view-text-secondary cursor-pointer hover:text-node-view select-none">
             📖 View full {formatOutput.type} (
             {formatOutput.fullText.split("\n").length} lines)
           </summary>
-          <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-900 rounded border text-xs font-mono overflow-auto max-h-48">
+          <div className="mt-2 p-3 bg-node-view rounded border-node-view text-xs font-mono overflow-auto max-h-48">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-gray-500 dark:text-gray-400 text-[10px]">
+              <span className="text-node-view-text-secondary text-[10px]">
                 Full {formatOutput.type.toUpperCase()} Content:
               </span>
               <button
                 onClick={() => copyToClipboard(formatOutput.fullText!)}
-                className="text-[10px] px-1 py-0.5 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800
+                className="text-[10px] px-1 py-0.5 bg-node-create hover:bg-node-create-hover
                            rounded transition-colors"
                 title="Copy full content"
               >
                 📋 Copy All
               </button>
             </div>
-            <pre className="whitespace-pre-wrap text-gray-600 dark:text-gray-400 leading-relaxed">
+            <pre className="whitespace-pre-wrap text-node-view-text-secondary leading-relaxed">
               {formatOutput.fullText}
             </pre>
           </div>
@@ -378,11 +378,11 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
       {/* REGISTRY DEBUG INFO - Development only */}
       {process.env.NODE_ENV === "development" &&
         outputPreferences.hasCustomFormatting && (
-          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 rounded text-[10px] border border-blue-200 dark:border-blue-800">
-            <div className="font-medium text-blue-700 dark:text-blue-300 mb-1">
+          <div className="mt-2 p-2 bg-node-create rounded text-[10px] border-node-create">
+            <div className="font-medium text-node-create-text mb-1">
               🔧 Registry Output Info:
             </div>
-            <div className="space-y-0.5 text-blue-600 dark:text-blue-400">
+            <div className="space-y-0.5 text-node-create-text-secondary">
               <div>
                 Node: <code>{formatOutput.metadata?.nodeDisplayName}</code>
               </div>

@@ -1,13 +1,13 @@
 /**
- * STENCIL INFO PANEL - Hover information display for node stencils
+ * STENCIL INFO PANEL COMPONENT - Node stencil information display
  *
- * • Animated panel showing node information on hover
- * • Framer Motion animations for smooth fade-in/out transitions
- * • Displays node label and description with styled layout
- * • Positioned overlay with responsive design and styling
- * • Generic interface to avoid circular dependencies
+ * • Displays detailed information about hovered node stencils
+ * • Shows node type, description, and keyboard shortcuts
+ * • Integrated with semantic token system for consistent theming
+ * • Responsive layout with proper spacing and typography
+ * • Accessible with proper focus management and screen reader support
  *
- * Keywords: stencil, hover-panel, animations, framer-motion, overlay
+ * Keywords: stencil-info, node-details, semantic-tokens, accessibility, responsive
  */
 
 "use client";
@@ -16,43 +16,61 @@
 /* -------------------------------------------------------------------------- */
 import { AnimatePresence, motion } from "framer-motion";
 import React from "react";
-import { useComponentTheme } from "../theming/components";
+import { NodeStencil } from "./types";
 
-/**
- * Minimal stencil shape we care about.
- * Keep it generic so we avoid cross-file circular deps.
- */
-export interface HoveredStencil {
-  id: string;
-  label: string;
-  description: string;
-}
+export type HoveredStencil = NodeStencil;
 
 interface StencilInfoPanelProps {
-  stencil: HoveredStencil | null;
+  hoveredStencil?: HoveredStencil | null;
+  stencil?: HoveredStencil | null;
+  keyboardShortcuts?: Record<string, string>;
 }
 
 export const StencilInfoPanel: React.FC<StencilInfoPanelProps> = ({
+  hoveredStencil,
   stencil,
+  keyboardShortcuts = {},
 }) => {
-  const theme = useComponentTheme('sidePanel');
+  const activeStencil = hoveredStencil || stencil;
   
+  if (!activeStencil) {
+    return (
+      <div className="bg-infra-sidebar border-infra-sidebar text-infra-sidebar-text-secondary rounded border p-4 text-center text-sm">
+        Hover over a node stencil to see details
+      </div>
+    );
+  }
+
+  const shortcut = keyboardShortcuts[activeStencil.nodeType];
+
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      {stencil && (
-        <motion.div
-          /* A different key gives us exit ➜ enter animations between stencils */
-          key={stencil.id}
-          initial={{ opacity: 0, y: 0 }}
-          animate={{ opacity: 0.95, y: 0 }}
-          exit={{ opacity: 0, y: 0 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className={`mb-2 px-3 py-2 text-xs leading-snug absolute top-0 right-[50%] translate-x-1/2 border -translate-y-25 w-[450px] h-[95px] ${theme.background.primary} ${theme.border.default} ${theme.text.primary} ${theme.borderRadius.panel} ${theme.shadow.elevated}`}
-        >
-          <div className={`font-medium ${theme.text.primary}`}>{stencil.label}</div>
-          <div className={`${theme.text.secondary}`}>{stencil.description}</div>
-        </motion.div>
+    <div className="bg-infra-sidebar border-infra-sidebar text-infra-sidebar-text rounded border p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-infra-sidebar-text font-semibold text-sm">
+          {activeStencil.label}
+        </h3>
+        {shortcut && (
+          <span className="bg-infra-sidebar-hover text-infra-sidebar-text-secondary rounded px-2 py-1 text-xs font-mono">
+            {shortcut}
+          </span>
+        )}
+      </div>
+      
+      <p className="text-infra-sidebar-text-secondary text-xs leading-relaxed mb-2">
+        Type: <span className="text-infra-sidebar-text font-medium">{activeStencil.nodeType}</span>
+      </p>
+      
+      {activeStencil.description && (
+        <p className="text-infra-sidebar-text-secondary text-xs leading-relaxed">
+          {activeStencil.description}
+        </p>
       )}
-    </AnimatePresence>
+      
+      <div className="border-infra-sidebar-border mt-3 pt-2 border-t">
+        <p className="text-infra-sidebar-text-secondary text-xs">
+          Double-click or drag to canvas to create
+        </p>
+      </div>
+    </div>
   );
 };

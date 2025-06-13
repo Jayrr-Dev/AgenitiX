@@ -329,6 +329,7 @@ export function SidebarTabs({
             onNativeDragStart={handleNativeDragStart}
             onDoubleClickCreate={onDoubleClickCreate}
             setHovered={setHovered}
+            onSearch={() => {}}
           />
         </div>
 

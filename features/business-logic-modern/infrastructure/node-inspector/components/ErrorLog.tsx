@@ -29,13 +29,13 @@ export const ErrorLog: React.FC<ErrorLogProps> = ({
       {/* Sticky Header - Transparent */}
       <div className="sticky top-0 z-10 pb-3">
         <div className="flex items-center justify-between px-1">
-          <div className="font-semibold text-gray-700 dark:text-gray-300 text-sm">
+          <div className="font-semibold text-infra-inspector-text text-sm">
             Errors ({errors.length})
           </div>
           {errors.length > 0 && onClearErrors && (
             <button
               onClick={onClearErrors}
-              className="px-2 py-1 text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+              className="px-2 py-1 text-xs text-error hover:text-error-secondary hover:bg-error-hover rounded transition-colors"
             >
               Clear All
             </button>
@@ -44,10 +44,10 @@ export const ErrorLog: React.FC<ErrorLogProps> = ({
       </div>
 
       {/* Scrollable Error Container */}
-      <div className="flex-1 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 overflow-hidden flex flex-col min-h-0">
+      <div className="flex-1 bg-node-view border-node-view rounded-lg p-4 overflow-hidden flex flex-col min-h-0">
         {errors.length === 0 ? (
           <div className="flex-1 flex items-center justify-center">
-            <span className="text-gray-400 italic text-sm">
+            <span className="text-infra-inspector-text-secondary italic text-sm">
               No errors detected
             </span>
           </div>
@@ -56,31 +56,31 @@ export const ErrorLog: React.FC<ErrorLogProps> = ({
             {errors.map((error, index) => (
               <div
                 key={`${error.timestamp}-${index}`}
-                className="bg-white dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-700 p-3 shadow-sm"
+                className="bg-infra-inspector border-infra-inspector rounded-md p-3 shadow-sm"
               >
                 {/* Error Header */}
                 <div className="flex items-center gap-2 mb-2">
                   <span
                     className={`w-2 h-2 rounded-full flex-shrink-0 ${
                       error.type === "error"
-                        ? "bg-red-500"
+                        ? "bg-status-node-delete"
                         : error.type === "warning"
-                          ? "bg-yellow-500"
-                          : "bg-blue-500"
+                          ? "bg-status-edge-add"
+                          : "bg-status-node-update"
                     }`}
                   />
                   <span
                     className={`font-medium text-xs uppercase tracking-wide ${
                       error.type === "error"
-                        ? "text-red-600 dark:text-red-400"
+                        ? "text-error"
                         : error.type === "warning"
-                          ? "text-yellow-600 dark:text-yellow-400"
-                          : "text-blue-600 dark:text-blue-400"
+                          ? "text-warning"
+                          : "text-info"
                     }`}
                   >
                     {error.type}
                   </span>
-                  <span className="text-gray-500 text-xs ml-auto">
+                  <span className="text-infra-inspector-text-secondary text-xs ml-auto">
                     {new Date(error.timestamp).toLocaleTimeString()}
                   </span>
                 </div>
@@ -89,10 +89,10 @@ export const ErrorLog: React.FC<ErrorLogProps> = ({
                 <div
                   className={`text-sm font-mono leading-relaxed break-words whitespace-pre-wrap ${
                     error.type === "error"
-                      ? "text-red-700 dark:text-red-300"
+                      ? "text-error-secondary"
                       : error.type === "warning"
-                        ? "text-yellow-700 dark:text-yellow-300"
-                        : "text-blue-700 dark:text-blue-300"
+                        ? "text-warning-secondary"
+                        : "text-info-secondary"
                   }`}
                 >
                   {error.message}
@@ -100,8 +100,8 @@ export const ErrorLog: React.FC<ErrorLogProps> = ({
 
                 {/* Error Source */}
                 {error.source && (
-                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="mt-2 pt-2 border-t border-infra-inspector">
+                    <span className="text-xs text-infra-inspector-text-secondary">
                       Source: <span className="font-mono">{error.source}</span>
                     </span>
                   </div>
