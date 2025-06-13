@@ -32,7 +32,9 @@ export interface NodeSpecMetadata {
   handles: Array<{
     id: string;
     type: 'source' | 'target';
-    dataType: string;
+    dataType?: string;
+    code?: string;
+    tsSymbol?: string;
     position: 'left' | 'right' | 'top' | 'bottom';
   }>;
   initialData: Record<string, any>;

@@ -91,6 +91,19 @@ const ULTIMATE_TYPE_MAP: Record<string, any> = {
   V: { color: "#8b5cf6", label: "Vibe" },
 };
 
+/**
+ * Type descriptions for tooltips - detailed explanations of each data type
+ */
+const TYPE_DESCRIPTIONS: Record<string, string> = {
+  s: "String - Text and string values",
+  n: "Number - Integer and numeric values", 
+  b: "Boolean - True/false values",
+  j: "JSON - JavaScript objects and JSON data",
+  a: "Array - Lists and array structures",
+  x: "Any - Accepts all data types",
+  V: "Vibe - Custom Vibe data type",
+};
+
 // ============================================================================
 // UTILITY FUNCTIONS - Pure functions using top-level constants
 // ============================================================================
@@ -138,6 +151,46 @@ function getHandleTypeName(tsSymbol?: string, dataType?: string, code?: string):
   }
   const typeCode = parseUnionTypes(dataType || code)[0];
   return ULTIMATE_TYPE_MAP[typeCode]?.label || DEFAULT_HANDLE_TYPE;
+}
+
+/**
+ * Generate tooltip content for handle
+ */
+function getTooltipContent(
+  handleType: 'source' | 'target', 
+  dataType?: string, 
+  code?: string,
+  tsSymbol?: string
+): string {
+  const direction = handleType === 'target' ? 'Input' : 'Output';
+  
+  // Handle TypeScript symbols
+  if (tsSymbol) {
+    const symbolName = tsSymbol.split(".").pop() || 'Unknown';
+    return `${direction}: ${symbolName} (TypeScript type)`;
+  }
+  
+  // Get the primary type code
+  const typeCode = parseUnionTypes(dataType || code)[0];
+  const typeDescription = TYPE_DESCRIPTIONS[typeCode];
+  
+  if (!typeDescription) {
+    return `${direction}: Unknown type (${typeCode || 'undefined'})`;
+  }
+  
+  // Handle union types (multiple types separated by |)
+  const allTypes = parseUnionTypes(dataType || code);
+  if (allTypes.length > 1) {
+    const descriptions = allTypes
+      .map(type => TYPE_DESCRIPTIONS[type])
+      .filter(Boolean);
+    
+    if (descriptions.length > 1) {
+      return `${direction}: ${descriptions.join(' OR ')}`;
+    }
+  }
+  
+  return `${direction}: ${typeDescription}`;
 }
 
 function isTypeCompatible(sourceType: string, targetType: string): boolean {
@@ -217,10 +270,14 @@ const UltimateTypesafeHandle: React.FC<any> = ({
   // Get background color using utility function
   const backgroundColor = getHandleBackgroundColor(isConnected, isSource);
 
+  // Generate tooltip content
+  const tooltipContent = getTooltipContent(props.type, dataType, code, tsSymbol);
+
   return (
     <Handle
       {...(props as HandleProps)}
       className={HANDLE_CSS_CLASSES}
+      title={tooltipContent} // Native browser tooltip
       style={{
         width: HANDLE_SIZE_PX,
         height: HANDLE_SIZE_PX,
@@ -229,6 +286,7 @@ const UltimateTypesafeHandle: React.FC<any> = ({
         borderColor: badge.color,
         color: badge.color,
         backgroundColor,
+        pointerEvents: 'all', // Ensure pointer events work for both input and output handles
         ...getPositionOffset(props.position), // Apply position offset using utility function
         ...props.style,
       }}
