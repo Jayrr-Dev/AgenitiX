@@ -27,7 +27,9 @@
     "plop": "plop",
     "new:node": "plop node",
     "migrate:nodes": "npx ts-node --project tsconfig.node.json tooling/migration-scripts/migrate-all-nodes.ts",
-    "generate:handle-types": "node scripts/gen-handle-types.js"
+    "generate:handle-types": "node scripts/gen-handle-types.js",
+    "validate:tokens": "node scripts/theming/validate-tokens.js",
+    "validate:colors": "node scripts/theming/validate-primitive-colors.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
