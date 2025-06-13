@@ -1,34 +1,50 @@
-import React from 'react';
+/**
+ * ADD NODE BUTTON - Node creation button with semantic tokens
+ *
+ * • Provides button for adding new nodes to the flow
+ * • Uses semantic tokens for consistent theming
+ * • Integrates with node creation system
+ * • Maintains accessibility and interaction patterns
+ * • Supports hover and focus states with semantic styling
+ *
+ * Keywords: add-node-button, semantic-tokens, node-creation, accessibility, interaction
+ */
+
+import React from "react";
 
 interface AddNodeButtonProps {
   onClick: () => void;
-  title?: string;
+  disabled?: boolean;
+  className?: string;
 }
 
-export function AddNodeButton({ onClick, title }: AddNodeButtonProps) {
+export const AddNodeButton: React.FC<AddNodeButtonProps> = ({
+  onClick,
+  disabled = false,
+  className = "",
+}) => {
   return (
     <button
       onClick={onClick}
-      title={title}
-      className="h-[70px] w-[70px] p-3 border-2 border-dashed border-gray-300 dark:border-zinc-600 
-                 rounded-lg hover:border-blue-400 dark:hover:border-blue-500 
-                 hover:bg-blue-50 dark:hover:bg-blue-950/20
-                 transition-all duration-200 group
-                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-      type="button"
+      disabled={disabled}
+      className={`
+        group relative w-full p-3 rounded-lg border-2 border-dashed
+        border-node-view hover:border-node-create
+        bg-node-create hover:bg-node-create-hover
+        transition-all duration-200 ease-in-out
+        focus:outline-none focus:ring-2 focus:ring-node-create focus:ring-offset-2
+        ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+        ${className}
+      `}
     >
-      <div className="flex flex-col items-center justify-center gap-1 text-gray-500 dark:text-gray-400 
-                      group-hover:text-blue-600 dark:group-hover:text-blue-400">
-        <div className="w-6 h-6 rounded-full border border-current flex items-center justify-center
-                        group-hover:scale-110 transition-transform">
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
+      <div className="flex flex-col items-center space-y-2">
+        <div className="text-lg text-control-debug group-hover:text-node-create-text transition-colors">
+          +
         </div>
-        <div className="text-[10px] font-medium text-center leading-tight">
-          Add
+        <div className="text-xs text-node-create-text group-hover:text-node-create-text font-medium">
+          Add Node
         </div>
       </div>
     </button>
   );
-} 
+}; 

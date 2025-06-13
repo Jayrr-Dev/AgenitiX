@@ -1,20 +1,23 @@
 /**
- * GLOW EFFECTS UTILITIES - Easy node glow customization
+ * GLOW EFFECTS UTILITIES - Semantic token-based node glow customization
  * 
- * This file provides simple functions to adjust node glow effects.
- * Use these functions to quickly change the visual appearance of node selection.
+ * This file provides simple functions to adjust node glow effects using
+ * semantic design tokens. All glow effects now use CSS custom properties
+ * defined in the @theme block for consistency and maintainability.
  * 
  * @example
  * ```typescript
- * // Make selection glow stronger
+ * // Make selection glow stronger (uses semantic token)
  * setStrongSelectionGlow();
  * 
- * // Use a blue glow for selection
+ * // Use a blue glow for selection (uses semantic token)
  * setBlueSelectionGlow();
  * 
- * // Create custom glow
+ * // Create custom glow (for advanced scenarios)
  * setCustomSelectionGlow(12, 3, "255,0,255", 0.9); // Purple glow
  * ```
+ * 
+ * Keywords: glow-effects, semantic-tokens, node-styling, browser-console
  */
 
 import { useNodeStyleStore, createGlowEffect, GLOW_PRESETS } from "../stores/nodeStyleStore";

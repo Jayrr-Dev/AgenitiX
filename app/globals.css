@@ -177,8 +177,16 @@
   --status-edge-delete-border: 0 80% 80%;
   --status-bulk-update-bg: 45 100% 95%;
   --status-bulk-update-border: 45 100% 80%;
-  --status-special-bg: 280 100% 95%;
-  --status-special-border: 280 100% 80%;
+  --status-bulk-delete-bg: 0 80% 95%;
+  --status-bulk-delete-border: 0 80% 80%;
+  --status-node-move-bg: 210 100% 95%;
+  --status-node-move-border: 210 100% 80%;
+  --status-paste-bg: 280 100% 95%;
+  --status-paste-border: 280 100% 80%;
+  --status-duplicate-bg: 240 100% 95%;
+  --status-duplicate-border: 240 100% 80%;
+  --status-special-bg: 0 0% 95%;
+  --status-special-border: 0 0% 80%;
 
   /* NEW: Sizing tokens for nodes */
   --node-size-fe1h-width: 240px;
@@ -189,6 +197,26 @@
   --node-size-expanded-height: 160px;
   --node-size-default-width: 200px;
   --node-size-default-height: 100px;
+
+  /* NEW: Control component tokens */
+  --control-input-bg: var(--background);
+  --control-input-bg-dark: var(--muted);
+  --control-input-border: var(--border);
+  --control-input-border-focus: var(--ring);
+  --control-input-text: var(--foreground);
+  --control-input-placeholder: var(--muted-foreground);
+  --control-group-border: var(--border);
+  --control-debug-bg: var(--muted);
+  --control-debug-text: var(--muted-foreground);
+  --control-error-bg: 0 100% 97%;
+  --control-error-border: 0 100% 85%;
+  --control-error-text: 0 100% 30%;
+  --control-success-bg: 120 100% 97%;
+  --control-success-border: 120 100% 85%;
+  --control-success-text: 120 100% 30%;
+  --control-warning-bg: 45 100% 97%;
+  --control-warning-border: 45 100% 85%;
+  --control-warning-text: 45 100% 30%;
 
   /* shorthand animations */
   --animate-fill-transparency :
@@ -409,6 +437,14 @@
 @utility border-status-edge-delete { border-color: hsl(var(--status-edge-delete-border)); }
 @utility bg-status-bulk-update { background-color: hsl(var(--status-bulk-update-bg)); }
 @utility border-status-bulk-update { border-color: hsl(var(--status-bulk-update-border)); }
+@utility bg-status-bulk-delete { background-color: hsl(var(--status-bulk-delete-bg)); }
+@utility border-status-bulk-delete { border-color: hsl(var(--status-bulk-delete-border)); }
+@utility bg-status-node-move { background-color: hsl(var(--status-node-move-bg)); }
+@utility border-status-node-move { border-color: hsl(var(--status-node-move-border)); }
+@utility bg-status-paste { background-color: hsl(var(--status-paste-bg)); }
+@utility border-status-paste { border-color: hsl(var(--status-paste-border)); }
+@utility bg-status-duplicate { background-color: hsl(var(--status-duplicate-bg)); }
+@utility border-status-duplicate { border-color: hsl(var(--status-duplicate-border)); }
 @utility bg-status-special { background-color: hsl(var(--status-special-bg)); }
 @utility border-status-special { border-color: hsl(var(--status-special-border)); }
 
@@ -421,6 +457,26 @@
 @utility h-node-size-expanded { height: var(--node-size-expanded-height); }
 @utility w-node-size-default { width: var(--node-size-default-width); }
 @utility h-node-size-default { height: var(--node-size-default-height); }
+
+/* NEW: Control component utilities */
+@utility bg-control-input { background-color: hsl(var(--control-input-bg)); }
+@utility bg-control-input-dark { background-color: hsl(var(--control-input-bg-dark)); }
+@utility border-control-input { border-color: hsl(var(--control-input-border)); }
+@utility border-control-input-focus { border-color: hsl(var(--control-input-border-focus)); }
+@utility text-control-input { color: hsl(var(--control-input-text)); }
+@utility text-control-placeholder { color: hsl(var(--control-input-placeholder)); }
+@utility border-control-group { border-color: hsl(var(--control-group-border)); }
+@utility bg-control-debug { background-color: hsl(var(--control-debug-bg)); }
+@utility text-control-debug { color: hsl(var(--control-debug-text)); }
+@utility bg-control-error { background-color: hsl(var(--control-error-bg)); }
+@utility border-control-error { border-color: hsl(var(--control-error-border)); }
+@utility text-control-error { color: hsl(var(--control-error-text)); }
+@utility bg-control-success { background-color: hsl(var(--control-success-bg)); }
+@utility border-control-success { border-color: hsl(var(--control-success-border)); }
+@utility text-control-success { color: hsl(var(--control-success-text)); }
+@utility bg-control-warning { background-color: hsl(var(--control-warning-bg)); }
+@utility border-control-warning { border-color: hsl(var(--control-warning-border)); }
+@utility text-control-warning { color: hsl(var(--control-warning-text)); }
 
 /* Hover effects that adapt to theme */
 @utility hover-brighten  { 

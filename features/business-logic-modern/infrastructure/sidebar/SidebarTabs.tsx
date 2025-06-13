@@ -11,8 +11,6 @@ import { SearchBar } from "./components/SearchBar";
 import { TabContent } from "./components/TabContent";
 import { VARIANT_CONFIG } from "./constants";
 import { NodeStencil, SidebarVariant } from "./types";
-import { useComponentClasses, useComponentButtonClasses, useComponentTheme } from "../theming/components";
-
 interface SidebarTabsProps {
   variant: SidebarVariant;
   activeTab: string;
@@ -67,11 +65,7 @@ export function SidebarTabs({
     return [];
   }, [variant, normalizedVariant, variantConfig]);
 
-  // Get themed classes
-  const theme = useComponentTheme('sidePanel');
-  const iconTheme = useComponentTheme('sidebarIcons');
-  const buttonClasses = useComponentButtonClasses('sidePanel', 'ghost', 'sm');
-  const iconButtonClasses = useComponentButtonClasses('sidebarIcons', 'ghost', 'sm');
+  // Removed theme hooks - using semantic tokens directly
   
   // CONSOLIDATED STATE MANAGEMENT
   const [uiState, setUiState] = useState({
@@ -269,10 +263,10 @@ export function SidebarTabs({
 
   return (
     <Tabs value={activeTab} onValueChange={onTabChange}>
-      <aside className={`absolute bottom-4 right-4 z-30 h-[200px] sm:h-[280px] w-full sm:w-[400px] lg:w-[450px] pl-3 sm:pl-6 pr-3 sm:pr-5 pt-2 ${theme.borderRadius.panel}  ${theme.background.primary} ${theme.border.default} ${theme.glow.hover} ${theme.shadow.default}`}>
+      <aside className="absolute bottom-4 right-4 z-30 h-[200px] sm:h-[280px] w-full sm:w-[400px] lg:w-[450px] pl-3 sm:pl-6 pr-3 sm:pr-5 pt-2 rounded-lg bg-infra-sidebar border border-infra-sidebar shadow-lg">
         <StencilInfoPanel stencil={uiState.hovered} />
 
-        <TabsList className={`${theme.background.primary} items-stretch justify-between w-full gap-1 border-0 ${theme.border.default}`}>
+        <TabsList className="bg-infra-sidebar items-stretch justify-between w-full gap-1 border-0 border-infra-sidebar">
           {tabs.map(({ key, label }, index) => {
             const shortcutNumber = index + 1;
 
@@ -281,7 +275,7 @@ export function SidebarTabs({
                 key={key}
                 value={key}
                 title={`${label} (${shortcutNumber})`}
-                className={`${theme.text.primary} ${theme.background.hover} data-[state=active]:${theme.background.active} data-[state=active]:${theme.text.primary} ${theme.transition} ${theme.borderRadius.button} px-3 py-2`}
+                className="text-infra-sidebar-text hover:bg-infra-sidebar-hover data-[state=active]:bg-infra-sidebar-active data-[state=active]:text-infra-sidebar-text transition-colors rounded px-3 py-2"
               >
                 {label}
               </TabsTrigger>
@@ -291,16 +285,16 @@ export function SidebarTabs({
           {/* Search Button */}
           <button
             onClick={() => setIsSearchVisible(true)}
-            className={`${iconButtonClasses} flex items-center gap-1 ${theme.borderRadius.button}`}
+            className="p-1 rounded hover:bg-infra-sidebar-hover text-infra-sidebar-text flex items-center gap-1"
             title="Search all nodes (6)"
           >
-            <Search className={`h-4 w-4 ${iconTheme.text.primary}`} />
+            <Search className="h-4 w-4 text-infra-sidebar-text" />
             {/* <span className="hidden sm:inline">Search</span> */}
             {/* <span className="hidden lg:inline text-xs text-gray-500">⌘K</span> */}
           </button>
         </TabsList>
 
-        <div className={`max-h-[150px] sm:max-h-[230px] overflow-y-auto scrollbar pb-2 border-0 ${theme.background.primary}`}>
+        <div className="max-h-[150px] sm:max-h-[230px] overflow-y-auto scrollbar pb-2 border-0 bg-infra-sidebar">
           {tabs.map(({ key }) => {
             const isCustomTab = variant === "E" && key === "custom";
 

@@ -1,155 +1,159 @@
 /**
- * JSON HIGHLIGHTER UTILITY - Syntax highlighted JSON display component
+ * JSON HIGHLIGHTER - Syntax highlighting for JSON with semantic tokens
  *
- * • Renders JSON data with syntax highlighting and proper formatting
- * • Provides collapsible object/array structures for better readability
- * • Supports different data types with color-coded highlighting
- * • Handles large data sets with performance optimizations
- * • Includes copy functionality and expandable nested structures
+ * • Provides syntax highlighting for JSON data in node inspector
+ * • Uses semantic tokens for consistent theming across node categories
+ * • Supports collapsible object/array structures
+ * • Maintains accessibility and readability standards
+ * • Integrates with control component theming system
  *
- * Keywords: json-highlighting, syntax-coloring, formatting, collapsible, performance, copy
+ * Keywords: json-highlighter, semantic-tokens, syntax-highlighting, node-inspector, accessibility
  */
 
-import React from "react";
-import { JsonHighlighterProps } from "../types";
+import React, { useState } from "react";
 
-export const JsonHighlighter = React.memo<JsonHighlighterProps>(
-  ({ data, className = "" }) => {
-    const highlightJson = React.useCallback(
-      (obj: unknown, depth = 0): React.ReactNode => {
-        const indent = "  ".repeat(depth);
+interface JsonHighlighterProps {
+  data: any;
+  maxDepth?: number;
+  className?: string;
+}
 
-        if (obj === null) {
-          return <span className="text-gray-500 dark:text-gray-400">null</span>;
-        }
+interface JsonValueProps {
+  value: any;
+  depth: number;
+  maxDepth: number;
+  isLast?: boolean;
+}
 
-        if (obj === undefined) {
-          return (
-            <span className="text-gray-500 dark:text-gray-400">undefined</span>
-          );
-        }
+const JsonValue: React.FC<JsonValueProps> = ({ value, depth, maxDepth, isLast = false }) => {
+  const [isCollapsed, setIsCollapsed] = useState(depth >= maxDepth);
 
-        if (typeof obj === "string") {
-          return (
-            <span className="text-green-600 dark:text-green-400 break-all">
-              "{obj}"
-            </span>
-          );
-        }
+  if (value === null) {
+    return <span className="text-control-debug">null</span>;
+  }
 
-        if (typeof obj === "number") {
-          if (isNaN(obj)) {
-            return (
-              <span className="text-orange-600 dark:text-orange-400">NaN</span>
-            );
-          }
-          if (!isFinite(obj)) {
-            return (
-              <span className="text-orange-600 dark:text-orange-400">
-                {obj > 0 ? "Infinity" : "-Infinity"}
-              </span>
-            );
-          }
-          return (
-            <span className="text-blue-600 dark:text-blue-400">{obj}</span>
-          );
-        }
+  if (value === undefined) {
+    return <span className="text-control-debug">undefined</span>;
+  }
 
-        if (typeof obj === "boolean") {
-          return (
-            <span className="text-purple-600 dark:text-purple-400">
-              {obj.toString()}
-            </span>
-          );
-        }
-
-        if (typeof obj === "bigint") {
-          return (
-            <span className="text-blue-600 dark:text-blue-400">
-              {obj.toString()}n
-            </span>
-          );
-        }
-
-        if (obj instanceof Date) {
-          return (
-            <span className="text-orange-600 dark:text-orange-400">
-              "{obj.toISOString()}"
-            </span>
-          );
-        }
-
-        if (Array.isArray(obj)) {
-          if (obj.length === 0) {
-            return <span className="text-gray-700 dark:text-gray-300">[]</span>;
-          }
-
-          return (
-            <span className="text-gray-700 dark:text-gray-300">
-              [<br />
-              {obj.map((item, index) => (
-                <span key={index}>
-                  {indent} {highlightJson(item, depth + 1)}
-                  {index < obj.length - 1 && (
-                    <span className="text-gray-500">,</span>
-                  )}
-                  <br />
-                </span>
-              ))}
-              {indent}]
-            </span>
-          );
-        }
-
-        if (typeof obj === "object" && obj !== null) {
-          const entries = Object.entries(obj);
-          if (entries.length === 0) {
-            return (
-              <span className="text-gray-700 dark:text-gray-300">{"{}"}</span>
-            );
-          }
-
-          return (
-            <span className="text-gray-700 dark:text-gray-300">
-              {"{"}
-              <br />
-              {entries.map(([key, value], index) => (
-                <span key={key}>
-                  {indent}{" "}
-                  <span className="text-red-600 dark:text-red-400">
-                    "{key}"
-                  </span>
-                  <span className="text-gray-500">: </span>
-                  {highlightJson(value, depth + 1)}
-                  {index < entries.length - 1 && (
-                    <span className="text-gray-500">,</span>
-                  )}
-                  <br />
-                </span>
-              ))}
-              {indent}
-              {"}"}
-            </span>
-          );
-        }
-
-        return (
-          <span className="text-gray-500 dark:text-gray-400">
-            {String(obj)}
-          </span>
-        );
-      },
-      []
-    );
-
+  if (typeof value === "string") {
     return (
-      <pre
-        className={`font-mono text-xs leading-relaxed whitespace-pre-wrap break-words ${className}`}
-      >
-        {highlightJson(data)}
-      </pre>
+      <span>
+        <span className="text-control-success">"</span>
+        <span className="text-control-success">{value}</span>
+        <span className="text-control-success">"</span>
+      </span>
     );
   }
-);
 
-JsonHighlighter.displayName = "JsonHighlighter";
+  if (typeof value === "number") {
+    return <span className="text-control-warning">{value}</span>;
+  }
+
+  if (typeof value === "boolean") {
+    return <span className="text-node-create-text">{value.toString()}</span>;
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return <span className="text-control-debug">[]</span>;
+    }
+
+    return (
+      <div className="inline-block">
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="text-control-debug hover:text-control-input focus:outline-none"
+        >
+          <span className="text-control-debug">[</span>
+          {isCollapsed && (
+            <span className="text-control-debug ml-1">
+              ... {value.length} items
+            </span>
+          )}
+        </button>
+        {!isCollapsed && (
+          <div className="ml-4 border-l-2 border-control-group pl-2">
+            {value.map((item, index) => (
+              <div key={index} className="my-1">
+                <JsonValue
+                  value={item}
+                  depth={depth + 1}
+                  maxDepth={maxDepth}
+                  isLast={index === value.length - 1}
+                />
+                {index < value.length - 1 && (
+                  <span className="text-control-debug">,</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {!isCollapsed && <span className="text-control-debug">]</span>}
+      </div>
+    );
+  }
+
+  if (typeof value === "object") {
+    const keys = Object.keys(value);
+    if (keys.length === 0) {
+      return <span className="text-control-debug">{"{}"}</span>;
+    }
+
+    return (
+      <div className="inline-block">
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="text-control-debug hover:text-control-input focus:outline-none"
+        >
+          <span className="text-control-debug">{"{"}</span>
+          {isCollapsed && (
+            <span className="text-control-debug ml-1">
+              ... {keys.length} properties
+            </span>
+          )}
+        </button>
+        {!isCollapsed && (
+          <div className="ml-4 border-l-2 border-control-group pl-2">
+            {keys.map((key, index) => (
+              <div key={key} className="my-1">
+                <span className="text-control-debug">"</span>
+                <span className="text-control-debug">{key}</span>
+                <span className="text-control-debug">": </span>
+                <JsonValue
+                  value={value[key]}
+                  depth={depth + 1}
+                  maxDepth={maxDepth}
+                  isLast={index === keys.length - 1}
+                />
+                {index < keys.length - 1 && (
+                  <span className="text-control-debug">,</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {!isCollapsed && <span className="text-control-debug">{"}"}</span>}
+      </div>
+    );
+  }
+
+  // Fallback for unknown types
+  return (
+    <span className="text-control-error">
+      {typeof value}: {String(value)}
+    </span>
+  );
+};
+
+export const JsonHighlighter: React.FC<JsonHighlighterProps> = ({
+  data,
+  maxDepth = 3,
+  className = "",
+}) => {
+  return (
+    <div className={`font-mono text-xs bg-control-debug p-3 rounded border border-control-input overflow-auto ${className}`}>
+      <JsonValue value={data} depth={0} maxDepth={maxDepth} />
+    </div>
+  );
+};
