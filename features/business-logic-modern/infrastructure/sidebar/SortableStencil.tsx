@@ -3,7 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import React, { type KeyboardEvent, useCallback, useRef } from "react";
-import { HoveredStencil } from "../components/StencilInfoPanel";
+import { HoveredStencil } from "./StencilInfoPanel";
 import { NodeStencil } from "./types";
 import { useComponentTheme } from "../theming/components";
 

@@ -636,7 +636,7 @@ const HISTORY_PANEL_THEME: ComponentTheme = {
  */
 const SIDE_PANEL_THEME: ComponentTheme = {
   background: {
-    primary: "bg-card border border-border", // 🌞 White (#ffffff) 🌙 Dark gray-blue (#1e293b)
+    primary: "bg-background border border-border", // 🌞 White (#ffffff) 🌙 Dark gray-blue (#1e293b)
     secondary: "bg-accent border border-accent-foreground/20", // Accent with subtle border
     hover: "hover-node-effect", // 🎨 Custom utility: brighter in dark, darker in light
     active: "bg-accent/80", // Slightly transparent accent

@@ -185,7 +185,7 @@ export function VariantSelector({
   // ========================================================================
   
   return (
-    <div className="absolute bottom-56 sm:bottom-78 right-4 z-40">
+    <div className="absolute bottom-56 sm:bottom-78 right-5 z-40">
       <div className="flex gap-2 flex-row w-[450px]">
         {/* Floating Text Display - Half width */}
         <div className="w-1/2 flex justify-center">

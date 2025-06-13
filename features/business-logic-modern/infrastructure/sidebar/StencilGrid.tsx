@@ -5,7 +5,7 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import React, { useCallback, useMemo } from "react";
-import { HoveredStencil } from "../components/StencilInfoPanel";
+import { HoveredStencil } from "./StencilInfoPanel";
 import { SortableStencil } from "./SortableStencil";
 import { useDragSensors } from "./hooks/useDragSensors";
 import { NodeStencil } from "./types";

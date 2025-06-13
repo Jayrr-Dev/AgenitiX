@@ -6,7 +6,7 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import React from "react";
-import { HoveredStencil } from "../../components/StencilInfoPanel";
+import { HoveredStencil } from "../StencilInfoPanel";
 import { SortableStencil } from "../SortableStencil";
 import { StencilGrid } from "../StencilGrid";
 import { VARIANT_CONFIG } from "../constants";

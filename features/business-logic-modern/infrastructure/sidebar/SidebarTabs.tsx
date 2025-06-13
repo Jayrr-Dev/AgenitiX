@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState, useMemo } from "react"
 import {
   HoveredStencil,
   StencilInfoPanel,
-} from "../components/StencilInfoPanel";
+} from "./StencilInfoPanel";
 import { useFlowStore } from "../flow-engine/stores/flowStore";
 import { NodeSearchModal } from "./components/NodeSearchModal";
 import { SearchBar } from "./components/SearchBar";

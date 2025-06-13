@@ -35,7 +35,7 @@ interface StencilInfoPanelProps {
 export const StencilInfoPanel: React.FC<StencilInfoPanelProps> = ({
   stencil,
 }) => {
-  const theme = useComponentTheme('historyPanel');
+  const theme = useComponentTheme('sidePanel');
   
   return (
     <AnimatePresence mode="wait" initial={false}>
@@ -47,7 +47,7 @@ export const StencilInfoPanel: React.FC<StencilInfoPanelProps> = ({
           animate={{ opacity: 0.95, y: 0 }}
           exit={{ opacity: 0, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className={`mb-2 px-3 py-2 text-xs leading-snug absolute top-0 right-[50%] translate-x-1/2 -translate-y-25 w-[440px] h-[95px] ${theme.background.primary} ${theme.border.default} ${theme.text.primary} ${theme.borderRadius.panel} ${theme.shadow.elevated}`}
+          className={`mb-2 px-3 py-2 text-xs leading-snug absolute top-0 right-[50%] translate-x-1/2 border -translate-y-25 w-[450px] h-[95px] ${theme.background.primary} ${theme.border.default} ${theme.text.primary} ${theme.borderRadius.panel} ${theme.shadow.elevated}`}
         >
           <div className={`font-medium ${theme.text.primary}`}>{stencil.label}</div>
           <div className={`${theme.text.secondary}`}>{stencil.description}</div>
