@@ -92,21 +92,40 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
         height: 'auto',
     };
 
+    // Calculate handle positioning for multiple handles on same side
+    const handlesByPosition = React.useMemo(() => {
+      const grouped: Record<string, typeof spec.handles> = {};
+      spec.handles?.forEach((handle) => {
+        const pos = handle.position;
+        if (!grouped[pos]) grouped[pos] = [];
+        grouped[pos].push(handle);
+      });
+      return grouped;
+    }, []);
+
     return (
       <NodeScaffoldWrapper style={style} className={themeClasses}>
-        {/* Render handles defined in the spec */}
-        {spec.handles?.map((handle) => (
-          <TypeSafeHandle
-            key={handle.id}
-            id={handle.id + '__' + ((handle.code ?? handle.dataType) ?? 'x')}
-            type={handle.type}
-            position={handle.position as Position}
-            dataType={handle.dataType}
-            code={(handle as any).code}
-            tsSymbol={(handle as any).tsSymbol}
-            nodeId={props.id}
-          />
-        ))}
+        {/* Render handles defined in the spec with smart positioning */}
+        {spec.handles?.map((handle, index) => {
+          const handlesOnSameSide = handlesByPosition[handle.position] || [];
+          const handleIndex = handlesOnSameSide.findIndex(h => h.id === handle.id);
+          const totalHandlesOnSide = handlesOnSameSide.length;
+
+          return (
+            <TypeSafeHandle
+              key={handle.id}
+              id={handle.id + '__' + ((handle.code ?? handle.dataType) ?? 'x')}
+              type={handle.type}
+              position={handle.position as Position}
+              dataType={handle.dataType}
+              code={(handle as any).code}
+              tsSymbol={(handle as any).tsSymbol}
+              nodeId={props.id}
+              handleIndex={handleIndex}
+              totalHandlesOnSide={totalHandlesOnSide}
+            />
+          );
+        })}
 
         {/* Here you would inject ErrorBoundary, Suspense, PostHog, etc. */}
         <Component {...props} />

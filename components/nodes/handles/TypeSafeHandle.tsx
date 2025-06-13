@@ -30,7 +30,8 @@ import schemaManifest from "@/generated/handle-types.manifest.json";
  * Handle visual configuration
  */
 const HANDLE_SIZE_PX = 10;
-const HANDLE_POSITION_OFFSET = 10; // pixels to move handles further out from nodes
+const HANDLE_POSITION_OFFSET = 12; // pixels to move handles further out from nodes
+const HANDLE_SPACING = 12; // pixels between multiple handles on the same side
 
 /**
  * Handle background colors
@@ -117,20 +118,52 @@ function parseUnionTypes(typeStr?: string | null): string[] {
 }
 
 /**
- * Calculate positioning offset based on handle position
+ * Calculate positioning offset based on handle position and index
+ * Supports multiple handles on the same side without overlapping
  */
-function getPositionOffset(position: string): Record<string, number> {
+function getPositionOffset(
+  position: string, 
+  handleIndex: number = 0, 
+  totalHandlesOnSide: number = 1
+): Record<string, number | string> {
+  const baseOffset = {
+    left: { left: -HANDLE_POSITION_OFFSET },
+    right: { right: -HANDLE_POSITION_OFFSET },
+    top: { top: -HANDLE_POSITION_OFFSET },
+    bottom: { bottom: -HANDLE_POSITION_OFFSET },
+  };
+
+  const base = baseOffset[position as keyof typeof baseOffset] || {};
+  
+  // If only one handle on this side, use base positioning
+  if (totalHandlesOnSide <= 1) {
+    return base;
+  }
+
+  // Calculate spacing for multiple handles - center them properly
+  const totalSpacing = (totalHandlesOnSide - 1) * HANDLE_SPACING;
+  const startOffset = -totalSpacing / 2;
+  const currentOffset = startOffset + (handleIndex * HANDLE_SPACING);
+
+  // Add perpendicular offset for multiple handles
+  // Use transform to center handles properly relative to their own size
   switch (position) {
     case 'left':
-      return { left: -HANDLE_POSITION_OFFSET };
     case 'right':
-      return { right: -HANDLE_POSITION_OFFSET };
+      return { 
+        ...base, 
+        top: `calc(50% + ${currentOffset}px)` as any,
+        transform: 'translateY(-50%)' 
+      };
     case 'top':
-      return { top: -HANDLE_POSITION_OFFSET };
     case 'bottom':
-      return { bottom: -HANDLE_POSITION_OFFSET };
+      return { 
+        ...base, 
+        left: `calc(50% + ${currentOffset}px)` as any,
+        transform: 'translateX(-50%)' 
+      };
     default:
-      return {};
+      return base;
   }
 }
 
@@ -245,6 +278,8 @@ const UltimateTypesafeHandle: React.FC<any> = ({
   tsSymbol,
   code,
   nodeId,
+  handleIndex = 0,
+  totalHandlesOnSide = 1,
   ...props
 }) => {
   // Get handle type name using utility function
@@ -287,7 +322,7 @@ const UltimateTypesafeHandle: React.FC<any> = ({
         color: badge.color,
         backgroundColor,
         pointerEvents: 'all', // Ensure pointer events work for both input and output handles
-        ...getPositionOffset(props.position), // Apply position offset using utility function
+        ...getPositionOffset(props.position, handleIndex, totalHandlesOnSide), // Apply smart positioning
         ...props.style,
       }}
       isValidConnection={isValidConnection}

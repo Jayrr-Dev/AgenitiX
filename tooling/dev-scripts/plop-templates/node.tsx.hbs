@@ -58,8 +58,10 @@ const spec: NodeSpec = {
     // Primary output handle using code
     { id: 'output', code: 's', position: 'right', type: 'source' },
     
-    // Additional handles can be added below
-    // { id: 'input-1', dataType: 's', position: 'left', type: 'target' },
+    // Multiple handles on same side are automatically spaced
+    // { id: 'input-1', code: 's', position: 'left', type: 'target' },
+    // { id: 'input-2', code: 'n', position: 'left', type: 'target' },
+    // { id: 'input-3', code: 'b', position: 'left', type: 'target' },
     
     // Boolean control for activation (if needed)
     { id: 'activate', code: 's', position: 'left', type: 'target' },

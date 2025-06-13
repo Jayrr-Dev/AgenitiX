@@ -58,11 +58,9 @@ const spec: NodeSpec = {
     // Primary output handle using TS symbol
     { id: 'output', code: 's', position: 'right', type: 'source' },
     
-    // Additional handles can be added below
-    // { id: 'input-1', dataType: 's', position: 'left', type: 'target' },
     
     // Boolean control for activation (if needed)
-    { id: 'activate', code: 's', position: 'left', type: 'target' },
+    { id: 'activate', code: 'b', position: 'left', type: 'target' },
   ],
   inspector: {
     key: 'CreateTextInspector',
