@@ -13,11 +13,11 @@
 
 import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import React from "react";
+import { BaseControlProps } from "../node-inspector/types";
 import {
   isV2UNode as autoIsV2UNode,
   autoResolveControl,
-} from "./controls/V2UAutoControls";
-import { BaseControlProps } from "./types";
+} from "./V2UAutoControls";
 
 // ============================================================================
 // V2U METADATA INTERFACES
@@ -135,7 +135,10 @@ export function resolveV2UControl(
       : undefined,
   };
 
-  const controlType = getControlTypeName(nodeType || "unknown", autoResolution.method);
+  const controlType = getControlTypeName(
+    nodeType || "unknown",
+    autoResolution.method
+  );
 
   if (debugMode) {
     console.log(`[V2UControlRegistry] Resolved control for ${nodeType}:`, {

@@ -14,12 +14,12 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AgenNode } from "../../flow-engine/types/nodeData";
+import type { AgenNode } from "../flow-engine/types/nodeData";
 import {
   DEFAULT_VALUES,
   V2U_INSPECTOR_CONFIG,
   V2U_PERFORMANCE_CONFIG,
-} from "../constants";
+} from "../node-inspector/constants";
 import type {
   V2UEventState,
   V2ULifecycleState,
@@ -28,7 +28,7 @@ import type {
   V2UPerformanceState,
   V2UPluginState,
   V2USecurityState,
-} from "../types";
+} from "../node-inspector/types";
 
 // ============================================================================
 // V2U STATE HOOK

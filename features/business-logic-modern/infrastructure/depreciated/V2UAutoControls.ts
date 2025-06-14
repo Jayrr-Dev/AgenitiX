@@ -12,7 +12,7 @@
 
 import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import React from "react";
-import { BaseControlProps } from "../types";
+import { BaseControlProps } from "../node-inspector/types";
 
 // Import controls (these are the actual components, not registry entries)
 import { V2UTextControl } from "./V2UTextControl";
@@ -23,12 +23,12 @@ import {
 } from "./V2UTriggerControls";
 
 // Legacy fallbacks
-import { TextNodeControl } from "./TextNodeControl";
+import { TextNodeControl } from "../node-inspector/controls/TextNodeControl";
 import {
   TriggerOnClickControl,
   TriggerOnPulseControl,
   TriggerOnToggleControl,
-} from "./TriggerControls";
+} from "../node-inspector/controls/TriggerControls";
 
 // ============================================================================
 // ZERO-REGISTRATION DETECTION
@@ -155,13 +155,13 @@ export function autoResolveControl(node: AgenNode): {
 
   // PRIORITY 2: Pattern matching (zero config)
   if (node.type) {
-  const patternControl = getControlByPattern(node.type, isV2U);
-  if (patternControl) {
-    return {
-      ControlComponent: patternControl,
-      isV2U,
-      method: "pattern",
-    };
+    const patternControl = getControlByPattern(node.type, isV2U);
+    if (patternControl) {
+      return {
+        ControlComponent: patternControl,
+        isV2U,
+        method: "pattern",
+      };
     }
   }
 

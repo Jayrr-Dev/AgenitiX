@@ -13,9 +13,9 @@
  */
 
 import { useEffect, useState } from "react";
+import { useV2UState } from "../../depreciated/useV2UState";
 import type { AgenNode } from "../../flow-engine/types/nodeData";
 import { DEFAULT_VALUES } from "../constants";
-import { useV2UState } from "./useV2UState";
 
 // ============================================================================
 // ENHANCED INSPECTOR STATE HOOK

@@ -24,9 +24,10 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { Suspense, useCallback, useMemo, useState } from "react";
 import { useUndoRedo } from "./UndoRedoContext";
-import RenderHistoryGraph from "./renderHistoryGraph";
+// Lazy-load the heavy ReactFlow-powered graph renderer only when needed for significant memory & bundle savings
+const RenderHistoryGraph = React.lazy(() => import("./renderHistoryGraph"));
 
 // STYLING CONSTANTS
 const PANEL_STYLES = {
@@ -681,12 +682,22 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
         {graphView ? (
           <div className={CONTENT_STYLES.graphContainer}>
             {fullGraphData ? (
-              <RenderHistoryGraph
-                graph={fullGraphData}
-                onJumpToState={jumpToHistoryState}
-                onNodeSelect={handleNodeSelect}
-                selectedNodeId={selectedNodeId}
-              />
+              <Suspense
+                fallback={
+                  <div className={CONTENT_STYLES.graphUnavailable}>
+                    <p className={CONTENT_STYLES.graphUnavailableText}>
+                      Loading graph…
+                    </p>
+                  </div>
+                }
+              >
+                <RenderHistoryGraph
+                  graph={fullGraphData}
+                  onJumpToState={jumpToHistoryState}
+                  onNodeSelect={handleNodeSelect}
+                  selectedNodeId={selectedNodeId}
+                />
+              </Suspense>
             ) : (
               <div className={CONTENT_STYLES.graphUnavailable}>
                 <p className={CONTENT_STYLES.graphUnavailableText}>

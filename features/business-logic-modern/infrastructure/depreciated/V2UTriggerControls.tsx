@@ -13,14 +13,14 @@
  */
 
 import React, { useCallback, useRef, useState } from "react";
-import { BaseControlProps } from "../types";
 import {
   ActionButton,
   BaseControl,
   ControlGroup,
   EnhancedInput,
   StatusBadge,
-} from "./BaseControl";
+} from "../node-inspector/controls/BaseControl";
+import { BaseControlProps } from "../node-inspector/types";
 
 // ============================================================================
 // V2U TRIGGER CONTROL INTERFACES
@@ -393,9 +393,7 @@ export const V2UTriggerOnToggleControl: React.FC<V2UTriggerControlProps> = ({
 
             {lastToggleTime && (
               <div className="p-2 bg-node-view rounded border-node-view">
-                <div className="text-node-view-text-secondary">
-                  Last Toggle
-                </div>
+                <div className="text-node-view-text-secondary">Last Toggle</div>
                 <div className="text-sm text-node-view">
                   {new Date(lastToggleTime).toLocaleTimeString()}
                 </div>
@@ -533,9 +531,7 @@ export const V2UTriggerOnPulseControl: React.FC<V2UTriggerControlProps> = ({
           />
         </div>
         {isPulsing && (
-          <span className="text-xs text-info animate-pulse">
-            ⏳ Pulsing...
-          </span>
+          <span className="text-xs text-info animate-pulse">⏳ Pulsing...</span>
         )}
       </div>
 
@@ -558,9 +554,7 @@ export const V2UTriggerOnPulseControl: React.FC<V2UTriggerControlProps> = ({
             </div>
 
             {!isValidDuration && durationError && (
-              <div className="text-xs text-error">
-                ⚠️ {durationError}
-              </div>
+              <div className="text-xs text-error">⚠️ {durationError}</div>
             )}
 
             <ActionButton
@@ -607,9 +601,7 @@ export const V2UTriggerOnPulseControl: React.FC<V2UTriggerControlProps> = ({
 
             {lastPulseTime && (
               <div className="p-2 bg-node-view rounded border-node-view col-span-2">
-                <div className="text-node-view-text-secondary">
-                  Last Pulse
-                </div>
+                <div className="text-node-view-text-secondary">Last Pulse</div>
                 <div className="text-sm text-node-view">
                   {new Date(lastPulseTime).toLocaleTimeString()}
                 </div>

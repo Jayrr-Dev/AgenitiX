@@ -374,4 +374,5 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
   );
 };
 
-export default RenderHistoryGraph;
+// Memoize to prevent unnecessary re-renders when props are unchanged
+export default React.memo(RenderHistoryGraph);

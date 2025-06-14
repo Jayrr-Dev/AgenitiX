@@ -94,12 +94,18 @@ const createFlowStateOptimized = (
   edges: Edge[],
   viewport?: { x: number; y: number; zoom: number }
 ): FlowState => {
-  return produce({} as FlowState, (draft) => {
-    // Immer only clones what changes - massive memory savings!
+  const state = produce({} as FlowState, (draft) => {
+    // Immer only clones what changes – massive memory savings!
     draft.nodes = nodes;
     draft.edges = edges;
     draft.viewport = viewport;
+
+    // Pre-compute structural hash *within* the draft to avoid mutating the
+    // (potentially frozen) returned object. This keeps dev-mode autoFreeze happy.
+    draft.__hash = createStateHash(draft as unknown as FlowState);
   });
+
+  return state;
 };
 
 /**
@@ -123,7 +129,15 @@ const areStatesEqualOptimized = (
   state1: FlowState,
   state2: FlowState
 ): boolean => {
-  // First check lengths for quick exit
+  // 🚀 Immediate shortcut when both references are identical
+  if (state1 === state2) return true;
+
+  // If both hashes exist we can short-circuit immediately
+  if (state1.__hash && state2.__hash) {
+    return state1.__hash === state2.__hash;
+  }
+
+  // Quick length check before heavier work
   if (
     state1.nodes.length !== state2.nodes.length ||
     state1.edges.length !== state2.edges.length
@@ -131,8 +145,11 @@ const areStatesEqualOptimized = (
     return false;
   }
 
-  // Use hash comparison for speed
-  return createStateHash(state1) === createStateHash(state2);
+  // Compute hashes *without* mutating frozen objects
+  const hash1 = state1.__hash ?? createStateHash(state1);
+  const hash2 = state2.__hash ?? createStateHash(state2);
+
+  return hash1 === hash2;
 };
 
 // COMPATIBILITY ALIASES - Use optimized versions

@@ -19,11 +19,8 @@ import { getNodeOutput } from "@/features/business-logic-modern/infrastructure/f
 import React, { useCallback, useMemo } from "react";
 import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
 
-import {
-  getNodeMetadata,
-  validateNode,
-} from "../node-registry/nodespec-registry";
-
+import type { AgenNode, NodeType } from "../flow-engine/types/nodeData";
+import { NodeInspectorAdapter } from "./adapters/NodeInspectorAdapter";
 import { EdgeInspector } from "./components/EdgeInspector";
 import { ErrorLog } from "./components/ErrorLog";
 import { NodeControls } from "./components/NodeControls";
@@ -31,7 +28,6 @@ import { NodeHeader } from "./components/NodeHeader";
 import { NodeOutput } from "./components/NodeOutput";
 import { useInspectorState } from "./hooks/useInspectorState";
 import { JsonHighlighter } from "./utils/JsonHighlighter";
-import type { AgenNode, NodeType } from "../flow-engine/types/nodeData";
 const NodeInspector = React.memo(function NodeInspector() {
   const {
     nodes,
@@ -75,18 +71,9 @@ const NodeInspector = React.memo(function NodeInspector() {
     [inspectorState, inspectorLocked, setInspectorLocked]
   );
 
-  const nodeMetadata = useMemo(() => {
+  const nodeInfo = useMemo(() => {
     if (!selectedNode) return null;
-    const metadata = getNodeMetadata(selectedNode.type as NodeType);
-    const validation = validateNode(selectedNode.type as NodeType);
-    if (!validation.isValid) {
-      console.warn(
-        `[NodeInspector] Invalid node type: ${selectedNode.type}`,
-        validation.suggestions
-      );
-      return null;
-    }
-    return metadata;
+    return NodeInspectorAdapter.getNodeInfo(selectedNode.type as NodeType);
   }, [selectedNode]);
 
   const handleUpdateNodeId = useCallback(
@@ -187,14 +174,14 @@ const NodeInspector = React.memo(function NodeInspector() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-3">
-        {selectedNode && nodeMetadata ? (
+        {selectedNode && nodeInfo ? (
           <div className="flex flex-col gap-4">
             <NodeHeader
               nodeId={selectedNode.id}
-              displayName={nodeMetadata.displayName}
-              category={nodeMetadata.category}
-              icon={nodeMetadata.icon}
-              description={nodeMetadata.description}
+              displayName={nodeInfo?.displayName || selectedNode.type}
+              category={nodeInfo?.category || "unknown"}
+              icon={nodeInfo?.icon}
+              description={nodeInfo?.description}
               onUpdateNodeId={handleUpdateNodeId}
               onDeleteNode={handleDeleteNode}
               onDuplicateNode={handleDuplicateNode}
@@ -207,7 +194,6 @@ const NodeInspector = React.memo(function NodeInspector() {
               </h3>
               <NodeControls
                 node={selectedNode}
-                metadata={nodeMetadata}
                 updateNodeData={updateNodeData}
                 onLogError={logNodeError as any}
               />
@@ -217,17 +203,17 @@ const NodeInspector = React.memo(function NodeInspector() {
               <h3 className="text-sm font-semibold text-infra-inspector-text-secondary mb-2">
                 Live Output
               </h3>
-              <NodeOutput output={output} nodeType={selectedNode.type as NodeType} />
+              <NodeOutput
+                output={output}
+                nodeType={selectedNode.type as NodeType}
+              />
             </div>
 
             <div>
               <h3 className="text-sm font-semibold text-infra-inspector-text-secondary mb-2">
                 Error Log
               </h3>
-              <ErrorLog
-                errors={errors}
-                onClearErrors={handleClearErrors}
-              />
+              <ErrorLog errors={errors} onClearErrors={handleClearErrors} />
             </div>
 
             <div>

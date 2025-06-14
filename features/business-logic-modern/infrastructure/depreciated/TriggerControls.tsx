@@ -14,8 +14,12 @@
 
 import { useFlowStore } from "@flow-engine/stores/flowStore";
 import React from "react";
-import { BaseControlProps } from "../types";
-import { ActionButton, BaseControl, StatusBadge } from "./BaseControl";
+import { BaseControlProps } from "../node-inspector/types";
+import {
+  ActionButton,
+  BaseControl,
+  StatusBadge,
+} from "../node-inspector/controls/BaseControl";
 
 export const TriggerOnClickControl: React.FC<BaseControlProps> = ({ node }) => {
   const updateNodeData = useFlowStore((state) => state.updateNodeData);

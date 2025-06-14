@@ -13,13 +13,12 @@
  */
 
 import React, { useMemo } from "react";
-import { BaseControlProps } from "../types";
+import { BaseControlProps } from "../node-inspector/types";
 import {
   getV2UMetadata,
   isV2UNode,
   resolveV2UControl,
-} from "../V2UControlRegistry";
-import { getNodeSpecMetadata } from "../../node-registry/nodespec-registry";
+} from "./V2UControlRegistry";
 
 // ============================================================================
 // V2U CONTROL WRAPPER INTERFACES
@@ -52,7 +51,9 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
 }) => {
   // Enhanced debug mode logic
   const finalDebugMode = useMemo(() => {
-    return propDebugMode || enableDebugMode || process.env.NODE_ENV === "development";
+    return (
+      propDebugMode || enableDebugMode || process.env.NODE_ENV === "development"
+    );
   }, [propDebugMode, enableDebugMode]);
 
   const resolution = resolveV2UControl(node, finalDebugMode);
@@ -212,9 +213,7 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <span className="text-control-debug">
-                  Node ID:
-                </span>
+                <span className="text-control-debug">Node ID:</span>
                 <span className="ml-1 font-mono">{node.id}</span>
               </div>
               <div>
@@ -222,9 +221,7 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
                 <span className="ml-1 font-mono">{node.type}</span>
               </div>
               <div>
-                <span className="text-control-debug">
-                  Control:
-                </span>
+                <span className="text-control-debug">Control:</span>
                 <span className="ml-1">{controlType || "None"}</span>
               </div>
               <div>
@@ -239,9 +236,7 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
 
             {v2uState && (
               <div className="pt-2 border-t border-control-group">
-                <div className="text-control-debug mb-1">
-                  V2U State:
-                </div>
+                <div className="text-control-debug mb-1">V2U State:</div>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div>
                     <span className="text-control-debug">Lifecycle:</span>
@@ -285,9 +280,7 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
                   </div>
                   <div>
                     <span className="text-control-debug">Status:</span>
-                    <div className="font-mono text-control-debug">
-                      Active
-                    </div>
+                    <div className="font-mono text-control-debug">Active</div>
                   </div>
                 </div>
               </div>

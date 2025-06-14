@@ -14,11 +14,11 @@
 
 import { formatDistanceToNow } from "date-fns";
 import React, { useState } from "react";
-import { V2U_LIFECYCLE_CONFIG } from "../../constants";
+import { V2U_LIFECYCLE_CONFIG } from "../../node-inspector/constants";
 import type {
   V2ULifecycleInspectorProps,
   V2ULifecycleState,
-} from "../../types";
+} from "../../node-inspector/types";
 
 // ============================================================================
 // LIFECYCLE INSPECTOR COMPONENT
@@ -63,7 +63,8 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
   };
 
   const getHookStatusColor = (hook: any) => {
-    if (!hook || !hook.executed) return "text-node-view-text-secondary bg-node-view";
+    if (!hook || !hook.executed)
+      return "text-node-view-text-secondary bg-node-view";
     if (hook.error) return "text-error bg-error";
     if (
       hook.duration &&
@@ -213,7 +214,9 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
 
                 {lifecycle.onMount?.error && (
                   <div className="p-2 bg-error rounded text-xs">
-                    <div className="font-medium text-error-text mb-1">Error:</div>
+                    <div className="font-medium text-error-text mb-1">
+                      Error:
+                    </div>
                     <div className="text-error-text-secondary">
                       {String(lifecycle.onMount.error)}
                     </div>
@@ -226,7 +229,9 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
                     disabled={isTriggering === "onMount"}
                     className="text-xs px-2 py-1 bg-node-trigger hover:bg-node-trigger-hover text-node-trigger-text rounded transition-colors disabled:opacity-50"
                   >
-                    {isTriggering === "onMount" ? "Triggering..." : "🔄 Trigger"}
+                    {isTriggering === "onMount"
+                      ? "Triggering..."
+                      : "🔄 Trigger"}
                   </button>
                 )}
               </div>
@@ -294,7 +299,9 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
 
                 {lifecycle.onUnmount?.error && (
                   <div className="p-2 bg-error rounded text-xs">
-                    <div className="font-medium text-error-text mb-1">Error:</div>
+                    <div className="font-medium text-error-text mb-1">
+                      Error:
+                    </div>
                     <div className="text-error-text-secondary">
                       {String(lifecycle.onUnmount.error)}
                     </div>
@@ -307,7 +314,9 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
                     disabled={isTriggering === "onUnmount"}
                     className="text-xs px-2 py-1 bg-node-trigger hover:bg-node-trigger-hover text-node-trigger-text rounded transition-colors disabled:opacity-50"
                   >
-                    {isTriggering === "onUnmount" ? "Triggering..." : "🔄 Trigger"}
+                    {isTriggering === "onUnmount"
+                      ? "Triggering..."
+                      : "🔄 Trigger"}
                   </button>
                 )}
               </div>
@@ -373,7 +382,9 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
 
                 {lifecycle.onDataChange?.lastError && (
                   <div className="p-2 bg-error rounded text-xs">
-                    <div className="font-medium text-error-text mb-1">Last Error:</div>
+                    <div className="font-medium text-error-text mb-1">
+                      Last Error:
+                    </div>
                     <div className="text-error-text-secondary">
                       {lifecycle.onDataChange.lastError}
                     </div>
@@ -386,7 +397,9 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
                     disabled={isTriggering === "onDataChange"}
                     className="text-xs px-2 py-1 bg-node-trigger hover:bg-node-trigger-hover text-node-trigger-text rounded transition-colors disabled:opacity-50"
                   >
-                    {isTriggering === "onDataChange" ? "Triggering..." : "🔄 Trigger"}
+                    {isTriggering === "onDataChange"
+                      ? "Triggering..."
+                      : "🔄 Trigger"}
                   </button>
                 )}
               </div>
@@ -471,7 +484,9 @@ export const V2ULifecycleInspector: React.FC<V2ULifecycleInspectorProps> = ({
                     disabled={isTriggering === "onValidation"}
                     className="text-xs px-2 py-1 bg-node-trigger hover:bg-node-trigger-hover text-node-trigger-text rounded transition-colors disabled:opacity-50"
                   >
-                    {isTriggering === "onValidation" ? "Triggering..." : "🔄 Trigger"}
+                    {isTriggering === "onValidation"
+                      ? "Triggering..."
+                      : "🔄 Trigger"}
                   </button>
                 )}
               </div>

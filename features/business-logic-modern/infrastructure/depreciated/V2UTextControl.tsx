@@ -13,14 +13,14 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { BaseControlProps } from "../types";
 import {
   ActionButton,
   BaseControl,
   ControlGroup,
   EnhancedTextarea,
   StatusBadge,
-} from "./BaseControl";
+} from "../node-inspector/controls/BaseControl";
+import { BaseControlProps } from "../node-inspector/types";
 
 // ============================================================================
 // V2U TEXT CONTROL INTERFACES
@@ -219,15 +219,9 @@ export const V2UTextControl: React.FC<V2UTextControlProps> = ({
           )}
         </div>
         <div className="flex items-center gap-1">
-          {isDirty && (
-            <span className="text-xs text-warning">
-              ● Unsaved
-            </span>
-          )}
+          {isDirty && <span className="text-xs text-warning">● Unsaved</span>}
           {lastSaved && !isDirty && (
-            <span className="text-xs text-success">
-              ✓ Saved
-            </span>
+            <span className="text-xs text-success">✓ Saved</span>
           )}
         </div>
       </div>
@@ -259,9 +253,7 @@ export const V2UTextControl: React.FC<V2UTextControlProps> = ({
           <div className="grid grid-cols-2 gap-3 text-xs">
             {showCharacterCount && (
               <div className="p-2 bg-node-view rounded border-node-view">
-                <div className="text-node-view-text-secondary">
-                  Characters
-                </div>
+                <div className="text-node-view-text-secondary">Characters</div>
                 <div
                   className={`text-lg font-semibold ${
                     maxLength && metrics.characters > maxLength * 0.9
@@ -271,7 +263,9 @@ export const V2UTextControl: React.FC<V2UTextControlProps> = ({
                 >
                   {metrics.characters}
                   {maxLength && (
-                    <span className="text-xs text-node-view-text-secondary">/{maxLength}</span>
+                    <span className="text-xs text-node-view-text-secondary">
+                      /{maxLength}
+                    </span>
                   )}
                 </div>
               </div>
@@ -297,9 +291,7 @@ export const V2UTextControl: React.FC<V2UTextControlProps> = ({
               <div className="text-node-view-text-secondary">Status</div>
               <div
                 className={`text-sm font-medium ${
-                  metrics.isValid
-                    ? "text-success"
-                    : "text-error"
+                  metrics.isValid ? "text-success" : "text-error"
                 }`}
               >
                 {metrics.isValid ? "✓ Valid" : "⚠️ Invalid"}
