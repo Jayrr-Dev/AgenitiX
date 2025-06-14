@@ -25,8 +25,6 @@ import {
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { useUndoRedo } from "./UndoRedoContext";
-import { useComponentClasses, useComponentButtonClasses, useComponentTheme } from "../theming/components";
-
 interface HistoryPanelProps {
   className?: string;
 }
@@ -35,12 +33,6 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
   const { undo, redo, clearHistory, getHistory } = useUndoRedo();
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<string | null>(null);
-
-  // GET THEMED CLASSES
-  const theme = useComponentTheme('historyPanel');
-  const panelClasses = useComponentClasses('historyPanel', 'default', className);
-  const buttonClasses = useComponentButtonClasses('historyPanel', 'ghost', 'sm');
-  const activeButtonClasses = useComponentButtonClasses('historyPanel', 'primary', 'sm');
 
   // GET HISTORY FROM CONTEXT - Updated for graph-based system
   const historyData = getHistory();
@@ -85,20 +77,20 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
   const getActionIcon = (metadata: any): React.ReactNode => {
     const actionType = metadata?.actionType || "unknown";
     const iconMap: Record<string, React.ReactNode> = {
-      node_add: <div className="w-2 h-2 bg-green-500 rounded-full" />,
-      node_delete: <div className="w-2 h-2 bg-red-500 rounded-full" />,
-      node_move: <div className="w-2 h-2 bg-blue-500 rounded-full" />,
-      node_update: <div className="w-2 h-2 bg-yellow-500 rounded-full" />,
-      edge_add: <div className="w-2 h-2 bg-green-400 rounded-full" />,
-      edge_delete: <div className="w-2 h-2 bg-red-400 rounded-full" />,
-      bulk_delete: <div className="w-2 h-2 bg-red-600 rounded-full" />,
-      bulk_update: <div className="w-2 h-2 bg-orange-500 rounded-full" />,
-      paste: <div className="w-2 h-2 bg-purple-500 rounded-full" />,
-      duplicate: <div className="w-2 h-2 bg-indigo-500 rounded-full" />,
+      node_add: <div className="w-2 h-2 bg-status-node-add rounded-full" />,
+      node_delete: <div className="w-2 h-2 bg-status-node-delete rounded-full" />,
+      node_move: <div className="w-2 h-2 bg-status-node-move rounded-full" />,
+      node_update: <div className="w-2 h-2 bg-status-node-update rounded-full" />,
+      edge_add: <div className="w-2 h-2 bg-status-edge-add rounded-full" />,
+      edge_delete: <div className="w-2 h-2 bg-status-edge-delete rounded-full" />,
+      bulk_delete: <div className="w-2 h-2 bg-status-bulk-delete rounded-full" />,
+      bulk_update: <div className="w-2 h-2 bg-status-bulk-update rounded-full" />,
+      paste: <div className="w-2 h-2 bg-status-paste rounded-full" />,
+      duplicate: <div className="w-2 h-2 bg-status-duplicate rounded-full" />,
     };
     return (
       iconMap[actionType] || (
-        <div className="w-2 h-2 bg-gray-500 rounded-full" />
+        <div className="w-2 h-2 bg-status-special rounded-full" />
       )
     );
   };
@@ -106,18 +98,18 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
   const getActionColor = (metadata: any): string => {
     const actionType = metadata?.actionType || "unknown";
     const colorMap: Record<string, string> = {
-      node_add: "border-l-green-500",
-      node_delete: "border-l-red-500",
-      node_move: "border-l-blue-500",
-      node_update: "border-l-yellow-500",
-      edge_add: "border-l-green-400",
-      edge_delete: "border-l-red-400",
-      bulk_delete: "border-l-red-600",
-      bulk_update: "border-l-orange-500",
-      paste: "border-l-purple-500",
-      duplicate: "border-l-indigo-500",
+      node_add: "border-l-status-node-add",
+      node_delete: "border-l-status-node-delete",
+      node_move: "border-l-status-node-move",
+      node_update: "border-l-status-node-update",
+      edge_add: "border-l-status-edge-add",
+      edge_delete: "border-l-status-edge-delete",
+      bulk_delete: "border-l-status-bulk-delete",
+      bulk_update: "border-l-status-bulk-update",
+      paste: "border-l-status-paste",
+      duplicate: "border-l-status-duplicate",
     };
-    return colorMap[actionType] || "border-l-gray-500";
+    return colorMap[actionType] || "border-l-status-special";
   };
 
   // EVENT HANDLERS
@@ -148,14 +140,14 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
   // RENDER
   if (!isExpanded) {
     return (
-      <div className={panelClasses}>
+      <div className={`bg-infra-history border border-infra-history ${className}`}>
         <button
           onClick={() => setIsExpanded(true)}
-          className={`w-full p-3 flex items-center justify-between ${theme.background.hover} ${theme.transition}`}
+          className="w-full p-3 flex items-center justify-between hover:bg-infra-history-hover transition-colors"
         >
           <div className="flex items-center gap-2">
-            <Clock className={`w-4 h-4 ${theme.text.muted}`} />
-            <span className={`text-sm font-medium ${theme.text.primary}`}>
+            <Clock className="w-4 h-4 text-infra-history-text" />
+            <span className="text-sm font-medium text-infra-history-text">
               History ({historyPath.length})
             </span>
             {graphStats && graphStats.branches > 0 && (
@@ -167,24 +159,24 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
               </div>
             )}
           </div>
-          <ChevronRight className={`w-4 h-4 ${theme.text.muted}`} />
+          <ChevronRight className="w-4 h-4 text-infra-history-text" />
         </button>
       </div>
     );
   }
 
   return (
-    <div className={panelClasses}>
+    <div className={`bg-infra-history border border-infra-history ${className}`}>
       {/* HEADER */}
-      <div className={`p-3 ${theme.border.default} border-b`}>
+      <div className="p-3 border-b border-infra-history">
         <div className="flex items-center justify-between">
           <button
             onClick={() => setIsExpanded(false)}
-            className={`flex items-center gap-2 ${theme.background.hover} p-1 ${theme.borderRadius.button} ${theme.transition}`}
+            className="flex items-center gap-2 hover:bg-infra-history-hover p-1 rounded transition-colors"
           >
-            <ChevronDown className={`w-4 h-4 ${theme.text.muted}`} />
-            <Clock className={`w-4 h-4 ${theme.text.muted}`} />
-            <span className={`text-sm font-medium ${theme.text.primary}`}>
+            <ChevronDown className="w-4 h-4 text-infra-history-text" />
+            <Clock className="w-4 h-4 text-infra-history-text" />
+            <span className="text-sm font-medium text-infra-history-text">
               History ({historyPath.length})
             </span>
             {graphStats && (
@@ -197,7 +189,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
                     </span>
                   </div>
                 )}
-                <span className={`text-xs ${theme.text.muted}`}>
+                <span className="text-xs text-infra-history-text">
                   {graphStats.totalNodes} total states
                 </span>
               </div>
@@ -208,7 +200,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
             <button
               onClick={() => undo()}
               disabled={!canUndo}
-              className={buttonClasses}
+              className="p-1 rounded hover:bg-infra-history-hover text-infra-history-text disabled:opacity-50"
               title="Undo (Ctrl+Z)"
             >
               <RotateCcw className="w-4 h-4" />
@@ -217,7 +209,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
             <button
               onClick={() => redo()}
               disabled={!canRedo}
-              className={buttonClasses}
+              className="p-1 rounded hover:bg-infra-history-hover text-infra-history-text disabled:opacity-50"
               title="Redo (Ctrl+Y)"
             >
               <RotateCw className="w-4 h-4" />
@@ -225,7 +217,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 
             <button
               onClick={handleClearHistory}
-              className={buttonClasses}
+              className="p-1 rounded hover:bg-infra-history-hover text-infra-history-text"
               title="Clear History"
             >
               <Trash2 className="w-4 h-4" />
@@ -236,7 +228,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 
       {/* BRANCH OPTIONS */}
       {branchOptions.length > 1 && (
-        <div className="p-2 border-b border-gray-200 dark:border-gray-700 bg-orange-50 dark:bg-orange-900/20">
+        <div className="p-2 border-b border-infra-history bg-status-special">
           <div className="flex items-center gap-2 mb-2">
             <GitBranch className="w-4 h-4 text-orange-600 dark:text-orange-400" />
             <span className="text-sm font-medium text-orange-800 dark:text-orange-300">
@@ -261,7 +253,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
       {/* HISTORY LIST */}
       <div className="max-h-80 overflow-y-auto">
         {visibleHistory.length === 0 ? (
-          <div className={`p-4 text-center ${theme.text.muted} text-sm`}>
+          <div className="p-4 text-center text-infra-history-text text-sm">
             No history yet. Start making changes to see them here.
           </div>
         ) : (
@@ -280,10 +272,10 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
                     ${getActionColor(entry.metadata)}
                     ${
                       isCurrentState
-                        ? `${theme.background.active} ring-1 ring-primary/20`
+                        ? "bg-infra-history-hover ring-1 ring-primary/20"
                         : isFutureState
-                          ? `${theme.background.secondary} opacity-60`
-                          : `${theme.background.hover}`
+                          ? "bg-infra-history opacity-60"
+                          : "hover:bg-infra-history-hover"
                     }
                     ${isSelected ? "ring-1 ring-primary/30" : ""}
                   `}
@@ -301,7 +293,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className={`text-sm font-medium ${theme.text.primary} truncate`}>
+                        <span className="text-sm font-medium text-infra-history-text truncate">
                           {entry.label || "Unknown action"}
                         </span>
                         {isCurrentState && (
@@ -312,10 +304,10 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
                       </div>
 
                       <div className="flex items-center justify-between mt-1">
-                        <span className={`text-xs ${theme.text.secondary}`}>
+                        <span className="text-xs text-infra-history-text">
                           {formatTimestamp(entry.createdAt)}
                         </span>
-                        <span className={`text-xs ${theme.text.muted} font-mono`}>
+                        <span className="text-xs text-infra-history-text font-mono">
                           #{globalIndex + 1}
                         </span>
                       </div>
@@ -334,15 +326,15 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 
                       {/* METADATA */}
                       {entry.metadata && isSelected && (
-                        <div className={`mt-2 p-2 ${theme.background.secondary} rounded text-xs`}>
-                          <div className={`font-medium ${theme.text.primary} mb-1`}>
+                        <div className="mt-2 p-2 bg-infra-history rounded text-xs">
+                          <div className="font-medium text-infra-history-text mb-1">
                             Details:
                           </div>
                           {Object.entries(entry.metadata).map(
                             ([key, value]) => (
                               <div
                                 key={key}
-                                className={`${theme.text.secondary}`}
+                                className="text-infra-history-text"
                               >
                                 <span className="font-medium">{key}:</span>{" "}
                                 {String(value)}
@@ -362,8 +354,8 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 
       {/* FOOTER */}
       {historyPath.length > visibleHistory.length && (
-        <div className={`p-2 ${theme.border.default} border-t text-center`}>
-          <span className={`text-xs ${theme.text.muted}`}>
+        <div className="p-2 border-t border-infra-history text-center">
+          <span className="text-xs text-infra-history-text">
             Showing last {visibleHistory.length} of {historyPath.length} actions
           </span>
         </div>

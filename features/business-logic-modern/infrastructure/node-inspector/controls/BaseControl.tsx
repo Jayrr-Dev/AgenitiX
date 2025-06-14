@@ -1,27 +1,21 @@
 /**
- * BASE CONTROL COMPONENTS - Foundational UI controls for node property editing
+ * BASE CONTROL COMPONENTS - Enhanced node inspector controls with semantic tokens
  *
- * • Provides reusable base components for building node-specific controls
- * • Includes status badges, action buttons, and input field foundations
- * • Implements consistent styling and interaction patterns with registry-enhanced theming
- * • Supports theming and accessibility features across all controls
- * • Serves as building blocks for complex node control interfaces
- * • Enhanced with registry integration for category-based styling and consistency
+ * • Provides foundational control components for node inspector
+ * • Uses semantic tokens for consistent theming across node categories
+ * • Supports registry-enhanced styling with node type awareness
+ * • Maintains backward compatibility with existing control patterns
+ * • Integrates with V2U control system for enhanced functionality
  *
- * Keywords: base-controls, reusable, styling, accessibility, theming, building-blocks, registry-integration
+ * Keywords: base-controls, semantic-tokens, node-inspector, registry-enhanced, v2u-integration
  */
 
 import React, { useMemo } from "react";
-
-// REGISTRY INTEGRATION - Import for enhanced theming
 import type { NodeType } from "../../flow-engine/types/nodeData";
 import { getNodeMetadata } from "../../node-registry/nodespec-registry";
 
-// PROPER TYPES IMPORT - Use the correct BaseControlProps from types
-import type { BaseControlProps } from "../types";
-
 // ============================================================================
-// ENHANCED COMPONENT INTERFACES
+// TYPES & INTERFACES
 // ============================================================================
 
 interface ControlWrapperProps {
@@ -50,104 +44,77 @@ interface ActionButtonProps {
 }
 
 // ============================================================================
-// REGISTRY-ENHANCED THEMING HELPERS
+// SEMANTIC TOKEN MAPPING
 // ============================================================================
 
 /**
- * GET CATEGORY-BASED THEME
- * Returns theme colors based on node category from registry
+ * Maps node types to semantic token classes
+ * Replaces the old dynamic theme system with semantic tokens
  */
-function getCategoryTheme(nodeType?: string): {
-  primary: string;
-  secondary: string;
-  accent: string;
-  success: string;
-  warning: string;
-  danger: string;
-} {
-  const metadata = nodeType ? getNodeMetadata(nodeType as NodeType) : null;
+function getSemanticClasses(nodeType?: string) {
+  const baseType = nodeType?.toLowerCase();
   
-  // Default theme
-  const defaultTheme = {
-    primary: "blue",
-    secondary: "gray",
-    accent: "indigo",
-    success: "green",
-    warning: "yellow",
-    danger: "red",
-  };
-
-  if (!metadata) {
-    return defaultTheme;
-  }
-
-  // Category-based theming (handle both uppercase and lowercase)
-  const category = metadata.category.toLowerCase();
-  switch (category) {
-    case "create":
+  switch (baseType) {
+    case 'create':
+    case 'createnode':
       return {
-        primary: "green",
-        secondary: "emerald",
-        accent: "teal",
-        success: "green",
-        warning: "yellow",
-        danger: "red",
+        primary: 'bg-node-create text-node-create-text',
+        primaryHover: 'hover:bg-node-create-hover',
+        border: 'border-node-create',
+        borderHover: 'hover:border-node-create-hover',
+        text: 'text-node-create-text',
+        textSecondary: 'text-node-create-text-secondary'
       };
-    case "view":
+    case 'view':
+    case 'viewnode':
       return {
-        primary: "blue",
-        secondary: "sky",
-        accent: "cyan",
-        success: "green",
-        warning: "yellow",
-        danger: "red",
+        primary: 'bg-node-view text-node-view-text',
+        primaryHover: 'hover:bg-node-view-hover',
+        border: 'border-node-view',
+        borderHover: 'hover:border-node-view-hover',
+        text: 'text-node-view-text',
+        textSecondary: 'text-node-view-text-secondary'
       };
-    case "trigger":
+    case 'trigger':
+    case 'triggernode':
       return {
-        primary: "purple",
-        secondary: "violet",
-        accent: "fuchsia",
-        success: "green",
-        warning: "yellow",
-        danger: "red",
+        primary: 'bg-node-trigger text-node-trigger-text',
+        primaryHover: 'hover:bg-node-trigger-hover',
+        border: 'border-node-trigger',
+        borderHover: 'hover:border-node-trigger-hover',
+        text: 'text-node-trigger-text',
+        textSecondary: 'text-node-trigger-text-secondary'
       };
-    case "test":
+    case 'test':
+    case 'testnode':
       return {
-        primary: "yellow",
-        secondary: "amber",
-        accent: "orange",
-        success: "green",
-        warning: "yellow",
-        danger: "red",
-      };
-    case "cycle":
-      return {
-        primary: "cyan",
-        secondary: "teal",
-        accent: "blue",
-        success: "green",
-        warning: "yellow",
-        danger: "red",
+        primary: 'bg-node-test text-node-test-text',
+        primaryHover: 'hover:bg-node-test-hover',
+        border: 'border-node-test',
+        borderHover: 'hover:border-node-test-hover',
+        text: 'text-node-test-text',
+        textSecondary: 'text-node-test-text-secondary'
       };
     default:
+      // Default to view node styling for unknown types
       return {
-        primary: "gray",
-        secondary: "slate",
-        accent: "zinc",
-        success: "green",
-        warning: "yellow",
-        danger: "red",
+        primary: 'bg-node-view text-node-view-text',
+        primaryHover: 'hover:bg-node-view-hover',
+        border: 'border-node-view',
+        borderHover: 'hover:border-node-view-hover',
+        text: 'text-node-view-text',
+        textSecondary: 'text-node-view-text-secondary'
       };
   }
 }
 
 // ============================================================================
-// ENHANCED BASE CONTROL COMPONENTS
+// BASE COMPONENTS
 // ============================================================================
 
 /**
  * BASE CONTROL WRAPPER
- * Enhanced with registry-based theming
+ * Provides consistent styling and spacing for control groups
  */
 export const BaseControl: React.FC<ControlWrapperProps> = ({
   children,
@@ -155,25 +122,25 @@ export const BaseControl: React.FC<ControlWrapperProps> = ({
   className = "",
   nodeType,
 }) => {
-  const theme = useMemo(() => getCategoryTheme(nodeType), [nodeType]);
+  const semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
 
   return (
-    <div className={`flex flex-col gap-2 ${className}`}>
+    <div className={`space-y-2 ${className}`}>
       {title && (
-        <h4
-          className={`text-xs font-medium text-${theme.primary}-700 dark:text-${theme.primary}-300 mb-2 border-b border-${theme.primary}-200 dark:border-${theme.primary}-700 pb-1`}
-        >
+        <div className={`text-xs font-semibold ${semanticClasses.text} uppercase tracking-wide`}>
           {title}
-        </h4>
+        </div>
       )}
-      <div className="space-y-2">{children}</div>
+      <div className="space-y-2 pl-2 border-l-2 border-control-group">
+        {children}
+      </div>
     </div>
   );
 };
 
 /**
  * STATUS BADGE
- * Enhanced with registry-based theming
+ * Shows boolean status with semantic styling
  */
 export const StatusBadge: React.FC<StatusBadgeProps> = ({
   status,
@@ -183,18 +150,15 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   falseColor,
   nodeType,
 }) => {
-  const theme = useMemo(() => getCategoryTheme(nodeType), [nodeType]);
+  const semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
 
-  // Use custom colors if provided, otherwise use theme-based colors
-  const defaultTrueColor = `bg-${theme.success}-100 text-${theme.success}-700 dark:bg-${theme.success}-900 dark:text-${theme.success}-300`;
-  const defaultFalseColor = `bg-${theme.danger}-100 text-${theme.danger}-700 dark:bg-${theme.danger}-900 dark:text-${theme.danger}-300`;
+  // Use semantic tokens for status colors
+  const statusClasses = status 
+    ? `bg-control-success text-control-success border-control-success`
+    : `bg-control-error text-control-error border-control-error`;
 
   return (
-    <span
-      className={`text-xs px-2 py-1 rounded font-medium ${
-        status ? trueColor || defaultTrueColor : falseColor || defaultFalseColor
-      }`}
-    >
+    <span className={`text-xs px-2 py-1 rounded border font-medium ${statusClasses}`}>
       {status ? trueLabel : falseLabel}
     </span>
   );
@@ -202,7 +166,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 
 /**
  * ACTION BUTTON
- * Enhanced with registry-based theming
+ * Themed button with semantic token styling
  */
 export const ActionButton: React.FC<ActionButtonProps> = ({
   onClick,
@@ -212,19 +176,22 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
   className = "",
   nodeType,
 }) => {
-  const theme = useMemo(() => getCategoryTheme(nodeType), [nodeType]);
-  const baseClasses =
-    "text-xs px-3 py-1.5 rounded transition-colors font-medium";
+  const semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
+  const baseClasses = "text-xs px-3 py-1.5 rounded transition-colors font-medium";
 
-  // Dynamic variant classes based on theme
-  const variantClasses = useMemo(
-    () => ({
-      primary: `bg-${theme.primary}-100 text-${theme.primary}-700 hover:bg-${theme.primary}-200 dark:bg-${theme.primary}-900 dark:text-${theme.primary}-300 dark:hover:bg-${theme.primary}-800`,
-      secondary: `bg-${theme.secondary}-100 text-${theme.secondary}-700 hover:bg-${theme.secondary}-200 dark:bg-${theme.secondary}-700 dark:text-${theme.secondary}-300 dark:hover:bg-${theme.secondary}-600`,
-      danger: `bg-${theme.danger}-100 text-${theme.danger}-700 hover:bg-${theme.danger}-200 dark:bg-${theme.danger}-900 dark:text-${theme.danger}-300 dark:hover:bg-${theme.danger}-800`,
-    }),
-    [theme]
-  );
+  // Use semantic tokens for variant styling
+  const variantClasses = useMemo(() => {
+    switch (variant) {
+      case 'primary':
+        return `${semanticClasses.primary} ${semanticClasses.primaryHover} ${semanticClasses.border}`;
+      case 'secondary':
+        return `bg-control-debug text-control-debug border-control-input hover:bg-control-input-dark`;
+      case 'danger':
+        return `bg-control-error text-control-error border-control-error hover:bg-control-warning`;
+      default:
+        return `${semanticClasses.primary} ${semanticClasses.primaryHover} ${semanticClasses.border}`;
+    }
+  }, [variant, semanticClasses]);
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent event bubbling
@@ -237,7 +204,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
     <button
       onClick={handleClick}
       disabled={disabled}
-      className={`${baseClasses} ${variantClasses[variant]} ${
+      className={`${baseClasses} ${variantClasses} ${
         disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
       } ${className}`}
     >
@@ -252,7 +219,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
 
 /**
  * REGISTRY-ENHANCED INPUT
- * Base input with theme-based styling
+ * Base input with semantic token styling
  */
 interface EnhancedInputProps {
   value: string;
@@ -273,7 +240,7 @@ export const EnhancedInput: React.FC<EnhancedInputProps> = ({
   nodeType,
   type = "text",
 }) => {
-  const theme = useMemo(() => getCategoryTheme(nodeType), [nodeType]);
+  const semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
 
   return (
     <input
@@ -284,11 +251,11 @@ export const EnhancedInput: React.FC<EnhancedInputProps> = ({
       disabled={disabled}
       className={`
         text-xs px-2 py-1.5 rounded border
-        bg-white dark:bg-gray-800
-        text-gray-900 dark:text-gray-100
-        border-${theme.primary}-200 dark:border-${theme.primary}-700
-        focus:outline-none focus:ring-2 focus:ring-${theme.primary}-500 focus:border-${theme.primary}-500
-        placeholder-gray-400 dark:placeholder-gray-500
+        bg-control-input dark:bg-control-input-dark
+        text-control-input
+        ${semanticClasses.border} focus:border-control-input-focus
+        focus:outline-none focus:ring-2 focus:ring-control-input-focus
+        placeholder-control-placeholder
         ${disabled ? "opacity-50 cursor-not-allowed" : ""}
         ${className}
       `}
@@ -298,7 +265,7 @@ export const EnhancedInput: React.FC<EnhancedInputProps> = ({
 
 /**
  * REGISTRY-ENHANCED TEXTAREA
- * Base textarea with theme-based styling
+ * Base textarea with semantic token styling
  */
 interface EnhancedTextareaProps {
   value: string;
@@ -319,7 +286,7 @@ export const EnhancedTextarea: React.FC<EnhancedTextareaProps> = ({
   nodeType,
   rows = 3,
 }) => {
-  const theme = useMemo(() => getCategoryTheme(nodeType), [nodeType]);
+  const semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
 
   return (
     <textarea
@@ -330,11 +297,11 @@ export const EnhancedTextarea: React.FC<EnhancedTextareaProps> = ({
       rows={rows}
       className={`
         text-xs px-2 py-1.5 rounded border resize-none
-        bg-white dark:bg-gray-800
-        text-gray-900 dark:text-gray-100
-        border-${theme.primary}-200 dark:border-${theme.primary}-700
-        focus:outline-none focus:ring-2 focus:ring-${theme.primary}-500 focus:border-${theme.primary}-500
-        placeholder-gray-400 dark:placeholder-gray-500
+        bg-control-input dark:bg-control-input-dark
+        text-control-input
+        ${semanticClasses.border} focus:border-control-input-focus
+        focus:outline-none focus:ring-2 focus:ring-control-input-focus
+        placeholder-control-placeholder
         ${disabled ? "opacity-50 cursor-not-allowed" : ""}
         ${className}
       `}
@@ -363,18 +330,16 @@ export const ControlGroup: React.FC<ControlGroupProps> = ({
   nodeType,
   className = "",
 }) => {
-  const theme = useMemo(() => getCategoryTheme(nodeType), [nodeType]);
+  const semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
 
   return (
     <div className={`space-y-2 ${className}`}>
       {title && (
-        <div
-          className={`text-xs font-semibold text-${theme.primary}-600 dark:text-${theme.primary}-400 uppercase tracking-wide`}
-        >
+        <div className={`text-xs font-semibold ${semanticClasses.textSecondary} uppercase tracking-wide`}>
           {title}
         </div>
       )}
-      <div className="space-y-2 pl-2 border-l-2 border-gray-200 dark:border-gray-700">
+      <div className="space-y-2 pl-2 border-l-2 border-control-group">
         {children}
       </div>
     </div>
@@ -399,7 +364,7 @@ export const RegistryDebugBadge: React.FC<RegistryDebugBadgeProps> = ({
   const metadata = getNodeMetadata(nodeType as NodeType);
 
   return (
-    <div className="mt-2 text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
+    <div className="mt-2 text-[10px] text-control-debug flex items-center gap-1">
       <span>🔧</span>
       <span>Registry: ✅</span>
       {metadata && <span>• Category: {metadata.category}</span>}
@@ -408,4 +373,4 @@ export const RegistryDebugBadge: React.FC<RegistryDebugBadgeProps> = ({
 };
 
 // Re-export the BaseControlProps type for convenience
-export type { BaseControlProps };
+export type { BaseControlProps } from "../types";

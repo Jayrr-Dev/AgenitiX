@@ -34,7 +34,7 @@ interface TabContentProps {
   onStencilsChange?: (tabKey: string, stencils: NodeStencil[]) => void;
 }
 
-export function TabContent({
+export function SidebarTabContent({
   variant,
   tabKey,
   onNativeDragStart,
@@ -167,7 +167,7 @@ export function TabContent({
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={nodeIds} strategy={rectSortingStrategy}>
-            <div className="flex flex-wrap justify-evenly gap-2 sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center sm:mx-auto">
+            <div className="flex flex-wrap justify-evenly gap-2 sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center sm:mx-auto bg-infra-sidebar">
               {/* Add Node Button as first item in grid */}
               <div className="flex items-center justify-center">
                 <AddNodeButton

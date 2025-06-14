@@ -41,7 +41,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
 
   // Enhanced data type detection
   const getActualDataType = (node: any, handle: string, isOutput: boolean) => {
-    if (!node) return { label: "Unknown", color: "text-gray-500", value: null };
+    if (!node) return { label: "Unknown", color: "text-node-view-text-secondary", value: null };
 
     // For default handles, try to infer the actual data type
     if (handle === "default") {
@@ -51,7 +51,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
           const outputValue = node.data?.text || "";
           return {
             label: "String",
-            color: "text-blue-600 dark:text-blue-400",
+            color: "text-info",
             value: outputValue,
             actualType: typeof outputValue,
           };
@@ -62,7 +62,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
           if (actualType === "boolean") {
             return {
               label: "Boolean",
-              color: "text-green-600 dark:text-green-400",
+              color: "text-success",
               value: value,
               actualType,
             };
@@ -70,7 +70,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
           if (actualType === "string") {
             return {
               label: "String",
-              color: "text-blue-600 dark:text-blue-400",
+              color: "text-info",
               value: value,
               actualType,
             };
@@ -78,7 +78,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
           if (actualType === "number") {
             return {
               label: "Number",
-              color: "text-orange-600 dark:text-orange-400",
+              color: "text-warning",
               value: value,
               actualType,
             };
@@ -87,7 +87,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
         if (node.type === "counterNode") {
           return {
             label: "Number",
-            color: "text-orange-600 dark:text-orange-400",
+            color: "text-warning",
             value: node.data?.count || 0,
             actualType: "number",
           };
@@ -96,7 +96,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
           // Output node shows whatever it receives
           return {
             label: "Any",
-            color: "text-gray-600 dark:text-gray-400",
+            color: "text-node-view-text-secondary",
             value: "Displays input",
             actualType: "any",
           };
@@ -105,7 +105,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
         if (node.type?.startsWith("logic")) {
           return {
             label: "Boolean",
-            color: "text-green-600 dark:text-green-400",
+            color: "text-success",
             value: node.data?.triggered || false,
             actualType: "boolean",
           };
@@ -114,7 +114,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
         if (node.type?.startsWith("trigger")) {
           return {
             label: "Boolean",
-            color: "text-green-600 dark:text-green-400",
+            color: "text-success",
             value: node.data?.triggered || false,
             actualType: "boolean",
           };
@@ -124,7 +124,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
         if (node.type === "outputnode") {
           return {
             label: "Any",
-            color: "text-gray-600 dark:text-gray-400",
+            color: "text-node-view-text-secondary",
             value: "Accepts any type",
             actualType: "any",
           };
@@ -135,7 +135,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
         ) {
           return {
             label: "String",
-            color: "text-blue-600 dark:text-blue-400",
+            color: "text-info",
             value: "Expects string",
             actualType: "string",
           };
@@ -143,7 +143,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
         if (node.type?.startsWith("logic")) {
           return {
             label: "Boolean",
-            color: "text-green-600 dark:text-green-400",
+            color: "text-success",
             value: "Expects boolean",
             actualType: "boolean",
           };
@@ -151,7 +151,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
         if (node.type === "counterNode") {
           return {
             label: "Number",
-            color: "text-orange-600 dark:text-orange-400",
+            color: "text-warning",
             value: "Expects number",
             actualType: "number",
           };
@@ -159,7 +159,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
         if (node.type === "delayNode") {
           return {
             label: "Any",
-            color: "text-gray-600 dark:text-gray-400",
+            color: "text-node-view-text-secondary",
             value: "Passes through input",
             actualType: "any",
           };
@@ -169,22 +169,22 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
 
     // Handle typed handles
     const typeMap: Record<string, { label: string; color: string }> = {
-      s: { label: "String", color: "text-blue-600 dark:text-blue-400" },
-      n: { label: "Number", color: "text-orange-600 dark:text-orange-400" },
-      b: { label: "Boolean", color: "text-green-600 dark:text-green-400" },
-      x: { label: "Any", color: "text-gray-600 dark:text-gray-400" },
-      j: { label: "JSON", color: "text-indigo-600 dark:text-indigo-400" },
-      a: { label: "Array", color: "text-pink-600 dark:text-pink-400" },
-      N: { label: "BigInt", color: "text-purple-600 dark:text-purple-400" },
-      f: { label: "Float", color: "text-yellow-600 dark:text-yellow-400" },
-      u: { label: "Undefined", color: "text-gray-400 dark:text-gray-500" },
-      S: { label: "Symbol", color: "text-yellow-700 dark:text-yellow-300" },
-      "∅": { label: "Null", color: "text-red-600 dark:text-red-400" },
+      s: { label: "String", color: "text-info" },
+      n: { label: "Number", color: "text-warning" },
+      b: { label: "Boolean", color: "text-success" },
+      x: { label: "Any", color: "text-node-view-text-secondary" },
+      j: { label: "JSON", color: "text-node-trigger" },
+      a: { label: "Array", color: "text-node-test" },
+      N: { label: "BigInt", color: "text-node-trigger-text-secondary" },
+      f: { label: "Float", color: "text-warning-secondary" },
+      u: { label: "Undefined", color: "text-node-view-text-secondary" },
+      S: { label: "Symbol", color: "text-warning" },
+      "∅": { label: "Null", color: "text-error" },
     };
 
     const typeInfo = typeMap[handle] || {
       label: "Unknown",
-      color: "text-gray-500",
+      color: "text-node-view-text-secondary",
     };
     return { ...typeInfo, value: null, actualType: handle };
   };
@@ -195,144 +195,122 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
   return (
     <div className="flex flex-col gap-3">
       {/* Edge Header */}
-      <div className="border-b border-gray-200 dark:border-gray-700 pb-2">
+      <div className="border-b border-node-view pb-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Zap className="w-4 h-4 text-yellow-500" />
+          <h3 className="text-sm font-semibold text-node-view flex items-center gap-2">
+            <Zap className="w-4 h-4" />
             Edge Connection
           </h3>
-
           {onDeleteEdge && (
             <button
               onClick={() => onDeleteEdge(edge.id)}
-              className="flex items-center gap-1 px-2 py-1 text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
+              className="p-1 text-error hover:bg-error-hover rounded transition-colors"
               title="Delete Edge"
             >
-              <Trash2 className="w-3 h-3" />
-              Delete
+              <Trash2 className="w-4 h-4" />
             </button>
           )}
         </div>
-
-        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Edge ID: {edge.id}
+        <div className="text-xs text-node-view-text-secondary mt-1">
+          ID: {edge.id}
         </div>
       </div>
 
       {/* Connection Flow */}
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-md border p-3">
-        <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Data Flow:
-        </h4>
-
-        <div className="flex items-center gap-2 text-sm">
-          {/* Source Node */}
-          <div className="flex-1 bg-white dark:bg-gray-700 rounded border p-2">
-            <div className="font-medium text-gray-900 dark:text-gray-100">
+      <div className="space-y-3">
+        {/* Source Node */}
+        <div className="p-3 bg-node-view rounded border-node-view">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-node-view-text-secondary">Source</div>
+            <div className="text-xs font-mono text-node-view">
               {sourceNode?.type || "Unknown"}
             </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">
-              ID: {edge.source}
-            </div>
-            <div className={`text-xs font-mono ${sourceType.color}`}>
-              Output: {sourceType.label}
-            </div>
-            {sourceType.value !== null && (
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 p-1 bg-gray-50 dark:bg-gray-600 rounded">
-                Value:{" "}
+          </div>
+          <div className="text-sm font-medium text-node-view mb-1">
+            {sourceNode?.data?.label || sourceNode?.id || "Unknown Node"}
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-node-view-text-secondary">Output:</span>
+            <span className={`font-mono ${sourceType.color}`}>
+              {sourceType.label}
+            </span>
+            {sourceHandle !== "default" && (
+              <span className="text-node-view-text-secondary">
+                ({sourceHandle})
+              </span>
+            )}
+          </div>
+          {sourceType.value !== null && (
+            <div className="mt-2 text-xs">
+              <span className="text-node-view-text-secondary">Value: </span>
+              <span className="font-mono text-node-view">
                 {typeof sourceType.value === "string"
                   ? `"${sourceType.value}"`
                   : String(sourceType.value)}
-              </div>
-            )}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Connection Arrow */}
+        <div className="flex justify-center">
+          <div className="flex items-center gap-2 text-node-view-text-secondary">
+            <ArrowRight className="w-4 h-4" />
+            <span className="text-xs">Data Flow</span>
+            <ArrowRight className="w-4 h-4" />
           </div>
+        </div>
 
-          {/* Arrow */}
-          <ArrowRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
-
-          {/* Target Node */}
-          <div className="flex-1 bg-white dark:bg-gray-700 rounded border p-2">
-            <div className="font-medium text-gray-900 dark:text-gray-100">
+        {/* Target Node */}
+        <div className="p-3 bg-node-view rounded border-node-view">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-node-view-text-secondary">Target</div>
+            <div className="text-xs font-mono text-node-view">
               {targetNode?.type || "Unknown"}
             </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">
-              ID: {edge.target}
-            </div>
-            <div className={`text-xs font-mono ${targetType.color}`}>
-              Input: {targetType.label}
-            </div>
-            {targetType.value !== null && (
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 p-1 bg-gray-50 dark:bg-gray-600 rounded">
-                {targetType.value}
-              </div>
+          </div>
+          <div className="text-sm font-medium text-node-view mb-1">
+            {targetNode?.data?.label || targetNode?.id || "Unknown Node"}
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-node-view-text-secondary">Input:</span>
+            <span className={`font-mono ${targetType.color}`}>
+              {targetType.label}
+            </span>
+            {targetHandle !== "default" && (
+              <span className="text-node-view-text-secondary">
+                ({targetHandle})
+              </span>
             )}
           </div>
         </div>
       </div>
 
-      {/* Edge Properties */}
-      <div className="flex-1 flex flex-col">
-        <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Edge Properties:
-        </h4>
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-md border p-3 overflow-y-auto flex-1">
-          <JsonHighlighter
-            data={{
-              id: edge.id,
-              source: edge.source,
-              target: edge.target,
-              sourceHandle: edge.sourceHandle,
-              targetHandle: edge.targetHandle,
-              type: edge.type,
-              animated: edge.animated,
-              style: edge.style,
-              data: edge.data,
-              selected: edge.selected,
-              hidden: edge.hidden,
-              deletable: edge.deletable,
-              focusable: edge.focusable,
-            }}
-            className="w-full"
-          />
+      {/* Type Compatibility Check */}
+      <div className="p-3 bg-info rounded border-info">
+        <div className="text-xs font-medium text-info-text mb-2">
+          Type Compatibility
+        </div>
+        <div className="text-xs text-info-text-secondary">
+          {sourceType.actualType === targetType.actualType ||
+          targetType.actualType === "any" ||
+          sourceType.actualType === "any" ? (
+            <span className="text-success">✓ Compatible types</span>
+          ) : (
+            <span className="text-warning">⚠ Type mismatch warning</span>
+          )}
         </div>
       </div>
 
-      {/* Connection Status */}
-      <div className="bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-800 p-2">
-        <div className="text-xs">
-          <div className="font-medium text-blue-900 dark:text-blue-100 mb-1">
-            Connection Analysis:
-          </div>
-          <div className="space-y-1 text-blue-800 dark:text-blue-200">
-            <div>✓ Source node: {sourceNode ? "Found" : "Missing"}</div>
-            <div>✓ Target node: {targetNode ? "Found" : "Missing"}</div>
-            <div>
-              ✓ Data flow: {sourceType.label} → {targetType.label}
-            </div>
-            <div>
-              ✓ Handle types:{" "}
-              {sourceHandle === "default" ? "Auto-detected" : "Typed"} →{" "}
-              {targetHandle === "default" ? "Auto-detected" : "Typed"}
-            </div>
-            <div>✓ Connection: {edge.animated ? "Animated" : "Static"}</div>
-            {sourceType.actualType && targetType.actualType && (
-              <div
-                className={
-                  sourceType.actualType === targetType.actualType ||
-                  targetType.actualType === "any"
-                    ? "text-green-700 dark:text-green-300"
-                    : "text-yellow-700 dark:text-yellow-300"
-                }
-              >
-                {sourceType.actualType === targetType.actualType ||
-                targetType.actualType === "any"
-                  ? "✓ Type compatibility: Compatible"
-                  : "⚠ Type compatibility: May need conversion"}
-              </div>
-            )}
+      {/* Edge Data (if any) */}
+      {edge.data && Object.keys(edge.data).length > 0 && (
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-node-view">Edge Data</div>
+          <div className="p-2 bg-node-view rounded border-node-view">
+            <JsonHighlighter data={edge.data} />
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

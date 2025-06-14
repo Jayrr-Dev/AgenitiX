@@ -107,7 +107,7 @@ const ComponentThemePreview: React.FC<{
   const theme = useComponentTheme(componentName);
   
   const handleDebugColors = () => {
-    debugComponentColors(componentName, theme);
+    debugComponentColors(componentName, 'light');
   };
   
   return (
@@ -179,7 +179,7 @@ export const ColorDebugger: React.FC<ColorDebuggerProps> = ({
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-4">
             <h2 className="text-lg font-semibold text-card-foreground">
-              🎨 Color Debugger <span className="text-xs bg-yellow-500 text-yellow-900 px-2 py-1 rounded">DEV</span>
+              🎨 Color Debugger <span className="text-xs bg-status-edge-add text-node-test-text px-2 py-1 rounded">DEV</span>
             </h2>
             <div className="flex bg-muted rounded-md p-1">
               <button

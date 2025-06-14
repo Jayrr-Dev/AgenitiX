@@ -1,10 +1,21 @@
-import { Search, X } from "lucide-react";
+/**
+ * SEARCH BAR COMPONENT - Node search interface for sidebar
+ *
+ * • Search input with real-time filtering capabilities
+ * • Integrated with semantic token system for consistent theming
+ * • Accessible with proper keyboard navigation and screen reader support
+ * • Clear button and search icon for better UX
+ * • Responsive design with proper focus states
+ *
+ * Keywords: search-bar, filter, semantic-tokens, accessibility, responsive
+ */
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Search, X } from "lucide-react";
 import { HoveredStencil } from "../StencilInfoPanel";
 import { getAllNodeMetadata } from "../../node-registry/nodespec-registry";
 import type { NodeMetadata } from "../../node-registry/types";
 import { StencilGrid } from "../StencilGrid";
-import { useComponentTheme } from "../../theming/components";
 
 interface SearchBarProps {
   onNativeDragStart: (
@@ -24,7 +35,28 @@ export function SearchBar({
   isVisible,
   onClose,
 }: SearchBarProps) {
-  const theme = useComponentTheme('sidePanel');
+  // Create theme object that maps to semantic tokens
+  const theme = {
+    background: {
+      primary: "bg-infra-sidebar",
+      secondary: "bg-infra-sidebar-hover",
+      hover: "hover:bg-infra-sidebar-hover",
+    },
+    border: {
+      default: "border-infra-sidebar",
+    },
+    borderRadius: {
+      panel: "rounded-lg",
+      button: "rounded",
+    },
+    text: {
+      primary: "text-infra-sidebar-text",
+      secondary: "text-infra-sidebar-text-secondary",
+      muted: "text-infra-sidebar-text-secondary",
+    },
+    transition: "transition-colors",
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isInputFocused, setIsInputFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -370,9 +402,9 @@ export function SearchBar({
   if (!isVisible) return null;
 
   return (
-    <div className={`absolute inset-0 ${theme.background.primary} ${theme.border.default} ${theme.borderRadius.panel} z-40 flex flex-col`}>
+    <div className={`absolute inset-x-0 top-0 bottom-2 ${theme.background.primary} ${theme.border.default} ${theme.borderRadius.panel} z-40 flex flex-col`}>
       {/* Search Header */}
-      <div className={`flex items-center gap-2 px-4 py-1 ${theme.border.default} border-b`}>
+      <div className={`flex items-center gap-2 px-7 pt-3  ${theme.border.default} border-b flex-shrink-0`}>
         <div className="relative flex-1">
           <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme.text.muted} h-4 w-4`} />
           <input
@@ -382,7 +414,7 @@ export function SearchBar({
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsInputFocused(true)}
             onBlur={() => setIsInputFocused(false)}
-            className={`w-full pl-10 pr-10 py-0.5 ${theme.border.default} border ${theme.borderRadius.button} ${theme.background.secondary} ${theme.text.primary} focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 ${theme.transition}`}
+            className={`w-full pl-10 pr-10 py-0 ${theme.border.default} border ${theme.borderRadius.button} ${theme.background.secondary} ${theme.text.primary} focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 ${theme.transition}`}
             autoFocus
             ref={inputRef}
           />
@@ -405,9 +437,9 @@ export function SearchBar({
       </div>
 
       {/* Search Results */}
-      <div className="flex-1 overflow-y-auto p-3 ">
+      <div className="flex-1 overflow-y-auto pb-2 min-h-0">
         {searchQuery.trim() && (
-          <div className="mb-3">
+          <div className="mb-3 px-3">
             <div className={`text-sm ${theme.text.secondary}`}>
               {filteredStencils.length} result
               {filteredStencils.length !== 1 ? "s" : ""} for "{searchQuery}"
@@ -428,22 +460,24 @@ export function SearchBar({
         )}
 
         {filteredStencils.length > 0 ? (
-          <StencilGrid
-            stencils={filteredStencils}
-            setStencils={() => {}} // Read-only for search results
-            onNativeDragStart={onNativeDragStart}
-            onDoubleClickCreate={onDoubleClickCreate}
-            setHovered={setHovered}
-            getKeyboardShortcut={getKeyboardShortcut}
-          />
+          <div className="flex-1 outline-none px-6 border-l-[1px]">
+            <StencilGrid
+              stencils={filteredStencils}
+              setStencils={() => {}} // Read-only for search results
+              onNativeDragStart={onNativeDragStart}
+              onDoubleClickCreate={onDoubleClickCreate}
+              setHovered={setHovered}
+              getKeyboardShortcut={getKeyboardShortcut}
+            />
+          </div>
         ) : searchQuery.trim() ? (
-          <div className={`text-center ${theme.text.muted} mt-8`}>
+          <div className={`text-center ${theme.text.muted} mt-8 px-3`}>
             <Search className={`h-12 w-12 mx-auto mb-4 ${theme.text.muted}`} />
             <p className={`text-lg font-medium ${theme.text.secondary}`}>No nodes found</p>
             <p className={`text-sm ${theme.text.muted}`}>Try searching with different keywords</p>
           </div>
         ) : (
-          <div className={`text-center ${theme.text.muted} mt-8`}>
+          <div className={`text-center ${theme.text.muted} mt-8 px-3`}>
             <Search className={`h-12 w-12 mx-auto mb-4 ${theme.text.muted}`} />
             <p className={`text-lg font-medium ${theme.text.secondary}`}>Search all nodes</p>
             <p className={`text-sm mb-4 ${theme.text.secondary}`}>

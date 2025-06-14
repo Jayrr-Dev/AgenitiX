@@ -29,54 +29,54 @@ export interface CategoryTheme {
   };
 }
 
-/** Hard-coded fallback palette (used if registry has no entry). */
+/** Semantic token-based palette using new design system tokens. */
 export const CATEGORY_THEMES: Partial<Record<string, CategoryTheme>> = {
   create: {
-    background: { light: "bg-blue-50", dark: "bg-blue-900" },
-    border: { light: "border-blue-300", dark: "border-blue-800" },
+    background: { light: "bg-node-create", dark: "bg-node-create" },
+    border: { light: "border-node-create", dark: "border-node-create" },
     text: {
-      primary: { light: "text-blue-900", dark: "text-blue-100" },
-      secondary: { light: "text-blue-800", dark: "text-blue-200" },
+      primary: { light: "text-node-create", dark: "text-node-create" },
+      secondary: { light: "text-node-create-secondary", dark: "text-node-create-secondary" },
     },
     button: {
-      border: "border-blue-300 dark:border-blue-800",
-      hover: { light: "hover:bg-blue-200", dark: "hover:bg-blue-800" },
+      border: "border-node-create",
+      hover: { light: "hover:bg-node-create-hover", dark: "hover:bg-node-create-hover" },
     },
   },
   view: {
-    background: { light: "bg-gray-50", dark: "bg-gray-900" },
-    border: { light: "border-gray-300", dark: "border-gray-800" },
+    background: { light: "bg-node-view", dark: "bg-node-view" },
+    border: { light: "border-node-view", dark: "border-node-view" },
     text: {
-      primary: { light: "text-gray-900", dark: "text-gray-100" },
-      secondary: { light: "text-gray-800", dark: "text-gray-200" },
+      primary: { light: "text-node-view", dark: "text-node-view" },
+      secondary: { light: "text-node-view-secondary", dark: "text-node-view-secondary" },
     },
     button: {
-      border: "border-gray-300 dark:border-gray-800",
-      hover: { light: "hover:bg-gray-200", dark: "hover:bg-gray-800" },
+      border: "border-node-view",
+      hover: { light: "hover:bg-node-view-hover", dark: "hover:bg-node-view-hover" },
     },
   },
   trigger: {
-    background: { light: "bg-purple-50", dark: "bg-purple-900" },
-    border: { light: "border-purple-300", dark: "border-purple-800" },
+    background: { light: "bg-node-trigger", dark: "bg-node-trigger" },
+    border: { light: "border-node-trigger", dark: "border-node-trigger" },
     text: {
-      primary: { light: "text-purple-900", dark: "text-purple-100" },
-      secondary: { light: "text-purple-800", dark: "text-purple-200" },
+      primary: { light: "text-node-trigger", dark: "text-node-trigger" },
+      secondary: { light: "text-node-trigger-secondary", dark: "text-node-trigger-secondary" },
     },
     button: {
-      border: "border-purple-300 dark:border-purple-800",
-      hover: { light: "hover:bg-purple-200", dark: "hover:bg-purple-800" },
+      border: "border-node-trigger",
+      hover: { light: "hover:bg-node-trigger-hover", dark: "hover:bg-node-trigger-hover" },
     },
   },
   test: {
-    background: { light: "bg-yellow-50", dark: "bg-yellow-900" },
-    border: { light: "border-yellow-300", dark: "border-yellow-800" },
+    background: { light: "bg-node-test", dark: "bg-node-test" },
+    border: { light: "border-node-test", dark: "border-node-test" },
     text: {
-      primary: { light: "text-yellow-900", dark: "text-yellow-100" },
-      secondary: { light: "text-yellow-800", dark: "text-yellow-200" },
+      primary: { light: "text-node-test", dark: "text-node-test" },
+      secondary: { light: "text-node-test-secondary", dark: "text-node-test-secondary" },
     },
     button: {
-      border: "border-yellow-300 dark:border-yellow-800",
-      hover: { light: "hover:bg-yellow-200", dark: "hover:bg-yellow-800" },
+      border: "border-node-test",
+      hover: { light: "hover:bg-node-test-hover", dark: "hover:bg-node-test-hover" },
     },
   },
 };
@@ -135,33 +135,34 @@ export interface NodeStyleActions {
 }
 
 // ============================================================================
-// GLOW CONFIGURATION - Easy to find and adjust visual effects
+// GLOW CONFIGURATION - Semantic token-based visual effects
 // ============================================================================
 
 /**
- * SELECTION GLOW CONFIGURATION
+ * SEMANTIC GLOW EFFECTS CONFIGURATION
  * 
- * Easily adjustable glow effects for node selection states.
- * Modify these values to change the visual appearance of node selection.
+ * Now using semantic design tokens for consistent glow effects.
+ * These utilities are automatically generated from CSS custom properties
+ * defined in the @theme block in globals.css.
  * 
- * Format: shadow-[offsetX_offsetY_blurRadius_spreadRadius_color]
- * - offsetX/Y: Shadow position (usually 0_0 for centered glow)
- * - blurRadius: How soft/spread the glow is (higher = more diffuse)
- * - spreadRadius: How far the glow extends (higher = larger glow)
- * - color: RGBA color with alpha for transparency
+ * Benefits:
+ * - Consistent with design system tokens
+ * - Easy to modify via CSS variables
+ * - Automatic dark/light mode support
+ * - Better maintainability
  */
 const GLOW_EFFECTS = {
   /** Subtle hover glow - appears on mouse hover */
-  hover: "shadow-[0_0_3px_0px_rgba(255,255,255,0.1)]",
+  hover: "shadow-effect-glow-hover",
   
   /** Selection glow - faint white glow when node is selected */
-  selection: "shadow-[0_0_4px_1px_rgba(255,255,255,0.6)]",
+  selection: "shadow-effect-glow-selection",
   
   /** Active state glow - green glow for active/running nodes */
-  activation: "shadow-[0_0_8px_2px_rgba(34,197,94,0.8)]",
+  activation: "shadow-effect-glow-activation",
   
   /** Error state glow - red glow for nodes with errors */
-  error: "shadow-[0_0_8px_2px_rgba(239,68,68,0.8)]",
+  error: "shadow-effect-glow-error",
 } as const;
 
 /**
@@ -169,6 +170,9 @@ const GLOW_EFFECTS = {
  * 
  * Helper functions to create custom glow effects programmatically.
  * Use these if you need to generate glow effects dynamically.
+ * 
+ * Note: For standard effects, prefer using semantic token utilities.
+ * This function is preserved for advanced customization scenarios.
  */
 export const createGlowEffect = (
   blurRadius: number = 8,
@@ -180,15 +184,18 @@ export const createGlowEffect = (
 };
 
 /**
- * Predefined glow presets for common use cases
+ * SEMANTIC GLOW PRESETS
+ * 
+ * Predefined glow presets using semantic design tokens.
+ * These map to CSS custom properties defined in globals.css.
  */
 export const GLOW_PRESETS = {
-  subtle: createGlowEffect(4, 1, "255,255,255", 0.4),
-  normal: createGlowEffect(8, 2, "255,255,255", 0.8),
-  strong: createGlowEffect(12, 3, "255,255,255", 1.0),
-  blue: createGlowEffect(8, 2, "59,130,246", 0.8),
-  green: createGlowEffect(8, 2, "34,197,94", 0.8),
-  red: createGlowEffect(8, 2, "239,68,68", 0.8),
+  subtle: "shadow-effect-glow-subtle",
+  normal: "shadow-effect-glow-normal", 
+  strong: "shadow-effect-glow-strong",
+  blue: "shadow-effect-glow-blue",
+  green: "shadow-effect-glow-green",
+  red: "shadow-effect-glow-red",
 } as const;
 
 const DEFAULT_STYLES: NodeStyleState = {
@@ -196,26 +203,26 @@ const DEFAULT_STYLES: NodeStyleState = {
   selection: { glow: GLOW_EFFECTS.selection },
   activation: {
     glow: GLOW_EFFECTS.activation,
-    border: "border-green-300/60 dark:border-green-400/50",
+    border: "border-effect-glow-green/60",
     scale: "scale-[1.02]",
     buttonTheme: {
-      border: "border-green-400",
-      hover: "hover:bg-green-100 dark:hover:bg-green-900",
+      border: "border-effect-glow-green",
+      hover: "hover:bg-effect-glow-green/10",
     },
   },
   error: {
     glow: GLOW_EFFECTS.error,
-    border: "border-red-300/60 dark:border-red-400/50",
+    border: "border-effect-glow-red/60",
     scale: "scale-[1.02]",
     buttonTheme: {
-      border: "border-red-400",
-      hover: "hover:bg-red-100 dark:hover:bg-red-900",
+      border: "border-effect-glow-red",
+      hover: "hover:bg-effect-glow-red/10",
     },
     textTheme: {
-      primary: "text-red-900 dark:text-red-100",
-      secondary: "text-red-800 dark:text-red-200",
-      border: "border-red-300 dark:border-red-700",
-      focus: "focus:ring-red-500",
+      primary: "text-effect-glow-red",
+      secondary: "text-effect-glow-red/80",
+      border: "border-effect-glow-red",
+      focus: "focus:ring-effect-glow-red",
     },
   },
   base: { transition: "transition-all duration-200" },

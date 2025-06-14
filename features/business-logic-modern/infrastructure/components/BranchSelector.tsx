@@ -39,7 +39,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
         <button
           onClick={handleUndo}
           disabled={!canUndo}
-          className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+          className="px-3 py-1 text-sm bg-infra-toolbar hover:bg-infra-toolbar-hover disabled:opacity-50 disabled:cursor-not-allowed rounded"
           title="Undo"
         >
           ↶ Undo
@@ -47,7 +47,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
         <button
           onClick={() => handleRedo()}
           disabled={!canRedo}
-          className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+          className="px-3 py-1 text-sm bg-infra-toolbar hover:bg-infra-toolbar-hover disabled:opacity-50 disabled:cursor-not-allowed rounded"
           title="Redo"
         >
           ↷ Redo
@@ -62,7 +62,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
       <button
         onClick={handleUndo}
         disabled={!canUndo}
-        className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+        className="px-3 py-1 text-sm bg-infra-toolbar hover:bg-infra-toolbar-hover disabled:opacity-50 disabled:cursor-not-allowed rounded"
         title="Undo"
       >
         ↶ Undo
@@ -79,7 +79,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
             <button
               key={branchId}
               onClick={() => handleRedo(branchId)}
-              className="px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 rounded border border-blue-300 transition-colors"
+              className="px-2 py-1 text-xs bg-node-create hover:bg-node-create-hover text-node-create-text rounded border border-node-create-border transition-colors"
               title={`Redo: ${branchLabel}`}
             >
               ↷ {branchLabel.slice(0, 12)}

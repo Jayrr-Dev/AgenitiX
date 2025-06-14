@@ -19,12 +19,30 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true
+			"recommended": true,
+			"style": {
+				"noUnusedTemplateLiteral": "error"
+			},
+			"suspicious": {
+				"noConsoleLog": "warn"
+			}
 		}
 	},
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "double"
 		}
-	}
+	},
+	"overrides": [
+		{
+			"include": ["features/business-logic-modern/**/*.{ts,tsx}"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noUnusedTemplateLiteral": "error"
+					}
+				}
+			}
+		}
+	]
 }

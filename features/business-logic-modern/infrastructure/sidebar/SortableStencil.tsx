@@ -1,11 +1,22 @@
-+'use client';
+/**
+ * SORTABLE STENCIL COMPONENT - Drag-and-drop node stencil with touch support
+ *
+ * • Draggable node stencil for sidebar with keyboard and touch accessibility
+ * • Supports native drag-and-drop and touch-based drag simulation
+ * • Integrated with semantic token system for consistent theming
+ * • Hover states, focus management, and double-tap creation
+ * • Sortable via dnd-kit with visual feedback and transitions
+ *
+ * Keywords: sortable-stencil, drag-drop, touch-support, semantic-tokens, accessibility
+ */
+
+'use client';
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import React, { type KeyboardEvent, useCallback, useRef } from "react";
 import { HoveredStencil } from "./StencilInfoPanel";
 import { NodeStencil } from "./types";
-import { useComponentTheme } from "../theming/components";
 
 interface SortableStencilProps {
   stencil: NodeStencil;
@@ -29,8 +40,6 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
   showRemoveButton = false,
   keyboardShortcut,
 }) => {
-  const theme = useComponentTheme('sidePanel');
-  
   const {
     attributes,
     listeners,
@@ -115,7 +124,7 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
       const dragPreview = document.createElement("div");
       dragPreview.textContent = stencil.label;
       dragPreview.className =
-        "fixed z-50 pointer-events-none bg-blue-500 text-white px-2 py-1 rounded text-xs";
+        "fixed z-50 pointer-events-none bg-node-create text-node-create-text px-2 py-1 rounded text-xs";
       dragPreview.style.left = `${touch.clientX - 35}px`;
       dragPreview.style.top = `${touch.clientY - 15}px`;
       document.body.appendChild(dragPreview);
@@ -226,7 +235,7 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative flex h-[70px] w-[70px] select-none items-center justify-center rounded border-2 ${theme.background.primary} ${theme.border.default} ${theme.text.primary} ${theme.background.hover} ${theme.transition} group cursor-pointer`}
+      className="relative flex h-[70px] w-[70px] select-none items-center justify-center rounded border-2 bg-infra-sidebar border-infra-sidebar text-infra-sidebar-text hover:bg-infra-sidebar-hover transition-colors group cursor-pointer"
       title={
         keyboardShortcut
           ? `${stencil.label} (${keyboardShortcut})`
@@ -248,7 +257,7 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
         {...listeners}
         type="button"
         title="Re-order"
-        className={`absolute left-1 top-1 h-3 w-3 cursor-grab text-[8px] ${theme.text.muted} active:cursor-grabbing`}
+        className="absolute left-1 top-1 h-3 w-3 cursor-grab text-[8px] text-infra-sidebar-text-secondary active:cursor-grabbing"
         draggable={false}
       >
         ⦿

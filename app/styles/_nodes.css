@@ -1,0 +1,94 @@
+/* =====================================================================
+   _NODES.CSS — NODE-SPECIFIC THEME & UTILITIES
+   =====================================================================
+   This file extends the global theme with tokens and utilities
+   specifically for styling the nodes in the flow canvas. It keeps
+   node-related styling isolated and easy to manage.
+
+   • Theme extensions for different node categories (create, view, etc.)
+   • Theme extensions for node sizing variants
+   • Utility classes for applying node-specific backgrounds, borders,
+     text colors, and sizes.
+
+   Keywords: nodes, theme, tokens, utilities, react-flow
+   ===================================================================== */
+
+@theme {
+  /* Node Category Tokens */
+  --node-create-bg: 210 100% 97%;              /* #f0f9ff */
+  --node-create-bg-hover: 210 100% 95%;        /* #e0f2fe */
+  --node-create-border: 210 100% 85%;          /* #7dd3fc */
+  --node-create-border-hover: 210 100% 80%;    /* #38bdf8 */
+  --node-create-text: 210 100% 20%;            /* #0c4a6e */
+  --node-create-text-secondary: 210 80% 30%;   /* #075985 */
+
+  --node-view-bg: 0 0% 97%;                    /* #f7f7f7 */
+  --node-view-bg-hover: 0 0% 95%;              /* #f2f2f2 */
+  --node-view-border: 0 0% 85%;                /* #d9d9d9 */
+  --node-view-border-hover: 0 0% 80%;          /* #cccccc */
+  --node-view-text: 0 0% 20%;                  /* #333333 */
+  --node-view-text-secondary: 0 0% 30%;        /* #4d4d4d */
+
+  --node-trigger-bg: 280 100% 97%;             /* #faf5ff */
+  --node-trigger-bg-hover: 280 100% 95%;       /* #f3e8ff */
+  --node-trigger-border: 280 100% 85%;         /* #c4b5fd */
+  --node-trigger-border-hover: 280 100% 80%;   /* #a78bfa */
+  --node-trigger-text: 280 100% 20%;           /* #581c87 */
+  --node-trigger-text-secondary: 280 80% 30%;  /* #6b21a8 */
+
+  --node-test-bg: 45 100% 97%;                 /* #fffbeb */
+  --node-test-bg-hover: 45 100% 95%;           /* #fef3c7 */
+  --node-test-border: 45 100% 85%;             /* #fcd34d */
+  --node-test-border-hover: 45 100% 80%;       /* #f59e0b */
+  --node-test-text: 45 100% 20%;               /* #92400e */
+  --node-test-text-secondary: 45 80% 30%;      /* #a16207 */
+
+  /* Sizing Tokens for Nodes */
+  --node-size-fe1h-width: 240px;
+  --node-size-fe1h-height: 120px;
+  --node-size-compact-width: 180px;
+  --node-size-compact-height: 80px;
+  --node-size-expanded-width: 320px;
+  --node-size-expanded-height: 160px;
+  --node-size-default-width: 200px;
+  --node-size-default-height: 100px;
+}
+
+/* Node Category Utilities */
+@utility bg-node-create { background-color: hsl(var(--node-create-bg)); } /* #f0f9ff */
+@utility bg-node-create-hover { background-color: hsl(var(--node-create-bg-hover)); } /* #e0f2fe */
+@utility border-node-create { border-color: hsl(var(--node-create-border)); } /* #7dd3fc */
+@utility border-node-create-hover { border-color: hsl(var(--node-create-border-hover)); } /* #38bdf8 */
+@utility text-node-create { color: hsl(var(--node-create-text)); } /* #0c4a6e */
+@utility text-node-create-secondary { color: hsl(var(--node-create-text-secondary)); } /* #075985 */
+
+@utility bg-node-view { background-color: hsl(var(--node-view-bg)); } /* #f7f7f7 */
+@utility bg-node-view-hover { background-color: hsl(var(--node-view-bg-hover)); } /* #f2f2f2 */
+@utility border-node-view { border-color: hsl(var(--node-view-border)); } /* #d9d9d9 */
+@utility border-node-view-hover { border-color: hsl(var(--node-view-border-hover)); } /* #cccccc */
+@utility text-node-view { color: hsl(var(--node-view-text)); } /* #333333 */
+@utility text-node-view-secondary { color: hsl(var(--node-view-text-secondary)); } /* #4d4d4d */
+
+@utility bg-node-trigger { background-color: hsl(var(--node-trigger-bg)); } /* #faf5ff */
+@utility bg-node-trigger-hover { background-color: hsl(var(--node-trigger-bg-hover)); } /* #f3e8ff */
+@utility border-node-trigger { border-color: hsl(var(--node-trigger-border)); } /* #c4b5fd */
+@utility border-node-trigger-hover { border-color: hsl(var(--node-trigger-border-hover)); } /* #a78bfa */
+@utility text-node-trigger { color: hsl(var(--node-trigger-text)); } /* #581c87 */
+@utility text-node-trigger-secondary { color: hsl(var(--node-trigger-text-secondary)); } /* #6b21a8 */
+
+@utility bg-node-test { background-color: hsl(var(--node-test-bg)); } /* #fffbeb */
+@utility bg-node-test-hover { background-color: hsl(var(--node-test-bg-hover)); } /* #fef3c7 */
+@utility border-node-test { border-color: hsl(var(--node-test-border)); } /* #fcd34d */
+@utility border-node-test-hover { border-color: hsl(var(--node-test-border-hover)); } /* #f59e0b */
+@utility text-node-test { color: hsl(var(--node-test-text)); } /* #92400e */
+@utility text-node-test-secondary { color: hsl(var(--node-test-text-secondary)); } /* #a16207 */
+
+/* Node Sizing Utilities */
+@utility w-node-size-fe1h { width: var(--node-size-fe1h-width); } /* 240px */
+@utility h-node-size-fe1h { height: var(--node-size-fe1h-height); } /* 120px */
+@utility w-node-size-compact { width: var(--node-size-compact-width); } /* 180px */
+@utility h-node-size-compact { height: var(--node-size-compact-height); } /* 80px */
+@utility w-node-size-expanded { width: var(--node-size-expanded-width); } /* 320px */
+@utility h-node-size-expanded { height: var(--node-size-expanded-height); } /* 160px */
+@utility w-node-size-default { width: var(--node-size-default-width); } /* 200px */
+@utility h-node-size-default { height: var(--node-size-default-height); } /* 100px */

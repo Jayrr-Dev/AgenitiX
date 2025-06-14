@@ -12,13 +12,14 @@
  * Keywords: v2u-wrapper, automatic-resolution, smart-controls, fallback, metadata, debugging
  */
 
-import React from "react";
+import React, { useMemo } from "react";
 import { BaseControlProps } from "../types";
 import {
   getV2UMetadata,
   isV2UNode,
   resolveV2UControl,
 } from "../V2UControlRegistry";
+import { getNodeSpecMetadata } from "../../node-registry/nodespec-registry";
 
 // ============================================================================
 // V2U CONTROL WRAPPER INTERFACES
@@ -49,10 +50,14 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
   customControlType,
   ...otherProps
 }) => {
-  const resolution = resolveV2UControl(node, propDebugMode || enableDebugMode);
+  // Enhanced debug mode logic
+  const finalDebugMode = useMemo(() => {
+    return propDebugMode || enableDebugMode || process.env.NODE_ENV === "development";
+  }, [propDebugMode, enableDebugMode]);
+
+  const resolution = resolveV2UControl(node, finalDebugMode);
   const { ControlComponent, isV2UControl, controlType, metadata } = resolution;
 
-  const finalDebugMode = propDebugMode || enableDebugMode;
   const nodeMetadata = getV2UMetadata(node);
   const isNodeV2U = isV2UNode(node);
 
@@ -61,18 +66,18 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
     return (
       <div className="space-y-3">
         {showV2UInfo && (
-          <div className="text-xs border rounded p-2 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
-            <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
+          <div className="text-xs border rounded p-2 bg-control-error border-control-error">
+            <div className="flex items-center gap-2 text-control-error">
               <span>⚠️</span>
               <span className="font-semibold">No Control Available</span>
             </div>
-            <div className="mt-1 text-red-600 dark:text-red-400">
+            <div className="mt-1 text-control-error">
               No control component found for node type: {node.type}
             </div>
           </div>
         )}
 
-        <div className="text-xs text-gray-500 dark:text-gray-400 p-4 text-center border rounded bg-gray-50 dark:bg-gray-900">
+        <div className="text-xs text-control-debug p-4 text-center border rounded bg-control-debug">
           <div className="text-lg mb-2">🚫</div>
           <div>No controls available for this node type</div>
           <div className="mt-1 text-xs">
@@ -87,23 +92,23 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
     <div className="space-y-3">
       {/* V2U Status Info */}
       {showV2UInfo && (
-        <div className="text-xs border rounded p-2 bg-gray-50 dark:bg-gray-900">
+        <div className="text-xs border rounded p-2 bg-control-debug border-control-input">
           <div className="flex items-center justify-between mb-2">
-            <span className="font-semibold text-gray-700 dark:text-gray-300">
+            <span className="font-semibold text-control-debug">
               Control System
             </span>
             <div className="flex items-center gap-2">
               <span
                 className={`px-2 py-1 rounded text-xs ${
                   isV2UControl
-                    ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                    : "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300"
+                    ? "bg-control-success text-control-success border-control-success"
+                    : "bg-control-warning text-control-warning border-control-warning"
                 }`}
               >
                 {isV2UControl ? "V2U Enhanced" : "Legacy"}
               </span>
               {controlType && (
-                <span className="px-2 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded text-xs">
+                <span className="px-2 py-1 bg-node-create text-node-create-text border-node-create rounded text-xs">
                   {controlType}
                 </span>
               )}
@@ -111,7 +116,7 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
           </div>
 
           {metadata && (
-            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400">
+            <div className="grid grid-cols-2 gap-2 text-xs text-control-debug">
               <div>Node Type: {metadata.nodeType}</div>
               <div>Category: {metadata.controlConfig.category}</div>
               {metadata.isV2UNode && metadata.metadata?.version && (
@@ -130,8 +135,8 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
 
           {/* Enhanced Features List */}
           {isV2UControl && metadata && finalDebugMode && (
-            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+            <div className="mt-2 pt-2 border-t border-control-group">
+              <div className="text-xs text-control-debug mb-1">
                 Enhanced Features:
               </div>
               <div className="flex flex-wrap gap-1">
@@ -139,7 +144,7 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
                   (feature: string, index: number) => (
                     <span
                       key={index}
-                      className="px-1 py-0.5 bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-300 rounded text-xs"
+                      className="px-1 py-0.5 bg-node-create text-node-create-text border-node-create rounded text-xs"
                     >
                       {feature}
                     </span>
@@ -151,31 +156,31 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
 
           {/* V2U System Status */}
           {isNodeV2U && finalDebugMode && (
-            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+            <div className="mt-2 pt-2 border-t border-control-group">
+              <div className="text-xs text-control-debug mb-1">
                 V2U System Status:
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div
                   className={`p-1 rounded ${
                     nodeMetadata.migrated
-                      ? "bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-300"
-                      : "bg-red-50 text-red-700 dark:bg-red-900 dark:text-red-300"
+                      ? "bg-control-success text-control-success border-control-success"
+                      : "bg-control-error text-control-error border-control-error"
                   }`}
                 >
                   Migration: {nodeMetadata.migrated ? "Complete" : "Pending"}
                 </div>
                 {nodeMetadata.version && (
-                  <div className="p-1 bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded">
+                  <div className="p-1 bg-node-create text-node-create-text border-node-create rounded">
                     Version: {nodeMetadata.version}
                   </div>
                 )}
                 {v2uState && (
                   <>
-                    <div className="p-1 bg-purple-50 text-purple-700 dark:bg-purple-900 dark:text-purple-300 rounded">
+                    <div className="p-1 bg-node-trigger text-node-trigger-text border-node-trigger rounded">
                       Health: {v2uState.systemHealth}
                     </div>
-                    <div className="p-1 bg-indigo-50 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 rounded">
+                    <div className="p-1 bg-node-test text-node-test-text border-node-test rounded">
                       Registry: {v2uState.registryStatus}
                     </div>
                   </>
@@ -187,7 +192,7 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
       )}
 
       {/* Actual Control Component */}
-      <div className="border rounded p-3 bg-white dark:bg-gray-800">
+      <div className="border rounded p-3 bg-control-input border-control-input">
         <ControlComponent
           node={node}
           updateNodeData={updateNodeData}
@@ -199,33 +204,33 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
 
       {/* V2U Debug Panel */}
       {finalDebugMode && v2uState && (
-        <div className="text-xs border rounded p-2 bg-gray-100 dark:bg-gray-800">
-          <div className="font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <div className="text-xs border rounded p-2 bg-control-debug border-control-input">
+          <div className="font-semibold text-control-debug mb-2">
             🔍 V2U Debug Information
           </div>
 
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <span className="text-gray-600 dark:text-gray-400">
+                <span className="text-control-debug">
                   Node ID:
                 </span>
                 <span className="ml-1 font-mono">{node.id}</span>
               </div>
               <div>
-                <span className="text-gray-600 dark:text-gray-400">Type:</span>
+                <span className="text-control-debug">Type:</span>
                 <span className="ml-1 font-mono">{node.type}</span>
               </div>
               <div>
-                <span className="text-gray-600 dark:text-gray-400">
+                <span className="text-control-debug">
                   Control:
                 </span>
                 <span className="ml-1">{controlType || "None"}</span>
               </div>
               <div>
-                <span className="text-gray-600 dark:text-gray-400">V2U:</span>
+                <span className="text-control-debug">V2U:</span>
                 <span
-                  className={`ml-1 ${isV2UControl ? "text-green-600" : "text-orange-600"}`}
+                  className={`ml-1 ${isV2UControl ? "text-control-success" : "text-control-warning"}`}
                 >
                   {isV2UControl ? "Yes" : "No"}
                 </span>
@@ -233,13 +238,13 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
             </div>
 
             {v2uState && (
-              <div className="pt-2 border-t border-gray-300 dark:border-gray-600">
-                <div className="text-gray-600 dark:text-gray-400 mb-1">
+              <div className="pt-2 border-t border-control-group">
+                <div className="text-control-debug mb-1">
                   V2U State:
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div>
-                    <span className="text-gray-500">Lifecycle:</span>
+                    <span className="text-control-debug">Lifecycle:</span>
                     <div className="font-mono">
                       {
                         Object.values(v2uState.lifecycle).filter(
@@ -250,15 +255,38 @@ export const V2UControlWrapper: React.FC<V2UControlWrapperProps> = ({
                     </div>
                   </div>
                   <div>
-                    <span className="text-gray-500">Performance:</span>
+                    <span className="text-control-debug">Performance:</span>
                     <div className="font-mono">
                       {v2uState.performance.averageExecutionTime}ms avg
                     </div>
                   </div>
                   <div>
-                    <span className="text-gray-500">Events:</span>
+                    <span className="text-control-debug">Events:</span>
                     <div className="font-mono">
                       {v2uState.events.eventsEmitted} emitted
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Performance Metrics */}
+            {v2uState?.performance && (
+              <div className="pt-2 border-t border-control-group">
+                <div className="text-control-debug mb-1">
+                  Performance Metrics:
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-control-debug">Avg Execution:</span>
+                    <div className="font-mono text-control-success">
+                      {v2uState.performance.averageExecutionTime}ms
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-control-debug">Status:</span>
+                    <div className="font-mono text-control-debug">
+                      Active
                     </div>
                   </div>
                 </div>

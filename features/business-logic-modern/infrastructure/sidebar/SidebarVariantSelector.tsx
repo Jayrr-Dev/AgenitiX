@@ -1,7 +1,19 @@
+/**
+ * VARIANT SELECTOR - Floating component for switching between sidebar variants
+ *
+ * • Floating variant buttons with icons positioned absolutely
+ * • Temporary text display showing variant names on hover/switch
+ * • Keyboard shortcut support (Alt+1-5) with visual feedback
+ * • Hover effects with variant name preview
+ * • Responsive design with mobile considerations
+ * • Integration with semantic token system for consistent theming
+ *
+ * Keywords: variant-selector, floating-buttons, keyboard-shortcuts, semantic-tokens, responsive
+ */
+
 import React, { useState, useEffect } from 'react';
 import { FaBolt, FaVideo, FaLink, FaRobot, FaBox } from 'react-icons/fa';
 import { SidebarVariant, VARIANT_NAMES } from './types';
-import { useComponentTheme } from '../theming/components';
 
 // ============================================================================
 // CONSTANTS
@@ -60,14 +72,13 @@ const renderVariantIcon = (variant: SidebarVariant): React.ReactElement | null =
  * • Dark mode: White background with dark text
  * 
  * @param {boolean} isActive - Whether the button represents the active variant
- * @param {object} theme - The component theme object
  * @returns {string} Combined CSS classes with proper contrast for active state
  */
-const generateButtonClasses = (isActive: boolean, theme: any): string => {
-  const BASE_CLASSES = `${theme.borderRadius.button} h-8 w-8 py-1 text-sm ${theme.transition} flex items-center justify-center`;
+const generateButtonClasses = (isActive: boolean): string => {
+  const BASE_CLASSES = "rounded h-8 w-8 py-1 text-sm transition-all duration-200 flex items-center justify-center";
   
-  const activeClasses = `${theme.background.active} ${theme.text.muted} ${theme.background.hover}`;
-  const inactiveClasses = `${theme.background.primary} ${theme.text.primary} ${theme.background.hover}`;
+  const activeClasses = "bg-infra-sidebar-hover text-infra-sidebar-text border-infra-sidebar-border-hover";
+  const inactiveClasses = "bg-infra-sidebar text-infra-sidebar-text-secondary hover:bg-infra-sidebar-hover hover:text-infra-sidebar-text";
   
   return `${BASE_CLASSES} ${isActive ? activeClasses : inactiveClasses}`;
 };
@@ -90,7 +101,7 @@ const generateButtonClasses = (isActive: boolean, theme: any): string => {
  * - Keyboard shortcut support (Alt+1-5)
  * - Hover effects with variant name preview
  * - Responsive design with mobile considerations
- * - Integration with central theme system
+ * - Integration with semantic token system
  * 
  * @param {VariantSelectorProps} props - Component props
  * @returns {React.ReactElement | null} The variant selector component or null if hidden
@@ -112,9 +123,6 @@ export function VariantSelector({
   // ========================================================================
   // HOOKS & STATE
   // ========================================================================
-  
-  /** Component theme from central theme store */
-  const theme = useComponentTheme('variantSelector');
   
   /** Currently hovered variant for preview text */
   const [hoveredVariant, setHoveredVariant] = useState<SidebarVariant | null>(null);
@@ -191,14 +199,7 @@ export function VariantSelector({
         <div className="w-1/2 flex justify-center">
           {displayText && (
             <div 
-              className={`
-                hidden sm:block 
-                ${theme.text.primary} 
-                text-shadow-lg font-extralight 
-                px-2 py-1 ml-10 
-                ${theme.borderRadius.panel} 
-                whitespace-nowrap pointer-events-none tracking-widest
-              `}
+              className="hidden sm:block text-infra-sidebar-text font-extralight px-2 py-1 ml-10 rounded whitespace-nowrap pointer-events-none tracking-widest shadow-lg"
             >
               {VARIANT_NAMES[displayText]}
             </div>
@@ -219,7 +220,7 @@ export function VariantSelector({
                 onMouseEnter={() => handleMouseEnter(variantKey)}
                 onMouseLeave={handleMouseLeave}
                 title={`${variantName} (Alt+${shortcutNumber})`}
-                className={generateButtonClasses(isActive, theme)}
+                className={generateButtonClasses(isActive)}
                 aria-label={`Switch to ${variantName} variant`}
                 aria-pressed={isActive}
               >
