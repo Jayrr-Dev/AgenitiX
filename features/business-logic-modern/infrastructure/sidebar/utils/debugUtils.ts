@@ -10,6 +10,10 @@
  */
 
 import { modernNodeRegistry } from "../../node-registry/nodespec-registry";
+import {
+  getSidebarStatistics,
+  validateSidebarConfiguration,
+} from "../constants";
 
 /**
  * Clear all sidebar-related localStorage data
@@ -40,10 +44,6 @@ const clearStorage = () => {
  */
 const debugConfig = () => {
   // Silent config debugging - data available for inspection
-  const {
-    getSidebarStatistics,
-    validateSidebarConfiguration,
-  } = require("../constants");
   const stats = getSidebarStatistics();
   const validation = validateSidebarConfiguration();
 
@@ -72,7 +72,7 @@ const testNodeCreation = (nodeType: string) => {
     };
   }
 
-  const metadata = getNodeMetadata(nodeType);
+  const metadata = modernNodeRegistry.get(nodeType);
   if (!metadata) {
     return {
       error: `Failed to get metadata for '${nodeType}'`,
