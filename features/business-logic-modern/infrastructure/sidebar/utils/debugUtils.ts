@@ -43,7 +43,7 @@ const debugConfig = () => {
   const {
     getSidebarStatistics,
     validateSidebarConfiguration,
-  } = require("../../../sidebar/constants");
+  } = require("../constants");
   const stats = getSidebarStatistics();
   const validation = validateSidebarConfiguration();
 
