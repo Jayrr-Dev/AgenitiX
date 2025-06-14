@@ -7,7 +7,13 @@
  * • Integrated inspector panels, history tracking, action toolbars
  * • Drag & drop, multi-selection, real-time editing
  *
- * Keywords: ReactFlow, workflow-editor, nodes, edges, drag-drop, responsive
+ * Customization:
+ * • Node movement step set to 5 pixels (snapGrid)
+ * • Background dot spacing set to 15 pixels for visual clarity
+ * • All constants are top-level for maintainability
+ * • Good contrast for background dots
+ *
+ * Keywords: ReactFlow, workflow-editor, nodes, edges, drag-drop, responsive, snapGrid, dot-spacing
  */
 
 import {
@@ -15,7 +21,6 @@ import {
   ColorMode,
   ConnectionMode,
   Controls,
-  MiniMap,
   Panel,
   PanOnScrollMode,
   ReactFlow,
@@ -29,9 +34,10 @@ import type { AgenEdge, AgenNode } from "../types/nodeData";
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/components/ActionToolbar";
 import HistoryPanel from "@/features/business-logic-modern/infrastructure/components/HistoryPanel";
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
-import type { Node, NodeProps } from "@xyflow/react";
-import type { ComponentType } from "react";
-import { useComponentClasses, useComponentTheme, ThemedMiniMap } from "@/features/business-logic-modern/infrastructure/theming/components";
+import {
+  ThemedMiniMap,
+  useComponentTheme,
+} from "@/features/business-logic-modern/infrastructure/theming/components";
 
 // Node components are now loaded via useDynamicNodeTypes hook
 // No need for direct imports here
@@ -39,9 +45,7 @@ import { useComponentClasses, useComponentTheme, ThemedMiniMap } from "@/feature
 // ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention & cleanup
 import { useUltimateFlowConnectionPrevention } from "@/components/nodes/handles/TypeSafeHandle";
 
-import { NODE_TYPE_CONFIG } from '../constants';
-import { useShallow } from "zustand/react/shallow";
-import { useDynamicNodeTypes } from '../hooks/useDynamicNodeTypes';
+import { useDynamicNodeTypes } from "../hooks/useDynamicNodeTypes";
 
 interface FlowCanvasProps {
   nodes: AgenNode[];
@@ -81,6 +85,57 @@ interface FlowCanvasProps {
   };
 }
 
+/**
+ * The grid size for node movement snapping (in pixels)
+ * @type {[number, number]}
+ */
+const SNAP_GRID: [number, number] = [2.5, 2.5];
+
+/**
+ * BACKGROUND CONFIGURATION - For ReactFlow Background component
+ *
+ * These constants control the appearance and spacing of the canvas background dots.
+ * Adjust here for global consistency and maintainability.
+ */
+/**
+ * The spacing between background dots (in pixels)
+ * @type {number}
+ */
+const BACKGROUND_DOT_GAP = 15.5;
+
+/**
+ * The size of each background dot (in pixels)
+ * @type {number}
+ */
+const BACKGROUND_DOT_SIZE = 1;
+
+/**
+ * The color of the background dots
+ * @type {string}
+ */
+const BACKGROUND_DOT_COLOR = "#aaa";
+
+/**
+ * The original background dot spacing (in pixels)
+ * @type {number}
+ * @unused
+ */
+const ORIGINAL_BACKGROUND_DOT_GAP = 12;
+
+/**
+ * The original background dot size (in pixels)
+ * @type {number}
+ * @unused
+ */
+const ORIGINAL_BACKGROUND_DOT_SIZE = 1;
+
+/**
+ * The original background dot color
+ * @type {string}
+ * @unused
+ */
+const ORIGINAL_BACKGROUND_DOT_COLOR = "#aaa";
+
 export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   nodes,
   edges,
@@ -108,7 +163,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     nodesCount: nodes?.length || 0,
     edgesCount: edges?.length || 0,
     selectedNode: selectedNode?.id,
-    selectedEdge: selectedEdge?.id
+    selectedEdge: selectedEdge?.id,
   });
 
   const { resolvedTheme } = useTheme();
@@ -121,8 +176,16 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   }, [resolvedTheme]);
 
   // Use a stable colorMode that doesn't cause hydration issues
-  const colorMode: ColorMode = mounted && resolvedTheme === "light" ? "light" : "dark";
-  console.log("🎨 Using colorMode:", colorMode, "mounted:", mounted, "resolvedTheme:", resolvedTheme);
+  const colorMode: ColorMode =
+    mounted && resolvedTheme === "light" ? "light" : "dark";
+  console.log(
+    "🎨 Using colorMode:",
+    colorMode,
+    "mounted:",
+    mounted,
+    "resolvedTheme:",
+    resolvedTheme
+  );
 
   // ============================================================================
   // ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention
@@ -138,7 +201,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   const [hasFilteredNodes, setHasFilteredNodes] = useState(false);
 
   // Get themed classes for components
-  const nodeInspectorTheme = useComponentTheme('nodeInspector');
+  const nodeInspectorTheme = useComponentTheme("nodeInspector");
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -257,12 +320,12 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       className="relative flex-1 w-full h-full"
       onDragOver={onDragOver}
       onDrop={onDrop}
-      style={{ 
+      style={{
         touchAction: "none",
         width: "100%",
         height: "100%",
         minHeight: "100vh",
-        minWidth: "100vw"
+        minWidth: "100vw",
       }}
     >
       <ReactFlow
@@ -271,10 +334,8 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        
         // Explicit dimensions to fix sizing issue
         style={{ width: "100%", height: "100%" }}
-        
         // Connection Handling
         isValidConnection={isValidConnection}
         connectionMode={ConnectionMode.Loose}
@@ -282,34 +343,30 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         onReconnect={reactFlowHandlers.onReconnect}
         onReconnectStart={reactFlowHandlers.onReconnectStart}
         onReconnectEnd={reactFlowHandlers.onReconnectEnd}
-        
         // Change Handlers
         onNodesChange={reactFlowHandlers.onNodesChange}
         onEdgesChange={reactFlowHandlers.onEdgesChange}
         onSelectionChange={reactFlowHandlers.onSelectionChange}
         onInit={reactFlowHandlers.onInit}
-        
         // Selection Configuration
         selectionMode={SelectionMode.Partial}
         selectionKeyCode={selectionKeys.selectionKeyCode}
         multiSelectionKeyCode={selectionKeys.multiSelectionKeyCode}
         deleteKeyCode={["Delete", "Backspace"]}
-        
         // Interaction Settings
         snapToGrid
+        snapGrid={SNAP_GRID}
         panOnDrag
         panOnScroll
         panOnScrollMode={PanOnScrollMode.Free}
         zoomOnScroll
         zoomOnPinch
         zoomOnDoubleClick={false}
-        
         // Node/Edge Behavior
         nodesDraggable
         nodesConnectable
         elementsSelectable
         edgesReconnectable
-        
         // Visual Settings
         fitView
         colorMode={colorMode}
@@ -330,8 +387,8 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         </Panel>
 
         {/* MINIMAP */}
-        <ThemedMiniMap 
-          position="bottom-left" 
+        <ThemedMiniMap
+          position="bottom-left"
           additionalClasses="hidden md:block"
         />
 
@@ -342,8 +399,12 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
           className={controlsClassName}
         />
 
-        {/* BACKGROUND */}
-        <Background gap={12} size={1} color="#aaa" />
+        {/* BACKGROUND - uses top-level constants for maintainability */}
+        <Background
+          gap={BACKGROUND_DOT_GAP}
+          size={BACKGROUND_DOT_SIZE}
+          color={BACKGROUND_DOT_COLOR}
+        />
 
         {/* ACTION TOOLBAR */}
         <Panel position="top-right" className="m-2">
@@ -357,7 +418,11 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         <Panel position="top-center" className="m-2">
           <button
             onClick={() => {
-              if (window.confirm('Are you sure you want to clear all local storage? This will reset your workspace and cannot be undone.')) {
+              if (
+                window.confirm(
+                  "Are you sure you want to clear all local storage? This will reset your workspace and cannot be undone."
+                )
+              ) {
                 localStorage.clear();
                 window.location.reload();
               }
