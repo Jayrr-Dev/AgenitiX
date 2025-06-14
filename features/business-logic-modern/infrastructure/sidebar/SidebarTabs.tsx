@@ -1,15 +1,18 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
-import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
-import {
-  HoveredStencil,
-  StencilInfoPanel,
-} from "./StencilInfoPanel";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useFlowStore } from "../flow-engine/stores/flowStore";
 import { NodeSearchModal } from "./components/NodeSearchModal";
 import { SearchBar } from "./components/SearchBar";
 import { SidebarTabContent } from "./components/SidebarTabContent";
 import { VARIANT_CONFIG } from "./constants";
+import { HoveredStencil, StencilInfoPanel } from "./StencilInfoPanel";
 import { NodeStencil, SidebarVariant } from "./types";
 interface SidebarTabsProps {
   variant: SidebarVariant;
@@ -39,19 +42,26 @@ export function SidebarTabs({
   onToggle,
 }: SidebarTabsProps) {
   // IMPROVED VARIANT HANDLING - More defensive programming
-  const normalizedVariant = (typeof variant === 'string' ? variant.toUpperCase() : String(variant).toUpperCase()) as SidebarVariant;
+  const normalizedVariant = (
+    typeof variant === "string"
+      ? variant.toUpperCase()
+      : String(variant).toUpperCase()
+  ) as SidebarVariant;
   const variantConfig = VARIANT_CONFIG[normalizedVariant];
-  
+
   // ROBUST FALLBACK LOGIC - Handle multiple failure cases
   const tabs = useMemo(() => {
     if (variantConfig?.tabs) {
       return variantConfig.tabs;
     }
-    
-    console.warn(`Invalid variant '${variant}' (normalized to '${normalizedVariant}') - not found in VARIANT_CONFIG. Available variants:`, Object.keys(VARIANT_CONFIG));
-    
+
+    console.warn(
+      `Invalid variant '${variant}' (normalized to '${normalizedVariant}') - not found in VARIANT_CONFIG. Available variants:`,
+      Object.keys(VARIANT_CONFIG)
+    );
+
     // Try fallback variants in order of preference
-    const fallbackVariants: SidebarVariant[] = ['A', 'B', 'C', 'D', 'E'];
+    const fallbackVariants: SidebarVariant[] = ["A", "B", "C", "D", "E"];
     for (const fallbackVariant of fallbackVariants) {
       const fallbackConfig = VARIANT_CONFIG[fallbackVariant];
       if (fallbackConfig?.tabs) {
@@ -59,14 +69,16 @@ export function SidebarTabs({
         return fallbackConfig.tabs;
       }
     }
-    
+
     // Ultimate fallback - empty array
-    console.error('No valid variant configurations found! Using empty tabs array.');
+    console.error(
+      "No valid variant configurations found! Using empty tabs array."
+    );
     return [];
   }, [variant, normalizedVariant, variantConfig]);
 
   // Removed theme hooks - using semantic tokens directly
-  
+
   // CONSOLIDATED STATE MANAGEMENT
   const [uiState, setUiState] = useState({
     hovered: null as HoveredStencil | null,
@@ -85,8 +97,8 @@ export function SidebarTabs({
   const { selectedNodeId, removeNode } = useFlowStore();
 
   // Get existing node types in custom section to prevent duplicates
-  const existingCustomNodeTypes = useMemo(() => 
-    customNodes.map((node) => node.nodeType), 
+  const existingCustomNodeTypes = useMemo(
+    () => customNodes.map((node) => node.nodeType),
     [customNodes]
   );
 
@@ -110,26 +122,26 @@ export function SidebarTabs({
 
   // HELPER FUNCTIONS FOR UI STATE
   const setHovered = useCallback((hovered: HoveredStencil | null) => {
-    setUiState(prev => ({ ...prev, hovered }));
+    setUiState((prev) => ({ ...prev, hovered }));
   }, []);
 
   const setIsSearchModalOpen = useCallback((isSearchModalOpen: boolean) => {
-    setUiState(prev => ({ ...prev, isSearchModalOpen }));
+    setUiState((prev) => ({ ...prev, isSearchModalOpen }));
   }, []);
 
   const setIsSearchVisible = useCallback((isSearchVisible: boolean) => {
-    setUiState(prev => ({ ...prev, isSearchVisible }));
+    setUiState((prev) => ({ ...prev, isSearchVisible }));
   }, []);
 
   // IMPROVED KEY THROTTLING LOGIC
   const isKeyThrottled = useCallback((key: string): boolean => {
     const now = Date.now();
     const lastTime = keyThrottleRef.current.get(key);
-    
-    if (lastTime && (now - lastTime) < KEY_REPEAT_COOLDOWN) {
+
+    if (lastTime && now - lastTime < KEY_REPEAT_COOLDOWN) {
       return true; // Key is throttled
     }
-    
+
     keyThrottleRef.current.set(key, now);
     return false; // Key is not throttled
   }, []);
@@ -139,10 +151,33 @@ export function SidebarTabs({
     const handleKeyDown = (e: KeyboardEvent) => {
       // PREVENT BROWSER KEY REPEAT for node creation keys (except Alt+Q)
       if (e.repeat) {
-        const nodeCreationKeys = ["q", "w", "e", "r", "t", "a", "s", "d", "f", "g", "z", "x", "c", "v", "b"];
+        const nodeCreationKeys = [
+          "q",
+          "w",
+          "e",
+          "r",
+          "t",
+          "a",
+          "s",
+          "d",
+          "f",
+          "g",
+          "z",
+          "x",
+          "c",
+          "v",
+          "b",
+        ];
         const isAltQBackspace = e.altKey && e.key.toLowerCase() === "q";
-        
-        if (nodeCreationKeys.includes(e.key.toLowerCase()) && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && !isAltQBackspace) {
+
+        if (
+          nodeCreationKeys.includes(e.key.toLowerCase()) &&
+          !e.ctrlKey &&
+          !e.metaKey &&
+          !e.altKey &&
+          !e.shiftKey &&
+          !isAltQBackspace
+        ) {
           e.preventDefault();
           return;
         }
@@ -151,7 +186,7 @@ export function SidebarTabs({
       // SIMPLIFIED THROTTLING - Only for non-Alt+Q keys
       const currentKey = e.key.toLowerCase();
       const isAltQBackspace = e.altKey && currentKey === "q";
-      
+
       if (!isAltQBackspace && isKeyThrottled(currentKey)) {
         e.preventDefault();
         return;
@@ -159,11 +194,11 @@ export function SidebarTabs({
 
       // Check if user is typing in an input field
       const activeElement = document.activeElement;
-      const isTyping = activeElement && (
-        activeElement.tagName === "INPUT" ||
-        activeElement.tagName === "TEXTAREA" ||
-        activeElement.getAttribute("contenteditable") === "true"
-      );
+      const isTyping =
+        activeElement &&
+        (activeElement.tagName === "INPUT" ||
+          activeElement.tagName === "TEXTAREA" ||
+          activeElement.getAttribute("contenteditable") === "true");
 
       // If typing, only allow system shortcuts
       if (isTyping && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
@@ -174,7 +209,11 @@ export function SidebarTabs({
       if (e.altKey && e.key >= "1" && e.key <= "5") {
         e.preventDefault();
         const variantMap: Record<string, SidebarVariant> = {
-          "1": "A", "2": "B", "3": "C", "4": "D", "5": "E",
+          "1": "A",
+          "2": "B",
+          "3": "C",
+          "4": "D",
+          "5": "E",
         };
         const targetVariant = variantMap[e.key];
         if (targetVariant) {
@@ -198,13 +237,19 @@ export function SidebarTabs({
       }
 
       // Skip QWERTY shortcuts with modifiers or when search is visible
-      if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || uiState.isSearchVisible) {
+      if (
+        e.ctrlKey ||
+        e.metaKey ||
+        e.shiftKey ||
+        e.altKey ||
+        uiState.isSearchVisible
+      ) {
         return;
       }
 
       // Node grid shortcuts
       const isCustomTab = variant === "E" && activeTab === "custom";
-      
+
       if (isCustomTab) {
         // Custom tab: q = add node, w-b for positions
         if (currentKey === "q") {
@@ -214,9 +259,20 @@ export function SidebarTabs({
         }
 
         const customGridKeyMap: Record<string, number> = {
-          w: 0, e: 1, r: 2, t: 3,
-          a: 4, s: 5, d: 6, f: 7, g: 8,
-          z: 9, x: 10, c: 11, v: 12, b: 13,
+          w: 0,
+          e: 1,
+          r: 2,
+          t: 3,
+          a: 4,
+          s: 5,
+          d: 6,
+          f: 7,
+          g: 8,
+          z: 9,
+          x: 10,
+          c: 11,
+          v: 12,
+          b: 13,
         };
 
         const position = customGridKeyMap[currentKey];
@@ -227,9 +283,21 @@ export function SidebarTabs({
       } else {
         // Regular tabs: full QWERTY grid
         const gridKeyMap: Record<string, number> = {
-          q: 0, w: 1, e: 2, r: 3, t: 4,
-          a: 5, s: 6, d: 7, f: 8, g: 9,
-          z: 10, x: 11, c: 12, v: 13, b: 14,
+          q: 0,
+          w: 1,
+          e: 2,
+          r: 3,
+          t: 4,
+          a: 5,
+          s: 6,
+          d: 7,
+          f: 8,
+          g: 9,
+          z: 10,
+          x: 11,
+          c: 12,
+          v: 13,
+          b: 14,
         };
 
         const position = gridKeyMap[currentKey];
@@ -294,7 +362,7 @@ export function SidebarTabs({
           </button>
         </TabsList>
 
-        <div className="max-h-[150px] sm:max-h-[230px] overflow-y-auto scrollbar pb-2 border-1 bg-infra-sidebar">
+        <div className="max-h-[150px] sm:max-h-[230px] overflow-y-auto scrollbar pb-2 border-0 bg-infra-sidebar">
           {tabs.map(({ key }) => {
             const isCustomTab = variant === "E" && key === "custom";
 

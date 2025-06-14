@@ -24,6 +24,8 @@ import {
   getGraphStats,
   getPathToCursor,
   loadGraph,
+  pruneGraphToLimit,
+  removeNodeAndChildren,
   saveGraph,
 } from "./graphHelpers";
 import { FlowState, HistoryGraph, HistoryNode } from "./historyGraph";
@@ -243,7 +245,8 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
   const finalConfig = useMemo(
     () => ({
-      maxHistorySize: config.maxHistorySize ?? 100,
+      // Default maximum history size is 300 unless overridden via config
+      maxHistorySize: config.maxHistorySize ?? 300,
       positionDebounceMs: config.positionDebounceMs ?? POSITION_DEBOUNCE_DELAY,
       actionSeparatorMs: config.actionSeparatorMs ?? ACTION_SEPARATOR_DELAY,
       enableViewportTracking: config.enableViewportTracking ?? false,
@@ -356,7 +359,9 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
       // Safety check: if cursor points to non-existent node, reset to root
       if (!cursorNode) {
-        console.warn(`⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in push, resetting to root`);
+        console.warn(
+          `⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in push, resetting to root`
+        );
         graph.cursor = graph.root;
         const rootNode = graph.nodes[graph.root];
         saveGraph(graph);
@@ -370,6 +375,10 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
           metadata
         );
         graph.cursor = newId;
+
+        // Enforce maximum history size
+        pruneGraphToLimit(graph, finalConfig.maxHistorySize);
+
         saveGraph(graph);
         lastActionTimestampRef.current = Date.now();
         const path = getPathToCursor(graph);
@@ -403,6 +412,11 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
       );
 
       graph.cursor = newId;
+
+      // Enforce maximum history size via pruning
+      pruneGraphToLimit(graph, finalConfig.maxHistorySize);
+
+      // Persist changes after pruning
       saveGraph(graph);
       lastActionTimestampRef.current = Date.now();
 
@@ -414,7 +428,64 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
       const path = getPathToCursor(graph);
       onHistoryChange?.(path, path.length - 1);
     },
-    [onHistoryChange, getGraph]
+    [onHistoryChange, getGraph, finalConfig.maxHistorySize]
+  );
+
+  // ============================================================================
+  // HISTORY MANAGEMENT
+  // ============================================================================
+
+  const clearHistory = useCallback(() => {
+    if (DEBUG_MODE) {
+      console.log("🗑️ [UndoRedo] Clearing history");
+    }
+
+    const currentState = captureCurrentState();
+    const newGraph = createRootGraph(currentState);
+    graphRef.current = newGraph;
+    saveGraph(newGraph);
+
+    lastCapturedStateRef.current = currentState;
+    lastActionTimestampRef.current = Date.now();
+
+    const path = getPathToCursor(newGraph);
+    onHistoryChange?.(path, path.length - 1);
+  }, [captureCurrentState, onHistoryChange]);
+
+  const removeSelectedNode = useCallback(
+    (nodeId?: string) => {
+      const graph = getGraph();
+      const targetNodeId = nodeId || graph.cursor;
+
+      // Cannot remove root node
+      if (targetNodeId === graph.root) {
+        console.warn("[UndoRedo] Cannot remove root node");
+        return false;
+      }
+
+      const success = removeNodeAndChildren(graph, targetNodeId);
+      if (success) {
+        saveGraph(graph);
+
+        // Apply the state that the cursor now points to
+        const currentNode = graph.nodes[graph.cursor];
+        if (currentNode) {
+          applyState(currentNode.after, "remove node and children");
+        }
+
+        const path = getPathToCursor(graph);
+        onHistoryChange?.(path, path.length - 1);
+
+        if (DEBUG_MODE) {
+          console.log(
+            `🗑️ [UndoRedo] Removed node ${targetNodeId} and its children`
+          );
+        }
+      }
+
+      return success;
+    },
+    [getGraph, applyState, onHistoryChange]
   );
 
   // ============================================================================
@@ -427,7 +498,9 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
     // Safety check: if cursor points to non-existent node, reset to root
     if (!current) {
-      console.warn(`⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in undo, resetting to root`);
+      console.warn(
+        `⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in undo, resetting to root`
+      );
       graph.cursor = graph.root;
       saveGraph(graph);
       return false;
@@ -462,7 +535,9 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
       // Safety check: if cursor points to non-existent node, reset to root
       if (!current) {
-        console.warn(`⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in redo, resetting to root`);
+        console.warn(
+          `⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in redo, resetting to root`
+        );
         graph.cursor = graph.root;
         saveGraph(graph);
         return false;
@@ -532,19 +607,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     [recordAction]
   );
 
-  const clearHistory = useCallback(() => {
-    const graph = getGraph();
-    graphRef.current = createRootGraph(captureCurrentState());
-    lastCapturedStateRef.current = null;
-    lastActionTimestampRef.current = 0;
-    saveGraph(graphRef.current);
-    onHistoryChange?.([], -1);
-
-    if (DEBUG_MODE) {
-      console.log("�� [UndoRedo] History cleared");
-    }
-  }, [captureCurrentState, onHistoryChange, getGraph]);
-
   const getHistory = useCallback(() => {
     const graph = getGraph();
     const path = getPathToCursor(graph);
@@ -552,11 +614,13 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
     // Safety check: if cursor points to non-existent node, reset to root
     if (!current) {
-      console.warn(`⚠️ [UndoRedo] Invalid cursor "${graph.cursor}", resetting to root`);
+      console.warn(
+        `⚠️ [UndoRedo] Invalid cursor "${graph.cursor}", resetting to root`
+      );
       graph.cursor = graph.root;
       const rootNode = graph.nodes[graph.root];
       saveGraph(graph);
-      
+
       return {
         entries: [rootNode],
         currentIndex: 0,
@@ -583,15 +647,17 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
   const getBranchOptions = useCallback((): string[] => {
     const graph = getGraph();
     const current = graph.nodes[graph.cursor];
-    
+
     // Safety check: if cursor points to non-existent node, reset to root
     if (!current) {
-      console.warn(`⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in getBranchOptions, resetting to root`);
+      console.warn(
+        `⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in getBranchOptions, resetting to root`
+      );
       graph.cursor = graph.root;
       saveGraph(graph);
       return [...graph.nodes[graph.root].childrenIds];
     }
-    
+
     return [...current.childrenIds];
   }, [getGraph]);
 
@@ -792,9 +858,15 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
       recordAction,
       recordActionDebounced: recordAction, // Same as recordAction now
       clearHistory,
+      removeSelectedNode,
       getHistory,
       // Additional graph-specific APIs
       getBranchOptions,
+      getFullGraph: () => ({
+        nodes: graphRef.current.nodes,
+        root: graphRef.current.root,
+        cursor: graphRef.current.cursor,
+      }),
       redoSpecificBranch: redo, // Alias for clarity
     };
 
@@ -824,6 +896,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     redo,
     recordAction,
     clearHistory,
+    removeSelectedNode,
     getHistory,
     getBranchOptions,
     applyState,

@@ -31,6 +31,7 @@ export interface UndoRedoContextType {
     metadata?: Record<string, unknown>
   ) => void;
   clearHistory: () => void;
+  removeSelectedNode: (nodeId?: string) => boolean;
   getHistory: () => {
     entries: any[];
     currentIndex: number;
@@ -41,6 +42,11 @@ export interface UndoRedoContextType {
     graphStats?: any;
     currentNode?: any;
   };
+  getFullGraph: () => {
+    nodes: Record<string, any>;
+    root: string;
+    cursor: string;
+  } | null;
 }
 
 // CONTEXT
@@ -89,6 +95,10 @@ export const UndoRedoProvider: React.FC<UndoRedoProviderProps> = ({
     managerRef.current?.clearHistory();
   }, []);
 
+  const removeSelectedNode = useCallback((nodeId?: string) => {
+    return managerRef.current?.removeSelectedNode?.(nodeId) || false;
+  }, []);
+
   const getHistory = useCallback(() => {
     return (
       managerRef.current?.getHistory() || {
@@ -100,6 +110,10 @@ export const UndoRedoProvider: React.FC<UndoRedoProviderProps> = ({
     );
   }, []);
 
+  const getFullGraph = useCallback(() => {
+    return managerRef.current?.getFullGraph?.() || null;
+  }, []);
+
   const contextValue: UndoRedoContextType & {
     registerManager: (manager: UndoRedoContextType) => void;
   } = {
@@ -108,7 +122,9 @@ export const UndoRedoProvider: React.FC<UndoRedoProviderProps> = ({
     recordAction,
     recordActionDebounced,
     clearHistory,
+    removeSelectedNode,
     getHistory,
+    getFullGraph,
     registerManager,
   };
 
@@ -131,12 +147,14 @@ export const useUndoRedo = (): UndoRedoContextType => {
       recordAction: () => {},
       recordActionDebounced: () => {},
       clearHistory: () => {},
+      removeSelectedNode: () => false,
       getHistory: () => ({
         entries: [],
         currentIndex: -1,
         canUndo: false,
         canRedo: false,
       }),
+      getFullGraph: () => null,
     };
   }
 

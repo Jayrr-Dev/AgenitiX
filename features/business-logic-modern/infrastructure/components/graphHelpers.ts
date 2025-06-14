@@ -167,3 +167,123 @@ export const getGraphStats = (graph: HistoryGraph) => {
     currentDepth: maxDepth,
   };
 };
+
+// PRUNE GRAPH TO LIMIT SIZE
+// Removes oldest states by promoting subsequent children to root until
+// the total number of nodes is within the specified limit.
+// This follows a FIFO approach along the chronological order of creation,
+// effectively "moving the initial state forward".
+export const pruneGraphToLimit = (
+  graph: HistoryGraph,
+  maxSize: number
+): void => {
+  // Safety checks
+  if (maxSize <= 0) return;
+
+  // Continue pruning until we meet the size requirement
+  while (Object.keys(graph.nodes).length > maxSize) {
+    const currentRoot = graph.nodes[graph.root];
+    if (!currentRoot) {
+      // Should not happen, but break to avoid infinite loop
+      console.warn(
+        "[GraphHelpers] pruneGraphToLimit: root node missing – aborting prune"
+      );
+      break;
+    }
+
+    // If the current root has no children we cannot prune further safely
+    if (currentRoot.childrenIds.length === 0) {
+      console.warn(
+        "[GraphHelpers] pruneGraphToLimit: reached leaf root – cannot prune further"
+      );
+      break;
+    }
+
+    // Promote the FIRST child to become the new root (chronologically oldest)
+    const [newRootId, ...remainingChildren] = currentRoot.childrenIds;
+
+    // Update new root parent reference
+    const newRootNode = graph.nodes[newRootId];
+    if (newRootNode) {
+      newRootNode.parentId = null;
+    }
+
+    // All siblings of the new root also become top-level nodes (parentId = null)
+    remainingChildren.forEach((childId) => {
+      const childNode = graph.nodes[childId];
+      if (childNode) {
+        childNode.parentId = null;
+      }
+    });
+
+    // Remove the old root
+    delete graph.nodes[graph.root];
+
+    // Re-assign graph.root
+    graph.root = newRootId;
+
+    // If cursor pointed to the removed root, update it to newRootId
+    if (graph.cursor === currentRoot.id) {
+      graph.cursor = newRootId;
+    }
+  }
+};
+
+// REMOVE NODE AND ALL ITS CHILDREN
+// Removes a specific node and all its descendants from the history graph.
+// Updates parent references and cursor position if necessary.
+export const removeNodeAndChildren = (
+  graph: HistoryGraph,
+  nodeId: NodeId
+): boolean => {
+  const nodeToRemove = graph.nodes[nodeId];
+  if (!nodeToRemove) {
+    console.warn(
+      `[GraphHelpers] removeNodeAndChildren: node ${nodeId} not found`
+    );
+    return false;
+  }
+
+  // Cannot remove the root node
+  if (nodeId === graph.root) {
+    console.warn(
+      "[GraphHelpers] removeNodeAndChildren: cannot remove root node"
+    );
+    return false;
+  }
+
+  // Collect all nodes to remove (node + all descendants)
+  const nodesToRemove = new Set<NodeId>();
+  const collectDescendants = (id: NodeId) => {
+    nodesToRemove.add(id);
+    const node = graph.nodes[id];
+    if (node) {
+      node.childrenIds.forEach(collectDescendants);
+    }
+  };
+  collectDescendants(nodeId);
+
+  // Update cursor if it points to a node being removed
+  if (nodesToRemove.has(graph.cursor)) {
+    // Move cursor to the parent of the removed node
+    graph.cursor = nodeToRemove.parentId || graph.root;
+  }
+
+  // Remove the node from its parent's children list
+  if (nodeToRemove.parentId) {
+    const parent = graph.nodes[nodeToRemove.parentId];
+    if (parent) {
+      parent.childrenIds = parent.childrenIds.filter((id) => id !== nodeId);
+    }
+  }
+
+  // Remove all collected nodes from the graph
+  nodesToRemove.forEach((id) => {
+    delete graph.nodes[id];
+  });
+
+  console.log(
+    `[GraphHelpers] Removed ${nodesToRemove.size} nodes from history`
+  );
+  return true;
+};

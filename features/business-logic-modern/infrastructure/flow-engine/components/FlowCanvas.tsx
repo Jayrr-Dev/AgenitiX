@@ -34,9 +34,7 @@ import type { AgenEdge, AgenNode } from "../types/nodeData";
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/components/ActionToolbar";
 import HistoryPanel from "@/features/business-logic-modern/infrastructure/components/HistoryPanel";
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
-import type { Node, NodeProps } from "@xyflow/react";
-import type { ComponentType } from "react";
-import { useComponentClasses, ThemedMiniMap } from "@/features/business-logic-modern/infrastructure/theming/components";
+import { ThemedMiniMap } from "@/features/business-logic-modern/infrastructure/theming/components";
 
 // Node components are now loaded via useDynamicNodeTypes hook
 // No need for direct imports here
@@ -200,7 +198,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   const [hasFilteredNodes, setHasFilteredNodes] = useState(false);
 
   // Get themed classes for components
-  const nodeInspectorTheme = useComponentTheme("nodeInspector");
+  // const nodeInspectorTheme = useComponentTheme("nodeInspector");
   // Removed useComponentTheme - now using semantic tokens directly
 
   useEffect(() => {
@@ -387,13 +385,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         </Panel>
 
         {/* MINIMAP */}
-        <ThemedMiniMap
-          position="bottom-left"
-          additionalClasses="hidden md:block"
-        <ThemedMiniMap
-          position="bottom-left"
-          className="hidden md:block"
-        />
+        <ThemedMiniMap position="bottom-left" className="hidden md:block" />
 
         {/* CONTROLS */}
         <Controls
@@ -403,7 +395,11 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         />
 
         {/* BACKGROUND */}
-        <Background gap={12} size={1} color="hsl(var(--node-view-text-secondary))" />
+        <Background
+          gap={12}
+          size={1}
+          color="hsl(var(--node-view-text-secondary))"
+        />
 
         {/* ACTION TOOLBAR */}
         <Panel position="top-right" className="m-2">
