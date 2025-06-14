@@ -1,0 +1,150 @@
+/* =====================================================================
+   _INFRA.CSS — INFRASTRUCTURE-SPECIFIC THEME & UTILITIES
+   =====================================================================
+   This file extends the global theme with tokens and utilities
+   for styling the main application "chrome" components like the
+   sidebar, inspector, minimap, and panels.
+
+   • Theme extensions for all major UI components and their states
+   • Theme extensions for action statuses used in the history panel
+   • Utility classes for applying infra-specific backgrounds, borders,
+     and text colors.
+
+   Keywords: infra, theme, tokens, utilities, sidebar, inspector
+   ===================================================================== */
+
+@theme {
+  /* Infrastructure Component Tokens */ 
+  --infra-inspector-bg: var(--card); /* #141414 */
+  --infra-inspector-bg-hover: var(--accent); /* #3d3d3d */
+  --infra-inspector-bg-active: var(--muted); /* #2e2e2e */
+  --infra-inspector-border: var(--border); /* #2e2e2e */
+  --infra-inspector-border-hover: var(--ring); /* #d4d4d4 */
+  --infra-inspector-text: var(--card-foreground); /* #fafafa */
+  --infra-inspector-text-secondary: var(--muted-foreground); /* #b3b3b3 */
+
+  --infra-sidebar-bg: var(--card); /* #141414 */
+  --infra-sidebar-bg-hover: var(--accent); /* #3d3d3d */
+  --infra-sidebar-bg-active: var(--card); /* #141414 */
+  --infra-sidebar-border: var(--border); /* #2e2e2e */
+  --infra-sidebar-border-hover: var(--ring); /* #d4d4d4 */
+  --infra-sidebar-text: var(--muted-foreground); /* #b3b3b3 */
+  --infra-sidebar-text-secondary: var(--muted-foreground); /* #b3b3b3 */
+
+  --infra-minimap-bg: var(--background); /* #0f0f0f */
+  --infra-minimap-bg-hover: var(--muted); /* #2e2e2e */
+  --infra-minimap-border: var(--border); /* #2e2e2e */
+  --infra-minimap-border-hover: var(--ring); /* #d4d4d4 */
+  --infra-minimap-text: var(--foreground); /* #fafafa */
+  --infra-minimap-mask: 0 0% 0% / 0.1; /* #0f0f0f */
+
+  --infra-history-bg: var(--card); /* #141414 */ 
+  --infra-history-bg-hover: var(--accent); /* #3d3d3d */
+  --infra-history-border: var(--border); /* #2e2e2e */
+  --infra-history-border-hover: var(--ring); /* #d4d4d4 */
+  --infra-history-text: var(--card-foreground); /* #fafafa */
+
+  --infra-toolbar-bg: var(--card); /* #141414 */
+  --infra-toolbar-bg-hover: var(--accent); /* #3d3d3d */
+  --infra-toolbar-border: var(--border); /* #2e2e2e */
+  --infra-toolbar-border-hover: var(--ring); /* #d4d4d4 */
+  --infra-toolbar-text: var(--card-foreground); /* #fafafa */
+
+  --infra-panel-bg: var(--muted); /* #2e2e2e */
+  --infra-panel-bg-hover: var(--accent); /* #3d3d3d */
+  --infra-panel-border: var(--border); /* #2e2e2e */
+  --infra-panel-border-hover: var(--ring); /* #d4d4d4 */
+  --infra-panel-text: var(--muted-foreground); /* #b3b3b3 */
+
+  /* Action Status Tokens for HistoryPanel */
+  --status-node-add-bg: 120 100% 95%;        /* #f0fff4 */
+  --status-node-add-border: 120 100% 80%;    /* #66ff66 */
+  --status-node-delete-bg: 0 100% 95%;       /* #ffcccc */
+  --status-node-delete-border: 0 100% 80%;   /* #ff6666 */
+  --status-node-update-bg: 210 100% 95%;     /* #ccf5ff */
+  --status-node-update-border: 210 100% 80%; /* #66ccff */
+  --status-edge-add-bg: 120 80% 95%;         /* #eff8ef */
+  --status-edge-add-border: 120 80% 80%;     /* #99e699 */
+  --status-edge-delete-bg: 0 80% 95%;        /* #f8efef */
+  --status-edge-delete-border: 0 80% 80%;    /* #e69999 */
+  --status-bulk-update-bg: 45 100% 95%;      /* #fffacc */
+  --status-bulk-update-border: 45 100% 80%;  /* #ffee66 */
+  --status-bulk-delete-bg: 0 80% 95%;        /* #f8efef */
+  --status-bulk-delete-border: 0 80% 80%;    /* #e69999 */
+  --status-node-move-bg: 210 100% 95%;       /* #ccf5ff */
+  --status-node-move-border: 210 100% 80%;   /* #66ccff */
+  --status-paste-bg: 280 100% 95%;           /* #f5ccff */
+  --status-paste-border: 280 100% 80%;       /* #cc66ff */
+  --status-duplicate-bg: 240 100% 95%;       /* #d9ccff */
+  --status-duplicate-border: 240 100% 80%;   /* #9966ff */
+  --status-special-bg: 0 0% 95%;             /* #f2f2f2 */
+  --status-special-border: 0 0% 80%;         /* #cccccc */
+}
+
+/* Infrastructure Component Utilities */
+@utility bg-infra-inspector { background-color: hsl(var(--infra-inspector-bg)); } /* #141414 */
+@utility bg-infra-inspector-hover { background-color: hsl(var(--infra-inspector-bg-hover)); } /* #3d3d3d */
+@utility bg-infra-inspector-active { background-color: hsl(var(--infra-inspector-bg-active)); } /* #2e2e2e */
+@utility border-infra-inspector { border-color: hsl(var(--infra-inspector-border)); } /* #2e2e2e */
+@utility border-infra-inspector-hover { border-color: hsl(var(--infra-inspector-border-hover)); } /* #d4d4d4 */
+@utility text-infra-inspector { color: hsl(var(--infra-inspector-text)); } /* #fafafa */
+@utility text-infra-inspector-secondary { color: hsl(var(--infra-inspector-text-secondary)); } /* #b3b3b3 */
+@utility bg-infra-sidebar { background-color: hsl(var(--infra-sidebar-bg)); } /* #141414 */       
+@utility bg-infra-sidebar-hover { background-color: hsl(var(--infra-sidebar-bg-hover)); } /* #3d3d3d */
+@utility bg-infra-sidebar-active { background-color: hsl(var(--infra-sidebar-bg-active)); } /* #2e2e2e */
+@utility border-infra-sidebar { border-color: hsl(var(--infra-sidebar-border)); } /* #2e2e2e */
+@utility border-infra-sidebar-hover { border-color: hsl(var(--infra-sidebar-border-hover)); } /* #d4d4d4 */
+@utility border-infra-sidebar-border-hover { border-color: hsl(var(--infra-sidebar-border-hover)); } /* #d4d4d4 */
+@utility text-infra-sidebar { color: hsl(var(--infra-sidebar-text)); } /* #fafafa */
+@utility text-infra-sidebar-secondary { color: hsl(var(--infra-sidebar-text-secondary)); } /* #b3b3b3 */
+@utility text-infra-sidebar-text { color: hsl(var(--infra-sidebar-text)); } /* #fafafa */
+@utility text-infra-sidebar-text-secondary { color: hsl(var(--infra-sidebar-text-secondary)); } /* #b3b3b3 */
+@utility text-infra-sidebar-text-primary { color: hsl(var(--infra-sidebar-text)); } /* #fafafa */
+
+@utility bg-infra-minimap { background-color: hsl(var(--infra-minimap-bg)); } /* #141414 */
+@utility bg-infra-minimap-hover { background-color: hsl(var(--infra-minimap-bg-hover)); } /* #3d3d3d */
+@utility border-infra-minimap { border-color: hsl(var(--infra-minimap-border)); } /* #2e2e2e */
+@utility border-infra-minimap-hover { border-color: hsl(var(--infra-minimap-border-hover)); } /* #d4d4d4 */
+@utility text-infra-minimap { color: hsl(var(--infra-minimap-text)); } /* #fafafa */
+
+@utility bg-infra-history { background-color: hsl(var(--infra-history-bg)); } /* #141414 */
+@utility bg-infra-history-hover { background-color: hsl(var(--infra-history-bg-hover)); } /* #3d3d3d */
+@utility border-infra-history { border-color: hsl(var(--infra-history-border)); } /* #2e2e2e */
+@utility border-infra-history-hover { border-color: hsl(var(--infra-history-border-hover)); } /* #d4d4d4 */
+@utility text-infra-history { color: hsl(var(--infra-history-text)); } /* #fafafa */
+
+@utility bg-infra-toolbar { background-color: hsl(var(--infra-toolbar-bg)); } /* #141414 */
+@utility bg-infra-toolbar-hover { background-color: hsl(var(--infra-toolbar-bg-hover)); } /* #3d3d3d */
+@utility border-infra-toolbar { border-color: hsl(var(--infra-toolbar-border)); } /* #2e2e2e */
+@utility border-infra-toolbar-hover { border-color: hsl(var(--infra-toolbar-border-hover)); } /* #d4d4d4 */
+@utility text-infra-toolbar { color: hsl(var(--infra-toolbar-text)); } /* #fafafa */
+
+@utility bg-infra-panel { background-color: hsl(var(--infra-panel-bg)); } /* #2e2e2e */
+@utility bg-infra-panel-hover { background-color: hsl(var(--infra-panel-bg-hover)); } /* #3d3d3d */
+@utility border-infra-panel { border-color: hsl(var(--infra-panel-border)); } /* #2e2e2e */
+@utility border-infra-panel-hover { border-color: hsl(var(--infra-panel-border-hover)); } /* #d4d4d4 */
+@utility text-infra-panel { color: hsl(var(--infra-panel-text)); } /* #b3b3b3 */
+
+/* Action Status Utilities */
+@utility bg-status-node-add { background-color: hsl(var(--status-node-add-bg)); } /* #f0fff4 */
+@utility border-status-node-add { border-color: hsl(var(--status-node-add-border)); } /* #66ff66 */
+@utility bg-status-node-delete { background-color: hsl(var(--status-node-delete-bg)); } /* #ffcccc */
+@utility border-status-node-delete { border-color: hsl(var(--status-node-delete-border)); } /* #ff6666 */
+@utility bg-status-node-update { background-color: hsl(var(--status-node-update-bg)); } /* #ccf5ff */
+@utility border-status-node-update { border-color: hsl(var(--status-node-update-border)); } /* #66ccff */
+@utility bg-status-edge-add { background-color: hsl(var(--status-edge-add-bg)); } /* #eff8ef */
+@utility border-status-edge-add { border-color: hsl(var(--status-edge-add-border)); } /* #99e699 */
+@utility bg-status-edge-delete { background-color: hsl(var(--status-edge-delete-bg)); } /* #f8efef */
+@utility border-status-edge-delete { border-color: hsl(var(--status-edge-delete-border)); } /* #e69999 */
+@utility bg-status-bulk-update { background-color: hsl(var(--status-bulk-update-bg)); } /* #fffacc */
+@utility border-status-bulk-update { border-color: hsl(var(--status-bulk-update-border)); } /* #ffee66 */
+@utility bg-status-bulk-delete { background-color: hsl(var(--status-bulk-delete-bg)); } /* #f8efef */
+@utility border-status-bulk-delete { border-color: hsl(var(--status-bulk-delete-border)); } /* #e69999 */
+@utility bg-status-node-move { background-color: hsl(var(--status-node-move-bg)); } /* #ccf5ff */
+@utility border-status-node-move { border-color: hsl(var(--status-node-move-border)); } /* #66ccff */
+@utility bg-status-paste { background-color: hsl(var(--status-paste-bg)); } /* #f5ccff */
+@utility border-status-paste { border-color: hsl(var(--status-paste-border)); } /* #cc66ff */
+@utility bg-status-duplicate { background-color: hsl(var(--status-duplicate-bg)); } /* #d9ccff */
+@utility border-status-duplicate { border-color: hsl(var(--status-duplicate-border)); } /* #9966ff */
+@utility bg-status-special { background-color: hsl(var(--status-special-bg)); } /* #f2f2f2 */
+@utility border-status-special { border-color: hsl(var(--status-special-border)); } /* #cccccc */

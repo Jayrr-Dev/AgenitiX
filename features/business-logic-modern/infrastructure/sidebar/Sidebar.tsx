@@ -50,7 +50,7 @@ const validateNode = (nodeType: string) => ({
 
 import { SidebarTabs } from "./SidebarTabs";
 import { ToggleButton } from "./ToggleButton";
-import { SidebarVariantSelector as VariantSelector } from "./SidebarVariantSelector";
+import { VariantSelector } from "./SidebarVariantSelector";
 import { useSidebarState } from "./hooks/useSidebarState";
 
 // REGISTRY ENHANCEMENTS - Additional utility imports
@@ -300,15 +300,26 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
     // ============================================================================
 
     return (
-      <div className={`${className} ${enableDebug ? "debug-mode" : ""}`}>
+      <div className={`
+        bg-infra-sidebar 
+        border-infra-sidebar 
+        text-infra-sidebar 
+        border-r 
+        transition-all 
+        duration-300 
+        ease-in-out
+        ${isHidden ? 'w-0 overflow-hidden' : 'w-80'} 
+        ${className} 
+        ${enableDebug ? "debug-mode" : ""}
+      `}>
         {/* REGISTRY DEBUG PANEL - Development Only */}
         {enableDebug && process.env.NODE_ENV === "development" && (
-          <div className="bg-gray-100 dark:bg-gray-800 p-2 text-xs border-b">
-            <div className="text-blue-600 dark:text-blue-400 font-semibold mb-1">
+          <div className="bg-infra-sidebar-hover border-infra-sidebar-hover p-2 text-xs border-b">
+            <div className="text-infra-sidebar font-semibold mb-1">
               🔧 Registry Integration
             </div>
             {registryStats && (
-              <div className="space-y-1">
+              <div className="space-y-1 text-infra-sidebar-secondary">
                 <div>Total Nodes: {registryStats.totalNodes}</div>
                 <div>
                   Categories:{" "}
@@ -320,17 +331,17 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
               </div>
             )}
             {validationResults && !validationResults.isValid && (
-              <div className="text-red-600 dark:text-red-400 mt-1">
+              <div className="text-error mt-1">
                 ⚠️ {validationResults.errors.length} validation errors
               </div>
             )}
           </div>
         )}
 
-                        <VariantSelector
-          variants={['A', 'B', 'C', 'D', 'E']}
-          selectedVariant={variant}
+        <VariantSelector
+          variant={variant}
           onVariantChange={setVariant}
+          isHidden={isHidden}
         />
 
         <SidebarTabs

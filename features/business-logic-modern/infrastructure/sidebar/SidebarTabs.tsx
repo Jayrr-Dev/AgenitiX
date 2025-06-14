@@ -8,7 +8,7 @@ import {
 import { useFlowStore } from "../flow-engine/stores/flowStore";
 import { NodeSearchModal } from "./components/NodeSearchModal";
 import { SearchBar } from "./components/SearchBar";
-import { TabContent } from "./components/TabContent";
+import { SidebarTabContent } from "./components/SidebarTabContent";
 import { VARIANT_CONFIG } from "./constants";
 import { NodeStencil, SidebarVariant } from "./types";
 interface SidebarTabsProps {
@@ -263,7 +263,7 @@ export function SidebarTabs({
 
   return (
     <Tabs value={activeTab} onValueChange={onTabChange}>
-      <aside className="absolute bottom-4 right-4 z-30 h-[200px] sm:h-[280px] w-full sm:w-[400px] lg:w-[450px] pl-3 sm:pl-6 pr-3 sm:pr-5 pt-2 rounded-lg bg-infra-sidebar border border-infra-sidebar shadow-lg">
+      <aside className="absolute bottom-4 right-4 z-30 h-[200px] sm:h-[280px] w-full sm:w-[400px] lg:w-[450px] pl-3 sm:pl-6 pr-3 sm:pr-5 pt-2 rounded-lg bg-infra-sidebar border border-infra-sidebar shadow-lg transition-all duration-300 ease-in-out">
         <StencilInfoPanel stencil={uiState.hovered} />
 
         <TabsList className="bg-infra-sidebar items-stretch justify-between w-full gap-1 border-0 border-infra-sidebar">
@@ -275,7 +275,7 @@ export function SidebarTabs({
                 key={key}
                 value={key}
                 title={`${label} (${shortcutNumber})`}
-                className="text-infra-sidebar-text hover:bg-infra-sidebar-hover data-[state=active]:bg-infra-sidebar-active data-[state=active]:text-infra-sidebar-text transition-colors rounded px-3 py-2"
+                className="text-infra-sidebar hover:bg-infra-sidebar-hover hover:border-infra-sidebar-hover data-[state=active]:bg-infra-sidebar-active data-[state=active]:text-infra-sidebar transition-colors rounded px-3 py-2 border border-transparent"
               >
                 {label}
               </TabsTrigger>
@@ -285,21 +285,21 @@ export function SidebarTabs({
           {/* Search Button */}
           <button
             onClick={() => setIsSearchVisible(true)}
-            className="p-1 rounded hover:bg-infra-sidebar-hover text-infra-sidebar-text flex items-center gap-1"
+            className="p-2 mr-1 rounded hover:bg-infra-sidebar-hover hover:border-infra-sidebar-hover text-infra-sidebar flex items-center gap-1 border border-transparent transition-colors"
             title="Search all nodes (6)"
           >
-            <Search className="h-4 w-4 text-infra-sidebar-text" />
+            <Search className="h-4 w-4 text-infra-sidebar" />
             {/* <span className="hidden sm:inline">Search</span> */}
-            {/* <span className="hidden lg:inline text-xs text-gray-500">⌘K</span> */}
+            {/* <span className="hidden lg:inline text-xs text-infra-sidebar-secondary">⌘K</span> */}
           </button>
         </TabsList>
 
-        <div className="max-h-[150px] sm:max-h-[230px] overflow-y-auto scrollbar pb-2 border-0 bg-infra-sidebar">
+        <div className="max-h-[150px] sm:max-h-[230px] overflow-y-auto scrollbar pb-2 border-1 bg-infra-sidebar">
           {tabs.map(({ key }) => {
             const isCustomTab = variant === "E" && key === "custom";
 
             return (
-              <TabContent
+              <SidebarTabContent
                 key={key}
                 variant={variant}
                 tabKey={key}
@@ -329,7 +329,6 @@ export function SidebarTabs({
             onNativeDragStart={handleNativeDragStart}
             onDoubleClickCreate={onDoubleClickCreate}
             setHovered={setHovered}
-            onSearch={() => {}}
           />
         </div>
 

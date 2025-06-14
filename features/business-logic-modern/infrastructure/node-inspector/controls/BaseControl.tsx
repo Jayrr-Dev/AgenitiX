@@ -151,7 +151,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   nodeType,
 }) => {
   const semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
-  
+
   // Use semantic tokens for status colors
   const statusClasses = status 
     ? `bg-control-success text-control-success border-control-success`
