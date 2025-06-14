@@ -18,9 +18,11 @@ interface BranchSelectorProps {
   className?: string;
 }
 
-export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => {
+export const BranchSelector: React.FC<BranchSelectorProps> = ({
+  className,
+}) => {
   const { undo, redo, getHistory } = useUndoRedo();
-  
+
   const historyData = useMemo(() => getHistory(), [getHistory]);
   const { canUndo, canRedo, branchOptions = [], currentNode } = historyData;
 
@@ -28,9 +30,12 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
     undo();
   }, [undo]);
 
-  const handleRedo = useCallback((branchId?: string) => {
-    redo(branchId);
-  }, [redo]);
+  const handleRedo = useCallback(
+    (branchId?: string) => {
+      redo(branchId);
+    },
+    [redo]
+  );
 
   // If no branches or only one branch, show simple undo/redo
   if (!branchOptions || branchOptions.length <= 1) {
@@ -67,14 +72,16 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
       >
         ↶ Undo
       </button>
-      
+
       <div className="flex gap-1">
         <span className="text-xs text-gray-500 px-2 py-1">Redo:</span>
         {branchOptions.map((branchId, index) => {
           // Get the branch node to show its label
-          const branchNode = currentNode?.children?.find((child: any) => child.id === branchId);
+          const branchNode = currentNode?.children?.find(
+            (child: any) => child.id === branchId
+          );
           const branchLabel = branchNode?.label || `Branch ${index + 1}`;
-          
+
           return (
             <button
               key={branchId}
@@ -125,4 +132,4 @@ export const useUndoRedoShortcuts = () => {
   }, [undo, redo]);
 };
 
-export default BranchSelector; 
+export default BranchSelector;

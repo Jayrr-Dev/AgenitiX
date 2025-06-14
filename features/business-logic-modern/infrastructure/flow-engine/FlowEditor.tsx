@@ -9,8 +9,11 @@ import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import React, { useCallback, useEffect, useRef } from "react";
 
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
-import { UndoRedoProvider, useUndoRedo } from "../components/UndoRedoContext";
-import UndoRedoManager from "../components/UndoRedoManager";
+import {
+  UndoRedoProvider,
+  useUndoRedo,
+} from "../components/history/UndoRedoContext";
+import UndoRedoManager from "../components/history/UndoRedoManager";
 import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";

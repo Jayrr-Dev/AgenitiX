@@ -32,7 +32,7 @@ import type { AgenEdge, AgenNode } from "../types/nodeData";
 
 // Import other components - Using clean aliases
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/components/ActionToolbar";
-import HistoryPanel from "@/features/business-logic-modern/infrastructure/components/HistoryPanel";
+import HistoryPanel from "@/features/business-logic-modern/infrastructure/components/history/HistoryPanel";
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
 import { ThemedMiniMap } from "@/features/business-logic-modern/infrastructure/theming/components";
 import { NodeDisplayProvider } from "../contexts/NodeDisplayContext";

@@ -13,17 +13,14 @@
 
 "use client";
 
-import {
-  History,
-  Maximize,
-  Minimize,
-  RotateCcw,
-  RotateCw,
-} from "lucide-react";
-import React, { useEffect, useState } from "react";
-import { useUndoRedo } from "./UndoRedoContext";
-import { useComponentClasses, useComponentButtonClasses } from "../theming/components";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { History, Maximize, Minimize, RotateCcw, RotateCw } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import {
+  useComponentButtonClasses,
+  useComponentClasses,
+} from "../theming/components";
+import { useUndoRedo } from "./history/UndoRedoContext";
 
 interface ActionToolbarProps {
   showHistoryPanel: boolean;
@@ -42,9 +39,21 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
   const [isBrowserEnvironment, setIsBrowserEnvironment] = useState(false);
 
   // Get themed classes
-  const containerClasses = useComponentClasses('actionToolbar', 'default', `flex items-center gap-1 p-1 ${className}`);
-  const buttonClasses = useComponentButtonClasses('actionToolbar', 'ghost', 'sm');
-  const activeButtonClasses = useComponentButtonClasses('actionToolbar', 'primary', 'sm');
+  const containerClasses = useComponentClasses(
+    "actionToolbar",
+    "default",
+    `flex items-center gap-1 p-1 ${className}`
+  );
+  const buttonClasses = useComponentButtonClasses(
+    "actionToolbar",
+    "ghost",
+    "sm"
+  );
+  const activeButtonClasses = useComponentButtonClasses(
+    "actionToolbar",
+    "primary",
+    "sm"
+  );
 
   // Detect if running in browser vs desktop/Electron app
   useEffect(() => {
@@ -147,12 +156,12 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
         <>
           <div className="w-px h-6 bg-infra-toolbar-border mx-1" />
 
-  {/* THEME SWITCHER */}
-  {/* <div className="w-px h-6 bg-infra-toolbar-border mx-1" /> */}
-      
-      <div className="flex items-center">
-        <ThemeSwitcher />
-      </div>
+          {/* THEME SWITCHER */}
+          {/* <div className="w-px h-6 bg-infra-toolbar-border mx-1" /> */}
+
+          <div className="flex items-center">
+            <ThemeSwitcher />
+          </div>
 
           <button
             onClick={toggleFullscreen}
@@ -169,8 +178,6 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
           </button>
         </>
       )}
-
-    
     </div>
   );
 };

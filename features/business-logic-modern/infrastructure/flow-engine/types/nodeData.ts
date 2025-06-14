@@ -37,12 +37,6 @@ export interface CreateTextData extends BaseNodeData {
   heldText: string;
 }
 
-// All V2U Data interfaces should be here
-export interface CreateTextV2UData extends BaseNodeData {
-  text: string;
-  heldText: string;
-}
-
 // ============================================================================
 // VIEW DOMAIN NODE DATA INTERFACES
 // ============================================================================
@@ -64,16 +58,6 @@ export interface ViewOutputData extends BaseNodeData {
   includedTypes?: string[];
 }
 
-export interface ViewOutputV2UData extends BaseNodeData {
-  label: string;
-  displayedValues: Array<{
-    type: string;
-    content: any;
-    id: string;
-    timestamp?: number;
-  }>;
-}
-
 // ============================================================================
 // TRIGGER DOMAIN NODE DATA INTERFACES
 // ============================================================================
@@ -88,12 +72,6 @@ export interface TriggerOnToggleData extends BaseNodeData {
   hasExternalInputs: boolean;
 }
 
-export interface TriggerOnToggleV2UData extends BaseNodeData {
-  triggered: boolean;
-  value: boolean;
-  outputValue: boolean;
-}
-
 // ============================================================================
 // TEST DOMAIN NODE DATA INTERFACES
 // ============================================================================
@@ -105,12 +83,6 @@ export interface TestErrorData extends BaseNodeData {
   isGeneratingError: boolean;
   text: string;
   json: any;
-}
-
-export interface TestErrorV2UData extends BaseNodeData {
-  errorMessage: string;
-  errorType: "warning" | "error" | "critical";
-  isGeneratingError: boolean;
 }
 
 // ============================================================================
@@ -132,11 +104,7 @@ export interface CyclePulseData extends BaseNodeData {
 // ============================================================================
 
 export type AgenNode =
-  // V2U Nodes
-  | Node<CreateTextV2UData, "createTextV2U">
-  | Node<ViewOutputV2UData, "viewOutputV2U">
-  | Node<TriggerOnToggleV2UData, "triggerOnToggleV2U">
-  | Node<TestErrorV2UData, "testErrorV2U">
+  // Legacy Nodes (for backward compatibility)
   | Node<CreateTextData, "createText">
   | Node<ViewOutputData, "viewOutput">
   | Node<TriggerOnToggleData, "triggerOnToggle">
