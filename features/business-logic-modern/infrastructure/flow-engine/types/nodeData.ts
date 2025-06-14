@@ -133,16 +133,14 @@ export interface CyclePulseData extends BaseNodeData {
 
 export type AgenNode =
   // V2U Nodes
-  | (Node<CreateTextV2UData, "createTextV2U">)
-  | (Node<ViewOutputV2UData, "viewOutputV2U">)
-  | (Node<TriggerOnToggleV2UData, "triggerOnToggleV2U">)
-  | (Node<TestErrorV2UData, "testErrorV2U">)
-  
-  // Legacy Nodes
-  | (Node<CreateTextData, "createText">)
-  | (Node<ViewOutputData, "viewOutput">)
-  | (Node<TriggerOnToggleData, "triggerOnToggle">)
-  | (Node<TestErrorData, "testError">);
+  | Node<CreateTextV2UData, "createTextV2U">
+  | Node<ViewOutputV2UData, "viewOutputV2U">
+  | Node<TriggerOnToggleV2UData, "triggerOnToggleV2U">
+  | Node<TestErrorV2UData, "testErrorV2U">
+  | Node<CreateTextData, "createText">
+  | Node<ViewOutputData, "viewOutput">
+  | Node<TriggerOnToggleData, "triggerOnToggle">
+  | Node<TestErrorData, "testError">;
 
 export type AgenEdge = Edge & {
   sourceHandle?: string | null;

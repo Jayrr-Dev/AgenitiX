@@ -35,6 +35,7 @@ import ActionToolbar from "@/features/business-logic-modern/infrastructure/compo
 import HistoryPanel from "@/features/business-logic-modern/infrastructure/components/HistoryPanel";
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
 import { ThemedMiniMap } from "@/features/business-logic-modern/infrastructure/theming/components";
+import { NodeDisplayProvider } from "../contexts/NodeDisplayContext";
 
 // Node components are now loaded via useDynamicNodeTypes hook
 // No need for direct imports here
@@ -156,33 +157,17 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   setInspectorLocked,
   reactFlowHandlers,
 }) => {
-  console.log("🎨 FlowCanvas rendering with:", {
-    nodesCount: nodes?.length || 0,
-    edgesCount: edges?.length || 0,
-    selectedNode: selectedNode?.id,
-    selectedEdge: selectedEdge?.id,
-  });
+  const componentName = "FlowCanvas";
 
+  // Theme integration
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Fix hydration mismatch by only using theme after mount
   useEffect(() => {
-    console.log("🎨 FlowCanvas mounted, theme:", resolvedTheme);
     setMounted(true);
-  }, [resolvedTheme]);
+  }, []);
 
-  // Use a stable colorMode that doesn't cause hydration issues
-  const colorMode: ColorMode =
-    mounted && resolvedTheme === "light" ? "light" : "dark";
-  console.log(
-    "🎨 Using colorMode:",
-    colorMode,
-    "mounted:",
-    mounted,
-    "resolvedTheme:",
-    resolvedTheme
-  );
+  const colorMode = (resolvedTheme || "dark") as ColorMode;
 
   // ============================================================================
   // ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention
@@ -249,11 +234,15 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       return true;
     });
 
-    // Log filtering results if any nodes were filtered
-    if (filteredNodes.length !== nodes.length) {
-      const filteredCount = nodes.length - filteredNodes.length;
+    return filteredNodes;
+  }, [nodes]);
+
+  // Track filtering results separately to avoid infinite re-renders
+  useEffect(() => {
+    if (safeNodes.length !== nodes.length) {
+      const filteredCount = nodes.length - safeNodes.length;
       console.warn(
-        `🔍 [FlowCanvas] Filtered ${filteredCount} invalid nodes. Kept ${filteredNodes.length} valid nodes.`
+        `🔍 [FlowCanvas] Filtered ${filteredCount} invalid nodes. Kept ${safeNodes.length} valid nodes.`
       );
       console.warn(
         "💡 If this error persists, you may need to reset your workspace."
@@ -262,9 +251,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     } else {
       setHasFilteredNodes(false);
     }
-
-    return filteredNodes;
-  }, [nodes]);
+  }, [nodes.length, safeNodes.length]);
 
   // ============================================================================
   // DYNAMIC POSITIONING VARIABLES
@@ -309,8 +296,6 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   // ============================================================================
   // RENDER
   // ============================================================================
-
-  console.log("🎯 FlowCanvas about to render ReactFlow...");
 
   return (
     <div
@@ -381,7 +366,9 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
           position="bottom-center"
           className="hidden md:block rounded bg-infra-inspector p-4 shadow-sm max-w-4xl max-h-[250px] overflow-y-auto scrollbar-none hover:shadow-effect-glow-hover"
         >
-          <NodeInspector />
+          <NodeDisplayProvider>
+            <NodeInspector />
+          </NodeDisplayProvider>
         </Panel>
 
         {/* MINIMAP */}

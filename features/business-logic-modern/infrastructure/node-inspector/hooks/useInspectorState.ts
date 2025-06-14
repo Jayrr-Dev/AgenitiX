@@ -1,68 +1,56 @@
 /**
- * INSPECTOR STATE HOOK V2U - Enhanced state management with V2U integration
+ * INSPECTOR STATE HOOK - Clean state management for node inspector
  *
- * 🎯 V2U UPGRADE: Enhanced inspector state management with V2U system integration
- * • Backwards compatible with existing useInspectorState functionality
- * • Integration with V2U state monitoring and debugging
- * • Enhanced input synchronization with V2U metadata tracking
+ * • Core inspector state management without deprecated dependencies
+ * • Input synchronization with node data
+ * • Editing state tracking and validation
  * • Performance optimized state management
- * • Automatic V2U feature detection and activation
- * • Debug mode and advanced configuration support
+ * • Clean, maintainable architecture
  *
- * Keywords: v2u-inspector-state, backwards-compatible, enhanced, monitoring
+ * Keywords: inspector-state, clean, maintainable, performance
  */
 
 import { useEffect, useState } from "react";
-import { useV2UState } from "../../depreciated/useV2UState";
 import type { AgenNode } from "../../flow-engine/types/nodeData";
 import { DEFAULT_VALUES } from "../constants";
 
 // ============================================================================
-// ENHANCED INSPECTOR STATE HOOK
+// INSPECTOR STATE HOOK
 // ============================================================================
 
 /**
- * Enhanced Inspector State Hook with V2U Integration
- * Maintains backwards compatibility while adding V2U features
+ * Clean Inspector State Hook
+ * Provides core functionality without deprecated dependencies
  */
 export function useInspectorState(node: AgenNode | null) {
-  // V2U State Integration
-  const v2uHook = useV2UState(node);
-
-  // Original Inspector State
+  // Core Inspector State
   const [inspectorState, setInspectorState] = useState({
     durationInput: "",
     countInput: "",
     multiplierInput: "",
     delayInput: "",
-    // V2U Enhanced state
-    v2uTabIndex: 0,
-    v2uDebugExpanded: false,
-    v2uMetricsExpanded: false,
   });
 
-  // Editing References (Enhanced)
+  // Editing References
   const [editingRefs, setEditingRefs] = useState({
     isEditingCount: false,
     isEditingMultiplier: false,
-    // V2U Enhanced editing states
-    isEditingV2UConfig: false,
-    isEditingV2UMetadata: false,
+    isEditingDuration: false,
+    isEditingDelay: false,
   });
 
   // ============================================================================
-  // INPUT SYNCHRONIZATION WITH V2U ENHANCEMENT
+  // INPUT SYNCHRONIZATION
   // ============================================================================
 
   /**
-   * Sync inputs with node data (Enhanced with V2U support)
+   * Sync inputs with node data
    */
   useEffect(() => {
     if (!node) return;
 
     const nodeData = node.data as any;
 
-    // Original synchronization
     setInspectorState((prev) => ({
       ...prev,
       durationInput: String(nodeData.duration || DEFAULT_VALUES.DURATION),
@@ -70,42 +58,27 @@ export function useInspectorState(node: AgenNode | null) {
       multiplierInput: String(nodeData.multiplier || DEFAULT_VALUES.MULTIPLIER),
       delayInput: String(nodeData.delay || DEFAULT_VALUES.DELAY),
     }));
-
-    // V2U Enhancement: Log synchronization for debugging
-    if (v2uHook.isV2UNode && v2uHook.v2uState?.metadata._v2uMigrated) {
-      console.log(`[V2U Inspector] Synced inputs for V2U node: ${node.id}`, {
-        nodeType: node.type,
-        v2uVersion: nodeData._v2uVersion,
-        hasLifecycle: v2uHook.hasLifecycleHooks,
-        systemHealth: v2uHook.systemHealth,
-      });
-    }
   }, [
-    node,
-    v2uHook.isV2UNode,
-    v2uHook.v2uState,
-    v2uHook.hasLifecycleHooks,
-    v2uHook.systemHealth,
+    node?.id,
+    node?.data?.duration,
+    node?.data?.count,
+    node?.data?.multiplier,
+    node?.data?.delay,
   ]);
 
   // ============================================================================
-  // V2U ENHANCED HELPER FUNCTIONS
+  // HELPER FUNCTIONS
   // ============================================================================
 
   /**
-   * Update inspector state with V2U awareness
+   * Update inspector state
    */
   const updateInspectorState = (updates: Partial<typeof inspectorState>) => {
     setInspectorState((prev) => ({ ...prev, ...updates }));
-
-    // V2U Enhancement: Track state changes for debugging
-    if (v2uHook.isV2UNode && process.env.NODE_ENV === "development") {
-      console.log(`[V2U Inspector] State updated:`, updates);
-    }
   };
 
   /**
-   * Update editing references with V2U awareness
+   * Update editing references
    */
   const updateEditingRefs = (updates: Partial<typeof editingRefs>) => {
     setEditingRefs((prev) => ({ ...prev, ...updates }));
@@ -117,14 +90,14 @@ export function useInspectorState(node: AgenNode | null) {
   const isEditing =
     editingRefs.isEditingCount ||
     editingRefs.isEditingMultiplier ||
-    editingRefs.isEditingV2UConfig ||
-    editingRefs.isEditingV2UMetadata;
+    editingRefs.isEditingDuration ||
+    editingRefs.isEditingDelay;
 
   /**
-   * Get input validation status with V2U enhancement
+   * Get input validation status
    */
   const getInputValidation = () => {
-    const validation = {
+    return {
       duration: {
         isValid:
           !isNaN(Number(inspectorState.durationInput)) &&
@@ -150,28 +123,14 @@ export function useInspectorState(node: AgenNode | null) {
         value: Number(inspectorState.delayInput),
       },
     };
-
-    // V2U Enhancement: Add V2U-specific validation
-    if (v2uHook.isV2UNode && v2uHook.v2uState) {
-      const v2uValidation = {
-        hasV2UErrors:
-          v2uHook.hasSecurityViolations || v2uHook.hasPerformanceIssues,
-        systemHealth: v2uHook.systemHealth,
-        lifecycleStatus: v2uHook.hasLifecycleHooks ? "active" : "inactive",
-      };
-
-      return { ...validation, v2u: v2uValidation };
-    }
-
-    return validation;
   };
 
   // ============================================================================
-  // RETURN ENHANCED INTERFACE
+  // RETURN CLEAN INTERFACE
   // ============================================================================
 
   return {
-    // Original interface (backwards compatible)
+    // Core interface
     inspectorState,
     editingRefs,
     setInspectorState: updateInspectorState,
@@ -179,49 +138,11 @@ export function useInspectorState(node: AgenNode | null) {
     isEditing,
     getInputValidation,
 
-    // V2U Enhanced interface
-    ...v2uHook,
-
-    // Combined helpers
-    isV2UEnabled: v2uHook.isV2UNode,
-    hasV2UData: Boolean(v2uHook.v2uState),
-    combinedHealth: v2uHook.isV2UNode ? v2uHook.systemHealth : "legacy",
-
-    // V2U specific state helpers
-    v2uTabState: {
-      activeTab: inspectorState.v2uTabIndex,
-      setActiveTab: (index: number) =>
-        updateInspectorState({ v2uTabIndex: index }),
-    },
-
-    v2uDebugState: {
-      isExpanded: inspectorState.v2uDebugExpanded,
-      toggle: () =>
-        updateInspectorState({
-          v2uDebugExpanded: !inspectorState.v2uDebugExpanded,
-        }),
-    },
-
-    v2uMetricsState: {
-      isExpanded: inspectorState.v2uMetricsExpanded,
-      toggle: () =>
-        updateInspectorState({
-          v2uMetricsExpanded: !inspectorState.v2uMetricsExpanded,
-        }),
-    },
-
-    // Enhanced debugging info
-    debugInfo: {
+    // Basic node info
+    nodeInfo: {
       nodeId: node?.id,
       nodeType: node?.type,
-      isV2UNode: v2uHook.isV2UNode,
-      systemHealth: v2uHook.systemHealth,
-      hasLifecycleHooks: v2uHook.hasLifecycleHooks,
-      hasSecurityViolations: v2uHook.hasSecurityViolations,
-      hasPerformanceIssues: v2uHook.hasPerformanceIssues,
-      lastRefresh: v2uHook.lastRefresh,
-      isLoading: v2uHook.isLoading,
-      error: v2uHook.error,
+      hasData: Boolean(node?.data),
     },
   };
 }

@@ -1,20 +1,20 @@
 /**
- * NODE INSPECTOR SERVICE - Facade layer for Plop system integration
+ * NODE INSPECTOR SERVICE - Facade for NodeSpec system integration
  *
- * • Provides clean interface between Node Inspector and Plop system
- * • Reduces import churn by centralizing all node system interactions
- * • Handles NodeSpec metadata retrieval and validation
- * • Manages type-safe node data updates with Zod validation
- * • Abstracts complexity of the underlying node registry system
+ * • Provides clean interface between Node Inspector and NodeSpec registry
+ * • Reduces import churn by centralizing NodeSpec interactions
+ * • Aligns with modern Plop-based node creation system
+ * • Uses NodeSpec as single source of truth
+ * • Supports dynamic control generation from Zod schemas
  *
- * Keywords: facade-pattern, service-layer, plop-integration, type-safety, import-reduction
+ * Keywords: nodespec-integration, service-layer, plop-aligned, single-source-truth
  */
 
-import { z } from "zod";
 import type { AgenNode, NodeType } from "../../flow-engine/types/nodeData";
 import {
-  getNodeMetadata,
+  getNodeSpecMetadata,
   validateNode,
+  type NodeSpecMetadata,
 } from "../../node-registry/nodespec-registry";
 
 // ============================================================================
@@ -22,13 +22,12 @@ import {
 // ============================================================================
 
 /**
- * Enhanced node metadata for inspector use
+ * Enhanced node metadata for inspector use (based on NodeSpec)
  */
-export interface InspectorNodeMetadata extends NodeMetadata {
+export interface InspectorNodeMetadata extends NodeSpecMetadata {
   isValid: boolean;
   validationErrors: string[];
   hasCustomControls: boolean;
-  controlSchema?: z.ZodSchema;
 }
 
 /**
@@ -65,34 +64,32 @@ export interface ControlField {
 
 /**
  * Centralized service for all node inspector operations
- * Acts as a facade to reduce import churn and provide clean abstraction
+ * Acts as a facade over the NodeSpec system (Plop-aligned)
  */
 class NodeInspectorServiceImpl {
   // ============================================================================
-  // METADATA OPERATIONS
+  // NODESPEC INTEGRATION
   // ============================================================================
 
   /**
-   * Get enhanced metadata for a node type
-   * Combines NodeSpec data with validation information
+   * Get enhanced metadata for a node type using NodeSpec as source of truth
    */
   getNodeMetadata(nodeType: NodeType): InspectorNodeMetadata | null {
     try {
-      // Get base metadata from registry
-      const baseMetadata = getNodeMetadata(nodeType);
+      // Get base metadata from NodeSpec registry (single source of truth)
+      const baseMetadata = getNodeSpecMetadata(nodeType);
       if (!baseMetadata) {
         return null;
       }
 
-      // Validate the node type
+      // Validate using the NodeSpec system
       const validation = validateNode(nodeType);
 
       return {
         ...baseMetadata,
         isValid: validation.isValid,
         validationErrors: validation.warnings || [],
-        hasCustomControls: true, // Will be determined by schema analysis
-        controlSchema: undefined, // Will be added when schema extraction is implemented
+        hasCustomControls: this.determineHasControls(baseMetadata),
       };
     } catch (error) {
       console.error(
@@ -104,7 +101,7 @@ class NodeInspectorServiceImpl {
   }
 
   /**
-   * Check if a node type exists and is valid
+   * Check if a node type exists and is valid in the NodeSpec registry
    */
   isValidNodeType(nodeType: string): boolean {
     const validation = validateNode(nodeType as NodeType);
@@ -121,26 +118,25 @@ class NodeInspectorServiceImpl {
   }
 
   // ============================================================================
-  // CONTROL FIELD GENERATION
+  // CONTROL FIELD GENERATION (Future: From Zod Schema)
   // ============================================================================
 
   /**
-   * Generate control fields from a node's schema
-   * This enables automatic control generation without manual mapping
+   * Generate control fields from a node's Zod schema
+   * TODO: Implement schema introspection when available
    */
   generateControlFields(nodeType: NodeType): ControlField[] {
-    // For now, return empty array until schema extraction is implemented
-    // This will be enhanced when we have access to the node's Zod schema
+    // Placeholder for future Zod schema introspection
+    // This will be enhanced when we can access the node's Zod schema
     return [];
   }
 
   // ============================================================================
-  // NODE DATA OPERATIONS
+  // NODE DATA OPERATIONS (Plop-Aligned)
   // ============================================================================
 
   /**
-   * Validate and update node data using the node's schema
-   * Provides type-safe updates with automatic validation
+   * Validate and update node data (basic validation until schema access available)
    */
   updateNodeData(
     node: AgenNode,
@@ -155,7 +151,7 @@ class NodeInspectorServiceImpl {
         };
       }
 
-      // For now, allow all updates until schema validation is implemented
+      // Basic validation until we have direct Zod schema access
       return {
         success: true,
         errors: [],
@@ -172,30 +168,41 @@ class NodeInspectorServiceImpl {
   }
 
   /**
-   * Get the current data for a node with defaults applied
+   * Get the current data for a node with defaults from NodeSpec
    */
   getNodeDataWithDefaults(node: AgenNode): Record<string, unknown> {
-    return node.data || {};
+    const metadata = this.getNodeMetadata(node.type as NodeType);
+    const initialData = metadata?.initialData || {};
+
+    // Merge initial data with current node data
+    return {
+      ...initialData,
+      ...node.data,
+    };
   }
 
   // ============================================================================
-  // ERROR HANDLING
+  // ERROR HANDLING & VALIDATION
   // ============================================================================
 
   /**
-   * Validate node configuration and return any issues
+   * Validate node configuration using NodeSpec system
    */
   validateNodeConfiguration(node: AgenNode): string[] {
     const errors: string[] = [];
 
     try {
-      // Check if node type is valid
-      if (!this.isValidNodeType(node.type)) {
+      // Check if node type is valid in NodeSpec registry
+      if (!this.isValidNodeType(node.type as string)) {
         errors.push(`Invalid node type: ${node.type}`);
         return errors;
       }
 
-      // Additional validation will be added when schema support is implemented
+      // Get validation warnings from NodeSpec system
+      const metadata = this.getNodeMetadata(node.type as NodeType);
+      if (metadata?.validationErrors) {
+        errors.push(...metadata.validationErrors);
+      }
     } catch (error) {
       errors.push(
         `Configuration validation error: ${error instanceof Error ? error.message : "Unknown error"}`
@@ -206,11 +213,11 @@ class NodeInspectorServiceImpl {
   }
 
   // ============================================================================
-  // UTILITY METHODS
+  // UTILITY METHODS (NodeSpec-Based)
   // ============================================================================
 
   /**
-   * Check if a node has custom controls available
+   * Check if a node has custom controls based on NodeSpec metadata
    */
   hasCustomControls(nodeType: NodeType): boolean {
     const metadata = this.getNodeMetadata(nodeType);
@@ -218,12 +225,28 @@ class NodeInspectorServiceImpl {
   }
 
   /**
-   * Get suggested node types based on category
+   * Get suggested node types based on category from NodeSpec
    */
   getSuggestedNodeTypes(category?: string): string[] {
-    // This would be implemented when we have category-based node discovery
-    // For now, return empty array
+    // TODO: Implement when we have category-based node discovery from NodeSpec
     return [];
+  }
+
+  // ============================================================================
+  // PRIVATE HELPERS
+  // ============================================================================
+
+  /**
+   * Determine if a node has controls based on NodeSpec metadata
+   */
+  private determineHasControls(metadata: NodeSpecMetadata): boolean {
+    // Use NodeSpec metadata to determine control availability
+    // Categories like CREATE and TRIGGER typically have controls
+    return (
+      metadata.category === "CREATE" ||
+      metadata.category === "TRIGGER" ||
+      metadata.inspector?.key !== undefined
+    );
   }
 }
 
@@ -232,8 +255,7 @@ class NodeInspectorServiceImpl {
 // ============================================================================
 
 /**
- * Singleton instance of the NodeInspectorService
- * This reduces import churn and provides a consistent interface
+ * Singleton instance aligned with NodeSpec system
  */
 export const NodeInspectorService = new NodeInspectorServiceImpl();
 

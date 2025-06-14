@@ -1,13 +1,13 @@
 /**
- * NODE CONTROLS COMPONENT - Enhanced control panels with Plop system integration
+ * NODE CONTROLS COMPONENT - Enhanced control panels with modern system integration
  *
  * • Renders dynamic control interfaces based on NodeSpec metadata
  * • Uses adapter pattern to reduce import churn and improve maintainability
  * • Supports automatic control generation from node schemas
- * • Provides fallback controls for legacy node types
- * • Integrates with the new Plop node creation system
+ * • Provides fallback controls for unrecognized node types
+ * • Integrates with the modern node creation system
  *
- * Keywords: node-controls, plop-integration, adapter-pattern, dynamic-ui, schema-driven
+ * Keywords: node-controls, adapter-pattern, dynamic-ui, schema-driven
  */
 
 "use client";
@@ -15,7 +15,6 @@
 import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import type React from "react";
 import { NodeInspectorAdapter } from "../adapters/NodeInspectorAdapter";
-import { TextNodeControl } from "../controls/TextNodeControl";
 import { EnhancedNodeControls } from "./EnhancedNodeControls";
 
 interface NodeControlsProps {
@@ -58,11 +57,6 @@ export const NodeControls: React.FC<NodeControlsProps> = ({
         onLogError={onLogError}
       />
     );
-  }
-
-  // Legacy fallback for specific node types
-  if (node.data && typeof node.data.text === "string") {
-    return <TextNodeControl node={node} updateNodeData={updateNodeData} />;
   }
 
   // Default fallback with helpful information

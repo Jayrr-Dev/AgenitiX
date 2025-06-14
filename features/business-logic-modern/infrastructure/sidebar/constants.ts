@@ -19,26 +19,19 @@ import {
   TAB_CONFIG_C,
   TAB_CONFIG_D,
   TAB_CONFIG_E,
-  TabKeyA,
-  TabKeyB,
-  TabKeyC,
-  TabKeyD,
-  TabKeyE,
   VariantConfig,
 } from "./types";
 
 // NodeSpec Registry Integration (Single Source of Truth)
 import type { NodeType } from "../flow-engine/types/nodeData";
+import type { NodeSpecMetadata } from "../node-registry/nodespec-registry";
 import {
   getAllNodeSpecMetadata,
   getNodeSpecMetadata,
   getNodesByCategory,
   getNodesByFolder,
-  getAllCategories,
-  getAllFolders,
   hasNodeSpec,
-} from '../node-registry/nodespec-registry';
-import type { NodeSpecMetadata } from '../node-registry/nodespec-registry';
+} from "../node-registry/nodespec-registry";
 
 export const STORAGE_PREFIX = "sidebar-stencil-order";
 
@@ -49,7 +42,9 @@ export const STORAGE_PREFIX = "sidebar-stencil-order";
 /**
  * Get node metadata from the NodeSpec registry
  */
-export function getNodeMetadata(nodeType: NodeType): NodeSpecMetadata | undefined {
+export function getNodeMetadata(
+  nodeType: NodeType
+): NodeSpecMetadata | undefined {
   return getNodeSpecMetadata(nodeType) || undefined;
 }
 
@@ -188,9 +183,7 @@ export function createStencilsByCategory(
   prefix: string
 ): NodeStencil[] {
   const nodes = getNodesInCategory(category);
-  return nodes.map((meta, i) =>
-    createStencilFromNodeMetadata(meta, prefix, i)
-  );
+  return nodes.map((meta, i) => createStencilFromNodeMetadata(meta, prefix, i));
 }
 
 /**
@@ -202,9 +195,7 @@ export function createStencilsByFolder(
   prefix: string
 ): NodeStencil[] {
   const nodes = getNodesByFolderName(folder);
-  return nodes.map((meta, i) =>
-    createStencilFromNodeMetadata(meta, prefix, i)
-  );
+  return nodes.map((meta, i) => createStencilFromNodeMetadata(meta, prefix, i));
 }
 
 /**
@@ -318,7 +309,10 @@ export function getSidebarStatistics() {
     stencilsPerVariant: Object.fromEntries(
       Object.entries(VARIANT_CONFIG).map(([key, config]) => [
         key,
-        Object.values(config.stencils).reduce((total, stencils) => total + stencils.length, 0),
+        Object.values(config.stencils).reduce(
+          (total, stencils) => total + stencils.length,
+          0
+        ),
       ])
     ),
   };
@@ -345,7 +339,10 @@ export function validateSidebarConfiguration(): {
 
   // Check each variant
   Object.entries(VARIANT_CONFIG).forEach(([variantKey, config]) => {
-    const totalStencils = Object.values(config.stencils).reduce((total, stencils) => total + stencils.length, 0);
+    const totalStencils = Object.values(config.stencils).reduce(
+      (total, stencils) => total + stencils.length,
+      0
+    );
     if (totalStencils === 0) {
       warnings.push(`Variant ${variantKey} has no stencils`);
     }
@@ -426,10 +423,5 @@ export function logSidebarDebugInfo(): void {
   const stats = getSidebarStatistics();
   const validation = validateSidebarConfiguration();
 
-  console.group("🔧 Sidebar Debug Information");
-  console.log("📊 Statistics:", stats);
-  console.log("✅ Validation:", validation);
-  console.log("🎯 Available Categories:", getAllCategories());
-  console.log("📁 Available Folders:", getAllFolders());
-  console.groupEnd();
+  // Debug info available but not logged to console
 }

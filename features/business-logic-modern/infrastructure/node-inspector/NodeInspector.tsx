@@ -174,14 +174,14 @@ const NodeInspector = React.memo(function NodeInspector() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-3">
-        {selectedNode && nodeInfo ? (
+        {selectedNode && nodeInfo && nodeInfo.displayName ? (
           <div className="flex flex-col gap-4">
             <NodeHeader
               nodeId={selectedNode.id}
-              displayName={nodeInfo?.displayName || selectedNode.type}
-              category={nodeInfo?.category || "unknown"}
-              icon={nodeInfo?.icon}
-              description={nodeInfo?.description}
+              displayName={nodeInfo.displayName ?? selectedNode.type}
+              category={nodeInfo.category ?? "unknown"}
+              icon={nodeInfo.icon}
+              description={nodeInfo.description}
               onUpdateNodeId={handleUpdateNodeId}
               onDeleteNode={handleDeleteNode}
               onDuplicateNode={handleDuplicateNode}

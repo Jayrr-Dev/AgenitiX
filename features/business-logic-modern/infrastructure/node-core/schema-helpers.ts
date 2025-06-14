@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Schema Helper Utilities
@@ -16,16 +16,19 @@ export function extractSchemaDefaults<T extends z.ZodRawShape>(
     // Create an object with undefined values for all keys
     const shape = schema.shape;
     const emptyObject: Record<string, undefined> = {};
-    
+
     // For each field in the schema, try to get its default
-    Object.keys(shape).forEach(key => {
+    Object.keys(shape).forEach((key) => {
       emptyObject[key] = undefined;
     });
-    
+
     // Parse with the schema - this will apply defaults
     return schema.parse(emptyObject);
   } catch (error) {
-    console.warn('Failed to extract schema defaults, using empty object:', error);
+    console.warn(
+      "Failed to extract schema defaults, using empty object:",
+      error
+    );
     return {} as z.infer<z.ZodObject<T>>;
   }
 }
@@ -40,15 +43,15 @@ export function createSafeInitialData<T extends z.ZodRawShape>(
 ): z.infer<z.ZodObject<T>> {
   const defaults = extractSchemaDefaults(schema);
   const merged = { ...defaults, ...overrides };
-  
+
   try {
     // Validate the merged data against the schema
     return schema.parse(merged);
   } catch (error) {
-    console.error('Schema validation failed for initial data:', error);
-    console.error('Defaults:', defaults);
-    console.error('Overrides:', overrides);
-    console.error('Merged:', merged);
+    console.error("Schema validation failed for initial data:", error);
+    console.error("Defaults:", defaults);
+    console.error("Overrides:", overrides);
+    console.error("Merged:", merged);
     throw new Error(`Invalid initial data for schema: ${error}`);
   }
 }
@@ -61,15 +64,17 @@ export const SafeSchemas = {
   /**
    * Text field with safe defaults
    */
-  text: (defaultValue = 'Default text') => 
-    z.string().min(1, 'Text cannot be empty').default(defaultValue),
-  
+  text: (defaultValue = "Default text") =>
+    z.string().min(1, "Text cannot be empty").default(defaultValue),
+
   /**
    * Optional text field
    */
-  optionalText: (defaultValue?: string) => 
-    defaultValue ? z.string().optional().default(defaultValue) : z.string().optional(),
-  
+  optionalText: (defaultValue?: string) =>
+    defaultValue
+      ? z.string().optional().default(defaultValue)
+      : z.string().optional(),
+
   /**
    * Number field with safe defaults
    */
@@ -78,29 +83,32 @@ export const SafeSchemas = {
     const withMax = max !== undefined ? baseSchema.max(max) : baseSchema;
     return withMax.default(defaultValue);
   },
-  
+
   /**
    * Boolean field with safe defaults
    */
-  boolean: (defaultValue = false) => 
-    z.boolean().default(defaultValue),
-  
+  boolean: (defaultValue = false) => z.boolean().default(defaultValue),
+
   /**
    * URL field with safe defaults
    */
-  url: (defaultValue?: string) => 
-    defaultValue 
-      ? z.string().url('Invalid URL format').optional().default(defaultValue)
-      : z.string().url('Invalid URL format').optional(),
-  
+  url: (defaultValue?: string) =>
+    defaultValue
+      ? z.string().url("Invalid URL format").optional().default(defaultValue)
+      : z.string().url("Invalid URL format").optional(),
+
   /**
    * Email field with safe defaults
    */
-  email: (defaultValue?: string) => 
+  email: (defaultValue?: string) =>
     defaultValue
-      ? z.string().email('Invalid email format').optional().default(defaultValue)
-      : z.string().email('Invalid email format').optional(),
-  
+      ? z
+          .string()
+          .email("Invalid email format")
+          .optional()
+          .default(defaultValue)
+      : z.string().email("Invalid email format").optional(),
+
   /**
    * Enum field with safe defaults
    */
@@ -122,8 +130,8 @@ export function validateSchemaCompatibility<T extends z.ZodRawShape>(
     return true;
   } catch (error) {
     console.error(`Schema compatibility check failed for ${nodeName}:`, error);
-    console.error('Schema:', schema.shape);
-    console.error('Initial data:', initialData);
+    console.error("Schema:", schema.shape);
+    console.error("Initial data:", initialData);
     return false;
   }
-} 
+}

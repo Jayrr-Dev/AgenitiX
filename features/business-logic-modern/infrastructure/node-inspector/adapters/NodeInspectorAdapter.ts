@@ -1,16 +1,15 @@
 /**
- * NODE INSPECTOR ADAPTER - Simplified facade for Plop system integration
+ * NODE INSPECTOR ADAPTER - Simplified facade for node registry integration
  *
- * • Provides clean interface between Node Inspector and Plop system
+ * • Provides clean interface between Node Inspector and node registry
  * • Reduces import churn by centralizing node system interactions
  * • Handles NodeSpec metadata retrieval and validation
- * • Manages node data updates with basic validation
- * • Focuses on core functionality without complex schema parsing
+ * • Focuses on core adapter functionality
  *
- * Keywords: adapter-pattern, facade, plop-integration, simplified, core-functionality
+ * Keywords: adapter-pattern, facade, registry-integration, simplified
  */
 
-import type { AgenNode, NodeType } from "../../flow-engine/types/nodeData";
+import type { NodeType } from "../../flow-engine/types/nodeData";
 import {
   getNodeMetadata,
   validateNode,
@@ -33,22 +32,13 @@ export interface InspectorNodeInfo {
   hasControls: boolean;
 }
 
-/**
- * Node update result
- */
-export interface NodeUpdateResult {
-  success: boolean;
-  errors: string[];
-  validatedData?: Record<string, unknown>;
-}
-
 // ============================================================================
 // MAIN ADAPTER CLASS
 // ============================================================================
 
 /**
  * Simplified adapter for node inspector operations
- * Provides a clean facade over the Plop system
+ * Provides a clean facade over the node registry system
  */
 class NodeInspectorAdapterImpl {
   /**
@@ -84,82 +74,10 @@ class NodeInspectorAdapterImpl {
   }
 
   /**
-   * Update node data with basic validation
-   */
-  updateNodeData(
-    node: AgenNode,
-    updates: Record<string, unknown>
-  ): NodeUpdateResult {
-    try {
-      // Basic validation - check if node type is valid
-      const nodeInfo = this.getNodeInfo(node.type as NodeType);
-      if (!nodeInfo) {
-        return {
-          success: false,
-          errors: [`Unknown node type: ${node.type}`],
-        };
-      }
-
-      // For now, allow all updates - schema validation can be added later
-      return {
-        success: true,
-        errors: [],
-        validatedData: updates,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        errors: [
-          `Update error: ${error instanceof Error ? error.message : "Unknown error"}`,
-        ],
-      };
-    }
-  }
-
-  /**
-   * Get node configuration errors
-   */
-  getNodeErrors(node: AgenNode): string[] {
-    const errors: string[] = [];
-
-    try {
-      // Check if node type is valid
-      const nodeInfo = this.getNodeInfo(node.type as NodeType);
-      if (!nodeInfo) {
-        errors.push(`Invalid node type: ${node.type}`);
-        return errors;
-      }
-
-      // Add validation warnings as errors
-      errors.push(...nodeInfo.warnings);
-
-      // Basic data validation
-      if (!node.data) {
-        errors.push("Node data is missing");
-      }
-    } catch (error) {
-      errors.push(
-        `Configuration error: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
-    }
-
-    return errors;
-  }
-
-  /**
    * Check if a node type has custom controls
    */
   hasCustomControls(nodeType: NodeType): boolean {
     return this.determineHasControls(nodeType);
-  }
-
-  /**
-   * Get current node data with any defaults applied
-   */
-  getNodeDataWithDefaults(node: AgenNode): Record<string, unknown> {
-    // For now, just return the node data as-is
-    // This can be enhanced with schema-based defaults later
-    return node.data || {};
   }
 
   // ============================================================================
@@ -170,10 +88,15 @@ class NodeInspectorAdapterImpl {
    * Determine if a node type has custom controls available
    */
   private determineHasControls(nodeType: NodeType): boolean {
-    // For now, assume all CREATE nodes have controls
+    // Get metadata directly to avoid circular dependency
+    const metadata = getNodeMetadata(nodeType);
+    if (!metadata) {
+      return false;
+    }
+
+    // For now, assume all CREATE and TRIGGER nodes have controls
     // This can be enhanced with schema analysis later
-    const nodeInfo = this.getNodeInfo(nodeType);
-    return nodeInfo?.category === "create" || nodeInfo?.category === "trigger";
+    return metadata.category === "create" || metadata.category === "trigger";
   }
 }
 

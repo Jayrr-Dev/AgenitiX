@@ -34,7 +34,6 @@ import type { NodeType } from "@/features/business-logic-modern/infrastructure/f
 import {
   getNodeSpecMetadata as getNodeMetadata,
   hasNodeSpec,
-  getAllNodeTypes,
 } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 // import { nanoid } from "nanoid"; // Removed due to resolver issues
 import type { Node as ReactFlowNode } from "@xyflow/react";
@@ -42,15 +41,19 @@ import type { Node as ReactFlowNode } from "@xyflow/react";
 // Simple validation function to replace validateNode
 const validateNode = (nodeType: string) => ({
   isValid: hasNodeSpec(nodeType),
-  warnings: hasNodeSpec(nodeType) ? [] : [`Node type '${nodeType}' not found in registry`],
-  suggestions: hasNodeSpec(nodeType) ? [] : ['Check available node types in the registry'],
+  warnings: hasNodeSpec(nodeType)
+    ? []
+    : [`Node type '${nodeType}' not found in registry`],
+  suggestions: hasNodeSpec(nodeType)
+    ? []
+    : ["Check available node types in the registry"],
 });
 
 // FACTORY INTEGRATION - REMOVED
 
 import { SidebarTabs } from "./SidebarTabs";
-import { ToggleButton } from "./ToggleButton";
 import { VariantSelector } from "./SidebarVariantSelector";
+import { ToggleButton } from "./ToggleButton";
 import { useSidebarState } from "./hooks/useSidebarState";
 
 // REGISTRY ENHANCEMENTS - Additional utility imports
@@ -181,21 +184,13 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
             return false;
           }
 
-          if (enableDebug) {
-            console.log("🏭 Creating node with NodeSpec registry metadata:", {
-              nodeType: metadata.kind,
-              displayName: metadata.displayName,
-              category: metadata.category,
-              folder: metadata.ui?.folder,
-            });
-          }
+          // Debug info available but not logged to console
 
           // STEP 3: Calculate position (custom or mouse-based)
-          const targetPosition =
-            customPosition || {
-              x: mousePositionRef.current.x,
-              y: mousePositionRef.current.y,
-            };
+          const targetPosition = customPosition || {
+            x: mousePositionRef.current.x,
+            y: mousePositionRef.current.y,
+          };
 
           // Convert screen coordinates to flow coordinates
           const flowPosition = screenToFlowPosition(targetPosition);
@@ -214,14 +209,7 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
           // STEP 5: Add node to the store
           addNode(newNode as any);
 
-          // STEP 6: Success feedback
-          if (enableDebug) {
-            console.log("✅ Node created successfully:", {
-              id: newNode.id,
-              type: newNode.type,
-              position: newNode.position,
-            });
-          }
+          // STEP 6: Success feedback (debug info available but not logged)
 
           // STEP 7: Optional callback
           onNodeCreated?.(metadata.kind as NodeType, newNode.id);
@@ -255,9 +243,7 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
 
     const refreshFromRegistry = useCallback(() => {
       if (enableDebug) {
-        console.log("🔄 Refreshing sidebar from registry...");
         setRegistryStats(getSidebarStatistics());
-        console.log("✅ Registry refresh complete");
       }
     }, [enableDebug]);
 
@@ -284,14 +270,7 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
 
     useEffect(() => {
       if (enableDebug && process.env.NODE_ENV === "development") {
-        console.log("🔧 SIDEBAR DEBUG INFO");
-        console.log("=====================");
-        console.log("📊 Registry Stats:", registryStats);
-        console.log("✅ Validation:", validationResults);
-        console.log(
-          "🎯 Available Node Types:",
-          getAllNodeTypes()
-        );
+        // Debug info available but not logged to console
       }
     }, [enableDebug, registryStats, validationResults]);
 
@@ -300,18 +279,20 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
     // ============================================================================
 
     return (
-      <div className={`
-        bg-infra-sidebar 
-        border-infra-sidebar 
-        text-infra-sidebar 
-        border-r 
-        transition-all 
-        duration-300 
+      <div
+        className={`
+        bg-infra-sidebar
+        border-infra-sidebar
+        text-infra-sidebar
+        border-r
+        transition-all
+        duration-300
         ease-in-out
-        ${isHidden ? 'w-0 overflow-hidden' : 'w-80'} 
-        ${className} 
+        ${isHidden ? "w-0 overflow-hidden" : "w-80"}
+        ${className}
         ${enableDebug ? "debug-mode" : ""}
-      `}>
+      `}
+      >
         {/* REGISTRY DEBUG PANEL - Development Only */}
         {enableDebug && process.env.NODE_ENV === "development" && (
           <div className="bg-infra-sidebar-hover border-infra-sidebar-hover p-2 text-xs border-b">
@@ -321,13 +302,8 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
             {registryStats && (
               <div className="space-y-1 text-infra-sidebar-secondary">
                 <div>Total Nodes: {registryStats.totalNodes}</div>
-                <div>
-                  Categories:{" "}
-                  {registryStats.categories.length}
-                </div>
-                <div>
-                  Folders: {registryStats.folders.length}
-                </div>
+                <div>Categories: {registryStats.categories.length}</div>
+                <div>Folders: {registryStats.folders.length}</div>
               </div>
             )}
             {validationResults && !validationResults.isValid && (

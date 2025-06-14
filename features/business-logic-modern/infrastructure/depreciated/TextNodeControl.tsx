@@ -11,8 +11,8 @@
  */
 
 import React from "react";
-import { BaseControlProps } from "../types";
-import { BaseControl } from "./BaseControl";
+import { BaseControl } from "../node-inspector/controls/BaseControl";
+import { BaseControlProps } from "../node-inspector/types";
 
 export const TextNodeControl: React.FC<BaseControlProps> = ({
   node,

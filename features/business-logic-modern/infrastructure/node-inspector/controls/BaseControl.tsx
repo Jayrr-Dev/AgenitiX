@@ -5,9 +5,9 @@
  * • Uses semantic tokens for consistent theming across node categories
  * • Supports registry-enhanced styling with node type awareness
  * • Maintains backward compatibility with existing control patterns
- * • Integrates with V2U control system for enhanced functionality
+ * • Clean, maintainable component architecture
  *
- * Keywords: base-controls, semantic-tokens, node-inspector, registry-enhanced, v2u-integration
+ * Keywords: base-controls, semantic-tokens, node-inspector, registry-enhanced
  */
 
 import React, { useMemo } from "react";
@@ -49,61 +49,61 @@ interface ActionButtonProps {
 
 /**
  * Maps node types to semantic token classes
- * Replaces the old dynamic theme system with semantic tokens
+ * Provides consistent theming across node categories
  */
 function getSemanticClasses(nodeType?: string) {
   const baseType = nodeType?.toLowerCase();
-  
+
   switch (baseType) {
-    case 'create':
-    case 'createnode':
+    case "create":
+    case "createnode":
       return {
-        primary: 'bg-node-create text-node-create-text',
-        primaryHover: 'hover:bg-node-create-hover',
-        border: 'border-node-create',
-        borderHover: 'hover:border-node-create-hover',
-        text: 'text-node-create-text',
-        textSecondary: 'text-node-create-text-secondary'
+        primary: "bg-node-create text-node-create-text",
+        primaryHover: "hover:bg-node-create-hover",
+        border: "border-node-create",
+        borderHover: "hover:border-node-create-hover",
+        text: "text-node-create-text",
+        textSecondary: "text-node-create-text-secondary",
       };
-    case 'view':
-    case 'viewnode':
+    case "view":
+    case "viewnode":
       return {
-        primary: 'bg-node-view text-node-view-text',
-        primaryHover: 'hover:bg-node-view-hover',
-        border: 'border-node-view',
-        borderHover: 'hover:border-node-view-hover',
-        text: 'text-node-view-text',
-        textSecondary: 'text-node-view-text-secondary'
+        primary: "bg-node-view text-node-view-text",
+        primaryHover: "hover:bg-node-view-hover",
+        border: "border-node-view",
+        borderHover: "hover:border-node-view-hover",
+        text: "text-node-view-text",
+        textSecondary: "text-node-view-text-secondary",
       };
-    case 'trigger':
-    case 'triggernode':
+    case "trigger":
+    case "triggernode":
       return {
-        primary: 'bg-node-trigger text-node-trigger-text',
-        primaryHover: 'hover:bg-node-trigger-hover',
-        border: 'border-node-trigger',
-        borderHover: 'hover:border-node-trigger-hover',
-        text: 'text-node-trigger-text',
-        textSecondary: 'text-node-trigger-text-secondary'
+        primary: "bg-node-trigger text-node-trigger-text",
+        primaryHover: "hover:bg-node-trigger-hover",
+        border: "border-node-trigger",
+        borderHover: "hover:border-node-trigger-hover",
+        text: "text-node-trigger-text",
+        textSecondary: "text-node-trigger-text-secondary",
       };
-    case 'test':
-    case 'testnode':
+    case "test":
+    case "testnode":
       return {
-        primary: 'bg-node-test text-node-test-text',
-        primaryHover: 'hover:bg-node-test-hover',
-        border: 'border-node-test',
-        borderHover: 'hover:border-node-test-hover',
-        text: 'text-node-test-text',
-        textSecondary: 'text-node-test-text-secondary'
+        primary: "bg-node-test text-node-test-text",
+        primaryHover: "hover:bg-node-test-hover",
+        border: "border-node-test",
+        borderHover: "hover:border-node-test-hover",
+        text: "text-node-test-text",
+        textSecondary: "text-node-test-text-secondary",
       };
     default:
       // Default to view node styling for unknown types
       return {
-        primary: 'bg-node-view text-node-view-text',
-        primaryHover: 'hover:bg-node-view-hover',
-        border: 'border-node-view',
-        borderHover: 'hover:border-node-view-hover',
-        text: 'text-node-view-text',
-        textSecondary: 'text-node-view-text-secondary'
+        primary: "bg-node-view text-node-view-text",
+        primaryHover: "hover:bg-node-view-hover",
+        border: "border-node-view",
+        borderHover: "hover:border-node-view-hover",
+        text: "text-node-view-text",
+        textSecondary: "text-node-view-text-secondary",
       };
   }
 }
@@ -122,12 +122,17 @@ export const BaseControl: React.FC<ControlWrapperProps> = ({
   className = "",
   nodeType,
 }) => {
-  const semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
+  const semanticClasses = useMemo(
+    () => getSemanticClasses(nodeType),
+    [nodeType]
+  );
 
   return (
     <div className={`space-y-2 ${className}`}>
       {title && (
-        <div className={`text-xs font-semibold ${semanticClasses.text} uppercase tracking-wide`}>
+        <div
+          className={`text-xs font-semibold ${semanticClasses.text} uppercase tracking-wide`}
+        >
           {title}
         </div>
       )}
@@ -150,15 +155,20 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   falseColor,
   nodeType,
 }) => {
-  const semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
+  const semanticClasses = useMemo(
+    () => getSemanticClasses(nodeType),
+    [nodeType]
+  );
 
   // Use semantic tokens for status colors
-  const statusClasses = status 
+  const statusClasses = status
     ? `bg-control-success text-control-success border-control-success`
     : `bg-control-error text-control-error border-control-error`;
 
   return (
-    <span className={`text-xs px-2 py-1 rounded border font-medium ${statusClasses}`}>
+    <span
+      className={`text-xs px-2 py-1 rounded border font-medium ${statusClasses}`}
+    >
       {status ? trueLabel : falseLabel}
     </span>
   );
@@ -176,17 +186,21 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
   className = "",
   nodeType,
 }) => {
-  const semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
-  const baseClasses = "text-xs px-3 py-1.5 rounded transition-colors font-medium";
+  const semanticClasses = useMemo(
+    () => getSemanticClasses(nodeType),
+    [nodeType]
+  );
+  const baseClasses =
+    "text-xs px-3 py-1.5 rounded transition-colors font-medium";
 
   // Use semantic tokens for variant styling
   const variantClasses = useMemo(() => {
     switch (variant) {
-      case 'primary':
+      case "primary":
         return `${semanticClasses.primary} ${semanticClasses.primaryHover} ${semanticClasses.border}`;
-      case 'secondary':
+      case "secondary":
         return `bg-control-debug text-control-debug border-control-input hover:bg-control-input-dark`;
-      case 'danger':
+      case "danger":
         return `bg-control-error text-control-error border-control-error hover:bg-control-warning`;
       default:
         return `${semanticClasses.primary} ${semanticClasses.primaryHover} ${semanticClasses.border}`;
@@ -240,7 +254,10 @@ export const EnhancedInput: React.FC<EnhancedInputProps> = ({
   nodeType,
   type = "text",
 }) => {
-  const semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
+  const semanticClasses = useMemo(
+    () => getSemanticClasses(nodeType),
+    [nodeType]
+  );
 
   return (
     <input
@@ -286,7 +303,10 @@ export const EnhancedTextarea: React.FC<EnhancedTextareaProps> = ({
   nodeType,
   rows = 3,
 }) => {
-  const semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
+  const semanticClasses = useMemo(
+    () => getSemanticClasses(nodeType),
+    [nodeType]
+  );
 
   return (
     <textarea
@@ -330,12 +350,17 @@ export const ControlGroup: React.FC<ControlGroupProps> = ({
   nodeType,
   className = "",
 }) => {
-  const semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
+  const semanticClasses = useMemo(
+    () => getSemanticClasses(nodeType),
+    [nodeType]
+  );
 
   return (
     <div className={`space-y-2 ${className}`}>
       {title && (
-        <div className={`text-xs font-semibold ${semanticClasses.textSecondary} uppercase tracking-wide`}>
+        <div
+          className={`text-xs font-semibold ${semanticClasses.textSecondary} uppercase tracking-wide`}
+        >
           {title}
         </div>
       )}

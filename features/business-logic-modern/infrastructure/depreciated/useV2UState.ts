@@ -344,7 +344,7 @@ export function useV2UState(node: AgenNode | null) {
     } finally {
       setIsLoading(false);
     }
-  }, [node, initializeV2UState]);
+  }, [node?.id, node?.type, node?.data]); // Only depend on specific node properties that matter
 
   // ============================================================================
   // AUTO-REFRESH MANAGEMENT
@@ -374,18 +374,18 @@ export function useV2UState(node: AgenNode | null) {
         refreshIntervalRef.current = null;
       }
     };
-  }, [node, refreshV2UState]);
+  }, [node?.id]); // Only depend on node ID, not the refreshV2UState function
 
   // ============================================================================
   // NODE CHANGE DETECTION
   // ============================================================================
 
   /**
-   * Refresh state when node changes
+   * Refresh state when node changes - only refresh when node ID changes
    */
   useEffect(() => {
     refreshV2UState();
-  }, [refreshV2UState]);
+  }, [node?.id]); // Only depend on node ID, not the entire refreshV2UState function
 
   // ============================================================================
   // EVENT SYSTEM INTEGRATION
@@ -431,7 +431,7 @@ export function useV2UState(node: AgenNode | null) {
       eventListenersRef.current.forEach((cleanup) => cleanup());
       eventListenersRef.current = [];
     };
-  }, [node, v2uState?.isV2UNode]);
+  }, [node?.id, v2uState?.isV2UNode]); // Only depend on primitive values
 
   // ============================================================================
   // CLEANUP

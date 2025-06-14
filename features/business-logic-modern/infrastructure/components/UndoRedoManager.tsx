@@ -34,7 +34,7 @@ import { FlowState, HistoryGraph, HistoryNode } from "./historyGraph";
 enableMapSet();
 
 // PERFORMANCE OPTIMIZATION - Debug logging only in development
-const DEBUG_MODE = process.env.NODE_ENV === "development";
+const DEBUG_MODE = false; // Disable debug logging completely
 
 // ============================================================================
 // CONFIGURATION & CONSTANTS
