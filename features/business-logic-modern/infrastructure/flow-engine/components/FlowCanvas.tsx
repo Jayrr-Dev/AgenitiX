@@ -364,7 +364,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         {/* NODE INSPECTOR PANEL */}
         <Panel
           position="bottom-center"
-          className="hidden md:block rounded bg-infra-inspector p-4 shadow-sm max-w-4xl max-h-[250px] overflow-y-auto scrollbar-none hover:shadow-effect-glow-hover"
+          className="hidden md:block rounded bg-infra-inspector shadow-sm max-w-4xl max-h-[250px] overflow-y-scroll scrollbar-thin min-w-xl scrollbar-thumb-infra-inspector-accent scrollbar-track-infra-inspector-accent-hover hover:shadow-effect-glow-hover"
         >
           <NodeDisplayProvider>
             <NodeInspector />

@@ -1,13 +1,12 @@
 /**
- * CREATETEXT NODE - Enhanced with Schema-Driven Controls
+ * CREATETEXT NODE - Simple text creation node
  *
- * • Demonstrates the new schema-driven control system
- * • Uses enhanced NodeSpec with dataSchema and controls configuration
- * • Automatically generates controls from Zod schema introspection
- * • Supports custom field configurations and validation
- * • Serves as reference implementation for 400+ node scalability
+ * • Creates text content with direct inline editing
+ * • Simple textarea interface for immediate text input
+ * • Schema-driven controls available in Node Inspector
+ * • Clean, minimal UI focused on content creation
  *
- * Keywords: schema-driven, automatic-controls, reference-implementation, scalable-architecture
+ * Keywords: text-creation, inline-editing, simple-interface
  */
 
 import { useNodeData } from "@/hooks/useNodeData";
@@ -36,24 +35,15 @@ import {
 // -- PLOP-INJECTED-IMPORTS --
 
 /**
- * Enterprise-grade data schema for createText node
- * Define your node's data structure with validation rules
+ * Simple data schema for createText node
  */
 const CreateTextDataSchema = z
   .object({
-    // Enhanced schema with better field definitions for automatic control generation
     text: SafeSchemas.text("Default text"),
     isEnabled: SafeSchemas.boolean(true),
-    // Indicates whether the node is active in the flow engine (used by scaffolding/theme)
     isActive: SafeSchemas.boolean(false),
-
-    // Example of additional fields that would generate different control types
-    // priority: SafeSchemas.enum(['low', 'medium', 'high'], 'medium'),
-    // maxLength: SafeSchemas.number(100, 1, 1000),
-    // description: SafeSchemas.optionalText(),
-    // outputFormat: SafeSchemas.enum(['plain', 'markdown', 'html'], 'plain'),
   })
-  .strict(); // Prevents unexpected properties
+  .strict();
 
 type CreateTextData = z.infer<typeof CreateTextDataSchema>;
 
@@ -64,7 +54,7 @@ const validateNodeData = createNodeValidator(
 );
 
 /**
- * Enhanced Node specification with schema-driven controls
+ * Simple Node specification with schema-driven controls
  */
 const spec: NodeSpec = {
   kind: "createText",
@@ -75,75 +65,25 @@ const spec: NodeSpec = {
     collapsed: COLLAPSED_SIZES.C1,
   },
   handles: [
-    // Standard JSON input for programmatic control
     { id: "json-input", code: "j", position: "top", type: "target" },
-
-    // Primary output handle using TS symbol
     { id: "output", code: "s", position: "right", type: "source" },
-
-    // Boolean control for activation (if needed)
     { id: "activate", code: "b", position: "left", type: "target" },
   ],
   inspector: {
     key: "CreateTextInspector",
   },
-  initialData: createSafeInitialData(CreateTextDataSchema), // Auto-generated safe defaults
-
-  // NEW: Schema reference for automatic control generation
+  initialData: createSafeInitialData(CreateTextDataSchema),
   dataSchema: CreateTextDataSchema,
-
-  // NEW: Control configuration for enhanced UX
-  controls: {
-    autoGenerate: true, // Enable schema-driven control generation
-    excludeFields: ["isActive"], // System fields excluded from controls
-    customFields: [
-      // Custom configuration for the text field
-      {
-        key: "text",
-        type: "textarea",
-        label: "Text Output",
-        placeholder: "Enter the text this node will output...",
-        description:
-          "This text will be passed to connected nodes when activated.",
-        required: true,
-        ui: {
-          rows: 3,
-        },
-      },
-      // Custom configuration for the enabled field
-      {
-        key: "isEnabled",
-        type: "boolean",
-        label: "Node Enabled",
-        description:
-          "When disabled, this node will not process or output data.",
-      },
-    ],
-    fieldGroups: [
-      {
-        title: "Output Configuration",
-        fields: ["text"],
-        collapsible: false,
-      },
-      {
-        title: "Node Settings",
-        fields: ["isEnabled"],
-        collapsible: true,
-      },
-    ],
-  },
 };
 
 /**
  * createText Node Component
  *
- * Follows enterprise standards:
+ * Simple UI with direct text editing:
+ * - Clean textarea interface for immediate text input
+ * - Schema-driven controls available in Node Inspector
+ * - Maintains all enterprise validation and type safety
  * - Two visual states (collapsed/expanded)
- * - JSON input for programmatic control
- * - Type-safe data validation
- * - Error handling and reporting
- * - Metrics collection
- * - Schema-driven controls (automatic generation)
  */
 const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
   const [isExpanded, setExpanded] = useState(false);
@@ -173,10 +113,10 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 
   const onToggle = () => setExpanded((prev) => !prev);
 
-  // Handle data updates with proper React Flow integration
-  const handleDataUpdate = (updates: Partial<CreateTextData>) => {
+  // Handle text updates directly
+  const handleTextChange = (newText: string) => {
     try {
-      updateNodeData(updates);
+      updateNodeData({ text: newText });
     } catch (error) {
       console.error("Failed to update CreateText node data:", error);
     }
@@ -198,40 +138,33 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
       style={{ width, height, minWidth: width, minHeight: height }}
       data-testid="create-text-node"
     >
-      {/* Expand/Collapse Button - always top left */}
-
       <ExpandCollapseButton showUI={isExpanded} onToggle={onToggle} size="sm" />
 
       {isExpanded ? (
-        <div className="p-4 pt-8 w-full h-full">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">createText</h3>
-              {process.env.NODE_ENV === "development" && (
-                <span className="text-xs text-gray-500 absolute top-2">
-                  Health: {getHealthScore()}%
-                </span>
-              )}
-            </div>
-
-            {/* Simplified UI - controls are now handled by Node Inspector */}
-            <div className="text-xs text-gray-500 italic">
-              Configure this node using the Node Inspector panel →
-            </div>
-
-            {/* Show current values for reference */}
-            <div className="space-y-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
-              <div className="text-xs font-medium">Current Configuration:</div>
-              <div className="text-xs">
-                <div>Text: "{validatedData.text}"</div>
-                <div>Enabled: {validatedData.isEnabled ? "Yes" : "No"}</div>
-              </div>
-            </div>
+        <div className="p-4 pt-8 w-full h-full flex flex-col">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold">createText</h3>
+            {process.env.NODE_ENV === "development" && (
+              <span className="text-xs text-gray-500">
+                Health: {getHealthScore()}%
+              </span>
+            )}
           </div>
+
+          {/* Simple, clean textarea for direct text editing */}
+          <textarea
+            value={validatedData.text}
+            onChange={(e) => handleTextChange(e.target.value)}
+            placeholder="Enter your text here..."
+            className="flex-1 w-full p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md
+                     bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                     resize-none"
+            style={{ minHeight: "60px" }}
+          />
         </div>
       ) : (
         <div className="flex items-center justify-center w-full h-full">
-          {/* Collapsed state icon or minimal content */}
           <span className="text-2xl" aria-label="Create Text Node">
             📝
           </span>
