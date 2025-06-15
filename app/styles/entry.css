@@ -3,19 +3,20 @@
    =====================================================================
    This is the single entry-point for all global styles, ensuring a
    predictable build order and a single home for all imports.
- 
+
    • Imports Tailwind's base, components, and utilities
    • Imports external CSS libraries like @xyflow/react
    • Imports Google Fonts via @import url()
    • Imports the three logical layers of the project's theme
- 
+
    Keywords: entry-point, tailwind, styles, imports, layers
    ===================================================================== */
 @import "tailwindcss";
 @import "@xyflow/react/dist/style.css";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Work+Sans:wght@400;600&family=Source+Serif+Pro:ital,wght@0,400;1,400&display=swap') layer(utilities);
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Work+Sans:wght@400;600&family=Source+Serif+Pro:ital,wght@0,400;1,400&display=swap")
+layer(utilities);
 
 /* order matters: foundations first */
 @import "./_globals.css";
 @import "./_nodes.css";
-@import "./_infra.css"; 
+@import "./_infra.css";

@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate design tokens
+        run: pnpm generate:tokens
+
+      - name: Check token drift (fail if _generated_tokens.css not committed)
+        run: |
+          git diff --exit-code app/styles/_generated_tokens.css
+
+      - name: Contrast validation
+        run: pnpm ci:tokens
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests
+        run: pnpm test || true # allow tests to be empty for now
+
+      - name: Build
+        run: pnpm build

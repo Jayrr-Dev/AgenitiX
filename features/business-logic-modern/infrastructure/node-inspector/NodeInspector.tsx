@@ -6,9 +6,10 @@
  * • Output and controls in dedicated right column
  * • Error log in separate column when errors exist
  * • Prominent duplicate and delete action buttons
+ * • Uses centralized design system for consistent theming
  * • Maintains enterprise-grade backend safety with modern functionality
  *
- * Keywords: node-inspector, multi-column, legacy-style, json-highlighting, action-buttons
+ * Keywords: node-inspector, multi-column, legacy-style, json-highlighting, action-buttons, design-system
  */
 
 "use client";
@@ -25,12 +26,70 @@ import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
 import { NODE_TYPE_CONFIG } from "../flow-engine/constants";
 import type { AgenNode, NodeType } from "../flow-engine/types/nodeData";
 import { useComponentTheme } from "../theming/components";
+import {
+  NODE_INSPECTOR_TOKENS as DESIGN_CONFIG,
+  getConditionalNodeInspectorVariant as getConditionalVariant,
+} from "../theming/components/nodeInspector";
 import { NodeInspectorAdapter } from "./adapters/NodeInspectorAdapter";
 import { EdgeInspector } from "./components/EdgeInspector";
 import { ErrorLog } from "./components/ErrorLog";
 import { NodeControls } from "./components/NodeControls";
 import { NodeOutput } from "./components/NodeOutput";
 import { JsonHighlighter } from "./utils/JsonHighlighter";
+
+// =====================================================================
+// STYLING CONSTANTS - Organized by type and usage
+// =====================================================================
+
+// LAYOUT CONTAINERS - Main structural elements
+const STYLING_CONTAINER_LOCKED = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.centerContent} ${DESIGN_CONFIG.dimensions.stateContainer}`;
+const STYLING_CONTAINER_NODE_INSPECTOR = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.spacing.sectionGap} ${DESIGN_CONFIG.spacing.containerPadding}`;
+const STYLING_CONTAINER_EMPTY_STATE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.centerContent} ${DESIGN_CONFIG.dimensions.stateContainer} ${DESIGN_CONFIG.effects.roundedFull}`;
+const STYLING_CONTAINER_EDGE_INSPECTOR = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.spacing.sectionGap}`;
+
+// COLUMN CONTAINERS - Multi-column layout elements
+const STYLING_CONTAINER_COLUMN_LEFT = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.spacing.sectionGap} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
+const STYLING_CONTAINER_COLUMN_RIGHT = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.spacing.sectionGap} ${DESIGN_CONFIG.dimensions.rightColumnMinWidth}`;
+const STYLING_CONTAINER_COLUMN_ERROR = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.spacing.sectionGap}`;
+const STYLING_CONTAINER_EDGE_CONTENT = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.spacing.sectionGap} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
+
+// SECTION CONTAINERS - Content area containers
+const STYLING_CONTAINER_NODE_HEADER = `${DESIGN_CONFIG.effects.borderBottom} ${DESIGN_CONFIG.colors.header.border} ${DESIGN_CONFIG.spacing.headerPadding}`;
+const STYLING_CONTAINER_HEADER_CONTENT = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} ${DESIGN_CONFIG.layout.justifyBetween}`;
+const STYLING_CONTAINER_HEADER_ICON_TEXT = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} ${DESIGN_CONFIG.spacing.iconTextGap}`;
+const STYLING_CONTAINER_NODE_DESCRIPTION = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.descriptionPadding} mt-2`;
+const STYLING_CONTAINER_NODE_DATA = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
+const STYLING_CONTAINER_NODE_DATA_ADAPTIVE = `${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.dimensions.fullWidth}`;
+const STYLING_CONTAINER_JSON_DATA = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.jsonPadding} ${DESIGN_CONFIG.effects.overflow} ${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
+const STYLING_CONTAINER_JSON_DATA_ADAPTIVE = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.jsonPadding} ${DESIGN_CONFIG.effects.overflowAdaptive} ${DESIGN_CONFIG.dimensions.fullWidth}`;
+const STYLING_CONTAINER_ACTION_BUTTONS = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} ${DESIGN_CONFIG.layout.justifyEnd} ${DESIGN_CONFIG.spacing.buttonGap}`;
+const STYLING_CONTAINER_OUTPUT_SECTION = `${DESIGN_CONFIG.layout.flexColumn} gap-2`;
+const STYLING_CONTAINER_CONTROLS_SECTION = `${DESIGN_CONFIG.layout.flexColumn} gap-2`;
+
+// BUTTON STYLES - Interactive elements
+const STYLING_BUTTON_UNLOCK_LARGE = `${DESIGN_CONFIG.colors.inspector.background} ${DESIGN_CONFIG.colors.inspector.text} ${DESIGN_CONFIG.colors.states.locked.textHover} ${DESIGN_CONFIG.colors.states.locked.borderHover} border-1 ${DESIGN_CONFIG.effects.borderTransparent} ${DESIGN_CONFIG.spacing.statePadding} ${DESIGN_CONFIG.effects.roundedFull}`;
+const STYLING_BUTTON_MAGNIFYING_GLASS = `${DESIGN_CONFIG.colors.inspector.textSecondary} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.effects.borderTransparent} ${DESIGN_CONFIG.colors.states.magnifyingGlass.borderHover} ${DESIGN_CONFIG.colors.states.magnifyingGlass.textHover} ${DESIGN_CONFIG.spacing.statePadding} ${DESIGN_CONFIG.effects.roundedFull}`;
+const STYLING_BUTTON_LOCK_SMALL = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1 ${DESIGN_CONFIG.spacing.buttonPadding} ${DESIGN_CONFIG.typography.buttonText} ${DESIGN_CONFIG.colors.actions.lock.background} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.actions.lock.border} ${DESIGN_CONFIG.colors.actions.lock.text} ${DESIGN_CONFIG.effects.rounded} ${DESIGN_CONFIG.colors.actions.lock.backgroundHover} ${DESIGN_CONFIG.colors.actions.lock.borderHover} ${DESIGN_CONFIG.effects.transition}`;
+const STYLING_BUTTON_DUPLICATE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1 ${DESIGN_CONFIG.spacing.buttonPadding} ${DESIGN_CONFIG.typography.buttonText} ${DESIGN_CONFIG.colors.actions.duplicate.background} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.actions.duplicate.border} ${DESIGN_CONFIG.colors.actions.duplicate.text} ${DESIGN_CONFIG.effects.rounded} ${DESIGN_CONFIG.colors.actions.duplicate.backgroundHover} ${DESIGN_CONFIG.effects.transition}`;
+const STYLING_BUTTON_DELETE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1 ${DESIGN_CONFIG.spacing.buttonPadding} ${DESIGN_CONFIG.typography.buttonText} ${DESIGN_CONFIG.colors.actions.delete.background} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.actions.delete.border} ${DESIGN_CONFIG.colors.actions.delete.text} ${DESIGN_CONFIG.effects.rounded} ${DESIGN_CONFIG.colors.actions.delete.backgroundHover} ${DESIGN_CONFIG.effects.transition}`;
+
+// TEXT STYLES - Typography elements
+const STYLING_TEXT_NODE_ICON = DESIGN_CONFIG.typography.nodeIcon;
+const STYLING_TEXT_NODE_NAME = `${DESIGN_CONFIG.typography.nodeName} ${DESIGN_CONFIG.colors.header.text}`;
+const STYLING_TEXT_NODE_METADATA = `${DESIGN_CONFIG.typography.metadata} ${DESIGN_CONFIG.colors.header.textSecondary}`;
+const STYLING_TEXT_NODE_DESCRIPTION = `${DESIGN_CONFIG.typography.description} ${DESIGN_CONFIG.colors.data.text}`;
+const STYLING_TEXT_SECTION_HEADER = `${DESIGN_CONFIG.typography.sectionHeader} ${DESIGN_CONFIG.colors.data.text} mb-2`;
+
+// ICON STYLES - Icon sizing variants
+const STYLING_ICON_ACTION_SMALL = DESIGN_CONFIG.icons.small;
+const STYLING_ICON_STATE_LARGE = DESIGN_CONFIG.icons.large;
+
+// COMPONENT STYLES - Specialized component styling
+const STYLING_JSON_HIGHLIGHTER = `${DESIGN_CONFIG.dimensions.fullWidth} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.flexBasis}`;
+
+// =====================================================================
+// COMPONENT IMPLEMENTATION
+// =====================================================================
 
 const NodeInspector = React.memo(function NodeInspector() {
   const {
@@ -139,14 +198,14 @@ const NodeInspector = React.memo(function NodeInspector() {
   // Early return for locked state
   if (inspectorLocked) {
     return (
-      <div className="flex items-center justify-center w-12 h-12">
+      <div className={STYLING_CONTAINER_LOCKED}>
         <button
-          aria-label="Unlock Inspector"
-          title="Unlock Inspector (Alt+A)"
+          aria-label={DESIGN_CONFIG.content.aria.unlockInspector}
+          title={DESIGN_CONFIG.content.tooltips.unlockInspector}
           onClick={() => setInspectorLocked(false)}
-          className="bg-infra-inspector-lock text-infra-inspector-lock hover:text-infra-inspector-locked hover:border-infra-inspector-locked border-1 border-transparent p-2 rounded-full"
+          className={STYLING_BUTTON_UNLOCK_LARGE}
         >
-          <FaLock className="w-5 h-5" />
+          <FaLock className={STYLING_ICON_STATE_LARGE} />
         </button>
       </div>
     );
@@ -162,33 +221,38 @@ const NodeInspector = React.memo(function NodeInspector() {
     const hasRightColumn = nodeConfig?.hasOutput || nodeInfo.hasControls;
 
     return (
-      <div id="node-info-container" className="flex gap-3 p-4">
+      <div
+        id={DESIGN_CONFIG.content.ids.nodeInfoContainer}
+        className={STYLING_CONTAINER_NODE_INSPECTOR}
+      >
         {/* COLUMN 1: NODE HEADER + NODE DATA */}
-        <div className="flex-1 flex flex-col gap-3 min-w-0 w-full">
+        <div className={STYLING_CONTAINER_COLUMN_LEFT}>
           {/* Node Header */}
-          <div className="border-b border-infra-inspector-header pb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+          <div className={STYLING_CONTAINER_NODE_HEADER}>
+            <div className={STYLING_CONTAINER_HEADER_CONTENT}>
+              <div className={STYLING_CONTAINER_HEADER_ICON_TEXT}>
                 {nodeInfo.icon && (
-                  <span className="text-xl">{nodeInfo.icon}</span>
+                  <span className={STYLING_TEXT_NODE_ICON}>
+                    {nodeInfo.icon}
+                  </span>
                 )}
                 <div>
-                  <h3 className="text-sm font-semibold text-infra-inspector-header">
+                  <h3 className={STYLING_TEXT_NODE_NAME}>
                     {nodeInfo.displayName}
                   </h3>
-                  <div className="text-xs text-infra-inspector-header-secondary">
-                    Type: {selectedNode.type}
+                  <div className={STYLING_TEXT_NODE_METADATA}>
+                    {DESIGN_CONFIG.content.labels.type} {selectedNode.type}
                   </div>
-                  <div className="text-xs text-infra-inspector-header-secondary">
-                    ID: {selectedNode.id}
+                  <div className={STYLING_TEXT_NODE_METADATA}>
+                    {DESIGN_CONFIG.content.labels.id} {selectedNode.id}
                   </div>
                 </div>
               </div>
             </div>
 
             {nodeInfo.description && (
-              <div className="bg-infra-inspector-data rounded-md border border-infra-inspector-data p-2 mt-2">
-                <p className="text-xs text-infra-inspector-data">
+              <div className={STYLING_CONTAINER_NODE_DESCRIPTION}>
+                <p className={STYLING_TEXT_NODE_DESCRIPTION}>
                   {nodeInfo.description}
                 </p>
               </div>
@@ -196,14 +260,28 @@ const NodeInspector = React.memo(function NodeInspector() {
           </div>
 
           {/* Node Data */}
-          <div className="flex-1 flex flex-col min-w-0 w-full">
-            <h4 className="text-xs font-medium text-infra-inspector-data mb-2">
-              Node Data:
+          <div
+            className={getConditionalVariant(
+              "jsonContainer",
+              DESIGN_CONFIG.behavior.jsonAdaptiveHeight,
+              "adaptive",
+              "fixed"
+            )}
+          >
+            <h4 className={STYLING_TEXT_SECTION_HEADER}>
+              {DESIGN_CONFIG.content.labels.nodeData}
             </h4>
-            <div className="bg-infra-inspector-data rounded-md border border-infra-inspector-data p-3 overflow-y-auto overflow-x-auto flex-1 min-w-0 w-full">
+            <div
+              className={getConditionalVariant(
+                "jsonData",
+                DESIGN_CONFIG.behavior.jsonAdaptiveHeight,
+                "adaptive",
+                "fixed"
+              )}
+            >
               <JsonHighlighter
                 data={selectedNode.data}
-                className="w-full min-w-0 flex-1"
+                className={STYLING_JSON_HIGHLIGHTER}
               />
             </div>
           </div>
@@ -211,47 +289,47 @@ const NodeInspector = React.memo(function NodeInspector() {
 
         {/* COLUMN 2: ACTION BUTTONS + OUTPUT + CONTROLS */}
         {hasRightColumn && (
-          <div className="flex-1 flex flex-col gap-3 min-w-[100px]">
+          <div className={STYLING_CONTAINER_COLUMN_RIGHT}>
             {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-2">
+            <div className={STYLING_CONTAINER_ACTION_BUTTONS}>
               {/* Lock Button */}
               <button
                 onClick={() => setInspectorLocked(!inspectorLocked)}
-                className="flex items-center gap-1 px-2 py-1 text-xs bg-infra-inspector-lock border border-infra-inspector-lock text-infra-inspector-lock rounded hover:bg-infra-inspector-lock-hover hover:border-infra-inspector-button-hover transition-colors"
+                className={STYLING_BUTTON_LOCK_SMALL}
                 title={
                   inspectorLocked
-                    ? "Unlock Inspector (Alt+A)"
-                    : "Lock Inspector (Alt+A)"
+                    ? DESIGN_CONFIG.content.tooltips.unlockInspector
+                    : DESIGN_CONFIG.content.tooltips.lockInspector
                 }
               >
                 {inspectorLocked ? (
-                  <FaLock className="w-3 h-3" />
+                  <FaLock className={STYLING_ICON_ACTION_SMALL} />
                 ) : (
-                  <FaLockOpen className="w-3 h-3" />
+                  <FaLockOpen className={STYLING_ICON_ACTION_SMALL} />
                 )}
               </button>
 
               <button
                 onClick={() => handleDuplicateNode(selectedNode.id)}
-                className="flex items-center gap-1 px-2 py-1 text-xs bg-infra-inspector-duplicate border border-infra-inspector-duplicate text-infra-inspector-duplicate rounded hover:bg-infra-inspector-duplicate-hover transition-colors"
-                title="Duplicate Node (Alt+W)"
+                className={STYLING_BUTTON_DUPLICATE}
+                title={DESIGN_CONFIG.content.tooltips.duplicateNode}
               >
-                <Copy className="w-3 h-3" />
+                <Copy className={STYLING_ICON_ACTION_SMALL} />
               </button>
 
               <button
                 onClick={() => handleDeleteNode(selectedNode.id)}
-                className="flex items-center gap-1 px-2 py-1 text-xs bg-infra-inspector-delete border border-infra-inspector-delete text-infra-inspector-delete rounded hover:bg-infra-inspector-delete-hover transition-colors"
-                title="Delete Node (Alt+Q)"
+                className={STYLING_BUTTON_DELETE}
+                title={DESIGN_CONFIG.content.tooltips.deleteNode}
               >
-                <Trash2 className="w-3 h-3" />
+                <Trash2 className={STYLING_ICON_ACTION_SMALL} />
               </button>
             </div>
 
             {nodeConfig?.hasOutput && (
-              <div className="flex flex-col gap-2">
-                <h4 className="text-xs font-medium text-infra-inspector-data">
-                  Output:
+              <div className={STYLING_CONTAINER_OUTPUT_SECTION}>
+                <h4 className={STYLING_TEXT_SECTION_HEADER}>
+                  {DESIGN_CONFIG.content.labels.output}
                 </h4>
                 <NodeOutput
                   output={output}
@@ -261,9 +339,9 @@ const NodeInspector = React.memo(function NodeInspector() {
             )}
 
             {nodeInfo.hasControls && (
-              <div className="flex flex-col gap-2">
-                <h4 className="text-xs font-medium text-infra-inspector-data">
-                  Controls:
+              <div className={STYLING_CONTAINER_CONTROLS_SECTION}>
+                <h4 className={STYLING_TEXT_SECTION_HEADER}>
+                  {DESIGN_CONFIG.content.labels.controls}
                 </h4>
                 <NodeControls
                   node={selectedNode}
@@ -277,7 +355,7 @@ const NodeInspector = React.memo(function NodeInspector() {
 
         {/* COLUMN 3: ERROR LOG (only show when there are errors) */}
         {errors.length > 0 && (
-          <div className="flex-1 flex flex-col gap-3">
+          <div className={STYLING_CONTAINER_COLUMN_ERROR}>
             <ErrorLog errors={errors} onClearErrors={handleClearErrors} />
           </div>
         )}
@@ -288,8 +366,11 @@ const NodeInspector = React.memo(function NodeInspector() {
   // Show edge inspector if edge is selected (only when no node is selected)
   if (selectedEdge && nodes) {
     return (
-      <div id="edge-info-container" className="flex gap-3">
-        <div className="flex-1 flex flex-col gap-3 min-w-0 w-full">
+      <div
+        id={DESIGN_CONFIG.content.ids.edgeInfoContainer}
+        className={STYLING_CONTAINER_EDGE_INSPECTOR}
+      >
+        <div className={STYLING_CONTAINER_EDGE_CONTENT}>
           <EdgeInspector
             edge={selectedEdge}
             allNodes={nodes}
@@ -302,14 +383,14 @@ const NodeInspector = React.memo(function NodeInspector() {
 
   // Show empty state if no node or edge selected
   return (
-    <div className="flex items-center justify-center w-12 h-12 rounded-full">
+    <div className={STYLING_CONTAINER_EMPTY_STATE}>
       <button
-        aria-label="Lock Inspector"
-        title="Lock Inspector - Keep current view when selecting nodes"
+        aria-label={DESIGN_CONFIG.content.aria.lockInspector}
+        title={DESIGN_CONFIG.content.tooltips.lockInspectorDescription}
         onClick={() => setInspectorLocked(true)}
-        className="text-infra-inspector-secondary border border-transparent hover:border-infra-inspector-button-hover hover:text-infra-inspector-secondary-hover p-2 rounded-full"
+        className={STYLING_BUTTON_MAGNIFYING_GLASS}
       >
-        <FaSearch className="w-5 h-5" />
+        <FaSearch className={STYLING_ICON_STATE_LARGE} />
       </button>
     </div>
   );
