@@ -13,7 +13,6 @@ import {
   IsValidConnection,
   useStore,
 } from "@xyflow/react";
-import Ajv from "ajv";
 import React, { useCallback } from "react";
 import { toast } from "sonner";
 // Auto-generated at build time (can be empty in dev before first build)
@@ -32,19 +31,28 @@ const HANDLE_POSITION_OFFSET = 7.5; // pixels to move handles further out from n
 const HANDLE_SPACING = 7.5; // pixels between multiple handles on the same side
 
 /**
- * Handle background colors
+ * Unified handle styling using semantic tokens
+ * - Consistent theming across light/dark modes
+ * - Semantic token-based backgrounds and borders
+ * - Type-specific colors for visual distinction
  */
-const HANDLE_BACKGROUND_CONNECTED = "rgba(0,0,0,0.5)";
-const HANDLE_BACKGROUND_SOURCE = "rgba(0,0,0,0.5)";
-const HANDLE_BACKGROUND_TARGET = "rgba(255,255,255,0.1)";
+const UNIFIED_HANDLE_STYLES = {
+  // Base styling classes
+  base: "flex items-center justify-center rounded-sm text-[6px] font-semibold uppercase select-none z-30",
 
-/**
- * Handle CSS styling
- */
-const HANDLE_CSS_CLASSES =
-  "flex items-center justify-center rounded-sm text-[6px] font-semibold uppercase select-none z-30";
-const HANDLE_BORDER_WIDTH = 0;
-const HANDLE_BOX_SHADOW_TEMPLATE = "0 0 0.5px 0.5px "; // color will be appended
+  // Background colors using semantic tokens
+  backgrounds: {
+    connected: "hsl(var(--core-handle-bg-connected))",
+    source: "hsl(var(--core-handle-bg-source))",
+    target: "hsl(var(--core-handle-bg-target))",
+  },
+
+  // Border and shadow configuration
+  border: {
+    width: 0,
+    shadow: "var(--core-handle-shadow)",
+  },
+} as const;
 
 /**
  * Toast notification configuration
@@ -64,32 +72,34 @@ const DEFAULT_HANDLE_TYPE = "any";
 /**
  * AJV validation configuration
  */
-const ajv = new Ajv({ allErrors: false, strict: false });
+// const ajv = new Ajv({ allErrors: false, strict: false });
 
 /**
- * Display map - maps basic type names to icon text & color
+ * Unified type display configuration using semantic tokens
+ * Maps type names to icons and semantic token references
  */
-const DISPLAY_MAP: Record<string, { icon: string; color: string }> = {
-  string: { icon: "T", color: "#3b82f6" },
-  number: { icon: "#", color: "#f59e42" },
-  boolean: { icon: "✓", color: "#10b981" },
-  object: { icon: "{}", color: "#6366f1" },
-  array: { icon: "[]", color: "#f472b6" },
-  any: { icon: "?", color: "#6b7280" },
-  json: { icon: "J", color: "#6366f1" },
-};
+const UNIFIED_TYPE_DISPLAY: Record<string, { icon: string; tokenKey: string }> =
+  {
+    string: { icon: "T", tokenKey: "string" },
+    number: { icon: "#", tokenKey: "number" },
+    boolean: { icon: "✓", tokenKey: "boolean" },
+    object: { icon: "{}", tokenKey: "object" },
+    array: { icon: "[]", tokenKey: "array" },
+    any: { icon: "?", tokenKey: "any" },
+    json: { icon: "J", tokenKey: "json" },
+  };
 
 /**
- * Ultimate type map - maps short codes to type information
+ * Ultimate type map - maps short codes to type information using semantic tokens
  */
-const ULTIMATE_TYPE_MAP: Record<string, any> = {
-  s: { color: "#3b82f6", label: "string" },
-  n: { color: "#f59e42", label: "number" },
-  b: { color: "#10b981", label: "boolean" },
-  j: { color: "#6366f1", label: "json" },
-  a: { color: "#f472b6", label: "array" },
-  x: { color: "#6b7280", label: "any" },
-  V: { color: "#8b5cf6", label: "Vibe" },
+const ULTIMATE_TYPE_MAP: Record<string, { tokenKey: string; label: string }> = {
+  s: { tokenKey: "string", label: "string" },
+  n: { tokenKey: "number", label: "number" },
+  b: { tokenKey: "boolean", label: "boolean" },
+  j: { tokenKey: "json", label: "json" },
+  a: { tokenKey: "array", label: "array" },
+  x: { tokenKey: "any", label: "any" },
+  V: { tokenKey: "vibe", label: "Vibe" },
 };
 
 /**
@@ -168,14 +178,39 @@ function getPositionOffset(
 }
 
 /**
- * Get handle background color based on connection state
+ * Get handle background color based on connection state using semantic tokens
  */
 function getHandleBackgroundColor(
   isConnected: boolean,
   isSource: boolean
 ): string {
-  if (isConnected) return HANDLE_BACKGROUND_CONNECTED;
-  return isSource ? HANDLE_BACKGROUND_SOURCE : HANDLE_BACKGROUND_TARGET;
+  if (isConnected) return UNIFIED_HANDLE_STYLES.backgrounds.connected;
+  return isSource
+    ? UNIFIED_HANDLE_STYLES.backgrounds.source
+    : UNIFIED_HANDLE_STYLES.backgrounds.target;
+}
+
+/**
+ * Get type-specific color using semantic tokens
+ */
+function getTypeColor(tokenKey: string): string {
+  return `hsl(var(--core-handle-types-${tokenKey}-color))`;
+}
+
+/**
+ * Get unified type display information (icon and color)
+ */
+function getTypeDisplay(handleTypeName: string): {
+  icon: string;
+  color: string;
+} {
+  const display =
+    UNIFIED_TYPE_DISPLAY[handleTypeName.toLowerCase()] ||
+    UNIFIED_TYPE_DISPLAY.any;
+  return {
+    icon: display.icon,
+    color: getTypeColor(display.tokenKey),
+  };
 }
 
 /**
@@ -245,7 +280,7 @@ const toastThrottle: Record<string, number> = {};
 
 export const useUltimateFlowConnectionPrevention = () => {
   const isValidConnection: IsValidConnection = useCallback((connection) => {
-    const { source, sourceHandle, target, targetHandle } = connection;
+    const { sourceHandle, targetHandle } = connection;
 
     // Extract types from handle IDs (e.g., "handle-id__string|number")
     const sourceDataType = sourceHandle?.split("__")[1];
@@ -279,6 +314,7 @@ export const useUltimateFlowConnectionPrevention = () => {
 };
 
 const UltimateTypesafeHandle: React.FC<any> = ({
+  // eslint-disable-line @typescript-eslint/no-explicit-any
   dataType,
   tsSymbol,
   code,
@@ -289,7 +325,7 @@ const UltimateTypesafeHandle: React.FC<any> = ({
 }) => {
   // Get handle type name using utility function
   const handleTypeName = getHandleTypeName(tsSymbol, dataType, code);
-  const badge = DISPLAY_MAP[handleTypeName.toLowerCase()] || DISPLAY_MAP.any;
+  const typeDisplay = getTypeDisplay(handleTypeName);
 
   const { isValidConnection } = useUltimateFlowConnectionPrevention();
 
@@ -321,15 +357,15 @@ const UltimateTypesafeHandle: React.FC<any> = ({
   return (
     <Handle
       {...(props as HandleProps)}
-      className={HANDLE_CSS_CLASSES}
+      className={UNIFIED_HANDLE_STYLES.base}
       title={tooltipContent} // Native browser tooltip
       style={{
         width: HANDLE_SIZE_PX,
         height: HANDLE_SIZE_PX,
-        borderWidth: HANDLE_BORDER_WIDTH,
-        boxShadow: HANDLE_BOX_SHADOW_TEMPLATE + badge.color,
-        borderColor: badge.color,
-        color: badge.color,
+        borderWidth: UNIFIED_HANDLE_STYLES.border.width,
+        boxShadow: `${UNIFIED_HANDLE_STYLES.border.shadow} ${typeDisplay.color}`,
+        borderColor: typeDisplay.color,
+        color: typeDisplay.color,
         backgroundColor,
         pointerEvents: "all", // Ensure pointer events work for both input and output handles
         ...getPositionOffset(props.position, handleIndex, totalHandlesOnSide), // Apply smart positioning
@@ -339,7 +375,7 @@ const UltimateTypesafeHandle: React.FC<any> = ({
       isConnectableStart={connectableStart}
       isConnectableEnd={connectableEnd}
     >
-      {badge.icon}
+      {typeDisplay.icon}
     </Handle>
   );
 };

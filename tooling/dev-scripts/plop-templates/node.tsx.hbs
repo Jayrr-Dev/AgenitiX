@@ -74,15 +74,79 @@ const spec: NodeSpec = {
 };
 
 /**
+ * Category-specific background mapping
+ */
+const CATEGORY_BACKGROUNDS = {
+  CREATE: "bg-[hsl(var(--node-create-bg))]",
+  VIEW: "bg-[hsl(var(--node-view-bg))]",
+  TRIGGER: "bg-[hsl(var(--node-trigger-bg))]",
+  TEST: "bg-[hsl(var(--node-test-bg))]",
+  CYCLE: "bg-[hsl(var(--node-cycle-bg))]",
+} as const;
+
+/**
+ * Category-specific text color mapping
+ */
+const CATEGORY_TEXT_COLORS = {
+  CREATE: {
+    primary: "text-[hsl(var(--node-create-text))]",
+    secondary: "text-[hsl(var(--node-create-text-secondary))]",
+  },
+  VIEW: {
+    primary: "text-[hsl(var(--node-view-text))]",
+    secondary: "text-[hsl(var(--node-view-text-secondary))]",
+  },
+  TRIGGER: {
+    primary: "text-[hsl(var(--node-trigger-text))]",
+    secondary: "text-[hsl(var(--node-trigger-text-secondary))]",
+  },
+  TEST: {
+    primary: "text-[hsl(var(--node-test-text))]",
+    secondary: "text-[hsl(var(--node-test-text-secondary))]",
+  },
+  CYCLE: {
+    primary: "text-[hsl(var(--node-cycle-text))]",
+    secondary: "text-[hsl(var(--node-cycle-text-secondary))]",
+  },
+} as const;
+
+/**
+ * Category-specific border color mapping
+ */
+const CATEGORY_BORDER_COLORS = {
+  CREATE: {
+    default: "border-[hsl(var(--node-create-border))]",
+    hover: "hover:border-[hsl(var(--node-create-border-hover))]",
+  },
+  VIEW: {
+    default: "border-[hsl(var(--node-view-border))]",
+    hover: "hover:border-[hsl(var(--node-view-border-hover))]",
+  },
+  TRIGGER: {
+    default: "border-[hsl(var(--node-trigger-border))]",
+    hover: "hover:border-[hsl(var(--node-trigger-border-hover))]",
+  },
+  TEST: {
+    default: "border-[hsl(var(--node-test-border))]",
+    hover: "hover:border-[hsl(var(--node-test-border-hover))]",
+  },
+  CYCLE: {
+    default: "border-[hsl(var(--node-cycle-border))]",
+    hover: "hover:border-[hsl(var(--node-cycle-border-hover))]",
+  },
+} as const;
+
+/**
  * Unified theming constants using semantic tokens
+ * - Category-specific backgrounds for visual distinction
+ * - Neutral borders for clean, consistent appearance
+ * - Category-appropriate text colors for readability
  */
 const UNIFIED_NODE_STYLES = {
   // Container styles with semantic tokens
   container: {
     base: "relative rounded-lg shadow-md border transition-all duration-200",
-    background: "bg-[hsl(var(--core-node-bg))]",
-    border: "border-[hsl(var(--core-node-border))]",
-    hover: "hover:border-[hsl(var(--core-node-border-hover))]",
+    // Background and border determined dynamically by category
     expanded: "",
     collapsed: "flex items-center justify-center",
   },
@@ -96,8 +160,7 @@ const UNIFIED_NODE_STYLES = {
   // Header styles
   header: {
     container: "flex items-center justify-between mb-3",
-    title: "text-sm font-semibold text-[hsl(var(--core-node-text))]",
-    health: "text-xs text-[hsl(var(--core-node-text-secondary))]",
+    // Title and health colors determined dynamically by category
   },
 
   // Main content styles
@@ -105,7 +168,7 @@ const UNIFIED_NODE_STYLES = {
     container: "flex-1 flex items-center justify-center",
     content: "text-center",
     icon: "text-2xl mb-2",
-    text: "text-xs text-[hsl(var(--core-node-text-secondary))]",
+    // Text color determined dynamically by category
   },
 
   // Collapsed state styles
@@ -155,12 +218,18 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
   const width = typeof dims.width === 'number' ? `${dims.width}px` : dims.width;
   const height = typeof dims.height === 'number' ? `${dims.height}px` : dims.height;
 
-  // Combine unified styles
+  // Get category-specific styling
+  const categoryKey = spec.category as keyof typeof CATEGORY_BACKGROUNDS;
+  const categoryBackground = CATEGORY_BACKGROUNDS[categoryKey] || CATEGORY_BACKGROUNDS.CREATE;
+  const categoryTextColors = CATEGORY_TEXT_COLORS[categoryKey] || CATEGORY_TEXT_COLORS.CREATE;
+  const categoryBorderColors = CATEGORY_BORDER_COLORS[categoryKey] || CATEGORY_BORDER_COLORS.CREATE;
+
+  // Combine unified styles with category-specific background and borders
   const containerClasses = [
     UNIFIED_NODE_STYLES.container.base,
-    UNIFIED_NODE_STYLES.container.background,
-    UNIFIED_NODE_STYLES.container.border,
-    UNIFIED_NODE_STYLES.container.hover,
+    categoryBackground,
+    categoryBorderColors.default,
+    categoryBorderColors.hover,
     isExpanded ? UNIFIED_NODE_STYLES.container.expanded : UNIFIED_NODE_STYLES.container.collapsed,
   ].join(' ');
 
@@ -175,9 +244,9 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
       {isExpanded ? (
         <div className={UNIFIED_NODE_STYLES.content.expanded}>
           <div className={UNIFIED_NODE_STYLES.header.container}>
-            <h3 className={UNIFIED_NODE_STYLES.header.title}>{{camelCase kind}}</h3>
+            <h3 className={`text-sm font-semibold ${categoryTextColors.primary}`}>{{camelCase kind}}</h3>
             {process.env.NODE_ENV === 'development' && (
-              <span className={UNIFIED_NODE_STYLES.header.health}>
+              <span className={`text-xs ${categoryTextColors.secondary}`}>
                 Health: {getHealthScore()}%
               </span>
             )}
@@ -187,7 +256,7 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
           <div className={UNIFIED_NODE_STYLES.main.container}>
             <div className={UNIFIED_NODE_STYLES.main.content}>
               <div className={UNIFIED_NODE_STYLES.main.icon}>🔧</div>
-              <div className={UNIFIED_NODE_STYLES.main.text}>
+              <div className={`text-xs ${categoryTextColors.secondary}`}>
                 {nodeData.isEnabled ? nodeData.text : 'Disabled'}
               </div>
             </div>
