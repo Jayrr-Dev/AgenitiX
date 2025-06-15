@@ -58,8 +58,8 @@ for (const [name, val] of Object.entries(flat)) {
 // Build CSS
 let css = `/* AUTO-GENERATED FILE — do not edit directly  */\n`;
 
-// Light theme / default variables
-css += `@theme {\n`;
+// Light theme / default variables (use :root instead of @theme for broad browser support)
+css += `:root {\n`;
 for (const [name, val] of Object.entries(lightTokens)) {
   const needsCorePrefix =
     !name.startsWith("node-") && !name.startsWith("infra-");

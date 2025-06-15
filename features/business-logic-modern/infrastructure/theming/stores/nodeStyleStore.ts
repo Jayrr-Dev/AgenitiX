@@ -114,13 +114,13 @@ export interface NodeStyleState {
   selection: { glow: string; border?: string; scale?: string };
   activation: {
     glow: string;
-    border: string;
+    border?: string; // Make border optional since we now rely on component borders
     scale?: string;
     buttonTheme: { border: string; hover: string };
   };
   error: {
     glow: string;
-    border: string;
+    border?: string; // Make border optional since we now rely on component borders
     scale?: string;
     buttonTheme: { border: string; hover: string };
     textTheme: {
@@ -227,26 +227,26 @@ const DEFAULT_STYLES: NodeStyleState = {
   selection: { glow: GLOW_EFFECTS.selection },
   activation: {
     glow: GLOW_EFFECTS.activation,
-    border: "border-effect-glow-green/60",
+    // Remove undefined border class - use only token-based borders from components
     scale: "scale-[1.02]",
     buttonTheme: {
-      border: "border-effect-glow-green",
-      hover: "hover:bg-effect-glow-green/10",
+      border: "border-green-500", // Use standard Tailwind colors instead
+      hover: "hover:bg-green-500/10",
     },
   },
   error: {
     glow: GLOW_EFFECTS.error,
-    border: "border-effect-glow-red/60",
+    // Remove undefined border class - use only token-based borders from components
     scale: "scale-[1.02]",
     buttonTheme: {
-      border: "border-effect-glow-red",
-      hover: "hover:bg-effect-glow-red/10",
+      border: "border-red-500", // Use standard Tailwind colors instead
+      hover: "hover:bg-red-500/10",
     },
     textTheme: {
-      primary: "text-effect-glow-red",
-      secondary: "text-effect-glow-red/80",
-      border: "border-effect-glow-red",
-      focus: "focus:ring-effect-glow-red",
+      primary: "text-red-500", // Use standard Tailwind colors instead
+      secondary: "text-red-500/80",
+      border: "border-red-500",
+      focus: "focus:ring-red-500",
     },
   },
   base: { transition: "transition-all duration-200" },
@@ -355,8 +355,14 @@ export function useNodeStyleClasses(
   return useMemo(() => {
     const classes = [base.transition, hover.glow];
     if (isSelected) classes.push(selection.glow);
-    if (isError) classes.push(error.border, error.glow);
-    if (isActive) classes.push(activation.border, activation.glow);
+    if (isError) {
+      classes.push(error.glow);
+      if (error.border) classes.push(error.border); // Only add border if defined
+    }
+    if (isActive) {
+      classes.push(activation.glow);
+      if (activation.border) classes.push(activation.border); // Only add border if defined
+    }
 
     return classes.join(" ");
   }, [

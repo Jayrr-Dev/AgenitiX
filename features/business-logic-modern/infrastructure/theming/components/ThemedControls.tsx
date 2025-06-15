@@ -40,11 +40,11 @@ export const ThemedControls: React.FC<ThemedControlsProps> = ({
   return (
     <Controls
       className={`
-        [&]:bg-[hsl(var(--infra-controls-bg))]
-        [&]:border-[hsl(var(--infra-controls-border))]
-        [&_button]:text-[hsl(var(--infra-controls-icon))]
-        [&_button:hover]:text-[hsl(var(--infra-controls-icon-hover))]
-        [&_button:hover]:bg-[hsl(var(--infra-controls-button-hover))]
+        [&]:bg-[var(--infra-controls-bg)]
+        [&]:border-[var(--infra-controls-border)]
+        [&_button]:text-[var(--infra-controls-icon)]
+        [&_button:hover]:text-[var(--infra-controls-icon-hover)]
+        [&_button:hover]:bg-[var(--infra-controls-button-hover)]
         ${className}
       `}
       position={position}

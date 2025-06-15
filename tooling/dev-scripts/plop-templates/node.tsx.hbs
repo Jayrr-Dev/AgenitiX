@@ -1,13 +1,13 @@
 /**
- * {{titleCase kind}} NODE - Unified theming node template
+ * {{titleCase kind}} NODE - Clean content-focused node template
  *
- * • Clean, simple UI with schema-driven controls in Node Inspector
- * • Unified theming system with semantic tokens for consistency
+ * • Focuses ONLY on content and layout - no structural styling
+ * • withNodeScaffold handles all borders, sizing, theming, interactive states
+ * • Schema-driven controls in Node Inspector
  * • Type-safe data validation with Zod schema
- * • Zero-maintenance control system with automatic light/dark mode
- * • Enterprise-grade backend safety
+ * • Clean separation of concerns for maximum maintainability
  *
- * Keywords: {{kebabCase kind}}, unified-theming, schema-driven, type-safe, semantic-tokens
+ * Keywords: {{kebabCase kind}}, content-focused, schema-driven, type-safe, clean-architecture
  */
 
 import type { NodeProps } from '@xyflow/react';
@@ -74,18 +74,36 @@ const spec: NodeSpec = {
 };
 
 /**
- * Category-specific background mapping
+ * Content-focused styling constants
+ * Only handles internal layout and content - no structural styling
  */
-const CATEGORY_BACKGROUNDS = {
-  CREATE: "bg-[var(--node-create-bg)]",
-  VIEW: "bg-[var(--node-view-bg)]",
-  TRIGGER: "bg-[var(--node-trigger-bg)]",
-  TEST: "bg-[var(--node-test-bg)]",
-  CYCLE: "bg-[var(--node-cycle-bg)]",
+const CONTENT_STYLES = {
+  // Content area layouts
+  content: {
+    expanded: "p-4 w-full h-full flex flex-col",
+    collapsed: "flex items-center justify-center w-full h-full",
+  },
+
+  // Header layouts
+  header: {
+    container: "flex items-center justify-between mb-3",
+  },
+
+  // Main content layouts
+  main: {
+    container: "flex-1 flex items-center justify-center",
+    content: "text-center",
+    icon: "text-2xl mb-2",
+  },
+
+  // Collapsed state layouts
+  collapsed: {
+    icon: "text-2xl",
+  },
 } as const;
 
 /**
- * Category-specific text color mapping
+ * Category-specific text colors from design system
  */
 const CATEGORY_TEXT_COLORS = {
   CREATE: {
@@ -111,80 +129,14 @@ const CATEGORY_TEXT_COLORS = {
 } as const;
 
 /**
- * Category-specific border color mapping
- */
-const CATEGORY_BORDER_COLORS = {
-  CREATE: {
-    default: "border-[var(--node-create-border)]",
-    hover: "hover:border-[var(--node-create-border-hover)]",
-  },
-  VIEW: {
-    default: "border-[var(--node-view-border)]",
-    hover: "hover:border-[var(--node-view-border-hover)]",
-  },
-  TRIGGER: {
-    default: "border-[var(--node-trigger-border)]",
-    hover: "hover:border-[var(--node-trigger-border-hover)]",
-  },
-  TEST: {
-    default: "border-[var(--node-test-border)]",
-    hover: "hover:border-[var(--node-test-border-hover)]",
-  },
-  CYCLE: {
-    default: "border-[var(--node-cycle-border)]",
-    hover: "hover:border-[var(--node-cycle-border-hover)]",
-  },
-} as const;
-
-/**
- * Unified theming constants using semantic tokens
- * - Category-specific backgrounds for visual distinction
- * - Neutral borders for clean, consistent appearance
- * - Category-appropriate text colors for readability
- */
-const UNIFIED_NODE_STYLES = {
-  // Container styles with semantic tokens
-  container: {
-    base: "relative rounded-lg shadow-md border transition-all duration-200",
-    // Background and border determined dynamically by category
-    expanded: "",
-    collapsed: "flex items-center justify-center",
-  },
-
-  // Content area styles
-  content: {
-    expanded: "p-4 pt-8 w-full h-full flex flex-col",
-    collapsed: "flex items-center justify-center w-full h-full",
-  },
-
-  // Header styles
-  header: {
-    container: "flex items-center justify-between mb-3",
-    // Title and health colors determined dynamically by category
-  },
-
-  // Main content styles
-  main: {
-    container: "flex-1 flex items-center justify-center",
-    content: "text-center",
-    icon: "text-2xl mb-2",
-    // Text color determined dynamically by category
-  },
-
-  // Collapsed state styles
-  collapsed: {
-    icon: "text-2xl",
-  },
-} as const;
-
-/**
  * {{camelCase kind}} Node Component
  *
- * Unified theming with semantic tokens:
- * - Consistent styling across all nodes using design system
- * - Automatic light/dark mode support
- * - Schema-driven controls available in Node Inspector
- * - Maintains enterprise validation and type safety
+ * Clean content-focused component:
+ * • withNodeScaffold handles ALL structural styling
+ * • Component focuses ONLY on content and layout
+ * • Uses design system tokens for text colors
+ * • Schema-driven controls available in Node Inspector
+ * • Maintains enterprise validation and type safety
  */
 const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
   const [isExpanded, setExpanded] = useState(false);
@@ -211,40 +163,20 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
 
   const onToggle = () => setExpanded((prev) => !prev);
 
-  // Use the spec.size for strict sizing
-  const { expanded, collapsed } = spec.size;
-  const nodeSize = isExpanded ? expanded : collapsed;
-  const dims = nodeSize as { width: number | string; height: number | string };
-  const width = typeof dims.width === 'number' ? `${dims.width}px` : dims.width;
-  const height = typeof dims.height === 'number' ? `${dims.height}px` : dims.height;
-
-  // Get category-specific styling
-  const categoryKey = spec.category as keyof typeof CATEGORY_BACKGROUNDS;
-  const categoryBackground = CATEGORY_BACKGROUNDS[categoryKey] || CATEGORY_BACKGROUNDS.CREATE;
+  // Get category-specific text colors
+  const categoryKey = spec.category as keyof typeof CATEGORY_TEXT_COLORS;
   const categoryTextColors = CATEGORY_TEXT_COLORS[categoryKey] || CATEGORY_TEXT_COLORS.CREATE;
-  const categoryBorderColors = CATEGORY_BORDER_COLORS[categoryKey] || CATEGORY_BORDER_COLORS.CREATE;
-
-  // Combine unified styles with category-specific background and borders
-  const containerClasses = [
-    UNIFIED_NODE_STYLES.container.base,
-    categoryBackground,
-    categoryBorderColors.default,
-    categoryBorderColors.hover,
-    isExpanded ? UNIFIED_NODE_STYLES.container.expanded : UNIFIED_NODE_STYLES.container.collapsed,
-  ].join(' ');
 
   return (
-    <div
-      className={containerClasses}
-      style={{ width, height, minWidth: width, minHeight: height }}
-      data-testid="{{kebabCase kind}}-node"
-    >
+    <>
       <ExpandCollapseButton showUI={isExpanded} onToggle={onToggle} size="sm" />
 
       {isExpanded ? (
-        <div className={UNIFIED_NODE_STYLES.content.expanded}>
-          <div className={UNIFIED_NODE_STYLES.header.container}>
-            <h3 className={`text-sm font-semibold ${categoryTextColors.primary}`}>{{camelCase kind}}</h3>
+        <div className={CONTENT_STYLES.content.expanded}>
+          <div className={CONTENT_STYLES.header.container}>
+            <h3 className={`text-sm font-semibold ${categoryTextColors.primary}`}>
+              {{camelCase kind}}
+            </h3>
             {process.env.NODE_ENV === 'development' && (
               <span className={`text-xs ${categoryTextColors.secondary}`}>
                 Health: {getHealthScore()}%
@@ -253,9 +185,9 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
           </div>
 
           {/* Add your node-specific UI here */}
-          <div className={UNIFIED_NODE_STYLES.main.container}>
-            <div className={UNIFIED_NODE_STYLES.main.content}>
-              <div className={UNIFIED_NODE_STYLES.main.icon}>🔧</div>
+          <div className={CONTENT_STYLES.main.container}>
+            <div className={CONTENT_STYLES.main.content}>
+              <div className={CONTENT_STYLES.main.icon}>🔧</div>
               <div className={`text-xs ${categoryTextColors.secondary}`}>
                 {nodeData.isEnabled ? nodeData.text : 'Disabled'}
               </div>
@@ -263,13 +195,13 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
           </div>
         </div>
       ) : (
-        <div className={UNIFIED_NODE_STYLES.content.collapsed}>
-          <span className={UNIFIED_NODE_STYLES.collapsed.icon} aria-label="{{titleCase kind}} Node">
+        <div className={CONTENT_STYLES.content.collapsed}>
+          <span className={CONTENT_STYLES.collapsed.icon} aria-label="{{titleCase kind}} Node">
             🔧
           </span>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

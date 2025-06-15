@@ -119,14 +119,14 @@ const BACKGROUND_DOT_SIZE = 1;
  */
 const EDGE_STYLES = {
   strokeWidth: 2,
-  stroke: "hsl(var(--infra-canvas-edge))",
+  stroke: "var(--infra-canvas-edge)",
 } as const;
 
 /**
  * Mobile delete button styling using design system tokens
  */
 const MOBILE_DELETE_BUTTON_STYLES = {
-  base: "bg-[hsl(var(--core-status-node-delete-bg))] hover:bg-[hsl(var(--core-status-node-delete-bg-light))] text-[hsl(var(--core-status-node-delete-border))] p-1 rounded-full shadow-lg transition-colors",
+  base: "bg-[var(--core-status-node-delete-bg)] hover:bg-[var(--core-status-node-delete-bg-light)] text-[var(--core-status-node-delete-border)] p-1 rounded-full shadow-lg transition-colors",
   icon: "w-5 h-5",
 } as const;
 
@@ -395,7 +395,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         <Background
           gap={BACKGROUND_DOT_GAP}
           size={BACKGROUND_DOT_SIZE}
-          color="hsl(var(--infra-canvas-dot))"
+          color="var(--infra-canvas-dot)"
         />
 
         {/* ACTION TOOLBAR */}

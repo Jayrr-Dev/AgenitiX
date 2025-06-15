@@ -243,8 +243,8 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
         className: `${NODE_STYLES.className} ${isCursor ? NODE_STYLES.cursorRing : ""} ${isSelected ? "history-node-selected" : ""}`,
         style: {
           ...NODE_STYLES.base,
-          backgroundColor: `hsl(var(${bgVar}))`,
-          borderColor: `hsl(var(${borderVar}))`,
+          backgroundColor: `var(${bgVar})`,
+          borderColor: `var(${borderVar})`,
           ...(isFuture ? NODE_STYLES.futureNode : {}),
         },
         draggable: false,
@@ -326,17 +326,17 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
       <style>
         {`
           .react-flow__controls.history-graph-controls {
-            background-color: hsl(var(--infra-history-bg)) !important;
-            border: 1px solid hsl(var(--infra-history-border)) !important;
+            background-color: var(--infra-history-bg) !important;
+            border: 1px solid var(--infra-history-border) !important;
             border-radius: 6px !important;
           }
           .react-flow__controls.history-graph-controls button {
-            background-color: hsl(var(--infra-history-bg)) !important;
-            border: 1px solid hsl(var(--infra-history-border)) !important;
-            color: hsl(var(--infra-history-text)) !important;
+            background-color: var(--infra-history-bg) !important;
+            border: 1px solid var(--infra-history-border) !important;
+            color: var(--infra-history-text) !important;
           }
           .react-flow__controls.history-graph-controls button:hover {
-            background-color: hsl(var(--infra-history-bg-hover)) !important;
+            background-color: var(--infra-history-bg-hover) !important;
           }
 
           /* History graph node hover and select effects */

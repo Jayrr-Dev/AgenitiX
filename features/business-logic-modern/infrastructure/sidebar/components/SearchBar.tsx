@@ -38,21 +38,21 @@ export function SearchBar({
   // Create theme object that maps to semantic tokens
   const theme = {
     background: {
-      primary: "bg-[hsl(var(--infra-sidebar-bg))]",
-      secondary: "bg-[hsl(var(--infra-sidebar-bg-hover))]",
-      hover: "hover:bg-[hsl(var(--infra-sidebar-bg-hover))]",
+      primary: "bg-[var(--infra-sidebar-bg)]",
+      secondary: "bg-[var(--infra-sidebar-bg-hover)]",
+      hover: "hover:bg-[var(--infra-sidebar-bg-hover)]",
     },
     border: {
-      default: "border-[hsl(var(--infra-sidebar-border))]",
+      default: "border-[var(--infra-sidebar-border)]",
     },
     borderRadius: {
       panel: "rounded-lg",
       button: "rounded",
     },
     text: {
-      primary: "text-[hsl(var(--infra-sidebar-text))]",
-      secondary: "text-[hsl(var(--infra-sidebar-text-secondary))]",
-      muted: "text-[hsl(var(--infra-sidebar-text-secondary))]",
+      primary: "text-[var(--infra-sidebar-text)]",
+      secondary: "text-[var(--infra-sidebar-text-secondary)]",
+      muted: "text-[var(--infra-sidebar-text-secondary)]",
     },
     transition: "transition-colors",
   };

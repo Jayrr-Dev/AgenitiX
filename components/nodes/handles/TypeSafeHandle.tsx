@@ -31,6 +31,18 @@ const HANDLE_POSITION_OFFSET = 7.5; // pixels to move handles further out from n
 const HANDLE_SPACING = 7.5; // pixels between multiple handles on the same side
 
 /**
+ * Utility to get CSS custom property value from the DOM
+ * This allows us to inject Tailwind classes from tokens.json
+ */
+const getInjectableClasses = (cssVar: string): string => {
+  if (typeof window === "undefined") return "";
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(cssVar)
+    .trim();
+  return value || "";
+};
+
+/**
  * Unified handle styling using semantic tokens
  * - Consistent theming across light/dark modes
  * - Semantic token-based backgrounds and borders
@@ -42,9 +54,9 @@ const UNIFIED_HANDLE_STYLES = {
 
   // Background colors using semantic tokens
   backgrounds: {
-    connected: "hsl(var(--core-handle-bg-connected))",
-    source: "hsl(var(--core-handle-bg-source))",
-    target: "hsl(var(--core-handle-bg-target))",
+    connected: "var(--core-handle-bg-connected)",
+    source: "var(--core-handle-bg-source)",
+    target: "var(--core-handle-bg-target)",
   },
 
   // Border and shadow configuration
@@ -194,7 +206,7 @@ function getHandleBackgroundColor(
  * Get type-specific color using semantic tokens
  */
 function getTypeColor(tokenKey: string): string {
-  return `hsl(var(--core-handle-types-${tokenKey}-color))`;
+  return `var(--core-handle-types-${tokenKey}-color)`;
 }
 
 /**
@@ -346,6 +358,14 @@ const UltimateTypesafeHandle: React.FC<any> = ({
   // Get background color using utility function
   const backgroundColor = getHandleBackgroundColor(isConnected, isSource);
 
+  // Get injectable classes based on handle state
+  const baseClasses = getInjectableClasses("--core-handle-classes-base");
+  const stateClasses = isConnected
+    ? getInjectableClasses("--core-handle-classes-connected")
+    : isSource
+      ? getInjectableClasses("--core-handle-classes-source")
+      : getInjectableClasses("--core-handle-classes-target");
+
   // Generate tooltip content
   const tooltipContent = getTooltipContent(
     props.type,
@@ -357,7 +377,7 @@ const UltimateTypesafeHandle: React.FC<any> = ({
   return (
     <Handle
       {...(props as HandleProps)}
-      className={UNIFIED_HANDLE_STYLES.base}
+      className={`${UNIFIED_HANDLE_STYLES.base} ${baseClasses} ${stateClasses}`}
       title={tooltipContent} // Native browser tooltip
       style={{
         width: HANDLE_SIZE_PX,

@@ -1,26 +1,21 @@
 /**
- * CREATETEXT NODE - CREATE category themed text creation node
+ * CREATE TEXT NODE - Clean content-focused implementation
  *
- * • Creates text content with direct inline editing
- * • Green theming for CREATE category consistency
- * • Simple textarea interface for immediate text input
- * • Schema-driven controls available in Node Inspector
- * • Clean, minimal UI focused on content creation
+ * • Focuses ONLY on content and layout - no structural styling
+ * • withNodeScaffold handles all borders, sizing, theming, interactive states
+ * • Schema-driven controls in Node Inspector
+ * • Type-safe data validation with Zod schema
+ * • Clean separation of concerns for maximum maintainability
  *
- * Keywords: text-creation, inline-editing, create-category, green-theme
+ * Keywords: create-text, content-focused, schema-driven, type-safe, clean-architecture
  */
 
-import { useNodeData } from "@/hooks/useNodeData";
 import type { NodeProps } from "@xyflow/react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import {
-  SafeSchemas,
-  createSafeInitialData,
-} from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
 import {
   createNodeValidator,
   reportValidationError,
@@ -32,17 +27,16 @@ import {
   COLLAPSED_SIZES,
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
-
-// -- PLOP-INJECTED-IMPORTS --
+import { useNodeData } from "@/hooks/useNodeData";
 
 /**
- * Simple data schema for createText node
+ * Data schema for CreateText node
  */
 const CreateTextDataSchema = z
   .object({
-    text: SafeSchemas.text("Default text"),
-    isEnabled: SafeSchemas.boolean(true),
-    isActive: SafeSchemas.boolean(false),
+    text: z.string().default(""),
+    isActive: z.boolean().default(false),
+    isExpanded: z.boolean().default(false),
   })
   .strict();
 
@@ -55,15 +49,15 @@ const validateNodeData = createNodeValidator(
 );
 
 /**
- * Simple Node specification with schema-driven controls
+ * Node specification
  */
 const spec: NodeSpec = {
   kind: "createText",
   displayName: "createText",
   category: CATEGORIES.CREATE,
   size: {
-    expanded: EXPANDED_SIZES.FE1H,
-    collapsed: COLLAPSED_SIZES.C1,
+    expanded: EXPANDED_SIZES.VE2, // 120x'auto' for variable height content
+    collapsed: COLLAPSED_SIZES.C1W, // 60x60 standard collapsed
   },
   handles: [
     { id: "json-input", code: "j", position: "top", type: "target" },
@@ -73,129 +67,71 @@ const spec: NodeSpec = {
   inspector: {
     key: "CreateTextInspector",
   },
-  initialData: createSafeInitialData(CreateTextDataSchema),
+  initialData: { text: "", isActive: false, isExpanded: false },
   dataSchema: CreateTextDataSchema,
 };
 
 /**
- * Category-specific background mapping
+ * Content-focused styling constants
+ * Only handles internal layout and content - no structural styling
  */
-const CATEGORY_BACKGROUNDS = {
-  CREATE: "bg-[var(--node-create-bg)]",
-  VIEW: "bg-[var(--node-view-bg)]",
-  TRIGGER: "bg-[var(--node-trigger-bg)]",
-  TEST: "bg-[var(--node-test-bg)]",
-  CYCLE: "bg-[var(--node-cycle-bg)]",
-} as const;
-
-/**
- * Category-specific text color mapping
- */
-const CATEGORY_TEXT_COLORS = {
-  CREATE: {
-    primary: "text-[var(--node-create-text)]",
-    secondary: "text-[var(--node-create-text-secondary)]",
-  },
-  VIEW: {
-    primary: "text-[var(--node-view-text)]",
-    secondary: "text-[var(--node-view-text-secondary)]",
-  },
-  TRIGGER: {
-    primary: "text-[var(--node-trigger-text)]",
-    secondary: "text-[var(--node-trigger-text-secondary)]",
-  },
-  TEST: {
-    primary: "text-[var(--node-test-text)]",
-    secondary: "text-[var(--node-test-text-secondary)]",
-  },
-  CYCLE: {
-    primary: "text-[var(--node-cycle-text)]",
-    secondary: "text-[var(--node-cycle-text-secondary)]",
-  },
-} as const;
-
-/**
- * Category-specific border color mapping
- */
-const CATEGORY_BORDER_COLORS = {
-  CREATE: {
-    default: "border-[var(--node-create-border)]",
-    hover: "hover:border-[var(--node-create-border-hover)]",
-  },
-  VIEW: {
-    default: "border-[var(--node-view-border)]",
-    hover: "hover:border-[var(--node-view-border-hover)]",
-  },
-  TRIGGER: {
-    default: "border-[var(--node-trigger-border)]",
-    hover: "hover:border-[var(--node-trigger-border-hover)]",
-  },
-  TEST: {
-    default: "border-[var(--node-test-border)]",
-    hover: "hover:border-[var(--node-test-border-hover)]",
-  },
-  CYCLE: {
-    default: "border-[var(--node-cycle-border)]",
-    hover: "hover:border-[var(--node-cycle-border-hover)]",
-  },
-} as const;
-
-/**
- * Unified theming constants using semantic tokens
- * - Category-specific backgrounds for visual distinction
- * - Neutral borders for clean, consistent appearance
- * - Category-appropriate text colors for readability
- */
-const UNIFIED_NODE_STYLES = {
-  // Container styles with semantic tokens
-  container: {
-    base: "relative rounded-lg shadow-md border transition-all duration-200",
-    // Background and border determined dynamically by category
-    expanded: "",
-    collapsed: "flex items-center justify-center",
-  },
-
-  // Content area styles
+const CONTENT_STYLES = {
+  // Content area layouts
   content: {
-    expanded: "p-4 pt-8 w-full h-full flex flex-col",
+    expanded: "p-4 w-full h-full flex flex-col",
     collapsed: "flex items-center justify-center w-full h-full",
   },
 
-  // Header styles
+  // Header layouts
   header: {
     container: "flex items-center justify-between mb-3",
-    // Title and health colors determined dynamically by category
   },
 
-  // Main content styles
+  // Main content layouts
   main: {
     container: "flex-1 flex items-center justify-center",
     content: "text-center",
     icon: "text-2xl mb-2",
-    // Text color determined dynamically by category
   },
 
-  // Collapsed state styles
+  // Collapsed state layouts
   collapsed: {
     icon: "text-2xl",
   },
 } as const;
 
 /**
+ * Category-specific text colors from design system
+ */
+const CATEGORY_TEXT_COLORS = {
+  CREATE: {
+    primary: "text-[var(--node-create-text)]",
+    secondary: "text-[var(--node-create-text-secondary)]",
+  },
+} as const;
+
+/**
  * createText Node Component
  *
- * Unified theming with category-specific backgrounds:
- * - CREATE category green background for visual distinction
- * - Neutral borders for clean, consistent appearance
- * - Category-appropriate text colors for readability
- * - Schema-driven controls available in Node Inspector
- * - Maintains enterprise validation and type safety
+ * Clean content-focused component:
+ * • withNodeScaffold handles ALL structural styling
+ * • Component focuses ONLY on content and layout
+ * • Uses design system tokens for text colors
+ * • Schema-driven controls available in Node Inspector
+ * • Maintains enterprise validation and type safety
  */
 const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
   const [isExpanded, setExpanded] = useState(false);
 
   // Use proper React Flow data management
   const { nodeData, updateNodeData } = useNodeData(id, data);
+
+  // Update node data to include expanded state for scaffold sizing
+  React.useEffect(() => {
+    if (nodeData.isExpanded !== isExpanded) {
+      updateNodeData({ ...nodeData, isExpanded });
+    }
+  }, [isExpanded, nodeData, updateNodeData]);
 
   // Enterprise validation with comprehensive error handling
   const validationResult = validateNodeData(nodeData);
@@ -228,45 +164,16 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
     }
   };
 
-  // Use the spec.size for strict sizing
-  const { expanded, collapsed } = spec.size;
-  const nodeSize = isExpanded ? expanded : collapsed;
-  const dims = nodeSize as { width: number | string; height: number | string };
-  const width = typeof dims.width === "number" ? `${dims.width}px` : dims.width;
-  const height =
-    typeof dims.height === "number" ? `${dims.height}px` : dims.height;
-
-  // Get category-specific styling
-  const categoryKey = spec.category as keyof typeof CATEGORY_BACKGROUNDS;
-  const categoryBackground =
-    CATEGORY_BACKGROUNDS[categoryKey] || CATEGORY_BACKGROUNDS.CREATE;
-  const categoryTextColors =
-    CATEGORY_TEXT_COLORS[categoryKey] || CATEGORY_TEXT_COLORS.CREATE;
-  const categoryBorderColors =
-    CATEGORY_BORDER_COLORS[categoryKey] || CATEGORY_BORDER_COLORS.CREATE;
-
-  // Combine unified styles with category-specific background and borders
-  const containerClasses = [
-    UNIFIED_NODE_STYLES.container.base,
-    categoryBackground,
-    categoryBorderColors.default,
-    categoryBorderColors.hover,
-    isExpanded
-      ? UNIFIED_NODE_STYLES.container.expanded
-      : UNIFIED_NODE_STYLES.container.collapsed,
-  ].join(" ");
+  // Get category-specific text colors
+  const categoryTextColors = CATEGORY_TEXT_COLORS.CREATE;
 
   return (
-    <div
-      className={containerClasses}
-      style={{ width, height, minWidth: width, minHeight: height }}
-      data-testid="create-text-node"
-    >
+    <>
       <ExpandCollapseButton showUI={isExpanded} onToggle={onToggle} size="sm" />
 
       {isExpanded ? (
-        <div className={UNIFIED_NODE_STYLES.content.expanded}>
-          <div className={UNIFIED_NODE_STYLES.header.container}>
+        <div className={CONTENT_STYLES.content.expanded}>
+          <div className={CONTENT_STYLES.header.container}>
             <h3
               className={`text-sm font-semibold ${categoryTextColors.primary}`}
             >
@@ -284,25 +191,24 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
             value={validatedData.text}
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Enter your text here..."
-            className={`flex-1 w-full p-2 text-sm rounded-md resize-none transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${categoryTextColors.primary} bg-[var(--node-create-bg-hover)] ${categoryBorderColors.default.replace("border-", "border-")} ${categoryBorderColors.hover.replace("hover:border-", "hover:border-")}`}
+            className={`flex-1 w-full p-2 text-sm rounded-md resize-none transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${categoryTextColors.primary} bg-[var(--node-create-bg-hover)]`}
             style={{
               minHeight: "60px",
-              borderWidth: "1px",
-              borderStyle: "solid",
+              border: "none", // Remove border - scaffold handles all borders
             }}
           />
         </div>
       ) : (
-        <div className={UNIFIED_NODE_STYLES.content.collapsed}>
+        <div className={CONTENT_STYLES.content.collapsed}>
           <span
-            className={UNIFIED_NODE_STYLES.collapsed.icon}
+            className={CONTENT_STYLES.collapsed.icon}
             aria-label="Create Text Node"
           >
             📝
           </span>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

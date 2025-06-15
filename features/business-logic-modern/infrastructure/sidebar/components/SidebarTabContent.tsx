@@ -171,7 +171,7 @@ export function SidebarTabContent({
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={nodeIds} strategy={rectSortingStrategy}>
-            <div className="flex flex-wrap justify-evenly gap-2 sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center sm:mx-auto bg-[hsl(var(--infra-sidebar-bg))]">
+            <div className="flex flex-wrap justify-evenly gap-2 sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center sm:mx-auto bg-[var(--infra-sidebar-bg)]">
               {/* Add Node Button as first item in grid */}
               <div className="flex items-center justify-center">
                 <AddNodeButton

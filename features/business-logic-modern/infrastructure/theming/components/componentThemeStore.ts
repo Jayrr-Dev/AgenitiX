@@ -793,20 +793,20 @@ const NODE_INSPECTOR_THEME: ComponentTheme = {
  */
 const MINI_MAP_THEME: ComponentTheme = {
   background: {
-    primary: "bg-[hsl(var(--infra-minimap-bg))]", // 🌞 White background 🌙 Dark background
-    secondary: "bg-[hsl(var(--infra-minimap-bg))]", // Same as primary for consistency
-    hover: "hover:bg-[hsl(var(--infra-minimap-bg-hover))]", // Subtle hover state
-    active: "bg-[hsl(var(--infra-minimap-bg-active))]", // Active state
+    primary: "bg-[var(--infra-minimap-bg)]", // 🌞 White background 🌙 Dark background
+    secondary: "bg-[var(--infra-minimap-bg)]", // Same as primary for consistency
+    hover: "hover:bg-[var(--infra-minimap-bg-hover)]", // Subtle hover state
+    active: "bg-[var(--infra-minimap-bg-active)]", // Active state
   },
   border: {
-    default: "border-[hsl(var(--infra-minimap-border))]", // Consistent border color
-    hover: "hover:border-[hsl(var(--infra-minimap-border-hover))]", // Enhanced border on hover
-    active: "border-[hsl(var(--infra-minimap-border-hover))]", // Active border state
+    default: "border-[var(--infra-minimap-border)]", // Consistent border color
+    hover: "hover:border-[var(--infra-minimap-border-hover)]", // Enhanced border on hover
+    active: "border-[var(--infra-minimap-border-hover)]", // Active border state
   },
   text: {
-    primary: "text-[hsl(var(--infra-minimap-text))]", // Primary text color
-    secondary: "text-[hsl(var(--infra-minimap-text-secondary))]", // Secondary text color
-    muted: "text-[hsl(var(--infra-minimap-text-secondary))]", // Muted text same as secondary
+    primary: "text-[var(--infra-minimap-text)]", // Primary text color
+    secondary: "text-[var(--infra-minimap-text-secondary)]", // Secondary text color
+    muted: "text-[var(--infra-minimap-text-secondary)]", // Muted text same as secondary
   },
   glow: {
     hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
@@ -840,20 +840,20 @@ const MINI_MAP_THEME: ComponentTheme = {
  */
 const FLOW_CANVAS_THEME: ComponentTheme = {
   background: {
-    primary: "bg-[hsl(var(--infra-canvas-bg))]", // 🌞 White canvas 🌙 Dark canvas
-    secondary: "bg-[hsl(var(--infra-canvas-bg))]", // Same as primary for consistency
-    hover: "hover:bg-[hsl(var(--infra-canvas-bg-hover))]", // Subtle hover state
-    active: "bg-[hsl(var(--infra-canvas-bg-active))]", // Active state
+    primary: "bg-[var(--infra-canvas-bg)]", // 🌞 White canvas 🌙 Dark canvas
+    secondary: "bg-[var(--infra-canvas-bg)]", // Same as primary for consistency
+    hover: "hover:bg-[var(--infra-canvas-bg-hover)]", // Subtle hover state
+    active: "bg-[var(--infra-canvas-bg-active)]", // Active state
   },
   border: {
-    default: "border-[hsl(var(--infra-canvas-border))]", // Consistent border color
-    hover: "hover:border-[hsl(var(--infra-canvas-border-hover))]", // Enhanced border on hover
-    active: "border-[hsl(var(--infra-canvas-border-hover))]", // Active border state
+    default: "border-[var(--infra-canvas-border)]", // Consistent border color
+    hover: "hover:border-[var(--infra-canvas-border-hover)]", // Enhanced border on hover
+    active: "border-[var(--infra-canvas-border-hover)]", // Active border state
   },
   text: {
-    primary: "text-[hsl(var(--infra-canvas-text))]", // Primary text color
-    secondary: "text-[hsl(var(--infra-canvas-text-secondary))]", // Secondary text color
-    muted: "text-[hsl(var(--infra-canvas-text-secondary))]", // Muted text same as secondary
+    primary: "text-[var(--infra-canvas-text)]", // Primary text color
+    secondary: "text-[var(--infra-canvas-text-secondary)]", // Secondary text color
+    muted: "text-[var(--infra-canvas-text-secondary)]", // Muted text same as secondary
   },
   glow: {
     hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
@@ -878,9 +878,9 @@ const FLOW_CANVAS_THEME: ComponentTheme = {
  */
 export const CONTROLS_THEME = {
   container:
-    "bg-[hsl(var(--infra-controls-bg))] border-[hsl(var(--infra-controls-border))] hover:bg-[hsl(var(--infra-controls-bg-hover))] hover:border-[hsl(var(--infra-controls-border-hover))] rounded-lg border shadow-lg transition-colors duration-200",
+    "bg-[var(--infra-controls-bg)] border-[var(--infra-controls-border)] hover:bg-[var(--infra-controls-bg-hover)] hover:border-[var(--infra-controls-border-hover)] rounded-lg border shadow-lg transition-colors duration-200",
   button:
-    "bg-[hsl(var(--infra-controls-button))] hover:bg-[hsl(var(--infra-controls-button-hover))] active:bg-[hsl(var(--infra-controls-button-active))] border-[hsl(var(--infra-controls-border))] hover:border-[hsl(var(--infra-controls-border-hover))] text-[hsl(var(--infra-controls-icon))] hover:text-[hsl(var(--infra-controls-icon-hover))] transition-all duration-200 rounded shadow-sm hover:shadow-md active:scale-95",
+    "bg-[var(--infra-controls-button)] hover:bg-[var(--infra-controls-button-hover)] active:bg-[var(--infra-controls-button-active)] border-[var(--infra-controls-border)] hover:border-[var(--infra-controls-border-hover)] text-[var(--infra-controls-icon)] hover:text-[var(--infra-controls-icon-hover)] transition-all duration-200 rounded shadow-sm hover:shadow-md active:scale-95",
 } as const;
 
 // ============================================================================

@@ -31,15 +31,15 @@ const RenderHistoryGraph = React.lazy(() => import("./renderHistoryGraph"));
 
 // STYLING CONSTANTS
 const PANEL_STYLES = {
-  base: "bg-[hsl(var(--infra-history-bg))] border border-[hsl(var(--infra-history-border))] rounded-lg shadow-lg overflow-hidden max-w-full min-w-0",
+  base: "bg-[var(--infra-history-bg)] border border-[var(--infra-history-border)] rounded-lg shadow-lg overflow-hidden max-w-full min-w-0",
 } as const;
 
 const COLLAPSED_STYLES = {
   button:
-    "w-full p-4 flex items-center justify-between hover:bg-[hsl(var(--infra-history-bg-hover))] transition-colors group",
-  icon: "w-4 h-4 text-[hsl(var(--infra-history-text))] group-hover:text-primary transition-colors",
+    "w-full p-4 flex items-center justify-between hover:bg-[var(--infra-history-bg-hover)] transition-colors group",
+  icon: "w-4 h-4 text-[var(--infra-history-text)] group-hover:text-primary transition-colors",
   title:
-    "text-sm font-semibold text-[hsl(var(--infra-history-text))] group-hover:text-primary transition-colors",
+    "text-sm font-semibold text-[var(--infra-history-text)] group-hover:text-primary transition-colors",
   badge: "text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full",
   branchContainer: "flex items-center gap-1 ml-1",
   branchIcon: "w-3 h-3 text-amber-500",
@@ -161,8 +161,8 @@ const HISTORY_ITEM_META_STYLES = {
 
 const FOOTER_STYLES = {
   container:
-    "p-2 border-t border-[hsl(var(--infra-history-border))] text-center",
-  text: "text-xs text-[hsl(var(--infra-history-text))]",
+    "p-2 border-t border-[var(--infra-history-border)] text-center",
+  text: "text-xs text-[var(--infra-history-text)]",
 } as const;
 
 // MODAL STYLES
@@ -517,27 +517,27 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
     const actionType = metadata?.actionType || "unknown";
     switch (actionType) {
       case "node_add":
-        return "text-[hsl(var(--core-status-node-add-border))]";
+        return "text-[var(--core-status-node-add-border)]";
       case "node_delete":
-        return "text-[hsl(var(--core-status-node-delete-border))]";
+        return "text-[var(--core-status-node-delete-border)]";
       case "node_update":
-        return "text-[hsl(var(--core-status-node-update-border))]";
+        return "text-[var(--core-status-node-update-border)]";
       case "node_move":
-        return "text-[hsl(var(--core-status-node-move-border))]";
+        return "text-[var(--core-status-node-move-border)]";
       case "edge_add":
-        return "text-[hsl(var(--core-status-edge-add-border))]";
+        return "text-[var(--core-status-edge-add-border)]";
       case "edge_delete":
-        return "text-[hsl(var(--core-status-edge-delete-border))]";
+        return "text-[var(--core-status-edge-delete-border)]";
       case "bulk_update":
-        return "text-[hsl(var(--core-status-bulk-update-border))]";
+        return "text-[var(--core-status-bulk-update-border)]";
       case "bulk_delete":
-        return "text-[hsl(var(--core-status-bulk-delete-border))]";
+        return "text-[var(--core-status-bulk-delete-border)]";
       case "paste":
-        return "text-[hsl(var(--core-status-paste-border))]";
+        return "text-[var(--core-status-paste-border)]";
       case "duplicate":
-        return "text-[hsl(var(--core-status-duplicate-border))]";
+        return "text-[var(--core-status-duplicate-border)]";
       default:
-        return "text-[hsl(var(--core-status-special-border))]";
+        return "text-[var(--core-status-special-border)]";
     }
   }, []);
 
@@ -546,58 +546,58 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
     switch (actionType) {
       case "node_add":
         return {
-          backgroundColor: "hsl(var(--core-status-node-add-bg))",
-          borderColor: "hsl(var(--core-status-node-add-border))",
+          backgroundColor: "var(--core-status-node-add-bg)",
+          borderColor: "var(--core-status-node-add-border)",
         };
       case "node_delete":
         return {
-          backgroundColor: "hsl(var(--core-status-node-delete-bg))",
-          borderColor: "hsl(var(--core-status-node-delete-border))",
+          backgroundColor: "var(--core-status-node-delete-bg)",
+          borderColor: "var(--core-status-node-delete-border)",
         };
       case "node_update":
         return {
-          backgroundColor: "hsl(var(--core-status-node-update-bg))",
-          borderColor: "hsl(var(--core-status-node-update-border))",
+          backgroundColor: "var(--core-status-node-update-bg)",
+          borderColor: "var(--core-status-node-update-border)",
         };
       case "node_move":
         return {
-          backgroundColor: "hsl(var(--core-status-node-move-bg))",
-          borderColor: "hsl(var(--core-status-node-move-border))",
+          backgroundColor: "var(--core-status-node-move-bg)",
+          borderColor: "var(--core-status-node-move-border)",
         };
       case "edge_add":
         return {
-          backgroundColor: "hsl(var(--core-status-edge-add-bg))",
-          borderColor: "hsl(var(--core-status-edge-add-border))",
+          backgroundColor: "var(--core-status-edge-add-bg)",
+          borderColor: "var(--core-status-edge-add-border)",
         };
       case "edge_delete":
         return {
-          backgroundColor: "hsl(var(--core-status-edge-delete-bg))",
-          borderColor: "hsl(var(--core-status-edge-delete-border))",
+          backgroundColor: "var(--core-status-edge-delete-bg)",
+          borderColor: "var(--core-status-edge-delete-border)",
         };
       case "bulk_update":
         return {
-          backgroundColor: "hsl(var(--core-status-bulk-update-bg))",
-          borderColor: "hsl(var(--core-status-bulk-update-border))",
+          backgroundColor: "var(--core-status-bulk-update-bg)",
+          borderColor: "var(--core-status-bulk-update-border)",
         };
       case "bulk_delete":
         return {
-          backgroundColor: "hsl(var(--core-status-bulk-delete-bg))",
-          borderColor: "hsl(var(--core-status-bulk-delete-border))",
+          backgroundColor: "var(--core-status-bulk-delete-bg)",
+          borderColor: "var(--core-status-bulk-delete-border)",
         };
       case "paste":
         return {
-          backgroundColor: "hsl(var(--core-status-paste-bg))",
-          borderColor: "hsl(var(--core-status-paste-border))",
+          backgroundColor: "var(--core-status-paste-bg)",
+          borderColor: "var(--core-status-paste-border)",
         };
       case "duplicate":
         return {
-          backgroundColor: "hsl(var(--core-status-duplicate-bg))",
-          borderColor: "hsl(var(--core-status-duplicate-border))",
+          backgroundColor: "var(--core-status-duplicate-bg)",
+          borderColor: "var(--core-status-duplicate-border)",
         };
       default:
         return {
-          backgroundColor: "hsl(var(--core-status-special-bg))",
-          borderColor: "hsl(var(--core-status-special-border))",
+          backgroundColor: "var(--core-status-special-bg)",
+          borderColor: "var(--core-status-special-border)",
         };
     }
   }, []);

@@ -44,7 +44,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({
         <button
           onClick={handleUndo}
           disabled={!canUndo}
-          className="px-3 py-1 text-sm bg-[hsl(var(--infra-toolbar-bg))] hover:bg-[hsl(var(--infra-toolbar-bg-hover))] disabled:opacity-50 disabled:cursor-not-allowed rounded"
+          className="px-3 py-1 text-sm bg-[var(--infra-toolbar-bg)] hover:bg-[var(--infra-toolbar-bg-hover)] disabled:opacity-50 disabled:cursor-not-allowed rounded"
           title="Undo"
         >
           ↶ Undo
@@ -52,7 +52,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({
         <button
           onClick={() => handleRedo()}
           disabled={!canRedo}
-          className="px-3 py-1 text-sm bg-[hsl(var(--infra-toolbar-bg))] hover:bg-[hsl(var(--infra-toolbar-bg-hover))] disabled:opacity-50 disabled:cursor-not-allowed rounded"
+          className="px-3 py-1 text-sm bg-[var(--infra-toolbar-bg)] hover:bg-[var(--infra-toolbar-bg-hover)] disabled:opacity-50 disabled:cursor-not-allowed rounded"
           title="Redo"
         >
           ↷ Redo
@@ -67,7 +67,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({
       <button
         onClick={handleUndo}
         disabled={!canUndo}
-        className="px-3 py-1 text-sm bg-[hsl(var(--infra-toolbar-bg))] hover:bg-[hsl(var(--infra-toolbar-bg-hover))] disabled:opacity-50 disabled:cursor-not-allowed rounded"
+        className="px-3 py-1 text-sm bg-[var(--infra-toolbar-bg)] hover:bg-[var(--infra-toolbar-bg-hover)] disabled:opacity-50 disabled:cursor-not-allowed rounded"
         title="Undo"
       >
         ↶ Undo

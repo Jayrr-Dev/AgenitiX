@@ -138,8 +138,8 @@ function generateChallengePageHTML(challenge: any, returnTo: string): string {
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: hsl(var(--background));
-            color: hsl(var(--foreground));
+            background: var(--background);
+            color: var(--foreground);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -148,8 +148,8 @@ function generateChallengePageHTML(challenge: any, returnTo: string): string {
         }
         
         .container {
-            background: hsl(var(--background));
-            border: 1px solid hsl(var(--border));
+            background: var(--background);
+            border: 1px solid var(--border);
             border-radius: 16px;
             padding: 40px;
             max-width: 500px;
@@ -163,7 +163,7 @@ function generateChallengePageHTML(challenge: any, returnTo: string): string {
             width: 64px;
             height: 64px;
             margin: 0 auto 24px;
-            background: hsl(var(--secondary));
+            background: var(--secondary);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -179,11 +179,11 @@ function generateChallengePageHTML(challenge: any, returnTo: string): string {
             font-size: 28px;
             font-weight: 700;
             margin-bottom: 12px;
-            color: hsl(var(--foreground));
+            color: var(--foreground);
         }
         
         .subtitle {
-            color: hsl(var(--muted-foreground));
+            color: var(--muted-foreground);
             margin-bottom: 32px;
             font-size: 16px;
             line-height: 1.5;
@@ -191,7 +191,7 @@ function generateChallengePageHTML(challenge: any, returnTo: string): string {
         
         .challenge-container {
             background: hsl(var(--muted) / 0.3);
-            border: 1px solid hsl(var(--border));
+            border: 1px solid var(--border);
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 24px;
@@ -204,7 +204,7 @@ function generateChallengePageHTML(challenge: any, returnTo: string): string {
         .progress-bar {
             width: 100%;
             height: 8px;
-            background: hsl(var(--muted));
+            background: var(--muted);
             border-radius: 4px;
             overflow: hidden;
             margin-bottom: 12px;
@@ -220,7 +220,7 @@ function generateChallengePageHTML(challenge: any, returnTo: string): string {
         
         .progress-text {
             font-size: 14px;
-            color: hsl(var(--muted-foreground));
+            color: var(--muted-foreground);
             margin-bottom: 8px;
         }
         
@@ -234,13 +234,13 @@ function generateChallengePageHTML(challenge: any, returnTo: string): string {
         
         .status.working {
             background: rgba(34, 197, 94, 0.1);
-            color: hsl(var(--secondary));
+            color: var(--secondary);
             border: 1px solid rgba(34, 197, 94, 0.2);
         }
         
         .status.completed {
             background: rgba(34, 197, 94, 0.2);
-            color: hsl(var(--secondary));
+            color: var(--secondary);
             border: 1px solid rgba(34, 197, 94, 0.3);
         }
         
@@ -248,9 +248,9 @@ function generateChallengePageHTML(challenge: any, returnTo: string): string {
             display: inline-block;
             width: 16px;
             height: 16px;
-            border: 2px solid hsl(var(--muted));
+            border: 2px solid var(--muted);
             border-radius: 50%;
-            border-top-color: hsl(var(--secondary));
+            border-top-color: var(--secondary);
             animation: spin 1s ease-in-out infinite;
             margin-right: 8px;
         }
@@ -261,16 +261,16 @@ function generateChallengePageHTML(challenge: any, returnTo: string): string {
         
         .footer {
             font-size: 12px;
-            color: hsl(var(--muted-foreground));
+            color: var(--muted-foreground);
             margin-top: 24px;
             padding-top: 24px;
-            border-top: 1px solid hsl(var(--border));
+            border-top: 1px solid var(--border);
         }
         
         .brand {
             font-family: 'Work Sans', sans-serif;
             font-weight: 700;
-            color: hsl(var(--foreground));
+            color: var(--foreground);
         }
         
         @media (prefers-color-scheme: light) {

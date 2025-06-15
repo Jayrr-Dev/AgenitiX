@@ -281,9 +281,9 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
     return (
       <div
         className={`
-        bg-[hsl(var(--infra-sidebar-bg))]
-        border-[hsl(var(--infra-sidebar-border))]
-        text-[hsl(var(--infra-sidebar-text))]
+        bg-[var(--infra-sidebar-bg)]
+        border-[var(--infra-sidebar-border)]
+        text-[var(--infra-sidebar-text)]
         border-r
         transition-all
         duration-300
@@ -295,12 +295,12 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
       >
         {/* REGISTRY DEBUG PANEL - Development Only */}
         {enableDebug && process.env.NODE_ENV === "development" && (
-          <div className="bg-[hsl(var(--infra-sidebar-bg-hover))] border-[hsl(var(--infra-sidebar-border-hover))] p-2 text-xs border-b">
-            <div className="text-[hsl(var(--infra-sidebar-text))] font-semibold mb-1">
+          <div className="bg-[var(--infra-sidebar-bg-hover)] border-[var(--infra-sidebar-border-hover)] p-2 text-xs border-b">
+            <div className="text-[var(--infra-sidebar-text)] font-semibold mb-1">
               🔧 Registry Integration
             </div>
             {registryStats && (
-              <div className="space-y-1 text-[hsl(var(--infra-sidebar-text-secondary))]">
+              <div className="space-y-1 text-[var(--infra-sidebar-text-secondary)]">
                 <div>Total Nodes: {registryStats.totalNodes}</div>
                 <div>Categories: {registryStats.categories.length}</div>
                 <div>Folders: {registryStats.folders.length}</div>

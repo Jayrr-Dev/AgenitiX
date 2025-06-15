@@ -17,6 +17,7 @@
 layer(utilities);
 
 /* order matters: foundations first */
+@import "./_generated_tokens.css";
 @import "./_globals.css";
 @import "./_nodes.css";
 @import "./_infra.css";
