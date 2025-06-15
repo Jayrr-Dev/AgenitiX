@@ -4,11 +4,11 @@ import { z } from 'zod';
 
 import { withNodeScaffold } from '@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold';
 import type { NodeSpec } from '@/features/business-logic-modern/infrastructure/node-core/NodeSpec';
-import { 
-  createNodeValidator, 
-  CommonSchemas, 
+import {
+  createNodeValidator,
+  CommonSchemas,
   reportValidationError,
-  useNodeDataValidation 
+  useNodeDataValidation
 } from '@/features/business-logic-modern/infrastructure/node-core/validation';
 import { SafeSchemas, createSafeInitialData } from '@/features/business-logic-modern/infrastructure/node-core/schema-helpers';
 import { CATEGORIES } from '@/features/business-logic-modern/infrastructure/theming/categories';
@@ -18,8 +18,21 @@ import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
 // -- PLOP-INJECTED-IMPORTS --
 
 /**
+ * {{titleCase kind}} NODE - Schema-Driven Controls Implementation
+ *
+ * • Uses enhanced NodeSpec with automatic control generation
+ * • Demonstrates scalable architecture for 400+ node types
+ * • Provides type-safe data validation with Zod schema introspection
+ * • Supports custom field configurations and validation rules
+ * • Zero-maintenance control system with enterprise-grade validation
+ *
+ * Keywords: schema-driven, automatic-controls, scalable-architecture, type-safety, zero-maintenance
+ */
+
+/**
  * Enterprise-grade data schema for {{titleCase kind}} node
  * Define your node's data structure with validation rules
+ * The schema will automatically generate appropriate controls in the Node Inspector
  */
 const {{pascalCase kind}}DataSchema = z.object({
   // Default schema with common fields - customize as needed:
@@ -27,12 +40,44 @@ const {{pascalCase kind}}DataSchema = z.object({
   isEnabled: SafeSchemas.boolean(true),
   // Indicates whether the node is active in the flow engine (used by scaffolding/theme)
   isActive: SafeSchemas.boolean(false),
-  
-  // Add your specific fields here using SafeSchemas:
-  // number: SafeSchemas.number(0, 0, 100),
-  // url: SafeSchemas.url(),
-  // email: SafeSchemas.email(),
-  
+
+  // Add your specific fields here using SafeSchemas for automatic control generation:
+  // Examples of different control types that will be auto-generated:
+
+  // Text fields (generates text input or textarea based on field name)
+  // description: SafeSchemas.optionalText(),
+  // content: SafeSchemas.text('Default content'), // Will generate textarea
+
+  // Number fields (generates number input with validation)
+  // count: SafeSchemas.number(1, 1, 100),
+  // delay: SafeSchemas.number(1000, 0, 10000),
+
+  // Boolean fields (generates checkbox)
+  // autoStart: SafeSchemas.boolean(false),
+  // showPreview: SafeSchemas.boolean(true),
+
+  // Enum fields (generates select dropdown)
+  // priority: SafeSchemas.enum(['low', 'medium', 'high'], 'medium'),
+  // format: SafeSchemas.enum(['json', 'xml', 'csv'], 'json'),
+
+  // URL fields (generates URL input with validation)
+  // endpoint: SafeSchemas.url(),
+  // webhookUrl: SafeSchemas.url('https://example.com/webhook'),
+
+  // Email fields (generates email input with validation)
+  // notificationEmail: SafeSchemas.email(),
+
+  // Date fields (generates date picker)
+  // scheduledDate: SafeSchemas.date(),
+
+  // JSON fields (generates JSON editor with syntax highlighting)
+  // configuration: SafeSchemas.json({}),
+  // metadata: SafeSchemas.json({ version: '1.0' }),
+
+  // Array fields (generates JSON editor for arrays)
+  // tags: SafeSchemas.array(z.string(), ['default']),
+  // items: SafeSchemas.array(z.object({ name: z.string(), value: z.number() }), []),
+
 }).strict(); // Prevents unexpected properties
 
 type {{pascalCase kind}}Data = z.infer<typeof {{pascalCase kind}}DataSchema>;
@@ -41,7 +86,7 @@ type {{pascalCase kind}}Data = z.infer<typeof {{pascalCase kind}}DataSchema>;
 const validateNodeData = createNodeValidator({{pascalCase kind}}DataSchema, '{{pascalCase kind}}');
 
 /**
- * Node specification with enterprise configuration
+ * Enhanced Node specification with schema-driven controls
  */
 const spec: NodeSpec = {
   kind: '{{camelCase kind}}',
@@ -54,15 +99,15 @@ const spec: NodeSpec = {
   handles: [
     // Standard JSON input for programmatic control
     { id: 'json-input', code: 'j', position: 'top', type: 'target' },
-    
+
     // Primary output handle using code
     { id: 'output', code: 's', position: 'right', type: 'source' },
-    
+
     // Multiple handles on same side are automatically spaced
     // { id: 'input-1', code: 's', position: 'left', type: 'target' },
     // { id: 'input-2', code: 'n', position: 'left', type: 'target' },
     // { id: 'input-3', code: 'b', position: 'left', type: 'target' },
-    
+
     // Boolean control for activation (if needed)
     { id: 'activate', code: 's', position: 'left', type: 'target' },
   ],
@@ -70,25 +115,72 @@ const spec: NodeSpec = {
     key: '{{pascalCase kind}}Inspector',
   },
   initialData: createSafeInitialData({{pascalCase kind}}DataSchema), // Auto-generated safe defaults
+
+  // NEW: Schema reference for automatic control generation
+  dataSchema: {{pascalCase kind}}DataSchema,
+
+  // NEW: Control configuration for enhanced UX (optional customizations)
+  controls: {
+    autoGenerate: true, // Enable schema-driven control generation
+    excludeFields: ['isActive'], // System fields excluded from controls
+
+    // Optional: Custom field configurations to override auto-generated controls
+    customFields: [
+      // Example: Customize the text field to be a textarea
+      {
+        key: 'text',
+        type: 'textarea',
+        label: 'Text Output',
+        placeholder: 'Enter the text this node will output...',
+        description: 'This text will be passed to connected nodes when activated.',
+        required: true,
+        ui: {
+          rows: 3,
+        },
+      },
+      // Example: Customize the enabled field
+      {
+        key: 'isEnabled',
+        type: 'boolean',
+        label: 'Node Enabled',
+        description: 'When disabled, this node will not process or output data.',
+      },
+    ],
+
+    // Optional: Group related fields together
+    fieldGroups: [
+      {
+        title: 'Configuration',
+        fields: ['text'],
+        collapsible: false,
+      },
+      {
+        title: 'Settings',
+        fields: ['isEnabled'],
+        collapsible: true,
+      },
+    ],
+  },
 };
 
 /**
  * {{camelCase kind}} Node Component
- * 
+ *
  * Follows enterprise standards:
  * - Two visual states (collapsed/expanded)
  * - JSON input for programmatic control
  * - Type-safe data validation
  * - Error handling and reporting
  * - Metrics collection
+ * - Schema-driven controls (automatic generation)
  */
 const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
   const [isExpanded, setExpanded] = useState(false);
-  
+
   // Enterprise validation with comprehensive error handling
   const validationResult = validateNodeData(data);
   const nodeData = validationResult.data;
-  
+
   // Report validation errors for monitoring
   if (!validationResult.success) {
     reportValidationError('{{pascalCase kind}}', id, validationResult.errors, {
@@ -111,8 +203,8 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
   const handleDataUpdate = (updates: Partial<{{pascalCase kind}}Data>) => {
     try {
       const updatedData = updateData(updates);
-      console.log(`{{pascalCase kind}} node ${id} updated:`, updatedData);
       // TODO: Implement actual data persistence via React Flow store
+      // For now, this is handled by the Node Inspector controls
     } catch (error) {
       console.error('Failed to update {{pascalCase kind}} node data:', error);
     }
@@ -147,50 +239,29 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
                 </span>
               )}
             </div>
-            
-            {/* Default UI controls - customize as needed */}
-            <div>
-              <label className="text-xs font-semibold">Text</label>
-              <input
-                type="text"
-                value={nodeData.text || ''}
-                onChange={(e) => handleDataUpdate({ text: e.target.value })}
-                className="w-full p-1 border rounded text-sm bg-white dark:bg-neutral-800 text-black dark:text-white border-neutral-300 dark:border-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter text..."
-              />
+
+            {/* Schema-driven controls are now handled by Node Inspector */}
+            <div className="text-xs text-gray-500 italic">
+              Configure this node using the Node Inspector panel →
             </div>
-            
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={nodeData.isEnabled || false}
-                onChange={(e) => handleDataUpdate({ isEnabled: e.target.checked })}
-                className="rounded"
-              />
-              <label className="text-xs">Enabled</label>
+
+            {/* Show current values for reference */}
+            <div className="space-y-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+              <div className="text-xs font-medium">Current Configuration:</div>
+              <div className="text-xs">
+                <div>Text: "{nodeData.text}"</div>
+                <div>Enabled: {nodeData.isEnabled ? "Yes" : "No"}</div>
+                {/* Add more fields as needed */}
+              </div>
             </div>
-            
-            {/* Example number input:
-            <div>
-              <label className="text-xs font-semibold">Number</label>
-              <input
-                type="number"
-                value={nodeData.number || 0}
-                onChange={(e) => handleDataUpdate({ number: Number(e.target.value) })}
-                className="w-full p-1 border rounded text-sm bg-white dark:bg-neutral-800 text-black dark:text-white border-neutral-300 dark:border-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            */}
-            
-            {/* Example checkbox:
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={nodeData.isEnabled || false}
-                onChange={(e) => handleDataUpdate({ isEnabled: e.target.checked })}
-                className="rounded"
-              />
-              <label className="text-xs">Enable feature</label>
+
+            {/* Optional: Add node-specific UI that's not part of controls */}
+            {/*
+            <div className="mt-4">
+              <div className="text-xs font-medium mb-2">Node Output Preview:</div>
+              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs font-mono">
+                {nodeData.isEnabled ? nodeData.text : "(disabled)"}
+              </div>
             </div>
             */}
           </div>
@@ -198,7 +269,9 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
       ) : (
         <div className="flex items-center justify-center w-full h-full">
           {/* Collapsed state icon or minimal content */}
-          <span className="text-2xl" aria-label="{{titleCase kind}} Node">🔧</span>
+          <span className="text-2xl" aria-label="{{titleCase kind}} Node">
+            🔧
+          </span>
         </div>
       )}
     </div>
@@ -208,4 +281,4 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
 export default withNodeScaffold(spec, {{pascalCase kind}}NodeComponent);
 
 // Export spec for registry access
-export { spec }; 
+export { spec };

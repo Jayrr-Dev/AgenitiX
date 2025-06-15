@@ -12,8 +12,8 @@ import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sid
 import {
   UndoRedoProvider,
   useUndoRedo,
-} from "../components/history/UndoRedoContext";
-import UndoRedoManager from "../components/history/UndoRedoManager";
+} from "../action-toolbar/history/UndoRedoContext";
+import UndoRedoManager from "../action-toolbar/history/UndoRedoManager";
 import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";

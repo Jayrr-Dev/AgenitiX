@@ -96,7 +96,7 @@ class NodeInspectorAdapterImpl {
 
     // For now, assume all CREATE and TRIGGER nodes have controls
     // This can be enhanced with schema analysis later
-    return metadata.category === "create" || metadata.category === "trigger";
+    return metadata.category === "CREATE" || metadata.category === "TRIGGER";
   }
 }
 

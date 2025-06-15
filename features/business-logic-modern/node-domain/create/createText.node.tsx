@@ -1,3 +1,16 @@
+/**
+ * CREATETEXT NODE - Enhanced with Schema-Driven Controls
+ *
+ * • Demonstrates the new schema-driven control system
+ * • Uses enhanced NodeSpec with dataSchema and controls configuration
+ * • Automatically generates controls from Zod schema introspection
+ * • Supports custom field configurations and validation
+ * • Serves as reference implementation for 400+ node scalability
+ *
+ * Keywords: schema-driven, automatic-controls, reference-implementation, scalable-architecture
+ */
+
+import { useNodeData } from "@/hooks/useNodeData";
 import type { NodeProps } from "@xyflow/react";
 import { useState } from "react";
 import { z } from "zod";
@@ -28,16 +41,17 @@ import {
  */
 const CreateTextDataSchema = z
   .object({
-    // Default schema with common fields - customize as needed:
+    // Enhanced schema with better field definitions for automatic control generation
     text: SafeSchemas.text("Default text"),
     isEnabled: SafeSchemas.boolean(true),
     // Indicates whether the node is active in the flow engine (used by scaffolding/theme)
     isActive: SafeSchemas.boolean(false),
 
-    // Add your specific fields here using SafeSchemas:
-    // number: SafeSchemas.number(0, 0, 100),
-    // url: SafeSchemas.url(),
-    // email: SafeSchemas.email(),
+    // Example of additional fields that would generate different control types
+    // priority: SafeSchemas.enum(['low', 'medium', 'high'], 'medium'),
+    // maxLength: SafeSchemas.number(100, 1, 1000),
+    // description: SafeSchemas.optionalText(),
+    // outputFormat: SafeSchemas.enum(['plain', 'markdown', 'html'], 'plain'),
   })
   .strict(); // Prevents unexpected properties
 
@@ -50,7 +64,7 @@ const validateNodeData = createNodeValidator(
 );
 
 /**
- * Node specification with enterprise configuration
+ * Enhanced Node specification with schema-driven controls
  */
 const spec: NodeSpec = {
   kind: "createText",
@@ -74,6 +88,50 @@ const spec: NodeSpec = {
     key: "CreateTextInspector",
   },
   initialData: createSafeInitialData(CreateTextDataSchema), // Auto-generated safe defaults
+
+  // NEW: Schema reference for automatic control generation
+  dataSchema: CreateTextDataSchema,
+
+  // NEW: Control configuration for enhanced UX
+  controls: {
+    autoGenerate: true, // Enable schema-driven control generation
+    excludeFields: ["isActive"], // System fields excluded from controls
+    customFields: [
+      // Custom configuration for the text field
+      {
+        key: "text",
+        type: "textarea",
+        label: "Text Output",
+        placeholder: "Enter the text this node will output...",
+        description:
+          "This text will be passed to connected nodes when activated.",
+        required: true,
+        ui: {
+          rows: 3,
+        },
+      },
+      // Custom configuration for the enabled field
+      {
+        key: "isEnabled",
+        type: "boolean",
+        label: "Node Enabled",
+        description:
+          "When disabled, this node will not process or output data.",
+      },
+    ],
+    fieldGroups: [
+      {
+        title: "Output Configuration",
+        fields: ["text"],
+        collapsible: false,
+      },
+      {
+        title: "Node Settings",
+        fields: ["isEnabled"],
+        collapsible: true,
+      },
+    ],
+  },
 };
 
 /**
@@ -85,13 +143,17 @@ const spec: NodeSpec = {
  * - Type-safe data validation
  * - Error handling and reporting
  * - Metrics collection
+ * - Schema-driven controls (automatic generation)
  */
 const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
   const [isExpanded, setExpanded] = useState(false);
 
+  // Use proper React Flow data management
+  const { nodeData, updateNodeData } = useNodeData(id, data);
+
   // Enterprise validation with comprehensive error handling
-  const validationResult = validateNodeData(data);
-  const nodeData = validationResult.data;
+  const validationResult = validateNodeData(nodeData);
+  const validatedData = validationResult.data;
 
   // Report validation errors for monitoring
   if (!validationResult.success) {
@@ -102,21 +164,19 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
   }
 
   // Enterprise data validation hook for real-time updates
-  const { updateData, getHealthScore } = useNodeDataValidation(
+  const { getHealthScore } = useNodeDataValidation(
     CreateTextDataSchema,
     "CreateText",
-    nodeData,
+    validatedData,
     id
   );
 
   const onToggle = () => setExpanded((prev) => !prev);
 
-  // Handle data updates with validation
+  // Handle data updates with proper React Flow integration
   const handleDataUpdate = (updates: Partial<CreateTextData>) => {
     try {
-      const updatedData = updateData(updates);
-      console.log(`CreateText node ${id} updated:`, updatedData);
-      // TODO: Implement actual data persistence via React Flow store
+      updateNodeData(updates);
     } catch (error) {
       console.error("Failed to update CreateText node data:", error);
     }
@@ -154,53 +214,19 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
               )}
             </div>
 
-            {/* Default UI controls - customize as needed */}
-            <div>
-              <label className="text-xs font-semibold">Text</label>
-              <input
-                type="text"
-                value={nodeData.text || ""}
-                onChange={(e) => handleDataUpdate({ text: e.target.value })}
-                className="w-full p-1 border rounded text-sm bg-white dark:bg-neutral-800 text-black dark:text-white border-neutral-300 dark:border-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter text..."
-              />
+            {/* Simplified UI - controls are now handled by Node Inspector */}
+            <div className="text-xs text-gray-500 italic">
+              Configure this node using the Node Inspector panel →
             </div>
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={nodeData.isEnabled || false}
-                onChange={(e) =>
-                  handleDataUpdate({ isEnabled: e.target.checked })
-                }
-                className="rounded"
-              />
-              <label className="text-xs">Enabled</label>
+            {/* Show current values for reference */}
+            <div className="space-y-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+              <div className="text-xs font-medium">Current Configuration:</div>
+              <div className="text-xs">
+                <div>Text: "{validatedData.text}"</div>
+                <div>Enabled: {validatedData.isEnabled ? "Yes" : "No"}</div>
+              </div>
             </div>
-
-            {/* Example number input:
-            <div>
-              <label className="text-xs font-semibold">Number</label>
-              <input
-                type="number"
-                value={nodeData.number || 0}
-                onChange={(e) => handleDataUpdate({ number: Number(e.target.value) })}
-                className="w-full p-1 border rounded text-sm"
-              />
-            </div>
-            */}
-
-            {/* Example checkbox:
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={nodeData.isEnabled || false}
-                onChange={(e) => handleDataUpdate({ isEnabled: e.target.checked })}
-                className="rounded"
-              />
-              <label className="text-xs">Enable feature</label>
-            </div>
-            */}
           </div>
         </div>
       ) : (

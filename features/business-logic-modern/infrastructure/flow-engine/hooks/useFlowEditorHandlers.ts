@@ -12,7 +12,7 @@
  */
 
 import { useCallback } from "react";
-import { useUndoRedo } from "../../components/history/UndoRedoContext";
+import { useUndoRedo } from "../../action-toolbar/history/UndoRedoContext";
 import type { AgenEdge, AgenNode } from "../types/nodeData";
 
 // ============================================================================

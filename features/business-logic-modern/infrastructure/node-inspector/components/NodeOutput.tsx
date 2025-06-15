@@ -19,6 +19,7 @@ import React, { useCallback, useMemo } from "react";
 import type { NodeType } from "../../flow-engine/types/nodeData";
 import { getNodeMetadata } from "../../node-registry/nodespec-registry";
 import type { NodeMetadata } from "../../node-registry/types";
+import { useComponentTheme } from "../../theming/components";
 
 // ============================================================================
 // COMPONENT INTERFACE
@@ -81,79 +82,57 @@ function getOutputFormattingPreferences(nodeType: string): {
 
 /**
  * GET NODE-SPECIFIC OUTPUT STYLING
- * Returns node-specific styling based on registry metadata
+ * Returns node-specific styling based on registry metadata using component theme
  */
 function getNodeSpecificStyling(
   nodeType: NodeType,
-  preferences: ReturnType<typeof getOutputFormattingPreferences>
+  preferences: ReturnType<typeof getOutputFormattingPreferences>,
+  theme: any
 ): Partial<FormattedOutput> {
-  // Registry-enhanced styling
+  // Registry-enhanced styling using component theme
   if (preferences.hasCustomFormatting && preferences.metadata) {
     const metadata = preferences.metadata;
 
-    // Category-based styling
+    // Category-based styling with proper theme colors
     switch (metadata.category) {
       case "create":
         return {
-          color: "text-node-create",
+          color: theme.text.primary,
           icon: metadata.icon || "🏗️",
         };
       case "view":
         return {
-          color: "text-node-view",
+          color: theme.text.secondary,
           icon: metadata.icon || "👁️",
         };
       case "trigger":
         return {
-          color: "text-node-trigger",
+          color: theme.text.primary,
           icon: metadata.icon || "⚡",
         };
       case "test":
         return {
-          color: "text-node-test",
+          color: theme.text.primary,
           icon: metadata.icon || "🧪",
         };
       case "cycle":
         return {
-          color: "text-info",
+          color: theme.text.secondary,
           icon: metadata.icon || "🔄",
         };
       default:
         return {
-          color: "text-node-view-text-secondary",
+          color: theme.text.muted,
           icon: metadata.icon || "📄",
         };
     }
   }
 
-  // Fallback to node type specific styling (legacy support)
-  switch (nodeType) {
-    case "createText":
-      return {
-        color: "text-node-create",
-        icon: "📝",
-      };
-    case "viewOutput":
-      return {
-        color: "text-node-view",
-        icon: "👁️",
-      };
-    case "triggerOnToggle":
-      return {
-        color: "text-node-trigger",
-        icon: "🎯",
-      };
-    case "testError":
-      return {
-        color: "text-node-test",
-        icon: "⚠️",
-      };
-    default:
-      return {
-        color: "text-node-view-text-secondary",
-        icon: "📄",
-      };
-  }
+  // Fallback to node type specific styling using theme
+  return {
+    color: theme.text.muted,
+    icon: "📄",
+  };
 }
 
 // ============================================================================
@@ -161,6 +140,9 @@ function getNodeSpecificStyling(
 // ============================================================================
 
 export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
+  // Get component theme
+  const theme = useComponentTheme("nodeInspector");
+
   // REGISTRY METADATA - Get formatting preferences
   const outputPreferences = useMemo(() => {
     return getOutputFormattingPreferences(nodeType);
@@ -177,12 +159,12 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
     }
   }, []);
 
-  // ENHANCED OUTPUT FORMATTING - Registry-aware
+  // ENHANCED OUTPUT FORMATTING - Registry-aware with theme
   const formatOutput = useMemo((): FormattedOutput => {
     if (output === null || output === undefined) {
       return {
         text: "—",
-        color: "text-node-view-text-secondary italic",
+        color: `${theme.text.muted} italic`,
         type: "null",
         icon: "∅",
         metadata: {
@@ -198,204 +180,124 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
     let detectedType = "string";
 
     try {
-      // Attempt JSON parsing for complex types
-      if (
-        typeof output === "string" &&
-        (output.startsWith("{") || output.startsWith("["))
-      ) {
-        parsedValue = JSON.parse(output);
-        detectedType = Array.isArray(parsedValue) ? "array" : "object";
-      } else if (output === "true" || output === "false") {
-        parsedValue = output === "true";
-        detectedType = "boolean";
-      } else if (!isNaN(Number(output)) && output.trim() !== "") {
-        parsedValue = Number(output);
-        detectedType = "number";
-      }
+      parsedValue = JSON.parse(output);
+      detectedType = Array.isArray(parsedValue) ? "array" : typeof parsedValue;
     } catch {
-      // Keep as string if parsing fails
+      // Keep as string if not valid JSON
       detectedType = "string";
     }
 
-    // TYPE-SPECIFIC FORMATTING AND COLORS
-    let baseFormatting: FormattedOutput;
+    // Get node-specific styling
+    const nodeSpecificStyling = getNodeSpecificStyling(
+      nodeType,
+      outputPreferences,
+      theme
+    );
 
+    // Format based on detected type
     switch (detectedType) {
-      case "boolean":
-        baseFormatting = {
-          text: String(parsedValue),
-          color: parsedValue
-            ? "text-success"
-            : "text-error",
-          type: "boolean",
-          icon: parsedValue ? "✅" : "❌",
-        };
-        break;
-
-      case "number":
-        baseFormatting = {
-          text: String(parsedValue),
-          color: "text-warning",
-          type: "number",
-          icon: "🔢",
-        };
-        break;
-
-      case "array":
-        baseFormatting = {
-          text: `[${parsedValue.length} items]`,
-          color: "text-node-test",
-          type: "array",
-          icon: "📊",
-          fullText: JSON.stringify(parsedValue, null, 2),
-        };
-        break;
-
       case "object":
-        const keys = Object.keys(parsedValue);
-        baseFormatting = {
-          text: `{${keys.length} properties}`,
-          color: "text-node-trigger",
+        return {
+          text: JSON.stringify(parsedValue, null, 2),
+          color: nodeSpecificStyling.color || theme.text.primary,
           type: "object",
-          icon: "📋",
+          icon: nodeSpecificStyling.icon || "📦",
           fullText: JSON.stringify(parsedValue, null, 2),
+          metadata: {
+            nodeDisplayName: outputPreferences.displayName,
+            nodeIcon: outputPreferences.customIcon,
+            nodeCategory: outputPreferences.category,
+          },
         };
-        break;
-
+      case "array":
+        return {
+          text: JSON.stringify(parsedValue, null, 2),
+          color: nodeSpecificStyling.color || theme.text.primary,
+          type: "array",
+          icon: nodeSpecificStyling.icon || "📋",
+          fullText: JSON.stringify(parsedValue, null, 2),
+          metadata: {
+            nodeDisplayName: outputPreferences.displayName,
+            nodeIcon: outputPreferences.customIcon,
+            nodeCategory: outputPreferences.category,
+          },
+        };
+      case "number":
+        return {
+          text: String(parsedValue),
+          color: nodeSpecificStyling.color || theme.text.primary,
+          type: "number",
+          icon: nodeSpecificStyling.icon || "🔢",
+          fullText: String(parsedValue),
+          metadata: {
+            nodeDisplayName: outputPreferences.displayName,
+            nodeIcon: outputPreferences.customIcon,
+            nodeCategory: outputPreferences.category,
+          },
+        };
+      case "boolean":
+        return {
+          text: String(parsedValue),
+          color: nodeSpecificStyling.color || theme.text.primary,
+          type: "boolean",
+          icon: nodeSpecificStyling.icon || (parsedValue ? "✅" : "❌"),
+          fullText: String(parsedValue),
+          metadata: {
+            nodeDisplayName: outputPreferences.displayName,
+            nodeIcon: outputPreferences.customIcon,
+            nodeCategory: outputPreferences.category,
+          },
+        };
       default:
-        // Get node-specific styling from registry
-        const nodeSpecificStyling = getNodeSpecificStyling(
-          nodeType,
-          outputPreferences
-        );
-
-        baseFormatting = {
+        return {
           text: String(output),
-          color:
-            nodeSpecificStyling.color || "text-node-view",
+          color: nodeSpecificStyling.color || theme.text.primary,
           type: "string",
           icon: nodeSpecificStyling.icon || "📝",
+          fullText: String(output),
+          metadata: {
+            nodeDisplayName: outputPreferences.displayName,
+            nodeIcon: outputPreferences.customIcon,
+            nodeCategory: outputPreferences.category,
+          },
         };
-        break;
     }
-
-    // Add registry metadata
-    baseFormatting.metadata = {
-      nodeDisplayName: outputPreferences.displayName,
-      nodeIcon: outputPreferences.customIcon,
-      nodeCategory: outputPreferences.category,
-    };
-
-    return baseFormatting;
-  }, [output, nodeType, outputPreferences]);
-
-  // ============================================================================
-  // RENDER
-  // ============================================================================
+  }, [output, nodeType, outputPreferences, theme]);
 
   return (
-    <div className="text-xs space-y-2">
-      {/* OUTPUT HEADER - Registry-enhanced */}
-      <div className="font-semibold text-node-view flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <span>Output:</span>
-
-          {/* DATA TYPE INDICATOR */}
-          {formatOutput.icon && (
-            <span
-              className="text-sm cursor-help"
-              title={`Type: ${formatOutput.type}`}
-            >
-              {formatOutput.icon}
-            </span>
-          )}
-
-          {/* NODE METADATA INDICATOR */}
-          {formatOutput.metadata?.nodeIcon && (
-            <span
-              className="text-xs opacity-60 cursor-help"
-              title={`From: ${formatOutput.metadata.nodeDisplayName} (${formatOutput.metadata.nodeCategory})`}
-            >
-              {formatOutput.metadata.nodeIcon}
+    <div className="flex flex-col h-full min-h-0">
+      {/* Output Header with Metadata */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{formatOutput.icon}</span>
+          <span className={`text-xs font-medium ${theme.text.secondary}`}>
+            {formatOutput.type.toUpperCase()}
+          </span>
+          {formatOutput.metadata?.nodeDisplayName && (
+            <span className={`text-xs ${theme.text.muted}`}>
+              from {formatOutput.metadata.nodeDisplayName}
             </span>
           )}
         </div>
-
-        {/* COPY BUTTON */}
-        {output && (
+        {formatOutput.fullText && (
           <button
-            onClick={() =>
-              copyToClipboard(formatOutput.fullText || formatOutput.text)
-            }
-            className="text-[10px] px-1 py-0.5 bg-node-view-hover hover:bg-node-view-hover
-                       rounded transition-colors cursor-pointer"
-            title="Copy output to clipboard"
+            onClick={() => copyToClipboard(formatOutput.fullText!)}
+            className={`px-2 py-1 text-xs ${theme.text.muted} hover:${theme.text.primary} ${theme.background.hover} hover:${theme.background.active} ${theme.borderRadius.button} ${theme.transition}`}
+            title="Copy to clipboard"
           >
             📋
           </button>
         )}
       </div>
 
-      {/* OUTPUT VALUE DISPLAY */}
-      <div
-        className={`font-mono break-all bg-node-view-hover rounded-md px-3 py-2 border-node-view ${formatOutput.color} cursor-text`}
-        onClick={() =>
-          output && copyToClipboard(formatOutput.fullText || formatOutput.text)
-        }
-        title="Click to copy"
-      >
-        {formatOutput.text}
+      {/* Output Content */}
+      <div className="flex-1 overflow-auto">
+        <pre
+          className={`text-sm font-mono leading-relaxed whitespace-pre-wrap break-words ${formatOutput.color}`}
+        >
+          {formatOutput.text}
+        </pre>
       </div>
-
-      {/* EXPANDED VIEW FOR COMPLEX TYPES */}
-      {formatOutput.fullText && (
-        <details className="mt-2">
-          <summary className="text-xs text-node-view-text-secondary cursor-pointer hover:text-node-view select-none">
-            📖 View full {formatOutput.type} (
-            {formatOutput.fullText.split("\n").length} lines)
-          </summary>
-          <div className="mt-2 p-3 bg-node-view rounded border-node-view text-xs font-mono overflow-auto max-h-48">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-node-view-text-secondary text-[10px]">
-                Full {formatOutput.type.toUpperCase()} Content:
-              </span>
-              <button
-                onClick={() => copyToClipboard(formatOutput.fullText!)}
-                className="text-[10px] px-1 py-0.5 bg-node-create hover:bg-node-create-hover
-                           rounded transition-colors"
-                title="Copy full content"
-              >
-                📋 Copy All
-              </button>
-            </div>
-            <pre className="whitespace-pre-wrap text-node-view-text-secondary leading-relaxed">
-              {formatOutput.fullText}
-            </pre>
-          </div>
-        </details>
-      )}
-
-      {/* REGISTRY DEBUG INFO - Development only */}
-      {process.env.NODE_ENV === "development" &&
-        outputPreferences.hasCustomFormatting && (
-          <div className="mt-2 p-2 bg-node-create rounded text-[10px] border-node-create">
-            <div className="font-medium text-node-create-text mb-1">
-              🔧 Registry Output Info:
-            </div>
-            <div className="space-y-0.5 text-node-create-text-secondary">
-              <div>
-                Node: <code>{formatOutput.metadata?.nodeDisplayName}</code>
-              </div>
-              <div>
-                Category: <code>{formatOutput.metadata?.nodeCategory}</code>
-              </div>
-              <div>
-                Data Type: <code>{formatOutput.type}</code>
-              </div>
-              <div>Registry Enhanced: ✅</div>
-            </div>
-          </div>
-        )}
     </div>
   );
 };

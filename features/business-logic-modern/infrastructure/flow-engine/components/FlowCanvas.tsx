@@ -31,8 +31,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import type { AgenEdge, AgenNode } from "../types/nodeData";
 
 // Import other components - Using clean aliases
-import ActionToolbar from "@/features/business-logic-modern/infrastructure/components/ActionToolbar";
-import HistoryPanel from "@/features/business-logic-modern/infrastructure/components/history/HistoryPanel";
+import ActionToolbar from "@/features/business-logic-modern/infrastructure/action-toolbar/ActionToolbar";
+import HistoryPanel from "@/features/business-logic-modern/infrastructure/action-toolbar/history/HistoryPanel";
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
 import { ThemedMiniMap } from "@/features/business-logic-modern/infrastructure/theming/components";
 import { NodeDisplayProvider } from "../contexts/NodeDisplayContext";

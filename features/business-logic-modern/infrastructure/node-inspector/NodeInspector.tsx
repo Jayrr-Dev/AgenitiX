@@ -20,6 +20,7 @@ import React, { useCallback, useMemo } from "react";
 import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
 
 import type { AgenNode, NodeType } from "../flow-engine/types/nodeData";
+import { useComponentTheme } from "../theming/components";
 import { NodeInspectorAdapter } from "./adapters/NodeInspectorAdapter";
 import { EdgeInspector } from "./components/EdgeInspector";
 import { ErrorLog } from "./components/ErrorLog";
@@ -28,6 +29,7 @@ import { NodeHeader } from "./components/NodeHeader";
 import { NodeOutput } from "./components/NodeOutput";
 import { useInspectorState } from "./hooks/useInspectorState";
 import { JsonHighlighter } from "./utils/JsonHighlighter";
+
 const NodeInspector = React.memo(function NodeInspector() {
   const {
     nodes,
@@ -45,6 +47,9 @@ const NodeInspector = React.memo(function NodeInspector() {
     addNode,
     selectNode,
   } = useFlowStore();
+
+  // Get theme for node inspector
+  const theme = useComponentTheme("nodeInspector");
 
   const selectedNode = selectedNodeId
     ? nodes.find((n) => n.id === selectedNodeId) || null
@@ -134,13 +139,15 @@ const NodeInspector = React.memo(function NodeInspector() {
 
   if (inspectorLocked) {
     return (
-      <div className="flex items-center justify-center h-full w-full bg-infra-inspector">
+      <div
+        className={`flex items-center justify-center h-full w-full ${theme.background.primary}`}
+      >
         <button
           type="button"
           aria-label="Unlock Inspector"
           title="Unlock Inspector (Alt+A)"
           onClick={() => setInspectorLocked(false)}
-          className="p-2 rounded-full bg-infra-inspector-hover text-infra-inspector-text hover:bg-infra-inspector-active"
+          className={`p-2 ${theme.borderRadius.button} ${theme.background.hover} ${theme.text.primary} ${theme.transition} hover:${theme.background.active} ${theme.shadow.hover}`}
         >
           <FaLockOpen />
         </button>
@@ -149,15 +156,20 @@ const NodeInspector = React.memo(function NodeInspector() {
   }
 
   return (
-    <div className="node-inspector flex flex-col h-full bg-infra-inspector text-infra-inspector-text border-l border-infra-inspector">
-      <div className="flex items-center justify-between p-2 border-b border-infra-inspector">
+    <div
+      className={`node-inspector flex flex-col h-full ${theme.background.primary} ${theme.text.primary} ${theme.border.default} border-l`}
+    >
+      {/* Header */}
+      <div
+        className={`flex items-center justify-between p-2 ${theme.border.default} border-b`}
+      >
         <h2 className="text-lg font-semibold">Inspector</h2>
         <div className="flex items-center gap-2">
           <button
             type="button"
             aria-label="Search"
             title="Search (not implemented)"
-            className="p-1 rounded hover:bg-infra-inspector-hover text-infra-inspector-text-secondary"
+            className={`p-1 rounded ${theme.background.hover} ${theme.text.secondary} ${theme.transition} hover:${theme.background.active}`}
           >
             <FaSearch />
           </button>
@@ -166,13 +178,14 @@ const NodeInspector = React.memo(function NodeInspector() {
             aria-label="Lock Inspector"
             title="Lock Inspector (Alt+A)"
             onClick={() => setInspectorLocked(true)}
-            className="p-1 rounded hover:bg-infra-inspector-hover text-infra-inspector-text-secondary"
+            className={`p-1 rounded ${theme.background.hover} ${theme.text.secondary} ${theme.transition} hover:${theme.background.active}`}
           >
             <FaLock />
           </button>
         </div>
       </div>
 
+      {/* Content */}
       <div className="flex-1 overflow-y-auto p-3">
         {selectedNode && nodeInfo && nodeInfo.displayName ? (
           <div className="flex flex-col gap-4">
@@ -188,8 +201,11 @@ const NodeInspector = React.memo(function NodeInspector() {
               inspectorState={combinedInspectorState}
             />
 
+            {/* Configuration Section */}
             <div>
-              <h3 className="text-sm font-semibold text-infra-inspector-text-secondary mb-2">
+              <h3
+                className={`text-sm font-semibold ${theme.text.secondary} mb-2`}
+              >
                 Configuration
               </h3>
               <NodeControls
@@ -199,28 +215,47 @@ const NodeInspector = React.memo(function NodeInspector() {
               />
             </div>
 
+            {/* Live Output Section - FIXED CONTRAST */}
             <div>
-              <h3 className="text-sm font-semibold text-infra-inspector-text-secondary mb-2">
+              <h3
+                className={`text-sm font-semibold ${theme.text.secondary} mb-2`}
+              >
                 Live Output
               </h3>
-              <NodeOutput
-                output={output}
-                nodeType={selectedNode.type as NodeType}
-              />
+              <div
+                className={`${theme.background.secondary} ${theme.border.default} border ${theme.borderRadius.panel} p-3`}
+              >
+                <NodeOutput
+                  output={output}
+                  nodeType={selectedNode.type as NodeType}
+                />
+              </div>
             </div>
 
+            {/* Error Log Section - FIXED CONTRAST */}
             <div>
-              <h3 className="text-sm font-semibold text-infra-inspector-text-secondary mb-2">
+              <h3
+                className={`text-sm font-semibold ${theme.text.secondary} mb-2`}
+              >
                 Error Log
               </h3>
-              <ErrorLog errors={errors} onClearErrors={handleClearErrors} />
+              <div
+                className={`${theme.background.secondary} ${theme.border.default} border ${theme.borderRadius.panel} p-3`}
+              >
+                <ErrorLog errors={errors} onClearErrors={handleClearErrors} />
+              </div>
             </div>
 
+            {/* Raw Data Section */}
             <div>
-              <h3 className="text-sm font-semibold text-infra-inspector-text-secondary mb-2">
+              <h3
+                className={`text-sm font-semibold ${theme.text.secondary} mb-2`}
+              >
                 Raw Data
               </h3>
-              <div className="p-2 bg-infra-inspector-hover rounded-lg text-xs border border-infra-inspector">
+              <div
+                className={`p-2 ${theme.background.secondary} ${theme.borderRadius.panel} text-xs ${theme.border.default} border`}
+              >
                 <JsonHighlighter data={selectedNode.data} />
               </div>
             </div>
@@ -233,10 +268,10 @@ const NodeInspector = React.memo(function NodeInspector() {
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="text-lg font-semibold text-infra-inspector-text-secondary">
+            <div className={`text-lg font-semibold ${theme.text.secondary}`}>
               No Selection
             </div>
-            <p className="text-sm text-infra-inspector-text-secondary mt-1">
+            <p className={`text-sm ${theme.text.muted} mt-1`}>
               Select a node or edge to inspect its properties.
             </p>
           </div>
