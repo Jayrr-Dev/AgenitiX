@@ -32,7 +32,7 @@ export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
 }) => {
   return (
     <MiniMap
-      className={`bg-[hsl(var(--infra-minimap-bg))] border-[hsl(var(--infra-minimap-border))] hover:bg-[hsl(var(--infra-minimap-bg-hover))] hover:border-[hsl(var(--infra-minimap-border-hover))] rounded border shadow-sm transition-colors duration-200 ${className}`}
+      className={`bg-[var(--infra-minimap-bg)] border-[var(--infra-minimap-border)] hover:bg-[var(--infra-minimap-bg-hover)] hover:border-[var(--infra-minimap-border-hover)] rounded border shadow-sm transition-colors duration-200 ${className}`}
       position={position}
       pannable={pannable}
       zoomable={zoomable}
@@ -76,20 +76,20 @@ export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
             console.log(
               `🟢 [MiniMap] Applying CREATE green color for node ${node.id}`
             );
-            return "hsl(var(--node-create-bg))";
+            return "var(--node-create-bg)";
           case "VIEW":
-            return "hsl(var(--node-view-bg))";
+            return "var(--node-view-bg)";
           case "TRIGGER":
-            return "hsl(var(--node-trigger-bg))";
+            return "var(--node-trigger-bg)";
           case "TEST":
-            return "hsl(var(--node-test-bg))";
+            return "var(--node-test-bg)";
           case "CYCLE":
-            return "hsl(var(--node-cycle-bg))";
+            return "var(--node-cycle-bg)";
           default:
             console.log(
               `🔵 [MiniMap] Using default blue color for node ${node.id}, category: ${resolvedCategory}`
             );
-            return "hsl(var(--node-view-bg))";
+            return "var(--node-view-bg)";
         }
       }}
       nodeStrokeColor={(node) => {
@@ -117,24 +117,24 @@ export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
 
         switch (resolvedCategory) {
           case "CREATE":
-            return "hsl(var(--node-create-bg-hover))"; // Slightly darker for border
+            return "var(--node-create-bg-hover)"; // Slightly darker for border
           case "VIEW":
-            return "hsl(var(--node-view-bg-hover))";
+            return "var(--node-view-bg-hover)";
           case "TRIGGER":
-            return "hsl(var(--node-trigger-bg-hover))";
+            return "var(--node-trigger-bg-hover)";
           case "TEST":
-            return "hsl(var(--node-test-bg-hover))";
+            return "var(--node-test-bg-hover)";
           case "CYCLE":
-            return "hsl(var(--node-cycle-bg-hover))";
+            return "var(--node-cycle-bg-hover)";
           default:
-            return "hsl(var(--node-view-bg-hover))";
+            return "var(--node-view-bg-hover)";
         }
       }}
       nodeStrokeWidth={2}
-      maskColor="hsl(var(--infra-minimap-mask))"
+      maskColor="var(--infra-minimap-mask)"
       style={{
-        backgroundColor: "hsl(var(--infra-minimap-bg))",
-        border: "1px solid hsl(var(--infra-minimap-border))",
+        backgroundColor: "var(--infra-minimap-bg)",
+        border: "1px solid var(--infra-minimap-border)",
       }}
     />
   );

@@ -81,11 +81,11 @@ const spec: NodeSpec = {
  * Category-specific background mapping
  */
 const CATEGORY_BACKGROUNDS = {
-  CREATE: "bg-[hsl(var(--node-create-bg))]",
-  VIEW: "bg-[hsl(var(--node-view-bg))]",
-  TRIGGER: "bg-[hsl(var(--node-trigger-bg))]",
-  TEST: "bg-[hsl(var(--node-test-bg))]",
-  CYCLE: "bg-[hsl(var(--node-cycle-bg))]",
+  CREATE: "bg-[var(--node-create-bg)]",
+  VIEW: "bg-[var(--node-view-bg)]",
+  TRIGGER: "bg-[var(--node-trigger-bg)]",
+  TEST: "bg-[var(--node-test-bg)]",
+  CYCLE: "bg-[var(--node-cycle-bg)]",
 } as const;
 
 /**
@@ -93,24 +93,24 @@ const CATEGORY_BACKGROUNDS = {
  */
 const CATEGORY_TEXT_COLORS = {
   CREATE: {
-    primary: "text-[hsl(var(--node-create-text))]",
-    secondary: "text-[hsl(var(--node-create-text-secondary))]",
+    primary: "text-[var(--node-create-text)]",
+    secondary: "text-[var(--node-create-text-secondary)]",
   },
   VIEW: {
-    primary: "text-[hsl(var(--node-view-text))]",
-    secondary: "text-[hsl(var(--node-view-text-secondary))]",
+    primary: "text-[var(--node-view-text)]",
+    secondary: "text-[var(--node-view-text-secondary)]",
   },
   TRIGGER: {
-    primary: "text-[hsl(var(--node-trigger-text))]",
-    secondary: "text-[hsl(var(--node-trigger-text-secondary))]",
+    primary: "text-[var(--node-trigger-text)]",
+    secondary: "text-[var(--node-trigger-text-secondary)]",
   },
   TEST: {
-    primary: "text-[hsl(var(--node-test-text))]",
-    secondary: "text-[hsl(var(--node-test-text-secondary))]",
+    primary: "text-[var(--node-test-text)]",
+    secondary: "text-[var(--node-test-text-secondary)]",
   },
   CYCLE: {
-    primary: "text-[hsl(var(--node-cycle-text))]",
-    secondary: "text-[hsl(var(--node-cycle-text-secondary))]",
+    primary: "text-[var(--node-cycle-text)]",
+    secondary: "text-[var(--node-cycle-text-secondary)]",
   },
 } as const;
 
@@ -119,24 +119,24 @@ const CATEGORY_TEXT_COLORS = {
  */
 const CATEGORY_BORDER_COLORS = {
   CREATE: {
-    default: "border-[hsl(var(--node-create-border))]",
-    hover: "hover:border-[hsl(var(--node-create-border-hover))]",
+    default: "border-[var(--node-create-border)]",
+    hover: "hover:border-[var(--node-create-border-hover)]",
   },
   VIEW: {
-    default: "border-[hsl(var(--node-view-border))]",
-    hover: "hover:border-[hsl(var(--node-view-border-hover))]",
+    default: "border-[var(--node-view-border)]",
+    hover: "hover:border-[var(--node-view-border-hover)]",
   },
   TRIGGER: {
-    default: "border-[hsl(var(--node-trigger-border))]",
-    hover: "hover:border-[hsl(var(--node-trigger-border-hover))]",
+    default: "border-[var(--node-trigger-border)]",
+    hover: "hover:border-[var(--node-trigger-border-hover)]",
   },
   TEST: {
-    default: "border-[hsl(var(--node-test-border))]",
-    hover: "hover:border-[hsl(var(--node-test-border-hover))]",
+    default: "border-[var(--node-test-border)]",
+    hover: "hover:border-[var(--node-test-border-hover)]",
   },
   CYCLE: {
-    default: "border-[hsl(var(--node-cycle-border))]",
-    hover: "hover:border-[hsl(var(--node-cycle-border-hover))]",
+    default: "border-[var(--node-cycle-border)]",
+    hover: "hover:border-[var(--node-cycle-border-hover)]",
   },
 } as const;
 
@@ -284,7 +284,7 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
             value={validatedData.text}
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Enter your text here..."
-            className={`flex-1 w-full p-2 text-sm rounded-md resize-none transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${categoryTextColors.primary} bg-[hsl(var(--node-create-bg-hover))] ${categoryBorderColors.default.replace("border-", "border-")} ${categoryBorderColors.hover.replace("hover:border-", "hover:border-")}`}
+            className={`flex-1 w-full p-2 text-sm rounded-md resize-none transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${categoryTextColors.primary} bg-[var(--node-create-bg-hover)] ${categoryBorderColors.default.replace("border-", "border-")} ${categoryBorderColors.hover.replace("hover:border-", "hover:border-")}`}
             style={{
               minHeight: "60px",
               borderWidth: "1px",
