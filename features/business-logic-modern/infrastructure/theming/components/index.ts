@@ -21,3 +21,5 @@ export * from "./designTokens";
 // Themed components
 export * from "./ColorDebugger";
 export * from "./ThemedMiniMap";
+
+export * from "./actionToolbar";
