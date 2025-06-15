@@ -70,7 +70,7 @@
 | node.test.text | 0 0% 98% |
 | node.test.text-secondary | 0 0% 85% |
 | node.test.bg-hover | 0 72% 30% |
-| infra.inspector.bg | 0 0% 12% |
+| infra.inspector.bg | 0 100% 12% |
 | infra.inspector.text | 0 0% 98% |
 | infra.inspector.text-secondary | 0 0% 70% |
 | infra.sidebar.bg | 0 0% 8% |

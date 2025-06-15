@@ -10,24 +10,7 @@
 
 import { useMemo } from "react";
 import { create } from "zustand";
-
-// ⚠️ Note: Importing node registry here created a circular dependency with
-// node-spec files (e.g., createText.node) during Storybook evaluation.
-// We now lazy-load the registry functions to avoid the cycle.
-
-// Browser-safe lazy import using dynamic ESM `import()`.
-let _registryModule: any | null = null;
-// eslint-disable-next-line @typescript-eslint/ban-types
-const lazyGetNodeMetadata = (nodeType: string): any | null => {
-  if (_registryModule) {
-    return _registryModule.getNodeMetadata(nodeType);
-  }
-  // Kick off async import – but don't block render. First call returns null.
-  import("../../node-registry/nodespec-registry").then((mod) => {
-    _registryModule = mod;
-  });
-  return null;
-};
+import { getNodeMetadata } from "../../node-registry/nodespec-registry";
 
 // -----------------------------------------------------------------------------
 // 1. Theme constants & helpers
@@ -354,7 +337,7 @@ export const useNodeStyleStore = create<NodeStyleState & NodeStyleActions>(
 
 export const getNodeCategory = (nodeType?: string): string | null => {
   if (!nodeType) return null;
-  const meta = lazyGetNodeMetadata(nodeType);
+  const meta = getNodeMetadata(nodeType);
   return meta?.category ?? null;
 };
 
@@ -396,14 +379,6 @@ export function useCategoryTheme(nodeType?: string): CategoryTheme | null {
 
   return useMemo(() => {
     if (!enabled || !nodeType) return null;
-
-    // Direct category key usage if present in mapping
-    if (CATEGORY_THEMES[nodeType as keyof typeof CATEGORY_THEMES]) {
-      return {
-        ...CATEGORY_THEMES[nodeType as keyof typeof CATEGORY_THEMES]!,
-        ...(customOverrides[nodeType] ?? {}),
-      } as CategoryTheme;
-    }
 
     const category = getNodeCategory(nodeType);
     if (!category) return null;

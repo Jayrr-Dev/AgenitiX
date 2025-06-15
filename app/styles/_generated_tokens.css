@@ -63,12 +63,12 @@
   --node-trigger-bg: 45 72% 35%;
   --node-trigger-text: 0 0% 6%;
   --node-trigger-text-secondary: 0 0% 5%;
-  --node-trigger-bg-hover: 45 72% 15%;
+  --node-trigger-bg-hover: 45 72% 25%;
   --node-test-bg: 0 72% 35%;
   --node-test-text: 0 0% 98%;
   --node-test-text-secondary: 0 0% 85%;
   --node-test-bg-hover: 0 72% 30%;
-  --infra-inspector-bg: 0 0% 12%;
+  --infra-inspector-bg: 0 100% 12%;
   --infra-inspector-text: 0 0% 98%;
   --infra-inspector-text-secondary: 0 0% 70%;
   --infra-sidebar-bg: 0 0% 8%;

@@ -35,9 +35,7 @@
     "validate:tokens": "node scripts/theming/validate-tokens.js",
     "ci:tokens": "pnpm validate:tokens",
     "validate:colors": "node scripts/theming/validate-primitive-colors.js",
-    "postinstall": "pnpm generate:docs",
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "postinstall": "pnpm generate:docs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -96,8 +94,7 @@
     "use-debounce": "^10.0.5",
     "yaml": "^2.8.0",
     "zod": "^3.25.55",
-    "zustand": "^5.0.3",
-    "@emotion/is-prop-valid": "^1.2.0"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
@@ -129,16 +126,6 @@
     "ts-morph": "^26.0.0",
     "ts-node": "^10.9.2",
     "typescript": "5.7.2",
-    "vitest": "^2.1.9",
-    "@storybook/addon-essentials": "^8.0.0",
-    "@storybook/addon-themes": "^8.0.0",
-    "@storybook/addon-a11y": "^8.0.0",
-    "@storybook/addon-viewport": "^8.0.0",
-    "@storybook/nextjs": "^8.0.0",
-    "@storybook/builder-vite": "^8.0.0",
-    "storybook": "^8.0.0",
-    "vite-tsconfig-paths": "^4.0.0",
-    "@storybook/react": "^8.0.0",
-    "@vitejs/plugin-react-swc": "^3.6.0"
+    "vitest": "^2.1.9"
   }
 }

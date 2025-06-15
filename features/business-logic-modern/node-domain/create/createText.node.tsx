@@ -141,14 +141,8 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
       <ExpandCollapseButton showUI={isExpanded} onToggle={onToggle} size="sm" />
 
       {isExpanded ? (
-        <div
-          className="w-full h-full flex flex-col"
-          style={{ padding: "32px 16px 16px 16px" }}
-        >
-          <div
-            className="flex items-center justify-between"
-            style={{ marginBottom: "12px" }}
-          >
+        <div className="p-4 pt-8 w-full h-full flex flex-col">
+          <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold">createText</h3>
             {process.env.NODE_ENV === "development" && (
               <span className="text-xs text-gray-500">
@@ -162,14 +156,11 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
             value={validatedData.text}
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Enter your text here..."
-            className="flex-1 w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md
+            className="flex-1 w-full p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md
                      bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                      resize-none"
-            style={{
-              minHeight: "60px",
-              padding: "8px",
-            }}
+            style={{ minHeight: "60px" }}
           />
         </div>
       ) : (

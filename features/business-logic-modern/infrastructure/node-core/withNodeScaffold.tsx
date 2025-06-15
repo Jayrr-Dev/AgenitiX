@@ -60,10 +60,7 @@ export function withNodeScaffold(
 
     // Get theming classes from the theming system
     const nodeStyleClasses = useNodeStyleClasses(isSelected, isError, isActive);
-    const categoryKey = (
-      typeof spec.category === "string" ? spec.category : ""
-    ).toLowerCase();
-    const categoryTheme = useCategoryTheme(categoryKey || spec.kind);
+    const categoryTheme = useCategoryTheme(spec.kind);
 
     // Build the complete className with theming
     const themeClasses = React.useMemo(() => {
@@ -86,8 +83,9 @@ export function withNodeScaffold(
     }, [nodeStyleClasses, categoryTheme]);
 
     // TODO: Sync with actual expanded/collapsed state via context or props.
-    // Default to expanded size so isolated renders (e.g., Storybook) look correct.
-    const size = spec.size.expanded;
+    // Start with collapsed size by default.
+    const isExpandedDefault = false;
+    const size = isExpandedDefault ? spec.size.expanded : spec.size.collapsed;
 
     const collapsedSize = spec.size.collapsed as any;
     const style: React.CSSProperties = {

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Design Tokens Preview</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; }
+    .token-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin: 2rem 0; }
+    .token-group { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; }
+    .token-group h3 { margin-top: 0; }
+    .color-swatch { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0; }
+    .swatch { width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ccc; }
+    .token-table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    .token-table th, .token-table td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #eee; }
+    .token-table th { background: #f5f5f5; }
+  </style>
+</head>
+<body>
+  <h1>Design Tokens</h1>
+  <p>Auto-generated from <code>tokens.json</code> • Last updated: 6/15/2025, 7:21:32 AM</p>
+
+  <div class="token-grid">
+    <div class="token-group">
+      <h3>Node Categories</h3>
+      <div class="color-swatch">
+        <div class="swatch" style="background: hsl(140 72% 25%); color: hsl(0 0% 100%); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">Aa</div>
+        <span><strong>create</strong> • bg: 140 72% 25% • text: 0 0% 100%</span>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch" style="background: hsl(225 72% 35%); color: hsl(0 0% 98%); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">Aa</div>
+        <span><strong>view</strong> • bg: 225 72% 35% • text: 0 0% 98%</span>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch" style="background: hsl(45 72% 35%); color: hsl(0 0% 6%); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">Aa</div>
+        <span><strong>trigger</strong> • bg: 45 72% 35% • text: 0 0% 6%</span>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch" style="background: hsl(0 72% 35%); color: hsl(0 0% 98%); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">Aa</div>
+        <span><strong>test</strong> • bg: 0 72% 35% • text: 0 0% 98%</span>
+      </div>
+    </div>
+    <div class="token-group">
+      <h3>Infrastructure Components</h3>
+      <div class="color-swatch">
+        <div class="swatch" style="background: hsl(0 100% 12%); color: hsl(0 0% 98%); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">Aa</div>
+        <span><strong>inspector</strong> • bg: 0 100% 12% • text: 0 0% 98%</span>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch" style="background: hsl(0 0% 8%); color: hsl(0 0% 98%); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">Aa</div>
+        <span><strong>sidebar</strong> • bg: 0 0% 8% • text: 0 0% 98%</span>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch" style="background: hsl(0 0% 10%); color: hsl(0 0% 98%); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">Aa</div>
+        <span><strong>minimap</strong> • bg: 0 0% 10% • text: 0 0% 98%</span>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch" style="background: hsl(0 0% 12%); color: hsl(0 0% 98%); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">Aa</div>
+        <span><strong>history</strong> • bg: 0 0% 12% • text: 0 0% 98%</span>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch" style="background: hsl(0 0% 8%); color: hsl(0 0% 98%); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">Aa</div>
+        <span><strong>toolbar</strong> • bg: 0 0% 8% • text: 0 0% 98%</span>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch" style="background: hsl(0 0% 12%); color: hsl(0 0% 98%); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">Aa</div>
+        <span><strong>panel</strong> • bg: 0 0% 12% • text: 0 0% 98%</span>
+      </div>
+    </div>
+  </div>
+  <h2>All Tokens</h2>
+  <table class="token-table">
+    <thead>
+      <tr><th>Token</th><th>Value</th></tr>
+    </thead>
+    <tbody><tr><td>spacing.xs</td><td>0.25rem</td></tr><tr><td>spacing.sm</td><td>0.5rem</td></tr><tr><td>spacing.md</td><td>0.75rem</td></tr><tr><td>spacing.lg</td><td>1rem</td></tr><tr><td>spacing.xl</td><td>1.5rem</td></tr><tr><td>spacing.2xl</td><td>2rem</td></tr><tr><td>spacing.3xl</td><td>3rem</td></tr><tr><td>typography.sizes.xs</td><td>0.75rem</td></tr><tr><td>typography.sizes.sm</td><td>0.875rem</td></tr><tr><td>typography.sizes.base</td><td>1rem</td></tr><tr><td>typography.sizes.lg</td><td>1.125rem</td></tr><tr><td>typography.sizes.xl</td><td>1.25rem</td></tr><tr><td>typography.sizes.2xl</td><td>1.5rem</td></tr><tr><td>typography.weights.normal</td><td>400</td></tr><tr><td>typography.weights.medium</td><td>500</td></tr><tr><td>typography.weights.semibold</td><td>600</td></tr><tr><td>typography.weights.bold</td><td>700</td></tr><tr><td>typography.families.sans</td><td>ui-sans-serif, system-ui, sans-serif</td></tr><tr><td>typography.families.mono</td><td>ui-monospace, 'Cascadia Code', 'Fira Code', monospace</td></tr><tr><td>colors.background</td><td>hsl(var(--background))</td></tr><tr><td>colors.foreground</td><td>hsl(var(--foreground))</td></tr><tr><td>colors.muted</td><td>hsl(var(--muted))</td></tr><tr><td>colors.mutedForeground</td><td>hsl(var(--muted-foreground))</td></tr><tr><td>colors.border</td><td>hsl(var(--border))</td></tr><tr><td>colors.success</td><td>hsl(120 100% 40%)</td></tr><tr><td>colors.warning</td><td>hsl(45 100% 50%)</td></tr><tr><td>colors.error</td><td>hsl(0 100% 50%)</td></tr><tr><td>colors.info</td><td>hsl(210 100% 50%)</td></tr><tr><td>layout.flex</td><td>flex</td></tr><tr><td>layout.flexCol</td><td>flex flex-col</td></tr><tr><td>layout.flexRow</td><td>flex flex-row</td></tr><tr><td>layout.grid</td><td>grid</td></tr><tr><td>layout.itemsCenter</td><td>items-center</td></tr><tr><td>layout.justifyCenter</td><td>justify-center</td></tr><tr><td>layout.justifyBetween</td><td>justify-between</td></tr><tr><td>effects.rounded.none</td><td>rounded-none</td></tr><tr><td>effects.rounded.sm</td><td>rounded-sm</td></tr><tr><td>effects.rounded.md</td><td>rounded-md</td></tr><tr><td>effects.rounded.lg</td><td>rounded-lg</td></tr><tr><td>effects.rounded.full</td><td>rounded-full</td></tr><tr><td>effects.shadow.sm</td><td>shadow-sm</td></tr><tr><td>effects.shadow.md</td><td>shadow-md</td></tr><tr><td>effects.shadow.lg</td><td>shadow-lg</td></tr><tr><td>effects.transition</td><td>transition-colors duration-200</td></tr><tr><td>dimensions.icon.xs</td><td>w-3 h-3</td></tr><tr><td>dimensions.icon.sm</td><td>w-4 h-4</td></tr><tr><td>dimensions.icon.md</td><td>w-5 h-5</td></tr><tr><td>dimensions.icon.lg</td><td>w-6 h-6</td></tr><tr><td>dimensions.icon.xl</td><td>w-8 h-8</td></tr><tr><td>dimensions.button.sm</td><td>px-2 py-1</td></tr><tr><td>dimensions.button.md</td><td>px-3 py-2</td></tr><tr><td>dimensions.button.lg</td><td>px-4 py-3</td></tr><tr><td>node.create.bg</td><td>140 72% 25%</td></tr><tr><td>node.create.text</td><td>0 0% 100%</td></tr><tr><td>node.create.text-secondary</td><td>0 0% 100%</td></tr><tr><td>node.create.bg-hover</td><td>140 72% 20%</td></tr><tr><td>node.view.bg</td><td>225 72% 35%</td></tr><tr><td>node.view.text</td><td>0 0% 98%</td></tr><tr><td>node.view.text-secondary</td><td>0 0% 85%</td></tr><tr><td>node.view.bg-hover</td><td>225 72% 30%</td></tr><tr><td>node.trigger.bg</td><td>45 72% 35%</td></tr><tr><td>node.trigger.text</td><td>0 0% 6%</td></tr><tr><td>node.trigger.text-secondary</td><td>0 0% 5%</td></tr><tr><td>node.trigger.bg-hover</td><td>45 72% 25%</td></tr><tr><td>node.test.bg</td><td>0 72% 35%</td></tr><tr><td>node.test.text</td><td>0 0% 98%</td></tr><tr><td>node.test.text-secondary</td><td>0 0% 85%</td></tr><tr><td>node.test.bg-hover</td><td>0 72% 30%</td></tr><tr><td>infra.inspector.bg</td><td>0 100% 12%</td></tr><tr><td>infra.inspector.text</td><td>0 0% 98%</td></tr><tr><td>infra.inspector.text-secondary</td><td>0 0% 70%</td></tr><tr><td>infra.sidebar.bg</td><td>0 0% 8%</td></tr><tr><td>infra.sidebar.text</td><td>0 0% 98%</td></tr><tr><td>infra.sidebar.text-secondary</td><td>0 0% 70%</td></tr><tr><td>infra.minimap.bg</td><td>0 0% 10%</td></tr><tr><td>infra.minimap.text</td><td>0 0% 98%</td></tr><tr><td>infra.minimap.text-secondary</td><td>0 0% 70%</td></tr><tr><td>infra.history.bg</td><td>0 0% 12%</td></tr><tr><td>infra.history.text</td><td>0 0% 98%</td></tr><tr><td>infra.history.text-secondary</td><td>0 0% 70%</td></tr><tr><td>infra.toolbar.bg</td><td>0 0% 8%</td></tr><tr><td>infra.toolbar.text</td><td>0 0% 98%</td></tr><tr><td>infra.toolbar.text-secondary</td><td>0 0% 70%</td></tr><tr><td>infra.panel.bg</td><td>0 0% 12%</td></tr><tr><td>infra.panel.text</td><td>0 0% 98%</td></tr><tr><td>infra.panel.text-secondary</td><td>0 0% 70%</td></tr>
+    </tbody>
+  </table>
+</body>
+</html>
