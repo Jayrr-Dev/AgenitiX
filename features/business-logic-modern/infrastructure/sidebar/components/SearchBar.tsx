@@ -10,12 +10,12 @@
  * Keywords: search-bar, filter, semantic-tokens, accessibility, responsive
  */
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
-import { HoveredStencil } from "../StencilInfoPanel";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getAllNodeMetadata } from "../../node-registry/nodespec-registry";
 import type { NodeMetadata } from "../../node-registry/types";
 import { StencilGrid } from "../StencilGrid";
+import { HoveredStencil } from "../StencilInfoPanel";
 
 interface SearchBarProps {
   onNativeDragStart: (
@@ -38,21 +38,21 @@ export function SearchBar({
   // Create theme object that maps to semantic tokens
   const theme = {
     background: {
-      primary: "bg-infra-sidebar",
-      secondary: "bg-infra-sidebar-hover",
-      hover: "hover:bg-infra-sidebar-hover",
+      primary: "bg-[hsl(var(--infra-sidebar-bg))]",
+      secondary: "bg-[hsl(var(--infra-sidebar-bg-hover))]",
+      hover: "hover:bg-[hsl(var(--infra-sidebar-bg-hover))]",
     },
     border: {
-      default: "border-infra-sidebar",
+      default: "border-[hsl(var(--infra-sidebar-border))]",
     },
     borderRadius: {
       panel: "rounded-lg",
       button: "rounded",
     },
     text: {
-      primary: "text-infra-sidebar-text",
-      secondary: "text-infra-sidebar-text-secondary",
-      muted: "text-infra-sidebar-text-secondary",
+      primary: "text-[hsl(var(--infra-sidebar-text))]",
+      secondary: "text-[hsl(var(--infra-sidebar-text-secondary))]",
+      muted: "text-[hsl(var(--infra-sidebar-text-secondary))]",
     },
     transition: "transition-colors",
   };
@@ -109,7 +109,12 @@ export function SearchBar({
 
     const query = searchQuery.toLowerCase();
     return allStencils.filter(
-      (stencil: { id: string; nodeType: string; label: string; description: string }) =>
+      (stencil: {
+        id: string;
+        nodeType: string;
+        label: string;
+        description: string;
+      }) =>
         stencil.label.toLowerCase().includes(query) ||
         stencil.description.toLowerCase().includes(query) ||
         stencil.nodeType.toLowerCase().includes(query)
@@ -402,11 +407,17 @@ export function SearchBar({
   if (!isVisible) return null;
 
   return (
-    <div className={`absolute inset-x-0 top-0 bottom-2 ${theme.background.primary} ${theme.border.default} ${theme.borderRadius.panel} z-40 flex flex-col`}>
+    <div
+      className={`absolute inset-x-0 top-0 bottom-2 ${theme.background.primary} ${theme.border.default} ${theme.borderRadius.panel} z-40 flex flex-col`}
+    >
       {/* Search Header */}
-      <div className={`flex items-center gap-2 px-7 pt-3  ${theme.border.default} border-b flex-shrink-0`}>
+      <div
+        className={`flex items-center gap-2 px-7 pt-3  ${theme.border.default} border-b flex-shrink-0`}
+      >
         <div className="relative flex-1">
-          <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme.text.muted} h-4 w-4`} />
+          <Search
+            className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme.text.muted} h-4 w-4`}
+          />
           <input
             type="text"
             placeholder="Search nodes..."
@@ -473,13 +484,19 @@ export function SearchBar({
         ) : searchQuery.trim() ? (
           <div className={`text-center ${theme.text.muted} mt-8 px-3`}>
             <Search className={`h-12 w-12 mx-auto mb-4 ${theme.text.muted}`} />
-            <p className={`text-lg font-medium ${theme.text.secondary}`}>No nodes found</p>
-            <p className={`text-sm ${theme.text.muted}`}>Try searching with different keywords</p>
+            <p className={`text-lg font-medium ${theme.text.secondary}`}>
+              No nodes found
+            </p>
+            <p className={`text-sm ${theme.text.muted}`}>
+              Try searching with different keywords
+            </p>
           </div>
         ) : (
           <div className={`text-center ${theme.text.muted} mt-8 px-3`}>
             <Search className={`h-12 w-12 mx-auto mb-4 ${theme.text.muted}`} />
-            <p className={`text-lg font-medium ${theme.text.secondary}`}>Search all nodes</p>
+            <p className={`text-lg font-medium ${theme.text.secondary}`}>
+              Search all nodes
+            </p>
             <p className={`text-sm mb-4 ${theme.text.secondary}`}>
               Type to find nodes by name or description
             </p>

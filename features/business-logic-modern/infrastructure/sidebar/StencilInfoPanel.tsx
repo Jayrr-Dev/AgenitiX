@@ -44,10 +44,14 @@ export const StencilInfoPanel: React.FC<StencilInfoPanelProps> = ({
           animate={{ opacity: 0.95, y: 0 }}
           exit={{ opacity: 0, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="mb-2 px-3 py-2 text-xs leading-snug absolute top-0 right-[50%] translate-x-1/2 border -translate-y-full w-[450px] h-[95px] bg-infra-sidebar border-infra-sidebar text-infra-sidebar-text rounded-lg shadow-lg"
+          className="mb-2 px-3 py-2 text-xs leading-snug absolute top-0 right-[50%] translate-x-1/2 border -translate-y-full w-[450px] h-[95px] bg-[hsl(var(--infra-sidebar-bg))] border-[hsl(var(--infra-sidebar-border))] text-[hsl(var(--infra-sidebar-text))] rounded-lg shadow-lg"
         >
-          <div className="font-medium text-infra-sidebar-text">{stencil.label}</div>
-          <div className="text-infra-sidebar-text-secondary">{stencil.description}</div>
+          <div className="font-medium text-[hsl(var(--infra-sidebar-text))]">
+            {stencil.label}
+          </div>
+          <div className="text-[hsl(var(--infra-sidebar-text-secondary))]">
+            {stencil.description}
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

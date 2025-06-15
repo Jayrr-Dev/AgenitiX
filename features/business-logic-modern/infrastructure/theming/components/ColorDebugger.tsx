@@ -11,7 +11,8 @@
 
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { debugComponentColors, getColorInfo } from "./colorDebugUtils";
 import type { ComponentThemes } from "./componentThemeStore";
 import { useComponentTheme } from "./componentThemeStore";
@@ -79,23 +80,31 @@ const ColorSwatch: React.FC<{
 }> = ({ variable, theme }) => {
   const colorInfo = getColorInfo(variable, theme);
 
+  const handleCopy = useCallback(() => {
+    navigator.clipboard
+      .writeText(`var(--${variable.replace(/^(bg-|text-|border-)/, "")})`)
+      .then(() => toast.success(`${variable} copied to clipboard`));
+  }, [variable]);
+
   return (
-    <div className="flex items-center gap-3 p-2 rounded-md bg-card border border-border">
-      <div
-        className="w-8 h-8 rounded border border-border shadow-sm"
+    <button
+      onClick={handleCopy}
+      className="flex items-center gap-3 p-2 rounded-md bg-card border border-border text-left hover:ring-2 hover:ring-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/50"
+      title="Click to copy CSS variable"
+    >
+      <span
+        className="w-8 h-8 rounded border border-border shadow-sm flex-shrink-0"
         style={{ backgroundColor: colorInfo.hex }}
-        title={`${colorInfo.hex} - ${colorInfo.name}`}
       />
-      <div className="flex-1 min-w-0">
-        <div className="font-mono text-sm text-foreground">{variable}</div>
-        <div className="text-xs text-muted-foreground truncate">
+      <span className="flex-1 min-w-0">
+        <span className="block font-mono text-sm text-foreground">
+          {variable}
+        </span>
+        <span className="block text-xs text-muted-foreground truncate">
           {colorInfo.hex} • {colorInfo.name}
-        </div>
-        <div className="text-xs text-muted-foreground/70 truncate">
-          {colorInfo.usage}
-        </div>
-      </div>
-    </div>
+        </span>
+      </span>
+    </button>
   );
 };
 
@@ -179,6 +188,8 @@ export const ColorDebugger: React.FC<ColorDebuggerProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<"colors" | "components">("colors");
   const [selectedTheme, setSelectedTheme] = useState<"light" | "dark">("light");
+  const [search, setSearch] = useState("");
+  const filteredVariables = CSS_VARIABLES.filter((v) => v.includes(search));
 
   // Only render in development mode
   if (!IS_DEVELOPMENT || !isVisible) return null;
@@ -230,7 +241,7 @@ export const ColorDebugger: React.FC<ColorDebuggerProps> = ({
         <div className="p-4 overflow-y-auto max-h-[calc(90vh-80px)]">
           {activeTab === "colors" && (
             <div>
-              {/* Theme Selector */}
+              {/* Theme & Search */}
               <div className="flex items-center gap-4 mb-6">
                 <span className="text-sm font-medium text-card-foreground">
                   Theme:
@@ -257,11 +268,19 @@ export const ColorDebugger: React.FC<ColorDebuggerProps> = ({
                     🌙 Dark
                   </button>
                 </div>
+                <input
+                  type="text"
+                  placeholder="Filter…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="ml-4 px-3 py-1 text-sm bg-background border border-border rounded placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  aria-label="Filter variables"
+                />
               </div>
 
               {/* Color Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {CSS_VARIABLES.map((variable) => (
+                {filteredVariables.map((variable) => (
                   <ColorSwatch
                     key={variable}
                     variable={variable}

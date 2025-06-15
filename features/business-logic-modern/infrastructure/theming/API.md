@@ -93,6 +93,21 @@ interface CoreTokens {
       lg: string; // "px-4 py-3"
     };
   };
+
+  palette: {
+    primary: { [key: string]: string };
+    neutral: { [key: string]: string };
+    semantic: {
+      success: { light: string; dark: string };
+      warning: { light: string; dark: string };
+      error: { light: string; dark: string };
+    };
+  };
+
+  elevation: {
+    surface: { [key: string]: string };
+    glow: { [key: string]: string };
+  };
 }
 ```
 
@@ -420,16 +435,6 @@ import {
 
 // ✅ Import convenience objects
 import { componentStyles, componentTokens } from "@/theming";
-```
-
-### Legacy Compatibility
-
-```typescript
-// 🔄 Legacy imports (still work)
-import { DESIGN_CONFIG, getVariant } from "@/theming";
-
-// ✅ Preferred modern imports
-import { NODE_INSPECTOR_TOKENS, getNodeInspectorVariant } from "@/theming";
 ```
 
 ## 🔍 TypeScript Support

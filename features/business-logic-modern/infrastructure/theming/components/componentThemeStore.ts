@@ -7,6 +7,7 @@
  *
  * Features:
  * • Centralized theme management for all major UI components
+ * • Integration with DESIGN_CONFIG pattern and CORE_TOKENS
  * • Action toolbar & history panel styling with glow effects
  * • Side panel theming with consistent borders and backgrounds
  * • Node inspector styling that matches node aesthetics
@@ -16,28 +17,50 @@
  * • WCAG AA compliant color contrast ratios
  * • Material Design elevation system
  * • Custom override capabilities for component-specific styling
+ * • CSS custom properties integration (--infra-* variables)
  *
  * @author Agenitix Development Team
- * @version 2.0.0
+ * @version 2.1.0
  * @since 1.0.0
  *
- * Keywords: component-theming, ui-consistency, glow-effects, shadcn, next-themes, accessibility
+ * Keywords: component-theming, ui-consistency, glow-effects, shadcn, next-themes, accessibility, design-config
  */
 
 "use client";
 
 import { useMemo } from "react";
 import { create } from "zustand";
-import {
-  BORDER_RADIUS_DEFAULT,
-  BORDER_RADIUS_LARGE,
-  BORDER_RADIUS_MEDIUM,
-  BORDER_RADIUS_SMALL,
-  ELEVATION_SYSTEM,
-  OPACITY_MODERATE,
-  TRANSITION_DURATION_FAST,
-  TRANSITION_DURATION_NORMAL,
-} from "./designTokens";
+import { CORE_TOKENS } from "../core/tokens";
+import { NODE_INSPECTOR_TOKENS } from "./nodeInspector";
+
+// Aliases for convenience
+const ELEVATION_SYSTEM = CORE_TOKENS.elevation;
+const BORDER_RADIUS_LARGE = CORE_TOKENS.effects.rounded.lg;
+const BORDER_RADIUS_MEDIUM = CORE_TOKENS.effects.rounded.md;
+const BORDER_RADIUS_SMALL = CORE_TOKENS.effects.rounded.sm;
+const BORDER_RADIUS_DEFAULT = CORE_TOKENS.effects.rounded.md; // Using md as default for components
+const TRANSITION_DURATION_NORMAL = "200"; // from old designTokens.ts
+const TRANSITION_DURATION_FAST = "150"; // from old designTokens.ts
+const OPACITY_MODERATE = "0.2"; // from old designTokens.ts
+
+// ============================================================================
+// DESIGN SYSTEM INTEGRATION - Integration with centralized design tokens
+// ============================================================================
+
+/**
+ * Design system integration constants
+ *
+ * These constants provide integration points between the component theme store
+ * and the centralized design system tokens (CORE_TOKENS, NODE_INSPECTOR_TOKENS).
+ */
+const DESIGN_SYSTEM_INTEGRATION = {
+  /** Core design tokens for foundational styling */
+  core: CORE_TOKENS,
+  /** Node inspector specific design configuration */
+  nodeInspector: NODE_INSPECTOR_TOKENS,
+  /** CSS custom properties prefix for infrastructure components */
+  cssPrefix: "--infra-",
+} as const;
 
 // ============================================================================
 // TYPE DEFINITIONS - Core interfaces and type definitions
@@ -122,20 +145,14 @@ export interface ComponentTheme {
  * @interface ComponentThemes
  */
 export interface ComponentThemes {
-  /** Theme configuration for action toolbar component */
-  actionToolbar: ComponentTheme;
-  /** Theme configuration for history panel component */
-  historyPanel: ComponentTheme;
-  /** Theme configuration for side panel component */
-  sidePanel: ComponentTheme;
-  /** Theme configuration for sidebar icons component */
-  sidebarIcons: ComponentTheme;
-  /** Theme configuration for variant selector component */
-  variantSelector: ComponentTheme;
-  /** Theme configuration for node inspector component */
-  nodeInspector: ComponentTheme;
-  /** Theme configuration for mini map component */
-  miniMap: ComponentTheme;
+  nodeInspector: typeof NODE_INSPECTOR_THEME;
+  sidePanel: typeof SIDE_PANEL_THEME;
+  sidebarIcons: typeof SIDEBAR_ICONS_THEME;
+  variantSelector: typeof VARIANT_SELECTOR_THEME;
+  actionToolbar: typeof ACTION_TOOLBAR_THEME;
+  historyPanel: typeof HISTORY_PANEL_THEME;
+  miniMap: typeof MINI_MAP_THEME;
+  flowCanvas: typeof FLOW_CANVAS_THEME;
 }
 
 /**
@@ -190,7 +207,14 @@ export interface ComponentThemeActions {
  * CSS VARIABLE COLOR REFERENCE - What colors actually look like
  *
  * This reference maps shadcn CSS variables to actual color values and descriptions
- * to help developers understand what colors they're working with.
+ * to help developers understand what colors they're working with. Also includes
+ * integration with the new design system's CSS custom properties.
+ *
+ * 🔗 DESIGN SYSTEM INTEGRATION:
+ * • Shadcn CSS variables (--background, --foreground, etc.)
+ * • Infrastructure CSS variables (--infra-inspector-*, --infra-sidebar-*, etc.)
+ * • CORE_TOKENS integration for foundational styling
+ * • NODE_INSPECTOR_TOKENS for component-specific theming
  *
  * 🌞 LIGHT THEME COLORS:
  * • bg-background: #ffffff (Pure white) - Main app background
@@ -708,27 +732,35 @@ const VARIANT_SELECTOR_THEME: ComponentTheme = {
  *
  * Used for node inspector panels with clean backgrounds and
  * subtle interactive states for property editing interfaces.
+ * Integrates with DESIGN_CONFIG pattern and CSS custom properties.
  *
  * 🎨 COLOR BREAKDOWN:
- * Light: White background (#ffffff) with dark blue text (#0f172a)
- * Dark: Dark blue background (#0f172a) with white text (#f8fafc)
+ * Uses CSS custom properties from --infra-inspector-* variables
+ * Light: White background with dark blue text
+ * Dark: Dark blue background with white text
+ *
+ * 🔗 DESIGN SYSTEM INTEGRATION:
+ * • Uses NODE_INSPECTOR_TOKENS.colors for consistent theming
+ * • Integrates with CORE_TOKENS for foundational styling
+ * • Supports CSS custom properties (--infra-inspector-*)
  */
 const NODE_INSPECTOR_THEME: ComponentTheme = {
   background: {
-    primary: "bg-background border border-border", // 🌞 White (#ffffff) 🌙 Dark blue (#0f172a)
-    secondary: "bg-muted", // 🌞 Very light gray (#f1f5f9) 🌙 Dark gray-blue (#1e293b)
-    hover: "hover:bg-muted/80", // Slightly transparent muted background
-    active: "bg-muted", // Same as secondary
+    primary: `${DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.background} border ${DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.border}`,
+    secondary: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.data.background,
+    hover: "hover:bg-muted/80", // Fallback to shadcn for hover states
+    active: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.data.background,
   },
   border: {
-    default: "border-border", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
-    hover: "hover:border-border", // Same as default
-    active: "border-primary", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+    default: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.border,
+    hover: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.borderHover,
+    active: "border-primary", // Fallback to shadcn for active states
   },
   text: {
-    primary: "text-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
-    secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
-    muted: "text-muted-foreground/70", // Secondary text with 70% opacity
+    primary: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.text,
+    secondary:
+      DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.textSecondary,
+    muted: "text-muted-foreground/70", // Fallback to shadcn with opacity
   },
   glow: {
     hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
@@ -740,41 +772,41 @@ const NODE_INSPECTOR_THEME: ComponentTheme = {
     hover: ELEVATION_SYSTEM.surface.level2.replace("shadow-", "hover:shadow-"),
     elevated: ELEVATION_SYSTEM.surface.level3,
   },
-  transition: `transition-colors duration-${TRANSITION_DURATION_FAST}`,
+  transition: DESIGN_SYSTEM_INTEGRATION.nodeInspector.effects.transition,
   borderRadius: {
-    default: BORDER_RADIUS_MEDIUM,
-    button: BORDER_RADIUS_SMALL,
-    panel: BORDER_RADIUS_MEDIUM,
+    default: DESIGN_SYSTEM_INTEGRATION.nodeInspector.effects.rounded.md,
+    button: DESIGN_SYSTEM_INTEGRATION.nodeInspector.effects.rounded.default,
+    panel: DESIGN_SYSTEM_INTEGRATION.nodeInspector.effects.rounded.md,
   },
 };
 
 /**
  * Mini Map Theme - Miniature overview component styling
  *
- * Used for mini map components with backdrop blur effects and
- * subtle transparency for overlay positioning.
+ * Used for mini map components with node category color mapping and
+ * unified token system integration for consistent theming.
  *
  * 🎨 COLOR BREAKDOWN:
- * Light: Semi-transparent white (#ffffff/90) with dark blue text (#0f172a)
- * Dark: Semi-transparent dark blue (#0f172a/90) with white text (#f8fafc)
- * Special: Uses backdrop-blur for glass-like effect
+ * Light: Clean white background with subtle borders and hover states
+ * Dark: Dark background with proper contrast and enhanced visibility
+ * Special: Node category colors for visual distinction in minimap
  */
 const MINI_MAP_THEME: ComponentTheme = {
   background: {
-    primary: "bg-background/90 backdrop-blur-sm border border-border", // 🌞 White 90% opacity + blur 🌙 Dark blue 90% opacity + blur
-    secondary: "bg-muted", // 🌞 Very light gray (#f1f5f9) 🌙 Dark gray-blue (#1e293b)
-    hover: "hover:bg-muted/80", // Slightly transparent muted background
-    active: "bg-muted", // Same as secondary
+    primary: "bg-[hsl(var(--infra-minimap-bg))]", // 🌞 White background 🌙 Dark background
+    secondary: "bg-[hsl(var(--infra-minimap-bg))]", // Same as primary for consistency
+    hover: "hover:bg-[hsl(var(--infra-minimap-bg-hover))]", // Subtle hover state
+    active: "bg-[hsl(var(--infra-minimap-bg-active))]", // Active state
   },
   border: {
-    default: "border-border", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
-    hover: "hover:border-border", // Same as default
-    active: "border-primary", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+    default: "border-[hsl(var(--infra-minimap-border))]", // Consistent border color
+    hover: "hover:border-[hsl(var(--infra-minimap-border-hover))]", // Enhanced border on hover
+    active: "border-[hsl(var(--infra-minimap-border-hover))]", // Active border state
   },
   text: {
-    primary: "text-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
-    secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
-    muted: "text-muted-foreground/70", // Secondary text with 70% opacity
+    primary: "text-[hsl(var(--infra-minimap-text))]", // Primary text color
+    secondary: "text-[hsl(var(--infra-minimap-text-secondary))]", // Secondary text color
+    muted: "text-[hsl(var(--infra-minimap-text-secondary))]", // Muted text same as secondary
   },
   glow: {
     hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
@@ -794,6 +826,63 @@ const MINI_MAP_THEME: ComponentTheme = {
   },
 };
 
+/**
+ * Flow Canvas Theme - Main workflow editor canvas styling
+ *
+ * Used for the primary ReactFlow canvas with background, edges, and
+ * interactive elements. Integrates with node category colors and
+ * provides consistent theming for all canvas elements.
+ *
+ * 🎨 COLOR BREAKDOWN:
+ * Light: Clean white canvas with subtle dots and blue edges
+ * Dark: Dark canvas with proper contrast and enhanced edge visibility
+ * Special: Status-based colors for delete buttons and interactive elements
+ */
+const FLOW_CANVAS_THEME: ComponentTheme = {
+  background: {
+    primary: "bg-[hsl(var(--infra-canvas-bg))]", // 🌞 White canvas 🌙 Dark canvas
+    secondary: "bg-[hsl(var(--infra-canvas-bg))]", // Same as primary for consistency
+    hover: "hover:bg-[hsl(var(--infra-canvas-bg-hover))]", // Subtle hover state
+    active: "bg-[hsl(var(--infra-canvas-bg-active))]", // Active state
+  },
+  border: {
+    default: "border-[hsl(var(--infra-canvas-border))]", // Consistent border color
+    hover: "hover:border-[hsl(var(--infra-canvas-border-hover))]", // Enhanced border on hover
+    active: "border-[hsl(var(--infra-canvas-border-hover))]", // Active border state
+  },
+  text: {
+    primary: "text-[hsl(var(--infra-canvas-text))]", // Primary text color
+    secondary: "text-[hsl(var(--infra-canvas-text-secondary))]", // Secondary text color
+    muted: "text-[hsl(var(--infra-canvas-text-secondary))]", // Muted text same as secondary
+  },
+  glow: {
+    hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
+    active: ELEVATION_SYSTEM.surface.level2,
+    focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
+  },
+  shadow: {
+    default: ELEVATION_SYSTEM.surface.level1,
+    hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
+    elevated: ELEVATION_SYSTEM.surface.level2,
+  },
+  transition: `transition-all duration-${TRANSITION_DURATION_FAST} ease-in-out`,
+  borderRadius: {
+    default: BORDER_RADIUS_MEDIUM,
+    button: BORDER_RADIUS_SMALL,
+    panel: BORDER_RADIUS_MEDIUM,
+  },
+};
+
+/**
+ * Controls theme configuration using semantic tokens
+ */
+export const CONTROLS_THEME = {
+  container:
+    "bg-[hsl(var(--infra-controls-bg))] border-[hsl(var(--infra-controls-border))] hover:bg-[hsl(var(--infra-controls-bg-hover))] hover:border-[hsl(var(--infra-controls-border-hover))] rounded-lg border shadow-lg transition-colors duration-200",
+  button:
+    "bg-[hsl(var(--infra-controls-button))] hover:bg-[hsl(var(--infra-controls-button-hover))] active:bg-[hsl(var(--infra-controls-button-active))] border-[hsl(var(--infra-controls-border))] hover:border-[hsl(var(--infra-controls-border-hover))] text-[hsl(var(--infra-controls-icon))] hover:text-[hsl(var(--infra-controls-icon-hover))] transition-all duration-200 rounded shadow-sm hover:shadow-md active:scale-95",
+} as const;
+
 // ============================================================================
 // STORE CONFIGURATION - Zustand store setup and default state
 // ============================================================================
@@ -806,13 +895,14 @@ const MINI_MAP_THEME: ComponentTheme = {
  */
 const DEFAULT_THEME_STATE: ComponentThemeState = {
   themes: {
-    actionToolbar: ACTION_TOOLBAR_THEME,
-    historyPanel: HISTORY_PANEL_THEME,
+    nodeInspector: NODE_INSPECTOR_THEME,
     sidePanel: SIDE_PANEL_THEME,
     sidebarIcons: SIDEBAR_ICONS_THEME,
     variantSelector: VARIANT_SELECTOR_THEME,
-    nodeInspector: NODE_INSPECTOR_THEME,
+    actionToolbar: ACTION_TOOLBAR_THEME,
+    historyPanel: HISTORY_PANEL_THEME,
     miniMap: MINI_MAP_THEME,
+    flowCanvas: FLOW_CANVAS_THEME,
   },
   enabled: true,
   customOverrides: {},
@@ -930,6 +1020,98 @@ export const useComponentThemeStore = create<
     return baseClasses.join(" ");
   },
 }));
+
+// ============================================================================
+// DESIGN SYSTEM UTILITIES - Helper functions for design system integration
+// ============================================================================
+
+/**
+ * Get design system token with fallback
+ *
+ * Provides a safe way to access design system tokens with fallback values.
+ * Integrates with both CORE_TOKENS and component-specific tokens.
+ *
+ * @param {string} tokenPath - Dot notation path to the token (e.g., "colors.inspector.background")
+ * @param {string} fallback - Fallback value if token is not found
+ * @returns {string} Token value or fallback
+ *
+ * @example
+ * ```tsx
+ * const bgColor = getDesignSystemToken("colors.inspector.background", "bg-background");
+ * const spacing = getDesignSystemToken("spacing.containerPadding", "p-4");
+ * ```
+ */
+export function getDesignSystemToken(
+  tokenPath: string,
+  fallback: string
+): string {
+  try {
+    const pathParts = tokenPath.split(".");
+    let current: any = DESIGN_SYSTEM_INTEGRATION.nodeInspector;
+
+    for (const part of pathParts) {
+      if (current && typeof current === "object" && part in current) {
+        current = current[part];
+      } else {
+        return fallback;
+      }
+    }
+
+    return typeof current === "string" ? current : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Combine design system tokens with additional classes
+ *
+ * Safely combines design system tokens with additional CSS classes,
+ * providing a consistent way to extend component styling.
+ *
+ * @param {string} tokenPath - Dot notation path to the design system token
+ * @param {string} additionalClasses - Additional CSS classes to append
+ * @param {string} fallback - Fallback value if token is not found
+ * @returns {string} Combined CSS classes
+ *
+ * @example
+ * ```tsx
+ * const buttonClasses = combineDesignSystemToken(
+ *   "colors.actions.duplicate.background",
+ *   "hover:scale-105 active:scale-95",
+ *   "bg-blue-500"
+ * );
+ * ```
+ */
+export function combineDesignSystemToken(
+  tokenPath: string,
+  additionalClasses: string = "",
+  fallback: string = ""
+): string {
+  const token = getDesignSystemToken(tokenPath, fallback);
+  return additionalClasses ? `${token} ${additionalClasses}` : token;
+}
+
+/**
+ * Get CSS custom property name for infrastructure components
+ *
+ * Generates the correct CSS custom property name for infrastructure
+ * components following the --infra-* naming convention.
+ *
+ * @param {string} propertyName - The property name (e.g., "inspector-background")
+ * @returns {string} CSS custom property name
+ *
+ * @example
+ * ```tsx
+ * const cssVar = getInfraCSSProperty("inspector-background");
+ * // Returns: "--infra-inspector-background"
+ *
+ * const bgClass = `bg-[hsl(var(${getInfraCSSProperty("inspector-background")}))]`;
+ * ```
+ */
+export function getInfraCSSProperty(propertyName: string): string {
+  return `${DESIGN_SYSTEM_INTEGRATION.cssPrefix}${propertyName}`;
+}
 
 // ============================================================================
 // PUBLIC HOOKS - React hooks for component integration
@@ -1125,15 +1307,15 @@ export function useComponentButtonClasses(
       theme.glow.focus, // Focus ring for accessibility
     ];
 
-    // Size classes with consistent spacing
+    // Size classes with consistent spacing using design system tokens
     const sizeClasses = {
-      sm: `h-8 px-3 text-xs ${BORDER_RADIUS_MEDIUM}`,
-      md: `h-9 px-4 py-2 text-sm ${BORDER_RADIUS_MEDIUM}`,
-      lg: `h-10 px-8 text-base ${BORDER_RADIUS_MEDIUM}`,
+      sm: `h-8 px-3 text-xs ${getDesignSystemToken("effects.rounded.default", BORDER_RADIUS_MEDIUM)}`,
+      md: `h-9 px-4 py-2 text-sm ${getDesignSystemToken("effects.rounded.default", BORDER_RADIUS_MEDIUM)}`,
+      lg: `h-10 px-8 text-base ${getDesignSystemToken("effects.rounded.default", BORDER_RADIUS_MEDIUM)}`,
     };
     baseClasses.push(sizeClasses[size]);
 
-    // Variant classes using shadcn patterns with color explanations
+    // Variant classes using shadcn patterns with design system integration
     switch (variant) {
       case "primary":
         baseClasses.push(
@@ -1162,4 +1344,98 @@ export function useComponentButtonClasses(
 
     return baseClasses.join(" ");
   }, [theme, variant, size]);
+}
+
+/**
+ * Hook to get design system aware classes for components
+ *
+ * Provides CSS classes that integrate with both the component theme store
+ * and the centralized design system tokens. Automatically handles fallbacks
+ * and provides type-safe access to design system tokens.
+ *
+ * 🎨 DESIGN SYSTEM INTEGRATION:
+ * • Combines component theme store with DESIGN_CONFIG tokens
+ * • Provides fallbacks to shadcn/ui classes for reliability
+ * • Supports CSS custom properties (--infra-* variables)
+ * • Type-safe access to design system tokens
+ *
+ * @param {keyof ComponentThemes} component - The component to style
+ * @param {object} options - Styling options
+ * @param {string} options.variant - Design system variant to use
+ * @param {'default' | 'hover' | 'active'} options.state - Component state
+ * @param {string} options.additionalClasses - Additional CSS classes
+ * @returns {string} Complete CSS class string with design system integration
+ *
+ * @example
+ * ```tsx
+ * // Basic usage with design system integration
+ * const classes = useDesignSystemClasses('nodeInspector', {
+ *   variant: 'jsonContainer.adaptive',
+ *   state: 'default'
+ * });
+ *
+ * // With additional classes
+ * const buttonClasses = useDesignSystemClasses('nodeInspector', {
+ *   variant: 'colors.actions.duplicate',
+ *   state: 'hover',
+ *   additionalClasses: 'transform hover:scale-105'
+ * });
+ * ```
+ */
+export function useDesignSystemClasses(
+  component: keyof ComponentThemes,
+  options: {
+    variant?: string;
+    state?: "default" | "hover" | "active";
+    additionalClasses?: string;
+  } = {}
+): string {
+  const { variant, state = "default", additionalClasses = "" } = options;
+  const componentTheme = useComponentTheme(component);
+  const componentClasses = useComponentClasses(component, state);
+
+  return useMemo(() => {
+    const classes = [componentClasses];
+
+    // Add design system variant if specified
+    if (variant) {
+      const designSystemClass = getDesignSystemToken(variant, "");
+      if (designSystemClass) {
+        classes.push(designSystemClass);
+      }
+    }
+
+    // Add additional classes
+    if (additionalClasses) {
+      classes.push(additionalClasses);
+    }
+
+    return classes.filter(Boolean).join(" ");
+  }, [componentClasses, variant, additionalClasses]);
+}
+
+/**
+ * Hook to access design system tokens directly
+ *
+ * Provides direct access to design system tokens with React hooks integration.
+ * Useful for accessing design system values in component logic or dynamic styling.
+ *
+ * @param {string} tokenPath - Dot notation path to the design system token
+ * @param {string} fallback - Fallback value if token is not found
+ * @returns {string} Design system token value
+ *
+ * @example
+ * ```tsx
+ * const containerPadding = useDesignSystemToken("spacing.containerPadding", "p-4");
+ * const primaryColor = useDesignSystemToken("colors.inspector.background", "bg-background");
+ * const iconSize = useDesignSystemToken("icons.small", "w-4 h-4");
+ * ```
+ */
+export function useDesignSystemToken(
+  tokenPath: string,
+  fallback: string
+): string {
+  return useMemo(() => {
+    return getDesignSystemToken(tokenPath, fallback);
+  }, [tokenPath, fallback]);
 }

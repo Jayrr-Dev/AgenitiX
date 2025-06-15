@@ -20,7 +20,6 @@ import {
   Background,
   ColorMode,
   ConnectionMode,
-  Controls,
   Panel,
   PanOnScrollMode,
   ReactFlow,
@@ -34,7 +33,11 @@ import type { AgenEdge, AgenNode } from "../types/nodeData";
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/action-toolbar/ActionToolbar";
 import HistoryPanel from "@/features/business-logic-modern/infrastructure/action-toolbar/history/HistoryPanel";
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
-import { ThemedMiniMap } from "@/features/business-logic-modern/infrastructure/theming/components";
+import {
+  nodeInspectorStyles,
+  ThemedControls,
+  ThemedMiniMap,
+} from "@/features/business-logic-modern/infrastructure/theming/components";
 import { NodeDisplayProvider } from "../contexts/NodeDisplayContext";
 
 // Node components are now loaded via useDynamicNodeTypes hook
@@ -44,6 +47,9 @@ import { NodeDisplayProvider } from "../contexts/NodeDisplayContext";
 import { useUltimateFlowConnectionPrevention } from "@/components/nodes/handles/TypeSafeHandle";
 
 import { useDynamicNodeTypes } from "../hooks/useDynamicNodeTypes";
+
+// Debug tool for clearing local storage in dev mode
+import ClearLocalStorage from "@/features/business-logic-modern/infrastructure/components/ClearLocalStorage";
 
 interface FlowCanvasProps {
   nodes: AgenNode[];
@@ -84,17 +90,18 @@ interface FlowCanvasProps {
 }
 
 /**
+ * FLOW CANVAS CONFIGURATION - Unified with design system tokens
+ *
+ * All constants now use the centralized token system for consistency
+ * and maintainability across light/dark themes.
+ */
+
+/**
  * The grid size for node movement snapping (in pixels)
  * @type {[number, number]}
  */
 const SNAP_GRID: [number, number] = [2.5, 2.5];
 
-/**
- * BACKGROUND CONFIGURATION - For ReactFlow Background component
- *
- * These constants control the appearance and spacing of the canvas background dots.
- * Adjust here for global consistency and maintainability.
- */
 /**
  * The spacing between background dots (in pixels)
  * @type {number}
@@ -108,31 +115,31 @@ const BACKGROUND_DOT_GAP = 15.5;
 const BACKGROUND_DOT_SIZE = 1;
 
 /**
- * The color of the background dots
- * @type {string}
+ * Edge styling configuration using design system tokens
  */
-const BACKGROUND_DOT_COLOR = "#aaa";
+const EDGE_STYLES = {
+  strokeWidth: 2,
+  stroke: "hsl(var(--infra-canvas-edge))",
+} as const;
 
 /**
- * The original background dot spacing (in pixels)
- * @type {number}
- * @unused
+ * Mobile delete button styling using design system tokens
  */
-const ORIGINAL_BACKGROUND_DOT_GAP = 12;
+const MOBILE_DELETE_BUTTON_STYLES = {
+  base: "bg-[hsl(var(--core-status-node-delete-bg))] hover:bg-[hsl(var(--core-status-node-delete-bg-light))] text-[hsl(var(--core-status-node-delete-border))] p-1 rounded-full shadow-lg transition-colors",
+  icon: "w-5 h-5",
+} as const;
 
 /**
- * The original background dot size (in pixels)
- * @type {number}
- * @unused
+ * Panel positioning and styling constants
  */
-const ORIGINAL_BACKGROUND_DOT_SIZE = 1;
-
-/**
- * The original background dot color
- * @type {string}
- * @unused
- */
-const ORIGINAL_BACKGROUND_DOT_COLOR = "#aaa";
+const PANEL_STYLES = {
+  margin: "m-2",
+  historyPanel: "mr-2",
+  historyPanelTop: "70px",
+  mobileDeleteTop: "100px",
+  mobileDeleteRight: "14px",
+} as const;
 
 export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   nodes,
@@ -261,8 +268,11 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   const controlsClassName = isMobile ? " translate-y-1/2 translate-x-1" : "";
   const deleteButtonPosition = isMobile ? "center-right" : "top-right";
   const deleteButtonStyle = isMobile
-    ? { marginTop: "100px", marginRight: "14px" }
-    : { marginTop: "70px" };
+    ? {
+        marginTop: PANEL_STYLES.mobileDeleteTop,
+        marginRight: PANEL_STYLES.mobileDeleteRight,
+      }
+    : { marginTop: PANEL_STYLES.historyPanelTop };
 
   // ============================================================================
   // NODE TYPES REGISTRY (INLINE) - A temporary, hardcoded manifest
@@ -358,13 +368,13 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
           type: "default",
           deletable: true,
           focusable: true,
-          style: { strokeWidth: 2, stroke: "hsl(var(--info))" },
+          style: EDGE_STYLES,
         }}
       >
         {/* NODE INSPECTOR PANEL */}
         <Panel
           position="bottom-center"
-          className="hidden md:block rounded  bg-infra-inspector shadow-sm max-w-4xl max-h-[250px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          className={`hidden md:block rounded shadow-sm max-w-4xl max-h-[250px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${nodeInspectorStyles.getContainer()}`}
         >
           <NodeDisplayProvider>
             <NodeInspector />
@@ -375,7 +385,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         <ThemedMiniMap position="bottom-left" className="hidden md:block" />
 
         {/* CONTROLS */}
-        <Controls
+        <ThemedControls
           position={controlsPosition}
           showInteractive={false}
           className={controlsClassName}
@@ -383,51 +393,21 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 
         {/* BACKGROUND */}
         <Background
-          gap={12}
-          size={1}
-          color="hsl(var(--node-view-text-secondary))"
+          gap={BACKGROUND_DOT_GAP}
+          size={BACKGROUND_DOT_SIZE}
+          color="hsl(var(--infra-canvas-dot))"
         />
 
         {/* ACTION TOOLBAR */}
-        <Panel position="top-right" className="m-2">
+        <Panel position="top-right" className={PANEL_STYLES.margin}>
           <ActionToolbar
             showHistoryPanel={showHistoryPanel}
             onToggleHistory={onToggleHistory}
           />
         </Panel>
 
-        {/* CLEAR LOCAL STORAGE BUTTON */}
-        <Panel position="top-center" className="m-2">
-          <button
-            onClick={() => {
-              if (
-                window.confirm(
-                  "Are you sure you want to clear all local storage? This will reset your workspace and cannot be undone."
-                )
-              ) {
-                localStorage.clear();
-                window.location.reload();
-              }
-            }}
-            className="bg-error hover:bg-error-hover text-error-text px-4 py-2 rounded-lg shadow-lg transition-colors duration-200 flex items-center gap-2 text-sm font-medium"
-            title="Clear all local storage and reset workspace"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
-            Clear Storage
-          </button>
-        </Panel>
+        {/* DEBUG TOOL - Clears local storage (development utility) */}
+        <ClearLocalStorage className={PANEL_STYLES.margin} />
 
         {/* MOBILE DELETE BUTTON - Only visible on mobile when node or edge is selected */}
         {(selectedNode || selectedEdge) && (
@@ -444,7 +424,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
                   onDeleteEdge?.(selectedEdge.id);
                 }
               }}
-              className="bg-error hover:bg-error-hover text-error-text p-1 rounded-full shadow-lg transition-colors"
+              className={MOBILE_DELETE_BUTTON_STYLES.base}
               title={
                 selectedNode
                   ? `Delete ${selectedNode.data?.label || selectedNode.type} node`
@@ -454,7 +434,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
               }
             >
               <svg
-                className="w-5 h-5"
+                className={MOBILE_DELETE_BUTTON_STYLES.icon}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -474,8 +454,8 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         {showHistoryPanel && (
           <Panel
             position="top-right"
-            className="mr-2"
-            style={{ marginTop: "70px" }}
+            className={PANEL_STYLES.historyPanel}
+            style={{ marginTop: PANEL_STYLES.historyPanelTop }}
           >
             <div className="w-80 max-h-96">
               <HistoryPanel className="shadow-lg" />

@@ -58,48 +58,48 @@ const NODE_STYLES = {
 // ACTION TYPE COLOR MAPPING
 const ACTION_TYPE_COLORS = {
   node_add: {
-    bg: "--status-node-add-bg",
-    border: "--status-node-add-border",
+    bg: "--core-status-node-add-bg",
+    border: "--core-status-node-add-border",
   },
   node_delete: {
-    bg: "--status-node-delete-bg",
-    border: "--status-node-delete-border",
+    bg: "--core-status-node-delete-bg",
+    border: "--core-status-node-delete-border",
   },
   node_move: {
-    bg: "--status-node-move-bg",
-    border: "--status-node-move-border",
+    bg: "--core-status-node-move-bg",
+    border: "--core-status-node-move-border",
   },
   node_update: {
-    bg: "--status-node-update-bg",
-    border: "--status-node-update-border",
+    bg: "--core-status-node-update-bg",
+    border: "--core-status-node-update-border",
   },
   edge_add: {
-    bg: "--status-edge-add-bg",
-    border: "--status-edge-add-border",
+    bg: "--core-status-edge-add-bg",
+    border: "--core-status-edge-add-border",
   },
   edge_delete: {
-    bg: "--status-edge-delete-bg",
-    border: "--status-edge-delete-border",
+    bg: "--core-status-edge-delete-bg",
+    border: "--core-status-edge-delete-border",
   },
   bulk_delete: {
-    bg: "--status-bulk-delete-bg",
-    border: "--status-bulk-delete-border",
+    bg: "--core-status-bulk-delete-bg",
+    border: "--core-status-bulk-delete-border",
   },
   bulk_update: {
-    bg: "--status-bulk-update-bg",
-    border: "--status-bulk-update-border",
+    bg: "--core-status-bulk-update-bg",
+    border: "--core-status-bulk-update-border",
   },
   paste: {
-    bg: "--status-paste-bg",
-    border: "--status-paste-border",
+    bg: "--core-status-paste-bg",
+    border: "--core-status-paste-border",
   },
   duplicate: {
-    bg: "--status-duplicate-bg",
-    border: "--status-duplicate-border",
+    bg: "--core-status-duplicate-bg",
+    border: "--core-status-duplicate-border",
   },
   special: {
-    bg: "--status-special-bg",
-    border: "--status-special-border",
+    bg: "--core-status-special-bg",
+    border: "--core-status-special-border",
   },
 } as const;
 

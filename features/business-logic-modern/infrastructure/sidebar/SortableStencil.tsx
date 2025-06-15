@@ -10,7 +10,7 @@
  * Keywords: sortable-stencil, drag-drop, touch-support, semantic-tokens, accessibility
  */
 
-'use client';
+"use client";
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -235,7 +235,7 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="relative flex h-[70px] w-[70px] select-none items-center justify-center rounded border-2 bg-infra-sidebar border-infra-sidebar text-infra-sidebar-text hover:bg-infra-sidebar-hover transition-colors group cursor-pointer"
+      className="relative flex h-[70px] w-[70px] select-none items-center justify-center rounded border-2 bg-[hsl(var(--infra-sidebar-bg))] border-[hsl(var(--infra-sidebar-border))] text-[hsl(var(--infra-sidebar-text))] hover:bg-[hsl(var(--infra-sidebar-bg-hover))] transition-colors group cursor-pointer"
       title={
         keyboardShortcut
           ? `${stencil.label} (${keyboardShortcut})`
@@ -257,7 +257,7 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
         {...listeners}
         type="button"
         title="Re-order"
-        className="absolute left-1 top-1 h-3 w-3 cursor-grab text-[8px] text-infra-sidebar-text-secondary active:cursor-grabbing"
+        className="absolute left-1 top-1 h-3 w-3 cursor-grab text-[8px] text-[hsl(var(--infra-sidebar-text-secondary))] active:cursor-grabbing"
         draggable={false}
       >
         ⦿

@@ -34,6 +34,13 @@ The AgenitiX theming system is an **enterprise-grade, scalable design system** b
 - **Development Mode**: Enhanced debugging features
 - **Console Logging**: Detailed theme information during development
 
+### **🗂️ Centralized Design Configuration**
+
+- **Immutable Single Source of Truth**: All content strings, spacing, typography, icon sizes, layout patterns, and colour themes are consolidated in a frozen `DESIGN_CONFIG` object.
+- **Token-Driven Styling**: Component class constants compose their Tailwind/infra utility strings exclusively from `DESIGN_CONFIG` tokens, ensuring instant global updates.
+- **Internationalisation Ready**: All labels, tool-tips, and aria-ids are exposed through `DESIGN_CONFIG.content`, making copy edits or future i18n trivial.
+- **Verb-First Constants**: Every extracted class string is stored in a top-level constant following the new verb-first naming convention for optimal discoverability.
+
 ## 🏛️ Architecture Overview
 
 ### **Three-Layer CSS Structure**
@@ -107,6 +114,13 @@ layer(utilities);
 --infra-sidebar-text: var(--muted-foreground); /* #b3b3b3 */
 --infra-toolbar-bg: var(--card); /* #141414 */
 --infra-panel-bg: var(--muted); /* #2e2e2e */
+
+/* v1.3.0 – Node Inspector specific tokens */
+--infra-inspector-lock-icon: 214 17% 55%; /* #7c8da4 */
+--infra-inspector-lock-icon-hover: 214 17% 65%; /* #8f9fb4 */
+--infra-inspector-text-secondary: 210 10% 75%; /* #b3bbc4 */
+--infra-inspector-text-secondary-hover: 210 15% 85%; /* #d1d7df */
+--infra-inspector-button-border-hover: 210 100% 60%; /* #0091ff */
 ```
 
 ## 🧩 Component Theming System

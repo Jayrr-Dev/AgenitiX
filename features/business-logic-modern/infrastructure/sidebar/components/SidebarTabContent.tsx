@@ -6,13 +6,13 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import React from "react";
-import { HoveredStencil } from "../StencilInfoPanel";
 import { SortableStencil } from "../SortableStencil";
 import { StencilGrid } from "../StencilGrid";
+import { HoveredStencil } from "../StencilInfoPanel";
 import { VARIANT_CONFIG } from "../constants";
 import { useDragSensors } from "../hooks/useDragSensors";
 import { useStencilStorage } from "../hooks/useStencilStorage";
-import { NodeStencil, SidebarVariant, AnyTabKey, TabKey } from "../types";
+import { NodeStencil, SidebarVariant, TabKey } from "../types";
 import { AddNodeButton } from "./AddNodeButton";
 
 interface TabContentProps {
@@ -113,16 +113,20 @@ export function SidebarTabContent({
 
     // Safely access the stencils with proper type checking
     if (!stencilsConfig) {
-      console.warn(`No stencils config found for variant '${variant}' (normalized to '${normalizedVariant}')`);
+      console.warn(
+        `No stencils config found for variant '${variant}' (normalized to '${normalizedVariant}')`
+      );
       return [];
     }
-    
+
     const tabStencils = stencilsConfig[tabKey as keyof typeof stencilsConfig];
     if (!Array.isArray(tabStencils)) {
-      console.warn(`No stencils found for tab '${tabKey}' in variant '${variant}' (normalized to '${normalizedVariant}')`);
+      console.warn(
+        `No stencils found for tab '${tabKey}' in variant '${variant}' (normalized to '${normalizedVariant}')`
+      );
       return [];
     }
-    
+
     return tabStencils;
   };
 
@@ -167,7 +171,7 @@ export function SidebarTabContent({
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={nodeIds} strategy={rectSortingStrategy}>
-            <div className="flex flex-wrap justify-evenly gap-2 sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center sm:mx-auto bg-infra-sidebar">
+            <div className="flex flex-wrap justify-evenly gap-2 sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center sm:mx-auto bg-[hsl(var(--infra-sidebar-bg))]">
               {/* Add Node Button as first item in grid */}
               <div className="flex items-center justify-center">
                 <AddNodeButton

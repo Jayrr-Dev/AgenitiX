@@ -1,17 +1,19 @@
 /**
- * CREATETEXT NODE - Simple text creation node
+ * CREATETEXT NODE - CREATE category themed text creation node
  *
  * • Creates text content with direct inline editing
+ * • Green theming for CREATE category consistency
  * • Simple textarea interface for immediate text input
  * • Schema-driven controls available in Node Inspector
  * • Clean, minimal UI focused on content creation
  *
- * Keywords: text-creation, inline-editing, simple-interface
+ * Keywords: text-creation, inline-editing, create-category, green-theme
  */
 
 import { useNodeData } from "@/hooks/useNodeData";
 import type { NodeProps } from "@xyflow/react";
-import { useState } from "react";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
@@ -79,14 +81,27 @@ const spec: NodeSpec = {
 /**
  * createText Node Component
  *
- * Simple UI with direct text editing:
- * - Clean textarea interface for immediate text input
+ * Original styling with CREATE category green theming:
+ * - Clean interface focused on node-specific functionality
+ * - Green accent colors for CREATE category consistency
  * - Schema-driven controls available in Node Inspector
- * - Maintains all enterprise validation and type safety
- * - Two visual states (collapsed/expanded)
+ * - Maintains enterprise validation and type safety
  */
 const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
   const [isExpanded, setExpanded] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { theme, resolvedTheme } = useTheme();
+
+  // Debug theme switching
+  useEffect(() => {
+    setMounted(true);
+    console.log(`🎨 [CreateText-${id}] Theme Debug:`, {
+      theme,
+      resolvedTheme,
+      mounted,
+      timestamp: new Date().toISOString(),
+    });
+  }, [theme, resolvedTheme, id, mounted]);
 
   // Use proper React Flow data management
   const { nodeData, updateNodeData } = useNodeData(id, data);
@@ -130,12 +145,38 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
   const height =
     typeof dims.height === "number" ? `${dims.height}px` : dims.height;
 
+  // Prevent hydration mismatch by not rendering theme-dependent styles until mounted
+  if (!mounted) {
+    return (
+      <div
+        className="relative bg-gray-100 rounded-lg shadow-md border border-gray-300 transition-all duration-200 flex items-center justify-center"
+        style={{ width, height, minWidth: width, minHeight: height }}
+        data-testid="create-text-node"
+      >
+        <span className="text-2xl" aria-label="Create Text Node">
+          📝
+        </span>
+      </div>
+    );
+  }
+
+  const isDark = resolvedTheme === "dark";
+
   return (
     <div
-      className={`relative bg-white dark:bg-neutral-900 rounded-lg shadow-md border border-neutral-200 dark:border-neutral-700 transition-all duration-200 ${
-        isExpanded ? "" : "flex items-center justify-center"
-      }`}
-      style={{ width, height, minWidth: width, minHeight: height }}
+      className={`relative rounded-lg shadow-md transition-all duration-200 ${
+        isDark
+          ? "bg-neutral-900 border-green-700/50 hover:border-green-600/70"
+          : "bg-white border-green-200/70 hover:border-green-300/80"
+      } ${isExpanded ? "" : "flex items-center justify-center"}`}
+      style={{
+        width,
+        height,
+        minWidth: width,
+        minHeight: height,
+        borderWidth: "1px",
+        borderStyle: "solid",
+      }}
       data-testid="create-text-node"
     >
       <ExpandCollapseButton showUI={isExpanded} onToggle={onToggle} size="sm" />
@@ -143,24 +184,35 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
       {isExpanded ? (
         <div className="p-4 pt-8 w-full h-full flex flex-col">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold">createText</h3>
+            <h3
+              className={`text-sm font-semibold ${isDark ? "text-gray-100" : "text-gray-900"}`}
+            >
+              createText
+            </h3>
             {process.env.NODE_ENV === "development" && (
-              <span className="text-xs text-gray-500">
-                Health: {getHealthScore()}%
+              <span
+                className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}
+              >
+                Health: {getHealthScore()}% | Theme: {resolvedTheme}
               </span>
             )}
           </div>
 
-          {/* Simple, clean textarea for direct text editing */}
+          {/* Simple, clean textarea for direct text editing with thin green accent */}
           <textarea
             value={validatedData.text}
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Enter your text here..."
-            className="flex-1 w-full p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md
-                     bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                     resize-none"
-            style={{ minHeight: "60px" }}
+            className={`flex-1 w-full p-2 text-sm rounded-md resize-none transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+              isDark
+                ? "bg-gray-800 text-gray-100 placeholder:text-gray-400 border-green-600/50 hover:border-green-500/70"
+                : "bg-white text-gray-900 placeholder:text-gray-500 border-green-300/60 hover:border-green-400/80"
+            }`}
+            style={{
+              minHeight: "60px",
+              borderWidth: "1px",
+              borderStyle: "solid",
+            }}
           />
         </div>
       ) : (

@@ -85,17 +85,17 @@ export const SIDEBAR_TOKENS = {
     },
   },
 
-  // LAYOUT - Sidebar-specific layout patterns
+  // LAYOUT - Sidebar-specific layout patterns (uses generated tokens)
   layout: {
     container: combineTokens(
       CORE_TOKENS.layout.flexCol,
-      "h-full bg-infra-sidebar border-r border-infra-sidebar"
+      "h-full bg-[hsl(var(--infra-sidebar-bg))] border-r border-[hsl(var(--infra-sidebar-border))]"
     ),
     header: combineTokens(
       CORE_TOKENS.layout.flexRow,
       CORE_TOKENS.layout.itemsCenter,
       CORE_TOKENS.layout.justifyBetween,
-      "p-4 border-b border-infra-sidebar"
+      "p-4 border-b border-[hsl(var(--infra-sidebar-border))]"
     ),
     content: combineTokens(
       CORE_TOKENS.layout.flexCol,
@@ -105,7 +105,7 @@ export const SIDEBAR_TOKENS = {
       CORE_TOKENS.layout.flexRow,
       CORE_TOKENS.layout.itemsCenter,
       CORE_TOKENS.layout.justifyCenter,
-      "p-3 border-t border-infra-sidebar"
+      "p-3 border-t border-[hsl(var(--infra-sidebar-border))]"
     ),
     section: combineTokens(CORE_TOKENS.layout.flexCol, "gap-2"),
     sectionHeader: combineTokens(
@@ -116,30 +116,31 @@ export const SIDEBAR_TOKENS = {
     ),
   },
 
-  // COLORS - Sidebar-specific color mappings (uses your infra CSS system)
+  // COLORS - Sidebar-specific color mappings (uses generated tokens)
   colors: {
     container: {
-      background: "bg-infra-sidebar",
-      border: "border-infra-sidebar",
-      text: "text-infra-sidebar",
+      background: "bg-[hsl(var(--infra-sidebar-bg))]",
+      border: "border-[hsl(var(--infra-sidebar-border))]",
+      text: "text-[hsl(var(--infra-sidebar-text))]",
     },
     header: {
-      background: "bg-infra-sidebar",
-      text: "text-infra-sidebar",
-      border: "border-infra-sidebar",
+      background: "bg-[hsl(var(--infra-sidebar-bg))]",
+      text: "text-[hsl(var(--infra-sidebar-text))]",
+      border: "border-[hsl(var(--infra-sidebar-border))]",
     },
     item: {
-      background: "bg-infra-sidebar",
-      backgroundHover: "hover:bg-infra-sidebar-hover",
-      backgroundActive: "bg-infra-sidebar-active",
-      text: "text-infra-sidebar",
-      textSecondary: "text-infra-sidebar-secondary",
-      border: "border-infra-sidebar",
-      borderHover: "hover:border-infra-sidebar-hover",
+      background: "bg-[hsl(var(--infra-sidebar-bg))]",
+      backgroundHover: "hover:bg-[hsl(var(--infra-sidebar-bg-hover))]",
+      backgroundActive: "bg-[hsl(var(--infra-sidebar-bg-active))]",
+      text: "text-[hsl(var(--infra-sidebar-text))]",
+      textSecondary: "text-[hsl(var(--infra-sidebar-text-secondary))]",
+      textHover: "hover:text-[hsl(var(--infra-sidebar-text-hover))]",
+      border: "border-[hsl(var(--infra-sidebar-border))]",
+      borderHover: "hover:border-[hsl(var(--infra-sidebar-border-hover))]",
     },
     section: {
-      header: "text-infra-sidebar-text-secondary",
-      divider: "border-infra-sidebar",
+      header: "text-[hsl(var(--infra-sidebar-text-secondary))]",
+      divider: "border-[hsl(var(--infra-sidebar-border))]",
     },
   },
 } as const;

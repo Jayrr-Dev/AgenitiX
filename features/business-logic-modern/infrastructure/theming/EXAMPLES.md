@@ -17,12 +17,12 @@ const SimpleCard = ({ title, children }) => {
       CORE_TOKENS.spacing.lg,
       CORE_TOKENS.effects.rounded.md,
       CORE_TOKENS.effects.shadow.sm,
-      "bg-white border border-gray-200"
+      "bg-[hsl(var(--core-colors-background))] border border-[hsl(var(--core-colors-border))]"
     )}>
       <h3 className={combineTokens(
         CORE_TOKENS.typography.sizes.lg,
         CORE_TOKENS.typography.weights.semibold,
-        "text-gray-900"
+        "text-[hsl(var(--core-colors-foreground))]"
       )}>
         {title}
       </h3>
@@ -206,13 +206,8 @@ const Node: React.FC<NodeProps> = ({ node }) => {
     ? "w-30 h-15" // 120x60px
     : "w-15 h-15"; // 60x60px
 
-  // Category colors
-  const categoryColors = {
-    create: "bg-blue-500 text-white border-blue-600",
-    count: "bg-purple-500 text-white border-purple-600",
-    delay: "bg-orange-500 text-white border-orange-600",
-    transform: "bg-green-500 text-white border-green-600"
-  };
+  // Category classes are now dynamic based on node.category
+  const categoryClasses = `bg-node-${node.category.toLowerCase()} text-node-${node.category.toLowerCase()} border-node-${node.category.toLowerCase()}`;
 
   // State effects
   const stateEffects = combineTokens(
@@ -231,7 +226,7 @@ const Node: React.FC<NodeProps> = ({ node }) => {
         CORE_TOKENS.layout.justifyCenter,
         CORE_TOKENS.effects.rounded.md,
         CORE_TOKENS.effects.transition,
-        categoryColors[node.category],
+        categoryClasses,
         stateEffects,
         "border-2 cursor-pointer"
       )}
@@ -387,32 +382,6 @@ const ResponsiveLayout = ({ children }) => {
       "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
       CORE_TOKENS.spacing.lg,
       "gap-4 md:gap-6 lg:gap-8"
-    )}>
-      {children}
-    </div>
-  );
-};
-```
-
-### Theme-Aware Components
-
-```typescript
-import React from "react";
-import { CORE_TOKENS, combineTokens } from "@/theming";
-
-const ThemeAwareCard = ({ children, isDark }) => {
-  const themeStyles = isDark
-    ? "bg-gray-800 text-white border-gray-700"
-    : "bg-white text-gray-900 border-gray-200";
-
-  return (
-    <div className={combineTokens(
-      CORE_TOKENS.layout.flexCol,
-      CORE_TOKENS.spacing.lg,
-      CORE_TOKENS.effects.rounded.lg,
-      CORE_TOKENS.effects.shadow.md,
-      themeStyles,
-      "border"
     )}>
       {children}
     </div>

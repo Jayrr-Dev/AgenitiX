@@ -694,3 +694,83 @@ This system represents a significant advancement in node-based architecture, pro
 - **Schema Generator**: AI-assisted Zod schema creation
 - **Testing Framework**: Automated node behavior testing
 - **Analytics Dashboard**: Node usage and performance analytics
+
+# Node Creation with Plop - Unified Theming System
+
+## Overview
+
+The Plop node template has been updated to use the **unified theming system** with semantic tokens. All new nodes created with `pnpm run create-node` will automatically:
+
+- ✅ Use semantic tokens for consistent styling
+- ✅ Support automatic light/dark mode switching
+- ✅ Maintain visual consistency across all nodes
+- ✅ Follow enterprise-grade styling patterns
+
+## Unified Theming Features
+
+### Semantic Token Integration
+
+New nodes automatically use semantic tokens:
+
+```tsx
+// Old approach (manual Tailwind)
+className =
+  "bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700";
+
+// New approach (semantic tokens)
+className =
+  "bg-[hsl(var(--core-node-bg))] border-[hsl(var(--core-node-border))]";
+```
+
+### Centralized Style Constants
+
+The template includes `UNIFIED_NODE_STYLES` constants for:
+
+- Container styling (background, borders, hover states)
+- Content area layouts (expanded/collapsed)
+- Header styling (titles, health indicators)
+- Main content styling (icons, text, centering)
+
+### Automatic Theme Consistency
+
+All new nodes will automatically match:
+
+- Node Inspector theming
+- Sidebar component styling
+- Action Toolbar appearance
+- History Panel colors
+- Canvas and Controls theming
+
+## Usage
+
+Create a new node with unified theming:
+
+```bash
+pnpm run create-node
+```
+
+The generated node will include:
+
+- Semantic token-based styling
+- Consistent color scheme
+- Proper contrast ratios
+- Smooth transitions
+- Enterprise validation patterns
+
+## Customization
+
+To customize node appearance while maintaining consistency:
+
+1. **Modify UNIFIED_NODE_STYLES**: Update the style constants in your generated node
+2. **Add semantic tokens**: Extend the token system in `tokens.json` if needed
+3. **Use arbitrary values**: Apply semantic tokens with `bg-[hsl(var(--your-token))]` syntax
+
+## Migration
+
+Existing nodes can be migrated to use the unified theming system by:
+
+1. Replacing manual Tailwind classes with semantic tokens
+2. Adding the `UNIFIED_NODE_STYLES` constants
+3. Using the centralized styling approach
+
+This ensures all nodes maintain visual consistency and automatically adapt to theme changes.

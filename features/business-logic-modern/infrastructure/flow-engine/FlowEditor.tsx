@@ -45,6 +45,23 @@ const getNodeSpecForType = async (nodeType: string) => {
   }
 };
 
+/* -------------------------------------------------------------------------- */
+/*  DESIGN CONSTANTS (verb-first names)                                        */
+/* -------------------------------------------------------------------------- */
+
+// Error view layout & colours
+const wrapErrorScreen =
+  "h-screen w-screen flex items-center justify-center bg-error dark:bg-error-hover" as const;
+
+const styleErrorTitle = "text-2xl font-bold text-error mb-4" as const;
+const styleErrorSubtitle = "text-error-secondary mb-4" as const;
+
+// Retry button
+const styleRetryBase =
+  "px-4 py-2 rounded shadow-lg transition-transform transition-colors duration-200 text-sm font-medium" as const;
+const styleRetryColour =
+  "bg-destructive text-destructive-foreground hover:opacity-90 hover:shadow-effect-glow-error hover:scale-105 active:scale-100" as const;
+
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -66,17 +83,15 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="h-screen w-screen flex items-center justify-center bg-red-50 dark:bg-red-900">
+        <div className={wrapErrorScreen}>
           <div className="text-center p-8">
-            <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
-              Something went wrong
-            </h1>
-            <p className="text-red-500 dark:text-red-300 mb-4">
+            <h1 className={styleErrorTitle}>Something went wrong</h1>
+            <p className={styleErrorSubtitle}>
               {this.state.error?.message || "Unknown error occurred"}
             </p>
             <button
               onClick={() => this.setState({ hasError: false })}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              className={styleRetryBase + " " + styleRetryColour}
             >
               Try again
             </button>
@@ -391,7 +406,7 @@ const FlowEditorInternal = () => {
 
   return (
     <div
-      className="h-screen w-screen bg-gray-100 dark:bg-gray-900"
+      className="h-screen w-screen"
       style={{ height: "100vh", width: "100vw" }}
     >
       {/* Undo/Redo Manager - tracks all node/edge changes */}

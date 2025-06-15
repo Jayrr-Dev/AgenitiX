@@ -1,3 +1,15 @@
+/**
+ * {{titleCase kind}} NODE - Unified theming node template
+ *
+ * • Clean, simple UI with schema-driven controls in Node Inspector
+ * • Unified theming system with semantic tokens for consistency
+ * • Type-safe data validation with Zod schema
+ * • Zero-maintenance control system with automatic light/dark mode
+ * • Enterprise-grade backend safety
+ *
+ * Keywords: {{kebabCase kind}}, unified-theming, schema-driven, type-safe, semantic-tokens
+ */
+
 import type { NodeProps } from '@xyflow/react';
 import { useState } from 'react';
 import { z } from 'zod';
@@ -16,17 +28,6 @@ import { EXPANDED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-moder
 import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
 
 // -- PLOP-INJECTED-IMPORTS --
-
-/**
- * {{titleCase kind}} NODE - Simple node with schema-driven controls
- *
- * • Clean, simple UI with schema-driven controls in Node Inspector
- * • Type-safe data validation with Zod schema
- * • Zero-maintenance control system
- * • Enterprise-grade backend safety
- *
- * Keywords: {{kebabCase kind}}, simple-ui, schema-driven, type-safe
- */
 
 /**
  * Data schema for {{titleCase kind}} node
@@ -73,10 +74,52 @@ const spec: NodeSpec = {
 };
 
 /**
+ * Unified theming constants using semantic tokens
+ */
+const UNIFIED_NODE_STYLES = {
+  // Container styles with semantic tokens
+  container: {
+    base: "relative rounded-lg shadow-md border transition-all duration-200",
+    background: "bg-[hsl(var(--core-node-bg))]",
+    border: "border-[hsl(var(--core-node-border))]",
+    hover: "hover:border-[hsl(var(--core-node-border-hover))]",
+    expanded: "",
+    collapsed: "flex items-center justify-center",
+  },
+
+  // Content area styles
+  content: {
+    expanded: "p-4 pt-8 w-full h-full flex flex-col",
+    collapsed: "flex items-center justify-center w-full h-full",
+  },
+
+  // Header styles
+  header: {
+    container: "flex items-center justify-between mb-3",
+    title: "text-sm font-semibold text-[hsl(var(--core-node-text))]",
+    health: "text-xs text-[hsl(var(--core-node-text-secondary))]",
+  },
+
+  // Main content styles
+  main: {
+    container: "flex-1 flex items-center justify-center",
+    content: "text-center",
+    icon: "text-2xl mb-2",
+    text: "text-xs text-[hsl(var(--core-node-text-secondary))]",
+  },
+
+  // Collapsed state styles
+  collapsed: {
+    icon: "text-2xl",
+  },
+} as const;
+
+/**
  * {{camelCase kind}} Node Component
  *
- * Simple UI with schema-driven controls:
- * - Clean interface focused on node-specific functionality
+ * Unified theming with semantic tokens:
+ * - Consistent styling across all nodes using design system
+ * - Automatic light/dark mode support
  * - Schema-driven controls available in Node Inspector
  * - Maintains enterprise validation and type safety
  */
@@ -112,40 +155,47 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
   const width = typeof dims.width === 'number' ? `${dims.width}px` : dims.width;
   const height = typeof dims.height === 'number' ? `${dims.height}px` : dims.height;
 
+  // Combine unified styles
+  const containerClasses = [
+    UNIFIED_NODE_STYLES.container.base,
+    UNIFIED_NODE_STYLES.container.background,
+    UNIFIED_NODE_STYLES.container.border,
+    UNIFIED_NODE_STYLES.container.hover,
+    isExpanded ? UNIFIED_NODE_STYLES.container.expanded : UNIFIED_NODE_STYLES.container.collapsed,
+  ].join(' ');
+
   return (
     <div
-      className={`relative bg-white dark:bg-neutral-900 rounded-lg shadow-md border border-neutral-200 dark:border-neutral-700 transition-all duration-200 ${
-        isExpanded ? '' : 'flex items-center justify-center'
-      }`}
+      className={containerClasses}
       style={{ width, height, minWidth: width, minHeight: height }}
       data-testid="{{kebabCase kind}}-node"
     >
       <ExpandCollapseButton showUI={isExpanded} onToggle={onToggle} size="sm" />
 
       {isExpanded ? (
-        <div className="p-4 pt-8 w-full h-full flex flex-col">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold">{{camelCase kind}}</h3>
+        <div className={UNIFIED_NODE_STYLES.content.expanded}>
+          <div className={UNIFIED_NODE_STYLES.header.container}>
+            <h3 className={UNIFIED_NODE_STYLES.header.title}>{{camelCase kind}}</h3>
             {process.env.NODE_ENV === 'development' && (
-              <span className="text-xs text-gray-500">
+              <span className={UNIFIED_NODE_STYLES.header.health}>
                 Health: {getHealthScore()}%
               </span>
             )}
           </div>
 
           {/* Add your node-specific UI here */}
-          <div className="flex-1 flex items-center justify-center text-gray-500">
-            <div className="text-center">
-              <div className="text-2xl mb-2">🔧</div>
-              <div className="text-xs">
+          <div className={UNIFIED_NODE_STYLES.main.container}>
+            <div className={UNIFIED_NODE_STYLES.main.content}>
+              <div className={UNIFIED_NODE_STYLES.main.icon}>🔧</div>
+              <div className={UNIFIED_NODE_STYLES.main.text}>
                 {nodeData.isEnabled ? nodeData.text : 'Disabled'}
               </div>
             </div>
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-center w-full h-full">
-          <span className="text-2xl" aria-label="{{titleCase kind}} Node">
+        <div className={UNIFIED_NODE_STYLES.content.collapsed}>
+          <span className={UNIFIED_NODE_STYLES.collapsed.icon} aria-label="{{titleCase kind}} Node">
             🔧
           </span>
         </div>

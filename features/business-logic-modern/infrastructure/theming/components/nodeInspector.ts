@@ -59,21 +59,21 @@ export const NODE_INSPECTOR_TOKENS = {
     },
     jsonData: {
       adaptive: combineTokens(
-        "bg-infra-inspector-data",
+        "bg-[hsl(var(--infra-inspector-data-bg))]",
         CORE_TOKENS.effects.rounded.md,
-        "border border-infra-inspector-data",
+        "border border-[hsl(var(--infra-inspector-data-border))]",
         "p-3 overflow-x-auto w-full"
       ),
       fixed: combineTokens(
-        "bg-infra-inspector-data",
+        "bg-[hsl(var(--infra-inspector-data-bg))]",
         CORE_TOKENS.effects.rounded.md,
-        "border border-infra-inspector-data",
+        "border border-[hsl(var(--infra-inspector-data-border))]",
         "p-3 overflow-y-auto overflow-x-auto flex-1 min-w-0 w-full"
       ),
       compact: combineTokens(
-        "bg-infra-inspector-data",
+        "bg-[hsl(var(--infra-inspector-data-bg))]",
         CORE_TOKENS.effects.rounded.md,
-        "border border-infra-inspector-data",
+        "border border-[hsl(var(--infra-inspector-data-border))]",
         "p-2 overflow-y-auto overflow-x-auto max-h-48 w-full"
       ),
     },
@@ -171,60 +171,135 @@ export const NODE_INSPECTOR_TOKENS = {
     xlarge: "w-6 h-6",
   },
 
-  // COLORS - NodeInspector-specific color mappings (uses your infra CSS system)
+  // COLORS - NodeInspector-specific color mappings (uses generated CSS variables)
   colors: {
     inspector: {
-      background: "bg-infra-inspector-lock",
-      text: "text-infra-inspector-lock",
-      textSecondary: "text-infra-inspector-secondary",
-      border: "border-infra-inspector-lock",
-      borderHover: "border-infra-inspector-button-hover",
+      background: "bg-[hsl(var(--infra-inspector-bg))]",
+      text: "text-[hsl(var(--infra-inspector-text))]",
+      textSecondary: "text-[hsl(var(--infra-inspector-text-secondary))]",
+      border: "border-[hsl(var(--infra-inspector-border))]",
+      borderHover: "hover:border-[hsl(var(--infra-inspector-border-hover))]",
     },
     header: {
-      background: "bg-infra-inspector-header",
-      text: "text-infra-inspector-header",
-      textSecondary: "text-infra-inspector-header-secondary",
-      border: "border-infra-inspector-header",
+      background: "bg-[hsl(var(--infra-inspector-header-bg))]",
+      text: "text-[hsl(var(--infra-inspector-header-text))]",
+      textSecondary: "text-[hsl(var(--infra-inspector-header-text-secondary))]",
+      border: "border-[hsl(var(--infra-inspector-header-border))]",
     },
     data: {
-      background: "bg-infra-inspector-data",
-      text: "text-infra-inspector-data",
-      border: "border-infra-inspector-data",
+      background: "bg-[hsl(var(--infra-inspector-data-bg))]",
+      text: "text-[hsl(var(--infra-inspector-data-text))]",
+      border: "border-[hsl(var(--infra-inspector-data-border))]",
     },
     actions: {
       duplicate: {
-        background: "bg-infra-inspector-duplicate",
-        backgroundHover: "hover:bg-infra-inspector-duplicate-hover",
-        text: "text-infra-inspector-duplicate",
-        border: "border-infra-inspector-duplicate",
+        background: "bg-[hsl(var(--infra-inspector-actions-duplicate-bg))]",
+        backgroundHover:
+          "hover:bg-[hsl(var(--infra-inspector-actions-duplicate-bg-hover))]",
+        text: "text-[hsl(var(--infra-inspector-actions-duplicate-text))]",
+        border: "border-[hsl(var(--infra-inspector-actions-duplicate-border))]",
       },
       delete: {
-        background: "bg-infra-inspector-delete",
-        backgroundHover: "hover:bg-infra-inspector-delete-hover",
-        text: "text-infra-inspector-delete",
-        border: "border-infra-inspector-delete",
+        background: "bg-[hsl(var(--infra-inspector-actions-delete-bg))]",
+        backgroundHover:
+          "hover:bg-[hsl(var(--infra-inspector-actions-delete-bg-hover))]",
+        text: "text-[hsl(var(--infra-inspector-actions-delete-text))]",
+        border: "border-[hsl(var(--infra-inspector-actions-delete-border))]",
       },
       lock: {
-        background: "bg-infra-inspector-lock",
-        backgroundHover: "hover:bg-infra-inspector-lock-hover",
-        text: "text-infra-inspector-lock",
-        textHover: "hover:text-infra-inspector-locked",
-        border: "border-infra-inspector-lock",
-        borderHover: "hover:border-infra-inspector-button-hover",
+        background: "bg-[hsl(var(--infra-inspector-actions-lock-bg))]",
+        backgroundHover:
+          "hover:bg-[hsl(var(--infra-inspector-actions-lock-bg-hover))]",
+        text: "text-[hsl(var(--infra-inspector-actions-lock-text))]",
+        textHover:
+          "hover:text-[hsl(var(--infra-inspector-states-locked-text))]",
+        border: "border-[hsl(var(--infra-inspector-actions-lock-border))]",
+        borderHover:
+          "hover:border-[hsl(var(--infra-inspector-button-border-hover))]",
       },
     },
     states: {
       locked: {
-        textHover: "hover:text-infra-inspector-locked",
-        borderHover: "hover:border-infra-inspector-locked",
+        textHover:
+          "hover:text-[hsl(var(--infra-inspector-states-locked-text-hover))]",
+        borderHover:
+          "hover:border-[hsl(var(--infra-inspector-states-locked-border-hover))]",
       },
       magnifyingGlass: {
-        textHover: "hover:text-infra-inspector-secondary-hover",
-        borderHover: "hover:border-infra-inspector-button-hover",
+        textHover:
+          "hover:text-[hsl(var(--infra-inspector-text-secondary-hover))]",
+        borderHover:
+          "hover:border-[hsl(var(--infra-inspector-button-border-hover))]",
       },
     },
   },
 } as const;
+
+// =====================================================================
+// NODE INSPECTOR STYLES - Pre-built style utilities
+// =====================================================================
+
+/** Pre-built style utilities for the NodeInspector component */
+export const nodeInspectorStyles = {
+  getContainer: () => {
+    return combineTokens(
+      NODE_INSPECTOR_TOKENS.colors.inspector.background,
+      "border-l",
+      NODE_INSPECTOR_TOKENS.colors.inspector.border
+    );
+  },
+  getHeader: () => {
+    return combineTokens(
+      NODE_INSPECTOR_TOKENS.layout.header,
+      "pb-2 border-b",
+      NODE_INSPECTOR_TOKENS.colors.header.border
+    );
+  },
+  getJsonContainer: (isAdaptive: boolean) => {
+    const variant = isAdaptive ? "adaptive" : "fixed";
+    return NODE_INSPECTOR_TOKENS.variants.jsonContainer[variant];
+  },
+  getJsonData: (isAdaptive: boolean) => {
+    const variant = isAdaptive ? "adaptive" : "fixed";
+    return NODE_INSPECTOR_TOKENS.variants.jsonData[variant];
+  },
+  getActionButtons: () => {
+    return combineTokens(
+      NODE_INSPECTOR_TOKENS.layout.actionButtons,
+      "justify-end"
+    );
+  },
+  getDuplicateButton: () => {
+    return combineTokens(
+      NODE_INSPECTOR_TOKENS.layout.flexRow,
+      "items-center gap-1",
+      NODE_INSPECTOR_TOKENS.spacing.buttonPadding,
+      NODE_INSPECTOR_TOKENS.typography.buttonText,
+      NODE_INSPECTOR_TOKENS.colors.actions.duplicate.background,
+      "border",
+      NODE_INSPECTOR_TOKENS.colors.actions.duplicate.border,
+      NODE_INSPECTOR_TOKENS.colors.actions.duplicate.text,
+      NODE_INSPECTOR_TOKENS.effects.rounded.default,
+      NODE_INSPECTOR_TOKENS.colors.actions.duplicate.backgroundHover,
+      NODE_INSPECTOR_TOKENS.effects.transition
+    );
+  },
+  getDeleteButton: () => {
+    return combineTokens(
+      NODE_INSPECTOR_TOKENS.layout.flexRow,
+      "items-center gap-1",
+      NODE_INSPECTOR_TOKENS.spacing.buttonPadding,
+      NODE_INSPECTOR_TOKENS.typography.buttonText,
+      NODE_INSPECTOR_TOKENS.colors.actions.delete.background,
+      "border",
+      NODE_INSPECTOR_TOKENS.colors.actions.delete.border,
+      NODE_INSPECTOR_TOKENS.colors.actions.delete.text,
+      NODE_INSPECTOR_TOKENS.effects.rounded.default,
+      NODE_INSPECTOR_TOKENS.colors.actions.delete.backgroundHover,
+      NODE_INSPECTOR_TOKENS.effects.transition
+    );
+  },
+};
 
 // =====================================================================
 // NODE INSPECTOR UTILITIES - Component-specific helper functions
@@ -254,61 +329,6 @@ export const getConditionalNodeInspectorVariant = (
     category,
     condition ? trueVariant : falseVariant
   );
-};
-
-/** NodeInspector-specific styling utilities */
-export const nodeInspectorStyles = {
-  // JSON container styling
-  getJsonContainer: (adaptive: boolean = true) =>
-    getConditionalNodeInspectorVariant(
-      "jsonContainer",
-      adaptive,
-      "adaptive",
-      "fixed"
-    ),
-
-  getJsonData: (adaptive: boolean = true) =>
-    getConditionalNodeInspectorVariant(
-      "jsonData",
-      adaptive,
-      "adaptive",
-      "fixed"
-    ),
-
-  // Layout utilities
-  getContainer: () => NODE_INSPECTOR_TOKENS.layout.container,
-  getHeader: () => NODE_INSPECTOR_TOKENS.layout.header,
-  getStateContainer: () => NODE_INSPECTOR_TOKENS.layout.stateContainer,
-  getActionButtons: () => NODE_INSPECTOR_TOKENS.layout.actionButtons,
-
-  // Color utilities
-  getInspectorBackground: () =>
-    NODE_INSPECTOR_TOKENS.colors.inspector.background,
-  getHeaderText: () => NODE_INSPECTOR_TOKENS.colors.header.text,
-  getDataBackground: () => NODE_INSPECTOR_TOKENS.colors.data.background,
-
-  // Action button styling
-  getDuplicateButton: () =>
-    combineTokens(
-      NODE_INSPECTOR_TOKENS.colors.actions.duplicate.background,
-      NODE_INSPECTOR_TOKENS.colors.actions.duplicate.backgroundHover,
-      NODE_INSPECTOR_TOKENS.colors.actions.duplicate.text,
-      NODE_INSPECTOR_TOKENS.colors.actions.duplicate.border,
-      CORE_TOKENS.dimensions.button.md,
-      CORE_TOKENS.effects.rounded.md,
-      CORE_TOKENS.effects.transition
-    ),
-
-  getDeleteButton: () =>
-    combineTokens(
-      NODE_INSPECTOR_TOKENS.colors.actions.delete.background,
-      NODE_INSPECTOR_TOKENS.colors.actions.delete.backgroundHover,
-      NODE_INSPECTOR_TOKENS.colors.actions.delete.text,
-      NODE_INSPECTOR_TOKENS.colors.actions.delete.border,
-      CORE_TOKENS.dimensions.button.md,
-      CORE_TOKENS.effects.rounded.md,
-      CORE_TOKENS.effects.transition
-    ),
 };
 
 // =====================================================================

@@ -11,16 +11,16 @@
  * Keywords: variant-selector, floating-buttons, keyboard-shortcuts, semantic-tokens, responsive
  */
 
-import React, { useState, useEffect } from 'react';
-import { FaBolt, FaVideo, FaLink, FaRobot, FaBox } from 'react-icons/fa';
-import { SidebarVariant, VARIANT_NAMES } from './types';
+import React, { useEffect, useState } from "react";
+import { FaBolt, FaBox, FaLink, FaRobot, FaVideo } from "react-icons/fa";
+import { SidebarVariant, VARIANT_NAMES } from "./types";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
 /** Available sidebar variants in order */
-const SIDEBAR_VARIANTS: SidebarVariant[] = ['A', 'B', 'C', 'D', 'E'];
+const SIDEBAR_VARIANTS: SidebarVariant[] = ["A", "B", "C", "D", "E"];
 
 /** Duration to show variant name text after switching (in milliseconds) */
 const VARIANT_TEXT_DISPLAY_DURATION = 1500;
@@ -51,35 +51,46 @@ interface VariantSelectorProps {
  * @param {SidebarVariant} variant - The variant to get icon for
  * @returns {React.ReactElement | null} The icon component or null
  */
-const renderVariantIcon = (variant: SidebarVariant): React.ReactElement | null => {
+const renderVariantIcon = (
+  variant: SidebarVariant
+): React.ReactElement | null => {
   const ICON_CLASS_NAME = "w-4 h-4";
-  
+
   switch (variant) {
-    case 'A': return <FaBolt className={ICON_CLASS_NAME} />; // Main
-    case 'B': return <FaVideo className={ICON_CLASS_NAME} />; // Media
-    case 'C': return <FaLink className={ICON_CLASS_NAME} />; // Integration
-    case 'D': return <FaRobot className={ICON_CLASS_NAME} />; // Automation
-    case 'E': return <FaBox className={ICON_CLASS_NAME} />; // Misc
-    default: return null;
+    case "A":
+      return <FaBolt className={ICON_CLASS_NAME} />; // Main
+    case "B":
+      return <FaVideo className={ICON_CLASS_NAME} />; // Media
+    case "C":
+      return <FaLink className={ICON_CLASS_NAME} />; // Integration
+    case "D":
+      return <FaRobot className={ICON_CLASS_NAME} />; // Automation
+    case "E":
+      return <FaBox className={ICON_CLASS_NAME} />; // Misc
+    default:
+      return null;
   }
 };
 
 /**
  * Generates the CSS classes for variant buttons based on active state
- * 
+ *
  * Active buttons use inverted colors for high contrast:
  * • Light mode: Dark background with white text
  * • Dark mode: White background with dark text
- * 
+ *
  * @param {boolean} isActive - Whether the button represents the active variant
  * @returns {string} Combined CSS classes with proper contrast for active state
  */
 const generateButtonClasses = (isActive: boolean): string => {
-  const BASE_CLASSES = "rounded h-8 w-8 py-1 text-sm transition-all duration-200 flex items-center justify-center";
-  
-  const activeClasses = "bg-infra-sidebar-hover text-infra-sidebar-text border-infra-sidebar-border-hover";
-  const inactiveClasses = "bg-infra-sidebar text-infra-sidebar-text-secondary hover:bg-infra-sidebar-hover hover:text-infra-sidebar-text";
-  
+  const BASE_CLASSES =
+    "rounded h-8 w-8 py-1 text-sm transition-all duration-200 flex items-center justify-center";
+
+  const activeClasses =
+    "bg-[hsl(var(--infra-sidebar-bg-hover))] text-[hsl(var(--infra-sidebar-text))] border-[hsl(var(--infra-sidebar-border-hover))]";
+  const inactiveClasses =
+    "bg-[hsl(var(--infra-sidebar-bg))] text-[hsl(var(--infra-sidebar-text-secondary))] hover:bg-[hsl(var(--infra-sidebar-bg-hover))] hover:text-[hsl(var(--infra-sidebar-text-hover))]";
+
   return `${BASE_CLASSES} ${isActive ? activeClasses : inactiveClasses}`;
 };
 
@@ -89,12 +100,12 @@ const generateButtonClasses = (isActive: boolean): string => {
 
 /**
  * VariantSelector - A floating component for switching between sidebar variants
- * 
+ *
  * This component provides a visual interface for users to switch between different
  * sidebar variants (A, B, C, D, E) with keyboard shortcuts and hover feedback.
  * It displays variant names temporarily when switching and maintains its position
  * absolutely positioned in the bottom-right area.
- * 
+ *
  * Features:
  * - Floating variant buttons with icons
  * - Temporary text display showing variant names
@@ -102,10 +113,10 @@ const generateButtonClasses = (isActive: boolean): string => {
  * - Hover effects with variant name preview
  * - Responsive design with mobile considerations
  * - Integration with semantic token system
- * 
+ *
  * @param {VariantSelectorProps} props - Component props
  * @returns {React.ReactElement | null} The variant selector component or null if hidden
- * 
+ *
  * @example
  * ```tsx
  * <VariantSelector
@@ -115,32 +126,36 @@ const generateButtonClasses = (isActive: boolean): string => {
  * />
  * ```
  */
-export function VariantSelector({ 
-  variant, 
-  onVariantChange, 
-  isHidden 
+export function VariantSelector({
+  variant,
+  onVariantChange,
+  isHidden,
 }: VariantSelectorProps): React.ReactElement | null {
   // ========================================================================
   // HOOKS & STATE
   // ========================================================================
-  
+
   /** Currently hovered variant for preview text */
-  const [hoveredVariant, setHoveredVariant] = useState<SidebarVariant | null>(null);
-  
+  const [hoveredVariant, setHoveredVariant] = useState<SidebarVariant | null>(
+    null
+  );
+
   /** Variant to show text for (after switching) */
-  const [showSwitchText, setShowSwitchText] = useState<SidebarVariant | null>(null);
+  const [showSwitchText, setShowSwitchText] = useState<SidebarVariant | null>(
+    null
+  );
 
   // ========================================================================
   // EFFECTS
   // ========================================================================
-  
+
   /**
    * Show variant name text briefly when variant changes
    * Automatically hides the text after VARIANT_TEXT_DISPLAY_DURATION
    */
   useEffect(() => {
     setShowSwitchText(variant);
-    
+
     const timer = setTimeout(() => {
       setShowSwitchText(null);
     }, VARIANT_TEXT_DISPLAY_DURATION);
@@ -151,20 +166,20 @@ export function VariantSelector({
   // ========================================================================
   // EARLY RETURNS
   // ========================================================================
-  
+
   if (isHidden) return null;
 
   // ========================================================================
   // COMPUTED VALUES
   // ========================================================================
-  
+
   /** Text to display (either hovered variant or switch confirmation) */
   const displayText = hoveredVariant || showSwitchText;
 
   // ========================================================================
   // EVENT HANDLERS
   // ========================================================================
-  
+
   /**
    * Handles variant button click
    * @param {SidebarVariant} selectedVariant - The variant that was clicked
@@ -191,28 +206,26 @@ export function VariantSelector({
   // ========================================================================
   // RENDER
   // ========================================================================
-  
+
   return (
     <div className="absolute bottom-56 sm:bottom-78 right-5 z-40">
       <div className="flex gap-2 flex-row w-[450px]">
         {/* Floating Text Display - Half width */}
         <div className="w-1/2 flex justify-center">
           {displayText && (
-            <div 
-              className="hidden sm:block text-infra-sidebar-text font-extralight px-2 py-1 ml-10 rounded whitespace-nowrap pointer-events-none tracking-widest shadow-lg"
-            >
+            <div className="hidden sm:block text-[hsl(var(--infra-sidebar-text))] font-extralight px-2 py-1 ml-10 rounded whitespace-nowrap pointer-events-none tracking-widest shadow-lg">
               {VARIANT_NAMES[displayText]}
             </div>
           )}
         </div>
-        
+
         {/* Variant Buttons Container - Half width */}
         <div className="w-1/2 flex gap-2 justify-end">
           {SIDEBAR_VARIANTS.map((variantKey, index) => {
             const shortcutNumber = index + 1;
             const variantName = VARIANT_NAMES[variantKey];
             const isActive = variant === variantKey;
-            
+
             return (
               <button
                 key={variantKey}
@@ -232,4 +245,4 @@ export function VariantSelector({
       </div>
     </div>
   );
-} 
+}

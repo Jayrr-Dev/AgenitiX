@@ -67,16 +67,18 @@ pnpm generate:docs
 
 ### Step 3: Use in Components
 
+Now you can use the auto-generated utility classes in your components.
+
 ```tsx
 // In your node component
-import { NODE_INSPECTOR_TOKENS } from "@/features/business-logic-modern/infrastructure/theming/components";
+// No special imports needed if using utility classes!
 
 const DatabaseNode = () => (
   <div
     className={`
-    ${NODE_INSPECTOR_TOKENS.node.database.bg}
-    ${NODE_INSPECTOR_TOKENS.node.database.text}
-  `}
+      bg-node-database-bg text-node-database-text
+      border border-node-database-border
+    `}
   >
     Database Node
   </div>
@@ -124,6 +126,8 @@ pnpm generate:tokens && pnpm validate:colors
 
 ### Step 3: Create Component Theme (Optional)
 
+If the component is complex, create a dedicated theme file for it.
+
 ```bash
 # Create new component theme file
 code features/business-logic-modern/infrastructure/theming/components/notification.ts
@@ -131,20 +135,26 @@ code features/business-logic-modern/infrastructure/theming/components/notificati
 
 ```typescript
 /**
- * NOTIFICATION COMPONENT THEME - Toast and alert notification styling
+ * NOTIFICATION_THEME - Styling for toast and alert notifications
  */
+import { CORE_TOKENS, combineTokens } from "../../core/tokens";
 
-export const NOTIFICATION_TOKENS = {
-  // Base notification styles
-  base: "bg-infra-notification text-infra-notification border border-border rounded-lg p-4",
+export const NOTIFICATION_THEME = {
+  // Base styles using core tokens
+  base: combineTokens("p-4 rounded-lg border", CORE_TOKENS.effects.shadow.md),
 
-  // Variants
-  success: "bg-green-50 text-green-900 border-green-200",
-  error: "bg-red-50 text-red-900 border-red-200",
-  warning: "bg-yellow-50 text-yellow-900 border-yellow-200",
+  // Variants using generated infra tokens
+  variants: {
+    base: "bg-infra-notification-bg text-infra-notification-text border-infra-notification-border",
+    success:
+      "bg-infra-success-bg text-infra-success-text border-infra-success-border",
+    error: "bg-infra-error-bg text-infra-error-text border-infra-error-border",
+    warning:
+      "bg-infra-warning-bg text-infra-warning-text border-infra-warning-border",
+  },
 
   // Interactive states
-  hover: "hover:shadow-md transition-shadow",
+  interactive: "transition-shadow hover:shadow-lg",
   dismissible: "cursor-pointer hover:opacity-80",
 } as const;
 ```
@@ -153,7 +163,7 @@ export const NOTIFICATION_TOKENS = {
 
 ```typescript
 // In features/business-logic-modern/infrastructure/theming/components/index.ts
-export { NOTIFICATION_TOKENS } from "./notification";
+export { NOTIFICATION_THEME } from "./notification";
 ```
 
 **✅ Result**: New infrastructure component with consistent theming

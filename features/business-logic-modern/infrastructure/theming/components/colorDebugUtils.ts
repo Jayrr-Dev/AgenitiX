@@ -1,3 +1,7 @@
+import { CORE_TOKENS } from "../core/tokens";
+
+const UNIFIED_COLOR_PALETTE = CORE_TOKENS.palette;
+
 /**
  * COLOR DEBUG UTILITIES - Color debugging and development tools
  *
@@ -18,189 +22,164 @@
  *
  * This reference maps shadcn CSS variables to actual color values and descriptions
  * to help developers understand what colors they're working with.
+ *
+ * @deprecated This is a legacy static reference. The system is moving towards
+ *             dynamically generating this from the UNIFIED_COLOR_PALETTE.
  */
 export const CSS_VARIABLE_COLOR_REFERENCE = {
   light: {
     backgrounds: {
       "bg-background": {
-        hex: "#ffffff",
+        hex: UNIFIED_COLOR_PALETTE.neutral[0],
         name: "Pure White",
         usage: "Main app background",
-        contrast: "Base surface",
       },
       "bg-card": {
-        hex: "#ffffff",
+        hex: UNIFIED_COLOR_PALETTE.neutral[0],
         name: "Pure White",
         usage: "Card/panel backgrounds",
-        contrast: "Same as background for seamless integration",
       },
       "bg-muted": {
-        hex: "#f1f5f9",
+        hex: UNIFIED_COLOR_PALETTE.neutral[100],
         name: "Very Light Gray",
         usage: "Subtle backgrounds",
-        contrast: "Slightly darker than cards for layering",
       },
       "bg-accent": {
-        hex: "#f1f5f9",
+        hex: UNIFIED_COLOR_PALETTE.neutral[100],
         name: "Very Light Gray",
         usage: "Accent backgrounds",
-        contrast: "Subtle highlight without distraction",
       },
       "bg-primary": {
-        hex: "#0f172a",
+        hex: UNIFIED_COLOR_PALETTE.neutral[900],
         name: "Very Dark Blue",
         usage: "Primary buttons",
-        contrast: "High contrast for important actions",
       },
       "bg-secondary": {
-        hex: "#f1f5f9",
+        hex: UNIFIED_COLOR_PALETTE.neutral[100],
         name: "Very Light Gray",
         usage: "Secondary buttons",
-        contrast: "Subtle for less important actions",
       },
     },
     text: {
       "text-foreground": {
-        hex: "#0f172a",
+        hex: UNIFIED_COLOR_PALETTE.neutral[900],
         name: "Very Dark Blue",
         usage: "Primary text",
-        contrast: "21:1 on white background",
       },
       "text-card-foreground": {
-        hex: "#0f172a",
+        hex: UNIFIED_COLOR_PALETTE.neutral[900],
         name: "Very Dark Blue",
         usage: "Card text",
-        contrast: "21:1 on white cards",
       },
       "text-muted-foreground": {
-        hex: "#64748b",
+        hex: UNIFIED_COLOR_PALETTE.neutral[500],
         name: "Medium Gray",
         usage: "Secondary text",
-        contrast: "7:1 on white background",
       },
       "text-primary-foreground": {
-        hex: "#f8fafc",
+        hex: UNIFIED_COLOR_PALETTE.neutral[50],
         name: "Almost White",
         usage: "Text on primary",
-        contrast: "18:1 on dark blue primary",
       },
       "text-secondary-foreground": {
-        hex: "#0f172a",
+        hex: UNIFIED_COLOR_PALETTE.neutral[900],
         name: "Very Dark Blue",
         usage: "Text on secondary",
-        contrast: "21:1 on light gray secondary",
       },
     },
     borders: {
       "border-border": {
-        hex: "#e2e8f0",
+        hex: UNIFIED_COLOR_PALETTE.neutral[200],
         name: "Light Gray",
         usage: "Default borders",
-        contrast: "Subtle definition without harshness",
       },
       "border-accent": {
-        hex: "#e2e8f0",
+        hex: UNIFIED_COLOR_PALETTE.neutral[200],
         name: "Light Gray",
         usage: "Accent borders",
-        contrast: "Same as default for consistency",
       },
       "border-primary": {
-        hex: "#0f172a",
+        hex: UNIFIED_COLOR_PALETTE.neutral[900],
         name: "Very Dark Blue",
         usage: "Primary borders",
-        contrast: "Strong definition for emphasis",
       },
     },
   },
   dark: {
     backgrounds: {
       "bg-background": {
-        hex: "#0f172a",
+        hex: UNIFIED_COLOR_PALETTE.neutral[900],
         name: "Very Dark Blue",
         usage: "Main app background",
-        contrast: "Deep base for dark theme",
       },
       "bg-card": {
-        hex: "#1e293b",
+        hex: UNIFIED_COLOR_PALETTE.neutral[800],
         name: "Dark Gray-Blue",
         usage: "Card/panel backgrounds",
-        contrast: "Elevated from background",
       },
       "bg-muted": {
-        hex: "#1e293b",
+        hex: UNIFIED_COLOR_PALETTE.neutral[800],
         name: "Dark Gray-Blue",
         usage: "Subtle backgrounds",
-        contrast: "Same as cards for consistency",
       },
       "bg-accent": {
-        hex: "#1e293b",
+        hex: UNIFIED_COLOR_PALETTE.neutral[800],
         name: "Dark Gray-Blue",
         usage: "Accent backgrounds",
-        contrast: "Subtle highlight in dark theme",
       },
       "bg-primary": {
-        hex: "#f8fafc",
+        hex: UNIFIED_COLOR_PALETTE.neutral[50],
         name: "Almost White",
         usage: "Primary buttons",
-        contrast: "High contrast for visibility",
       },
       "bg-secondary": {
-        hex: "#1e293b",
+        hex: UNIFIED_COLOR_PALETTE.neutral[800],
         name: "Dark Gray-Blue",
         usage: "Secondary buttons",
-        contrast: "Subtle for less important actions",
       },
     },
     text: {
       "text-foreground": {
-        hex: "#f8fafc",
+        hex: UNIFIED_COLOR_PALETTE.neutral[50],
         name: "Almost White",
         usage: "Primary text",
-        contrast: "18:1 on dark background",
       },
       "text-card-foreground": {
-        hex: "#f8fafc",
+        hex: UNIFIED_COLOR_PALETTE.neutral[50],
         name: "Almost White",
         usage: "Card text",
-        contrast: "15:1 on dark cards",
       },
       "text-muted-foreground": {
-        hex: "#94a3b8",
+        hex: UNIFIED_COLOR_PALETTE.neutral[400],
         name: "Medium Gray",
         usage: "Secondary text",
-        contrast: "5.5:1 on dark background",
       },
       "text-primary-foreground": {
-        hex: "#0f172a",
+        hex: UNIFIED_COLOR_PALETTE.neutral[900],
         name: "Very Dark Blue",
         usage: "Text on primary",
-        contrast: "18:1 on white primary",
       },
       "text-secondary-foreground": {
-        hex: "#f8fafc",
+        hex: UNIFIED_COLOR_PALETTE.neutral[50],
         name: "Almost White",
         usage: "Text on secondary",
-        contrast: "15:1 on dark secondary",
       },
     },
     borders: {
       "border-border": {
-        hex: "#334155",
+        hex: UNIFIED_COLOR_PALETTE.neutral[700],
         name: "Dark Gray",
         usage: "Default borders",
-        contrast: "Visible definition in dark theme",
       },
       "border-accent": {
-        hex: "#334155",
+        hex: UNIFIED_COLOR_PALETTE.neutral[700],
         name: "Dark Gray",
         usage: "Accent borders",
-        contrast: "Same as default for consistency",
       },
       "border-primary": {
-        hex: "#f8fafc",
+        hex: UNIFIED_COLOR_PALETTE.neutral[50],
         name: "Almost White",
         usage: "Primary borders",
-        contrast: "Strong definition for emphasis",
       },
     },
   },

@@ -18,28 +18,26 @@ A scalable, enterprise-grade design system that prevents bloat and maintains con
 
 ### Design Philosophy
 
-Our design system follows **enterprise-grade modular architecture** used by Google, Meta, and Netflix:
+Our design system follows **enterprise-grade modular architecture**:
 
-- **🎯 Core Foundation** - Lightweight, shared tokens that never bloat
-- **🧩 Component Isolation** - Each component has its own styling file
-- **📦 Tree Shaking** - Import only what you need
-- **🔧 Type Safety** - Full TypeScript support
-- **🎨 Consistency** - Shared foundation ensures visual harmony
+- **🎯 Core Foundation** - A single `tokens.json` file is the source of truth for all design values.
+- **🧩 Component Isolation** - Each component has its own styling file, consuming from the core foundation.
+- **📦 Tree Shaking** - Import only what you need, for a minimal bundle size.
+- **🔧 Type Safety** - Full TypeScript support for all tokens and styles.
+- **🎨 Consistency** - The shared foundation ensures visual harmony.
 
 ### File Structure
 
 ```
 theming/
 ├── core/
-│   └── tokens.ts              # 🎯 Core design tokens (150 lines, never grows)
+│   └── tokens.ts              # 🎯 Core design tokens (reads tokens.json)
 ├── components/
 │   ├── nodeInspector.ts       # 🧩 NodeInspector-specific styling
 │   ├── sidebar.ts             # 🧩 Sidebar-specific styling
 │   └── [component].ts         # 🧩 Add new components here
-├── examples/
-│   └── ExampleComponent.tsx   # 📚 Usage examples
-├── index.ts                   # 📦 Clean exports and tree shaking
-├── designSystem.ts            # 🔄 Legacy compatibility
+├── index.ts                   # 📦 Clean exports for tree-shaking
+├── tokens.json                # 🔥 SINGLE SOURCE OF TRUTH
 └── README.md                  # 📖 This documentation
 ```
 
@@ -420,23 +418,20 @@ const buttonStyle = combineTokens(
 ### ❌ Don'ts
 
 ```typescript
-// ❌ Don't import entire design system
-import { DESIGN_CONFIG } from "@/theming"; // Legacy, avoid
-
 // ❌ Don't hardcode values that exist in tokens
-<div className="p-4 flex flex-col gap-3" /> // Use tokens instead
+<div className="p-4 flex flex-col gap-3" /> // Use CORE_TOKENS.spacing.lg, etc.
 
-// ❌ Don't create component-specific styling in core
-CORE_TOKENS.nodeInspectorSpecific = { ... } // Keep core generic
+// ❌ Don't create component-specific styling in the core tokens.json
+// Keep the core tokens generic and component-agnostic.
 
 // ❌ Don't mix styling approaches
-const mixed = "p-4 " + CORE_TOKENS.spacing.lg; // Be consistent
+const mixed = "p-4 " + CORE_TOKENS.spacing.lg; // Be consistent, use combineTokens
 ```
 
 ### Performance Tips
 
 ```typescript
-// ✅ Tree-shakeable imports
+// ✅ Tree-shakeable imports are the default
 import { nodeInspectorStyles } from "@/theming";
 
 // ✅ Conditional loading
@@ -457,54 +452,11 @@ const complexStyle = useMemo(
 );
 ```
 
-## 🎓 Migration Guide
+## 🎓 Migration Guide (Completed)
 
-### From Legacy System
+The legacy `designSystem.ts` and `DESIGN_CONFIG` object have been fully removed and migrated to the `tokens.json`-based system. All components should now import from the root `@/theming` barrel file.
 
-**Before (Legacy):**
-
-```typescript
-import { DESIGN_CONFIG, getVariant } from "@/theming/designSystem";
-
-<div className={DESIGN_CONFIG.spacing.containerPadding}>
-  <div className={getVariant("jsonContainer", "adaptive")}>
-    {DESIGN_CONFIG.content.labels.nodeData}
-  </div>
-</div>
-```
-
-**After (Modular):**
-
-```typescript
-import { CORE_TOKENS, combineTokens } from "@/theming";
-import { nodeInspectorStyles, NODE_INSPECTOR_TOKENS } from "@/theming";
-
-<div className={CORE_TOKENS.spacing.lg}>
-  <div className={nodeInspectorStyles.getJsonContainer(true)}>
-    {NODE_INSPECTOR_TOKENS.content.labels.nodeData}
-  </div>
-</div>
-```
-
-### Migration Steps
-
-1. **Identify component-specific styling** in your legacy code
-2. **Move to appropriate component file** in `theming/components/`
-3. **Update imports** to use modular exports
-4. **Test bundle size** to confirm tree shaking works
-5. **Update team documentation** with new patterns
-
-### Backward Compatibility
-
-The system maintains backward compatibility:
-
-```typescript
-// Legacy imports still work
-import { DESIGN_CONFIG } from "@/theming";
-
-// But prefer new modular imports
-import { NODE_INSPECTOR_TOKENS } from "@/theming";
-```
+---
 
 ## 🚀 Performance Metrics
 
@@ -512,8 +464,8 @@ import { NODE_INSPECTOR_TOKENS } from "@/theming";
 
 ```bash
 # Before (Monolithic)
-Initial Bundle: 50KB design system
-Every Component: Loads entire system
+Initial Bundle: ~50KB design system
+Every Component: Loaded entire system
 
 # After (Modular)
 Initial Bundle: 2KB core tokens

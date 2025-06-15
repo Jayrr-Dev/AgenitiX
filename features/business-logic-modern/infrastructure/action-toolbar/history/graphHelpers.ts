@@ -118,12 +118,14 @@ export const getLeafNodes = (graph: HistoryGraph): HistoryNode[] => {
 const STORAGE_KEY = "workflow-history-graph-v4"; // bump to avoid clash with uncompressed
 
 export const saveGraph = (graph: HistoryGraph): void => {
+  // Guard against server-side execution where localStorage is unavailable
+  if (typeof window === "undefined") return;
   try {
     const json = JSON.stringify(graph);
     // Compress if payload > 1 MB (threshold chosen to avoid diminishing returns on small graphs)
     const payload =
       json.length > 1_000_000 ? `lz:${compressToUTF16(json)}` : json;
-    localStorage.setItem(STORAGE_KEY, payload);
+    window.localStorage.setItem(STORAGE_KEY, payload);
   } catch (error) {
     console.error(
       "[GraphHelpers] Failed to save graph to localStorage:",
@@ -133,8 +135,10 @@ export const saveGraph = (graph: HistoryGraph): void => {
 };
 
 export const loadGraph = (): HistoryGraph | null => {
+  // Skip on server – nothing to load
+  if (typeof window === "undefined") return null;
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = window.localStorage.getItem(STORAGE_KEY);
     if (!stored) return null;
 
     const data = stored.startsWith("lz:")
@@ -151,8 +155,9 @@ export const loadGraph = (): HistoryGraph | null => {
 };
 
 export const clearPersistedGraph = (): void => {
+  if (typeof window === "undefined") return;
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
     console.warn("[GraphHelpers] Failed to clear persisted graph:", error);
   }

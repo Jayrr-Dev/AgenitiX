@@ -31,19 +31,19 @@ const RenderHistoryGraph = React.lazy(() => import("./renderHistoryGraph"));
 
 // STYLING CONSTANTS
 const PANEL_STYLES = {
-  base: "bg-infra-history border border-infra-history rounded-lg shadow-lg overflow-hidden max-w-full min-w-0",
+  base: "bg-[hsl(var(--infra-history-bg))] border border-[hsl(var(--infra-history-border))] rounded-lg shadow-lg overflow-hidden max-w-full min-w-0",
 } as const;
 
 const COLLAPSED_STYLES = {
   button:
-    "w-full p-4 flex items-center justify-between hover:bg-infra-history-hover transition-colors group",
-  icon: "w-4 h-4 text-infra-history-text group-hover:text-primary transition-colors",
+    "w-full p-4 flex items-center justify-between hover:bg-[hsl(var(--infra-history-bg-hover))] transition-colors group",
+  icon: "w-4 h-4 text-[hsl(var(--infra-history-text))] group-hover:text-primary transition-colors",
   title:
-    "text-sm font-semibold text-infra-history-text group-hover:text-primary transition-colors",
+    "text-sm font-semibold text-[hsl(var(--infra-history-text))] group-hover:text-primary transition-colors",
   badge: "text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full",
   branchContainer: "flex items-center gap-1 ml-1",
-  branchIcon: "w-3 h-3 text-orange-500",
-  branchText: "text-xs text-orange-600 dark:text-orange-400 font-medium",
+  branchIcon: "w-3 h-3 text-amber-500",
+  branchText: "text-xs text-amber-600 dark:text-amber-400 font-medium",
   chevron:
     "w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors",
 } as const;
@@ -69,9 +69,9 @@ const STATS_STYLES = {
   statesCount: "font-bold text-foreground text-xs",
   statesLabel: "text-muted-foreground font-medium hidden lg:inline",
   branchContainer:
-    "flex items-center gap-0.5 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/50 border border-orange-200/50 dark:border-orange-800/50 px-1 py-0.5 rounded-full shadow-sm flex-shrink-0",
-  branchIcon: "w-2.5 h-2.5 text-orange-600 dark:text-orange-400",
-  branchCount: "font-bold text-orange-700 dark:text-orange-300 text-xs",
+    "flex items-center gap-0.5 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-950/50 dark:to-amber-900/50 border border-amber-200/50 dark:border-amber-800/50 px-1 py-0.5 rounded-full shadow-sm flex-shrink-0",
+  branchIcon: "w-2.5 h-2.5 text-amber-600 dark:text-amber-400",
+  branchCount: "font-bold text-amber-700 dark:text-amber-300 text-xs",
 } as const;
 
 const CONTROLS_STYLES = {
@@ -89,13 +89,13 @@ const CONTROLS_STYLES = {
 
 const BRANCH_OPTIONS_STYLES = {
   container:
-    "mx-3 mb-3 p-3 rounded-lg border border-orange-300 dark:border-orange-600 bg-orange-50/90 dark:bg-orange-900/90 backdrop-blur-sm shadow-lg",
+    "mx-3 mb-3 p-3 rounded-lg border border-amber-300 dark:border-amber-600 bg-amber-50/90 dark:bg-amber-900/90 backdrop-blur-sm shadow-lg",
   header: "flex items-center gap-2 mb-2",
-  headerIcon: "w-4 h-4 text-orange-600 dark:text-orange-400",
-  headerText: "text-sm font-medium text-orange-800 dark:text-orange-300",
+  headerIcon: "w-4 h-4 text-amber-600 dark:text-amber-400",
+  headerText: "text-sm font-medium text-amber-800 dark:text-amber-300",
   buttonContainer: "flex flex-wrap gap-2",
   button:
-    "px-3 py-1.5 text-sm font-medium bg-orange-100 hover:bg-orange-200 dark:bg-orange-800 dark:hover:bg-orange-700 text-orange-800 dark:text-orange-200 rounded-md border border-orange-300 dark:border-orange-600 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm",
+    "px-3 py-1.5 text-sm font-medium bg-amber-100 hover:bg-amber-200 dark:bg-amber-800 dark:hover:bg-amber-700 text-amber-800 dark:text-amber-200 rounded-md border border-amber-300 dark:border-amber-600 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm",
 } as const;
 
 const CONTENT_STYLES = {
@@ -160,8 +160,9 @@ const HISTORY_ITEM_META_STYLES = {
 } as const;
 
 const FOOTER_STYLES = {
-  container: "p-2 border-t border-infra-history text-center",
-  text: "text-xs text-infra-history-text",
+  container:
+    "p-2 border-t border-[hsl(var(--infra-history-border))] text-center",
+  text: "text-xs text-[hsl(var(--infra-history-text))]",
 } as const;
 
 // MODAL STYLES
@@ -485,7 +486,6 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
   }, []);
 
   const getActionIcon = useCallback((metadata: any): React.ReactNode => {
-    // Simple icon mapping - you can expand this
     const actionType = metadata?.actionType || "unknown";
     switch (actionType) {
       case "node_add":
@@ -494,12 +494,22 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
         return "🗑️";
       case "node_update":
         return "✏️";
+      case "node_move":
+        return "🔄";
       case "edge_add":
         return "🔗";
       case "edge_delete":
         return "✂️";
-      default:
+      case "bulk_update":
         return "📝";
+      case "bulk_delete":
+        return "🗑️";
+      case "paste":
+        return "📋";
+      case "duplicate":
+        return "📄";
+      default:
+        return "⚡";
     }
   }, []);
 
@@ -507,17 +517,88 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
     const actionType = metadata?.actionType || "unknown";
     switch (actionType) {
       case "node_add":
-        return "text-green-600 dark:text-green-400";
+        return "text-[hsl(var(--core-status-node-add-border))]";
       case "node_delete":
-        return "text-red-600 dark:text-red-400";
+        return "text-[hsl(var(--core-status-node-delete-border))]";
       case "node_update":
-        return "text-blue-600 dark:text-blue-400";
+        return "text-[hsl(var(--core-status-node-update-border))]";
+      case "node_move":
+        return "text-[hsl(var(--core-status-node-move-border))]";
       case "edge_add":
-        return "text-purple-600 dark:text-purple-400";
+        return "text-[hsl(var(--core-status-edge-add-border))]";
       case "edge_delete":
-        return "text-orange-600 dark:text-orange-400";
+        return "text-[hsl(var(--core-status-edge-delete-border))]";
+      case "bulk_update":
+        return "text-[hsl(var(--core-status-bulk-update-border))]";
+      case "bulk_delete":
+        return "text-[hsl(var(--core-status-bulk-delete-border))]";
+      case "paste":
+        return "text-[hsl(var(--core-status-paste-border))]";
+      case "duplicate":
+        return "text-[hsl(var(--core-status-duplicate-border))]";
       default:
-        return "text-gray-600 dark:text-gray-400";
+        return "text-[hsl(var(--core-status-special-border))]";
+    }
+  }, []);
+
+  const getActionIndicatorStyle = useCallback((metadata: any) => {
+    const actionType = metadata?.actionType || "special";
+    switch (actionType) {
+      case "node_add":
+        return {
+          backgroundColor: "hsl(var(--core-status-node-add-bg))",
+          borderColor: "hsl(var(--core-status-node-add-border))",
+        };
+      case "node_delete":
+        return {
+          backgroundColor: "hsl(var(--core-status-node-delete-bg))",
+          borderColor: "hsl(var(--core-status-node-delete-border))",
+        };
+      case "node_update":
+        return {
+          backgroundColor: "hsl(var(--core-status-node-update-bg))",
+          borderColor: "hsl(var(--core-status-node-update-border))",
+        };
+      case "node_move":
+        return {
+          backgroundColor: "hsl(var(--core-status-node-move-bg))",
+          borderColor: "hsl(var(--core-status-node-move-border))",
+        };
+      case "edge_add":
+        return {
+          backgroundColor: "hsl(var(--core-status-edge-add-bg))",
+          borderColor: "hsl(var(--core-status-edge-add-border))",
+        };
+      case "edge_delete":
+        return {
+          backgroundColor: "hsl(var(--core-status-edge-delete-bg))",
+          borderColor: "hsl(var(--core-status-edge-delete-border))",
+        };
+      case "bulk_update":
+        return {
+          backgroundColor: "hsl(var(--core-status-bulk-update-bg))",
+          borderColor: "hsl(var(--core-status-bulk-update-border))",
+        };
+      case "bulk_delete":
+        return {
+          backgroundColor: "hsl(var(--core-status-bulk-delete-bg))",
+          borderColor: "hsl(var(--core-status-bulk-delete-border))",
+        };
+      case "paste":
+        return {
+          backgroundColor: "hsl(var(--core-status-paste-bg))",
+          borderColor: "hsl(var(--core-status-paste-border))",
+        };
+      case "duplicate":
+        return {
+          backgroundColor: "hsl(var(--core-status-duplicate-bg))",
+          borderColor: "hsl(var(--core-status-duplicate-border))",
+        };
+      default:
+        return {
+          backgroundColor: "hsl(var(--core-status-special-bg))",
+          borderColor: "hsl(var(--core-status-special-border))",
+        };
     }
   }, []);
 
@@ -726,6 +807,13 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 
                   if (!state) return null;
 
+                  // Get action-specific styling
+                  const actionIcon = getActionIcon(state.metadata);
+                  const actionColor = getActionColor(state.metadata);
+                  const actionIndicatorStyle = getActionIndicatorStyle(
+                    state.metadata
+                  );
+
                   // Determine styling based on state
                   let itemStyle, indicatorStyle, badgeStyle, textStyle;
                   if (isCurrentState) {
@@ -748,7 +836,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
                   // Add selection styling
                   if (isSelected && !isCurrentState) {
                     itemStyle +=
-                      " ring-2 ring-orange-400/50 bg-orange-50/50 dark:bg-orange-900/20";
+                      " ring-2 ring-primary/50 bg-primary/5 dark:bg-primary/10";
                   }
 
                   return (
@@ -773,17 +861,21 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
                         <div className={HISTORY_ITEM_STYLES.leftSection}>
                           <div
                             className={`${HISTORY_ITEM_INDICATOR_STYLES.base} ${indicatorStyle}`}
+                            style={actionIndicatorStyle}
                           />
                           <span
                             className={`${HISTORY_ITEM_BADGE_STYLES.base} ${badgeStyle}`}
                           >
                             #{index + 1}
                           </span>
-                          <span
-                            className={`${HISTORY_ITEM_TEXT_STYLES.base} ${textStyle}`}
-                          >
-                            {state.label || state.action || "Initial State"}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">{actionIcon}</span>
+                            <span
+                              className={`${HISTORY_ITEM_TEXT_STYLES.base} ${textStyle} ${actionColor}`}
+                            >
+                              {state.label || state.action || "Initial State"}
+                            </span>
+                          </div>
                         </div>
                         <div className={HISTORY_ITEM_STYLES.rightSection}>
                           {state.timestamp && (
@@ -796,8 +888,8 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
                           {state.childrenIds &&
                             state.childrenIds.length > 1 && (
                               <div className="flex items-center gap-1">
-                                <GitBranch className="w-3 h-3 text-orange-500" />
-                                <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                                <GitBranch className="w-3 h-3 text-amber-500" />
+                                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
                                   {state.childrenIds.length}
                                 </span>
                               </div>

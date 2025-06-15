@@ -36,12 +36,41 @@ const flatten = (
   return out;
 };
 
+// ---------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------
+
 const flat = flatten(tokens);
+
+// Separate dark and light tokens
+const lightTokens: Record<string, string> = {};
+const darkTokens: Record<string, string> = {};
+
+for (const [name, val] of Object.entries(flat)) {
+  if (name.endsWith("-dark")) {
+    const baseName = name.replace(/-dark$/, "");
+    darkTokens[baseName] = val;
+  } else {
+    lightTokens[name] = val;
+  }
+}
 
 // Build CSS
 let css = `/* AUTO-GENERATED FILE — do not edit directly  */\n`;
+
+// Light theme / default variables
 css += `@theme {\n`;
-for (const [name, val] of Object.entries(flat)) {
+for (const [name, val] of Object.entries(lightTokens)) {
+  const needsCorePrefix =
+    !name.startsWith("node-") && !name.startsWith("infra-");
+  const varName = needsCorePrefix ? `--core-${name}` : `--${name}`;
+  css += `  ${varName}: ${val};\n`;
+}
+css += `}\n\n`;
+
+// Dark theme overrides
+css += `html.dark {\n`;
+for (const [name, val] of Object.entries(darkTokens)) {
   const needsCorePrefix =
     !name.startsWith("node-") && !name.startsWith("infra-");
   const varName = needsCorePrefix ? `--core-${name}` : `--${name}`;

@@ -141,7 +141,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
         <RotateCw className="w-4 h-4" />
       </button>
 
-      <div className="w-px h-6 bg-infra-toolbar-border mx-1" />
+      <div className="w-px h-6 bg-[hsl(var(--infra-toolbar-border))] mx-1" />
 
       <button
         onClick={onToggleHistory}
@@ -154,10 +154,10 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
       {/* FULLSCREEN BUTTON - Only show in browser environments */}
       {isBrowserEnvironment && (
         <>
-          <div className="w-px h-6 bg-infra-toolbar-border mx-1" />
+          <div className="w-px h-6 bg-[hsl(var(--infra-toolbar-border))] mx-1" />
 
           {/* THEME SWITCHER */}
-          {/* <div className="w-px h-6 bg-infra-toolbar-border mx-1" /> */}
+          {/* <div className="w-px h-6 bg-[hsl(var(--infra-toolbar-border))] mx-1" /> */}
 
           <div className="flex items-center">
             <ThemeSwitcher />
