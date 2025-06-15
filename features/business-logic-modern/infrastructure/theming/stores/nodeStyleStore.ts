@@ -8,9 +8,26 @@
 /* eslint @typescript-eslint/consistent-type-definitions: "off" */
 // ============================================================================
 
-import { create } from "zustand";
 import { useMemo } from "react";
-import { getNodeMetadata } from "../../node-registry/nodespec-registry";
+import { create } from "zustand";
+
+// ⚠️ Note: Importing node registry here created a circular dependency with
+// node-spec files (e.g., createText.node) during Storybook evaluation.
+// We now lazy-load the registry functions to avoid the cycle.
+
+// Browser-safe lazy import using dynamic ESM `import()`.
+let _registryModule: any | null = null;
+// eslint-disable-next-line @typescript-eslint/ban-types
+const lazyGetNodeMetadata = (nodeType: string): any | null => {
+  if (_registryModule) {
+    return _registryModule.getNodeMetadata(nodeType);
+  }
+  // Kick off async import – but don't block render. First call returns null.
+  import("../../node-registry/nodespec-registry").then((mod) => {
+    _registryModule = mod;
+  });
+  return null;
+};
 
 // -----------------------------------------------------------------------------
 // 1. Theme constants & helpers
@@ -36,11 +53,17 @@ export const CATEGORY_THEMES: Partial<Record<string, CategoryTheme>> = {
     border: { light: "border-node-create", dark: "border-node-create" },
     text: {
       primary: { light: "text-node-create", dark: "text-node-create" },
-      secondary: { light: "text-node-create-secondary", dark: "text-node-create-secondary" },
+      secondary: {
+        light: "text-node-create-secondary",
+        dark: "text-node-create-secondary",
+      },
     },
     button: {
       border: "border-node-create",
-      hover: { light: "hover:bg-node-create-hover", dark: "hover:bg-node-create-hover" },
+      hover: {
+        light: "hover:bg-node-create-hover",
+        dark: "hover:bg-node-create-hover",
+      },
     },
   },
   view: {
@@ -48,11 +71,17 @@ export const CATEGORY_THEMES: Partial<Record<string, CategoryTheme>> = {
     border: { light: "border-node-view", dark: "border-node-view" },
     text: {
       primary: { light: "text-node-view", dark: "text-node-view" },
-      secondary: { light: "text-node-view-secondary", dark: "text-node-view-secondary" },
+      secondary: {
+        light: "text-node-view-secondary",
+        dark: "text-node-view-secondary",
+      },
     },
     button: {
       border: "border-node-view",
-      hover: { light: "hover:bg-node-view-hover", dark: "hover:bg-node-view-hover" },
+      hover: {
+        light: "hover:bg-node-view-hover",
+        dark: "hover:bg-node-view-hover",
+      },
     },
   },
   trigger: {
@@ -60,11 +89,17 @@ export const CATEGORY_THEMES: Partial<Record<string, CategoryTheme>> = {
     border: { light: "border-node-trigger", dark: "border-node-trigger" },
     text: {
       primary: { light: "text-node-trigger", dark: "text-node-trigger" },
-      secondary: { light: "text-node-trigger-secondary", dark: "text-node-trigger-secondary" },
+      secondary: {
+        light: "text-node-trigger-secondary",
+        dark: "text-node-trigger-secondary",
+      },
     },
     button: {
       border: "border-node-trigger",
-      hover: { light: "hover:bg-node-trigger-hover", dark: "hover:bg-node-trigger-hover" },
+      hover: {
+        light: "hover:bg-node-trigger-hover",
+        dark: "hover:bg-node-trigger-hover",
+      },
     },
   },
   test: {
@@ -72,11 +107,17 @@ export const CATEGORY_THEMES: Partial<Record<string, CategoryTheme>> = {
     border: { light: "border-node-test", dark: "border-node-test" },
     text: {
       primary: { light: "text-node-test", dark: "text-node-test" },
-      secondary: { light: "text-node-test-secondary", dark: "text-node-test-secondary" },
+      secondary: {
+        light: "text-node-test-secondary",
+        dark: "text-node-test-secondary",
+      },
     },
     button: {
       border: "border-node-test",
-      hover: { light: "hover:bg-node-test-hover", dark: "hover:bg-node-test-hover" },
+      hover: {
+        light: "hover:bg-node-test-hover",
+        dark: "hover:bg-node-test-hover",
+      },
     },
   },
 };
@@ -140,11 +181,11 @@ export interface NodeStyleActions {
 
 /**
  * SEMANTIC GLOW EFFECTS CONFIGURATION
- * 
+ *
  * Now using semantic design tokens for consistent glow effects.
  * These utilities are automatically generated from CSS custom properties
  * defined in the @theme block in globals.css.
- * 
+ *
  * Benefits:
  * - Consistent with design system tokens
  * - Easy to modify via CSS variables
@@ -154,23 +195,23 @@ export interface NodeStyleActions {
 const GLOW_EFFECTS = {
   /** Subtle hover glow - appears on mouse hover */
   hover: "shadow-effect-glow-hover",
-  
+
   /** Selection glow - faint white glow when node is selected */
   selection: "shadow-effect-glow-selection",
-  
+
   /** Active state glow - green glow for active/running nodes */
   activation: "shadow-effect-glow-activation",
-  
+
   /** Error state glow - red glow for nodes with errors */
   error: "shadow-effect-glow-error",
 } as const;
 
 /**
  * GLOW UTILITY FUNCTIONS
- * 
+ *
  * Helper functions to create custom glow effects programmatically.
  * Use these if you need to generate glow effects dynamically.
- * 
+ *
  * Note: For standard effects, prefer using semantic token utilities.
  * This function is preserved for advanced customization scenarios.
  */
@@ -185,13 +226,13 @@ export const createGlowEffect = (
 
 /**
  * SEMANTIC GLOW PRESETS
- * 
+ *
  * Predefined glow presets using semantic design tokens.
  * These map to CSS custom properties defined in globals.css.
  */
 export const GLOW_PRESETS = {
   subtle: "shadow-effect-glow-subtle",
-  normal: "shadow-effect-glow-normal", 
+  normal: "shadow-effect-glow-normal",
   strong: "shadow-effect-glow-strong",
   blue: "shadow-effect-glow-blue",
   green: "shadow-effect-glow-green",
@@ -249,11 +290,17 @@ export const useNodeStyleStore = create<NodeStyleState & NodeStyleActions>(
 
     // Glow effect utilities for easy adjustment
     setSelectionGlow: (preset) => {
-      const glowValue = preset in GLOW_PRESETS ? GLOW_PRESETS[preset as keyof typeof GLOW_PRESETS] : preset;
+      const glowValue =
+        preset in GLOW_PRESETS
+          ? GLOW_PRESETS[preset as keyof typeof GLOW_PRESETS]
+          : preset;
       set((st) => ({ selection: { ...st.selection, glow: glowValue } }));
     },
     setHoverGlow: (preset) => {
-      const glowValue = preset in GLOW_PRESETS ? GLOW_PRESETS[preset as keyof typeof GLOW_PRESETS] : preset;
+      const glowValue =
+        preset in GLOW_PRESETS
+          ? GLOW_PRESETS[preset as keyof typeof GLOW_PRESETS]
+          : preset;
       set((st) => ({ hover: { ...st.hover, glow: glowValue } }));
     },
 
@@ -280,7 +327,10 @@ export const useNodeStyleStore = create<NodeStyleState & NodeStyleActions>(
         const newOverrides = { ...st.categoryTheming.customOverrides };
         delete newOverrides[cat];
         return {
-          categoryTheming: { ...st.categoryTheming, customOverrides: newOverrides },
+          categoryTheming: {
+            ...st.categoryTheming,
+            customOverrides: newOverrides,
+          },
         };
       }),
     resetAllCategoryThemes: () =>
@@ -304,7 +354,7 @@ export const useNodeStyleStore = create<NodeStyleState & NodeStyleActions>(
 
 export const getNodeCategory = (nodeType?: string): string | null => {
   if (!nodeType) return null;
-  const meta = getNodeMetadata(nodeType);
+  const meta = lazyGetNodeMetadata(nodeType);
   return meta?.category ?? null;
 };
 
@@ -326,15 +376,34 @@ export function useNodeStyleClasses(
     if (isActive) classes.push(activation.border, activation.glow);
 
     return classes.join(" ");
-  }, [base, selection, error, activation, hover, isSelected, isError, isActive]);
+  }, [
+    base,
+    selection,
+    error,
+    activation,
+    hover,
+    isSelected,
+    isError,
+    isActive,
+  ]);
 }
 
 export function useCategoryTheme(nodeType?: string): CategoryTheme | null {
   const enabled = useNodeStyleStore((s) => s.categoryTheming.enabled);
-  const customOverrides = useNodeStyleStore((s) => s.categoryTheming.customOverrides);
-  
+  const customOverrides = useNodeStyleStore(
+    (s) => s.categoryTheming.customOverrides
+  );
+
   return useMemo(() => {
     if (!enabled || !nodeType) return null;
+
+    // Direct category key usage if present in mapping
+    if (CATEGORY_THEMES[nodeType as keyof typeof CATEGORY_THEMES]) {
+      return {
+        ...CATEGORY_THEMES[nodeType as keyof typeof CATEGORY_THEMES]!,
+        ...(customOverrides[nodeType] ?? {}),
+      } as CategoryTheme;
+    }
 
     const category = getNodeCategory(nodeType);
     if (!category) return null;
@@ -348,13 +417,22 @@ export function useCategoryTheme(nodeType?: string): CategoryTheme | null {
     return {
       ...defaultTheme,
       ...overrideTheme,
-      background: { ...defaultTheme.background, ...(overrideTheme.background ?? {}) },
+      background: {
+        ...defaultTheme.background,
+        ...(overrideTheme.background ?? {}),
+      },
       border: { ...defaultTheme.border, ...(overrideTheme.border ?? {}) },
       text: {
         ...defaultTheme.text,
         ...(overrideTheme.text ?? {}),
-        primary: { ...defaultTheme.text.primary, ...(overrideTheme.text?.primary ?? {}) },
-        secondary: { ...defaultTheme.text.secondary, ...(overrideTheme.text?.secondary ?? {}) },
+        primary: {
+          ...defaultTheme.text.primary,
+          ...(overrideTheme.text?.primary ?? {}),
+        },
+        secondary: {
+          ...defaultTheme.text.secondary,
+          ...(overrideTheme.text?.secondary ?? {}),
+        },
       },
       button: { ...defaultTheme.button, ...(overrideTheme.button ?? {}) },
     };

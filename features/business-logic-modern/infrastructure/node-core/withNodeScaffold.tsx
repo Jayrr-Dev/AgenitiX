@@ -1,8 +1,11 @@
-import type { NodeProps, Position } from '@xyflow/react';
-import React from 'react';
-import type { NodeSpec } from './NodeSpec';
-import TypeSafeHandle from '@/components/nodes/handles/TypeSafeHandle';
-import { useNodeStyleClasses, useCategoryTheme } from '@/features/business-logic-modern/infrastructure/theming/stores/nodeStyleStore';
+import TypeSafeHandle from "@/components/nodes/handles/TypeSafeHandle";
+import {
+  useCategoryTheme,
+  useNodeStyleClasses,
+} from "@/features/business-logic-modern/infrastructure/theming/stores/nodeStyleStore";
+import type { NodeProps, Position } from "@xyflow/react";
+import React from "react";
+import type { NodeSpec } from "./NodeSpec";
 
 /**
  * Enhanced scaffold wrapper that provides sizing, theming, and glow effects
@@ -26,9 +29,9 @@ const NodeScaffoldWrapper = ({
     className={className}
     style={{
       ...style,
-      border: '1px solid transparent', // Keep minimal border for selection outline
-      borderRadius: '8px',
-      background: 'transparent', // Remove the white/gray backdrop
+      border: "1px solid transparent", // Keep minimal border for selection outline
+      borderRadius: "8px",
+      background: "transparent", // Remove the white/gray backdrop
     }}
   >
     {children}
@@ -44,7 +47,10 @@ const NodeScaffoldWrapper = ({
  * @param Component The node's raw React UI component.
  * @returns A complete, production-ready node component with theming integration.
  */
-export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>) {
+export function withNodeScaffold(
+  spec: NodeSpec,
+  Component: React.FC<NodeProps>
+) {
   // The returned component is what React Flow will render.
   const WrappedComponent = (props: NodeProps) => {
     // Extract React Flow state for theming
@@ -54,7 +60,10 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 
     // Get theming classes from the theming system
     const nodeStyleClasses = useNodeStyleClasses(isSelected, isError, isActive);
-    const categoryTheme = useCategoryTheme(spec.kind);
+    const categoryKey = (
+      typeof spec.category === "string" ? spec.category : ""
+    ).toLowerCase();
+    const categoryTheme = useCategoryTheme(categoryKey || spec.kind);
 
     // Build the complete className with theming
     const themeClasses = React.useMemo(() => {
@@ -62,7 +71,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
         "relative transition-all duration-200",
         nodeStyleClasses, // Includes hover, selection, error, and activation glow effects
       ];
-      
+
       // Apply category-based theming if available
       if (categoryTheme) {
         baseClasses.push(
@@ -72,24 +81,23 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
           categoryTheme.border.dark
         );
       }
-      
+
       return baseClasses.join(" ");
     }, [nodeStyleClasses, categoryTheme]);
 
     // TODO: Sync with actual expanded/collapsed state via context or props.
-    // Start with collapsed size by default.
-    const isExpandedDefault = false;
-    const size = isExpandedDefault ? spec.size.expanded : spec.size.collapsed;
+    // Default to expanded size so isolated renders (e.g., Storybook) look correct.
+    const size = spec.size.expanded;
 
     const collapsedSize = spec.size.collapsed as any;
     const style: React.CSSProperties = {
-        minWidth: `${collapsedSize.width}px`,
-        minHeight:
-          typeof collapsedSize.height === 'number'
-            ? `${collapsedSize.height}px`
-            : collapsedSize.height,
-        width: 'auto',
-        height: 'auto',
+      minWidth: `${collapsedSize.width}px`,
+      minHeight:
+        typeof collapsedSize.height === "number"
+          ? `${collapsedSize.height}px`
+          : collapsedSize.height,
+      width: "auto",
+      height: "auto",
     };
 
     // Calculate handle positioning for multiple handles on same side
@@ -108,13 +116,15 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
         {/* Render handles defined in the spec with smart positioning */}
         {spec.handles?.map((handle, index) => {
           const handlesOnSameSide = handlesByPosition[handle.position] || [];
-          const handleIndex = handlesOnSameSide.findIndex(h => h.id === handle.id);
+          const handleIndex = handlesOnSameSide.findIndex(
+            (h) => h.id === handle.id
+          );
           const totalHandlesOnSide = handlesOnSameSide.length;
 
           return (
             <TypeSafeHandle
               key={handle.id}
-              id={handle.id + '__' + ((handle.code ?? handle.dataType) ?? 'x')}
+              id={handle.id + "__" + (handle.code ?? handle.dataType ?? "x")}
               type={handle.type}
               position={handle.position as Position}
               dataType={handle.dataType}
@@ -135,4 +145,4 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 
   WrappedComponent.displayName = `withNodeScaffold(${spec.displayName})`;
   return WrappedComponent;
-} 
+}
