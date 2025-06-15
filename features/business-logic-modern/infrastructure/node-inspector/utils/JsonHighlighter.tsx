@@ -1,13 +1,13 @@
 /**
- * JSON HIGHLIGHTER - Syntax highlighting for JSON with semantic tokens
+ * JSON HIGHLIGHTER - Syntax highlighting for JSON with proper colors
  *
  * • Provides syntax highlighting for JSON data in node inspector
- * • Uses semantic tokens for consistent theming across node categories
+ * • Uses proper JSON syntax colors (keys, strings, numbers, booleans, etc.)
  * • Supports collapsible object/array structures
  * • Maintains accessibility and readability standards
- * • Integrates with control component theming system
+ * • Matches original NodeInspector JSON highlighting
  *
- * Keywords: json-highlighter, semantic-tokens, syntax-highlighting, node-inspector, accessibility
+ * Keywords: json-highlighter, syntax-highlighting, node-inspector, json-colors
  */
 
 import React, { useState } from "react";
@@ -25,55 +25,66 @@ interface JsonValueProps {
   isLast?: boolean;
 }
 
-const JsonValue: React.FC<JsonValueProps> = ({ value, depth, maxDepth, isLast = false }) => {
+const JsonValue: React.FC<JsonValueProps> = ({
+  value,
+  depth,
+  maxDepth,
+  isLast = false,
+}) => {
   const [isCollapsed, setIsCollapsed] = useState(depth >= maxDepth);
 
   if (value === null) {
-    return <span className="text-control-debug">null</span>;
+    return <span className="text-purple-600 dark:text-purple-400">null</span>;
   }
 
   if (value === undefined) {
-    return <span className="text-control-debug">undefined</span>;
+    return (
+      <span className="text-purple-600 dark:text-purple-400">undefined</span>
+    );
   }
 
   if (typeof value === "string") {
     return (
       <span>
-        <span className="text-control-success">"</span>
-        <span className="text-control-success">{value}</span>
-        <span className="text-control-success">"</span>
+        <span className="text-green-600 dark:text-green-400">"</span>
+        <span className="text-green-600 dark:text-green-400">{value}</span>
+        <span className="text-green-600 dark:text-green-400">"</span>
       </span>
     );
   }
 
   if (typeof value === "number") {
-    return <span className="text-control-warning">{value}</span>;
+    return <span className="text-blue-600 dark:text-blue-400">{value}</span>;
   }
 
   if (typeof value === "boolean") {
-    return <span className="text-node-create-text">{value.toString()}</span>;
+    return (
+      <span className="text-orange-600 dark:text-orange-400">
+        {value.toString()}
+      </span>
+    );
   }
 
   if (Array.isArray(value)) {
     if (value.length === 0) {
-      return <span className="text-control-debug">[]</span>;
+      return <span className="text-gray-600 dark:text-gray-400">[]</span>;
     }
 
     return (
       <div className="inline-block">
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="text-control-debug hover:text-control-input focus:outline-none"
+          className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 focus:outline-none"
         >
-          <span className="text-control-debug">[</span>
+          <span className="text-gray-600 dark:text-gray-400">[</span>
           {isCollapsed && (
-            <span className="text-control-debug ml-1">
+            <span className="text-gray-500 dark:text-gray-500 ml-1">
               ... {value.length} items
             </span>
           )}
         </button>
         {!isCollapsed && (
-          <div className="ml-4 border-l-2 border-control-group pl-2">
+          <div className="ml-4 border-l border-gray-300 dark:border-gray-600 pl-2">
             {value.map((item, index) => (
               <div key={index} className="my-1">
                 <JsonValue
@@ -83,13 +94,15 @@ const JsonValue: React.FC<JsonValueProps> = ({ value, depth, maxDepth, isLast = 
                   isLast={index === value.length - 1}
                 />
                 {index < value.length - 1 && (
-                  <span className="text-control-debug">,</span>
+                  <span className="text-gray-600 dark:text-gray-400">,</span>
                 )}
               </div>
             ))}
           </div>
         )}
-        {!isCollapsed && <span className="text-control-debug">]</span>}
+        {!isCollapsed && (
+          <span className="text-gray-600 dark:text-gray-400">]</span>
+        )}
       </div>
     );
   }
@@ -97,29 +110,30 @@ const JsonValue: React.FC<JsonValueProps> = ({ value, depth, maxDepth, isLast = 
   if (typeof value === "object") {
     const keys = Object.keys(value);
     if (keys.length === 0) {
-      return <span className="text-control-debug">{"{}"}</span>;
+      return <span className="text-gray-600 dark:text-gray-400">{"{}"}</span>;
     }
 
     return (
       <div className="inline-block">
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="text-control-debug hover:text-control-input focus:outline-none"
+          className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 focus:outline-none"
         >
-          <span className="text-control-debug">{"{"}</span>
+          <span className="text-gray-600 dark:text-gray-400">{"{"}</span>
           {isCollapsed && (
-            <span className="text-control-debug ml-1">
+            <span className="text-gray-500 dark:text-gray-500 ml-1">
               ... {keys.length} properties
             </span>
           )}
         </button>
         {!isCollapsed && (
-          <div className="ml-4 border-l-2 border-control-group pl-2">
+          <div className="ml-4 border-l border-gray-300 dark:border-gray-600 pl-2">
             {keys.map((key, index) => (
               <div key={key} className="my-1">
-                <span className="text-control-debug">"</span>
-                <span className="text-control-debug">{key}</span>
-                <span className="text-control-debug">": </span>
+                <span className="text-red-600 dark:text-red-400">"</span>
+                <span className="text-red-600 dark:text-red-400">{key}</span>
+                <span className="text-red-600 dark:text-red-400">"</span>
+                <span className="text-gray-600 dark:text-gray-400">: </span>
                 <JsonValue
                   value={value[key]}
                   depth={depth + 1}
@@ -127,20 +141,22 @@ const JsonValue: React.FC<JsonValueProps> = ({ value, depth, maxDepth, isLast = 
                   isLast={index === keys.length - 1}
                 />
                 {index < keys.length - 1 && (
-                  <span className="text-control-debug">,</span>
+                  <span className="text-gray-600 dark:text-gray-400">,</span>
                 )}
               </div>
             ))}
           </div>
         )}
-        {!isCollapsed && <span className="text-control-debug">{"}"}</span>}
+        {!isCollapsed && (
+          <span className="text-gray-600 dark:text-gray-400">{"}"}</span>
+        )}
       </div>
     );
   }
 
   // Fallback for unknown types
   return (
-    <span className="text-control-error">
+    <span className="text-red-700 dark:text-red-300">
       {typeof value}: {String(value)}
     </span>
   );
@@ -152,7 +168,7 @@ export const JsonHighlighter: React.FC<JsonHighlighterProps> = ({
   className = "",
 }) => {
   return (
-    <div className={`font-mono text-xs bg-control-debug p-3 rounded border border-control-input overflow-auto ${className}`}>
+    <div className={`font-mono text-xs leading-relaxed ${className}`}>
       <JsonValue value={data} depth={0} maxDepth={maxDepth} />
     </div>
   );

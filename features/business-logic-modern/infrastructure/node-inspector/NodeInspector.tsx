@@ -1,34 +1,29 @@
 /**
- * NODE INSPECTOR - Tabbed node property editor with shadcn/ui
+ * NODE INSPECTOR - Legacy-styled multi-column node property editor
  *
- * • Clean shadcn/ui tabbed interface with Info, Controls, and Errors tabs
- * • Smart tab visibility based on node state and available controls
- * • Schema-driven controls with automatic generation
- * • Real-time validation and error feedback
- * • Maintains enterprise-grade backend safety
+ * • Legacy multi-column layout with side-by-side panels
+ * • Node data display with JSON highlighting
+ * • Output and controls in dedicated right column
+ * • Error log in separate column when errors exist
+ * • Prominent duplicate and delete action buttons
+ * • Maintains enterprise-grade backend safety with modern functionality
  *
- * Keywords: node-inspector, shadcn-tabs, schema-driven, type-safe, conditional-tabs
+ * Keywords: node-inspector, multi-column, legacy-style, json-highlighting, action-buttons
  */
 
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useFlowStore,
   useNodeErrors,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import { getNodeOutput } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/outputUtils";
-import React, { useCallback, useMemo, useState } from "react";
-import {
-  FaExclamationTriangle,
-  FaInfoCircle,
-  FaLock,
-  FaLockOpen,
-  FaSlidersH,
-} from "react-icons/fa";
+import { Copy, Trash2 } from "lucide-react";
+import React, { useCallback, useMemo } from "react";
+import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
 
-import type { NodeType } from "../flow-engine/types/nodeData";
+import { NODE_TYPE_CONFIG } from "../flow-engine/constants";
+import type { AgenNode, NodeType } from "../flow-engine/types/nodeData";
 import { useComponentTheme } from "../theming/components";
 import { NodeInspectorAdapter } from "./adapters/NodeInspectorAdapter";
 import { EdgeInspector } from "./components/EdgeInspector";
@@ -36,31 +31,6 @@ import { ErrorLog } from "./components/ErrorLog";
 import { NodeControls } from "./components/NodeControls";
 import { NodeOutput } from "./components/NodeOutput";
 import { JsonHighlighter } from "./utils/JsonHighlighter";
-
-// Tab types
-type TabType = "info" | "controls" | "errors";
-
-// Tab configuration
-const TAB_CONFIG = {
-  info: {
-    id: "info" as const,
-    label: "Info",
-    icon: FaInfoCircle,
-    alwaysVisible: true,
-  },
-  controls: {
-    id: "controls" as const,
-    label: "Controls",
-    icon: FaSlidersH,
-    alwaysVisible: false,
-  },
-  errors: {
-    id: "errors" as const,
-    label: "Errors",
-    icon: FaExclamationTriangle,
-    alwaysVisible: false,
-  },
-};
 
 const NodeInspector = React.memo(function NodeInspector() {
   const {
@@ -71,17 +41,19 @@ const NodeInspector = React.memo(function NodeInspector() {
     inspectorLocked,
     setInspectorLocked,
     updateNodeData,
+    updateNodeId,
     logNodeError,
     clearNodeErrors,
+    removeNode,
     removeEdge,
+    addNode,
+    selectNode,
   } = useFlowStore();
-
-  // Tab state
-  const [activeTab, setActiveTab] = useState<TabType>("info");
 
   // Get theme for node inspector
   const theme = useComponentTheme("nodeInspector");
 
+  // Get selected items
   const selectedNode = selectedNodeId
     ? nodes.find((n) => n.id === selectedNodeId) || null
     : null;
@@ -89,8 +61,10 @@ const NodeInspector = React.memo(function NodeInspector() {
     ? edges.find((e) => e.id === selectedEdgeId) || null
     : null;
 
+  // Always call useNodeErrors to avoid conditional hook usage
   const errors = useNodeErrors(selectedNodeId);
 
+  // Get output for selected node
   const output = useMemo(() => {
     if (!selectedNode) return null;
     return getNodeOutput(selectedNode, nodes, edges);
@@ -101,34 +75,53 @@ const NodeInspector = React.memo(function NodeInspector() {
     return NodeInspectorAdapter.getNodeInfo(selectedNode.type as NodeType);
   }, [selectedNode]);
 
-  // Check if node has controls (inputs)
-  const hasControls = useMemo(() => {
-    if (!selectedNode || !nodeInfo) return false;
-    // Use the hasControls property from the adapter
-    return nodeInfo.hasControls;
-  }, [selectedNode, nodeInfo]);
+  // Node action handlers
+  const handleUpdateNodeId = useCallback(
+    (oldId: string, newId: string) => {
+      const success = updateNodeId(oldId, newId);
+      if (!success) {
+        console.warn(
+          `Failed to update node ID from "${oldId}" to "${newId}" - ID might already exist`
+        );
+      }
+      return success;
+    },
+    [updateNodeId]
+  );
 
-  // Check if there are errors
-  const hasErrors = useMemo(() => {
-    return errors && errors.length > 0;
-  }, [errors]);
+  const handleDeleteNode = useCallback(
+    (nodeId: string) => {
+      removeNode(nodeId);
+    },
+    [removeNode]
+  );
 
-  // Get visible tabs
-  const visibleTabs = useMemo(() => {
-    return Object.values(TAB_CONFIG).filter((tab) => {
-      if (tab.alwaysVisible) return true;
-      if (tab.id === "controls") return hasControls;
-      if (tab.id === "errors") return hasErrors;
-      return false;
-    });
-  }, [hasControls, hasErrors]);
+  const handleDuplicateNode = useCallback(
+    (nodeId: string) => {
+      const nodeToDuplicate = nodes.find((n) => n.id === nodeId);
+      if (!nodeToDuplicate) return;
 
-  // Ensure active tab is visible
-  React.useEffect(() => {
-    if (!visibleTabs.some((tab) => tab.id === activeTab)) {
-      setActiveTab("info");
-    }
-  }, [visibleTabs, activeTab]);
+      // Create a new node with a unique ID and offset position
+      const newId = `${nodeId}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+      const newNode = {
+        ...nodeToDuplicate,
+        id: newId,
+        position: {
+          x: nodeToDuplicate.position.x + 40,
+          y: nodeToDuplicate.position.y + 40,
+        },
+        selected: false,
+        data: { ...nodeToDuplicate.data },
+      } as AgenNode;
+
+      // Add the new node using the Zustand store
+      addNode(newNode);
+
+      // Select the new duplicated node
+      selectNode(newId);
+    },
+    [nodes, addNode, selectNode]
+  );
 
   const handleDeleteEdge = useCallback(
     (edgeId: string) => {
@@ -143,257 +136,185 @@ const NodeInspector = React.memo(function NodeInspector() {
     }
   }, [selectedNodeId, clearNodeErrors]);
 
+  // Early return for locked state
   if (inspectorLocked) {
     return (
-      <div
-        className={`flex items-center justify-center h-full w-full ${theme.background.primary}`}
-      >
+      <div className="flex items-center justify-center w-12 h-12">
         <button
-          type="button"
           aria-label="Unlock Inspector"
           title="Unlock Inspector (Alt+A)"
           onClick={() => setInspectorLocked(false)}
-          className={`p-2 ${theme.borderRadius.button} ${theme.background.hover} ${theme.text.primary} ${theme.transition} hover:${theme.background.active} ${theme.shadow.hover}`}
+          className="bg-infra-inspector-lock text-infra-inspector-lock hover:text-infra-inspector-locked hover:border-infra-inspector-locked border-1 p-2 rounded-full"
         >
-          <FaLockOpen />
+          <FaLock className="w-5 h-5" />
         </button>
       </div>
     );
   }
 
-  return (
-    <div
-      className={`node-inspector relative flex flex-col h-full ${theme.background.primary} ${theme.text.primary} ${theme.border.default} border-l overflow-hidden`}
-    >
-      {/* Fixed Header */}
-      <div
-        className={`relative z-20 flex items-center justify-between p-3 ${theme.background.primary} ${theme.border.default} border-b shadow-sm`}
-      >
-        <h2 className="text-lg font-semibold">Node Inspector</h2>
-        <button
-          type="button"
-          aria-label="Lock Inspector"
-          title="Lock Inspector (Alt+A)"
-          onClick={() => setInspectorLocked(true)}
-          className={`p-2 rounded ${theme.background.hover} ${theme.text.secondary} ${theme.transition} hover:${theme.background.active}`}
-        >
-          <FaLock />
-        </button>
-      </div>
+  // Show node inspector if node is selected (prioritize nodes over edges)
+  if (selectedNode && nodeInfo) {
+    // Get node type config for hasOutput information
+    const nodeConfig = selectedNode.type
+      ? NODE_TYPE_CONFIG[selectedNode.type]
+      : undefined;
+    // Check if node has right column content (output or controls)
+    const hasRightColumn = nodeConfig?.hasOutput || nodeInfo.hasControls;
 
-      {/* Scrollable Content Container */}
-      <div className="relative flex-1 flex flex-col overflow-hidden">
-        {selectedNode && nodeInfo && nodeInfo.displayName ? (
-          <Tabs
-            value={activeTab}
-            onValueChange={(value) => setActiveTab(value as TabType)}
-            className="flex flex-col h-full"
-          >
-            {/* Fixed Tab Navigation */}
-            <div
-              className={`relative z-10 px-4 pt-4 pb-2 ${theme.background.primary} border-b ${theme.border.default} shadow-sm`}
-            >
-              <TabsList className="grid w-full grid-cols-3 gap-1">
-                {visibleTabs.map((tab) => {
-                  const IconComponent = tab.icon;
-
-                  return (
-                    <TabsTrigger
-                      key={tab.id}
-                      value={tab.id}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <IconComponent className="w-4 h-4" />
-                      {tab.label}
-                      {tab.id === "errors" && hasErrors && (
-                        <Badge
-                          variant="destructive"
-                          className="ml-1 px-1.5 py-0.5 text-xs"
-                        >
-                          {errors?.length}
-                        </Badge>
-                      )}
-                    </TabsTrigger>
-                  );
-                })}
-              </TabsList>
-            </div>
-
-            {/* Scrollable Tab Content Container */}
-            <div className="flex-1 overflow-y-auto">
-              <TabsContent
-                value="info"
-                className="h-full p-4 mt-0 data-[state=active]:block"
-                style={{ minHeight: "100%" }}
-              >
-                <div className="space-y-6">
-                  {/* Node Header */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      {nodeInfo.icon && (
-                        <span className="text-2xl">{nodeInfo.icon}</span>
-                      )}
-                      <div>
-                        <h3 className="text-xl font-semibold">
-                          {nodeInfo.displayName}
-                        </h3>
-                        <p className={`text-sm ${theme.text.muted}`}>
-                          Type: {selectedNode.type}
-                        </p>
-                      </div>
-                    </div>
-                    {nodeInfo.description && (
-                      <div
-                        className={`${theme.background.secondary} ${theme.border.default} border rounded-md p-3`}
-                      >
-                        <p className={`text-sm ${theme.text.primary}`}>
-                          {nodeInfo.description}
-                        </p>
-                      </div>
-                    )}
+    return (
+      <div id="node-info-container" className="flex gap-3 p-4">
+        {/* COLUMN 1: NODE HEADER + NODE DATA */}
+        <div className="flex-1 flex flex-col gap-3 min-w-0 w-full">
+          {/* Node Header */}
+          <div className="border-b border-infra-inspector-header pb-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {nodeInfo.icon && (
+                  <span className="text-xl">{nodeInfo.icon}</span>
+                )}
+                <div>
+                  <h3 className="text-sm font-semibold text-infra-inspector-header">
+                    {nodeInfo.displayName}
+                  </h3>
+                  <div className="text-xs text-infra-inspector-header-secondary">
+                    Type: {selectedNode.type}
                   </div>
-
-                  {/* Node ID */}
-                  <div className="space-y-2">
-                    <h4
-                      className={`text-sm font-medium ${theme.text.secondary}`}
-                    >
-                      Node ID
-                    </h4>
-                    <div
-                      className={`${theme.background.secondary} ${theme.border.default} border rounded p-2`}
-                    >
-                      <code className="text-xs font-mono">
-                        {selectedNode.id}
-                      </code>
-                    </div>
+                  <div className="text-xs text-infra-inspector-header-secondary">
+                    ID: {selectedNode.id}
                   </div>
-
-                  {/* Development Info (only in dev mode) */}
-                  {process.env.NODE_ENV === "development" && (
-                    <details className="space-y-2">
-                      <summary
-                        className={`text-sm font-medium ${theme.text.secondary} cursor-pointer`}
-                      >
-                        Developer Info
-                      </summary>
-                      <div className="space-y-3 mt-2">
-                        {/* Live Output */}
-                        <div>
-                          <h5
-                            className={`text-xs font-medium ${theme.text.secondary} mb-1`}
-                          >
-                            Live Output
-                          </h5>
-                          <div
-                            className={`${theme.background.secondary} ${theme.border.default} border rounded p-2 text-xs`}
-                          >
-                            <NodeOutput
-                              output={output}
-                              nodeType={selectedNode.type as NodeType}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Raw Data */}
-                        <div>
-                          <h5
-                            className={`text-xs font-medium ${theme.text.secondary} mb-1`}
-                          >
-                            Raw Data
-                          </h5>
-                          <div
-                            className={`${theme.background.secondary} ${theme.border.default} border rounded p-2 text-xs`}
-                          >
-                            <JsonHighlighter data={selectedNode.data} />
-                          </div>
-                        </div>
-                      </div>
-                    </details>
-                  )}
                 </div>
-              </TabsContent>
-
-              {hasControls && (
-                <TabsContent
-                  value="controls"
-                  className="h-full p-4 mt-0 data-[state=active]:block"
-                  style={{ minHeight: "100%" }}
-                >
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <h4
-                        className={`text-lg font-medium ${theme.text.primary}`}
-                      >
-                        Node Controls
-                      </h4>
-                      <p className={`text-sm ${theme.text.muted}`}>
-                        Configure the behavior and properties of this node.
-                      </p>
-                    </div>
-
-                    <NodeControls
-                      node={selectedNode}
-                      updateNodeData={updateNodeData}
-                      onLogError={logNodeError as any}
-                    />
-                  </div>
-                </TabsContent>
-              )}
-
-              {hasErrors && (
-                <TabsContent
-                  value="errors"
-                  className="h-full p-4 mt-0 data-[state=active]:block"
-                  style={{ minHeight: "100%" }}
-                >
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <h4
-                        className={`text-lg font-medium ${theme.text.primary} flex items-center gap-2`}
-                      >
-                        <FaExclamationTriangle className="text-red-500" />
-                        Error Details
-                      </h4>
-                      <p className={`text-sm ${theme.text.muted}`}>
-                        Debug information and error logs for this node.
-                      </p>
-                    </div>
-
-                    <div
-                      className={`${theme.background.secondary} ${theme.border.default} border rounded-md p-4`}
-                    >
-                      <ErrorLog
-                        errors={errors!}
-                        onClearErrors={handleClearErrors}
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-              )}
+              </div>
             </div>
-          </Tabs>
-        ) : selectedEdge ? (
-          <div className="flex-1 overflow-y-auto p-4">
-            <EdgeInspector
-              edge={selectedEdge}
-              allNodes={nodes}
-              onDeleteEdge={handleDeleteEdge}
-            />
+
+            {nodeInfo.description && (
+              <div className="bg-infra-inspector-data rounded-md border border-infra-inspector-data p-2 mt-2">
+                <p className="text-xs text-infra-inspector-data">
+                  {nodeInfo.description}
+                </p>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center py-12">
-            <div className={`text-xl font-medium ${theme.text.secondary} mb-2`}>
-              No Selection
+
+          {/* Node Data */}
+          <div className="flex-1 flex flex-col min-w-0 w-full">
+            <h4 className="text-xs font-medium text-infra-inspector-data mb-2">
+              Node Data:
+            </h4>
+            <div className="bg-infra-inspector-data rounded-md border border-infra-inspector-data p-3 overflow-y-auto overflow-x-auto flex-1 min-w-0 w-full">
+              <JsonHighlighter
+                data={selectedNode.data}
+                className="w-full min-w-0 flex-1"
+              />
             </div>
-            <p className={`text-sm ${theme.text.muted}`}>
-              Select a node to view its information and controls
-            </p>
+          </div>
+        </div>
+
+        {/* COLUMN 2: ACTION BUTTONS + OUTPUT + CONTROLS */}
+        {hasRightColumn && (
+          <div className="flex-1 flex flex-col gap-3 min-w-[100px]">
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2">
+              {/* Lock Button */}
+              <button
+                onClick={() => setInspectorLocked(!inspectorLocked)}
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-infra-inspector-lock border border-infra-inspector-lock text-infra-inspector-lock rounded hover:bg-infra-inspector-lock-hover hover:border-infra-inspector-button-hover transition-colors"
+                title={
+                  inspectorLocked
+                    ? "Unlock Inspector (Alt+A)"
+                    : "Lock Inspector (Alt+A)"
+                }
+              >
+                {inspectorLocked ? (
+                  <FaLock className="w-3 h-3" />
+                ) : (
+                  <FaLockOpen className="w-3 h-3" />
+                )}
+              </button>
+
+              <button
+                onClick={() => handleDuplicateNode(selectedNode.id)}
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-infra-inspector-duplicate border border-infra-inspector-duplicate text-infra-inspector-duplicate rounded hover:bg-infra-inspector-duplicate-hover transition-colors"
+                title="Duplicate Node (Alt+W)"
+              >
+                <Copy className="w-3 h-3" />
+              </button>
+
+              <button
+                onClick={() => handleDeleteNode(selectedNode.id)}
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-infra-inspector-delete border border-infra-inspector-delete text-infra-inspector-delete rounded hover:bg-infra-inspector-delete-hover transition-colors"
+                title="Delete Node (Alt+Q)"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
+
+            {nodeConfig?.hasOutput && (
+              <div className="flex flex-col gap-2">
+                <h4 className="text-xs font-medium text-infra-inspector-data">
+                  Output:
+                </h4>
+                <NodeOutput
+                  output={output}
+                  nodeType={selectedNode.type as NodeType}
+                />
+              </div>
+            )}
+
+            {nodeInfo.hasControls && (
+              <div className="flex flex-col gap-2">
+                <h4 className="text-xs font-medium text-infra-inspector-data">
+                  Controls:
+                </h4>
+                <NodeControls
+                  node={selectedNode}
+                  updateNodeData={updateNodeData}
+                  onLogError={logNodeError as any}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* COLUMN 3: ERROR LOG (only show when there are errors) */}
+        {errors.length > 0 && (
+          <div className="flex-1 flex flex-col gap-3">
+            <ErrorLog errors={errors} onClearErrors={handleClearErrors} />
           </div>
         )}
       </div>
+    );
+  }
+
+  // Show edge inspector if edge is selected (only when no node is selected)
+  if (selectedEdge && nodes) {
+    return (
+      <div id="edge-info-container" className="flex gap-3">
+        <div className="flex-1 flex flex-col gap-3 min-w-0 w-full">
+          <EdgeInspector
+            edge={selectedEdge}
+            allNodes={nodes}
+            onDeleteEdge={handleDeleteEdge}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state if no node or edge selected
+  return (
+    <div className="flex items-center justify-center w-12 h-12 rounded-full">
+      <button
+        aria-label="Lock Inspector"
+        title="Lock Inspector - Keep current view when selecting nodes"
+        onClick={() => setInspectorLocked(true)}
+        className="text-infra-inspector-secondary border border-transparent hover:border-infra-inspector-button-hover hover:text-infra-inspector-secondary-hover p-2 rounded-full"
+      >
+        <FaSearch className="w-5 h-5" />
+      </button>
     </div>
   );
 });
+
+NodeInspector.displayName = "NodeInspector";
 
 export default NodeInspector;
