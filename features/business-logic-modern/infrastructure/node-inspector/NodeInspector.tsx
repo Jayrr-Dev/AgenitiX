@@ -144,7 +144,7 @@ const NodeInspector = React.memo(function NodeInspector() {
           aria-label="Unlock Inspector"
           title="Unlock Inspector (Alt+A)"
           onClick={() => setInspectorLocked(false)}
-          className="bg-infra-inspector-lock text-infra-inspector-lock hover:text-infra-inspector-locked hover:border-infra-inspector-locked border-1 p-2 rounded-full"
+          className="bg-infra-inspector-lock text-infra-inspector-lock hover:text-infra-inspector-locked hover:border-infra-inspector-locked border-1 border-transparent p-2 rounded-full"
         >
           <FaLock className="w-5 h-5" />
         </button>
