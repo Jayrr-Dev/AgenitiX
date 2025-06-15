@@ -23,6 +23,7 @@ import { Copy, Trash2 } from "lucide-react";
 import React, { useCallback, useMemo } from "react";
 import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
 
+import EditableNodeId from "@/components/nodes/editableNodeId";
 import { NODE_TYPE_CONFIG } from "../flow-engine/constants";
 import type { AgenNode, NodeType } from "../flow-engine/types/nodeData";
 import { useComponentTheme } from "../theming/components";
@@ -119,6 +120,16 @@ const NodeInspector = React.memo(function NodeInspector() {
   const selectedEdge = selectedEdgeId
     ? edges.find((e) => e.id === selectedEdgeId) || null
     : null;
+
+  // Get node category for display
+  const nodeCategory = useMemo(() => {
+    if (!selectedNode) return null;
+    // Try to get category from node metadata or spec
+    const nodeMetadata = NodeInspectorAdapter.getNodeInfo(
+      selectedNode.type as NodeType
+    );
+    return nodeMetadata?.category || "unknown";
+  }, [selectedNode]);
 
   // Always call useNodeErrors to avoid conditional hook usage
   const errors = useNodeErrors(selectedNodeId);
@@ -244,7 +255,12 @@ const NodeInspector = React.memo(function NodeInspector() {
                     {DESIGN_CONFIG.content.labels.type} {selectedNode.type}
                   </div>
                   <div className={STYLING_TEXT_NODE_METADATA}>
-                    {DESIGN_CONFIG.content.labels.id} {selectedNode.id}
+                    {DESIGN_CONFIG.content.labels.id}{" "}
+                    <EditableNodeId
+                      nodeId={selectedNode.id}
+                      onUpdateId={handleUpdateNodeId}
+                      className="inline"
+                    />
                   </div>
                 </div>
               </div>
@@ -280,7 +296,11 @@ const NodeInspector = React.memo(function NodeInspector() {
               )}
             >
               <JsonHighlighter
-                data={selectedNode.data}
+                data={{
+                  id: selectedNode.id,
+                  category: nodeCategory,
+                  ...selectedNode.data,
+                }}
                 className={STYLING_JSON_HIGHLIGHTER}
               />
             </div>
