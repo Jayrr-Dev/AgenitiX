@@ -102,6 +102,12 @@ module.exports = function (plop) {
         template:
           "// Node exports will be added here automatically by Plop\nexport { default as {{kind}} } from './{{domain}}/{{kind}}.node';",
       },
+      {
+        type: "add",
+        path: "stories/{{pascalCase kind}}Preview.stories.tsx",
+        templateFile:
+          "tooling/dev-scripts/plop-templates/node-preview.stories.tsx.hbs",
+      },
     ],
   });
 

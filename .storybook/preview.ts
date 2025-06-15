@@ -15,7 +15,7 @@ const preview: Preview = {
     },
     options: {
       storySort: {
-        order: ["Overview", "Design Tokens"],
+        order: ["Overview", "Design Tokens", "Guides"],
       },
     },
     viewport: {
