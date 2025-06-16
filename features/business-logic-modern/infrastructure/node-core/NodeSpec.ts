@@ -131,4 +131,20 @@ export interface NodeSpec {
    * Enables automatic control generation with customization options
    */
   controls?: ControlsConfig;
+
+  /**
+   * Schema version of the node spec. Increment only on breaking changes to
+   * data shape or behaviour so migration scripts know when to run.
+   */
+  version?: number;
+
+  /**
+   * OPTIONAL: key that identifies the runtime executor for this node when
+   * it runs on the worker queue. Keeping it serialisable (string) avoids
+   * bundling functions inside JSON.
+   */
+  runtime?: {
+    /** Identifier used by the execution engine to look up a handler. */
+    execute?: string;
+  };
 }

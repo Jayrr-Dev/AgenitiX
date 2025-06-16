@@ -126,6 +126,12 @@
   --core-expandCollapseButton-_comment: 🔘 Expand/collapse button styling - change bg and text to customize appearance;
   --core-expandCollapseButton-bg: transparent;
   --core-expandCollapseButton-text: hsla(0, 0%, 0%, 1);
+  --core-label-_comment: 📝 Node label styling - editable title at top of each node;
+  --core-label-top: 2px;
+  --core-label-font-size: 10px;
+  --core-label-font-weight: 600;
+  --core-label-font-family: Inter, ui-sans-serif, sans-serif;
+  --core-label-color: hsla(0, 0%, 20%, 1);
   --core-handle-bg-connected: hsla(0, 0%, 0%, 0.5);
   --core-handle-bg-source: hsla(0, 0%, 0%, 0.5);
   --core-handle-bg-target: hsla(0, 0%, 100%, 0.1);

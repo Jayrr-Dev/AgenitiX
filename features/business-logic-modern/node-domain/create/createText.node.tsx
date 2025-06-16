@@ -37,8 +37,14 @@ const CreateTextDataSchema = z
     text: z.string().default(""),
     isActive: z.boolean().default(false),
     isExpanded: z.boolean().default(false),
+    /**
+     * Optional user-editable label shown above the node.
+     * Not required by business logic, so keep it optional.
+     */
+    label: z.string().optional(),
+    description: z.string().optional(),
   })
-  .strict();
+  .passthrough();
 
 type CreateTextData = z.infer<typeof CreateTextDataSchema>;
 
@@ -66,6 +72,10 @@ const spec: NodeSpec = {
   ],
   inspector: {
     key: "CreateTextInspector",
+  },
+  version: 1,
+  runtime: {
+    execute: "createText_execute_v1",
   },
   initialData: { text: "", isActive: false, isExpanded: false },
   dataSchema: CreateTextDataSchema,

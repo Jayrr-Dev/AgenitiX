@@ -72,17 +72,25 @@ const LabelNode: React.FC<LabelNodeProps> = ({ nodeId, label }) => {
     }
   };
 
+  const handleContainerClick = (e: React.MouseEvent) => {
+    // Only handle double-click when not editing
+    if (!editing && e.detail === 2) {
+      setEditing(true);
+    }
+  };
+
   return (
     <div
       className="absolute left-1/2 -translate-x-1/2 px-1 text-center select-none truncate"
-      onDoubleClick={() => setEditing(true)}
+      onClick={handleContainerClick}
       style={{
-        pointerEvents: "auto",
+        pointerEvents: editing ? "none" : "auto", // Disable pointer events when editing
         top: "var(--core-label-top)",
         fontSize: "var(--core-label-font-size)",
         fontWeight: "var(--core-label-font-weight)",
         fontFamily: "var(--core-label-font-family, inherit)",
         color: "var(--core-label-color)",
+        zIndex: editing ? 10 : 1, // Higher z-index when editing
       }}
     >
       <span
@@ -100,6 +108,7 @@ const LabelNode: React.FC<LabelNodeProps> = ({ nodeId, label }) => {
           color: "var(--core-label-color)",
           whiteSpace: "nowrap",
           userSelect: editing ? "text" : "none",
+          pointerEvents: editing ? "auto" : "none", // Only allow events on span when editing
         }}
       >
         {label}

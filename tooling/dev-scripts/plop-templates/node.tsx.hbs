@@ -43,7 +43,11 @@ const {{pascalCase kind}}DataSchema = z.object({
   // description: SafeSchemas.optionalText(),
   // count: SafeSchemas.number(1, 1, 100),
   // priority: SafeSchemas.enum(['low', 'medium', 'high'], 'medium'),
-}).strict();
+
+  // Optional user-editable title shown above the node
+  label: SafeSchemas.optionalText(),
+  description: SafeSchemas.optionalText(),
+}).passthrough();
 
 type {{pascalCase kind}}Data = z.infer<typeof {{pascalCase kind}}DataSchema>;
 
@@ -68,6 +72,10 @@ const spec: NodeSpec = {
   ],
   inspector: {
     key: '{{pascalCase kind}}Inspector',
+  },
+  version: 1,
+  runtime: {
+    execute: '{{camelCase kind}}_execute_v1',
   },
   initialData: createSafeInitialData({{pascalCase kind}}DataSchema),
   dataSchema: {{pascalCase kind}}DataSchema,

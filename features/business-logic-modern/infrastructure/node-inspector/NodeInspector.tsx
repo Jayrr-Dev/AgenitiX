@@ -23,6 +23,7 @@ import { Copy, Trash2 } from "lucide-react";
 import React, { useCallback, useMemo } from "react";
 import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
 
+import EditableNodeDescription from "@/components/nodes/EditableNodeDescription";
 import EditableNodeId from "@/components/nodes/editableNodeId";
 import { NODE_TYPE_CONFIG } from "../flow-engine/constants";
 import type { AgenNode, NodeType } from "../flow-engine/types/nodeData";
@@ -268,9 +269,15 @@ const NodeInspector = React.memo(function NodeInspector() {
 
             {nodeInfo.description && (
               <div className={STYLING_CONTAINER_NODE_DESCRIPTION}>
-                <p className={STYLING_TEXT_NODE_DESCRIPTION}>
-                  {nodeInfo.description}
-                </p>
+                <EditableNodeDescription
+                  nodeId={selectedNode.id}
+                  description={
+                    (selectedNode.data as any)?.description ??
+                    nodeInfo.description
+                  }
+                  defaultDescription={nodeInfo.description}
+                  className={STYLING_TEXT_NODE_DESCRIPTION}
+                />
               </div>
             )}
           </div>
@@ -344,6 +351,48 @@ const NodeInspector = React.memo(function NodeInspector() {
               >
                 <Trash2 className={STYLING_ICON_ACTION_SMALL} />
               </button>
+
+              {/* DEV-ONLY ERROR SIMULATION BUTTONS */}
+              {process.env.NODE_ENV === "development" && (
+                <>
+                  <button
+                    onClick={() => {
+                      console.error(
+                        `🔴 Simulated console error from node ${selectedNode.id}`
+                      );
+                    }}
+                    className={STYLING_BUTTON_DUPLICATE}
+                    title="Simulate console.error()"
+                  >
+                    CE
+                  </button>
+                  <button
+                    onClick={() => {
+                      logNodeError(
+                        selectedNode.id,
+                        "Simulated node error via dev button",
+                        "error",
+                        "DEV_BUTTON"
+                      );
+                    }}
+                    className={STYLING_BUTTON_DUPLICATE}
+                    title="Simulate node error"
+                  >
+                    NE
+                  </button>
+                  <button
+                    onClick={() => {
+                      updateNodeData(selectedNode.id, {
+                        forceError: Date.now(),
+                      });
+                    }}
+                    className={STYLING_BUTTON_DUPLICATE}
+                    title="Simulate runtime error (throws)"
+                  >
+                    RE
+                  </button>
+                </>
+              )}
             </div>
 
             {nodeConfig?.hasOutput && (

@@ -18,7 +18,11 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/stores/nodeStyleStore";
 import type { NodeProps, Position } from "@xyflow/react";
 import React from "react";
+import NodeErrorBoundary from "./ErrorBoundary";
 import type { NodeSpec } from "./NodeSpec";
+import NodeTelemetry from "./NodeTelemetry";
+import { getNodePlugins } from "./plugins/nodePluginRegistry";
+import { runServerActions } from "./serverActions/serverActionRegistry";
 
 /**
  * Utility to get CSS custom property value from the DOM
@@ -183,8 +187,42 @@ export function withNodeScaffold(
     // Determine label (persisted or fallback)
     const nodeLabel = (props.data as any)?.label || spec.displayName;
 
+    // Inner component to throw inside ErrorBoundary, not outside
+    const MaybeError: React.FC = () => {
+      if (
+        process.env.NODE_ENV === "development" &&
+        (props.data as any)?.forceError
+      ) {
+        throw new Error(
+          `🧨 Simulated runtime error from node ${props.id} (forceError flag)`
+        );
+      }
+      return null;
+    };
+
+    // side-effect: run server actions once
+    React.useEffect(() => {
+      runServerActions({
+        nodeId: props.id,
+        nodeKind: spec.kind,
+        data: props.data as any,
+      });
+    }, []);
+
     return (
       <NodeScaffoldWrapper style={style} className={themeClasses} spec={spec}>
+        {/* Render registered node plugins */}
+        {getNodePlugins().map((Plugin, idx) => (
+          <Plugin
+            key={idx}
+            nodeId={props.id}
+            nodeKind={spec.kind}
+            data={props.data as any}
+          />
+        ))}
+        {/* Telemetry event: node created */}
+        <NodeTelemetry nodeId={props.id} nodeKind={spec.kind} />
+
         {/* Editable label */}
         <LabelNode nodeId={props.id} label={nodeLabel} />
 
@@ -212,8 +250,13 @@ export function withNodeScaffold(
           );
         })}
 
-        {/* Here you would inject ErrorBoundary, Suspense, PostHog, etc. */}
-        <Component {...props} />
+        {/* Error boundary isolates runtime errors per node */}
+        <NodeErrorBoundary nodeId={props.id}>
+          <>
+            <MaybeError />
+            <Component {...props} />
+          </>
+        </NodeErrorBoundary>
       </NodeScaffoldWrapper>
     );
   };
