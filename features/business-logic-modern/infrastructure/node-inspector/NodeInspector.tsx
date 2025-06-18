@@ -45,21 +45,26 @@ import { JsonHighlighter } from "./utils/JsonHighlighter";
 
 // LAYOUT CONTAINERS - Main structural elements
 const STYLING_CONTAINER_LOCKED = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.centerContent} ${DESIGN_CONFIG.dimensions.stateContainer}`;
-const STYLING_CONTAINER_NODE_INSPECTOR = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.spacing.sectionGap} ${DESIGN_CONFIG.spacing.containerPadding}`;
+const STYLING_CONTAINER_NODE_INSPECTOR = `${DESIGN_CONFIG.layout.flexColumn} h-full`;
+const STYLING_CONTAINER_HEADER_FIXED = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.justifyBetween} px-2 py-1 bg-muted sticky top-0 z-10 ${DESIGN_CONFIG.effects.borderBottom} ${DESIGN_CONFIG.colors.header.border}`;
+const STYLING_CONTAINER_CONTENT_SCROLLABLE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.spacing.sectionGap} ${DESIGN_CONFIG.spacing.containerPadding} flex-1 overflow-auto`;
 const STYLING_CONTAINER_EMPTY_STATE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.centerContent} ${DESIGN_CONFIG.dimensions.stateContainer} ${DESIGN_CONFIG.effects.roundedFull}`;
 const STYLING_CONTAINER_EDGE_INSPECTOR = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.spacing.sectionGap}`;
 
 // COLUMN CONTAINERS - Multi-column layout elements
-const STYLING_CONTAINER_COLUMN_LEFT = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.spacing.sectionGap} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
-const STYLING_CONTAINER_COLUMN_RIGHT = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.spacing.sectionGap} ${DESIGN_CONFIG.dimensions.rightColumnMinWidth}`;
-const STYLING_CONTAINER_COLUMN_ERROR = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.spacing.sectionGap}`;
+const STYLING_CONTAINER_COLUMN_LEFT = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.spacing.sectionGap} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth} overflow-auto`;
+const STYLING_CONTAINER_COLUMN_RIGHT = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.spacing.sectionGap} ${DESIGN_CONFIG.dimensions.rightColumnMinWidth} overflow-auto`;
+const STYLING_CONTAINER_COLUMN_ERROR = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.spacing.sectionGap} overflow-auto`;
 const STYLING_CONTAINER_EDGE_CONTENT = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.spacing.sectionGap} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
 
 // SECTION CONTAINERS - Content area containers
 const STYLING_CONTAINER_NODE_HEADER = `${DESIGN_CONFIG.effects.borderBottom} ${DESIGN_CONFIG.colors.header.border} ${DESIGN_CONFIG.spacing.headerPadding}`;
 const STYLING_CONTAINER_HEADER_CONTENT = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} ${DESIGN_CONFIG.layout.justifyBetween}`;
 const STYLING_CONTAINER_HEADER_ICON_TEXT = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} ${DESIGN_CONFIG.spacing.iconTextGap}`;
-const STYLING_CONTAINER_NODE_DESCRIPTION = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.descriptionPadding} mt-2`;
+const STYLING_CONTAINER_HEADER_LEFT_SECTION = `${DESIGN_CONFIG.layout.flexColumn}`;
+const STYLING_CONTAINER_HEADER_RIGHT_SECTION = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1`;
+const STYLING_CONTAINER_NODE_METADATA_SECTION = `${DESIGN_CONFIG.layout.flexColumn} gap-1`;
+const STYLING_CONTAINER_NODE_DESCRIPTION = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.descriptionPadding} mb-4 -mt-2`;
 const STYLING_CONTAINER_NODE_DATA = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
 const STYLING_CONTAINER_NODE_DATA_ADAPTIVE = `${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.dimensions.fullWidth}`;
 const STYLING_CONTAINER_JSON_DATA = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.jsonPadding} ${DESIGN_CONFIG.effects.overflow} ${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
@@ -67,6 +72,7 @@ const STYLING_CONTAINER_JSON_DATA_ADAPTIVE = `${DESIGN_CONFIG.colors.data.backgr
 const STYLING_CONTAINER_ACTION_BUTTONS = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} ${DESIGN_CONFIG.layout.justifyEnd} ${DESIGN_CONFIG.spacing.buttonGap}`;
 const STYLING_CONTAINER_OUTPUT_SECTION = `${DESIGN_CONFIG.layout.flexColumn} gap-2`;
 const STYLING_CONTAINER_CONTROLS_SECTION = `${DESIGN_CONFIG.layout.flexColumn} gap-2`;
+const STYLING_CONTAINER_COLUMNS_ROW = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.spacing.sectionGap} flex-1`;
 
 // BUTTON STYLES - Interactive elements
 const STYLING_BUTTON_UNLOCK_LARGE = `${DESIGN_CONFIG.colors.inspector.background} ${DESIGN_CONFIG.colors.inspector.text} ${DESIGN_CONFIG.colors.states.locked.textHover} ${DESIGN_CONFIG.colors.states.locked.borderHover} border-1 ${DESIGN_CONFIG.effects.borderTransparent} ${DESIGN_CONFIG.spacing.statePadding} ${DESIGN_CONFIG.effects.roundedFull}`;
@@ -76,14 +82,14 @@ const STYLING_BUTTON_DUPLICATE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFI
 const STYLING_BUTTON_DELETE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1 ${DESIGN_CONFIG.spacing.buttonPadding} ${DESIGN_CONFIG.typography.buttonText} ${DESIGN_CONFIG.colors.actions.delete.background} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.actions.delete.border} ${DESIGN_CONFIG.colors.actions.delete.text} ${DESIGN_CONFIG.effects.rounded} ${DESIGN_CONFIG.colors.actions.delete.backgroundHover} ${DESIGN_CONFIG.effects.transition}`;
 
 // TEXT STYLES - Typography elements
-const STYLING_TEXT_NODE_ICON = DESIGN_CONFIG.typography.nodeIcon;
+const STYLING_TEXT_NODE_ICON = `text-sm w-3 h-3`;
 const STYLING_TEXT_NODE_NAME = `${DESIGN_CONFIG.typography.nodeName} ${DESIGN_CONFIG.colors.header.text}`;
 const STYLING_TEXT_NODE_METADATA = `${DESIGN_CONFIG.typography.metadata} ${DESIGN_CONFIG.colors.header.textSecondary}`;
 const STYLING_TEXT_NODE_DESCRIPTION = `${DESIGN_CONFIG.typography.description} ${DESIGN_CONFIG.colors.data.text}`;
 const STYLING_TEXT_SECTION_HEADER = `${DESIGN_CONFIG.typography.sectionHeader} ${DESIGN_CONFIG.colors.data.text} mb-2`;
 
-// ICON STYLES - Icon sizing variants
-const STYLING_ICON_ACTION_SMALL = DESIGN_CONFIG.icons.small;
+// ICON STYLES - Icon sizing variants (all same size now)
+const STYLING_ICON_ACTION_SMALL = `w-3 h-3`;
 const STYLING_ICON_STATE_LARGE = DESIGN_CONFIG.icons.large;
 
 // COMPONENT STYLES - Specialized component styling
@@ -237,36 +243,121 @@ const NodeInspector = React.memo(function NodeInspector() {
         id={DESIGN_CONFIG.content.ids.nodeInfoContainer}
         className={STYLING_CONTAINER_NODE_INSPECTOR}
       >
-        {/* COLUMN 1: NODE HEADER + NODE DATA */}
-        <div className={STYLING_CONTAINER_COLUMN_LEFT}>
-          {/* Node Header */}
-          <div className={STYLING_CONTAINER_NODE_HEADER}>
-            <div className={STYLING_CONTAINER_HEADER_CONTENT}>
-              <div className={STYLING_CONTAINER_HEADER_ICON_TEXT}>
-                {nodeInfo.icon && (
-                  <span className={STYLING_TEXT_NODE_ICON}>
-                    {nodeInfo.icon}
-                  </span>
-                )}
-                <div>
-                  <h3 className={STYLING_TEXT_NODE_NAME}>
-                    {nodeInfo.displayName}
-                  </h3>
-                  <div className={STYLING_TEXT_NODE_METADATA}>
-                    {DESIGN_CONFIG.content.labels.type} {selectedNode.type}
-                  </div>
-                  <div className={STYLING_TEXT_NODE_METADATA}>
-                    {DESIGN_CONFIG.content.labels.id}{" "}
-                    <EditableNodeId
-                      nodeId={selectedNode.id}
-                      onUpdateId={handleUpdateNodeId}
-                      className="inline"
-                    />
-                  </div>
-                </div>
+        {/* FIXED HEADER: NODE INFO + ACTION BUTTONS */}
+        <div className={STYLING_CONTAINER_HEADER_FIXED}>
+          {/* Left Header Section: Node Info */}
+          <div className={STYLING_CONTAINER_HEADER_LEFT_SECTION}>
+            <div className={STYLING_CONTAINER_HEADER_ICON_TEXT}>
+              {nodeInfo.icon && (
+                <span className={STYLING_TEXT_NODE_ICON}>{nodeInfo.icon}</span>
+              )}
+              <div>
+                <h3 className={STYLING_TEXT_NODE_NAME}>
+                  {nodeInfo.displayName}
+                </h3>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Header Section: Action Buttons */}
+          <div className={STYLING_CONTAINER_HEADER_RIGHT_SECTION}>
+            {/* Lock Button */}
+            <button
+              onClick={() => setInspectorLocked(!inspectorLocked)}
+              className={STYLING_BUTTON_LOCK_SMALL}
+              title={
+                inspectorLocked
+                  ? DESIGN_CONFIG.content.tooltips.unlockInspector
+                  : DESIGN_CONFIG.content.tooltips.lockInspector
+              }
+            >
+              {inspectorLocked ? (
+                <FaLock className={STYLING_ICON_ACTION_SMALL} />
+              ) : (
+                <FaLockOpen className={STYLING_ICON_ACTION_SMALL} />
+              )}
+            </button>
+
+            <button
+              onClick={() => handleDuplicateNode(selectedNode.id)}
+              className={STYLING_BUTTON_DUPLICATE}
+              title={DESIGN_CONFIG.content.tooltips.duplicateNode}
+            >
+              <Copy className={STYLING_ICON_ACTION_SMALL} />
+            </button>
+
+            <button
+              onClick={() => handleDeleteNode(selectedNode.id)}
+              className={STYLING_BUTTON_DELETE}
+              title={DESIGN_CONFIG.content.tooltips.deleteNode}
+            >
+              <Trash2 className={STYLING_ICON_ACTION_SMALL} />
+            </button>
+
+            {/* DEV-ONLY ERROR SIMULATION BUTTONS */}
+            {process.env.NODE_ENV === "development" && (
+              <>
+                <button
+                  onClick={() => {
+                    console.error(
+                      `🔴 Simulated console error from node ${selectedNode.id}`
+                    );
+                  }}
+                  className={STYLING_BUTTON_DUPLICATE}
+                  title="Simulate console.error()"
+                >
+                  CE
+                </button>
+                <button
+                  onClick={() => {
+                    logNodeError(
+                      selectedNode.id,
+                      "Simulated node error via dev button",
+                      "error",
+                      "DEV_BUTTON"
+                    );
+                  }}
+                  className={STYLING_BUTTON_DUPLICATE}
+                  title="Simulate node error"
+                >
+                  NE
+                </button>
+                <button
+                  onClick={() => {
+                    updateNodeData(selectedNode.id, {
+                      forceError: Date.now(),
+                    });
+                  }}
+                  className={STYLING_BUTTON_DUPLICATE}
+                  title="Simulate runtime error (throws)"
+                >
+                  RE
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* SCROLLABLE CONTENT: NODE DATA + OUTPUT + CONTROLS + ERRORS */}
+        <div className={STYLING_CONTAINER_CONTENT_SCROLLABLE}>
+          {/* COLUMN 1: NODE DESCRIPTION + NODE DATA */}
+          <div className={STYLING_CONTAINER_COLUMN_LEFT}>
+            {/* Node Metadata */}
+            <div className={STYLING_CONTAINER_NODE_METADATA_SECTION}>
+              <div className={STYLING_TEXT_NODE_METADATA}>
+                {DESIGN_CONFIG.content.labels.type} {selectedNode.type}
+              </div>
+              <div className={STYLING_TEXT_NODE_METADATA}>
+                {DESIGN_CONFIG.content.labels.id}{" "}
+                <EditableNodeId
+                  nodeId={selectedNode.id}
+                  onUpdateId={handleUpdateNodeId}
+                  className="inline"
+                />
               </div>
             </div>
 
+            {/* Node Description */}
             {nodeInfo.description && (
               <div className={STYLING_CONTAINER_NODE_DESCRIPTION}>
                 <EditableNodeDescription
@@ -280,154 +371,76 @@ const NodeInspector = React.memo(function NodeInspector() {
                 />
               </div>
             )}
-          </div>
 
-          {/* Node Data */}
-          <div
-            className={getConditionalVariant(
-              "jsonContainer",
-              DESIGN_CONFIG.behavior.jsonAdaptiveHeight,
-              "adaptive",
-              "fixed"
-            )}
-          >
-            <h4 className={STYLING_TEXT_SECTION_HEADER}>
-              {DESIGN_CONFIG.content.labels.nodeData}
-            </h4>
+            {/* Node Data */}
             <div
               className={getConditionalVariant(
-                "jsonData",
+                "jsonContainer",
                 DESIGN_CONFIG.behavior.jsonAdaptiveHeight,
                 "adaptive",
                 "fixed"
               )}
             >
-              <JsonHighlighter
-                data={{
-                  id: selectedNode.id,
-                  category: nodeCategory,
-                  ...selectedNode.data,
-                }}
-                className={STYLING_JSON_HIGHLIGHTER}
-              />
+              <h4 className={STYLING_TEXT_SECTION_HEADER}>
+                {DESIGN_CONFIG.content.labels.nodeData}
+              </h4>
+              <div
+                className={getConditionalVariant(
+                  "jsonData",
+                  DESIGN_CONFIG.behavior.jsonAdaptiveHeight,
+                  "adaptive",
+                  "fixed"
+                )}
+              >
+                <JsonHighlighter
+                  data={{
+                    id: selectedNode.id,
+                    category: nodeCategory,
+                    ...selectedNode.data,
+                  }}
+                  className={STYLING_JSON_HIGHLIGHTER}
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* COLUMN 2: ACTION BUTTONS + OUTPUT + CONTROLS */}
-        {hasRightColumn && (
-          <div className={STYLING_CONTAINER_COLUMN_RIGHT}>
-            {/* Action Buttons */}
-            <div className={STYLING_CONTAINER_ACTION_BUTTONS}>
-              {/* Lock Button */}
-              <button
-                onClick={() => setInspectorLocked(!inspectorLocked)}
-                className={STYLING_BUTTON_LOCK_SMALL}
-                title={
-                  inspectorLocked
-                    ? DESIGN_CONFIG.content.tooltips.unlockInspector
-                    : DESIGN_CONFIG.content.tooltips.lockInspector
-                }
-              >
-                {inspectorLocked ? (
-                  <FaLock className={STYLING_ICON_ACTION_SMALL} />
-                ) : (
-                  <FaLockOpen className={STYLING_ICON_ACTION_SMALL} />
-                )}
-              </button>
+          {/* COLUMN 2: OUTPUT + CONTROLS */}
+          {hasRightColumn && (
+            <div className={STYLING_CONTAINER_COLUMN_RIGHT}>
+              {nodeConfig?.hasOutput && (
+                <div className={STYLING_CONTAINER_OUTPUT_SECTION}>
+                  <h4 className={STYLING_TEXT_SECTION_HEADER}>
+                    {DESIGN_CONFIG.content.labels.output}
+                  </h4>
+                  <NodeOutput
+                    output={output}
+                    nodeType={selectedNode.type as NodeType}
+                  />
+                </div>
+              )}
 
-              <button
-                onClick={() => handleDuplicateNode(selectedNode.id)}
-                className={STYLING_BUTTON_DUPLICATE}
-                title={DESIGN_CONFIG.content.tooltips.duplicateNode}
-              >
-                <Copy className={STYLING_ICON_ACTION_SMALL} />
-              </button>
-
-              <button
-                onClick={() => handleDeleteNode(selectedNode.id)}
-                className={STYLING_BUTTON_DELETE}
-                title={DESIGN_CONFIG.content.tooltips.deleteNode}
-              >
-                <Trash2 className={STYLING_ICON_ACTION_SMALL} />
-              </button>
-
-              {/* DEV-ONLY ERROR SIMULATION BUTTONS */}
-              {process.env.NODE_ENV === "development" && (
-                <>
-                  <button
-                    onClick={() => {
-                      console.error(
-                        `🔴 Simulated console error from node ${selectedNode.id}`
-                      );
-                    }}
-                    className={STYLING_BUTTON_DUPLICATE}
-                    title="Simulate console.error()"
-                  >
-                    CE
-                  </button>
-                  <button
-                    onClick={() => {
-                      logNodeError(
-                        selectedNode.id,
-                        "Simulated node error via dev button",
-                        "error",
-                        "DEV_BUTTON"
-                      );
-                    }}
-                    className={STYLING_BUTTON_DUPLICATE}
-                    title="Simulate node error"
-                  >
-                    NE
-                  </button>
-                  <button
-                    onClick={() => {
-                      updateNodeData(selectedNode.id, {
-                        forceError: Date.now(),
-                      });
-                    }}
-                    className={STYLING_BUTTON_DUPLICATE}
-                    title="Simulate runtime error (throws)"
-                  >
-                    RE
-                  </button>
-                </>
+              {nodeInfo.hasControls && (
+                <div className={STYLING_CONTAINER_CONTROLS_SECTION}>
+                  <h4 className={STYLING_TEXT_SECTION_HEADER}>
+                    {DESIGN_CONFIG.content.labels.controls}
+                  </h4>
+                  <NodeControls
+                    node={selectedNode}
+                    updateNodeData={updateNodeData}
+                    onLogError={logNodeError as any}
+                  />
+                </div>
               )}
             </div>
+          )}
 
-            {nodeConfig?.hasOutput && (
-              <div className={STYLING_CONTAINER_OUTPUT_SECTION}>
-                <h4 className={STYLING_TEXT_SECTION_HEADER}>
-                  {DESIGN_CONFIG.content.labels.output}
-                </h4>
-                <NodeOutput
-                  output={output}
-                  nodeType={selectedNode.type as NodeType}
-                />
-              </div>
-            )}
-
-            {nodeInfo.hasControls && (
-              <div className={STYLING_CONTAINER_CONTROLS_SECTION}>
-                <h4 className={STYLING_TEXT_SECTION_HEADER}>
-                  {DESIGN_CONFIG.content.labels.controls}
-                </h4>
-                <NodeControls
-                  node={selectedNode}
-                  updateNodeData={updateNodeData}
-                  onLogError={logNodeError as any}
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* COLUMN 3: ERROR LOG (only show when there are errors) */}
-        {errors.length > 0 && (
-          <div className={STYLING_CONTAINER_COLUMN_ERROR}>
-            <ErrorLog errors={errors} onClearErrors={handleClearErrors} />
-          </div>
-        )}
+          {/* COLUMN 3: ERROR LOG (only show when there are errors) */}
+          {errors.length > 0 && (
+            <div className={STYLING_CONTAINER_COLUMN_ERROR}>
+              <ErrorLog errors={errors} onClearErrors={handleClearErrors} />
+            </div>
+          )}
+        </div>
       </div>
     );
   }
