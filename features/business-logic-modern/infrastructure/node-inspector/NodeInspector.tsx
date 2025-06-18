@@ -25,6 +25,7 @@ import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
 
 import EditableNodeDescription from "@/components/nodes/EditableNodeDescription";
 import EditableNodeId from "@/components/nodes/editableNodeId";
+import EditableNodeLabel from "@/components/nodes/EditableNodeLabel";
 import { NODE_TYPE_CONFIG } from "../flow-engine/constants";
 import type { AgenNode, NodeType } from "../flow-engine/types/nodeData";
 import { useComponentTheme } from "../theming/components";
@@ -253,7 +254,13 @@ const NodeInspector = React.memo(function NodeInspector() {
               )}
               <div>
                 <h3 className={STYLING_TEXT_NODE_NAME}>
-                  {nodeInfo.displayName}
+                  <EditableNodeLabel
+                    nodeId={selectedNode.id}
+                    label={(selectedNode.data as any)?.label || ""}
+                    displayName={nodeInfo.displayName}
+                    onUpdateNodeData={updateNodeData}
+                    className={STYLING_TEXT_NODE_NAME}
+                  />
                 </h3>
               </div>
             </div>
