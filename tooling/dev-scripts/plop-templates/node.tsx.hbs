@@ -11,11 +11,10 @@
  */
 
 import React from 'react';
-import { NodeProps, useUpdateNodeInternals } from '@xyflow/react';
+import { NodeProps } from '@xyflow/react';
 import { z } from 'zod';
-
 import { withNodeScaffold } from '@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold';
-import type { NodeSpec } from '@/features/business-logic-modern/infrastructure/node-core/NodeSpec';
+import { NodeSpec } from '@/features/business-logic-modern/infrastructure/node-core/NodeSpec';
 import {
   createNodeValidator,
   CommonSchemas,
@@ -26,6 +25,7 @@ import { SafeSchemas, createSafeInitialData } from '@/features/business-logic-mo
 import { CATEGORIES } from '@/features/business-logic-modern/infrastructure/theming/categories';
 import { EXPANDED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
 import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
+import { useNodeData } from '@/hooks/useNodeData';
 
 // -- PLOP-INJECTED-IMPORTS --
 
@@ -147,13 +147,21 @@ const CATEGORY_TEXT_COLORS = {
  * • Schema-driven controls available in Node Inspector
  * • Maintains enterprise validation and type safety
  */
-const {{pascalCase kind}}NodeComponent = ({ data, id, updateNodeInternals }: NodeProps) => {
-  // Enterprise validation with comprehensive error handling
-  const validationResult = validateNodeData(data);
-  const nodeData = validationResult.data;
+const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
+  // Use proper React Flow data management
+  const { nodeData, updateNodeData } = useNodeData(id, data);
 
-  // Get updateNodeInternals hook
-  const updateNodeInternalsHook = useUpdateNodeInternals();
+  // Get isExpanded directly from node data
+  const isExpanded = (nodeData as {{pascalCase kind}}Data).isExpanded || false;
+
+  // Update expanded state via node data
+  const handleToggleExpanded = () => {
+    updateNodeData({ ...nodeData, isExpanded: !isExpanded });
+  };
+
+  // Enterprise validation with comprehensive error handling
+  const validationResult = validateNodeData(nodeData);
+  const validatedData = validationResult.data;
 
   // Report validation errors for monitoring
   if (!validationResult.success) {
@@ -167,24 +175,9 @@ const {{pascalCase kind}}NodeComponent = ({ data, id, updateNodeInternals }: Nod
   const { getHealthScore } = useNodeDataValidation(
     {{pascalCase kind}}DataSchema,
     '{{pascalCase kind}}',
-    nodeData,
+    validatedData,
     id
   );
-
-  // Get isExpanded directly from node data
-  const isExpanded = (nodeData as {{pascalCase kind}}Data).isExpanded;
-
-  // Handle toggle expanded state
-  const handleToggleExpanded = () => {
-    if (updateNodeInternals) {
-      updateNodeInternals({
-        ...nodeData,
-        isExpanded: !isExpanded,
-      });
-    } else {
-      updateNodeInternalsHook(id);
-    }
-  };
 
   // Get category-specific text colors
   const categoryKey = spec.category as keyof typeof CATEGORY_TEXT_COLORS;
@@ -212,7 +205,7 @@ const {{pascalCase kind}}NodeComponent = ({ data, id, updateNodeInternals }: Nod
             <div className={CONTENT_STYLES.main.content}>
               <div className={CONTENT_STYLES.main.icon}>🔧</div>
               <div className={`text-xs ${categoryTextColors.secondary}`}>
-                {nodeData.isEnabled ? nodeData.text : 'Disabled'}
+                {validatedData.isEnabled ? validatedData.text : 'Disabled'}
               </div>
             </div>
           </div>
