@@ -400,7 +400,6 @@ const NodeInspector = React.memo(function NodeInspector() {
 
             {/* Node Data Card */}
             <div className={STYLING_CARD_SECTION}>
-              <h4 className={STYLING_TEXT_SECTION_HEADER}>Node Data</h4>
               <div className="bg-muted/20 rounded-md border border-border/30 overflow-hidden -mx-1">
                 <EditableJsonEditor
                   data={{
