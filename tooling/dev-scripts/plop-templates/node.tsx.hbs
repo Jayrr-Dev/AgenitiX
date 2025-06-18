@@ -44,10 +44,6 @@ const {{pascalCase kind}}DataSchema = z.object({
   // description: SafeSchemas.optionalText(),
   // count: SafeSchemas.number(1, 1, 100),
   // priority: SafeSchemas.enum(['low', 'medium', 'high'], 'medium'),
-
-  // Optional user-editable title shown above the node
-  label: SafeSchemas.optionalText(),
-  description: SafeSchemas.optionalText(),
 }).passthrough();
 
 type {{pascalCase kind}}Data = z.infer<typeof {{pascalCase kind}}DataSchema>;
@@ -203,7 +199,9 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
           {/* Add your node-specific UI here */}
           <div className={CONTENT_STYLES.main.container}>
             <div className={CONTENT_STYLES.main.content}>
-              <div className={CONTENT_STYLES.main.icon}>🔧</div>
+              <div className={`text-xs font-medium ${categoryTextColors.primary} uppercase tracking-wide mb-1`}>
+                {{titleCase kind}}
+              </div>
               <div className={`text-xs ${categoryTextColors.secondary}`}>
                 {validatedData.isEnabled ? validatedData.text : 'Disabled'}
               </div>
@@ -212,9 +210,11 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
         </div>
       ) : (
         <div className={CONTENT_STYLES.content.collapsed}>
-          <span className={CONTENT_STYLES.collapsed.icon} aria-label="{{titleCase kind}} Node">
-            🔧
-          </span>
+          <div className="text-center">
+            <div className={`text-xs font-medium ${categoryTextColors.primary} uppercase tracking-wide`}>
+              {{upper (truncate kind 4)}}
+            </div>
+          </div>
         </div>
       )}
     </>

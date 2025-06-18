@@ -29,10 +29,7 @@ import EditableNodeLabel from "@/components/nodes/EditableNodeLabel";
 import { NODE_TYPE_CONFIG } from "../flow-engine/constants";
 import type { AgenNode, NodeType } from "../flow-engine/types/nodeData";
 import { useComponentTheme } from "../theming/components";
-import {
-  NODE_INSPECTOR_TOKENS as DESIGN_CONFIG,
-  getConditionalNodeInspectorVariant as getConditionalVariant,
-} from "../theming/components/nodeInspector";
+import { NODE_INSPECTOR_TOKENS as DESIGN_CONFIG } from "../theming/components/nodeInspector";
 import { NodeInspectorAdapter } from "./adapters/NodeInspectorAdapter";
 import { EdgeInspector } from "./components/EdgeInspector";
 import { EditableJsonEditor } from "./components/EditableJsonEditor";
@@ -41,60 +38,65 @@ import { NodeControls } from "./components/NodeControls";
 import { NodeOutput } from "./components/NodeOutput";
 
 // =====================================================================
-// STYLING CONSTANTS - Organized by type and usage
+// STYLING CONSTANTS - Thin, minimalistic design with original colors
 // =====================================================================
 
-// LAYOUT CONTAINERS - Main structural elements
+// LAYOUT CONTAINERS - Tighter spacing for compact design
 const STYLING_CONTAINER_LOCKED = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.centerContent} ${DESIGN_CONFIG.dimensions.stateContainer}`;
 const STYLING_CONTAINER_NODE_INSPECTOR = `${DESIGN_CONFIG.layout.flexColumn} h-full`;
-const STYLING_CONTAINER_HEADER_FIXED = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.justifyBetween} px-2 py-1 bg-muted sticky top-0 z-10 ${DESIGN_CONFIG.effects.borderBottom} ${DESIGN_CONFIG.colors.header.border}`;
-const STYLING_CONTAINER_CONTENT_SCROLLABLE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.spacing.sectionGap} ${DESIGN_CONFIG.spacing.containerPadding} flex-1 overflow-auto`;
+const STYLING_CONTAINER_HEADER_FIXED = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.justifyBetween} px-2 py-1 ${DESIGN_CONFIG.colors.inspector.background} sticky top-0 z-10 ${DESIGN_CONFIG.effects.borderBottom} ${DESIGN_CONFIG.colors.header.border}`;
+const STYLING_CONTAINER_CONTENT_SCROLLABLE = `${DESIGN_CONFIG.layout.flexRow} gap-3 p-3 flex-1 overflow-auto`;
 const STYLING_CONTAINER_EMPTY_STATE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.centerContent} ${DESIGN_CONFIG.dimensions.stateContainer} ${DESIGN_CONFIG.effects.roundedFull}`;
-const STYLING_CONTAINER_EDGE_INSPECTOR = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.spacing.sectionGap}`;
+const STYLING_CONTAINER_EDGE_INSPECTOR = `${DESIGN_CONFIG.layout.flexRow} gap-3 p-3`;
 
-// COLUMN CONTAINERS - Multi-column layout elements
-const STYLING_CONTAINER_COLUMN_LEFT = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.spacing.sectionGap} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth} overflow-auto`;
-const STYLING_CONTAINER_COLUMN_RIGHT = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.spacing.sectionGap} ${DESIGN_CONFIG.dimensions.rightColumnMinWidth} overflow-auto`;
-const STYLING_CONTAINER_COLUMN_ERROR = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.spacing.sectionGap} overflow-auto`;
-const STYLING_CONTAINER_EDGE_CONTENT = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.spacing.sectionGap} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
+// COLUMN CONTAINERS - Tighter proportions with compact spacing
+const STYLING_CONTAINER_COLUMN_LEFT = `flex-[2] ${DESIGN_CONFIG.layout.flexColumn} gap-3 min-w-0 overflow-auto`;
+const STYLING_CONTAINER_COLUMN_RIGHT = `flex-[1] ${DESIGN_CONFIG.layout.flexColumn} gap-3 min-w-[280px] overflow-auto`;
+const STYLING_CONTAINER_COLUMN_ERROR = `flex-[1] ${DESIGN_CONFIG.layout.flexColumn} gap-2 min-w-[280px] overflow-auto`;
+const STYLING_CONTAINER_EDGE_CONTENT = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} gap-3 ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
 
-// SECTION CONTAINERS - Content area containers
+// SECTION CONTAINERS - Minimal styling with original colors
 const STYLING_CONTAINER_NODE_HEADER = `${DESIGN_CONFIG.effects.borderBottom} ${DESIGN_CONFIG.colors.header.border} ${DESIGN_CONFIG.spacing.headerPadding}`;
 const STYLING_CONTAINER_HEADER_CONTENT = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} ${DESIGN_CONFIG.layout.justifyBetween}`;
 const STYLING_CONTAINER_HEADER_ICON_TEXT = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} ${DESIGN_CONFIG.spacing.iconTextGap}`;
 const STYLING_CONTAINER_HEADER_LEFT_SECTION = `${DESIGN_CONFIG.layout.flexColumn}`;
 const STYLING_CONTAINER_HEADER_RIGHT_SECTION = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1`;
 const STYLING_CONTAINER_NODE_METADATA_SECTION = `${DESIGN_CONFIG.layout.flexColumn} gap-1`;
-const STYLING_CONTAINER_NODE_DESCRIPTION = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.descriptionPadding} mb-4 -mt-2`;
+const STYLING_CONTAINER_NODE_DESCRIPTION = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.descriptionPadding} mb-2`;
 const STYLING_CONTAINER_NODE_DATA = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
 const STYLING_CONTAINER_NODE_DATA_ADAPTIVE = `${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.dimensions.fullWidth}`;
 const STYLING_CONTAINER_JSON_DATA = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.jsonPadding} ${DESIGN_CONFIG.effects.overflow} ${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
 const STYLING_CONTAINER_JSON_DATA_ADAPTIVE = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.jsonPadding} ${DESIGN_CONFIG.effects.overflowAdaptive} ${DESIGN_CONFIG.dimensions.fullWidth}`;
-const STYLING_CONTAINER_ACTION_BUTTONS = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} ${DESIGN_CONFIG.layout.justifyEnd} ${DESIGN_CONFIG.spacing.buttonGap}`;
+const STYLING_CONTAINER_ACTION_BUTTONS = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1`;
 const STYLING_CONTAINER_OUTPUT_SECTION = `${DESIGN_CONFIG.layout.flexColumn} gap-2`;
 const STYLING_CONTAINER_CONTROLS_SECTION = `${DESIGN_CONFIG.layout.flexColumn} gap-2`;
 const STYLING_CONTAINER_COLUMNS_ROW = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.spacing.sectionGap} flex-1`;
 
-// BUTTON STYLES - Interactive elements
+// BUTTON STYLES - Minimal buttons with original colors
 const STYLING_BUTTON_UNLOCK_LARGE = `${DESIGN_CONFIG.colors.inspector.background} ${DESIGN_CONFIG.colors.inspector.text} ${DESIGN_CONFIG.colors.states.locked.textHover} ${DESIGN_CONFIG.colors.states.locked.borderHover} border-1 ${DESIGN_CONFIG.effects.borderTransparent} ${DESIGN_CONFIG.spacing.statePadding} ${DESIGN_CONFIG.effects.roundedFull}`;
 const STYLING_BUTTON_MAGNIFYING_GLASS = `${DESIGN_CONFIG.colors.inspector.textSecondary} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.effects.borderTransparent} ${DESIGN_CONFIG.colors.states.magnifyingGlass.borderHover} ${DESIGN_CONFIG.colors.states.magnifyingGlass.textHover} ${DESIGN_CONFIG.spacing.statePadding} ${DESIGN_CONFIG.effects.roundedFull}`;
-const STYLING_BUTTON_LOCK_SMALL = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1 ${DESIGN_CONFIG.spacing.buttonPadding} ${DESIGN_CONFIG.typography.buttonText} ${DESIGN_CONFIG.colors.actions.lock.background} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.actions.lock.border} ${DESIGN_CONFIG.colors.actions.lock.text} ${DESIGN_CONFIG.effects.rounded} ${DESIGN_CONFIG.colors.actions.lock.backgroundHover} ${DESIGN_CONFIG.colors.actions.lock.borderHover} ${DESIGN_CONFIG.effects.transition}`;
-const STYLING_BUTTON_DUPLICATE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1 ${DESIGN_CONFIG.spacing.buttonPadding} ${DESIGN_CONFIG.typography.buttonText} ${DESIGN_CONFIG.colors.actions.duplicate.background} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.actions.duplicate.border} ${DESIGN_CONFIG.colors.actions.duplicate.text} ${DESIGN_CONFIG.effects.rounded} ${DESIGN_CONFIG.colors.actions.duplicate.backgroundHover} ${DESIGN_CONFIG.effects.transition}`;
-const STYLING_BUTTON_DELETE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1 ${DESIGN_CONFIG.spacing.buttonPadding} ${DESIGN_CONFIG.typography.buttonText} ${DESIGN_CONFIG.colors.actions.delete.background} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.actions.delete.border} ${DESIGN_CONFIG.colors.actions.delete.text} ${DESIGN_CONFIG.effects.rounded} ${DESIGN_CONFIG.colors.actions.delete.backgroundHover} ${DESIGN_CONFIG.effects.transition}`;
+const STYLING_BUTTON_LOCK_SMALL = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1 px-2 py-1 ${DESIGN_CONFIG.typography.buttonText} ${DESIGN_CONFIG.colors.actions.lock.background} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.actions.lock.border} ${DESIGN_CONFIG.colors.actions.lock.text} ${DESIGN_CONFIG.effects.rounded} ${DESIGN_CONFIG.colors.actions.lock.backgroundHover} ${DESIGN_CONFIG.colors.actions.lock.borderHover} ${DESIGN_CONFIG.effects.transition}`;
+const STYLING_BUTTON_DUPLICATE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1 px-2 py-1 ${DESIGN_CONFIG.typography.buttonText} ${DESIGN_CONFIG.colors.actions.duplicate.background} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.actions.duplicate.border} ${DESIGN_CONFIG.colors.actions.duplicate.text} ${DESIGN_CONFIG.effects.rounded} ${DESIGN_CONFIG.colors.actions.duplicate.backgroundHover} ${DESIGN_CONFIG.effects.transition}`;
+const STYLING_BUTTON_DELETE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1 px-2 py-1 ${DESIGN_CONFIG.typography.buttonText} ${DESIGN_CONFIG.colors.actions.delete.background} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.actions.delete.border} ${DESIGN_CONFIG.colors.actions.delete.text} ${DESIGN_CONFIG.effects.rounded} ${DESIGN_CONFIG.colors.actions.delete.backgroundHover} ${DESIGN_CONFIG.effects.transition}`;
 
-// TEXT STYLES - Typography elements
+// TEXT STYLES - Compact typography with tighter spacing
 const STYLING_TEXT_NODE_ICON = `text-sm w-3 h-3`;
 const STYLING_TEXT_NODE_NAME = `${DESIGN_CONFIG.typography.nodeName} ${DESIGN_CONFIG.colors.header.text}`;
 const STYLING_TEXT_NODE_METADATA = `${DESIGN_CONFIG.typography.metadata} ${DESIGN_CONFIG.colors.header.textSecondary}`;
 const STYLING_TEXT_NODE_DESCRIPTION = `${DESIGN_CONFIG.typography.description} ${DESIGN_CONFIG.colors.data.text}`;
-const STYLING_TEXT_SECTION_HEADER = `${DESIGN_CONFIG.typography.sectionHeader} ${DESIGN_CONFIG.colors.data.text} mb-2`;
+const STYLING_TEXT_SECTION_HEADER = `${DESIGN_CONFIG.typography.sectionHeader} ${DESIGN_CONFIG.colors.data.text} mb-1`;
 
-// ICON STYLES - Icon sizing variants (all same size now)
+// ICON STYLES - Minimal icon sizing
 const STYLING_ICON_ACTION_SMALL = `w-3 h-3`;
 const STYLING_ICON_STATE_LARGE = DESIGN_CONFIG.icons.large;
 
-// COMPONENT STYLES - Specialized component styling
+// COMPONENT STYLES - Minimal component styling
 const STYLING_JSON_HIGHLIGHTER = `${DESIGN_CONFIG.dimensions.fullWidth} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.flexBasis}`;
+
+// CARD STYLES - Compact card components
+const STYLING_CARD_SECTION = `p-3 bg-card rounded-lg border border-border shadow-sm`;
+const STYLING_CARD_SECTION_HEADER = `p-3 bg-muted/30 rounded-t-lg border-b border-border/30`;
+const STYLING_CARD_SECTION_CONTENT = `p-3 bg-card rounded-b-lg`;
 
 // =====================================================================
 // COMPONENT IMPLEMENTATION
@@ -261,15 +263,13 @@ const NodeInspector = React.memo(function NodeInspector() {
                 <span className={STYLING_TEXT_NODE_ICON}>{nodeInfo.icon}</span>
               )}
               <div>
-                <h3 className={STYLING_TEXT_NODE_NAME}>
-                  <EditableNodeLabel
-                    nodeId={selectedNode.id}
-                    label={(selectedNode.data as any)?.label || ""}
-                    displayName={nodeInfo.displayName}
-                    onUpdateNodeData={updateNodeData}
-                    className={STYLING_TEXT_NODE_NAME}
-                  />
-                </h3>
+                <EditableNodeLabel
+                  nodeId={selectedNode.id}
+                  label={(selectedNode.data as any)?.label || ""}
+                  displayName={nodeInfo.displayName}
+                  onUpdateNodeData={updateNodeData}
+                  className={STYLING_TEXT_NODE_NAME}
+                />
               </div>
             </div>
           </div>
@@ -357,24 +357,35 @@ const NodeInspector = React.memo(function NodeInspector() {
         <div className={STYLING_CONTAINER_CONTENT_SCROLLABLE}>
           {/* COLUMN 1: NODE DESCRIPTION + NODE DATA */}
           <div className={STYLING_CONTAINER_COLUMN_LEFT}>
-            {/* Node Metadata */}
-            <div className={STYLING_CONTAINER_NODE_METADATA_SECTION}>
-              <div className={STYLING_TEXT_NODE_METADATA}>
-                {DESIGN_CONFIG.content.labels.type} {selectedNode.type}
-              </div>
-              <div className={STYLING_TEXT_NODE_METADATA}>
-                {DESIGN_CONFIG.content.labels.id}{" "}
-                <EditableNodeId
-                  nodeId={selectedNode.id}
-                  onUpdateId={handleUpdateNodeId}
-                  className="inline"
-                />
+            {/* Node Metadata Card */}
+            <div className={STYLING_CARD_SECTION}>
+              <h4 className={STYLING_TEXT_SECTION_HEADER}>Node Information</h4>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+                    TYPE
+                  </span>
+                  <span className={STYLING_TEXT_NODE_METADATA}>
+                    {selectedNode.type}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+                    ID
+                  </span>
+                  <EditableNodeId
+                    nodeId={selectedNode.id}
+                    onUpdateId={handleUpdateNodeId}
+                    className="text-sm font-mono text-muted-foreground"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Node Description */}
+            {/* Node Description Card */}
             {nodeInfo.description && (
-              <div className={STYLING_CONTAINER_NODE_DESCRIPTION}>
+              <div className={STYLING_CARD_SECTION}>
+                <h4 className={STYLING_TEXT_SECTION_HEADER}>Description</h4>
                 <EditableNodeDescription
                   nodeId={selectedNode.id}
                   description={
@@ -387,28 +398,24 @@ const NodeInspector = React.memo(function NodeInspector() {
               </div>
             )}
 
-            {/* Node Data */}
-            <div
-              className={getConditionalVariant(
-                "jsonContainer",
-                DESIGN_CONFIG.behavior.jsonAdaptiveHeight,
-                "adaptive",
-                "fixed"
-              )}
-            >
-              <EditableJsonEditor
-                data={{
-                  id: selectedNode.id,
-                  category: nodeCategory,
-                  ...selectedNode.data,
-                }}
-                onUpdateData={(newData) => {
-                  // Extract the system fields and update only the data portion
-                  const { id, category, ...nodeData } = newData;
-                  handleUpdateNodeData(selectedNode.id, nodeData);
-                }}
-                className={STYLING_JSON_HIGHLIGHTER}
-              />
+            {/* Node Data Card */}
+            <div className={STYLING_CARD_SECTION}>
+              <h4 className={STYLING_TEXT_SECTION_HEADER}>Node Data</h4>
+              <div className="bg-muted/20 rounded-md border border-border/30 overflow-hidden -mx-1">
+                <EditableJsonEditor
+                  data={{
+                    id: selectedNode.id,
+                    category: nodeCategory,
+                    ...selectedNode.data,
+                  }}
+                  onUpdateData={(newData) => {
+                    // Extract the system fields and update only the data portion
+                    const { id, category, ...nodeData } = newData;
+                    handleUpdateNodeData(selectedNode.id, nodeData);
+                  }}
+                  className={STYLING_JSON_HIGHLIGHTER}
+                />
+              </div>
             </div>
           </div>
 
@@ -416,10 +423,8 @@ const NodeInspector = React.memo(function NodeInspector() {
           {hasRightColumn && (
             <div className={STYLING_CONTAINER_COLUMN_RIGHT}>
               {nodeConfig?.hasOutput && (
-                <div className={STYLING_CONTAINER_OUTPUT_SECTION}>
-                  <h4 className={STYLING_TEXT_SECTION_HEADER}>
-                    {DESIGN_CONFIG.content.labels.output}
-                  </h4>
+                <div className={STYLING_CARD_SECTION}>
+                  <h4 className={STYLING_TEXT_SECTION_HEADER}>Output</h4>
                   <NodeOutput
                     output={output}
                     nodeType={selectedNode.type as NodeType}
@@ -428,10 +433,8 @@ const NodeInspector = React.memo(function NodeInspector() {
               )}
 
               {nodeInfo.hasControls && (
-                <div className={STYLING_CONTAINER_CONTROLS_SECTION}>
-                  <h4 className={STYLING_TEXT_SECTION_HEADER}>
-                    {DESIGN_CONFIG.content.labels.controls}
-                  </h4>
+                <div className={STYLING_CARD_SECTION}>
+                  <h4 className={STYLING_TEXT_SECTION_HEADER}>Controls</h4>
                   <NodeControls
                     node={selectedNode}
                     updateNodeData={updateNodeData}
@@ -445,7 +448,10 @@ const NodeInspector = React.memo(function NodeInspector() {
           {/* COLUMN 3: ERROR LOG (only show when there are errors) */}
           {errors.length > 0 && (
             <div className={STYLING_CONTAINER_COLUMN_ERROR}>
-              <ErrorLog errors={errors} onClearErrors={handleClearErrors} />
+              <div className={STYLING_CARD_SECTION}>
+                <h4 className={STYLING_TEXT_SECTION_HEADER}>Error Log</h4>
+                <ErrorLog errors={errors} onClearErrors={handleClearErrors} />
+              </div>
             </div>
           )}
         </div>

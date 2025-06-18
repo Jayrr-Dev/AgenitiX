@@ -36,12 +36,6 @@ const CreateTextDataSchema = z
     text: z.string().default(""),
     isActive: z.boolean().default(false),
     isExpanded: z.boolean().default(false),
-    /**
-     * Optional user-editable label shown above the node.
-     * Not required by business logic, so keep it optional.
-     */
-    label: z.string().optional(),
-    description: z.string().optional(),
   })
   .passthrough();
 
@@ -210,12 +204,13 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
         </div>
       ) : (
         <div className={CONTENT_STYLES.content.collapsed}>
-          <span
-            className={CONTENT_STYLES.collapsed.icon}
-            aria-label="Create Text Node"
-          >
-            📝
-          </span>
+          <div className="text-center">
+            <div
+              className={`text-xs font-medium ${categoryTextColors.primary} uppercase tracking-wide`}
+            >
+              TEXT
+            </div>
+          </div>
         </div>
       )}
     </>
