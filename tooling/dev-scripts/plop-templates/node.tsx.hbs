@@ -10,8 +10,8 @@
  * Keywords: {{kebabCase kind}}, content-focused, schema-driven, type-safe, clean-architecture
  */
 
-import type { NodeProps } from '@xyflow/react';
-import { useState } from 'react';
+import React from 'react';
+import { NodeProps, useUpdateNodeInternals } from '@xyflow/react';
 import { z } from 'zod';
 
 import { withNodeScaffold } from '@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold';
@@ -38,6 +38,7 @@ const {{pascalCase kind}}DataSchema = z.object({
   text: SafeSchemas.text('Default text'),
   isEnabled: SafeSchemas.boolean(true),
   isActive: SafeSchemas.boolean(false),
+  isExpanded: SafeSchemas.boolean(false),
 
   // Add your fields here - controls are auto-generated:
   // description: SafeSchemas.optionalText(),
@@ -146,12 +147,13 @@ const CATEGORY_TEXT_COLORS = {
  * • Schema-driven controls available in Node Inspector
  * • Maintains enterprise validation and type safety
  */
-const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
-  const [isExpanded, setExpanded] = useState(false);
-
+const {{pascalCase kind}}NodeComponent = ({ data, id, updateNodeInternals }: NodeProps) => {
   // Enterprise validation with comprehensive error handling
   const validationResult = validateNodeData(data);
   const nodeData = validationResult.data;
+
+  // Get updateNodeInternals hook
+  const updateNodeInternalsHook = useUpdateNodeInternals();
 
   // Report validation errors for monitoring
   if (!validationResult.success) {
@@ -169,7 +171,20 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
     id
   );
 
-  const onToggle = () => setExpanded((prev) => !prev);
+  // Get isExpanded directly from node data
+  const isExpanded = (nodeData as {{pascalCase kind}}Data).isExpanded;
+
+  // Handle toggle expanded state
+  const handleToggleExpanded = () => {
+    if (updateNodeInternals) {
+      updateNodeInternals({
+        ...nodeData,
+        isExpanded: !isExpanded,
+      });
+    } else {
+      updateNodeInternalsHook(id);
+    }
+  };
 
   // Get category-specific text colors
   const categoryKey = spec.category as keyof typeof CATEGORY_TEXT_COLORS;
@@ -177,7 +192,7 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
 
   return (
     <>
-      <ExpandCollapseButton showUI={isExpanded} onToggle={onToggle} size="sm" />
+      <ExpandCollapseButton showUI={isExpanded} onToggle={handleToggleExpanded} size="sm" />
 
       {isExpanded ? (
         <div className={CONTENT_STYLES.content.expanded}>

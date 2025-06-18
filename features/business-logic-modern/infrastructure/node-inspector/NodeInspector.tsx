@@ -35,10 +35,10 @@ import {
 } from "../theming/components/nodeInspector";
 import { NodeInspectorAdapter } from "./adapters/NodeInspectorAdapter";
 import { EdgeInspector } from "./components/EdgeInspector";
+import { EditableJsonEditor } from "./components/EditableJsonEditor";
 import { ErrorLog } from "./components/ErrorLog";
 import { NodeControls } from "./components/NodeControls";
 import { NodeOutput } from "./components/NodeOutput";
-import { JsonHighlighter } from "./utils/JsonHighlighter";
 
 // =====================================================================
 // STYLING CONSTANTS - Organized by type and usage
@@ -214,6 +214,14 @@ const NodeInspector = React.memo(function NodeInspector() {
     }
   }, [selectedNodeId, clearNodeErrors]);
 
+  // Handle node data updates
+  const handleUpdateNodeData = useCallback(
+    (nodeId: string, newData: any) => {
+      updateNodeData(nodeId, newData);
+    },
+    [updateNodeData]
+  );
+
   // Early return for locked state
   if (inspectorLocked) {
     return (
@@ -388,26 +396,19 @@ const NodeInspector = React.memo(function NodeInspector() {
                 "fixed"
               )}
             >
-              <h4 className={STYLING_TEXT_SECTION_HEADER}>
-                {DESIGN_CONFIG.content.labels.nodeData}
-              </h4>
-              <div
-                className={getConditionalVariant(
-                  "jsonData",
-                  DESIGN_CONFIG.behavior.jsonAdaptiveHeight,
-                  "adaptive",
-                  "fixed"
-                )}
-              >
-                <JsonHighlighter
-                  data={{
-                    id: selectedNode.id,
-                    category: nodeCategory,
-                    ...selectedNode.data,
-                  }}
-                  className={STYLING_JSON_HIGHLIGHTER}
-                />
-              </div>
+              <EditableJsonEditor
+                data={{
+                  id: selectedNode.id,
+                  category: nodeCategory,
+                  ...selectedNode.data,
+                }}
+                onUpdateData={(newData) => {
+                  // Extract the system fields and update only the data portion
+                  const { id, category, ...nodeData } = newData;
+                  handleUpdateNodeData(selectedNode.id, nodeData);
+                }}
+                className={STYLING_JSON_HIGHLIGHTER}
+              />
             </div>
           </div>
 

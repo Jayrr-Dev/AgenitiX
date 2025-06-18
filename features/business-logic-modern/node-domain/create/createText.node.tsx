@@ -11,7 +11,6 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import React, { useState } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
@@ -131,17 +130,16 @@ const CATEGORY_TEXT_COLORS = {
  * • Maintains enterprise validation and type safety
  */
 const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
-  const [isExpanded, setExpanded] = useState(false);
-
   // Use proper React Flow data management
   const { nodeData, updateNodeData } = useNodeData(id, data);
 
-  // Update node data to include expanded state for scaffold sizing
-  React.useEffect(() => {
-    if (nodeData.isExpanded !== isExpanded) {
-      updateNodeData({ ...nodeData, isExpanded });
-    }
-  }, [isExpanded, nodeData, updateNodeData]);
+  // Get isExpanded directly from node data
+  const isExpanded = (nodeData as CreateTextData).isExpanded || false;
+
+  // Update expanded state via node data
+  const handleToggleExpanded = () => {
+    updateNodeData({ ...nodeData, isExpanded: !isExpanded });
+  };
 
   // Enterprise validation with comprehensive error handling
   const validationResult = validateNodeData(nodeData);
@@ -163,8 +161,6 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
     id
   );
 
-  const onToggle = () => setExpanded((prev) => !prev);
-
   // Handle text updates directly
   const handleTextChange = (newText: string) => {
     try {
@@ -179,7 +175,11 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 
   return (
     <>
-      <ExpandCollapseButton showUI={isExpanded} onToggle={onToggle} size="sm" />
+      <ExpandCollapseButton
+        showUI={isExpanded}
+        onToggle={handleToggleExpanded}
+        size="sm"
+      />
 
       {isExpanded ? (
         <div className={CONTENT_STYLES.content.expanded}>
