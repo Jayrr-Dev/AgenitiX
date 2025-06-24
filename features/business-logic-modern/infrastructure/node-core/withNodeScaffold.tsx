@@ -147,7 +147,7 @@ export function withNodeScaffold(
     }, [nodeStyleClasses, categoryTheme]);
 
     // Extract expanded state from component data or use collapsed as default
-    // This is a simple heuristic - in a full implementation you'd want proper state management
+    // Node components manage isExpanded through their data schema and useNodeData hook
     const isExpanded = (props.data as any)?.isExpanded || false;
     const currentSize = isExpanded ? spec.size.expanded : spec.size.collapsed;
 

@@ -98,32 +98,32 @@ function getNodeSpecificStyling(
       case "create":
         return {
           color: theme.text.primary,
-          icon: metadata.icon || "🏗️",
+          icon: metadata.icon || "CREATE",
         };
       case "view":
         return {
           color: theme.text.secondary,
-          icon: metadata.icon || "👁️",
+          icon: metadata.icon || "VIEW",
         };
       case "trigger":
         return {
           color: theme.text.primary,
-          icon: metadata.icon || "⚡",
+          icon: metadata.icon || "TRIGGER",
         };
       case "test":
         return {
           color: theme.text.primary,
-          icon: metadata.icon || "🧪",
+          icon: metadata.icon || "TEST",
         };
       case "cycle":
         return {
           color: theme.text.secondary,
-          icon: metadata.icon || "🔄",
+          icon: metadata.icon || "CYCLE",
         };
       default:
         return {
           color: theme.text.muted,
-          icon: metadata.icon || "📄",
+          icon: metadata.icon || "NODE",
         };
     }
   }
@@ -131,7 +131,7 @@ function getNodeSpecificStyling(
   // Fallback to node type specific styling using theme
   return {
     color: theme.text.muted,
-    icon: "📄",
+    icon: "NODE",
   };
 }
 
@@ -166,7 +166,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
         text: "—",
         color: `${theme.text.muted} italic`,
         type: "null",
-        icon: "∅",
+        icon: "NULL",
         metadata: {
           nodeDisplayName: outputPreferences.displayName,
           nodeIcon: outputPreferences.customIcon,
@@ -201,7 +201,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
           text: JSON.stringify(parsedValue, null, 2),
           color: nodeSpecificStyling.color || theme.text.primary,
           type: "object",
-          icon: nodeSpecificStyling.icon || "📦",
+          icon: nodeSpecificStyling.icon || "OBJ",
           fullText: JSON.stringify(parsedValue, null, 2),
           metadata: {
             nodeDisplayName: outputPreferences.displayName,
@@ -214,7 +214,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
           text: JSON.stringify(parsedValue, null, 2),
           color: nodeSpecificStyling.color || theme.text.primary,
           type: "array",
-          icon: nodeSpecificStyling.icon || "📋",
+          icon: nodeSpecificStyling.icon || "ARR",
           fullText: JSON.stringify(parsedValue, null, 2),
           metadata: {
             nodeDisplayName: outputPreferences.displayName,
@@ -227,7 +227,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
           text: String(parsedValue),
           color: nodeSpecificStyling.color || theme.text.primary,
           type: "number",
-          icon: nodeSpecificStyling.icon || "🔢",
+          icon: nodeSpecificStyling.icon || "NUM",
           fullText: String(parsedValue),
           metadata: {
             nodeDisplayName: outputPreferences.displayName,
@@ -240,7 +240,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
           text: String(parsedValue),
           color: nodeSpecificStyling.color || theme.text.primary,
           type: "boolean",
-          icon: nodeSpecificStyling.icon || (parsedValue ? "✅" : "❌"),
+          icon: nodeSpecificStyling.icon || (parsedValue ? "TRUE" : "FALSE"),
           fullText: String(parsedValue),
           metadata: {
             nodeDisplayName: outputPreferences.displayName,
@@ -253,7 +253,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
           text: String(output),
           color: nodeSpecificStyling.color || theme.text.primary,
           type: "string",
-          icon: nodeSpecificStyling.icon || "📝",
+          icon: nodeSpecificStyling.icon || "STR",
           fullText: String(output),
           metadata: {
             nodeDisplayName: outputPreferences.displayName,
@@ -267,14 +267,13 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Output Header with Metadata */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">{formatOutput.icon}</span>
-          <span className={`text-xs font-medium ${theme.text.secondary}`}>
-            {formatOutput.type.toUpperCase()}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-foreground uppercase tracking-wide">
+            {formatOutput.type}
           </span>
           {formatOutput.metadata?.nodeDisplayName && (
-            <span className={`text-xs ${theme.text.muted}`}>
+            <span className="text-xs text-muted-foreground font-medium">
               from {formatOutput.metadata.nodeDisplayName}
             </span>
           )}
@@ -282,19 +281,17 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
         {formatOutput.fullText && (
           <button
             onClick={() => copyToClipboard(formatOutput.fullText!)}
-            className={`px-2 py-1 text-xs ${theme.text.muted} hover:${theme.text.primary} ${theme.background.hover} hover:${theme.background.active} ${theme.borderRadius.button} ${theme.transition}`}
+            className="px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/50 rounded transition-all duration-200 uppercase tracking-wide"
             title="Copy to clipboard"
           >
-            📋
+            COPY
           </button>
         )}
       </div>
 
       {/* Output Content */}
       <div className="flex-1 overflow-auto">
-        <pre
-          className={`text-sm font-mono leading-relaxed whitespace-pre-wrap break-words ${formatOutput.color}`}
-        >
+        <pre className="text-sm font-mono leading-relaxed whitespace-pre-wrap break-words text-foreground p-3 bg-muted/20 rounded border">
           {formatOutput.text}
         </pre>
       </div>

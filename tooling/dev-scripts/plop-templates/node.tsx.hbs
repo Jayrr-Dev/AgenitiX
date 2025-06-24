@@ -10,12 +10,11 @@
  * Keywords: {{kebabCase kind}}, content-focused, schema-driven, type-safe, clean-architecture
  */
 
-import type { NodeProps } from '@xyflow/react';
-import { useState } from 'react';
+import React from 'react';
+import { NodeProps } from '@xyflow/react';
 import { z } from 'zod';
-
 import { withNodeScaffold } from '@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold';
-import type { NodeSpec } from '@/features/business-logic-modern/infrastructure/node-core/NodeSpec';
+import { NodeSpec } from '@/features/business-logic-modern/infrastructure/node-core/NodeSpec';
 import {
   createNodeValidator,
   CommonSchemas,
@@ -26,6 +25,7 @@ import { SafeSchemas, createSafeInitialData } from '@/features/business-logic-mo
 import { CATEGORIES } from '@/features/business-logic-modern/infrastructure/theming/categories';
 import { EXPANDED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
 import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
+import { useNodeData } from '@/hooks/useNodeData';
 
 // -- PLOP-INJECTED-IMPORTS --
 
@@ -38,15 +38,12 @@ const {{pascalCase kind}}DataSchema = z.object({
   text: SafeSchemas.text('Default text'),
   isEnabled: SafeSchemas.boolean(true),
   isActive: SafeSchemas.boolean(false),
+  isExpanded: SafeSchemas.boolean(false),
 
   // Add your fields here - controls are auto-generated:
   // description: SafeSchemas.optionalText(),
   // count: SafeSchemas.number(1, 1, 100),
   // priority: SafeSchemas.enum(['low', 'medium', 'high'], 'medium'),
-
-  // Optional user-editable title shown above the node
-  label: SafeSchemas.optionalText(),
-  description: SafeSchemas.optionalText(),
 }).passthrough();
 
 type {{pascalCase kind}}Data = z.infer<typeof {{pascalCase kind}}DataSchema>;
@@ -147,11 +144,20 @@ const CATEGORY_TEXT_COLORS = {
  * • Maintains enterprise validation and type safety
  */
 const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
-  const [isExpanded, setExpanded] = useState(false);
+  // Use proper React Flow data management
+  const { nodeData, updateNodeData } = useNodeData(id, data);
+
+  // Get isExpanded directly from node data
+  const isExpanded = (nodeData as {{pascalCase kind}}Data).isExpanded || false;
+
+  // Update expanded state via node data
+  const handleToggleExpanded = () => {
+    updateNodeData({ ...nodeData, isExpanded: !isExpanded });
+  };
 
   // Enterprise validation with comprehensive error handling
-  const validationResult = validateNodeData(data);
-  const nodeData = validationResult.data;
+  const validationResult = validateNodeData(nodeData);
+  const validatedData = validationResult.data;
 
   // Report validation errors for monitoring
   if (!validationResult.success) {
@@ -165,11 +171,9 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
   const { getHealthScore } = useNodeDataValidation(
     {{pascalCase kind}}DataSchema,
     '{{pascalCase kind}}',
-    nodeData,
+    validatedData,
     id
   );
-
-  const onToggle = () => setExpanded((prev) => !prev);
 
   // Get category-specific text colors
   const categoryKey = spec.category as keyof typeof CATEGORY_TEXT_COLORS;
@@ -177,7 +181,7 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
 
   return (
     <>
-      <ExpandCollapseButton showUI={isExpanded} onToggle={onToggle} size="sm" />
+      <ExpandCollapseButton showUI={isExpanded} onToggle={handleToggleExpanded} size="sm" />
 
       {isExpanded ? (
         <div className={CONTENT_STYLES.content.expanded}>
@@ -195,18 +199,22 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
           {/* Add your node-specific UI here */}
           <div className={CONTENT_STYLES.main.container}>
             <div className={CONTENT_STYLES.main.content}>
-              <div className={CONTENT_STYLES.main.icon}>🔧</div>
+              <div className={`text-xs font-medium ${categoryTextColors.primary} uppercase tracking-wide mb-1`}>
+                {{titleCase kind}}
+              </div>
               <div className={`text-xs ${categoryTextColors.secondary}`}>
-                {nodeData.isEnabled ? nodeData.text : 'Disabled'}
+                {validatedData.isEnabled ? validatedData.text : 'Disabled'}
               </div>
             </div>
           </div>
         </div>
       ) : (
         <div className={CONTENT_STYLES.content.collapsed}>
-          <span className={CONTENT_STYLES.collapsed.icon} aria-label="{{titleCase kind}} Node">
-            🔧
-          </span>
+          <div className="text-center">
+            <div className={`text-xs font-medium ${categoryTextColors.primary} uppercase tracking-wide`}>
+              {{upper (truncate kind 4)}}
+            </div>
+          </div>
         </div>
       )}
     </>
