@@ -22,6 +22,7 @@ export type DataRow = {
   workPerformed: string;
   type: string;
   task: number;
+  estimatedHours?: number; // New field for estimated hours tracking
   isNew?: boolean; // Flag to identify newly created rows that haven't been saved yet
   isSynced?: boolean; // Flag to identify rows that are synced with the server
 };

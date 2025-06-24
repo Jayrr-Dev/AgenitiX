@@ -3,24 +3,26 @@
  *
  * • Provides undo/redo buttons with keyboard shortcut support
  * • History panel toggle for viewing action timeline
+ * • Estimated hours tab for time tracking and estimation
  * • Fullscreen mode toggle (browser environments only)
  * • Theme switcher for light/dark/system mode selection
  * • Environment detection for desktop vs browser features
  * • Now uses centralized component theming system
  *
- * Keywords: toolbar, undo-redo, history, fullscreen, shortcuts, theming, theme-switcher
+ * Keywords: toolbar, undo-redo, history, estimated-hours, time-tracking, fullscreen, shortcuts, theming, theme-switcher
  */
 
 "use client";
 
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { History, Maximize, Minimize, RotateCcw, RotateCw } from "lucide-react";
+import { History, Maximize, Minimize, RotateCcw, RotateCw, Clock } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import {
   useComponentButtonClasses,
   useComponentClasses,
 } from "../theming/components";
 import { useUndoRedo } from "./history/UndoRedoContext";
+import EstimatedHoursTab from "./EstimatedHoursTab";
 
 interface ActionToolbarProps {
   showHistoryPanel: boolean;
@@ -37,6 +39,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
   const { canUndo, canRedo } = getHistory();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isBrowserEnvironment, setIsBrowserEnvironment] = useState(false);
+  const [showEstimatedHours, setShowEstimatedHours] = useState(false);
 
   // Get themed classes
   const containerClasses = useComponentClasses(
@@ -92,14 +95,21 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
       document.removeEventListener("fullscreenchange", checkFullscreen);
   }, [isBrowserEnvironment]);
 
-  // Keyboard shortcut for fullscreen (F11) - only in browser
+  // Keyboard shortcuts
   useEffect(() => {
-    if (!isBrowserEnvironment) return;
-
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "F11") {
+      // Fullscreen shortcut (F11) - only in browser
+      if (e.key === "F11" && isBrowserEnvironment) {
         e.preventDefault();
         toggleFullscreen();
+        return;
+      }
+
+      // Estimated Hours shortcut (Ctrl+E)
+      if (e.ctrlKey && e.key === "e") {
+        e.preventDefault();
+        toggleEstimatedHours();
+        return;
       }
     };
 
@@ -121,64 +131,85 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
     }
   };
 
+  const toggleEstimatedHours = () => {
+    setShowEstimatedHours(!showEstimatedHours);
+  };
+
   return (
-    <div className={containerClasses}>
-      <button
-        onClick={() => undo()}
-        disabled={!canUndo}
-        className={buttonClasses}
-        title="Undo (Ctrl+Z)"
-      >
-        <RotateCcw className="w-4 h-4" />
-      </button>
+    <>
+      <div className={containerClasses}>
+        <button
+          onClick={() => undo()}
+          disabled={!canUndo}
+          className={buttonClasses}
+          title="Undo (Ctrl+Z)"
+        >
+          <RotateCcw className="w-4 h-4" />
+        </button>
 
-      <button
-        onClick={() => redo()}
-        disabled={!canRedo}
-        className={buttonClasses}
-        title="Redo (Ctrl+Y)"
-      >
-        <RotateCw className="w-4 h-4" />
-      </button>
+        <button
+          onClick={() => redo()}
+          disabled={!canRedo}
+          className={buttonClasses}
+          title="Redo (Ctrl+Y)"
+        >
+          <RotateCw className="w-4 h-4" />
+        </button>
 
-      <div className="w-px h-6 bg-[var(--infra-toolbar-border)] mx-1" />
+        <div className="w-px h-6 bg-[var(--infra-toolbar-border)] mx-1" />
 
-      <button
-        onClick={onToggleHistory}
-        className={showHistoryPanel ? activeButtonClasses : buttonClasses}
-        title="Toggle History Panel (Ctrl+H)"
-      >
-        <History className="w-4 h-4" />
-      </button>
+        <button
+          onClick={onToggleHistory}
+          className={showHistoryPanel ? activeButtonClasses : buttonClasses}
+          title="Toggle History Panel (Ctrl+H)"
+        >
+          <History className="w-4 h-4" />
+        </button>
 
-      {/* FULLSCREEN BUTTON - Only show in browser environments */}
-      {isBrowserEnvironment && (
-        <>
-          <div className="w-px h-6 bg-[var(--infra-toolbar-border)] mx-1" />
+        <button
+          onClick={toggleEstimatedHours}
+          className={showEstimatedHours ? activeButtonClasses : buttonClasses}
+          title="Toggle Estimated Hours Tab (Ctrl+E)"
+        >
+          <Clock className="w-4 h-4" />
+        </button>
 
-          {/* THEME SWITCHER */}
-          {/* <div className="w-px h-6 bg-[var(--infra-toolbar-border)] mx-1" /> */}
+        {/* FULLSCREEN BUTTON - Only show in browser environments */}
+        {isBrowserEnvironment && (
+          <>
+            <div className="w-px h-6 bg-[var(--infra-toolbar-border)] mx-1" />
 
-          <div className="flex items-center">
-            <ThemeSwitcher />
-          </div>
+            {/* THEME SWITCHER */}
+            {/* <div className="w-px h-6 bg-[var(--infra-toolbar-border)] mx-1" /> */}
 
-          <button
-            onClick={toggleFullscreen}
-            className={isFullscreen ? activeButtonClasses : buttonClasses}
-            title={
-              isFullscreen ? "Exit Fullscreen (F11)" : "Enter Fullscreen (F11)"
-            }
-          >
-            {isFullscreen ? (
-              <Minimize className="w-4 h-4" />
-            ) : (
-              <Maximize className="w-4 h-4" />
-            )}
-          </button>
-        </>
+            <div className="flex items-center">
+              <ThemeSwitcher />
+            </div>
+
+            <button
+              onClick={toggleFullscreen}
+              className={isFullscreen ? activeButtonClasses : buttonClasses}
+              title={
+                isFullscreen ? "Exit Fullscreen (F11)" : "Enter Fullscreen (F11)"
+              }
+            >
+              {isFullscreen ? (
+                <Minimize className="w-4 h-4" />
+              ) : (
+                <Maximize className="w-4 h-4" />
+              )}
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Estimated Hours Tab Panel */}
+      {showEstimatedHours && (
+        <div className="absolute top-full left-0 mt-2 z-50">
+          <EstimatedHoursTab />
+        </div>
       )}
-    </div>
+    </>
   );
 };
 
