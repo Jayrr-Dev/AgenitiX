@@ -606,7 +606,9 @@ export const DynamicControls: React.FC<DynamicControlsProps> = ({
 
   // Generate control fields from the node's schema using enhanced service
   const controlFields = useMemo(() => {
-    return NodeInspectorService.generateControlFields(node.type as any);
+    const fields = NodeInspectorService.generateControlFields(node.type as any);
+    console.log(`[DynamicControls] Generated ${fields.length} control fields for ${node.type}:`, fields);
+    return fields;
   }, [node.type]);
 
   // Get current node data with defaults applied

@@ -204,7 +204,7 @@ export function withNodeScaffold(
     // Initialize node memory if configured
     React.useEffect(() => {
       if (spec.memory) {
-        globalNodeMemoryManager.getNodeMemory(props.id, spec.memory);
+        globalNodeMemoryManager.get(props.id, spec.memory);
       }
     }, [props.id]);
 

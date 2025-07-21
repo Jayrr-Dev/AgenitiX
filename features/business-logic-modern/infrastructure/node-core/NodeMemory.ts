@@ -1,675 +1,420 @@
+/* eslint-disable @typescript-eslint/ban-types */
 /**
- * NODE MEMORY SYSTEM - Per-node programmable cache and state management
+ * NODE MEMORY SYSTEM (v2) — per‑node programmable cache with isolation
  *
- * • Each node gets its own isolated memory space with configurable limits
- * • Persistent storage across workflow executions
- * • Built-in cache with TTL, LRU eviction, and size limits
- * • Memory analytics and monitoring for optimization
- * • Secure isolation between nodes
- * • Garbage collection and cleanup mechanisms
- *
- * Keywords: node-memory, cache, isolation, programmable, state-management
+ * – Size & entry caps, four eviction strategies, per‑key TTL
+ * – Optional persistence via pluggable StorageAdapter (default: localStorage in browser)
+ * – Accurate metrics & pressure index
+ * – Environment‑agnostic (Node, browser, edge)
  */
 
-import { z } from "zod";
+import { EventEmitter } from 'events';
+import { z } from 'zod';
 
-/**
- * Memory configuration for individual nodes
- */
-export interface NodeMemoryConfig {
-  /** Maximum memory size in bytes (default: 1MB) */
-  maxSize?: number;
-  /** Maximum number of cache entries (default: 1000) */
-  maxEntries?: number;
-  /** Default TTL for cache entries in milliseconds (default: 1 hour) */
-  defaultTTL?: number;
-  /** Enable persistent storage across sessions (default: false) */
-  persistent?: boolean;
-  /** Memory cleanup strategy */
-  evictionPolicy?: 'LRU' | 'LFU' | 'FIFO' | 'TTL';
-  /** Enable memory analytics (default: true) */
-  analytics?: boolean;
-  /** Custom serialization for complex objects */
-  serializer?: 'json' | 'msgpack' | 'custom';
-}
+/* ------------------------------------------------------------------ */
+/* 1. Public config / types                                            */
+/* ------------------------------------------------------------------ */
 
-/**
- * Memory entry with metadata
- */
-export interface MemoryEntry<T = any> {
-  key: string;
+export const NodeMemoryConfigSchema = z.object({
+  maxSize: z.number().int().positive().default(1024 * 1024),          // bytes
+  maxEntries: z.number().int().positive().default(1_000),
+  defaultTTL: z.number().int().positive().default(3_600_000),         // ms
+  persistent: z.boolean().default(false),
+  evictionPolicy: z.enum(['LRU', 'LFU', 'FIFO', 'TTL']).default('LRU'),
+  analytics: z.boolean().default(true),
+  serializer: z.enum(['json', 'msgpack']).default('json'),
+});
+
+export type NodeMemoryConfig = z.infer<typeof NodeMemoryConfigSchema>;
+
+export interface MemoryEntry<T = unknown> {
   value: T;
   createdAt: number;
   lastAccessed: number;
   accessCount: number;
-  ttl?: number;
+  ttl: number | null;
   size: number;
   tags?: string[];
 }
 
-/**
- * Memory analytics and metrics
- */
 export interface MemoryMetrics {
   totalSize: number;
   entryCount: number;
-  hitRate: number;
-  missRate: number;
-  evictionCount: number;
+  hit: number;
+  miss: number;
+  eviction: number;
   lastCleanup: number;
-  memoryPressure: number; // 0-1 scale
+  pressure: number;         // max(sizeRatio, countRatio) 0‑1
 }
 
-/**
- * Memory operation result
- */
-export type MemoryResult<T> = 
-  | { success: true; data: T; fromCache: boolean }
-  | { success: false; error: string; code: 'NOT_FOUND' | 'MEMORY_FULL' | 'INVALID_KEY' | 'SERIALIZATION_ERROR' };
+/* ------------------------------------------------------------------ */
+/* 2. Pluggable storage adapter                                        */
+/* ------------------------------------------------------------------ */
 
-/**
- * Node Memory Manager - Isolated memory space for each node
- */
-export class NodeMemoryManager {
-  private cache = new Map<string, MemoryEntry>();
-  private config: Required<NodeMemoryConfig>;
-  private metrics: MemoryMetrics;
-  private nodeId: string;
-  private cleanupTimer?: NodeJS.Timeout;
+export interface StorageAdapter {
+  load(nodeId: string): Promise<Record<string, MemoryEntry> | null>;
+  save(nodeId: string, data: Record<string, MemoryEntry>): Promise<void>;
+  delete(nodeId: string): Promise<void>;
+}
 
-  constructor(nodeId: string, config: NodeMemoryConfig = {}) {
-    this.nodeId = nodeId;
-    this.config = {
-      maxSize: config.maxSize ?? 1024 * 1024, // 1MB default
-      maxEntries: config.maxEntries ?? 1000,
-      defaultTTL: config.defaultTTL ?? 60 * 60 * 1000, // 1 hour
-      persistent: config.persistent ?? false,
-      evictionPolicy: config.evictionPolicy ?? 'LRU',
-      analytics: config.analytics ?? true,
-      serializer: config.serializer ?? 'json'
-    };
-
-    this.metrics = {
-      totalSize: 0,
-      entryCount: 0,
-      hitRate: 0,
-      missRate: 0,
-      evictionCount: 0,
-      lastCleanup: Date.now(),
-      memoryPressure: 0
-    };
-
-    // Start periodic cleanup
-    this.startCleanupTimer();
-
-    // Load persistent data if enabled
-    if (this.config.persistent) {
-      this.loadPersistentData();
-    }
-  }
-
-  /**
-   * Store data in node memory with optional TTL
-   */
-  set<T>(key: string, value: T, ttl?: number): MemoryResult<T> {
+/** Default adapter – browser only (localStorage). No‑op in Node/Edge */
+export const LocalStorageAdapter: StorageAdapter = {
+  async load(id) {
+    if (typeof localStorage === 'undefined') return null;
     try {
-      // Validate key
-      if (!this.isValidKey(key)) {
-        return { success: false, error: 'Invalid key format', code: 'INVALID_KEY' };
-      }
-
-      // Calculate size
-      const serializedValue = this.serialize(value);
-      const size = this.calculateSize(serializedValue);
-
-      // Check memory limits
-      if (size > this.config.maxSize) {
-        return { success: false, error: 'Value too large for memory limit', code: 'MEMORY_FULL' };
-      }
-
-      // Evict if necessary
-      this.evictIfNecessary(size);
-
-      // Create entry
-      const entry: MemoryEntry<T> = {
-        key,
-        value,
-        createdAt: Date.now(),
-        lastAccessed: Date.now(),
-        accessCount: 1,
-        ttl: ttl ?? this.config.defaultTTL,
-        size,
-        tags: []
-      };
-
-      // Store entry
-      this.cache.set(key, entry);
-      this.updateMetrics('set', size);
-
-      // Persist if enabled
-      if (this.config.persistent) {
-        this.persistEntry(key, entry);
-      }
-
-      return { success: true, data: value, fromCache: false };
-    } catch (error) {
-      return { 
-        success: false, 
-        error: `Serialization failed: ${error}`, 
-        code: 'SERIALIZATION_ERROR' 
-      };
+      return JSON.parse(localStorage.getItem(`node_mem_${id}`) ?? 'null');
+    } catch {
+      return null;
     }
+  },
+  async save(id, data) {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(`node_mem_${id}`, JSON.stringify(data));
+    }
+  },
+  async delete(id) {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(`node_mem_${id}`);
+    }
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/* 3. Main class                                                       */
+/* ------------------------------------------------------------------ */
+
+export class NodeMemoryManager extends EventEmitter {
+  private readonly cache = new Map<string, MemoryEntry>();
+  private readonly cfg: Required<NodeMemoryConfig>;
+  private readonly metrics: MemoryMetrics = {
+    totalSize: 0,
+    entryCount: 0,
+    hit: 0,
+    miss: 0,
+    eviction: 0,
+    lastCleanup: Date.now(),
+    pressure: 0,
+  };
+
+  private persistQueued = false;
+  private cleanupTimer?: ReturnType<typeof setInterval>;
+
+  constructor(
+    private readonly nodeId: string,
+    cfg: NodeMemoryConfig = {
+      maxSize: 0,
+      maxEntries: 0,
+      defaultTTL: 0,
+      persistent: false,
+      evictionPolicy: 'LRU',
+      analytics: false,
+      serializer: 'json'
+    },
+    private adapter: StorageAdapter = LocalStorageAdapter,
+  ) {
+    super();
+    this.cfg = NodeMemoryConfigSchema.parse(cfg) as Required<NodeMemoryConfig>;
+
+    if (this.cfg.persistent) {
+      this.adapter.load(nodeId).then((data) => {
+        if (data) {
+          Object.entries(data).forEach(([k, v]) => this.cache.set(k, v));
+          this.recalcMetrics();
+        }
+      });
+    }
+
+    /* periodic TTL cleanup */
+    this.cleanupTimer = setInterval(() => this.gc(), 5 * 60_000);
   }
 
-  /**
-   * Retrieve data from node memory
-   */
-  get<T>(key: string): MemoryResult<T> {
-    const entry = this.cache.get(key) as MemoryEntry<T> | undefined;
+  /* -------------------------------------------------------------- */
+  /*  Public API                                                    */
+  /* -------------------------------------------------------------- */
 
-    if (!entry) {
-      this.updateMetrics('miss');
-      return { success: false, error: 'Key not found', code: 'NOT_FOUND' };
-    }
+  set<T>(key: string, value: T, ttl = this.cfg.defaultTTL): T | undefined {
+    this.assertKey(key);
 
-    // Check TTL
-    if (this.isExpired(entry)) {
-      this.cache.delete(key);
-      this.updateMetrics('miss');
-      return { success: false, error: 'Key expired', code: 'NOT_FOUND' };
-    }
+    const serial = this.serialize(value);
+    const size = this.byteSize(serial);
 
-    // Update access metadata
-    entry.lastAccessed = Date.now();
-    entry.accessCount++;
+    if (size > this.cfg.maxSize) throw new Error('MEMORY_FULL: entry too large');
 
-    this.updateMetrics('hit');
-    return { success: true, data: entry.value, fromCache: true };
+    /* overwrite handling */
+    if (this.cache.has(key)) this.removeEntry(key);
+
+    this.ensureCapacity(size);
+
+    const now = Date.now();
+    this.cache.set(key, {
+      value,
+      createdAt: now,
+      lastAccessed: now,
+      accessCount: 1,
+      ttl,
+      size,
+    });
+
+    this.metrics.totalSize += size;
+    this.metrics.entryCount = this.cache.size;
+    this.updatePressure();
+    this.emit('set', key);
+
+    this.queuePersist();
+    return value;
   }
 
-  /**
-   * Check if key exists in memory
-   */
+  get<T>(key: string): T | undefined {
+    const e = this.cache.get(key);
+    if (!e || this.isExpired(e)) {
+      if (e) this.removeEntry(key);
+      this.metrics.miss++;
+      this.updatePressure();
+      this.emit('miss', key);
+      return undefined;
+    }
+
+    e.lastAccessed = Date.now();
+    e.accessCount++;
+    this.metrics.hit++;
+    this.emit('hit', key);
+    return e.value as T;
+  }
+
   has(key: string): boolean {
-    const entry = this.cache.get(key);
-    if (!entry) return false;
-    
-    if (this.isExpired(entry)) {
-      this.cache.delete(key);
-      return false;
-    }
-    
-    return true;
+    return this.get(key) !== undefined;
   }
 
-  /**
-   * Delete key from memory
-   */
   delete(key: string): boolean {
     const existed = this.cache.has(key);
-    if (existed) {
-      const entry = this.cache.get(key)!;
-      this.cache.delete(key);
-      this.updateMetrics('delete', -entry.size);
-      
-      if (this.config.persistent) {
-        this.deletePersistentEntry(key);
-      }
-    }
+    if (existed) this.removeEntry(key);
     return existed;
   }
 
-  /**
-   * Clear all memory
-   */
   clear(): void {
-    this.cache.clear();
-    this.metrics.totalSize = 0;
-    this.metrics.entryCount = 0;
-    this.metrics.evictionCount = 0;
-    
-    if (this.config.persistent) {
-      this.clearPersistentData();
-    }
+    this.cache.forEach((_, k) => this.cache.delete(k));
+    this.recalcMetrics();
+    this.queuePersist();
+    this.emit('clear');
   }
 
-  /**
-   * Get all keys in memory
-   */
-  keys(): string[] {
-    return Array.from(this.cache.keys());
+  compute<T>(key: string, fn: () => Promise<T> | T, ttl?: number): Promise<T> {
+    const cached = this.get<T>(key);
+    if (cached !== undefined) return Promise.resolve(cached);
+
+    return Promise.resolve(fn()).then((val) => {
+      this.set(key, val, ttl);
+      return val;
+    });
   }
 
-  /**
-   * Get memory size in bytes
-   */
   size(): number {
     return this.metrics.totalSize;
   }
 
-  /**
-   * Get entry count
-   */
   count(): number {
     return this.cache.size;
   }
 
-  /**
-   * Get memory metrics
-   */
-  getMetrics(): MemoryMetrics {
+  stats(): Readonly<MemoryMetrics> {
     return { ...this.metrics };
   }
 
-  /**
-   * Compute cached value or store new computation
-   */
-  async compute<T>(
-    key: string, 
-    computeFn: () => Promise<T> | T, 
-    ttl?: number
-  ): Promise<MemoryResult<T>> {
-    // Try to get from cache first
-    const cached = this.get<T>(key);
-    if (cached.success) {
-      return cached;
-    }
-
-    try {
-      // Compute new value
-      const value = await computeFn();
-      
-      // Store in cache
-      return this.set(key, value, ttl);
-    } catch (error) {
-      return { 
-        success: false, 
-        error: `Computation failed: ${error}`, 
-        code: 'SERIALIZATION_ERROR' 
-      };
-    }
-  }
-
-  /**
-   * Batch operations for efficiency
-   */
-  batch(): NodeMemoryBatch {
-    return new NodeMemoryBatch(this);
-  }
-
-  /**
-   * Tag-based operations
-   */
-  setWithTags<T>(key: string, value: T, tags: string[], ttl?: number): MemoryResult<T> {
-    const result = this.set(key, value, ttl);
-    if (result.success) {
-      const entry = this.cache.get(key)!;
-      entry.tags = tags;
-    }
-    return result;
-  }
-
-  /**
-   * Get all keys with specific tag
-   */
-  getByTag(tag: string): string[] {
-    return Array.from(this.cache.entries())
-      .filter(([_, entry]) => entry.tags?.includes(tag))
-      .map(([key]) => key);
-  }
-
-  /**
-   * Delete all entries with specific tag
-   */
-  deleteByTag(tag: string): number {
-    const keysToDelete = this.getByTag(tag);
-    keysToDelete.forEach(key => this.delete(key));
-    return keysToDelete.length;
-  }
-
-  /**
-   * Memory pressure management
-   */
-  getMemoryPressure(): number {
-    const sizeRatio = this.metrics.totalSize / this.config.maxSize;
-    const countRatio = this.metrics.entryCount / this.config.maxEntries;
-    return Math.max(sizeRatio, countRatio);
-  }
-
-  /**
-   * Force garbage collection
-   */
+  /** remove expired & return freed byte count */
   gc(): { evicted: number; freed: number } {
-    const beforeCount = this.cache.size;
-    const beforeSize = this.metrics.totalSize;
+    let freed = 0;
+    let evicted = 0;
+    const now = Date.now();
 
-    // Remove expired entries
-    for (const [key, entry] of this.cache.entries()) {
-      if (this.isExpired(entry)) {
-        this.cache.delete(key);
+    for (const [k, v] of Array.from(this.cache.entries())) {
+      if (this.isExpired(v, now)) {
+        this.cache.delete(k);
+        freed += v.size;
+        evicted++;
       }
     }
-
-    // Update metrics
-    const evicted = beforeCount - this.cache.size;
-    const freed = beforeSize - this.metrics.totalSize;
-    
-    this.metrics.lastCleanup = Date.now();
-    
+    if (freed) {
+      this.metrics.totalSize -= freed;
+      this.metrics.entryCount = this.cache.size;
+      this.metrics.eviction += evicted;
+      this.updatePressure();
+      this.queuePersist();
+      this.emit('gc', { evicted, freed });
+    }
+    this.metrics.lastCleanup = now;
     return { evicted, freed };
   }
 
-  /**
-   * Cleanup and destroy memory manager
-   */
   destroy(): void {
-    if (this.cleanupTimer) {
-      clearInterval(this.cleanupTimer);
+    clearInterval(this.cleanupTimer);
+    this.queuePersist(true);
+    this.removeAllListeners();
+  }
+
+  /* -------------------------------------------------------------- */
+  /*  Private helpers                                               */
+  /* -------------------------------------------------------------- */
+
+  private assertKey(key: string) {
+    if (!key || key.length > 250) throw new Error('INVALID_KEY');
+  }
+
+  private serialize(v: unknown): string {
+    return this.cfg.serializer === 'json'
+      ? JSON.stringify(v)
+      : JSON.stringify(v); // placeholder for msgpack
+  }
+
+  private byteSize(str: string): number {
+    /* Node & Edge have Buffer; browser has TextEncoder. */
+    if (typeof Buffer !== 'undefined') return Buffer.byteLength(str);
+    return new TextEncoder().encode(str).length;
+  }
+
+  private isExpired(e: MemoryEntry, now = Date.now()): boolean {
+    return e.ttl !== null && now - e.lastAccessed > e.ttl;
+  }
+
+  private removeEntry(key: string) {
+    const e = this.cache.get(key);
+    if (!e) return;
+    this.cache.delete(key);
+    this.metrics.totalSize -= e.size;
+    this.metrics.entryCount = this.cache.size;
+  }
+
+  private ensureCapacity(extraBytes: number) {
+    while (
+      (this.metrics.totalSize + extraBytes > this.cfg.maxSize ||
+        this.cache.size >= this.cfg.maxEntries) &&
+      this.cache.size
+    ) {
+      this.evictOne();
     }
-    
-    if (this.config.persistent) {
-      this.savePersistentData();
-    }
-    
-    this.clear();
   }
 
-  // Private methods
+  private evictOne() {
+    let targetKey: string | undefined;
+    const entries = Array.from(this.cache.entries());
 
-  private isValidKey(key: string): boolean {
-    return typeof key === 'string' && key.length > 0 && key.length <= 250;
-  }
-
-  private serialize<T>(value: T): string {
-    switch (this.config.serializer) {
-      case 'json':
-        return JSON.stringify(value);
-      case 'msgpack':
-        // Would use msgpack library
-        return JSON.stringify(value); // Fallback
-      case 'custom':
-        // Custom serialization logic
-        return JSON.stringify(value); // Fallback
-      default:
-        return JSON.stringify(value);
-    }
-  }
-
-  private calculateSize(serializedValue: string): number {
-    return new Blob([serializedValue]).size;
-  }
-
-  private isExpired(entry: MemoryEntry): boolean {
-    if (!entry.ttl) return false;
-    return Date.now() - entry.createdAt > entry.ttl;
-  }
-
-  private evictIfNecessary(newEntrySize: number): void {
-    // Check if we need to evict
-    const wouldExceedSize = this.metrics.totalSize + newEntrySize > this.config.maxSize;
-    const wouldExceedCount = this.cache.size >= this.config.maxEntries;
-
-    if (!wouldExceedSize && !wouldExceedCount) return;
-
-    // Perform eviction based on policy
-    switch (this.config.evictionPolicy) {
-      case 'LRU':
-        this.evictLRU(newEntrySize);
-        break;
+    switch (this.cfg.evictionPolicy) {
       case 'LFU':
-        this.evictLFU(newEntrySize);
+        targetKey = entries.reduce((a, b) =>
+          a[1].accessCount <= b[1].accessCount ? a : b,
+        )[0];
         break;
       case 'FIFO':
-        this.evictFIFO(newEntrySize);
+        targetKey = Array.from(this.cache.keys())[0];
         break;
       case 'TTL':
-        this.evictExpired();
+        targetKey = entries
+          .filter(([_, v]) => this.isExpired(v))
+          .map(([k]) => k)[0];
         break;
+      case 'LRU':
+      default:
+        targetKey = entries.reduce((a, b) =>
+          a[1].lastAccessed <= b[1].lastAccessed ? a : b,
+        )[0];
+    }
+    if (targetKey) {
+      this.removeEntry(targetKey);
+      this.metrics.eviction++;
+      this.emit('evict', targetKey);
     }
   }
 
-  private evictLRU(requiredSpace: number): void {
-    const entries = Array.from(this.cache.entries())
-      .sort(([, a], [, b]) => a.lastAccessed - b.lastAccessed);
+  private recalcMetrics() {
+    this.metrics.totalSize = Array.from(this.cache.values()).reduce(
+      (acc, e) => acc + e.size,
+      0,
+    );
+    this.metrics.entryCount = this.cache.size;
+    this.updatePressure();
+  }
 
-    let freedSpace = 0;
-    for (const [key, entry] of entries) {
-      this.cache.delete(key);
-      freedSpace += entry.size;
-      this.metrics.evictionCount++;
-      
-      if (freedSpace >= requiredSpace) break;
+  private updatePressure() {
+    this.metrics.pressure = Math.max(
+      this.metrics.totalSize / this.cfg.maxSize,
+      this.metrics.entryCount / this.cfg.maxEntries,
+    );
+  }
+
+  /* ---------- persistence (debounced) ---------- */
+
+  private queuePersist(flush = false) {
+    if (!this.cfg.persistent) return;
+    if (flush) return void this.persistNow();
+
+    if (!this.persistQueued) {
+      this.persistQueued = true;
+      /* use micro‑task queue to batch multiple writes in same tick */
+      queueMicrotask(() => {
+        this.persistNow();
+        this.persistQueued = false;
+      });
     }
   }
 
-  private evictLFU(requiredSpace: number): void {
-    const entries = Array.from(this.cache.entries())
-      .sort(([, a], [, b]) => a.accessCount - b.accessCount);
-
-    let freedSpace = 0;
-    for (const [key, entry] of entries) {
-      this.cache.delete(key);
-      freedSpace += entry.size;
-      this.metrics.evictionCount++;
-      
-      if (freedSpace >= requiredSpace) break;
-    }
-  }
-
-  private evictFIFO(requiredSpace: number): void {
-    const entries = Array.from(this.cache.entries())
-      .sort(([, a], [, b]) => a.createdAt - b.createdAt);
-
-    let freedSpace = 0;
-    for (const [key, entry] of entries) {
-      this.cache.delete(key);
-      freedSpace += entry.size;
-      this.metrics.evictionCount++;
-      
-      if (freedSpace >= requiredSpace) break;
-    }
-  }
-
-  private evictExpired(): void {
-    for (const [key, entry] of this.cache.entries()) {
-      if (this.isExpired(entry)) {
-        this.cache.delete(key);
-        this.metrics.evictionCount++;
-      }
-    }
-  }
-
-  private updateMetrics(operation: 'set' | 'hit' | 'miss' | 'delete', sizeChange = 0): void {
-    if (!this.config.analytics) return;
-
-    switch (operation) {
-      case 'set':
-        this.metrics.totalSize += sizeChange;
-        this.metrics.entryCount = this.cache.size;
-        break;
-      case 'hit':
-        this.metrics.hitRate = (this.metrics.hitRate * 0.9) + (1 * 0.1); // Exponential moving average
-        break;
-      case 'miss':
-        this.metrics.missRate = (this.metrics.missRate * 0.9) + (1 * 0.1);
-        break;
-      case 'delete':
-        this.metrics.totalSize += sizeChange; // sizeChange is negative
-        this.metrics.entryCount = this.cache.size;
-        break;
-    }
-
-    this.metrics.memoryPressure = this.getMemoryPressure();
-  }
-
-  private startCleanupTimer(): void {
-    // Run cleanup every 5 minutes
-    this.cleanupTimer = setInterval(() => {
-      this.gc();
-    }, 5 * 60 * 1000);
-  }
-
-  // Persistence methods (simplified - would use IndexedDB or similar)
-  private async loadPersistentData(): Promise<void> {
-    try {
-      const key = `node_memory_${this.nodeId}`;
-      const data = localStorage.getItem(key);
-      if (data) {
-        const entries = JSON.parse(data);
-        for (const [k, entry] of Object.entries(entries)) {
-          this.cache.set(k, entry as MemoryEntry);
-        }
-      }
-    } catch (error) {
-      console.warn(`Failed to load persistent data for node ${this.nodeId}:`, error);
-    }
-  }
-
-  private async savePersistentData(): Promise<void> {
-    try {
-      const key = `node_memory_${this.nodeId}`;
-      const entries = Object.fromEntries(this.cache.entries());
-      localStorage.setItem(key, JSON.stringify(entries));
-    } catch (error) {
-      console.warn(`Failed to save persistent data for node ${this.nodeId}:`, error);
-    }
-  }
-
-  private persistEntry(key: string, entry: MemoryEntry): void {
-    // Individual entry persistence (for real-time updates)
-    if (this.config.persistent) {
-      this.savePersistentData(); // Simplified - would be more efficient
-    }
-  }
-
-  private deletePersistentEntry(key: string): void {
-    if (this.config.persistent) {
-      this.savePersistentData(); // Simplified
-    }
-  }
-
-  private clearPersistentData(): void {
-    try {
-      const key = `node_memory_${this.nodeId}`;
-      localStorage.removeItem(key);
-    } catch (error) {
-      console.warn(`Failed to clear persistent data for node ${this.nodeId}:`, error);
-    }
+  private async persistNow() {
+    await this.adapter.save(
+      this.nodeId,
+      Object.fromEntries(this.cache.entries()),
+    );
   }
 }
 
-/**
- * Batch operations for efficient memory management
- */
-export class NodeMemoryBatch {
-  private operations: Array<() => void> = [];
-  
-  constructor(private memory: NodeMemoryManager) {}
+/* ------------------------------------------------------------------ */
+/* 4. Global manager (singleton)                                       */
+/* ------------------------------------------------------------------ */
 
-  set<T>(key: string, value: T, ttl?: number): this {
-    this.operations.push(() => this.memory.set(key, value, ttl));
-    return this;
+export class GlobalNodeMemoryManager {
+  private readonly map = new Map<string, NodeMemoryManager>();
+  constructor(private adapter: StorageAdapter = LocalStorageAdapter) { }
+
+  get(nodeId: string, cfg?: NodeMemoryConfig) {
+    if (!this.map.has(nodeId)) {
+      this.map.set(nodeId, new NodeMemoryManager(nodeId, cfg, this.adapter));
+    }
+    return this.map.get(nodeId)!;
   }
 
-  delete(key: string): this {
-    this.operations.push(() => this.memory.delete(key));
-    return this;
+  destroy(nodeId: string) {
+    this.map.get(nodeId)?.destroy();
+    this.map.delete(nodeId);
   }
 
-  execute(): void {
-    this.operations.forEach(op => op());
-    this.operations = [];
+  gcAll() {
+    let freed = 0;
+    let evicted = 0;
+    this.map.forEach((m) => {
+      const r = m.gc();
+      freed += r.freed;
+      evicted += r.evicted;
+    });
+    return { freed, evicted };
+  }
+
+  totalBytes() {
+    return Array.from(this.map.values()).reduce((acc, m) => acc + m.size(), 0);
+  }
+
+  metrics() {
+    return Object.fromEntries(
+      Array.from(this.map.entries()).map(([id, m]) => [id, m.stats()]),
+    );
   }
 }
 
-/**
- * Memory configuration schema for validation
- */
-export const NodeMemoryConfigSchema = z.object({
-  maxSize: z.number().positive().optional(),
-  maxEntries: z.number().positive().optional(),
-  defaultTTL: z.number().positive().optional(),
-  persistent: z.boolean().optional(),
-  evictionPolicy: z.enum(['LRU', 'LFU', 'FIFO', 'TTL']).optional(),
-  analytics: z.boolean().optional(),
-  serializer: z.enum(['json', 'msgpack', 'custom']).optional()
-}).optional();
-
-/**
- * Global memory manager for all nodes
- */
-class GlobalNodeMemoryManager {
-  private nodeMemories = new Map<string, NodeMemoryManager>();
-  private globalConfig: NodeMemoryConfig = {};
-
-  setGlobalConfig(config: NodeMemoryConfig): void {
-    this.globalConfig = config;
-  }
-
-  getNodeMemory(nodeId: string, config?: NodeMemoryConfig): NodeMemoryManager {
-    if (!this.nodeMemories.has(nodeId)) {
-      const mergedConfig = { ...this.globalConfig, ...config };
-      this.nodeMemories.set(nodeId, new NodeMemoryManager(nodeId, mergedConfig));
-    }
-    return this.nodeMemories.get(nodeId)!;
-  }
-
-  destroyNodeMemory(nodeId: string): void {
-    const memory = this.nodeMemories.get(nodeId);
-    if (memory) {
-      memory.destroy();
-      this.nodeMemories.delete(nodeId);
-    }
-  }
-
-  getAllMetrics(): Record<string, MemoryMetrics> {
-    const metrics: Record<string, MemoryMetrics> = {};
-    for (const [nodeId, memory] of this.nodeMemories.entries()) {
-      metrics[nodeId] = memory.getMetrics();
-    }
-    return metrics;
-  }
-
-  getTotalMemoryUsage(): number {
-    let total = 0;
-    for (const memory of this.nodeMemories.values()) {
-      total += memory.size();
-    }
-    return total;
-  }
-
-  gcAll(): { totalEvicted: number; totalFreed: number } {
-    let totalEvicted = 0;
-    let totalFreed = 0;
-    
-    for (const memory of this.nodeMemories.values()) {
-      const result = memory.gc();
-      totalEvicted += result.evicted;
-      totalFreed += result.freed;
-    }
-    
-    return { totalEvicted, totalFreed };
-  }
-}
-
-// Export singleton instance
+/* Singleton export */
 export const globalNodeMemoryManager = new GlobalNodeMemoryManager();
 
-/**
- * React hook for using node memory in components
- */
-export function useNodeMemory(nodeId: string, config?: NodeMemoryConfig) {
-  const memory = globalNodeMemoryManager.getNodeMemory(nodeId, config);
-  
-  return {
-    set: memory.set.bind(memory),
-    get: memory.get.bind(memory),
-    has: memory.has.bind(memory),
-    delete: memory.delete.bind(memory),
-    clear: memory.clear.bind(memory),
-    compute: memory.compute.bind(memory),
-    batch: memory.batch.bind(memory),
-    getMetrics: memory.getMetrics.bind(memory),
-    gc: memory.gc.bind(memory)
-  };
-}
+/* ------------------------------------------------------------------ */
+/* 5. React hook (unchanged API)                                       */
+/* ------------------------------------------------------------------ */
+
+export const useNodeMemory = (
+  nodeId: string,
+  cfg?: NodeMemoryConfig,
+): ReturnType<typeof globalNodeMemoryManager['get']> =>
+  globalNodeMemoryManager.get(nodeId, cfg);

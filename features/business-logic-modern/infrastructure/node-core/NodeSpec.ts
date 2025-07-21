@@ -12,16 +12,16 @@ import type { NodeMemoryConfig } from "./NodeMemory";
 export interface ControlFieldConfig {
   key: string;
   type:
-    | "text"
-    | "textarea"
-    | "number"
-    | "boolean"
-    | "select"
-    | "url"
-    | "email"
-    | "color"
-    | "date"
-    | "json";
+  | "text"
+  | "textarea"
+  | "number"
+  | "boolean"
+  | "select"
+  | "url"
+  | "email"
+  | "color"
+  | "date"
+  | "json";
   label?: string;
   placeholder?: string;
   description?: string;

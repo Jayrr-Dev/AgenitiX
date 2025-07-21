@@ -216,9 +216,8 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
 
           return true;
         } catch (error) {
-          const errorMsg = `Node creation failed: ${
-            error instanceof Error ? error.message : String(error)
-          }`;
+          const errorMsg = `Node creation failed: ${error instanceof Error ? error.message : String(error)
+            }`;
           console.error("❌ Critical node creation error:", error);
           onCreationError?.(errorMsg, nodeType);
           return false;

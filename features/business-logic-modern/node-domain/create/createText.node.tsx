@@ -72,6 +72,26 @@ const spec: NodeSpec = {
   },
   initialData: { text: "", isActive: false, isExpanded: false },
   dataSchema: CreateTextDataSchema,
+  controls: {
+    autoGenerate: true,
+    excludeFields: ["isActive"], // Hide system fields from controls
+    customFields: [
+      {
+        key: "text",
+        type: "textarea",
+        label: "Text",
+        placeholder: "Enter your text here...",
+        ui: {
+          rows: 4,
+        },
+      },
+      {
+        key: "isExpanded",
+        type: "boolean",
+        label: "Is Expanded",
+      },
+    ],
+  },
 };
 
 /**
@@ -183,32 +203,30 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
             >
               createText
             </h3>
-            {process.env.NODE_ENV === "development" && (
+            {/* {process.env.NODE_ENV === "development" && (
               <span className={`text-xs ${categoryTextColors.secondary}`}>
                 Health: {getHealthScore()}%
               </span>
-            )}
+            )} */}
           </div>
 
           {/* Simple, clean textarea for direct text editing */}
+          
           <textarea
             value={validatedData.text}
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Enter your text here..."
-            className={`flex-1 w-full p-2 text-sm rounded-md resize-none transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${categoryTextColors.primary} bg-[var(--node-create-bg-hover)]`}
-            style={{
-              minHeight: "60px",
-              border: "none", // Remove border - scaffold handles all borders
-            }}
+            className={`scrollbar scrollbar-thumb-sky-700 scrollbar-track-sky-300 h-32 overflow-y-scroll focus:ring-2 focus:ring-green-500 focus:border-transparent ${categoryTextColors.primary}`}
+           
           />
         </div>
       ) : (
         <div className={CONTENT_STYLES.content.collapsed}>
           <div className="text-center">
             <div
-              className={`text-xs font-medium ${categoryTextColors.primary} uppercase tracking-wide`}
+              className={`text-xs font-medium ${categoryTextColors.primary} uppercase tracking-wide max-w-20 truncate`}
             >
-              TEXT
+              {validatedData.text}
             </div>
           </div>
         </div>

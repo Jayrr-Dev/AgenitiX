@@ -11,19 +11,19 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { globalNodeMemoryManager, type NodeMemoryConfig, type MemoryMetrics, type MemoryResult } from "./NodeMemory";
+import { globalNodeMemoryManager, type NodeMemoryConfig, type MemoryMetrics } from "./NodeMemory";
 
 /**
  * Enhanced node memory hook with React integration
  */
 export function useNodeMemory(nodeId: string, config?: NodeMemoryConfig) {
-  const memoryRef = useRef(globalNodeMemoryManager.getNodeMemory(nodeId, config));
-  const [metrics, setMetrics] = useState<MemoryMetrics>(memoryRef.current.getMetrics());
+  const memoryRef = useRef(globalNodeMemoryManager.get(nodeId, config));
+  const [metrics, setMetrics] = useState<MemoryMetrics>(memoryRef.current.stats());
 
   // Update metrics periodically
   useEffect(() => {
     const interval = setInterval(() => {
-      setMetrics(memoryRef.current.getMetrics());
+      setMetrics(memoryRef.current.stats());
     }, 1000); // Update every second
 
     return () => clearInterval(interval);
@@ -46,31 +46,21 @@ export function useNodeMemory(nodeId: string, config?: NodeMemoryConfig) {
     has: (key: string) => memory.has(key),
     delete: (key: string) => memory.delete(key),
     clear: () => memory.clear(),
-    
+
     // Advanced operations
-    compute: <T>(key: string, computeFn: () => Promise<T> | T, ttl?: number) => 
+    compute: <T>(key: string, computeFn: () => Promise<T> | T, ttl?: number) =>
       memory.compute(key, computeFn, ttl),
-    
-    // Batch operations
-    batch: () => memory.batch(),
-    
-    // Tag-based operations
-    setWithTags: <T>(key: string, value: T, tags: string[], ttl?: number) =>
-      memory.setWithTags(key, value, tags, ttl),
-    getByTag: (tag: string) => memory.getByTag(tag),
-    deleteByTag: (tag: string) => memory.deleteByTag(tag),
-    
+
     // Memory management
     gc: () => memory.gc(),
-    getMetrics: () => memory.getMetrics(),
-    
+    stats: () => memory.stats(),
+
     // React-specific features
     metrics, // Real-time metrics state
-    memoryPressure: metrics.memoryPressure,
-    isHealthy: metrics.memoryPressure < 0.8,
-    
+    memoryPressure: metrics.pressure,
+    isHealthy: metrics.pressure < 0.8,
+
     // Utility functions
-    keys: () => memory.keys(),
     size: () => memory.size(),
     count: () => memory.count(),
   };
@@ -85,14 +75,14 @@ export function useMemoryState<T>(
   key: string,
   initialValue: T,
   ttl?: number
-): [T, (value: T) => void, MemoryResult<T> | null] {
+): [T, (value: T) => void, T | undefined] {
   const memory = useNodeMemory(nodeId);
   const [state, setState] = useState<T>(() => {
     // Try to load from memory first
     const cached = memory.get<T>(key);
-    return cached.success ? cached.data : initialValue;
+    return cached !== undefined ? cached : initialValue;
   });
-  const [lastResult, setLastResult] = useState<MemoryResult<T> | null>(null);
+  const [lastResult, setLastResult] = useState<T | undefined>(undefined);
 
   const setValue = (value: T) => {
     setState(value);
@@ -103,8 +93,8 @@ export function useMemoryState<T>(
   // Sync with memory on mount
   useEffect(() => {
     const cached = memory.get<T>(key);
-    if (cached.success && cached.data !== state) {
-      setState(cached.data);
+    if (cached !== undefined && cached !== state) {
+      setState(cached);
       setLastResult(cached);
     }
   }, [key, memory, state]);
@@ -130,14 +120,10 @@ export function useMemoryComputed<T>(
   const compute = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const result = await memory.compute(key, computeFn, ttl);
-      if (result.success) {
-        setData(result.data);
-      } else {
-        setError(result.error);
-      }
+      setData(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -164,13 +150,13 @@ export function useMemoryComputed<T>(
 export function useMemoryAnalytics(nodeId: string) {
   const memory = useNodeMemory(nodeId);
   const [analytics, setAnalytics] = useState({
-    metrics: memory.getMetrics(),
+    metrics: memory.stats(),
     history: [] as MemoryMetrics[]
   });
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const currentMetrics = memory.getMetrics();
+      const currentMetrics = memory.stats();
       setAnalytics(prev => ({
         metrics: currentMetrics,
         history: [...prev.history.slice(-59), currentMetrics] // Keep last 60 data points
@@ -182,8 +168,8 @@ export function useMemoryAnalytics(nodeId: string) {
 
   return {
     ...analytics,
-    isHealthy: analytics.metrics.memoryPressure < 0.8,
-    needsCleanup: analytics.metrics.memoryPressure > 0.9,
+    isHealthy: analytics.metrics.pressure < 0.8,
+    needsCleanup: analytics.metrics.pressure > 0.9,
     performGC: memory.gc,
     clearMemory: memory.clear
   };

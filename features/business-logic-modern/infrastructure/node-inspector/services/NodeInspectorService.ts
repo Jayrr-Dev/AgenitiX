@@ -103,6 +103,8 @@ class NodeInspectorServiceImpl {
         return [];
       }
 
+      console.log(`[NodeInspectorService] Generating control fields for: ${nodeType}`);
+
       // Get the node spec metadata
       const metadata = getNodeSpecMetadata(nodeType);
       if (!metadata) {
@@ -110,9 +112,22 @@ class NodeInspectorServiceImpl {
         return [];
       }
 
+      console.log(`[NodeInspectorService] Found metadata for ${nodeType}:`, metadata);
+
       // Get the actual NodeSpec to access schema and controls config
       const nodeSpec = this.getNodeSpec(nodeType);
-      if (!nodeSpec?.dataSchema) {
+      if (!nodeSpec) {
+        console.warn(`No nodeSpec found for node type: ${nodeType}`);
+        return [];
+      }
+
+      console.log(`[NodeInspectorService] Found nodeSpec for ${nodeType}:`, {
+        hasDataSchema: !!nodeSpec.dataSchema,
+        hasControls: !!nodeSpec.controls,
+        controls: nodeSpec.controls
+      });
+
+      if (!nodeSpec.dataSchema) {
         console.warn(`No schema found for node type: ${nodeType}`);
         return [];
       }
@@ -122,15 +137,21 @@ class NodeInspectorServiceImpl {
         nodeSpec.dataSchema
       );
 
+      console.log(`[NodeInspectorService] Schema analysis for ${nodeType} found ${schemaFields.length} fields:`, schemaFields);
+
       // Convert schema field info to control fields
       let controlFields = schemaFields.map(this.convertSchemaFieldToControl);
 
+      console.log(`[NodeInspectorService] Converted to ${controlFields.length} control fields:`, controlFields);
+
       // Apply control configuration customizations
       if (nodeSpec.controls) {
+        console.log(`[NodeInspectorService] Applying control customizations for ${nodeType}`);
         controlFields = this.applyControlCustomizations(
           controlFields,
           nodeSpec.controls
         );
+        console.log(`[NodeInspectorService] After customizations: ${controlFields.length} fields:`, controlFields);
       }
 
       // Filter out excluded fields and system fields
@@ -138,6 +159,8 @@ class NodeInspectorServiceImpl {
         controlFields,
         nodeSpec.controls
       );
+
+      console.log(`[NodeInspectorService] Final control fields for ${nodeType}: ${controlFields.length} fields:`, controlFields);
 
       return controlFields;
     } catch (error) {
@@ -207,7 +230,7 @@ class NodeInspectorServiceImpl {
       if (!nodeType) return null;
 
       // Access the actual NodeSpec from the registry
-      const nodeSpec = nodeSpecs[nodeType];
+      const nodeSpec = nodeSpecs[nodeType as keyof typeof nodeSpecs];
       if (!nodeSpec) {
         console.warn(`NodeSpec not found for type: ${nodeType}`);
         return null;
@@ -336,8 +359,8 @@ class NodeInspectorServiceImpl {
    * Get node data with defaults applied
    */
   getNodeDataWithDefaults(node: AgenNode): Record<string, unknown> {
-    const metadata = this.getNodeMetadata(node.type as any);
-    const defaults = metadata?.initialData || {};
+    const nodeSpec = this.getNodeSpec(node.type as any);
+    const defaults = nodeSpec?.initialData || {};
 
     return { ...defaults, ...node.data };
   }

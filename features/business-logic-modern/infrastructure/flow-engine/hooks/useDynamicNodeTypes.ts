@@ -6,9 +6,6 @@ import React, { useMemo } from "react";
 const createText = React.lazy(
   () => import("../../../node-domain/create/createText.node")
 );
-const createEmailCache = React.lazy(
-  () => import("../../../node-domain/create/createEmailCache.node")
-);
 
 /**
  * Hook that provides nodeTypes for React Flow
@@ -22,7 +19,6 @@ export function useDynamicNodeTypes() {
     () => ({
       // Add new node types here
       createText,
-      createEmailCache,
     }),
     []
   );
