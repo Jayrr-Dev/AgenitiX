@@ -21,3 +21,20 @@ layer(utilities);
 @import "./_globals.css";
 @import "./_nodes.css";
 @import "./_infra.css";
+
+textarea::-webkit-scrollbar {
+    width: 5px;
+}
+
+textarea::-webkit-scrollbar-track {
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+}
+
+textarea::-webkit-scrollbar-thumb {
+  background-color: black;
+}
+@plugin 'tailwind-scrollbar' {
+    nocompatible: true;
+}
+
+

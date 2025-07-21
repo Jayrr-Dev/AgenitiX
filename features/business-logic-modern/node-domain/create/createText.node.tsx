@@ -198,11 +198,7 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
       {isExpanded ? (
         <div className={CONTENT_STYLES.content.expanded}>
           <div className={CONTENT_STYLES.header.container}>
-            <h3
-              className={`text-sm font-semibold ${categoryTextColors.primary}`}
-            >
-              createText
-            </h3>
+        
             {/* {process.env.NODE_ENV === "development" && (
               <span className={`text-xs ${categoryTextColors.secondary}`}>
                 Health: {getHealthScore()}%
@@ -216,7 +212,7 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
             value={validatedData.text}
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Enter your text here..."
-            className={`scrollbar scrollbar-thumb-sky-700 scrollbar-track-sky-300 h-32 overflow-y-scroll focus:ring-2 focus:ring-green-500 focus:border-transparent ${categoryTextColors.primary}`}
+            className={`text-sm nowheel overflow-y-auto focus:border-transparent ${categoryTextColors.primary}`}
            
           />
         </div>
