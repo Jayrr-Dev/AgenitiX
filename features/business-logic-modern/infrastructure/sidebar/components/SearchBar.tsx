@@ -38,21 +38,21 @@ export function SearchBar({
   // Create theme object that maps to semantic tokens
   const theme = {
     background: {
-      primary: "bg-[var(--infra-sidebar-bg)]",
-      secondary: "bg-[var(--infra-sidebar-bg-hover)]",
-      hover: "hover:bg-[var(--infra-sidebar-bg-hover)]",
+      primary: "bg-(--infra-sidebar-bg)",
+      secondary: "bg-(--infra-sidebar-bg-hover)",
+      hover: "hover:bg-(--infra-sidebar-bg-hover)",
     },
     border: {
-      default: "border-[var(--infra-sidebar-border)]",
+      default: "border-(--infra-sidebar-border)",
     },
     borderRadius: {
       panel: "rounded-lg",
       button: "rounded",
     },
     text: {
-      primary: "text-[var(--infra-sidebar-text)]",
-      secondary: "text-[var(--infra-sidebar-text-secondary)]",
-      muted: "text-[var(--infra-sidebar-text-secondary)]",
+      primary: "text-(--infra-sidebar-text)",
+      secondary: "text-(--infra-sidebar-text-secondary)",
+      muted: "text-(--infra-sidebar-text-secondary)",
     },
     transition: "transition-colors",
   };
@@ -412,7 +412,7 @@ export function SearchBar({
     >
       {/* Search Header */}
       <div
-        className={`flex items-center gap-2 px-7 pt-3  ${theme.border.default} border-b flex-shrink-0`}
+        className={`flex items-center gap-2 px-7 pt-3  ${theme.border.default} border-b shrink-0`}
       >
         <div className="relative flex-1">
           <Search
@@ -471,7 +471,7 @@ export function SearchBar({
         )}
 
         {filteredStencils.length > 0 ? (
-          <div className="flex-1 outline-none px-6 border-l-[1px]">
+          <div className="flex-1 outline-none px-6 border-l">
             <StencilGrid
               stencils={filteredStencils}
               setStencils={() => {}} // Read-only for search results

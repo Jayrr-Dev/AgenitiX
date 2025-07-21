@@ -16,7 +16,7 @@ export default function Loading() {
         "inline-block animate-spin rounded-full",
         "w-12 h-12", // Size
         "p-0.5", // Ring thickness
-        "bg-gradient-to-r from-red-500 via-blue-500 to-red-500" // Red & Blue gradient
+        "bg-linear-to-r from-red-500 via-blue-500 to-red-500" // Red & Blue gradient
     );
 
     // INNER CIRCLE: COVERS GRADIENT CENTER, CREATES RING EFFECT

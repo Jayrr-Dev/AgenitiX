@@ -59,21 +59,21 @@ export const NODE_INSPECTOR_TOKENS = {
     },
     jsonData: {
       adaptive: combineTokens(
-        "bg-[var(--infra-inspector-data-bg)]",
+        "bg-(--infra-inspector-data-bg)",
         CORE_TOKENS.effects.rounded.md,
-        "border border-[var(--infra-inspector-data-border)]",
+        "border border-(--infra-inspector-data-border)",
         "p-3 overflow-x-auto w-full"
       ),
       fixed: combineTokens(
-        "bg-[var(--infra-inspector-data-bg)]",
+        "bg-(--infra-inspector-data-bg)",
         CORE_TOKENS.effects.rounded.md,
-        "border border-[var(--infra-inspector-data-border)]",
+        "border border-(--infra-inspector-data-border)",
         "p-3 overflow-y-auto overflow-x-auto flex-1 min-w-0 w-full"
       ),
       compact: combineTokens(
-        "bg-[var(--infra-inspector-data-bg)]",
+        "bg-(--infra-inspector-data-bg)",
         CORE_TOKENS.effects.rounded.md,
-        "border border-[var(--infra-inspector-data-border)]",
+        "border border-(--infra-inspector-data-border)",
         "p-2 overflow-y-auto overflow-x-auto max-h-48 w-full"
       ),
     },
@@ -174,62 +174,62 @@ export const NODE_INSPECTOR_TOKENS = {
   // COLORS - NodeInspector-specific color mappings (uses generated CSS variables)
   colors: {
     inspector: {
-      background: "bg-[var(--infra-inspector-bg)]",
-      text: "text-[var(--infra-inspector-text)]",
-      textSecondary: "text-[var(--infra-inspector-text-secondary)]",
-      border: "border-[var(--infra-inspector-border)]",
-      borderHover: "hover:border-[var(--infra-inspector-border-hover)]",
+      background: "bg-(--infra-inspector-bg)",
+      text: "text-(--infra-inspector-text)",
+      textSecondary: "text-(--infra-inspector-text-secondary)",
+      border: "border-(--infra-inspector-border)",
+      borderHover: "hover:border-(--infra-inspector-border-hover)",
     },
     header: {
-      background: "bg-[var(--infra-inspector-header-bg)]",
-      text: "text-[var(--infra-inspector-header-text)]",
-      textSecondary: "text-[var(--infra-inspector-header-text-secondary)]",
-      border: "border-[var(--infra-inspector-header-border)]",
+      background: "bg-(--infra-inspector-header-bg)",
+      text: "text-(--infra-inspector-header-text)",
+      textSecondary: "text-(--infra-inspector-header-text-secondary)",
+      border: "border-(--infra-inspector-header-border)",
     },
     data: {
-      background: "bg-[var(--infra-inspector-data-bg)]",
-      text: "text-[var(--infra-inspector-data-text)]",
-      border: "border-[var(--infra-inspector-data-border)]",
+      background: "bg-(--infra-inspector-data-bg)",
+      text: "text-(--infra-inspector-data-text)",
+      border: "border-(--infra-inspector-data-border)",
     },
     actions: {
       duplicate: {
-        background: "bg-[var(--infra-inspector-actions-duplicate-bg)]",
+        background: "bg-(--infra-inspector-actions-duplicate-bg)",
         backgroundHover:
-          "hover:bg-[var(--infra-inspector-actions-duplicate-bg-hover)]",
-        text: "text-[var(--infra-inspector-actions-duplicate-text)]",
-        border: "border-[var(--infra-inspector-actions-duplicate-border)]",
+          "hover:bg-(--infra-inspector-actions-duplicate-bg-hover)",
+        text: "text-(--infra-inspector-actions-duplicate-text)",
+        border: "border-(--infra-inspector-actions-duplicate-border)",
       },
       delete: {
-        background: "bg-[var(--infra-inspector-actions-delete-bg)]",
+        background: "bg-(--infra-inspector-actions-delete-bg)",
         backgroundHover:
-          "hover:bg-[var(--infra-inspector-actions-delete-bg-hover)]",
-        text: "text-[var(--infra-inspector-actions-delete-text)]",
-        border: "border-[var(--infra-inspector-actions-delete-border)]",
+          "hover:bg-(--infra-inspector-actions-delete-bg-hover)",
+        text: "text-(--infra-inspector-actions-delete-text)",
+        border: "border-(--infra-inspector-actions-delete-border)",
       },
       lock: {
-        background: "bg-[var(--infra-inspector-actions-lock-bg)]",
+        background: "bg-(--infra-inspector-actions-lock-bg)",
         backgroundHover:
-          "hover:bg-[var(--infra-inspector-actions-lock-bg-hover)]",
-        text: "text-[var(--infra-inspector-actions-lock-text)]",
+          "hover:bg-(--infra-inspector-actions-lock-bg-hover)",
+        text: "text-(--infra-inspector-actions-lock-text)",
         textHover:
-          "hover:text-[var(--infra-inspector-states-locked-text)]",
-        border: "border-[var(--infra-inspector-actions-lock-border)]",
+          "hover:text-(--infra-inspector-states-locked-text)",
+        border: "border-(--infra-inspector-actions-lock-border)",
         borderHover:
-          "hover:border-[var(--infra-inspector-button-border-hover)]",
+          "hover:border-(--infra-inspector-button-border-hover)",
       },
     },
     states: {
       locked: {
         textHover:
-          "hover:text-[var(--infra-inspector-states-locked-text-hover)]",
+          "hover:text-(--infra-inspector-states-locked-text-hover)",
         borderHover:
-          "hover:border-[var(--infra-inspector-states-locked-border-hover)]",
+          "hover:border-(--infra-inspector-states-locked-border-hover)",
       },
       magnifyingGlass: {
         textHover:
-          "hover:text-[var(--infra-inspector-text-secondary-hover)]",
+          "hover:text-(--infra-inspector-text-secondary-hover)",
         borderHover:
-          "hover:border-[var(--infra-inspector-button-border-hover)]",
+          "hover:border-(--infra-inspector-button-border-hover)",
       },
     },
   },

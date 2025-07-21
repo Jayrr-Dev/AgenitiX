@@ -211,7 +211,7 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
                 >
                   <div className="flex items-center gap-3">
                     {result.icon && (
-                      <span className="text-lg flex-shrink-0">
+                      <span className="text-lg shrink-0">
                         {result.icon}
                       </span>
                     )}

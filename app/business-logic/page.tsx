@@ -16,7 +16,7 @@ import { VERSION } from "@/features/business-logic-modern/infrastructure/version
 // MAIN PAGE COMPONENT
 export default function BusinessLogicPage() {
   return (
-    <div className="h-[100vh] w-[100vw] relative">
+    <div className="h-screen w-screen relative">
       <FlowEditor />
 
       {/* VERSION DISPLAY - Bottom right corner */}

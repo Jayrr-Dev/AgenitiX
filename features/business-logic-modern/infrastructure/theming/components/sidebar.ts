@@ -89,13 +89,13 @@ export const SIDEBAR_TOKENS = {
   layout: {
     container: combineTokens(
       CORE_TOKENS.layout.flexCol,
-      "h-full bg-[var(--infra-sidebar-bg)] border-r border-[var(--infra-sidebar-border)]"
+      "h-full bg-(--infra-sidebar-bg) border-r border-(--infra-sidebar-border)"
     ),
     header: combineTokens(
       CORE_TOKENS.layout.flexRow,
       CORE_TOKENS.layout.itemsCenter,
       CORE_TOKENS.layout.justifyBetween,
-      "p-4 border-b border-[var(--infra-sidebar-border)]"
+      "p-4 border-b border-(--infra-sidebar-border)"
     ),
     content: combineTokens(
       CORE_TOKENS.layout.flexCol,
@@ -105,7 +105,7 @@ export const SIDEBAR_TOKENS = {
       CORE_TOKENS.layout.flexRow,
       CORE_TOKENS.layout.itemsCenter,
       CORE_TOKENS.layout.justifyCenter,
-      "p-3 border-t border-[var(--infra-sidebar-border)]"
+      "p-3 border-t border-(--infra-sidebar-border)"
     ),
     section: combineTokens(CORE_TOKENS.layout.flexCol, "gap-2"),
     sectionHeader: combineTokens(
@@ -119,28 +119,28 @@ export const SIDEBAR_TOKENS = {
   // COLORS - Sidebar-specific color mappings (uses generated tokens)
   colors: {
     container: {
-      background: "bg-[var(--infra-sidebar-bg)]",
-      border: "border-[var(--infra-sidebar-border)]",
-      text: "text-[var(--infra-sidebar-text)]",
+      background: "bg-(--infra-sidebar-bg)",
+      border: "border-(--infra-sidebar-border)",
+      text: "text-(--infra-sidebar-text)",
     },
     header: {
-      background: "bg-[var(--infra-sidebar-bg)]",
-      text: "text-[var(--infra-sidebar-text)]",
-      border: "border-[var(--infra-sidebar-border)]",
+      background: "bg-(--infra-sidebar-bg)",
+      text: "text-(--infra-sidebar-text)",
+      border: "border-(--infra-sidebar-border)",
     },
     item: {
-      background: "bg-[var(--infra-sidebar-bg)]",
-      backgroundHover: "hover:bg-[var(--infra-sidebar-bg-hover)]",
-      backgroundActive: "bg-[var(--infra-sidebar-bg-active)]",
-      text: "text-[var(--infra-sidebar-text)]",
-      textSecondary: "text-[var(--infra-sidebar-text-secondary)]",
-      textHover: "hover:text-[var(--infra-sidebar-text-hover)]",
-      border: "border-[var(--infra-sidebar-border)]",
-      borderHover: "hover:border-[var(--infra-sidebar-border-hover)]",
+      background: "bg-(--infra-sidebar-bg)",
+      backgroundHover: "hover:bg-(--infra-sidebar-bg-hover)",
+      backgroundActive: "bg-(--infra-sidebar-bg-active)",
+      text: "text-(--infra-sidebar-text)",
+      textSecondary: "text-(--infra-sidebar-text-secondary)",
+      textHover: "hover:text-(--infra-sidebar-text-hover)",
+      border: "border-(--infra-sidebar-border)",
+      borderHover: "hover:border-(--infra-sidebar-border-hover)",
     },
     section: {
-      header: "text-[var(--infra-sidebar-text-secondary)]",
-      divider: "border-[var(--infra-sidebar-border)]",
+      header: "text-(--infra-sidebar-text-secondary)",
+      divider: "border-(--infra-sidebar-border)",
     },
   },
 } as const;

@@ -93,7 +93,7 @@ const ColorSwatch: React.FC<{
       title="Click to copy CSS variable"
     >
       <span
-        className="w-8 h-8 rounded border border-border shadow-sm flex-shrink-0"
+        className="w-8 h-8 rounded border border-border shadow-sm shrink-0"
         style={{ backgroundColor: colorInfo.hex }}
       />
       <span className="flex-1 min-w-0">

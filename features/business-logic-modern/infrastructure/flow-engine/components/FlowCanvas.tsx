@@ -126,7 +126,7 @@ const EDGE_STYLES = {
  * Mobile delete button styling using design system tokens
  */
 const MOBILE_DELETE_BUTTON_STYLES = {
-  base: "bg-[var(--core-status-node-delete-bg)] hover:bg-[var(--core-status-node-delete-bg-light)] text-[var(--core-status-node-delete-border)] p-1 rounded-full shadow-lg transition-colors",
+  base: "bg-(--core-status-node-delete-bg) hover:bg-(--core-status-node-delete-bg-light) text-(--core-status-node-delete-border) p-1 rounded-full shadow-lg transition-colors",
   icon: "w-5 h-5",
 } as const;
 

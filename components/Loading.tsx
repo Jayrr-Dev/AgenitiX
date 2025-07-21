@@ -34,7 +34,7 @@ export const Loading: React.FC<LoadingProps> = ({
     size,
     ringThickness,
     // Tailwind gradient; adjust stops/direction here if needed
-    "bg-gradient-to-r from-blue-500 via-purple-500 to-red-500"
+    "bg-linear-to-r from-blue-500 via-purple-500 to-red-500"
   );
 
   // Inner circle: covers the gradient's center, yielding a ring

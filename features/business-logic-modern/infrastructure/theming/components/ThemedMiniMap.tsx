@@ -32,7 +32,7 @@ export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
 }) => {
   return (
     <MiniMap
-      className={`bg-[var(--infra-minimap-bg)] border-[var(--infra-minimap-border)] hover:bg-[var(--infra-minimap-bg-hover)] hover:border-[var(--infra-minimap-border-hover)] rounded border shadow-sm transition-colors duration-200 ${className}`}
+      className={`bg-(--infra-minimap-bg) border-(--infra-minimap-border) hover:bg-(--infra-minimap-bg-hover) hover:border-(--infra-minimap-border-hover) rounded border shadow-sm transition-colors duration-200 ${className}`}
       position={position}
       pannable={pannable}
       zoomable={zoomable}

@@ -31,15 +31,15 @@ const RenderHistoryGraph = React.lazy(() => import("./renderHistoryGraph"));
 
 // STYLING CONSTANTS
 const PANEL_STYLES = {
-  base: "bg-[var(--infra-history-bg)] border border-[var(--infra-history-border)] rounded-lg shadow-lg overflow-hidden max-w-full min-w-0",
+  base: "bg-(--infra-history-bg) border border-(--infra-history-border) rounded-lg shadow-lg overflow-hidden max-w-full min-w-0",
 } as const;
 
 const COLLAPSED_STYLES = {
   button:
-    "w-full p-4 flex items-center justify-between hover:bg-[var(--infra-history-bg-hover)] transition-colors group",
-  icon: "w-4 h-4 text-[var(--infra-history-text)] group-hover:text-primary transition-colors",
+    "w-full p-4 flex items-center justify-between hover:bg-(--infra-history-bg-hover) transition-colors group",
+  icon: "w-4 h-4 text-(--infra-history-text) group-hover:text-primary transition-colors",
   title:
-    "text-sm font-semibold text-[var(--infra-history-text)] group-hover:text-primary transition-colors",
+    "text-sm font-semibold text-(--infra-history-text) group-hover:text-primary transition-colors",
   badge: "text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full",
   branchContainer: "flex items-center gap-1 ml-1",
   branchIcon: "w-3 h-3 text-amber-500",
@@ -52,37 +52,37 @@ const HEADER_STYLES = {
   container: "px-2 py-2 border-b border-border/50 bg-card/50 backdrop-blur-sm",
   layout: "flex items-center justify-between min-w-0 gap-1",
   collapseButton:
-    "flex items-center gap-1 hover:bg-accent/50 px-1 py-1 rounded-lg transition-all duration-200 group -ml-1 flex-shrink-0",
+    "flex items-center gap-1 hover:bg-accent/50 px-1 py-1 rounded-lg transition-all duration-200 group -ml-1 shrink-0",
   collapseIcon:
     "w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors duration-200",
   titleContainer: "flex items-center gap-1 min-w-0 flex-1",
-  titleIcon: "w-3.5 h-3.5 text-primary flex-shrink-0",
+  titleIcon: "w-3.5 h-3.5 text-primary shrink-0",
   titleText: "text-sm font-semibold text-foreground tracking-tight truncate",
   titleBadge:
-    "text-xs font-semibold text-primary bg-primary/10 border border-primary/20 px-1 py-0.5 rounded-full ml-1 flex-shrink-0",
-  rightSection: "flex items-center gap-1 flex-shrink-0",
+    "text-xs font-semibold text-primary bg-primary/10 border border-primary/20 px-1 py-0.5 rounded-full ml-1 shrink-0",
+  rightSection: "flex items-center gap-1 shrink-0",
 } as const;
 
 const STATS_STYLES = {
-  container: "flex items-center gap-1 text-xs flex-shrink-0",
-  statesContainer: "flex items-center gap-0.5 flex-shrink-0",
+  container: "flex items-center gap-1 text-xs shrink-0",
+  statesContainer: "flex items-center gap-0.5 shrink-0",
   statesCount: "font-bold text-foreground text-xs",
   statesLabel: "text-muted-foreground font-medium hidden lg:inline",
   branchContainer:
-    "flex items-center gap-0.5 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-950/50 dark:to-amber-900/50 border border-amber-200/50 dark:border-amber-800/50 px-1 py-0.5 rounded-full shadow-sm flex-shrink-0",
+    "flex items-center gap-0.5 bg-linear-to-r from-amber-50 to-amber-100 dark:from-amber-950/50 dark:to-amber-900/50 border border-amber-200/50 dark:border-amber-800/50 px-1 py-0.5 rounded-full shadow-sm shrink-0",
   branchIcon: "w-2.5 h-2.5 text-amber-600 dark:text-amber-400",
   branchCount: "font-bold text-amber-700 dark:text-amber-300 text-xs",
 } as const;
 
 const CONTROLS_STYLES = {
   container:
-    "flex items-center gap-0.5 border-l border-border/30 pl-1.5 flex-shrink-0",
+    "flex items-center gap-0.5 border-l border-border/30 pl-1.5 shrink-0",
   button:
-    "p-1 rounded hover:bg-accent hover:text-accent-foreground text-muted-foreground transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0",
+    "p-1 rounded hover:bg-accent hover:text-accent-foreground text-muted-foreground transition-all duration-200 hover:scale-105 active:scale-95 shrink-0",
   buttonDisabled:
-    "p-1 rounded hover:bg-accent hover:text-accent-foreground text-muted-foreground disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-muted-foreground disabled:hover:scale-100 transition-all duration-200 flex-shrink-0",
+    "p-1 rounded hover:bg-accent hover:text-accent-foreground text-muted-foreground disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-muted-foreground disabled:hover:scale-100 transition-all duration-200 shrink-0",
   buttonDestructive:
-    "p-1 rounded hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-all duration-200 hover:scale-105 active:scale-95 hover:shadow-sm flex-shrink-0",
+    "p-1 rounded hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-all duration-200 hover:scale-105 active:scale-95 hover:shadow-sm shrink-0",
   icon: "w-3 h-3",
   separator: "w-px h-3 bg-border/40 mx-0.5",
 } as const;
@@ -102,7 +102,7 @@ const CONTENT_STYLES = {
   container:
     "max-h-64 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent [&::-webkit-scrollbar]:w-[2px] [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent",
   graphContainer:
-    "h-64 bg-gradient-to-b from-background/50 to-muted/20 overflow-hidden",
+    "h-64 bg-linear-to-b from-background/50 to-muted/20 overflow-hidden",
   graphUnavailable:
     "flex items-center justify-center h-full text-muted-foreground bg-muted/20 rounded-lg m-4",
   graphUnavailableText: "text-sm font-medium",
@@ -119,7 +119,7 @@ const EMPTY_STATE_STYLES = {
 const HISTORY_ITEM_STYLES = {
   base: "p-3 rounded-xl border transition-all duration-300 hover:shadow-md",
   current:
-    "bg-gradient-to-r from-primary/10 to-primary/5 border-primary/40 text-primary shadow-lg ring-2 ring-primary/20 scale-[1.02]",
+    "bg-linear-to-r from-primary/10 to-primary/5 border-primary/40 text-primary shadow-lg ring-2 ring-primary/20 scale-[1.02]",
   default:
     "bg-card/50 border-border/50 hover:bg-accent/30 hover:border-primary/30 hover:shadow-lg hover:scale-[1.01] backdrop-blur-sm",
   future:
@@ -129,18 +129,18 @@ const HISTORY_ITEM_STYLES = {
   layout: "flex items-center justify-between gap-4",
   leftSection: "flex items-center gap-3 min-w-0 flex-1",
   rightSection:
-    "flex items-center gap-2.5 text-xs text-muted-foreground flex-shrink-0",
+    "flex items-center gap-2.5 text-xs text-muted-foreground shrink-0",
 } as const;
 
 const HISTORY_ITEM_INDICATOR_STYLES = {
-  base: "w-2 h-2 rounded-full flex-shrink-0",
+  base: "w-2 h-2 rounded-full shrink-0",
   current: "bg-primary",
   default: "bg-muted-foreground/40",
   future: "bg-muted-foreground/20",
 } as const;
 
 const HISTORY_ITEM_BADGE_STYLES = {
-  base: "text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 shadow-sm",
+  base: "text-xs px-2.5 py-1 rounded-full font-semibold shrink-0 shadow-sm",
   current: "bg-primary/20 text-primary border border-primary/40 shadow-md",
   default: "bg-muted/80 text-muted-foreground border border-border/50",
   future: "bg-muted/40 text-muted-foreground/50 border border-border/30",
@@ -161,8 +161,8 @@ const HISTORY_ITEM_META_STYLES = {
 
 const FOOTER_STYLES = {
   container:
-    "p-2 border-t border-[var(--infra-history-border)] text-center",
-  text: "text-xs text-[var(--infra-history-text)]",
+    "p-2 border-t border-(--infra-history-border) text-center",
+  text: "text-xs text-(--infra-history-text)",
 } as const;
 
 // MODAL STYLES
@@ -172,7 +172,7 @@ const MODAL_STYLES = {
   container:
     "bg-background border border-border rounded-xl shadow-2xl max-w-md w-full mx-auto",
   header: "flex items-center gap-3 p-6 border-b border-border",
-  headerIcon: "w-6 h-6 text-destructive flex-shrink-0",
+  headerIcon: "w-6 h-6 text-destructive shrink-0",
   headerText: "text-lg font-semibold text-foreground",
   closeButton: "ml-auto p-1 hover:bg-accent rounded-md transition-colors",
   closeIcon: "w-4 h-4 text-muted-foreground hover:text-foreground",
@@ -517,27 +517,27 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
     const actionType = metadata?.actionType || "unknown";
     switch (actionType) {
       case "node_add":
-        return "text-[var(--core-status-node-add-border)]";
+        return "text-(--core-status-node-add-border)";
       case "node_delete":
-        return "text-[var(--core-status-node-delete-border)]";
+        return "text-(--core-status-node-delete-border)";
       case "node_update":
-        return "text-[var(--core-status-node-update-border)]";
+        return "text-(--core-status-node-update-border)";
       case "node_move":
-        return "text-[var(--core-status-node-move-border)]";
+        return "text-(--core-status-node-move-border)";
       case "edge_add":
-        return "text-[var(--core-status-edge-add-border)]";
+        return "text-(--core-status-edge-add-border)";
       case "edge_delete":
-        return "text-[var(--core-status-edge-delete-border)]";
+        return "text-(--core-status-edge-delete-border)";
       case "bulk_update":
-        return "text-[var(--core-status-bulk-update-border)]";
+        return "text-(--core-status-bulk-update-border)";
       case "bulk_delete":
-        return "text-[var(--core-status-bulk-delete-border)]";
+        return "text-(--core-status-bulk-delete-border)";
       case "paste":
-        return "text-[var(--core-status-paste-border)]";
+        return "text-(--core-status-paste-border)";
       case "duplicate":
-        return "text-[var(--core-status-duplicate-border)]";
+        return "text-(--core-status-duplicate-border)";
       default:
-        return "text-[var(--core-status-special-border)]";
+        return "text-(--core-status-special-border)";
     }
   }, []);
 

@@ -65,7 +65,7 @@ export const ErrorLog: React.FC<ErrorLogProps> = ({
                 {/* Error Header */}
                 <div className="flex items-center gap-2 mb-2">
                   <span
-                    className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                    className={`w-2 h-2 rounded-full shrink-0 ${
                       error.type === "error"
                         ? "bg-destructive"
                         : error.type === "warning"

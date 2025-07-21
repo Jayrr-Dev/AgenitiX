@@ -27,7 +27,7 @@ export default function FeaturesBoxesPlain({ features }: { features: typeFeature
         {features.map((feature, index) => (
           <article
             key={feature.title}
-            className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-neutral-100 to-white p-6 dark:from-neutral-900 dark:to-neutral-950"
+            className="relative overflow-hidden rounded-3xl bg-linear-to-b from-neutral-100 to-white p-6 dark:from-neutral-900 dark:to-neutral-950"
           >
             <Grid size={20} pattern={generateDeterministicPattern(index)} />
             <h3 className="relative z-20 text-base font-bold text-neutral-800 dark:text-white">
@@ -46,8 +46,8 @@ export default function FeaturesBoxesPlain({ features }: { features: typeFeature
 /* 🟩 Grid Overlay */
 const Grid: React.FC<GridProps> = ({ pattern, size = 20 }) => {
   return (
-    <div className="pointer-events-none absolute inset-0 -top-2 left-1/2 -translate-x-1/2 h-full w-full [mask-image:linear-gradient(white,transparent)]">
-      <div className="absolute inset-0 opacity-100 bg-gradient-to-r from-zinc-100/30 to-zinc-300/30 dark:from-zinc-900/30 dark:to-zinc-900/30 [mask-image:radial-gradient(farthest-side_at_top,white,transparent)]">
+    <div className="pointer-events-none absolute inset-0 -top-2 left-1/2 -translate-x-1/2 h-full w-full mask-[linear-gradient(white,transparent)]">
+      <div className="absolute inset-0 opacity-100 bg-linear-to-r from-zinc-100/30 to-zinc-300/30 dark:from-zinc-900/30 dark:to-zinc-900/30 mask-[radial-gradient(farthest-side_at_top,white,transparent)]">
         <GridPattern
           width={size}
           height={size}

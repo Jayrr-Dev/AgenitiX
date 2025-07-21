@@ -140,7 +140,7 @@ const CONTROLS_CONFIG = {
 
 // CONTAINER STYLING
 const CONTAINER_STYLES = {
-  base: "relative w-full overflow-hidden [&_.react-flow__handle]:!opacity-0 [&_[data-handleid]]:!opacity-0 [&_[data-handlepos]]:!opacity-0 [&_.react-flow__handle-top]:!opacity-0 [&_.react-flow__handle-bottom]:!opacity-0 [&_.react-flow__handle-left]:!opacity-0 [&_.react-flow__handle-right]:!opacity-0",
+  base: "relative w-full overflow-hidden [&_.react-flow__handle]:opacity-0! **:data-handleid:opacity-0! **:data-handlepos:opacity-0! [&_.react-flow__handle-top]:opacity-0! [&_.react-flow__handle-bottom]:opacity-0! [&_.react-flow__handle-left]:opacity-0! [&_.react-flow__handle-right]:opacity-0!",
 } as const;
 
 interface RenderHistoryGraphProps {

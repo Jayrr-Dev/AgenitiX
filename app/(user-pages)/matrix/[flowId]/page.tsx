@@ -24,7 +24,7 @@ export default async function FlowPage({ params, searchParams }: PageProps) {
   if (!flow) notFound();
 
   return (
-    <div className="h-[100vh] w-[100vw]" style={{ height: "100vh", width: "100vw", overflow: "hidden" }}>
+    <div className="h-screen w-screen" style={{ height: "100vh", width: "100vw", overflow: "hidden" }}>
       <FlowEditor />
     </div>
   );

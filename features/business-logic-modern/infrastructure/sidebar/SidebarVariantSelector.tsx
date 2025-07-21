@@ -87,9 +87,9 @@ const generateButtonClasses = (isActive: boolean): string => {
     "rounded h-8 w-8 py-1 text-sm transition-all duration-200 flex items-center justify-center";
 
   const activeClasses =
-    "bg-[var(--infra-sidebar-bg-hover)] text-[var(--infra-sidebar-text)] border-[var(--infra-sidebar-border-hover)]";
+    "bg-(--infra-sidebar-bg-hover) text-(--infra-sidebar-text) border-(--infra-sidebar-border-hover)";
   const inactiveClasses =
-    "bg-[var(--infra-sidebar-bg)] text-[var(--infra-sidebar-text-secondary)] hover:bg-[var(--infra-sidebar-bg-hover)] hover:text-[var(--infra-sidebar-text-hover)]";
+    "bg-(--infra-sidebar-bg) text-(--infra-sidebar-text-secondary) hover:bg-(--infra-sidebar-bg-hover) hover:text-(--infra-sidebar-text-hover)";
 
   return `${BASE_CLASSES} ${isActive ? activeClasses : inactiveClasses}`;
 };
@@ -213,7 +213,7 @@ export function VariantSelector({
         {/* Floating Text Display - Half width */}
         <div className="w-1/2 flex justify-center">
           {displayText && (
-            <div className="hidden sm:block text-[var(--infra-sidebar-text)] font-extralight px-2 py-1 ml-10 rounded whitespace-nowrap pointer-events-none tracking-widest shadow-lg">
+            <div className="hidden sm:block text-(--infra-sidebar-text) font-extralight px-2 py-1 ml-10 rounded whitespace-nowrap pointer-events-none tracking-widest shadow-lg">
               {VARIANT_NAMES[displayText]}
             </div>
           )}

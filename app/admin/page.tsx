@@ -116,7 +116,7 @@ export default function AdminPage() {
         </div>
 
         {/* OPTIMISTIC VERIFICATION INFO */}
-        <div className="mt-8 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-6">
+        <div className="mt-8 bg-linear-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-foreground mb-2">
             🚀 Optimistic Verification Active
           </h3>

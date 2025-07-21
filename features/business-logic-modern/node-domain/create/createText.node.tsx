@@ -128,8 +128,8 @@ const CONTENT_STYLES = {
  */
 const CATEGORY_TEXT_COLORS = {
   CREATE: {
-    primary: "text-[var(--node-create-text)]",
-    secondary: "text-[var(--node-create-text-secondary)]",
+    primary: "text-(--node-create-text)",
+    secondary: "text-(--node-create-text-secondary)",
   },
 } as const;
 

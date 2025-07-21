@@ -331,10 +331,10 @@ export function SidebarTabs({
 
   return (
     <Tabs value={activeTab} onValueChange={onTabChange}>
-      <aside className="absolute bottom-4 right-4 z-30 h-[200px] sm:h-[280px] w-full sm:w-[400px] lg:w-[450px] pl-3 sm:pl-6 pr-3 sm:pr-5 pt-2 rounded-lg bg-[var(--infra-sidebar-bg)] border border-[var(--infra-sidebar-border)] shadow-lg transition-all duration-300 ease-in-out">
+      <aside className="absolute bottom-4 right-4 z-30 h-[200px] sm:h-[280px] w-full sm:w-[400px] lg:w-[450px] pl-3 sm:pl-6 pr-3 sm:pr-5 pt-2 rounded-lg bg-(--infra-sidebar-bg) border border-(--infra-sidebar-border) shadow-lg transition-all duration-300 ease-in-out">
         <StencilInfoPanel stencil={uiState.hovered} />
 
-        <TabsList className="bg-[var(--infra-sidebar-bg)] items-stretch justify-between w-full gap-1 border-0 border-[var(--infra-sidebar-border)]">
+        <TabsList className="bg-(--infra-sidebar-bg) items-stretch justify-between w-full gap-1 border-0 border-(--infra-sidebar-border)">
           {tabs.map(({ key, label }, index) => {
             const shortcutNumber = index + 1;
 
@@ -343,7 +343,7 @@ export function SidebarTabs({
                 key={key}
                 value={key}
                 title={`${label} (${shortcutNumber})`}
-                className="text-[var(--infra-sidebar-text)] hover:bg-[var(--infra-sidebar-bg-hover)] hover:border-[var(--infra-sidebar-border-hover)] data-[state=active]:bg-[var(--infra-sidebar-bg-active)] data-[state=active]:text-[var(--infra-sidebar-text)] transition-colors rounded px-3 py-2 border border-transparent"
+                className="text-(--infra-sidebar-text) hover:bg-(--infra-sidebar-bg-hover) hover:border-(--infra-sidebar-border-hover) data-[state=active]:bg-(--infra-sidebar-bg-active) data-[state=active]:text-(--infra-sidebar-text) transition-colors rounded px-3 py-2 border border-transparent"
               >
                 {label}
               </TabsTrigger>
@@ -353,16 +353,16 @@ export function SidebarTabs({
           {/* Search Button */}
           <button
             onClick={() => setIsSearchVisible(true)}
-            className="p-2 mr-1 rounded hover:bg-[var(--infra-sidebar-bg-hover)] hover:border-[var(--infra-sidebar-border-hover)] text-[var(--infra-sidebar-text)] flex items-center gap-1 border border-transparent transition-colors"
+            className="p-2 mr-1 rounded hover:bg-(--infra-sidebar-bg-hover) hover:border-(--infra-sidebar-border-hover) text-(--infra-sidebar-text) flex items-center gap-1 border border-transparent transition-colors"
             title="Search all nodes (6)"
           >
-            <Search className="h-4 w-4 text-[var(--infra-sidebar-text)]" />
+            <Search className="h-4 w-4 text-(--infra-sidebar-text)" />
             {/* <span className="hidden sm:inline">Search</span> */}
             {/* <span className="hidden lg:inline text-xs text-infra-sidebar-secondary">⌘K</span> */}
           </button>
         </TabsList>
 
-        <div className="max-h-[150px] sm:max-h-[230px] overflow-y-auto scrollbar pb-2 border-0 bg-[var(--infra-sidebar-bg)]">
+        <div className="max-h-[150px] sm:max-h-[230px] overflow-y-auto scrollbar pb-2 border-0 bg-(--infra-sidebar-bg)">
           {tabs.map(({ key }) => {
             const isCustomTab = variant === "E" && key === "custom";
 
