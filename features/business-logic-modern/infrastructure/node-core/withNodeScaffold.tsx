@@ -23,6 +23,7 @@ import type { NodeSpec } from "./NodeSpec";
 import NodeTelemetry from "./NodeTelemetry";
 import { getNodePlugins } from "./plugins/nodePluginRegistry";
 import { runServerActions } from "./serverActions/serverActionRegistry";
+import { globalNodeMemoryManager } from "./NodeMemory";
 
 /**
  * Utility to get CSS custom property value from the DOM
@@ -199,6 +200,13 @@ export function withNodeScaffold(
       }
       return null;
     };
+
+    // Initialize node memory if configured
+    React.useEffect(() => {
+      if (spec.memory) {
+        globalNodeMemoryManager.getNodeMemory(props.id, spec.memory);
+      }
+    }, [props.id]);
 
     // side-effect: run server actions once
     React.useEffect(() => {

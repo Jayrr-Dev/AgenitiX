@@ -4,6 +4,7 @@ import type {
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import type { z } from "zod";
+import type { NodeMemoryConfig } from "./NodeMemory";
 
 /**
  * Control field configuration for custom control overrides
@@ -147,4 +148,10 @@ export interface NodeSpec {
     /** Identifier used by the execution engine to look up a handler. */
     execute?: string;
   };
+
+  /**
+   * NEW: Memory configuration for this node type
+   * Each node instance gets its own isolated memory space with these settings
+   */
+  memory?: NodeMemoryConfig;
 }

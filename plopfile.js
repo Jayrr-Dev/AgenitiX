@@ -70,6 +70,34 @@ module.exports = function (plop) {
         message:
           "Optional: TypeScript symbol for primary output handle (leave blank for none)",
       },
+      {
+        type: "confirm",
+        name: "enableMemory",
+        message: "Enable node memory/cache capabilities?",
+        default: false,
+      },
+      {
+        type: "input",
+        name: "memorySize",
+        message: "Memory size in MB (default: 1MB):",
+        default: "1",
+        when: (answers) => answers.enableMemory,
+      },
+      {
+        type: "list",
+        name: "evictionPolicy",
+        message: "Memory eviction policy:",
+        choices: ["LRU", "LFU", "FIFO", "TTL"],
+        default: "LRU",
+        when: (answers) => answers.enableMemory,
+      },
+      {
+        type: "confirm",
+        name: "persistentMemory",
+        message: "Enable persistent memory across sessions?",
+        default: false,
+        when: (answers) => answers.enableMemory,
+      },
     ],
     actions: [
       // 1. Create the main node file

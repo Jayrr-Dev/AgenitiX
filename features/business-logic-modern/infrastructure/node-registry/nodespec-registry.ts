@@ -7,11 +7,13 @@
 
 import type { NodeSpec } from '../node-core/NodeSpec';
 import createText, { spec as createTextSpec } from '../../node-domain/create/createText.node';
+import createEmailCache, { spec as createEmailCacheSpec } from '../../node-domain/create/createEmailCache.node';
 
 // Collect all specs in one place
 const nodeSpecs: Record<string, NodeSpec> = {
   // Add new node specs here (auto-updated by Plop)
   createText: createTextSpec,
+  createEmailCache: createEmailCacheSpec,
 };
 
 // Enhanced metadata that combines NodeSpec with additional UI properties
@@ -69,6 +71,15 @@ const defaultNodeMetadata = {
 // Node-specific metadata overrides
 const nodeMetadataOverrides: Record<string, Partial<NodeSpecMetadata>> = {
   // Add more node-specific overrides here
+  createEmailCache: {
+    description: 'Intelligent email template caching with AI-powered optimization and memory management',
+    icon: '📧',
+    ui: {
+      defaultCollapsed: false,
+      folder: 'email',
+      order: 2,
+    },
+  },
 };
 
 /**
