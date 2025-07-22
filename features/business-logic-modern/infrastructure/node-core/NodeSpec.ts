@@ -153,4 +153,29 @@ export interface NodeSpec {
 	 * OPTIONAL: Memory configuration for this node's persistent cache
 	 */
 	memory?: NodeMemoryConfig;
+
+	/**
+	 * OPTIONAL: Icon identifier for the node (e.g., 'FileText', 'Mail', 'Bot')
+	 * Used for visual representation in the sidebar and node header
+	 */
+	icon?: string;
+
+	/**
+	 * OPTIONAL: Creator or author of the node
+	 * Used for attribution and tracking node ownership
+	 */
+	author?: string;
+
+	/**
+	 * OPTIONAL: Detailed description of what the node does
+	 * Used for tooltips, documentation, and help text
+	 */
+	description?: string;
+
+	/**
+	 * OPTIONAL: The feature or module this node belongs to
+	 * Examples: 'base', 'email', 'agents', 'ai', 'database', 'api'
+	 * Used for organization, filtering, and feature-based grouping
+	 */
+	feature?: string;
 }

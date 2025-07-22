@@ -54,6 +54,30 @@ module.exports = (plop) => {
 			},
 			{
 				type: "input",
+				name: "icon",
+				message: "What icon should represent this node? (e.g., FileText, Mail, Bot, Database)",
+				default: "FileText",
+			},
+			{
+				type: "input",
+				name: "author",
+				message: "Who is the author/creator of this node?",
+				default: "Agenitix Team",
+			},
+			{
+				type: "input",
+				name: "description",
+				message: "Describe what this node does:",
+				default: "{{pascalCase kind}} node for {{domain}} operations",
+			},
+			{
+				type: "list",
+				name: "feature",
+				message: "What feature/module does this node belong to?",
+				choices: ["base", "email", "agents", "ai", "database", "api", "ui", "workflow", "custom"],
+			},
+			{
+				type: "input",
 				name: "tsSymbol",
 				message: "Optional: TypeScript symbol for primary output handle (leave blank for none)",
 			},

@@ -24,6 +24,9 @@ interface NodeDocData {
   category: string;
   displayName: string;
   description: string;
+  icon?: string;
+  author?: string;
+  feature?: string;
   inputs: Array<{
     id: string;
     type: string;
@@ -95,6 +98,9 @@ interface NodeDocData {
         defaultValue?: any;
       }>;
     };
+    icon?: string;
+    author?: string;
+    feature?: string;
   };
   theming: {
     category: string;
@@ -251,6 +257,16 @@ function extractNodeSpecification(kind: string, domain: string): NodeDocData['sp
   const controlsMatch = nodeContent.match(/controls:\s*{([^}]+)}/);
   const controls = controlsMatch ? parseControlsConfig(controlsMatch[1]) : undefined;
   
+  // Extract new NodeSpec fields
+  const iconMatch = nodeContent.match(/icon:\s*["']([^"']+)["']/);
+  const icon = iconMatch ? iconMatch[1] : undefined;
+  
+  const authorMatch = nodeContent.match(/author:\s*["']([^"']+)["']/);
+  const author = authorMatch ? authorMatch[1] : undefined;
+  
+  const featureMatch = nodeContent.match(/feature:\s*["']([^"']+)["']/);
+  const feature = featureMatch ? featureMatch[1] : undefined;
+  
   // Extract data schema - look for Zod schema definition
   const schemaMatch = nodeContent.match(/const\s+\w+DataSchema\s*=\s*z\s*\.\s*object\s*\(\s*{([\s\S]*?)}\s*\)/);
   if (schemaMatch) {
@@ -273,7 +289,10 @@ function extractNodeSpecification(kind: string, domain: string): NodeDocData['sp
         runtime,
         memory,
         controls,
-        dataSchema
+        dataSchema,
+        icon,
+        author,
+        feature
       };
     }
   }
@@ -292,7 +311,10 @@ function extractNodeSpecification(kind: string, domain: string): NodeDocData['sp
     runtime,
     memory,
     controls,
-    dataSchema
+    dataSchema,
+    icon,
+    author,
+    feature
   };
 }
 
@@ -665,6 +687,9 @@ function generateMarkdownDoc(nodeData: NodeDocData) {
 **Domain**: ${domain}  
 **Category**: ${category}  
 **Display Name**: ${displayName}
+${spec.icon ? `**Icon**: ${spec.icon}` : ''}
+${spec.author ? `**Author**: ${spec.author}` : ''}
+${spec.feature ? `**Feature**: ${spec.feature}` : ''}
 
 ${description}
 
@@ -1093,6 +1118,9 @@ function generateAPIDoc(nodeData: NodeDocData) {
  * - Size: ${spec.size.humanReadable.expanded} / ${spec.size.humanReadable.collapsed}
  * - Version: ${spec.version}
  * - Runtime: ${spec.runtime?.execute || 'Not specified'}
+ * ${spec.icon ? `- Icon: ${spec.icon}` : ''}
+ * ${spec.author ? `- Author: ${spec.author}` : ''}
+ * ${spec.feature ? `- Feature: ${spec.feature}` : ''}
  * 
  * Theming & Design:
  * - Category: ${nodeData.theming.category}
@@ -1147,7 +1175,11 @@ ${initialDataFields}
     autoGenerate: ${spec.controls?.autoGenerate || true},
     excludeFields: ${spec.controls ? JSON.stringify(spec.controls.excludeFields) : '[]'},
     customFields: ${spec.controls ? JSON.stringify(spec.controls.customFields, null, 2) : '[]'}
-  }
+  },
+  ${spec.icon ? `icon: '${spec.icon}',` : ''}
+  ${spec.author ? `author: '${spec.author}',` : ''}
+  ${nodeData.description ? `description: '${nodeData.description}',` : ''}
+  ${spec.feature ? `feature: '${spec.feature}',` : ''}
 };
 
 // Node Component
