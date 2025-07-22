@@ -18,9 +18,27 @@ const nodeSpecs: Record<string, NodeSpec> = {
 export interface NodeSpecMetadata {
 	kind: string;
 	displayName: string;
+	label?: string;
 	category: string;
 	description: string;
 	icon: string;
+	author?: string;
+	feature?: string;
+	version?: number;
+	runtime?: {
+		execute?: string;
+	};
+	controls?: {
+		autoGenerate?: boolean;
+		excludeFields?: string[];
+		customFields?: Array<{
+			key: string;
+			type: string;
+			label?: string;
+			placeholder?: string;
+			ui?: Record<string, any>;
+		}>;
+	};
 	/** legacy alias of kind */
 	nodeType: string;
 	/** optional component name for legacy sidebar */
@@ -84,9 +102,15 @@ export function getNodeSpecMetadata(nodeType: string): NodeSpecMetadata | null {
 	return {
 		kind: spec.kind,
 		displayName: spec.displayName,
+		label: spec.label,
 		category: spec.category,
-		description: overrides.description || defaults.description,
-		icon: overrides.icon || spec.icon || defaults.icon,
+		description: spec.description || overrides.description || defaults.description,
+		icon: spec.icon || overrides.icon || defaults.icon,
+		author: spec.author,
+		feature: spec.feature,
+		version: spec.version,
+		runtime: spec.runtime,
+		controls: spec.controls,
 		nodeType: spec.kind,
 		component: spec.kind,
 		size: {

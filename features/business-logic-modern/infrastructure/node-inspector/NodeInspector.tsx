@@ -19,8 +19,8 @@ import {
 	useNodeErrors,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import { getNodeOutput } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/outputUtils";
-import { Copy, Trash2 } from "lucide-react";
-import React, { useCallback, useMemo } from "react";
+import { Copy, Trash2, ChevronDown, Edit3 } from "lucide-react";
+import React, { useCallback, useMemo, useState } from "react";
 import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
 
 import EditableNodeDescription from "@/components/nodes/EditableNodeDescription";
@@ -51,7 +51,7 @@ const STYLING_CONTAINER_EMPTY_STATE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_
 const STYLING_CONTAINER_EDGE_INSPECTOR = `${DESIGN_CONFIG.layout.flexRow} gap-3 p-3`;
 
 // COLUMN CONTAINERS - Tighter proportions with compact spacing
-const STYLING_CONTAINER_COLUMN_LEFT = `flex-2 ${DESIGN_CONFIG.layout.flexColumn} gap-3 min-w-0 overflow-auto`;
+const STYLING_CONTAINER_COLUMN_LEFT = `flex-2 ${DESIGN_CONFIG.layout.flexColumn} gap-3 min-w-[300px] max-w-[300px] overflow-auto`;
 const STYLING_CONTAINER_COLUMN_RIGHT = `flex-1 ${DESIGN_CONFIG.layout.flexColumn} gap-3 min-w-[280px] overflow-auto`;
 const STYLING_CONTAINER_COLUMN_ERROR = `flex-1 ${DESIGN_CONFIG.layout.flexColumn} gap-2 min-w-[280px] overflow-auto`;
 const STYLING_CONTAINER_EDGE_CONTENT = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} gap-3 ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
@@ -100,6 +100,42 @@ const STYLING_CARD_SECTION_HEADER = `p-3 bg-muted/30 rounded-t-lg border-b borde
 const STYLING_CARD_SECTION_CONTENT = `p-3 bg-card rounded-b-lg`;
 
 // =====================================================================
+// ACCORDION COMPONENT
+// =====================================================================
+
+interface AccordionSectionProps {
+	title: string;
+	isOpen: boolean;
+	onToggle: () => void;
+	children: React.ReactNode;
+}
+
+const AccordionSection: React.FC<AccordionSectionProps> = ({ title, isOpen, onToggle, children }) => {
+	return (
+		<div className={STYLING_CARD_SECTION}>
+			<button
+				onClick={onToggle}
+				className="w-full flex items-center justify-between px-3 py-0 bg-muted/30 rounded-t-lg border-b border-border/30 hover:bg-muted/50 transition-colors duration-200"
+			>
+				<h4 className="text-xs font-medium text-muted-foreground mb-1">{title}</h4>
+				<ChevronDown
+					className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+				/>
+			</button>
+			<div 
+				className={`overflow-hidden transition-all duration-300 ease-in-out ${
+					isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+				}`}
+			>
+				<div className="p-3 bg-card rounded-b-lg">
+					{children}
+				</div>
+			</div>
+		</div>
+	);
+};
+
+// =====================================================================
 // COMPONENT IMPLEMENTATION
 // =====================================================================
 
@@ -120,6 +156,24 @@ const NodeInspector = React.memo(function NodeInspector() {
 		addNode,
 		selectNode,
 	} = useFlowStore();
+
+	// Accordion state management
+	const [accordionState, setAccordionState] = useState({
+		nodeInfo: true,
+		description: true,
+		handles: true,
+		nodeData: true,
+		output: true,
+		controls: true,
+		errors: true,
+	});
+
+	const toggleAccordion = (section: keyof typeof accordionState) => {
+		setAccordionState(prev => ({
+			...prev,
+			[section]: !prev[section],
+		}));
+	};
 
 	// Get theme for node inspector
 	const theme = useComponentTheme("nodeInspector");
@@ -260,7 +314,7 @@ const NodeInspector = React.memo(function NodeInspector() {
 							<div>
 								<EditableNodeLabel
 									nodeId={selectedNode.id}
-									label={(selectedNode.data as any)?.label || ""}
+									label={(selectedNode.data as any)?.label || nodeInfo.label || nodeInfo.displayName}
 									displayName={nodeInfo.displayName}
 									onUpdateNodeData={updateNodeData}
 									className={STYLING_TEXT_NODE_NAME}
@@ -351,8 +405,11 @@ const NodeInspector = React.memo(function NodeInspector() {
 					{/* COLUMN 1: NODE DESCRIPTION + NODE DATA */}
 					<div className={STYLING_CONTAINER_COLUMN_LEFT}>
 						{/* Node Metadata Card */}
-						<div className={STYLING_CARD_SECTION}>
-							<h4 className={STYLING_TEXT_SECTION_HEADER}>Node Information</h4>
+						<AccordionSection
+							title="Node Information"
+							isOpen={accordionState.nodeInfo}
+							onToggle={() => toggleAccordion('nodeInfo')}
+						>
 							<div className="space-y-2">
 								<div className="flex items-center gap-2">
 									<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
@@ -362,32 +419,97 @@ const NodeInspector = React.memo(function NodeInspector() {
 								</div>
 								<div className="flex items-center gap-2">
 									<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+										LABEL
+									</span>
+									<div className="flex items-center gap-1">
+										<input
+											type="text"
+											value={(selectedNode.data as any)?.label || nodeInfo.label || nodeInfo.displayName}
+											onChange={(e) => {
+												updateNodeData(selectedNode.id, {
+													...selectedNode.data,
+													label: e.target.value,
+												});
+											}}
+											onClick={(e) => {
+												(e.target as HTMLInputElement).select();
+											}}
+											className="text-sm font-mono text-muted-foreground bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-500 rounded px-1"
+											placeholder={nodeInfo.displayName}
+										/>
+										<Edit3 className="w-3 h-3 text-muted-foreground/60" />
+									</div>
+								</div>
+								<div className="flex items-center gap-2">
+									<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
 										ID
 									</span>
-									<EditableNodeId
-										nodeId={selectedNode.id}
-										onUpdateId={handleUpdateNodeId}
-										className="text-sm font-mono text-muted-foreground"
-									/>
+									<div className="flex items-center gap-1">
+										<EditableNodeId
+											nodeId={selectedNode.id}
+											onUpdateId={handleUpdateNodeId}
+											className="text-sm font-mono text-muted-foreground"
+										/>
+										<Edit3 className="w-3 h-3 text-muted-foreground/60" />
+									</div>
 								</div>
+								{nodeInfo.author && (
+									<div className="flex items-center gap-2">
+										<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+											AUTHOR
+										</span>
+										<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.author}</span>
+									</div>
+								)}
+								{nodeInfo.feature && (
+									<div className="flex items-center gap-2">
+										<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+											FEATURE
+										</span>
+										<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.feature}</span>
+									</div>
+								)}
+								{nodeInfo.version && (
+									<div className="flex items-center gap-2">
+										<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+											VERSION
+										</span>
+										<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.version}</span>
+									</div>
+								)}
+								{nodeInfo.runtime?.execute && (
+									<div className="flex items-center gap-2">
+										<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+											RUNTIME
+										</span>
+										<span className="text-sm font-mono text-muted-foreground">{nodeInfo.runtime.execute}</span>
+									</div>
+								)}
 							</div>
-						</div>
+						</AccordionSection>
 
 						{/* Node Description Card */}
 						{nodeInfo.description && (
-							<div className={STYLING_CARD_SECTION}>
-								<h4 className={STYLING_TEXT_SECTION_HEADER}>Description</h4>
+							<AccordionSection
+								title="Description"
+								isOpen={accordionState.description}
+								onToggle={() => toggleAccordion('description')}
+							>
 								<EditableNodeDescription
 									nodeId={selectedNode.id}
 									description={(selectedNode.data as any)?.description ?? nodeInfo.description}
 									defaultDescription={nodeInfo.description}
 									className={STYLING_TEXT_NODE_DESCRIPTION}
 								/>
-							</div>
+							</AccordionSection>
 						)}
 
 						{/* Node Data Card */}
-						<div className={STYLING_CARD_SECTION}>
+						<AccordionSection
+							title="Node Data"
+							isOpen={accordionState.nodeData}
+							onToggle={() => toggleAccordion('nodeData')}
+						>
 							<div className="bg-muted/20 rounded-md border border-border/30 overflow-hidden -mx-1">
 								<EditableJsonEditor
 									data={{
@@ -403,39 +525,90 @@ const NodeInspector = React.memo(function NodeInspector() {
 									className={STYLING_JSON_HIGHLIGHTER}
 								/>
 							</div>
-						</div>
+						</AccordionSection>
 					</div>
 
 					{/* COLUMN 2: OUTPUT + CONTROLS */}
 					{hasRightColumn && (
 						<div className={STYLING_CONTAINER_COLUMN_RIGHT}>
 							{nodeConfig?.hasOutput && (
-								<div className={STYLING_CARD_SECTION}>
-									<h4 className={STYLING_TEXT_SECTION_HEADER}>Output</h4>
+								<AccordionSection
+									title="Output"
+									isOpen={accordionState.output}
+									onToggle={() => toggleAccordion('output')}
+								>
 									<NodeOutput output={output} nodeType={selectedNode.type as NodeType} />
-								</div>
+								</AccordionSection>
 							)}
 
 							{nodeInfo.hasControls && (
-								<div className={STYLING_CARD_SECTION}>
-									<h4 className={STYLING_TEXT_SECTION_HEADER}>Controls</h4>
+								<AccordionSection
+									title="Controls"
+									isOpen={accordionState.controls}
+									onToggle={() => toggleAccordion('controls')}
+								>
 									<NodeControls
 										node={selectedNode}
 										updateNodeData={updateNodeData}
 										onLogError={logNodeError as any}
 									/>
-								</div>
+								</AccordionSection>
 							)}
+
+							{/* Handles Card */}
+							<AccordionSection
+								title="Handles"
+								isOpen={accordionState.handles}
+								onToggle={() => toggleAccordion('handles')}
+							>
+								<div className="space-y-2">
+									{nodeInfo.handles?.map((handle, index) => {
+										// Find connections for this handle
+										const connections = edges.filter(edge => 
+											(edge.source === selectedNode.id && edge.sourceHandle === handle.id) ||
+											(edge.target === selectedNode.id && edge.targetHandle === handle.id)
+										);
+										
+										return (
+											<div key={handle.id} className="flex items-center justify-between p-2 bg-muted/20 rounded border">
+												<div className="flex items-center gap-2">
+													<span className={`w-3 h-3 rounded-full ${
+														handle.type === 'source' ? 'bg-green-500' : 'bg-blue-500'
+													}`} title={handle.type} />
+													{handle.dataType && (
+														<span className="text-xs font-medium text-foreground">
+															{handle.dataType} ({handle.type === 'source' ? 'Output' : 'Input'})
+														</span>
+													)}
+												</div>
+												<div className="flex items-center gap-1">
+													<span className="text-xs text-muted-foreground">
+														{connections.length} connection{connections.length !== 1 ? 's' : ''}
+													</span>
+												</div>
+											</div>
+										);
+									})}
+									{(!nodeInfo.handles || nodeInfo.handles.length === 0) && (
+										<div className="text-xs text-muted-foreground/60 text-center py-2">
+											No handles defined for this node
+										</div>
+									)}
+								</div>
+							</AccordionSection>
 						</div>
 					)}
 
 					{/* COLUMN 3: ERROR LOG (only show when there are errors) */}
 					{errors.length > 0 && (
 						<div className={STYLING_CONTAINER_COLUMN_ERROR}>
-							<div className={STYLING_CARD_SECTION}>
-								<h4 className={STYLING_TEXT_SECTION_HEADER}>Error Log</h4>
+							<AccordionSection
+								title="Error Log"
+								isOpen={accordionState.errors}
+								onToggle={() => toggleAccordion('errors')}
+							>
 								<ErrorLog errors={errors} onClearErrors={handleClearErrors} />
-							</div>
+							</AccordionSection>
 						</div>
 					)}
 				</div>

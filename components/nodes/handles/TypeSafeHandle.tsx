@@ -104,6 +104,13 @@ const ULTIMATE_TYPE_MAP: Record<string, { tokenKey: string; label: string }> = {
 	a: { tokenKey: "array", label: "array" },
 	x: { tokenKey: "any", label: "any" },
 	V: { tokenKey: "vibe", label: "Vibe" },
+	// Full data type names for direct mapping
+	JSON: { tokenKey: "json", label: "json" },
+	String: { tokenKey: "string", label: "string" },
+	Boolean: { tokenKey: "boolean", label: "boolean" },
+	Number: { tokenKey: "number", label: "number" },
+	Array: { tokenKey: "array", label: "array" },
+	Object: { tokenKey: "object", label: "object" },
 };
 
 /**

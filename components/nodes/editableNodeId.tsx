@@ -109,12 +109,12 @@ const EditableNodeId: React.FC<EditableNodeIdProps> = ({ nodeId, onUpdateId, cla
 				ref={spanRef}
 				contentEditable={editing}
 				suppressContentEditableWarning
-				onDoubleClick={() => setEditing(true)}
+				onClick={() => setEditing(true)}
 				onBlur={onBlur}
 				onKeyDown={onKeyDown}
 				className={`inline-block ${editing ? "cursor-text" : "cursor-pointer"} ${
 					error ? "text-red-500" : ""
-				}`}
+				} ${editing ? "focus:ring-1 focus:ring-blue-500 rounded px-1" : ""}`}
 				style={{
 					outline: "none",
 					userSelect: editing ? "text" : "none",
@@ -122,7 +122,7 @@ const EditableNodeId: React.FC<EditableNodeIdProps> = ({ nodeId, onUpdateId, cla
 					minWidth: "60px",
 					borderBottom: editing ? "1px solid currentColor" : "1px solid transparent",
 				}}
-				title={editing ? "Enter to save, Escape to cancel" : "Double-click to edit ID"}
+				title={editing ? "Enter to save, Escape to cancel" : "Click to edit ID"}
 			>
 				{nodeId}
 			</span>

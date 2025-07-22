@@ -57,15 +57,16 @@ const validateNodeData = createNodeValidator({{pascalCase kind}}DataSchema, '{{p
 const spec: NodeSpec = {
   kind: '{{camelCase kind}}',
   displayName: '{{camelCase kind}}'.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim(),
+  label: '{{camelCase kind}}'.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim(),
   category: CATEGORIES.{{constantCase category}},
   size: {
     expanded: {{expandedSizeConstant expandedSize}},
     collapsed: {{collapsedSizeConstant collapsedSize}},
   },
   handles: [
-    { id: 'json-input', code: 'j', position: 'top', type: 'target' },
-    { id: 'output', code: 's', position: 'right', type: 'source' },
-    { id: 'activate', code: 'b', position: 'left', type: 'target' },
+    { id: 'json-input', code: 'j', position: 'top', type: 'target', dataType: 'JSON' },
+    { id: 'output', code: 's', position: 'right', type: 'source', dataType: 'String' },
+    { id: 'activate', code: 'b', position: 'left', type: 'target', dataType: 'Boolean' },
   ],
   inspector: {
     key: '{{pascalCase kind}}Inspector',

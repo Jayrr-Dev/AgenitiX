@@ -99,7 +99,7 @@ export const EditableJsonEditor: React.FC<EditableJsonEditorProps> = ({
 
 	if (isEditing) {
 		return (
-			<div className={`space-y-2 ${className}`}>
+			<div className={`space-y-2 ${className} p-1`}>
 				{/* Edit Mode Header */}
 				<div className="flex items-center justify-between">
 					<div className="text-xs font-medium text-gray-700 dark:text-gray-300">Edit JSON Data</div>
@@ -171,10 +171,10 @@ export const EditableJsonEditor: React.FC<EditableJsonEditorProps> = ({
 
 	// View Mode
 	return (
-		<div className={`space-y-2 ${className}`}>
+		<div className={`space-y-2 ${className} p-1`}>
 			{/* View Mode Header */}
-			<div className="flex items-center justify-between">
-				<div className="text-xs font-medium text-gray-700 dark:text-gray-300">Node Data</div>
+			<div className="flex items-center justify-between ">
+				<div className="text-xs font-medium text-gray-700 dark:text-gray-300 ">JSON Data</div>
 				<button
 					onClick={startEditing}
 					className="flex items-center gap-1 px-2 py-0.5 text-xs bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded border border-blue-300 dark:border-blue-700 transition-colors"

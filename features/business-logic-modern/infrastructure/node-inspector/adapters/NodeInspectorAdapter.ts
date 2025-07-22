@@ -21,9 +21,35 @@ import { getNodeMetadata, validateNode } from "../../node-registry/nodespec-regi
  */
 export interface InspectorNodeInfo {
 	displayName: string;
+	label?: string;
 	category: string;
 	icon?: string;
 	description?: string;
+	author?: string;
+	feature?: string;
+	version?: number;
+	runtime?: {
+		execute?: string;
+	};
+	handles?: Array<{
+		id: string;
+		type: "source" | "target";
+		dataType?: string;
+		code?: string;
+		tsSymbol?: string;
+		position: "left" | "right" | "top" | "bottom";
+	}>;
+	controls?: {
+		autoGenerate?: boolean;
+		excludeFields?: string[];
+		customFields?: Array<{
+			key: string;
+			type: string;
+			label?: string;
+			placeholder?: string;
+			ui?: Record<string, any>;
+		}>;
+	};
 	isValid: boolean;
 	warnings: string[];
 	hasControls: boolean;
@@ -54,9 +80,16 @@ class NodeInspectorAdapterImpl {
 
 			return {
 				displayName: metadata.displayName,
+				label: metadata.label,
 				category: metadata.category,
 				icon: metadata.icon,
 				description: metadata.description,
+				author: metadata.author,
+				feature: metadata.feature,
+				version: metadata.version,
+				runtime: metadata.runtime,
+				handles: metadata.handles,
+				controls: metadata.controls,
 				isValid: validation.isValid,
 				warnings: validation.warnings || [],
 				hasControls: this.determineHasControls(nodeType),

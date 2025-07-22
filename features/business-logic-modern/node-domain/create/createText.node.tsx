@@ -50,15 +50,16 @@ const validateNodeData = createNodeValidator(CreateTextDataSchema, "CreateText")
 const spec: NodeSpec = {
   kind: "createText",
   displayName: "Create Text",
+  label: "Create Text",
   category: CATEGORIES.CREATE,
   size: {
     expanded: EXPANDED_SIZES.VE2, // 120x'auto' for variable height content
     collapsed: COLLAPSED_SIZES.C1W, // 60x60 standard collapsed
   },
   handles: [
-    { id: "json-input", code: "j", position: "top", type: "target" },
-    { id: "output", code: "s", position: "right", type: "source" },
-    { id: "activate", code: "b", position: "left", type: "target" },
+    { id: "json-input", code: "j", position: "top", type: "target", dataType: "JSON" },
+    { id: "output", code: "s", position: "right", type: "source", dataType: "String" },
+    { id: "activate", code: "b", position: "left", type: "target", dataType: "Boolean" },
   ],
   inspector: {
     key: "CreateTextInspector",

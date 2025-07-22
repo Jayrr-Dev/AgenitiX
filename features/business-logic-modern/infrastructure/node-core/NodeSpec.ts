@@ -92,6 +92,12 @@ export interface NodeSpec {
 	displayName: string;
 
 	/**
+	 * OPTIONAL: Custom label for the node instance (can be edited by user)
+	 * If not provided, defaults to displayName
+	 */
+	label?: string;
+
+	/**
 	 * The functional category the node belongs to. Drives color, folder, and theming.
 	 */
 	category: NodeCategory;

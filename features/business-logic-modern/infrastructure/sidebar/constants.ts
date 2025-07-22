@@ -164,7 +164,7 @@ export function createStencilFromNodeMetadata(
 	return {
 		id: `${prefix}-${metadata.kind.toLowerCase()}-${index}`,
 		nodeType: metadata.kind as NodeType,
-		label: metadata.displayName,
+		label: metadata.label || metadata.displayName,
 		description: metadata.description,
 		icon: metadata.icon,
 		category: metadata.category,
