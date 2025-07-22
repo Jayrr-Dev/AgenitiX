@@ -210,7 +210,7 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
             value={validatedData.text}
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Enter your text here..."
-            className={`scrollbar scrollbar-thumb-sky-700 scrollbar-track-sky-300 h-32 overflow-y-scroll focus:ring-2 focus:ring-green-500 focus:border-transparent ${categoryTextColors.primary}`}
+                          className={`scrollbar rounded-md p-2 text-sm scrollbar-thumb-sky-700 scrollbar-track-sky-300 h-32 overflow-y-scroll focus:outline-none focus:ring-1 focus:ring-white-500 focus:ring-offset-0 ${categoryTextColors.primary}`}
            
           />
         </div>
