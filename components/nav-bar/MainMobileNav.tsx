@@ -35,28 +35,8 @@ export default function MobileNav() {
 					</Link>
 				</DropdownMenuItem>
 				<DropdownMenuItem asChild>
-					<Link href="/about" className="w-full">
-						About Us
-					</Link>
-				</DropdownMenuItem>
-				<DropdownMenuItem asChild>
-					<Link href="/expertise" className="w-full">
-						Expertise
-					</Link>
-				</DropdownMenuItem>
-				<DropdownMenuItem asChild>
-					<Link href="/projects" className="w-full">
-						Projects
-					</Link>
-				</DropdownMenuItem>
-				<DropdownMenuItem asChild>
-					<Link href="/contact" className="w-full">
-						Contact
-					</Link>
-				</DropdownMenuItem>
-				<DropdownMenuItem asChild>
-					<Link href="/careers" className="w-full">
-						Careers
+					<Link href="/dashboard" className="w-full">
+						Dashboard
 					</Link>
 				</DropdownMenuItem>
 			</DropdownMenuContent>

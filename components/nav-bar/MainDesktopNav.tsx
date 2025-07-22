@@ -16,30 +16,13 @@ export default function MainDesktopNav() {
 		<NavigationMenu>
 			<NavigationMenuList className="flex flex-row gap-4 flex-wrap">
 				<NavigationMenuItem>
-					<Link href="/about" legacyBehavior passHref>
-						<NavigationMenuLink className={navItemStyle}>About Us</NavigationMenuLink>
+					<Link href="/" legacyBehavior passHref>
+						<NavigationMenuLink className={navItemStyle}>Home</NavigationMenuLink>
 					</Link>
 				</NavigationMenuItem>
 				<NavigationMenuItem>
-					<Link href="/expertise" legacyBehavior passHref>
-						<NavigationMenuLink className={navItemStyle}>Expertise</NavigationMenuLink>
-					</Link>
-				</NavigationMenuItem>
-				<NavigationMenuItem>
-					<Link href="/projects" legacyBehavior passHref>
-						<NavigationMenuLink className={navItemStyle}>Projects</NavigationMenuLink>
-					</Link>
-				</NavigationMenuItem>
-
-				<NavigationMenuItem>
-					<Link href="/careers" legacyBehavior passHref>
-						<NavigationMenuLink className={navItemStyle}>Careers</NavigationMenuLink>
-					</Link>
-				</NavigationMenuItem>
-
-				<NavigationMenuItem>
-					<Link href="/contact" legacyBehavior passHref>
-						<NavigationMenuLink className={cn(navItemStyle)}>Contact</NavigationMenuLink>
+					<Link href="/dashboard" legacyBehavior passHref>
+						<NavigationMenuLink className={cn(navItemStyle)}>Dashboard</NavigationMenuLink>
 					</Link>
 				</NavigationMenuItem>
 			</NavigationMenuList>

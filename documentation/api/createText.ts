@@ -18,18 +18,22 @@
  * - Accessibility:  Focus Management supported
  */
 
+import React from 'react';
 import { z } from 'zod';
 import type { NodeProps } from '@xyflow/react';
 
-// Node Data Interface
-export interface createTextData {
+// Node Data Schema
+export const createTextDataSchema = z.object({
   /** Required string field (default: "") */
-  text: string;
+  text: z.string().default(""),
   /** Required boolean field (default: false) */
-  isActive: boolean;
+  isActive: z.boolean().default(false),
   /** Required boolean field (default: false) */
-  isExpanded: boolean;
-}
+  isExpanded: z.boolean().default(false),
+});
+
+// Type inference from schema
+export type createTextData = z.infer<typeof createTextDataSchema>;
 
 // Node Specification
 export const createTextSpec = {
@@ -63,24 +67,10 @@ export const createTextSpec = {
   }
 };
 
-// Data Schema
-export const createTextDataSchema = z.object({
-  text: z.string().default(""),
-  isActive: z.boolean().default(false),
-  isExpanded: z.boolean().default(false),
-});
-
-// Type inference from schema
-export type createTextData = z.infer<typeof createTextDataSchema>;
-
 // Node Component
-export const createTextNode = ({ data, id }: NodeProps<createTextData>) => {
+export const createTextNode = ({ data, id }: NodeProps) => {
   // Your node component implementation
-  return (
-    <div>
-      {/* Node content goes here */}
-    </div>
-  );
+  return React.createElement('div', null, 'Node content goes here');
 };
 
 // Export for use in other modules

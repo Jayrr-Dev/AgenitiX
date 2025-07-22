@@ -1101,16 +1101,20 @@ function generateAPIDoc(nodeData: NodeDocData) {
  * - Accessibility: ${nodeData.theming.accessibility.keyboardSupport ? 'Keyboard' : ''}${nodeData.theming.accessibility.screenReaderSupport ? ' Screen Reader' : ''}${nodeData.theming.accessibility.focusManagement ? ' Focus Management' : ''} supported
  */
 
+import React from 'react';
 import { z } from 'zod';
 import type { NodeProps } from '@xyflow/react';
 
-// Node Data Interface
-export interface ${interfaceName} {
+// Node Data Schema
+export const ${interfaceName}Schema = z.object({
 ${spec.dataSchema?.fields.map(field => 
   `  /** ${field.required ? 'Required' : 'Optional'} ${field.type} field${field.defaultValue !== undefined ? ` (default: ${JSON.stringify(field.defaultValue)})` : ''} */
-  ${field.name}${field.required ? '' : '?'}: ${field.type};`
+  ${field.name}: z.${field.type === 'string' ? 'string' : field.type === 'boolean' ? 'boolean' : field.type === 'number' ? 'number' : 'string'}().default(${field.defaultValue !== undefined ? JSON.stringify(field.defaultValue) : field.type === 'string' ? '""' : field.type === 'boolean' ? 'false' : field.type === 'number' ? '0' : '""'}),`
 ).join('\n') || '  // Define your node data properties here'}
-}
+});
+
+// Type inference from schema
+export type ${interfaceName} = z.infer<typeof ${interfaceName}Schema>;
 
 // Node Specification
 export const ${kind}Spec = {
@@ -1146,22 +1150,10 @@ ${initialDataFields}
   }
 };
 
-// Data Schema
-export const ${interfaceName}Schema = z.object({
-${schemaFields}
-});
-
-// Type inference from schema
-export type ${interfaceName} = z.infer<typeof ${interfaceName}Schema>;
-
 // Node Component
-export const ${displayName.replace(/\s+/g, '')}Node = ({ data, id }: NodeProps<${interfaceName}>) => {
+export const ${displayName.replace(/\s+/g, '')}Node = ({ data, id }: NodeProps) => {
   // Your node component implementation
-  return (
-    <div>
-      {/* Node content goes here */}
-    </div>
-  );
+  return React.createElement('div', null, 'Node content goes here');
 };
 
 // Export for use in other modules
