@@ -6,8 +6,6 @@ import MainMobileNav from "@/components/nav-bar/MainMobileNav";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
-import Image from "next/image";
-import Link from "next/link";
 import * as React from "react";
 
 export default function MainNavBar() {
@@ -26,9 +24,6 @@ export default function MainNavBar() {
 			window.removeEventListener("scroll", handleScroll);
 		};
 	}, [scrolled]);
-
-	const { theme } = useTheme();
-	// Render the navigation bar with responsive behavior based on scroll position
 	return (
 		<header
 			className={cn(

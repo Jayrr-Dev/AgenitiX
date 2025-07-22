@@ -133,7 +133,7 @@
     "coverage",
     "*.config.js",
     "*.config.ts",
-    "anubis-standalone/examples/**/*",
+    ".deprecated/examples/**/*",
     "features/business-logic-modern/infrastructure/depreciated/**/*"
   ],
 
