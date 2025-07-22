@@ -23,6 +23,7 @@ import type { NodeSpec } from "./NodeSpec";
 import NodeTelemetry from "./NodeTelemetry";
 import { getNodePlugins } from "./plugins/nodePluginRegistry";
 import { runServerActions } from "./serverActions/serverActionRegistry";
+import { globalNodeMemoryManager } from "./NodeMemory";
 
 /**
  * Utility to get CSS custom property value from the DOM
@@ -170,13 +171,25 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 		// Determine label (persisted or fallback)
 		const nodeLabel = (props.data as any)?.label || spec.displayName;
 
-		// Inner component to throw inside ErrorBoundary, not outside
-		const MaybeError: React.FC = () => {
-			if (process.env.NODE_ENV === "development" && (props.data as any)?.forceError) {
-				throw new Error(`🧨 Simulated runtime error from node ${props.id} (forceError flag)`);
-			}
-			return null;
-		};
+    // Inner component to throw inside ErrorBoundary, not outside
+    const MaybeError: React.FC = () => {
+      if (
+        process.env.NODE_ENV === "development" &&
+        (props.data as any)?.forceError
+      ) {
+        throw new Error(
+          `🧨 Simulated runtime error from node ${props.id} (forceError flag)`
+        );
+      }
+      return null;
+    };
+
+    // Initialize node memory if configured
+    React.useEffect(() => {
+      if (spec.memory) {
+        globalNodeMemoryManager.get(props.id, spec.memory);
+      }
+    }, [props.id]);
 
 		// side-effect: run server actions once
 		React.useEffect(() => {

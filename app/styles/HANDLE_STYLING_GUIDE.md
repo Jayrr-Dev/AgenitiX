@@ -286,7 +286,7 @@ const UNIFIED_HANDLE_STYLES = {
 
 ### **Handle Visibility Issues**
 
-- Check if handles are hidden by CSS: `[&_.react-flow__handle]:!opacity-0`
+- Check if handles are hidden by CSS: `[&_.react-flow__handle]:opacity-0!`
 - Verify `pointerEvents: "all"` is set for interaction
 - Ensure proper z-index with `z-30` class
 

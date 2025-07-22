@@ -4,6 +4,7 @@ import type {
 	EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import type { z } from "zod";
+import type { NodeMemoryConfig } from "./NodeMemory";
 
 /**
  * Control field configuration for custom control overrides

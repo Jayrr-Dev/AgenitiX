@@ -48,27 +48,47 @@ const validateNodeData = createNodeValidator(CreateTextDataSchema, "CreateText")
  * Node specification
  */
 const spec: NodeSpec = {
-	kind: "createText",
-	displayName: "createText",
-	category: CATEGORIES.CREATE,
-	size: {
-		expanded: EXPANDED_SIZES.VE2, // 120x'auto' for variable height content
-		collapsed: COLLAPSED_SIZES.C1W, // 60x60 standard collapsed
-	},
-	handles: [
-		{ id: "json-input", code: "j", position: "top", type: "target" },
-		{ id: "output", code: "s", position: "right", type: "source" },
-		{ id: "activate", code: "b", position: "left", type: "target" },
-	],
-	inspector: {
-		key: "CreateTextInspector",
-	},
-	version: 1,
-	runtime: {
-		execute: "createText_execute_v1",
-	},
-	initialData: { text: "", isActive: false, isExpanded: false },
-	dataSchema: CreateTextDataSchema,
+  kind: "createText",
+  displayName: "createText",
+  category: CATEGORIES.CREATE,
+  size: {
+    expanded: EXPANDED_SIZES.VE2, // 120x'auto' for variable height content
+    collapsed: COLLAPSED_SIZES.C1W, // 60x60 standard collapsed
+  },
+  handles: [
+    { id: "json-input", code: "j", position: "top", type: "target" },
+    { id: "output", code: "s", position: "right", type: "source" },
+    { id: "activate", code: "b", position: "left", type: "target" },
+  ],
+  inspector: {
+    key: "CreateTextInspector",
+  },
+  version: 1,
+  runtime: {
+    execute: "createText_execute_v1",
+  },
+  initialData: { text: "", isActive: false, isExpanded: false },
+  dataSchema: CreateTextDataSchema,
+  controls: {
+    autoGenerate: true,
+    excludeFields: ["isActive"], // Hide system fields from controls
+    customFields: [
+      {
+        key: "text",
+        type: "textarea",
+        label: "Text",
+        placeholder: "Enter your text here...",
+        ui: {
+          rows: 4,
+        },
+      },
+      {
+        key: "isExpanded",
+        type: "boolean",
+        label: "Is Expanded",
+      },
+    ],
+  },
 };
 
 /**
@@ -104,10 +124,10 @@ const CONTENT_STYLES = {
  * Category-specific text colors from design system
  */
 const CATEGORY_TEXT_COLORS = {
-	CREATE: {
-		primary: "text-[var(--node-create-text)]",
-		secondary: "text-[var(--node-create-text-secondary)]",
-	},
+  CREATE: {
+    primary: "text-(--node-create-text)",
+    secondary: "text-(--node-create-text-secondary)",
+  },
 } as const;
 
 /**
@@ -168,42 +188,44 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 		<>
 			<ExpandCollapseButton showUI={isExpanded} onToggle={handleToggleExpanded} size="sm" />
 
-			{isExpanded ? (
-				<div className={CONTENT_STYLES.content.expanded}>
-					<div className={CONTENT_STYLES.header.container}>
-						<h3 className={`text-sm font-semibold ${categoryTextColors.primary}`}>createText</h3>
-						{process.env.NODE_ENV === "development" && (
-							<span className={`text-xs ${categoryTextColors.secondary}`}>
-								Health: {getHealthScore()}%
-							</span>
-						)}
-					</div>
+      {isExpanded ? (
+        <div className={CONTENT_STYLES.content.expanded}>
+          <div className={CONTENT_STYLES.header.container}>
+            <h3
+              className={`text-sm font-semibold ${categoryTextColors.primary}`}
+            >
+              createText
+            </h3>
+            {/* {process.env.NODE_ENV === "development" && (
+              <span className={`text-xs ${categoryTextColors.secondary}`}>
+                Health: {getHealthScore()}%
+              </span>
+            )} */}
+          </div>
 
-					{/* Simple, clean textarea for direct text editing */}
-					<textarea
-						value={validatedData.text}
-						onChange={(e) => handleTextChange(e.target.value)}
-						placeholder="Enter your text here..."
-						className={`flex-1 w-full p-2 text-sm rounded-md resize-none transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${categoryTextColors.primary} bg-[var(--node-create-bg-hover)]`}
-						style={{
-							minHeight: "60px",
-							border: "none", // Remove border - scaffold handles all borders
-						}}
-					/>
-				</div>
-			) : (
-				<div className={CONTENT_STYLES.content.collapsed}>
-					<div className="text-center">
-						<div
-							className={`text-xs font-medium ${categoryTextColors.primary} uppercase tracking-wide`}
-						>
-							TEXT
-						</div>
-					</div>
-				</div>
-			)}
-		</>
-	);
+          {/* Simple, clean textarea for direct text editing */}
+          
+          <textarea
+            value={validatedData.text}
+            onChange={(e) => handleTextChange(e.target.value)}
+            placeholder="Enter your text here..."
+            className={`scrollbar scrollbar-thumb-sky-700 scrollbar-track-sky-300 h-32 overflow-y-scroll focus:ring-2 focus:ring-green-500 focus:border-transparent ${categoryTextColors.primary}`}
+           
+          />
+        </div>
+      ) : (
+        <div className={CONTENT_STYLES.content.collapsed}>
+          <div className="text-center">
+            <div
+              className={`text-xs font-medium ${categoryTextColors.primary} uppercase tracking-wide max-w-20 truncate`}
+            >
+              {validatedData.text}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 };
 
 export default withNodeScaffold(spec, CreateTextNodeComponent);

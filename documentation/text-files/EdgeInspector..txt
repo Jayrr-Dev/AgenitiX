@@ -222,7 +222,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({
           </div>
 
           {/* Arrow */}
-          <ArrowRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+          <ArrowRight className="w-5 h-5 text-gray-400 shrink-0" />
 
           {/* Target Node */}
           <div className="flex-1 bg-white dark:bg-gray-700 rounded border p-2">
