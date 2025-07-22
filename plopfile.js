@@ -168,7 +168,59 @@ module.exports = (plop) => {
 				});
 			},
 
-			// 9. Final success message with comprehensive instructions
+			// 9. Auto-generate node documentation (NEW)
+			(data) => {
+				return new Promise((resolve) => {
+					const { spawn } = require("child_process");
+					console.log("📚 Generating node documentation...");
+
+					const docProcess = spawn("npx", ["ts-node", "--project", "tsconfig.node.json", "scripts/generate-node-docs.ts", data.kind, data.domain, data.category, data.kind], {
+						stdio: "inherit",
+						shell: true,
+						cwd: __dirname,
+					});
+
+					docProcess.on("close", (code) => {
+						if (code === 0) {
+							resolve("✅ Node documentation generated successfully");
+						} else {
+							resolve(`⚠️  Documentation generation completed with code ${code}`);
+						}
+					});
+
+					docProcess.on("error", (error) => {
+						resolve(`❌ Error generating documentation: ${error.message}`);
+					});
+				});
+			},
+
+			// 10. Auto-generate nodes overview (NEW)
+			() => {
+				return new Promise((resolve) => {
+					const { spawn } = require("child_process");
+					console.log("📋 Generating nodes overview...");
+
+					const overviewProcess = spawn("npx", ["ts-node", "--project", "tsconfig.node.json", "scripts/generate-nodes-overview.ts"], {
+						stdio: "inherit",
+						shell: true,
+						cwd: __dirname,
+					});
+
+					overviewProcess.on("close", (code) => {
+						if (code === 0) {
+							resolve("✅ Nodes overview generated successfully");
+						} else {
+							resolve(`⚠️  Overview generation completed with code ${code}`);
+						}
+					});
+
+					overviewProcess.on("error", (error) => {
+						resolve(`❌ Error generating overview: ${error.message}`);
+					});
+				});
+			},
+
+			// 11. Final success message with comprehensive instructions
 			(data) => {
 				const { kind, domain, category } = data;
 				return (
@@ -177,20 +229,32 @@ module.exports = (plop) => {
 					`   ✅ Node file: features/business-logic-modern/node-domain/${domain}/${kind}.node.tsx\n` +
 					`   ✅ Registry entries: useDynamicNodeTypes.ts, nodespec-registry.ts\n` +
 					`   ✅ Export statements: node-domain/index.ts\n` +
-					`   ✅ CSS tokens: Regenerated from tokens.json\n\n` +
+					`   ✅ CSS tokens: Regenerated from tokens.json\n` +
+					`   ✅ Documentation: documentation/nodes/${domain}/${kind}.md\n` +
+					`   ✅ HTML docs: documentation/nodes/${domain}/${kind}.html\n` +
+					`   ✅ API reference: documentation/api/${kind}.ts\n` +
+					`   ✅ Nodes overview: documentation/nodes/overview.html\n\n` +
 					`🎨 THEMING INTEGRATION:\n` +
 					`   ✅ Node uses category '${category}' theming tokens\n` +
 					`   ✅ CSS variables: --node-${category.toLowerCase()}-*\n` +
 					`   ✅ Auto-integrated with sidebar, inspector, minimap\n` +
 					`   ✅ Follows semantic token system\n\n` +
+					`📚 DOCUMENTATION GENERATED:\n` +
+					`   ✅ Comprehensive markdown documentation\n` +
+					`   ✅ Interactive HTML documentation\n` +
+					`   ✅ API reference with TypeScript types\n` +
+					`   ✅ Usage examples and integration guides\n` +
+					`   ✅ Troubleshooting and development tips\n\n` +
 					`🚀 READY TO USE:\n` +
 					`   • Node automatically appears in sidebar\n` +
 					`   • Inspector controls auto-generated from schema\n` +
 					`   • NODE_TYPE_CONFIG dynamically provides configuration\n` +
-					`   • Theming matches existing ${category} category nodes\n\n` +
+					`   • Theming matches existing ${category} category nodes\n` +
+					`   • Documentation available at documentation/nodes/${domain}/\n\n` +
 					`🔧 NEXT STEPS:\n` +
 					`   • Customize node schema in the generated file\n` +
 					`   • Add custom UI in the expanded/collapsed sections\n` +
+					`   • Review generated documentation\n` +
 					`   • Test with 'pnpm dev' - no additional setup needed!`
 				);
 			},

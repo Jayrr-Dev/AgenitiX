@@ -14,4 +14,8 @@ export default withPWA({
 	register: true,
 	skipWaiting: true,
 	disable: process.env.NODE_ENV === "development",
+	exclude: [
+		/\.map$/,
+		/^\/tailwind\.css$/, // Exclude static tailwind.css from caching
+	],
 })(nextConfig);
