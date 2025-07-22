@@ -45,7 +45,7 @@ export const EnhancedNodeControls: React.FC<EnhancedNodeControlsProps> = ({
 			<DynamicControls node={node} updateNodeData={updateNodeData} onLogError={onLogError} />
 
 			{/* Development debug info */}
-			{process.env.NODE_ENV === "development" && (
+			{/* {process.env.NODE_ENV === "development" && (
 				<div className="mt-4 p-2 bg-control-debug rounded border-control-input text-xs">
 					<div className="font-medium text-control-input mb-1">🔧 NodeSpec Integration:</div>
 					<div className="space-y-0.5 text-control-placeholder">
@@ -59,7 +59,7 @@ export const EnhancedNodeControls: React.FC<EnhancedNodeControlsProps> = ({
 						<div>Valid: {nodeInfo.isValid ? "✅" : "❌"}</div>
 					</div>
 				</div>
-			)}
+			)} */}
 		</BaseControl>
 	);
 };

@@ -86,7 +86,7 @@ const spec: NodeSpec = {
       {
         key: "isExpanded",
         type: "boolean",
-        label: "Is Expanded",
+        label: "Expand",
       },
     ],
   },
@@ -196,11 +196,7 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
       {isExpanded ? (
         <div className={CONTENT_STYLES.content.expanded}>
           <div className={CONTENT_STYLES.header.container}>
-            <h3
-              className={`text-sm font-semibold ${categoryTextColors.primary}`}
-            >
-              createText
-            </h3>
+       
             {/* {process.env.NODE_ENV === "development" && (
               <span className={`text-xs ${categoryTextColors.secondary}`}>
                 Health: {getHealthScore()}%
