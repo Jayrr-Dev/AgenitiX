@@ -49,7 +49,7 @@ const validateNodeData = createNodeValidator(CreateTextDataSchema, "CreateText")
  */
 const spec: NodeSpec = {
   kind: "createText",
-  displayName: "createText",
+  displayName: "Create Text",
   category: CATEGORIES.CREATE,
   size: {
     expanded: EXPANDED_SIZES.VE2, // 120x'auto' for variable height content
