@@ -186,8 +186,6 @@ export class RiskEngine {
 		sessionHistory?: any;
 		timestamp: number;
 	}): Promise<{ riskLevel: RiskLevel; config: AdaptiveConfig; factors: RiskFactors }> {
-		console.log(`🔍 Starting risk analysis for: ${request.userAgent}`);
-
 		const factors: RiskFactors = {
 			ipReputation: await this.checkIPReputation(request.ip),
 			geolocation: await this.checkGeolocation(request.ip),
@@ -199,15 +197,11 @@ export class RiskEngine {
 			networkBehavior: await this.analyzeNetworkBehavior(request.ip),
 		};
 
-		console.log(`📊 Risk factors:`, factors);
-
 		const score = this.calculateRiskScore(factors);
 		const riskLevel = this.getRiskLevel(score);
 		const config = this.getAdaptiveConfig(riskLevel.level);
 
-		console.log(
-			`🎯 Final risk assessment: ${riskLevel.name} (Level ${riskLevel.level}) - Score: ${score}`
-		);
+		console.log(`🛡️ Risk: ${riskLevel.name} (${score})`);
 
 		return { riskLevel, config, factors };
 	}
