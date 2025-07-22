@@ -1,4 +1,4 @@
-import { testimonials } from "@/features/home-page/data";
+import { testimonials } from "@/features/marketing/home-page/data";
 import dynamic from "next/dynamic";
 const InfiniteMovingCards = dynamic(
 	() => import("@/components/ui/infinite-moving-cards").then((mod) => mod.InfiniteMovingCards),

@@ -89,7 +89,7 @@ const spec: NodeSpec = {
       },
     ],
   },
-  icon: "FileText",
+  icon: "LuFileText",
   author: "Agenitix Team",
   description: "Creates text content with customizable formatting and styling options",
   feature: "base",

@@ -1,21 +1,23 @@
 /**
- * NODE SEARCH MODAL - Enhanced node search and selection interface
+ * NODE SEARCH MODAL - Advanced node discovery and creation interface
  *
- * • Provides fuzzy search across all available node types with keyboard navigation
- * • Shows categorized results with node metadata and descriptions
- * • Supports keyboard shortcuts for quick selection and modal dismissal
- * • Integrates with node registry for accurate type information and icons
- * • Includes recent selections and favorites for improved workflow efficiency
+ * • Fuzzy search with real-time filtering and scoring
+ * • Keyboard navigation with arrow keys and shortcuts
+ * • Visual feedback with hover states and selection indicators
+ * • Registry integration for rich node metadata display
+ * • Ant Design icons from react-icons/ai for visual consistency
+ * • Responsive design with proper accessibility features
  *
- * Keywords: node-search, modal, fuzzy-search, keyboard-navigation, node-registry
+ * Keywords: search-modal, fuzzy-search, keyboard-navigation, registry-integration, icons
  */
 
 "use client";
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import type { NodeType } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
-import { getNodeMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
+import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 import { Search, X } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -55,7 +57,7 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 			// Show all nodes when no search query
 			return availableNodes
 				.map((nodeType) => {
-					const metadata = getNodeMetadata(nodeType);
+					const metadata = getNodeSpecMetadata(nodeType);
 					return {
 						nodeType,
 						displayName: metadata?.displayName || nodeType,
@@ -72,7 +74,7 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 		const results: SearchResult[] = [];
 
 		availableNodes.forEach((nodeType) => {
-			const metadata = getNodeMetadata(nodeType);
+			const metadata = getNodeSpecMetadata(nodeType);
 			const displayName = metadata?.displayName || nodeType;
 			const category = metadata?.category || "other";
 			const description = metadata?.description || "";
@@ -207,7 +209,11 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 									}`}
 								>
 									<div className="flex items-center gap-3">
-										{result.icon && <span className="text-lg flex-shrink-0">{result.icon}</span>}
+										{result.icon && (
+											<span className="text-lg flex-shrink-0">
+												{renderLucideIcon(result.icon)}
+											</span>
+										)}
 										<div className="flex-1 min-w-0">
 											<div className="font-medium text-modal">{result.displayName}</div>
 											<div className="text-xs text-modal-secondary capitalize">

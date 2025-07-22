@@ -94,7 +94,7 @@ export async function middleware(request: NextRequest) {
 	// CHECK FOR EXISTING VALID AUTH TOKEN
 	if (authCookie?.value) {
 		try {
-			const payload = await AnubisJWT.verify(authCookie.value);
+			const payload = await AnubisJWT.verify(authCookie.value, process.env.ANUBIS_SECRET || "default-secret");
 			if (payload && payload.exp > Math.floor(now / 1000)) {
 				const response = NextResponse.next();
 				response.headers.set("X-Anubis-Verified", "true");

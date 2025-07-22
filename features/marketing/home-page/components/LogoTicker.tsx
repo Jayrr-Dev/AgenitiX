@@ -1,4 +1,4 @@
-import { logos } from "@/features/home-page/data";
+import { logos } from "@/features/marketing/home-page/data";
 import dynamic from "next/dynamic";
 
 // Dynamically import the LogoTicker component

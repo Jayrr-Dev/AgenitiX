@@ -11,7 +11,7 @@
  */
 
 import FlowEditor from "@/features/business-logic-modern/infrastructure/flow-engine/FlowEditor";
-import { VERSION } from "@/features/business-logic-modern/infrastructure/versioning/version";
+import { VERSION } from "@/features/business-logic-modern/infrastructure/versioning";
 
 // MAIN PAGE COMPONENT
 export default function BusinessLogicPage() {

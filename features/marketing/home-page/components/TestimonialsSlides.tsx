@@ -1,4 +1,4 @@
-import { testimonialsSlides } from "@/features/home-page/data";
+import { testimonialsSlides } from "@/features/marketing/home-page/data";
 import dynamic from "next/dynamic";
 
 const AnimatedTestimonials = dynamic(

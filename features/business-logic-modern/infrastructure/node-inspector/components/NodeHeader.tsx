@@ -13,6 +13,7 @@
 
 "use client";
 
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import { useNodeDisplay } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/NodeDisplayContext";
 import { useTextInputShortcuts } from "@flow-engine/hooks/useTextInputShortcuts";
 import type React from "react";
@@ -123,7 +124,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 					{/* REGISTRY-ENHANCED ICON */}
 					{icon && (
 						<span className="text-lg" title={`${displayName} • Category: ${category}`}>
-							{icon}
+							{renderLucideIcon(icon)}
 						</span>
 					)}
 

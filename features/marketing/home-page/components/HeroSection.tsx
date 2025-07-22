@@ -1,4 +1,4 @@
-import { HeroCarousel } from "@/features/home-page/components/HeroCaroussel";
+import { HeroCarousel } from "@/features/marketing/home-page/components/HeroCaroussel";
 
 export default function Header() {
 	return (

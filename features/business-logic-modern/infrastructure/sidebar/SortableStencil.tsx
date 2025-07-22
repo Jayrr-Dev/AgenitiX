@@ -1,13 +1,14 @@
 /**
- * SORTABLE STENCIL COMPONENT - Drag-and-drop node stencil with touch support
+ * SORTABLE STENCIL - Drag-and-drop enabled node stencil with enhanced UX
  *
- * • Draggable node stencil for sidebar with keyboard and touch accessibility
- * • Supports native drag-and-drop and touch-based drag simulation
- * • Integrated with semantic token system for consistent theming
- * • Hover states, focus management, and double-tap creation
- * • Sortable via dnd-kit with visual feedback and transitions
+ * • Drag-and-drop reordering with visual feedback and accessibility
+ * • Touch-friendly interactions with proper gesture handling
+ * • Keyboard navigation with focus management and shortcuts
+ * • Visual feedback for hover, focus, and active states
+ * • Registry-enhanced with Ant Design icons from react-icons/ai
+ * • Responsive design with proper touch and mouse event handling
  *
- * Keywords: sortable-stencil, drag-drop, touch-support, semantic-tokens, accessibility
+ * Keywords: sortable, stencil, drag-drop, touch, accessibility, keyboard, icons
  */
 
 "use client";
@@ -15,9 +16,23 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type React from "react";
-import { type KeyboardEvent, useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
+
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import type { HoveredStencil } from "./StencilInfoPanel";
 import type { NodeStencil } from "./types";
+
+/**
+ * Formats node label with proper capitalization
+ * Converts "createText" to "Create Text"
+ */
+function formatNodeLabel(label: string): string {
+	// Handle camelCase to Title Case conversion
+	return label
+		.replace(/([A-Z])/g, ' $1') // Add space before capital letters
+		.replace(/^./, str => str.toUpperCase()) // Capitalize first letter
+		.trim(); // Remove leading/trailing spaces
+}
 
 interface SortableStencilProps {
 	stencil: NodeStencil;
@@ -54,7 +69,7 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
 	const lastTapTime = useRef<number>(0);
 	const isTouchDragging = useRef<boolean>(false);
 
-	const handleKeyFocus = (e: KeyboardEvent<HTMLDivElement>) => {
+	const handleKeyFocus = (e: React.KeyboardEvent<HTMLDivElement>) => {
 		if (["Enter", " "].includes(e.key)) {
 			setHovered(stencil);
 		}
@@ -265,9 +280,12 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
 			<div
 				draggable
 				onDragStart={(e) => onNativeDragStart(e, stencil.nodeType)}
-				className="flex h-full w-full items-center justify-center text-center text-xs font-medium"
+				className="flex h-full w-full flex-col items-center justify-center text-center text-xs font-medium"
 			>
-				{stencil.label}
+				{renderLucideIcon(stencil.icon, "", 24)}
+				<div className="mt-1 text-[10px] text-[var(--infra-sidebar-text-secondary)] leading-tight">
+					{formatNodeLabel(stencil.label)}
+				</div>
 			</div>
 		</div>
 	);

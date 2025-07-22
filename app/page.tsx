@@ -3,22 +3,22 @@
 // Force dynamic rendering to avoid prerendering issues
 export const dynamic = "force-dynamic";
 
-import FAQ from "@/features/home-page/components/FAQ";
-import FeatureBoxesBento from "@/features/home-page/components/FeatureBoxesBento";
-import FeatureBoxesIconed from "@/features/home-page/components/FeatureBoxesIconed";
-import FeaturesBoxesPlain from "@/features/home-page/components/FeatureBoxesPlain";
-import Hero from "@/features/home-page/components/HeroSection";
-import { Revealer } from "@/features/home-page/components/HoverRevealer";
-import { InfiniteLogoTicker } from "@/features/home-page/components/LogoTicker";
-import { TabletScroller } from "@/features/home-page/components/TabletScroller";
-import { AnimatedTestimonialsDemo } from "@/features/home-page/components/TestimonialsSlides";
-import { Testimonials } from "@/features/home-page/components/TestimonialsTicker";
+import FAQ from "@/features/marketing/home-page/components/FAQ";
+import FeatureBoxesBento from "@/features/marketing/home-page/components/FeatureBoxesBento";
+import FeatureBoxesIconed from "@/features/marketing/home-page/components/FeatureBoxesIconed";
+import FeaturesBoxesPlain from "@/features/marketing/home-page/components/FeatureBoxesPlain";
+import Hero from "@/features/marketing/home-page/components/HeroSection";
+import { Revealer } from "@/features/marketing/home-page/components/HoverRevealer";
+import { InfiniteLogoTicker } from "@/features/marketing/home-page/components/LogoTicker";
+import { TabletScroller } from "@/features/marketing/home-page/components/TabletScroller";
+import { AnimatedTestimonialsDemo } from "@/features/marketing/home-page/components/TestimonialsSlides";
+import { Testimonials } from "@/features/marketing/home-page/components/TestimonialsTicker";
 import {
 	faq,
 	featureBoxesBento,
 	featureBoxesIconed,
 	featureBoxesPlain,
-} from "@/features/home-page/data";
+} from "@/features/marketing/home-page/data";
 import { useAnubisProtection } from "@/hooks/useAnubisProtection";
 
 export default function Home() {

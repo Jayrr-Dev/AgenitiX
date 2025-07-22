@@ -86,7 +86,7 @@ export function getNodeSpecMetadata(nodeType: string): NodeSpecMetadata | null {
 		displayName: spec.displayName,
 		category: spec.category,
 		description: overrides.description || defaults.description,
-		icon: overrides.icon || defaults.icon,
+		icon: overrides.icon || spec.icon || defaults.icon,
 		nodeType: spec.kind,
 		component: spec.kind,
 		size: {
