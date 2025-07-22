@@ -1,24 +1,18 @@
 {
-  "name": "agenitix-anubis-testing",
-  "version": "1.0.0",
-  "description": "Testing suite for AgenitiX Adaptive Anubis Bot Protection System",
-  "main": "test-adaptive-anubis.js",
-  "scripts": {
-    "test": "node test-adaptive-anubis.js",
-    "test:local": "TEST_SERVER_URL=http://localhost:3000 node test-adaptive-anubis.js",
-    "test:dev": "TEST_SERVER_URL=https://your-dev-server.com node test-adaptive-anubis.js",
-    "test:staging": "TEST_SERVER_URL=https://your-staging-server.com node test-adaptive-anubis.js"
-  },
-  "keywords": [
-    "anubis",
-    "bot-protection",
-    "testing",
-    "security",
-    "adaptive-risk"
-  ],
-  "author": "AgenitiX",
-  "license": "MIT",
-  "engines": {
-    "node": ">=14.0.0"
-  }
-} 
+	"name": "agenitix-anubis-testing",
+	"version": "1.0.0",
+	"description": "Testing suite for AgenitiX Adaptive Anubis Bot Protection System",
+	"main": "test-adaptive-anubis.js",
+	"scripts": {
+		"test": "node test-adaptive-anubis.js",
+		"test:local": "TEST_SERVER_URL=http://localhost:3000 node test-adaptive-anubis.js",
+		"test:dev": "TEST_SERVER_URL=https://your-dev-server.com node test-adaptive-anubis.js",
+		"test:staging": "TEST_SERVER_URL=https://your-staging-server.com node test-adaptive-anubis.js"
+	},
+	"keywords": ["anubis", "bot-protection", "testing", "security", "adaptive-risk"],
+	"author": "AgenitiX",
+	"license": "MIT",
+	"engines": {
+		"node": ">=14.0.0"
+	}
+}

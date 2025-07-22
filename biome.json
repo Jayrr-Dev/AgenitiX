@@ -7,11 +7,23 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"ignore": []
+		"ignore": [
+			"node_modules/**",
+			".next/**",
+			"dist/**",
+			"build/**",
+			"coverage/**",
+			".vercel/**",
+			"convex/_generated/**",
+			"generated/**",
+			"*.min.js",
+			"*.min.css"
+		]
 	},
 	"formatter": {
 		"enabled": true,
-		"indentStyle": "tab"
+		"indentStyle": "tab",
+		"lineWidth": 100
 	},
 	"organizeImports": {
 		"enabled": true
@@ -21,16 +33,26 @@
 		"rules": {
 			"recommended": true,
 			"style": {
-				"noUnusedTemplateLiteral": "error"
+				"noUnusedTemplateLiteral": "error",
+				"useTemplate": "error"
 			},
 			"suspicious": {
-				"noConsoleLog": "warn"
+				"noConsoleLog": "warn",
+				"noExplicitAny": "warn"
+			},
+			"complexity": {
+				"noExcessiveCognitiveComplexity": "warn"
+			},
+			"correctness": {
+				"noUnusedVariables": "error"
 			}
 		}
 	},
 	"javascript": {
 		"formatter": {
-			"quoteStyle": "double"
+			"quoteStyle": "double",
+			"trailingCommas": "es5",
+			"semicolons": "always"
 		}
 	},
 	"overrides": [
@@ -40,6 +62,29 @@
 				"rules": {
 					"style": {
 						"noUnusedTemplateLiteral": "error"
+					},
+					"suspicious": {
+						"noConsoleLog": "off"
+					}
+				}
+			}
+		},
+		{
+			"include": ["app/api/**/*.{ts,tsx}"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noConsoleLog": "off"
+					}
+				}
+			}
+		},
+		{
+			"include": ["scripts/**/*.{ts,js}"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noConsoleLog": "off"
 					}
 				}
 			}

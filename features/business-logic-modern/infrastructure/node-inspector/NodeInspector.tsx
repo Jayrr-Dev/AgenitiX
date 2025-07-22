@@ -15,8 +15,8 @@
 "use client";
 
 import {
-  useFlowStore,
-  useNodeErrors,
+	useFlowStore,
+	useNodeErrors,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import { getNodeOutput } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/outputUtils";
 import { Copy, Trash2 } from "lucide-react";
@@ -24,8 +24,8 @@ import React, { useCallback, useMemo } from "react";
 import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
 
 import EditableNodeDescription from "@/components/nodes/EditableNodeDescription";
-import EditableNodeId from "@/components/nodes/editableNodeId";
 import EditableNodeLabel from "@/components/nodes/EditableNodeLabel";
+import EditableNodeId from "@/components/nodes/editableNodeId";
 import { NODE_TYPE_CONFIG } from "../flow-engine/constants";
 import type { AgenNode, NodeType } from "../flow-engine/types/nodeData";
 import { useComponentTheme } from "../theming/components";
@@ -103,392 +103,368 @@ const STYLING_CARD_SECTION_CONTENT = `p-3 bg-card rounded-b-lg`;
 // =====================================================================
 
 const NodeInspector = React.memo(function NodeInspector() {
-  const {
-    nodes,
-    edges,
-    selectedNodeId,
-    selectedEdgeId,
-    inspectorLocked,
-    setInspectorLocked,
-    updateNodeData,
-    updateNodeId,
-    logNodeError,
-    clearNodeErrors,
-    removeNode,
-    removeEdge,
-    addNode,
-    selectNode,
-  } = useFlowStore();
+	const {
+		nodes,
+		edges,
+		selectedNodeId,
+		selectedEdgeId,
+		inspectorLocked,
+		setInspectorLocked,
+		updateNodeData,
+		updateNodeId,
+		logNodeError,
+		clearNodeErrors,
+		removeNode,
+		removeEdge,
+		addNode,
+		selectNode,
+	} = useFlowStore();
 
-  // Get theme for node inspector
-  const theme = useComponentTheme("nodeInspector");
+	// Get theme for node inspector
+	const theme = useComponentTheme("nodeInspector");
 
-  // Get selected items
-  const selectedNode = selectedNodeId
-    ? nodes.find((n) => n.id === selectedNodeId) || null
-    : null;
-  const selectedEdge = selectedEdgeId
-    ? edges.find((e) => e.id === selectedEdgeId) || null
-    : null;
+	// Get selected items
+	const selectedNode = selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) || null : null;
+	const selectedEdge = selectedEdgeId ? edges.find((e) => e.id === selectedEdgeId) || null : null;
 
-  // Get node category for display
-  const nodeCategory = useMemo(() => {
-    if (!selectedNode) return null;
-    // Try to get category from node metadata or spec
-    const nodeMetadata = NodeInspectorAdapter.getNodeInfo(
-      selectedNode.type as NodeType
-    );
-    return nodeMetadata?.category || "unknown";
-  }, [selectedNode]);
+	// Get node category for display
+	const nodeCategory = useMemo(() => {
+		if (!selectedNode) return null;
+		// Try to get category from node metadata or spec
+		const nodeMetadata = NodeInspectorAdapter.getNodeInfo(selectedNode.type as NodeType);
+		return nodeMetadata?.category || "unknown";
+	}, [selectedNode]);
 
-  // Always call useNodeErrors to avoid conditional hook usage
-  const errors = useNodeErrors(selectedNodeId);
+	// Always call useNodeErrors to avoid conditional hook usage
+	const errors = useNodeErrors(selectedNodeId);
 
-  // Get output for selected node
-  const output = useMemo(() => {
-    if (!selectedNode) return null;
-    return getNodeOutput(selectedNode, nodes, edges);
-  }, [selectedNode, nodes, edges]);
+	// Get output for selected node
+	const output = useMemo(() => {
+		if (!selectedNode) return null;
+		return getNodeOutput(selectedNode, nodes, edges);
+	}, [selectedNode, nodes, edges]);
 
-  const nodeInfo = useMemo(() => {
-    if (!selectedNode) return null;
-    return NodeInspectorAdapter.getNodeInfo(selectedNode.type as NodeType);
-  }, [selectedNode]);
+	const nodeInfo = useMemo(() => {
+		if (!selectedNode) return null;
+		return NodeInspectorAdapter.getNodeInfo(selectedNode.type as NodeType);
+	}, [selectedNode]);
 
-  // Node action handlers
-  const handleUpdateNodeId = useCallback(
-    (oldId: string, newId: string) => {
-      const success = updateNodeId(oldId, newId);
-      if (!success) {
-        console.warn(
-          `Failed to update node ID from "${oldId}" to "${newId}" - ID might already exist`
-        );
-      }
-      return success;
-    },
-    [updateNodeId]
-  );
+	// Node action handlers
+	const handleUpdateNodeId = useCallback(
+		(oldId: string, newId: string) => {
+			const success = updateNodeId(oldId, newId);
+			if (!success) {
+				console.warn(
+					`Failed to update node ID from "${oldId}" to "${newId}" - ID might already exist`
+				);
+			}
+			return success;
+		},
+		[updateNodeId]
+	);
 
-  const handleDeleteNode = useCallback(
-    (nodeId: string) => {
-      removeNode(nodeId);
-    },
-    [removeNode]
-  );
+	const handleDeleteNode = useCallback(
+		(nodeId: string) => {
+			removeNode(nodeId);
+		},
+		[removeNode]
+	);
 
-  const handleDuplicateNode = useCallback(
-    (nodeId: string) => {
-      const nodeToDuplicate = nodes.find((n) => n.id === nodeId);
-      if (!nodeToDuplicate) return;
+	const handleDuplicateNode = useCallback(
+		(nodeId: string) => {
+			const nodeToDuplicate = nodes.find((n) => n.id === nodeId);
+			if (!nodeToDuplicate) return;
 
-      // Create a new node with a unique ID and offset position
-      const newId = `${nodeId}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-      const newNode = {
-        ...nodeToDuplicate,
-        id: newId,
-        position: {
-          x: nodeToDuplicate.position.x + 40,
-          y: nodeToDuplicate.position.y + 40,
-        },
-        selected: false,
-        data: { ...nodeToDuplicate.data },
-      } as AgenNode;
+			// Create a new node with a unique ID and offset position
+			const newId = `${nodeId}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+			const newNode = {
+				...nodeToDuplicate,
+				id: newId,
+				position: {
+					x: nodeToDuplicate.position.x + 40,
+					y: nodeToDuplicate.position.y + 40,
+				},
+				selected: false,
+				data: { ...nodeToDuplicate.data },
+			} as AgenNode;
 
-      // Add the new node using the Zustand store
-      addNode(newNode);
+			// Add the new node using the Zustand store
+			addNode(newNode);
 
-      // Select the new duplicated node
-      selectNode(newId);
-    },
-    [nodes, addNode, selectNode]
-  );
+			// Select the new duplicated node
+			selectNode(newId);
+		},
+		[nodes, addNode, selectNode]
+	);
 
-  const handleDeleteEdge = useCallback(
-    (edgeId: string) => {
-      removeEdge(edgeId);
-    },
-    [removeEdge]
-  );
+	const handleDeleteEdge = useCallback(
+		(edgeId: string) => {
+			removeEdge(edgeId);
+		},
+		[removeEdge]
+	);
 
-  const handleClearErrors = useCallback(() => {
-    if (selectedNodeId) {
-      clearNodeErrors(selectedNodeId);
-    }
-  }, [selectedNodeId, clearNodeErrors]);
+	const handleClearErrors = useCallback(() => {
+		if (selectedNodeId) {
+			clearNodeErrors(selectedNodeId);
+		}
+	}, [selectedNodeId, clearNodeErrors]);
 
-  // Handle node data updates
-  const handleUpdateNodeData = useCallback(
-    (nodeId: string, newData: any) => {
-      updateNodeData(nodeId, newData);
-    },
-    [updateNodeData]
-  );
+	// Handle node data updates
+	const handleUpdateNodeData = useCallback(
+		(nodeId: string, newData: any) => {
+			updateNodeData(nodeId, newData);
+		},
+		[updateNodeData]
+	);
 
-  // Early return for locked state
-  if (inspectorLocked) {
-    return (
-      <div className={STYLING_CONTAINER_LOCKED}>
-        <button
-          aria-label={DESIGN_CONFIG.content.aria.unlockInspector}
-          title={DESIGN_CONFIG.content.tooltips.unlockInspector}
-          onClick={() => setInspectorLocked(false)}
-          className={STYLING_BUTTON_UNLOCK_LARGE}
-        >
-          <FaLock className={STYLING_ICON_STATE_LARGE} />
-        </button>
-      </div>
-    );
-  }
+	// Early return for locked state
+	if (inspectorLocked) {
+		return (
+			<div className={STYLING_CONTAINER_LOCKED}>
+				<button
+					aria-label={DESIGN_CONFIG.content.aria.unlockInspector}
+					title={DESIGN_CONFIG.content.tooltips.unlockInspector}
+					onClick={() => setInspectorLocked(false)}
+					className={STYLING_BUTTON_UNLOCK_LARGE}
+				>
+					<FaLock className={STYLING_ICON_STATE_LARGE} />
+				</button>
+			</div>
+		);
+	}
 
-  // Show node inspector if node is selected (prioritize nodes over edges)
-  if (selectedNode && nodeInfo) {
-    // Get node type config for hasOutput information
-    const nodeConfig = selectedNode.type
-      ? NODE_TYPE_CONFIG[selectedNode.type]
-      : undefined;
-    // Check if node has right column content (output or controls)
-    const hasRightColumn = nodeConfig?.hasOutput || nodeInfo.hasControls;
+	// Show node inspector if node is selected (prioritize nodes over edges)
+	if (selectedNode && nodeInfo) {
+		// Get node type config for hasOutput information
+		const nodeConfig = selectedNode.type ? NODE_TYPE_CONFIG[selectedNode.type] : undefined;
+		// Check if node has right column content (output or controls)
+		const hasRightColumn = nodeConfig?.hasOutput || nodeInfo.hasControls;
 
-    return (
-      <div
-        id={DESIGN_CONFIG.content.ids.nodeInfoContainer}
-        className={STYLING_CONTAINER_NODE_INSPECTOR}
-      >
-        {/* FIXED HEADER: NODE INFO + ACTION BUTTONS */}
-        <div className={STYLING_CONTAINER_HEADER_FIXED}>
-          {/* Left Header Section: Node Info */}
-          <div className={STYLING_CONTAINER_HEADER_LEFT_SECTION}>
-            <div className={STYLING_CONTAINER_HEADER_ICON_TEXT}>
-              {nodeInfo.icon && (
-                <span className={STYLING_TEXT_NODE_ICON}>{nodeInfo.icon}</span>
-              )}
-              <div>
-                <EditableNodeLabel
-                  nodeId={selectedNode.id}
-                  label={(selectedNode.data as any)?.label || ""}
-                  displayName={nodeInfo.displayName}
-                  onUpdateNodeData={updateNodeData}
-                  className={STYLING_TEXT_NODE_NAME}
-                />
-              </div>
-            </div>
-          </div>
+		return (
+			<div
+				id={DESIGN_CONFIG.content.ids.nodeInfoContainer}
+				className={STYLING_CONTAINER_NODE_INSPECTOR}
+			>
+				{/* FIXED HEADER: NODE INFO + ACTION BUTTONS */}
+				<div className={STYLING_CONTAINER_HEADER_FIXED}>
+					{/* Left Header Section: Node Info */}
+					<div className={STYLING_CONTAINER_HEADER_LEFT_SECTION}>
+						<div className={STYLING_CONTAINER_HEADER_ICON_TEXT}>
+							{nodeInfo.icon && <span className={STYLING_TEXT_NODE_ICON}>{nodeInfo.icon}</span>}
+							<div>
+								<EditableNodeLabel
+									nodeId={selectedNode.id}
+									label={(selectedNode.data as any)?.label || ""}
+									displayName={nodeInfo.displayName}
+									onUpdateNodeData={updateNodeData}
+									className={STYLING_TEXT_NODE_NAME}
+								/>
+							</div>
+						</div>
+					</div>
 
-          {/* Right Header Section: Action Buttons */}
-          <div className={STYLING_CONTAINER_HEADER_RIGHT_SECTION}>
-            {/* Lock Button */}
-            <button
-              onClick={() => setInspectorLocked(!inspectorLocked)}
-              className={STYLING_BUTTON_LOCK_SMALL}
-              title={
-                inspectorLocked
-                  ? DESIGN_CONFIG.content.tooltips.unlockInspector
-                  : DESIGN_CONFIG.content.tooltips.lockInspector
-              }
-            >
-              {inspectorLocked ? (
-                <FaLock className={STYLING_ICON_ACTION_SMALL} />
-              ) : (
-                <FaLockOpen className={STYLING_ICON_ACTION_SMALL} />
-              )}
-            </button>
+					{/* Right Header Section: Action Buttons */}
+					<div className={STYLING_CONTAINER_HEADER_RIGHT_SECTION}>
+						{/* Lock Button */}
+						<button
+							onClick={() => setInspectorLocked(!inspectorLocked)}
+							className={STYLING_BUTTON_LOCK_SMALL}
+							title={
+								inspectorLocked
+									? DESIGN_CONFIG.content.tooltips.unlockInspector
+									: DESIGN_CONFIG.content.tooltips.lockInspector
+							}
+						>
+							{inspectorLocked ? (
+								<FaLock className={STYLING_ICON_ACTION_SMALL} />
+							) : (
+								<FaLockOpen className={STYLING_ICON_ACTION_SMALL} />
+							)}
+						</button>
 
-            <button
-              onClick={() => handleDuplicateNode(selectedNode.id)}
-              className={STYLING_BUTTON_DUPLICATE}
-              title={DESIGN_CONFIG.content.tooltips.duplicateNode}
-            >
-              <Copy className={STYLING_ICON_ACTION_SMALL} />
-            </button>
+						<button
+							onClick={() => handleDuplicateNode(selectedNode.id)}
+							className={STYLING_BUTTON_DUPLICATE}
+							title={DESIGN_CONFIG.content.tooltips.duplicateNode}
+						>
+							<Copy className={STYLING_ICON_ACTION_SMALL} />
+						</button>
 
-            <button
-              onClick={() => handleDeleteNode(selectedNode.id)}
-              className={STYLING_BUTTON_DELETE}
-              title={DESIGN_CONFIG.content.tooltips.deleteNode}
-            >
-              <Trash2 className={STYLING_ICON_ACTION_SMALL} />
-            </button>
+						<button
+							onClick={() => handleDeleteNode(selectedNode.id)}
+							className={STYLING_BUTTON_DELETE}
+							title={DESIGN_CONFIG.content.tooltips.deleteNode}
+						>
+							<Trash2 className={STYLING_ICON_ACTION_SMALL} />
+						</button>
 
-            {/* DEV-ONLY ERROR SIMULATION BUTTONS */}
-            {process.env.NODE_ENV === "development" && (
-              <>
-                <button
-                  onClick={() => {
-                    console.error(
-                      `🔴 Simulated console error from node ${selectedNode.id}`
-                    );
-                  }}
-                  className={STYLING_BUTTON_DUPLICATE}
-                  title="Simulate console.error()"
-                >
-                  CE
-                </button>
-                <button
-                  onClick={() => {
-                    logNodeError(
-                      selectedNode.id,
-                      "Simulated node error via dev button",
-                      "error",
-                      "DEV_BUTTON"
-                    );
-                  }}
-                  className={STYLING_BUTTON_DUPLICATE}
-                  title="Simulate node error"
-                >
-                  NE
-                </button>
-                <button
-                  onClick={() => {
-                    updateNodeData(selectedNode.id, {
-                      forceError: Date.now(),
-                    });
-                  }}
-                  className={STYLING_BUTTON_DUPLICATE}
-                  title="Simulate runtime error (throws)"
-                >
-                  RE
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+						{/* DEV-ONLY ERROR SIMULATION BUTTONS */}
+						{process.env.NODE_ENV === "development" && (
+							<>
+								<button
+									onClick={() => {
+										console.error(`🔴 Simulated console error from node ${selectedNode.id}`);
+									}}
+									className={STYLING_BUTTON_DUPLICATE}
+									title="Simulate console.error()"
+								>
+									CE
+								</button>
+								<button
+									onClick={() => {
+										logNodeError(
+											selectedNode.id,
+											"Simulated node error via dev button",
+											"error",
+											"DEV_BUTTON"
+										);
+									}}
+									className={STYLING_BUTTON_DUPLICATE}
+									title="Simulate node error"
+								>
+									NE
+								</button>
+								<button
+									onClick={() => {
+										updateNodeData(selectedNode.id, {
+											forceError: Date.now(),
+										});
+									}}
+									className={STYLING_BUTTON_DUPLICATE}
+									title="Simulate runtime error (throws)"
+								>
+									RE
+								</button>
+							</>
+						)}
+					</div>
+				</div>
 
-        {/* SCROLLABLE CONTENT: NODE DATA + OUTPUT + CONTROLS + ERRORS */}
-        <div className={STYLING_CONTAINER_CONTENT_SCROLLABLE}>
-          {/* COLUMN 1: NODE DESCRIPTION + NODE DATA */}
-          <div className={STYLING_CONTAINER_COLUMN_LEFT}>
-            {/* Node Metadata Card */}
-            <div className={STYLING_CARD_SECTION}>
-              <h4 className={STYLING_TEXT_SECTION_HEADER}>Node Information</h4>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
-                    TYPE
-                  </span>
-                  <span className={STYLING_TEXT_NODE_METADATA}>
-                    {selectedNode.type}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
-                    ID
-                  </span>
-                  <EditableNodeId
-                    nodeId={selectedNode.id}
-                    onUpdateId={handleUpdateNodeId}
-                    className="text-sm font-mono text-muted-foreground"
-                  />
-                </div>
-              </div>
-            </div>
+				{/* SCROLLABLE CONTENT: NODE DATA + OUTPUT + CONTROLS + ERRORS */}
+				<div className={STYLING_CONTAINER_CONTENT_SCROLLABLE}>
+					{/* COLUMN 1: NODE DESCRIPTION + NODE DATA */}
+					<div className={STYLING_CONTAINER_COLUMN_LEFT}>
+						{/* Node Metadata Card */}
+						<div className={STYLING_CARD_SECTION}>
+							<h4 className={STYLING_TEXT_SECTION_HEADER}>Node Information</h4>
+							<div className="space-y-2">
+								<div className="flex items-center gap-2">
+									<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+										TYPE
+									</span>
+									<span className={STYLING_TEXT_NODE_METADATA}>{selectedNode.type}</span>
+								</div>
+								<div className="flex items-center gap-2">
+									<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+										ID
+									</span>
+									<EditableNodeId
+										nodeId={selectedNode.id}
+										onUpdateId={handleUpdateNodeId}
+										className="text-sm font-mono text-muted-foreground"
+									/>
+								</div>
+							</div>
+						</div>
 
-            {/* Node Description Card */}
-            {nodeInfo.description && (
-              <div className={STYLING_CARD_SECTION}>
-                <h4 className={STYLING_TEXT_SECTION_HEADER}>Description</h4>
-                <EditableNodeDescription
-                  nodeId={selectedNode.id}
-                  description={
-                    (selectedNode.data as any)?.description ??
-                    nodeInfo.description
-                  }
-                  defaultDescription={nodeInfo.description}
-                  className={STYLING_TEXT_NODE_DESCRIPTION}
-                />
-              </div>
-            )}
+						{/* Node Description Card */}
+						{nodeInfo.description && (
+							<div className={STYLING_CARD_SECTION}>
+								<h4 className={STYLING_TEXT_SECTION_HEADER}>Description</h4>
+								<EditableNodeDescription
+									nodeId={selectedNode.id}
+									description={(selectedNode.data as any)?.description ?? nodeInfo.description}
+									defaultDescription={nodeInfo.description}
+									className={STYLING_TEXT_NODE_DESCRIPTION}
+								/>
+							</div>
+						)}
 
-            {/* Node Data Card */}
-            <div className={STYLING_CARD_SECTION}>
-              <div className="bg-muted/20 rounded-md border border-border/30 overflow-hidden -mx-1">
-                <EditableJsonEditor
-                  data={{
-                    id: selectedNode.id,
-                    category: nodeCategory,
-                    ...selectedNode.data,
-                  }}
-                  onUpdateData={(newData) => {
-                    // Extract the system fields and update only the data portion
-                    const { id, category, ...nodeData } = newData;
-                    handleUpdateNodeData(selectedNode.id, nodeData);
-                  }}
-                  className={STYLING_JSON_HIGHLIGHTER}
-                />
-              </div>
-            </div>
-          </div>
+						{/* Node Data Card */}
+						<div className={STYLING_CARD_SECTION}>
+							<div className="bg-muted/20 rounded-md border border-border/30 overflow-hidden -mx-1">
+								<EditableJsonEditor
+									data={{
+										id: selectedNode.id,
+										category: nodeCategory,
+										...selectedNode.data,
+									}}
+									onUpdateData={(newData) => {
+										// Extract the system fields and update only the data portion
+										const { id, category, ...nodeData } = newData;
+										handleUpdateNodeData(selectedNode.id, nodeData);
+									}}
+									className={STYLING_JSON_HIGHLIGHTER}
+								/>
+							</div>
+						</div>
+					</div>
 
-          {/* COLUMN 2: OUTPUT + CONTROLS */}
-          {hasRightColumn && (
-            <div className={STYLING_CONTAINER_COLUMN_RIGHT}>
-              {nodeConfig?.hasOutput && (
-                <div className={STYLING_CARD_SECTION}>
-                  <h4 className={STYLING_TEXT_SECTION_HEADER}>Output</h4>
-                  <NodeOutput
-                    output={output}
-                    nodeType={selectedNode.type as NodeType}
-                  />
-                </div>
-              )}
+					{/* COLUMN 2: OUTPUT + CONTROLS */}
+					{hasRightColumn && (
+						<div className={STYLING_CONTAINER_COLUMN_RIGHT}>
+							{nodeConfig?.hasOutput && (
+								<div className={STYLING_CARD_SECTION}>
+									<h4 className={STYLING_TEXT_SECTION_HEADER}>Output</h4>
+									<NodeOutput output={output} nodeType={selectedNode.type as NodeType} />
+								</div>
+							)}
 
-              {nodeInfo.hasControls && (
-                <div className={STYLING_CARD_SECTION}>
-                  <h4 className={STYLING_TEXT_SECTION_HEADER}>Controls</h4>
-                  <NodeControls
-                    node={selectedNode}
-                    updateNodeData={updateNodeData}
-                    onLogError={logNodeError as any}
-                  />
-                </div>
-              )}
-            </div>
-          )}
+							{nodeInfo.hasControls && (
+								<div className={STYLING_CARD_SECTION}>
+									<h4 className={STYLING_TEXT_SECTION_HEADER}>Controls</h4>
+									<NodeControls
+										node={selectedNode}
+										updateNodeData={updateNodeData}
+										onLogError={logNodeError as any}
+									/>
+								</div>
+							)}
+						</div>
+					)}
 
-          {/* COLUMN 3: ERROR LOG (only show when there are errors) */}
-          {errors.length > 0 && (
-            <div className={STYLING_CONTAINER_COLUMN_ERROR}>
-              <div className={STYLING_CARD_SECTION}>
-                <h4 className={STYLING_TEXT_SECTION_HEADER}>Error Log</h4>
-                <ErrorLog errors={errors} onClearErrors={handleClearErrors} />
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+					{/* COLUMN 3: ERROR LOG (only show when there are errors) */}
+					{errors.length > 0 && (
+						<div className={STYLING_CONTAINER_COLUMN_ERROR}>
+							<div className={STYLING_CARD_SECTION}>
+								<h4 className={STYLING_TEXT_SECTION_HEADER}>Error Log</h4>
+								<ErrorLog errors={errors} onClearErrors={handleClearErrors} />
+							</div>
+						</div>
+					)}
+				</div>
+			</div>
+		);
+	}
 
-  // Show edge inspector if edge is selected (only when no node is selected)
-  if (selectedEdge && nodes) {
-    return (
-      <div
-        id={DESIGN_CONFIG.content.ids.edgeInfoContainer}
-        className={STYLING_CONTAINER_EDGE_INSPECTOR}
-      >
-        <div className={STYLING_CONTAINER_EDGE_CONTENT}>
-          <EdgeInspector
-            edge={selectedEdge}
-            allNodes={nodes}
-            onDeleteEdge={handleDeleteEdge}
-          />
-        </div>
-      </div>
-    );
-  }
+	// Show edge inspector if edge is selected (only when no node is selected)
+	if (selectedEdge && nodes) {
+		return (
+			<div
+				id={DESIGN_CONFIG.content.ids.edgeInfoContainer}
+				className={STYLING_CONTAINER_EDGE_INSPECTOR}
+			>
+				<div className={STYLING_CONTAINER_EDGE_CONTENT}>
+					<EdgeInspector edge={selectedEdge} allNodes={nodes} onDeleteEdge={handleDeleteEdge} />
+				</div>
+			</div>
+		);
+	}
 
-  // Show empty state if no node or edge selected
-  return (
-    <div className={STYLING_CONTAINER_EMPTY_STATE}>
-      <button
-        aria-label={DESIGN_CONFIG.content.aria.lockInspector}
-        title={DESIGN_CONFIG.content.tooltips.lockInspectorDescription}
-        onClick={() => setInspectorLocked(true)}
-        className={STYLING_BUTTON_MAGNIFYING_GLASS}
-      >
-        <FaSearch className={STYLING_ICON_STATE_LARGE} />
-      </button>
-    </div>
-  );
+	// Show empty state if no node or edge selected
+	return (
+		<div className={STYLING_CONTAINER_EMPTY_STATE}>
+			<button
+				aria-label={DESIGN_CONFIG.content.aria.lockInspector}
+				title={DESIGN_CONFIG.content.tooltips.lockInspectorDescription}
+				onClick={() => setInspectorLocked(true)}
+				className={STYLING_BUTTON_MAGNIFYING_GLASS}
+			>
+				<FaSearch className={STYLING_ICON_STATE_LARGE} />
+			</button>
+		</div>
+	);
 });
 
 NodeInspector.displayName = "NodeInspector";

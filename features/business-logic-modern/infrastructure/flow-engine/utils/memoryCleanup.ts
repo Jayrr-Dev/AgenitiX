@@ -23,24 +23,24 @@ import { emergencyCleanupAllTimers, getTimerStats } from "./timerCleanup";
 // ============================================================================
 
 interface MemoryCleanupStats {
-  timersCleared: {
-    nodeCount: number;
-    totalTimeouts: number;
-    totalIntervals: number;
-    totalRAFs: number;
-    customCleanupCount: number;
-  };
-  cacheCleared: {
-    domElementRefs: number;
-    eventListeners: number;
-    observers: number;
-  };
-  performanceMetrics: {
-    cleanupDuration: number;
-    memoryBeforeCleanup: number;
-    memoryAfterCleanup: number;
-    memoryFreed: number;
-  };
+	timersCleared: {
+		nodeCount: number;
+		totalTimeouts: number;
+		totalIntervals: number;
+		totalRAFs: number;
+		customCleanupCount: number;
+	};
+	cacheCleared: {
+		domElementRefs: number;
+		eventListeners: number;
+		observers: number;
+	};
+	performanceMetrics: {
+		cleanupDuration: number;
+		memoryBeforeCleanup: number;
+		memoryAfterCleanup: number;
+		memoryFreed: number;
+	};
 }
 
 // ============================================================================
@@ -52,22 +52,22 @@ const domElementRefs = new Map<string, WeakRef<Element>>();
 
 // Event Listener Registry
 const eventListeners = new Map<
-  string,
-  Array<{
-    element: Element;
-    event: string;
-    handler: EventListener;
-    options?: boolean | AddEventListenerOptions;
-  }>
+	string,
+	Array<{
+		element: Element;
+		event: string;
+		handler: EventListener;
+		options?: boolean | AddEventListenerOptions;
+	}>
 >();
 
 // Observer Registry (Intersection, Mutation, Resize observers)
 const observers = new Map<
-  string,
-  Array<{
-    observer: IntersectionObserver | MutationObserver | ResizeObserver;
-    type: "intersection" | "mutation" | "resize";
-  }>
+	string,
+	Array<{
+		observer: IntersectionObserver | MutationObserver | ResizeObserver;
+		type: "intersection" | "mutation" | "resize";
+	}>
 >();
 
 // ============================================================================
@@ -79,7 +79,7 @@ const observers = new Map<
  * Register a DOM element reference for cleanup tracking
  */
 export const registerDOMElement = (nodeId: string, element: Element): void => {
-  domElementRefs.set(`${nodeId}-${Date.now()}`, new WeakRef(element));
+	domElementRefs.set(`${nodeId}-${Date.now()}`, new WeakRef(element));
 };
 
 /**
@@ -87,22 +87,22 @@ export const registerDOMElement = (nodeId: string, element: Element): void => {
  * Register an event listener for cleanup tracking
  */
 export const registerEventListener = (
-  nodeId: string,
-  element: Element,
-  event: string,
-  handler: EventListener,
-  options?: boolean | AddEventListenerOptions
+	nodeId: string,
+	element: Element,
+	event: string,
+	handler: EventListener,
+	options?: boolean | AddEventListenerOptions
 ): void => {
-  if (!eventListeners.has(nodeId)) {
-    eventListeners.set(nodeId, []);
-  }
+	if (!eventListeners.has(nodeId)) {
+		eventListeners.set(nodeId, []);
+	}
 
-  eventListeners.get(nodeId)!.push({
-    element,
-    event,
-    handler,
-    options,
-  });
+	eventListeners.get(nodeId)!.push({
+		element,
+		event,
+		handler,
+		options,
+	});
 };
 
 /**
@@ -110,18 +110,18 @@ export const registerEventListener = (
  * Register an observer for cleanup tracking
  */
 export const registerObserver = (
-  nodeId: string,
-  observer: IntersectionObserver | MutationObserver | ResizeObserver,
-  type: "intersection" | "mutation" | "resize"
+	nodeId: string,
+	observer: IntersectionObserver | MutationObserver | ResizeObserver,
+	type: "intersection" | "mutation" | "resize"
 ): void => {
-  if (!observers.has(nodeId)) {
-    observers.set(nodeId, []);
-  }
+	if (!observers.has(nodeId)) {
+		observers.set(nodeId, []);
+	}
 
-  observers.get(nodeId)!.push({
-    observer,
-    type,
-  });
+	observers.get(nodeId)!.push({
+		observer,
+		type,
+	});
 };
 
 // ============================================================================
@@ -133,14 +133,14 @@ export const registerObserver = (
  * Add event listener with automatic cleanup registration
  */
 export const safeAddEventListener = (
-  nodeId: string,
-  element: Element,
-  event: string,
-  handler: EventListener,
-  options?: boolean | AddEventListenerOptions
+	nodeId: string,
+	element: Element,
+	event: string,
+	handler: EventListener,
+	options?: boolean | AddEventListenerOptions
 ): void => {
-  element.addEventListener(event, handler, options);
-  registerEventListener(nodeId, element, event, handler, options);
+	element.addEventListener(event, handler, options);
+	registerEventListener(nodeId, element, event, handler, options);
 };
 
 /**
@@ -148,13 +148,13 @@ export const safeAddEventListener = (
  * Create intersection observer with automatic cleanup registration
  */
 export const safeCreateIntersectionObserver = (
-  nodeId: string,
-  callback: IntersectionObserverCallback,
-  options?: IntersectionObserverInit
+	nodeId: string,
+	callback: IntersectionObserverCallback,
+	options?: IntersectionObserverInit
 ): IntersectionObserver => {
-  const observer = new IntersectionObserver(callback, options);
-  registerObserver(nodeId, observer, "intersection");
-  return observer;
+	const observer = new IntersectionObserver(callback, options);
+	registerObserver(nodeId, observer, "intersection");
+	return observer;
 };
 
 /**
@@ -162,12 +162,12 @@ export const safeCreateIntersectionObserver = (
  * Create mutation observer with automatic cleanup registration
  */
 export const safeCreateMutationObserver = (
-  nodeId: string,
-  callback: MutationCallback
+	nodeId: string,
+	callback: MutationCallback
 ): MutationObserver => {
-  const observer = new MutationObserver(callback);
-  registerObserver(nodeId, observer, "mutation");
-  return observer;
+	const observer = new MutationObserver(callback);
+	registerObserver(nodeId, observer, "mutation");
+	return observer;
 };
 
 /**
@@ -175,12 +175,12 @@ export const safeCreateMutationObserver = (
  * Create resize observer with automatic cleanup registration
  */
 export const safeCreateResizeObserver = (
-  nodeId: string,
-  callback: ResizeObserverCallback
+	nodeId: string,
+	callback: ResizeObserverCallback
 ): ResizeObserver => {
-  const observer = new ResizeObserver(callback);
-  registerObserver(nodeId, observer, "resize");
-  return observer;
+	const observer = new ResizeObserver(callback);
+	registerObserver(nodeId, observer, "resize");
+	return observer;
 };
 
 // ============================================================================
@@ -192,48 +192,42 @@ export const safeCreateResizeObserver = (
  * Clean up all memory references for a specific node
  */
 export const cleanupNodeMemory = (nodeId: string): void => {
-  console.log(`🧹 Cleaning up memory for node ${nodeId}`);
+	console.log(`🧹 Cleaning up memory for node ${nodeId}`);
 
-  // Clean up event listeners
-  const nodeEventListeners = eventListeners.get(nodeId);
-  if (nodeEventListeners) {
-    nodeEventListeners.forEach(({ element, event, handler, options }) => {
-      try {
-        element.removeEventListener(event, handler, options);
-      } catch (error) {
-        console.warn(
-          `Failed to remove event listener for node ${nodeId}:`,
-          error
-        );
-      }
-    });
-    eventListeners.delete(nodeId);
-  }
+	// Clean up event listeners
+	const nodeEventListeners = eventListeners.get(nodeId);
+	if (nodeEventListeners) {
+		nodeEventListeners.forEach(({ element, event, handler, options }) => {
+			try {
+				element.removeEventListener(event, handler, options);
+			} catch (error) {
+				console.warn(`Failed to remove event listener for node ${nodeId}:`, error);
+			}
+		});
+		eventListeners.delete(nodeId);
+	}
 
-  // Clean up observers
-  const nodeObservers = observers.get(nodeId);
-  if (nodeObservers) {
-    nodeObservers.forEach(({ observer, type }) => {
-      try {
-        observer.disconnect();
-      } catch (error) {
-        console.warn(
-          `Failed to disconnect ${type} observer for node ${nodeId}:`,
-          error
-        );
-      }
-    });
-    observers.delete(nodeId);
-  }
+	// Clean up observers
+	const nodeObservers = observers.get(nodeId);
+	if (nodeObservers) {
+		nodeObservers.forEach(({ observer, type }) => {
+			try {
+				observer.disconnect();
+			} catch (error) {
+				console.warn(`Failed to disconnect ${type} observer for node ${nodeId}:`, error);
+			}
+		});
+		observers.delete(nodeId);
+	}
 
-  // Clean up DOM element references
-  const keysToDelete: string[] = [];
-  domElementRefs.forEach((weakRef, key) => {
-    if (key.startsWith(nodeId)) {
-      keysToDelete.push(key);
-    }
-  });
-  keysToDelete.forEach((key) => domElementRefs.delete(key));
+	// Clean up DOM element references
+	const keysToDelete: string[] = [];
+	domElementRefs.forEach((weakRef, key) => {
+		if (key.startsWith(nodeId)) {
+			keysToDelete.push(key);
+		}
+	});
+	keysToDelete.forEach((key) => domElementRefs.delete(key));
 };
 
 // ============================================================================
@@ -245,87 +239,84 @@ export const cleanupNodeMemory = (nodeId: string): void => {
  * Comprehensive cleanup of all accumulated memory references
  */
 export const performCompleteMemoryCleanup = (): MemoryCleanupStats => {
-  const startTime = performance.now();
-  const memoryBefore = getMemoryUsage();
+	const startTime = performance.now();
+	const memoryBefore = getMemoryUsage();
 
-  console.warn("🧹 Performing complete memory cleanup");
+	console.warn("🧹 Performing complete memory cleanup");
 
-  // Get timer stats before cleanup
-  const timerStatsBefore = getTimerStats();
+	// Get timer stats before cleanup
+	const timerStatsBefore = getTimerStats();
 
-  // Clean up all timers
-  emergencyCleanupAllTimers();
+	// Clean up all timers
+	emergencyCleanupAllTimers();
 
-  // Count cache items before cleanup
-  const domRefsCount = domElementRefs.size;
-  const eventListenersCount = Array.from(eventListeners.values()).reduce(
-    (total, listeners) => total + listeners.length,
-    0
-  );
-  const observersCount = Array.from(observers.values()).reduce(
-    (total, observerList) => total + observerList.length,
-    0
-  );
+	// Count cache items before cleanup
+	const domRefsCount = domElementRefs.size;
+	const eventListenersCount = Array.from(eventListeners.values()).reduce(
+		(total, listeners) => total + listeners.length,
+		0
+	);
+	const observersCount = Array.from(observers.values()).reduce(
+		(total, observerList) => total + observerList.length,
+		0
+	);
 
-  // Clean up all event listeners
-  eventListeners.forEach((listeners, nodeId) => {
-    listeners.forEach(({ element, event, handler, options }) => {
-      try {
-        element.removeEventListener(event, handler, options);
-      } catch (error) {
-        console.warn(`Failed to remove event listener during cleanup:`, error);
-      }
-    });
-  });
-  eventListeners.clear();
+	// Clean up all event listeners
+	eventListeners.forEach((listeners, nodeId) => {
+		listeners.forEach(({ element, event, handler, options }) => {
+			try {
+				element.removeEventListener(event, handler, options);
+			} catch (error) {
+				console.warn(`Failed to remove event listener during cleanup:`, error);
+			}
+		});
+	});
+	eventListeners.clear();
 
-  // Clean up all observers
-  observers.forEach((observerList, nodeId) => {
-    observerList.forEach(({ observer, type }) => {
-      try {
-        observer.disconnect();
-      } catch (error) {
-        console.warn(
-          `Failed to disconnect ${type} observer during cleanup:`,
-          error
-        );
-      }
-    });
-  });
-  observers.clear();
+	// Clean up all observers
+	observers.forEach((observerList, nodeId) => {
+		observerList.forEach(({ observer, type }) => {
+			try {
+				observer.disconnect();
+			} catch (error) {
+				console.warn(`Failed to disconnect ${type} observer during cleanup:`, error);
+			}
+		});
+	});
+	observers.clear();
 
-  // Clean up DOM element references
-  domElementRefs.clear();
+	// Clean up DOM element references
+	domElementRefs.clear();
 
-  // Force garbage collection if available (development only)
-  if (typeof window !== "undefined" && "gc" in window) {
-    try {
-      (window as any).gc();
-    } catch (error) {
-      // Garbage collection not available, continue
-    }
-  }
+	// Force garbage collection if available (development only)
+	if (typeof window !== "undefined" && "gc" in window) {
+		try {
+			(window as any).gc();
+		} catch (error) {
+			// Garbage collection not available, continue
+		}
+	}
 
-  const endTime = performance.now();
-  const memoryAfter = getMemoryUsage();
+	const endTime = performance.now();
+	const memoryAfter = getMemoryUsage();
 
-  const stats: MemoryCleanupStats = {
-    timersCleared: timerStatsBefore,
-    cacheCleared: {
-      domElementRefs: domRefsCount,
-      eventListeners: eventListenersCount,
-      observers: observersCount,
-    },
-    performanceMetrics: {
-      cleanupDuration: endTime - startTime,
-      memoryBeforeCleanup: memoryBefore,
-      memoryAfterCleanup: memoryAfter,
-      memoryFreed: memoryBefore - memoryAfter,
-    },
-  };
+	const stats: MemoryCleanupStats = {
+		timersCleared: timerStatsBefore,
+		cacheCleared: {
+			domElementRefs: domRefsCount,
+			eventListeners: eventListenersCount,
+			observers: observersCount,
+		},
+		performanceMetrics: {
+			cleanupDuration: endTime - startTime,
+			memoryBeforeCleanup: memoryBefore,
+			memoryAfterCleanup: memoryAfter,
+			memoryFreed: memoryBefore - memoryAfter,
+		},
+	};
 
-  console.log("✅ Complete memory cleanup finished:", stats);
-  return stats;
+	console.log("✅ Complete memory cleanup finished:", stats);
+	return stats;
 };
 
 // ============================================================================
@@ -337,14 +328,10 @@ export const performCompleteMemoryCleanup = (): MemoryCleanupStats => {
  * Get current memory usage (if available)
  */
 export const getMemoryUsage = (): number => {
-  if (
-    typeof window !== "undefined" &&
-    "performance" in window &&
-    "memory" in performance
-  ) {
-    return (performance as any).memory.usedJSHeapSize || 0;
-  }
-  return 0;
+	if (typeof window !== "undefined" && "performance" in window && "memory" in performance) {
+		return (performance as any).memory.usedJSHeapSize || 0;
+	}
+	return 0;
 };
 
 /**
@@ -352,28 +339,28 @@ export const getMemoryUsage = (): number => {
  * Get detailed memory statistics
  */
 export const getMemoryStats = () => {
-  const domRefsCount = domElementRefs.size;
-  const eventListenersCount = Array.from(eventListeners.values()).reduce(
-    (total, listeners) => total + listeners.length,
-    0
-  );
-  const observersCount = Array.from(observers.values()).reduce(
-    (total, observerList) => total + observerList.length,
-    0
-  );
+	const domRefsCount = domElementRefs.size;
+	const eventListenersCount = Array.from(eventListeners.values()).reduce(
+		(total, listeners) => total + listeners.length,
+		0
+	);
+	const observersCount = Array.from(observers.values()).reduce(
+		(total, observerList) => total + observerList.length,
+		0
+	);
 
-  return {
-    domElementRefs: domRefsCount,
-    eventListeners: {
-      nodeCount: eventListeners.size,
-      totalListeners: eventListenersCount,
-    },
-    observers: {
-      nodeCount: observers.size,
-      totalObservers: observersCount,
-    },
-    memoryUsage: getMemoryUsage(),
-  };
+	return {
+		domElementRefs: domRefsCount,
+		eventListeners: {
+			nodeCount: eventListeners.size,
+			totalListeners: eventListenersCount,
+		},
+		observers: {
+			nodeCount: observers.size,
+			totalObservers: observersCount,
+		},
+		memoryUsage: getMemoryUsage(),
+	};
 };
 
 /**
@@ -381,21 +368,21 @@ export const getMemoryStats = () => {
  * Get memory details for a specific node
  */
 export const getNodeMemoryDetails = (nodeId: string) => {
-  const nodeEventListeners = eventListeners.get(nodeId) || [];
-  const nodeObservers = observers.get(nodeId) || [];
+	const nodeEventListeners = eventListeners.get(nodeId) || [];
+	const nodeObservers = observers.get(nodeId) || [];
 
-  const domRefCount = Array.from(domElementRefs.keys()).filter((key) =>
-    key.startsWith(nodeId)
-  ).length;
+	const domRefCount = Array.from(domElementRefs.keys()).filter((key) =>
+		key.startsWith(nodeId)
+	).length;
 
-  return {
-    nodeId,
-    eventListeners: nodeEventListeners.length,
-    observers: nodeObservers.length,
-    domElementRefs: domRefCount,
-    details: {
-      eventTypes: nodeEventListeners.map(({ event }) => event),
-      observerTypes: nodeObservers.map(({ type }) => type),
-    },
-  };
+	return {
+		nodeId,
+		eventListeners: nodeEventListeners.length,
+		observers: nodeObservers.length,
+		domElementRefs: domRefCount,
+		details: {
+			eventTypes: nodeEventListeners.map(({ event }) => event),
+			observerTypes: nodeObservers.map(({ type }) => type),
+		},
+	};
 };

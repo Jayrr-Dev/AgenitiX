@@ -7,10 +7,6 @@ import { redirect } from "next/navigation";
  * @param {string} message - The message to be encoded and added as a query parameter.
  * @returns {never} This function doesn't return as it triggers a redirect.
  */
-export function encodedRedirect(
-  type: "error" | "success",
-  path: string,
-  message: string,
-) {
-  return redirect(`${path}?${type}=${encodeURIComponent(message)}`);
+export function encodedRedirect(type: "error" | "success", path: string, message: string) {
+	return redirect(`${path}?${type}=${encodeURIComponent(message)}`);
 }

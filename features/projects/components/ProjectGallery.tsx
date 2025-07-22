@@ -1,18 +1,12 @@
 // components/ProjectGallery.tsx
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
+import Link from "next/link";
 //get images from project_showcase table
-import slugify from 'slugify';
-import Link from 'next/link';
+import slugify from "slugify";
 
 export default function ProjectGallery() {
-
-    
-  return (
-    <div className="mb-20">
-
-    </div>
-  );
+	return <div className="mb-20"></div>;
 }

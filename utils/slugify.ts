@@ -1,12 +1,12 @@
-import slugifyLib from 'slugify';
+import slugifyLib from "slugify";
 
 /**
  * Generates a canonical project slug combining a slugified title and its ID.
  * @param title Project title
  * @returns e.g. "cool-project-title"
  */
-    export function generateProjectSlug(title: string): string {
-  return slugifyLib(title, { lower: true, strict: true });
+export function generateProjectSlug(title: string): string {
+	return slugifyLib(title, { lower: true, strict: true });
 }
 
 /**
@@ -15,6 +15,5 @@ import slugifyLib from 'slugify';
  * @returns the ID portion of the slug
  */
 export function extractProjectId(slug: string): string {
-  return slug.split('---').pop() || '';
+	return slug.split("---").pop() || "";
 }
-

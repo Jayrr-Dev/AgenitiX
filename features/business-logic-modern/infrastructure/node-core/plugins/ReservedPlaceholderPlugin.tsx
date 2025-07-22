@@ -6,7 +6,7 @@
  * real plugin later.
  */
 
-import React from "react";
+import type React from "react";
 import type { NodePluginProps } from "./nodePluginRegistry";
 import { registerNodePlugin } from "./nodePluginRegistry";
 

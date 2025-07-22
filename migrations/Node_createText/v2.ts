@@ -6,6 +6,6 @@
  */
 
 export const migrate = (oldData: any): any => {
-  // TODO: implement when version 2 ships
-  return { ...oldData };
+	// TODO: implement when version 2 ships
+	return { ...oldData };
 };

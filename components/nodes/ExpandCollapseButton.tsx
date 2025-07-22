@@ -10,22 +10,22 @@
  * Keywords: expand-collapse, token-styling, unified-design, accessibility
  */
 
-import React from "react";
+import type React from "react";
 
 /**
  * Toggle symbols for expanded/collapsed states
  * Using semantic symbols that work well with rotation animations
  */
 const TOGGLE_SYMBOLS = {
-  EXPANDED: "⦿",
-  COLLAPSED: "⦾",
+	EXPANDED: "⦿",
+	COLLAPSED: "⦾",
 } as const;
 
 interface ExpandCollapseButtonProps {
-  showUI: boolean;
-  onToggle: () => void;
-  className?: string;
-  size?: "sm" | "md";
+	showUI: boolean;
+	onToggle: () => void;
+	className?: string;
+	size?: "sm" | "md";
 }
 
 /**
@@ -39,42 +39,42 @@ interface ExpandCollapseButtonProps {
  * - Single source of truth for button styling
  */
 export const ExpandCollapseButton: React.FC<ExpandCollapseButtonProps> = ({
-  showUI,
-  onToggle,
-  className = "",
-  size = "sm",
+	showUI,
+	onToggle,
+	className = "",
+	size = "sm",
 }) => {
-  const buttonStyle: React.CSSProperties = {
-    // Token-based styling - maintains current appearance
-    backgroundColor: "var(--core-expandCollapseButton-bg)",
-    color: "var(--core-expandCollapseButton-text)",
-    // Positioning and sizing (keeping current values)
-    position: "absolute",
-    top: "0px", // top-0.5 = 2px
-    left: "2px", // left-1 = 4px
-    zIndex: 10,
-    cursor: "pointer",
-    // Typography (keeping current values)
-    fontSize: "11px",
-    fontWeight: "bold",
-    // Remove default button styling
-    border: "none",
-    padding: "0",
-    outline: "none",
-    margin: "0px",
-    transform: "translate(0px, -1px)",
-    opacity: ".7",
-  };
+	const buttonStyle: React.CSSProperties = {
+		// Token-based styling - maintains current appearance
+		backgroundColor: "var(--core-expandCollapseButton-bg)",
+		color: "var(--core-expandCollapseButton-text)",
+		// Positioning and sizing (keeping current values)
+		position: "absolute",
+		top: "0px", // top-0.5 = 2px
+		left: "2px", // left-1 = 4px
+		zIndex: 10,
+		cursor: "pointer",
+		// Typography (keeping current values)
+		fontSize: "11px",
+		fontWeight: "bold",
+		// Remove default button styling
+		border: "none",
+		padding: "0",
+		outline: "none",
+		margin: "0px",
+		transform: "translate(0px, -1px)",
+		opacity: ".7",
+	};
 
-  return (
-    <button
-      aria-label={showUI ? "Collapse node" : "Expand node"}
-      title={showUI ? "Collapse" : "Expand"}
-      onClick={onToggle}
-      style={buttonStyle}
-      className={className}
-    >
-      {showUI ? TOGGLE_SYMBOLS.EXPANDED : TOGGLE_SYMBOLS.COLLAPSED}
-    </button>
-  );
+	return (
+		<button
+			aria-label={showUI ? "Collapse node" : "Expand node"}
+			title={showUI ? "Collapse" : "Expand"}
+			onClick={onToggle}
+			style={buttonStyle}
+			className={className}
+		>
+			{showUI ? TOGGLE_SYMBOLS.EXPANDED : TOGGLE_SYMBOLS.COLLAPSED}
+		</button>
+	);
 };

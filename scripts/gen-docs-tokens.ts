@@ -3,18 +3,18 @@ import { join } from "path";
 import tokens from "../features/business-logic-modern/infrastructure/theming/tokens.json";
 
 const flatten = (
-  obj: Record<string, any>,
-  prefix: string[] = [],
-  out: Record<string, string> = {}
+	obj: Record<string, any>,
+	prefix: string[] = [],
+	out: Record<string, string> = {}
 ) => {
-  for (const [k, v] of Object.entries(obj)) {
-    if (typeof v === "object" && v !== null) {
-      flatten(v, [...prefix, k], out);
-    } else {
-      out[[...prefix, k].join(".")] = String(v);
-    }
-  }
-  return out;
+	for (const [k, v] of Object.entries(obj)) {
+		if (typeof v === "object" && v !== null) {
+			flatten(v, [...prefix, k], out);
+		} else {
+			out[[...prefix, k].join(".")] = String(v);
+		}
+	}
+	return out;
 };
 
 const flat = flatten(tokens);
@@ -22,7 +22,7 @@ const flat = flatten(tokens);
 // Build markdown table
 let md = "# Core Tokens\n\n| Token | Value |\n|-------|-------|\n";
 for (const [k, v] of Object.entries(flat)) {
-  md += `| ${k} | ${v} |\n`;
+	md += `| ${k} | ${v} |\n`;
 }
 
 // Build HTML preview with color swatches
@@ -52,45 +52,45 @@ const nodeColors = Object.entries(tokens.node || {});
 const infraColors = Object.entries(tokens.infra || {});
 
 if (nodeColors.length > 0) {
-  html += `
+	html += `
   <div class="token-grid">
     <div class="token-group">
       <h3>Node Categories</h3>`;
 
-  for (const [category, colors] of nodeColors) {
-    const bg = (colors as any).bg;
-    const text = (colors as any).text;
-    if (bg && text) {
-      html += `
+	for (const [category, colors] of nodeColors) {
+		const bg = (colors as any).bg;
+		const text = (colors as any).text;
+		if (bg && text) {
+			html += `
       <div class="color-swatch">
         <div class="swatch" style="background: hsl(${bg}); color: hsl(${text}); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">Aa</div>
         <span><strong>${category}</strong> • bg: ${bg} • text: ${text}</span>
       </div>`;
-    }
-  }
+		}
+	}
 
-  html += `
+	html += `
     </div>`;
 }
 
 if (infraColors.length > 0) {
-  html += `
+	html += `
     <div class="token-group">
       <h3>Infrastructure Components</h3>`;
 
-  for (const [component, colors] of infraColors) {
-    const bg = (colors as any).bg;
-    const text = (colors as any).text;
-    if (bg && text) {
-      html += `
+	for (const [component, colors] of infraColors) {
+		const bg = (colors as any).bg;
+		const text = (colors as any).text;
+		if (bg && text) {
+			html += `
       <div class="color-swatch">
         <div class="swatch" style="background: hsl(${bg}); color: hsl(${text}); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">Aa</div>
         <span><strong>${component}</strong> • bg: ${bg} • text: ${text}</span>
       </div>`;
-    }
-  }
+		}
+	}
 
-  html += `
+	html += `
     </div>
   </div>`;
 }
@@ -105,7 +105,7 @@ html += `
     <tbody>`;
 
 for (const [k, v] of Object.entries(flat)) {
-  html += `<tr><td>${k}</td><td>${v}</td></tr>`;
+	html += `<tr><td>${k}</td><td>${v}</td></tr>`;
 }
 
 html += `
@@ -117,7 +117,7 @@ html += `
 // Ensure documentation directory exists
 const outDir = join(process.cwd(), "documentation");
 if (!fs.existsSync(outDir)) {
-  fs.mkdirSync(outDir, { recursive: true });
+	fs.mkdirSync(outDir, { recursive: true });
 }
 
 // Write both files

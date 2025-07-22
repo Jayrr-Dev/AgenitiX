@@ -26,14 +26,14 @@ export const CORE_TOKENS = tokensJson as Readonly<typeof tokensJson>;
 
 /** Get core token value with fallback */
 export const getCoreToken = (
-  category: keyof typeof CORE_TOKENS,
-  key: string,
-  fallback = ""
+	category: keyof typeof CORE_TOKENS,
+	key: string,
+	fallback = ""
 ): string => {
-  // @ts-ignore – index signature dynamic access
-  const group = CORE_TOKENS[category] as Record<string, any> | undefined;
-  if (!group) return fallback;
-  return group[key] ?? fallback;
+	// @ts-ignore – index signature dynamic access
+	const group = CORE_TOKENS[category] as Record<string, any> | undefined;
+	if (!group) return fallback;
+	return group[key] ?? fallback;
 };
 
 /** Combine multiple token values */

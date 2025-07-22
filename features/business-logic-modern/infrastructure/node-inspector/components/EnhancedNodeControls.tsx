@@ -12,7 +12,7 @@
 "use client";
 
 import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
-import React from "react";
+import type React from "react";
 import type { InspectorNodeInfo } from "../adapters/NodeInspectorAdapter";
 import { BaseControl } from "../controls/BaseControl";
 import { DynamicControls } from "./DynamicControls";
@@ -22,10 +22,10 @@ import { DynamicControls } from "./DynamicControls";
 // ============================================================================
 
 interface EnhancedNodeControlsProps {
-  node: AgenNode;
-  nodeInfo: InspectorNodeInfo;
-  updateNodeData: (id: string, patch: Record<string, unknown>) => void;
-  onLogError: (nodeId: string, message: string) => void;
+	node: AgenNode;
+	nodeInfo: InspectorNodeInfo;
+	updateNodeData: (id: string, patch: Record<string, unknown>) => void;
+	onLogError: (nodeId: string, message: string) => void;
 }
 
 // ============================================================================
@@ -33,42 +33,33 @@ interface EnhancedNodeControlsProps {
 // ============================================================================
 
 export const EnhancedNodeControls: React.FC<EnhancedNodeControlsProps> = ({
-  node,
-  nodeInfo,
-  updateNodeData,
-  onLogError,
+	node,
+	nodeInfo,
+	updateNodeData,
+	onLogError,
 }) => {
-  // Use DynamicControls for all control rendering
-  // This aligns with the NodeSpec system and reduces duplication
-  return (
-    <BaseControl
-      title={`${nodeInfo.displayName} Configuration`}
-      nodeType={nodeInfo.category}
-    >
-      <DynamicControls
-        node={node}
-        updateNodeData={updateNodeData}
-        onLogError={onLogError}
-      />
+	// Use DynamicControls for all control rendering
+	// This aligns with the NodeSpec system and reduces duplication
+	return (
+		<BaseControl title={`${nodeInfo.displayName} Configuration`} nodeType={nodeInfo.category}>
+			<DynamicControls node={node} updateNodeData={updateNodeData} onLogError={onLogError} />
 
-      {/* Development debug info */}
-      {process.env.NODE_ENV === "development" && (
-        <div className="mt-4 p-2 bg-control-debug rounded border-control-input text-xs">
-          <div className="font-medium text-control-input mb-1">
-            🔧 NodeSpec Integration:
-          </div>
-          <div className="space-y-0.5 text-control-placeholder">
-            <div>
-              Node Type: <code>{node.type}</code>
-            </div>
-            <div>
-              Category: <code>{nodeInfo.category}</code>
-            </div>
-            <div>Has Controls: {nodeInfo.hasControls ? "✅" : "❌"}</div>
-            <div>Valid: {nodeInfo.isValid ? "✅" : "❌"}</div>
-          </div>
-        </div>
-      )}
-    </BaseControl>
-  );
+			{/* Development debug info */}
+			{process.env.NODE_ENV === "development" && (
+				<div className="mt-4 p-2 bg-control-debug rounded border-control-input text-xs">
+					<div className="font-medium text-control-input mb-1">🔧 NodeSpec Integration:</div>
+					<div className="space-y-0.5 text-control-placeholder">
+						<div>
+							Node Type: <code>{node.type}</code>
+						</div>
+						<div>
+							Category: <code>{nodeInfo.category}</code>
+						</div>
+						<div>Has Controls: {nodeInfo.hasControls ? "✅" : "❌"}</div>
+						<div>Valid: {nodeInfo.isValid ? "✅" : "❌"}</div>
+					</div>
+				</div>
+			)}
+		</BaseControl>
+	);
 };

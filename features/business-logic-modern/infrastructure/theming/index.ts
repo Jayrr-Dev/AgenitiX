@@ -9,74 +9,71 @@
 // ---------------------------------------------------------------------
 // CORE – foundational tokens & helpers (never bloats)
 // ---------------------------------------------------------------------
-import { combineTokens, CORE_TOKENS, getCoreToken } from "./core/tokens";
+import { CORE_TOKENS, combineTokens, getCoreToken } from "./core/tokens";
 
 import type {
-  CoreButtonSize,
-  CoreColor,
-  CoreIconSize,
-  CoreSpacing,
-  CoreTypographySize,
-  CoreTypographyWeight,
+	CoreButtonSize,
+	CoreColor,
+	CoreIconSize,
+	CoreSpacing,
+	CoreTypographySize,
+	CoreTypographyWeight,
 } from "./core/tokens";
 
 export { combineTokens, CORE_TOKENS, getCoreToken };
 
 export type {
-  CoreButtonSize,
-  CoreColor,
-  CoreIconSize,
-  CoreSpacing,
-  CoreTypographySize,
-  CoreTypographyWeight,
+	CoreButtonSize,
+	CoreColor,
+	CoreIconSize,
+	CoreSpacing,
+	CoreTypographySize,
+	CoreTypographyWeight,
 };
 
 // ---------------------------------------------------------------------
 // COMPONENTS – import & re-export individually (tree-shakeable)
 // ---------------------------------------------------------------------
 export {
-  getConditionalNodeInspectorVariant,
-  getNodeInspectorVariant,
-  NODE_INSPECTOR_TOKENS,
-  nodeInspectorStyles,
+	getConditionalNodeInspectorVariant,
+	getNodeInspectorVariant,
+	NODE_INSPECTOR_TOKENS,
+	nodeInspectorStyles,
 } from "./components/nodeInspector";
 
 export type {
-  NodeInspectorContent,
-  NodeInspectorVariant,
+	NodeInspectorContent,
+	NodeInspectorVariant,
 } from "./components/nodeInspector";
 
 export {
-  getConditionalSidebarVariant,
-  getSidebarVariant,
-  SIDEBAR_TOKENS,
-  sidebarStyles,
+	getConditionalSidebarVariant,
+	getSidebarVariant,
+	SIDEBAR_TOKENS,
+	sidebarStyles,
 } from "./components/sidebar";
 
 export type { SidebarContent, SidebarVariant } from "./components/sidebar";
 
 // Local references for convenience objects
 import {
-  NODE_INSPECTOR_TOKENS as _NI_TOKENS,
-  nodeInspectorStyles as _niStyles,
+	NODE_INSPECTOR_TOKENS as _NI_TOKENS,
+	nodeInspectorStyles as _niStyles,
 } from "./components/nodeInspector";
 
-import {
-  SIDEBAR_TOKENS as _SB_TOKENS,
-  sidebarStyles as _sbStyles,
-} from "./components/sidebar";
+import { SIDEBAR_TOKENS as _SB_TOKENS, sidebarStyles as _sbStyles } from "./components/sidebar";
 
 // ---------------------------------------------------------------------
 // CONVENIENCE OBJECTS – aggregated but still tree-shakeable
 // ---------------------------------------------------------------------
 export const componentStyles = {
-  nodeInspector: _niStyles,
-  sidebar: _sbStyles,
-  // Add more component style objects here
+	nodeInspector: _niStyles,
+	sidebar: _sbStyles,
+	// Add more component style objects here
 } as const;
 
 export const componentTokens = {
-  nodeInspector: _NI_TOKENS,
-  sidebar: _SB_TOKENS,
-  // Add more component tokens here
+	nodeInspector: _NI_TOKENS,
+	sidebar: _SB_TOKENS,
+	// Add more component tokens here
 } as const;

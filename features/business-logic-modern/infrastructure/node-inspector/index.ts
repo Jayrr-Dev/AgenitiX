@@ -50,25 +50,25 @@ export { JsonHighlighter } from "./utils/JsonHighlighter";
 // ============================================================================
 
 export type {
-  BaseControlProps,
-  EditingRefs,
-  ErrorType,
-  InspectorState,
-  JsonHighlighterProps,
-  NodeControlsProps,
-  NodeError,
-  NodeInspectorProps,
-  NodeType,
+	BaseControlProps,
+	EditingRefs,
+	ErrorType,
+	InspectorState,
+	JsonHighlighterProps,
+	NodeControlsProps,
+	NodeError,
+	NodeInspectorProps,
+	NodeType,
 } from "./types";
 
 export {
-  DEFAULT_DURATIONS,
-  DEFAULT_VALUES,
-  ERROR_CATEGORIES,
-  ERROR_SEVERITY,
-  ERROR_TYPES,
-  VALIDATION,
-  VALIDATION_RULES,
+	DEFAULT_DURATIONS,
+	DEFAULT_VALUES,
+	ERROR_CATEGORIES,
+	ERROR_SEVERITY,
+	ERROR_TYPES,
+	VALIDATION,
+	VALIDATION_RULES,
 } from "./constants";
 
 // ============================================================================

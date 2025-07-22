@@ -1,109 +1,107 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { loadAnubisConfig } from '@/lib/anubis/config';
-import { AnubisCrypto, AnubisJWT } from '@/lib/anubis/crypto';
-import type { AnubisChallengeResponse } from '@/types/anubis';
+import { loadAnubisConfig } from "@/lib/anubis/config";
+import { AnubisCrypto, AnubisJWT } from "@/lib/anubis/crypto";
+import type { AnubisChallengeResponse } from "@/types/anubis";
+import { type NextRequest, NextResponse } from "next/server";
 
 // ANUBIS CHALLENGE API ENDPOINTS
 export async function GET(request: NextRequest) {
-  try {
-    const config = loadAnubisConfig();
-    const { searchParams } = new URL(request.url);
-    const returnTo = searchParams.get('return_to') || '/';
-    
-    // EXTRACT REQUEST METADATA
-    const requestMetadata = {
-      userAgent: request.headers.get('user-agent') || undefined,
-      acceptLanguage: request.headers.get('accept-language') || undefined,
-      ip: getClientIP(request)
-    };
-    
-    // GENERATE CHALLENGE
-    const challenge = AnubisCrypto.createChallenge(requestMetadata, config.difficulty);
-    
-    // RETURN CHALLENGE PAGE HTML
-    const challengePageHTML = generateChallengePageHTML(challenge, returnTo);
-    
-    return new NextResponse(challengePageHTML, {
-      headers: {
-        'Content-Type': 'text/html',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-    });
-    
-  } catch (error) {
-    console.error('Challenge generation error:', error);
-    return NextResponse.json({ error: 'Challenge generation failed' }, { status: 500 });
-  }
+	try {
+		const config = loadAnubisConfig();
+		const { searchParams } = new URL(request.url);
+		const returnTo = searchParams.get("return_to") || "/";
+
+		// EXTRACT REQUEST METADATA
+		const requestMetadata = {
+			userAgent: request.headers.get("user-agent") || undefined,
+			acceptLanguage: request.headers.get("accept-language") || undefined,
+			ip: getClientIP(request),
+		};
+
+		// GENERATE CHALLENGE
+		const challenge = AnubisCrypto.createChallenge(requestMetadata, config.difficulty);
+
+		// RETURN CHALLENGE PAGE HTML
+		const challengePageHTML = generateChallengePageHTML(challenge, returnTo);
+
+		return new NextResponse(challengePageHTML, {
+			headers: {
+				"Content-Type": "text/html",
+				"Cache-Control": "no-cache, no-store, must-revalidate",
+				Pragma: "no-cache",
+				Expires: "0",
+			},
+		});
+	} catch (error) {
+		console.error("Challenge generation error:", error);
+		return NextResponse.json({ error: "Challenge generation failed" }, { status: 500 });
+	}
 }
 
 // HANDLE PROOF OF WORK SUBMISSION
 export async function POST(request: NextRequest) {
-  try {
-    const config = loadAnubisConfig();
-    const body = await request.json() as AnubisChallengeResponse;
-    
-    // VALIDATE PROOF OF WORK
-    const isValid = await AnubisCrypto.validateProofOfWork(body, config.difficulty);
-    
-    if (!isValid) {
-      return NextResponse.json({ error: 'Invalid proof of work' }, { status: 400 });
-    }
-    
-    // EXTRACT REQUEST METADATA FOR JWT
-    const requestMetadata = {
-      userAgent: request.headers.get('user-agent') || undefined,
-      acceptLanguage: request.headers.get('accept-language') || undefined,
-      ip: getClientIP(request)
-    };
-    
-    // GENERATE JWT TOKEN
-    const fingerprint = AnubisCrypto.generateFingerprint(requestMetadata);
-    const now = Math.floor(Date.now() / 1000);
-    const payload = {
-      fingerprint,
-      exp: now + (7 * 24 * 60 * 60), // 7 DAYS
-      iat: now,
-      difficulty: config.difficulty
-    };
-    
-    const token = await AnubisJWT.sign(payload, config.jwtSecret);
-    
-    // SET COOKIE AND RETURN SUCCESS
-    const response = NextResponse.json({ success: true });
-    response.cookies.set('anubis-auth', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60, // 7 DAYS
-      domain: config.cookieDomain
-    });
-    
-    return response;
-    
-  } catch (error) {
-    console.error('Proof of work validation error:', error);
-    return NextResponse.json({ error: 'Validation failed' }, { status: 500 });
-  }
+	try {
+		const config = loadAnubisConfig();
+		const body = (await request.json()) as AnubisChallengeResponse;
+
+		// VALIDATE PROOF OF WORK
+		const isValid = await AnubisCrypto.validateProofOfWork(body, config.difficulty);
+
+		if (!isValid) {
+			return NextResponse.json({ error: "Invalid proof of work" }, { status: 400 });
+		}
+
+		// EXTRACT REQUEST METADATA FOR JWT
+		const requestMetadata = {
+			userAgent: request.headers.get("user-agent") || undefined,
+			acceptLanguage: request.headers.get("accept-language") || undefined,
+			ip: getClientIP(request),
+		};
+
+		// GENERATE JWT TOKEN
+		const fingerprint = AnubisCrypto.generateFingerprint(requestMetadata);
+		const now = Math.floor(Date.now() / 1000);
+		const payload = {
+			fingerprint,
+			exp: now + 7 * 24 * 60 * 60, // 7 DAYS
+			iat: now,
+			difficulty: config.difficulty,
+		};
+
+		const token = await AnubisJWT.sign(payload, config.jwtSecret);
+
+		// SET COOKIE AND RETURN SUCCESS
+		const response = NextResponse.json({ success: true });
+		response.cookies.set("anubis-auth", token, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			maxAge: 7 * 24 * 60 * 60, // 7 DAYS
+			domain: config.cookieDomain,
+		});
+
+		return response;
+	} catch (error) {
+		console.error("Proof of work validation error:", error);
+		return NextResponse.json({ error: "Validation failed" }, { status: 500 });
+	}
 }
 
 // EXTRACT CLIENT IP HELPER
 function getClientIP(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  const realIP = request.headers.get('x-real-ip');
-  const cfConnectingIP = request.headers.get('cf-connecting-ip');
-  
-  if (cfConnectingIP) return cfConnectingIP;
-  if (realIP) return realIP;
-  if (forwarded) return forwarded.split(',')[0].trim();
-  
-  return '127.0.0.1';
+	const forwarded = request.headers.get("x-forwarded-for");
+	const realIP = request.headers.get("x-real-ip");
+	const cfConnectingIP = request.headers.get("cf-connecting-ip");
+
+	if (cfConnectingIP) return cfConnectingIP;
+	if (realIP) return realIP;
+	if (forwarded) return forwarded.split(",")[0].trim();
+
+	return "127.0.0.1";
 }
 
 // GENERATE CHALLENGE PAGE HTML
 function generateChallengePageHTML(challenge: any, returnTo: string): string {
-  return `
+	return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -389,4 +387,4 @@ function generateChallengePageHTML(challenge: any, returnTo: string): string {
 </body>
 </html>
   `;
-} 
+}

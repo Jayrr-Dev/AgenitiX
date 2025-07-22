@@ -15,8 +15,8 @@
 // ============================================================================
 
 interface FlowEditorLoadingProps {
-  mounted: boolean;
-  hasHydrated: boolean;
+	mounted: boolean;
+	hasHydrated: boolean;
 }
 
 // ============================================================================
@@ -26,19 +26,14 @@ interface FlowEditorLoadingProps {
 /**
  * Loading screen component with proper hydration handling
  */
-export function FlowEditorLoading({
-  mounted,
-  hasHydrated,
-}: FlowEditorLoadingProps) {
-  // LOADING MESSAGE LOGIC
-  const loadingMessage = !mounted
-    ? "Loading Flow Editor..."
-    : "Loading saved data...";
+export function FlowEditorLoading({ mounted, hasHydrated }: FlowEditorLoadingProps) {
+	// LOADING MESSAGE LOGIC
+	const loadingMessage = !mounted ? "Loading Flow Editor..." : "Loading saved data...";
 
-  // RENDER LOADING SCREEN
-  return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="text-lg">{loadingMessage}</div>
-    </div>
-  );
+	// RENDER LOADING SCREEN
+	return (
+		<div className="flex items-center justify-center h-screen">
+			<div className="text-lg">{loadingMessage}</div>
+		</div>
+	);
 }

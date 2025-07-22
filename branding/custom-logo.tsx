@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import Image from "next/image";
+import type React from "react";
+import { useEffect, useState } from "react";
 
 // TYPES
 interface CustomLogoProps {
-  className?: string;
-  size?: number;
+	className?: string;
+	size?: number;
 }
 
 /**
@@ -16,42 +17,36 @@ interface CustomLogoProps {
  * - Adapts styling based on the current theme (light/dark)
  * - Prevents mismatches between SSR and client-side rendering
  */
-export const CustomLogo: React.FC<CustomLogoProps> = ({ 
-  className = "", 
-  size = 50 
-}) => {
-  const { theme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+export const CustomLogo: React.FC<CustomLogoProps> = ({ className = "", size = 50 }) => {
+	const { theme, resolvedTheme } = useTheme();
+	const [mounted, setMounted] = useState(false);
 
-  // ENSURE CLIENT-SIDE RENDERING
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+	// ENSURE CLIENT-SIDE RENDERING
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
-  // DETERMINE THEME-BASED STYLING
-  const isDarkMode = mounted ? (resolvedTheme ?? theme) === "dark" : false;
+	// DETERMINE THEME-BASED STYLING
+	const isDarkMode = mounted ? (resolvedTheme ?? theme) === "dark" : false;
 
-  return (
-    <div 
-      className={`relative inline-block ${className}`}
-      style={{ width: size, height: size }}
-    >
-      <Image
-        src="/logo-mark.png"
-        alt="Custom Logo"
-        width={size}
-        height={size}
-        className={`
+	return (
+		<div className={`relative inline-block ${className}`} style={{ width: size, height: size }}>
+			<Image
+				src="/logo-mark.png"
+				alt="Custom Logo"
+				width={size}
+				height={size}
+				className={`
           rounded-full 
           object-cover 
           transition-all 
           duration-300
-          ${isDarkMode ? 'brightness-110 contrast-110' : 'brightness-95 contrast-105'}
+          ${isDarkMode ? "brightness-110 contrast-110" : "brightness-95 contrast-105"}
         `}
-        priority
-      />
-    </div>
-  );
+				priority
+			/>
+		</div>
+	);
 };
 
 /**
@@ -59,10 +54,6 @@ export const CustomLogo: React.FC<CustomLogoProps> = ({
  * - Displays "AgenitiX" with custom styling
  * - Maintains consistency with existing brand
  */
-export const CustomBrandWordmark: React.FC<{ className?: string }> = ({ 
-  className = "" 
-}) => (
-  <span className={`font-brand text-xl font-semibold tracking-tight ${className}`}>
-    AgenitiX
-  </span>
-); 
+export const CustomBrandWordmark: React.FC<{ className?: string }> = ({ className = "" }) => (
+	<span className={`font-brand text-xl font-semibold tracking-tight ${className}`}>AgenitiX</span>
+);

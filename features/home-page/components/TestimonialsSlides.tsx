@@ -1,11 +1,13 @@
-import dynamic from "next/dynamic";
 import { testimonialsSlides } from "@/features/home-page/data";
-  
-const AnimatedTestimonials = dynamic(() => import("@/components/ui/animated-testimonials").then(mod => mod.AnimatedTestimonials) , {
-  loading: () => <div>Loading...</div>
-});
+import dynamic from "next/dynamic";
+
+const AnimatedTestimonials = dynamic(
+	() => import("@/components/ui/animated-testimonials").then((mod) => mod.AnimatedTestimonials),
+	{
+		loading: () => <div>Loading...</div>,
+	}
+);
 
 export function AnimatedTestimonialsDemo() {
-  
-  return <AnimatedTestimonials testimonials={testimonialsSlides} />;
+	return <AnimatedTestimonials testimonials={testimonialsSlides} />;
 }
