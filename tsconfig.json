@@ -1,133 +1,157 @@
 {
-	"compilerOptions": {
-		"target": "es5",
-		"lib": ["dom", "dom.iterable", "esnext"],
-		"allowJs": true,
-		"skipLibCheck": true,
-		"strict": true,
-		"forceConsistentCasingInFileNames": true,
-		"noEmit": true,
-		"esModuleInterop": true,
-		"module": "esnext",
-		"moduleResolution": "node",
-		"resolveJsonModule": true,
-		"isolatedModules": true,
-		"jsx": "preserve",
-		"incremental": true,
-		"baseUrl": ".",
-		"plugins": [
-			{
-				"name": "next"
-			}
-		],
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
 
-		// ============================================================================
-		// PATH MAPPINGS - BUSINESS LOGIC MODERN SYSTEM
-		// ============================================================================
-		"paths": {
-			// ============================================================================
-			// ROOT ALIASES
-			// ============================================================================
-			"@/*": ["./*"],
-			"@/app/*": ["app/*"],
-			"@/components/*": ["components/*"],
-			"@/features/*": ["features/*"],
-			"@/hooks/*": ["hooks/*"],
-			"@/lib/*": ["lib/*"],
-			"@/public/*": ["public/*"],
-			"@/scripts/*": ["scripts/*"],
-			"@/store/*": ["store/*"],
-			"@/supabase/*": ["supabase/*"],
-			"@/templates/*": ["templates/*"],
-			"@/types/*": ["types/*"],
-			"@/utils/*": ["utils/*"],
+    // ============================================================================
+    // PATH MAPPINGS - BUSINESS LOGIC MODERN SYSTEM
+    // ============================================================================
+    "paths": {
+      // ============================================================================
+      // ROOT ALIASES
+      // ============================================================================
+      "@/*": ["./*"],
+      "@/app/*": ["app/*"],
+      "@/components/*": ["components/*"],
+      "@/features/*": ["features/*"],
+      "@/hooks/*": ["hooks/*"],
+      "@/lib/*": ["lib/*"],
+      "@/public/*": ["public/*"],
+      "@/scripts/*": ["scripts/*"],
+      "@/store/*": ["store/*"],
+      "@/supabase/*": ["supabase/*"],
+      "@/templates/*": ["templates/*"],
+      "@/types/*": ["types/*"],
+      "@/utils/*": ["utils/*"],
 
-			// ============================================================================
-			// MODERN BUSINESS LOGIC SYSTEM
-			// ============================================================================
-			"@modern/*": ["./features/business-logic-modern/*"],
+      // ============================================================================
+      // MODERN BUSINESS LOGIC SYSTEM
+      // ============================================================================
+      "@modern/*": ["./features/business-logic-modern/*"],
 
-			// ============================================================================
-			// NODE DOMAIN - BUSINESS LOGIC
-			// ============================================================================
-			"@domains/*": ["./features/business-logic-modern/node-domain/*"],
-			"@domain-create/*": ["./features/business-logic-modern/node-domain/create/*"],
-			"@domain-view/*": ["./features/business-logic-modern/node-domain/view/*"],
-			"@domain-trigger/*": ["./features/business-logic-modern/node-domain/trigger/*"],
-			"@domain-test/*": ["./features/business-logic-modern/node-domain/test/*"],
-			"@domain-cycle/*": ["./features/business-logic-modern/node-domain/cycle/*"],
+      // ============================================================================
+      // NODE DOMAIN - BUSINESS LOGIC
+      // ============================================================================
+      "@domains/*": ["./features/business-logic-modern/node-domain/*"],
+      "@domain-create/*": [
+        "./features/business-logic-modern/node-domain/create/*"
+      ],
+      "@domain-view/*": ["./features/business-logic-modern/node-domain/view/*"],
+      "@domain-trigger/*": [
+        "./features/business-logic-modern/node-domain/trigger/*"
+      ],
+      "@domain-test/*": ["./features/business-logic-modern/node-domain/test/*"],
+      "@domain-cycle/*": [
+        "./features/business-logic-modern/node-domain/cycle/*"
+      ],
 
-			// ============================================================================
-			// INFRASTRUCTURE LAYER
-			// ============================================================================
-			"@infrastructure/*": ["./features/business-logic-modern/infrastructure/*"],
+      // ============================================================================
+      // INFRASTRUCTURE LAYER
+      // ============================================================================
+      "@infrastructure/*": [
+        "./features/business-logic-modern/infrastructure/*"
+      ],
 
-			// Core Infrastructure Components
-			"@infra-components/*": ["./features/business-logic-modern/infrastructure/components/*"],
-			"@flow-engine/*": ["./features/business-logic-modern/infrastructure/flow-engine/*"],
+      // Core Infrastructure Components
+      "@infra-components/*": [
+        "./features/business-logic-modern/infrastructure/components/*"
+      ],
+      "@flow-engine/*": [
+        "./features/business-logic-modern/infrastructure/flow-engine/*"
+      ],
 
-			// Registry Systems
-			"@node-inspector/*": ["./features/business-logic-modern/infrastructure/node-inspector/*"],
-			"@node-domain/*": ["./features/business-logic-modern/node-domain/*"],
-			"@sidebar/*": ["./features/business-logic-modern/infrastructure/sidebar/*"],
-			"@theming/*": ["./features/business-logic-modern/infrastructure/theming/*"],
+      // Registry Systems
+      "@node-inspector/*": [
+        "./features/business-logic-modern/infrastructure/node-inspector/*"
+      ],
+      "@node-domain/*": ["./features/business-logic-modern/node-domain/*"],
+      "@sidebar/*": [
+        "./features/business-logic-modern/infrastructure/sidebar/*"
+      ],
+      "@theming/*": [
+        "./features/business-logic-modern/infrastructure/theming/*"
+      ],
 
-			// ============================================================================
-			// SYSTEM RESOURCES
-			// ============================================================================
-			"@docs/*": ["./features/business-logic-modern/documentation/*"],
-			"@tooling/*": ["./features/business-logic-modern/tooling/*"],
-			"@testing/*": ["./features/business-logic-modern/testing/*"],
+      // ============================================================================
+      // SYSTEM RESOURCES
+      // ============================================================================
+      "@docs/*": ["./features/business-logic-modern/documentation/*"],
+      "@tooling/*": ["./features/business-logic-modern/tooling/*"],
+      "@testing/*": ["./features/business-logic-modern/testing/*"],
 
-			// ============================================================================
-			// LEGACY SYSTEM ISOLATION
-			// ============================================================================
-			"@legacy/*": ["./features/business-logic-legacy/*"],
-			"@legacy-business/*": ["./features/business-logic/*"],
+      // ============================================================================
+      // LEGACY SYSTEM ISOLATION
+      // ============================================================================
+      "@legacy/*": ["./features/business-logic-legacy/*"],
+      "@legacy-business/*": ["./features/business-logic/*"],
 
-			// ============================================================================
-			// COMMON ALIASES FOR CONVENIENCE
-			// ============================================================================
-			"@config/*": ["./config/*"]
-		}
-	},
+      // ============================================================================
+      // COMMON ALIASES FOR CONVENIENCE
+      // ============================================================================
+      "@config/*": ["./config/*"]
+    }
+  },
 
-	// ============================================================================
-	// INCLUSION PATTERNS
-	// ============================================================================
-	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "types/**/*.ts"],
+  // ============================================================================
+  // INCLUSION PATTERNS
+  // ============================================================================
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "types/**/*.ts"
+, ".deprecated/database.types.ts"  ],
 
-	// ============================================================================
-	// EXCLUSION PATTERNS
-	// ============================================================================
-	"exclude": [
-		"node_modules",
-		".next",
-		"out",
-		"dist",
-		"build",
-		"coverage",
-		"*.config.js",
-		"*.config.ts",
-		"anubis-standalone/examples/**/*",
-		"features/business-logic-modern/infrastructure/depreciated/**/*"
-	],
+  // ============================================================================
+  // EXCLUSION PATTERNS
+  // ============================================================================
+  "exclude": [
+    "node_modules",
+    ".next",
+    "out",
+    "dist",
+    "build",
+    "coverage",
+    "*.config.js",
+    "*.config.ts",
+    "anubis-standalone/examples/**/*",
+    "features/business-logic-modern/infrastructure/depreciated/**/*"
+  ],
 
-	// ============================================================================
-	// TYPE ACQUISITION
-	// ============================================================================
-	"typeAcquisition": {
-		"enable": false
-	},
+  // ============================================================================
+  // TYPE ACQUISITION
+  // ============================================================================
+  "typeAcquisition": {
+    "enable": false
+  },
 
-	// ============================================================================
-	// WATCH OPTIONS (PERFORMANCE)
-	// ============================================================================
-	"watchOptions": {
-		"watchFile": "useFsEvents",
-		"watchDirectory": "useFsEvents",
-		"fallbackPolling": "dynamicPriority",
-		"synchronousWatchDirectory": true,
-		"excludeDirectories": ["**/node_modules", ".next", "dist", "build"]
-	}
+  // ============================================================================
+  // WATCH OPTIONS (PERFORMANCE)
+  // ============================================================================
+  "watchOptions": {
+    "watchFile": "useFsEvents",
+    "watchDirectory": "useFsEvents",
+    "fallbackPolling": "dynamicPriority",
+    "synchronousWatchDirectory": true,
+    "excludeDirectories": ["**/node_modules", ".next", "dist", "build"]
+  }
 }
