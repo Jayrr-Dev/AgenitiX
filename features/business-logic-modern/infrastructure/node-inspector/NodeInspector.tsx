@@ -28,6 +28,7 @@ import EditableNodeLabel from "@/components/nodes/EditableNodeLabel";
 import EditableNodeId from "@/components/nodes/editableNodeId";
 import { NODE_TYPE_CONFIG } from "../flow-engine/constants";
 import type { AgenNode, NodeType } from "../flow-engine/types/nodeData";
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import { useComponentTheme } from "../theming/components";
 import { NODE_INSPECTOR_TOKENS as DESIGN_CONFIG } from "../theming/components/nodeInspector";
 import { NodeInspectorAdapter } from "./adapters/NodeInspectorAdapter";
@@ -251,7 +252,11 @@ const NodeInspector = React.memo(function NodeInspector() {
 					{/* Left Header Section: Node Info */}
 					<div className={STYLING_CONTAINER_HEADER_LEFT_SECTION}>
 						<div className={STYLING_CONTAINER_HEADER_ICON_TEXT}>
-							{nodeInfo.icon && <span className={STYLING_TEXT_NODE_ICON}>{nodeInfo.icon}</span>}
+							{nodeInfo.icon && (
+								<span className={STYLING_TEXT_NODE_ICON}>
+									{renderLucideIcon(nodeInfo.icon, "", 20)}
+								</span>
+							)}
 							<div>
 								<EditableNodeLabel
 									nodeId={selectedNode.id}

@@ -124,7 +124,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 					{/* REGISTRY-ENHANCED ICON */}
 					{icon && (
 						<span className="text-lg" title={`${displayName} • Category: ${category}`}>
-							{renderLucideIcon(icon)}
+							{renderLucideIcon(icon, "", 20)}
 						</span>
 					)}
 
