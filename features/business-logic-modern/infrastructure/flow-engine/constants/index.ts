@@ -34,7 +34,7 @@ export const TYPE_MAP: TypeMap = new Proxy({} as TypeMap, {
 		if (ULTIMATE_TYPE_MAP[prop]) {
 			return {
 				label: ULTIMATE_TYPE_MAP[prop].label,
-				color: ULTIMATE_TYPE_MAP[prop].color,
+				color: `var(--core-handle-types-${ULTIMATE_TYPE_MAP[prop].tokenKey}-color)`,
 			};
 		}
 		// Fallback for unknown types

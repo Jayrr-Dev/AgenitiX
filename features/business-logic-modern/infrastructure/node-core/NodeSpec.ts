@@ -148,4 +148,9 @@ export interface NodeSpec {
 		/** Identifier used by the execution engine to look up a handler. */
 		execute?: string;
 	};
+
+	/**
+	 * OPTIONAL: Memory configuration for this node's persistent cache
+	 */
+	memory?: NodeMemoryConfig;
 }
