@@ -178,8 +178,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 		// Calculate handle positioning for multiple handles on same side
 		const handlesByPosition = React.useMemo(() => {
 			const grouped: Record<string, typeof spec.handles> = {};
-			const customHandles = (props.data as any)?.customHandles || [];
-			const allHandles = [...(spec.handles || []), ...customHandles];
+			const allHandles = spec.handles || [];
 			
 			allHandles.forEach((handle) => {
 				const pos = handle.position;
@@ -187,7 +186,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 				grouped[pos].push(handle);
 			});
 			return grouped;
-		}, [spec.handles, props.data]);
+		}, [spec.handles]);
 
     // Inner component to throw inside ErrorBoundary, not outside
     const MaybeError: React.FC = () => {
@@ -229,22 +228,9 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 
 				{/* Render handles defined in the spec with smart positioning */}
 				{(() => {
-					// Get hidden handles and custom handles from node data
-					const hiddenHandles = (props.data as any)?.hiddenHandles || [];
-					const customHandles = (props.data as any)?.customHandles || [];
+					const allHandles = spec.handles || [];
 					
-					// Combine spec handles and custom handles
-					const allHandles = [
-						...(spec.handles || []),
-						...customHandles
-					];
-					
-					// Filter out hidden handles
-					const visibleHandles = allHandles.filter(handle => 
-						!hiddenHandles.includes(handle.id)
-					);
-					
-					return visibleHandles.map((handle, index) => {
+					return allHandles.map((handle, index) => {
 						const handlesOnSameSide = handlesByPosition[handle.position] || [];
 						const handleIndex = handlesOnSameSide.findIndex((h) => h.id === handle.id);
 						const totalHandlesOnSide = handlesOnSameSide.length;
