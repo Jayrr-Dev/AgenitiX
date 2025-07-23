@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import React from 'react';
-import clsx from 'clsx';
+import clsx from "clsx";
+import type React from "react";
 
 /* ---------------------------------------------------------------------
    Types
    ------------------------------------------------------------------ */
 export interface BrandWordmarkProps {
-  /** Extra Tailwind / CVA classes to merge in (optional). */
-  className?: string;
+	/** Extra Tailwind / CVA classes to merge in (optional). */
+	className?: string;
 }
 
 /* ---------------------------------------------------------------------
@@ -21,28 +21,26 @@ export interface BrandWordmarkProps {
  * - `hover:animate-fill-transparency` triggers the left+right sweeps
  *   defined in globals.css.
  */
-export const BrandWordmark: React.FC<BrandWordmarkProps> = ({
-  className = '',
-}) => (
-  <div
-    className={clsx(
-      /* base paint stack + layout */
-      'inline-block rounded-xl border border-transparent bg-fill-content p-2',
+export const BrandWordmark: React.FC<BrandWordmarkProps> = ({ className = "" }) => (
+	<div
+		className={clsx(
+			/* base paint stack + layout */
+			"inline-block rounded-xl border border-transparent bg-fill-content p-2",
 
-      /* smooth colour transition when theme toggles */
-      'transition-[background] duration-300 ease-out',
+			/* smooth colour transition when theme toggles */
+			"transition-[background] duration-300 ease-out",
 
-      /* animated sweep on hover */
-      'hover:animate-fill-transparency',
+			/* animated sweep on hover */
+			"hover:animate-fill-transparency",
 
-      /* caller-supplied overrides */
-      className,
-    )}
-  >
-    <span className="font-brand text-[32px] font-semibold leading-none tracking-tight">
-      AgenitiX
-    </span>
-  </div>
+			/* caller-supplied overrides */
+			className
+		)}
+	>
+		<span className="font-brand text-[32px] font-semibold leading-none tracking-tight">
+			AgenitiX
+		</span>
+	</div>
 );
 
 export default BrandWordmark;

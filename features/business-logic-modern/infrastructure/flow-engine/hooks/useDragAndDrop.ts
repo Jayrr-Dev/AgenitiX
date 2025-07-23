@@ -10,83 +10,79 @@
  * Keywords: drag-drop, node-creation, sidebar, ReactFlow, positioning, registry
  */
 
+import type { AgenNode } from "@infrastructure/flow-engine/types/nodeData";
 import type { ReactFlowInstance } from "@xyflow/react";
 import { useCallback } from "react";
-import type { AgenNode } from "@infrastructure/flow-engine/types/nodeData";
 import { getNodeMetadata } from "../../node-registry/nodespec-registry";
 
 interface DragAndDropProps {
-  flowInstance: React.RefObject<ReactFlowInstance<AgenNode, any> | null>;
-  wrapperRef: React.RefObject<HTMLDivElement | null>;
-  onNodeAdd: (node: AgenNode) => void;
+	flowInstance: React.RefObject<ReactFlowInstance<AgenNode, any> | null>;
+	wrapperRef: React.RefObject<HTMLDivElement | null>;
+	onNodeAdd: (node: AgenNode) => void;
 }
 
-export function useDragAndDrop({
-  flowInstance,
-  wrapperRef,
-  onNodeAdd,
-}: DragAndDropProps) {
-  const onDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  }, []);
+export function useDragAndDrop({ flowInstance, wrapperRef, onNodeAdd }: DragAndDropProps) {
+	const onDragOver = useCallback((e: React.DragEvent) => {
+		e.preventDefault();
+		e.dataTransfer.dropEffect = "move";
+	}, []);
 
-  const onDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
+	const onDrop = useCallback(
+		(e: React.DragEvent) => {
+			e.preventDefault();
 
-      if (!wrapperRef.current || !flowInstance.current) {
-        return;
-      }
+			if (!wrapperRef.current || !flowInstance.current) {
+				return;
+			}
 
-      const nodeType = e.dataTransfer.getData("application/reactflow");
-      if (!nodeType) {
-        return;
-      }
+			const nodeType = e.dataTransfer.getData("application/reactflow");
+			if (!nodeType) {
+				return;
+			}
 
-      const metadata = getNodeMetadata(nodeType);
-      if (!metadata) {
-        console.error(`[DragDrop] Invalid node type dropped: ${nodeType}`);
-        return;
-      }
+			const metadata = getNodeMetadata(nodeType);
+			if (!metadata) {
+				console.error(`[DragDrop] Invalid node type dropped: ${nodeType}`);
+				return;
+			}
 
-      const bounds = wrapperRef.current.getBoundingClientRect();
-      const position = flowInstance.current.screenToFlowPosition({
-        x: e.clientX - bounds.left,
-        y: e.clientY - bounds.top,
-      });
+			const bounds = wrapperRef.current.getBoundingClientRect();
+			const position = flowInstance.current.screenToFlowPosition({
+				x: e.clientX - bounds.left,
+				y: e.clientY - bounds.top,
+			});
 
-      try {
-        const defaultData = metadata.data
-          ? Object.fromEntries(
-              Object.entries(metadata.data).map(([key, { default: defaultValue }]) => [
-                key,
-                defaultValue,
-              ])
-            )
-          : {};
+			try {
+				const defaultData = metadata.data
+					? Object.fromEntries(
+							Object.entries(metadata.data).map(([key, { default: defaultValue }]) => [
+								key,
+								defaultValue,
+							])
+						)
+					: {};
 
-        const id = `node_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-        const newNode = {
-          id,
-          type: nodeType,
-          position,
-          deletable: true,
-          data: {
-            ...defaultData,
-            isActive: false, // Default state
-          },
-        } as AgenNode;
-        onNodeAdd(newNode);
-      } catch (error) {
-        console.error("❌ [DragDrop] Failed to create node:", error);
-      }
-    },
-    [flowInstance, wrapperRef, onNodeAdd]
-  );
+				const id = `node_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+				const newNode = {
+					id,
+					type: nodeType,
+					position,
+					deletable: true,
+					data: {
+						...defaultData,
+						isActive: false, // Default state
+					},
+				} as AgenNode;
+				onNodeAdd(newNode);
+			} catch (error) {
+				console.error("❌ [DragDrop] Failed to create node:", error);
+			}
+		},
+		[flowInstance, wrapperRef, onNodeAdd]
+	);
 
-  return {
-    onDragOver,
-    onDrop,
-  };
+	return {
+		onDragOver,
+		onDrop,
+	};
 }

@@ -1,1 +1,1 @@
-declare module 'ts-json-schema-generator'; 
+declare module "ts-json-schema-generator";

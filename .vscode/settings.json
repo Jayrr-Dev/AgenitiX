@@ -1,9 +1,9 @@
 {
-  "cSpell.words": ["Agen", "optimised", "rafs", "REACTFLOW", "Typesafe"],
-  "tailwindCSS.colorDecorators": true,
-  "editor.colorDecorators": true,
-  "files.associations": {
-    "*.css": "tailwindcss"
-  },
-  "tailwindCSS.hovers": true
+	"cSpell.words": ["Agen", "optimised", "rafs", "REACTFLOW", "Typesafe"],
+	"tailwindCSS.colorDecorators": true,
+	"editor.colorDecorators": true,
+	"files.associations": {
+		"*.css": "tailwindcss"
+	},
+	"tailwindCSS.hovers": true
 }

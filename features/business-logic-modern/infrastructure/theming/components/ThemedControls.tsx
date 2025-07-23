@@ -12,47 +12,47 @@
 "use client";
 
 import { Controls } from "@xyflow/react";
-import React from "react";
+import type React from "react";
 
 interface ThemedControlsProps {
-  className?: string;
-  position?:
-    | "top-left"
-    | "top-right"
-    | "bottom-left"
-    | "bottom-right"
-    | "top-center"
-    | "bottom-center"
-    | "center-left"
-    | "center-right";
-  showInteractive?: boolean;
-  showZoom?: boolean;
-  showFitView?: boolean;
+	className?: string;
+	position?:
+		| "top-left"
+		| "top-right"
+		| "bottom-left"
+		| "bottom-right"
+		| "top-center"
+		| "bottom-center"
+		| "center-left"
+		| "center-right";
+	showInteractive?: boolean;
+	showZoom?: boolean;
+	showFitView?: boolean;
 }
 
 export const ThemedControls: React.FC<ThemedControlsProps> = ({
-  className = "",
-  position = "top-left",
-  showInteractive = false,
-  showZoom = true,
-  showFitView = true,
+	className = "",
+	position = "top-left",
+	showInteractive = false,
+	showZoom = true,
+	showFitView = true,
 }) => {
-  return (
-    <Controls
-      className={`
-        [&]:bg-(--infra-controls-bg)
-        [&]:border-(--infra-controls-border)
-        [&_button]:text-(--infra-controls-icon)
-        [&_button:hover]:text-(--infra-controls-icon-hover)
-        [&_button:hover]:bg-(--infra-controls-button-hover)
+	return (
+		<Controls
+			className={`
+        [&]:bg-[var(--infra-controls-bg)]
+        [&]:border-[var(--infra-controls-border)]
+        [&_button]:text-[var(--infra-controls-icon)]
+        [&_button:hover]:text-[var(--infra-controls-icon-hover)]
+        [&_button:hover]:bg-[var(--infra-controls-button-hover)]
         ${className}
       `}
-      position={position}
-      showInteractive={showInteractive}
-      showZoom={showZoom}
-      showFitView={showFitView}
-    />
-  );
+			position={position}
+			showInteractive={showInteractive}
+			showZoom={showZoom}
+			showFitView={showFitView}
+		/>
+	);
 };
 
 export default ThemedControls;

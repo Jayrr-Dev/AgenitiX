@@ -9,20 +9,19 @@
  * Keywords: node-header, theming, accessibility, consistency
  */
 
-import React from "react";
+import type React from "react";
 
 interface NodeHeaderProps {
-  title: string;
-  className?: string;
+	title: string;
+	className?: string;
 }
 
-export const NodeHeader: React.FC<NodeHeaderProps> = ({ 
-  title, 
-  className = "" 
-}) => {
-  return (
-    <div className={`p-2 border-b border-node-view text-node-view font-medium text-sm ${className}`}>
-      {title}
-    </div>
-  );
-}; 
+export const NodeHeader: React.FC<NodeHeaderProps> = ({ title, className = "" }) => {
+	return (
+		<div
+			className={`p-2 border-b border-node-view text-node-view font-medium text-sm ${className}`}
+		>
+			{title}
+		</div>
+	);
+};

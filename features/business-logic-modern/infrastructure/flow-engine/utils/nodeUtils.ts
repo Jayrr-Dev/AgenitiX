@@ -13,23 +13,23 @@
  * @param space - The indentation space for formatting.
  * @returns A JSON string.
  */
-export const safeStringify = (value: any, space: number = 2): string => {
-  const cache = new Set();
-  return JSON.stringify(
-    value,
-    (key, value) => {
-      if (typeof value === "object" && value !== null) {
-        if (cache.has(value)) {
-          // Circular reference found, discard key
-          return;
-        }
-        // Store value in our collection
-        cache.add(value);
-      }
-      return value;
-    },
-    space
-  );
+export const safeStringify = (value: any, space = 2): string => {
+	const cache = new Set();
+	return JSON.stringify(
+		value,
+		(key, value) => {
+			if (typeof value === "object" && value !== null) {
+				if (cache.has(value)) {
+					// Circular reference found, discard key
+					return;
+				}
+				// Store value in our collection
+				cache.add(value);
+			}
+			return value;
+		},
+		space
+	);
 };
 
 /**
@@ -39,23 +39,23 @@ export const safeStringify = (value: any, space: number = 2): string => {
  * @returns The extracted value, or the stringified object if no primary value is found.
  */
 export const extractNodeValue = (data: Record<string, any> | null | undefined): any => {
-  if (!data) {
-    return null;
-  }
+	if (!data) {
+		return null;
+	}
 
-  // Prioritize specific, meaningful keys for output
-  if (data.output !== undefined) return data.output;
-  if (data.value !== undefined) return data.value;
-  if (data.text !== undefined) return data.text;
-  if (data.result !== undefined) return data.result;
-  if (data.payload !== undefined) return data.payload;
+	// Prioritize specific, meaningful keys for output
+	if (data.output !== undefined) return data.output;
+	if (data.value !== undefined) return data.value;
+	if (data.text !== undefined) return data.text;
+	if (data.result !== undefined) return data.result;
+	if (data.payload !== undefined) return data.payload;
 
-  // Fallback for objects with a single key
-  const keys = Object.keys(data);
-  if (keys.length === 1) {
-    return data[keys[0]];
-  }
+	// Fallback for objects with a single key
+	const keys = Object.keys(data);
+	if (keys.length === 1) {
+		return data[keys[0]];
+	}
 
-  // If no primary value is found, return the whole data object for inspection
-  return data;
-}; 
+	// If no primary value is found, return the whole data object for inspection
+	return data;
+};

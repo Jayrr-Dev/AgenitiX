@@ -12,21 +12,21 @@ import { useEffect } from "react";
 import { TelemetryClient } from "../telemetry/TelemetryClient";
 
 interface NodeTelemetryProps {
-  nodeId: string;
-  nodeKind: string;
+	nodeId: string;
+	nodeKind: string;
 }
 
 const NodeTelemetry: React.FC<NodeTelemetryProps> = ({ nodeId, nodeKind }) => {
-  useEffect(() => {
-    TelemetryClient.send("node_created", {
-      nodeId,
-      nodeKind,
-      timestamp: Date.now(),
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // fire only once per mount
+	useEffect(() => {
+		TelemetryClient.send("node_created", {
+			nodeId,
+			nodeKind,
+			timestamp: Date.now(),
+		});
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []); // fire only once per mount
 
-  return null;
+	return null;
 };
 
 export default NodeTelemetry;

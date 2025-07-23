@@ -12,15 +12,8 @@
 
 import type { AgenNode } from "../../flow-engine/types/nodeData";
 import type { ControlsConfig } from "../../node-core/NodeSpec";
-import {
-  SchemaIntrospector,
-  type SchemaFieldInfo,
-} from "../../node-core/schema-helpers";
-import {
-  getNodeSpecMetadata,
-  hasNodeSpec,
-  nodeSpecs,
-} from "../../node-registry/nodespec-registry";
+import { type SchemaFieldInfo, SchemaIntrospector } from "../../node-core/schema-helpers";
+import { getNodeSpecMetadata, hasNodeSpec, nodeSpecs } from "../../node-registry/nodespec-registry";
 import type { NodeType } from "../types";
 
 // ============================================================================
@@ -32,54 +25,54 @@ import type { NodeType } from "../types";
  * Now supports all modern control types and advanced configurations
  */
 export interface ControlField {
-  key: string;
-  type:
-    | "text"
-    | "number"
-    | "boolean"
-    | "select"
-    | "textarea"
-    | "url"
-    | "email"
-    | "color"
-    | "date"
-    | "json";
-  label: string;
-  defaultValue: unknown;
-  required: boolean;
-  validation?: {
-    min?: number;
-    max?: number;
-    pattern?: string;
-    options?: Array<{ value: unknown; label: string }>;
-  };
-  description?: string;
-  placeholder?: string;
-  ui?: {
-    rows?: number; // For textarea
-    step?: number; // For number inputs
-    multiline?: boolean;
-    showPreview?: boolean;
-  };
+	key: string;
+	type:
+		| "text"
+		| "number"
+		| "boolean"
+		| "select"
+		| "textarea"
+		| "url"
+		| "email"
+		| "color"
+		| "date"
+		| "json";
+	label: string;
+	defaultValue: unknown;
+	required: boolean;
+	validation?: {
+		min?: number;
+		max?: number;
+		pattern?: string;
+		options?: Array<{ value: unknown; label: string }>;
+	};
+	description?: string;
+	placeholder?: string;
+	ui?: {
+		rows?: number; // For textarea
+		step?: number; // For number inputs
+		multiline?: boolean;
+		showPreview?: boolean;
+	};
 }
 
 /**
  * Field group for organizing related controls
  */
 export interface ControlFieldGroup {
-  title: string;
-  fields: ControlField[];
-  collapsible?: boolean;
+	title: string;
+	fields: ControlField[];
+	collapsible?: boolean;
 }
 
 /**
  * Complete control configuration for a node
  */
 export interface NodeControlConfig {
-  fields: ControlField[];
-  groups?: ControlFieldGroup[];
-  hasCustomComponent?: boolean;
-  customComponentName?: string;
+	fields: ControlField[];
+	groups?: ControlFieldGroup[];
+	hasCustomComponent?: boolean;
+	customComponentName?: string;
 }
 
 // ============================================================================
@@ -87,9 +80,9 @@ export interface NodeControlConfig {
 // ============================================================================
 
 class NodeInspectorServiceImpl {
-  // ============================================================================
-  // SCHEMA-DRIVEN CONTROL GENERATION
-  // ============================================================================
+	// ============================================================================
+	// SCHEMA-DRIVEN CONTROL GENERATION
+	// ============================================================================
 
   /**
    * Generate control fields from a node's Zod schema with advanced customization
@@ -162,72 +155,65 @@ class NodeInspectorServiceImpl {
 
       console.log(`[NodeInspectorService] Final control fields for ${nodeType}: ${controlFields.length} fields:`, controlFields);
 
-      return controlFields;
-    } catch (error) {
-      console.error(
-        `Failed to generate control fields for ${nodeType}:`,
-        error
-      );
-      return [];
-    }
-  }
+			return controlFields;
+		} catch (error) {
+			console.error(`Failed to generate control fields for ${nodeType}:`, error);
+			return [];
+		}
+	}
 
-  /**
-   * Get complete control configuration including groups and custom components
-   */
-  getNodeControlConfig(nodeType: NodeType): NodeControlConfig {
-    const fields = this.generateControlFields(nodeType);
-    const nodeSpec = this.getNodeSpec(nodeType);
-    const controlsConfig = nodeSpec?.controls;
+	/**
+	 * Get complete control configuration including groups and custom components
+	 */
+	getNodeControlConfig(nodeType: NodeType): NodeControlConfig {
+		const fields = this.generateControlFields(nodeType);
+		const nodeSpec = this.getNodeSpec(nodeType);
+		const controlsConfig = nodeSpec?.controls;
 
-    const config: NodeControlConfig = {
-      fields,
-      hasCustomComponent: !!controlsConfig?.customComponent,
-      customComponentName: controlsConfig?.customComponent,
-    };
+		const config: NodeControlConfig = {
+			fields,
+			hasCustomComponent: !!controlsConfig?.customComponent,
+			customComponentName: controlsConfig?.customComponent,
+		};
 
-    // Create field groups if configured
-    if (controlsConfig?.fieldGroups) {
-      config.groups = controlsConfig.fieldGroups.map((groupConfig: any) => ({
-        title: groupConfig.title,
-        collapsible: groupConfig.collapsible,
-        fields: fields.filter((field) =>
-          groupConfig.fields.includes(field.key)
-        ),
-      }));
-    }
+		// Create field groups if configured
+		if (controlsConfig?.fieldGroups) {
+			config.groups = controlsConfig.fieldGroups.map((groupConfig: any) => ({
+				title: groupConfig.title,
+				collapsible: groupConfig.collapsible,
+				fields: fields.filter((field) => groupConfig.fields.includes(field.key)),
+			}));
+		}
 
-    return config;
-  }
+		return config;
+	}
 
-  /**
-   * Check if a node has schema-driven controls available
-   */
-  hasSchemaControls(nodeType: NodeType): boolean {
-    const nodeSpec = this.getNodeSpec(nodeType);
-    return !!(
-      nodeSpec?.dataSchema && nodeSpec?.controls?.autoGenerate !== false
-    );
-  }
+	/**
+	 * Check if a node has schema-driven controls available
+	 */
+	hasSchemaControls(nodeType: NodeType): boolean {
+		const nodeSpec = this.getNodeSpec(nodeType);
+		return !!(nodeSpec?.dataSchema && nodeSpec?.controls?.autoGenerate !== false);
+	}
 
-  /**
-   * Check if a node has custom control component
-   */
-  hasCustomControlComponent(nodeType: NodeType): boolean {
-    const nodeSpec = this.getNodeSpec(nodeType);
-    return !!nodeSpec?.controls?.customComponent;
-  }
+	/**
+	 * Check if a node has custom control component
+	 */
+	hasCustomControlComponent(nodeType: NodeType): boolean {
+		const nodeSpec = this.getNodeSpec(nodeType);
+		return !!nodeSpec?.controls?.customComponent;
+	}
 
-  // ============================================================================
-  // PRIVATE HELPER METHODS
-  // ============================================================================
+	// ============================================================================
+	// PRIVATE HELPER METHODS
+	// ============================================================================
 
-  /**
-   * Get NodeSpec from registry (with proper typing)
-   */
-  private getNodeSpec(nodeType: NodeType): any {
-    try {
-      if (!nodeType) return null;
+	/**
+	 * Get NodeSpec from registry (with proper typing)
+	 */
+	private getNodeSpec(nodeType: NodeType): any {
+		try {
+			if (!nodeType) return null;
 
       // Access the actual NodeSpec from the registry
       const nodeSpec = nodeSpecs[nodeType as keyof typeof nodeSpecs];
@@ -236,124 +222,120 @@ class NodeInspectorServiceImpl {
         return null;
       }
 
-      return nodeSpec;
-    } catch (error) {
-      console.warn(`Could not retrieve NodeSpec for ${nodeType}:`, error);
-      return null;
-    }
-  }
+			return nodeSpec;
+		} catch (error) {
+			console.warn(`Could not retrieve NodeSpec for ${nodeType}:`, error);
+			return null;
+		}
+	}
 
-  /**
-   * Convert schema field info to control field
-   */
-  private convertSchemaFieldToControl = (
-    schemaField: SchemaFieldInfo
-  ): ControlField => {
-    return {
-      key: schemaField.key,
-      type: schemaField.controlType,
-      label: schemaField.label,
-      defaultValue: schemaField.defaultValue,
-      required: schemaField.required,
-      validation: schemaField.validation,
-      description: schemaField.description,
-      placeholder: schemaField.placeholder,
-      ui: schemaField.ui,
-    };
-  };
+	/**
+	 * Convert schema field info to control field
+	 */
+	private convertSchemaFieldToControl = (schemaField: SchemaFieldInfo): ControlField => {
+		return {
+			key: schemaField.key,
+			type: schemaField.controlType,
+			label: schemaField.label,
+			defaultValue: schemaField.defaultValue,
+			required: schemaField.required,
+			validation: schemaField.validation,
+			description: schemaField.description,
+			placeholder: schemaField.placeholder,
+			ui: schemaField.ui,
+		};
+	};
 
-  /**
-   * Apply control customizations from NodeSpec controls config
-   */
-  private applyControlCustomizations(
-    fields: ControlField[],
-    controlsConfig: ControlsConfig
-  ): ControlField[] {
-    if (!controlsConfig.customFields) return fields;
+	/**
+	 * Apply control customizations from NodeSpec controls config
+	 */
+	private applyControlCustomizations(
+		fields: ControlField[],
+		controlsConfig: ControlsConfig
+	): ControlField[] {
+		if (!controlsConfig.customFields) return fields;
 
-    return fields.map((field) => {
-      const customField = controlsConfig.customFields?.find(
-        (cf) => cf.key === field.key
-      );
-      if (!customField) return field;
+		return fields.map((field) => {
+			const customField = controlsConfig.customFields?.find((cf) => cf.key === field.key);
+			if (!customField) return field;
 
-      // Merge custom configuration with generated field
-      return {
-        ...field,
-        ...customField,
-        validation: { ...field.validation, ...customField.validation },
-        ui: { ...field.ui, ...customField.ui },
-      };
-    });
-  }
+			// Merge custom configuration with generated field
+			return {
+				...field,
+				...customField,
+				validation: { ...field.validation, ...customField.validation },
+				ui: { ...field.ui, ...customField.ui },
+			};
+		});
+	}
 
-  /**
-   * Filter out excluded fields and system fields
-   */
-  private filterControlFields(
-    fields: ControlField[],
-    controlsConfig?: ControlsConfig
-  ): ControlField[] {
-    // System fields that should not have controls
-    const systemFields = ["isActive", "id", "type"];
+	/**
+	 * Filter out excluded fields and system fields
+	 */
+	private filterControlFields(
+		fields: ControlField[],
+		controlsConfig?: ControlsConfig
+	): ControlField[] {
+		// System fields that should not have controls
+		const systemFields = ["isActive", "id", "type"];
 
-    // User-excluded fields
-    const excludedFields = controlsConfig?.excludeFields || [];
+		// User-excluded fields
+		const excludedFields = controlsConfig?.excludeFields || [];
 
-    const allExcludedFields = [...systemFields, ...excludedFields];
+		const allExcludedFields = [...systemFields, ...excludedFields];
 
-    return fields.filter((field) => !allExcludedFields.includes(field.key));
-  }
+		return fields.filter((field) => !allExcludedFields.includes(field.key));
+	}
 
-  // ============================================================================
-  // LEGACY METHODS (Maintained for backward compatibility)
-  // ============================================================================
+	// ============================================================================
+	// LEGACY METHODS (Maintained for backward compatibility)
+	// ============================================================================
 
-  /**
-   * Get node metadata from the registry
-   */
-  getNodeMetadata(nodeType: NodeType) {
-    if (!nodeType) return null;
-    return getNodeSpecMetadata(nodeType);
-  }
+	/**
+	 * Get node metadata from the registry
+	 */
+	getNodeMetadata(nodeType: NodeType) {
+		if (!nodeType) return null;
+		return getNodeSpecMetadata(nodeType);
+	}
 
-  /**
-   * Check if a node type exists in the registry
-   */
-  nodeExists(nodeType: NodeType): boolean {
-    if (!nodeType) return false;
-    return hasNodeSpec(nodeType);
-  }
+	/**
+	 * Check if a node type exists in the registry
+	 */
+	nodeExists(nodeType: NodeType): boolean {
+		if (!nodeType) return false;
+		return hasNodeSpec(nodeType);
+	}
 
-  /**
-   * Update node data with validation
-   */
-  updateNodeData(
-    node: AgenNode,
-    updates: Record<string, unknown>
-  ): { success: boolean; errors: string[] } {
-    try {
-      // Basic validation - in a real implementation, this would use the node's schema
-      const errors: string[] = [];
+	/**
+	 * Update node data with validation
+	 */
+	updateNodeData(
+		node: AgenNode,
+		updates: Record<string, unknown>
+	): { success: boolean; errors: string[] } {
+		try {
+			// Basic validation - in a real implementation, this would use the node's schema
+			const errors: string[] = [];
 
-      // Validate each update
-      Object.entries(updates).forEach(([key, value]) => {
-        if (value === null || value === undefined) {
-          errors.push(`${key}: Value cannot be null or undefined`);
-        }
-      });
+			// Validate each update
+			Object.entries(updates).forEach(([key, value]) => {
+				if (value === null || value === undefined) {
+					errors.push(`${key}: Value cannot be null or undefined`);
+				}
+			});
 
-      return {
-        success: errors.length === 0,
-        errors,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        errors: [`Update failed: ${error}`],
-      };
-    }
-  }
+			return {
+				success: errors.length === 0,
+				errors,
+			};
+		} catch (error) {
+			return {
+				success: false,
+				errors: [`Update failed: ${error}`],
+			};
+		}
+	}
 
   /**
    * Get node data with defaults applied
@@ -362,48 +344,48 @@ class NodeInspectorServiceImpl {
     const nodeSpec = this.getNodeSpec(node.type as any);
     const defaults = nodeSpec?.initialData || {};
 
-    return { ...defaults, ...node.data };
-  }
+		return { ...defaults, ...node.data };
+	}
 
-  // ============================================================================
-  // UTILITY METHODS (NodeSpec-Based)
-  // ============================================================================
+	// ============================================================================
+	// UTILITY METHODS (NodeSpec-Based)
+	// ============================================================================
 
-  /**
-   * Check if a node has custom controls based on NodeSpec metadata
-   */
-  hasCustomControls(nodeType: NodeType): boolean {
-    // Check for schema-driven controls first
-    if (this.hasSchemaControls(nodeType)) {
-      return true;
-    }
+	/**
+	 * Check if a node has custom controls based on NodeSpec metadata
+	 */
+	hasCustomControls(nodeType: NodeType): boolean {
+		// Check for schema-driven controls first
+		if (this.hasSchemaControls(nodeType)) {
+			return true;
+		}
 
-    // Check for custom control component
-    if (this.hasCustomControlComponent(nodeType)) {
-      return true;
-    }
+		// Check for custom control component
+		if (this.hasCustomControlComponent(nodeType)) {
+			return true;
+		}
 
-    // Fallback to legacy detection based on category
-    const metadata = this.getNodeMetadata(nodeType);
-    return this.determineHasControls(metadata);
-  }
+		// Fallback to legacy detection based on category
+		const metadata = this.getNodeMetadata(nodeType);
+		return this.determineHasControls(metadata);
+	}
 
-  // ============================================================================
-  // PRIVATE HELPERS
-  // ============================================================================
+	// ============================================================================
+	// PRIVATE HELPERS
+	// ============================================================================
 
-  /**
-   * Determine if a node has controls based on NodeSpec metadata
-   */
-  private determineHasControls(metadata: any): boolean {
-    // Use NodeSpec metadata to determine control availability
-    // Categories like CREATE and TRIGGER typically have controls
-    return (
-      metadata.category === "CREATE" ||
-      metadata.category === "TRIGGER" ||
-      metadata.inspector?.key !== undefined
-    );
-  }
+	/**
+	 * Determine if a node has controls based on NodeSpec metadata
+	 */
+	private determineHasControls(metadata: any): boolean {
+		// Use NodeSpec metadata to determine control availability
+		// Categories like CREATE and TRIGGER typically have controls
+		return (
+			metadata.category === "CREATE" ||
+			metadata.category === "TRIGGER" ||
+			metadata.inspector?.key !== undefined
+		);
+	}
 }
 
 // Export singleton instance

@@ -18,9 +18,8 @@
  * Join any number of class / token strings, skipping falsy values.
  * Identical to clsx/twMerge for simple cases but with zero deps.
  */
-export const combineTokens = (
-  ...tokens: Array<string | false | undefined | null>
-): string => tokens.filter(Boolean).join(" ");
+export const combineTokens = (...tokens: Array<string | false | undefined | null>): string =>
+	tokens.filter(Boolean).join(" ");
 
 /**
  * Back-compat alias – some legacy files import `combineStyles`.
@@ -41,36 +40,29 @@ export const combineStyles = combineTokens; // eslint-disable-line import/prefer
  * @param fallback           – optional string if variant not found
  */
 export function getVariant<
-  C extends string,
-  V extends Record<string, string>,
-  T extends Record<C, V>,
+	C extends string,
+	V extends Record<string, string>,
+	T extends Record<C, V>,
 >(variantsByCategory: T, category: C, variant: string, fallback = ""): string {
-  const cat = variantsByCategory[category] as
-    | Record<string, string>
-    | undefined;
-  if (!cat) return fallback;
-  return cat[variant] ?? fallback;
+	const cat = variantsByCategory[category] as Record<string, string> | undefined;
+	if (!cat) return fallback;
+	return cat[variant] ?? fallback;
 }
 
 /**
  * Convenience helper to choose between two variants via a boolean flag.
  */
 export function getConditionalVariant<
-  C extends string,
-  V extends Record<string, string>,
-  T extends Record<C, V>,
+	C extends string,
+	V extends Record<string, string>,
+	T extends Record<C, V>,
 >(
-  variantsByCategory: T,
-  category: C,
-  condition: boolean,
-  trueVariant: string,
-  falseVariant: string,
-  fallback = ""
+	variantsByCategory: T,
+	category: C,
+	condition: boolean,
+	trueVariant: string,
+	falseVariant: string,
+	fallback = ""
 ): string {
-  return getVariant(
-    variantsByCategory,
-    category,
-    condition ? trueVariant : falseVariant,
-    fallback
-  );
+	return getVariant(variantsByCategory, category, condition ? trueVariant : falseVariant, fallback);
 }

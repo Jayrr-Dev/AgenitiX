@@ -11,167 +11,162 @@
  */
 
 import {
-  addEdge,
-  applyEdgeChanges,
-  applyNodeChanges,
-  ReactFlowInstance,
-  reconnectEdge,
-  type Connection,
-  type Edge,
-  type EdgeChange,
-  type NodeChange,
-  type OnConnect,
-  type OnSelectionChangeFunc,
+	type Connection,
+	type Edge,
+	type EdgeChange,
+	type NodeChange,
+	type OnConnect,
+	type OnSelectionChangeFunc,
+	type ReactFlowInstance,
+	addEdge,
+	applyEdgeChanges,
+	applyNodeChanges,
+	reconnectEdge,
 } from "@xyflow/react";
 import { useCallback, useRef } from "react";
 import type { AgenEdge, AgenNode } from "../types/nodeData";
 import {
-  createEdgeStyle,
-  getConnectionDataType,
-  validateConnection,
+	createEdgeStyle,
+	getConnectionDataType,
+	validateConnection,
 } from "../utils/connectionUtils";
 
 interface ReactFlowHandlersProps {
-  nodes: AgenNode[];
-  edges: AgenEdge[];
-  setNodes: (nodes: AgenNode[] | ((prev: AgenNode[]) => AgenNode[])) => void;
-  setEdges: (edges: AgenEdge[] | ((prev: AgenEdge[]) => AgenEdge[])) => void;
-  onSelectionChange: (nodeId: string | null) => void;
-  onEdgeSelectionChange: (edgeId: string | null) => void;
+	nodes: AgenNode[];
+	edges: AgenEdge[];
+	setNodes: (nodes: AgenNode[] | ((prev: AgenNode[]) => AgenNode[])) => void;
+	setEdges: (edges: AgenEdge[] | ((prev: AgenEdge[]) => AgenEdge[])) => void;
+	onSelectionChange: (nodeId: string | null) => void;
+	onEdgeSelectionChange: (edgeId: string | null) => void;
 }
 
 export function useReactFlowHandlers({
-  nodes,
-  edges,
-  setNodes,
-  setEdges,
-  onSelectionChange,
-  onEdgeSelectionChange,
+	nodes,
+	edges,
+	setNodes,
+	setEdges,
+	onSelectionChange,
+	onEdgeSelectionChange,
 }: ReactFlowHandlersProps) {
-  // ============================================================================
-  // REFS
-  // ============================================================================
+	// ============================================================================
+	// REFS
+	// ============================================================================
 
-  const flowInstance = useRef<ReactFlowInstance<AgenNode, AgenEdge> | null>(
-    null
-  );
-  const edgeReconnectFlag = useRef(true);
+	const flowInstance = useRef<ReactFlowInstance<AgenNode, AgenEdge> | null>(null);
+	const edgeReconnectFlag = useRef(true);
 
-  // ============================================================================
-  // RECONNECTION HANDLERS
-  // ============================================================================
+	// ============================================================================
+	// RECONNECTION HANDLERS
+	// ============================================================================
 
-  const onReconnectStart = useCallback(() => {
-    edgeReconnectFlag.current = false;
-  }, []);
+	const onReconnectStart = useCallback(() => {
+		edgeReconnectFlag.current = false;
+	}, []);
 
-  const onReconnect = useCallback(
-    (oldEdge: Edge, newConn: Connection) => {
-      edgeReconnectFlag.current = true;
-      setEdges((els) => reconnectEdge(oldEdge, newConn, els) as AgenEdge[]);
-    },
-    [setEdges]
-  );
+	const onReconnect = useCallback(
+		(oldEdge: Edge, newConn: Connection) => {
+			edgeReconnectFlag.current = true;
+			setEdges((els) => reconnectEdge(oldEdge, newConn, els) as AgenEdge[]);
+		},
+		[setEdges]
+	);
 
-  const onReconnectEnd = useCallback(
-    (_: any, edge: Edge) => {
-      if (!edgeReconnectFlag.current) {
-        setEdges((eds) => eds.filter((e) => e.id !== edge.id));
-      }
-      edgeReconnectFlag.current = true;
-    },
-    [setEdges]
-  );
+	const onReconnectEnd = useCallback(
+		(_: any, edge: Edge) => {
+			if (!edgeReconnectFlag.current) {
+				setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+			}
+			edgeReconnectFlag.current = true;
+		},
+		[setEdges]
+	);
 
-  // ============================================================================
-  // NODE/EDGE CHANGE HANDLERS
-  // ============================================================================
+	// ============================================================================
+	// NODE/EDGE CHANGE HANDLERS
+	// ============================================================================
 
-  const onNodesChange = useCallback(
-    (changes: NodeChange[]) =>
-      setNodes((nds) => applyNodeChanges(changes, nds) as AgenNode[]),
-    [setNodes]
-  );
+	const onNodesChange = useCallback(
+		(changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds) as AgenNode[]),
+		[setNodes]
+	);
 
-  const onEdgesChange = useCallback(
-    (changes: EdgeChange[]) =>
-      setEdges((eds) => applyEdgeChanges(changes, eds) as AgenEdge[]),
-    [setEdges]
-  );
+	const onEdgesChange = useCallback(
+		(changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds) as AgenEdge[]),
+		[setEdges]
+	);
 
-  // ============================================================================
-  // CONNECTION HANDLER
-  // ============================================================================
+	// ============================================================================
+	// CONNECTION HANDLER
+	// ============================================================================
 
-  const onConnect: OnConnect = useCallback(
-    (connection: Connection) => {
-      // Validate connection
-      if (!validateConnection(connection)) {
-        // Don't show toast here - Ultimate system handles it
-        return;
-      }
+	const onConnect: OnConnect = useCallback(
+		(connection: Connection) => {
+			// Validate connection
+			if (!validateConnection(connection)) {
+				// Don't show toast here - Ultimate system handles it
+				return;
+			}
 
-      // Get data type for styling
-      const dataType = getConnectionDataType(connection, nodes);
+			// Get data type for styling
+			const dataType = getConnectionDataType(connection, nodes);
 
-      setEdges((eds) =>
-        addEdge(
-          {
-            ...connection,
-            type: "default",
-            style: createEdgeStyle(dataType, 2, connection, nodes),
-          },
-          eds
-        )
-      );
-    },
-    [setEdges]
-  );
+			setEdges((eds) =>
+				addEdge(
+					{
+						...connection,
+						type: "default",
+						style: createEdgeStyle(dataType, 2, connection, nodes),
+					},
+					eds
+				)
+			);
+		},
+		[setEdges]
+	);
 
-  // ============================================================================
-  // SELECTION HANDLER
-  // ============================================================================
+	// ============================================================================
+	// SELECTION HANDLER
+	// ============================================================================
 
-  const onSelectionChangeHandler: OnSelectionChangeFunc<AgenNode, AgenEdge> =
-    useCallback(
-      ({ nodes: selectedNodes, edges: selectedEdges }) => {
-        // Handle node selection first
-        const nodeId = selectedNodes.length > 0 ? selectedNodes[0].id : null;
-        onSelectionChange(nodeId);
+	const onSelectionChangeHandler: OnSelectionChangeFunc<AgenNode, AgenEdge> = useCallback(
+		({ nodes: selectedNodes, edges: selectedEdges }) => {
+			// Handle node selection first
+			const nodeId = selectedNodes.length > 0 ? selectedNodes[0].id : null;
+			onSelectionChange(nodeId);
 
-        // Only handle edge selection if NO nodes are selected
-        if (selectedNodes.length === 0) {
-          const edgeId = selectedEdges.length > 0 ? selectedEdges[0].id : null;
-          onEdgeSelectionChange(edgeId);
-        }
-      },
-      [onSelectionChange, onEdgeSelectionChange]
-    );
+			// Only handle edge selection if NO nodes are selected
+			if (selectedNodes.length === 0) {
+				const edgeId = selectedEdges.length > 0 ? selectedEdges[0].id : null;
+				onEdgeSelectionChange(edgeId);
+			}
+		},
+		[onSelectionChange, onEdgeSelectionChange]
+	);
 
-  // ============================================================================
-  // FLOW INSTANCE HANDLER
-  // ============================================================================
+	// ============================================================================
+	// FLOW INSTANCE HANDLER
+	// ============================================================================
 
-  const onInit = useCallback((rf: ReactFlowInstance<AgenNode, AgenEdge>) => {
-    flowInstance.current = rf;
-  }, []);
+	const onInit = useCallback((rf: ReactFlowInstance<AgenNode, AgenEdge>) => {
+		flowInstance.current = rf;
+	}, []);
 
-  // ============================================================================
-  // RETURN HANDLERS AND REFS
-  // ============================================================================
+	// ============================================================================
+	// RETURN HANDLERS AND REFS
+	// ============================================================================
 
-  return {
-    // Refs
-    flowInstance,
+	return {
+		// Refs
+		flowInstance,
 
-    // Handlers
-    onReconnectStart,
-    onReconnect,
-    onReconnectEnd,
-    onNodesChange,
-    onEdgesChange,
-    onConnect,
-    onSelectionChange: onSelectionChangeHandler,
-    onInit,
-  };
+		// Handlers
+		onReconnectStart,
+		onReconnect,
+		onReconnectEnd,
+		onNodesChange,
+		onEdgesChange,
+		onConnect,
+		onSelectionChange: onSelectionChangeHandler,
+		onInit,
+	};
 }

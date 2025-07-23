@@ -6,8 +6,8 @@
  */
 
 declare module "lz-string" {
-  /** Compress a string into UTF-16 safe text */
-  export function compressToUTF16(input: string): string;
-  /** Decompress a UTF-16 string */
-  export function decompressFromUTF16(compressed: string): string | null;
+	/** Compress a string into UTF-16 safe text */
+	export function compressToUTF16(input: string): string;
+	/** Decompress a UTF-16 string */
+	export function decompressFromUTF16(compressed: string): string | null;
 }

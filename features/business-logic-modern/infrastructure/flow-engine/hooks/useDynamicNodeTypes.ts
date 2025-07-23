@@ -3,9 +3,8 @@ import React, { useMemo } from "react";
 // Import all available node components
 // This should be automatically updated when new nodes are created via Plop
 // Add new node imports here (Plop can auto-inject these)
-const createText = React.lazy(
-  () => import("../../../node-domain/create/createText.node")
-);
+import viewText from '../../../node-domain/view/viewText.node';
+import createText from '../../../node-domain/create/createText.node';
 
 /**
  * Hook that provides nodeTypes for React Flow
@@ -15,13 +14,14 @@ const createText = React.lazy(
  * and include it in the nodeTypes object below.
  */
 export function useDynamicNodeTypes() {
-  const nodeTypes = useMemo(
-    () => ({
-      // Add new node types here
-      createText,
-    }),
-    []
-  );
+	const nodeTypes = useMemo(
+		() => ({
+			// Add new node types here
+			viewText,
+			createText,
+		}),
+		[]
+	);
 
-  return nodeTypes;
+	return nodeTypes;
 }

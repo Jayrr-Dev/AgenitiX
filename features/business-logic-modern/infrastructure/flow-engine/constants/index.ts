@@ -10,15 +10,15 @@
  * Keywords: constants, node-types, type-mapping, configuration, registry, keyboard-shortcuts
  */
 
-import { Position } from "@xyflow/react";
 import { ULTIMATE_TYPE_MAP } from "@/components/nodes/handles/TypeSafeHandle";
+import { Position } from "@xyflow/react";
 import type {
-  AgenEdge,
-  AgenNode,
-  NodeType,
-  NodeTypeConfig,
-  NodeTypeConfigMap,
-  TypeMap,
+	AgenEdge,
+	AgenNode,
+	NodeType,
+	NodeTypeConfig,
+	NodeTypeConfigMap,
+	TypeMap,
 } from "../types/nodeData";
 
 // ============================================================================
@@ -29,63 +29,63 @@ import type {
  * UNIFIED TYPE SYSTEM - Now uses UltimateTypesafeHandle as single source of truth
  */
 export const TYPE_MAP: TypeMap = new Proxy({} as TypeMap, {
-  get(target, prop: string) {
-    // Direct mapping for types
-    if (ULTIMATE_TYPE_MAP[prop]) {
-      return {
-        label: ULTIMATE_TYPE_MAP[prop].label,
-        color: ULTIMATE_TYPE_MAP[prop].color,
-      };
-    }
-    // Fallback for unknown types
-    return { label: prop, color: "#6b7280" }; // gray
-  },
-  ownKeys() {
-    return Object.keys(ULTIMATE_TYPE_MAP);
-  },
-  has(target, prop) {
-    return prop in ULTIMATE_TYPE_MAP;
-  },
+	get(target, prop: string) {
+		// Direct mapping for types
+		if (ULTIMATE_TYPE_MAP[prop]) {
+			return {
+				label: ULTIMATE_TYPE_MAP[prop].label,
+				color: `var(--core-handle-types-${ULTIMATE_TYPE_MAP[prop].tokenKey}-color)`,
+			};
+		}
+		// Fallback for unknown types
+		return { label: prop, color: "#6b7280" }; // gray
+	},
+	ownKeys() {
+		return Object.keys(ULTIMATE_TYPE_MAP);
+	},
+	has(target, prop) {
+		return prop in ULTIMATE_TYPE_MAP;
+	},
 });
 
 // ============================================================================
 // NODE TYPE CONFIGURATION - Modern Registry Integration
 // ============================================================================
 
-import { modernNodeRegistry, getNodeMetadata } from "../../node-registry/nodespec-registry";
+import { getNodeMetadata, modernNodeRegistry } from "../../node-registry/nodespec-registry";
 
 /**
  * NODE_TYPE_CONFIG - Dynamic configuration based on modern node registry
  * This creates a proxy that dynamically generates node configurations from the registry
  */
 export const NODE_TYPE_CONFIG = new Proxy({} as Record<string, NodeTypeConfig>, {
-  get(target, nodeType: string) {
-    const metadata = getNodeMetadata(nodeType);
-    if (!metadata) {
-      console.warn(`No metadata found for node type: ${nodeType}`);
-      return undefined;
-    }
+	get(target, nodeType: string) {
+		const metadata = getNodeMetadata(nodeType);
+		if (!metadata) {
+			console.warn(`No metadata found for node type: ${nodeType}`);
+			return undefined;
+		}
 
-    // Convert metadata to the expected configuration format
-    return {
-      defaultData: Object.fromEntries(
-        Object.entries(metadata.data || {}).map(([key, config]) => [
-          key,
-          (config as any)?.default || null,
-        ])
-      ),
-      hasTargetPosition: false,
-      hasOutput: true,
-      hasControls: true,
-      displayName: metadata.displayName,
-    } as NodeTypeConfig;
-  },
-  has(target, nodeType) {
-    return modernNodeRegistry.has(nodeType as string);
-  },
-  ownKeys() {
-    return Array.from(modernNodeRegistry.keys());
-  },
+		// Convert metadata to the expected configuration format
+		return {
+			defaultData: Object.fromEntries(
+				Object.entries(metadata.data || {}).map(([key, config]) => [
+					key,
+					(config as any)?.default || null,
+				])
+			),
+			hasTargetPosition: false,
+			hasOutput: true,
+			hasControls: true,
+			displayName: metadata.displayName,
+		} as NodeTypeConfig;
+	},
+	has(target, nodeType) {
+		return modernNodeRegistry.has(nodeType as string);
+	},
+	ownKeys() {
+		return Array.from(modernNodeRegistry.keys());
+	},
 }) as NodeTypeConfigMap;
 
 /**
@@ -94,7 +94,7 @@ export const NODE_TYPE_CONFIG = new Proxy({} as Record<string, NodeTypeConfig>, 
  * @returns Node configuration object or undefined if not found
  */
 export const getNodeTypeConfig = (nodeType: string): NodeTypeConfig | undefined => {
-  return (NODE_TYPE_CONFIG as any)[nodeType];
+	return (NODE_TYPE_CONFIG as any)[nodeType];
 };
 
 // ============================================================================
@@ -102,11 +102,11 @@ export const getNodeTypeConfig = (nodeType: string): NodeTypeConfig | undefined 
 // ============================================================================
 
 export const INITIAL_NODES: AgenNode[] = [
-  // Nodes will be added here after recreation via Plop
+	// Nodes will be added here after recreation via Plop
 ];
 
 export const INITIAL_EDGES: AgenEdge[] = [
-  // Edges will be added here after recreation via Plop
+	// Edges will be added here after recreation via Plop
 ];
 
 // ============================================================================
@@ -114,18 +114,18 @@ export const INITIAL_EDGES: AgenEdge[] = [
 // ============================================================================
 
 export const KEYBOARD_SHORTCUTS = {
-  DELETE: ["Delete", "Backspace"],
-  DUPLICATE: "d",
-  COPY: "c",
-  PASTE: "v",
-  LOCK_INSPECTOR: "a",
-  ESCAPE: "Escape",
-  TOGGLE_HISTORY: "h",
-  SELECT_ALL: "a",
-  DELETE_NODES: "q",
-  TOGGLE_INSPECTOR: "a",
-  DUPLICATE_NODE: "w",
-  TOGGLE_SIDEBAR: "s",
+	DELETE: ["Delete", "Backspace"],
+	DUPLICATE: "d",
+	COPY: "c",
+	PASTE: "v",
+	LOCK_INSPECTOR: "a",
+	ESCAPE: "Escape",
+	TOGGLE_HISTORY: "h",
+	SELECT_ALL: "a",
+	DELETE_NODES: "q",
+	TOGGLE_INSPECTOR: "a",
+	DUPLICATE_NODE: "w",
+	TOGGLE_SIDEBAR: "s",
 };
 
 // ============================================================================
@@ -142,9 +142,9 @@ export const EDGE_ID_PREFIX = "edge-";
 // ============================================================================
 
 export const VALIDATION = {
-  MIN_PULSE_DURATION: 50,
-  MIN_DELAY: 0,
-  MIN_CYCLE_DURATION: 100,
-  MIN_INPUT_COUNT: 1,
-  MAX_INPUT_COUNT: 10,
+	MIN_PULSE_DURATION: 50,
+	MIN_DELAY: 0,
+	MIN_CYCLE_DURATION: 100,
+	MIN_INPUT_COUNT: 1,
+	MAX_INPUT_COUNT: 10,
 } as const;

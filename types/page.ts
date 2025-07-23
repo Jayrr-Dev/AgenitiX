@@ -1,7 +1,6 @@
-     // types/page.ts
+// types/page.ts
 export type PageProps = {
-    params: {
-      [key: string]: string;
-    };
-  };
-  
+	params: {
+		[key: string]: string;
+	};
+};

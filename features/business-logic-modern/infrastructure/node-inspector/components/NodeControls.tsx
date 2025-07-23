@@ -18,62 +18,54 @@ import { NodeInspectorAdapter } from "../adapters/NodeInspectorAdapter";
 import { EnhancedNodeControls } from "./EnhancedNodeControls";
 
 interface NodeControlsProps {
-  node: AgenNode;
-  updateNodeData: (id: string, patch: Record<string, unknown>) => void;
-  onLogError: (nodeId: string, message: string) => void;
+	node: AgenNode;
+	updateNodeData: (id: string, patch: Record<string, unknown>) => void;
+	onLogError: (nodeId: string, message: string) => void;
 }
 
-export const NodeControls: React.FC<NodeControlsProps> = ({
-  node,
-  updateNodeData,
-  onLogError,
-}) => {
-  // Get node information through the adapter (reduces import churn)
-  const nodeInfo = NodeInspectorAdapter.getNodeInfo(node.type as any);
+export const NodeControls: React.FC<NodeControlsProps> = ({ node, updateNodeData, onLogError }) => {
+	// Get node information through the adapter (reduces import churn)
+	const nodeInfo = NodeInspectorAdapter.getNodeInfo(node.type as any);
 
-  if (!nodeInfo) {
-    return (
-      <div className="text-xs text-control-error p-3 text-center">
-        <div className="mb-2">⚠️ Unknown Node Type</div>
-        <div className="text-control-debug">
-          Node type: <code>{node.type}</code>
-        </div>
-        <div className="mt-2 text-control-placeholder">
-          This node type is not recognized by the system.
-          <br />
-          Please check the node registry configuration.
-        </div>
-      </div>
-    );
-  }
+	if (!nodeInfo) {
+		return (
+			<div className="text-xs text-control-error p-3 text-center">
+				<div className="mb-2">⚠️ Unknown Node Type</div>
+				<div className="text-control-debug">
+					Node type: <code>{node.type}</code>
+				</div>
+				<div className="mt-2 text-control-placeholder">
+					This node type is not recognized by the system.
+					<br />
+					Please check the node registry configuration.
+				</div>
+			</div>
+		);
+	}
 
-  // Use enhanced controls for nodes that support them
-  if (nodeInfo.hasControls) {
-    return (
-      <EnhancedNodeControls
-        node={node}
-        nodeInfo={nodeInfo}
-        updateNodeData={updateNodeData}
-        onLogError={onLogError}
-      />
-    );
-  }
+	// Use enhanced controls for nodes that support them
+	if (nodeInfo.hasControls) {
+		return (
+			<EnhancedNodeControls
+				node={node}
+				nodeInfo={nodeInfo}
+				updateNodeData={updateNodeData}
+				onLogError={onLogError}
+			/>
+		);
+	}
 
-  // Default fallback with helpful information
-  return (
-    <div className="text-xs text-control-placeholder p-3 text-center">
-      <div className="mb-2">📋 {nodeInfo.displayName}</div>
-      <div className="text-control-debug mb-2">
-        Category: <code>{nodeInfo.category}</code>
-      </div>
-      {nodeInfo.description && (
-        <div className="text-control-placeholder mb-2 italic">
-          {nodeInfo.description}
-        </div>
-      )}
-      <div className="text-control-debug">
-        No controls available for this node type.
-      </div>
-    </div>
-  );
+	// Default fallback with helpful information
+	return (
+		<div className="text-xs text-control-placeholder p-3 text-center">
+			<div className="mb-2">📋 {nodeInfo.displayName}</div>
+			<div className="text-control-debug mb-2">
+				Category: <code>{nodeInfo.category}</code>
+			</div>
+			{nodeInfo.description && (
+				<div className="text-control-placeholder mb-2 italic">{nodeInfo.description}</div>
+			)}
+			<div className="text-control-debug">No controls available for this node type.</div>
+		</div>
+	);
 };

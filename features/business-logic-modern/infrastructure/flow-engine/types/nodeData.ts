@@ -17,15 +17,15 @@ import type { Edge, Node, Position } from "@xyflow/react";
 // ============================================================================
 
 export interface BaseNodeData {
-  /** Error message if node encounters issues */
-  error?: string;
-  /** Whether node should propagate data downstream */
-  isActive?: boolean;
-  /** Vibe Mode error injection properties */
-  isErrorState?: boolean;
-  errorType?: "warning" | "error" | "critical";
-  /** Allow additional properties for flexibility */
-  [key: string]: any;
+	/** Error message if node encounters issues */
+	error?: string;
+	/** Whether node should propagate data downstream */
+	isActive?: boolean;
+	/** Vibe Mode error injection properties */
+	isErrorState?: boolean;
+	errorType?: "warning" | "error" | "critical";
+	/** Allow additional properties for flexibility */
+	[key: string]: any;
 }
 
 // ============================================================================
@@ -33,8 +33,8 @@ export interface BaseNodeData {
 // ============================================================================
 
 export interface CreateTextData extends BaseNodeData {
-  text: string;
-  heldText: string;
+	text: string;
+	heldText: string;
 }
 
 // ============================================================================
@@ -42,20 +42,28 @@ export interface CreateTextData extends BaseNodeData {
 // ============================================================================
 
 export interface ViewOutputData extends BaseNodeData {
-  label: string;
-  displayedValues: Array<{
-    type: string;
-    content: any;
-    id: string;
-    timestamp?: number;
-  }>;
-  maxHistory?: number;
-  autoScroll?: boolean;
-  showTypeIcons?: boolean;
-  groupSimilar?: boolean;
-  filterEmpty?: boolean;
-  filterDuplicates?: boolean;
-  includedTypes?: string[];
+	label: string;
+	displayedValues: Array<{
+		type: string;
+		content: any;
+		id: string;
+		timestamp?: number;
+	}>;
+	maxHistory?: number;
+	autoScroll?: boolean;
+	showTypeIcons?: boolean;
+	groupSimilar?: boolean;
+	filterEmpty?: boolean;
+	filterDuplicates?: boolean;
+	includedTypes?: string[];
+}
+
+export interface ViewTextData extends BaseNodeData {
+	text: string;
+	isEnabled: boolean;
+	isActive: boolean;
+	isExpanded: boolean;
+	receivedData?: string;
 }
 
 // ============================================================================
@@ -63,13 +71,13 @@ export interface ViewOutputData extends BaseNodeData {
 // ============================================================================
 
 export interface TriggerOnToggleData extends BaseNodeData {
-  triggered: boolean;
-  value: boolean;
-  outputValue: boolean;
-  type: string;
-  label: string;
-  inputCount: number;
-  hasExternalInputs: boolean;
+	triggered: boolean;
+	value: boolean;
+	outputValue: boolean;
+	type: string;
+	label: string;
+	inputCount: number;
+	hasExternalInputs: boolean;
 }
 
 // ============================================================================
@@ -77,12 +85,12 @@ export interface TriggerOnToggleData extends BaseNodeData {
 // ============================================================================
 
 export interface TestErrorData extends BaseNodeData {
-  errorMessage: string;
-  errorType: "warning" | "error" | "critical";
-  triggerMode: "always" | "trigger_on" | "trigger_off";
-  isGeneratingError: boolean;
-  text: string;
-  json: any;
+	errorMessage: string;
+	errorType: "warning" | "error" | "critical";
+	triggerMode: "always" | "trigger_on" | "trigger_off";
+	isGeneratingError: boolean;
+	text: string;
+	json: any;
 }
 
 // ============================================================================
@@ -90,13 +98,13 @@ export interface TestErrorData extends BaseNodeData {
 // ============================================================================
 
 export interface CyclePulseData extends BaseNodeData {
-  triggered: boolean;
-  isRunning?: boolean;
-  initialState?: boolean;
-  cycleDuration?: number;
-  pulseDuration?: number;
-  infinite?: boolean;
-  maxCycles?: number;
+	triggered: boolean;
+	isRunning?: boolean;
+	initialState?: boolean;
+	cycleDuration?: number;
+	pulseDuration?: number;
+	infinite?: boolean;
+	maxCycles?: number;
 }
 
 // ============================================================================
@@ -104,17 +112,18 @@ export interface CyclePulseData extends BaseNodeData {
 // ============================================================================
 
 export type AgenNode =
-  // Legacy Nodes (for backward compatibility)
-  | Node<CreateTextData, "createText">
-  | Node<ViewOutputData, "viewOutput">
-  | Node<TriggerOnToggleData, "triggerOnToggle">
-  | Node<TestErrorData, "testError">;
+	// Legacy Nodes (for backward compatibility)
+	| Node<CreateTextData, "createText">
+	| Node<ViewOutputData, "viewOutput">
+	| Node<TriggerOnToggleData, "triggerOnToggle">
+	| Node<TestErrorData, "testError">
+	| Node<ViewTextData, "viewText">;
 
 export type AgenEdge = Edge & {
-  sourceHandle?: string | null;
-  targetHandle?: string | null;
-  type: "custom" | "step" | "default";
-  style?: { stroke: string; strokeWidth: number };
+	sourceHandle?: string | null;
+	targetHandle?: string | null;
+	type: "custom" | "step" | "default";
+	style?: { stroke: string; strokeWidth: number };
 };
 
 // ============================================================================
@@ -124,25 +133,25 @@ export type AgenEdge = Edge & {
 export type NodeType = NonNullable<AgenNode["type"]>;
 
 export interface NodeError {
-  timestamp: number;
-  message: string;
-  type: "error" | "warning" | "info";
-  source?: string;
+	timestamp: number;
+	message: string;
+	type: "error" | "warning" | "info";
+	source?: string;
 }
 
 export interface FlowEditorState {
-  nodes: AgenNode[];
-  edges: AgenEdge[];
-  selectedNodeId: string | null;
-  copiedNodes: AgenNode[];
-  copiedEdges: AgenEdge[];
-  nodeErrors: Record<string, NodeError[]>;
-  showHistoryPanel: boolean;
+	nodes: AgenNode[];
+	edges: AgenEdge[];
+	selectedNodeId: string | null;
+	copiedNodes: AgenNode[];
+	copiedEdges: AgenEdge[];
+	nodeErrors: Record<string, NodeError[]>;
+	showHistoryPanel: boolean;
 }
 
 export interface TypeMapEntry {
-  label: string;
-  color: string;
+	label: string;
+	color: string;
 }
 
 export type TypeMap = Record<string, TypeMapEntry>;
@@ -152,14 +161,14 @@ export type TypeMap = Record<string, TypeMapEntry>;
 // ============================================================================
 
 export interface FlowEditorCallbacks {
-  updateNodeData: (id: string, patch: Record<string, unknown>) => void;
-  logNodeError: (
-    nodeId: string,
-    message: string,
-    type?: NodeError["type"],
-    source?: string
-  ) => void;
-  clearNodeErrors: (nodeId: string) => void;
+	updateNodeData: (id: string, patch: Record<string, unknown>) => void;
+	logNodeError: (
+		nodeId: string,
+		message: string,
+		type?: NodeError["type"],
+		source?: string
+	) => void;
+	clearNodeErrors: (nodeId: string) => void;
 }
 
 // ============================================================================
@@ -167,16 +176,16 @@ export interface FlowEditorCallbacks {
 // ============================================================================
 
 export interface NodeDefaultData {
-  [key: string]: unknown;
+	[key: string]: unknown;
 }
 
 export interface NodeTypeConfig {
-  defaultData: NodeDefaultData;
-  hasTargetPosition?: boolean;
-  targetPosition?: Position;
-  hasOutput?: boolean;
-  hasControls?: boolean;
-  displayName?: string;
+	defaultData: NodeDefaultData;
+	hasTargetPosition?: boolean;
+	targetPosition?: Position;
+	hasOutput?: boolean;
+	hasControls?: boolean;
+	displayName?: string;
 }
 
 export type NodeTypeConfigMap = Record<NodeType, NodeTypeConfig>;
@@ -188,10 +197,10 @@ export type NodeTypeConfigMap = Record<NodeType, NodeTypeConfig>;
 export type DomainCategory = "create" | "view" | "trigger" | "test" | "cycle";
 
 export interface DomainMetadata {
-  category: DomainCategory;
-  icon: string;
-  description: string;
-  nodeTypes: NodeType[];
+	category: DomainCategory;
+	icon: string;
+	description: string;
+	nodeTypes: NodeType[];
 }
 
 export type DomainMetadataMap = Record<DomainCategory, DomainMetadata>;

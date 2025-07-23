@@ -1,3 +1,3 @@
 export interface CreateTextOutput {
-  text: string;
-} 
+	text: string;
+}

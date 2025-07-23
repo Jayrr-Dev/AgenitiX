@@ -1,23 +1,16 @@
 {
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "module": "commonjs",
-    "target": "es2020",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": false,
-    "outDir": "./dist"
-  },
-  "include": [
-    "tooling/**/*",
-    "scripts/**/*",
-    "*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
-} 
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"module": "commonjs",
+		"target": "es2020",
+		"moduleResolution": "node",
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"noEmit": false,
+		"outDir": "./dist"
+	},
+	"include": ["tooling/**/*", "scripts/**/*", "*.ts"],
+	"exclude": ["node_modules", "dist"]
+}

@@ -11,20 +11,20 @@
  */
 
 import FlowEditor from "@/features/business-logic-modern/infrastructure/flow-engine/FlowEditor";
-import { VERSION } from "@/features/business-logic-modern/infrastructure/versioning/version";
+import { VERSION } from "@/features/business-logic-modern/infrastructure/versioning";
 
 // MAIN PAGE COMPONENT
 export default function BusinessLogicPage() {
-  return (
-    <div className="h-screen w-screen relative">
-      <FlowEditor />
+	return (
+		<div className="h-[100vh] w-[100vw] relative">
+			<FlowEditor />
 
-      {/* VERSION DISPLAY - Bottom right corner */}
-      <div className="absolute bottom-2 right-2 z-50 pointer-events-none select-none">
-        <span className="text-xs text-gray-400/60 font-mono bg-black/10 backdrop-blur-sm px-2 py-1 rounded">
-          v{VERSION.full}
-        </span>
-      </div>
-    </div>
-  );
+			{/* VERSION DISPLAY - Bottom right corner */}
+			<div className="absolute bottom-2 right-2 z-50 pointer-events-none select-none">
+				<span className="text-xs text-gray-400/60 font-mono bg-black/10 backdrop-blur-sm px-2 py-1 rounded">
+					v{VERSION.full}
+				</span>
+			</div>
+		</div>
+	);
 }

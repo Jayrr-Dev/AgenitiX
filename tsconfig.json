@@ -37,7 +37,7 @@
       "@/public/*": ["public/*"],
       "@/scripts/*": ["scripts/*"],
       "@/store/*": ["store/*"],
-      "@/supabase/*": ["supabase/*"],
+      "@/supabase/*": [".deprecated/supabase/*"],
       "@/templates/*": ["templates/*"],
       "@/types/*": ["types/*"],
       "@/utils/*": ["utils/*"],
@@ -119,7 +119,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "types/**/*.ts"
-  ],
+, ".deprecated/database.types.ts", ".deprecated/electric.tsx", ".deprecated/fortis-logo.tsx", ".deprecated/next-logo.tsx", ".deprecated/powerline.tsx", ".deprecated/safety.tsx", ".deprecated/urban-infra.tsx", ".deprecated/version-commands.ts", ".deprecated/data.ts", ".deprecated/gen-handle-types.ts", ".deprecated/periodStore.ts", ".deprecated/projectStore.ts", ".deprecated/sessionStore.ts", ".deprecated/timesheetStore.ts", ".deprecated/userStore.ts"  ],
 
   // ============================================================================
   // EXCLUSION PATTERNS
@@ -133,8 +133,9 @@
     "coverage",
     "*.config.js",
     "*.config.ts",
-    "anubis-standalone/examples/**/*",
-    "features/business-logic-modern/infrastructure/depreciated/**/*"
+    ".deprecated/examples/**/*",
+    "features/business-logic-modern/infrastructure/depreciated/**/*",
+    "backups/**/*"
   ],
 
   // ============================================================================

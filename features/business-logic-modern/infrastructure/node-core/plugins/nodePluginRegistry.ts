@@ -6,12 +6,12 @@
  * side-effect-free (no server calls).
  */
 
-import React from "react";
+import type React from "react";
 
 export interface NodePluginProps {
-  nodeId: string;
-  nodeKind: string;
-  data: Record<string, unknown>;
+	nodeId: string;
+	nodeKind: string;
+	data: Record<string, unknown>;
 }
 
 export type NodePlugin = React.FC<NodePluginProps>;
@@ -19,7 +19,7 @@ export type NodePlugin = React.FC<NodePluginProps>;
 const plugins: NodePlugin[] = [];
 
 export const registerNodePlugin = (plugin: NodePlugin) => {
-  plugins.push(plugin);
+	plugins.push(plugin);
 };
 
 export const getNodePlugins = () => plugins;

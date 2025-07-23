@@ -12,43 +12,41 @@
 
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import type React from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { AgenNode } from "../../flow-engine/types/nodeData";
-import {
-  NodeInspectorService,
-  type ControlField,
-} from "../services/NodeInspectorService";
+import { type ControlField, NodeInspectorService } from "../services/NodeInspectorService";
 
 // ============================================================================
 // CONSTANTS - Apple Design System
 // ============================================================================
 
 const APPLE_COLORS = {
-  primary: "rgb(0, 122, 255)",
-  success: "rgb(52, 199, 89)",
-  warning: "rgb(255, 149, 0)",
-  danger: "rgb(255, 59, 48)",
-  gray: {
-    50: "rgb(249, 249, 249)",
-    100: "rgb(242, 242, 247)",
-    200: "rgb(229, 229, 234)",
-    300: "rgb(199, 199, 204)",
-    400: "rgb(142, 142, 147)",
-    500: "rgb(99, 99, 102)",
-    600: "rgb(72, 72, 74)",
-    700: "rgb(58, 58, 60)",
-    800: "rgb(44, 44, 46)",
-    900: "rgb(28, 28, 30)",
-  },
+	primary: "rgb(0, 122, 255)",
+	success: "rgb(52, 199, 89)",
+	warning: "rgb(255, 149, 0)",
+	danger: "rgb(255, 59, 48)",
+	gray: {
+		50: "rgb(249, 249, 249)",
+		100: "rgb(242, 242, 247)",
+		200: "rgb(229, 229, 234)",
+		300: "rgb(199, 199, 204)",
+		400: "rgb(142, 142, 147)",
+		500: "rgb(99, 99, 102)",
+		600: "rgb(72, 72, 74)",
+		700: "rgb(58, 58, 60)",
+		800: "rgb(44, 44, 46)",
+		900: "rgb(28, 28, 30)",
+	},
 } as const;
 
 const APPLE_SPACING = {
-  xs: "4px",
-  sm: "8px",
-  md: "12px",
-  lg: "16px",
-  xl: "20px",
-  xxl: "24px",
+	xs: "4px",
+	sm: "8px",
+	md: "12px",
+	lg: "16px",
+	xl: "20px",
+	xxl: "24px",
 } as const;
 
 // ============================================================================
@@ -56,18 +54,18 @@ const APPLE_SPACING = {
 // ============================================================================
 
 interface DynamicControlsProps {
-  node: AgenNode;
-  updateNodeData: (id: string, patch: Record<string, unknown>) => void;
-  onLogError?: (nodeId: string, message: string, type?: string) => void;
+	node: AgenNode;
+	updateNodeData: (id: string, patch: Record<string, unknown>) => void;
+	onLogError?: (nodeId: string, message: string, type?: string) => void;
 }
 
 interface ControlRendererProps {
-  field: ControlField;
-  value: unknown;
-  onChange: (value: unknown) => void;
-  nodeType: string;
-  hasError: boolean;
-  errorMessage?: string;
+	field: ControlField;
+	value: unknown;
+	onChange: (value: unknown) => void;
+	nodeType: string;
+	hasError: boolean;
+	errorMessage?: string;
 }
 
 // ============================================================================
@@ -78,23 +76,23 @@ interface ControlRendererProps {
  * Clean text input with Apple's refined styling
  */
 const AppleTextInput: React.FC<ControlRendererProps> = ({
-  field,
-  value,
-  onChange,
-  hasError,
-  errorMessage,
+	field,
+	value,
+	onChange,
+	hasError,
+	errorMessage,
 }) => {
-  return (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-900 dark:text-white">
-        {field.label}
-      </label>
-      <input
-        type="text"
-        value={String(value || "")}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={field.placeholder}
-        className={`
+	return (
+		<div className="space-y-2">
+			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+				{field.label}
+			</label>
+			<input
+				type="text"
+				value={String(value || "")}
+				onChange={(e) => onChange(e.target.value)}
+				placeholder={field.placeholder}
+				className={`
           w-full px-3 py-2.5 text-sm
           bg-white dark:bg-gray-800
           border rounded-lg
@@ -102,43 +100,43 @@ const AppleTextInput: React.FC<ControlRendererProps> = ({
           focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
           placeholder:text-gray-400 dark:placeholder:text-gray-500
           ${
-            hasError
-              ? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-          }
+						hasError
+							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
+							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+					}
         `}
-      />
-      {hasError && errorMessage && (
-        <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-          <span className="w-3 h-3 text-red-500">⚠</span>
-          {errorMessage}
-        </p>
-      )}
-    </div>
-  );
+			/>
+			{hasError && errorMessage && (
+				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+					<span className="w-3 h-3 text-red-500">⚠</span>
+					{errorMessage}
+				</p>
+			)}
+		</div>
+	);
 };
 
 /**
  * Elegant textarea with Apple's attention to detail
  */
 const AppleTextarea: React.FC<ControlRendererProps> = ({
-  field,
-  value,
-  onChange,
-  hasError,
-  errorMessage,
+	field,
+	value,
+	onChange,
+	hasError,
+	errorMessage,
 }) => {
-  return (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-900 dark:text-white">
-        {field.label}
-      </label>
-      <textarea
-        value={String(value || "")}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={field.placeholder}
-        rows={field.ui?.rows || 3}
-        className={`
+	return (
+		<div className="space-y-2">
+			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+				{field.label}
+			</label>
+			<textarea
+				value={String(value || "")}
+				onChange={(e) => onChange(e.target.value)}
+				placeholder={field.placeholder}
+				rows={field.ui?.rows || 3}
+				className={`
           w-full px-3 py-2.5 text-sm
           bg-white dark:bg-gray-800
           border rounded-lg
@@ -147,58 +145,58 @@ const AppleTextarea: React.FC<ControlRendererProps> = ({
           placeholder:text-gray-400 dark:placeholder:text-gray-500
           resize-none
           ${
-            hasError
-              ? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-          }
+						hasError
+							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
+							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+					}
         `}
-      />
-      {hasError && errorMessage && (
-        <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-          <span className="w-3 h-3 text-red-500">⚠</span>
-          {errorMessage}
-        </p>
-      )}
-    </div>
-  );
+			/>
+			{hasError && errorMessage && (
+				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+					<span className="w-3 h-3 text-red-500">⚠</span>
+					{errorMessage}
+				</p>
+			)}
+		</div>
+	);
 };
 
 /**
  * Precise number input with Apple's numeric styling
  */
 const AppleNumberInput: React.FC<ControlRendererProps> = ({
-  field,
-  value,
-  onChange,
-  hasError,
-  errorMessage,
+	field,
+	value,
+	onChange,
+	hasError,
+	errorMessage,
 }) => {
-  const handleChange = useCallback(
-    (newValue: string) => {
-      const numValue = parseFloat(newValue);
-      if (!isNaN(numValue)) {
-        onChange(numValue);
-      } else if (newValue === "") {
-        onChange(field.defaultValue);
-      }
-    },
-    [onChange, field.defaultValue]
-  );
+	const handleChange = useCallback(
+		(newValue: string) => {
+			const numValue = Number.parseFloat(newValue);
+			if (!isNaN(numValue)) {
+				onChange(numValue);
+			} else if (newValue === "") {
+				onChange(field.defaultValue);
+			}
+		},
+		[onChange, field.defaultValue]
+	);
 
-  return (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-900 dark:text-white">
-        {field.label}
-      </label>
-      <input
-        type="number"
-        value={String(value ?? "")}
-        onChange={(e) => handleChange(e.target.value)}
-        placeholder={field.placeholder}
-        step={field.ui?.step || 1}
-        min={field.validation?.min}
-        max={field.validation?.max}
-        className={`
+	return (
+		<div className="space-y-2">
+			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+				{field.label}
+			</label>
+			<input
+				type="number"
+				value={String(value ?? "")}
+				onChange={(e) => handleChange(e.target.value)}
+				placeholder={field.placeholder}
+				step={field.ui?.step || 1}
+				min={field.validation?.min}
+				max={field.validation?.max}
+				className={`
           w-full px-3 py-2.5 text-sm
           bg-white dark:bg-gray-800
           border rounded-lg
@@ -206,144 +204,138 @@ const AppleNumberInput: React.FC<ControlRendererProps> = ({
           focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
           placeholder:text-gray-400 dark:placeholder:text-gray-500
           ${
-            hasError
-              ? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-          }
+						hasError
+							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
+							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+					}
         `}
-      />
-      {hasError && errorMessage && (
-        <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-          <span className="w-3 h-3 text-red-500">⚠</span>
-          {errorMessage}
-        </p>
-      )}
-    </div>
-  );
+			/>
+			{hasError && errorMessage && (
+				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+					<span className="w-3 h-3 text-red-500">⚠</span>
+					{errorMessage}
+				</p>
+			)}
+		</div>
+	);
 };
 
 /**
  * Beautiful toggle switch inspired by iOS
  */
 const AppleToggle: React.FC<ControlRendererProps> = ({
-  field,
-  value,
-  onChange,
-  hasError,
-  errorMessage,
+	field,
+	value,
+	onChange,
+	hasError,
+	errorMessage,
 }) => {
-  const boolValue = Boolean(value);
+	const boolValue = Boolean(value);
 
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-gray-900 dark:text-white">
-          {field.label}
-        </label>
-        <button
-          onClick={() => onChange(!boolValue)}
-          className={`
+	return (
+		<div className="space-y-2">
+			<div className="flex items-center justify-between">
+				<label className="text-sm font-medium text-gray-900 dark:text-white">{field.label}</label>
+				<button
+					onClick={() => onChange(!boolValue)}
+					className={`
             relative inline-flex h-6 w-11 items-center rounded-full
             transition-colors duration-200 ease-out
             focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2
-            ${
-              boolValue
-                ? "bg-blue-600 shadow-sm"
-                : "bg-gray-200 dark:bg-gray-700"
-            }
+            ${boolValue ? "bg-blue-600 shadow-sm" : "bg-gray-200 dark:bg-gray-700"}
           `}
-          type="button"
-        >
-          <span
-            className={`
+					type="button"
+				>
+					<span
+						className={`
               inline-block h-4 w-4 transform rounded-full bg-white
               transition-transform duration-200 ease-out shadow-sm
               ${boolValue ? "translate-x-6" : "translate-x-1"}
             `}
-          />
-        </button>
-      </div>
-      {hasError && errorMessage && (
-        <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-          <span className="w-3 h-3 text-red-500">⚠</span>
-          {errorMessage}
-        </p>
-      )}
-    </div>
-  );
+					/>
+				</button>
+			</div>
+			{hasError && errorMessage && (
+				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+					<span className="w-3 h-3 text-red-500">⚠</span>
+					{errorMessage}
+				</p>
+			)}
+		</div>
+	);
 };
 
 /**
  * Clean select dropdown with Apple's refined styling
  */
 const AppleSelect: React.FC<ControlRendererProps> = ({
-  field,
-  value,
-  onChange,
-  hasError,
-  errorMessage,
+	field,
+	value,
+	onChange,
+	hasError,
+	errorMessage,
 }) => {
-  const options = field.validation?.options || [];
+	const options = field.validation?.options || [];
 
-  return (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-900 dark:text-white">
-        {field.label}
-      </label>
-      <select
-        value={String(value || "")}
-        onChange={(e) => onChange(e.target.value)}
-        className={`
+	return (
+		<div className="space-y-2">
+			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+				{field.label}
+			</label>
+			<select
+				value={String(value || "")}
+				onChange={(e) => onChange(e.target.value)}
+				className={`
           w-full px-3 py-2.5 text-sm
           bg-white dark:bg-gray-800
           border rounded-lg
           transition-all duration-200 ease-out
           focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
           ${
-            hasError
-              ? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-          }
+						hasError
+							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
+							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+					}
         `}
-      >
-        {!field.required && <option value="">Select {field.label}</option>}
-        {options.map((option) => (
-          <option key={String(option.value)} value={String(option.value)}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      {hasError && errorMessage && (
-        <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-          <span className="w-3 h-3 text-red-500">⚠</span>
-          {errorMessage}
-        </p>
-      )}
-    </div>
-  );
+			>
+				{!field.required && <option value="">Select {field.label}</option>}
+				{options.map((option) => (
+					<option key={String(option.value)} value={String(option.value)}>
+						{option.label}
+					</option>
+				))}
+			</select>
+			{hasError && errorMessage && (
+				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+					<span className="w-3 h-3 text-red-500">⚠</span>
+					{errorMessage}
+				</p>
+			)}
+		</div>
+	);
 };
 
 /**
  * URL input with validation styling
  */
 const AppleUrlInput: React.FC<ControlRendererProps> = ({
-  field,
-  value,
-  onChange,
-  hasError,
-  errorMessage,
+	field,
+	value,
+	onChange,
+	hasError,
+	errorMessage,
 }) => {
-  return (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-900 dark:text-white">
-        {field.label}
-      </label>
-      <input
-        type="url"
-        value={String(value || "")}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={field.placeholder || "https://example.com"}
-        className={`
+	return (
+		<div className="space-y-2">
+			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+				{field.label}
+			</label>
+			<input
+				type="url"
+				value={String(value || "")}
+				onChange={(e) => onChange(e.target.value)}
+				placeholder={field.placeholder || "https://example.com"}
+				className={`
           w-full px-3 py-2.5 text-sm
           bg-white dark:bg-gray-800
           border rounded-lg
@@ -351,43 +343,43 @@ const AppleUrlInput: React.FC<ControlRendererProps> = ({
           focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
           placeholder:text-gray-400 dark:placeholder:text-gray-500
           ${
-            hasError
-              ? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-          }
+						hasError
+							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
+							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+					}
         `}
-      />
-      {hasError && errorMessage && (
-        <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-          <span className="w-3 h-3 text-red-500">⚠</span>
-          {errorMessage}
-        </p>
-      )}
-    </div>
-  );
+			/>
+			{hasError && errorMessage && (
+				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+					<span className="w-3 h-3 text-red-500">⚠</span>
+					{errorMessage}
+				</p>
+			)}
+		</div>
+	);
 };
 
 /**
  * Email input with validation styling
  */
 const AppleEmailInput: React.FC<ControlRendererProps> = ({
-  field,
-  value,
-  onChange,
-  hasError,
-  errorMessage,
+	field,
+	value,
+	onChange,
+	hasError,
+	errorMessage,
 }) => {
-  return (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-900 dark:text-white">
-        {field.label}
-      </label>
-      <input
-        type="email"
-        value={String(value || "")}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={field.placeholder || "user@example.com"}
-        className={`
+	return (
+		<div className="space-y-2">
+			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+				{field.label}
+			</label>
+			<input
+				type="email"
+				value={String(value || "")}
+				onChange={(e) => onChange(e.target.value)}
+				placeholder={field.placeholder || "user@example.com"}
+				className={`
           w-full px-3 py-2.5 text-sm
           bg-white dark:bg-gray-800
           border rounded-lg
@@ -395,50 +387,50 @@ const AppleEmailInput: React.FC<ControlRendererProps> = ({
           focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
           placeholder:text-gray-400 dark:placeholder:text-gray-500
           ${
-            hasError
-              ? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-          }
+						hasError
+							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
+							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+					}
         `}
-      />
-      {hasError && errorMessage && (
-        <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-          <span className="w-3 h-3 text-red-500">⚠</span>
-          {errorMessage}
-        </p>
-      )}
-    </div>
-  );
+			/>
+			{hasError && errorMessage && (
+				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+					<span className="w-3 h-3 text-red-500">⚠</span>
+					{errorMessage}
+				</p>
+			)}
+		</div>
+	);
 };
 
 /**
  * Color picker with Apple's attention to visual design
  */
 const AppleColorPicker: React.FC<ControlRendererProps> = ({
-  field,
-  value,
-  onChange,
-  hasError,
-  errorMessage,
+	field,
+	value,
+	onChange,
+	hasError,
+	errorMessage,
 }) => {
-  return (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-900 dark:text-white">
-        {field.label}
-      </label>
-      <div className="flex items-center gap-3">
-        <input
-          type="color"
-          value={String(value || "#000000")}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-12 h-10 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer"
-        />
-        <input
-          type="text"
-          value={String(value || "")}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="#000000"
-          className={`
+	return (
+		<div className="space-y-2">
+			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+				{field.label}
+			</label>
+			<div className="flex items-center gap-3">
+				<input
+					type="color"
+					value={String(value || "#000000")}
+					onChange={(e) => onChange(e.target.value)}
+					className="w-12 h-10 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer"
+				/>
+				<input
+					type="text"
+					value={String(value || "")}
+					onChange={(e) => onChange(e.target.value)}
+					placeholder="#000000"
+					className={`
             flex-1 px-3 py-2.5 text-sm font-mono
             bg-white dark:bg-gray-800
             border rounded-lg
@@ -446,114 +438,114 @@ const AppleColorPicker: React.FC<ControlRendererProps> = ({
             focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
             placeholder:text-gray-400 dark:placeholder:text-gray-500
             ${
-              hasError
-                ? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-                : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-            }
+							hasError
+								? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
+								: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+						}
           `}
-        />
-      </div>
-      {hasError && errorMessage && (
-        <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-          <span className="w-3 h-3 text-red-500">⚠</span>
-          {errorMessage}
-        </p>
-      )}
-    </div>
-  );
+				/>
+			</div>
+			{hasError && errorMessage && (
+				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+					<span className="w-3 h-3 text-red-500">⚠</span>
+					{errorMessage}
+				</p>
+			)}
+		</div>
+	);
 };
 
 /**
  * Date input with clean styling
  */
 const AppleDateInput: React.FC<ControlRendererProps> = ({
-  field,
-  value,
-  onChange,
-  hasError,
-  errorMessage,
+	field,
+	value,
+	onChange,
+	hasError,
+	errorMessage,
 }) => {
-  return (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-900 dark:text-white">
-        {field.label}
-      </label>
-      <input
-        type="date"
-        value={String(value || "")}
-        onChange={(e) => onChange(e.target.value)}
-        className={`
+	return (
+		<div className="space-y-2">
+			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+				{field.label}
+			</label>
+			<input
+				type="date"
+				value={String(value || "")}
+				onChange={(e) => onChange(e.target.value)}
+				className={`
           w-full px-3 py-2.5 text-sm
           bg-white dark:bg-gray-800
           border rounded-lg
           transition-all duration-200 ease-out
           focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
           ${
-            hasError
-              ? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-          }
+						hasError
+							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
+							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+					}
         `}
-      />
-      {hasError && errorMessage && (
-        <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-          <span className="w-3 h-3 text-red-500">⚠</span>
-          {errorMessage}
-        </p>
-      )}
-    </div>
-  );
+			/>
+			{hasError && errorMessage && (
+				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+					<span className="w-3 h-3 text-red-500">⚠</span>
+					{errorMessage}
+				</p>
+			)}
+		</div>
+	);
 };
 
 /**
  * JSON editor with syntax highlighting and validation
  */
 const AppleJsonEditor: React.FC<ControlRendererProps> = ({
-  field,
-  value,
-  onChange,
-  hasError,
-  errorMessage,
+	field,
+	value,
+	onChange,
+	hasError,
+	errorMessage,
 }) => {
-  const [jsonError, setJsonError] = useState<string | null>(null);
+	const [jsonError, setJsonError] = useState<string | null>(null);
 
-  const handleJsonChange = useCallback(
-    (newValue: string) => {
-      try {
-        if (newValue.trim()) {
-          JSON.parse(newValue);
-          setJsonError(null);
-          onChange(JSON.parse(newValue));
-        } else {
-          setJsonError(null);
-          onChange(null);
-        }
-      } catch (error) {
-        setJsonError("Invalid JSON format");
-        // Still update the raw value for editing
-        onChange(newValue);
-      }
-    },
-    [onChange]
-  );
+	const handleJsonChange = useCallback(
+		(newValue: string) => {
+			try {
+				if (newValue.trim()) {
+					JSON.parse(newValue);
+					setJsonError(null);
+					onChange(JSON.parse(newValue));
+				} else {
+					setJsonError(null);
+					onChange(null);
+				}
+			} catch (error) {
+				setJsonError("Invalid JSON format");
+				// Still update the raw value for editing
+				onChange(newValue);
+			}
+		},
+		[onChange]
+	);
 
-  const displayValue = useMemo(() => {
-    if (typeof value === "string") return value;
-    if (value === null || value === undefined) return "";
-    return JSON.stringify(value, null, 2);
-  }, [value]);
+	const displayValue = useMemo(() => {
+		if (typeof value === "string") return value;
+		if (value === null || value === undefined) return "";
+		return JSON.stringify(value, null, 2);
+	}, [value]);
 
-  return (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-900 dark:text-white">
-        {field.label}
-      </label>
-      <textarea
-        value={displayValue}
-        onChange={(e) => handleJsonChange(e.target.value)}
-        placeholder={field.placeholder || '{"key": "value"}'}
-        rows={field.ui?.rows || 4}
-        className={`
+	return (
+		<div className="space-y-2">
+			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+				{field.label}
+			</label>
+			<textarea
+				value={displayValue}
+				onChange={(e) => handleJsonChange(e.target.value)}
+				placeholder={field.placeholder || '{"key": "value"}'}
+				rows={field.ui?.rows || 4}
+				className={`
           w-full px-3 py-2.5 text-sm font-mono
           bg-white dark:bg-gray-800
           border rounded-lg
@@ -562,32 +554,28 @@ const AppleJsonEditor: React.FC<ControlRendererProps> = ({
           placeholder:text-gray-400 dark:placeholder:text-gray-500
           resize-none
           ${
-            hasError || jsonError
-              ? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-          }
+						hasError || jsonError
+							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
+							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+					}
         `}
-      />
-      {(hasError || jsonError) && (
-        <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-          <span className="w-3 h-3 text-red-500">⚠</span>
-          {jsonError || errorMessage}
-        </p>
-      )}
-      {field.ui?.showPreview && !jsonError && displayValue && (
-        <div className="text-xs text-gray-500 dark:text-gray-400">
-          <div className="font-medium mb-1">Preview:</div>
-          <pre className="p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs overflow-auto max-h-20 border">
-            {JSON.stringify(
-              typeof value === "string" ? JSON.parse(value) : value,
-              null,
-              2
-            )}
-          </pre>
-        </div>
-      )}
-    </div>
-  );
+			/>
+			{(hasError || jsonError) && (
+				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+					<span className="w-3 h-3 text-red-500">⚠</span>
+					{jsonError || errorMessage}
+				</p>
+			)}
+			{field.ui?.showPreview && !jsonError && displayValue && (
+				<div className="text-xs text-gray-500 dark:text-gray-400">
+					<div className="font-medium mb-1">Preview:</div>
+					<pre className="p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs overflow-auto max-h-20 border">
+						{JSON.stringify(typeof value === "string" ? JSON.parse(value) : value, null, 2)}
+					</pre>
+				</div>
+			)}
+		</div>
+	);
 };
 
 // ============================================================================
@@ -595,14 +583,12 @@ const AppleJsonEditor: React.FC<ControlRendererProps> = ({
 // ============================================================================
 
 export const DynamicControls: React.FC<DynamicControlsProps> = ({
-  node,
-  updateNodeData,
-  onLogError,
+	node,
+	updateNodeData,
+	onLogError,
 }) => {
-  // State for tracking validation errors
-  const [validationErrors, setValidationErrors] = useState<
-    Record<string, string>
-  >({});
+	// State for tracking validation errors
+	const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Generate control fields from the node's schema using enhanced service
   const controlFields = useMemo(() => {
@@ -611,142 +597,135 @@ export const DynamicControls: React.FC<DynamicControlsProps> = ({
     return fields;
   }, [node.type]);
 
-  // Get current node data with defaults applied
-  const nodeDataWithDefaults = useMemo(() => {
-    return NodeInspectorService.getNodeDataWithDefaults(node);
-  }, [node]);
+	// Get current node data with defaults applied
+	const nodeDataWithDefaults = useMemo(() => {
+		return NodeInspectorService.getNodeDataWithDefaults(node);
+	}, [node.id, node.data, node.type]);
 
-  // Check if the node has any custom controls available
-  const hasControls = controlFields.length > 0;
+	// Check if the node has any custom controls available
+	const hasControls = controlFields.length > 0;
 
-  /**
-   * Handle individual field updates with validation
-   */
-  const handleFieldUpdate = useCallback(
-    (fieldKey: string, value: unknown) => {
-      // Apply update immediately for better UX
-      updateNodeData(node.id, { [fieldKey]: value });
+	/**
+	 * Handle individual field updates with validation
+	 */
+	const handleFieldUpdate = useCallback(
+		(fieldKey: string, value: unknown) => {
+			// Apply update immediately for better UX
+			updateNodeData(node.id, { [fieldKey]: value });
 
-      // Clear any existing validation error for this field
-      setValidationErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[fieldKey];
-        return newErrors;
-      });
+			// Clear any existing validation error for this field
+			setValidationErrors((prev) => {
+				const newErrors = { ...prev };
+				delete newErrors[fieldKey];
+				return newErrors;
+			});
 
-      // Validate the update
-      const updateResult = NodeInspectorService.updateNodeData(node, {
-        [fieldKey]: value,
-      });
+			// Validate the update
+			const updateResult = NodeInspectorService.updateNodeData(node, {
+				[fieldKey]: value,
+			});
 
-      if (!updateResult.success) {
-        // Set validation error
-        const fieldError = updateResult.errors.find((error) =>
-          error.startsWith(`${fieldKey}:`)
-        );
-        if (fieldError) {
-          setValidationErrors((prev) => ({
-            ...prev,
-            [fieldKey]: fieldError,
-          }));
-        }
+			if (!updateResult.success) {
+				// Set validation error
+				const fieldError = updateResult.errors.find((error) => error.startsWith(`${fieldKey}:`));
+				if (fieldError) {
+					setValidationErrors((prev) => ({
+						...prev,
+						[fieldKey]: fieldError,
+					}));
+				}
 
-        // Log error if handler provided
-        if (onLogError) {
-          onLogError(
-            node.id,
-            `Validation failed for ${fieldKey}: ${fieldError || "Unknown error"}`,
-            "warning"
-          );
-        }
-      }
-    },
-    [node, updateNodeData, onLogError]
-  );
+				// Log error if handler provided
+				if (onLogError) {
+					onLogError(
+						node.id,
+						`Validation failed for ${fieldKey}: ${fieldError || "Unknown error"}`,
+						"warning"
+					);
+				}
+			}
+		},
+		[node, updateNodeData, onLogError]
+	);
 
-  /**
-   * Render individual control based on field type
-   */
-  const renderControl = useCallback(
-    (field: ControlField) => {
-      const currentValue =
-        nodeDataWithDefaults[field.key] ?? field.defaultValue;
-      const hasError = field.key in validationErrors;
-      const errorMessage = validationErrors[field.key];
+	/**
+	 * Render individual control based on field type
+	 */
+	const renderControl = useCallback(
+		(field: ControlField) => {
+			const currentValue = nodeDataWithDefaults[field.key] ?? field.defaultValue;
+			const hasError = field.key in validationErrors;
+			const errorMessage = validationErrors[field.key];
 
-      const commonProps: ControlRendererProps = {
-        field,
-        value: currentValue,
-        onChange: (value) => handleFieldUpdate(field.key, value),
-        nodeType: node.type as string,
-        hasError,
-        errorMessage,
-      };
+			const commonProps: ControlRendererProps = {
+				field,
+				value: currentValue,
+				onChange: (value) => handleFieldUpdate(field.key, value),
+				nodeType: node.type as string,
+				hasError,
+				errorMessage,
+			};
 
-      switch (field.type) {
-        case "textarea":
-          return <AppleTextarea key={field.key} {...commonProps} />;
-        case "number":
-          return <AppleNumberInput key={field.key} {...commonProps} />;
-        case "boolean":
-          return <AppleToggle key={field.key} {...commonProps} />;
-        case "select":
-          return <AppleSelect key={field.key} {...commonProps} />;
-        case "url":
-          return <AppleUrlInput key={field.key} {...commonProps} />;
-        case "email":
-          return <AppleEmailInput key={field.key} {...commonProps} />;
-        case "color":
-          return <AppleColorPicker key={field.key} {...commonProps} />;
-        case "date":
-          return <AppleDateInput key={field.key} {...commonProps} />;
-        case "json":
-          return <AppleJsonEditor key={field.key} {...commonProps} />;
-        case "text":
-        default:
-          return <AppleTextInput key={field.key} {...commonProps} />;
-      }
-    },
-    [nodeDataWithDefaults, validationErrors, handleFieldUpdate]
-  );
+			switch (field.type) {
+				case "textarea":
+					return <AppleTextarea key={field.key} {...commonProps} />;
+				case "number":
+					return <AppleNumberInput key={field.key} {...commonProps} />;
+				case "boolean":
+					return <AppleToggle key={field.key} {...commonProps} />;
+				case "select":
+					return <AppleSelect key={field.key} {...commonProps} />;
+				case "url":
+					return <AppleUrlInput key={field.key} {...commonProps} />;
+				case "email":
+					return <AppleEmailInput key={field.key} {...commonProps} />;
+				case "color":
+					return <AppleColorPicker key={field.key} {...commonProps} />;
+				case "date":
+					return <AppleDateInput key={field.key} {...commonProps} />;
+				case "json":
+					return <AppleJsonEditor key={field.key} {...commonProps} />;
+				case "text":
+				default:
+					return <AppleTextInput key={field.key} {...commonProps} />;
+			}
+		},
+		[nodeDataWithDefaults, validationErrors, handleFieldUpdate]
+	);
 
-  // ============================================================================
-  // RENDER
-  // ============================================================================
+	// ============================================================================
+	// RENDER
+	// ============================================================================
 
-  if (!hasControls) {
-    return (
-      <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-        <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
-          <span className="text-gray-400 dark:text-gray-500 text-lg">⚙️</span>
-        </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-          No configuration needed
-        </p>
-        <p className="text-xs text-gray-400 dark:text-gray-500">
-          This node works automatically
-        </p>
-      </div>
-    );
-  }
+	if (!hasControls) {
+		return (
+			<div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+				<div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
+					<span className="text-gray-400 dark:text-gray-500 text-lg">⚙️</span>
+				</div>
+				<p className="text-sm text-gray-500 dark:text-gray-400 mb-1">No configuration needed</p>
+				<p className="text-xs text-gray-400 dark:text-gray-500">This node works automatically</p>
+			</div>
+		);
+	}
 
-  return (
-    <div className="p-4 space-y-4">
-      {/* Control Fields */}
-      <div className="space-y-4">{controlFields.map(renderControl)}</div>
+	return (
+		<div className="p-4 space-y-4">
+			{/* Control Fields */}
+			<div className="space-y-4">{controlFields.map(renderControl)}</div>
 
-      {/* Validation Status */}
-      {Object.keys(validationErrors).length > 0 && (
-        <div className="mt-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <div className="flex items-center gap-2 text-sm text-red-800 dark:text-red-200">
-            <span className="text-red-500">⚠</span>
-            <span className="font-medium">Configuration Issues</span>
-          </div>
-          <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-            Please fix the errors above to ensure proper node operation.
-          </p>
-        </div>
-      )}
-    </div>
-  );
+			{/* Validation Status */}
+			{Object.keys(validationErrors).length > 0 && (
+				<div className="mt-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+					<div className="flex items-center gap-2 text-sm text-red-800 dark:text-red-200">
+						<span className="text-red-500">⚠</span>
+						<span className="font-medium">Configuration Issues</span>
+					</div>
+					<p className="text-xs text-red-600 dark:text-red-400 mt-1">
+						Please fix the errors above to ensure proper node operation.
+					</p>
+				</div>
+			)}
+		</div>
+	);
 };

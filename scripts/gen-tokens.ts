@@ -21,19 +21,19 @@ import tokens from "../features/business-logic-modern/infrastructure/theming/tok
 // ---------------------------------------------------------------------
 
 const flatten = (
-  obj: Record<string, any>,
-  prefix: string[] = [],
-  out: Record<string, string> = {}
+	obj: Record<string, any>,
+	prefix: string[] = [],
+	out: Record<string, string> = {}
 ) => {
-  for (const [key, value] of Object.entries(obj)) {
-    const path = [...prefix, key];
-    if (typeof value === "object" && value !== null) {
-      flatten(value, path, out);
-    } else {
-      out[path.join("-")] = String(value);
-    }
-  }
-  return out;
+	for (const [key, value] of Object.entries(obj)) {
+		const path = [...prefix, key];
+		if (typeof value === "object" && value !== null) {
+			flatten(value, path, out);
+		} else {
+			out[path.join("-")] = String(value);
+		}
+	}
+	return out;
 };
 
 // ---------------------------------------------------------------------
@@ -47,12 +47,12 @@ const lightTokens: Record<string, string> = {};
 const darkTokens: Record<string, string> = {};
 
 for (const [name, val] of Object.entries(flat)) {
-  if (name.endsWith("-dark")) {
-    const baseName = name.replace(/-dark$/, "");
-    darkTokens[baseName] = val;
-  } else {
-    lightTokens[name] = val;
-  }
+	if (name.endsWith("-dark")) {
+		const baseName = name.replace(/-dark$/, "");
+		darkTokens[baseName] = val;
+	} else {
+		lightTokens[name] = val;
+	}
 }
 
 // Build CSS
@@ -61,20 +61,18 @@ let css = `/* AUTO-GENERATED FILE — do not edit directly  */\n`;
 // Light theme / default variables (use :root instead of @theme for broad browser support)
 css += `:root {\n`;
 for (const [name, val] of Object.entries(lightTokens)) {
-  const needsCorePrefix =
-    !name.startsWith("node-") && !name.startsWith("infra-");
-  const varName = needsCorePrefix ? `--core-${name}` : `--${name}`;
-  css += `  ${varName}: ${val};\n`;
+	const needsCorePrefix = !name.startsWith("node-") && !name.startsWith("infra-");
+	const varName = needsCorePrefix ? `--core-${name}` : `--${name}`;
+	css += `  ${varName}: ${val};\n`;
 }
 css += `}\n\n`;
 
 // Dark theme overrides
 css += `html.dark {\n`;
 for (const [name, val] of Object.entries(darkTokens)) {
-  const needsCorePrefix =
-    !name.startsWith("node-") && !name.startsWith("infra-");
-  const varName = needsCorePrefix ? `--core-${name}` : `--${name}`;
-  css += `  ${varName}: ${val};\n`;
+	const needsCorePrefix = !name.startsWith("node-") && !name.startsWith("infra-");
+	const varName = needsCorePrefix ? `--core-${name}` : `--${name}`;
+	css += `  ${varName}: ${val};\n`;
 }
 css += `}\n`;
 
