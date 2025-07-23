@@ -16,8 +16,10 @@ import createText from '../../../node-domain/create/createText.node';
 export function useDynamicNodeTypes() {
 	const nodeTypes = useMemo(
 		() => ({
-			// Add new node types here			viewText,
-			createText}),
+			// Add new node types here
+			viewText,
+			createText,
+		}),
 		[]
 	);
 

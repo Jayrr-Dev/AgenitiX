@@ -701,11 +701,11 @@ module.exports = (plop) => {
 							let content = fs.readFileSync(dynamicTypesPath, "utf8");
 							const originalContent = content;
 							
-							// Remove the import statement for the deleted node
+							// Remove the import statement for the deleted node - must match BOTH conditions
 							const lines = content.split('\n');
 							const filteredLines = lines.filter(line => 
-								!line.includes(`import ${kind} from`) || 
-								!line.includes(`node-domain/${domain}/${kind}.node`)
+								!(line.includes(`import ${kind} from`) && 
+								  line.includes(`node-domain/${domain}/${kind}.node`))
 							);
 							content = filteredLines.join('\n');
 							
@@ -730,12 +730,13 @@ module.exports = (plop) => {
 							let content = fs.readFileSync(dynamicTypesPath, "utf8");
 							const originalContent = content;
 							
-							// Remove the node from the nodeTypes object
-							// Handle various formatting patterns
-							content = content.replace(new RegExp(`\\s*${kind},\\r?\\n`, "g"), "");
-							content = content.replace(new RegExp(`\\s*${kind}\\r?\\n`, "g"), "");
-							content = content.replace(new RegExp(`\\s*${kind},`, "g"), "");
-							content = content.replace(new RegExp(`\\s*${kind}`, "g"), "");
+							// Remove the node from the nodeTypes object with precise matching
+							// Use word boundaries to avoid partial matches
+							content = content.replace(new RegExp(`\\s*\\b${kind}\\b,\\r?\\n`, "g"), "");
+							content = content.replace(new RegExp(`\\s*\\b${kind}\\b\\r?\\n`, "g"), "");
+							content = content.replace(new RegExp(`\\s*\\b${kind}\\b,`, "g"), "");
+							// Only match standalone node names, not as part of other names
+							content = content.replace(new RegExp(`(^|\\s)${kind}(?=\\s*[,}])`, "gm"), "");
 							
 							// Clean up any trailing commas that might be left
 							content = content.replace(/,\s*}/g, "}");
@@ -763,11 +764,11 @@ module.exports = (plop) => {
 					),
 					template: "",
 					transform: (fileContents) => {
-						// Safety check: ensure we're not removing other imports
+						// Safety check: ensure we're only removing the specific import
 						const lines = fileContents.split('\n');
 						const filteredLines = lines.filter(line => 
-							!line.includes(`import ${kind}, { spec as ${kind}Spec }`) || 
-							!line.includes(`node-domain/${domain}/${kind}.node`)
+							!(line.includes(`import ${kind}, { spec as ${kind}Spec }`) && 
+							  line.includes(`node-domain/${domain}/${kind}.node`))
 						);
 						return filteredLines.join('\n');
 					}
@@ -782,15 +783,15 @@ module.exports = (plop) => {
 							let content = fs.readFileSync(registryPath, "utf8");
 							const originalContent = content;
 							
-							// Remove the registry entry with various patterns
+							// Remove the registry entry with precise word boundary matching
 							// Pattern 1: entry with trailing comma
-							content = content.replace(new RegExp(`\\s*${kind}: ${kind}Spec,\\r?\\n`, "g"), "");
+							content = content.replace(new RegExp(`\\s*\\b${kind}\\b: ${kind}Spec,\\r?\\n`, "g"), "");
 							// Pattern 2: entry without trailing comma (last entry)
-							content = content.replace(new RegExp(`\\s*${kind}: ${kind}Spec\\r?\\n`, "g"), "");
+							content = content.replace(new RegExp(`\\s*\\b${kind}\\b: ${kind}Spec\\r?\\n`, "g"), "");
 							// Pattern 3: entry on same line as other entries
-							content = content.replace(new RegExp(`\\s*${kind}: ${kind}Spec,`, "g"), "");
+							content = content.replace(new RegExp(`\\s*\\b${kind}\\b: ${kind}Spec,`, "g"), "");
 							// Pattern 4: entry without comma (last entry on line)
-							content = content.replace(new RegExp(`\\s*${kind}: ${kind}Spec`, "g"), "");
+							content = content.replace(new RegExp(`\\s*\\b${kind}\\b: ${kind}Spec(?!\\w)`, "g"), "");
 							
 							if (content !== originalContent) {
 								fs.writeFileSync(registryPath, content);
@@ -950,8 +951,8 @@ module.exports = (plop) => {
 							// Check for common syntax issues
 							const issues = [];
 							
-							// Check for undefined references
-							const undefinedRefs = content.match(new RegExp(`${kind}Spec`, "g"));
+							// Check for undefined references to the deleted node
+							const undefinedRefs = content.match(new RegExp(`\\b${kind}Spec\\b`, "g"));
 							if (undefinedRefs && undefinedRefs.length > 0) {
 								issues.push(`Found ${undefinedRefs.length} undefined references to ${kind}Spec`);
 							}
@@ -960,6 +961,13 @@ module.exports = (plop) => {
 							const orphanedCommas = content.match(/,\s*}/g);
 							if (orphanedCommas && orphanedCommas.length > 0) {
 								issues.push(`Found ${orphanedCommas.length} orphaned commas in object definitions`);
+							}
+							
+							// Check that other nodes are still intact
+							const expectedNodes = ['createText', 'viewText'].filter(node => node !== kind);
+							const missingNodes = expectedNodes.filter(node => !content.includes(node));
+							if (missingNodes.length > 0) {
+								issues.push(`⚠️ CRITICAL: Missing nodes after deletion: ${missingNodes.join(', ')}`);
 							}
 							
 							if (issues.length > 0) {
