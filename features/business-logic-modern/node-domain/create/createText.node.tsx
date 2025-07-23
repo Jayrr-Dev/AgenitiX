@@ -38,6 +38,8 @@ const CreateTextDataSchema = z
 		text: z.string().default(""),
 		isActive: z.boolean().default(false),
 		isExpanded: z.boolean().default(false),
+		expandedSize: z.string().default("VE2"), // Dynamic expanded size
+		collapsedSize: z.string().default("C1W"), // Dynamic collapsed size
 	})
 	.passthrough();
 
@@ -47,16 +49,16 @@ type CreateTextData = z.infer<typeof CreateTextDataSchema>;
 const validateNodeData = createNodeValidator(CreateTextDataSchema, "CreateText");
 
 /**
- * Node specification
+ * Dynamic node specification that uses data for sizing
  */
-const spec: NodeSpec = {
+const createDynamicSpec = (nodeData: CreateTextData): NodeSpec => ({
   kind: "createText",
   displayName: "Create Text",
   label: "Create Text",
   category: CATEGORIES.CREATE,
   size: {
-    expanded: EXPANDED_SIZES.VE2, // 120x'auto' for variable height content
-    collapsed: COLLAPSED_SIZES.C1W, // 60x60 standard collapsed
+    expanded: EXPANDED_SIZES[nodeData.expandedSize as keyof typeof EXPANDED_SIZES] || EXPANDED_SIZES.VE2,
+    collapsed: COLLAPSED_SIZES[nodeData.collapsedSize as keyof typeof COLLAPSED_SIZES] || COLLAPSED_SIZES.C1W,
   },
   handles: [
     { id: "json-input", code: "j", position: "top", type: "target", dataType: "JSON" },
@@ -70,11 +72,11 @@ const spec: NodeSpec = {
   runtime: {
     execute: "createText_execute_v1",
   },
-  initialData: { text: "", isActive: false, isExpanded: false },
+  initialData: { text: "", isActive: false, isExpanded: false, expandedSize: "VE2", collapsedSize: "C1W" },
   dataSchema: CreateTextDataSchema,
   controls: {
     autoGenerate: true,
-    excludeFields: ["isActive"], // Hide system fields from controls
+    excludeFields: ["isActive", "expandedSize", "collapsedSize"], // Hide system fields and size fields from main controls
     customFields: [
       {
         key: "text",
@@ -96,6 +98,7 @@ const spec: NodeSpec = {
   author: "Agenitix Team",
   description: "Creates text content with customizable formatting and styling options",
   feature: "base",
+  tags: ["content", "formatting"],
   theming: {
     // Custom dark mode theming for Create Text node
     bgDark: "hsla(140, 80%, 15%, 1)", // Darker green background
@@ -105,7 +108,10 @@ const spec: NodeSpec = {
     textSecondaryDark: "hsla(0, 0%, 80%, 1)", // Slightly dimmer secondary text
     bgHoverDark: "hsla(140, 72%, 25%, 1)", // Slightly lighter on hover
   },
-};
+});
+
+// Static spec for registry (uses default sizes)
+const spec: NodeSpec = createDynamicSpec({ expandedSize: "VE2", collapsedSize: "C1W" } as CreateTextData);
 
 /**
  * Content-focused styling constants
@@ -145,6 +151,8 @@ const CATEGORY_TEXT_COLORS = {
     secondary: "text-(--node-create-text-secondary)",
   },
 } as const;
+
+
 
 /**
  * createText Node Component
@@ -296,7 +304,14 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
   );
 };
 
-export default withNodeScaffold(spec, CreateTextNodeComponent);
+// Wrapper component that creates dynamic spec based on node data
+const CreateTextNodeWithDynamicSpec = (props: NodeProps) => {
+  const { nodeData } = useNodeData(props.id, props.data);
+  const dynamicSpec = createDynamicSpec(nodeData as CreateTextData);
+  return withNodeScaffold(dynamicSpec, CreateTextNodeComponent)(props);
+};
+
+export default CreateTextNodeWithDynamicSpec;
 
 // Export spec for registry access
 export { spec };

@@ -41,6 +41,10 @@ const ViewTextDataSchema = z.object({
   isExpanded: SafeSchemas.boolean(false),
   receivedData: SafeSchemas.optionalText(), // Store received data from connected nodes
 
+  // Dynamic size fields for node inspector controls
+  expandedSize: SafeSchemas.text('VE2'), // Dynamic expanded size
+  collapsedSize: SafeSchemas.text('C2'), // Dynamic collapsed size
+
   // Add your fields here - controls are auto-generated:
   // description: SafeSchemas.optionalText(),
   // count: SafeSchemas.number(1, 1, 100),
@@ -53,16 +57,16 @@ type ViewTextData = z.infer<typeof ViewTextDataSchema>;
 const validateNodeData = createNodeValidator(ViewTextDataSchema, 'ViewText');
 
 /**
- * Node specification with schema-driven controls
+ * Dynamic node specification that uses data for sizing
  */
-const spec: NodeSpec = {
+const createDynamicSpec = (nodeData: ViewTextData): NodeSpec => ({
   kind: 'viewText',
   displayName: 'viewText'.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim(),
   label: 'viewText'.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim(),
   category: CATEGORIES.VIEW,
   size: {
-    expanded: EXPANDED_SIZES.VE2,
-    collapsed: COLLAPSED_SIZES.C2,
+    expanded: EXPANDED_SIZES[nodeData.expandedSize as keyof typeof EXPANDED_SIZES] || EXPANDED_SIZES.VE2,
+    collapsed: COLLAPSED_SIZES[nodeData.collapsedSize as keyof typeof COLLAPSED_SIZES] || COLLAPSED_SIZES.C2,
   },
   handles: [
     { id: 'json-input', code: 'j', position: 'top', type: 'target', dataType: 'JSON' },
@@ -80,7 +84,7 @@ const spec: NodeSpec = {
   dataSchema: ViewTextDataSchema,
   controls: {
     autoGenerate: true,
-    excludeFields: ["isActive", "receivedData"], // Hide system fields from controls
+    excludeFields: ["isActive", "receivedData", "expandedSize", "collapsedSize"], // Hide system fields and size fields from main controls
     customFields: [
       {
         key: "isExpanded",
@@ -91,8 +95,9 @@ const spec: NodeSpec = {
   },
   icon: 'LuFileText', // Lucide icon for text viewing
   author: 'Agenitix Team',
-  description: '{{pascalCase kind}} node for {{domain}} operations',
+  description: 'Displays and formats text content with customizable viewing options',
   feature: 'base',
+  tags: ["display", "formatting"],
   theming: {
     
     
@@ -181,7 +186,10 @@ const spec: NodeSpec = {
       return String(data);
     },
   },
-};
+});
+
+// Static spec for registry (uses default sizes)
+const spec: NodeSpec = createDynamicSpec({ expandedSize: "VE2", collapsedSize: "C2" } as ViewTextData);
 
 /**
  * Content-focused styling constants
@@ -442,7 +450,14 @@ const ViewTextNodeComponent = ({ data, id }: NodeProps) => {
   );
 };
 
-export default withNodeScaffold(spec, ViewTextNodeComponent);
+// Wrapper component that creates dynamic spec based on node data
+const ViewTextNodeWithDynamicSpec = (props: NodeProps) => {
+  const { nodeData } = useNodeData(props.id, props.data);
+  const dynamicSpec = createDynamicSpec(nodeData as ViewTextData);
+  return withNodeScaffold(dynamicSpec, ViewTextNodeComponent)(props);
+};
+
+export default ViewTextNodeWithDynamicSpec;
 
 // Export spec for registry access
 export { spec };

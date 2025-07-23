@@ -27,6 +27,7 @@ interface NodeDocData {
   icon?: string;
   author?: string;
   feature?: string;
+  tags?: string[];
   inputs: Array<{
     id: string;
     type: string;
@@ -101,6 +102,7 @@ interface NodeDocData {
     icon?: string;
     author?: string;
     feature?: string;
+    tags?: string[];
   };
   theming: {
     category: string;
@@ -267,6 +269,9 @@ function extractNodeSpecification(kind: string, domain: string): NodeDocData['sp
   const featureMatch = nodeContent.match(/feature:\s*["']([^"']+)["']/);
   const feature = featureMatch ? featureMatch[1] : undefined;
   
+  const tagsMatch = nodeContent.match(/tags:\s*\[([^\]]+)\]/);
+  const tags = tagsMatch ? parseTags(tagsMatch[1]) : undefined;
+  
   // Extract data schema - look for Zod schema definition
   const schemaMatch = nodeContent.match(/const\s+\w+DataSchema\s*=\s*z\s*\.\s*object\s*\(\s*{([\s\S]*?)}\s*\)/);
   if (schemaMatch) {
@@ -314,7 +319,8 @@ function extractNodeSpecification(kind: string, domain: string): NodeDocData['sp
     dataSchema,
     icon,
     author,
-    feature
+    feature,
+    tags
   };
 }
 
@@ -334,6 +340,16 @@ function parseMemoryConfig(configStr: string): NodeDocData['specification']['mem
     persistent: persistentMatch ? persistentMatch[1] === 'true' : false,
     evictionPolicy: evictionMatch ? evictionMatch[1] : 'LRU'
   };
+}
+
+/**
+ * Parse tags from node file
+ */
+function parseTags(tagsStr: string): string[] {
+  return tagsStr
+    .split(',')
+    .map(tag => tag.trim().replace(/['"]/g, ''))
+    .filter(tag => tag.length > 0);
 }
 
 /**
@@ -690,6 +706,7 @@ function generateMarkdownDoc(nodeData: NodeDocData) {
 ${spec.icon ? `**Icon**: ${spec.icon}` : ''}
 ${spec.author ? `**Author**: ${spec.author}` : ''}
 ${spec.feature ? `**Feature**: ${spec.feature}` : ''}
+${spec.tags && spec.tags.length > 0 ? `**Tags**: ${spec.tags.join(', ')}` : ''}
 
 ${description}
 

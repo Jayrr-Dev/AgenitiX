@@ -47,6 +47,10 @@ const {{pascalCase kind}}DataSchema = z.object({
   receivedData: SafeSchemas.optionalText(), // Store received data from connected nodes
   {{/if}}
 
+  // Dynamic size fields for node inspector controls
+  expandedSize: SafeSchemas.text('{{expandedSize}}'), // Dynamic expanded size
+  collapsedSize: SafeSchemas.text('{{collapsedSize}}'), // Dynamic collapsed size
+
   // Add your fields here - controls are auto-generated:
   // description: SafeSchemas.optionalText(),
   // count: SafeSchemas.number(1, 1, 100),
@@ -86,7 +90,7 @@ const spec: NodeSpec = {
   dataSchema: {{pascalCase kind}}DataSchema,
   controls: {
     autoGenerate: true,
-    excludeFields: ["isActive", "receivedData"], // Hide system fields from controls
+    excludeFields: ["isActive", "receivedData", "expandedSize", "collapsedSize"], // Hide system fields and size fields from main controls
     customFields: [
       {
         key: "isExpanded",
@@ -99,6 +103,7 @@ const spec: NodeSpec = {
   author: '{{author}}',
   description: '{{description}}',
   feature: '{{feature}}',
+  tags: ['{{tags}}'],
   {{#if customTheming}}
   theming: {
     {{#if bgDark}}bgDark: '{{bgDark}}',{{/if}}

@@ -56,19 +56,60 @@ module.exports = (plop) => {
 				type: "list",
 				name: "collapsedSize",
 				message: "Select collapsed size",
-				choices: ["C1", "C1W", "C2", "C3"],
+				choices: [
+					{ name: "C1: 60×60px (Standard)", value: "C1" },
+					{ name: "C1W: 120×60px (Wide)", value: "C1W" },
+					{ name: "C2: 120×120px (Large)", value: "C2" },
+					{ name: "C3: 180×180px (Extra Large)", value: "C3" },
+				],
 			},
 			{
 				type: "list",
 				name: "expandedSize",
 				message: "Select expanded size",
-				choices: ["FE0", "FE1", "FE1H", "FE2", "FE3", "VE0", "VE1", "VE2", "VE3"],
+				choices: [
+					{ name: "FE0: 60×60px (Fixed - Tiny)", value: "FE0" },
+					{ name: "FE1: 120×120px (Fixed - Default)", value: "FE1" },
+					{ name: "FE1H: 120×180px (Fixed - Tall)", value: "FE1H" },
+					{ name: "FE2: 180×180px (Fixed - Large)", value: "FE2" },
+					{ name: "FE3: 240×240px (Fixed - Extra Large)", value: "FE3" },
+					{ name: "VE0: 60px × auto (Variable - Tiny)", value: "VE0" },
+					{ name: "VE1: 120px × auto (Variable - Default)", value: "VE1" },
+					{ name: "VE2: 180px × auto (Variable - Large)", value: "VE2" },
+					{ name: "VE3: 240px × auto (Variable - Extra Large)", value: "VE3" },
+				],
+			},
+			{
+				type: "list",
+				name: "icon",
+				message: "Select an icon for this node",
+				choices: [
+					{ name: "📄 FileText (Document/Text)", value: "FileText" },
+					{ name: "📊 BarChart3 (Data/Charts)", value: "BarChart3" },
+					{ name: "🔗 Link (Connection/Network)", value: "Link" },
+					{ name: "⚙️ Settings (Configuration)", value: "Settings" },
+					{ name: "📧 Mail (Email/Communication)", value: "Mail" },
+					{ name: "🤖 Bot (AI/Automation)", value: "Bot" },
+					{ name: "💾 Database (Data Storage)", value: "Database" },
+					{ name: "🔍 Search (Search/Filter)", value: "Search" },
+					{ name: "⚡ Zap (Action/Trigger)", value: "Zap" },
+					{ name: "🔄 RefreshCw (Process/Cycle)", value: "RefreshCw" },
+					{ name: "Custom (enter manually)", value: "custom" },
+				],
+				default: "FileText",
 			},
 			{
 				type: "input",
-				name: "icon",
-				message: "What icon should represent this node? (e.g., FileText, Mail, Bot, Database)",
-				default: "FileText",
+				name: "customIcon",
+				message: "Enter custom icon name (e.g., FileText, Mail, Bot, Database):",
+				when: (answers) => answers.icon === "custom",
+			},
+			// Helper to get the final icon value
+			(data) => {
+				if (data.icon === "custom" && data.customIcon) {
+					data.icon = data.customIcon;
+				}
+				return `Icon set to: ${data.icon}`;
 			},
 			{
 				type: "input",
@@ -79,14 +120,59 @@ module.exports = (plop) => {
 			{
 				type: "input",
 				name: "description",
-				message: "Describe what this node does:",
-				default: "{{pascalCase kind}} node for {{domain}} operations",
+				message: "Describe what this node does (press Enter to use default):",
+				default: (answers) => {
+					const kind = answers.kind || "Node";
+					const domain = answers.domain || "general";
+					return `${kind.charAt(0).toUpperCase() + kind.slice(1)} node for ${domain} operations`;
+				},
+				validate: (input) => {
+					if (input.trim().length === 0) {
+						return "Description cannot be empty";
+					}
+					if (input.length > 200) {
+						return "Description is too long (max 200 characters)";
+					}
+					return true;
+				},
 			},
 			{
 				type: "list",
 				name: "feature",
 				message: "What feature/module does this node belong to?",
-				choices: ["base", "email", "agents", "ai", "database", "api", "ui", "workflow", "custom"],
+				choices: [
+					{ name: "base (Core functionality)", value: "base" },
+					{ name: "email (Email operations)", value: "email" },
+					{ name: "agents (AI agents)", value: "agents" },
+					{ name: "ai (Artificial Intelligence)", value: "ai" },
+					{ name: "database (Data storage)", value: "database" },
+					{ name: "api (External APIs)", value: "api" },
+					{ name: "ui (User interface)", value: "ui" },
+					{ name: "workflow (Process automation)", value: "workflow" },
+					{ name: "Custom (enter manually)", value: "custom" },
+				],
+			},
+			{
+				type: "input",
+				name: "customFeature",
+				message: "Enter custom feature name:",
+				when: (answers) => answers.feature === "custom",
+			},
+			// Helper to get the final feature value
+			(data) => {
+				if (data.feature === "custom" && data.customFeature) {
+					data.feature = data.customFeature;
+				}
+				return `Feature set to: ${data.feature}`;
+			},
+			// Helper to process tags
+			(data) => {
+				if (data.tags) {
+					// Split by comma and clean up each tag
+					const tagArray = data.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+					data.tags = tagArray.join("', '");
+				}
+				return `Tags processed: ${data.tags || 'default'}`;
 			},
 			{
 				type: "confirm",
@@ -131,6 +217,16 @@ module.exports = (plop) => {
 				type: "input",
 				name: "tsSymbol",
 				message: "Optional: TypeScript symbol for primary output handle (leave blank for none)",
+			},
+			{
+				type: "input",
+				name: "tags",
+				message: "Enter tags for this node (comma-separated, e.g., 'text, formatting, content'):",
+				default: (answers) => {
+					const kind = answers.kind || "node";
+					const domain = answers.domain || "general";
+					return `${domain}, ${kind}`;
+				},
 			},
 		],
 		actions: [

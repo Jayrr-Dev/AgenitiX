@@ -30,6 +30,7 @@ interface NodeHeaderProps {
 	category?: string;
 	icon?: string;
 	description?: string;
+	tags?: string[];
 	onUpdateNodeId?: (oldId: string, newId: string) => void;
 	onDeleteNode?: (nodeId: string) => void;
 	onDuplicateNode?: (nodeId: string) => void;
@@ -49,6 +50,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 	category,
 	icon,
 	description,
+	tags,
 	onUpdateNodeId,
 	onDeleteNode,
 	onDuplicateNode,
@@ -123,7 +125,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 				<div className="flex items-center gap-2">
 					{/* REGISTRY-ENHANCED ICON */}
 					{icon && (
-						<span className="text-lg" title={`${displayName} • Category: ${category}`}>
+						<span className="text-lg" title={`${displayName} • Category: ${category}${tags && tags.length > 0 ? ` • Tags: ${tags.join(', ')}` : ''}`}>
 							{renderLucideIcon(icon, "", 20)}
 						</span>
 					)}

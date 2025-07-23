@@ -135,6 +135,13 @@ const TYPE_DESCRIPTIONS: Record<string, string> = {
 	a: "Array - Lists and array structures",
 	x: "Any - Accepts all data types",
 	V: "Vibe - Custom Vibe data type",
+	// Full data type names
+	String: "String - Text and string values",
+	Boolean: "Boolean - True/false values",
+	Number: "Number - Integer and numeric values",
+	JSON: "JSON - JavaScript objects and JSON data",
+	Array: "Array - Lists and array structures",
+	Object: "Object - JavaScript objects and data structures",
 };
 
 // ============================================================================
@@ -260,6 +267,13 @@ function getTooltipContent(
 
 	// Get the primary type code
 	const typeCode = parseUnionTypes(dataType || code)[0];
+	
+	// Check if it's a full data type name (like "String", "Boolean", etc.)
+	const fullTypeMapping = ULTIMATE_TYPE_MAP[typeCode];
+	if (fullTypeMapping) {
+		return `${direction}: ${fullTypeMapping.label} - ${TYPE_DESCRIPTIONS[typeCode] || TYPE_DESCRIPTIONS[fullTypeMapping.tokenKey] || "Data type"}`;
+	}
+	
 	const typeDescription = TYPE_DESCRIPTIONS[typeCode];
 
 	if (!typeDescription) {
@@ -269,7 +283,10 @@ function getTooltipContent(
 	// Handle union types (multiple types separated by |)
 	const allTypes = parseUnionTypes(dataType || code);
 	if (allTypes.length > 1) {
-		const descriptions = allTypes.map((type) => TYPE_DESCRIPTIONS[type]).filter(Boolean);
+		const descriptions = allTypes.map((type) => {
+			const fullMapping = ULTIMATE_TYPE_MAP[type];
+			return fullMapping ? fullMapping.label : TYPE_DESCRIPTIONS[type];
+		}).filter(Boolean);
 
 		if (descriptions.length > 1) {
 			return `${direction}: ${descriptions.join(" OR ")}`;

@@ -37,6 +37,7 @@ import { EditableJsonEditor } from "./components/EditableJsonEditor";
 import { ErrorLog } from "./components/ErrorLog";
 import { NodeControls } from "./components/NodeControls";
 import { NodeOutput } from "./components/NodeOutput";
+import { SizeControls } from "./components/SizeControls";
 
 // =====================================================================
 // STYLING CONSTANTS - Thin, minimalistic design with original colors
@@ -167,6 +168,7 @@ const NodeInspector = React.memo(function NodeInspector() {
 		controls: true,
 		connections: true,
 		errors: true,
+		size: true,
 	});
 
 	const toggleAccordion = (section: keyof typeof accordionState) => {
@@ -500,6 +502,23 @@ const NodeInspector = React.memo(function NodeInspector() {
 										<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.feature}</span>
 									</div>
 								)}
+								{nodeInfo.tags && nodeInfo.tags.length > 0 && (
+									<div className="flex items-center gap-2">
+										<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+											TAGS
+										</span>
+										<div className="flex flex-wrap gap-1">
+											{nodeInfo.tags.map((tag, index) => (
+												<span
+													key={index}
+													className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded"
+												>
+													{tag}
+												</span>
+											))}
+										</div>
+									</div>
+								)}
 								{nodeInfo.version && (
 									<div className="flex items-center gap-2">
 										<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
@@ -557,6 +576,20 @@ const NodeInspector = React.memo(function NodeInspector() {
 								/>
 							</div>
 						</AccordionSection>
+
+						{/* Size Controls for nodes with size fields */}
+						{selectedNode.data && (selectedNode.data as any).expandedSize !== undefined && (
+							<AccordionSection
+								title="Size"
+								isOpen={accordionState.size}
+								onToggle={() => toggleAccordion('size')}
+							>
+								<SizeControls
+									nodeData={selectedNode.data as any}
+									updateNodeData={(patch: Record<string, any>) => updateNodeData(selectedNode.id, patch)}
+								/>
+							</AccordionSection>
+						)}
 					</div>
 
 					{/* COLUMN 2: OUTPUT + CONTROLS */}

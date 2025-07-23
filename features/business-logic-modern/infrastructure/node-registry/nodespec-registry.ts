@@ -26,6 +26,7 @@ export interface NodeSpecMetadata {
 	icon: string;
 	author?: string;
 	feature?: string;
+	tags?: string[];
 	version?: number;
 	runtime?: {
 		execute?: string;
@@ -110,6 +111,7 @@ export function getNodeSpecMetadata(nodeType: string): NodeSpecMetadata | null {
 		icon: spec.icon || overrides.icon || defaults.icon,
 		author: spec.author,
 		feature: spec.feature,
+		tags: spec.tags,
 		version: spec.version,
 		runtime: spec.runtime,
 		controls: spec.controls,

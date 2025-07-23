@@ -27,6 +27,7 @@ export interface InspectorNodeInfo {
 	description?: string;
 	author?: string;
 	feature?: string;
+	tags?: string[];
 	version?: number;
 	runtime?: {
 		execute?: string;
@@ -86,6 +87,7 @@ class NodeInspectorAdapterImpl {
 				description: metadata.description,
 				author: metadata.author,
 				feature: metadata.feature,
+				tags: metadata.tags,
 				version: metadata.version,
 				runtime: metadata.runtime,
 				handles: metadata.handles,

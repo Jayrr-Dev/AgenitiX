@@ -186,6 +186,13 @@ export interface NodeSpec {
 	feature?: string;
 
 	/**
+	 * OPTIONAL: Array of tags for categorizing and filtering the node
+	 * Examples: ['text', 'formatting', 'content'], ['api', 'external', 'auth']
+	 * Used for search, filtering, and organization beyond domain/category
+	 */
+	tags?: string[];
+
+	/**
 	 * OPTIONAL: Dark mode theming configuration
 	 * Override default dark mode colors for this specific node
 	 */
