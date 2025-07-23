@@ -97,7 +97,7 @@ function createDynamicSpec(data: CreateTextData): NodeSpec {
     handles: [
       { id: 'json-input', code: 'j', position: 'top', type: 'target', dataType: 'JSON' },
       { id: 'output', code: 's', position: 'right', type: 'source', dataType: 'String' },
-      { id: 'activate', code: 'b', position: 'left', type: 'target', dataType: 'Boolean' },
+      { id: 'input', code: 'b', position: 'left', type: 'target', dataType: 'Boolean' },
     ],
     inspector: { key: 'CreateTextInspector' },
     version: 1,

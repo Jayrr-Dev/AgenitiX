@@ -47,7 +47,7 @@ export const viewTextSpec = {
   
   handles: [
     { id: "json-input", code: "j", position: "top", type: "JSON" },
-    { id: "activate", code: "j", position: "left", type: "String" },
+    { id: "input", code: "j", position: "left", type: "String" },
     { id: "output", code: "j", position: "right", type: "String" },
   ],
   inspector: {

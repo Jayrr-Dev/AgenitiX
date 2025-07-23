@@ -149,7 +149,7 @@ function createDynamicSpec(data: ViewTextData): NodeSpec {
     handles: [
       { id: 'json-input', code: 'j', position: 'top', type: 'target', dataType: 'JSON' },
       { id: 'output', code: 's', position: 'right', type: 'source', dataType: 'String' },
-      { id: 'activate', code: 's', position: 'left', type: 'target', dataType: 'String' },
+      { id: 'input', code: 's', position: 'left', type: 'target', dataType: 'String' },
     ],
     inspector: { key: 'ViewTextInspector' },
     version: 1,

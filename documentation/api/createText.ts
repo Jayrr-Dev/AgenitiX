@@ -52,7 +52,7 @@ export const createTextSpec = {
   
   handles: [
     { id: "json-input", code: "j", position: "top", type: "JSON" },
-    { id: "activate", code: "j", position: "left", type: "Boolean" },
+    { id: "input", code: "j", position: "left", type: "Boolean" },
     { id: "output", code: "j", position: "right", type: "String" },
   ],
   inspector: {

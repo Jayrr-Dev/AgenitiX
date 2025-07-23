@@ -412,7 +412,7 @@ const spec: NodeSpec = {
   handles: [
     { id: "input", code: "j", position: "top", type: "target" },
     { id: "output", code: "s", position: "right", type: "source" },
-    { id: "activate", code: "b", position: "left", type: "target" },
+    { id: "input", code: "b", position: "left", type: "target" },
   ],
 };
 \`\`\`

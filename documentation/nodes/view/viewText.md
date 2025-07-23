@@ -88,7 +88,7 @@ The View Text node provides functionality for view operations in the VIEW catego
 
 ### Inputs
 - **json-input** (JSON) - Input JSON data [top]
-- **activate** (String) - Input String data [left]
+- **input** (String) - Input String data [left]
 
 ### Outputs
 - **output** (String) - Output String data [right]
