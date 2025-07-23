@@ -74,8 +74,8 @@ export const SafeSchemas = {
 	/**
 	 * Text field with safe defaults
 	 */
-	text: (defaultValue = "Default text") =>
-		z.string().min(1, "Text cannot be empty").default(defaultValue),
+	text: (defaultValue = "") =>
+		z.string().default(defaultValue),
 
 	/**
 	 * Optional text field

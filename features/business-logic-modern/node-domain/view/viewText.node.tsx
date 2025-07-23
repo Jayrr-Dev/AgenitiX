@@ -42,7 +42,7 @@ import { z } from "zod";
 
 export const ViewTextDataSchema = z
 	.object({
-		store: SafeSchemas.text("Default text"),
+		store: SafeSchemas.text(""),
 		isEnabled: SafeSchemas.boolean(true),
 		isActive: SafeSchemas.boolean(false),
 		isExpanded: SafeSchemas.boolean(false),
@@ -286,8 +286,8 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 			const active = hasConnectedInputs && hasContent;
 
 			updateNodeData({
-				inputs: hasConnectedInputs ? joined || "Empty input" : "No connected inputs",
-				store: hasContent ? joined : "No connected inputs",
+				inputs: hasConnectedInputs ? joined || "No inputs" : "No inputs",
+				store: hasContent ? joined : "No inputs",
 				isActive: active,
 			});
 
@@ -323,13 +323,13 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 				<div className={CONTENT.collapsed}>
 					{spec.receivedData?.showInCollapsed && validation.data.store !== "No inputs" ? (
 						<div
-							className={`text-xs text-center truncate w-[50px] tracking-wide ${categoryStyles.primary}`}
+							className={`  text-xs text-center w-[100px] h-[80px] overflow-y-auto nowheel  ${categoryStyles.primary}`}
 						>
-							{validation.data.store}
+							{validation.data.store || "..."}
 						</div>
 					) : (
 						<div className={`text-xs font-medium tracking-wide ${categoryStyles.primary}`}>
-							VIEW
+							...
 						</div>
 					)}
 				</div>
