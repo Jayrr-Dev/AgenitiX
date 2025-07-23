@@ -38,6 +38,7 @@ import { ErrorLog } from "./components/ErrorLog";
 import { NodeControls } from "./components/NodeControls";
 import { NodeOutput } from "./components/NodeOutput";
 import { SizeControls } from "./components/SizeControls";
+import { HandleManagementControl } from "./controls/HandleManagementControl";
 
 // =====================================================================
 // STYLING CONSTANTS - Thin, minimalistic design with original colors
@@ -163,6 +164,7 @@ const NodeInspector = React.memo(function NodeInspector() {
 		nodeInfo: true,
 		description: true,
 		handles: true,
+		handleManagement: true,
 		nodeData: true,
 		output: true,
 		controls: true,
@@ -774,6 +776,19 @@ const NodeInspector = React.memo(function NodeInspector() {
 										</div>
 									)}
 								</div>
+							</AccordionSection>
+
+							{/* Handle Management Card */}
+							<AccordionSection
+								title="Handle Management"
+								isOpen={accordionState.handleManagement}
+								onToggle={() => toggleAccordion('handleManagement')}
+							>
+								<HandleManagementControl
+									node={selectedNode}
+									updateNodeData={updateNodeData}
+									onLogError={logNodeError as any}
+								/>
 							</AccordionSection>
 
 							{/* Connections Card */}

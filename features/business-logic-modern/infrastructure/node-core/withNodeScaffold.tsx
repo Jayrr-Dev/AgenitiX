@@ -178,13 +178,16 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 		// Calculate handle positioning for multiple handles on same side
 		const handlesByPosition = React.useMemo(() => {
 			const grouped: Record<string, typeof spec.handles> = {};
-			spec.handles?.forEach((handle) => {
+			const customHandles = (props.data as any)?.customHandles || [];
+			const allHandles = [...(spec.handles || []), ...customHandles];
+			
+			allHandles.forEach((handle) => {
 				const pos = handle.position;
 				if (!grouped[pos]) grouped[pos] = [];
 				grouped[pos].push(handle);
 			});
 			return grouped;
-		}, []);
+		}, [spec.handles, props.data]);
 
     // Inner component to throw inside ErrorBoundary, not outside
     const MaybeError: React.FC = () => {
@@ -225,26 +228,43 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 				<NodeTelemetry nodeId={props.id} nodeKind={spec.kind} />
 
 				{/* Render handles defined in the spec with smart positioning */}
-				{spec.handles?.map((handle, index) => {
-					const handlesOnSameSide = handlesByPosition[handle.position] || [];
-					const handleIndex = handlesOnSameSide.findIndex((h) => h.id === handle.id);
-					const totalHandlesOnSide = handlesOnSameSide.length;
-
-					return (
-						<TypeSafeHandle
-							key={handle.id}
-							id={handle.id + "__" + (handle.code ?? handle.dataType ?? "x")}
-							type={handle.type}
-							position={handle.position as Position}
-							dataType={handle.dataType}
-							code={(handle as any).code}
-							tsSymbol={(handle as any).tsSymbol}
-							nodeId={props.id}
-							handleIndex={handleIndex}
-							totalHandlesOnSide={totalHandlesOnSide}
-						/>
+				{(() => {
+					// Get hidden handles and custom handles from node data
+					const hiddenHandles = (props.data as any)?.hiddenHandles || [];
+					const customHandles = (props.data as any)?.customHandles || [];
+					
+					// Combine spec handles and custom handles
+					const allHandles = [
+						...(spec.handles || []),
+						...customHandles
+					];
+					
+					// Filter out hidden handles
+					const visibleHandles = allHandles.filter(handle => 
+						!hiddenHandles.includes(handle.id)
 					);
-				})}
+					
+					return visibleHandles.map((handle, index) => {
+						const handlesOnSameSide = handlesByPosition[handle.position] || [];
+						const handleIndex = handlesOnSameSide.findIndex((h) => h.id === handle.id);
+						const totalHandlesOnSide = handlesOnSameSide.length;
+
+						return (
+							<TypeSafeHandle
+								key={handle.id}
+								id={handle.id + "__" + (handle.code ?? handle.dataType ?? "x")}
+								type={handle.type}
+								position={handle.position as Position}
+								dataType={handle.dataType}
+								code={(handle as any).code}
+								tsSymbol={(handle as any).tsSymbol}
+								nodeId={props.id}
+								handleIndex={handleIndex}
+								totalHandlesOnSide={totalHandlesOnSide}
+							/>
+						);
+					});
+				})()}
 
 				{/* Error boundary isolates runtime errors per node */}
 				<NodeErrorBoundary nodeId={props.id}>
