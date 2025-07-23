@@ -31,6 +31,31 @@ module.exports = (plop) => {
 	
 	// Helper for equality comparison
 	plop.setHelper("eq", (a, b) => a === b);
+	
+	// Helper for title case conversion
+	plop.setHelper("titleCase", (str) => {
+		return str.charAt(0).toUpperCase() + str.slice(1);
+	});
+	
+	// Helper for camel case conversion
+	plop.setHelper("camelCase", (str) => {
+		return str.charAt(0).toLowerCase() + str.slice(1);
+	});
+	
+	// Helper for pascal case conversion
+	plop.setHelper("pascalCase", (str) => {
+		return str.charAt(0).toUpperCase() + str.slice(1);
+	});
+	
+	// Helper for kebab case conversion
+	plop.setHelper("kebabCase", (str) => {
+		return str.replace(/([A-Z])/g, '-$1').toLowerCase();
+	});
+	
+	// Helper for constant case conversion
+	plop.setHelper("constantCase", (str) => {
+		return str.toUpperCase();
+	});
 
 	plop.setGenerator("node", {
 		description: "Create a new node using the NodeSpec architecture",
@@ -104,13 +129,7 @@ module.exports = (plop) => {
 				message: "Enter custom icon name (e.g., FileText, Mail, Bot, Database):",
 				when: (answers) => answers.icon === "custom",
 			},
-			// Helper to get the final icon value
-			(data) => {
-				if (data.icon === "custom" && data.customIcon) {
-					data.icon = data.customIcon;
-				}
-				return `Icon set to: ${data.icon}`;
-			},
+
 			{
 				type: "input",
 				name: "author",
@@ -158,22 +177,7 @@ module.exports = (plop) => {
 				message: "Enter custom feature name:",
 				when: (answers) => answers.feature === "custom",
 			},
-			// Helper to get the final feature value
-			(data) => {
-				if (data.feature === "custom" && data.customFeature) {
-					data.feature = data.customFeature;
-				}
-				return `Feature set to: ${data.feature}`;
-			},
-			// Helper to process tags
-			(data) => {
-				if (data.tags) {
-					// Split by comma and clean up each tag
-					const tagArray = data.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-					data.tags = tagArray.join("', '");
-				}
-				return `Tags processed: ${data.tags || 'default'}`;
-			},
+
 			{
 				type: "confirm",
 				name: "customTheming",
@@ -187,18 +191,7 @@ module.exports = (plop) => {
 				default: "",
 				when: (answers) => answers.customTheming,
 			},
-			{
-				type: "list",
-				name: "dataPropagation",
-				message: "What type of data propagation should this node support?",
-				choices: [
-					{ name: "Input only (receive data from other nodes)", value: "input" },
-					{ name: "Output only (send data to other nodes)", value: "output" },
-					{ name: "Both input and output (full data flow)", value: "both" },
-					{ name: "None (standalone node)", value: "none" }
-				],
-				default: "both",
-			},
+
 			{
 				type: "input",
 				name: "borderDark",
@@ -229,13 +222,30 @@ module.exports = (plop) => {
 				},
 			},
 		],
-		actions: [
-			// 1. Create the main node file
-			{
-				type: "add",
-				path: "features/business-logic-modern/node-domain/{{domain}}/{{kind}}.node.tsx",
-				templateFile: "tooling/dev-scripts/plop-templates/node.tsx.hbs",
-			},
+		actions: (data) => {
+			// Process custom icon
+			if (data.icon === "custom" && data.customIcon) {
+				data.icon = data.customIcon;
+			}
+			
+			// Process custom feature
+			if (data.feature === "custom" && data.customFeature) {
+				data.feature = data.customFeature;
+			}
+			
+			// Process tags
+			if (data.tags) {
+				const tagArray = data.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+				data.tags = tagArray;
+			}
+			
+			return [
+				// 1. Create the main node file
+				{
+					type: "add",
+					path: "features/business-logic-modern/node-domain/{{domain}}/{{kind}}.node.tsx",
+					templateFile: "tooling/dev-scripts/plop-templates/node.tsx.hbs",
+				},
 
 			// 2. Update useDynamicNodeTypes.ts - import
 			{
@@ -426,8 +436,11 @@ module.exports = (plop) => {
 					`   • Test with 'pnpm dev' - no additional setup needed!`
 				);
 			},
-		],
+		];
+		},
 	});
+
+
 
 	plop.setGenerator("delete-node", {
 		description: "Comprehensively delete an existing node and clean up all associated files",
@@ -680,35 +693,64 @@ module.exports = (plop) => {
 				deleteDirIfExists(path.join(__dirname, `migrations/Node_${kind}`)),
 
 				// 3. Clean up useDynamicNodeTypes.ts - import statement
-				{
-					type: "modify",
-					path: "features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts",
-					pattern: new RegExp(
-						`import ${kind} from '\\.\\./\\.\\./\\.\\./node-domain/${domain}/${kind}\\.node';\\r?\\n`,
-						"g"
-					),
-					template: "",
-					transform: (fileContents) => {
-						// Safety check: ensure we're not removing other imports
-						const lines = fileContents.split('\n');
-						const filteredLines = lines.filter(line => 
-							!line.includes(`import ${kind} from`) || 
-							!line.includes(`node-domain/${domain}/${kind}.node`)
-						);
-						return filteredLines.join('\n');
+				() => {
+					const dynamicTypesPath = path.join(__dirname, "features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts");
+					
+					if (fs.existsSync(dynamicTypesPath)) {
+						try {
+							let content = fs.readFileSync(dynamicTypesPath, "utf8");
+							const originalContent = content;
+							
+							// Remove the import statement for the deleted node
+							const lines = content.split('\n');
+							const filteredLines = lines.filter(line => 
+								!line.includes(`import ${kind} from`) || 
+								!line.includes(`node-domain/${domain}/${kind}.node`)
+							);
+							content = filteredLines.join('\n');
+							
+							if (content !== originalContent) {
+								fs.writeFileSync(dynamicTypesPath, content);
+								return `Cleaned up ${kind} import from useDynamicNodeTypes.ts`;
+							}
+							return `No ${kind} import found in useDynamicNodeTypes.ts`;
+						} catch (error) {
+							return `Error cleaning import from useDynamicNodeTypes.ts: ${error.message}`;
+						}
 					}
+					return `useDynamicNodeTypes.ts file not found`;
 				},
 
 				// 4. Clean up useDynamicNodeTypes.ts - export in array
-				{
-					type: "modify",
-					path: "features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts",
-					pattern: new RegExp(`\\s*${kind},\\r?\\n`, "g"),
-					template: "",
-					transform: (fileContents) => {
-						// Safety check: ensure we're only removing the specific node
-						return fileContents.replace(new RegExp(`\\s*${kind},\\r?\\n`, "g"), "");
+				() => {
+					const dynamicTypesPath = path.join(__dirname, "features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts");
+					
+					if (fs.existsSync(dynamicTypesPath)) {
+						try {
+							let content = fs.readFileSync(dynamicTypesPath, "utf8");
+							const originalContent = content;
+							
+							// Remove the node from the nodeTypes object
+							// Handle various formatting patterns
+							content = content.replace(new RegExp(`\\s*${kind},\\r?\\n`, "g"), "");
+							content = content.replace(new RegExp(`\\s*${kind}\\r?\\n`, "g"), "");
+							content = content.replace(new RegExp(`\\s*${kind},`, "g"), "");
+							content = content.replace(new RegExp(`\\s*${kind}`, "g"), "");
+							
+							// Clean up any trailing commas that might be left
+							content = content.replace(/,\s*}/g, "}");
+							content = content.replace(/,\s*]/g, "]");
+							
+							if (content !== originalContent) {
+								fs.writeFileSync(dynamicTypesPath, content);
+								return `Cleaned up ${kind} from useDynamicNodeTypes.ts`;
+							}
+							return `No ${kind} references found in useDynamicNodeTypes.ts`;
+						} catch (error) {
+							return `Error cleaning useDynamicNodeTypes.ts: ${error.message}`;
+						}
 					}
+					return `useDynamicNodeTypes.ts file not found`;
 				},
 
 				// 5. Clean up nodespec-registry.ts - import statement

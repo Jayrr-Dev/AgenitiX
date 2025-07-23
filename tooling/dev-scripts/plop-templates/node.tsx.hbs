@@ -1,97 +1,109 @@
 /**
- * {{titleCase kind}} NODE - Clean content-focused node template
+ * {{titleCase kind}} NODE - Clean content-focused implementation
  *
  * • Focuses ONLY on content and layout - no structural styling
  * • withNodeScaffold handles all borders, sizing, theming, interactive states
  * • Schema-driven controls in Node Inspector
  * • Type-safe data validation with Zod schema
  * • Clean separation of concerns for maximum maintainability
- * • Comprehensive data type handling for future-proof data flow
+ * 
+ * NOTE: This node will have controls in the Node Inspector regardless of category
+ * The NodeInspectorAdapter.determineHasControls() method returns true for all categories for consistent UX
+ * 
+ * ENHANCED APPROACH: Multi-type data handling with automatic type detection
+ * Supports JSON, String, Number, Boolean, Array, Object data types
+ * Automatic JSON parsing for object/array strings
+ * Backward compatible with text-only input
  *
- * Keywords: {{kebabCase kind}}, content-focused, schema-driven, type-safe, clean-architecture, data-propagation
+ * Keywords: {{kebabCase kind}}, content-focused, schema-driven, type-safe, clean-architecture
  */
 
-import React, { useCallback, useEffect, useState, useRef } from 'react';
-import { NodeProps, useReactFlow, useNodes, useEdges } from '@xyflow/react';
-import { z } from 'zod';
-import { withNodeScaffold } from '@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold';
-import { NodeSpec } from '@/features/business-logic-modern/infrastructure/node-core/NodeSpec';
+import type { NodeProps } from "@xyflow/react";
+import { z } from "zod";
+
+import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
+import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
-  createNodeValidator,
-  CommonSchemas,
-  reportValidationError,
-  useNodeDataValidation
-} from '@/features/business-logic-modern/infrastructure/node-core/validation';
-import { SafeSchemas, createSafeInitialData } from '@/features/business-logic-modern/infrastructure/node-core/schema-helpers';
-import { CATEGORIES } from '@/features/business-logic-modern/infrastructure/theming/categories';
-import { EXPANDED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
-import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
-import { useNodeData } from '@/hooks/useNodeData';
+	createNodeValidator,
+	reportValidationError,
+	useNodeDataValidation,
+} from "@/features/business-logic-modern/infrastructure/node-core/validation";
+import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
+import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
+import {
+	COLLAPSED_SIZES,
+	EXPANDED_SIZES,
+} from "@/features/business-logic-modern/infrastructure/theming/sizing";
+import { useNodeData } from "@/hooks/useNodeData";
+
+import { useCallback, useEffect, useMemo } from "react";
 
 // -- PLOP-INJECTED-IMPORTS --
 
 /**
  * Data schema for {{titleCase kind}} node
- * Define your node's data structure - controls are automatically generated
  */
-const {{pascalCase kind}}DataSchema = z.object({
-  // Basic fields - customize as needed
-  text: SafeSchemas.text('Default text'),
-  isEnabled: SafeSchemas.boolean(true),
-  isActive: SafeSchemas.boolean(false),
-  isExpanded: SafeSchemas.boolean(false),
-  {{#if (eq dataPropagation "input")}}
-  receivedData: SafeSchemas.optionalText(), // Store received data from connected nodes
-  {{/if}}
-  {{#if (eq dataPropagation "both")}}
-  receivedData: SafeSchemas.optionalText(), // Store received data from connected nodes
-  {{/if}}
+const {{pascalCase kind}}DataSchema = z
+	.object({
+		text: z.string().default(""),
+		isActive: z.boolean().default(false),
+		isExpanded: z.boolean().default(false),
+		isEnabled: z.boolean().default(true), // Data propagation control
+		expandedSize: z.string().default("{{expandedSize}}"), // Dynamic expanded size
+		collapsedSize: z.string().default("{{collapsedSize}}"), // Dynamic collapsed size
 
-  // Dynamic size fields for node inspector controls
-  expandedSize: SafeSchemas.text('{{expandedSize}}'), // Dynamic expanded size
-  collapsedSize: SafeSchemas.text('{{collapsedSize}}'), // Dynamic collapsed size
-
-  // Add your fields here - controls are auto-generated:
-  // description: SafeSchemas.optionalText(),
-  // count: SafeSchemas.number(1, 1, 100),
-  // priority: SafeSchemas.enum(['low', 'medium', 'high'], 'medium'),
-}).passthrough();
+	})
+	.passthrough();
 
 type {{pascalCase kind}}Data = z.infer<typeof {{pascalCase kind}}DataSchema>;
 
 // Create enterprise validator
-const validateNodeData = createNodeValidator({{pascalCase kind}}DataSchema, '{{pascalCase kind}}');
+const validateNodeData = createNodeValidator({{pascalCase kind}}DataSchema, "{{pascalCase kind}}");
 
 /**
- * Node specification with schema-driven controls
+ * Dynamic node specification that uses data for sizing
  */
-const spec: NodeSpec = {
-  kind: '{{camelCase kind}}',
-  displayName: '{{camelCase kind}}'.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim(),
-  label: '{{camelCase kind}}'.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim(),
+const createDynamicSpec = (nodeData: {{pascalCase kind}}Data): NodeSpec => ({
+  kind: "{{camelCase kind}}",
+  displayName: "{{titleCase kind}}",
+  label: "{{titleCase kind}}",
   category: CATEGORIES.{{constantCase category}},
   size: {
-    expanded: {{expandedSizeConstant expandedSize}},
-    collapsed: {{collapsedSizeConstant collapsedSize}},
+    expanded: EXPANDED_SIZES[nodeData.expandedSize as keyof typeof EXPANDED_SIZES] || EXPANDED_SIZES.{{expandedSize}},
+    collapsed: COLLAPSED_SIZES[nodeData.collapsedSize as keyof typeof COLLAPSED_SIZES] || COLLAPSED_SIZES.{{collapsedSize}},
   },
   handles: [
-    { id: 'json-input', code: 'j', position: 'top', type: 'target', dataType: 'JSON' },
-    { id: 'output', code: 's', position: 'right', type: 'source', dataType: 'String' },
-    { id: 'activate', code: 'b', position: 'left', type: 'target', dataType: 'Boolean' },
+    { id: "json-input", code: "j", position: "top", type: "target", dataType: "JSON" },
+    { id: "output", code: "s", position: "right", type: "source", dataType: "String" },
+    { id: "activate", code: "b", position: "left", type: "target", dataType: "Boolean" },
   ],
   inspector: {
-    key: '{{pascalCase kind}}Inspector',
+    key: "{{pascalCase kind}}Inspector",
   },
   version: 1,
   runtime: {
-    execute: '{{camelCase kind}}_execute_v1',
+    execute: "{{camelCase kind}}_execute_v1",
   },
-  initialData: createSafeInitialData({{pascalCase kind}}DataSchema),
+  initialData: { text: "", isActive: false, isExpanded: false, isEnabled: true, expandedSize: "{{expandedSize}}", collapsedSize: "{{collapsedSize}}" },
   dataSchema: {{pascalCase kind}}DataSchema,
   controls: {
     autoGenerate: true,
-    excludeFields: ["isActive", "receivedData", "expandedSize", "collapsedSize"], // Hide system fields and size fields from main controls
+    excludeFields: ["isActive", "expandedSize", "collapsedSize"], // Hide system fields and size fields from main controls
     customFields: [
+      {
+        key: "isEnabled",
+        type: "boolean",
+        label: "Enable",
+      },
+      {
+        key: "text",
+        type: "textarea",
+        label: "Text",
+        placeholder: "Enter your text here...",
+        ui: {
+          rows: 4,
+        },
+      },
       {
         key: "isExpanded",
         type: "boolean",
@@ -99,209 +111,55 @@ const spec: NodeSpec = {
       },
     ],
   },
-  icon: '{{icon}}' || 'LuCircle', // Placeholder - update with appropriate Lucide icon
-  author: '{{author}}',
-  description: '{{description}}',
-  feature: '{{feature}}',
-  tags: ['{{tags}}'],
+  icon: "{{icon}}",
+  author: "{{author}}",
+  description: "{{description}}",
+  feature: "{{feature}}",
+  tags: [{{#each tags}}"{{this}}"{{#unless @last}}, {{/unless}}{{/each}}],
   {{#if customTheming}}
   theming: {
-    {{#if bgDark}}bgDark: '{{bgDark}}',{{/if}}
-    {{#if borderDark}}borderDark: '{{borderDark}}',{{/if}}
-    {{#if textDark}}textDark: '{{textDark}}',{{/if}}
+    // Custom dark mode theming for {{titleCase kind}} node
+    {{#if bgDark}}bgDark: "{{bgDark}}",{{/if}}
+    {{#if borderDark}}borderDark: "{{borderDark}}",{{/if}}
+    {{#if borderHoverDark}}borderHoverDark: "{{borderHoverDark}}",{{/if}}
+    {{#if textDark}}textDark: "{{textDark}}",{{/if}}
+    {{#if textSecondaryDark}}textSecondaryDark: "{{textSecondaryDark}}",{{/if}}
+    {{#if bgHoverDark}}bgHoverDark: "{{bgHoverDark}}",{{/if}}
   },
   {{/if}}
-  {{#if (eq dataPropagation "input")}}
-  receivedData: {
-    enabled: true,
-    displayMode: 'formatted',
-    showInCollapsed: true,
-    formatData: (data: any) => {
-      // Comprehensive data type handling
-      if (data === null) return 'null';
-      if (data === undefined) return 'undefined';
-      if (typeof data === 'string') return data || 'Empty string';
-      if (typeof data === 'number') return String(data);
-      if (typeof data === 'boolean') return data ? 'true' : 'false';
-      if (typeof data === 'bigint') return data.toString();
-      if (typeof data === 'symbol') return data.toString();
-      if (typeof data === 'function') return '[Function]';
-      
-      if (typeof data === 'object') {
-        if (Array.isArray(data)) {
-          if (data.length === 0) return '[] (empty array)';
-          try {
-            return JSON.stringify(data, null, 2);
-          } catch {
-            return '[Array]';
-          }
-        } else if (data instanceof Date) {
-          return data.toISOString();
-        } else if (data instanceof RegExp) {
-          return data.toString();
-        } else if (data instanceof Error) {
-          return `Error: ${data.message}`;
-        } else if (data instanceof Map) {
-          try {
-            return JSON.stringify(Array.from(data.entries()), null, 2);
-          } catch {
-            return '[Map]';
-          }
-        } else if (data instanceof Set) {
-          try {
-            return JSON.stringify(Array.from(data), null, 2);
-          } catch {
-            return '[Set]';
-          }
-        } else if (data instanceof Promise) {
-          return '[Promise]';
-        } else {
-          // Handle plain objects with common data properties
-          const dataProperties = [
-            'text', 'output', 'value', 'data', 'content', 'message', 
-            'result', 'response', 'body', 'payload', 'input', 'output'
-          ];
-          
-          for (const prop of dataProperties) {
-            if (data[prop] !== null && data[prop] !== undefined) {
-              if (typeof data[prop] === 'string') {
-                return data[prop] || 'Empty string';
-              } else if (typeof data[prop] === 'number') {
-                return String(data[prop]);
-              } else if (typeof data[prop] === 'boolean') {
-                return data[prop] ? 'true' : 'false';
-              } else if (typeof data[prop] === 'object') {
-                try {
-                  return JSON.stringify(data[prop], null, 2);
-                } catch {
-                  return `[${prop}]`;
-                }
-              } else {
-                return String(data[prop]);
-              }
-            }
-          }
-          
-          // If no common properties found, stringify the entire object
-          try {
-            return JSON.stringify(data, null, 2);
-          } catch {
-            return '[Object]';
-          }
-        }
-      }
-      
-      // Fallback for any other types
-      return String(data);
-    },
-  },
-  {{/if}}
-  {{#if (eq dataPropagation "both")}}
-  receivedData: {
-    enabled: true,
-    displayMode: 'formatted',
-    showInCollapsed: true,
-    formatData: (data: any) => {
-      // Comprehensive data type handling
-      if (data === null) return 'null';
-      if (data === undefined) return 'undefined';
-      if (typeof data === 'string') return data || 'Empty string';
-      if (typeof data === 'number') return String(data);
-      if (typeof data === 'boolean') return data ? 'true' : 'false';
-      if (typeof data === 'bigint') return data.toString();
-      if (typeof data === 'symbol') return data.toString();
-      if (typeof data === 'function') return '[Function]';
-      
-      if (typeof data === 'object') {
-        if (Array.isArray(data)) {
-          if (data.length === 0) return '[] (empty array)';
-          try {
-            return JSON.stringify(data, null, 2);
-          } catch {
-            return '[Array]';
-          }
-        } else if (data instanceof Date) {
-          return data.toISOString();
-        } else if (data instanceof RegExp) {
-          return data.toString();
-        } else if (data instanceof Set) {
-          try {
-            return JSON.stringify(Array.from(data), null, 2);
-          } catch {
-            return '[Set]';
-          }
-        } else if (data instanceof Promise) {
-          return '[Promise]';
-        } else {
-          // Handle plain objects with common data properties
-          const dataProperties = [
-            'text', 'output', 'value', 'data', 'content', 'message', 
-            'result', 'response', 'body', 'payload', 'input', 'output'
-          ];
-          
-          for (const prop of dataProperties) {
-            if (data[prop] !== null && data[prop] !== undefined) {
-              if (typeof data[prop] === 'string') {
-                return data[prop] || 'Empty string';
-              } else if (typeof data[prop] === 'number') {
-                return String(data[prop]);
-              } else if (typeof data[prop] === 'boolean') {
-                return data[prop] ? 'true' : 'false';
-              } else if (typeof data[prop] === 'object') {
-                try {
-                  return JSON.stringify(data[prop], null, 2);
-                } catch {
-                  return `[${prop}]`;
-                }
-              } else {
-                return String(data[prop]);
-              }
-            }
-          }
-          
-          // If no common properties found, stringify the entire object
-          try {
-            return JSON.stringify(data, null, 2);
-          } catch {
-            return '[Object]';
-          }
-        }
-      }
-      
-      // Fallback for any other types
-      return String(data);
-    },
-  },
-  {{/if}}
-};
+
+});
+
+// Static spec for registry (uses default sizes)
+const spec: NodeSpec = createDynamicSpec({ expandedSize: "{{expandedSize}}", collapsedSize: "{{collapsedSize}}" } as {{pascalCase kind}}Data);
 
 /**
  * Content-focused styling constants
  * Only handles internal layout and content - no structural styling
  */
 const CONTENT_STYLES = {
-  // Content area layouts
-  content: {
-    expanded: "p-4 w-full h-full flex flex-col",
-    collapsed: "flex items-center justify-center w-full h-full",
-  },
+	// Content area layouts
+	content: {
+		expanded: "p-4 w-full h-full flex flex-col",
+		collapsed: "flex items-center justify-center w-full h-full",
+	},
 
-  // Header layouts
-  header: {
-    container: "flex items-center justify-between mb-3",
-  },
+	// Header layouts
+	header: {
+		container: "flex items-center justify-between mb-3",
+	},
 
-  // Main content layouts
-  main: {
-    container: "flex-1 flex items-center justify-center",
-    content: "text-center",
-    icon: "text-2xl mb-2",
-  },
+	// Main content layouts
+	main: {
+		container: "flex-1 flex items-center justify-center",
+		content: "text-center",
+		icon: "text-2xl mb-2",
+	},
 
-  // Collapsed state layouts
-  collapsed: {
-    icon: "text-2xl",
-  },
+	// Collapsed state layouts
+	collapsed: {
+		icon: "text-2xl",
+	},
 } as const;
 
 /**
@@ -331,439 +189,169 @@ const CATEGORY_TEXT_COLORS = {
 } as const;
 
 /**
- * {{camelCase kind}} Node Component
+ * {{titleCase kind}} Node Component
  *
- * Clean content-focused component with comprehensive data type handling:
+ * Clean content-focused component:
  * • withNodeScaffold handles ALL structural styling
  * • Component focuses ONLY on content and layout
  * • Uses design system tokens for text colors
  * • Schema-driven controls available in Node Inspector
  * • Maintains enterprise validation and type safety
- * • Future-proof data propagation with comprehensive type handling
  */
 const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
-  // Use proper React Flow data management
-  const { nodeData, updateNodeData } = useNodeData(id, data);
-  const { getNode, getNodes } = useReactFlow();
+	// Use proper React Flow data management
+	const { nodeData, updateNodeData } = useNodeData(id, data);
+
+	// Get isExpanded directly from node data
+	const isExpanded = (nodeData as {{pascalCase kind}}Data).isExpanded || false;
+
+	// Update expanded state via node data
+	const handleToggleExpanded = useCallback(() => {
+		updateNodeData({ isExpanded: !isExpanded });
+	}, [isExpanded, updateNodeData]);
+
+	// Enterprise validation with comprehensive error handling
+	const validationResult = validateNodeData(nodeData);
+	const validatedData = validationResult.data;
+
+	// Report validation errors for monitoring
+	if (!validationResult.success) {
+		reportValidationError("{{pascalCase kind}}", id, validationResult.errors, {
+			originalData: validationResult.originalData,
+			component: "{{pascalCase kind}}NodeComponent",
+		});
+	}
+
+	// Enterprise data validation hook for real-time updates
+	const { getHealthScore } = useNodeDataValidation(
+		{{pascalCase kind}}DataSchema,
+		"{{pascalCase kind}}",
+		validatedData,
+		id
+	);
+
+	// Monitor text content and update active state
+	useEffect(() => {
+		const currentText = validatedData.text || '';
+		const hasValidText = currentText.trim().length > 0;
+		
+		// If disabled, always set isActive to false
+		if (!validatedData.isEnabled) {
+			if (validatedData.isActive !== false) {
+				updateNodeData({ isActive: false });
+			}
+		} else {
+			// Only update if the active state has actually changed
+			if (validatedData.isActive !== hasValidText) {
+				updateNodeData({ 
+					isActive: hasValidText
+				});
+			}
+		}
+	}, [validatedData.text, validatedData.isActive, validatedData.isEnabled, updateNodeData]);
+
+	// Sync output with enabled state to control propagation
+	useEffect(() => {
+		const desiredOutput = validatedData.isEnabled ? validatedData.text : null;
+		if ((validatedData as any).output !== desiredOutput) {
+			updateNodeData({ output: desiredOutput });
+		}
+	}, [validatedData.isEnabled, validatedData.text, (validatedData as any).output, updateNodeData]);
+
+	// Enhanced data handling with type detection and conversion
+	const handleDataChange = useCallback((newValue: any, fieldName: string = 'text') => {
+		try {
+			// Detect data type and convert appropriately
+			let processedValue = newValue;
+			let outputValue = newValue;
+			
+			// Handle different data types
+			if (typeof newValue === 'string') {
+				// Try to parse as JSON if it looks like JSON
+				if (newValue.trim().startsWith('{') || newValue.trim().startsWith('[')) {
+					try {
+						const parsed = JSON.parse(newValue);
+						processedValue = parsed;
+						outputValue = parsed;
+					} catch {
+						// Keep as string if JSON parsing fails
+						processedValue = newValue;
+						outputValue = newValue;
+					}
+				} else {
+					// Regular string
+					processedValue = newValue;
+					outputValue = newValue;
+				}
+			} else if (typeof newValue === 'number') {
+				processedValue = newValue;
+				outputValue = newValue;
+			} else if (typeof newValue === 'boolean') {
+				processedValue = newValue;
+				outputValue = newValue;
+			} else if (Array.isArray(newValue)) {
+				processedValue = newValue;
+				outputValue = newValue;
+			} else if (typeof newValue === 'object' && newValue !== null) {
+				processedValue = newValue;
+				outputValue = newValue;
+			} else {
+				// Fallback to string conversion
+				processedValue = String(newValue);
+				outputValue = String(newValue);
+			}
+			
+			// Update node data with type-appropriate values
+			updateNodeData({ 
+				[fieldName]: processedValue,
+				output: validatedData.isEnabled ? outputValue : null // Only propagate if enabled
+			});
+		} catch (error) {
+			console.error("Failed to update {{pascalCase kind}} node data:", error);
+		}
+	}, [updateNodeData]);
+
+	// Backward compatibility for text-only updates
+	const handleTextChange = useCallback((newText: string) => {
+		handleDataChange(newText, 'text');
+	}, [handleDataChange]);
 
 
 
-  // Get isExpanded directly from node data
-  const isExpanded = (nodeData as {{pascalCase kind}}Data).isExpanded || false;
+	// Get category-specific text colors
+	const categoryKey = spec.category as keyof typeof CATEGORY_TEXT_COLORS;
+	const categoryTextColors = CATEGORY_TEXT_COLORS[categoryKey] || CATEGORY_TEXT_COLORS.CREATE;
 
-  // Update expanded state via node data
-  const handleToggleExpanded = useCallback(() => {
-    updateNodeData({ ...nodeData, isExpanded: !isExpanded });
-  }, [nodeData, isExpanded, updateNodeData]);
-
-
-
-  // Enterprise validation with comprehensive error handling
-  const validationResult = validateNodeData(nodeData);
-  const validatedData = validationResult.data;
-
-  // Report validation errors for monitoring
-  if (!validationResult.success) {
-    reportValidationError('{{pascalCase kind}}', id, validationResult.errors, {
-      originalData: validationResult.originalData,
-      component: '{{pascalCase kind}}NodeComponent',
-    });
-  }
-
-  // Enterprise data validation hook for real-time updates
-  const { getHealthScore } = useNodeDataValidation(
-    {{pascalCase kind}}DataSchema,
-    '{{pascalCase kind}}',
-    validatedData,
-    id
-  );
-
-  // Get category-specific text colors
-  const categoryKey = spec.category as keyof typeof CATEGORY_TEXT_COLORS;
-  const categoryTextColors = CATEGORY_TEXT_COLORS[categoryKey] || CATEGORY_TEXT_COLORS.CREATE;
-
-  // Comprehensive data type handler for future-proof data processing
-  const processDataValue = (data: any): string => {
-    // Handle primitive types
-    if (data === null) {
-      return 'null';
-    } else if (data === undefined) {
-      return 'undefined';
-    } else if (typeof data === 'string') {
-      return data || 'Empty string';
-    } else if (typeof data === 'number') {
-      return String(data);
-    } else if (typeof data === 'boolean') {
-      return data ? 'true' : 'false';
-    } else if (typeof data === 'bigint') {
-      return data.toString();
-    } else if (typeof data === 'symbol') {
-      return data.toString();
-    } else if (typeof data === 'function') {
-      return '[Function]';
-    } else if (typeof data === 'object') {
-      // Handle object types comprehensively
-      if (Array.isArray(data)) {
-        // Handle arrays
-        if (data.length === 0) {
-          return '[] (empty array)';
-        } else {
-          try {
-            return JSON.stringify(data, null, 2);
-          } catch {
-            return '[Array]';
-          }
-        }
-      } else if (data instanceof Date) {
-        // Handle Date objects
-        return data.toISOString();
-      } else if (data instanceof RegExp) {
-        // Handle RegExp objects
-        return data.toString();
-      } else if (data instanceof Error) {
-        // Handle Error objects
-        return `Error: ${data.message}`;
-      } else if (data instanceof Map) {
-        // Handle Map objects
-        try {
-          return JSON.stringify(Array.from(data.entries()), null, 2);
-        } catch {
-          return '[Map]';
-        }
-      } else if (data instanceof Set) {
-        // Handle Set objects
-        try {
-          return JSON.stringify(Array.from(data), null, 2);
-        } catch {
-          return '[Set]';
-        }
-      } else if (data instanceof Promise) {
-        // Handle Promise objects
-        return '[Promise]';
-      } else {
-        // Handle plain objects with common data patterns
-        // Check for common data properties in order of preference
-        const dataProperties = [
-          'text', 'output', 'value', 'data', 'content', 'message', 
-          'result', 'response', 'body', 'payload', 'input', 'output'
-        ];
-        
-        for (const prop of dataProperties) {
-          if (data[prop] !== null && data[prop] !== undefined) {
-            if (typeof data[prop] === 'string') {
-              return data[prop] || 'Empty string';
-            } else if (typeof data[prop] === 'number') {
-              return String(data[prop]);
-            } else if (typeof data[prop] === 'boolean') {
-              return data[prop] ? 'true' : 'false';
-            } else if (typeof data[prop] === 'object') {
-              try {
-                return JSON.stringify(data[prop], null, 2);
-              } catch {
-                return `[${prop}]`;
-              }
-            } else {
-              return String(data[prop]);
-            }
-          }
-        }
-        
-        // If no common properties found, stringify the entire object
-        try {
-          return JSON.stringify(data, null, 2);
-        } catch {
-          return '[Object]';
-        }
-      }
-    } else {
-      // Fallback for any other types
-      return String(data);
-    }
-  };
-
-
-
-  {{#if (eq dataPropagation "input")}}
-  // Modern data propagation logic - handles empty strings and immediate updates
-  const nodes = useNodes();
-  const edges = useEdges();
-  const lastProcessedInputRef = useRef<string | null>(null);
-
-  // Handle connection/disconnection events immediately
-  useEffect(() => {
-    const handleConnectionChange = () => {
-      const inputEdges = edges.filter(edge => edge.target === id);
-      const inputNodes = inputEdges.map(edge => 
-        nodes.find(node => node.id === edge.source)
-      ).filter(Boolean);
-      
-      if (inputNodes.length === 0) {
-        // No more connections - clear the data
-        lastProcessedInputRef.current = null;
-        updateNodeData({
-          isActive: false,
-          receivedData: 'No connected inputs',
-          text: 'No connected inputs',
-          output: 'No connected inputs'
-        });
-      }
-    };
-
-    handleConnectionChange();
-  }, [updateNodeData, id, getNodes, getEdges]);
-
-  // Direct data access to avoid timing issues
-  useEffect(() => {
-    const nodes = getNodes();
-    const edges = getEdges();
-    
-    // Find connected input nodes
-    const inputEdges = edges.filter(edge => edge.target === id);
-    const inputNodes = inputEdges.map(edge => 
-      nodes.find(node => node.id === edge.source)
-    ).filter(Boolean);
-    
-    if (inputNodes.length > 0) {
-      // Collect text from all connected input nodes
-      const allTexts: string[] = [];
-      
-      inputNodes.forEach(sourceNode => {
-        if (sourceNode?.data) {
-          let nodeText = '';
-          
-          if (sourceNode.data.text !== undefined) {
-            nodeText = String(sourceNode.data.text);
-          } else if (sourceNode.data.output !== undefined) {
-            nodeText = String(sourceNode.data.output);
-          } else {
-            nodeText = String(sourceNode.data);
-          }
-          
-          // Only add valid text
-          if (nodeText && nodeText !== 'null' && nodeText !== 'undefined') {
-            allTexts.push(nodeText);
-          }
-        }
-      });
-      
-      // Concatenate all texts without separator for predictable behavior
-      const concatenatedText = allTexts.join('');
-      
-      // Always update if the text has changed (including empty strings)
-      if (lastProcessedInputRef.current !== concatenatedText) {
-        lastProcessedInputRef.current = concatenatedText;
-        
-        const hasContent = concatenatedText && concatenatedText.trim().length > 0;
-        
-        updateNodeData({ 
-          isActive: hasContent,
-          receivedData: concatenatedText,
-          text: concatenatedText,
-          output: concatenatedText
-        });
-      }
-    } else {
-      // No connected inputs - clear the data
-      if (lastProcessedInputRef.current !== null) {
-        lastProcessedInputRef.current = null;
-        
-        updateNodeData({ 
-          isActive: false,
-          receivedData: 'No connected inputs',
-          text: 'No connected inputs',
-          output: 'No connected inputs'
-        });
-      }
-    }
-  }, [id, getNodes, getEdges, updateNodeData]);
-  {{/if}}
-
-  {{#if (eq dataPropagation "both")}}
-  // Modern data propagation logic - handles empty strings and immediate updates
-  const nodes = useNodes();
-  const edges = useEdges();
-  const lastProcessedInputRef = useRef<string | null>(null);
-
-  // Handle connection/disconnection events immediately
-  useEffect(() => {
-    const handleConnectionChange = () => {
-      const inputEdges = edges.filter(edge => edge.target === id);
-      const inputNodes = inputEdges.map(edge => 
-        nodes.find(node => node.id === edge.source)
-      ).filter(Boolean);
-      
-      if (inputNodes.length === 0) {
-        // No more connections - clear the data
-        lastProcessedInputRef.current = null;
-        updateNodeData({
-          isActive: false,
-          receivedData: 'No connected inputs',
-          text: 'No connected inputs',
-          output: 'No connected inputs'
-        });
-      }
-    };
-
-    handleConnectionChange();
-  }, [updateNodeData, id, getNodes, getEdges]);
-
-  // Direct data access to avoid timing issues
-  useEffect(() => {
-    const nodes = getNodes();
-    const edges = getEdges();
-    
-    // Find connected input nodes
-    const inputEdges = edges.filter(edge => edge.target === id);
-    const inputNodes = inputEdges.map(edge => 
-      nodes.find(node => node.id === edge.source)
-    ).filter(Boolean);
-    
-    if (inputNodes.length > 0) {
-      // Collect text from all connected input nodes
-      const allTexts: string[] = [];
-      
-      inputNodes.forEach(sourceNode => {
-        if (sourceNode?.data) {
-          let nodeText = '';
-          
-          if (sourceNode.data.text !== undefined) {
-            nodeText = String(sourceNode.data.text);
-          } else if (sourceNode.data.output !== undefined) {
-            nodeText = String(sourceNode.data.output);
-          } else {
-            nodeText = String(sourceNode.data);
-          }
-          
-          // Only add valid text
-          if (nodeText && nodeText !== 'null' && nodeText !== 'undefined') {
-            allTexts.push(nodeText);
-          }
-        }
-      });
-      
-      // Concatenate all texts without separator for predictable behavior
-      const concatenatedText = allTexts.join('');
-      
-      // Always update if the text has changed (including empty strings)
-      if (lastProcessedInputRef.current !== concatenatedText) {
-        lastProcessedInputRef.current = concatenatedText;
-        
-        const hasContent = concatenatedText && concatenatedText.trim().length > 0;
-        
-        updateNodeData({ 
-          isActive: hasContent,
-          receivedData: concatenatedText,
-          text: concatenatedText,
-          output: concatenatedText
-        });
-      }
-    } else {
-      // No connected inputs - clear the data
-      if (lastProcessedInputRef.current !== null) {
-        lastProcessedInputRef.current = null;
-        
-        updateNodeData({ 
-          isActive: false,
-          receivedData: 'No connected inputs',
-          text: 'No connected inputs',
-          output: 'No connected inputs'
-        });
-      }
-    }
-  }, [id, getNodes, getEdges, updateNodeData]);
-  {{/if}}
-
-  return (
-    <>
-      <ExpandCollapseButton showUI={isExpanded} onToggle={handleToggleExpanded} size="sm" />
+	return (
+		<>
+			<ExpandCollapseButton showUI={isExpanded} onToggle={handleToggleExpanded} size="sm" />
 
       {isExpanded ? (
         <div className={CONTENT_STYLES.content.expanded}>
-          {{#if (eq dataPropagation "input")}}
-          {/* Display received data from connected nodes (input-only mode) */}
-          <div className={CONTENT_STYLES.main.container}>
-            <div className={CONTENT_STYLES.main.content}>
-              <div className="font-normal text-xs">
-                {validatedData.text || 'No connected inputs'}
-              </div>
-            </div>
+          <div className={CONTENT_STYLES.header.container}>
+       
+            {/* {process.env.NODE_ENV === "development" && (
+              <span className={`text-xs ${categoryTextColors.secondary}`}>
+                Health: {getHealthScore()}%
+              </span>
+            )} */}
           </div>
-          {{/if}}
-
-          {{#if (eq dataPropagation "both")}}
-          {/* Display received data from connected nodes (full data flow mode) */}
-          <div className={CONTENT_STYLES.main.container}>
-            <div className={CONTENT_STYLES.main.content}>
-              <div className="font-normal text-xs">
-                {validatedData.text || 'No connected inputs'}
-              </div>
-            </div>
-          </div>
-          {{/if}}
-
-          {{#if (eq dataPropagation "output")}}
-          {/* Display node-specific UI for output-only mode */}
-          <div className={CONTENT_STYLES.main.container}>
-            <div className={CONTENT_STYLES.main.content}>
-              <div className={`text-xs font-medium ${categoryTextColors.primary} uppercase tracking-wide mb-1`}>
-                {{titleCase kind}}
-              </div>
-              <div className={`text-xs ${categoryTextColors.secondary}`}>
-                {validatedData.isEnabled ? validatedData.text : 'Disabled'}
-              </div>
-            </div>
-          </div>
-          {{/if}}
-
-          {{#if (eq dataPropagation "none")}}
-          {/* Display node-specific UI for standalone mode */}
-          <div className={CONTENT_STYLES.main.container}>
-            <div className={CONTENT_STYLES.main.content}>
-              <div className={`text-xs font-medium ${categoryTextColors.primary} uppercase tracking-wide mb-1`}>
-                {{titleCase kind}}
-              </div>
-              <div className={`text-xs ${categoryTextColors.secondary}`}>
-                {validatedData.isEnabled ? validatedData.text : 'Disabled'}
-              </div>
-            </div>
-          </div>
-          {{/if}}
+          
+          <textarea
+            value={validatedData.text}
+            onChange={(e) => handleTextChange(e.target.value)}
+            placeholder="Enter your text here..."
+            className={`scrollbar nowheel bg-background rounded-md p-2 text-xs scrollbar-thumb-sky-700 scrollbar-track-sky-300 h-32 overflow-y-scroll focus:outline-none focus:ring-1 focus:ring-white-500 focus:ring-offset-0 ${categoryTextColors.primary}`}
+          />
         </div>
       ) : (
         <div className={CONTENT_STYLES.content.collapsed}>
           <div className="text-center">
-            {{#if (eq dataPropagation "input")}}
-            {spec.receivedData?.showInCollapsed && validatedData.text !== 'No connected inputs' ? (
-              <div className={`text-xs ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
-                {validatedData.text}
-              </div>
-            ) : (
-              <div className={`text-xs font-medium ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
-                {{upper (truncate kind 4)}}
-              </div>
-            )}
-            {{/if}}
-            {{#if (eq dataPropagation "both")}}
-            {spec.receivedData?.showInCollapsed && validatedData.text !== 'No connected inputs' ? (
-              <div className={`text-xs ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
-                {validatedData.text}
-              </div>
-            ) : (
-              <div className={`text-xs font-medium ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
-                {{upper (truncate kind 4)}}
-              </div>
-            )}
-            {{/if}}
-            {{#if (eq dataPropagation "output")}}
-            <div className={`text-xs font-medium ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
-              {{upper (truncate kind 4)}}
+            <div
+              className={`text-xs font-medium ${categoryTextColors.primary} tracking-wide max-w-20 truncate`}
+            >
+              {validatedData.text}
             </div>
-            {{/if}}
-            {{#if (eq dataPropagation "none")}}
-            <div className={`text-xs font-medium ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
-              {{upper (truncate kind 4)}}
-            </div>
-            {{/if}}
           </div>
         </div>
       )}
@@ -771,7 +359,36 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
   );
 };
 
-export default withNodeScaffold(spec, {{pascalCase kind}}NodeComponent);
+// Wrapper component that creates dynamic spec based on node data
+const {{pascalCase kind}}NodeWithDynamicSpec = (props: NodeProps) => {
+  const { nodeData } = useNodeData(props.id, props.data);
+  
+  // Memoize the dynamic spec to prevent infinite re-renders
+  const dynamicSpec = useMemo(() => createDynamicSpec(nodeData as {{pascalCase kind}}Data), [
+    nodeData.expandedSize,
+    nodeData.collapsedSize,
+    nodeData.kind,
+    nodeData.displayName,
+    nodeData.label,
+    nodeData.category,
+    nodeData.handles,
+    nodeData.inspector,
+    nodeData.version,
+    nodeData.runtime,
+    nodeData.initialData,
+    nodeData.dataSchema,
+    nodeData.controls,
+    nodeData.icon,
+    nodeData.author,
+    nodeData.description,
+    nodeData.feature,
+    nodeData.tags
+  ]);
+  
+  return withNodeScaffold(dynamicSpec, {{pascalCase kind}}NodeComponent)(props);
+};
+
+export default {{pascalCase kind}}NodeWithDynamicSpec;
 
 // Export spec for registry access
 export { spec };

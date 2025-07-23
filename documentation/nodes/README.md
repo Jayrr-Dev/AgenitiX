@@ -187,3 +187,5 @@ Each node has three documentation files:
 - [View Text](./view/viewText.md) - The View Text node provides functionality for view operations in the VIEW category.
 
 
+
+- [testNode](./test/testNode.md) - The testNode node provides functionality for test operations in the TEST category.

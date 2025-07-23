@@ -14,7 +14,8 @@ import type { NodeSpec } from "../node-core/NodeSpec";
 const nodeSpecs: Record<string, NodeSpec> = {
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
-	testNode: testNodeSpec,	viewText: viewTextSpec,
+	testNode: testNodeSpec,
+	viewText: viewTextSpec,
 };
 
 // Enhanced metadata that combines NodeSpec with additional UI properties

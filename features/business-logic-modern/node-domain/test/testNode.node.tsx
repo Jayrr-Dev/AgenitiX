@@ -1,13 +1,21 @@
 /**
- * CREATE TEXT NODE - Clean content-focused implementation
+ * TestNode NODE - Clean content-focused implementation
  *
  * • Focuses ONLY on content and layout - no structural styling
  * • withNodeScaffold handles all borders, sizing, theming, interactive states
  * • Schema-driven controls in Node Inspector
  * • Type-safe data validation with Zod schema
  * • Clean separation of concerns for maximum maintainability
+ * 
+ * NOTE: This node will have controls in the Node Inspector regardless of category
+ * The NodeInspectorAdapter.determineHasControls() method returns true for all categories for consistent UX
+ * 
+ * ENHANCED APPROACH: Multi-type data handling with automatic type detection
+ * Supports JSON, String, Number, Boolean, Array, Object data types
+ * Automatic JSON parsing for object/array strings
+ * Backward compatible with text-only input
  *
- * Keywords: create-text, content-focused, schema-driven, type-safe, clean-architecture
+ * Keywords: test-node, content-focused, schema-driven, type-safe, clean-architecture
  */
 
 import type { NodeProps } from "@xyflow/react";
@@ -28,39 +36,41 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 
+import { useCallback, useEffect, useMemo } from "react";
 
-import { useCallback, useEffect, useRef, useMemo } from "react";
+// -- PLOP-INJECTED-IMPORTS --
 
 /**
- * Data schema for CreateText node
+ * Data schema for TestNode node
  */
-const CreateTextDataSchema = z
+const TestNodeDataSchema = z
 	.object({
 		text: z.string().default(""),
 		isActive: z.boolean().default(false),
 		isExpanded: z.boolean().default(false),
 		isEnabled: z.boolean().default(true), // Data propagation control
-		expandedSize: z.string().default("VE2"), // Dynamic expanded size
-		collapsedSize: z.string().default("C1W"), // Dynamic collapsed size
+		expandedSize: z.string().default("FE0"), // Dynamic expanded size
+		collapsedSize: z.string().default("C1"), // Dynamic collapsed size
+
 	})
 	.passthrough();
 
-type CreateTextData = z.infer<typeof CreateTextDataSchema>;
+type TestNodeData = z.infer<typeof TestNodeDataSchema>;
 
 // Create enterprise validator
-const validateNodeData = createNodeValidator(CreateTextDataSchema, "CreateText");
+const validateNodeData = createNodeValidator(TestNodeDataSchema, "TestNode");
 
 /**
  * Dynamic node specification that uses data for sizing
  */
-const createDynamicSpec = (nodeData: CreateTextData): NodeSpec => ({
-  kind: "createText",
-  displayName: "Create Text",
-  label: "Create Text",
-  category: CATEGORIES.CREATE,
+const createDynamicSpec = (nodeData: TestNodeData): NodeSpec => ({
+  kind: "testNode",
+  displayName: "TestNode",
+  label: "TestNode",
+  category: CATEGORIES.TEST,
   size: {
-    expanded: EXPANDED_SIZES[nodeData.expandedSize as keyof typeof EXPANDED_SIZES] || EXPANDED_SIZES.VE2,
-    collapsed: COLLAPSED_SIZES[nodeData.collapsedSize as keyof typeof COLLAPSED_SIZES] || COLLAPSED_SIZES.C1W,
+    expanded: EXPANDED_SIZES[nodeData.expandedSize as keyof typeof EXPANDED_SIZES] || EXPANDED_SIZES.FE0,
+    collapsed: COLLAPSED_SIZES[nodeData.collapsedSize as keyof typeof COLLAPSED_SIZES] || COLLAPSED_SIZES.C1,
   },
   handles: [
     { id: "json-input", code: "j", position: "top", type: "target", dataType: "JSON" },
@@ -68,14 +78,14 @@ const createDynamicSpec = (nodeData: CreateTextData): NodeSpec => ({
     { id: "activate", code: "b", position: "left", type: "target", dataType: "Boolean" },
   ],
   inspector: {
-    key: "CreateTextInspector",
+    key: "TestNodeInspector",
   },
   version: 1,
   runtime: {
-    execute: "createText_execute_v1",
+    execute: "testNode_execute_v1",
   },
-  initialData: { text: "", isActive: false, isExpanded: false, isEnabled: true, expandedSize: "VE2", collapsedSize: "C1W" },
-  dataSchema: CreateTextDataSchema,
+  initialData: { text: "", isActive: false, isExpanded: false, isEnabled: true, expandedSize: "FE0", collapsedSize: "C1" },
+  dataSchema: TestNodeDataSchema,
   controls: {
     autoGenerate: true,
     excludeFields: ["isActive", "expandedSize", "collapsedSize"], // Hide system fields and size fields from main controls
@@ -101,24 +111,16 @@ const createDynamicSpec = (nodeData: CreateTextData): NodeSpec => ({
       },
     ],
   },
-  icon: "LuFileText",
+  icon: "FileText",
   author: "Agenitix Team",
-  description: "Creates text content with customizable formatting and styling options",
+  description: "TestNode node for test operations",
   feature: "base",
-  tags: ["content", "formatting"],
-  theming: {
-    // Custom dark mode theming for Create Text node
-    bgDark: "hsla(140, 80%, 15%, 1)", // Darker green background
-    borderDark: "hsla(140, 100%, 35%, 1)", // Brighter green border
-    borderHoverDark: "hsla(140, 100%, 45%, 1)", // Even brighter on hover
-    textDark: "hsla(0, 0%, 90%, 1)", // Light text for readability
-    textSecondaryDark: "hsla(0, 0%, 80%, 1)", // Slightly dimmer secondary text
-    bgHoverDark: "hsla(140, 72%, 25%, 1)", // Slightly lighter on hover
-  },
+  tags: ["test", "testNode"],
+
 });
 
 // Static spec for registry (uses default sizes)
-const spec: NodeSpec = createDynamicSpec({ expandedSize: "VE2", collapsedSize: "C1W" } as CreateTextData);
+const spec: NodeSpec = createDynamicSpec({ expandedSize: "FE0", collapsedSize: "C1" } as TestNodeData);
 
 /**
  * Content-focused styling constants
@@ -157,12 +159,26 @@ const CATEGORY_TEXT_COLORS = {
     primary: "text-(--node-create-text)",
     secondary: "text-(--node-create-text-secondary)",
   },
+  VIEW: {
+    primary: "text-(--node-view-text)",
+    secondary: "text-(--node-view-text-secondary)",
+  },
+  TRIGGER: {
+    primary: "text-(--node-trigger-text)",
+    secondary: "text-(--node-trigger-text-secondary)",
+  },
+  TEST: {
+    primary: "text-(--node-test-text)",
+    secondary: "text-(--node-test-text-secondary)",
+  },
+  CYCLE: {
+    primary: "text-(--node-cycle-text)",
+    secondary: "text-(--node-cycle-text-secondary)",
+  },
 } as const;
 
-
-
 /**
- * createText Node Component
+ * TestNode Node Component
  *
  * Clean content-focused component:
  * • withNodeScaffold handles ALL structural styling
@@ -171,19 +187,17 @@ const CATEGORY_TEXT_COLORS = {
  * • Schema-driven controls available in Node Inspector
  * • Maintains enterprise validation and type safety
  */
-const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
+const TestNodeNodeComponent = ({ data, id }: NodeProps) => {
 	// Use proper React Flow data management
 	const { nodeData, updateNodeData } = useNodeData(id, data);
 
-
-
 	// Get isExpanded directly from node data
-	const isExpanded = (nodeData as CreateTextData).isExpanded || false;
+	const isExpanded = (nodeData as TestNodeData).isExpanded || false;
 
 	// Update expanded state via node data
 	const handleToggleExpanded = useCallback(() => {
 		updateNodeData({ isExpanded: !isExpanded });
-	}, [isExpanded]);
+	}, [isExpanded, updateNodeData]);
 
 	// Enterprise validation with comprehensive error handling
 	const validationResult = validateNodeData(nodeData);
@@ -191,21 +205,19 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 
 	// Report validation errors for monitoring
 	if (!validationResult.success) {
-		reportValidationError("CreateText", id, validationResult.errors, {
+		reportValidationError("TestNode", id, validationResult.errors, {
 			originalData: validationResult.originalData,
-			component: "CreateTextNodeComponent",
+			component: "TestNodeNodeComponent",
 		});
 	}
 
 	// Enterprise data validation hook for real-time updates
 	const { getHealthScore } = useNodeDataValidation(
-		CreateTextDataSchema,
-		"CreateText",
+		TestNodeDataSchema,
+		"TestNode",
 		validatedData,
 		id
 	);
-
-
 
 	// Monitor text content and update active state
 	useEffect(() => {
@@ -227,19 +239,6 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 		}
 	}, [validatedData.text, validatedData.isActive, validatedData.isEnabled, updateNodeData]);
 
-	// Handle text updates with immediate propagation
-	const handleTextChange = useCallback((newText: string) => {
-		try {
-			// Update text and output immediately for responsive UI
-			updateNodeData({ 
-				text: newText,
-				output: validatedData.isEnabled ? newText : null // Only propagate if enabled
-			});
-		} catch (error) {
-			console.error("Failed to update CreateText node data:", error);
-		}
-	}, [updateNodeData, validatedData.isEnabled]);
-
 	// Sync output with enabled state to control propagation
 	useEffect(() => {
 		const desiredOutput = validatedData.isEnabled ? validatedData.text : null;
@@ -248,8 +247,69 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 		}
 	}, [validatedData.isEnabled, validatedData.text, validatedData.output, updateNodeData]);
 
+	// Enhanced data handling with type detection and conversion
+	const handleDataChange = useCallback((newValue: any, fieldName: string = 'text') => {
+		try {
+			// Detect data type and convert appropriately
+			let processedValue = newValue;
+			let outputValue = newValue;
+			
+			// Handle different data types
+			if (typeof newValue === 'string') {
+				// Try to parse as JSON if it looks like JSON
+				if (newValue.trim().startsWith('{') || newValue.trim().startsWith('[')) {
+					try {
+						const parsed = JSON.parse(newValue);
+						processedValue = parsed;
+						outputValue = parsed;
+					} catch {
+						// Keep as string if JSON parsing fails
+						processedValue = newValue;
+						outputValue = newValue;
+					}
+				} else {
+					// Regular string
+					processedValue = newValue;
+					outputValue = newValue;
+				}
+			} else if (typeof newValue === 'number') {
+				processedValue = newValue;
+				outputValue = newValue;
+			} else if (typeof newValue === 'boolean') {
+				processedValue = newValue;
+				outputValue = newValue;
+			} else if (Array.isArray(newValue)) {
+				processedValue = newValue;
+				outputValue = newValue;
+			} else if (typeof newValue === 'object' && newValue !== null) {
+				processedValue = newValue;
+				outputValue = newValue;
+			} else {
+				// Fallback to string conversion
+				processedValue = String(newValue);
+				outputValue = String(newValue);
+			}
+			
+			// Update node data with type-appropriate values
+			updateNodeData({ 
+				[fieldName]: processedValue,
+				output: validatedData.isEnabled ? outputValue : null // Only propagate if enabled
+			});
+		} catch (error) {
+			console.error("Failed to update TestNode node data:", error);
+		}
+	}, [updateNodeData]);
+
+	// Backward compatibility for text-only updates
+	const handleTextChange = useCallback((newText: string) => {
+		handleDataChange(newText, 'text');
+	}, [handleDataChange]);
+
+
+
 	// Get category-specific text colors
-	const categoryTextColors = CATEGORY_TEXT_COLORS.CREATE;
+	const categoryKey = spec.category as keyof typeof CATEGORY_TEXT_COLORS;
+	const categoryTextColors = CATEGORY_TEXT_COLORS[categoryKey] || CATEGORY_TEXT_COLORS.CREATE;
 
 	return (
 		<>
@@ -270,8 +330,7 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
             value={validatedData.text}
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Enter your text here..."
-                          className={`scrollbar nowheel  bg-background rounded-md p-2 text-xs scrollbar-thumb-sky-700 scrollbar-track-sky-300 h-32 overflow-y-scroll focus:outline-none focus:ring-1 focus:ring-white-500 focus:ring-offset-0 ${categoryTextColors.primary}`}
-           
+            className={`scrollbar nowheel bg-background rounded-md p-2 text-xs scrollbar-thumb-sky-700 scrollbar-track-sky-300 h-32 overflow-y-scroll focus:outline-none focus:ring-1 focus:ring-white-500 focus:ring-offset-0 ${categoryTextColors.primary}`}
           />
         </div>
       ) : (
@@ -290,11 +349,11 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 };
 
 // Wrapper component that creates dynamic spec based on node data
-const CreateTextNodeWithDynamicSpec = (props: NodeProps) => {
+const TestNodeNodeWithDynamicSpec = (props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, props.data);
   
   // Memoize the dynamic spec to prevent infinite re-renders
-  const dynamicSpec = useMemo(() => createDynamicSpec(nodeData as CreateTextData), [
+  const dynamicSpec = useMemo(() => createDynamicSpec(nodeData as TestNodeData), [
     nodeData.expandedSize,
     nodeData.collapsedSize,
     nodeData.kind,
@@ -315,10 +374,10 @@ const CreateTextNodeWithDynamicSpec = (props: NodeProps) => {
     nodeData.tags
   ]);
   
-  return withNodeScaffold(dynamicSpec, CreateTextNodeComponent)(props);
+  return withNodeScaffold(dynamicSpec, TestNodeNodeComponent)(props);
 };
 
-export default CreateTextNodeWithDynamicSpec;
+export default TestNodeNodeWithDynamicSpec;
 
 // Export spec for registry access
 export { spec };

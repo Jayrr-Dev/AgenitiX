@@ -304,7 +304,8 @@ const ViewTextNodeComponent = ({ data, id, spec }: NodeProps & { spec: NodeSpec 
     } else if (data === undefined) {
       return 'undefined';
     } else if (typeof data === 'string') {
-      return data || 'Empty string';
+      // Return empty string as-is, don't convert to 'Empty string'
+      return data;
     } else if (typeof data === 'number') {
       return String(data);
     } else if (typeof data === 'boolean') {
@@ -419,17 +420,22 @@ const ViewTextNodeComponent = ({ data, id, spec }: NodeProps & { spec: NodeSpec 
         if (sourceNode?.data) {
           let nodeText = '';
           
-          // Comprehensive data type handling
-          if (sourceNode.data.text !== undefined) {
-            nodeText = processDataValue(sourceNode.data.text);
-          } else if (sourceNode.data.output !== undefined) {
+          // Comprehensive data type handling - prioritize output field
+          if (sourceNode.data.output !== undefined) {
             nodeText = processDataValue(sourceNode.data.output);
+          } else if (sourceNode.data.text !== undefined) {
+            nodeText = processDataValue(sourceNode.data.text);
           } else {
             nodeText = processDataValue(sourceNode.data);
           }
           
-          // Only add valid text
-          if (nodeText && nodeText !== 'null' && nodeText !== 'undefined' && nodeText !== 'Invalid data') {
+          // Only add valid text - exclude empty strings and null values
+          if (nodeText && 
+              nodeText !== 'null' && 
+              nodeText !== 'undefined' && 
+              nodeText !== 'Invalid data' && 
+              nodeText !== 'Empty string' &&
+              nodeText.trim().length > 0) {
             allTexts.push(nodeText);
           }
         }
@@ -442,13 +448,21 @@ const ViewTextNodeComponent = ({ data, id, spec }: NodeProps & { spec: NodeSpec 
       if (lastProcessedInputRef.current !== concatenatedText) {
         lastProcessedInputRef.current = concatenatedText;
         
-        const hasContent = concatenatedText && concatenatedText.trim().length > 0;
+        // Treat empty strings as inactive - only non-empty content makes node active
+        const hasContent = concatenatedText && 
+          concatenatedText.trim().length > 0 && 
+          concatenatedText !== '' && 
+          concatenatedText !== 'null' && 
+          concatenatedText !== 'undefined';
+        
+        // If no valid content, display appropriate message
+        const displayText = hasContent ? concatenatedText : (allTexts.length === 0 ? 'No connected inputs' : 'Empty content');
         
             updateNodeData({ 
           isActive: hasContent,
-          receivedData: concatenatedText,
-          text: concatenatedText,
-          output: concatenatedText
+          receivedData: displayText,
+          text: displayText,
+          output: displayText
             });
           }
         } else {

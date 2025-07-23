@@ -115,6 +115,9 @@ class NodeInspectorAdapterImpl {
 
 	/**
 	 * Determine if a node type has custom controls available
+	 * 
+	 * All node categories should have controls by default for better UX
+	 * This ensures consistent inspector behavior across all node types
 	 */
 	private determineHasControls(nodeType: NodeType): boolean {
 		// Get metadata directly to avoid circular dependency
@@ -123,9 +126,14 @@ class NodeInspectorAdapterImpl {
 			return false;
 		}
 
-		// For now, assume all CREATE and TRIGGER nodes have controls
-		// This can be enhanced with schema analysis later
-		return metadata.category === "CREATE" || metadata.category === "TRIGGER";
+		// Check if the node has controls configuration
+		if (metadata.controls && metadata.controls.autoGenerate !== false) {
+			return true;
+		}
+
+		// All node categories should have controls by default
+		// This provides consistent UX across CREATE, VIEW, TRIGGER, TEST, CYCLE categories
+		return true;
 	}
 }
 

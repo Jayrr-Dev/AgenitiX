@@ -24,6 +24,7 @@
     "validate:tokens": "node scripts/theming/validate-tokens.js",
     "ci:tokens": "pnpm validate:tokens",
     "validate:colors": "node scripts/theming/validate-primitive-colors.js",
+    "validate:adapter": "node scripts/validate-adapter-logic.js",
     "postinstall": "pnpm generate:docs"
   },
   "dependencies": {

@@ -19,7 +19,8 @@ export function useDynamicNodeTypes() {
 		() => ({
 			// Add new node types here
     testNode,			viewText,
-			createText}),
+			createText,
+		}),
 		[]
 	);
 

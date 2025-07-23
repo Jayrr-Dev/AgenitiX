@@ -18,8 +18,10 @@ export function useDynamicNodeTypes() {
 	const nodeTypes = useMemo(
 		() => ({
 			// Add new node types here
-    testNode,			viewText,
-			createText}),
+    testNode,
+			viewText,
+			createText,
+		}),
 		[]
 	);
 
