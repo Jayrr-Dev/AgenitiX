@@ -10,14 +10,13 @@
  * Keywords: view-text, content-focused, schema-driven, type-safe, clean-architecture
  */
 
-import React, { useCallback, useEffect, useState, useRef } from 'react';
-import { NodeProps, useReactFlow, useNodes, useEdges } from '@xyflow/react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { NodeProps, useReactFlow } from '@xyflow/react';
 import { z } from 'zod';
 import { withNodeScaffold } from '@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold';
 import { NodeSpec } from '@/features/business-logic-modern/infrastructure/node-core/NodeSpec';
 import {
   createNodeValidator,
-  CommonSchemas,
   reportValidationError,
   useNodeDataValidation
 } from '@/features/business-logic-modern/infrastructure/node-core/validation';
@@ -26,6 +25,8 @@ import { CATEGORIES } from '@/features/business-logic-modern/infrastructure/them
 import { EXPANDED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
 import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
 import { useNodeData } from '@/hooks/useNodeData';
+import { useOptimizedDataFlow } from '@/features/business-logic-modern/infrastructure/flow-engine/hooks/useOptimizedDataFlow';
+import { useConnectionHandlers } from '@/features/business-logic-modern/infrastructure/flow-engine/hooks/useConnectionHandlers';
 
 // -- PLOP-INJECTED-IMPORTS --
 
@@ -249,37 +250,42 @@ const CATEGORY_TEXT_COLORS = {
 /**
  * viewText Node Component
  *
- * Clean content-focused component following React Flow best practices:
- * • Uses useReactFlow, useNodeConnections, and useNodesData hooks
+ * Clean content-focused component using optimized data flow:
+ * • Uses useOptimizedDataFlow for instant propagation
  * • Automatically updates when connected nodes change
  * • No infinite loops - proper dependency management
- * • Follows official React Flow computing flows pattern
+ * • Follows optimized data flow pattern
  */
-const ViewTextNodeComponent = ({ data, id }: NodeProps) => {
+const ViewTextNodeComponent = ({ data, id, spec }: NodeProps & { spec: NodeSpec }) => {
   // Use proper React Flow data management
   const { nodeData, updateNodeData } = useNodeData(id, data);
-  const { getNode, getNodes } = useReactFlow();
 
-  // Local state for received text and active status
-  const [receivedText, setReceivedText] = useState<string>('No connected inputs');
-  const [isActive, setIsActive] = useState<boolean>(false);
-  
-  // Ref to track if we've already updated node data to prevent infinite loops
-  const lastUpdateRef = useRef<{ text: string; active: boolean } | null>(null);
-  
-  // Ref to track processing state to prevent recursive updates
-  const isProcessingRef = useRef<boolean>(false);
-  
-  // Ref to track the last processed edge IDs to detect actual changes
-  const lastProcessedEdgesRef = useRef<string>('');
+  // Get optimized data flow capabilities for this node (pass-through)
+  const dataFlow = useOptimizedDataFlow(id, {
+    instantPropagation: true, // Enable propagation for view nodes to pass data through
+    debounceDelay: 0, // No delay for immediate updates
+    extractData: (nodeData: any) => {
+      // Extract text from connected nodes
+      if (nodeData.text !== undefined) return nodeData.text;
+      if (nodeData.output !== undefined) return nodeData.output;
+      return String(nodeData);
+    },
+    transformData: (data: any) => {
+      // Transform data before output - pass through the received text
+      return data;
+    }
+  });
+
+  // Direct access to React Flow store for immediate data access
+  const { getNodes, getEdges } = useReactFlow();
 
   // Get isExpanded directly from node data
   const isExpanded = (nodeData as ViewTextData).isExpanded || false;
 
   // Update expanded state via node data
   const handleToggleExpanded = useCallback(() => {
-    updateNodeData({ ...nodeData, isExpanded: !isExpanded });
-  }, [nodeData, isExpanded, updateNodeData]);
+    updateNodeData({ isExpanded: !isExpanded });
+  }, [isExpanded]);
 
   // Enterprise validation with comprehensive error handling
   const validationResult = validateNodeData(nodeData);
@@ -301,120 +307,95 @@ const ViewTextNodeComponent = ({ data, id }: NodeProps) => {
     id
   );
 
+
+
   // Get category-specific text colors
   const categoryKey = spec.category as keyof typeof CATEGORY_TEXT_COLORS;
   const categoryTextColors = CATEGORY_TEXT_COLORS[categoryKey] || CATEGORY_TEXT_COLORS.CREATE;
 
-  // Get all nodes and edges to find connections
-  const nodes = useNodes();
-  const edges = useEdges();
+  // Track last processed input to prevent unnecessary updates
+  const lastProcessedInputRef = useRef<string | null>(null);
 
-  // Process connected data when nodes or edges change
-  useEffect(() => {
-    // Prevent recursive processing
-    if (isProcessingRef.current) {
-      return;
-    }
-
-    const processConnectedData = () => {
-      try {
-        isProcessingRef.current = true;
-        
-        // Get only edges that connect to this specific node
-        const relevantEdges = edges.filter(edge => edge.target === id);
-        
-        // Create a hash of the relevant edges to detect actual changes
-        const edgesHash = relevantEdges.map(edge => `${edge.source}-${edge.target}-${edge.sourceHandle}-${edge.targetHandle}`).join('|');
-        
-        // Only process if edges have actually changed
-        if (edgesHash === lastProcessedEdgesRef.current) {
-          return;
-        }
-        
-        lastProcessedEdgesRef.current = edgesHash;
-        
-        const connectedTexts: string[] = [];
-        
-        // Get data from source nodes using spec's formatData function
-        relevantEdges.forEach(edge => {
-          const sourceNode = nodes.find(node => node.id === edge.source);
-          if (sourceNode && sourceNode.data) {
-            // Use the spec's formatData function for comprehensive data type handling
-            const textValue = spec.receivedData?.formatData?.(sourceNode.data) || String(sourceNode.data);
-            connectedTexts.push(textValue);
-          }
+  // Connection handlers for immediate response to connect/disconnect events
+  useConnectionHandlers(id, {
+    onConnect: useCallback((edge: any) => {
+      // When a connection is made, clear any "No connected inputs" state
+      if (validatedData.text === 'No connected inputs') {
+        updateNodeData({
+          text: '',
+          receivedData: '',
+          isActive: false
         });
-
-        // Update received text with proper null handling and determine active state
-        if (connectedTexts.length > 0) {
-          const formattedTexts = connectedTexts.map(text => {
-            if (text === 'null') {
-              return 'null';
-            } else if (text === 'undefined') {
-              return 'undefined';
-            } else if (text === 'Empty string') {
-              return '';
-            } else if (text === 'Invalid data') {
-              return 'Invalid data';
-            } else {
-              return text;
-            }
-          });
-          
-          const finalText = formattedTexts.join('\n');
-          setReceivedText(finalText);
-          
-          // Determine if node should be active based on received data
-          const hasValidData = formattedTexts.some(text => 
-            text !== 'null' && 
-            text !== 'undefined' && 
-            text !== '' && 
-            text !== 'Invalid data' &&
-            text !== 'No connected inputs'
-          );
-          setIsActive(hasValidData);
-          
-          // Only update node data if values have actually changed to prevent infinite loops
-          const currentUpdate = { text: finalText, active: hasValidData };
-          if (!lastUpdateRef.current || 
-              lastUpdateRef.current.text !== currentUpdate.text || 
-              lastUpdateRef.current.active !== currentUpdate.active) {
-            lastUpdateRef.current = currentUpdate;
-            updateNodeData({ 
-              ...nodeData, 
-              isActive: hasValidData,
-              receivedData: finalText,
-              text: finalText // Also update the text field for inspector display
-            });
-          }
-        } else {
-          setReceivedText('');
-          setIsActive(false);
-          
-          // Only update node data if values have actually changed
-          const currentUpdate = { text: '', active: false };
-          if (!lastUpdateRef.current || 
-              lastUpdateRef.current.text !== currentUpdate.text || 
-              lastUpdateRef.current.active !== currentUpdate.active) {
-            lastUpdateRef.current = currentUpdate;
-            updateNodeData({ 
-              ...nodeData, 
-              isActive: false,
-              receivedData: '',
-              text: 'No connected inputs' // Update text field for inspector display
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error processing connected data:', error);
-        setReceivedText('Error processing inputs');
-      } finally {
-        isProcessingRef.current = false;
       }
-    };
+    }, [validatedData.text, updateNodeData]),
+    
+    onDisconnect: useCallback((edge: any) => {
+      // When a connection is broken, immediately clear the data
+      lastProcessedInputRef.current = null;
+      updateNodeData({
+        isActive: false,
+        receivedData: 'No connected inputs',
+        text: 'No connected inputs',
+        output: 'No connected inputs'
+      });
+    }, [updateNodeData])
+  });
 
-    processConnectedData();
-  }, [edges.filter(edge => edge.target === id).map(edge => `${edge.source}-${edge.target}-${edge.sourceHandle}-${edge.targetHandle}`).join('|')]); // Only depend on relevant edge changes
+  // Direct data access to avoid timing issues
+  useEffect(() => {
+    const nodes = getNodes();
+    const edges = getEdges();
+    
+    // Find connected input nodes
+    const inputEdges = edges.filter(edge => edge.target === id);
+    const inputNodes = inputEdges.map(edge => 
+      nodes.find(node => node.id === edge.source)
+    ).filter(Boolean);
+    
+    if (inputNodes.length > 0) {
+      // Get data from the first connected input node
+      const sourceNode = inputNodes[0];
+      let receivedText = '';
+      
+      if (sourceNode?.data) {
+        if (sourceNode.data.text !== undefined) {
+          receivedText = String(sourceNode.data.text);
+        } else if (sourceNode.data.output !== undefined) {
+          receivedText = String(sourceNode.data.output);
+        } else {
+          receivedText = String(sourceNode.data);
+        }
+      }
+      
+      // Process data if it's actually new
+      const isValidData = receivedText !== 'null' && receivedText !== 'undefined';
+      
+      if (isValidData && lastProcessedInputRef.current !== receivedText) {
+        lastProcessedInputRef.current = receivedText;
+        
+        const hasContent = receivedText && receivedText.trim().length > 0;
+        
+        updateNodeData({ 
+          isActive: hasContent,
+          receivedData: receivedText,
+          text: receivedText,
+          output: receivedText
+        });
+      }
+    } else {
+      // No connected inputs - clear the data
+      if (lastProcessedInputRef.current !== null) {
+        lastProcessedInputRef.current = null;
+        
+        updateNodeData({ 
+          isActive: false,
+          receivedData: 'No connected inputs',
+          text: 'No connected inputs',
+          output: 'No connected inputs'
+        });
+      }
+    }
+  }, [id, getNodes, getEdges, updateNodeData]);
 
   return (
     <>
@@ -426,7 +407,7 @@ const ViewTextNodeComponent = ({ data, id }: NodeProps) => {
           <div className={CONTENT_STYLES.main.container}>
             <div className={CONTENT_STYLES.main.content}>
               <div className="font-normal text-xs">
-                {validatedData.text || receivedText}
+                {validatedData.text || 'No connected inputs'}
               </div>
             </div>
           </div>
@@ -434,9 +415,9 @@ const ViewTextNodeComponent = ({ data, id }: NodeProps) => {
       ) : (
         <div className={CONTENT_STYLES.content.collapsed}>
           <div className="text-center">
-            {spec.receivedData?.showInCollapsed && (validatedData.text || receivedText) !== 'No connected inputs' ? (
+            {spec.receivedData?.showInCollapsed && validatedData.text !== 'No connected inputs' ? (
               <div className={`text-xs ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
-                {validatedData.text || receivedText}
+                {validatedData.text}
               </div>
             ) : (
               <div className={`text-xs font-medium ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
@@ -453,8 +434,32 @@ const ViewTextNodeComponent = ({ data, id }: NodeProps) => {
 // Wrapper component that creates dynamic spec based on node data
 const ViewTextNodeWithDynamicSpec = (props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, props.data);
-  const dynamicSpec = createDynamicSpec(nodeData as ViewTextData);
-  return withNodeScaffold(dynamicSpec, ViewTextNodeComponent)(props);
+  
+  // Memoize the dynamic spec to prevent infinite re-renders
+  const dynamicSpec = useMemo(() => createDynamicSpec(nodeData as ViewTextData), [
+    nodeData.expandedSize,
+    nodeData.collapsedSize,
+    nodeData.kind,
+    nodeData.displayName,
+    nodeData.label,
+    nodeData.category,
+    nodeData.handles,
+    nodeData.inspector,
+    nodeData.version,
+    nodeData.runtime,
+    nodeData.initialData,
+    nodeData.dataSchema,
+    nodeData.controls,
+    nodeData.icon,
+    nodeData.author,
+    nodeData.description,
+    nodeData.feature,
+    nodeData.tags
+  ]);
+  
+  return withNodeScaffold(dynamicSpec, (componentProps: NodeProps) => (
+    <ViewTextNodeComponent {...componentProps} spec={dynamicSpec} />
+  ))(props);
 };
 
 export default ViewTextNodeWithDynamicSpec;

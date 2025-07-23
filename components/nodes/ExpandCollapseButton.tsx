@@ -13,7 +13,6 @@
 
 import { useTheme } from "next-themes";
 import React from "react";
-import { useEffect, useState } from "react";
 
 import { IoIosRadioButtonOn } from "react-icons/io";
 import { IoIosRadioButtonOff } from "react-icons/io";
@@ -52,18 +51,12 @@ export const ExpandCollapseButton: React.FC<ExpandCollapseButtonProps> = ({
 	size = "sm",
 }) => {
 	const { resolvedTheme } = useTheme();
-	const [mounted, setMounted] = useState(false);
 
-	// Ensure client-side rendering to avoid hydration mismatch
-	useEffect(() => {
-		setMounted(true);
-	}, []);
+	// Get theme-aware button color (simplified to avoid hydration issues)
+	const buttonColor = "var(--core-expandCollapseButton-text)";
 
-	// Get theme-aware button color
-	const isDarkMode = mounted && resolvedTheme === "dark";
-	const buttonColor = isDarkMode ? "var(--core-expandCollapseButton-text)" : "var(--core-expandCollapseButton-text)";
-
-	const buttonStyle: React.CSSProperties = {
+	// Memoize the button style to prevent unnecessary re-renders
+	const buttonStyle = React.useMemo((): React.CSSProperties => ({
 		// Token-based styling - maintains current appearance
 		backgroundColor: "var(--core-expandCollapseButton-bg)",
 		color: buttonColor,
@@ -84,7 +77,7 @@ export const ExpandCollapseButton: React.FC<ExpandCollapseButtonProps> = ({
 		transform: "translate(0px, -1px)",
 		opacity: ".7",
 		scale: "1.2",
-	};
+	}), [buttonColor]);
 
 	return (
 		<button

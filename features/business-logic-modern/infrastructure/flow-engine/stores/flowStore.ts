@@ -249,7 +249,21 @@ export const useFlowStore = create<FlowStore>()(
 					set((state) => {
 						const node = state.nodes.find((n) => n.id === nodeId);
 						if (node) {
-							node.data = { ...node.data, ...data };
+							// Check if any values actually changed to prevent infinite loops
+							let hasChanges = false;
+							const newData = { ...node.data };
+							
+							for (const [key, value] of Object.entries(data)) {
+								if (JSON.stringify(newData[key]) !== JSON.stringify(value)) {
+									newData[key] = value;
+									hasChanges = true;
+								}
+							}
+							
+							// Only update if there are actual changes
+							if (hasChanges) {
+								node.data = newData;
+							}
 						}
 					});
 				},

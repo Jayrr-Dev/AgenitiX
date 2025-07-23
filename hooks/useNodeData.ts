@@ -1,5 +1,6 @@
 import { Node, useReactFlow } from "@xyflow/react";
 import { useCallback, useMemo } from "react";
+import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 
 /**
  * A hook to manage the data of a specific node.
@@ -8,26 +9,15 @@ import { useCallback, useMemo } from "react";
  * @returns An object with the current node data and a function to update it.
  */
 export const useNodeData = <T extends Record<string, any>>(nodeId: string, initialData: T) => {
-	const { setNodes, getNode } = useReactFlow();
+	const { getNode } = useReactFlow();
+	const { updateNodeData: storeUpdateNodeData } = useFlowStore();
 
 	const updateNodeData = useCallback(
 		(newData: Partial<T>) => {
-			setNodes((nodes) =>
-				nodes.map((node) => {
-					if (node.id === nodeId) {
-						return {
-							...node,
-							data: {
-								...node.data,
-								...newData,
-							},
-						};
-					}
-					return node;
-				})
-			);
+			// Use the flow store's updateNodeData to prevent infinite loops
+			storeUpdateNodeData(nodeId, newData);
 		},
-		[nodeId, setNodes]
+		[nodeId, storeUpdateNodeData]
 	);
 
 	const node = getNode(nodeId);

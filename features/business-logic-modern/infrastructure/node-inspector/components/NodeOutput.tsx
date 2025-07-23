@@ -191,6 +191,22 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
 		// Get node-specific styling
 		const nodeSpecificStyling = getNodeSpecificStyling(nodeType, outputPreferences, theme);
 
+		// Special handling for objects with text property (common in text nodes)
+		if (detectedType === "object" && parsedValue && typeof parsedValue === "object" && parsedValue.text !== undefined) {
+			return {
+				text: String(parsedValue.text),
+				color: nodeSpecificStyling.color || theme.text.primary,
+				type: "string",
+				icon: nodeSpecificStyling.icon || "STR",
+				fullText: String(parsedValue.text),
+				metadata: {
+					nodeDisplayName: outputPreferences.displayName,
+					nodeIcon: outputPreferences.customIcon,
+					nodeCategory: outputPreferences.category,
+				},
+			};
+		}
+
 		// Format based on detected type
 		switch (detectedType) {
 			case "object":

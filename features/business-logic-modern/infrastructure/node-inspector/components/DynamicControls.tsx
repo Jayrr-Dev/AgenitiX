@@ -600,7 +600,7 @@ export const DynamicControls: React.FC<DynamicControlsProps> = ({
 	// Get current node data with defaults applied
 	const nodeDataWithDefaults = useMemo(() => {
 		return NodeInspectorService.getNodeDataWithDefaults(node);
-	}, [node]);
+	}, [node.id, node.data, node.type]);
 
 	// Check if the node has any custom controls available
 	const hasControls = controlFields.length > 0;

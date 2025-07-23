@@ -1,7 +1,7 @@
 "use client";
 
 import { ADAPTIVE_CONFIGS, RISK_LEVELS } from "@/lib/anubis/risk-engine";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 // RISK DASHBOARD COMPONENT
 export function RiskDashboard() {
@@ -14,6 +14,9 @@ export function RiskDashboard() {
 		averageRiskScore: 0,
 		threatTrend: "stable" as "increasing" | "decreasing" | "stable",
 	});
+	
+	// Ref to track if dashboard is visible
+	const isVisibleRef = useRef(isVisible);
 
 	// CHECK IF UI IS ENABLED
 	const [showUI, setShowUI] = useState(false);
@@ -24,7 +27,11 @@ export function RiskDashboard() {
 
 	// SIMULATE REAL-TIME METRICS (replace with actual API calls)
 	useEffect(() => {
+		let isMounted = true;
+		
 		const interval = setInterval(() => {
+			if (!isMounted || !isVisibleRef.current) return;
+			
 			setMetrics((prev) => ({
 				totalRequests: prev.totalRequests + Math.floor(Math.random() * 10),
 				blockedRequests: prev.blockedRequests + Math.floor(Math.random() * 2),
@@ -34,13 +41,20 @@ export function RiskDashboard() {
 			}));
 		}, 5000);
 
-		return () => clearInterval(interval);
+		return () => {
+			isMounted = false;
+			clearInterval(interval);
+		};
 	}, []);
 
 	if (!showUI) return null;
 
 	// TOGGLE DASHBOARD VISIBILITY
-	const toggleDashboard = () => setIsVisible(!isVisible);
+	const toggleDashboard = () => {
+		const newVisibility = !isVisible;
+		setIsVisible(newVisibility);
+		isVisibleRef.current = newVisibility;
+	};
 
 	const currentRisk = RISK_LEVELS[currentRiskLevel];
 	const currentConfig = ADAPTIVE_CONFIGS[currentRiskLevel];

@@ -199,9 +199,12 @@ const NodeInspector = React.memo(function NodeInspector() {
 	// Get output for selected node
 	const output = useMemo(() => {
 		if (!selectedNode) return null;
-		const result = getNodeOutput(selectedNode, nodes, edges);
+		// Get the most up-to-date node data by finding it again
+		const currentNode = nodes.find((n) => n.id === selectedNode.id);
+		if (!currentNode) return null;
+		const result = getNodeOutput(currentNode, nodes, edges);
 		return result;
-	}, [selectedNode, nodes, edges]);
+	}, [selectedNode?.id, nodes, edges]);
 
 	// Get connections for selected node
 	const connections = useMemo(() => {

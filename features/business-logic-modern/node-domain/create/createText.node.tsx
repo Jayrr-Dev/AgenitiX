@@ -27,8 +27,9 @@ import {
 	EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { useWithNodeDataFlow } from "@/features/business-logic-modern/infrastructure/flow-engine/hooks/withNodeDataFlow";
-import { useCallback, useEffect, useRef } from "react";
+import { useOptimizedDataFlow } from "@/features/business-logic-modern/infrastructure/flow-engine/hooks/useOptimizedDataFlow";
+import { useConnectionHandlers } from "@/features/business-logic-modern/infrastructure/flow-engine/hooks/useConnectionHandlers";
+import { useCallback, useEffect, useRef, useMemo } from "react";
 
 /**
  * Data schema for CreateText node
@@ -168,19 +169,19 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 	// Use proper React Flow data management
 	const { nodeData, updateNodeData } = useNodeData(id, data);
 
-	// Get data flow capabilities for this node
-	const dataFlow = useWithNodeDataFlow(id, {
-		autoProcess: false, // Disable auto-processing to prevent infinite loops
-		autoPropagate: false, // Disable auto-propagation to prevent infinite loops
-		processInputs: (inputs) => {
-			// Process input data from connected nodes
-			console.log("CreateText processing inputs:", inputs);
-			return inputs;
+	// Get optimized data flow capabilities for this node
+	const dataFlow = useOptimizedDataFlow(id, {
+		instantPropagation: true, // Enable instant propagation
+		debounceDelay: 16, // 60fps for smooth updates
+		extractData: (nodeData: any) => {
+			// Extract text from connected nodes
+			if (nodeData.text !== undefined) return nodeData.text;
+			if (nodeData.output !== undefined) return nodeData.output;
+			return String(nodeData);
 		},
-		processOutputs: (outputs) => {
-			// Process output data before sending to downstream nodes
-			console.log("CreateText processing outputs:", outputs);
-			return outputs;
+		transformData: (data: any) => {
+			// Transform data before output
+			return { text: data };
 		}
 	});
 
@@ -188,9 +189,9 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 	const isExpanded = (nodeData as CreateTextData).isExpanded || false;
 
 	// Update expanded state via node data
-	const handleToggleExpanded = () => {
-		updateNodeData({ ...nodeData, isExpanded: !isExpanded });
-	};
+	const handleToggleExpanded = useCallback(() => {
+		updateNodeData({ isExpanded: !isExpanded });
+	}, [isExpanded]);
 
 	// Enterprise validation with comprehensive error handling
 	const validationResult = validateNodeData(nodeData);
@@ -212,56 +213,49 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 		id
 	);
 
-	// Ref to track if we've already updated node data to prevent infinite loops
-	const lastUpdateRef = useRef<{ text: string; active: boolean } | null>(null);
-	
-	// Ref to track processing state to prevent recursive updates
-	const isProcessingRef = useRef<boolean>(false);
+	// Connection handlers for immediate response to connect/disconnect events
+	useConnectionHandlers(id, {
+		onConnect: useCallback((edge: any) => {
+			// When a connection is made, ensure output is propagated immediately
+			if (validatedData.text) {
+				dataFlow.propagateOutput(validatedData.text);
+			}
+		}, [validatedData.text, dataFlow]),
+		
+		onDisconnect: useCallback((edge: any) => {
+			// When a connection is broken, clear any downstream data
+			// The downstream nodes will handle their own disconnect logic
+		}, [])
+	});
 
 	// Monitor text content and update active state
 	useEffect(() => {
-		// Prevent recursive processing
-		if (isProcessingRef.current) {
-			return;
-		}
-
-		try {
-			isProcessingRef.current = true;
-			
-			const currentText = validatedData.text || '';
-			const hasValidText = currentText.trim().length > 0;
-			
-			// Only update node data if values have actually changed
-			const currentUpdate = { text: currentText, active: hasValidText };
-			if (!lastUpdateRef.current || 
-				lastUpdateRef.current.text !== currentUpdate.text || 
-				lastUpdateRef.current.active !== currentUpdate.active) {
-				lastUpdateRef.current = currentUpdate;
-				updateNodeData({ 
-					...nodeData, 
-					isActive: hasValidText,
-					text: currentText 
-				});
-			}
-		} finally {
-			isProcessingRef.current = false;
-		}
-	}, [validatedData.text]); // Only depend on text changes, not nodeData or updateNodeData
-
-	// Handle text updates with manual output propagation
-	const handleTextChange = (newText: string) => {
-		try {
-			updateNodeData({ text: newText });
-			
-			// Manually propagate the text as output to connected nodes
-			// This only happens when the user actually changes the text
-			dataFlow.triggerOutputPropagation({
-				output: newText
+		const currentText = validatedData.text || '';
+		const hasValidText = currentText.trim().length > 0;
+		
+		// Only update if the active state has actually changed
+		if (validatedData.isActive !== hasValidText) {
+			updateNodeData({ 
+				isActive: hasValidText
 			});
+		}
+	}, [validatedData.text, validatedData.isActive, updateNodeData]);
+
+	// Handle text updates with immediate propagation
+	const handleTextChange = useCallback((newText: string) => {
+		try {
+			// Update text and output immediately for responsive UI
+			updateNodeData({ 
+				text: newText,
+				output: newText // Set output for downstream nodes
+			});
+			
+			// Always propagate immediately, including empty strings
+			dataFlow.propagateOutput(newText);
 		} catch (error) {
 			console.error("Failed to update CreateText node data:", error);
 		}
-	};
+	}, [updateNodeData, dataFlow]);
 
 	// Get category-specific text colors
 	const categoryTextColors = CATEGORY_TEXT_COLORS.CREATE;
@@ -307,7 +301,29 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 // Wrapper component that creates dynamic spec based on node data
 const CreateTextNodeWithDynamicSpec = (props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, props.data);
-  const dynamicSpec = createDynamicSpec(nodeData as CreateTextData);
+  
+  // Memoize the dynamic spec to prevent infinite re-renders
+  const dynamicSpec = useMemo(() => createDynamicSpec(nodeData as CreateTextData), [
+    nodeData.expandedSize,
+    nodeData.collapsedSize,
+    nodeData.kind,
+    nodeData.displayName,
+    nodeData.label,
+    nodeData.category,
+    nodeData.handles,
+    nodeData.inspector,
+    nodeData.version,
+    nodeData.runtime,
+    nodeData.initialData,
+    nodeData.dataSchema,
+    nodeData.controls,
+    nodeData.icon,
+    nodeData.author,
+    nodeData.description,
+    nodeData.feature,
+    nodeData.tags
+  ]);
+  
   return withNodeScaffold(dynamicSpec, CreateTextNodeComponent)(props);
 };
 
