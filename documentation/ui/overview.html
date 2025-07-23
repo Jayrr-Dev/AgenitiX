@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI Components Overview - Agenitix-2</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: #1f2937;
+      background: #f8fafc;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 3rem;
+      padding: 2rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 12px;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 3rem;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #1e40af;
+      display: block;
+    }
+
+    .stat-label {
+      color: #6b7280;
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+    }
+
+    .search-controls {
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 300px;
+      padding: 0.75rem 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      background: white;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #1e40af;
+      box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+    }
+
+    .filter-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 0.5rem 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background: white;
+      color: #374151;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover {
+      background: #f3f4f6;
+      border-color: #9ca3af;
+    }
+
+    .filter-btn.active {
+      background: #1e40af;
+      color: white;
+      border-color: #1e40af;
+    }
+
+    .components-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .component-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s ease;
+    }
+
+    .component-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .component-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .component-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1f2937;
+    }
+
+    .component-category {
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .category-core { background: #dbeafe; color: #1e40af; }
+    .category-interactive { background: #fef3c7; color: #92400e; }
+    .category-animation { background: #e0e7ff; color: #3730a3; }
+    .category-layout { background: #d1fae5; color: #065f46; }
+    .category-effects { background: #fce7f3; color: #be185d; }
+
+    .component-description {
+      color: #6b7280;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+
+    .component-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .feature-tag {
+      padding: 0.25rem 0.5rem;
+      background: #f3f4f6;
+      color: #374151;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .component-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .action-btn {
+      padding: 0.5rem 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background: white;
+      color: #374151;
+      font-size: 0.75rem;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+      background: #f3f4f6;
+      border-color: #9ca3af;
+    }
+
+    .action-btn.primary {
+      background: #1e40af;
+      color: white;
+      border-color: #1e40af;
+    }
+
+    .action-btn.primary:hover {
+      background: #1d4ed8;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+    }
+
+    .empty-state h3 {
+      margin-bottom: 1rem;
+      color: #374151;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+
+      .header h1 {
+        font-size: 2rem;
+      }
+
+      .search-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-input {
+        min-width: auto;
+      }
+
+      .components-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎨 UI Components</h1>
+      <p>Comprehensive documentation for all UI components in Agenitix-2</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <span class="stat-number">25</span>
+        <div class="stat-label">Total Components</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number">7</span>
+        <div class="stat-label">Core Components</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number">6</span>
+        <div class="stat-label">Interactive Elements</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number">6</span>
+        <div class="stat-label">Animation Components</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number">3</span>
+        <div class="stat-label">Layout Components</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number">5</span>
+        <div class="stat-label">Special Effects</div>
+      </div>
+    </div>
+
+    <div class="search-controls">
+      <input 
+        type="text" 
+        class="search-input" 
+        placeholder="Search components..."
+        id="searchInput"
+      >
+      <div class="filter-buttons">
+        <button class="filter-btn active" data-category="all">All</button>
+        <button class="filter-btn" data-category="core">Core</button>
+        <button class="filter-btn" data-category="interactive">Interactive</button>
+        <button class="filter-btn" data-category="animation">Animation</button>
+        <button class="filter-btn" data-category="layout">Layout</button>
+        <button class="filter-btn" data-category="effects">Effects</button>
+      </div>
+    </div>
+
+    <div class="components-grid" id="componentsGrid">
+      <!-- Core Components -->
+      <div class="component-card" data-category="core" data-search="button">
+        <div class="component-header">
+          <div class="component-title">Button</div>
+          <div class="component-category category-core">Core</div>
+        </div>
+        <div class="component-description">
+          Versatile button component with multiple variants, sizes, and accessibility features.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Variants</span>
+          <span class="feature-tag">Sizes</span>
+          <span class="feature-tag">Accessible</span>
+          <span class="feature-tag">Polymorphic</span>
+        </div>
+        <div class="component-actions">
+          <a href="./core/button.md" class="action-btn">Documentation</a>
+          <a href="./core/button.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="core" data-search="card">
+        <div class="component-header">
+          <div class="component-title">Card</div>
+          <div class="component-category category-core">Core</div>
+        </div>
+        <div class="component-description">
+          Flexible container component for displaying content in a structured layout.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Header</span>
+          <span class="feature-tag">Content</span>
+          <span class="feature-tag">Footer</span>
+          <span class="feature-tag">Responsive</span>
+        </div>
+        <div class="component-actions">
+          <a href="./core/card.md" class="action-btn">Documentation</a>
+          <a href="./core/card.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="core" data-search="dialog">
+        <div class="component-header">
+          <div class="component-title">Dialog</div>
+          <div class="component-category category-core">Core</div>
+        </div>
+        <div class="component-description">
+          Modal dialog component with overlay, animations, and accessibility features.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Modal</span>
+          <span class="feature-tag">Overlay</span>
+          <span class="feature-tag">Animated</span>
+          <span class="feature-tag">Accessible</span>
+        </div>
+        <div class="component-actions">
+          <a href="./core/dialog.md" class="action-btn">Documentation</a>
+          <a href="./core/dialog.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <!-- Interactive Components -->
+      <div class="component-card" data-category="interactive" data-search="accordion">
+        <div class="component-header">
+          <div class="component-title">Accordion</div>
+          <div class="component-category category-interactive">Interactive</div>
+        </div>
+        <div class="component-description">
+          Collapsible content component with smooth animations and keyboard navigation.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Collapsible</span>
+          <span class="feature-tag">Animated</span>
+          <span class="feature-tag">Keyboard</span>
+          <span class="feature-tag">Single/Multiple</span>
+        </div>
+        <div class="component-actions">
+          <a href="./interactive/accordion.md" class="action-btn">Documentation</a>
+          <a href="./interactive/accordion.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="interactive" data-search="tabs">
+        <div class="component-header">
+          <div class="component-title">Tabs</div>
+          <div class="component-category category-interactive">Interactive</div>
+        </div>
+        <div class="component-description">
+          Tabbed content navigation with smooth transitions and accessibility.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Navigation</span>
+          <span class="feature-tag">Animated</span>
+          <span class="feature-tag">Keyboard</span>
+          <span class="feature-tag">Responsive</span>
+        </div>
+        <div class="component-actions">
+          <a href="./interactive/tabs.md" class="action-btn">Documentation</a>
+          <a href="./interactive/tabs.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <!-- Animation Components -->
+      <div class="component-card" data-category="animation" data-search="3d marquee">
+        <div class="component-header">
+          <div class="component-title">3D Marquee</div>
+          <div class="component-category category-animation">Animation</div>
+        </div>
+        <div class="component-description">
+          Sophisticated 3D rotating image gallery with motion effects and grid overlays.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">3D Rotation</span>
+          <span class="feature-tag">Motion</span>
+          <span class="feature-tag">Grid Layout</span>
+          <span class="feature-tag">Responsive</span>
+        </div>
+        <div class="component-actions">
+          <a href="./animation/3d-marquee.md" class="action-btn">Documentation</a>
+          <a href="./animation/3d-marquee.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="animation" data-search="canvas reveal">
+        <div class="component-header">
+          <div class="component-title">Canvas Reveal Effect</div>
+          <div class="component-category category-animation">Animation</div>
+        </div>
+        <div class="component-description">
+          Animated reveal component with canvas-based effects and smooth transitions.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Canvas</span>
+          <span class="feature-tag">Reveal</span>
+          <span class="feature-tag">Smooth</span>
+          <span class="feature-tag">Performance</span>
+        </div>
+        <div class="component-actions">
+          <a href="./animation/canvas-reveal-effect.md" class="action-btn">Documentation</a>
+          <a href="./animation/canvas-reveal-effect.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <!-- Layout Components -->
+      <div class="component-card" data-category="layout" data-search="scroll area">
+        <div class="component-header">
+          <div class="component-title">Scroll Area</div>
+          <div class="component-category category-layout">Layout</div>
+        </div>
+        <div class="component-description">
+          Custom scrollable container with styled scrollbars and smooth scrolling.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Custom Scroll</span>
+          <span class="feature-tag">Styled</span>
+          <span class="feature-tag">Smooth</span>
+          <span class="feature-tag">Cross-platform</span>
+        </div>
+        <div class="component-actions">
+          <a href="./layout/scroll-area.md" class="action-btn">Documentation</a>
+          <a href="./layout/scroll-area.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <!-- Special Effects -->
+      <div class="component-card" data-category="effects" data-search="apple cards">
+        <div class="component-header">
+          <div class="component-title">Apple Cards Carousel</div>
+          <div class="component-category category-effects">Effects</div>
+        </div>
+        <div class="component-description">
+          Apple-style card carousel with smooth animations and gesture support.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Carousel</span>
+          <span class="feature-tag">Apple Style</span>
+          <span class="feature-tag">Gestures</span>
+          <span class="feature-tag">Smooth</span>
+        </div>
+        <div class="component-actions">
+          <a href="./effects/apple-cards-carousel.md" class="action-btn">Documentation</a>
+          <a href="./effects/apple-cards-carousel.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="effects" data-search="google gemini">
+        <div class="component-header">
+          <div class="component-title">Google Gemini Effect</div>
+          <div class="component-category category-effects">Effects</div>
+        </div>
+        <div class="component-description">
+          Google Gemini-style visual effect with particle animations and interactions.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Particles</span>
+          <span class="feature-tag">Gemini Style</span>
+          <span class="feature-tag">Interactive</span>
+          <span class="feature-tag">Performance</span>
+        </div>
+        <div class="component-actions">
+          <a href="./effects/google-gemini-effect.md" class="action-btn">Documentation</a>
+          <a href="./effects/google-gemini-effect.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <!-- Additional Core Components -->
+      <div class="component-card" data-category="core" data-search="input">
+        <div class="component-header">
+          <div class="component-title">Input</div>
+          <div class="component-category category-core">Core</div>
+        </div>
+        <div class="component-description">
+          Form input component with consistent styling and accessibility features.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Form</span>
+          <span class="feature-tag">Accessible</span>
+          <span class="feature-tag">Styled</span>
+          <span class="feature-tag">Responsive</span>
+        </div>
+        <div class="component-actions">
+          <a href="./core/input.md" class="action-btn">Documentation</a>
+          <a href="./core/input.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="core" data-search="label">
+        <div class="component-header">
+          <div class="component-title">Label</div>
+          <div class="component-category category-core">Core</div>
+        </div>
+        <div class="component-description">
+          Form label component with proper accessibility and styling.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Form</span>
+          <span class="feature-tag">Accessible</span>
+          <span class="feature-tag">Semantic</span>
+          <span class="feature-tag">Styled</span>
+        </div>
+        <div class="component-actions">
+          <a href="./core/label.md" class="action-btn">Documentation</a>
+          <a href="./core/label.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="core" data-search="checkbox">
+        <div class="component-header">
+          <div class="component-title">Checkbox</div>
+          <div class="component-category category-core">Core</div>
+        </div>
+        <div class="component-description">
+          Checkbox input component with custom styling and accessibility.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Form</span>
+          <span class="feature-tag">Custom</span>
+          <span class="feature-tag">Accessible</span>
+          <span class="feature-tag">Styled</span>
+        </div>
+        <div class="component-actions">
+          <a href="./core/checkbox.md" class="action-btn">Documentation</a>
+          <a href="./core/checkbox.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="core" data-search="badge">
+        <div class="component-header">
+          <div class="component-title">Badge</div>
+          <div class="component-category category-core">Core</div>
+        </div>
+        <div class="component-description">
+          Status and label badge component with various styles and colors.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Status</span>
+          <span class="feature-tag">Labels</span>
+          <span class="feature-tag">Variants</span>
+          <span class="feature-tag">Compact</span>
+        </div>
+        <div class="component-actions">
+          <a href="./core/badge.md" class="action-btn">Documentation</a>
+          <a href="./core/badge.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <!-- Additional Interactive Components -->
+      <div class="component-card" data-category="interactive" data-search="dropdown menu">
+        <div class="component-header">
+          <div class="component-title">Dropdown Menu</div>
+          <div class="component-category category-interactive">Interactive</div>
+        </div>
+        <div class="component-description">
+          Context menu component with submenus and keyboard navigation.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Context Menu</span>
+          <span class="feature-tag">Submenus</span>
+          <span class="feature-tag">Keyboard</span>
+          <span class="feature-tag">Animated</span>
+        </div>
+        <div class="component-actions">
+          <a href="./interactive/dropdown-menu.md" class="action-btn">Documentation</a>
+          <a href="./interactive/dropdown-menu.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="interactive" data-search="navigation menu">
+        <div class="component-header">
+          <div class="component-title">Navigation Menu</div>
+          <div class="component-category category-interactive">Interactive</div>
+        </div>
+        <div class="component-description">
+          Navigation component with dropdowns and keyboard accessibility.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Navigation</span>
+          <span class="feature-tag">Dropdowns</span>
+          <span class="feature-tag">Keyboard</span>
+          <span class="feature-tag">Responsive</span>
+        </div>
+        <div class="component-actions">
+          <a href="./interactive/navigation-menu.md" class="action-btn">Documentation</a>
+          <a href="./interactive/navigation-menu.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="interactive" data-search="tooltip">
+        <div class="component-header">
+          <div class="component-title">Tooltip</div>
+          <div class="component-category category-interactive">Interactive</div>
+        </div>
+        <div class="component-description">
+          Hover tooltip component with positioning and accessibility.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Hover</span>
+          <span class="feature-tag">Positioning</span>
+          <span class="feature-tag">Accessible</span>
+          <span class="feature-tag">Animated</span>
+        </div>
+        <div class="component-actions">
+          <a href="./interactive/tooltip.md" class="action-btn">Documentation</a>
+          <a href="./interactive/tooltip.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="interactive" data-search="sheet">
+        <div class="component-header">
+          <div class="component-title">Sheet</div>
+          <div class="component-category category-interactive">Interactive</div>
+        </div>
+        <div class="component-description">
+          Slide-out panel component with overlay and animations.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Slide-out</span>
+          <span class="feature-tag">Overlay</span>
+          <span class="feature-tag">Animated</span>
+          <span class="feature-tag">Responsive</span>
+        </div>
+        <div class="component-actions">
+          <a href="./interactive/sheet.md" class="action-btn">Documentation</a>
+          <a href="./interactive/sheet.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <!-- Additional Animation Components -->
+      <div class="component-card" data-category="animation" data-search="infinite moving cards">
+        <div class="component-header">
+          <div class="component-title">Infinite Moving Cards</div>
+          <div class="component-category category-animation">Animation</div>
+        </div>
+        <div class="component-description">
+          Continuously scrolling cards with smooth infinite animation.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Infinite</span>
+          <span class="feature-tag">Scrolling</span>
+          <span class="feature-tag">Smooth</span>
+          <span class="feature-tag">Performance</span>
+        </div>
+        <div class="component-actions">
+          <a href="./animation/infinite-moving-cards.md" class="action-btn">Documentation</a>
+          <a href="./animation/infinite-moving-cards.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="animation" data-search="container scroll animation">
+        <div class="component-header">
+          <div class="component-title">Container Scroll Animation</div>
+          <div class="component-category category-animation">Animation</div>
+        </div>
+        <div class="component-description">
+          Scroll-triggered animations with intersection observer.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Scroll-triggered</span>
+          <span class="feature-tag">Intersection</span>
+          <span class="feature-tag">Performance</span>
+          <span class="feature-tag">Smooth</span>
+        </div>
+        <div class="component-actions">
+          <a href="./animation/container-scroll-animation.md" class="action-btn">Documentation</a>
+          <a href="./animation/container-scroll-animation.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="animation" data-search="flip words">
+        <div class="component-header">
+          <div class="component-title">Flip Words</div>
+          <div class="component-category category-animation">Animation</div>
+        </div>
+        <div class="component-description">
+          Text flip animation component with smooth transitions.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Text</span>
+          <span class="feature-tag">Flip</span>
+          <span class="feature-tag">Smooth</span>
+          <span class="feature-tag">Animated</span>
+        </div>
+        <div class="component-actions">
+          <a href="./animation/flip-words.md" class="action-btn">Documentation</a>
+          <a href="./animation/flip-words.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="animation" data-search="logo ticker">
+        <div class="component-header">
+          <div class="component-title">Logo Ticker</div>
+          <div class="component-category category-animation">Animation</div>
+        </div>
+        <div class="component-description">
+          Scrolling logo display with smooth continuous animation.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Logo</span>
+          <span class="feature-tag">Scrolling</span>
+          <span class="feature-tag">Continuous</span>
+          <span class="feature-tag">Smooth</span>
+        </div>
+        <div class="component-actions">
+          <a href="./animation/logo-ticker.md" class="action-btn">Documentation</a>
+          <a href="./animation/logo-ticker.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <!-- Additional Layout Components -->
+      <div class="component-card" data-category="layout" data-search="carousel">
+        <div class="component-header">
+          <div class="component-title">Carousel</div>
+          <div class="component-category category-layout">Layout</div>
+        </div>
+        <div class="component-description">
+          Image/content carousel with navigation and controls.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Carousel</span>
+          <span class="feature-tag">Navigation</span>
+          <span class="feature-tag">Controls</span>
+          <span class="feature-tag">Responsive</span>
+        </div>
+        <div class="component-actions">
+          <a href="./layout/carousel.md" class="action-btn">Documentation</a>
+          <a href="./layout/carousel.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="layout" data-search="carousel dot buttons">
+        <div class="component-header">
+          <div class="component-title">Carousel Dot Buttons</div>
+          <div class="component-category category-layout">Layout</div>
+        </div>
+        <div class="component-description">
+          Carousel navigation with dot indicators and controls.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Dots</span>
+          <span class="feature-tag">Navigation</span>
+          <span class="feature-tag">Indicators</span>
+          <span class="feature-tag">Controls</span>
+        </div>
+        <div class="component-actions">
+          <a href="./layout/carousel-dot-buttons.md" class="action-btn">Documentation</a>
+          <a href="./layout/carousel-dot-buttons.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <!-- Additional Special Effects -->
+      <div class="component-card" data-category="effects" data-search="animated testimonials">
+        <div class="component-header">
+          <div class="component-title">Animated Testimonials</div>
+          <div class="component-category category-effects">Effects</div>
+        </div>
+        <div class="component-description">
+          Animated testimonial display with smooth transitions and effects.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Testimonials</span>
+          <span class="feature-tag">Animated</span>
+          <span class="feature-tag">Smooth</span>
+          <span class="feature-tag">Responsive</span>
+        </div>
+        <div class="component-actions">
+          <a href="./effects/animated-testimonials.md" class="action-btn">Documentation</a>
+          <a href="./effects/animated-testimonials.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="effects" data-search="blur image">
+        <div class="component-header">
+          <div class="component-title">Blur Image</div>
+          <div class="component-category category-effects">Effects</div>
+        </div>
+        <div class="component-description">
+          Blur effect image component with loading states and transitions.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Blur</span>
+          <span class="feature-tag">Loading</span>
+          <span class="feature-tag">Transitions</span>
+          <span class="feature-tag">Performance</span>
+        </div>
+        <div class="component-actions">
+          <a href="./effects/blur-image.md" class="action-btn">Documentation</a>
+          <a href="./effects/blur-image.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+
+      <div class="component-card" data-category="effects" data-search="sonner">
+        <div class="component-header">
+          <div class="component-title">Sonner</div>
+          <div class="component-category category-effects">Effects</div>
+        </div>
+        <div class="component-description">
+          Toast notification component with smooth animations and positioning.
+        </div>
+        <div class="component-features">
+          <span class="feature-tag">Toast</span>
+          <span class="feature-tag">Notifications</span>
+          <span class="feature-tag">Animated</span>
+          <span class="feature-tag">Positioning</span>
+        </div>
+        <div class="component-actions">
+          <a href="./effects/sonner.md" class="action-btn">Documentation</a>
+          <a href="./effects/sonner.html" class="action-btn primary">Interactive</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state" id="emptyState" style="display: none;">
+      <h3>No components found</h3>
+      <p>Try adjusting your search or filter criteria.</p>
+    </div>
+  </div>
+
+  <script>
+    // Search and filter functionality
+    const searchInput = document.getElementById('searchInput');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const componentCards = document.querySelectorAll('.component-card');
+    const emptyState = document.getElementById('emptyState');
+    const componentsGrid = document.getElementById('componentsGrid');
+
+    function filterComponents() {
+      const searchTerm = searchInput.value.toLowerCase();
+      const activeCategory = document.querySelector('.filter-btn.active').dataset.category;
+      
+      let visibleCount = 0;
+
+      componentCards.forEach(card => {
+        const category = card.dataset.category;
+        const searchText = card.dataset.search.toLowerCase();
+        const matchesSearch = searchText.includes(searchTerm);
+        const matchesCategory = activeCategory === 'all' || category === activeCategory;
+        
+        if (matchesSearch && matchesCategory) {
+          card.style.display = 'block';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      // Show/hide empty state
+      if (visibleCount === 0) {
+        emptyState.style.display = 'block';
+        componentsGrid.style.display = 'none';
+      } else {
+        emptyState.style.display = 'none';
+        componentsGrid.style.display = 'grid';
+      }
+    }
+
+    // Event listeners
+    searchInput.addEventListener('input', filterComponents);
+
+    filterButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        // Remove active class from all buttons
+        filterButtons.forEach(btn => btn.classList.remove('active'));
+        // Add active class to clicked button
+        button.classList.add('active');
+        // Filter components
+        filterComponents();
+      });
+    });
+
+    // Initialize
+    filterComponents();
+  </script>
+</body>
+</html> 
