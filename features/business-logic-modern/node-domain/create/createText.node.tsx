@@ -27,8 +27,8 @@ import {
 	EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { useOptimizedDataFlow } from "@/features/business-logic-modern/infrastructure/flow-engine/hooks/useOptimizedDataFlow";
-import { useConnectionHandlers } from "@/features/business-logic-modern/infrastructure/flow-engine/hooks/useConnectionHandlers";
+
+
 import { useCallback, useEffect, useRef, useMemo } from "react";
 
 /**
@@ -169,21 +169,7 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 	// Use proper React Flow data management
 	const { nodeData, updateNodeData } = useNodeData(id, data);
 
-	// Get optimized data flow capabilities for this node
-	const dataFlow = useOptimizedDataFlow(id, {
-		instantPropagation: true, // Enable instant propagation
-		debounceDelay: 16, // 60fps for smooth updates
-		extractData: (nodeData: any) => {
-			// Extract text from connected nodes
-			if (nodeData.text !== undefined) return nodeData.text;
-			if (nodeData.output !== undefined) return nodeData.output;
-			return String(nodeData);
-		},
-		transformData: (data: any) => {
-			// Transform data before output
-			return { text: data };
-		}
-	});
+
 
 	// Get isExpanded directly from node data
 	const isExpanded = (nodeData as CreateTextData).isExpanded || false;
@@ -213,20 +199,7 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 		id
 	);
 
-	// Connection handlers for immediate response to connect/disconnect events
-	useConnectionHandlers(id, {
-		onConnect: useCallback((edge: any) => {
-			// When a connection is made, ensure output is propagated immediately
-			if (validatedData.text) {
-				dataFlow.propagateOutput(validatedData.text);
-			}
-		}, [validatedData.text, dataFlow]),
-		
-		onDisconnect: useCallback((edge: any) => {
-			// When a connection is broken, clear any downstream data
-			// The downstream nodes will handle their own disconnect logic
-		}, [])
-	});
+
 
 	// Monitor text content and update active state
 	useEffect(() => {
@@ -249,13 +222,10 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 				text: newText,
 				output: newText // Set output for downstream nodes
 			});
-			
-			// Always propagate immediately, including empty strings
-			dataFlow.propagateOutput(newText);
 		} catch (error) {
 			console.error("Failed to update CreateText node data:", error);
 		}
-	}, [updateNodeData, dataFlow]);
+	}, [updateNodeData]);
 
 	// Get category-specific text colors
 	const categoryTextColors = CATEGORY_TEXT_COLORS.CREATE;

@@ -346,8 +346,7 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
   const { nodeData, updateNodeData } = useNodeData(id, data);
   const { getNode, getNodes } = useReactFlow();
 
-  // Local state for received data
-  const [receivedData, setReceivedData] = useState<string>('');
+
 
   // Get isExpanded directly from node data
   const isExpanded = (nodeData as {{pascalCase kind}}Data).isExpanded || false;
@@ -357,14 +356,7 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
     updateNodeData({ ...nodeData, isExpanded: !isExpanded });
   }, [nodeData, isExpanded, updateNodeData]);
 
-  {{#if (eq dataPropagation "input")}}
-  // Ref to track if we've already updated node data to prevent infinite loops
-  const lastUpdateRef = useRef<{ text: string; active: boolean } | null>(null);
-  {{/if}}
-  {{#if (eq dataPropagation "both")}}
-  // Ref to track if we've already updated node data to prevent infinite loops
-  const lastUpdateRef = useRef<{ text: string; active: boolean } | null>(null);
-  {{/if}}
+
 
   // Enterprise validation with comprehensive error handling
   const validationResult = validateNodeData(nodeData);
@@ -489,186 +481,196 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
     }
   };
 
+
+
   {{#if (eq dataPropagation "input")}}
-  // Get all nodes and edges to find connections (input-only mode)
+  // Modern data propagation logic - handles empty strings and immediate updates
   const nodes = useNodes();
   const edges = useEdges();
+  const lastProcessedInputRef = useRef<string | null>(null);
 
-  // Process connected data when nodes or edges change
+  // Handle connection/disconnection events immediately
   useEffect(() => {
-    const processConnectedData = () => {
-      try {
-        const connectedTexts: string[] = [];
-        
-        // Find edges that connect to this node
-        const incomingEdges = edges.filter(edge => edge.target === id);
-        
-        // Get data from source nodes using comprehensive type handler
-        incomingEdges.forEach(edge => {
-          const sourceNode = nodes.find(node => node.id === edge.source);
-          if (sourceNode && sourceNode.data) {
-            const textValue = processDataValue(sourceNode.data);
-            connectedTexts.push(textValue);
-          }
+    const handleConnectionChange = () => {
+      const inputEdges = edges.filter(edge => edge.target === id);
+      const inputNodes = inputEdges.map(edge => 
+        nodes.find(node => node.id === edge.source)
+      ).filter(Boolean);
+      
+      if (inputNodes.length === 0) {
+        // No more connections - clear the data
+        lastProcessedInputRef.current = null;
+        updateNodeData({
+          isActive: false,
+          receivedData: 'No connected inputs',
+          text: 'No connected inputs',
+          output: 'No connected inputs'
         });
-
-        // Update received data with proper null handling and determine active state
-        if (connectedTexts.length > 0) {
-          const formattedTexts = connectedTexts.map(text => {
-            if (text === 'null') {
-              return 'null';
-            } else if (text === 'undefined') {
-              return 'undefined';
-            } else if (text === 'Empty string') {
-              return '';
-            } else if (text === 'Invalid data') {
-              return 'Invalid data';
-            } else {
-              return text;
-            }
-          });
-          
-          const finalText = formattedTexts.join('\n');
-          setReceivedData(finalText);
-          
-          // Determine if node should be active based on received data
-          const hasValidData = formattedTexts.some(text => 
-            text !== 'null' && 
-            text !== 'undefined' && 
-            text !== '' && 
-            text !== 'Invalid data' &&
-            text !== 'No connected inputs'
-          );
-          
-          // Only update node data if values have actually changed to prevent infinite loops
-          const currentUpdate = { text: finalText, active: hasValidData };
-          if (!lastUpdateRef.current || 
-              lastUpdateRef.current.text !== currentUpdate.text || 
-              lastUpdateRef.current.active !== currentUpdate.active) {
-            lastUpdateRef.current = currentUpdate;
-            updateNodeData({ 
-              ...nodeData, 
-              isActive: hasValidData,
-              receivedData: finalText,
-              text: finalText // Also update the text field for inspector display
-            });
-          }
-        } else {
-          setReceivedData('');
-          
-          // Only update node data if values have actually changed
-          const currentUpdate = { text: '', active: false };
-          if (!lastUpdateRef.current || 
-              lastUpdateRef.current.text !== currentUpdate.text || 
-              lastUpdateRef.current.active !== currentUpdate.active) {
-            lastUpdateRef.current = currentUpdate;
-            updateNodeData({ 
-              ...nodeData, 
-              isActive: false,
-              receivedData: '',
-              text: 'No connected inputs' // Update text field for inspector display
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error processing connected data:', error);
-        setReceivedData('Error processing inputs');
       }
     };
 
-    processConnectedData();
-  }, [nodes, edges, id]);
+    handleConnectionChange();
+  }, [updateNodeData, id, getNodes, getEdges]);
+
+  // Direct data access to avoid timing issues
+  useEffect(() => {
+    const nodes = getNodes();
+    const edges = getEdges();
+    
+    // Find connected input nodes
+    const inputEdges = edges.filter(edge => edge.target === id);
+    const inputNodes = inputEdges.map(edge => 
+      nodes.find(node => node.id === edge.source)
+    ).filter(Boolean);
+    
+    if (inputNodes.length > 0) {
+      // Collect text from all connected input nodes
+      const allTexts: string[] = [];
+      
+      inputNodes.forEach(sourceNode => {
+        if (sourceNode?.data) {
+          let nodeText = '';
+          
+          if (sourceNode.data.text !== undefined) {
+            nodeText = String(sourceNode.data.text);
+          } else if (sourceNode.data.output !== undefined) {
+            nodeText = String(sourceNode.data.output);
+          } else {
+            nodeText = String(sourceNode.data);
+          }
+          
+          // Only add valid text
+          if (nodeText && nodeText !== 'null' && nodeText !== 'undefined') {
+            allTexts.push(nodeText);
+          }
+        }
+      });
+      
+      // Concatenate all texts without separator for predictable behavior
+      const concatenatedText = allTexts.join('');
+      
+      // Always update if the text has changed (including empty strings)
+      if (lastProcessedInputRef.current !== concatenatedText) {
+        lastProcessedInputRef.current = concatenatedText;
+        
+        const hasContent = concatenatedText && concatenatedText.trim().length > 0;
+        
+        updateNodeData({ 
+          isActive: hasContent,
+          receivedData: concatenatedText,
+          text: concatenatedText,
+          output: concatenatedText
+        });
+      }
+    } else {
+      // No connected inputs - clear the data
+      if (lastProcessedInputRef.current !== null) {
+        lastProcessedInputRef.current = null;
+        
+        updateNodeData({ 
+          isActive: false,
+          receivedData: 'No connected inputs',
+          text: 'No connected inputs',
+          output: 'No connected inputs'
+        });
+      }
+    }
+  }, [id, getNodes, getEdges, updateNodeData]);
   {{/if}}
 
   {{#if (eq dataPropagation "both")}}
-  // Get all nodes and edges to find connections (full data flow mode)
+  // Modern data propagation logic - handles empty strings and immediate updates
   const nodes = useNodes();
   const edges = useEdges();
+  const lastProcessedInputRef = useRef<string | null>(null);
 
-  // Process connected data when nodes or edges change
+  // Handle connection/disconnection events immediately
   useEffect(() => {
-    const processConnectedData = () => {
-      try {
-        const connectedTexts: string[] = [];
-        
-        // Find edges that connect to this node
-        const incomingEdges = edges.filter(edge => edge.target === id);
-        
-        // Get data from source nodes using comprehensive type handler
-        incomingEdges.forEach(edge => {
-          const sourceNode = nodes.find(node => node.id === edge.source);
-          if (sourceNode && sourceNode.data) {
-            const textValue = processDataValue(sourceNode.data);
-            connectedTexts.push(textValue);
-          }
+    const handleConnectionChange = () => {
+      const inputEdges = edges.filter(edge => edge.target === id);
+      const inputNodes = inputEdges.map(edge => 
+        nodes.find(node => node.id === edge.source)
+      ).filter(Boolean);
+      
+      if (inputNodes.length === 0) {
+        // No more connections - clear the data
+        lastProcessedInputRef.current = null;
+        updateNodeData({
+          isActive: false,
+          receivedData: 'No connected inputs',
+          text: 'No connected inputs',
+          output: 'No connected inputs'
         });
-
-        // Update received data with proper null handling and determine active state (both mode)
-        if (connectedTexts.length > 0) {
-          const formattedTexts = connectedTexts.map(text => {
-            if (text === 'null') {
-              return 'null';
-            } else if (text === 'undefined') {
-              return 'undefined';
-            } else if (text === 'Empty string') {
-              return '';
-            } else if (text === 'Invalid data') {
-              return 'Invalid data';
-            } else {
-              return text;
-            }
-          });
-          
-          const finalText = formattedTexts.join('\n');
-          setReceivedData(finalText);
-          
-          // Determine if node should be active based on received data
-          const hasValidData = formattedTexts.some(text => 
-            text !== 'null' && 
-            text !== 'undefined' && 
-            text !== '' && 
-            text !== 'Invalid data' &&
-            text !== 'No connected inputs'
-          );
-          
-          // Only update node data if values have actually changed to prevent infinite loops
-          const currentUpdate = { text: finalText, active: hasValidData };
-          if (!lastUpdateRef.current || 
-              lastUpdateRef.current.text !== currentUpdate.text || 
-              lastUpdateRef.current.active !== currentUpdate.active) {
-            lastUpdateRef.current = currentUpdate;
-            updateNodeData({ 
-              ...nodeData, 
-              isActive: hasValidData,
-              receivedData: finalText,
-              text: finalText // Also update the text field for inspector display
-            });
-          }
-        } else {
-          setReceivedData('');
-          
-          // Only update node data if values have actually changed
-          const currentUpdate = { text: '', active: false };
-          if (!lastUpdateRef.current || 
-              lastUpdateRef.current.text !== currentUpdate.text || 
-              lastUpdateRef.current.active !== currentUpdate.active) {
-            lastUpdateRef.current = currentUpdate;
-            updateNodeData({ 
-              ...nodeData, 
-              isActive: false,
-              receivedData: '',
-              text: 'No connected inputs' // Update text field for inspector display
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error processing connected data:', error);
-        setReceivedData('Error processing inputs');
       }
     };
 
-    processConnectedData();
-  }, [nodes, edges, id]);
+    handleConnectionChange();
+  }, [updateNodeData, id, getNodes, getEdges]);
+
+  // Direct data access to avoid timing issues
+  useEffect(() => {
+    const nodes = getNodes();
+    const edges = getEdges();
+    
+    // Find connected input nodes
+    const inputEdges = edges.filter(edge => edge.target === id);
+    const inputNodes = inputEdges.map(edge => 
+      nodes.find(node => node.id === edge.source)
+    ).filter(Boolean);
+    
+    if (inputNodes.length > 0) {
+      // Collect text from all connected input nodes
+      const allTexts: string[] = [];
+      
+      inputNodes.forEach(sourceNode => {
+        if (sourceNode?.data) {
+          let nodeText = '';
+          
+          if (sourceNode.data.text !== undefined) {
+            nodeText = String(sourceNode.data.text);
+          } else if (sourceNode.data.output !== undefined) {
+            nodeText = String(sourceNode.data.output);
+          } else {
+            nodeText = String(sourceNode.data);
+          }
+          
+          // Only add valid text
+          if (nodeText && nodeText !== 'null' && nodeText !== 'undefined') {
+            allTexts.push(nodeText);
+          }
+        }
+      });
+      
+      // Concatenate all texts without separator for predictable behavior
+      const concatenatedText = allTexts.join('');
+      
+      // Always update if the text has changed (including empty strings)
+      if (lastProcessedInputRef.current !== concatenatedText) {
+        lastProcessedInputRef.current = concatenatedText;
+        
+        const hasContent = concatenatedText && concatenatedText.trim().length > 0;
+        
+        updateNodeData({ 
+          isActive: hasContent,
+          receivedData: concatenatedText,
+          text: concatenatedText,
+          output: concatenatedText
+        });
+      }
+    } else {
+      // No connected inputs - clear the data
+      if (lastProcessedInputRef.current !== null) {
+        lastProcessedInputRef.current = null;
+        
+        updateNodeData({ 
+          isActive: false,
+          receivedData: 'No connected inputs',
+          text: 'No connected inputs',
+          output: 'No connected inputs'
+        });
+      }
+    }
+  }, [id, getNodes, getEdges, updateNodeData]);
   {{/if}}
 
   return (
@@ -681,13 +683,8 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
           {/* Display received data from connected nodes (input-only mode) */}
           <div className={CONTENT_STYLES.main.container}>
             <div className={CONTENT_STYLES.main.content}>
-              <div className={`text-sm ${categoryTextColors.primary} break-words p-2 bg-gray-50 dark:bg-gray-800 rounded`}>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  Received Data:
-                </div>
-                <div className="font-medium">
-                  {validatedData.text || receivedData || 'No connected inputs'}
-                </div>
+              <div className="font-normal text-xs">
+                {validatedData.text || 'No connected inputs'}
               </div>
             </div>
           </div>
@@ -697,13 +694,8 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
           {/* Display received data from connected nodes (full data flow mode) */}
           <div className={CONTENT_STYLES.main.container}>
             <div className={CONTENT_STYLES.main.content}>
-              <div className={`text-sm ${categoryTextColors.primary} break-words p-2 bg-gray-50 dark:bg-gray-800 rounded`}>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  Received Data:
-                </div>
-                <div className="font-medium">
-                  {validatedData.text || receivedData || 'No connected inputs'}
-                </div>
+              <div className="font-normal text-xs">
+                {validatedData.text || 'No connected inputs'}
               </div>
             </div>
           </div>
@@ -740,9 +732,38 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
       ) : (
         <div className={CONTENT_STYLES.content.collapsed}>
           <div className="text-center">
-            <div className={`text-xs font-medium ${categoryTextColors.primary} uppercase tracking-wide`}>
+            {{#if (eq dataPropagation "input")}}
+            {spec.receivedData?.showInCollapsed && validatedData.text !== 'No connected inputs' ? (
+              <div className={`text-xs ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
+                {validatedData.text}
+              </div>
+            ) : (
+              <div className={`text-xs font-medium ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
+                {{upper (truncate kind 4)}}
+              </div>
+            )}
+            {{/if}}
+            {{#if (eq dataPropagation "both")}}
+            {spec.receivedData?.showInCollapsed && validatedData.text !== 'No connected inputs' ? (
+              <div className={`text-xs ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
+                {validatedData.text}
+              </div>
+            ) : (
+              <div className={`text-xs font-medium ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
+                {{upper (truncate kind 4)}}
+              </div>
+            )}
+            {{/if}}
+            {{#if (eq dataPropagation "output")}}
+            <div className={`text-xs font-medium ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
               {{upper (truncate kind 4)}}
             </div>
+            {{/if}}
+            {{#if (eq dataPropagation "none")}}
+            <div className={`text-xs font-medium ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
+              {{upper (truncate kind 4)}}
+            </div>
+            {{/if}}
           </div>
         </div>
       )}

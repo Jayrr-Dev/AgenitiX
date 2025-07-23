@@ -25,7 +25,7 @@ import { CATEGORIES } from '@/features/business-logic-modern/infrastructure/them
 import { EXPANDED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
 import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
 import { useNodeData } from '@/hooks/useNodeData';
-import { useConnectionHandlers } from '@/features/business-logic-modern/infrastructure/flow-engine/hooks/useConnectionHandlers';
+
 
 // -- PLOP-INJECTED-IMPORTS --
 
@@ -250,7 +250,7 @@ const CATEGORY_TEXT_COLORS = {
  * viewText Node Component
  *
  * Clean content-focused component using optimized data flow:
- * • Uses useOptimizedDataFlow for instant propagation
+ * • Uses modern data propagation with immediate updates
  * • Automatically updates when connected nodes change
  * • No infinite loops - proper dependency management
  * • Follows optimized data flow pattern
@@ -296,41 +296,109 @@ const ViewTextNodeComponent = ({ data, id, spec }: NodeProps & { spec: NodeSpec 
   const categoryKey = spec.category as keyof typeof CATEGORY_TEXT_COLORS;
   const categoryTextColors = CATEGORY_TEXT_COLORS[categoryKey] || CATEGORY_TEXT_COLORS.CREATE;
 
+  // Comprehensive data type handler for future-proof data processing
+  const processDataValue = (data: any): string => {
+    // Handle primitive types
+    if (data === null) {
+      return 'null';
+    } else if (data === undefined) {
+      return 'undefined';
+    } else if (typeof data === 'string') {
+      return data || 'Empty string';
+    } else if (typeof data === 'number') {
+      return String(data);
+    } else if (typeof data === 'boolean') {
+      return data ? 'true' : 'false';
+    } else if (typeof data === 'bigint') {
+      return data.toString();
+    } else if (typeof data === 'symbol') {
+      return data.toString();
+    } else if (typeof data === 'function') {
+      return '[Function]';
+    } else if (typeof data === 'object') {
+      // Handle object types comprehensively
+      if (Array.isArray(data)) {
+        // Handle arrays
+        if (data.length === 0) {
+          return '[] (empty array)';
+        } else {
+          try {
+            return JSON.stringify(data, null, 2);
+          } catch {
+            return '[Array]';
+          }
+        }
+      } else if (data instanceof Date) {
+        // Handle Date objects
+        return data.toISOString();
+      } else if (data instanceof RegExp) {
+        // Handle RegExp objects
+        return data.toString();
+      } else if (data instanceof Error) {
+        // Handle Error objects
+        return `Error: ${data.message}`;
+      } else if (data instanceof Map) {
+        // Handle Map objects
+        try {
+          return JSON.stringify(Array.from(data.entries()), null, 2);
+        } catch {
+          return '[Map]';
+        }
+      } else if (data instanceof Set) {
+        // Handle Set objects
+        try {
+          return JSON.stringify(Array.from(data), null, 2);
+        } catch {
+          return '[Set]';
+        }
+      } else if (data instanceof Promise) {
+        // Handle Promise objects
+        return '[Promise]';
+      } else {
+        // Handle plain objects with common data patterns
+        // Check for common data properties in order of preference
+        const dataProperties = [
+          'text', 'output', 'value', 'data', 'content', 'message', 
+          'result', 'response', 'body', 'payload', 'input', 'output'
+        ];
+        
+        for (const prop of dataProperties) {
+          if (data[prop] !== null && data[prop] !== undefined) {
+            if (typeof data[prop] === 'string') {
+              return data[prop] || 'Empty string';
+            } else if (typeof data[prop] === 'number') {
+              return String(data[prop]);
+            } else if (typeof data[prop] === 'boolean') {
+              return data[prop] ? 'true' : 'false';
+            } else if (typeof data[prop] === 'object') {
+              try {
+                return JSON.stringify(data[prop], null, 2);
+              } catch {
+                return `[${prop}]`;
+              }
+            } else {
+              return String(data[prop]);
+            }
+          }
+        }
+        
+        // If no common properties found, stringify the entire object
+        try {
+          return JSON.stringify(data, null, 2);
+        } catch {
+          return '[Object]';
+        }
+      }
+    } else {
+      // Fallback for any other types
+      return String(data);
+    }
+  };
+
   // Track last processed input to prevent unnecessary updates
   const lastProcessedInputRef = useRef<string | null>(null);
 
-  // Connection handlers for immediate response to connect/disconnect events
-  useConnectionHandlers(id, {
-    onConnect: useCallback((edge: any) => {
-      // When a connection is made, clear any "No connected inputs" state
-      if (validatedData.text === 'No connected inputs') {
-        updateNodeData({
-          text: '',
-          receivedData: '',
-          isActive: false
-        });
-      }
-    }, [validatedData.text, updateNodeData]),
-    
-    onDisconnect: useCallback((edge: any) => {
-      // When a connection is broken, check if there are still other connections
-      const nodes = getNodes();
-      const edges = getEdges();
-      const remainingInputEdges = edges.filter(edge => edge.target === id);
-      
-      if (remainingInputEdges.length === 0) {
-        // No more connections - clear the data
-        lastProcessedInputRef.current = null;
-        updateNodeData({
-          isActive: false,
-          receivedData: 'No connected inputs',
-          text: 'No connected inputs',
-          output: 'No connected inputs'
-        });
-      }
-      // If there are still other connections, the useEffect will handle updating with remaining texts
-    }, [updateNodeData, id, getNodes, getEdges])
-  });
+
 
   // Direct data access to avoid timing issues
   useEffect(() => {
@@ -351,16 +419,17 @@ const ViewTextNodeComponent = ({ data, id, spec }: NodeProps & { spec: NodeSpec 
         if (sourceNode?.data) {
           let nodeText = '';
           
+          // Comprehensive data type handling
           if (sourceNode.data.text !== undefined) {
-            nodeText = String(sourceNode.data.text);
+            nodeText = processDataValue(sourceNode.data.text);
           } else if (sourceNode.data.output !== undefined) {
-            nodeText = String(sourceNode.data.output);
+            nodeText = processDataValue(sourceNode.data.output);
           } else {
-            nodeText = String(sourceNode.data);
+            nodeText = processDataValue(sourceNode.data);
           }
           
           // Only add valid text
-          if (nodeText && nodeText !== 'null' && nodeText !== 'undefined') {
+          if (nodeText && nodeText !== 'null' && nodeText !== 'undefined' && nodeText !== 'Invalid data') {
             allTexts.push(nodeText);
           }
         }
@@ -375,26 +444,26 @@ const ViewTextNodeComponent = ({ data, id, spec }: NodeProps & { spec: NodeSpec 
         
         const hasContent = concatenatedText && concatenatedText.trim().length > 0;
         
-        updateNodeData({ 
+            updateNodeData({ 
           isActive: hasContent,
           receivedData: concatenatedText,
           text: concatenatedText,
           output: concatenatedText
-        });
-      }
-    } else {
+            });
+          }
+        } else {
       // No connected inputs - clear the data
       if (lastProcessedInputRef.current !== null) {
         lastProcessedInputRef.current = null;
         
-        updateNodeData({ 
-          isActive: false,
+            updateNodeData({ 
+              isActive: false,
           receivedData: 'No connected inputs',
           text: 'No connected inputs',
           output: 'No connected inputs'
-        });
-      }
-    }
+            });
+          }
+        }
   }, [id, getNodes, getEdges, updateNodeData]);
 
   return (
