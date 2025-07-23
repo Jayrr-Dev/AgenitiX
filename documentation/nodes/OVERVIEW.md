@@ -4,10 +4,10 @@ This document provides a comprehensive overview of all available nodes in the Ag
 
 ## 📊 Statistics
 
-- **Total Nodes:** 3
+- **Total Nodes:** 2
 - **Total Domains:** 4
-- **Total Categories:** 3
-- **Last Updated:** 7/22/2025, 11:21:30 PM
+- **Total Categories:** 2
+- **Last Updated:** 7/22/2025, 11:54:23 PM
 
 ## 🎯 Quick Navigation
 
@@ -20,7 +20,6 @@ This document provides a comprehensive overview of all available nodes in the Ag
 ### Trigger Domain
 
 ### Test Domain
-- [test](#test-test) (1 nodes)
 
 ## Create Domain
 
@@ -93,42 +92,6 @@ Nodes that respond to events, conditions, or triggers
 ## Test Domain
 
 Nodes for testing, validation, and quality assurance
-
-### Test Category
-
-Testing and validation nodes
-
-**Nodes (1):**
-
-#### TestNode
-
-- **Type:** `testNode`
-- **Domain:** test
-- **Category:** test
-- **Description:** TestNode NODE - Clean content-focused implementation
- 
-  • Focuses ONLY on content and layout - no structural styling
-  • withNodeScaffold handles all borders, sizing, theming, interactive states
-  • Schema-driven controls in Node Inspector
-  • Type-safe data validation with Zod schema
-  • Clean separation of concerns for maximum maintainability
-  
-  NOTE: This node will have controls in the Node Inspector regardless of category
-  The NodeInspectorAdapter.determineHasControls() method returns true for all categories for consistent UX
-  
-  ENHANCED APPROACH: Multi-type data handling with automatic type detection
-  Supports JSON, String, Number, Boolean, Array, Object data types
-  Automatic JSON parsing for object/array strings
-  Backward compatible with text-only input
- 
-  Keywords: test-node, content-focused, schema-driven, type-safe, clean-architecture
-- **Features:** Type-safe validation, Schema-driven controls, Enterprise validation, JSON I/O
-- **Theming:** test category
-  - **Design Tokens:** var(--node-test-bg), var(--node-test-border), var(--node-test-text)
-  - **Responsive:**  Not optimized
-  - **Accessibility:** 🎯 Supported
-- **File:** `\features\business-logic-modern\node-domain\test\testNode.node.tsx`
-- **Documentation:** [Markdown](./test/testNode.md) | [HTML](./test/testNode.html)
 
 ## 🚀 Usage
 

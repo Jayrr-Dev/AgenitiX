@@ -6,13 +6,15 @@
  */
 
 import createText, { spec as createTextSpec } from "../../node-domain/create/createText.node";
+import testNode, { spec as testNodeSpec } from "../../node-domain/test/testNode.node";
 import viewText, { spec as viewTextSpec } from "../../node-domain/view/viewText.node";
 import type { NodeSpec } from "../node-core/NodeSpec";
 
 // Collect all specs in one place
 const nodeSpecs: Record<string, NodeSpec> = {
 	// Add new node specs here (auto-updated by Plop)
-	createText: createTextSpec,	viewText: viewTextSpec,
+	createText: createTextSpec,
+	testNode: testNodeSpec,	viewText: viewTextSpec,
 };
 
 // Enhanced metadata that combines NodeSpec with additional UI properties
