@@ -25,7 +25,6 @@ import { CATEGORIES } from '@/features/business-logic-modern/infrastructure/them
 import { EXPANDED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
 import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
 import { useNodeData } from '@/hooks/useNodeData';
-import { useOptimizedDataFlow } from '@/features/business-logic-modern/infrastructure/flow-engine/hooks/useOptimizedDataFlow';
 import { useConnectionHandlers } from '@/features/business-logic-modern/infrastructure/flow-engine/hooks/useConnectionHandlers';
 
 // -- PLOP-INJECTED-IMPORTS --
@@ -260,22 +259,6 @@ const ViewTextNodeComponent = ({ data, id, spec }: NodeProps & { spec: NodeSpec 
   // Use proper React Flow data management
   const { nodeData, updateNodeData } = useNodeData(id, data);
 
-  // Get optimized data flow capabilities for this node (pass-through)
-  const dataFlow = useOptimizedDataFlow(id, {
-    instantPropagation: true, // Enable propagation for view nodes to pass data through
-    debounceDelay: 0, // No delay for immediate updates
-    extractData: (nodeData: any) => {
-      // Extract text from connected nodes
-      if (nodeData.text !== undefined) return nodeData.text;
-      if (nodeData.output !== undefined) return nodeData.output;
-      return String(nodeData);
-    },
-    transformData: (data: any) => {
-      // Transform data before output - pass through the received text
-      return data;
-    }
-  });
-
   // Direct access to React Flow store for immediate data access
   const { getNodes, getEdges } = useReactFlow();
 
@@ -330,15 +313,23 @@ const ViewTextNodeComponent = ({ data, id, spec }: NodeProps & { spec: NodeSpec 
     }, [validatedData.text, updateNodeData]),
     
     onDisconnect: useCallback((edge: any) => {
-      // When a connection is broken, immediately clear the data
-      lastProcessedInputRef.current = null;
-      updateNodeData({
-        isActive: false,
-        receivedData: 'No connected inputs',
-        text: 'No connected inputs',
-        output: 'No connected inputs'
-      });
-    }, [updateNodeData])
+      // When a connection is broken, check if there are still other connections
+      const nodes = getNodes();
+      const edges = getEdges();
+      const remainingInputEdges = edges.filter(edge => edge.target === id);
+      
+      if (remainingInputEdges.length === 0) {
+        // No more connections - clear the data
+        lastProcessedInputRef.current = null;
+        updateNodeData({
+          isActive: false,
+          receivedData: 'No connected inputs',
+          text: 'No connected inputs',
+          output: 'No connected inputs'
+        });
+      }
+      // If there are still other connections, the useEffect will handle updating with remaining texts
+    }, [updateNodeData, id, getNodes, getEdges])
   });
 
   // Direct data access to avoid timing issues
@@ -353,33 +344,42 @@ const ViewTextNodeComponent = ({ data, id, spec }: NodeProps & { spec: NodeSpec 
     ).filter(Boolean);
     
     if (inputNodes.length > 0) {
-      // Get data from the first connected input node
-      const sourceNode = inputNodes[0];
-      let receivedText = '';
+      // Collect text from all connected input nodes
+      const allTexts: string[] = [];
       
-      if (sourceNode?.data) {
-        if (sourceNode.data.text !== undefined) {
-          receivedText = String(sourceNode.data.text);
-        } else if (sourceNode.data.output !== undefined) {
-          receivedText = String(sourceNode.data.output);
-        } else {
-          receivedText = String(sourceNode.data);
+      inputNodes.forEach(sourceNode => {
+        if (sourceNode?.data) {
+          let nodeText = '';
+          
+          if (sourceNode.data.text !== undefined) {
+            nodeText = String(sourceNode.data.text);
+          } else if (sourceNode.data.output !== undefined) {
+            nodeText = String(sourceNode.data.output);
+          } else {
+            nodeText = String(sourceNode.data);
+          }
+          
+          // Only add valid text
+          if (nodeText && nodeText !== 'null' && nodeText !== 'undefined') {
+            allTexts.push(nodeText);
+          }
         }
-      }
+      });
       
-      // Process data if it's actually new
-      const isValidData = receivedText !== 'null' && receivedText !== 'undefined';
+      // Concatenate all texts without separator for predictable behavior
+      const concatenatedText = allTexts.join('');
       
-      if (isValidData && lastProcessedInputRef.current !== receivedText) {
-        lastProcessedInputRef.current = receivedText;
+      // Always update if the text has changed (including empty strings)
+      if (lastProcessedInputRef.current !== concatenatedText) {
+        lastProcessedInputRef.current = concatenatedText;
         
-        const hasContent = receivedText && receivedText.trim().length > 0;
+        const hasContent = concatenatedText && concatenatedText.trim().length > 0;
         
         updateNodeData({ 
           isActive: hasContent,
-          receivedData: receivedText,
-          text: receivedText,
-          output: receivedText
+          receivedData: concatenatedText,
+          text: concatenatedText,
+          output: concatenatedText
         });
       }
     } else {
