@@ -193,9 +193,7 @@ export class ThreatIntelligence {
 	/**
 	 * CHECK VIRUSTOTAL (MOCK IMPLEMENTATION)
 	 */
-	private static async checkVirusTotal(
-		ip: string
-	): Promise<{
+	private static async checkVirusTotal(ip: string): Promise<{
 		source: string;
 		isMalicious: boolean;
 		riskScore: number;
@@ -209,9 +207,7 @@ export class ThreatIntelligence {
 	/**
 	 * CHECK ABUSEIPDB (MOCK IMPLEMENTATION)
 	 */
-	private static async checkAbuseIPDB(
-		ip: string
-	): Promise<{
+	private static async checkAbuseIPDB(ip: string): Promise<{
 		source: string;
 		isMalicious: boolean;
 		riskScore: number;
@@ -225,9 +221,7 @@ export class ThreatIntelligence {
 	/**
 	 * CHECK THREATCROWD (MOCK IMPLEMENTATION)
 	 */
-	private static async checkThreatCrowd(
-		ip: string
-	): Promise<{
+	private static async checkThreatCrowd(ip: string): Promise<{
 		source: string;
 		isMalicious: boolean;
 		riskScore: number;

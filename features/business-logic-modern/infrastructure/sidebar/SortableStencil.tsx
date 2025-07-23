@@ -29,8 +29,8 @@ import type { NodeStencil } from "./types";
 function formatNodeLabel(label: string): string {
 	// Handle camelCase to Title Case conversion
 	return label
-		.replace(/([A-Z])/g, ' $1') // Add space before capital letters
-		.replace(/^./, str => str.toUpperCase()) // Capitalize first letter
+		.replace(/([A-Z])/g, " $1") // Add space before capital letters
+		.replace(/^./, (str) => str.toUpperCase()) // Capitalize first letter
 		.trim(); // Remove leading/trailing spaces
 }
 

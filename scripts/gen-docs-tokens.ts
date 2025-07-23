@@ -20,105 +20,106 @@ const flatten = (
 // Helper function to detect if a value is a color
 const isColorValue = (value: string): boolean => {
 	return (
-		value.startsWith('#') ||
-		value.startsWith('hsl') ||
-		value.startsWith('rgb') ||
-		value.startsWith('hsla') ||
-		value.startsWith('rgba') ||
-		value.includes('var(--') && (value.includes('color') || value.includes('bg') || value.includes('border'))
+		value.startsWith("#") ||
+		value.startsWith("hsl") ||
+		value.startsWith("rgb") ||
+		value.startsWith("hsla") ||
+		value.startsWith("rgba") ||
+		(value.includes("var(--") &&
+			(value.includes("color") || value.includes("bg") || value.includes("border")))
 	);
 };
 
 // Helper function to extract color from CSS value
 const extractColor = (value: string): string => {
 	// Handle CSS custom properties
-	if (value.includes('var(--')) {
+	if (value.includes("var(--")) {
 		// For now, return a placeholder - in a real implementation you'd resolve the CSS variable
-		return '#6b7280'; // gray-500 as fallback
+		return "#6b7280"; // gray-500 as fallback
 	}
-	
+
 	// Handle HSL values
-	if (value.startsWith('hsl')) {
+	if (value.startsWith("hsl")) {
 		return value;
 	}
-	
+
 	// Handle hex colors
-	if (value.startsWith('#')) {
+	if (value.startsWith("#")) {
 		return value;
 	}
-	
+
 	// Handle rgb values
-	if (value.startsWith('rgb')) {
+	if (value.startsWith("rgb")) {
 		return value;
 	}
-	
-	return '';
+
+	return "";
 };
 
 // Helper function to categorize tokens
 const categorizeTokens = (flatTokens: Record<string, string>) => {
 	const categories: Record<string, { tokens: Record<string, string>; count: number }> = {
-		'spacing': { tokens: {}, count: 0 },
-		'typography': { tokens: {}, count: 0 },
-		'colors': { tokens: {}, count: 0 },
-		'layout': { tokens: {}, count: 0 },
-		'effects': { tokens: {}, count: 0 },
-		'dimensions': { tokens: {}, count: 0 },
-		'palette': { tokens: {}, count: 0 },
-		'elevation': { tokens: {}, count: 0 },
-		'status': { tokens: {}, count: 0 },
-		'node-global': { tokens: {}, count: 0 },
-		'node-create': { tokens: {}, count: 0 },
-		'node-view': { tokens: {}, count: 0 },
-		'node-trigger': { tokens: {}, count: 0 },
-		'node-test': { tokens: {}, count: 0 },
-		'node-cycle': { tokens: {}, count: 0 },
-		'infra-inspector': { tokens: {}, count: 0 },
-		'infra-sidebar': { tokens: {}, count: 0 },
-		'infra-toolbar': { tokens: {}, count: 0 },
-		'infra-canvas': { tokens: {}, count: 0 },
-		'infra-panel': { tokens: {}, count: 0 },
-		'infra-minimap': { tokens: {}, count: 0 },
-		'infra-history': { tokens: {}, count: 0 },
-		'infra-controls': { tokens: {}, count: 0 },
-		'handle': { tokens: {}, count: 0 },
-		'expandCollapseButton': { tokens: {}, count: 0 },
-		'label': { tokens: {}, count: 0 },
-		'coreNode': { tokens: {}, count: 0 },
-		'other': { tokens: {}, count: 0 }
+		spacing: { tokens: {}, count: 0 },
+		typography: { tokens: {}, count: 0 },
+		colors: { tokens: {}, count: 0 },
+		layout: { tokens: {}, count: 0 },
+		effects: { tokens: {}, count: 0 },
+		dimensions: { tokens: {}, count: 0 },
+		palette: { tokens: {}, count: 0 },
+		elevation: { tokens: {}, count: 0 },
+		status: { tokens: {}, count: 0 },
+		"node-global": { tokens: {}, count: 0 },
+		"node-create": { tokens: {}, count: 0 },
+		"node-view": { tokens: {}, count: 0 },
+		"node-trigger": { tokens: {}, count: 0 },
+		"node-test": { tokens: {}, count: 0 },
+		"node-cycle": { tokens: {}, count: 0 },
+		"infra-inspector": { tokens: {}, count: 0 },
+		"infra-sidebar": { tokens: {}, count: 0 },
+		"infra-toolbar": { tokens: {}, count: 0 },
+		"infra-canvas": { tokens: {}, count: 0 },
+		"infra-panel": { tokens: {}, count: 0 },
+		"infra-minimap": { tokens: {}, count: 0 },
+		"infra-history": { tokens: {}, count: 0 },
+		"infra-controls": { tokens: {}, count: 0 },
+		handle: { tokens: {}, count: 0 },
+		expandCollapseButton: { tokens: {}, count: 0 },
+		label: { tokens: {}, count: 0 },
+		coreNode: { tokens: {}, count: 0 },
+		other: { tokens: {}, count: 0 },
 	};
 
 	for (const [key, value] of Object.entries(flatTokens)) {
-		let category = 'other';
-		
-		if (key.startsWith('spacing.')) category = 'spacing';
-		else if (key.startsWith('typography.')) category = 'typography';
-		else if (key.startsWith('colors.')) category = 'colors';
-		else if (key.startsWith('layout.')) category = 'layout';
-		else if (key.startsWith('effects.')) category = 'effects';
-		else if (key.startsWith('dimensions.')) category = 'dimensions';
-		else if (key.startsWith('palette.')) category = 'palette';
-		else if (key.startsWith('elevation.')) category = 'elevation';
-		else if (key.startsWith('status.')) category = 'status';
-		else if (key.startsWith('node.global.')) category = 'node-global';
-		else if (key.startsWith('node.create.')) category = 'node-create';
-		else if (key.startsWith('node.view.')) category = 'node-view';
-		else if (key.startsWith('node.trigger.')) category = 'node-trigger';
-		else if (key.startsWith('node.test.')) category = 'node-test';
-		else if (key.startsWith('node.cycle.')) category = 'node-cycle';
-		else if (key.startsWith('infra.inspector.')) category = 'infra-inspector';
-		else if (key.startsWith('infra.sidebar.')) category = 'infra-sidebar';
-		else if (key.startsWith('infra.toolbar.')) category = 'infra-toolbar';
-		else if (key.startsWith('infra.canvas.')) category = 'infra-canvas';
-		else if (key.startsWith('infra.panel.')) category = 'infra-panel';
-		else if (key.startsWith('infra.minimap.')) category = 'infra-minimap';
-		else if (key.startsWith('infra.history.')) category = 'infra-history';
-		else if (key.startsWith('infra.controls.')) category = 'infra-controls';
-		else if (key.startsWith('handle.')) category = 'handle';
-		else if (key.startsWith('expandCollapseButton.')) category = 'expandCollapseButton';
-		else if (key.startsWith('label.')) category = 'label';
-		else if (key.startsWith('coreNode.')) category = 'coreNode';
-		
+		let category = "other";
+
+		if (key.startsWith("spacing.")) category = "spacing";
+		else if (key.startsWith("typography.")) category = "typography";
+		else if (key.startsWith("colors.")) category = "colors";
+		else if (key.startsWith("layout.")) category = "layout";
+		else if (key.startsWith("effects.")) category = "effects";
+		else if (key.startsWith("dimensions.")) category = "dimensions";
+		else if (key.startsWith("palette.")) category = "palette";
+		else if (key.startsWith("elevation.")) category = "elevation";
+		else if (key.startsWith("status.")) category = "status";
+		else if (key.startsWith("node.global.")) category = "node-global";
+		else if (key.startsWith("node.create.")) category = "node-create";
+		else if (key.startsWith("node.view.")) category = "node-view";
+		else if (key.startsWith("node.trigger.")) category = "node-trigger";
+		else if (key.startsWith("node.test.")) category = "node-test";
+		else if (key.startsWith("node.cycle.")) category = "node-cycle";
+		else if (key.startsWith("infra.inspector.")) category = "infra-inspector";
+		else if (key.startsWith("infra.sidebar.")) category = "infra-sidebar";
+		else if (key.startsWith("infra.toolbar.")) category = "infra-toolbar";
+		else if (key.startsWith("infra.canvas.")) category = "infra-canvas";
+		else if (key.startsWith("infra.panel.")) category = "infra-panel";
+		else if (key.startsWith("infra.minimap.")) category = "infra-minimap";
+		else if (key.startsWith("infra.history.")) category = "infra-history";
+		else if (key.startsWith("infra.controls.")) category = "infra-controls";
+		else if (key.startsWith("handle.")) category = "handle";
+		else if (key.startsWith("expandCollapseButton.")) category = "expandCollapseButton";
+		else if (key.startsWith("label.")) category = "label";
+		else if (key.startsWith("coreNode.")) category = "coreNode";
+
 		categories[category].tokens[key] = value;
 		categories[category].count++;
 	}
@@ -631,43 +632,43 @@ let html = `<!DOCTYPE html>
         </div>
         <div class="tab" data-tab="node-global">
           🎯 Node Global
-          <span class="tab-count">${categorizedTokens['node-global'].count}</span>
+          <span class="tab-count">${categorizedTokens["node-global"].count}</span>
         </div>
         <div class="tab" data-tab="node-create">
           ➕ Node Create
-          <span class="tab-count">${categorizedTokens['node-create'].count}</span>
+          <span class="tab-count">${categorizedTokens["node-create"].count}</span>
         </div>
         <div class="tab" data-tab="node-view">
           👁️ Node View
-          <span class="tab-count">${categorizedTokens['node-view'].count}</span>
+          <span class="tab-count">${categorizedTokens["node-view"].count}</span>
         </div>
         <div class="tab" data-tab="node-trigger">
           ⚡ Node Trigger
-          <span class="tab-count">${categorizedTokens['node-trigger'].count}</span>
+          <span class="tab-count">${categorizedTokens["node-trigger"].count}</span>
         </div>
         <div class="tab" data-tab="node-test">
           🧪 Node Test
-          <span class="tab-count">${categorizedTokens['node-test'].count}</span>
+          <span class="tab-count">${categorizedTokens["node-test"].count}</span>
         </div>
         <div class="tab" data-tab="node-cycle">
           🔄 Node Cycle
-          <span class="tab-count">${categorizedTokens['node-cycle'].count}</span>
+          <span class="tab-count">${categorizedTokens["node-cycle"].count}</span>
         </div>
         <div class="tab" data-tab="infra-inspector">
           🔍 Inspector
-          <span class="tab-count">${categorizedTokens['infra-inspector'].count}</span>
+          <span class="tab-count">${categorizedTokens["infra-inspector"].count}</span>
         </div>
         <div class="tab" data-tab="infra-sidebar">
           📋 Sidebar
-          <span class="tab-count">${categorizedTokens['infra-sidebar'].count}</span>
+          <span class="tab-count">${categorizedTokens["infra-sidebar"].count}</span>
         </div>
         <div class="tab" data-tab="infra-toolbar">
           🛠️ Toolbar
-          <span class="tab-count">${categorizedTokens['infra-toolbar'].count}</span>
+          <span class="tab-count">${categorizedTokens["infra-toolbar"].count}</span>
         </div>
         <div class="tab" data-tab="infra-canvas">
           🎨 Canvas
-          <span class="tab-count">${categorizedTokens['infra-canvas'].count}</span>
+          <span class="tab-count">${categorizedTokens["infra-canvas"].count}</span>
         </div>
         <div class="tab" data-tab="handle">
           🔗 Handles
@@ -742,8 +743,8 @@ html += `
 
 for (const [k, v] of Object.entries(flat)) {
 	const isColor = isColorValue(v);
-	const colorValue = isColor ? extractColor(v) : '';
-	
+	const colorValue = isColor ? extractColor(v) : "";
+
 	html += `<tr>
         <td>
           <div class="token-row">
@@ -753,7 +754,7 @@ for (const [k, v] of Object.entries(flat)) {
         <td>
           <div class="token-row">
             <span class="token-value">${v}</span>
-            ${isColor ? `<div class="color-preview" style="background: ${colorValue};"></div>` : ''}
+            ${isColor ? `<div class="color-preview" style="background: ${colorValue};"></div>` : ""}
           </div>
         </td>
       </tr>`;
@@ -766,42 +767,42 @@ html += `
 
 // Generate tab content for each category
 const categoryIcons: Record<string, string> = {
-	'spacing': '📏',
-	'typography': '🔤',
-	'colors': '🎨',
-	'layout': '📐',
-	'effects': '✨',
-	'dimensions': '📐',
-	'palette': '🎨',
-	'elevation': '📈',
-	'status': '🏷️',
-	'node-global': '🎯',
-	'node-create': '➕',
-	'node-view': '👁️',
-	'node-trigger': '⚡',
-	'node-test': '🧪',
-	'node-cycle': '🔄',
-	'infra-inspector': '🔍',
-	'infra-sidebar': '📋',
-	'infra-toolbar': '🛠️',
-	'infra-canvas': '🎨',
-	'infra-panel': '📄',
-	'infra-minimap': '🗺️',
-	'infra-history': '📜',
-	'infra-controls': '🎛️',
-	'handle': '🔗',
-	'expandCollapseButton': '🔽',
-	'label': '🏷️',
-	'coreNode': '⚙️',
-	'other': '📝'
+	spacing: "📏",
+	typography: "🔤",
+	colors: "🎨",
+	layout: "📐",
+	effects: "✨",
+	dimensions: "📐",
+	palette: "🎨",
+	elevation: "📈",
+	status: "🏷️",
+	"node-global": "🎯",
+	"node-create": "➕",
+	"node-view": "👁️",
+	"node-trigger": "⚡",
+	"node-test": "🧪",
+	"node-cycle": "🔄",
+	"infra-inspector": "🔍",
+	"infra-sidebar": "📋",
+	"infra-toolbar": "🛠️",
+	"infra-canvas": "🎨",
+	"infra-panel": "📄",
+	"infra-minimap": "🗺️",
+	"infra-history": "📜",
+	"infra-controls": "🎛️",
+	handle: "🔗",
+	expandCollapseButton: "🔽",
+	label: "🏷️",
+	coreNode: "⚙️",
+	other: "📝",
 };
 
 for (const [category, data] of Object.entries(categorizedTokens)) {
 	if (data.count === 0) continue;
-	
-	const icon = categoryIcons[category] || '📝';
-	const displayName = category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-	
+
+	const icon = categoryIcons[category] || "📝";
+	const displayName = category.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+
 	html += `
       <!-- ${displayName} Tab -->
       <div class="tab-content" id="${category}">
@@ -814,8 +815,8 @@ for (const [category, data] of Object.entries(categorizedTokens)) {
 
 	for (const [k, v] of Object.entries(data.tokens)) {
 		const isColor = isColorValue(v);
-		const colorValue = isColor ? extractColor(v) : '';
-		
+		const colorValue = isColor ? extractColor(v) : "";
+
 		html += `<tr>
           <td>
             <div class="token-row">
@@ -825,7 +826,7 @@ for (const [category, data] of Object.entries(categorizedTokens)) {
           <td>
             <div class="token-row">
               <span class="token-value">${v}</span>
-              ${isColor ? `<div class="color-preview" style="background: ${colorValue};"></div>` : ''}
+              ${isColor ? `<div class="color-preview" style="background: ${colorValue};"></div>` : ""}
             </div>
           </td>
         </tr>`;

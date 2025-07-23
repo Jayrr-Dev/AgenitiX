@@ -590,12 +590,15 @@ export const DynamicControls: React.FC<DynamicControlsProps> = ({
 	// State for tracking validation errors
 	const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  // Generate control fields from the node's schema using enhanced service
-  const controlFields = useMemo(() => {
-    const fields = NodeInspectorService.generateControlFields(node.type as any);
-    console.log(`[DynamicControls] Generated ${fields.length} control fields for ${node.type}:`, fields);
-    return fields;
-  }, [node.type]);
+	// Generate control fields from the node's schema using enhanced service
+	const controlFields = useMemo(() => {
+		const fields = NodeInspectorService.generateControlFields(node.type as any);
+		console.log(
+			`[DynamicControls] Generated ${fields.length} control fields for ${node.type}:`,
+			fields
+		);
+		return fields;
+	}, [node.type]);
 
 	// Get current node data with defaults applied
 	const nodeDataWithDefaults = useMemo(() => {

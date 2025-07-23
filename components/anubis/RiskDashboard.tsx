@@ -14,7 +14,7 @@ export function RiskDashboard() {
 		averageRiskScore: 0,
 		threatTrend: "stable" as "increasing" | "decreasing" | "stable",
 	});
-	
+
 	// Ref to track if dashboard is visible
 	const isVisibleRef = useRef(isVisible);
 
@@ -28,10 +28,10 @@ export function RiskDashboard() {
 	// SIMULATE REAL-TIME METRICS (replace with actual API calls)
 	useEffect(() => {
 		let isMounted = true;
-		
+
 		const interval = setInterval(() => {
 			if (!isMounted || !isVisibleRef.current) return;
-			
+
 			setMetrics((prev) => ({
 				totalRequests: prev.totalRequests + Math.floor(Math.random() * 10),
 				blockedRequests: prev.blockedRequests + Math.floor(Math.random() * 2),

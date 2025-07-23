@@ -19,11 +19,11 @@ import type { NodeProps, Position } from "@xyflow/react";
 import { useTheme } from "next-themes";
 import React from "react";
 import NodeErrorBoundary from "./ErrorBoundary";
+import { globalNodeMemoryManager } from "./NodeMemory";
 import type { NodeSpec } from "./NodeSpec";
 import NodeTelemetry from "./NodeTelemetry";
 import { getNodePlugins } from "./plugins/nodePluginRegistry";
 import { runServerActions } from "./serverActions/serverActionRegistry";
-import { globalNodeMemoryManager } from "./NodeMemory";
 
 /**
  * Utility to get CSS custom property value from the DOM
@@ -96,13 +96,15 @@ const NodeScaffoldWrapper = ({
 		borderWidth: `var(--node-${spec.category.toLowerCase()}-border-width)`,
 		borderStyle: "solid",
 		// Use custom theming if available and in dark mode, otherwise fall back to tokens
-		borderColor: isDarkMode && customTheming?.borderDark 
-			? customTheming.borderDark 
-			: `var(--node-${spec.category.toLowerCase()}-border)`,
+		borderColor:
+			isDarkMode && customTheming?.borderDark
+				? customTheming.borderDark
+				: `var(--node-${spec.category.toLowerCase()}-border)`,
 		// Background from category tokens or custom theming
-		backgroundColor: isDarkMode && customTheming?.bgDark 
-			? customTheming.bgDark 
-			: `var(--node-${spec.category.toLowerCase()}-bg)`,
+		backgroundColor:
+			isDarkMode && customTheming?.bgDark
+				? customTheming.bgDark
+				: `var(--node-${spec.category.toLowerCase()}-bg)`,
 		// Ensure proper layering
 		position: "relative",
 		// Smooth transitions for all properties
@@ -179,7 +181,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 		const handlesByPosition = React.useMemo(() => {
 			const grouped: Record<string, typeof spec.handles> = {};
 			const allHandles = spec.handles || [];
-			
+
 			allHandles.forEach((handle) => {
 				const pos = handle.position;
 				if (!grouped[pos]) grouped[pos] = [];
@@ -188,25 +190,20 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 			return grouped;
 		}, [spec.handles]);
 
-    // Inner component to throw inside ErrorBoundary, not outside
-    const MaybeError: React.FC = () => {
-      if (
-        process.env.NODE_ENV === "development" &&
-        (props.data as any)?.forceError
-      ) {
-        throw new Error(
-          `🧨 Simulated runtime error from node ${props.id} (forceError flag)`
-        );
-      }
-      return null;
-    };
+		// Inner component to throw inside ErrorBoundary, not outside
+		const MaybeError: React.FC = () => {
+			if (process.env.NODE_ENV === "development" && (props.data as any)?.forceError) {
+				throw new Error(`🧨 Simulated runtime error from node ${props.id} (forceError flag)`);
+			}
+			return null;
+		};
 
-    // Initialize node memory if configured
-    React.useEffect(() => {
-      if (spec.memory) {
-        globalNodeMemoryManager.get(props.id, spec.memory);
-      }
-    }, [props.id]);
+		// Initialize node memory if configured
+		React.useEffect(() => {
+			if (spec.memory) {
+				globalNodeMemoryManager.get(props.id, spec.memory);
+			}
+		}, [props.id]);
 
 		// side-effect: run server actions once
 		React.useEffect(() => {
@@ -229,7 +226,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 				{/* Render handles defined in the spec with smart positioning */}
 				{(() => {
 					const allHandles = spec.handles || [];
-					
+
 					return allHandles.map((handle, index) => {
 						const handlesOnSameSide = handlesByPosition[handle.position] || [];
 						const handleIndex = handlesOnSameSide.findIndex((h) => h.id === handle.id);

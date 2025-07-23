@@ -15,8 +15,8 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import type { NodeType } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 import { Search, X } from "lucide-react";
 import type React from "react";
@@ -210,9 +210,7 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 								>
 									<div className="flex items-center gap-3">
 										{result.icon && (
-											<span className="text-lg flex-shrink-0">
-												{renderLucideIcon(result.icon)}
-											</span>
+											<span className="text-lg flex-shrink-0">{renderLucideIcon(result.icon)}</span>
 										)}
 										<div className="flex-1 min-w-0">
 											<div className="font-medium text-modal">{result.displayName}</div>

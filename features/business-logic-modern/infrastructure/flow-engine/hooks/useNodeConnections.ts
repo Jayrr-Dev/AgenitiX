@@ -83,15 +83,15 @@ function extractDataTypeFromHandle(handleId: string): string {
 function isDataTypeCompatible(sourceType: string, targetType: string): boolean {
 	// "any" type is compatible with everything
 	if (sourceType === "any" || targetType === "any") return true;
-	
+
 	// Direct type match
 	if (sourceType === targetType) return true;
-	
+
 	// Handle union types (e.g., "string|number")
 	const sourceTypes = sourceType.split("|");
 	const targetTypes = targetType.split("|");
-	
-	return sourceTypes.some(s => targetTypes.includes(s));
+
+	return sourceTypes.some((s) => targetTypes.includes(s));
 }
 
 /**
@@ -99,7 +99,7 @@ function isDataTypeCompatible(sourceType: string, targetType: string): boolean {
  */
 function convertDataType(value: any, targetType: string): any {
 	if (targetType === "any") return value;
-	
+
 	switch (targetType) {
 		case "string":
 			return String(value);
@@ -122,24 +122,24 @@ function convertDataType(value: any, targetType: string): any {
 
 export function useNodeConnections(nodeId: string) {
 	const { nodes, edges } = useFlowStore();
-	
+
 	// ============================================================================
 	// GET CONNECTED NODES
 	// ============================================================================
-	
+
 	const getConnectedNodes = useCallback(() => {
-		const node = nodes.find(n => n.id === nodeId);
+		const node = nodes.find((n) => n.id === nodeId);
 		if (!node) return { inputs: [], outputs: [] };
-		
-		const nodeEdges = edges.filter(e => e.source === nodeId || e.target === nodeId);
-		
+
+		const nodeEdges = edges.filter((e) => e.source === nodeId || e.target === nodeId);
+
 		const inputs: NodeConnection[] = [];
 		const outputs: NodeConnection[] = [];
-		
-		nodeEdges.forEach(edge => {
+
+		nodeEdges.forEach((edge) => {
 			if (edge.target === nodeId) {
 				// This is an input connection
-				const sourceNode = nodes.find(n => n.id === edge.source);
+				const sourceNode = nodes.find((n) => n.id === edge.source);
 				if (sourceNode) {
 					const dataType = extractDataTypeFromHandle(edge.sourceHandle || "");
 					inputs.push({
@@ -147,12 +147,12 @@ export function useNodeConnections(nodeId: string) {
 						targetNode: node,
 						edge,
 						dataType,
-						isValid: true
+						isValid: true,
 					});
 				}
 			} else if (edge.source === nodeId) {
 				// This is an output connection
-				const targetNode = nodes.find(n => n.id === edge.target);
+				const targetNode = nodes.find((n) => n.id === edge.target);
 				if (targetNode) {
 					const dataType = extractDataTypeFromHandle(edge.sourceHandle || "");
 					outputs.push({
@@ -160,183 +160,191 @@ export function useNodeConnections(nodeId: string) {
 						targetNode,
 						edge,
 						dataType,
-						isValid: true
+						isValid: true,
 					});
 				}
 			}
 		});
-		
+
 		return { inputs, outputs };
 	}, [nodeId, nodes, edges]);
-	
+
 	// ============================================================================
 	// GET INPUT DATA
 	// ============================================================================
-	
-	const getInputData = useCallback((handleId?: string): NodeInputData[] => {
-		const { inputs } = getConnectedNodes();
-		const node = nodes.find(n => n.id === nodeId);
-		if (!node) return [];
-		
-		const inputData: NodeInputData[] = [];
-		
-		// Get all input handles for this node
-		const nodeSpec = (node as any).type ? getNodeSpecMetadata((node as any).type) : null;
-		const inputHandles = nodeSpec?.handles?.filter((h: any) => h.type === "target") || [];
-		
-		inputHandles.forEach((handle: any) => {
-			const handleId = handle.id;
-			const dataType = handle.dataType || "any";
-			
-			// Find connection for this handle
-			const connection = inputs.find(input => 
-				input.edge.targetHandle === handleId
-			);
-			
-			if (connection) {
-				// Get data from source node
-				const sourceData = connection.sourceNode.data;
-				const sourceValue = sourceData?.output || sourceData?.value || null;
-				
-				// Validate and convert data type
-				const isValid = isDataTypeCompatible(
-					extractDataTypeFromHandle(connection.edge.sourceHandle || ""),
-					dataType
-				);
-				
-				const convertedValue = isValid ? convertDataType(sourceValue, dataType) : null;
-				
-				inputData.push({
-					handleId,
-					dataType,
-					value: convertedValue,
-					sourceNodeId: connection.sourceNode.id,
-					sourceHandleId: connection.edge.sourceHandle || "",
-					isConnected: true,
-					error: isValid ? undefined : `Type mismatch: cannot convert to ${dataType}`
-				});
-			} else {
-				// No connection for this handle
-				inputData.push({
-					handleId,
-					dataType,
-					value: null,
-					sourceNodeId: "",
-					sourceHandleId: "",
-					isConnected: false
-				});
-			}
-		});
-		
-		// Filter by specific handle if requested
-		return handleId ? inputData.filter(input => input.handleId === handleId) : inputData;
-	}, [nodeId, nodes, edges, getConnectedNodes]);
-	
+
+	const getInputData = useCallback(
+		(handleId?: string): NodeInputData[] => {
+			const { inputs } = getConnectedNodes();
+			const node = nodes.find((n) => n.id === nodeId);
+			if (!node) return [];
+
+			const inputData: NodeInputData[] = [];
+
+			// Get all input handles for this node
+			const nodeSpec = (node as any).type ? getNodeSpecMetadata((node as any).type) : null;
+			const inputHandles = nodeSpec?.handles?.filter((h: any) => h.type === "target") || [];
+
+			inputHandles.forEach((handle: any) => {
+				const handleId = handle.id;
+				const dataType = handle.dataType || "any";
+
+				// Find connection for this handle
+				const connection = inputs.find((input) => input.edge.targetHandle === handleId);
+
+				if (connection) {
+					// Get data from source node
+					const sourceData = connection.sourceNode.data;
+					const sourceValue = sourceData?.output || sourceData?.value || null;
+
+					// Validate and convert data type
+					const isValid = isDataTypeCompatible(
+						extractDataTypeFromHandle(connection.edge.sourceHandle || ""),
+						dataType
+					);
+
+					const convertedValue = isValid ? convertDataType(sourceValue, dataType) : null;
+
+					inputData.push({
+						handleId,
+						dataType,
+						value: convertedValue,
+						sourceNodeId: connection.sourceNode.id,
+						sourceHandleId: connection.edge.sourceHandle || "",
+						isConnected: true,
+						error: isValid ? undefined : `Type mismatch: cannot convert to ${dataType}`,
+					});
+				} else {
+					// No connection for this handle
+					inputData.push({
+						handleId,
+						dataType,
+						value: null,
+						sourceNodeId: "",
+						sourceHandleId: "",
+						isConnected: false,
+					});
+				}
+			});
+
+			// Filter by specific handle if requested
+			return handleId ? inputData.filter((input) => input.handleId === handleId) : inputData;
+		},
+		[nodeId, nodes, edges, getConnectedNodes]
+	);
+
 	// ============================================================================
 	// GET OUTPUT DATA
 	// ============================================================================
-	
-	const getOutputData = useCallback((handleId?: string): NodeOutputData[] => {
-		const { outputs } = getConnectedNodes();
-		const node = nodes.find(n => n.id === nodeId);
-		if (!node) return [];
-		
-		const outputData: NodeOutputData[] = [];
-		
-		// Get all output handles for this node
-		const nodeSpec = (node as any).type ? getNodeSpecMetadata((node as any).type) : null;
-		const outputHandles = nodeSpec?.handles?.filter((h: any) => h.type === "source") || [];
-		
-		outputHandles.forEach((handle: any) => {
-			const handleId = handle.id;
-			const dataType = handle.dataType || "any";
-			
-			// Find connections for this handle
-			const connections = outputs.filter(output => 
-				output.edge.sourceHandle === handleId
-			);
-			
-			const targetNodeIds = connections.map(c => c.targetNode.id);
-			
-			// Get current output value from node data
-			const currentValue = node.data?.output || node.data?.value || null;
-			
-			outputData.push({
-				handleId,
-				dataType,
-				value: currentValue,
-				targetNodeIds,
-				isConnected: connections.length > 0
+
+	const getOutputData = useCallback(
+		(handleId?: string): NodeOutputData[] => {
+			const { outputs } = getConnectedNodes();
+			const node = nodes.find((n) => n.id === nodeId);
+			if (!node) return [];
+
+			const outputData: NodeOutputData[] = [];
+
+			// Get all output handles for this node
+			const nodeSpec = (node as any).type ? getNodeSpecMetadata((node as any).type) : null;
+			const outputHandles = nodeSpec?.handles?.filter((h: any) => h.type === "source") || [];
+
+			outputHandles.forEach((handle: any) => {
+				const handleId = handle.id;
+				const dataType = handle.dataType || "any";
+
+				// Find connections for this handle
+				const connections = outputs.filter((output) => output.edge.sourceHandle === handleId);
+
+				const targetNodeIds = connections.map((c) => c.targetNode.id);
+
+				// Get current output value from node data
+				const currentValue = node.data?.output || node.data?.value || null;
+
+				outputData.push({
+					handleId,
+					dataType,
+					value: currentValue,
+					targetNodeIds,
+					isConnected: connections.length > 0,
+				});
 			});
-		});
-		
-		// Filter by specific handle if requested
-		return handleId ? outputData.filter(output => output.handleId === handleId) : outputData;
-	}, [nodeId, nodes, edges, getConnectedNodes]);
-	
+
+			// Filter by specific handle if requested
+			return handleId ? outputData.filter((output) => output.handleId === handleId) : outputData;
+		},
+		[nodeId, nodes, edges, getConnectedNodes]
+	);
+
 	// ============================================================================
 	// GET SPECIFIC INPUT DATA
 	// ============================================================================
-	
-	const getInputDataByHandle = useCallback((handleId: string): NodeInputData | null => {
-		const inputs = getInputData(handleId);
-		return inputs.length > 0 ? inputs[0] : null;
-	}, [getInputData]);
-	
+
+	const getInputDataByHandle = useCallback(
+		(handleId: string): NodeInputData | null => {
+			const inputs = getInputData(handleId);
+			return inputs.length > 0 ? inputs[0] : null;
+		},
+		[getInputData]
+	);
+
 	// ============================================================================
 	// GET SPECIFIC OUTPUT DATA
 	// ============================================================================
-	
-	const getOutputDataByHandle = useCallback((handleId: string): NodeOutputData | null => {
-		const outputs = getOutputData(handleId);
-		return outputs.length > 0 ? outputs[0] : null;
-	}, [getOutputData]);
-	
+
+	const getOutputDataByHandle = useCallback(
+		(handleId: string): NodeOutputData | null => {
+			const outputs = getOutputData(handleId);
+			return outputs.length > 0 ? outputs[0] : null;
+		},
+		[getOutputData]
+	);
+
 	// ============================================================================
 	// VALIDATE CONNECTIONS
 	// ============================================================================
-	
+
 	const validateConnections = useCallback(() => {
 		const { inputs, outputs } = getConnectedNodes();
 		const errors: string[] = [];
-		
-		inputs.forEach(input => {
+
+		inputs.forEach((input) => {
 			const sourceDataType = extractDataTypeFromHandle(input.edge.sourceHandle || "");
 			const targetDataType = extractDataTypeFromHandle(input.edge.targetHandle || "");
-			
+
 			if (!isDataTypeCompatible(sourceDataType, targetDataType)) {
 				errors.push(`Invalid connection: ${sourceDataType} -> ${targetDataType}`);
 			}
 		});
-		
+
 		return {
 			isValid: errors.length === 0,
-			errors
+			errors,
 		};
 	}, [getConnectedNodes]);
-	
+
 	// ============================================================================
 	// COMPUTED VALUES
 	// ============================================================================
-	
+
 	const hasInputs = useMemo(() => {
 		const { inputs } = getConnectedNodes();
 		return inputs.length > 0;
 	}, [getConnectedNodes]);
-	
+
 	const hasOutputs = useMemo(() => {
 		const { outputs } = getConnectedNodes();
 		return outputs.length > 0;
 	}, [getConnectedNodes]);
-	
+
 	const isConnected = useMemo(() => {
 		return hasInputs || hasOutputs;
 	}, [hasInputs, hasOutputs]);
-	
+
 	// ============================================================================
 	// RETURN INTERFACE
 	// ============================================================================
-	
+
 	return {
 		// Connection data
 		getConnectedNodes,
@@ -344,21 +352,21 @@ export function useNodeConnections(nodeId: string) {
 		getOutputData,
 		getInputDataByHandle,
 		getOutputDataByHandle,
-		
+
 		// Validation
 		validateConnections,
-		
+
 		// Computed values
 		hasInputs,
 		hasOutputs,
 		isConnected,
-		
+
 		// Utility functions
 		isDataTypeCompatible,
 		convertDataType,
-		extractDataTypeFromHandle
+		extractDataTypeFromHandle,
 	};
 }
 
 // Import the NodeSpec registry function
-import { getNodeSpecMetadata } from "../../node-registry/nodespec-registry"; 
+import { getNodeSpecMetadata } from "../../node-registry/nodespec-registry";

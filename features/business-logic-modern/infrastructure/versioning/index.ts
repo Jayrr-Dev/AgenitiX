@@ -7,16 +7,16 @@
  */
 
 // Main version constant - most commonly imported
-export { VERSION } from './version';
+export { VERSION } from "./version";
 
 // Version configuration for advanced use cases
-export { VERSION_CONFIG } from './auto-version';
+export { VERSION_CONFIG } from "./auto-version";
 
 // Version detector for programmatic version checking
-export { versionDetector } from './version-detector';
+export { versionDetector } from "./version-detector";
 
 // Dashboard for status monitoring
-export { dashboard } from './status-dashboard';
+export { dashboard } from "./status-dashboard";
 
 // Auto-migrator for data migrations
-export { autoMigrator } from './auto-migrate'; 
+export { autoMigrator } from "./auto-migrate";

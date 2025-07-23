@@ -409,13 +409,13 @@ export function useCategoryTheme(nodeType?: string): CategoryTheme | null {
  */
 export function useCategoryThemeWithSpec(nodeType?: string, nodeSpec?: any): CategoryTheme | null {
 	const baseTheme = useCategoryTheme(nodeType);
-	
+
 	return useMemo(() => {
 		if (!baseTheme || !nodeSpec?.theming) return baseTheme;
 
 		// Apply custom theming from NodeSpec
 		const customTheming = nodeSpec.theming;
-		
+
 		return {
 			...baseTheme,
 			background: {

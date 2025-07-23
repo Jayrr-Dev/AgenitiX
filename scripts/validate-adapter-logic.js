@@ -10,11 +10,14 @@
  * Keywords: validation, adapter-logic, comprehensive-approach, future-proof, regression-prevention
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 // Constants for file paths
-const ADAPTER_FILE_PATH = path.join(__dirname, '../features/business-logic-modern/infrastructure/node-inspector/adapters/NodeInspectorAdapter.ts');
+const ADAPTER_FILE_PATH = path.join(
+	__dirname,
+	"../features/business-logic-modern/infrastructure/node-inspector/adapters/NodeInspectorAdapter.ts"
+);
 
 // Validation patterns
 const DETERMINE_HAS_CONTROLS_PATTERN = /determineHasControls.*\{[\s\S]*?return.*?;/;
@@ -25,64 +28,65 @@ const CATEGORY_CHECK_PATTERN = /metadata\.category ===/;
  * Validate that the NodeInspectorAdapter includes TEST category in determineHasControls
  */
 function validateAdapterLogic() {
-  console.log('🔍 Validating NodeInspectorAdapter logic...');
-  
-  try {
-    // Check if adapter file exists
-    if (!fs.existsSync(ADAPTER_FILE_PATH)) {
-      throw new Error(`Adapter file not found: ${ADAPTER_FILE_PATH}`);
-    }
-    
-    // Read the adapter file
-    const adapterContent = fs.readFileSync(ADAPTER_FILE_PATH, 'utf8');
-    
-    // Check if determineHasControls method exists
-    const hasDetermineMethod = DETERMINE_HAS_CONTROLS_PATTERN.test(adapterContent);
-    if (!hasDetermineMethod) {
-      throw new Error('determineHasControls method not found in NodeInspectorAdapter');
-    }
-    
-    		// Check if the method returns true for all categories (comprehensive approach)
+	console.log("🔍 Validating NodeInspectorAdapter logic...");
+
+	try {
+		// Check if adapter file exists
+		if (!fs.existsSync(ADAPTER_FILE_PATH)) {
+			throw new Error(`Adapter file not found: ${ADAPTER_FILE_PATH}`);
+		}
+
+		// Read the adapter file
+		const adapterContent = fs.readFileSync(ADAPTER_FILE_PATH, "utf8");
+
+		// Check if determineHasControls method exists
+		const hasDetermineMethod = DETERMINE_HAS_CONTROLS_PATTERN.test(adapterContent);
+		if (!hasDetermineMethod) {
+			throw new Error("determineHasControls method not found in NodeInspectorAdapter");
+		}
+
+		// Check if the method returns true for all categories (comprehensive approach)
 		const hasReturnTrue = RETURN_TRUE_PATTERN.test(adapterContent);
 		if (!hasReturnTrue) {
-			throw new Error('determineHasControls should return true for all categories');
+			throw new Error("determineHasControls should return true for all categories");
 		}
-		
+
 		// Check if there are any hardcoded category checks (which would be outdated)
 		const hasCategoryChecks = CATEGORY_CHECK_PATTERN.test(adapterContent);
 		if (hasCategoryChecks) {
-			console.warn('⚠️  Found hardcoded category checks - consider using comprehensive approach');
+			console.warn("⚠️  Found hardcoded category checks - consider using comprehensive approach");
 		}
-    
-    		console.log('✅ NodeInspectorAdapter logic is valid!');
-		console.log('   • All node categories have controls by default');
-		console.log('   • Comprehensive approach ensures future-proof behavior');
-		console.log('   • Consistent UX across CREATE, VIEW, TRIGGER, TEST, CYCLE categories');
-    
-    return true;
-    
-  } catch (error) {
-    console.error('❌ NodeInspectorAdapter validation failed:');
-    console.error(`   ${error.message}`);
-    console.error('');
-    		console.error('💡 To fix this issue:');
-		console.error('   1. Open NodeInspectorAdapter.ts');
-		console.error('   2. Find the determineHasControls method');
-		console.error('   3. Ensure the method returns true for all categories:');
-		console.error('      return true;');
-		console.error('');
-		console.error('   This ensures that all node categories have proper controls in the Node Inspector.');
-    
-    return false;
-  }
+
+		console.log("✅ NodeInspectorAdapter logic is valid!");
+		console.log("   • All node categories have controls by default");
+		console.log("   • Comprehensive approach ensures future-proof behavior");
+		console.log("   • Consistent UX across CREATE, VIEW, TRIGGER, TEST, CYCLE categories");
+
+		return true;
+	} catch (error) {
+		console.error("❌ NodeInspectorAdapter validation failed:");
+		console.error(`   ${error.message}`);
+		console.error("");
+		console.error("💡 To fix this issue:");
+		console.error("   1. Open NodeInspectorAdapter.ts");
+		console.error("   2. Find the determineHasControls method");
+		console.error("   3. Ensure the method returns true for all categories:");
+		console.error("      return true;");
+		console.error("");
+		console.error(
+			"   This ensures that all node categories have proper controls in the Node Inspector."
+		);
+
+		return false;
+	}
 }
 
 /**
  * Main execution
  */
 if (require.main === module) {
-  const isValid = validateAdapterLogic();
-  process.exit(isValid ? 0 : 1);
+	const isValid = validateAdapterLogic();
+	process.exit(isValid ? 0 : 1);
 }
 
-module.exports = { validateAdapterLogic }; 
+module.exports = { validateAdapterLogic };

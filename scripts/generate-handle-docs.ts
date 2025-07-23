@@ -10,52 +10,52 @@
  * Keywords: handle-documentation, type-system, validation-rules, connection-system, auto-generation
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs";
+import * as path from "path";
 
 // ============================================================================
 // TYPES AND INTERFACES
 // ============================================================================
 
 interface HandleSpec {
-  id: string;
-  dataType?: string;
-  tsSymbol?: string;
-  code?: string;
-  position: "top" | "bottom" | "left" | "right";
-  type: "source" | "target";
+	id: string;
+	dataType?: string;
+	tsSymbol?: string;
+	code?: string;
+	position: "top" | "bottom" | "left" | "right";
+	type: "source" | "target";
 }
 
 interface HandleTypeInfo {
-  code: string;
-  label: string;
-  description: string;
-  color: string;
-  icon: string;
-  examples: string[];
-  validationRules: string[];
+	code: string;
+	label: string;
+	description: string;
+	color: string;
+	icon: string;
+	examples: string[];
+	validationRules: string[];
 }
 
 interface NodeHandleAnalysis {
-  nodeKind: string;
-  nodeDisplayName: string;
-  nodeCategory: string;
-  handles: HandleSpec[];
-  handleCount: number;
-  inputCount: number;
-  outputCount: number;
-  typeUsage: Record<string, number>;
-  positionUsage: Record<string, number>;
+	nodeKind: string;
+	nodeDisplayName: string;
+	nodeCategory: string;
+	handles: HandleSpec[];
+	handleCount: number;
+	inputCount: number;
+	outputCount: number;
+	typeUsage: Record<string, number>;
+	positionUsage: Record<string, number>;
 }
 
 interface HandleSystemStats {
-  totalHandles: number;
-  totalNodes: number;
-  typeDistribution: Record<string, number>;
-  positionDistribution: Record<string, number>;
-  categoryDistribution: Record<string, number>;
-  validationErrors: string[];
-  recommendations: string[];
+	totalHandles: number;
+	totalNodes: number;
+	typeDistribution: Record<string, number>;
+	positionDistribution: Record<string, number>;
+	categoryDistribution: Record<string, number>;
+	validationErrors: string[];
+	recommendations: string[];
 }
 
 // ============================================================================
@@ -63,70 +63,70 @@ interface HandleSystemStats {
 // ============================================================================
 
 const HANDLE_TYPE_MAP: Record<string, HandleTypeInfo> = {
-  // Legacy single-letter codes
-  j: {
-    code: "j",
-    label: "JSON",
-    description: "JavaScript Object Notation - flexible data structure",
-    color: "var(--core-handle-types-json-color)",
-    icon: "{}",
-    examples: ["{text: 'Hello'}", "{data: [1,2,3]}", "{config: {enabled: true}}"],
-    validationRules: ["Must be valid JSON", "Accepts objects and arrays", "Type-safe validation"]
-  },
-  s: {
-    code: "s",
-    label: "String",
-    description: "Text data - UTF-8 encoded strings",
-    color: "var(--core-handle-types-string-color)",
-    icon: "T",
-    examples: ["'Hello World'", "'JSON string'", "'User input'"],
-    validationRules: ["Must be string type", "UTF-8 encoding", "No length limit"]
-  },
-  n: {
-    code: "n",
-    label: "Number",
-    description: "Numeric data - integers and floating point",
-    color: "var(--core-handle-types-number-color)",
-    icon: "#",
-    examples: ["42", "3.14", "-1", "0"],
-    validationRules: ["Must be numeric", "Supports integers and floats", "No NaN or Infinity"]
-  },
-  b: {
-    code: "b",
-    label: "Boolean",
-    description: "True/false values for control flow",
-    color: "var(--core-handle-types-boolean-color)",
-    icon: "✓",
-    examples: ["true", "false"],
-    validationRules: ["Must be boolean", "Only true/false values", "No type coercion"]
-  },
-  a: {
-    code: "a",
-    label: "Array",
-    description: "Ordered collection of values",
-    color: "var(--core-handle-types-array-color)",
-    icon: "[]",
-    examples: ["[1,2,3]", "['a','b','c']", "[{id: 1}, {id: 2}]"],
-    validationRules: ["Must be array type", "Ordered collection", "Heterogeneous elements allowed"]
-  },
-  o: {
-    code: "o",
-    label: "Object",
-    description: "Key-value pair collection",
-    color: "var(--core-handle-types-object-color)",
-    icon: "{}",
-    examples: ["{id: 1, name: 'John'}", "{config: {enabled: true}}"],
-    validationRules: ["Must be object type", "Key-value pairs", "No circular references"]
-  },
-  x: {
-    code: "x",
-    label: "Any",
-    description: "Unrestricted type - accepts any value",
-    color: "var(--core-handle-types-any-color)",
-    icon: "?",
-    examples: ["Any value", "Mixed types", "Unknown data"],
-    validationRules: ["Accepts any type", "No validation", "Use with caution"]
-  }
+	// Legacy single-letter codes
+	j: {
+		code: "j",
+		label: "JSON",
+		description: "JavaScript Object Notation - flexible data structure",
+		color: "var(--core-handle-types-json-color)",
+		icon: "{}",
+		examples: ["{text: 'Hello'}", "{data: [1,2,3]}", "{config: {enabled: true}}"],
+		validationRules: ["Must be valid JSON", "Accepts objects and arrays", "Type-safe validation"],
+	},
+	s: {
+		code: "s",
+		label: "String",
+		description: "Text data - UTF-8 encoded strings",
+		color: "var(--core-handle-types-string-color)",
+		icon: "T",
+		examples: ["'Hello World'", "'JSON string'", "'User input'"],
+		validationRules: ["Must be string type", "UTF-8 encoding", "No length limit"],
+	},
+	n: {
+		code: "n",
+		label: "Number",
+		description: "Numeric data - integers and floating point",
+		color: "var(--core-handle-types-number-color)",
+		icon: "#",
+		examples: ["42", "3.14", "-1", "0"],
+		validationRules: ["Must be numeric", "Supports integers and floats", "No NaN or Infinity"],
+	},
+	b: {
+		code: "b",
+		label: "Boolean",
+		description: "True/false values for control flow",
+		color: "var(--core-handle-types-boolean-color)",
+		icon: "✓",
+		examples: ["true", "false"],
+		validationRules: ["Must be boolean", "Only true/false values", "No type coercion"],
+	},
+	a: {
+		code: "a",
+		label: "Array",
+		description: "Ordered collection of values",
+		color: "var(--core-handle-types-array-color)",
+		icon: "[]",
+		examples: ["[1,2,3]", "['a','b','c']", "[{id: 1}, {id: 2}]"],
+		validationRules: ["Must be array type", "Ordered collection", "Heterogeneous elements allowed"],
+	},
+	o: {
+		code: "o",
+		label: "Object",
+		description: "Key-value pair collection",
+		color: "var(--core-handle-types-object-color)",
+		icon: "{}",
+		examples: ["{id: 1, name: 'John'}", "{config: {enabled: true}}"],
+		validationRules: ["Must be object type", "Key-value pairs", "No circular references"],
+	},
+	x: {
+		code: "x",
+		label: "Any",
+		description: "Unrestricted type - accepts any value",
+		color: "var(--core-handle-types-any-color)",
+		icon: "?",
+		examples: ["Any value", "Mixed types", "Unknown data"],
+		validationRules: ["Accepts any type", "No validation", "Use with caution"],
+	},
 };
 
 // ============================================================================
@@ -137,173 +137,178 @@ const HANDLE_TYPE_MAP: Record<string, HandleTypeInfo> = {
  * Scan all nodes for handle specifications
  */
 function scanNodeHandles(): NodeHandleAnalysis[] {
-  const nodeBasePath = path.join(process.cwd(), 'features/business-logic-modern/node-domain');
-  const domains = ['create', 'view', 'trigger', 'test', 'cycle', 'custom'];
-  const analyses: NodeHandleAnalysis[] = [];
+	const nodeBasePath = path.join(process.cwd(), "features/business-logic-modern/node-domain");
+	const domains = ["create", "view", "trigger", "test", "cycle", "custom"];
+	const analyses: NodeHandleAnalysis[] = [];
 
-  domains.forEach(domain => {
-    const domainPath = path.join(nodeBasePath, domain);
-    if (!fs.existsSync(domainPath)) return;
+	domains.forEach((domain) => {
+		const domainPath = path.join(nodeBasePath, domain);
+		if (!fs.existsSync(domainPath)) return;
 
-    const files = fs.readdirSync(domainPath)
-      .filter(file => file.endsWith('.node.tsx'))
-      .map(file => {
-        const kind = file.replace('.node.tsx', '');
-        return { kind, filePath: path.join(domainPath, file) };
-      });
+		const files = fs
+			.readdirSync(domainPath)
+			.filter((file) => file.endsWith(".node.tsx"))
+			.map((file) => {
+				const kind = file.replace(".node.tsx", "");
+				return { kind, filePath: path.join(domainPath, file) };
+			});
 
-    files.forEach(({ kind, filePath }) => {
-      try {
-        const content = fs.readFileSync(filePath, 'utf8');
-        const analysis = analyzeNodeHandles(content, kind, domain);
-        if (analysis) {
-          analyses.push(analysis);
-        }
-      } catch (error) {
-        console.warn(`⚠️  Could not analyze handles for: ${filePath}`);
-      }
-    });
-  });
+		files.forEach(({ kind, filePath }) => {
+			try {
+				const content = fs.readFileSync(filePath, "utf8");
+				const analysis = analyzeNodeHandles(content, kind, domain);
+				if (analysis) {
+					analyses.push(analysis);
+				}
+			} catch (error) {
+				console.warn(`⚠️  Could not analyze handles for: ${filePath}`);
+			}
+		});
+	});
 
-  return analyses;
+	return analyses;
 }
 
 /**
  * Analyze handles in a single node file
  */
-function analyzeNodeHandles(content: string, kind: string, domain: string): NodeHandleAnalysis | null {
-  // Extract NodeSpec
-  const specMatch = content.match(/const\s+spec:\s+NodeSpec\s*=\s*{([^}]+)}/);
-  if (!specMatch) return null;
+function analyzeNodeHandles(
+	content: string,
+	kind: string,
+	domain: string
+): NodeHandleAnalysis | null {
+	// Extract NodeSpec
+	const specMatch = content.match(/const\s+spec:\s+NodeSpec\s*=\s*{([^}]+)}/);
+	if (!specMatch) return null;
 
-  const specContent = specMatch[1];
-  
-  // Extract display name
-  const displayNameMatch = content.match(/displayName:\s*["']([^"']+)["']/);
-  const displayName = displayNameMatch ? displayNameMatch[1] : kind;
+	const specContent = specMatch[1];
 
-  // Extract category
-  const categoryMatch = content.match(/category:\s*CATEGORIES\.([A-Z_]+)/);
-  const category = categoryMatch ? categoryMatch[1] : 'UNKNOWN';
+	// Extract display name
+	const displayNameMatch = content.match(/displayName:\s*["']([^"']+)["']/);
+	const displayName = displayNameMatch ? displayNameMatch[1] : kind;
 
-  // Extract handles array
-  const handlesMatch = content.match(/handles:\s*\[([\s\S]*?)\]/);
-  if (!handlesMatch) return null;
+	// Extract category
+	const categoryMatch = content.match(/category:\s*CATEGORIES\.([A-Z_]+)/);
+	const category = categoryMatch ? categoryMatch[1] : "UNKNOWN";
 
-  const handlesContent = handlesMatch[1];
-  const handles = parseHandlesArray(handlesContent);
+	// Extract handles array
+	const handlesMatch = content.match(/handles:\s*\[([\s\S]*?)\]/);
+	if (!handlesMatch) return null;
 
-  // Analyze handle usage
-  const typeUsage: Record<string, number> = {};
-  const positionUsage: Record<string, number> = {};
+	const handlesContent = handlesMatch[1];
+	const handles = parseHandlesArray(handlesContent);
 
-  handles.forEach(handle => {
-    const type = handle.code || handle.dataType || 'unknown';
-    typeUsage[type] = (typeUsage[type] || 0) + 1;
-    positionUsage[handle.position] = (positionUsage[handle.position] || 0) + 1;
-  });
+	// Analyze handle usage
+	const typeUsage: Record<string, number> = {};
+	const positionUsage: Record<string, number> = {};
 
-  return {
-    nodeKind: kind,
-    nodeDisplayName: displayName,
-    nodeCategory: category,
-    handles,
-    handleCount: handles.length,
-    inputCount: handles.filter(h => h.type === 'target').length,
-    outputCount: handles.filter(h => h.type === 'source').length,
-    typeUsage,
-    positionUsage
-  };
+	handles.forEach((handle) => {
+		const type = handle.code || handle.dataType || "unknown";
+		typeUsage[type] = (typeUsage[type] || 0) + 1;
+		positionUsage[handle.position] = (positionUsage[handle.position] || 0) + 1;
+	});
+
+	return {
+		nodeKind: kind,
+		nodeDisplayName: displayName,
+		nodeCategory: category,
+		handles,
+		handleCount: handles.length,
+		inputCount: handles.filter((h) => h.type === "target").length,
+		outputCount: handles.filter((h) => h.type === "source").length,
+		typeUsage,
+		positionUsage,
+	};
 }
 
 /**
  * Parse handles array from NodeSpec
  */
 function parseHandlesArray(handlesContent: string): HandleSpec[] {
-  const handles: HandleSpec[] = [];
-  const handleRegex = /{\s*([^}]+)\s*}/g;
-  let match;
+	const handles: HandleSpec[] = [];
+	const handleRegex = /{\s*([^}]+)\s*}/g;
+	let match;
 
-  while ((match = handleRegex.exec(handlesContent)) !== null) {
-    const handleContent = match[1];
-    
-    const idMatch = handleContent.match(/id:\s*["']([^"']+)["']/);
-    const dataTypeMatch = handleContent.match(/dataType:\s*["']([^"']+)["']/);
-    const tsSymbolMatch = handleContent.match(/tsSymbol:\s*["']([^"']+)["']/);
-    const codeMatch = handleContent.match(/code:\s*["']([^"']+)["']/);
-    const positionMatch = handleContent.match(/position:\s*["']([^"']+)["']/);
-    const typeMatch = handleContent.match(/type:\s*["']([^"']+)["']/);
+	while ((match = handleRegex.exec(handlesContent)) !== null) {
+		const handleContent = match[1];
 
-    if (idMatch && positionMatch && typeMatch) {
-      handles.push({
-        id: idMatch[1],
-        dataType: dataTypeMatch ? dataTypeMatch[1] : undefined,
-        tsSymbol: tsSymbolMatch ? tsSymbolMatch[1] : undefined,
-        code: codeMatch ? codeMatch[1] : undefined,
-        position: positionMatch[1] as "top" | "bottom" | "left" | "right",
-        type: typeMatch[1] as "source" | "target"
-      });
-    }
-  }
+		const idMatch = handleContent.match(/id:\s*["']([^"']+)["']/);
+		const dataTypeMatch = handleContent.match(/dataType:\s*["']([^"']+)["']/);
+		const tsSymbolMatch = handleContent.match(/tsSymbol:\s*["']([^"']+)["']/);
+		const codeMatch = handleContent.match(/code:\s*["']([^"']+)["']/);
+		const positionMatch = handleContent.match(/position:\s*["']([^"']+)["']/);
+		const typeMatch = handleContent.match(/type:\s*["']([^"']+)["']/);
 
-  return handles;
+		if (idMatch && positionMatch && typeMatch) {
+			handles.push({
+				id: idMatch[1],
+				dataType: dataTypeMatch ? dataTypeMatch[1] : undefined,
+				tsSymbol: tsSymbolMatch ? tsSymbolMatch[1] : undefined,
+				code: codeMatch ? codeMatch[1] : undefined,
+				position: positionMatch[1] as "top" | "bottom" | "left" | "right",
+				type: typeMatch[1] as "source" | "target",
+			});
+		}
+	}
+
+	return handles;
 }
 
 /**
  * Generate handle system statistics
  */
 function generateHandleStats(analyses: NodeHandleAnalysis[]): HandleSystemStats {
-  const stats: HandleSystemStats = {
-    totalHandles: 0,
-    totalNodes: analyses.length,
-    typeDistribution: {},
-    positionDistribution: {},
-    categoryDistribution: {},
-    validationErrors: [],
-    recommendations: []
-  };
+	const stats: HandleSystemStats = {
+		totalHandles: 0,
+		totalNodes: analyses.length,
+		typeDistribution: {},
+		positionDistribution: {},
+		categoryDistribution: {},
+		validationErrors: [],
+		recommendations: [],
+	};
 
-  analyses.forEach(analysis => {
-    stats.totalHandles += analysis.handleCount;
-    
-    // Category distribution
-    stats.categoryDistribution[analysis.nodeCategory] = 
-      (stats.categoryDistribution[analysis.nodeCategory] || 0) + 1;
+	analyses.forEach((analysis) => {
+		stats.totalHandles += analysis.handleCount;
 
-    // Type distribution
-    Object.entries(analysis.typeUsage).forEach(([type, count]) => {
-      stats.typeDistribution[type] = (stats.typeDistribution[type] || 0) + count;
-    });
+		// Category distribution
+		stats.categoryDistribution[analysis.nodeCategory] =
+			(stats.categoryDistribution[analysis.nodeCategory] || 0) + 1;
 
-    // Position distribution
-    Object.entries(analysis.positionUsage).forEach(([position, count]) => {
-      stats.positionDistribution[position] = (stats.positionDistribution[position] || 0) + count;
-    });
+		// Type distribution
+		Object.entries(analysis.typeUsage).forEach(([type, count]) => {
+			stats.typeDistribution[type] = (stats.typeDistribution[type] || 0) + count;
+		});
 
-    // Validation checks
-    if (analysis.inputCount === 0) {
-      stats.validationErrors.push(`${analysis.nodeKind}: No input handles`);
-    }
-    if (analysis.outputCount === 0) {
-      stats.validationErrors.push(`${analysis.nodeKind}: No output handles`);
-    }
-    if (analysis.handles.some(h => !h.code && !h.tsSymbol)) {
-      stats.validationErrors.push(`${analysis.nodeKind}: Handle without type specification`);
-    }
-  });
+		// Position distribution
+		Object.entries(analysis.positionUsage).forEach(([position, count]) => {
+			stats.positionDistribution[position] = (stats.positionDistribution[position] || 0) + count;
+		});
 
-  // Recommendations
-  if (stats.totalHandles === 0) {
-    stats.recommendations.push("No handles found - check node specifications");
-  }
-  if (Object.keys(stats.typeDistribution).length < 3) {
-    stats.recommendations.push("Limited type diversity - consider more handle types");
-  }
-  if (stats.validationErrors.length > 0) {
-    stats.recommendations.push("Fix validation errors for better type safety");
-  }
+		// Validation checks
+		if (analysis.inputCount === 0) {
+			stats.validationErrors.push(`${analysis.nodeKind}: No input handles`);
+		}
+		if (analysis.outputCount === 0) {
+			stats.validationErrors.push(`${analysis.nodeKind}: No output handles`);
+		}
+		if (analysis.handles.some((h) => !h.code && !h.tsSymbol)) {
+			stats.validationErrors.push(`${analysis.nodeKind}: Handle without type specification`);
+		}
+	});
 
-  return stats;
+	// Recommendations
+	if (stats.totalHandles === 0) {
+		stats.recommendations.push("No handles found - check node specifications");
+	}
+	if (Object.keys(stats.typeDistribution).length < 3) {
+		stats.recommendations.push("Limited type diversity - consider more handle types");
+	}
+	if (stats.validationErrors.length > 0) {
+		stats.recommendations.push("Fix validation errors for better type safety");
+	}
+
+	return stats;
 }
 
 // ============================================================================
@@ -314,31 +319,31 @@ function generateHandleStats(analyses: NodeHandleAnalysis[]): HandleSystemStats 
  * Generate comprehensive handle system documentation
  */
 function generateHandleDocumentation() {
-  console.log('🔗 Analyzing handle system...');
-  
-  const analyses = scanNodeHandles();
-  const stats = generateHandleStats(analyses);
-  
-  console.log(`✅ Found ${analyses.length} nodes with ${stats.totalHandles} handles`);
-  
-  // Generate documentation formats
-  generateMarkdownDoc(analyses, stats);
-  generateHTMLDoc(analyses, stats);
-  generateTypeReferenceDoc(analyses, stats);
-  
-  console.log('✅ Handle system documentation generated');
+	console.log("🔗 Analyzing handle system...");
+
+	const analyses = scanNodeHandles();
+	const stats = generateHandleStats(analyses);
+
+	console.log(`✅ Found ${analyses.length} nodes with ${stats.totalHandles} handles`);
+
+	// Generate documentation formats
+	generateMarkdownDoc(analyses, stats);
+	generateHTMLDoc(analyses, stats);
+	generateTypeReferenceDoc(analyses, stats);
+
+	console.log("✅ Handle system documentation generated");
 }
 
 /**
  * Generate markdown documentation
  */
 function generateMarkdownDoc(analyses: NodeHandleAnalysis[], stats: HandleSystemStats) {
-  const docsDir = path.join(process.cwd(), 'documentation', 'handles');
-  if (!fs.existsSync(docsDir)) {
-    fs.mkdirSync(docsDir, { recursive: true });
-  }
+	const docsDir = path.join(process.cwd(), "documentation", "handles");
+	if (!fs.existsSync(docsDir)) {
+		fs.mkdirSync(docsDir, { recursive: true });
+	}
 
-  let markdown = `# Handle System Documentation
+	const markdown = `# Handle System Documentation
 
 ## Overview
 
@@ -356,25 +361,36 @@ The handle system provides type-safe connections between nodes with comprehensiv
 
 | Code | Type | Description | Icon | Color |
 |------|------|-------------|------|-------|
-${Object.entries(HANDLE_TYPE_MAP).map(([code, info]) => 
-  `| \`${code}\` | ${info.label} | ${info.description} | ${info.icon} | \`${info.color}\` |`
-).join('\n')}
+${Object.entries(HANDLE_TYPE_MAP)
+	.map(
+		([code, info]) =>
+			`| \`${code}\` | ${info.label} | ${info.description} | ${info.icon} | \`${info.color}\` |`
+	)
+	.join("\n")}
 
 ## 📍 Position Distribution
 
-${Object.entries(stats.positionDistribution).map(([position, count]) => 
-  `- **${position.toUpperCase()}**: ${count} handles (${((count / stats.totalHandles) * 100).toFixed(1)}%)`
-).join('\n')}
+${Object.entries(stats.positionDistribution)
+	.map(
+		([position, count]) =>
+			`- **${position.toUpperCase()}**: ${count} handles (${((count / stats.totalHandles) * 100).toFixed(1)}%)`
+	)
+	.join("\n")}
 
 ## 🏷️ Type Distribution
 
-${Object.entries(stats.typeDistribution).map(([type, count]) => 
-  `- **${HANDLE_TYPE_MAP[type]?.label || type}**: ${count} handles (${((count / stats.totalHandles) * 100).toFixed(1)}%)`
-).join('\n')}
+${Object.entries(stats.typeDistribution)
+	.map(
+		([type, count]) =>
+			`- **${HANDLE_TYPE_MAP[type]?.label || type}**: ${count} handles (${((count / stats.totalHandles) * 100).toFixed(1)}%)`
+	)
+	.join("\n")}
 
 ## 🏗️ Node Handle Analysis
 
-${analyses.map(analysis => `
+${analyses
+	.map(
+		(analysis) => `
 ### ${analysis.nodeDisplayName}
 
 - **Node Type:** \`${analysis.nodeKind}\`
@@ -385,22 +401,29 @@ ${analyses.map(analysis => `
 
 #### Handle Specifications
 
-${analysis.handles.map(handle => `- **${handle.id}** (${handle.type}) [${handle.position}]
-  - Type: ${handle.code || handle.tsSymbol || 'unspecified'}
-  - Code: \`${handle.code || 'none'}\`
-  - TS Symbol: \`${handle.tsSymbol || 'none'}\``).join('\n')}
-`).join('\n')}
+${analysis.handles
+	.map(
+		(handle) => `- **${handle.id}** (${handle.type}) [${handle.position}]
+  - Type: ${handle.code || handle.tsSymbol || "unspecified"}
+  - Code: \`${handle.code || "none"}\`
+  - TS Symbol: \`${handle.tsSymbol || "none"}\``
+	)
+	.join("\n")}
+`
+	)
+	.join("\n")}
 
 ## ⚠️ Validation Issues
 
-${stats.validationErrors.length > 0 ? 
-  stats.validationErrors.map(error => `- ❌ ${error}`).join('\n') : 
-  '- ✅ No validation issues found'
+${
+	stats.validationErrors.length > 0
+		? stats.validationErrors.map((error) => `- ❌ ${error}`).join("\n")
+		: "- ✅ No validation issues found"
 }
 
 ## 💡 Recommendations
 
-${stats.recommendations.map(rec => `- 💡 ${rec}`).join('\n')}
+${stats.recommendations.map((rec) => `- 💡 ${rec}`).join("\n")}
 
 ## 🔧 Usage Examples
 
@@ -440,9 +463,9 @@ const spec: NodeSpec = {
 
 ### Type Colors
 
-${Object.entries(HANDLE_TYPE_MAP).map(([code, info]) => 
-  `- **${info.label}**: \`${info.color}\` (${info.icon})`
-).join('\n')}
+${Object.entries(HANDLE_TYPE_MAP)
+	.map(([code, info]) => `- **${info.label}**: \`${info.color}\` (${info.icon})`)
+	.join("\n")}
 
 ### Connection Validation
 
@@ -456,21 +479,21 @@ ${Object.entries(HANDLE_TYPE_MAP).map(([code, info]) =>
 *This documentation is automatically generated from node specifications.*
 `;
 
-  const markdownPath = path.join(docsDir, 'HANDLE_SYSTEM.md');
-  fs.writeFileSync(markdownPath, markdown);
-  console.log(`   📄 Markdown: ${markdownPath}`);
+	const markdownPath = path.join(docsDir, "HANDLE_SYSTEM.md");
+	fs.writeFileSync(markdownPath, markdown);
+	console.log(`   📄 Markdown: ${markdownPath}`);
 }
 
 /**
  * Generate HTML documentation
  */
 function generateHTMLDoc(analyses: NodeHandleAnalysis[], stats: HandleSystemStats) {
-  const docsDir = path.join(process.cwd(), 'documentation', 'handles');
-  if (!fs.existsSync(docsDir)) {
-    fs.mkdirSync(docsDir, { recursive: true });
-  }
+	const docsDir = path.join(process.cwd(), "documentation", "handles");
+	if (!fs.existsSync(docsDir)) {
+		fs.mkdirSync(docsDir, { recursive: true });
+	}
 
-  const htmlContent = `<!DOCTYPE html>
+	const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -537,7 +560,9 @@ function generateHTMLDoc(analyses: NodeHandleAnalysis[], stats: HandleSystemStat
             <div class="section">
                 <h2>Handle Types</h2>
                 <div class="type-grid">
-                    ${Object.entries(HANDLE_TYPE_MAP).map(([code, info]) => `
+                    ${Object.entries(HANDLE_TYPE_MAP)
+											.map(
+												([code, info]) => `
                     <div class="type-card">
                         <h4><span class="type-icon">${info.icon}</span>${info.label}</h4>
                         <p><strong>Code:</strong> <code>${code}</code></p>
@@ -545,17 +570,21 @@ function generateHTMLDoc(analyses: NodeHandleAnalysis[], stats: HandleSystemStat
                         <p><strong>Color:</strong> <code>${info.color}</code></p>
                         <p><strong>Examples:</strong></p>
                         <ul>
-                            ${info.examples.map(ex => `<li><code>${ex}</code></li>`).join('')}
+                            ${info.examples.map((ex) => `<li><code>${ex}</code></li>`).join("")}
                         </ul>
                     </div>
-                    `).join('')}
+                    `
+											)
+											.join("")}
                 </div>
             </div>
             
             <div class="section">
                 <h2>Node Handle Analysis</h2>
                 <div class="node-grid">
-                    ${analyses.map(analysis => `
+                    ${analyses
+											.map(
+												(analysis) => `
                     <div class="node-card">
                         <h3>${analysis.nodeDisplayName}</h3>
                         <p><strong>Node Type:</strong> <code>${analysis.nodeKind}</code></p>
@@ -565,93 +594,117 @@ function generateHTMLDoc(analyses: NodeHandleAnalysis[], stats: HandleSystemStat
                         
                         <h4>Handle Specifications</h4>
                         <ul class="handle-list">
-                            ${analysis.handles.map(handle => `
+                            ${analysis.handles
+															.map(
+																(handle) => `
                             <li class="handle-item">
                                 <strong>${handle.id}</strong> <span class="type">(${handle.type}) [${handle.position}]</span><br>
-                                <small>Type: ${handle.code || handle.tsSymbol || 'unspecified'}</small>
+                                <small>Type: ${handle.code || handle.tsSymbol || "unspecified"}</small>
                             </li>
-                            `).join('')}
+                            `
+															)
+															.join("")}
                         </ul>
                     </div>
-                    `).join('')}
+                    `
+											)
+											.join("")}
                 </div>
             </div>
             
-            ${stats.validationErrors.length > 0 ? `
+            ${
+							stats.validationErrors.length > 0
+								? `
             <div class="validation-errors">
                 <h3>⚠️ Validation Issues</h3>
                 <ul>
-                    ${stats.validationErrors.map(error => `<li>❌ ${error}</li>`).join('')}
+                    ${stats.validationErrors.map((error) => `<li>❌ ${error}</li>`).join("")}
                 </ul>
             </div>
-            ` : ''}
+            `
+								: ""
+						}
             
-            ${stats.recommendations.length > 0 ? `
+            ${
+							stats.recommendations.length > 0
+								? `
             <div class="recommendations">
                 <h3>💡 Recommendations</h3>
                 <ul>
-                    ${stats.recommendations.map(rec => `<li>💡 ${rec}</li>`).join('')}
+                    ${stats.recommendations.map((rec) => `<li>💡 ${rec}</li>`).join("")}
                 </ul>
             </div>
-            ` : ''}
+            `
+								: ""
+						}
         </div>
     </div>
 </body>
 </html>`;
 
-  const htmlPath = path.join(docsDir, 'handle-system.html');
-  fs.writeFileSync(htmlPath, htmlContent);
-  console.log(`   🌐 HTML: ${htmlPath}`);
+	const htmlPath = path.join(docsDir, "handle-system.html");
+	fs.writeFileSync(htmlPath, htmlContent);
+	console.log(`   🌐 HTML: ${htmlPath}`);
 }
 
 /**
  * Generate type reference documentation
  */
 function generateTypeReferenceDoc(analyses: NodeHandleAnalysis[], stats: HandleSystemStats) {
-  const docsDir = path.join(process.cwd(), 'documentation', 'handles');
-  if (!fs.existsSync(docsDir)) {
-    fs.mkdirSync(docsDir, { recursive: true });
-  }
+	const docsDir = path.join(process.cwd(), "documentation", "handles");
+	if (!fs.existsSync(docsDir)) {
+		fs.mkdirSync(docsDir, { recursive: true });
+	}
 
-  let reference = `# Handle Type Reference
+	const reference = `# Handle Type Reference
 
 ## Quick Reference
 
 | Code | Type | Use Case | Validation |
 |------|------|----------|------------|
-${Object.entries(HANDLE_TYPE_MAP).map(([code, info]) => 
-  `| \`${code}\` | ${info.label} | ${info.description} | ${info.validationRules.join(', ')} |`
-).join('\n')}
+${Object.entries(HANDLE_TYPE_MAP)
+	.map(
+		([code, info]) =>
+			`| \`${code}\` | ${info.label} | ${info.description} | ${info.validationRules.join(", ")} |`
+	)
+	.join("\n")}
 
 ## Type Compatibility Matrix
 
 | Source \\ Target | JSON | String | Number | Boolean | Array | Object | Any |
 |------------------|------|--------|--------|---------|-------|--------|-----|
-${Object.keys(HANDLE_TYPE_MAP).map(sourceType => {
-  const source = HANDLE_TYPE_MAP[sourceType];
-  return `| **${source.label}** | ${Object.keys(HANDLE_TYPE_MAP).map(targetType => {
-    const target = HANDLE_TYPE_MAP[targetType];
-    const compatible = isTypeCompatible(sourceType, targetType);
-    return compatible ? '✅' : '❌';
-  }).join(' | ')} |`;
-}).join('\n')}
+${Object.keys(HANDLE_TYPE_MAP)
+	.map((sourceType) => {
+		const source = HANDLE_TYPE_MAP[sourceType];
+		return `| **${source.label}** | ${Object.keys(HANDLE_TYPE_MAP)
+			.map((targetType) => {
+				const target = HANDLE_TYPE_MAP[targetType];
+				const compatible = isTypeCompatible(sourceType, targetType);
+				return compatible ? "✅" : "❌";
+			})
+			.join(" | ")} |`;
+	})
+	.join("\n")}
 
 ## Usage Patterns
 
 ### Most Common Handle Combinations
 
 ${Object.entries(stats.typeDistribution)
-  .sort(([,a], [,b]) => b - a)
-  .slice(0, 5)
-  .map(([type, count]) => `- **${HANDLE_TYPE_MAP[type]?.label || type}**: ${count} uses`)
-  .join('\n')}
+	.sort(([, a], [, b]) => b - a)
+	.slice(0, 5)
+	.map(([type, count]) => `- **${HANDLE_TYPE_MAP[type]?.label || type}**: ${count} uses`)
+	.join("\n")}
 
 ### Position Preferences
 
 ${Object.entries(stats.positionDistribution)
-  .sort(([,a], [,b]) => b - a)
-  .map(([position, count]) => `- **${position.toUpperCase()}**: ${count} handles (${((count / stats.totalHandles) * 100).toFixed(1)}%)`)
-  .join('\n')}
+	.sort(([, a], [, b]) => b - a)
+	.map(
+		([position, count]) =>
+			`- **${position.toUpperCase()}**: ${count} handles (${((count / stats.totalHandles) * 100).toFixed(1)}%)`
+	)
+	.join("\n")}
 
 ## Best Practices
 
@@ -707,40 +760,40 @@ handles: [
 *Generated from ${stats.totalNodes} nodes with ${stats.totalHandles} handles*
 `;
 
-  const referencePath = path.join(docsDir, 'TYPE_REFERENCE.md');
-  fs.writeFileSync(referencePath, reference);
-  console.log(`   📚 Type Reference: ${referencePath}`);
+	const referencePath = path.join(docsDir, "TYPE_REFERENCE.md");
+	fs.writeFileSync(referencePath, reference);
+	console.log(`   📚 Type Reference: ${referencePath}`);
 }
 
 /**
  * Check type compatibility
  */
 function isTypeCompatible(sourceType: string, targetType: string): boolean {
-  // Any type can connect to any type
-  if (sourceType === 'x' || targetType === 'x') return true;
-  
-  // Same types are compatible
-  if (sourceType === targetType) return true;
-  
-  // JSON can connect to most types
-  if (sourceType === 'j') return ['s', 'n', 'b', 'a', 'o'].includes(targetType);
-  
-  // String can connect to string
-  if (sourceType === 's' && targetType === 's') return true;
-  
-  // Number can connect to number
-  if (sourceType === 'n' && targetType === 'n') return true;
-  
-  // Boolean can connect to boolean
-  if (sourceType === 'b' && targetType === 'b') return true;
-  
-  // Array can connect to array
-  if (sourceType === 'a' && targetType === 'a') return true;
-  
-  // Object can connect to object
-  if (sourceType === 'o' && targetType === 'o') return true;
-  
-  return false;
+	// Any type can connect to any type
+	if (sourceType === "x" || targetType === "x") return true;
+
+	// Same types are compatible
+	if (sourceType === targetType) return true;
+
+	// JSON can connect to most types
+	if (sourceType === "j") return ["s", "n", "b", "a", "o"].includes(targetType);
+
+	// String can connect to string
+	if (sourceType === "s" && targetType === "s") return true;
+
+	// Number can connect to number
+	if (sourceType === "n" && targetType === "n") return true;
+
+	// Boolean can connect to boolean
+	if (sourceType === "b" && targetType === "b") return true;
+
+	// Array can connect to array
+	if (sourceType === "a" && targetType === "a") return true;
+
+	// Object can connect to object
+	if (sourceType === "o" && targetType === "o") return true;
+
+	return false;
 }
 
 // ============================================================================
@@ -748,9 +801,9 @@ function isTypeCompatible(sourceType: string, targetType: string): boolean {
 // ============================================================================
 
 if (require.main === module) {
-  console.log('🔗 Generating handle system documentation...');
-  generateHandleDocumentation();
-  console.log('✅ Handle system documentation complete');
+	console.log("🔗 Generating handle system documentation...");
+	generateHandleDocumentation();
+	console.log("✅ Handle system documentation complete");
 }
 
-export { generateHandleDocumentation }; 
+export { generateHandleDocumentation };

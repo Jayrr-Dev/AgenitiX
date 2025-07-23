@@ -11,16 +11,9 @@
 import { Handle, type HandleProps, type IsValidConnection, useStore } from "@xyflow/react";
 import type React from "react";
 import { useCallback } from "react";
-import { toast } from "sonner";
-import { 
-	LuType, 
-	LuHash, 
-	LuCheck, 
-	LuBraces, 
-	LuBrackets, 
-	LuCircle
-} from "react-icons/lu";
+import { LuBraces, LuBrackets, LuCheck, LuCircle, LuHash, LuType } from "react-icons/lu";
 import { VscJson } from "react-icons/vsc";
+import { toast } from "sonner";
 // Auto-generated at build time (can be empty in dev before first build)
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore – file is generated post-install / build
@@ -267,13 +260,13 @@ function getTooltipContent(
 
 	// Get the primary type code
 	const typeCode = parseUnionTypes(dataType || code)[0];
-	
+
 	// Check if it's a full data type name (like "String", "Boolean", etc.)
 	const fullTypeMapping = ULTIMATE_TYPE_MAP[typeCode];
 	if (fullTypeMapping) {
 		return `${direction}: ${fullTypeMapping.label} - ${TYPE_DESCRIPTIONS[typeCode] || TYPE_DESCRIPTIONS[fullTypeMapping.tokenKey] || "Data type"}`;
 	}
-	
+
 	const typeDescription = TYPE_DESCRIPTIONS[typeCode];
 
 	if (!typeDescription) {
@@ -283,10 +276,12 @@ function getTooltipContent(
 	// Handle union types (multiple types separated by |)
 	const allTypes = parseUnionTypes(dataType || code);
 	if (allTypes.length > 1) {
-		const descriptions = allTypes.map((type) => {
-			const fullMapping = ULTIMATE_TYPE_MAP[type];
-			return fullMapping ? fullMapping.label : TYPE_DESCRIPTIONS[type];
-		}).filter(Boolean);
+		const descriptions = allTypes
+			.map((type) => {
+				const fullMapping = ULTIMATE_TYPE_MAP[type];
+				return fullMapping ? fullMapping.label : TYPE_DESCRIPTIONS[type];
+			})
+			.filter(Boolean);
 
 		if (descriptions.length > 1) {
 			return `${direction}: ${descriptions.join(" OR ")}`;
@@ -386,7 +381,7 @@ const UltimateTypesafeHandle: React.FC<any> = ({
 	const tooltipContent = getTooltipContent(props.type, dataType, code, tsSymbol);
 
 	const IconComponent = typeDisplay.icon;
-	
+
 	return (
 		<Handle
 			{...(props as HandleProps)}

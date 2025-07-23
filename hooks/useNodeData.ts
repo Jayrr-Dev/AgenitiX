@@ -1,6 +1,6 @@
+import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import { Node, useReactFlow } from "@xyflow/react";
 import { useCallback, useMemo } from "react";
-import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 
 /**
  * A hook to manage the data of a specific node.

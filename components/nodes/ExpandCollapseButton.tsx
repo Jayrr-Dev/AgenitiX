@@ -56,28 +56,31 @@ export const ExpandCollapseButton: React.FC<ExpandCollapseButtonProps> = ({
 	const buttonColor = "var(--core-expandCollapseButton-text)";
 
 	// Memoize the button style to prevent unnecessary re-renders
-	const buttonStyle = React.useMemo((): React.CSSProperties => ({
-		// Token-based styling - maintains current appearance
-		backgroundColor: "var(--core-expandCollapseButton-bg)",
-		color: buttonColor,
-		// Positioning and sizing (keeping current values)
-		position: "absolute",
-		top: "4px", // top-0.5 = 2px
-		left: "3px", // left-1 = 4px
-		zIndex: 10,
-		cursor: "pointer",
-		// Typography (keeping current values)
-		fontSize: "11px",
-		fontWeight: "bold",
-		// Remove default button styling
-		border: "none",
-		padding: "0",
-		outline: "none",
-		margin: "0px",
-		transform: "translate(0px, -1px)",
-		opacity: ".7",
-		scale: "1.2",
-	}), [buttonColor]);
+	const buttonStyle = React.useMemo(
+		(): React.CSSProperties => ({
+			// Token-based styling - maintains current appearance
+			backgroundColor: "var(--core-expandCollapseButton-bg)",
+			color: buttonColor,
+			// Positioning and sizing (keeping current values)
+			position: "absolute",
+			top: "4px", // top-0.5 = 2px
+			left: "3px", // left-1 = 4px
+			zIndex: 10,
+			cursor: "pointer",
+			// Typography (keeping current values)
+			fontSize: "11px",
+			fontWeight: "bold",
+			// Remove default button styling
+			border: "none",
+			padding: "0",
+			outline: "none",
+			margin: "0px",
+			transform: "translate(0px, -1px)",
+			opacity: ".7",
+			scale: "1.2",
+		}),
+		[buttonColor]
+	);
 
 	return (
 		<button

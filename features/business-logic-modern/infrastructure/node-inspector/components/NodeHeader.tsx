@@ -13,8 +13,8 @@
 
 "use client";
 
-import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import { useNodeDisplay } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/NodeDisplayContext";
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import { useTextInputShortcuts } from "@flow-engine/hooks/useTextInputShortcuts";
 import type React from "react";
 import { useCallback, useState } from "react";
@@ -125,7 +125,10 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 				<div className="flex items-center gap-2">
 					{/* REGISTRY-ENHANCED ICON */}
 					{icon && (
-						<span className="text-lg" title={`${displayName} • Category: ${category}${tags && tags.length > 0 ? ` • Tags: ${tags.join(', ')}` : ''}`}>
+						<span
+							className="text-lg"
+							title={`${displayName} • Category: ${category}${tags && tags.length > 0 ? ` • Tags: ${tags.join(", ")}` : ""}`}
+						>
 							{renderLucideIcon(icon, "", 20)}
 						</span>
 					)}

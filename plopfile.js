@@ -19,39 +19,39 @@ module.exports = (plop) => {
 	plop.setHelper("expandedSizeConstant", (key) =>
 		key.startsWith("V") ? `EXPANDED_VARIABLE_SIZES.${key}` : `EXPANDED_SIZES.${key}`
 	);
-	
+
 	// Helper to truncate strings
 	plop.setHelper("truncate", (str, length) => {
 		if (str.length <= length) return str;
 		return str.substring(0, length);
 	});
-	
+
 	// Helper to convert to uppercase
 	plop.setHelper("upper", (str) => str.toUpperCase());
-	
+
 	// Helper for equality comparison
 	plop.setHelper("eq", (a, b) => a === b);
-	
+
 	// Helper for title case conversion
 	plop.setHelper("titleCase", (str) => {
 		return str.charAt(0).toUpperCase() + str.slice(1);
 	});
-	
+
 	// Helper for camel case conversion
 	plop.setHelper("camelCase", (str) => {
 		return str.charAt(0).toLowerCase() + str.slice(1);
 	});
-	
+
 	// Helper for pascal case conversion
 	plop.setHelper("pascalCase", (str) => {
 		return str.charAt(0).toUpperCase() + str.slice(1);
 	});
-	
+
 	// Helper for kebab case conversion
 	plop.setHelper("kebabCase", (str) => {
-		return str.replace(/([A-Z])/g, '-$1').toLowerCase();
+		return str.replace(/([A-Z])/g, "-$1").toLowerCase();
 	});
-	
+
 	// Helper for constant case conversion
 	plop.setHelper("constantCase", (str) => {
 		return str.toUpperCase();
@@ -227,18 +227,21 @@ module.exports = (plop) => {
 			if (data.icon === "custom" && data.customIcon) {
 				data.icon = data.customIcon;
 			}
-			
+
 			// Process custom feature
 			if (data.feature === "custom" && data.customFeature) {
 				data.feature = data.customFeature;
 			}
-			
+
 			// Process tags
 			if (data.tags) {
-				const tagArray = data.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+				const tagArray = data.tags
+					.split(",")
+					.map((tag) => tag.trim())
+					.filter((tag) => tag.length > 0);
 				data.tags = tagArray;
 			}
-			
+
 			return [
 				// 1. Create the main node file
 				{
@@ -247,200 +250,218 @@ module.exports = (plop) => {
 					templateFile: "tooling/dev-scripts/plop-templates/node.tsx.hbs",
 				},
 
-			// 2. Update useDynamicNodeTypes.ts - import
-			{
-				type: "modify",
-				path: "features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts",
-				pattern: /\/\/ Add new node imports here \(Plop can auto-inject these\)/g,
-				template:
-					"// Add new node imports here (Plop can auto-inject these)\nimport {{kind}} from '../../../node-domain/{{domain}}/{{kind}}.node';",
-			},
+				// 2. Update useDynamicNodeTypes.ts - import
+				{
+					type: "modify",
+					path: "features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts",
+					pattern: /\/\/ Add new node imports here \(Plop can auto-inject these\)/g,
+					template:
+						"// Add new node imports here (Plop can auto-inject these)\nimport {{kind}} from '../../../node-domain/{{domain}}/{{kind}}.node';",
+				},
 
-			// 3. Update useDynamicNodeTypes.ts - export
-			{
-				type: "modify",
-				path: "features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts",
-				pattern: /\/\/ Add new node types here/g,
-				template: "// Add new node types here\n    {{kind}},",
-			},
+				// 3. Update useDynamicNodeTypes.ts - export
+				{
+					type: "modify",
+					path: "features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts",
+					pattern: /\/\/ Add new node types here/g,
+					template: "// Add new node types here\n    {{kind}},",
+				},
 
-			// 4. Update nodespec-registry.ts - import
-			{
-				type: "modify",
-				path: "features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts",
-				pattern: "import createText, { spec as createTextSpec } from \"../../node-domain/create/createText.node\";",
-				template: "import createText, { spec as createTextSpec } from \"../../node-domain/create/createText.node\";\nimport {{kind}}, { spec as {{kind}}Spec } from \"../../node-domain/{{domain}}/{{kind}}.node\";",
-			},
+				// 4. Update nodespec-registry.ts - import
+				{
+					type: "modify",
+					path: "features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts",
+					pattern:
+						'import createText, { spec as createTextSpec } from "../../node-domain/create/createText.node";',
+					template:
+						'import createText, { spec as createTextSpec } from "../../node-domain/create/createText.node";\nimport {{kind}}, { spec as {{kind}}Spec } from "../../node-domain/{{domain}}/{{kind}}.node";',
+				},
 
-			// 5. Update nodespec-registry.ts - registry entry
-			{
-				type: "modify",
-				path: "features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts",
-				pattern: "createText: createTextSpec,",
-				template: "createText: createTextSpec,\n\t{{kind}}: {{kind}}Spec,",
-			},
+				// 5. Update nodespec-registry.ts - registry entry
+				{
+					type: "modify",
+					path: "features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts",
+					pattern: "createText: createTextSpec,",
+					template: "createText: createTextSpec,\n\t{{kind}}: {{kind}}Spec,",
+				},
 
-			// 6. Update node-domain/index.ts - export
-			{
-				type: "modify",
-				path: "features/business-logic-modern/node-domain/index.ts",
-				pattern: "export { default as createText } from \"./create/createText.node\";",
-				template: "export { default as createText } from \"./create/createText.node\";\nexport { default as {{kind}} } from \"./{{domain}}/{{kind}}.node\";",
-			},
+				// 6. Update node-domain/index.ts - export
+				{
+					type: "modify",
+					path: "features/business-logic-modern/node-domain/index.ts",
+					pattern: 'export { default as createText } from "./create/createText.node";',
+					template:
+						'export { default as createText } from "./create/createText.node";\nexport { default as {{kind}} } from "./{{domain}}/{{kind}}.node";',
+				},
 
-			// 7. Ensure theming tokens exist for the category (NEW)
-			(data) => {
-				const { category, domain } = data;
-				const tokensPath = path.join(
-					__dirname,
-					"features/business-logic-modern/infrastructure/theming/tokens.json"
-				);
+				// 7. Ensure theming tokens exist for the category (NEW)
+				(data) => {
+					const { category, domain } = data;
+					const tokensPath = path.join(
+						__dirname,
+						"features/business-logic-modern/infrastructure/theming/tokens.json"
+					);
 
-				try {
-					if (fs.existsSync(tokensPath)) {
-						const tokens = JSON.parse(fs.readFileSync(tokensPath, "utf8"));
-						const categoryKey = category.toLowerCase();
+					try {
+						if (fs.existsSync(tokensPath)) {
+							const tokens = JSON.parse(fs.readFileSync(tokensPath, "utf8"));
+							const categoryKey = category.toLowerCase();
 
-						// Check if tokens exist for this category
-						if (!tokens.node || !tokens.node[categoryKey]) {
-							console.log(
-								`⚠️  Warning: No theming tokens found for category '${categoryKey}' in tokens.json`
-							);
-							console.log(
-								`   Add tokens for '${categoryKey}' in features/business-logic-modern/infrastructure/theming/tokens.json`
-							);
-							console.log(`   Then run 'pnpm generate:tokens' to regenerate CSS variables`);
+							// Check if tokens exist for this category
+							if (!tokens.node || !tokens.node[categoryKey]) {
+								console.log(
+									`⚠️  Warning: No theming tokens found for category '${categoryKey}' in tokens.json`
+								);
+								console.log(
+									`   Add tokens for '${categoryKey}' in features/business-logic-modern/infrastructure/theming/tokens.json`
+								);
+								console.log(`   Then run 'pnpm generate:tokens' to regenerate CSS variables`);
+							}
+
+							return `✅ Theming tokens verified for category '${categoryKey}'`;
 						}
-
-						return `✅ Theming tokens verified for category '${categoryKey}'`;
+						return `⚠️  tokens.json not found - theming may not work properly`;
+					} catch (error) {
+						return `❌ Error checking theming tokens: ${error.message}`;
 					}
-					return `⚠️  tokens.json not found - theming may not work properly`;
-				} catch (error) {
-					return `❌ Error checking theming tokens: ${error.message}`;
-				}
-			},
+				},
 
-			// 8. Auto-regenerate CSS tokens (NEW)
-			() => {
-				return new Promise((resolve) => {
-					const { spawn } = require("child_process");
-					console.log("🎨 Regenerating CSS tokens...");
+				// 8. Auto-regenerate CSS tokens (NEW)
+				() => {
+					return new Promise((resolve) => {
+						const { spawn } = require("child_process");
+						console.log("🎨 Regenerating CSS tokens...");
 
-					const tokenProcess = spawn("pnpm", ["generate:tokens"], {
-						stdio: "inherit",
-						shell: true,
-						cwd: __dirname,
+						const tokenProcess = spawn("pnpm", ["generate:tokens"], {
+							stdio: "inherit",
+							shell: true,
+							cwd: __dirname,
+						});
+
+						tokenProcess.on("close", (code) => {
+							if (code === 0) {
+								resolve("✅ CSS tokens regenerated successfully");
+							} else {
+								resolve(`⚠️  Token generation completed with code ${code}`);
+							}
+						});
+
+						tokenProcess.on("error", (error) => {
+							resolve(`❌ Error regenerating tokens: ${error.message}`);
+						});
 					});
+				},
 
-					tokenProcess.on("close", (code) => {
-						if (code === 0) {
-							resolve("✅ CSS tokens regenerated successfully");
-						} else {
-							resolve(`⚠️  Token generation completed with code ${code}`);
-						}
+				// 9. Auto-generate node documentation (NEW)
+				(data) => {
+					return new Promise((resolve) => {
+						const { spawn } = require("child_process");
+						console.log("📚 Generating node documentation...");
+
+						const docProcess = spawn(
+							"npx",
+							[
+								"ts-node",
+								"--project",
+								"tsconfig.node.json",
+								"scripts/generate-node-docs.ts",
+								data.kind,
+								data.domain,
+								data.category,
+								data.kind,
+							],
+							{
+								stdio: "inherit",
+								shell: true,
+								cwd: __dirname,
+							}
+						);
+
+						docProcess.on("close", (code) => {
+							if (code === 0) {
+								resolve("✅ Node documentation generated successfully");
+							} else {
+								resolve(`⚠️  Documentation generation completed with code ${code}`);
+							}
+						});
+
+						docProcess.on("error", (error) => {
+							resolve(`❌ Error generating documentation: ${error.message}`);
+						});
 					});
+				},
 
-					tokenProcess.on("error", (error) => {
-						resolve(`❌ Error regenerating tokens: ${error.message}`);
+				// 10. Auto-generate nodes overview (NEW)
+				() => {
+					return new Promise((resolve) => {
+						const { spawn } = require("child_process");
+						console.log("📋 Generating nodes overview...");
+
+						const overviewProcess = spawn(
+							"npx",
+							["ts-node", "--project", "tsconfig.node.json", "scripts/generate-nodes-overview.ts"],
+							{
+								stdio: "inherit",
+								shell: true,
+								cwd: __dirname,
+							}
+						);
+
+						overviewProcess.on("close", (code) => {
+							if (code === 0) {
+								resolve("✅ Nodes overview generated successfully");
+							} else {
+								resolve(`⚠️  Overview generation completed with code ${code}`);
+							}
+						});
+
+						overviewProcess.on("error", (error) => {
+							resolve(`❌ Error generating overview: ${error.message}`);
+						});
 					});
-				});
-			},
+				},
 
-			// 9. Auto-generate node documentation (NEW)
-			(data) => {
-				return new Promise((resolve) => {
-					const { spawn } = require("child_process");
-					console.log("📚 Generating node documentation...");
-
-					const docProcess = spawn("npx", ["ts-node", "--project", "tsconfig.node.json", "scripts/generate-node-docs.ts", data.kind, data.domain, data.category, data.kind], {
-						stdio: "inherit",
-						shell: true,
-						cwd: __dirname,
-					});
-
-					docProcess.on("close", (code) => {
-						if (code === 0) {
-							resolve("✅ Node documentation generated successfully");
-						} else {
-							resolve(`⚠️  Documentation generation completed with code ${code}`);
-						}
-					});
-
-					docProcess.on("error", (error) => {
-						resolve(`❌ Error generating documentation: ${error.message}`);
-					});
-				});
-			},
-
-			// 10. Auto-generate nodes overview (NEW)
-			() => {
-				return new Promise((resolve) => {
-					const { spawn } = require("child_process");
-					console.log("📋 Generating nodes overview...");
-
-					const overviewProcess = spawn("npx", ["ts-node", "--project", "tsconfig.node.json", "scripts/generate-nodes-overview.ts"], {
-						stdio: "inherit",
-						shell: true,
-						cwd: __dirname,
-					});
-
-					overviewProcess.on("close", (code) => {
-						if (code === 0) {
-							resolve("✅ Nodes overview generated successfully");
-						} else {
-							resolve(`⚠️  Overview generation completed with code ${code}`);
-						}
-					});
-
-					overviewProcess.on("error", (error) => {
-						resolve(`❌ Error generating overview: ${error.message}`);
-					});
-				});
-			},
-
-			// 11. Final success message with comprehensive instructions
-			(data) => {
-				const { kind, domain, category } = data;
-				return (
-					`🎯 Successfully created node '${kind}' with full theming integration:\n\n` +
-					`📁 FILES CREATED/UPDATED:\n` +
-					`   ✅ Node file: features/business-logic-modern/node-domain/${domain}/${kind}.node.tsx\n` +
-					`   ✅ Registry entries: useDynamicNodeTypes.ts, nodespec-registry.ts\n` +
-					`   ✅ Export statements: node-domain/index.ts\n` +
-					`   ✅ CSS tokens: Regenerated from tokens.json\n` +
-					`   ✅ Documentation: documentation/nodes/${domain}/${kind}.md\n` +
-					`   ✅ HTML docs: documentation/nodes/${domain}/${kind}.html\n` +
-					`   ✅ API reference: documentation/api/${kind}.ts\n` +
-					`   ✅ Nodes overview: documentation/nodes/overview.html\n\n` +
-					`🎨 THEMING INTEGRATION:\n` +
-					`   ✅ Node uses category '${category}' theming tokens\n` +
-					`   ✅ CSS variables: --node-${category.toLowerCase()}-*\n` +
-					`   ✅ Auto-integrated with sidebar, inspector, minimap\n` +
-					`   ✅ Follows semantic token system\n\n` +
-					`📚 DOCUMENTATION GENERATED:\n` +
-					`   ✅ Comprehensive markdown documentation\n` +
-					`   ✅ Interactive HTML documentation\n` +
-					`   ✅ API reference with TypeScript types\n` +
-					`   ✅ Usage examples and integration guides\n` +
-					`   ✅ Troubleshooting and development tips\n\n` +
-					`🚀 READY TO USE:\n` +
-					`   • Node automatically appears in sidebar\n` +
-					`   • Inspector controls auto-generated from schema\n` +
-					`   • NODE_TYPE_CONFIG dynamically provides configuration\n` +
-					`   • Theming matches existing ${category} category nodes\n` +
-					`   • Documentation available at documentation/nodes/${domain}/\n\n` +
-					`🔧 NEXT STEPS:\n` +
-					`   • Customize node schema in the generated file\n` +
-					`   • Add custom UI in the expanded/collapsed sections\n` +
-					`   • Review generated documentation\n` +
-					`   • Test with 'pnpm dev' - no additional setup needed!`
-				);
-			},
-		];
+				// 11. Final success message with comprehensive instructions
+				(data) => {
+					const { kind, domain, category } = data;
+					return (
+						`🎯 Successfully created node '${kind}' with full theming integration:\n\n` +
+						`📁 FILES CREATED/UPDATED:\n` +
+						`   ✅ Node file: features/business-logic-modern/node-domain/${domain}/${kind}.node.tsx\n` +
+						`   ✅ Registry entries: useDynamicNodeTypes.ts, nodespec-registry.ts\n` +
+						`   ✅ Export statements: node-domain/index.ts\n` +
+						`   ✅ CSS tokens: Regenerated from tokens.json\n` +
+						`   ✅ Documentation: documentation/nodes/${domain}/${kind}.md\n` +
+						`   ✅ HTML docs: documentation/nodes/${domain}/${kind}.html\n` +
+						`   ✅ API reference: documentation/api/${kind}.ts\n` +
+						`   ✅ Nodes overview: documentation/nodes/overview.html\n\n` +
+						`🎨 THEMING INTEGRATION:\n` +
+						`   ✅ Node uses category '${category}' theming tokens\n` +
+						`   ✅ CSS variables: --node-${category.toLowerCase()}-*\n` +
+						`   ✅ Auto-integrated with sidebar, inspector, minimap\n` +
+						`   ✅ Follows semantic token system\n\n` +
+						`📚 DOCUMENTATION GENERATED:\n` +
+						`   ✅ Comprehensive markdown documentation\n` +
+						`   ✅ Interactive HTML documentation\n` +
+						`   ✅ API reference with TypeScript types\n` +
+						`   ✅ Usage examples and integration guides\n` +
+						`   ✅ Troubleshooting and development tips\n\n` +
+						`🚀 READY TO USE:\n` +
+						`   • Node automatically appears in sidebar\n` +
+						`   • Inspector controls auto-generated from schema\n` +
+						`   • NODE_TYPE_CONFIG dynamically provides configuration\n` +
+						`   • Theming matches existing ${category} category nodes\n` +
+						`   • Documentation available at documentation/nodes/${domain}/\n\n` +
+						`🔧 NEXT STEPS:\n` +
+						`   • Customize node schema in the generated file\n` +
+						`   • Add custom UI in the expanded/collapsed sections\n` +
+						`   • Review generated documentation\n` +
+						`   • Test with 'pnpm dev' - no additional setup needed!`
+					);
+				},
+			];
 		},
 	});
-
-
 
 	plop.setGenerator("delete-node", {
 		description: "Comprehensively delete an existing node and clean up all associated files",
@@ -656,21 +677,25 @@ module.exports = (plop) => {
 			return [
 				// 0. Create backup of registry files before making changes
 				() => {
-					const backupDir = path.join(__dirname, "backups", new Date().toISOString().replace(/[:.]/g, "-"));
+					const backupDir = path.join(
+						__dirname,
+						"backups",
+						new Date().toISOString().replace(/[:.]/g, "-")
+					);
 					if (!fs.existsSync(path.dirname(backupDir))) {
 						fs.mkdirSync(path.dirname(backupDir), { recursive: true });
 					}
-					
+
 					const filesToBackup = [
 						"features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts",
 						"features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts",
 						"features/business-logic-modern/node-domain/index.ts",
 						`documentation/api/${kind}.ts`,
 						`documentation/nodes/${domain}/${kind}.md`,
-						`documentation/nodes/${domain}/${kind}.html`
+						`documentation/nodes/${domain}/${kind}.html`,
 					];
-					
-					filesToBackup.forEach(filePath => {
+
+					filesToBackup.forEach((filePath) => {
 						const fullPath = path.join(__dirname, filePath);
 						if (fs.existsSync(fullPath)) {
 							const backupPath = path.join(backupDir, path.basename(filePath));
@@ -682,7 +707,7 @@ module.exports = (plop) => {
 							fs.copyFileSync(fullPath, backupPath);
 						}
 					});
-					
+
 					return `✅ Created backup in ${backupDir}`;
 				},
 
@@ -694,21 +719,27 @@ module.exports = (plop) => {
 
 				// 3. Clean up useDynamicNodeTypes.ts - import statement
 				() => {
-					const dynamicTypesPath = path.join(__dirname, "features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts");
-					
+					const dynamicTypesPath = path.join(
+						__dirname,
+						"features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts"
+					);
+
 					if (fs.existsSync(dynamicTypesPath)) {
 						try {
 							let content = fs.readFileSync(dynamicTypesPath, "utf8");
 							const originalContent = content;
-							
+
 							// Remove the import statement for the deleted node - must match BOTH conditions
-							const lines = content.split('\n');
-							const filteredLines = lines.filter(line => 
-								!(line.includes(`import ${kind} from`) && 
-								  line.includes(`node-domain/${domain}/${kind}.node`))
+							const lines = content.split("\n");
+							const filteredLines = lines.filter(
+								(line) =>
+									!(
+										line.includes(`import ${kind} from`) &&
+										line.includes(`node-domain/${domain}/${kind}.node`)
+									)
 							);
-							content = filteredLines.join('\n');
-							
+							content = filteredLines.join("\n");
+
 							if (content !== originalContent) {
 								fs.writeFileSync(dynamicTypesPath, content);
 								return `Cleaned up ${kind} import from useDynamicNodeTypes.ts`;
@@ -723,13 +754,16 @@ module.exports = (plop) => {
 
 				// 4. Clean up useDynamicNodeTypes.ts - export in array
 				() => {
-					const dynamicTypesPath = path.join(__dirname, "features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts");
-					
+					const dynamicTypesPath = path.join(
+						__dirname,
+						"features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts"
+					);
+
 					if (fs.existsSync(dynamicTypesPath)) {
 						try {
 							let content = fs.readFileSync(dynamicTypesPath, "utf8");
 							const originalContent = content;
-							
+
 							// Remove the node from the nodeTypes object with precise matching
 							// Use word boundaries to avoid partial matches
 							content = content.replace(new RegExp(`\\s*\\b${kind}\\b,\\r?\\n`, "g"), "");
@@ -737,11 +771,11 @@ module.exports = (plop) => {
 							content = content.replace(new RegExp(`\\s*\\b${kind}\\b,`, "g"), "");
 							// Only match standalone node names, not as part of other names
 							content = content.replace(new RegExp(`(^|\\s)${kind}(?=\\s*[,}])`, "gm"), "");
-							
+
 							// Clean up any trailing commas that might be left
 							content = content.replace(/,\s*}/g, "}");
 							content = content.replace(/,\s*]/g, "]");
-							
+
 							if (content !== originalContent) {
 								fs.writeFileSync(dynamicTypesPath, content);
 								return `Cleaned up ${kind} from useDynamicNodeTypes.ts`;
@@ -765,34 +799,49 @@ module.exports = (plop) => {
 					template: "",
 					transform: (fileContents) => {
 						// Safety check: ensure we're only removing the specific import
-						const lines = fileContents.split('\n');
-						const filteredLines = lines.filter(line => 
-							!(line.includes(`import ${kind}, { spec as ${kind}Spec }`) && 
-							  line.includes(`node-domain/${domain}/${kind}.node`))
+						const lines = fileContents.split("\n");
+						const filteredLines = lines.filter(
+							(line) =>
+								!(
+									line.includes(`import ${kind}, { spec as ${kind}Spec }`) &&
+									line.includes(`node-domain/${domain}/${kind}.node`)
+								)
 						);
-						return filteredLines.join('\n');
-					}
+						return filteredLines.join("\n");
+					},
 				},
 
 				// 6. Clean up nodespec-registry.ts - registry entry
 				() => {
-					const registryPath = path.join(__dirname, "features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts");
-					
+					const registryPath = path.join(
+						__dirname,
+						"features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts"
+					);
+
 					if (fs.existsSync(registryPath)) {
 						try {
 							let content = fs.readFileSync(registryPath, "utf8");
 							const originalContent = content;
-							
+
 							// Remove the registry entry with precise word boundary matching
 							// Pattern 1: entry with trailing comma
-							content = content.replace(new RegExp(`\\s*\\b${kind}\\b: ${kind}Spec,\\r?\\n`, "g"), "");
+							content = content.replace(
+								new RegExp(`\\s*\\b${kind}\\b: ${kind}Spec,\\r?\\n`, "g"),
+								""
+							);
 							// Pattern 2: entry without trailing comma (last entry)
-							content = content.replace(new RegExp(`\\s*\\b${kind}\\b: ${kind}Spec\\r?\\n`, "g"), "");
+							content = content.replace(
+								new RegExp(`\\s*\\b${kind}\\b: ${kind}Spec\\r?\\n`, "g"),
+								""
+							);
 							// Pattern 3: entry on same line as other entries
 							content = content.replace(new RegExp(`\\s*\\b${kind}\\b: ${kind}Spec,`, "g"), "");
 							// Pattern 4: entry without comma (last entry on line)
-							content = content.replace(new RegExp(`\\s*\\b${kind}\\b: ${kind}Spec(?!\\w)`, "g"), "");
-							
+							content = content.replace(
+								new RegExp(`\\s*\\b${kind}\\b: ${kind}Spec(?!\\w)`, "g"),
+								""
+							);
+
 							if (content !== originalContent) {
 								fs.writeFileSync(registryPath, content);
 								return `Cleaned up ${kind} registry entry`;
@@ -858,7 +907,7 @@ module.exports = (plop) => {
 				// 14. Clean up node documentation files (NEW)
 				() => {
 					const apiDocPath = path.join(__dirname, `documentation/api/${kind}.ts`);
-					
+
 					if (fs.existsSync(apiDocPath)) {
 						try {
 							fs.unlinkSync(apiDocPath);
@@ -875,9 +924,9 @@ module.exports = (plop) => {
 					const docDir = path.join(__dirname, `documentation/nodes/${domain}`);
 					const nodeDocPath = path.join(docDir, `${kind}.md`);
 					const nodeHtmlPath = path.join(docDir, `${kind}.html`);
-					
+
 					const tasks = [];
-					
+
 					// Delete node markdown file
 					if (fs.existsSync(nodeDocPath)) {
 						try {
@@ -887,7 +936,7 @@ module.exports = (plop) => {
 							tasks.push(`Error deleting ${kind}.md: ${error.message}`);
 						}
 					}
-					
+
 					// Delete node HTML file
 					if (fs.existsSync(nodeHtmlPath)) {
 						try {
@@ -897,7 +946,7 @@ module.exports = (plop) => {
 							tasks.push(`Error deleting ${kind}.html: ${error.message}`);
 						}
 					}
-					
+
 					// Check if domain directory is empty and remove it
 					if (fs.existsSync(docDir)) {
 						try {
@@ -910,7 +959,7 @@ module.exports = (plop) => {
 							tasks.push(`Error checking ${domain} directory: ${error.message}`);
 						}
 					}
-					
+
 					return tasks.length > 0 ? tasks.join("; ") : "No documentation files to clean";
 				},
 
@@ -942,38 +991,41 @@ module.exports = (plop) => {
 
 				// 17. Validate registry file syntax after cleanup (NEW)
 				() => {
-					const registryPath = path.join(__dirname, "features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts");
-					
+					const registryPath = path.join(
+						__dirname,
+						"features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts"
+					);
+
 					if (fs.existsSync(registryPath)) {
 						try {
 							const content = fs.readFileSync(registryPath, "utf8");
-							
+
 							// Check for common syntax issues
 							const issues = [];
-							
+
 							// Check for undefined references to the deleted node
 							const undefinedRefs = content.match(new RegExp(`\\b${kind}Spec\\b`, "g"));
 							if (undefinedRefs && undefinedRefs.length > 0) {
 								issues.push(`Found ${undefinedRefs.length} undefined references to ${kind}Spec`);
 							}
-							
+
 							// Check for orphaned commas
 							const orphanedCommas = content.match(/,\s*}/g);
 							if (orphanedCommas && orphanedCommas.length > 0) {
 								issues.push(`Found ${orphanedCommas.length} orphaned commas in object definitions`);
 							}
-							
+
 							// Check that other nodes are still intact
-							const expectedNodes = ['createText', 'viewText'].filter(node => node !== kind);
-							const missingNodes = expectedNodes.filter(node => !content.includes(node));
+							const expectedNodes = ["createText", "viewText"].filter((node) => node !== kind);
+							const missingNodes = expectedNodes.filter((node) => !content.includes(node));
 							if (missingNodes.length > 0) {
-								issues.push(`⚠️ CRITICAL: Missing nodes after deletion: ${missingNodes.join(', ')}`);
+								issues.push(`⚠️ CRITICAL: Missing nodes after deletion: ${missingNodes.join(", ")}`);
 							}
-							
+
 							if (issues.length > 0) {
 								return `⚠️  Registry validation issues: ${issues.join(", ")}`;
 							}
-							
+
 							return `✅ Registry file syntax validated successfully`;
 						} catch (error) {
 							return `❌ Error validating registry: ${error.message}`;
@@ -988,11 +1040,15 @@ module.exports = (plop) => {
 						const { spawn } = require("child_process");
 						console.log("📚 Regenerating documentation overview after cleanup...");
 
-						const docProcess = spawn("npx", ["ts-node", "--project", "tsconfig.node.json", "scripts/generate-nodes-overview.ts"], {
-							stdio: "inherit",
-							shell: true,
-							cwd: __dirname,
-						});
+						const docProcess = spawn(
+							"npx",
+							["ts-node", "--project", "tsconfig.node.json", "scripts/generate-nodes-overview.ts"],
+							{
+								stdio: "inherit",
+								shell: true,
+								cwd: __dirname,
+							}
+						);
 
 						docProcess.on("close", (code) => {
 							if (code === 0) {

@@ -10,8 +10,8 @@
  */
 
 import React from "react";
+import type { IconType } from "react-icons";
 import * as LuIcons from "react-icons/lu";
-import { IconType } from "react-icons";
 
 /**
  * Renders a Lucide icon based on the icon name from NodeSpec
@@ -22,8 +22,8 @@ import { IconType } from "react-icons";
  */
 export function renderLucideIcon(
 	iconName: string | undefined,
-	className: string = "",
-	size: number = 16
+	className = "",
+	size = 16
 ): React.ReactElement | null {
 	if (!iconName) return null;
 
@@ -54,7 +54,7 @@ export function isValidLucideIcon(iconName: string): boolean {
  * @returns Array of available icon names
  */
 export function getAvailableLucideIcons(): string[] {
-	return Object.keys(LuIcons).filter(key => key.startsWith('Lu'));
+	return Object.keys(LuIcons).filter((key) => key.startsWith("Lu"));
 }
 
 /**
@@ -70,7 +70,7 @@ export const COMMON_LUCIDE_ICONS = {
 	FOLDER: "LuFolder",
 	FOLDER_PLUS: "LuFolderPlus",
 	FOLDER_OPEN: "LuFolderOpen",
-	
+
 	// Data & Database Icons
 	DATABASE: "LuDatabase",
 	TABLE: "LuTable",
@@ -79,7 +79,7 @@ export const COMMON_LUCIDE_ICONS = {
 	LINE_CHART: "LuLineChart",
 	TRENDING_UP: "LuTrendingUp",
 	TRENDING_DOWN: "LuTrendingDown",
-	
+
 	// Communication Icons
 	MAIL: "LuMail",
 	MESSAGE_SQUARE: "LuMessageSquare",
@@ -88,7 +88,7 @@ export const COMMON_LUCIDE_ICONS = {
 	USERS: "LuUsers",
 	USER_PLUS: "LuUserPlus",
 	USER_CHECK: "LuUserCheck",
-	
+
 	// Action Icons
 	PLUS: "LuPlus",
 	MINUS: "LuMinus",
@@ -100,7 +100,7 @@ export const COMMON_LUCIDE_ICONS = {
 	SAVE: "LuSave",
 	DOWNLOAD: "LuDownload",
 	UPLOAD: "LuUpload",
-	
+
 	// Navigation Icons
 	HOME: "LuHome",
 	SETTINGS: "LuSettings",
@@ -111,7 +111,7 @@ export const COMMON_LUCIDE_ICONS = {
 	ARROW_LEFT: "LuArrowLeft",
 	ARROW_UP: "LuArrowUp",
 	ARROW_DOWN: "LuArrowDown",
-	
+
 	// Status Icons
 	CHECK: "LuCheck",
 	CHECK_CIRCLE: "LuCheckCircle",
@@ -121,7 +121,7 @@ export const COMMON_LUCIDE_ICONS = {
 	ALERT_TRIANGLE: "LuAlertTriangle",
 	INFO: "LuInfo",
 	HELP_CIRCLE: "LuHelpCircle",
-	
+
 	// Media Icons
 	IMAGE: "LuImage",
 	VIDEO: "LuVideo",
@@ -130,7 +130,7 @@ export const COMMON_LUCIDE_ICONS = {
 	AUDIO_OFF: "LuVolumeX",
 	CAMERA: "LuCamera",
 	CAMERA_OFF: "LuCameraOff",
-	
+
 	// Business Icons
 	SHOPPING_CART: "LuShoppingCart",
 	CREDIT_CARD: "LuCreditCard",
@@ -138,7 +138,7 @@ export const COMMON_LUCIDE_ICONS = {
 	RECEIPT: "LuReceipt",
 	PACKAGE: "LuPackage",
 	TRUCK: "LuTruck",
-	
+
 	// Development Icons
 	CODE: "LuCode",
 	CODE_2: "LuCode2",
@@ -147,7 +147,7 @@ export const COMMON_LUCIDE_ICONS = {
 	WRENCH: "LuWrench",
 	SETTINGS_2: "LuSettings2",
 	TERMINAL: "LuTerminal",
-	
+
 	// Social Icons
 	HEART: "LuHeart",
 	HEART_OFF: "LuHeartOff",
@@ -156,20 +156,20 @@ export const COMMON_LUCIDE_ICONS = {
 	SHARE: "LuShare",
 	SHARE_2: "LuShare2",
 	MESSAGE_CIRCLE: "LuMessageCircle",
-	
+
 	// Time Icons
 	CALENDAR: "LuCalendar",
 	CLOCK: "LuClock",
 	TIMER: "LuTimer",
 	TIMER_OFF: "LuTimerOff",
 	WATCH: "LuWatch",
-	
+
 	// Location Icons
 	MAP_PIN: "LuMapPin",
 	NAVIGATION: "LuNavigation",
 	COMPASS: "LuCompass",
 	GLOBE: "LuGlobe",
-	
+
 	// Network Icons
 	WIFI: "LuWifi",
 	WIFI_OFF: "LuWifiOff",
@@ -179,7 +179,7 @@ export const COMMON_LUCIDE_ICONS = {
 	SIGNAL_LOW: "LuSignalLow",
 	CLOUD: "LuCloud",
 	CLOUD_OFF: "LuCloudOff",
-	
+
 	// Security Icons
 	LOCK: "LuLock",
 	UNLOCK: "LuUnlock",
@@ -187,7 +187,7 @@ export const COMMON_LUCIDE_ICONS = {
 	SHIELD_CHECK: "LuShieldCheck",
 	SHIELD_OFF: "LuShieldOff",
 	KEY: "LuKey",
-	
+
 	// Layout Icons
 	LAYOUT: "LuLayout",
 	LAYOUT_GRID: "LuLayoutGrid",
@@ -195,7 +195,7 @@ export const COMMON_LUCIDE_ICONS = {
 	SIDEBAR: "LuSidebar",
 	PANEL_LEFT: "LuPanelLeft",
 	PANEL_RIGHT: "LuPanelRight",
-	
+
 	// Content Icons
 	TEXT: "LuType",
 	HEADING: "LuHeading",
@@ -203,7 +203,7 @@ export const COMMON_LUCIDE_ICONS = {
 	LIST: "LuList",
 	LIST_ORDERED: "LuListOrdered",
 	QUOTE: "LuQuote",
-	
+
 	// Connection Icons
 	LINK: "LuLink",
 	LINK_2: "LuLink2",
@@ -212,7 +212,7 @@ export const COMMON_LUCIDE_ICONS = {
 	ZAP_OFF: "LuZapOff",
 	PLUG: "LuPlug",
 	PLUG_2: "LuPlug2",
-	
+
 	// Workflow Icons
 	PLAY: "LuPlay",
 	PAUSE: "LuPause",
@@ -221,7 +221,7 @@ export const COMMON_LUCIDE_ICONS = {
 	SKIP_FORWARD: "LuSkipForward",
 	REWIND: "LuRewind",
 	FAST_FORWARD: "LuFastForward",
-	
+
 	// Data Flow Icons
 	ARROW_RIGHT_CIRCLE: "LuArrowRightCircle",
 	ARROW_LEFT_CIRCLE: "LuArrowLeftCircle",
@@ -231,7 +231,7 @@ export const COMMON_LUCIDE_ICONS = {
 	COPY: "LuCopy",
 	CLIPBOARD: "LuClipboard",
 	CLIPBOARD_CHECK: "LuClipboardCheck",
-	
+
 	// System Icons
 	POWER: "LuPower",
 	POWER_OFF: "LuPowerOff",
@@ -240,7 +240,7 @@ export const COMMON_LUCIDE_ICONS = {
 	MONITOR: "LuMonitor",
 	SMARTPHONE: "LuSmartphone",
 	TABLET: "LuTablet",
-	
+
 	// Feedback Icons
 	BELL: "LuBell",
 	BELL_OFF: "LuBellOff",
@@ -248,7 +248,7 @@ export const COMMON_LUCIDE_ICONS = {
 	STAR_OFF: "LuStarOff",
 	FLAG: "LuFlag",
 	FLAG_OFF: "LuFlagOff",
-	
+
 	// Utility Icons
 	FILTER: "LuFilter",
 	SLASH: "LuSlash",
@@ -269,4 +269,4 @@ export type CommonIconName = keyof typeof COMMON_LUCIDE_ICONS;
 export const renderAntDesignIcon = renderLucideIcon;
 export const isValidAntDesignIcon = isValidLucideIcon;
 export const getAvailableAntDesignIcons = getAvailableLucideIcons;
-export const COMMON_ANT_ICONS = COMMON_LUCIDE_ICONS; 
+export const COMMON_ANT_ICONS = COMMON_LUCIDE_ICONS;

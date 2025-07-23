@@ -57,7 +57,9 @@ export async function middleware(request: NextRequest) {
 	const rateLimitResult = adaptiveRateLimiter.checkLimit(requestMetadata, riskLevel.name);
 
 	if (!rateLimitResult.allowed) {
-		console.log(`🚦 Rate limit exceeded: ${rateLimitResult.totalHits}/${rateLimitResult.remaining}`);
+		console.log(
+			`🚦 Rate limit exceeded: ${rateLimitResult.totalHits}/${rateLimitResult.remaining}`
+		);
 
 		const response = NextResponse.json(
 			{
@@ -94,7 +96,10 @@ export async function middleware(request: NextRequest) {
 	// CHECK FOR EXISTING VALID AUTH TOKEN
 	if (authCookie?.value) {
 		try {
-			const payload = await AnubisJWT.verify(authCookie.value, process.env.ANUBIS_SECRET || "default-secret");
+			const payload = await AnubisJWT.verify(
+				authCookie.value,
+				process.env.ANUBIS_SECRET || "default-secret"
+			);
 			if (payload && payload.exp > Math.floor(now / 1000)) {
 				const response = NextResponse.next();
 				response.headers.set("X-Anubis-Verified", "true");
@@ -172,10 +177,7 @@ export async function middleware(request: NextRequest) {
 		response.headers.set("X-Anubis-Session", sessionId);
 		response.headers.set("X-Anubis-Risk-Level", riskLevel.name);
 		response.headers.set("X-Anubis-Risk-Score", riskLevel.score.toString());
-		response.headers.set(
-			"X-Anubis-Difficulty",
-			adaptiveConfig.challengeDifficulty.toString()
-		);
+		response.headers.set("X-Anubis-Difficulty", adaptiveConfig.challengeDifficulty.toString());
 		response.headers.set("X-Anubis-Grace-Period", adaptiveConfig.gracePeriod.toString());
 
 		// SET SESSION COOKIE FOR BACKGROUND VERIFICATION

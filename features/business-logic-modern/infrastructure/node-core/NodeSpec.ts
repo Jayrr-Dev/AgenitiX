@@ -219,7 +219,7 @@ export interface NodeSpec {
 		/** Whether the node can receive data from connected nodes */
 		enabled?: boolean;
 		/** How to display received data (text, json, raw, etc.) */
-		displayMode?: 'text' | 'json' | 'raw' | 'formatted';
+		displayMode?: "text" | "json" | "raw" | "formatted";
 		/** Whether to show received data in collapsed state */
 		showInCollapsed?: boolean;
 		/** Custom formatting function for received data */

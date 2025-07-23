@@ -16,11 +16,11 @@ import type {
 	AgenEdge,
 	AgenNode,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
+import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { JsonHighlighter } from "@/features/business-logic-modern/infrastructure/node-inspector/utils/JsonHighlighter";
+import { nodeSpecs } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 import { ArrowRight, Trash2, Zap } from "lucide-react";
 import type React from "react";
-import { nodeSpecs } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
-import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 
 interface EdgeInspectorProps {
 	edge: AgenEdge;
@@ -50,25 +50,25 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 				if (specHandle) {
 					// Use the dataType from the spec
 					const dataType = specHandle.dataType;
-					
+
 					// Map data types to colors
 					const typeColorMap: Record<string, string> = {
-						'String': 'text-blue-600 dark:text-blue-400',
-						'Number': 'text-orange-600 dark:text-orange-400',
-						'Boolean': 'text-green-600 dark:text-green-400',
-						'JSON': 'text-purple-600 dark:text-purple-400',
-						'Array': 'text-indigo-600 dark:text-indigo-400',
-						'Any': 'text-muted-foreground',
-						'Object': 'text-yellow-600 dark:text-yellow-400',
-						'Date': 'text-cyan-600 dark:text-cyan-400',
-						'Function': 'text-pink-600 dark:text-pink-400',
+						String: "text-blue-600 dark:text-blue-400",
+						Number: "text-orange-600 dark:text-orange-400",
+						Boolean: "text-green-600 dark:text-green-400",
+						JSON: "text-purple-600 dark:text-purple-400",
+						Array: "text-indigo-600 dark:text-indigo-400",
+						Any: "text-muted-foreground",
+						Object: "text-yellow-600 dark:text-yellow-400",
+						Date: "text-cyan-600 dark:text-cyan-400",
+						Function: "text-pink-600 dark:text-pink-400",
 					};
 
 					return {
-						label: dataType || 'Unknown',
-						color: typeColorMap[dataType] || 'text-muted-foreground',
+						label: dataType || "Unknown",
+						color: typeColorMap[dataType] || "text-muted-foreground",
 						value: null,
-						actualType: dataType?.toLowerCase() || 'unknown'
+						actualType: dataType?.toLowerCase() || "unknown",
 					};
 				}
 			}
@@ -80,41 +80,40 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 				if (outputData !== undefined) {
 					const actualType = typeof outputData;
 					const typeColorMap: Record<string, string> = {
-						'string': 'text-blue-600 dark:text-blue-400',
-						'number': 'text-orange-600 dark:text-orange-400',
-						'boolean': 'text-green-600 dark:text-green-400',
-						'object': 'text-purple-600 dark:text-purple-400',
+						string: "text-blue-600 dark:text-blue-400",
+						number: "text-orange-600 dark:text-orange-400",
+						boolean: "text-green-600 dark:text-green-400",
+						object: "text-purple-600 dark:text-purple-400",
 					};
 
 					return {
 						label: actualType.charAt(0).toUpperCase() + actualType.slice(1),
-						color: typeColorMap[actualType] || 'text-muted-foreground',
+						color: typeColorMap[actualType] || "text-muted-foreground",
 						value: outputData,
-						actualType
+						actualType,
 					};
 				}
 			}
 
 			// Final fallback: infer from node type
-			if (node.type === 'createText') {
+			if (node.type === "createText") {
 				return {
-					label: 'String',
-					color: 'text-blue-600 dark:text-blue-400',
-					value: node.data?.text || '',
-					actualType: 'string'
+					label: "String",
+					color: "text-blue-600 dark:text-blue-400",
+					value: node.data?.text || "",
+					actualType: "string",
 				};
 			}
-			if (node.type === 'viewText') {
+			if (node.type === "viewText") {
 				return {
-					label: 'String',
-					color: 'text-blue-600 dark:text-blue-400',
-					        value: node.data?.store || node.data?.inputs || '',
-					actualType: 'string'
+					label: "String",
+					color: "text-blue-600 dark:text-blue-400",
+					value: node.data?.store || node.data?.inputs || "",
+					actualType: "string",
 				};
 			}
-
 		} catch (error) {
-			console.warn('Error getting node spec for type detection:', error);
+			console.warn("Error getting node spec for type detection:", error);
 		}
 
 		// Default fallback
@@ -122,7 +121,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 			label: "Unknown",
 			color: "text-muted-foreground",
 			value: null,
-			actualType: 'unknown'
+			actualType: "unknown",
 		};
 	};
 
@@ -130,7 +129,8 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 	const targetType = getActualDataType(targetNode, targetHandle, false);
 
 	// Check type compatibility
-	const isCompatible = sourceType.actualType === targetType.actualType ||
+	const isCompatible =
+		sourceType.actualType === targetType.actualType ||
 		targetType.actualType === "any" ||
 		sourceType.actualType === "any" ||
 		targetType.actualType === "unknown" ||
@@ -247,9 +247,13 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 					</div>
 					<div className="text-xs">
 						{isCompatible ? (
-							<span className="text-green-600 dark:text-green-400 font-medium">✓ Compatible types</span>
+							<span className="text-green-600 dark:text-green-400 font-medium">
+								✓ Compatible types
+							</span>
 						) : (
-							<span className="text-orange-600 dark:text-orange-400 font-medium">⚠ Type mismatch warning</span>
+							<span className="text-orange-600 dark:text-orange-400 font-medium">
+								⚠ Type mismatch warning
+							</span>
 						)}
 					</div>
 				</div>

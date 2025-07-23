@@ -30,6 +30,7 @@ import {
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import type { NodeType } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 
+import { generateNodeId } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
 // REGISTRY INTEGRATION - Imports from the new NodeSpec registry
 import {
 	getNodeSpecMetadata as getNodeMetadata,
@@ -37,7 +38,6 @@ import {
 } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 // import { nanoid } from "nanoid"; // Removed due to resolver issues
 import type { Node as ReactFlowNode } from "@xyflow/react";
-import { generateNodeId } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
 
 // Simple validation function to replace validateNode
 const validateNode = (nodeType: string) => ({

@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from "react";
-import type { AgenNode, AgenEdge } from "../types/nodeData";
+import type { AgenEdge, AgenNode } from "../types/nodeData";
 import { generateNodeId } from "../utils/nodeUtils";
 
 // ============================================================================

@@ -5,9 +5,9 @@ import type {
 	AgenEdge,
 	AgenNode,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
+import { generateNodeId } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import React, { useCallback, useEffect, useRef } from "react";
-import { generateNodeId } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
 
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
 import { UndoRedoProvider, useUndoRedo } from "../action-toolbar/history/UndoRedoContext";

@@ -12,120 +12,107 @@
  * • Memoised helpers & refs prevent unnecessary renders / infinite loops.
  */
 
-import React, {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from 'react';
-import { NodeProps, useReactFlow } from '@xyflow/react';
-import { z } from 'zod';
-import { withNodeScaffold } from '@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold';
-import type { NodeSpec } from '@/features/business-logic-modern/infrastructure/node-core/NodeSpec';
+import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
+import LabelNode from "@/components/nodes/labelNode";
+import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
-  createNodeValidator,
-  reportValidationError,
-  useNodeDataValidation,
-} from '@/features/business-logic-modern/infrastructure/node-core/validation';
+	SafeSchemas,
+	createSafeInitialData,
+} from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
 import {
-  SafeSchemas,
-  createSafeInitialData,
-} from '@/features/business-logic-modern/infrastructure/node-core/schema-helpers';
-import { renderLucideIcon } from '@/features/business-logic-modern/infrastructure/node-core/iconUtils';
-import { CATEGORIES } from '@/features/business-logic-modern/infrastructure/theming/categories';
+	createNodeValidator,
+	reportValidationError,
+	useNodeDataValidation,
+} from "@/features/business-logic-modern/infrastructure/node-core/validation";
+import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
+import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
-  EXPANDED_SIZES,
-  COLLAPSED_SIZES,
-} from '@/features/business-logic-modern/infrastructure/theming/sizing';
-import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
-import LabelNode from '@/components/nodes/labelNode';
-import { useNodeData } from '@/hooks/useNodeData';
+	COLLAPSED_SIZES,
+	EXPANDED_SIZES,
+} from "@/features/business-logic-modern/infrastructure/theming/sizing";
+import { useNodeData } from "@/hooks/useNodeData";
+import { type NodeProps, useReactFlow } from "@xyflow/react";
+import React, { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { z } from "zod";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
 // -----------------------------------------------------------------------------
 
 export const ViewTextDataSchema = z
-  .object({
-    store: SafeSchemas.text('Default text'),
-    isEnabled: SafeSchemas.boolean(true),
-    isActive: SafeSchemas.boolean(false),
-    isExpanded: SafeSchemas.boolean(false),
-    inputs: SafeSchemas.optionalText(),
-    outputs: SafeSchemas.optionalText(),
-    expandedSize: SafeSchemas.text('VE2'),
-    collapsedSize: SafeSchemas.text('C2'),
-  })
-  .passthrough();
+	.object({
+		store: SafeSchemas.text("Default text"),
+		isEnabled: SafeSchemas.boolean(true),
+		isActive: SafeSchemas.boolean(false),
+		isExpanded: SafeSchemas.boolean(false),
+		inputs: SafeSchemas.optionalText(),
+		outputs: SafeSchemas.optionalText(),
+		expandedSize: SafeSchemas.text("VE2"),
+		collapsedSize: SafeSchemas.text("C2"),
+	})
+	.passthrough();
 
 export type ViewTextData = z.infer<typeof ViewTextDataSchema>;
 
-const validateNodeData = createNodeValidator(ViewTextDataSchema, 'ViewText');
+const validateNodeData = createNodeValidator(ViewTextDataSchema, "ViewText");
 
 // -----------------------------------------------------------------------------
 // 2️⃣  Helper – format any value into a display‑ready string (re‑used everywhere)
 // -----------------------------------------------------------------------------
 
 const COMMON_OBJECT_PROPS = [
-  'text',
-  'output',
-  'value',
-  'data',
-  'content',
-  'message',
-  'result',
-  'response',
-  'body',
-  'payload',
-  'input',
+	"text",
+	"output",
+	"value",
+	"data",
+	"content",
+	"message",
+	"result",
+	"response",
+	"body",
+	"payload",
+	"input",
 ] as const;
 
 type Primitive = string | number | boolean | bigint | symbol | null | undefined;
 
 function formatValue(value: unknown): string {
-  // ── Primitives ──────────────────────────────────────────────────────────────
-  if (
-    value === null ||
-    value === undefined ||
-    value === false ||
-    value === '' ||
-    value === 0
-  )
-    return '';
+	// ── Primitives ──────────────────────────────────────────────────────────────
+	if (value === null || value === undefined || value === false || value === "" || value === 0)
+		return "";
 
-  if (typeof value !== 'object') return String(value);
+	if (typeof value !== "object") return String(value);
 
-  // ── Objects / Arrays ────────────────────────────────────────────────────────
-  if (Array.isArray(value)) {
-    if (value.length === 0) return '';
-    try {
-      return JSON.stringify(value, null, 2);
-    } catch {
-      return '[Array]';
-    }
-  }
+	// ── Objects / Arrays ────────────────────────────────────────────────────────
+	if (Array.isArray(value)) {
+		if (value.length === 0) return "";
+		try {
+			return JSON.stringify(value, null, 2);
+		} catch {
+			return "[Array]";
+		}
+	}
 
-  if (value instanceof Date) return value.toISOString();
-  if (value instanceof RegExp) return value.toString();
-  if (value instanceof Error) return `Error: ${value.message}`;
-  if (value instanceof Map)
-    return value.size ? JSON.stringify(Array.from(value.entries()), null, 2) : '';
-  if (value instanceof Set)
-    return value.size ? JSON.stringify(Array.from(value), null, 2) : '';
-  if (value instanceof Promise) return '[Promise]';
+	if (value instanceof Date) return value.toISOString();
+	if (value instanceof RegExp) return value.toString();
+	if (value instanceof Error) return `Error: ${value.message}`;
+	if (value instanceof Map)
+		return value.size ? JSON.stringify(Array.from(value.entries()), null, 2) : "";
+	if (value instanceof Set) return value.size ? JSON.stringify(Array.from(value), null, 2) : "";
+	if (value instanceof Promise) return "[Promise]";
 
-  // Plain object – try common prop names first
-  for (const prop of COMMON_OBJECT_PROPS) {
-    const inner = (value as Record<string, unknown>)[prop];
-    if (inner !== undefined && inner !== null) return formatValue(inner);
-  }
+	// Plain object – try common prop names first
+	for (const prop of COMMON_OBJECT_PROPS) {
+		const inner = (value as Record<string, unknown>)[prop];
+		if (inner !== undefined && inner !== null) return formatValue(inner);
+	}
 
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return '[Object]';
-  }
+	try {
+		return JSON.stringify(value, null, 2);
+	} catch {
+		return "[Object]";
+	}
 }
 
 // -----------------------------------------------------------------------------
@@ -133,52 +120,50 @@ function formatValue(value: unknown): string {
 // -----------------------------------------------------------------------------
 
 function createDynamicSpec(data: ViewTextData): NodeSpec {
-  const expanded =
-    EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ||
-    EXPANDED_SIZES.VE2;
-  const collapsed =
-    COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ||
-    COLLAPSED_SIZES.C2;
+	const expanded =
+		EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] || EXPANDED_SIZES.VE2;
+	const collapsed =
+		COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] || COLLAPSED_SIZES.C2;
 
-  return {
-    kind: 'viewText',
-    displayName: 'View Text',
-    label: 'View Text',
-    category: CATEGORIES.VIEW,
-    size: { expanded, collapsed },
-    handles: [
-      { id: 'json-input', code: 'j', position: 'top', type: 'target', dataType: 'JSON' },
-      { id: 'output', code: 's', position: 'right', type: 'source', dataType: 'String' },
-      { id: 'input', code: 's', position: 'left', type: 'target', dataType: 'String' },
-    ],
-    inspector: { key: 'ViewTextInspector' },
-    version: 1,
-    runtime: { execute: 'viewText_execute_v1' },
-    initialData: createSafeInitialData(ViewTextDataSchema),
-    dataSchema: ViewTextDataSchema,
-    controls: {
-      autoGenerate: true,
-      excludeFields: ['isActive', 'inputs', 'outputs', 'expandedSize', 'collapsedSize'],
-      customFields: [{ key: 'isExpanded', type: 'boolean', label: 'Expand' }],
-    },
-    icon: 'LuFileText',
-    author: 'Agenitix Team',
-    description: 'Displays & formats text content from connected nodes',
-    feature: 'base',
-    tags: ['display', 'formatting'],
-    receivedData: {
-      enabled: true,
-      displayMode: 'formatted',
-      showInCollapsed: true,
-      formatData: formatValue,
-    },
-  };
+	return {
+		kind: "viewText",
+		displayName: "View Text",
+		label: "View Text",
+		category: CATEGORIES.VIEW,
+		size: { expanded, collapsed },
+		handles: [
+			{ id: "json-input", code: "j", position: "top", type: "target", dataType: "JSON" },
+			{ id: "output", code: "s", position: "right", type: "source", dataType: "String" },
+			{ id: "input", code: "s", position: "left", type: "target", dataType: "String" },
+		],
+		inspector: { key: "ViewTextInspector" },
+		version: 1,
+		runtime: { execute: "viewText_execute_v1" },
+		initialData: createSafeInitialData(ViewTextDataSchema),
+		dataSchema: ViewTextDataSchema,
+		controls: {
+			autoGenerate: true,
+			excludeFields: ["isActive", "inputs", "outputs", "expandedSize", "collapsedSize"],
+			customFields: [{ key: "isExpanded", type: "boolean", label: "Expand" }],
+		},
+		icon: "LuFileText",
+		author: "Agenitix Team",
+		description: "Displays & formats text content from connected nodes",
+		feature: "base",
+		tags: ["display", "formatting"],
+		receivedData: {
+			enabled: true,
+			displayMode: "formatted",
+			showInCollapsed: true,
+			formatData: formatValue,
+		},
+	};
 }
 
 // Static spec for registry (default sizes)
 export const spec: NodeSpec = createDynamicSpec({
-  expandedSize: 'VE2',
-  collapsedSize: 'C2',
+	expandedSize: "VE2",
+	collapsedSize: "C2",
 } as ViewTextData);
 
 // -----------------------------------------------------------------------------
@@ -186,20 +171,20 @@ export const spec: NodeSpec = createDynamicSpec({
 // -----------------------------------------------------------------------------
 
 const CONTENT = {
-  expanded: 'p-4 w-full h-full flex flex-col',
-  collapsed: 'flex items-center justify-center w-full h-full',
-  header: 'flex items-center justify-between mb-3',
-  body: 'flex-1 flex items-center justify-center',
+	expanded: "p-4 w-full h-full flex flex-col",
+	collapsed: "flex items-center justify-center w-full h-full",
+	header: "flex items-center justify-between mb-3",
+	body: "flex-1 flex items-center justify-center",
 } as const;
 
 const CATEGORY_TEXT = {
-  VIEW: {
-    primary: 'text-[--node-view-text]',
-  },
-  CREATE: {
-    primary: 'text-[--node-create-text]',
-  },
-  // …add others as needed
+	VIEW: {
+		primary: "text-[--node-view-text]",
+	},
+	CREATE: {
+		primary: "text-[--node-create-text]",
+	},
+	// …add others as needed
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -207,157 +192,160 @@ const CATEGORY_TEXT = {
 // -----------------------------------------------------------------------------
 
 const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
-  // Sync with React‑Flow store
-  const { nodeData, updateNodeData } = useNodeData(id, data);
-  const { getNodes, getEdges } = useReactFlow();
+	// Sync with React‑Flow store
+	const { nodeData, updateNodeData } = useNodeData(id, data);
+	const { getNodes, getEdges } = useReactFlow();
 
-  // Derived state -------------------------------------------------------------
-  const isExpanded = (nodeData as ViewTextData).isExpanded || false;
-  const categoryStyles = CATEGORY_TEXT.VIEW;
+	// Derived state -------------------------------------------------------------
+	const isExpanded = (nodeData as ViewTextData).isExpanded || false;
+	const categoryStyles = CATEGORY_TEXT.VIEW;
 
-  // Helpers -------------------------------------------------------------------
-  const lastInputRef = useRef<string | null>(null);
-  const lastOutputRef = useRef<string | null>(null);
+	// Helpers -------------------------------------------------------------------
+	const lastInputRef = useRef<string | null>(null);
+	const lastOutputRef = useRef<string | null>(null);
 
-  /** Toggle between collapsed / expanded */
-  const toggleExpand = useCallback(() => {
-    updateNodeData({ isExpanded: !isExpanded });
-  }, [isExpanded, updateNodeData]);
+	/** Toggle between collapsed / expanded */
+	const toggleExpand = useCallback(() => {
+		updateNodeData({ isExpanded: !isExpanded });
+	}, [isExpanded, updateNodeData]);
 
-  /** Propagate output ONLY when node is active */
-  const propagate = useCallback(
-    (value: string | null) => {
-      const shouldSend = (nodeData as ViewTextData).isActive;
-      const out = shouldSend ? value : null;
-      if (out !== lastOutputRef.current) {
-        lastOutputRef.current = out;
-        updateNodeData({ outputs: out });
-      }
-    },
-    [nodeData, updateNodeData]
-  );
+	/** Propagate output ONLY when node is active */
+	const propagate = useCallback(
+		(value: string | null) => {
+			const shouldSend = (nodeData as ViewTextData).isActive;
+			const out = shouldSend ? value : null;
+			if (out !== lastOutputRef.current) {
+				lastOutputRef.current = out;
+				updateNodeData({ outputs: out });
+			}
+		},
+		[nodeData, updateNodeData]
+	);
 
-  /** Clear JSON‑ish fields when inactive */
-  const blockJsonWhenInactive = useCallback(() => {
-    if (!(nodeData as ViewTextData).isActive) {
-      updateNodeData({ json: null, data: null, payload: null, result: null, response: null });
-    }
-  }, [nodeData, updateNodeData]);
+	/** Clear JSON‑ish fields when inactive */
+	const blockJsonWhenInactive = useCallback(() => {
+		if (!(nodeData as ViewTextData).isActive) {
+			updateNodeData({ json: null, data: null, payload: null, result: null, response: null });
+		}
+	}, [nodeData, updateNodeData]);
 
-  // Main effect – watch upstream nodes & compute text -------------------------
-  useEffect(() => {
-    const nodes = getNodes();
-    const edges = getEdges().filter((e) => e.target === id);
+	// Main effect – watch upstream nodes & compute text -------------------------
+	useEffect(() => {
+		const nodes = getNodes();
+		const edges = getEdges().filter((e) => e.target === id);
 
-    const connected = edges
-      .map((e) => nodes.find((n) => n.id === e.source))
-      .filter(Boolean) as typeof nodes;
+		const connected = edges
+			.map((e) => nodes.find((n) => n.id === e.source))
+			.filter(Boolean) as typeof nodes;
 
-    // Enhanced input processing with meaningful content validation
-    const texts = connected
-      .filter((n) => {
-        // Only accept content from active source nodes
-        const sourceIsActive = n.data?.isActive === true;
-        if (!sourceIsActive) return false;
+		// Enhanced input processing with meaningful content validation
+		const texts = connected
+			.filter((n) => {
+				// Only accept content from active source nodes
+				const sourceIsActive = n.data?.isActive === true;
+				if (!sourceIsActive) return false;
 
-        // Get text from source node
-        let nodeText = '';
-        if (n.data?.output !== undefined) {
-          nodeText = formatValue(n.data.output);
-        } else if (n.data?.store !== undefined) {
-          nodeText = formatValue(n.data.store);
-        } else {
-          nodeText = formatValue(n.data);
-        }
+				// Get text from source node
+				let nodeText = "";
+				if (n.data?.output !== undefined) {
+					nodeText = formatValue(n.data.output);
+				} else if (n.data?.store !== undefined) {
+					nodeText = formatValue(n.data.store);
+				} else {
+					nodeText = formatValue(n.data);
+				}
 
-        // Check if content is meaningful (not default values)
-        const isDefaultText = nodeText === 'Default text' || 
-                             nodeText === 'No connected inputs' || 
-                             nodeText === 'Empty input';
-        const hasMeaningfulContent = nodeText && nodeText.trim().length > 0 && !isDefaultText;
+				// Check if content is meaningful (not default values)
+				const isDefaultText =
+					nodeText === "Default text" ||
+					nodeText === "No connected inputs" ||
+					nodeText === "Empty input";
+				const hasMeaningfulContent = nodeText && nodeText.trim().length > 0 && !isDefaultText;
 
-        return hasMeaningfulContent;
-      })
-      .map((n) => {
-        // Get the meaningful text
-        if (n.data?.output !== undefined) {
-          return formatValue(n.data.output);
-        } else if (n.data?.store !== undefined) {
-          return formatValue(n.data.store);
-        } else {
-          return formatValue(n.data);
-        }
-      })
-      .filter((t) => t.trim().length > 0);
+				return hasMeaningfulContent;
+			})
+			.map((n) => {
+				// Get the meaningful text
+				if (n.data?.output !== undefined) {
+					return formatValue(n.data.output);
+				} else if (n.data?.store !== undefined) {
+					return formatValue(n.data.store);
+				} else {
+					return formatValue(n.data);
+				}
+			})
+			.filter((t) => t.trim().length > 0);
 
-    const joined = texts.join('');
+		const joined = texts.join("");
 
-    if (joined !== lastInputRef.current) {
-      lastInputRef.current = joined;
+		if (joined !== lastInputRef.current) {
+			lastInputRef.current = joined;
 
-      const hasContent = joined.trim().length > 0;
-      const hasConnectedInputs = connected.length > 0;
-      const active = hasConnectedInputs && hasContent;
+			const hasContent = joined.trim().length > 0;
+			const hasConnectedInputs = connected.length > 0;
+			const active = hasConnectedInputs && hasContent;
 
-      updateNodeData({
-        inputs: hasConnectedInputs ? joined || 'Empty input' : 'No connected inputs',
-        store: hasContent ? joined : 'No connected inputs',
-        isActive: active,
-      });
+			updateNodeData({
+				inputs: hasConnectedInputs ? joined || "Empty input" : "No connected inputs",
+				store: hasContent ? joined : "No connected inputs",
+				isActive: active,
+			});
 
-      propagate(active ? joined : null);
-      blockJsonWhenInactive();
-    }
-  }, [getEdges, getNodes, id, propagate, blockJsonWhenInactive, updateNodeData]);
+			propagate(active ? joined : null);
+			blockJsonWhenInactive();
+		}
+	}, [getEdges, getNodes, id, propagate, blockJsonWhenInactive, updateNodeData]);
 
-  // Validate ------------------------------------------------------------------
-  const validation = validateNodeData(nodeData);
-  if (!validation.success) {
-    reportValidationError('ViewText', id, validation.errors, {
-      originalData: validation.originalData,
-      component: 'ViewTextNode',
-    });
-  }
+	// Validate ------------------------------------------------------------------
+	const validation = validateNodeData(nodeData);
+	if (!validation.success) {
+		reportValidationError("ViewText", id, validation.errors, {
+			originalData: validation.originalData,
+			component: "ViewTextNode",
+		});
+	}
 
-  useNodeDataValidation(ViewTextDataSchema, 'ViewText', validation.data, id);
+	useNodeDataValidation(ViewTextDataSchema, "ViewText", validation.data, id);
 
-  // Render --------------------------------------------------------------------
-  return (
-    <>
-      {/* Editable label or icon */}
-      {!isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60 ? (
-        <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
-          {spec.icon && renderLucideIcon(spec.icon, "", 16)}
-        </div>
-      ) : (
-        <LabelNode nodeId={id} label={spec.displayName} />
-      )}
+	// Render --------------------------------------------------------------------
+	return (
+		<>
+			{/* Editable label or icon */}
+			{!isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60 ? (
+				<div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+					{spec.icon && renderLucideIcon(spec.icon, "", 16)}
+				</div>
+			) : (
+				<LabelNode nodeId={id} label={spec.displayName} />
+			)}
 
-      {!isExpanded ? (
-        <div className={CONTENT.collapsed}>
-          {spec.receivedData?.showInCollapsed && validation.data.store !== 'No inputs' ? (
-            <div
-              className={`text-xs text-center truncate w-[50px] tracking-wide ${categoryStyles.primary}`}
-            >
-              {validation.data.store}
-            </div>
-          ) : (
-            <div className={`text-xs font-medium tracking-wide ${categoryStyles.primary}`}>VIEW</div>
-          )}
-        </div>
-      ) : (
-        <div className={CONTENT.expanded}>
-          <div className={CONTENT.body}>
-            <div className="text-xs font-normal text-center break-words whitespace-pre-line">
-              {validation.data.store || 'No inputs'}
-            </div>
-          </div>
-        </div>
-      )}
+			{!isExpanded ? (
+				<div className={CONTENT.collapsed}>
+					{spec.receivedData?.showInCollapsed && validation.data.store !== "No inputs" ? (
+						<div
+							className={`text-xs text-center truncate w-[50px] tracking-wide ${categoryStyles.primary}`}
+						>
+							{validation.data.store}
+						</div>
+					) : (
+						<div className={`text-xs font-medium tracking-wide ${categoryStyles.primary}`}>
+							VIEW
+						</div>
+					)}
+				</div>
+			) : (
+				<div className={CONTENT.expanded}>
+					<div className={CONTENT.body}>
+						<div className="text-xs font-normal text-center break-words whitespace-pre-line">
+							{validation.data.store || "No inputs"}
+						</div>
+					</div>
+				</div>
+			)}
 
-      <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
-    </>
-  );
+			<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
+		</>
+	);
 });
 
 // -----------------------------------------------------------------------------
@@ -365,14 +353,14 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 // -----------------------------------------------------------------------------
 
 const ViewTextNodeWithDynamicSpec = (props: NodeProps) => {
-  const { nodeData } = useNodeData(props.id, props.data);
+	const { nodeData } = useNodeData(props.id, props.data);
 
-  const dynamicSpec = useMemo(() => createDynamicSpec(nodeData as ViewTextData), [
-    nodeData.expandedSize,
-    nodeData.collapsedSize,
-  ]);
+	const dynamicSpec = useMemo(
+		() => createDynamicSpec(nodeData as ViewTextData),
+		[nodeData.expandedSize, nodeData.collapsedSize]
+	);
 
-  return withNodeScaffold(dynamicSpec, (p) => <ViewTextNode {...p} spec={dynamicSpec} />)(props);
+	return withNodeScaffold(dynamicSpec, (p) => <ViewTextNode {...p} spec={dynamicSpec} />)(props);
 };
 
 export default ViewTextNodeWithDynamicSpec;

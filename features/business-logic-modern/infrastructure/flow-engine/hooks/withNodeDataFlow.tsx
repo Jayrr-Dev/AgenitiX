@@ -12,8 +12,8 @@
  */
 
 import React from "react";
-import { useNodeDataFlow, type DataFlowConfig } from "./useNodeDataFlow";
 import type { AgenNode } from "../types/nodeData";
+import { type DataFlowConfig, useNodeDataFlow } from "./useNodeDataFlow";
 
 // ============================================================================
 // TYPES
@@ -73,18 +73,18 @@ export function withNodeDataFlow<P extends WithNodeDataFlowProps>(
 ) {
 	return function WithNodeDataFlowComponent(props: P) {
 		const { nodeId, dataFlowConfig, ...restProps } = props;
-		
+
 		// Merge default config with provided config
 		const config = {
 			autoProcess: true,
 			autoPropagate: true,
 			...defaultConfig,
-			...dataFlowConfig
+			...dataFlowConfig,
 		};
-		
+
 		// Use the data flow hook
 		const dataFlow = useNodeDataFlow(nodeId, config);
-		
+
 		// Create context object for the wrapped component
 		const context: NodeDataFlowContext = {
 			inputs: dataFlow.inputs,
@@ -99,13 +99,13 @@ export function withNodeDataFlow<P extends WithNodeDataFlowProps>(
 			getConnectedNodes: dataFlow.getConnectedNodes,
 			getInputData: dataFlow.getInputData,
 			getOutputData: dataFlow.getOutputData,
-			validateConnections: dataFlow.validateConnections
+			validateConnections: dataFlow.validateConnections,
 		};
-		
+
 		// Render wrapped component with data flow context
 		return React.createElement(WrappedComponent, {
 			...restProps,
-			...context
+			...context,
 		} as P & NodeDataFlowContext);
 	};
 }
@@ -118,12 +118,9 @@ export function withNodeDataFlow<P extends WithNodeDataFlowProps>(
  * Hook for using data flow capabilities directly in components
  * Use this when you need more control over the data flow integration
  */
-export function useWithNodeDataFlow(
-	nodeId: string,
-	config?: DataFlowConfig
-): NodeDataFlowContext {
+export function useWithNodeDataFlow(nodeId: string, config?: DataFlowConfig): NodeDataFlowContext {
 	const dataFlow = useNodeDataFlow(nodeId, config);
-	
+
 	return {
 		inputs: dataFlow.inputs,
 		outputs: dataFlow.outputs,
@@ -137,6 +134,6 @@ export function useWithNodeDataFlow(
 		getConnectedNodes: dataFlow.getConnectedNodes,
 		getInputData: dataFlow.getInputData,
 		getOutputData: dataFlow.getOutputData,
-		validateConnections: dataFlow.validateConnections
+		validateConnections: dataFlow.validateConnections,
 	};
-} 
+}

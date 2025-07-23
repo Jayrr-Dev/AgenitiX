@@ -192,7 +192,12 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
 		const nodeSpecificStyling = getNodeSpecificStyling(nodeType, outputPreferences, theme);
 
 		// Special handling for objects with text property (common in text nodes)
-		if (detectedType === "object" && parsedValue && typeof parsedValue === "object" && parsedValue.text !== undefined) {
+		if (
+			detectedType === "object" &&
+			parsedValue &&
+			typeof parsedValue === "object" &&
+			parsedValue.text !== undefined
+		) {
 			return {
 				text: String(parsedValue.text),
 				color: nodeSpecificStyling.color || theme.text.primary,

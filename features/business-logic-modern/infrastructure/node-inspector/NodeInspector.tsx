@@ -19,16 +19,16 @@ import {
 	useNodeErrors,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import { getNodeOutput } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/outputUtils";
-import { Copy, Trash2, ChevronDown, Edit3 } from "lucide-react";
+import { ChevronDown, Copy, Edit3, Trash2 } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
 import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
 
 import EditableNodeDescription from "@/components/nodes/EditableNodeDescription";
 import EditableNodeLabel from "@/components/nodes/EditableNodeLabel";
 import EditableNodeId from "@/components/nodes/editableNodeId";
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import { NODE_TYPE_CONFIG } from "../flow-engine/constants";
 import type { AgenNode, NodeType } from "../flow-engine/types/nodeData";
-import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import { useComponentTheme } from "../theming/components";
 import { NODE_INSPECTOR_TOKENS as DESIGN_CONFIG } from "../theming/components/nodeInspector";
 import { NodeInspectorAdapter } from "./adapters/NodeInspectorAdapter";
@@ -111,7 +111,12 @@ interface AccordionSectionProps {
 	children: React.ReactNode;
 }
 
-const AccordionSection: React.FC<AccordionSectionProps> = ({ title, isOpen, onToggle, children }) => {
+const AccordionSection: React.FC<AccordionSectionProps> = ({
+	title,
+	isOpen,
+	onToggle,
+	children,
+}) => {
 	return (
 		<div className={STYLING_CARD_SECTION}>
 			<button
@@ -120,17 +125,15 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({ title, isOpen, onTo
 			>
 				<h4 className="text-xs font-medium text-muted-foreground mb-1">{title}</h4>
 				<ChevronDown
-					className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+					className={`w-3 h-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
 				/>
 			</button>
-			<div 
+			<div
 				className={`overflow-hidden transition-all duration-300 ease-in-out ${
-					isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+					isOpen ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
 				}`}
 			>
-				<div className="p-3 bg-card rounded-b-lg">
-					{children}
-				</div>
+				<div className="p-3 bg-card rounded-b-lg">{children}</div>
 			</div>
 		</div>
 	);
@@ -172,7 +175,7 @@ const NodeInspector = React.memo(function NodeInspector() {
 	});
 
 	const toggleAccordion = (section: keyof typeof accordionState) => {
-		setAccordionState(prev => ({
+		setAccordionState((prev) => ({
 			...prev,
 			[section]: !prev[section],
 		}));
@@ -209,29 +212,29 @@ const NodeInspector = React.memo(function NodeInspector() {
 	// Get connections for selected node
 	const connections = useMemo(() => {
 		if (!selectedNode) return { incoming: [], outgoing: [] };
-		
+
 		const incoming = edges
-			.filter(edge => edge.target === selectedNode.id)
-			.map(edge => {
-				const sourceNode = nodes.find(n => n.id === edge.source);
+			.filter((edge) => edge.target === selectedNode.id)
+			.map((edge) => {
+				const sourceNode = nodes.find((n) => n.id === edge.source);
 				return {
 					edge,
 					sourceNode,
-					sourceOutput: sourceNode ? getNodeOutput(sourceNode, nodes, edges) : null
+					sourceOutput: sourceNode ? getNodeOutput(sourceNode, nodes, edges) : null,
 				};
 			});
-			
+
 		const outgoing = edges
-			.filter(edge => edge.source === selectedNode.id)
-			.map(edge => {
-				const targetNode = nodes.find(n => n.id === edge.target);
+			.filter((edge) => edge.source === selectedNode.id)
+			.map((edge) => {
+				const targetNode = nodes.find((n) => n.id === edge.target);
 				return {
 					edge,
 					targetNode,
-					targetInput: targetNode ? getNodeOutput(targetNode, nodes, edges) : null
+					targetInput: targetNode ? getNodeOutput(targetNode, nodes, edges) : null,
 				};
 			});
-			
+
 		return { incoming, outgoing };
 	}, [selectedNode, nodes, edges]);
 
@@ -350,7 +353,9 @@ const NodeInspector = React.memo(function NodeInspector() {
 							<div>
 								<EditableNodeLabel
 									nodeId={selectedNode.id}
-									label={(selectedNode.data as any)?.label || nodeInfo.label || nodeInfo.displayName}
+									label={
+										(selectedNode.data as any)?.label || nodeInfo.label || nodeInfo.displayName
+									}
 									displayName={nodeInfo.displayName}
 									onUpdateNodeData={updateNodeData}
 									className={STYLING_TEXT_NODE_NAME}
@@ -444,7 +449,7 @@ const NodeInspector = React.memo(function NodeInspector() {
 						<AccordionSection
 							title="Node Information"
 							isOpen={accordionState.nodeInfo}
-							onToggle={() => toggleAccordion('nodeInfo')}
+							onToggle={() => toggleAccordion("nodeInfo")}
 						>
 							<div className="space-y-2">
 								<div className="flex items-center gap-2">
@@ -460,7 +465,9 @@ const NodeInspector = React.memo(function NodeInspector() {
 									<div className="flex items-center gap-1">
 										<input
 											type="text"
-											value={(selectedNode.data as any)?.label || nodeInfo.label || nodeInfo.displayName}
+											value={
+												(selectedNode.data as any)?.label || nodeInfo.label || nodeInfo.displayName
+											}
 											onChange={(e) => {
 												updateNodeData(selectedNode.id, {
 													...selectedNode.data,
@@ -481,11 +488,11 @@ const NodeInspector = React.memo(function NodeInspector() {
 										ID
 									</span>
 									<div className="flex items-center gap-1">
-									<EditableNodeId
-										nodeId={selectedNode.id}
-										onUpdateId={handleUpdateNodeId}
-										className="text-sm font-mono text-muted-foreground"
-									/>
+										<EditableNodeId
+											nodeId={selectedNode.id}
+											onUpdateId={handleUpdateNodeId}
+											className="text-sm font-mono text-muted-foreground"
+										/>
 										<Edit3 className="w-3 h-3 text-muted-foreground/60" />
 									</div>
 								</div>
@@ -535,7 +542,9 @@ const NodeInspector = React.memo(function NodeInspector() {
 										<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
 											RUNTIME
 										</span>
-										<span className="text-sm font-mono text-muted-foreground">{nodeInfo.runtime.execute}</span>
+										<span className="text-sm font-mono text-muted-foreground">
+											{nodeInfo.runtime.execute}
+										</span>
 									</div>
 								)}
 							</div>
@@ -546,7 +555,7 @@ const NodeInspector = React.memo(function NodeInspector() {
 							<AccordionSection
 								title="Description"
 								isOpen={accordionState.description}
-								onToggle={() => toggleAccordion('description')}
+								onToggle={() => toggleAccordion("description")}
 							>
 								<EditableNodeDescription
 									nodeId={selectedNode.id}
@@ -561,15 +570,15 @@ const NodeInspector = React.memo(function NodeInspector() {
 						<AccordionSection
 							title="Node Data"
 							isOpen={accordionState.nodeData}
-							onToggle={() => toggleAccordion('nodeData')}
+							onToggle={() => toggleAccordion("nodeData")}
 						>
 							<div className="bg-muted/20 rounded-md border border-border/30 overflow-hidden -mx-1">
 								<EditableJsonEditor
 									data={{
 										id: selectedNode.id,
 										category: nodeCategory,
-										store: selectedNode.data?.store || '',
-										inputs: selectedNode.data?.inputs || '',
+										store: selectedNode.data?.store || "",
+										inputs: selectedNode.data?.inputs || "",
 										outputs: selectedNode.data?.outputs ?? null,
 										isActive: selectedNode.data?.isActive || false,
 										isEnabled: selectedNode.data?.isEnabled || true,
@@ -590,11 +599,13 @@ const NodeInspector = React.memo(function NodeInspector() {
 							<AccordionSection
 								title="Size"
 								isOpen={accordionState.size}
-								onToggle={() => toggleAccordion('size')}
+								onToggle={() => toggleAccordion("size")}
 							>
 								<SizeControls
 									nodeData={selectedNode.data as any}
-									updateNodeData={(patch: Record<string, any>) => updateNodeData(selectedNode.id, patch)}
+									updateNodeData={(patch: Record<string, any>) =>
+										updateNodeData(selectedNode.id, patch)
+									}
 								/>
 							</AccordionSection>
 						)}
@@ -607,7 +618,7 @@ const NodeInspector = React.memo(function NodeInspector() {
 								<AccordionSection
 									title="Output"
 									isOpen={accordionState.output}
-									onToggle={() => toggleAccordion('output')}
+									onToggle={() => toggleAccordion("output")}
 								>
 									<NodeOutput output={output} nodeType={selectedNode.type as NodeType} />
 								</AccordionSection>
@@ -617,7 +628,7 @@ const NodeInspector = React.memo(function NodeInspector() {
 								<AccordionSection
 									title="Controls"
 									isOpen={accordionState.controls}
-									onToggle={() => toggleAccordion('controls')}
+									onToggle={() => toggleAccordion("controls")}
 								>
 									<NodeControls
 										node={selectedNode}
@@ -631,36 +642,44 @@ const NodeInspector = React.memo(function NodeInspector() {
 							<AccordionSection
 								title="Handles"
 								isOpen={accordionState.handles}
-								onToggle={() => toggleAccordion('handles')}
+								onToggle={() => toggleAccordion("handles")}
 							>
 								{/* Handles Summary */}
 								{nodeInfo.handles && nodeInfo.handles.length > 0 && (
 									<div className="mb-3 p-2 bg-muted/30 rounded border border-border/30">
 										<div className="flex items-center justify-between text-xs">
 											<span className="font-medium text-foreground">
-												{nodeInfo.handles.length} handle{nodeInfo.handles.length !== 1 ? 's' : ''}
+												{nodeInfo.handles.length} handle{nodeInfo.handles.length !== 1 ? "s" : ""}
 											</span>
 											<span className="text-muted-foreground">
-												{edges.filter(edge => 
-													edge.source === selectedNode.id || edge.target === selectedNode.id
-												).length} total connection{edges.filter(edge => 
-													edge.source === selectedNode.id || edge.target === selectedNode.id
-												).length !== 1 ? 's' : ''}
+												{
+													edges.filter(
+														(edge) =>
+															edge.source === selectedNode.id || edge.target === selectedNode.id
+													).length
+												}{" "}
+												total connection
+												{edges.filter(
+													(edge) =>
+														edge.source === selectedNode.id || edge.target === selectedNode.id
+												).length !== 1
+													? "s"
+													: ""}
 											</span>
 										</div>
 									</div>
 								)}
-								
+
 								<div className="space-y-2">
 									{nodeInfo.handles?.map((handle, index) => {
 										// Find connections for this handle - improved logic with suffix handling
-										const handleConnections = edges.filter(edge => {
+										const handleConnections = edges.filter((edge) => {
 											// Check if this edge involves the selected node
 											const isSource = edge.source === selectedNode.id;
 											const isTarget = edge.target === selectedNode.id;
-											
+
 											if (!isSource && !isTarget) return false;
-											
+
 											// For source connections (output handles), check sourceHandle
 											if (isSource) {
 												// Check exact match first
@@ -668,9 +687,10 @@ const NodeInspector = React.memo(function NodeInspector() {
 												// Check with __s suffix
 												if (edge.sourceHandle === `${handle.id}__s`) return true;
 												// Check if handle starts with the base ID
-												if (edge.sourceHandle && edge.sourceHandle.startsWith(handle.id)) return true;
+												if (edge.sourceHandle && edge.sourceHandle.startsWith(handle.id))
+													return true;
 											}
-											
+
 											// For target connections (input handles), check targetHandle
 											if (isTarget) {
 												// Check exact match first
@@ -678,42 +698,53 @@ const NodeInspector = React.memo(function NodeInspector() {
 												// Check with __s suffix
 												if (edge.targetHandle === `${handle.id}__s`) return true;
 												// Check if handle starts with the base ID
-												if (edge.targetHandle && edge.targetHandle.startsWith(handle.id)) return true;
+												if (edge.targetHandle && edge.targetHandle.startsWith(handle.id))
+													return true;
 											}
-											
+
 											// Fallback: if no specific handle is specified, check handle type
-											if (isSource && handle.type === 'source' && !edge.sourceHandle) {
+											if (isSource && handle.type === "source" && !edge.sourceHandle) {
 												return true;
 											}
-											
-											if (isTarget && handle.type === 'target' && !edge.targetHandle) {
+
+											if (isTarget && handle.type === "target" && !edge.targetHandle) {
 												return true;
 											}
-											
+
 											return false;
 										});
-										
+
 										// Get connected node information
-										const connectedNodes = handleConnections.map(edge => {
-											const connectedNodeId = edge.source === selectedNode.id ? edge.target : edge.source;
-											const connectedNode = nodes.find(n => n.id === connectedNodeId);
-											return {
-												edge,
-												node: connectedNode,
-												isIncoming: edge.target === selectedNode.id
-											};
-										}).filter(conn => conn.node);
-										
+										const connectedNodes = handleConnections
+											.map((edge) => {
+												const connectedNodeId =
+													edge.source === selectedNode.id ? edge.target : edge.source;
+												const connectedNode = nodes.find((n) => n.id === connectedNodeId);
+												return {
+													edge,
+													node: connectedNode,
+													isIncoming: edge.target === selectedNode.id,
+												};
+											})
+											.filter((conn) => conn.node);
+
 										return (
-											<div key={handle.id} className="p-3 bg-muted/20 rounded border border-border/50">
+											<div
+												key={handle.id}
+												className="p-3 bg-muted/20 rounded border border-border/50"
+											>
 												<div className="flex items-center justify-between mb-2">
 													<div className="flex items-center gap-2">
-														<span className={`w-3 h-3 rounded-full ${
-															handle.type === 'source' ? 'bg-green-500' : 'bg-blue-500'
-														}`} title={handle.type} />
+														<span
+															className={`w-3 h-3 rounded-full ${
+																handle.type === "source" ? "bg-green-500" : "bg-blue-500"
+															}`}
+															title={handle.type}
+														/>
 														<div>
 															<span className="text-xs font-medium text-foreground">
-																{handle.dataType || 'Any'} ({handle.type === 'source' ? 'Output' : 'Input'})
+																{handle.dataType || "Any"} (
+																{handle.type === "source" ? "Output" : "Input"})
 															</span>
 															{handle.position && (
 																<span className="text-xs text-muted-foreground ml-1">
@@ -723,32 +754,41 @@ const NodeInspector = React.memo(function NodeInspector() {
 														</div>
 													</div>
 													<div className="flex items-center gap-1">
-														<span className={`text-xs px-2 py-1 rounded-full ${
-															handleConnections.length > 0 
-																? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' 
-																: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-														}`}>
-															{handleConnections.length} connection{handleConnections.length !== 1 ? 's' : ''}
+														<span
+															className={`text-xs px-2 py-1 rounded-full ${
+																handleConnections.length > 0
+																	? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+																	: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+															}`}
+														>
+															{handleConnections.length} connection
+															{handleConnections.length !== 1 ? "s" : ""}
 														</span>
 													</div>
 												</div>
-												
+
 												{/* Connected Nodes List */}
 												{connectedNodes.length > 0 && (
 													<div className="space-y-1">
 														{connectedNodes.map((connection, connIndex) => (
-															<div key={connection.edge.id} className={`text-xs p-2 rounded border ${
-																connection.isIncoming 
-																	? 'bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800' 
-																	: 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
-															}`}>
+															<div
+																key={connection.edge.id}
+																className={`text-xs p-2 rounded border ${
+																	connection.isIncoming
+																		? "bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800"
+																		: "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800"
+																}`}
+															>
 																<div className="flex items-center justify-between">
-																	<span className={`font-medium ${
-																		connection.isIncoming 
-																			? 'text-blue-700 dark:text-blue-300' 
-																			: 'text-green-700 dark:text-green-300'
-																	}`}>
-																		{connection.isIncoming ? '←' : '→'} {connection.node?.type || 'Unknown'}
+																	<span
+																		className={`font-medium ${
+																			connection.isIncoming
+																				? "text-blue-700 dark:text-blue-300"
+																				: "text-green-700 dark:text-green-300"
+																		}`}
+																	>
+																		{connection.isIncoming ? "←" : "→"}{" "}
+																		{connection.node?.type || "Unknown"}
 																	</span>
 																	<span className="text-muted-foreground">
 																		{connection.node?.id}
@@ -758,7 +798,7 @@ const NodeInspector = React.memo(function NodeInspector() {
 														))}
 													</div>
 												)}
-												
+
 												{/* No Connections Message */}
 												{handleConnections.length === 0 && (
 													<div className="text-xs text-muted-foreground/60 text-center py-1">
@@ -776,13 +816,11 @@ const NodeInspector = React.memo(function NodeInspector() {
 								</div>
 							</AccordionSection>
 
-
-
 							{/* Connections Card */}
 							<AccordionSection
 								title="Connections"
 								isOpen={accordionState.connections}
-								onToggle={() => toggleAccordion('connections')}
+								onToggle={() => toggleAccordion("connections")}
 							>
 								<div className="space-y-3">
 									{/* Incoming Connections */}
@@ -798,14 +836,17 @@ const NodeInspector = React.memo(function NodeInspector() {
 											</div>
 											<div className="space-y-2">
 												{connections.incoming.map((connection, index) => (
-													<div key={connection.edge.id} className="p-2 bg-muted/20 rounded border border-border/50">
+													<div
+														key={connection.edge.id}
+														className="p-2 bg-muted/20 rounded border border-border/50"
+													>
 														<div className="flex items-center justify-between mb-1">
 															<div className="flex items-center gap-2">
 																<span className="text-xs font-medium text-muted-foreground bg-blue-100 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">
 																	FROM
 																</span>
 																<span className="text-xs font-medium text-foreground">
-																	{connection.sourceNode?.type || 'Unknown'}
+																	{connection.sourceNode?.type || "Unknown"}
 																</span>
 															</div>
 															<span className="text-xs text-muted-foreground font-mono">
@@ -836,14 +877,17 @@ const NodeInspector = React.memo(function NodeInspector() {
 											</div>
 											<div className="space-y-2">
 												{connections.outgoing.map((connection, index) => (
-													<div key={connection.edge.id} className="p-2 bg-muted/20 rounded border border-border/50">
+													<div
+														key={connection.edge.id}
+														className="p-2 bg-muted/20 rounded border border-border/50"
+													>
 														<div className="flex items-center justify-between mb-1">
 															<div className="flex items-center gap-2">
 																<span className="text-xs font-medium text-muted-foreground bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded">
 																	TO
 																</span>
 																<span className="text-xs font-medium text-foreground">
-																	{connection.targetNode?.type || 'Unknown'}
+																	{connection.targetNode?.type || "Unknown"}
 																</span>
 															</div>
 															<span className="text-xs text-muted-foreground font-mono">
@@ -878,7 +922,7 @@ const NodeInspector = React.memo(function NodeInspector() {
 							<AccordionSection
 								title="Error Log"
 								isOpen={accordionState.errors}
-								onToggle={() => toggleAccordion('errors')}
+								onToggle={() => toggleAccordion("errors")}
 							>
 								<ErrorLog errors={errors} onClearErrors={handleClearErrors} />
 							</AccordionSection>

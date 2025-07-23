@@ -11,9 +11,9 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import { generateNodeId, generateEdgeId } from "../utils/nodeUtils";
 import { INITIAL_EDGES, INITIAL_NODES, MAX_ERRORS_PER_NODE } from "../constants";
 import type { AgenEdge, AgenNode, NodeError } from "../types/nodeData";
+import { generateEdgeId, generateNodeId } from "../utils/nodeUtils";
 import { getNodeOutput } from "../utils/outputUtils";
 
 export function useFlowEditorState() {

@@ -178,7 +178,7 @@ class GitVersionDetector {
 	// ENHANCED VERSION CONSTANTS WITH GIT INFO
 	updateVersionConstants(version, gitInfo) {
 		const parsed = this.parseVersion(version);
-		
+
 		const versionContent = `// AUTO-GENERATED - DO NOT EDIT MANUALLY
 export const VERSION = {
   major: ${parsed.major},
@@ -199,18 +199,18 @@ export const VERSION = {
 
 		// Ensure directory exists
 		const versionDir = path.dirname(this.versionFile);
-			if (!fs.existsSync(versionDir)) {
-				fs.mkdirSync(versionDir, { recursive: true });
-			}
+		if (!fs.existsSync(versionDir)) {
+			fs.mkdirSync(versionDir, { recursive: true });
+		}
 
 		fs.writeFileSync(this.versionFile, versionContent);
-			console.log(`✅ Updated version constants to ${version}`);
+		console.log(`✅ Updated version constants to ${version}`);
 
 		// Auto-sync package.json version
 		try {
-			const packageJsonPath = path.join(process.cwd(), 'package.json');
+			const packageJsonPath = path.join(process.cwd(), "package.json");
 			if (fs.existsSync(packageJsonPath)) {
-				const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+				const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
 				packageJson.version = version;
 				fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 				console.log(`📦 Updated package.json version to ${version}`);
@@ -231,15 +231,21 @@ export const VERSION = {
 		try {
 			// Simple approach: just scan the main directories
 			const dirs = ["app", "components", "features", "lib", "hooks", "types", "convex", "scripts"];
-			
+
 			for (const dir of dirs) {
 				if (fs.existsSync(dir)) {
 					this.scanDirectory(dir, files, extensions);
 				}
 			}
-			
+
 			// Add specific files
-			const specificFiles = ["middleware.ts", "next.config.ts", "tailwind.config.ts", "tsconfig.json", "package.json"];
+			const specificFiles = [
+				"middleware.ts",
+				"next.config.ts",
+				"tailwind.config.ts",
+				"tsconfig.json",
+				"package.json",
+			];
 			for (const file of specificFiles) {
 				if (fs.existsSync(file)) {
 					files.push(file);
@@ -305,27 +311,27 @@ export const VERSION = {
 
 	// Parse version with pre-release support
 	parseVersion(version) {
-		const [versionPart, preReleasePart] = version.split('-');
+		const [versionPart, preReleasePart] = version.split("-");
 		const [major, minor, patch] = versionPart.split(".").map(Number);
-		
+
 		return {
 			major,
 			minor,
 			patch,
 			preRelease: preReleasePart || null,
-			full: version
+			full: version,
 		};
 	}
 
 	// Bump pre-release version
-	bumpPreRelease(current, preReleaseType = 'alpha') {
+	bumpPreRelease(current, preReleaseType = "alpha") {
 		const parsed = this.parseVersion(current);
-		
+
 		if (parsed.preRelease) {
 			// Extract pre-release type and number
-			const [type, number] = parsed.preRelease.split('.');
-			const num = parseInt(number) || 0;
-			
+			const [type, number] = parsed.preRelease.split(".");
+			const num = Number.parseInt(number) || 0;
+
 			if (type === preReleaseType) {
 				// Bump the same pre-release type
 				return `${parsed.major}.${parsed.minor}.${parsed.patch}-${preReleaseType}.${num + 1}`;
@@ -696,7 +702,9 @@ async function handleCommand(command) {
 			const releaseChanges = await detector.convertToRelease();
 			if (releaseChanges) {
 				console.log(`✅ Released stable version: ${releaseChanges.version}`);
-				console.log(`📝 Git: ${releaseChanges.gitInfo.shortHash} on ${releaseChanges.gitInfo.branch}`);
+				console.log(
+					`📝 Git: ${releaseChanges.gitInfo.shortHash} on ${releaseChanges.gitInfo.branch}`
+				);
 			}
 			break;
 

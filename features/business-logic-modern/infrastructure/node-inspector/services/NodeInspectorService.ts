@@ -84,76 +84,80 @@ class NodeInspectorServiceImpl {
 	// SCHEMA-DRIVEN CONTROL GENERATION
 	// ============================================================================
 
-  /**
-   * Generate control fields from a node's Zod schema with advanced customization
-   * This is the core method that enables scalable control generation for 400+ nodes
-   */
-  generateControlFields(nodeType: NodeType): ControlField[] {
-    try {
-      // Type guard for nodeType
-      if (!nodeType) {
-        console.warn("Node type is undefined");
-        return [];
-      }
+	/**
+	 * Generate control fields from a node's Zod schema with advanced customization
+	 * This is the core method that enables scalable control generation for 400+ nodes
+	 */
+	generateControlFields(nodeType: NodeType): ControlField[] {
+		try {
+			// Type guard for nodeType
+			if (!nodeType) {
+				console.warn("Node type is undefined");
+				return [];
+			}
 
-      console.log(`[NodeInspectorService] Generating control fields for: ${nodeType}`);
+			console.log(`[NodeInspectorService] Generating control fields for: ${nodeType}`);
 
-      // Get the node spec metadata
-      const metadata = getNodeSpecMetadata(nodeType);
-      if (!metadata) {
-        console.warn(`No metadata found for node type: ${nodeType}`);
-        return [];
-      }
+			// Get the node spec metadata
+			const metadata = getNodeSpecMetadata(nodeType);
+			if (!metadata) {
+				console.warn(`No metadata found for node type: ${nodeType}`);
+				return [];
+			}
 
-      console.log(`[NodeInspectorService] Found metadata for ${nodeType}:`, metadata);
+			console.log(`[NodeInspectorService] Found metadata for ${nodeType}:`, metadata);
 
-      // Get the actual NodeSpec to access schema and controls config
-      const nodeSpec = this.getNodeSpec(nodeType);
-      if (!nodeSpec) {
-        console.warn(`No nodeSpec found for node type: ${nodeType}`);
-        return [];
-      }
+			// Get the actual NodeSpec to access schema and controls config
+			const nodeSpec = this.getNodeSpec(nodeType);
+			if (!nodeSpec) {
+				console.warn(`No nodeSpec found for node type: ${nodeType}`);
+				return [];
+			}
 
-      console.log(`[NodeInspectorService] Found nodeSpec for ${nodeType}:`, {
-        hasDataSchema: !!nodeSpec.dataSchema,
-        hasControls: !!nodeSpec.controls,
-        controls: nodeSpec.controls
-      });
+			console.log(`[NodeInspectorService] Found nodeSpec for ${nodeType}:`, {
+				hasDataSchema: !!nodeSpec.dataSchema,
+				hasControls: !!nodeSpec.controls,
+				controls: nodeSpec.controls,
+			});
 
-      if (!nodeSpec.dataSchema) {
-        console.warn(`No schema found for node type: ${nodeType}`);
-        return [];
-      }
+			if (!nodeSpec.dataSchema) {
+				console.warn(`No schema found for node type: ${nodeType}`);
+				return [];
+			}
 
-      // Use schema introspection to analyze the Zod schema
-      const schemaFields = SchemaIntrospector.analyzeSchema(
-        nodeSpec.dataSchema
-      );
+			// Use schema introspection to analyze the Zod schema
+			const schemaFields = SchemaIntrospector.analyzeSchema(nodeSpec.dataSchema);
 
-      console.log(`[NodeInspectorService] Schema analysis for ${nodeType} found ${schemaFields.length} fields:`, schemaFields);
+			console.log(
+				`[NodeInspectorService] Schema analysis for ${nodeType} found ${schemaFields.length} fields:`,
+				schemaFields
+			);
 
-      // Convert schema field info to control fields
-      let controlFields = schemaFields.map(this.convertSchemaFieldToControl);
+			// Convert schema field info to control fields
+			let controlFields = schemaFields.map(this.convertSchemaFieldToControl);
 
-      console.log(`[NodeInspectorService] Converted to ${controlFields.length} control fields:`, controlFields);
+			console.log(
+				`[NodeInspectorService] Converted to ${controlFields.length} control fields:`,
+				controlFields
+			);
 
-      // Apply control configuration customizations
-      if (nodeSpec.controls) {
-        console.log(`[NodeInspectorService] Applying control customizations for ${nodeType}`);
-        controlFields = this.applyControlCustomizations(
-          controlFields,
-          nodeSpec.controls
-        );
-        console.log(`[NodeInspectorService] After customizations: ${controlFields.length} fields:`, controlFields);
-      }
+			// Apply control configuration customizations
+			if (nodeSpec.controls) {
+				console.log(`[NodeInspectorService] Applying control customizations for ${nodeType}`);
+				controlFields = this.applyControlCustomizations(controlFields, nodeSpec.controls);
+				console.log(
+					`[NodeInspectorService] After customizations: ${controlFields.length} fields:`,
+					controlFields
+				);
+			}
 
-      // Filter out excluded fields and system fields
-      controlFields = this.filterControlFields(
-        controlFields,
-        nodeSpec.controls
-      );
+			// Filter out excluded fields and system fields
+			controlFields = this.filterControlFields(controlFields, nodeSpec.controls);
 
-      console.log(`[NodeInspectorService] Final control fields for ${nodeType}: ${controlFields.length} fields:`, controlFields);
+			console.log(
+				`[NodeInspectorService] Final control fields for ${nodeType}: ${controlFields.length} fields:`,
+				controlFields
+			);
 
 			return controlFields;
 		} catch (error) {
@@ -215,12 +219,12 @@ class NodeInspectorServiceImpl {
 		try {
 			if (!nodeType) return null;
 
-      // Access the actual NodeSpec from the registry
-      const nodeSpec = nodeSpecs[nodeType as keyof typeof nodeSpecs];
-      if (!nodeSpec) {
-        console.warn(`NodeSpec not found for type: ${nodeType}`);
-        return null;
-      }
+			// Access the actual NodeSpec from the registry
+			const nodeSpec = nodeSpecs[nodeType as keyof typeof nodeSpecs];
+			if (!nodeSpec) {
+				console.warn(`NodeSpec not found for type: ${nodeType}`);
+				return null;
+			}
 
 			return nodeSpec;
 		} catch (error) {
@@ -337,12 +341,12 @@ class NodeInspectorServiceImpl {
 		}
 	}
 
-  /**
-   * Get node data with defaults applied
-   */
-  getNodeDataWithDefaults(node: AgenNode): Record<string, unknown> {
-    const nodeSpec = this.getNodeSpec(node.type as any);
-    const defaults = nodeSpec?.initialData || {};
+	/**
+	 * Get node data with defaults applied
+	 */
+	getNodeDataWithDefaults(node: AgenNode): Record<string, unknown> {
+		const nodeSpec = this.getNodeSpec(node.type as any);
+		const defaults = nodeSpec?.initialData || {};
 
 		return { ...defaults, ...node.data };
 	}

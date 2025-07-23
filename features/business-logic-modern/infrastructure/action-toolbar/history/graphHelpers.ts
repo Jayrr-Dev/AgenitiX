@@ -11,8 +11,8 @@
 
 // Lightweight runtime compression for large graphs (≈70% smaller). Adds <2 KB to bundle.
 import { compressToUTF16, decompressFromUTF16 } from "lz-string";
-import type { FlowState, HistoryGraph, HistoryNode, NodeId } from "./historyGraph";
 import { generateNodeId as generateReadableNodeId } from "../../flow-engine/utils/nodeUtils";
+import type { FlowState, HistoryGraph, HistoryNode, NodeId } from "./historyGraph";
 
 // Generate unique IDs for history nodes
 export const generateNodeId = (): NodeId => generateReadableNodeId();

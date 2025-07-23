@@ -70,7 +70,9 @@ export const extractNodeValue = (data: Record<string, any> | null | undefined): 
  */
 export const generateReadableId = (prefix: string): string => {
 	const timestamp = Date.now().toString(16); // Convert timestamp to hex
-	const random = Math.floor(Math.random() * 0x10000).toString(16).padStart(4, '0'); // 4-digit hex
+	const random = Math.floor(Math.random() * 0x10000)
+		.toString(16)
+		.padStart(4, "0"); // 4-digit hex
 	return `${prefix}_${timestamp}_${random}`;
 };
 
@@ -79,7 +81,7 @@ export const generateReadableId = (prefix: string): string => {
  * @returns A unique node ID (e.g., "node_1a2b3c4d_5e6f").
  */
 export const generateNodeId = (): string => {
-	return generateReadableId('node');
+	return generateReadableId("node");
 };
 
 /**
@@ -87,5 +89,5 @@ export const generateNodeId = (): string => {
  * @returns A unique edge ID (e.g., "edge_1a2b3c4d_5e6f").
  */
 export const generateEdgeId = (): string => {
-	return generateReadableId('edge');
+	return generateReadableId("edge");
 };

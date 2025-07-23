@@ -115,7 +115,7 @@ class NodeInspectorAdapterImpl {
 
 	/**
 	 * Determine if a node type has custom controls available
-	 * 
+	 *
 	 * All node categories should have controls by default for better UX
 	 * This ensures consistent inspector behavior across all node types
 	 */
