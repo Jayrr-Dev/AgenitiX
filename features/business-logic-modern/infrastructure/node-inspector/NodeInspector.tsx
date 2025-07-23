@@ -568,7 +568,12 @@ const NodeInspector = React.memo(function NodeInspector() {
 									data={{
 										id: selectedNode.id,
 										category: nodeCategory,
-										...selectedNode.data,
+										store: selectedNode.data?.store || '',
+										inputs: selectedNode.data?.inputs || '',
+										outputs: selectedNode.data?.outputs ?? null,
+										isActive: selectedNode.data?.isActive || false,
+										isEnabled: selectedNode.data?.isEnabled || true,
+										isExpanded: selectedNode.data?.isExpanded || false,
 									}}
 									onUpdateData={(newData) => {
 										// Extract the system fields and update only the data portion

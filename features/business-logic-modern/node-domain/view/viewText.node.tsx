@@ -1,551 +1,378 @@
 /**
- * viewText NODE - Clean content-focused node template
+ * viewText NODE – Content‑focused, schema‑driven, type‑safe
  *
- * • Focuses ONLY on content and layout - no structural styling
- * • withNodeScaffold handles all borders, sizing, theming, interactive states
- * • Schema-driven controls in Node Inspector
- * • Type-safe data validation with Zod schema
- * • Clean separation of concerns for maximum maintainability
- *
- * Keywords: view-text, content-focused, schema-driven, type-safe, clean-architecture
+ * • Presents incoming text with ZERO structural styling – the surrounding scaffold handles
+ *   borders, sizing, themes, drag/selection states, etc.
+ * • Zod‑based schema gives auto‑generated, type‑checked Inspector controls.
+ * • Dynamic sizing is driven directly by node data (expandedSize / collapsedSize).
+ * • All data handling is funnelled through one formatter (formatValue) to avoid duplication.
+ * • Strict separation of responsibilities:
+ *     – createDynamicSpec: returns a NodeSpec based only on data               (pure)
+ *     – ViewTextNode:      deals with React‑Flow store & data propagation       (impure)
+ * • Memoised helpers & refs prevent unnecessary renders / infinite loops.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { NodeProps, useReactFlow } from '@xyflow/react';
 import { z } from 'zod';
 import { withNodeScaffold } from '@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold';
-import { NodeSpec } from '@/features/business-logic-modern/infrastructure/node-core/NodeSpec';
+import type { NodeSpec } from '@/features/business-logic-modern/infrastructure/node-core/NodeSpec';
 import {
   createNodeValidator,
   reportValidationError,
-  useNodeDataValidation
+  useNodeDataValidation,
 } from '@/features/business-logic-modern/infrastructure/node-core/validation';
-import { SafeSchemas, createSafeInitialData } from '@/features/business-logic-modern/infrastructure/node-core/schema-helpers';
+import {
+  SafeSchemas,
+  createSafeInitialData,
+} from '@/features/business-logic-modern/infrastructure/node-core/schema-helpers';
+import { renderLucideIcon } from '@/features/business-logic-modern/infrastructure/node-core/iconUtils';
 import { CATEGORIES } from '@/features/business-logic-modern/infrastructure/theming/categories';
-import { EXPANDED_SIZES, COLLAPSED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
+import {
+  EXPANDED_SIZES,
+  COLLAPSED_SIZES,
+} from '@/features/business-logic-modern/infrastructure/theming/sizing';
 import { ExpandCollapseButton } from '@/components/nodes/ExpandCollapseButton';
+import LabelNode from '@/components/nodes/labelNode';
 import { useNodeData } from '@/hooks/useNodeData';
 
+// -----------------------------------------------------------------------------
+// 1️⃣  Data schema & validation
+// -----------------------------------------------------------------------------
 
-// -- PLOP-INJECTED-IMPORTS --
+export const ViewTextDataSchema = z
+  .object({
+    store: SafeSchemas.text('Default text'),
+    isEnabled: SafeSchemas.boolean(true),
+    isActive: SafeSchemas.boolean(false),
+    isExpanded: SafeSchemas.boolean(false),
+    inputs: SafeSchemas.optionalText(),
+    outputs: SafeSchemas.optionalText(),
+    expandedSize: SafeSchemas.text('VE2'),
+    collapsedSize: SafeSchemas.text('C2'),
+  })
+  .passthrough();
 
-/**
- * Data schema for viewText node
- * Define your node's data structure - controls are automatically generated
- */
-const ViewTextDataSchema = z.object({
-  // Basic fields - customize as needed
-  text: SafeSchemas.text('Default text'),
-  isEnabled: SafeSchemas.boolean(true),
-  isActive: SafeSchemas.boolean(false),
-  isExpanded: SafeSchemas.boolean(false),
-  receivedData: SafeSchemas.optionalText(), // Store received data from connected nodes
+export type ViewTextData = z.infer<typeof ViewTextDataSchema>;
 
-  // Dynamic size fields for node inspector controls
-  expandedSize: SafeSchemas.text('VE2'), // Dynamic expanded size
-  collapsedSize: SafeSchemas.text('C2'), // Dynamic collapsed size
-
-  // Add your fields here - controls are auto-generated:
-  // description: SafeSchemas.optionalText(),
-  // count: SafeSchemas.number(1, 1, 100),
-  // priority: SafeSchemas.enum(['low', 'medium', 'high'], 'medium'),
-}).passthrough();
-
-type ViewTextData = z.infer<typeof ViewTextDataSchema>;
-
-// Create enterprise validator
 const validateNodeData = createNodeValidator(ViewTextDataSchema, 'ViewText');
 
-/**
- * Dynamic node specification that uses data for sizing
- */
-const createDynamicSpec = (nodeData: ViewTextData): NodeSpec => ({
-  kind: 'viewText',
-  displayName: 'viewText'.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim(),
-  label: 'viewText'.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim(),
-  category: CATEGORIES.VIEW,
-  size: {
-    expanded: EXPANDED_SIZES[nodeData.expandedSize as keyof typeof EXPANDED_SIZES] || EXPANDED_SIZES.VE2,
-    collapsed: COLLAPSED_SIZES[nodeData.collapsedSize as keyof typeof COLLAPSED_SIZES] || COLLAPSED_SIZES.C2,
-  },
-  handles: [
-    { id: 'json-input', code: 'j', position: 'top', type: 'target', dataType: 'JSON' },
-    { id: 'output', code: 's', position: 'right', type: 'source', dataType: 'String' },
-    { id: 'activate', code: 's', position: 'left', type: 'target', dataType: 'String' },
-  ],
-  inspector: {
-    key: 'ViewTextInspector',
-  },
-  version: 1,
-  runtime: {
-    execute: 'viewText_execute_v1',
-  },
-  initialData: createSafeInitialData(ViewTextDataSchema),
-  dataSchema: ViewTextDataSchema,
-  controls: {
-    autoGenerate: true,
-    excludeFields: ["isActive", "receivedData", "expandedSize", "collapsedSize"], // Hide system fields and size fields from main controls
-    customFields: [
-      {
-        key: "isExpanded",
-        type: "boolean",
-        label: "Expand",
-      },
+// -----------------------------------------------------------------------------
+// 2️⃣  Helper – format any value into a display‑ready string (re‑used everywhere)
+// -----------------------------------------------------------------------------
+
+const COMMON_OBJECT_PROPS = [
+  'text',
+  'output',
+  'value',
+  'data',
+  'content',
+  'message',
+  'result',
+  'response',
+  'body',
+  'payload',
+  'input',
+] as const;
+
+type Primitive = string | number | boolean | bigint | symbol | null | undefined;
+
+function formatValue(value: unknown): string {
+  // ── Primitives ──────────────────────────────────────────────────────────────
+  if (
+    value === null ||
+    value === undefined ||
+    value === false ||
+    value === '' ||
+    value === 0
+  )
+    return '';
+
+  if (typeof value !== 'object') return String(value);
+
+  // ── Objects / Arrays ────────────────────────────────────────────────────────
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '';
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch {
+      return '[Array]';
+    }
+  }
+
+  if (value instanceof Date) return value.toISOString();
+  if (value instanceof RegExp) return value.toString();
+  if (value instanceof Error) return `Error: ${value.message}`;
+  if (value instanceof Map)
+    return value.size ? JSON.stringify(Array.from(value.entries()), null, 2) : '';
+  if (value instanceof Set)
+    return value.size ? JSON.stringify(Array.from(value), null, 2) : '';
+  if (value instanceof Promise) return '[Promise]';
+
+  // Plain object – try common prop names first
+  for (const prop of COMMON_OBJECT_PROPS) {
+    const inner = (value as Record<string, unknown>)[prop];
+    if (inner !== undefined && inner !== null) return formatValue(inner);
+  }
+
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return '[Object]';
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 3️⃣  Dynamic spec factory (pure)
+// -----------------------------------------------------------------------------
+
+function createDynamicSpec(data: ViewTextData): NodeSpec {
+  const expanded =
+    EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ||
+    EXPANDED_SIZES.VE2;
+  const collapsed =
+    COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ||
+    COLLAPSED_SIZES.C2;
+
+  return {
+    kind: 'viewText',
+    displayName: 'View Text',
+    label: 'View Text',
+    category: CATEGORIES.VIEW,
+    size: { expanded, collapsed },
+    handles: [
+      { id: 'json-input', code: 'j', position: 'top', type: 'target', dataType: 'JSON' },
+      { id: 'output', code: 's', position: 'right', type: 'source', dataType: 'String' },
+      { id: 'activate', code: 's', position: 'left', type: 'target', dataType: 'String' },
     ],
-  },
-  icon: 'LuFileText', // Lucide icon for text viewing
-  author: 'Agenitix Team',
-  description: 'Displays and formats text content with customizable viewing options',
-  feature: 'base',
-  tags: ["display", "formatting"],
-  theming: {
-    
-    
-    
-  },
-  receivedData: {
-    enabled: true,
-    displayMode: 'formatted',
-    showInCollapsed: true,
-    formatData: (data: any) => {
-      // Comprehensive data type handling
-      if (data === null) return 'null';
-      if (data === undefined) return 'undefined';
-      if (typeof data === 'string') return data || 'Empty string';
-      if (typeof data === 'number') return String(data);
-      if (typeof data === 'boolean') return data ? 'true' : 'false';
-      if (typeof data === 'bigint') return data.toString();
-      if (typeof data === 'symbol') return data.toString();
-      if (typeof data === 'function') return '[Function]';
-      
-      if (typeof data === 'object') {
-        if (Array.isArray(data)) {
-          if (data.length === 0) return '[] (empty array)';
-          try {
-            return JSON.stringify(data, null, 2);
-          } catch {
-            return '[Array]';
-          }
-        } else if (data instanceof Date) {
-          return data.toISOString();
-        } else if (data instanceof RegExp) {
-          return data.toString();
-        } else if (data instanceof Error) {
-          return `Error: ${data.message}`;
-        } else if (data instanceof Map) {
-          try {
-            return JSON.stringify(Array.from(data.entries()), null, 2);
-          } catch {
-            return '[Map]';
-          }
-        } else if (data instanceof Set) {
-          try {
-            return JSON.stringify(Array.from(data), null, 2);
-          } catch {
-            return '[Set]';
-          }
-        } else if (data instanceof Promise) {
-          return '[Promise]';
-        } else {
-          // Handle plain objects with common data properties
-          const dataProperties = [
-            'text', 'output', 'value', 'data', 'content', 'message', 
-            'result', 'response', 'body', 'payload', 'input', 'output'
-          ];
-          
-          for (const prop of dataProperties) {
-            if (data[prop] !== null && data[prop] !== undefined) {
-              if (typeof data[prop] === 'string') {
-                return data[prop] || 'Empty string';
-              } else if (typeof data[prop] === 'number') {
-                return String(data[prop]);
-              } else if (typeof data[prop] === 'boolean') {
-                return data[prop] ? 'true' : 'false';
-              } else if (typeof data[prop] === 'object') {
-                try {
-                  return JSON.stringify(data[prop], null, 2);
-                } catch {
-                  return `[${prop}]`;
-                }
-              } else {
-                return String(data[prop]);
-              }
-            }
-          }
-          
-          // If no common properties found, stringify the entire object
-          try {
-            return JSON.stringify(data, null, 2);
-          } catch {
-            return '[Object]';
-          }
-        }
-      }
-      
-      // Fallback for any other types
-      return String(data);
+    inspector: { key: 'ViewTextInspector' },
+    version: 1,
+    runtime: { execute: 'viewText_execute_v1' },
+    initialData: createSafeInitialData(ViewTextDataSchema),
+    dataSchema: ViewTextDataSchema,
+    controls: {
+      autoGenerate: true,
+      excludeFields: ['isActive', 'inputs', 'outputs', 'expandedSize', 'collapsedSize'],
+      customFields: [{ key: 'isExpanded', type: 'boolean', label: 'Expand' }],
     },
-  },
-});
+    icon: 'LuFileText',
+    author: 'Agenitix Team',
+    description: 'Displays & formats text content from connected nodes',
+    feature: 'base',
+    tags: ['display', 'formatting'],
+    receivedData: {
+      enabled: true,
+      displayMode: 'formatted',
+      showInCollapsed: true,
+      formatData: formatValue,
+    },
+  };
+}
 
-// Static spec for registry (uses default sizes)
-const spec: NodeSpec = createDynamicSpec({ expandedSize: "VE2", collapsedSize: "C2" } as ViewTextData);
+// Static spec for registry (default sizes)
+export const spec: NodeSpec = createDynamicSpec({
+  expandedSize: 'VE2',
+  collapsedSize: 'C2',
+} as ViewTextData);
 
-/**
- * Content-focused styling constants
- * Only handles internal layout and content - no structural styling
- */
-const CONTENT_STYLES = {
-  // Content area layouts
-  content: {
-    expanded: "p-4 w-full h-full flex flex-col",
-    collapsed: "flex items-center justify-center w-full h-full",
-  },
+// -----------------------------------------------------------------------------
+// 4️⃣  Styles (internal content only – theme comes from scaffold)
+// -----------------------------------------------------------------------------
 
-  // Header layouts
-  header: {
-    container: "flex items-center justify-between mb-3",
-  },
-
-  // Main content layouts
-  main: {
-    container: "flex-1 flex items-center justify-center",
-    content: "text-center",
-    icon: "text-2xl mb-2",
-  },
-
-  // Collapsed state layouts
-  collapsed: {
-    icon: "text-2xl",
-  },
+const CONTENT = {
+  expanded: 'p-4 w-full h-full flex flex-col',
+  collapsed: 'flex items-center justify-center w-full h-full',
+  header: 'flex items-center justify-between mb-3',
+  body: 'flex-1 flex items-center justify-center',
 } as const;
 
-/**
- * Category-specific text colors from design system
- */
-const CATEGORY_TEXT_COLORS = {
-  CREATE: {
-    primary: "text-(--node-create-text)",
-    secondary: "text-(--node-create-text-secondary)",
-  },
+const CATEGORY_TEXT = {
   VIEW: {
-    primary: "text-(--node-view-text)",
-    secondary: "text-(--node-view-text-secondary)",
+    primary: 'text-[--node-view-text]',
   },
-  TRIGGER: {
-    primary: "text-(--node-trigger-text)",
-    secondary: "text-(--node-trigger-text-secondary)",
+  CREATE: {
+    primary: 'text-[--node-create-text]',
   },
-  TEST: {
-    primary: "text-(--node-test-text)",
-    secondary: "text-(--node-test-text-secondary)",
-  },
-  CYCLE: {
-    primary: "text-(--node-cycle-text)",
-    secondary: "text-(--node-cycle-text-secondary)",
-  },
+  // …add others as needed
 } as const;
 
-/**
- * viewText Node Component
- *
- * Clean content-focused component using optimized data flow:
- * • Uses modern data propagation with immediate updates
- * • Automatically updates when connected nodes change
- * • No infinite loops - proper dependency management
- * • Follows optimized data flow pattern
- */
-const ViewTextNodeComponent = ({ data, id, spec }: NodeProps & { spec: NodeSpec }) => {
-  // Use proper React Flow data management
-  const { nodeData, updateNodeData } = useNodeData(id, data);
+// -----------------------------------------------------------------------------
+// 5️⃣  React component – data propagation & rendering
+// -----------------------------------------------------------------------------
 
-  // Direct access to React Flow store for immediate data access
+const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
+  // Sync with React‑Flow store
+  const { nodeData, updateNodeData } = useNodeData(id, data);
   const { getNodes, getEdges } = useReactFlow();
 
-  // Get isExpanded directly from node data
+  // Derived state -------------------------------------------------------------
   const isExpanded = (nodeData as ViewTextData).isExpanded || false;
+  const categoryStyles = CATEGORY_TEXT.VIEW;
 
-  // Update expanded state via node data
-  const handleToggleExpanded = useCallback(() => {
+  // Helpers -------------------------------------------------------------------
+  const lastInputRef = useRef<string | null>(null);
+  const lastOutputRef = useRef<string | null>(null);
+
+  /** Toggle between collapsed / expanded */
+  const toggleExpand = useCallback(() => {
     updateNodeData({ isExpanded: !isExpanded });
-  }, [isExpanded]);
+  }, [isExpanded, updateNodeData]);
 
-  // Enterprise validation with comprehensive error handling
-  const validationResult = validateNodeData(nodeData);
-  const validatedData = validationResult.data;
+  /** Propagate output ONLY when node is active */
+  const propagate = useCallback(
+    (value: string | null) => {
+      const shouldSend = (nodeData as ViewTextData).isActive;
+      const out = shouldSend ? value : null;
+      if (out !== lastOutputRef.current) {
+        lastOutputRef.current = out;
+        updateNodeData({ outputs: out });
+      }
+    },
+    [nodeData, updateNodeData]
+  );
 
-  // Report validation errors for monitoring
-  if (!validationResult.success) {
-    reportValidationError('ViewText', id, validationResult.errors, {
-      originalData: validationResult.originalData,
-      component: 'ViewTextNodeComponent',
+  /** Clear JSON‑ish fields when inactive */
+  const blockJsonWhenInactive = useCallback(() => {
+    if (!(nodeData as ViewTextData).isActive) {
+      updateNodeData({ json: null, data: null, payload: null, result: null, response: null });
+    }
+  }, [nodeData, updateNodeData]);
+
+  // Main effect – watch upstream nodes & compute text -------------------------
+  useEffect(() => {
+    const nodes = getNodes();
+    const edges = getEdges().filter((e) => e.target === id);
+
+    const connected = edges
+      .map((e) => nodes.find((n) => n.id === e.source))
+      .filter(Boolean) as typeof nodes;
+
+    // Enhanced input processing with meaningful content validation
+    const texts = connected
+      .filter((n) => {
+        // Only accept content from active source nodes
+        const sourceIsActive = n.data?.isActive === true;
+        if (!sourceIsActive) return false;
+
+        // Get text from source node
+        let nodeText = '';
+        if (n.data?.output !== undefined) {
+          nodeText = formatValue(n.data.output);
+        } else if (n.data?.store !== undefined) {
+          nodeText = formatValue(n.data.store);
+        } else {
+          nodeText = formatValue(n.data);
+        }
+
+        // Check if content is meaningful (not default values)
+        const isDefaultText = nodeText === 'Default text' || 
+                             nodeText === 'No connected inputs' || 
+                             nodeText === 'Empty input';
+        const hasMeaningfulContent = nodeText && nodeText.trim().length > 0 && !isDefaultText;
+
+        return hasMeaningfulContent;
+      })
+      .map((n) => {
+        // Get the meaningful text
+        if (n.data?.output !== undefined) {
+          return formatValue(n.data.output);
+        } else if (n.data?.store !== undefined) {
+          return formatValue(n.data.store);
+        } else {
+          return formatValue(n.data);
+        }
+      })
+      .filter((t) => t.trim().length > 0);
+
+    const joined = texts.join('');
+
+    if (joined !== lastInputRef.current) {
+      lastInputRef.current = joined;
+
+      const hasContent = joined.trim().length > 0;
+      const hasConnectedInputs = connected.length > 0;
+      const active = hasConnectedInputs && hasContent;
+
+      updateNodeData({
+        inputs: hasConnectedInputs ? joined || 'Empty input' : 'No connected inputs',
+        store: hasContent ? joined : 'No connected inputs',
+        isActive: active,
+      });
+
+      propagate(active ? joined : null);
+      blockJsonWhenInactive();
+    }
+  }, [getEdges, getNodes, id, propagate, blockJsonWhenInactive, updateNodeData]);
+
+  // Validate ------------------------------------------------------------------
+  const validation = validateNodeData(nodeData);
+  if (!validation.success) {
+    reportValidationError('ViewText', id, validation.errors, {
+      originalData: validation.originalData,
+      component: 'ViewTextNode',
     });
   }
 
-  // Enterprise data validation hook for real-time updates
-  const { getHealthScore } = useNodeDataValidation(
-    ViewTextDataSchema,
-    'ViewText',
-    validatedData,
-    id
-  );
+  useNodeDataValidation(ViewTextDataSchema, 'ViewText', validation.data, id);
 
-
-
-  // Get category-specific text colors
-  const categoryKey = spec.category as keyof typeof CATEGORY_TEXT_COLORS;
-  const categoryTextColors = CATEGORY_TEXT_COLORS[categoryKey] || CATEGORY_TEXT_COLORS.CREATE;
-
-  // Comprehensive data type handler for future-proof data processing
-  const processDataValue = (data: any): string => {
-    // Handle primitive types
-    if (data === null) {
-      return 'null';
-    } else if (data === undefined) {
-      return 'undefined';
-    } else if (typeof data === 'string') {
-      // Return empty string as-is, don't convert to 'Empty string'
-      return data;
-    } else if (typeof data === 'number') {
-      return String(data);
-    } else if (typeof data === 'boolean') {
-      return data ? 'true' : 'false';
-    } else if (typeof data === 'bigint') {
-      return data.toString();
-    } else if (typeof data === 'symbol') {
-      return data.toString();
-    } else if (typeof data === 'function') {
-      return '[Function]';
-    } else if (typeof data === 'object') {
-      // Handle object types comprehensively
-      if (Array.isArray(data)) {
-        // Handle arrays
-        if (data.length === 0) {
-          return '[] (empty array)';
-        } else {
-          try {
-            return JSON.stringify(data, null, 2);
-          } catch {
-            return '[Array]';
-          }
-        }
-      } else if (data instanceof Date) {
-        // Handle Date objects
-        return data.toISOString();
-      } else if (data instanceof RegExp) {
-        // Handle RegExp objects
-        return data.toString();
-      } else if (data instanceof Error) {
-        // Handle Error objects
-        return `Error: ${data.message}`;
-      } else if (data instanceof Map) {
-        // Handle Map objects
-        try {
-          return JSON.stringify(Array.from(data.entries()), null, 2);
-        } catch {
-          return '[Map]';
-        }
-      } else if (data instanceof Set) {
-        // Handle Set objects
-        try {
-          return JSON.stringify(Array.from(data), null, 2);
-        } catch {
-          return '[Set]';
-        }
-      } else if (data instanceof Promise) {
-        // Handle Promise objects
-        return '[Promise]';
-      } else {
-        // Handle plain objects with common data patterns
-        // Check for common data properties in order of preference
-        const dataProperties = [
-          'text', 'output', 'value', 'data', 'content', 'message', 
-          'result', 'response', 'body', 'payload', 'input', 'output'
-        ];
-        
-        for (const prop of dataProperties) {
-          if (data[prop] !== null && data[prop] !== undefined) {
-            if (typeof data[prop] === 'string') {
-              return data[prop] || 'Empty string';
-            } else if (typeof data[prop] === 'number') {
-              return String(data[prop]);
-            } else if (typeof data[prop] === 'boolean') {
-              return data[prop] ? 'true' : 'false';
-            } else if (typeof data[prop] === 'object') {
-              try {
-                return JSON.stringify(data[prop], null, 2);
-              } catch {
-                return `[${prop}]`;
-              }
-            } else {
-              return String(data[prop]);
-            }
-          }
-        }
-        
-        // If no common properties found, stringify the entire object
-        try {
-          return JSON.stringify(data, null, 2);
-        } catch {
-          return '[Object]';
-        }
-      }
-    } else {
-      // Fallback for any other types
-      return String(data);
-    }
-  };
-
-  // Track last processed input to prevent unnecessary updates
-  const lastProcessedInputRef = useRef<string | null>(null);
-
-
-
-  // Direct data access to avoid timing issues
-  useEffect(() => {
-    const nodes = getNodes();
-    const edges = getEdges();
-    
-    // Find connected input nodes
-    const inputEdges = edges.filter(edge => edge.target === id);
-    const inputNodes = inputEdges.map(edge => 
-      nodes.find(node => node.id === edge.source)
-    ).filter(Boolean);
-    
-    if (inputNodes.length > 0) {
-      // Collect text from all connected input nodes
-      const allTexts: string[] = [];
-      
-      inputNodes.forEach(sourceNode => {
-        if (sourceNode?.data) {
-          let nodeText = '';
-          
-          // Comprehensive data type handling - prioritize output field
-          if (sourceNode.data.output !== undefined) {
-            nodeText = processDataValue(sourceNode.data.output);
-          } else if (sourceNode.data.text !== undefined) {
-            nodeText = processDataValue(sourceNode.data.text);
-          } else {
-            nodeText = processDataValue(sourceNode.data);
-          }
-          
-          // Only add valid text - exclude empty strings and null values
-          if (nodeText && 
-              nodeText !== 'null' && 
-              nodeText !== 'undefined' && 
-              nodeText !== 'Invalid data' && 
-              nodeText !== 'Empty string' &&
-              nodeText.trim().length > 0) {
-            allTexts.push(nodeText);
-          }
-        }
-      });
-      
-      // Concatenate all texts without separator for predictable behavior
-      const concatenatedText = allTexts.join('');
-      
-      // Always update if the text has changed (including empty strings)
-      if (lastProcessedInputRef.current !== concatenatedText) {
-        lastProcessedInputRef.current = concatenatedText;
-        
-        // Treat empty strings as inactive - only non-empty content makes node active
-        const hasContent = concatenatedText && 
-          concatenatedText.trim().length > 0 && 
-          concatenatedText !== '' && 
-          concatenatedText !== 'null' && 
-          concatenatedText !== 'undefined';
-        
-        // If no valid content, display appropriate message
-        const displayText = hasContent ? concatenatedText : (allTexts.length === 0 ? 'No connected inputs' : 'Empty content');
-        
-            updateNodeData({ 
-          isActive: hasContent,
-          receivedData: displayText,
-          text: displayText,
-          output: displayText
-            });
-          }
-        } else {
-      // No connected inputs - clear the data
-      if (lastProcessedInputRef.current !== null) {
-        lastProcessedInputRef.current = null;
-        
-            updateNodeData({ 
-              isActive: false,
-          receivedData: 'No connected inputs',
-          text: 'No connected inputs',
-          output: 'No connected inputs'
-            });
-          }
-        }
-  }, [id, getNodes, getEdges, updateNodeData]);
-
+  // Render --------------------------------------------------------------------
   return (
     <>
-      <ExpandCollapseButton showUI={isExpanded} onToggle={handleToggleExpanded} size="sm" />
+      {/* Editable label or icon */}
+      {!isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60 ? (
+        <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+          {spec.icon && renderLucideIcon(spec.icon, "", 16)}
+        </div>
+      ) : (
+        <LabelNode nodeId={id} label={spec.displayName} />
+      )}
 
-      {isExpanded ? (
-        <div className={CONTENT_STYLES.content.expanded}>
-          {/* Display received text from connected nodes */}
-          <div className={CONTENT_STYLES.main.container}>
-            <div className={CONTENT_STYLES.main.content}>
-              <div className="font-normal text-xs">
-                {validatedData.text || 'No connected inputs'}
-              </div>
+      {!isExpanded ? (
+        <div className={CONTENT.collapsed}>
+          {spec.receivedData?.showInCollapsed && validation.data.store !== 'No inputs' ? (
+            <div
+              className={`text-xs text-center truncate w-[50px] tracking-wide ${categoryStyles.primary}`}
+            >
+              {validation.data.store}
+            </div>
+          ) : (
+            <div className={`text-xs font-medium tracking-wide ${categoryStyles.primary}`}>VIEW</div>
+          )}
+        </div>
+      ) : (
+        <div className={CONTENT.expanded}>
+          <div className={CONTENT.body}>
+            <div className="text-xs font-normal text-center break-words whitespace-pre-line">
+              {validation.data.store || 'No inputs'}
             </div>
           </div>
         </div>
-      ) : (
-        <div className={CONTENT_STYLES.content.collapsed}>
-          <div className="text-center">
-            {spec.receivedData?.showInCollapsed && validatedData.text !== 'No connected inputs' ? (
-              <div className={`text-xs ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
-                {validatedData.text}
-              </div>
-            ) : (
-              <div className={`text-xs font-medium ${categoryTextColors.primary} tracking-wide truncate w-[50px]`}>
-                VIEW
-              </div>
-            )}
-          </div>
-        </div>
       )}
+
+      <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
     </>
   );
-};
+});
 
-// Wrapper component that creates dynamic spec based on node data
+// -----------------------------------------------------------------------------
+// 6️⃣  High‑order wrapper – inject scaffold with dynamic spec
+// -----------------------------------------------------------------------------
+
 const ViewTextNodeWithDynamicSpec = (props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, props.data);
-  
-  // Memoize the dynamic spec to prevent infinite re-renders
+
   const dynamicSpec = useMemo(() => createDynamicSpec(nodeData as ViewTextData), [
     nodeData.expandedSize,
     nodeData.collapsedSize,
-    nodeData.kind,
-    nodeData.displayName,
-    nodeData.label,
-    nodeData.category,
-    nodeData.handles,
-    nodeData.inspector,
-    nodeData.version,
-    nodeData.runtime,
-    nodeData.initialData,
-    nodeData.dataSchema,
-    nodeData.controls,
-    nodeData.icon,
-    nodeData.author,
-    nodeData.description,
-    nodeData.feature,
-    nodeData.tags
   ]);
-  
-  return withNodeScaffold(dynamicSpec, (componentProps: NodeProps) => (
-    <ViewTextNodeComponent {...componentProps} spec={dynamicSpec} />
-  ))(props);
+
+  return withNodeScaffold(dynamicSpec, (p) => <ViewTextNode {...p} spec={dynamicSpec} />)(props);
 };
 
 export default ViewTextNodeWithDynamicSpec;
-
-// Export spec for registry access
-export { spec };

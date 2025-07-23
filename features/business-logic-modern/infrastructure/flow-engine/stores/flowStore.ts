@@ -35,12 +35,13 @@ import {
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
+import { generateNodeId, generateEdgeId } from "../utils/nodeUtils";
 
 // ============================================================================
 // STORE TYPES
 // ============================================================================
 
-interface FlowState {
+export interface FlowState {
 	// Core Flow Data
 	nodes: AgenNode[];
 	edges: AgenEdge[];
@@ -490,7 +491,7 @@ export const useFlowStore = create<FlowStore>()(
 
 						// Generate new nodes with unique IDs and offset positions
 						copiedNodes.forEach((node) => {
-							const newId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+							const newId = generateNodeId();
 							nodeIdMap.set(node.id, newId);
 
 							const newNode: AgenNode = {
@@ -515,7 +516,7 @@ export const useFlowStore = create<FlowStore>()(
 							if (newSourceId && newTargetId) {
 								const newEdge: AgenEdge = {
 									...edge,
-									id: `edge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+									id: generateEdgeId(),
 									source: newSourceId,
 									target: newTargetId,
 									selected: false, // Don't select pasted edges initially
@@ -576,7 +577,7 @@ export const useFlowStore = create<FlowStore>()(
 
 						// Generate new nodes with unique IDs and calculated positions
 						copiedNodes.forEach((node) => {
-							const newId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+							const newId = generateNodeId();
 							nodeIdMap.set(node.id, newId);
 
 							const newNode: AgenNode = {
@@ -601,7 +602,7 @@ export const useFlowStore = create<FlowStore>()(
 							if (newSourceId && newTargetId) {
 								const newEdge: AgenEdge = {
 									...edge,
-									id: `edge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+									id: generateEdgeId(),
 									source: newSourceId,
 									target: newTargetId,
 									selected: false, // Don't select pasted edges initially

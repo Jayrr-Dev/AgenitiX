@@ -7,6 +7,7 @@ import type {
 } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import React, { useCallback, useEffect, useRef } from "react";
+import { generateNodeId } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
 
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
 import { UndoRedoProvider, useUndoRedo } from "../action-toolbar/history/UndoRedoContext";
@@ -326,7 +327,7 @@ const FlowEditorInternal = () => {
 				const defaultData = spec.initialData || {};
 
 				const newNode: AgenNode = {
-					id: `node_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+					id: generateNodeId(),
 					type: nodeType as any,
 					position,
 					deletable: true,

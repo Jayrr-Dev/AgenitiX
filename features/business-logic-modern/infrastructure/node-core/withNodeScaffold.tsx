@@ -11,7 +11,6 @@
  */
 
 import TypeSafeHandle from "@/components/nodes/handles/TypeSafeHandle";
-import LabelNode from "@/components/nodes/labelNode";
 import {
 	useCategoryThemeWithSpec,
 	useNodeStyleClasses,
@@ -25,7 +24,6 @@ import NodeTelemetry from "./NodeTelemetry";
 import { getNodePlugins } from "./plugins/nodePluginRegistry";
 import { runServerActions } from "./serverActions/serverActionRegistry";
 import { globalNodeMemoryManager } from "./NodeMemory";
-import { renderLucideIcon } from "./iconUtils";
 
 /**
  * Utility to get CSS custom property value from the DOM
@@ -188,13 +186,6 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 			return grouped;
 		}, []);
 
-		// Determine label (persisted or fallback)
-		const nodeLabel = (props.data as any)?.label || spec.displayName;
-
-		// Check if we should show icon instead of text for C1 size (60x60)
-		const isC1Size = !isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60;
-		const shouldShowIcon = isC1Size;
-
     // Inner component to throw inside ErrorBoundary, not outside
     const MaybeError: React.FC = () => {
       if (
@@ -232,15 +223,6 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 				))}
 				{/* Telemetry event: node created */}
 				<NodeTelemetry nodeId={props.id} nodeKind={spec.kind} />
-
-				{/* Editable label or icon */}
-				{shouldShowIcon ? (
-					<div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
-						{spec.icon && renderLucideIcon(spec.icon, "", 16)}
-					</div>
-				) : (
-					<LabelNode nodeId={props.id} label={nodeLabel} />
-				)}
 
 				{/* Render handles defined in the spec with smart positioning */}
 				{spec.handles?.map((handle, index) => {

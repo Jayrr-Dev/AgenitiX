@@ -13,13 +13,14 @@
 
 import { useCallback } from "react";
 import { useUndoRedo } from "../../action-toolbar/history/UndoRedoContext";
-import type { AgenEdge, AgenNode } from "../types/nodeData";
+import type { AgenNode, AgenEdge } from "../types/nodeData";
+import { generateNodeId } from "../utils/nodeUtils";
 
 // ============================================================================
-// TYPESCRIPT INTERFACES
+// TYPES
 // ============================================================================
 
-interface FlowEditorHandlers {
+export interface FlowEditorHandlers {
 	handleNodesChange: (changes: any[]) => void;
 	handleEdgesChange: (changes: any[]) => void;
 	handleSelectionChange: (selection: any) => void;
@@ -29,7 +30,7 @@ interface FlowEditorHandlers {
 	handleUpdateNodeId: (oldId: string, newId: string) => void;
 }
 
-interface ZustandActions {
+export interface ZustandActions {
 	setNodes: (nodes: AgenNode[]) => void;
 	setEdges: (edges: AgenEdge[]) => void;
 	updateNodePosition: (id: string, position: { x: number; y: number }) => void;
@@ -41,7 +42,7 @@ interface ZustandActions {
 	addNode: (node: AgenNode) => void;
 }
 
-interface FlowEditorHandlersProps {
+export interface FlowEditorHandlersProps {
 	nodes: AgenNode[];
 	edges: AgenEdge[];
 	flowInstanceRef: React.MutableRefObject<any>;
@@ -49,14 +50,14 @@ interface FlowEditorHandlersProps {
 }
 
 // ============================================================================
-// HELPER FUNCTIONS
+// UTILITY FUNCTIONS
 // ============================================================================
 
 /**
  * Generate unique node ID for duplication
  */
 function generateUniqueId(originalId: string): string {
-	return `${originalId}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+	return generateNodeId();
 }
 
 /**

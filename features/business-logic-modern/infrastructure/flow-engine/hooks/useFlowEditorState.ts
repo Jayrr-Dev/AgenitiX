@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
+import { generateNodeId, generateEdgeId } from "../utils/nodeUtils";
 import { INITIAL_EDGES, INITIAL_NODES, MAX_ERRORS_PER_NODE } from "../constants";
 import type { AgenEdge, AgenNode, NodeError } from "../types/nodeData";
 import { getNodeOutput } from "../utils/outputUtils";
@@ -169,7 +170,7 @@ export function useFlowEditorState() {
 
 			const idMap: Record<string, string> = {};
 			const newNodes = copiedNodes.map((n) => {
-				const newId = `${n.id}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+				const newId = generateNodeId();
 				idMap[n.id] = newId;
 
 				return {
@@ -186,7 +187,7 @@ export function useFlowEditorState() {
 					if (idMap[e.source] && idMap[e.target]) {
 						return {
 							...e,
-							id: `${e.id}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+							id: generateEdgeId(),
 							source: idMap[e.source],
 							target: idMap[e.target],
 							selected: false,

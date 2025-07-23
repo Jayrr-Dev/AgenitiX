@@ -14,6 +14,7 @@ import type { AgenNode } from "@infrastructure/flow-engine/types/nodeData";
 import type { ReactFlowInstance } from "@xyflow/react";
 import { useCallback } from "react";
 import { getNodeMetadata } from "../../node-registry/nodespec-registry";
+import { generateNodeId } from "../utils/nodeUtils";
 
 interface DragAndDropProps {
 	flowInstance: React.RefObject<ReactFlowInstance<AgenNode, any> | null>;
@@ -62,7 +63,7 @@ export function useDragAndDrop({ flowInstance, wrapperRef, onNodeAdd }: DragAndD
 						)
 					: {};
 
-				const id = `node_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+				const id = generateNodeId();
 				const newNode = {
 					id,
 					type: nodeType,

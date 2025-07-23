@@ -1,394 +1,275 @@
 /**
- * {{titleCase kind}} NODE - Clean content-focused implementation
+ * {{titleCase kind}} NODE – Content‑focused, schema‑driven, type‑safe
  *
- * • Focuses ONLY on content and layout - no structural styling
- * • withNodeScaffold handles all borders, sizing, theming, interactive states
- * • Schema-driven controls in Node Inspector
- * • Type-safe data validation with Zod schema
- * • Clean separation of concerns for maximum maintainability
- * 
- * NOTE: This node will have controls in the Node Inspector regardless of category
- * The NodeInspectorAdapter.determineHasControls() method returns true for all categories for consistent UX
- * 
- * ENHANCED APPROACH: Multi-type data handling with automatic type detection
- * Supports JSON, String, Number, Boolean, Array, Object data types
- * Automatic JSON parsing for object/array strings
- * Backward compatible with text-only input
+ * • Shows only internal layout; the scaffold provides borders, sizing, theming, and interactivity.
+ * • Zod schema auto‑generates type‑checked Inspector controls.
+ * • Dynamic sizing (expandedSize / collapsedSize) drives the spec.
+ * • Output propagation is gated by `isActive` *and* `isEnabled` to prevent runaway loops.
+ * • Code is fully commented and follows current React + TypeScript best practices.
  *
- * Keywords: {{kebabCase kind}}, content-focused, schema-driven, type-safe, clean-architecture
+ * Keywords: {{kebabCase kind}}, schema-driven, type‑safe, clean‑architecture
  */
 
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import type { NodeProps } from "@xyflow/react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
-import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import LabelNode from "@/components/nodes/labelNode";
 import {
-	createNodeValidator,
-	reportValidationError,
-	useNodeDataValidation,
+  createNodeValidator,
+  reportValidationError,
+  useNodeDataValidation,
 } from "@/features/business-logic-modern/infrastructure/node-core/validation";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
+import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import { SafeSchemas, createSafeInitialData } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
-	COLLAPSED_SIZES,
-	EXPANDED_SIZES,
+  COLLAPSED_SIZES,
+  EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 
-import { useCallback, useEffect, useMemo } from "react";
-
 // -- PLOP-INJECTED-IMPORTS --
 
-/**
- * Data schema for {{titleCase kind}} node
- */
-const {{pascalCase kind}}DataSchema = z
-	.object({
-		text: z.string().default(""),
-		isActive: z.boolean().default(false),
-		isExpanded: z.boolean().default(false),
-		isEnabled: z.boolean().default(true), // Data propagation control
-		expandedSize: z.string().default("{{expandedSize}}"), // Dynamic expanded size
-		collapsedSize: z.string().default("{{collapsedSize}}"), // Dynamic collapsed size
+// -----------------------------------------------------------------------------
+// 1️⃣  Data schema & validation
+// -----------------------------------------------------------------------------
 
-	})
-	.passthrough();
+export const {{pascalCase kind}}DataSchema = z
+  .object({
+    store: SafeSchemas.text('Default content'),
+    isEnabled: SafeSchemas.boolean(true),
+    isActive: SafeSchemas.boolean(false),
+    isExpanded: SafeSchemas.boolean(false),
+    inputs: SafeSchemas.optionalText(),
+    outputs: SafeSchemas.optionalText(),
+    expandedSize: SafeSchemas.text('{{expandedSize}}'),
+    collapsedSize: SafeSchemas.text('{{collapsedSize}}'),
+  })
+  .passthrough();
 
-type {{pascalCase kind}}Data = z.infer<typeof {{pascalCase kind}}DataSchema>;
+export type {{pascalCase kind}}Data = z.infer<typeof {{pascalCase kind}}DataSchema>;
 
-// Create enterprise validator
-const validateNodeData = createNodeValidator({{pascalCase kind}}DataSchema, "{{pascalCase kind}}");
+const validateNodeData = createNodeValidator({{pascalCase kind}}DataSchema, '{{pascalCase kind}}');
 
-/**
- * Dynamic node specification that uses data for sizing
- */
-const createDynamicSpec = (nodeData: {{pascalCase kind}}Data): NodeSpec => ({
-  kind: "{{camelCase kind}}",
-  displayName: "{{titleCase kind}}",
-  label: "{{titleCase kind}}",
-  category: CATEGORIES.{{constantCase category}},
-  size: {
-    expanded: EXPANDED_SIZES[nodeData.expandedSize as keyof typeof EXPANDED_SIZES] || EXPANDED_SIZES.{{expandedSize}},
-    collapsed: COLLAPSED_SIZES[nodeData.collapsedSize as keyof typeof COLLAPSED_SIZES] || COLLAPSED_SIZES.{{collapsedSize}},
+// -----------------------------------------------------------------------------
+// 2️⃣  Constants
+// -----------------------------------------------------------------------------
+
+const CATEGORY_TEXT = {
+  {{constantCase category}}: {
+    primary: 'text-[--node-{{kebabCase category}}-text]',
   },
-  handles: [
-    { id: "json-input", code: "j", position: "top", type: "target", dataType: "JSON" },
-    { id: "output", code: "s", position: "right", type: "source", dataType: "String" },
-    { id: "activate", code: "b", position: "left", type: "target", dataType: "Boolean" },
-  ],
-  inspector: {
-    key: "{{pascalCase kind}}Inspector",
-  },
-  version: 1,
-  runtime: {
-    execute: "{{camelCase kind}}_execute_v1",
-  },
-  initialData: { text: "", isActive: false, isExpanded: false, isEnabled: true, expandedSize: "{{expandedSize}}", collapsedSize: "{{collapsedSize}}" },
-  dataSchema: {{pascalCase kind}}DataSchema,
-  controls: {
-    autoGenerate: true,
-    excludeFields: ["isActive", "expandedSize", "collapsedSize"], // Hide system fields and size fields from main controls
-    customFields: [
-      {
-        key: "isEnabled",
-        type: "boolean",
-        label: "Enable",
-      },
-      {
-        key: "text",
-        type: "textarea",
-        label: "Text",
-        placeholder: "Enter your text here...",
-        ui: {
-          rows: 4,
-        },
-      },
-      {
-        key: "isExpanded",
-        type: "boolean",
-        label: "Expand",
-      },
+} as const;
+
+const CONTENT = {
+  expanded: 'p-4 w-full h-full flex flex-col',
+  collapsed: 'flex items-center justify-center w-full h-full',
+  header: 'flex items-center justify-between mb-3',
+  body: 'flex-1 flex items-center justify-center',
+} as const;
+
+// -----------------------------------------------------------------------------
+// 3️⃣  Dynamic spec factory (pure)
+// -----------------------------------------------------------------------------
+
+function createDynamicSpec(data: {{pascalCase kind}}Data): NodeSpec {
+  const expanded =
+    EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ||
+    EXPANDED_SIZES.{{expandedSize}};
+  const collapsed =
+    COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ||
+    COLLAPSED_SIZES.{{collapsedSize}};
+
+  return {
+    kind: '{{camelCase kind}}',
+    displayName: '{{titleCase kind}}',
+    label: '{{titleCase kind}}',
+    category: CATEGORIES.{{constantCase category}},
+    size: { expanded, collapsed },
+    handles: [
+      { id: 'json-input', code: 'j', position: 'top', type: 'target', dataType: 'JSON' },
+      { id: 'output', code: 's', position: 'right', type: 'source', dataType: 'String' },
+      { id: 'activate', code: 'b', position: 'left', type: 'target', dataType: 'Boolean' },
     ],
-  },
-  icon: "{{icon}}",
-  author: "{{author}}",
-  description: "{{description}}",
-  feature: "{{feature}}",
-  tags: [{{#each tags}}"{{this}}"{{#unless @last}}, {{/unless}}{{/each}}],
-  {{#if customTheming}}
-  theming: {
-    // Custom dark mode theming for {{titleCase kind}} node
-    {{#if bgDark}}bgDark: "{{bgDark}}",{{/if}}
-    {{#if borderDark}}borderDark: "{{borderDark}}",{{/if}}
-    {{#if borderHoverDark}}borderHoverDark: "{{borderHoverDark}}",{{/if}}
-    {{#if textDark}}textDark: "{{textDark}}",{{/if}}
-    {{#if textSecondaryDark}}textSecondaryDark: "{{textSecondaryDark}}",{{/if}}
-    {{#if bgHoverDark}}bgHoverDark: "{{bgHoverDark}}",{{/if}}
-  },
-  {{/if}}
+    inspector: { key: '{{pascalCase kind}}Inspector' },
+    version: 1,
+    runtime: { execute: '{{camelCase kind}}_execute_v1' },
+    initialData: createSafeInitialData({{pascalCase kind}}DataSchema),
+    dataSchema: {{pascalCase kind}}DataSchema,
+    controls: {
+      autoGenerate: true,
+      excludeFields: ['isActive', 'inputs', 'outputs', 'expandedSize', 'collapsedSize'],
+      customFields: [
+        { key: 'isEnabled', type: 'boolean', label: 'Enable' },
+        {
+          key: 'store',
+          type: 'textarea',
+          label: 'Store',
+          placeholder: 'Enter your content here…',
+          ui: { rows: 4 },
+        },
+        { key: 'isExpanded', type: 'boolean', label: 'Expand' },
+      ],
+    },
+    icon: '{{icon}}',
+    author: '{{author}}',
+    description: '{{description}}',
+    feature: '{{feature}}',
+    tags: [{{#each tags}}'{{this}}'{{#unless @last}}, {{/unless}}{{/each}}],
+    theming: {},
+  };
+}
 
-});
+// Static spec for registry (default sizes)
+export const spec: NodeSpec = createDynamicSpec({
+  expandedSize: '{{expandedSize}}',
+  collapsedSize: '{{collapsedSize}}',
+} as {{pascalCase kind}}Data);
 
-// Static spec for registry (uses default sizes)
-const spec: NodeSpec = createDynamicSpec({ expandedSize: "{{expandedSize}}", collapsedSize: "{{collapsedSize}}" } as {{pascalCase kind}}Data);
+// -----------------------------------------------------------------------------
+// 4️⃣  React component – data propagation & rendering
+// -----------------------------------------------------------------------------
 
-/**
- * Content-focused styling constants
- * Only handles internal layout and content - no structural styling
- */
-const CONTENT_STYLES = {
-	// Content area layouts
-	content: {
-		expanded: "p-4 w-full h-full flex flex-col",
-		collapsed: "flex items-center justify-center w-full h-full",
-	},
+const {{pascalCase kind}}Node = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
+  // Sync with React‑Flow store
+  const { nodeData, updateNodeData } = useNodeData(id, data);
 
-	// Header layouts
-	header: {
-		container: "flex items-center justify-between mb-3",
-	},
+  // Derived state -------------------------------------------------------------
+  const isExpanded = (nodeData as {{pascalCase kind}}Data).isExpanded || false;
+  const categoryStyles = CATEGORY_TEXT.{{constantCase category}};
 
-	// Main content layouts
-	main: {
-		container: "flex-1 flex items-center justify-center",
-		content: "text-center",
-		icon: "text-2xl mb-2",
-	},
+  // Helpers -------------------------------------------------------------------
+  const lastOutputRef = useRef<string | null>(null);
 
-	// Collapsed state layouts
-	collapsed: {
-		icon: "text-2xl",
-	},
-} as const;
+  /** Toggle between collapsed / expanded */
+  const toggleExpand = useCallback(() => {
+    updateNodeData({ isExpanded: !isExpanded });
+  }, [isExpanded, updateNodeData]);
 
-/**
- * Category-specific text colors from design system
- */
-const CATEGORY_TEXT_COLORS = {
-  CREATE: {
-    primary: "text-(--node-create-text)",
-    secondary: "text-(--node-create-text-secondary)",
-  },
-  VIEW: {
-    primary: "text-(--node-view-text)",
-    secondary: "text-(--node-view-text-secondary)",
-  },
-  TRIGGER: {
-    primary: "text-(--node-trigger-text)",
-    secondary: "text-(--node-trigger-text-secondary)",
-  },
-  TEST: {
-    primary: "text-(--node-test-text)",
-    secondary: "text-(--node-test-text-secondary)",
-  },
-  CYCLE: {
-    primary: "text-(--node-cycle-text)",
-    secondary: "text-(--node-cycle-text-secondary)",
-  },
-} as const;
+  /** Propagate output ONLY when node is active AND enabled */
+  const propagate = useCallback(
+    (value: string) => {
+      const shouldSend = (nodeData as {{pascalCase kind}}Data).isActive && (nodeData as {{pascalCase kind}}Data).isEnabled;
+      const out = shouldSend ? value : null;
+      if (out !== lastOutputRef.current) {
+        lastOutputRef.current = out;
+        updateNodeData({ outputs: out });
+      }
+    },
+    [nodeData, updateNodeData]
+  );
 
-/**
- * {{titleCase kind}} Node Component
- *
- * Clean content-focused component:
- * • withNodeScaffold handles ALL structural styling
- * • Component focuses ONLY on content and layout
- * • Uses design system tokens for text colors
- * • Schema-driven controls available in Node Inspector
- * • Maintains enterprise validation and type safety
- */
-const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
-	// Use proper React Flow data management
-	const { nodeData, updateNodeData } = useNodeData(id, data);
+  /** Clear JSON‑ish fields when inactive or disabled */
+  const blockJsonWhenInactive = useCallback(() => {
+    if (!(nodeData as {{pascalCase kind}}Data).isActive || !(nodeData as {{pascalCase kind}}Data).isEnabled) {
+      updateNodeData({ 
+        json: null, 
+        data: null, 
+        payload: null, 
+        result: null, 
+        response: null 
+      });
+    }
+  }, [nodeData, updateNodeData]);
 
-	// Get isExpanded directly from node data
-	const isExpanded = (nodeData as {{pascalCase kind}}Data).isExpanded || false;
+  // Monitor store content and update active state ------------------------------
+  useEffect(() => {
+    const currentStore = (nodeData as {{pascalCase kind}}Data).store || '';
+    const hasValidStore = currentStore.trim().length > 0 && currentStore !== 'Default content';
+    const isEnabled = (nodeData as {{pascalCase kind}}Data).isEnabled;
+    
+    // If disabled, always set isActive to false
+    if (!isEnabled) {
+      if ((nodeData as {{pascalCase kind}}Data).isActive !== false) {
+        updateNodeData({ isActive: false });
+      }
+    } else {
+      // Only update if the active state has actually changed
+      if ((nodeData as {{pascalCase kind}}Data).isActive !== hasValidStore) {
+        updateNodeData({ isActive: hasValidStore });
+      }
+    }
+  }, [(nodeData as {{pascalCase kind}}Data).store, (nodeData as {{pascalCase kind}}Data).isActive, (nodeData as {{pascalCase kind}}Data).isEnabled, updateNodeData]);
 
-	// Update expanded state via node data
-	const handleToggleExpanded = useCallback(() => {
-		updateNodeData({ isExpanded: !isExpanded });
-	}, [isExpanded, updateNodeData]);
+  // Sync outputs with active and enabled state --------------------------------
+  useEffect(() => {
+    const currentStore = (nodeData as {{pascalCase kind}}Data).store || '';
+    // Only propagate actual user content, not default values
+    const actualContent = currentStore === 'Default content' ? '' : currentStore;
+    propagate(actualContent);
+    blockJsonWhenInactive();
+  }, [(nodeData as {{pascalCase kind}}Data).isActive, (nodeData as {{pascalCase kind}}Data).isEnabled, (nodeData as {{pascalCase kind}}Data).store, propagate, blockJsonWhenInactive]);
 
-	// Enterprise validation with comprehensive error handling
-	const validationResult = validateNodeData(nodeData);
-	const validatedData = validationResult.data;
+  // Validate ------------------------------------------------------------------
+  const validation = validateNodeData(nodeData);
+  if (!validation.success) {
+    reportValidationError('{{pascalCase kind}}', id, validation.errors, {
+      originalData: validation.originalData,
+      component: '{{pascalCase kind}}Node',
+    });
+  }
 
-	// Report validation errors for monitoring
-	if (!validationResult.success) {
-		reportValidationError("{{pascalCase kind}}", id, validationResult.errors, {
-			originalData: validationResult.originalData,
-			component: "{{pascalCase kind}}NodeComponent",
-		});
-	}
+  useNodeDataValidation({{pascalCase kind}}DataSchema, '{{pascalCase kind}}', validation.data, id);
 
-	// Enterprise data validation hook for real-time updates
-	const { getHealthScore } = useNodeDataValidation(
-		{{pascalCase kind}}DataSchema,
-		"{{pascalCase kind}}",
-		validatedData,
-		id
-	);
-
-	// Monitor text content and update active state
-	useEffect(() => {
-		const currentText = validatedData.text || '';
-		const hasValidText = currentText.trim().length > 0;
-		
-		// If disabled, always set isActive to false
-		if (!validatedData.isEnabled) {
-			if (validatedData.isActive !== false) {
-				updateNodeData({ isActive: false });
-			}
-		} else {
-			// Only update if the active state has actually changed
-			if (validatedData.isActive !== hasValidText) {
-				updateNodeData({ 
-					isActive: hasValidText
-				});
-			}
-		}
-	}, [validatedData.text, validatedData.isActive, validatedData.isEnabled, updateNodeData]);
-
-	// Sync output with enabled state to control propagation
-	useEffect(() => {
-		const desiredOutput = validatedData.isEnabled ? validatedData.text : null;
-		if ((validatedData as any).output !== desiredOutput) {
-			updateNodeData({ output: desiredOutput });
-		}
-	}, [validatedData.isEnabled, validatedData.text, (validatedData as any).output, updateNodeData]);
-
-	// Enhanced data handling with type detection and conversion
-	const handleDataChange = useCallback((newValue: any, fieldName: string = 'text') => {
-		try {
-			// Detect data type and convert appropriately
-			let processedValue = newValue;
-			let outputValue = newValue;
-			
-			// Handle different data types
-			if (typeof newValue === 'string') {
-				// Try to parse as JSON if it looks like JSON
-				if (newValue.trim().startsWith('{') || newValue.trim().startsWith('[')) {
-					try {
-						const parsed = JSON.parse(newValue);
-						processedValue = parsed;
-						outputValue = parsed;
-					} catch {
-						// Keep as string if JSON parsing fails
-						processedValue = newValue;
-						outputValue = newValue;
-					}
-				} else {
-					// Regular string
-					processedValue = newValue;
-					outputValue = newValue;
-				}
-			} else if (typeof newValue === 'number') {
-				processedValue = newValue;
-				outputValue = newValue;
-			} else if (typeof newValue === 'boolean') {
-				processedValue = newValue;
-				outputValue = newValue;
-			} else if (Array.isArray(newValue)) {
-				processedValue = newValue;
-				outputValue = newValue;
-			} else if (typeof newValue === 'object' && newValue !== null) {
-				processedValue = newValue;
-				outputValue = newValue;
-			} else {
-				// Fallback to string conversion
-				processedValue = String(newValue);
-				outputValue = String(newValue);
-			}
-			
-			// Update node data with type-appropriate values
-			updateNodeData({ 
-				[fieldName]: processedValue,
-				output: validatedData.isEnabled ? outputValue : null // Only propagate if enabled
-			});
-		} catch (error) {
-			console.error("Failed to update {{pascalCase kind}} node data:", error);
-		}
-	}, [updateNodeData]);
-
-	// Backward compatibility for text-only updates
-	const handleTextChange = useCallback((newText: string) => {
-		handleDataChange(newText, 'text');
-	}, [handleDataChange]);
-
-
-
-	// Get category-specific text colors
-	const categoryKey = spec.category as keyof typeof CATEGORY_TEXT_COLORS;
-	const categoryTextColors = CATEGORY_TEXT_COLORS[categoryKey] || CATEGORY_TEXT_COLORS.CREATE;
-
-	return (
-		<>
-			<ExpandCollapseButton showUI={isExpanded} onToggle={handleToggleExpanded} size="sm" />
-
-      {isExpanded ? (
-        <div className={CONTENT_STYLES.content.expanded}>
-          <div className={CONTENT_STYLES.header.container}>
-       
-            {/* {process.env.NODE_ENV === "development" && (
-              <span className={`text-xs ${categoryTextColors.secondary}`}>
-                Health: {getHealthScore()}%
-              </span>
-            )} */}
-          </div>
-          
-          <textarea
-            value={validatedData.text}
-            onChange={(e) => handleTextChange(e.target.value)}
-            placeholder="Enter your text here..."
-            className={`scrollbar nowheel bg-background rounded-md p-2 text-xs scrollbar-thumb-sky-700 scrollbar-track-sky-300 h-32 overflow-y-scroll focus:outline-none focus:ring-1 focus:ring-white-500 focus:ring-offset-0 ${categoryTextColors.primary}`}
-          />
+  // Render --------------------------------------------------------------------
+  return (
+    <>
+      {/* Editable label or icon */}
+      {!isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60 ? (
+        <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+          {spec.icon && renderLucideIcon(spec.icon, "", 16)}
         </div>
       ) : (
-        <div className={CONTENT_STYLES.content.collapsed}>
+        <LabelNode nodeId={id} label={spec.displayName} />
+      )}
+
+      {!isExpanded ? (
+        <div className={CONTENT.collapsed}>
           <div className="text-center">
-            <div
-              className={`text-xs font-medium ${categoryTextColors.primary} tracking-wide max-w-20 truncate`}
-            >
-              {validatedData.text}
+            <div className={`text-xs font-medium ${categoryStyles.primary} tracking-wide max-w-20 truncate`}>
+              {validation.data.store === 'Default content' ? '' : (validation.data.store || '')}
             </div>
           </div>
         </div>
+      ) : (
+        <div className={CONTENT.expanded}>
+          <textarea
+            value={validation.data.store === 'Default content' ? '' : (validation.data.store || '')}
+            onChange={(e) => updateNodeData({ store: e.target.value })}
+            placeholder="Enter your content here…"
+            className={`scrollbar nowheel bg-background rounded-md p-2 text-xs scrollbar-thumb-sky-700 scrollbar-track-sky-300 h-32 overflow-y-scroll focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
+          />
+        </div>
       )}
+
+      <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
     </>
   );
-};
+});
 
-// Wrapper component that creates dynamic spec based on node data
+// -----------------------------------------------------------------------------
+// 5️⃣  High‑order wrapper – inject scaffold with dynamic spec
+// -----------------------------------------------------------------------------
+
 const {{pascalCase kind}}NodeWithDynamicSpec = (props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, props.data);
-  
-  // Memoize the dynamic spec to prevent infinite re-renders
+
   const dynamicSpec = useMemo(() => createDynamicSpec(nodeData as {{pascalCase kind}}Data), [
-    nodeData.expandedSize,
-    nodeData.collapsedSize,
-    nodeData.kind,
-    nodeData.displayName,
-    nodeData.label,
-    nodeData.category,
-    nodeData.handles,
-    nodeData.inspector,
-    nodeData.version,
-    nodeData.runtime,
-    nodeData.initialData,
-    nodeData.dataSchema,
-    nodeData.controls,
-    nodeData.icon,
-    nodeData.author,
-    nodeData.description,
-    nodeData.feature,
-    nodeData.tags
+    (nodeData as {{pascalCase kind}}Data).expandedSize,
+    (nodeData as {{pascalCase kind}}Data).collapsedSize,
   ]);
-  
-  return withNodeScaffold(dynamicSpec, {{pascalCase kind}}NodeComponent)(props);
+
+  return withNodeScaffold(dynamicSpec, (p) => <{{pascalCase kind}}Node {...p} spec={dynamicSpec} />)(props);
 };
 
 export default {{pascalCase kind}}NodeWithDynamicSpec;
-
-// Export spec for registry access
-export { spec };

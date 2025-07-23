@@ -12,10 +12,10 @@
 // Lightweight runtime compression for large graphs (≈70% smaller). Adds <2 KB to bundle.
 import { compressToUTF16, decompressFromUTF16 } from "lz-string";
 import type { FlowState, HistoryGraph, HistoryNode, NodeId } from "./historyGraph";
+import { generateNodeId as generateReadableNodeId } from "../../flow-engine/utils/nodeUtils";
 
 // Generate unique IDs for history nodes
-let nodeCounter = 0;
-export const generateNodeId = (): NodeId => `node_${Date.now()}_${++nodeCounter}`;
+export const generateNodeId = (): NodeId => generateReadableNodeId();
 
 // Create the initial root graph with starting state
 export const createRootGraph = (initialState: FlowState): HistoryGraph => {
@@ -77,7 +77,6 @@ export const cloneFlowState = (state: FlowState): FlowState => ({
 		...edge,
 		data: edge.data ? { ...edge.data } : edge.data,
 	})),
-	viewport: state.viewport ? { ...state.viewport } : undefined,
 });
 
 // Check if two FlowStates are equal

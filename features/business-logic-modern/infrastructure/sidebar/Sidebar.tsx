@@ -37,6 +37,7 @@ import {
 } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 // import { nanoid } from "nanoid"; // Removed due to resolver issues
 import type { Node as ReactFlowNode } from "@xyflow/react";
+import { generateNodeId } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
 
 // Simple validation function to replace validateNode
 const validateNode = (nodeType: string) => ({
@@ -182,7 +183,7 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
 
 					// STEP 4: Create a new node object directly
 					const newNode: ReactFlowNode = {
-						id: `node_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+						id: generateNodeId(),
 						type: metadata.kind,
 						position: flowPosition,
 						data: {

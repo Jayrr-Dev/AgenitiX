@@ -11,7 +11,8 @@
  */
 
 import { useCallback } from "react";
-import type { AgenEdge, AgenNode } from "../types/nodeData";
+import type { AgenNode, AgenEdge } from "../types/nodeData";
+import { generateNodeId } from "../utils/nodeUtils";
 
 // ============================================================================
 // TYPESCRIPT INTERFACES
@@ -93,7 +94,7 @@ function getSelectedEdges(edgeList: AgenEdge[]): AgenEdge[] {
  */
 function createDuplicatedNodes(selectedNodeList: AgenNode[]): AgenNode[] {
 	return selectedNodeList.map((nodeToDuplicate, index) => {
-		const newId = `${nodeToDuplicate.id}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+		const newId = generateNodeId();
 
 		// Stagger multiple duplicates slightly
 		const offsetX = 40 + index * 10;

@@ -59,11 +59,21 @@ export interface ViewOutputData extends BaseNodeData {
 }
 
 export interface ViewTextData extends BaseNodeData {
-	text: string;
+	store: string;
 	isEnabled: boolean;
 	isActive: boolean;
 	isExpanded: boolean;
-	receivedData?: string;
+	inputs?: string;
+	outputs?: string;
+}
+
+export interface CreateTextData extends BaseNodeData {
+	store: string;
+	isEnabled: boolean;
+	isActive: boolean;
+	isExpanded: boolean;
+	inputs?: string;
+	outputs?: string;
 }
 
 // ============================================================================

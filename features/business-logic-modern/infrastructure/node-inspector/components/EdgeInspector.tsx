@@ -108,7 +108,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 				return {
 					label: 'String',
 					color: 'text-blue-600 dark:text-blue-400',
-					value: node.data?.text || node.data?.receivedData || '',
+					        value: node.data?.store || node.data?.inputs || '',
 					actualType: 'string'
 				};
 			}
