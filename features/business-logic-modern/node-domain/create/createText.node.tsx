@@ -41,6 +41,7 @@ import {
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
+import { useReactFlow, useStore } from "@xyflow/react";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -48,11 +49,11 @@ import { useNodeData } from "@/hooks/useNodeData";
 
 export const CreateTextDataSchema = z
   .object({
-    store: SafeSchemas.text("Default text"),
+    store: z.string().default("Default text"),
     isEnabled: SafeSchemas.boolean(true),
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
-    inputs: SafeSchemas.optionalText(),
+    inputs: SafeSchemas.optionalText().nullable().default(null),
     outputs: SafeSchemas.optionalText(),
     expandedSize: SafeSchemas.text("VE2"),
     collapsedSize: SafeSchemas.text("C1W"),
@@ -81,6 +82,7 @@ const CONTENT = {
   collapsed: "flex items-center justify-center w-full h-full",
   header: "flex items-center justify-between mb-3",
   body: "flex-1 flex items-center justify-center",
+  disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -130,7 +132,11 @@ function createDynamicSpec(data: CreateTextData): NodeSpec {
     inspector: { key: "CreateTextInspector" },
     version: 1,
     runtime: { execute: "createText_execute_v1" },
-    initialData: createSafeInitialData(CreateTextDataSchema),
+    initialData: createSafeInitialData(CreateTextDataSchema, {
+      store: "Default text",
+      inputs: null,
+      outputs: "",
+    }),
     dataSchema: CreateTextDataSchema,
     controls: {
       autoGenerate: true,
@@ -188,9 +194,11 @@ const CreateTextNode = memo(
 
     const categoryStyles = CATEGORY_TEXT.CREATE;
 
-    // -------------------------------------------------------------------------
-    // 4.3  Refs
-    // -------------------------------------------------------------------------
+    // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
+    const nodes = useStore((s) => s.nodes);
+    const edges = useStore((s) => s.edges);
+
+    // keep last emitted output to avoid redundant writes
     const lastOutputRef = useRef<string | null>(null);
 
     // -------------------------------------------------------------------------
@@ -228,6 +236,19 @@ const CreateTextNode = memo(
       }
     }, [isActive, isEnabled, updateNodeData]);
 
+    /** Compute the latest text coming from the *first* upstream node. */
+    const computeInput = useCallback((): string | null => {
+      const incoming = edges.find((e) => e.target === id);
+      if (!incoming) return null;
+
+      const src = nodes.find((n) => n.id === incoming.source);
+      if (!src) return null;
+
+      // priority: outputs ➜ store ➜ whole data
+      const inputValue = src.data?.outputs ?? src.data?.store ?? src.data;
+      return typeof inputValue === 'string' ? inputValue : String(inputValue || '');
+    }, [edges, nodes, id]);
+
     /** Handle textarea change (memoised for perf) */
     const handleStoreChange = useCallback(
       (e: ChangeEvent<HTMLTextAreaElement>) => {
@@ -239,6 +260,31 @@ const CreateTextNode = memo(
     // -------------------------------------------------------------------------
     // 4.5  Effects
     // -------------------------------------------------------------------------
+
+    // -------------------------------------------------------------------------
+    // 4.5  Effects
+    // -------------------------------------------------------------------------
+
+    /* 🔄 Whenever nodes/edges change, recompute inputs. */
+    useEffect(() => {
+      const inputVal = computeInput();
+      if (inputVal !== (nodeData as CreateTextData).inputs) {
+        updateNodeData({ inputs: inputVal });
+      }
+    }, [computeInput, nodeData, updateNodeData]);
+
+    /* 🔄 Make isEnabled dependent on input value only when there are connections. */
+    useEffect(() => {
+      const hasInput = (nodeData as CreateTextData).inputs;
+      // Only auto-control isEnabled when there are connections (inputs !== null)
+      // When inputs is null (no connections), let user manually control isEnabled
+      if (hasInput !== null) {
+        const nextEnabled = hasInput && hasInput.trim().length > 0;
+        if (nextEnabled !== isEnabled) {
+          updateNodeData({ isEnabled: nextEnabled });
+        }
+      }
+    }, [nodeData, isEnabled, updateNodeData]);
 
     // Monitor store content and update active state
     useEffect(() => {
@@ -299,30 +345,31 @@ const CreateTextNode = memo(
         )}
 
         {!isExpanded ? (
-          <div className={CONTENT.collapsed}>
+          <div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ''}`}>
             <textarea
               value={
-                validation.data.store === "Default text"
+                store === "Default text"
                   ? ""
-                  : validation.data.store ?? ""
+                  : store ?? ""
               }
-			  
               onChange={handleStoreChange}
               placeholder="..."
               className={` resize-none text-center nowheel rounded-md h-8 m-4 translate-y-2 text-xs p-1 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
+              disabled={!isEnabled}
             />
           </div>
         ) : (
-          <div className={CONTENT.expanded}>
+          <div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ''}`}>
             <textarea
               value={
-                validation.data.store === "Default text"
+                store === "Default text"
                   ? ""
-                  : validation.data.store ?? ""
+                  : store ?? ""
               }
               onChange={handleStoreChange}
               placeholder="Enter your content here…"
               className={` resize-none nowheel bg-background rounded-md p-2 text-xs h-32 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
+              disabled={!isEnabled}
             />
           </div>
         )}

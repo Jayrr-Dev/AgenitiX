@@ -189,3 +189,5 @@ Each node has three documentation files:
 
 
 - [testNode](./test/testNode.md) - The testNode node provides functionality for test operations in the TEST category.
+
+- [triggerToggle](./trigger/triggerToggle.md) - The triggerToggle node provides functionality for trigger operations in the TRIGGER category.

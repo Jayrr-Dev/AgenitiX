@@ -577,8 +577,8 @@ const NodeInspector = React.memo(function NodeInspector() {
 									data={{
 										id: selectedNode.id,
 										category: nodeCategory,
-										store: selectedNode.data?.store || "",
-										inputs: selectedNode.data?.inputs || "",
+										store: selectedNode.data?.store ?? "",
+										inputs: selectedNode.data?.inputs ?? null,
 										outputs: selectedNode.data?.outputs ?? null,
 										isActive: selectedNode.data?.isActive || false,
 										isEnabled: selectedNode.data?.isEnabled || true,

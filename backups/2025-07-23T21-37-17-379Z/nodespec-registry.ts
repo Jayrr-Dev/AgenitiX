@@ -6,7 +6,7 @@
  */
 
 import createText, { spec as createTextSpec } from "../../node-domain/create/createText.node";
-import triggerToggle, { spec as triggerToggleSpec } from "../../node-domain/trigger/triggerToggle.node";
+import testNode, { spec as testNodeSpec } from "../../node-domain/test/testNode.node";
 import viewText, { spec as viewTextSpec } from "../../node-domain/view/viewText.node";
 import type { NodeSpec } from "../node-core/NodeSpec";
 
@@ -14,7 +14,7 @@ import type { NodeSpec } from "../node-core/NodeSpec";
 const nodeSpecs: Record<string, NodeSpec> = {
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
-	triggerToggle: triggerToggleSpec,
+	testNode: testNodeSpec,
 	viewText: viewTextSpec,
 };
 
@@ -85,8 +85,8 @@ const defaultNodeMetadata = {
 	ui: {
 		defaultCollapsed: false,
 		folder: "general",
-		order: 1
-	}
+		order: 1,
+	},
 };
 
 // Node-specific metadata overrides
@@ -122,12 +122,12 @@ export function getNodeSpecMetadata(nodeType: string): NodeSpecMetadata | null {
 		size: {
 			expanded: {
 				width: spec.size.expanded.width,
-				height: spec.size.expanded.height
+				height: spec.size.expanded.height,
 			},
 			collapsed: {
 				width: spec.size.collapsed.width,
-				height: spec.size.collapsed.height
-			}
+				height: spec.size.collapsed.height,
+			},
 		},
 		handles: spec.handles,
 		initialData: spec.initialData,
@@ -135,12 +135,12 @@ export function getNodeSpecMetadata(nodeType: string): NodeSpecMetadata | null {
 		inspector: spec.inspector,
 		ui: {
 			...defaults.ui,
-			...overrides.ui
+			...overrides.ui,
 		},
 		sidebar: {
 			folder: spec.kind,
-			order: 1
-		}
+			order: 1,
+		},
 	};
 }
 
@@ -220,7 +220,7 @@ export function validateNode(nodeType: string) {
 	return {
 		isValid: !!meta,
 		warnings: meta ? [] : [`Node type '${nodeType}' not found`],
-		suggestions: meta ? [] : ["Generate the node via Plop and ensure it is registered."]
+		suggestions: meta ? [] : ["Generate the node via Plop and ensure it is registered."],
 	};
 }
 

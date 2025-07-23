@@ -57,14 +57,43 @@ module.exports = (plop) => {
 		return str.toUpperCase();
 	});
 
+	// Helper to map icon names to Lucide icons
+	plop.setHelper("mapIconToLucide", (iconName) => {
+		const iconMap = {
+			FileText: "LuFileText",
+			BarChart3: "LuBarChart3", 
+			Link: "LuLink",
+			Settings: "LuSettings",
+			Mail: "LuMail",
+			Bot: "LuBot",
+			Database: "LuDatabase",
+			Search: "LuSearch",
+			Zap: "LuZap",
+			RefreshCw: "LuRefreshCw",
+		};
+		return iconMap[iconName] || `Lu${iconName}`;
+	});
+
 	plop.setGenerator("node", {
 		description: "Create a new node using the NodeSpec architecture",
 		prompts: [
-			{
-				type: "input",
-				name: "kind",
-				message: "What is the kind of the node? (e.g., createText, viewCsv)",
+					{
+			type: "input",
+			name: "kind",
+			message: "What is the kind of the node? (e.g., createText, viewCsv)",
+			validate: (input) => {
+				if (input.trim().length === 0) {
+					return "Node kind cannot be empty";
+				}
+				if (!/^[a-z][a-zA-Z0-9]*$/.test(input)) {
+					return "Node kind must start with lowercase letter and contain only letters and numbers";
+				}
+				if (input.length > 50) {
+					return "Node kind is too long (max 50 characters)";
+				}
+				return true;
 			},
+		},
 			{
 				type: "list",
 				name: "domain",
@@ -136,25 +165,34 @@ module.exports = (plop) => {
 				message: "Who is the author/creator of this node?",
 				default: "Agenitix Team",
 			},
-			{
-				type: "input",
-				name: "description",
-				message: "Describe what this node does (press Enter to use default):",
-				default: (answers) => {
-					const kind = answers.kind || "Node";
-					const domain = answers.domain || "general";
-					return `${kind.charAt(0).toUpperCase() + kind.slice(1)} node for ${domain} operations`;
-				},
-				validate: (input) => {
-					if (input.trim().length === 0) {
-						return "Description cannot be empty";
-					}
-					if (input.length > 200) {
-						return "Description is too long (max 200 characters)";
-					}
-					return true;
-				},
+					{
+			type: "input",
+			name: "description",
+			message: "Describe what this node does (press Enter to use default):",
+			default: (answers) => {
+				const kind = answers.kind || "Node";
+				const domain = answers.domain || "general";
+				const domainMap = {
+					create: "creation",
+					view: "display",
+					trigger: "triggering",
+					test: "testing",
+					cycle: "cycling",
+					custom: "custom operations"
+				};
+				const domainDesc = domainMap[answers.domain] || "operations";
+				return `${kind.charAt(0).toUpperCase() + kind.slice(1)} node for ${domainDesc}`;
 			},
+			validate: (input) => {
+				if (input.trim().length === 0) {
+					return "Description cannot be empty";
+				}
+				if (input.length > 200) {
+					return "Description is too long (max 200 characters)";
+				}
+				return true;
+			},
+		},
 			{
 				type: "list",
 				name: "feature",
@@ -425,7 +463,7 @@ module.exports = (plop) => {
 				(data) => {
 					const { kind, domain, category } = data;
 					return (
-						`🎯 Successfully created node '${kind}' with full theming integration:\n\n` +
+						`🎯 Successfully created node '${kind}' with improved architecture:\n\n` +
 						`📁 FILES CREATED/UPDATED:\n` +
 						`   ✅ Node file: features/business-logic-modern/node-domain/${domain}/${kind}.node.tsx\n` +
 						`   ✅ Registry entries: useDynamicNodeTypes.ts, nodespec-registry.ts\n` +
@@ -435,6 +473,14 @@ module.exports = (plop) => {
 						`   ✅ HTML docs: documentation/nodes/${domain}/${kind}.html\n` +
 						`   ✅ API reference: documentation/api/${kind}.ts\n` +
 						`   ✅ Nodes overview: documentation/nodes/overview.html\n\n` +
+						`🏗️  IMPROVED ARCHITECTURE:\n` +
+						`   ✅ Enhanced import organization and grouping\n` +
+						`   ✅ Better schema design with improved defaults\n` +
+						`   ✅ Sophisticated data propagation patterns\n` +
+						`   ✅ Focus-preserving memoization (no more focus loss!)\n` +
+						`   ✅ Enhanced UI patterns with better textarea handling\n` +
+						`   ✅ Robust validation and error handling\n` +
+						`   ✅ Clean separation of concerns\n\n` +
 						`🎨 THEMING INTEGRATION:\n` +
 						`   ✅ Node uses category '${category}' theming tokens\n` +
 						`   ✅ CSS variables: --node-${category.toLowerCase()}-*\n` +
@@ -451,12 +497,20 @@ module.exports = (plop) => {
 						`   • Inspector controls auto-generated from schema\n` +
 						`   • NODE_TYPE_CONFIG dynamically provides configuration\n` +
 						`   • Theming matches existing ${category} category nodes\n` +
-						`   • Documentation available at documentation/nodes/${domain}/\n\n` +
+						`   • Documentation available at documentation/nodes/${domain}/\n` +
+						`   • No focus loss issues during editing\n\n` +
 						`🔧 NEXT STEPS:\n` +
 						`   • Customize node schema in the generated file\n` +
 						`   • Add custom UI in the expanded/collapsed sections\n` +
 						`   • Review generated documentation\n` +
-						`   • Test with 'pnpm dev' - no additional setup needed!`
+						`   • Test with 'pnpm dev' - no additional setup needed!\n\n` +
+						`💡 KEY IMPROVEMENTS:\n` +
+						`   • Better organized imports and code structure\n` +
+						`   • Enhanced data propagation with proper state management\n` +
+						`   • Improved textarea handling with proper event types\n` +
+						`   • Memoized scaffold component prevents focus loss\n` +
+						`   • Better validation and error reporting\n` +
+						`   • Cleaner separation between pure and impure functions`
 					);
 				},
 			];
@@ -764,17 +818,18 @@ module.exports = (plop) => {
 							let content = fs.readFileSync(dynamicTypesPath, "utf8");
 							const originalContent = content;
 
-							// Remove the node from the nodeTypes object with precise matching
-							// Use word boundaries to avoid partial matches
-							content = content.replace(new RegExp(`\\s*\\b${kind}\\b,\\r?\\n`, "g"), "");
-							content = content.replace(new RegExp(`\\s*\\b${kind}\\b\\r?\\n`, "g"), "");
-							content = content.replace(new RegExp(`\\s*\\b${kind}\\b,`, "g"), "");
-							// Only match standalone node names, not as part of other names
-							content = content.replace(new RegExp(`(^|\\s)${kind}(?=\\s*[,}])`, "gm"), "");
-
-							// Clean up any trailing commas that might be left
-							content = content.replace(/,\s*}/g, "}");
-							content = content.replace(/,\s*]/g, "]");
+							// More precise regex that preserves formatting and only removes the specific node
+							// Pattern 1: Remove node entry with trailing comma and newline
+							const pattern1 = new RegExp(`\\s*${kind},\\s*\\r?\\n`, "g");
+							content = content.replace(pattern1, "\n");
+							
+							// Pattern 2: Remove node entry that might be the last one (no trailing comma)
+							const pattern2 = new RegExp(`\\s*${kind}\\s*(?=\\s*}|\\s*\\))`, "g");
+							content = content.replace(pattern2, "");
+							
+							// Pattern 3: Remove any orphaned commas that might result
+							content = content.replace(/,(\s*[,}\)])/g, "$1");
+							content = content.replace(/(\{\s*),/g, "$1");
 
 							if (content !== originalContent) {
 								fs.writeFileSync(dynamicTypesPath, content);
@@ -823,24 +878,18 @@ module.exports = (plop) => {
 							let content = fs.readFileSync(registryPath, "utf8");
 							const originalContent = content;
 
-							// Remove the registry entry with precise word boundary matching
-							// Pattern 1: entry with trailing comma
-							content = content.replace(
-								new RegExp(`\\s*\\b${kind}\\b: ${kind}Spec,\\r?\\n`, "g"),
-								""
-							);
-							// Pattern 2: entry without trailing comma (last entry)
-							content = content.replace(
-								new RegExp(`\\s*\\b${kind}\\b: ${kind}Spec\\r?\\n`, "g"),
-								""
-							);
-							// Pattern 3: entry on same line as other entries
-							content = content.replace(new RegExp(`\\s*\\b${kind}\\b: ${kind}Spec,`, "g"), "");
-							// Pattern 4: entry without comma (last entry on line)
-							content = content.replace(
-								new RegExp(`\\s*\\b${kind}\\b: ${kind}Spec(?!\\w)`, "g"),
-								""
-							);
+							// More precise regex that preserves formatting
+							// Pattern 1: Remove registry entry with trailing comma and newline
+							const pattern1 = new RegExp(`\\s*${kind}: ${kind}Spec,\\s*\\r?\\n`, "g");
+							content = content.replace(pattern1, "\n");
+							
+							// Pattern 2: Remove registry entry that might be the last one (no trailing comma)
+							const pattern2 = new RegExp(`\\s*${kind}: ${kind}Spec\\s*(?=\\s*}|\\s*\\))`, "g");
+							content = content.replace(pattern2, "");
+							
+							// Pattern 3: Remove any orphaned commas that might result
+							content = content.replace(/,(\s*[,}\)])/g, "$1");
+							content = content.replace(/(\{\s*),/g, "$1");
 
 							if (content !== originalContent) {
 								fs.writeFileSync(registryPath, content);
@@ -1009,24 +1058,38 @@ module.exports = (plop) => {
 								issues.push(`Found ${undefinedRefs.length} undefined references to ${kind}Spec`);
 							}
 
-							// Check for orphaned commas
-							const orphanedCommas = content.match(/,\s*}/g);
+							// Check for orphaned commas (more precise check)
+							const orphanedCommas = content.match(/,\s*[}\)]/g);
 							if (orphanedCommas && orphanedCommas.length > 0) {
-								issues.push(`Found ${orphanedCommas.length} orphaned commas in object definitions`);
+								issues.push(`Found ${orphanedCommas.length} orphaned commas`);
 							}
 
-							// Check that other nodes are still intact
-							const expectedNodes = ["createText", "viewText"].filter((node) => node !== kind);
-							const missingNodes = expectedNodes.filter((node) => !content.includes(node));
+							// Check that core nodes are still intact (only check if they exist)
+							const coreNodes = ["createText", "viewText"];
+							const expectedNodes = coreNodes.filter((node) => node !== kind);
+							const missingNodes = expectedNodes.filter((node) => {
+								// Check both import and registry entry
+								const hasImport = content.includes(`import ${node}`);
+								const hasEntry = content.includes(`${node}: ${node}Spec`);
+								return !hasImport || !hasEntry;
+							});
+							
 							if (missingNodes.length > 0) {
 								issues.push(`⚠️ CRITICAL: Missing nodes after deletion: ${missingNodes.join(", ")}`);
+							}
+
+							// Check basic syntax
+							const hasValidNodeSpecs = content.includes("const nodeSpecs:");
+							if (!hasValidNodeSpecs) {
+								issues.push("⚠️ CRITICAL: nodeSpecs object not found");
 							}
 
 							if (issues.length > 0) {
 								return `⚠️  Registry validation issues: ${issues.join(", ")}`;
 							}
 
-							return `✅ Registry file syntax validated successfully`;
+							const remainingNodes = expectedNodes.filter((node) => content.includes(`${node}: ${node}Spec`));
+							return `✅ Registry validated successfully (${remainingNodes.length} nodes remaining: ${remainingNodes.join(", ")})`;
 						} catch (error) {
 							return `❌ Error validating registry: ${error.message}`;
 						}

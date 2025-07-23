@@ -1,0 +1,384 @@
+/**
+ * TriggerToggle NODE – Boolean toggle with circular design
+ *
+ * ✔ Cycles between ON / OFF and propagates the value to connected nodes.
+ * ✔ Subscribes to global React‑Flow store so updates ripple automatically.
+ * ✔ Fully type‑safe (Zod) + focus‑preserving scaffold memoisation.
+ *
+ * Keywords: toggle‑button, boolean‑state, circular‑design, trigger‑control
+ */
+
+import type { NodeProps } from "@xyflow/react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
+import { useReactFlow, useStore } from "@xyflow/react";
+import { z } from "zod";
+
+import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
+import LabelNode from "@/components/nodes/labelNode";
+import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
+import {
+  SafeSchemas,
+  createSafeInitialData,
+} from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+import {
+  createNodeValidator,
+  reportValidationError,
+  useNodeDataValidation,
+} from "@/features/business-logic-modern/infrastructure/node-core/validation";
+import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
+import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
+import {
+  COLLAPSED_SIZES,
+  EXPANDED_SIZES,
+} from "@/features/business-logic-modern/infrastructure/theming/sizing";
+import { useNodeData } from "@/hooks/useNodeData";
+
+// -----------------------------------------------------------------------------
+// 1️⃣  Data schema & validation
+// -----------------------------------------------------------------------------
+
+export const TriggerToggleDataSchema = z
+  .object({
+    store: z.boolean().default(false),         // current toggle value
+    isEnabled: SafeSchemas.boolean(true),      // is toggle interactive?
+    isActive: SafeSchemas.boolean(false),      // reflects store when enabled
+    isExpanded: SafeSchemas.boolean(false),    // inspector open?
+         inputs: z.boolean().nullable().default(null),        // last received input
+    outputs: z.boolean().default(false),       // last emitted output
+    expandedSize: SafeSchemas.text("FE1"),
+    collapsedSize: SafeSchemas.text("C1"),
+  })
+  .passthrough();
+
+export type TriggerToggleData = z.infer<typeof TriggerToggleDataSchema>;
+
+const validateNodeData = createNodeValidator(
+  TriggerToggleDataSchema,
+  "TriggerToggle",
+);
+
+// -----------------------------------------------------------------------------
+// 2️⃣  Constants
+// -----------------------------------------------------------------------------
+
+const CATEGORY_TEXT = {
+  TRIGGER: {
+    primary: "text-[--node-trigger-text]",
+    on: "text-green-500",
+    off: "text-red-500",
+  },
+} as const;
+
+const CONTENT = {
+  expanded: "p-4 w-full h-full flex flex-col",
+  collapsed: "flex items-center justify-center w-full h-full",
+  header: "flex items-center justify-between mb-3",
+  body: "flex-1 flex items-center justify-center",
+  toggle: "relative w-12 h-12 rounded-full border-2 cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95",
+  toggleOn: "bg-green-500 border-green-600  shadow-green-500/50",
+  toggleOff: "bg-red-500 border-red-600  shadow-red-500/50",
+  toggleDisabled: "bg-gray-400 border-gray-500 cursor-not-allowed opacity-50",
+  toggleText: "absolute inset-0 flex items-center justify-center text-white font-bold text-xs",
+} as const;
+
+// -----------------------------------------------------------------------------
+// 3️⃣  Spec helpers
+// -----------------------------------------------------------------------------
+
+/** Builds a NodeSpec whose size keys can change at runtime. */
+function createDynamicSpec(data: TriggerToggleData): NodeSpec {
+  const expanded =
+    EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
+    EXPANDED_SIZES.FE1;
+  const collapsed =
+    COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
+    COLLAPSED_SIZES.C1;
+
+  return {
+    kind: "triggerToggle",
+    displayName: "Toggle",
+    label: "Toggle",
+    category: CATEGORIES.TRIGGER,
+    size: { expanded, collapsed },
+    handles: [
+      { id: "input",  code: "b", position: "left",  type: "target", dataType: "Boolean" },
+      { id: "output", code: "b", position: "right", type: "source", dataType: "Boolean" },
+    ],
+    inspector: { key: "TriggerToggleInspector" },
+    version: 1,
+    runtime: { execute: "triggerToggle_execute_v1" },
+         initialData: createSafeInitialData(TriggerToggleDataSchema, {
+       store: false,
+       inputs: null,
+       outputs: false,
+     }),
+    dataSchema: TriggerToggleDataSchema,
+    controls: {
+      autoGenerate: true,
+      excludeFields: [
+        "isActive",
+        "inputs",
+        "outputs",
+        "expandedSize",
+        "collapsedSize",
+      ],
+      customFields: [
+        { key: "isEnabled",  type: "boolean", label: "Enable" },
+        { key: "store",      type: "boolean", label: "Toggle State" },
+        { key: "isExpanded", type: "boolean", label: "Expand" },
+      ],
+    },
+    icon: "LuZap",
+    author: "Agenitix Team",
+    description: "Boolean toggle button that cycles between ON/OFF states",
+    feature: "base",
+    tags: ["toggle", "boolean", "trigger"],
+    theming: {},
+  };
+}
+
+/** Static spec (registry) */
+export const spec: NodeSpec = createDynamicSpec({
+  expandedSize: "FE1",
+  collapsedSize: "C1",
+} as TriggerToggleData);
+
+// -----------------------------------------------------------------------------
+// 4️⃣  React implementation
+// -----------------------------------------------------------------------------
+
+/** Utility: coerce any incoming value to a strict boolean. */
+const toBool = (v: unknown): boolean =>
+  v === true || v === "true" || v === "1";
+
+/** Main node UI & behaviour. */
+const TriggerToggleNode = memo(
+  ({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
+    // 4.1  Local node‑data helpers
+    const { nodeData, updateNodeData } = useNodeData(id, data);
+    const { isExpanded, isEnabled, isActive, store } =
+      nodeData as TriggerToggleData;
+
+    // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
+    const nodes  = useStore((s) => s.nodes);
+    const edges  = useStore((s) => s.edges);
+
+    // keep last emitted output to avoid redundant writes
+    const lastOutputRef = useRef<boolean | null>(null);
+
+    // -----------------------------------------------------------------------
+    // 4.3  Helpers
+    // -----------------------------------------------------------------------
+
+    /** Propagate current boolean to our `outputs` field. */
+    const propagate = useCallback(
+      (value: boolean) => {
+        if (value !== lastOutputRef.current) {
+          lastOutputRef.current = value;
+          updateNodeData({ outputs: value });
+        }
+      },
+      [updateNodeData],
+    );
+
+         /** Compute the latest boolean coming from the *first* upstream node. */
+     const computeInput = useCallback((): boolean | null => {
+       const incoming = edges.find((e) => e.target === id);
+       if (!incoming) return null;
+ 
+       const src = nodes.find((n) => n.id === incoming.source);
+       if (!src) return null;
+ 
+       return toBool(
+         // priority: outputs ➜ store ➜ whole data
+         src.data?.outputs ?? src.data?.store ?? src.data,
+       );
+     }, [edges, nodes, id]);
+
+    // -----------------------------------------------------------------------
+    // 4.4  Effects
+    // -----------------------------------------------------------------------
+
+    /* 🔄 Whenever nodes/edges change, recompute inputs. */
+    useEffect(() => {
+      const inputVal = computeInput();
+      if (inputVal !== (nodeData as TriggerToggleData).inputs) {
+        updateNodeData({ inputs: inputVal });
+      }
+    }, [computeInput, nodeData, updateNodeData]);
+
+         /* 🔄 Keep isActive in sync with store / isEnabled. */
+     useEffect(() => {
+       const nextActive = isEnabled && toBool(store);
+       if (nextActive !== isActive) {
+         updateNodeData({ isActive: nextActive });
+       }
+     }, [store, isEnabled, isActive, updateNodeData]);
+
+     /* 🔄 Make isEnabled dependent on input value only when there are connections. */
+     useEffect(() => {
+       const hasInput = (nodeData as TriggerToggleData).inputs;
+       // Only auto-control isEnabled when there are connections (inputs !== null)
+       // When inputs is null (no connections), let user manually control isEnabled
+       if (hasInput !== null) {
+         const nextEnabled = toBool(hasInput);
+         if (nextEnabled !== isEnabled) {
+           updateNodeData({ isEnabled: nextEnabled });
+         }
+       }
+     }, [nodeData, isEnabled, updateNodeData]);
+
+    /* 🔄 On every relevant change, propagate value. */
+    useEffect(() => {
+      // When disabled, always output false regardless of store value
+      // When enabled, output the actual store value
+      const outputValue = isEnabled ? toBool(store) : false;
+      propagate(outputValue);
+    }, [store, isEnabled, propagate]);
+
+    // -----------------------------------------------------------------------
+    // 4.5  Event handlers
+    // -----------------------------------------------------------------------
+
+    /** Toggle expand / collapse UI. */
+    const toggleExpand = useCallback(() => {
+      updateNodeData({ isExpanded: !isExpanded });
+    }, [isExpanded, updateNodeData]);
+
+    /** Flip boolean state (only when enabled). */
+    const toggleState = useCallback(() => {
+      if (isEnabled) updateNodeData({ store: !toBool(store) });
+    }, [isEnabled, store, updateNodeData]);
+
+    // -----------------------------------------------------------------------
+    // 4.6  Validation
+    // -----------------------------------------------------------------------
+
+    const validation = validateNodeData(nodeData);
+    if (!validation.success) {
+      reportValidationError("TriggerToggle", id, validation.errors, {
+        originalData: validation.originalData,
+        component: "TriggerToggleNode",
+      });
+    }
+    useNodeDataValidation(
+      TriggerToggleDataSchema,
+      "TriggerToggle",
+      validation.data,
+      id,
+    );
+
+    // -----------------------------------------------------------------------
+    // 4.7  Render
+    // -----------------------------------------------------------------------
+
+    const categoryStyles = CATEGORY_TEXT.TRIGGER;
+    const isToggled     = toBool(store);
+
+    return (
+      <>
+        {/* Label (hidden for 60×60 icons) */}
+        {!isExpanded &&
+        spec.size.collapsed.width === 60 &&
+        spec.size.collapsed.height === 60 ? (
+          <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+            {/* {spec.icon && renderLucideIcon(spec.icon)} */}
+          </div>
+        ) : (
+          <LabelNode nodeId={id} label={spec.displayName} />
+        )}
+
+        {/* ───────────────────────────────────────── UI ───────────────────────────────────────── */}
+        {!isExpanded ? (
+          /* Collapsed view */
+          <div className={CONTENT.collapsed}>
+            <div
+              className={`${CONTENT.toggle} ${
+                isEnabled
+                  ? isToggled
+                    ? CONTENT.toggleOn
+                    : CONTENT.toggleOff
+                  : CONTENT.toggleDisabled
+              }`}
+              onClick={toggleState}
+              title={isEnabled ? "Click to toggle" : "Disabled"}
+            >
+              <div className={CONTENT.toggleText}>
+                {isToggled ? "ON" : "OFF"}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Expanded view */
+          <div className={CONTENT.expanded}>
+            <div className={CONTENT.body}>
+              <div className="flex flex-col items-center gap-0">
+                <div
+                  className={`${CONTENT.toggle} ${
+                    isEnabled
+                      ? isToggled
+                        ? CONTENT.toggleOn
+                        : CONTENT.toggleOff
+                      : CONTENT.toggleDisabled
+                  }`}
+                  onClick={toggleState}
+                  title={isEnabled ? "Click to toggle" : "Disabled"}
+                >
+                  <div className={CONTENT.toggleText}>
+                    {isToggled ? "ON" : "OFF"}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {isEnabled ? "Click to toggle" : "Toggle disabled"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <ExpandCollapseButton
+          showUI={isExpanded}
+          onToggle={toggleExpand}
+          size="sm"
+        />
+      </>
+    );
+  },
+);
+
+// -----------------------------------------------------------------------------
+// 5️⃣  Focus‑preserving scaffold wrapper
+// -----------------------------------------------------------------------------
+
+const TriggerToggleNodeWithDynamicSpec = (props: NodeProps) => {
+  const { nodeData } = useNodeData(props.id, props.data);
+
+  const dynamicSpec = useMemo(
+    () => createDynamicSpec(nodeData as TriggerToggleData),
+    [
+      (nodeData as TriggerToggleData).expandedSize,
+      (nodeData as TriggerToggleData).collapsedSize,
+    ],
+  );
+
+  const ScaffoldedNode = useMemo(
+    () =>
+      withNodeScaffold(dynamicSpec, (p) => (
+        <TriggerToggleNode {...p} spec={dynamicSpec} />
+      )),
+    [dynamicSpec],
+  );
+
+  return <ScaffoldedNode {...props} />;
+};
+
+export default TriggerToggleNodeWithDynamicSpec;

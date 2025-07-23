@@ -4,10 +4,10 @@ This document provides a comprehensive overview of all available nodes in the Ag
 
 ## 📊 Statistics
 
-- **Total Nodes:** 2
+- **Total Nodes:** 3
 - **Total Domains:** 4
-- **Total Categories:** 2
-- **Last Updated:** 7/22/2025, 11:54:23 PM
+- **Total Categories:** 3
+- **Last Updated:** 7/23/2025, 3:46:21 PM
 
 ## 🎯 Quick Navigation
 
@@ -18,6 +18,7 @@ This document provides a comprehensive overview of all available nodes in the Ag
 - [view](#view-view) (1 nodes)
 
 ### Trigger Domain
+- [trigger](#trigger-trigger) (1 nodes)
 
 ### Test Domain
 
@@ -36,16 +37,16 @@ Data creation and generation nodes
 - **Type:** `createText`
 - **Domain:** create
 - **Category:** create
-- **Description:** CREATE TEXT NODE - Clean content-focused implementation
+- **Description:** createText NODE – Content‑focused, schema‑driven, type‑safe
  
-  • Focuses ONLY on content and layout - no structural styling
-  • withNodeScaffold handles all borders, sizing, theming, interactive states
-  • Schema-driven controls in Node Inspector
-  • Type-safe data validation with Zod schema
-  • Clean separation of concerns for maximum maintainability
+  • Shows only internal layout; the scaffold provides borders, sizing, theming, and interactivity.
+  • Zod schema auto‑generates type‑checked Inspector controls.
+  • Dynamic sizing (expandedSize / collapsedSize) drives the spec.
+  • Output propagation is gated by `isActive` and `isEnabled` to prevent runaway loops.
+  • Code is fully commented and follows current React + TypeScript best practices.
  
-  Keywords: create-text, content-focused, schema-driven, type-safe, clean-architecture
-- **Features:** Type-safe validation, Schema-driven controls, Enterprise validation, JSON I/O
+  Keywords: create-text, schema-driven, type‑safe, clean‑architecture
+- **Features:** JSON I/O
 - **Theming:** create category
   - **Design Tokens:** var(--node-create-bg), var(--node-create-border), var(--node-create-text)
   - **Responsive:**  Not optimized
@@ -63,21 +64,23 @@ Data visualization and display nodes
 
 **Nodes (1):**
 
-#### viewText
+#### View Text
 
 - **Type:** `viewText`
 - **Domain:** view
 - **Category:** view
-- **Description:** viewText NODE - Clean content-focused node template
+- **Description:** viewText NODE – Content‑focused, schema‑driven, type‑safe
  
-  • Focuses ONLY on content and layout - no structural styling
-  • withNodeScaffold handles all borders, sizing, theming, interactive states
-  • Schema-driven controls in Node Inspector
-  • Type-safe data validation with Zod schema
-  • Clean separation of concerns for maximum maintainability
- 
-  Keywords: view-text, content-focused, schema-driven, type-safe, clean-architecture
-- **Features:** Type-safe validation, Schema-driven controls, Enterprise validation, JSON I/O
+  • Presents incoming text with ZERO structural styling – the surrounding scaffold handles
+    borders, sizing, themes, drag/selection states, etc.
+  • Zod‑based schema gives auto‑generated, type‑checked Inspector controls.
+  • Dynamic sizing is driven directly by node data (expandedSize / collapsedSize).
+  • All data handling is funnelled through one formatter (formatValue) to avoid duplication.
+  • Strict separation of responsibilities:
+      – createDynamicSpec: returns a NodeSpec based only on data               (pure)
+      – ViewTextNode:      deals with React‑Flow store & data propagation       (impure)
+  • Memoised helpers & refs prevent unnecessary renders / infinite loops.
+- **Features:** JSON I/O
 - **Theming:** view category
   - **Design Tokens:** var(--node-view-bg), var(--node-view-border), var(--node-view-text)
   - **Responsive:**  Not optimized
@@ -88,6 +91,34 @@ Data visualization and display nodes
 ## Trigger Domain
 
 Nodes that respond to events, conditions, or triggers
+
+### Trigger Category
+
+Event-driven and conditional nodes
+
+**Nodes (1):**
+
+#### TriggerToggle
+
+- **Type:** `triggerToggle`
+- **Domain:** trigger
+- **Category:** trigger
+- **Description:** TriggerToggle NODE – Content‑focused, schema‑driven, type‑safe
+ 
+  • Shows only internal layout; the scaffold provides borders, sizing, theming, and interactivity.
+  • Zod schema auto‑generates type‑checked Inspector controls.
+  • Dynamic sizing (expandedSize / collapsedSize) drives the spec.
+  • Output propagation is gated by `isActive` and `isEnabled` to prevent runaway loops.
+  • Code is fully commented and follows current React + TypeScript best practices.
+ 
+  Keywords: trigger-toggle, schema-driven, type‑safe, clean‑architecture
+- **Features:** JSON I/O
+- **Theming:** trigger category
+  - **Design Tokens:** var(--node-trigger-bg), var(--node-trigger-border), var(--node-trigger-text)
+  - **Responsive:**  Not optimized
+  - **Accessibility:** 🎯 Supported
+- **File:** `\features\business-logic-modern\node-domain\trigger\triggerToggle.node.tsx`
+- **Documentation:** [Markdown](./trigger/triggerToggle.md) | [HTML](./trigger/triggerToggle.html)
 
 ## Test Domain
 
