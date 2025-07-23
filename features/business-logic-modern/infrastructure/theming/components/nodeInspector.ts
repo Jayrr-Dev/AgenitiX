@@ -231,7 +231,7 @@ export const nodeInspectorStyles = {
 	getContainer: () => {
 		return combineTokens(
 			NODE_INSPECTOR_TOKENS.colors.inspector.background,
-			"border-l",
+			"border",
 			NODE_INSPECTOR_TOKENS.colors.inspector.border
 		);
 	},

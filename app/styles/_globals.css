@@ -385,7 +385,7 @@
 	box-shadow: var(--effect-glow-hover);
 }
 @utility shadow-effect-glow-activation {
-	box-shadow: var(--effect-glow-activation);
+	box-shadow: var(--effect-glow-activation) !important;
 }
 @utility shadow-effect-glow-error {
 	box-shadow: var(--effect-glow-error);

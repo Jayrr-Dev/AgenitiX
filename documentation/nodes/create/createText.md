@@ -1,13 +1,16 @@
-# createText Node Documentation
+# Create Text Node Documentation
 
 ## Overview
 
 **Node Type**: `createText`  
 **Domain**: create  
 **Category**: CREATE  
-**Display Name**: createText
+**Display Name**: Create Text
+**Icon**: LuFileText
+**Author**: Agenitix Team
+**Feature**: base
 
-The createText node provides functionality for create operations in the CREATE category.
+The Create Text node provides functionality for create operations in the CREATE category.
 
 ## Node Specification
 
@@ -86,11 +89,11 @@ The createText node provides functionality for create operations in the CREATE c
 ## Node Interface
 
 ### Inputs
-- **json-input** (JSON) - Input data in JSON format [top]
-- **activate** (boolean) - Activation signal [left]
+- **json-input** (JSON) - Input JSON data [top]
+- **activate** (Boolean) - Input Boolean data [left]
 
 ### Outputs
-- **output** (string) - Processed output data [right]
+- **output** (String) - Output String data [right]
 
 ## Usage Examples
 
@@ -119,7 +122,7 @@ const node = {
 ```typescript
 const spec: NodeSpec = {
   kind: "createText",
-  displayName: "createText",
+  displayName: "Create Text",
   category: "CREATE",
   size: {
     expanded: { width: 120, height: 120 },
@@ -134,7 +137,7 @@ const spec: NodeSpec = {
 
 ### Data Schema
 ```typescript
-const createTextDataSchema = z.object({
+const Create TextDataSchema = z.object({
   // Schema definition
 });
 ```

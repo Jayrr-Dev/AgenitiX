@@ -58,6 +58,14 @@ export interface ViewOutputData extends BaseNodeData {
 	includedTypes?: string[];
 }
 
+export interface ViewTextData extends BaseNodeData {
+	text: string;
+	isEnabled: boolean;
+	isActive: boolean;
+	isExpanded: boolean;
+	receivedData?: string;
+}
+
 // ============================================================================
 // TRIGGER DOMAIN NODE DATA INTERFACES
 // ============================================================================
@@ -108,7 +116,8 @@ export type AgenNode =
 	| Node<CreateTextData, "createText">
 	| Node<ViewOutputData, "viewOutput">
 	| Node<TriggerOnToggleData, "triggerOnToggle">
-	| Node<TestErrorData, "testError">;
+	| Node<TestErrorData, "testError">
+	| Node<ViewTextData, "viewText">;
 
 export type AgenEdge = Edge & {
 	sourceHandle?: string | null;

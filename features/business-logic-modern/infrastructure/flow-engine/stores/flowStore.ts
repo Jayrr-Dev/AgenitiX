@@ -119,6 +119,66 @@ interface FlowActions {
 	setHasHydrated: (hasHydrated: boolean) => void;
 }
 
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Detect if adding an edge would create a circular connection
+ * @param edges - Current edges in the flow
+ * @param source - Source node ID
+ * @param target - Target node ID
+ * @returns true if adding the edge would create a circular connection
+ */
+function wouldCreateCircularConnection(
+	edges: AgenEdge[],
+	source: string,
+	target: string
+): boolean {
+	// Create a graph representation
+	const graph: Record<string, string[]> = {};
+	
+	// Initialize graph with existing edges
+	edges.forEach(edge => {
+		if (!graph[edge.source]) graph[edge.source] = [];
+		if (!graph[edge.target]) graph[edge.target] = [];
+		graph[edge.source].push(edge.target);
+	});
+	
+	// Add the new potential edge
+	if (!graph[source]) graph[source] = [];
+	graph[source].push(target);
+	
+	// DFS to detect cycles
+	const visited = new Set<string>();
+	const recStack = new Set<string>();
+	
+	function hasCycle(node: string): boolean {
+		if (recStack.has(node)) return true;
+		if (visited.has(node)) return false;
+		
+		visited.add(node);
+		recStack.add(node);
+		
+		const neighbors = graph[node] || [];
+		for (const neighbor of neighbors) {
+			if (hasCycle(neighbor)) return true;
+		}
+		
+		recStack.delete(node);
+		return false;
+	}
+	
+	// Check for cycles starting from each node
+	for (const node of Object.keys(graph)) {
+		if (!visited.has(node)) {
+			if (hasCycle(node)) return true;
+		}
+	}
+	
+	return false;
+}
+
 type FlowStore = FlowState & FlowActions;
 
 // ============================================================================
@@ -163,6 +223,20 @@ export const useFlowStore = create<FlowStore>()(
 				},
 				onConnect: (connection) => {
 					set((state) => {
+						// Check for circular connections before adding the edge
+						if (wouldCreateCircularConnection(state.edges, connection.source!, connection.target!)) {
+							console.warn('⚠️ Circular connection prevented:', connection);
+							// Log an error for the source node
+							state.nodeErrors[connection.source!] = state.nodeErrors[connection.source!] || [];
+							state.nodeErrors[connection.source!].push({
+								timestamp: Date.now(),
+								message: 'Circular connection detected and prevented',
+								type: 'warning',
+								source: 'flow-engine'
+							});
+							return; // Don't add the edge
+						}
+						
 						state.edges = addEdgeHelper(connection, state.edges) as AgenEdge[];
 					});
 				},

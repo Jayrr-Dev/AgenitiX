@@ -134,7 +134,8 @@
     "*.config.js",
     "*.config.ts",
     ".deprecated/examples/**/*",
-    "features/business-logic-modern/infrastructure/depreciated/**/*"
+    "features/business-logic-modern/infrastructure/depreciated/**/*",
+    "backups/**/*"
   ],
 
   // ============================================================================

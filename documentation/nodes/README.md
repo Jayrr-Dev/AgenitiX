@@ -179,3 +179,11 @@ Each node has three documentation files:
 - [Create Text](./create/createText.md) - The Create Text node provides functionality for create operations in the CREATE category.
 
 - [createText](./create/createText.md) - The createText node provides functionality for create operations in the CREATE category.
+
+
+
+
+
+- [View Text](./view/viewText.md) - The View Text node provides functionality for view operations in the VIEW category.
+
+

@@ -6,11 +6,21 @@
  * • Automatic validation and prevention of incompatible connections.
  * • User-friendly toast notifications for connection errors.
  * • Decoupled and reusable for any React Flow project.
+ * • Uses React Icons for perfect centering and consistency.
  */
 import { Handle, type HandleProps, type IsValidConnection, useStore } from "@xyflow/react";
 import type React from "react";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { 
+	LuType, 
+	LuHash, 
+	LuCheck, 
+	LuBraces, 
+	LuBrackets, 
+	LuCircle
+} from "react-icons/lu";
+import { VscJson } from "react-icons/vsc";
 // Auto-generated at build time (can be empty in dev before first build)
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore – file is generated post-install / build
@@ -41,10 +51,11 @@ const getInjectableClasses = (cssVar: string): string => {
  * - Consistent theming across light/dark modes
  * - Semantic token-based backgrounds and borders
  * - Type-specific colors for visual distinction
+ * - Perfect centering for all letters and icons
  */
 const UNIFIED_HANDLE_STYLES = {
-	// Base styling classes
-	base: "flex items-center justify-center rounded-sm text-[6px] font-semibold uppercase select-none z-30",
+	// Base styling classes with perfect centering
+	base: "flex items-center justify-center rounded-sm text-[6px] font-semibold uppercase select-none z-30 leading-none",
 
 	// Background colors using semantic tokens
 	backgrounds: {
@@ -80,17 +91,17 @@ const DEFAULT_HANDLE_TYPE = "any";
 // const ajv = new Ajv({ allErrors: false, strict: false });
 
 /**
- * Unified type display configuration using semantic tokens
- * Maps type names to icons and semantic token references
+ * Unified type display configuration using React Icons
+ * Maps type names to React icon components and semantic token references
  */
-const UNIFIED_TYPE_DISPLAY: Record<string, { icon: string; tokenKey: string }> = {
-	string: { icon: "T", tokenKey: "string" },
-	number: { icon: "#", tokenKey: "number" },
-	boolean: { icon: "✓", tokenKey: "boolean" },
-	object: { icon: "{}", tokenKey: "object" },
-	array: { icon: "[]", tokenKey: "array" },
-	any: { icon: "?", tokenKey: "any" },
-	json: { icon: "J", tokenKey: "json" },
+const UNIFIED_TYPE_DISPLAY: Record<string, { icon: React.ComponentType<any>; tokenKey: string }> = {
+	string: { icon: LuType, tokenKey: "string" },
+	number: { icon: LuHash, tokenKey: "number" },
+	boolean: { icon: LuCheck, tokenKey: "boolean" },
+	object: { icon: LuBraces, tokenKey: "object" },
+	array: { icon: LuBrackets, tokenKey: "array" },
+	any: { icon: LuCircle, tokenKey: "any" },
+	json: { icon: VscJson, tokenKey: "json" },
 };
 
 /**
@@ -209,7 +220,7 @@ function getTypeColor(tokenKey: string): string {
  * Get unified type display information (icon and color)
  */
 function getTypeDisplay(handleTypeName: string): {
-	icon: string;
+	icon: React.ComponentType<any>;
 	color: string;
 } {
 	const display = UNIFIED_TYPE_DISPLAY[handleTypeName.toLowerCase()] || UNIFIED_TYPE_DISPLAY.any;
@@ -357,6 +368,8 @@ const UltimateTypesafeHandle: React.FC<any> = ({
 	// Generate tooltip content
 	const tooltipContent = getTooltipContent(props.type, dataType, code, tsSymbol);
 
+	const IconComponent = typeDisplay.icon;
+	
 	return (
 		<Handle
 			{...(props as HandleProps)}
@@ -371,6 +384,10 @@ const UltimateTypesafeHandle: React.FC<any> = ({
 				color: typeDisplay.color,
 				backgroundColor,
 				pointerEvents: "all", // Ensure pointer events work for both input and output handles
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+				lineHeight: "1",
 				...getPositionOffset(props.position, handleIndex, totalHandlesOnSide), // Apply smart positioning
 				...props.style,
 			}}
@@ -378,7 +395,7 @@ const UltimateTypesafeHandle: React.FC<any> = ({
 			isConnectableStart={connectableStart}
 			isConnectableEnd={connectableEnd}
 		>
-			{typeDisplay.icon}
+			<IconComponent size={8} style={{ pointerEvents: "none" }} />
 		</Handle>
 	);
 };

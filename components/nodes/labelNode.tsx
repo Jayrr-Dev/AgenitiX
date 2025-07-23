@@ -5,11 +5,13 @@
  * • Double-click toggles inline edit <input>
  * • Persists value in React Flow node data under key `label`
  * • Defaults to NodeSpec.displayName when no label set
+ * • Supports dark mode theming
  *
- * Keywords: node-label, editable, persistent, react-flow, design-tokens
+ * Keywords: node-label, editable, persistent, react-flow, design-tokens, dark-mode
  */
 
 import { type Node, useReactFlow } from "@xyflow/react";
+import { useTheme } from "next-themes";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 
@@ -27,6 +29,17 @@ const LabelNode: React.FC<LabelNodeProps> = ({ nodeId, label }) => {
 	const [editing, setEditing] = useState(false);
 	const spanRef = useRef<HTMLSpanElement>(null);
 	const { setNodes } = useReactFlow();
+	const { resolvedTheme } = useTheme();
+	const [mounted, setMounted] = useState(false);
+
+	// Ensure client-side rendering to avoid hydration mismatch
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+
+	// Get theme-aware label color
+	const isDarkMode = mounted && resolvedTheme === "dark";
+	const labelColor = isDarkMode ? "var(--core-label-color)" : "var(--core-label-color)";
 
 	// focus when entering edit mode
 	useEffect(() => {
@@ -88,7 +101,7 @@ const LabelNode: React.FC<LabelNodeProps> = ({ nodeId, label }) => {
 				fontSize: "var(--core-label-font-size)",
 				fontWeight: "var(--core-label-font-weight)",
 				fontFamily: "var(--core-label-font-family, inherit)",
-				color: "var(--core-label-color)",
+				color: labelColor,
 				zIndex: editing ? 10 : 1, // Higher z-index when editing
 			}}
 		>
@@ -104,7 +117,7 @@ const LabelNode: React.FC<LabelNodeProps> = ({ nodeId, label }) => {
 					fontSize: "var(--core-label-font-size)",
 					fontWeight: "var(--core-label-font-weight)",
 					fontFamily: "var(--core-label-font-family, inherit)",
-					color: "var(--core-label-color)",
+					color: labelColor,
 					whiteSpace: "nowrap",
 					userSelect: editing ? "text" : "none",
 					pointerEvents: editing ? "auto" : "none", // Only allow events on span when editing

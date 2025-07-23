@@ -184,4 +184,38 @@ export interface NodeSpec {
 	 * Used for organization, filtering, and feature-based grouping
 	 */
 	feature?: string;
+
+	/**
+	 * OPTIONAL: Dark mode theming configuration
+	 * Override default dark mode colors for this specific node
+	 */
+	theming?: {
+		/** Dark mode background color override */
+		bgDark?: string;
+		/** Dark mode border color override */
+		borderDark?: string;
+		/** Dark mode border hover color override */
+		borderHoverDark?: string;
+		/** Dark mode text color override */
+		textDark?: string;
+		/** Dark mode secondary text color override */
+		textSecondaryDark?: string;
+		/** Dark mode background hover color override */
+		bgHoverDark?: string;
+	};
+
+	/**
+	 * OPTIONAL: Received data configuration
+	 * Defines how the node handles and displays received data from connected nodes
+	 */
+	receivedData?: {
+		/** Whether the node can receive data from connected nodes */
+		enabled?: boolean;
+		/** How to display received data (text, json, raw, etc.) */
+		displayMode?: 'text' | 'json' | 'raw' | 'formatted';
+		/** Whether to show received data in collapsed state */
+		showInCollapsed?: boolean;
+		/** Custom formatting function for received data */
+		formatData?: (data: any) => string;
+	};
 }

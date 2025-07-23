@@ -199,12 +199,12 @@ export const VERSION = {
 
 		// Ensure directory exists
 		const versionDir = path.dirname(this.versionFile);
-		if (!fs.existsSync(versionDir)) {
-			fs.mkdirSync(versionDir, { recursive: true });
-		}
+			if (!fs.existsSync(versionDir)) {
+				fs.mkdirSync(versionDir, { recursive: true });
+			}
 
 		fs.writeFileSync(this.versionFile, versionContent);
-		console.log(`✅ Updated version constants to ${version}`);
+			console.log(`✅ Updated version constants to ${version}`);
 
 		// Auto-sync package.json version
 		try {

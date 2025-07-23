@@ -27,6 +27,8 @@ import {
 	EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
+import { useWithNodeDataFlow } from "@/features/business-logic-modern/infrastructure/flow-engine/hooks/withNodeDataFlow";
+import { useCallback, useEffect, useRef } from "react";
 
 /**
  * Data schema for CreateText node
@@ -94,6 +96,15 @@ const spec: NodeSpec = {
   author: "Agenitix Team",
   description: "Creates text content with customizable formatting and styling options",
   feature: "base",
+  theming: {
+    // Custom dark mode theming for Create Text node
+    bgDark: "hsla(140, 80%, 15%, 1)", // Darker green background
+    borderDark: "hsla(140, 100%, 35%, 1)", // Brighter green border
+    borderHoverDark: "hsla(140, 100%, 45%, 1)", // Even brighter on hover
+    textDark: "hsla(0, 0%, 90%, 1)", // Light text for readability
+    textSecondaryDark: "hsla(0, 0%, 80%, 1)", // Slightly dimmer secondary text
+    bgHoverDark: "hsla(140, 72%, 25%, 1)", // Slightly lighter on hover
+  },
 };
 
 /**
@@ -149,6 +160,22 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 	// Use proper React Flow data management
 	const { nodeData, updateNodeData } = useNodeData(id, data);
 
+	// Get data flow capabilities for this node
+	const dataFlow = useWithNodeDataFlow(id, {
+		autoProcess: false, // Disable auto-processing to prevent infinite loops
+		autoPropagate: false, // Disable auto-propagation to prevent infinite loops
+		processInputs: (inputs) => {
+			// Process input data from connected nodes
+			console.log("CreateText processing inputs:", inputs);
+			return inputs;
+		},
+		processOutputs: (outputs) => {
+			// Process output data before sending to downstream nodes
+			console.log("CreateText processing outputs:", outputs);
+			return outputs;
+		}
+	});
+
 	// Get isExpanded directly from node data
 	const isExpanded = (nodeData as CreateTextData).isExpanded || false;
 
@@ -177,10 +204,52 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
 		id
 	);
 
-	// Handle text updates directly
+	// Ref to track if we've already updated node data to prevent infinite loops
+	const lastUpdateRef = useRef<{ text: string; active: boolean } | null>(null);
+	
+	// Ref to track processing state to prevent recursive updates
+	const isProcessingRef = useRef<boolean>(false);
+
+	// Monitor text content and update active state
+	useEffect(() => {
+		// Prevent recursive processing
+		if (isProcessingRef.current) {
+			return;
+		}
+
+		try {
+			isProcessingRef.current = true;
+			
+			const currentText = validatedData.text || '';
+			const hasValidText = currentText.trim().length > 0;
+			
+			// Only update node data if values have actually changed
+			const currentUpdate = { text: currentText, active: hasValidText };
+			if (!lastUpdateRef.current || 
+				lastUpdateRef.current.text !== currentUpdate.text || 
+				lastUpdateRef.current.active !== currentUpdate.active) {
+				lastUpdateRef.current = currentUpdate;
+				updateNodeData({ 
+					...nodeData, 
+					isActive: hasValidText,
+					text: currentText 
+				});
+			}
+		} finally {
+			isProcessingRef.current = false;
+		}
+	}, [validatedData.text]); // Only depend on text changes, not nodeData or updateNodeData
+
+	// Handle text updates with manual output propagation
 	const handleTextChange = (newText: string) => {
 		try {
 			updateNodeData({ text: newText });
+			
+			// Manually propagate the text as output to connected nodes
+			// This only happens when the user actually changes the text
+			dataFlow.triggerOutputPropagation({
+				output: newText
+			});
 		} catch (error) {
 			console.error("Failed to update CreateText node data:", error);
 		}
@@ -203,14 +272,12 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
               </span>
             )} */}
           </div>
-
-          {/* Simple, clean textarea for direct text editing */}
           
           <textarea
             value={validatedData.text}
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Enter your text here..."
-                          className={`scrollbar rounded-md p-2 text-sm scrollbar-thumb-sky-700 scrollbar-track-sky-300 h-32 overflow-y-scroll focus:outline-none focus:ring-1 focus:ring-white-500 focus:ring-offset-0 ${categoryTextColors.primary}`}
+                          className={`scrollbar nowheel  bg-background rounded-md p-2 text-xs scrollbar-thumb-sky-700 scrollbar-track-sky-300 h-32 overflow-y-scroll focus:outline-none focus:ring-1 focus:ring-white-500 focus:ring-offset-0 ${categoryTextColors.primary}`}
            
           />
         </div>
@@ -218,7 +285,7 @@ const CreateTextNodeComponent = ({ data, id }: NodeProps) => {
         <div className={CONTENT_STYLES.content.collapsed}>
           <div className="text-center">
             <div
-              className={`text-xs font-medium ${categoryTextColors.primary} uppercase tracking-wide max-w-20 truncate`}
+              className={`text-xs font-medium ${categoryTextColors.primary} tracking-wide max-w-20 truncate`}
             >
               {validatedData.text}
             </div>

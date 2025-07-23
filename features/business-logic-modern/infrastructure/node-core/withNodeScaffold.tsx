@@ -13,10 +13,11 @@
 import TypeSafeHandle from "@/components/nodes/handles/TypeSafeHandle";
 import LabelNode from "@/components/nodes/labelNode";
 import {
-	useCategoryTheme,
+	useCategoryThemeWithSpec,
 	useNodeStyleClasses,
 } from "@/features/business-logic-modern/infrastructure/theming/stores/nodeStyleStore";
 import type { NodeProps, Position } from "@xyflow/react";
+import { useTheme } from "next-themes";
 import React from "react";
 import NodeErrorBoundary from "./ErrorBoundary";
 import type { NodeSpec } from "./NodeSpec";
@@ -57,6 +58,15 @@ const NodeScaffoldWrapper = ({
 	className?: string;
 	spec: NodeSpec;
 }) => {
+	// Get theme for dark mode detection
+	const { resolvedTheme } = useTheme();
+	const [mounted, setMounted] = React.useState(false);
+
+	// Ensure client-side rendering to avoid hydration mismatch
+	React.useEffect(() => {
+		setMounted(true);
+	}, []);
+
 	// Get injectable classes for core node styling
 	const wrapperClasses = getInjectableClasses("--core-coreNode-classes-wrapper");
 	const containerClasses = getInjectableClasses("--core-coreNode-classes-container");
@@ -65,16 +75,20 @@ const NodeScaffoldWrapper = ({
 	// Build complete structural styling
 	const structuralClasses = [
 		// Base structural classes
-		"relative rounded-lg shadow-md transition-all duration-200",
+		"relative rounded-lg transition-all duration-200",
 		// Injectable classes from tokens
 		wrapperClasses,
 		containerClasses,
 		borderClasses,
-		// Theme classes from parent
+		// Theme classes from parent (includes activation glow)
 		className,
 	]
 		.filter(Boolean)
 		.join(" ");
+
+	// Get custom theming if available
+	const customTheming = spec.theming;
+	const isDarkMode = mounted && resolvedTheme === "dark";
 
 	// Complete style object with all structural properties
 	const completeStyle: React.CSSProperties = {
@@ -82,9 +96,14 @@ const NodeScaffoldWrapper = ({
 		// Scaffold handles ALL border styling
 		borderWidth: `var(--node-${spec.category.toLowerCase()}-border-width)`,
 		borderStyle: "solid",
-		borderColor: `var(--node-${spec.category.toLowerCase()}-border)`,
-		// Background from category tokens
-		backgroundColor: `var(--node-${spec.category.toLowerCase()}-bg)`,
+		// Use custom theming if available and in dark mode, otherwise fall back to tokens
+		borderColor: isDarkMode && customTheming?.borderDark 
+			? customTheming.borderDark 
+			: `var(--node-${spec.category.toLowerCase()}-border)`,
+		// Background from category tokens or custom theming
+		backgroundColor: isDarkMode && customTheming?.bgDark 
+			? customTheming.bgDark 
+			: `var(--node-${spec.category.toLowerCase()}-bg)`,
 		// Ensure proper layering
 		position: "relative",
 		// Smooth transitions for all properties
@@ -117,7 +136,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 
 		// Get theming classes from the theming system
 		const nodeStyleClasses = useNodeStyleClasses(isSelected, isError, isActive);
-		const categoryTheme = useCategoryTheme(spec.kind);
+		const categoryTheme = useCategoryThemeWithSpec(spec.kind, spec);
 
 		// Build the complete className with theming
 		const themeClasses = React.useMemo(() => {

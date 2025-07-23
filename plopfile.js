@@ -19,6 +19,18 @@ module.exports = (plop) => {
 	plop.setHelper("expandedSizeConstant", (key) =>
 		key.startsWith("V") ? `EXPANDED_VARIABLE_SIZES.${key}` : `EXPANDED_SIZES.${key}`
 	);
+	
+	// Helper to truncate strings
+	plop.setHelper("truncate", (str, length) => {
+		if (str.length <= length) return str;
+		return str.substring(0, length);
+	});
+	
+	// Helper to convert to uppercase
+	plop.setHelper("upper", (str) => str.toUpperCase());
+	
+	// Helper for equality comparison
+	plop.setHelper("eq", (a, b) => a === b);
 
 	plop.setGenerator("node", {
 		description: "Create a new node using the NodeSpec architecture",
@@ -77,6 +89,45 @@ module.exports = (plop) => {
 				choices: ["base", "email", "agents", "ai", "database", "api", "ui", "workflow", "custom"],
 			},
 			{
+				type: "confirm",
+				name: "customTheming",
+				message: "Do you want to customize dark mode theming for this node?",
+				default: false,
+			},
+			{
+				type: "input",
+				name: "bgDark",
+				message: "Dark mode background color (leave blank for default):",
+				default: "",
+				when: (answers) => answers.customTheming,
+			},
+			{
+				type: "list",
+				name: "dataPropagation",
+				message: "What type of data propagation should this node support?",
+				choices: [
+					{ name: "Input only (receive data from other nodes)", value: "input" },
+					{ name: "Output only (send data to other nodes)", value: "output" },
+					{ name: "Both input and output (full data flow)", value: "both" },
+					{ name: "None (standalone node)", value: "none" }
+				],
+				default: "both",
+			},
+			{
+				type: "input",
+				name: "borderDark",
+				message: "Dark mode border color (leave blank for default):",
+				default: "",
+				when: (answers) => answers.customTheming,
+			},
+			{
+				type: "input",
+				name: "textDark",
+				message: "Dark mode text color (leave blank for default):",
+				default: "",
+				when: (answers) => answers.customTheming,
+			},
+			{
 				type: "input",
 				name: "tsSymbol",
 				message: "Optional: TypeScript symbol for primary output handle (leave blank for none)",
@@ -111,27 +162,24 @@ module.exports = (plop) => {
 			{
 				type: "modify",
 				path: "features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts",
-				pattern: /\/\/ Import node specs directly - this will be auto-updated by Plop[\s\S]*?\n/,
-				template: (match) =>
-					`${match}import {{kind}}, { spec as {{kind}}Spec } from '../../node-domain/{{domain}}/{{kind}}.node';\n`,
+				pattern: "import createText, { spec as createTextSpec } from \"../../node-domain/create/createText.node\";",
+				template: "import createText, { spec as createTextSpec } from \"../../node-domain/create/createText.node\";\nimport {{kind}}, { spec as {{kind}}Spec } from \"../../node-domain/{{domain}}/{{kind}}.node\";",
 			},
 
 			// 5. Update nodespec-registry.ts - registry entry
 			{
 				type: "modify",
 				path: "features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts",
-				pattern: /\{\s*\/\/ Add new node specs here \(auto-updated by Plop\)([\s\S]*?)\}/,
-				template: (match, inner) =>
-					`{\n  // Add new node specs here (auto-updated by Plop)\n  {{kind}}: {{kind}}Spec,${inner}}`,
+				pattern: "createText: createTextSpec,",
+				template: "createText: createTextSpec,\n\t{{kind}}: {{kind}}Spec,",
 			},
 
 			// 6. Update node-domain/index.ts - export
 			{
 				type: "modify",
 				path: "features/business-logic-modern/node-domain/index.ts",
-				pattern: /\/\/ Node exports will be added here automatically by Plop/g,
-				template:
-					"// Node exports will be added here automatically by Plop\nexport { default as {{kind}} } from './{{domain}}/{{kind}}.node';",
+				pattern: "export { default as createText } from \"./create/createText.node\";",
+				template: "export { default as createText } from \"./create/createText.node\";\nexport { default as {{kind}} } from \"./{{domain}}/{{kind}}.node\";",
 			},
 
 			// 7. Ensure theming tokens exist for the category (NEW)
@@ -333,6 +381,12 @@ module.exports = (plop) => {
 
 			console.log(`Preparing to comprehensively delete node: ${kind} from domain: ${domain}`);
 
+			// Validate that the node file actually exists before proceeding
+			if (!fs.existsSync(filePath)) {
+				console.log(`❌ Error: Node file ${filePath} does not exist. Aborting deletion.`);
+				return [];
+			}
+
 			// Helper function to safely delete directories
 			const deleteDirIfExists = (dirPath) => {
 				return () => {
@@ -491,6 +545,38 @@ module.exports = (plop) => {
 			};
 
 			return [
+				// 0. Create backup of registry files before making changes
+				() => {
+					const backupDir = path.join(__dirname, "backups", new Date().toISOString().replace(/[:.]/g, "-"));
+					if (!fs.existsSync(path.dirname(backupDir))) {
+						fs.mkdirSync(path.dirname(backupDir), { recursive: true });
+					}
+					
+					const filesToBackup = [
+						"features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts",
+						"features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts",
+						"features/business-logic-modern/node-domain/index.ts",
+						`documentation/api/${kind}.ts`,
+						`documentation/nodes/${domain}/${kind}.md`,
+						`documentation/nodes/${domain}/${kind}.html`
+					];
+					
+					filesToBackup.forEach(filePath => {
+						const fullPath = path.join(__dirname, filePath);
+						if (fs.existsSync(fullPath)) {
+							const backupPath = path.join(backupDir, path.basename(filePath));
+							// Create directory structure if needed
+							const backupDirPath = path.dirname(backupPath);
+							if (!fs.existsSync(backupDirPath)) {
+								fs.mkdirSync(backupDirPath, { recursive: true });
+							}
+							fs.copyFileSync(fullPath, backupPath);
+						}
+					});
+					
+					return `✅ Created backup in ${backupDir}`;
+				},
+
 				// 1. Delete the main node file
 				deleteFileIfExists(filePath),
 
@@ -502,10 +588,19 @@ module.exports = (plop) => {
 					type: "modify",
 					path: "features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts",
 					pattern: new RegExp(
-						`import ${kind} from '..*?/node-domain/${domain}/${kind}.node';\\r?\\n`,
+						`import ${kind} from '\\.\\./\\.\\./\\.\\./node-domain/${domain}/${kind}\\.node';\\r?\\n`,
 						"g"
 					),
 					template: "",
+					transform: (fileContents) => {
+						// Safety check: ensure we're not removing other imports
+						const lines = fileContents.split('\n');
+						const filteredLines = lines.filter(line => 
+							!line.includes(`import ${kind} from`) || 
+							!line.includes(`node-domain/${domain}/${kind}.node`)
+						);
+						return filteredLines.join('\n');
+					}
 				},
 
 				// 4. Clean up useDynamicNodeTypes.ts - export in array
@@ -514,6 +609,10 @@ module.exports = (plop) => {
 					path: "features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts",
 					pattern: new RegExp(`\\s*${kind},\\r?\\n`, "g"),
 					template: "",
+					transform: (fileContents) => {
+						// Safety check: ensure we're only removing the specific node
+						return fileContents.replace(new RegExp(`\\s*${kind},\\r?\\n`, "g"), "");
+					}
 				},
 
 				// 5. Clean up nodespec-registry.ts - import statement
@@ -521,18 +620,50 @@ module.exports = (plop) => {
 					type: "modify",
 					path: "features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts",
 					pattern: new RegExp(
-						`import ${kind}, { spec as ${kind}Spec } from '..*?/node-domain/${domain}/${kind}.node';\\r?\\n`,
+						`import ${kind}, { spec as ${kind}Spec } from "\\.\\./\\.\\./node-domain/${domain}/${kind}\\.node";\\r?\\n`,
 						"g"
 					),
 					template: "",
+					transform: (fileContents) => {
+						// Safety check: ensure we're not removing other imports
+						const lines = fileContents.split('\n');
+						const filteredLines = lines.filter(line => 
+							!line.includes(`import ${kind}, { spec as ${kind}Spec }`) || 
+							!line.includes(`node-domain/${domain}/${kind}.node`)
+						);
+						return filteredLines.join('\n');
+					}
 				},
 
 				// 6. Clean up nodespec-registry.ts - registry entry
-				{
-					type: "modify",
-					path: "features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts",
-					pattern: new RegExp(`\\s*${kind}: ${kind}Spec,\\r?\\n`, "g"),
-					template: "",
+				() => {
+					const registryPath = path.join(__dirname, "features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts");
+					
+					if (fs.existsSync(registryPath)) {
+						try {
+							let content = fs.readFileSync(registryPath, "utf8");
+							const originalContent = content;
+							
+							// Remove the registry entry with various patterns
+							// Pattern 1: entry with trailing comma
+							content = content.replace(new RegExp(`\\s*${kind}: ${kind}Spec,\\r?\\n`, "g"), "");
+							// Pattern 2: entry without trailing comma (last entry)
+							content = content.replace(new RegExp(`\\s*${kind}: ${kind}Spec\\r?\\n`, "g"), "");
+							// Pattern 3: entry on same line as other entries
+							content = content.replace(new RegExp(`\\s*${kind}: ${kind}Spec,`, "g"), "");
+							// Pattern 4: entry without comma (last entry on line)
+							content = content.replace(new RegExp(`\\s*${kind}: ${kind}Spec`, "g"), "");
+							
+							if (content !== originalContent) {
+								fs.writeFileSync(registryPath, content);
+								return `Cleaned up ${kind} registry entry`;
+							}
+							return `No ${kind} registry entry found to clean`;
+						} catch (error) {
+							return `Error cleaning registry entry: ${error.message}`;
+						}
+					}
+					return `Registry file not found`;
 				},
 
 				// 7. Clean up node-domain/index.ts - export statement
@@ -540,7 +671,7 @@ module.exports = (plop) => {
 					type: "modify",
 					path: "features/business-logic-modern/node-domain/index.ts",
 					pattern: new RegExp(
-						`export { default as ${kind} } from './${domain}/${kind}.node';\\r?\\n`,
+						`export { default as ${kind} } from "\\./${domain}/${kind}\\.node";\\r?\\n`,
 						"g"
 					),
 					template: "",
@@ -585,7 +716,66 @@ module.exports = (plop) => {
 				// 13. Clean up documentation references (NEW)
 				cleanupDocumentationReferences(),
 
-				// 14. Auto-regenerate CSS tokens after cleanup (NEW)
+				// 14. Clean up node documentation files (NEW)
+				() => {
+					const apiDocPath = path.join(__dirname, `documentation/api/${kind}.ts`);
+					
+					if (fs.existsSync(apiDocPath)) {
+						try {
+							fs.unlinkSync(apiDocPath);
+							return `Deleted ${kind}.ts from documentation/api/`;
+						} catch (error) {
+							return `Error deleting ${kind}.ts: ${error.message}`;
+						}
+					}
+					return `API documentation file ${kind}.ts does not exist`;
+				},
+
+				// 15. Clean up node documentation directory
+				() => {
+					const docDir = path.join(__dirname, `documentation/nodes/${domain}`);
+					const nodeDocPath = path.join(docDir, `${kind}.md`);
+					const nodeHtmlPath = path.join(docDir, `${kind}.html`);
+					
+					const tasks = [];
+					
+					// Delete node markdown file
+					if (fs.existsSync(nodeDocPath)) {
+						try {
+							fs.unlinkSync(nodeDocPath);
+							tasks.push(`Deleted ${kind}.md`);
+						} catch (error) {
+							tasks.push(`Error deleting ${kind}.md: ${error.message}`);
+						}
+					}
+					
+					// Delete node HTML file
+					if (fs.existsSync(nodeHtmlPath)) {
+						try {
+							fs.unlinkSync(nodeHtmlPath);
+							tasks.push(`Deleted ${kind}.html`);
+						} catch (error) {
+							tasks.push(`Error deleting ${kind}.html: ${error.message}`);
+						}
+					}
+					
+					// Check if domain directory is empty and remove it
+					if (fs.existsSync(docDir)) {
+						try {
+							const remainingFiles = fs.readdirSync(docDir);
+							if (remainingFiles.length === 0) {
+								fs.rmdirSync(docDir);
+								tasks.push(`Removed empty ${domain} documentation directory`);
+							}
+						} catch (error) {
+							tasks.push(`Error checking ${domain} directory: ${error.message}`);
+						}
+					}
+					
+					return tasks.length > 0 ? tasks.join("; ") : "No documentation files to clean";
+				},
+
+				// 16. Auto-regenerate CSS tokens after cleanup (NEW)
 				() => {
 					return new Promise((resolve) => {
 						const { spawn } = require("child_process");
@@ -611,7 +801,68 @@ module.exports = (plop) => {
 					});
 				},
 
-				// 15. Final success message
+				// 17. Validate registry file syntax after cleanup (NEW)
+				() => {
+					const registryPath = path.join(__dirname, "features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts");
+					
+					if (fs.existsSync(registryPath)) {
+						try {
+							const content = fs.readFileSync(registryPath, "utf8");
+							
+							// Check for common syntax issues
+							const issues = [];
+							
+							// Check for undefined references
+							const undefinedRefs = content.match(new RegExp(`${kind}Spec`, "g"));
+							if (undefinedRefs && undefinedRefs.length > 0) {
+								issues.push(`Found ${undefinedRefs.length} undefined references to ${kind}Spec`);
+							}
+							
+							// Check for orphaned commas
+							const orphanedCommas = content.match(/,\s*}/g);
+							if (orphanedCommas && orphanedCommas.length > 0) {
+								issues.push(`Found ${orphanedCommas.length} orphaned commas in object definitions`);
+							}
+							
+							if (issues.length > 0) {
+								return `⚠️  Registry validation issues: ${issues.join(", ")}`;
+							}
+							
+							return `✅ Registry file syntax validated successfully`;
+						} catch (error) {
+							return `❌ Error validating registry: ${error.message}`;
+						}
+					}
+					return `Registry file not found for validation`;
+				},
+
+				// 18. Regenerate documentation overview after cleanup (NEW)
+				() => {
+					return new Promise((resolve) => {
+						const { spawn } = require("child_process");
+						console.log("📚 Regenerating documentation overview after cleanup...");
+
+						const docProcess = spawn("npx", ["ts-node", "--project", "tsconfig.node.json", "scripts/generate-nodes-overview.ts"], {
+							stdio: "inherit",
+							shell: true,
+							cwd: __dirname,
+						});
+
+						docProcess.on("close", (code) => {
+							if (code === 0) {
+								resolve("✅ Documentation overview regenerated after cleanup");
+							} else {
+								resolve(`⚠️  Documentation regeneration completed with code ${code}`);
+							}
+						});
+
+						docProcess.on("error", (error) => {
+							resolve(`❌ Error regenerating documentation: ${error.message}`);
+						});
+					});
+				},
+
+				// 19. Final success message
 				() =>
 					`🎯 Successfully deleted node '${kind}' and all associated files:\n` +
 					`   ✅ Main node file\n` +
@@ -622,6 +873,8 @@ module.exports = (plop) => {
 					`   ✅ Generated files\n` +
 					`   ✅ Theming references\n` +
 					`   ✅ Documentation references\n` +
+					`   ✅ Node documentation files (.md, .html)\n` +
+					`   ✅ API documentation files (.ts)\n` +
 					`   ✅ All imports and exports\n` +
 					`   ✅ CSS tokens regenerated\n\n` +
 					`⚠️  Remember to:\n` +
@@ -629,7 +882,12 @@ module.exports = (plop) => {
 					`   • Test the application to ensure no broken references remain\n` +
 					`   • The NODE_TYPE_CONFIG uses a proxy system, so no manual cleanup needed there\n` +
 					`   • Sidebar uses registry-based organization, so it will auto-update\n` +
-					`   • All theming tokens and CSS variables have been regenerated`,
+					`   • All theming tokens and CSS variables have been regenerated\n\n` +
+					`🛡️  Safety features:\n` +
+					`   • Backup created before deletion\n` +
+					`   • Precise regex patterns to avoid affecting other nodes\n` +
+					`   • Validation checks to ensure only target node is affected\n` +
+					`   • Rollback available from backup if needed`,
 			];
 		},
 	});

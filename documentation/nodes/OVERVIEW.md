@@ -4,10 +4,10 @@ This document provides a comprehensive overview of all available nodes in the Ag
 
 ## 📊 Statistics
 
-- **Total Nodes:** 1
+- **Total Nodes:** 2
 - **Total Domains:** 4
-- **Total Categories:** 1
-- **Last Updated:** 7/22/2025, 12:04:29 PM
+- **Total Categories:** 2
+- **Last Updated:** 7/22/2025, 6:40:26 PM
 
 ## 🎯 Quick Navigation
 
@@ -15,6 +15,7 @@ This document provides a comprehensive overview of all available nodes in the Ag
 - [create](#create-create) (1 nodes)
 
 ### View Domain
+- [view](#view-view) (1 nodes)
 
 ### Trigger Domain
 
@@ -30,7 +31,7 @@ Data creation and generation nodes
 
 **Nodes (1):**
 
-#### createText
+#### Create Text
 
 - **Type:** `createText`
 - **Domain:** create
@@ -44,7 +45,7 @@ Data creation and generation nodes
   • Clean separation of concerns for maximum maintainability
  
   Keywords: create-text, content-focused, schema-driven, type-safe, clean-architecture
-- **Features:** Type-safe validation, Schema-driven controls, Enterprise validation
+- **Features:** Type-safe validation, Schema-driven controls, Enterprise validation, JSON I/O
 - **Theming:** create category
   - **Design Tokens:** var(--node-create-bg), var(--node-create-border), var(--node-create-text)
   - **Responsive:**  Not optimized
@@ -55,6 +56,34 @@ Data creation and generation nodes
 ## View Domain
 
 Nodes that display, visualize, or present data
+
+### View Category
+
+Data visualization and display nodes
+
+**Nodes (1):**
+
+#### viewText
+
+- **Type:** `viewText`
+- **Domain:** view
+- **Category:** view
+- **Description:** viewText NODE - Clean content-focused node template
+ 
+  • Focuses ONLY on content and layout - no structural styling
+  • withNodeScaffold handles all borders, sizing, theming, interactive states
+  • Schema-driven controls in Node Inspector
+  • Type-safe data validation with Zod schema
+  • Clean separation of concerns for maximum maintainability
+ 
+  Keywords: view-text, content-focused, schema-driven, type-safe, clean-architecture
+- **Features:** Type-safe validation, Schema-driven controls, Enterprise validation, JSON I/O
+- **Theming:** view category
+  - **Design Tokens:** var(--node-view-bg), var(--node-view-border), var(--node-view-text)
+  - **Responsive:**  Not optimized
+  - **Accessibility:** 🎯 Supported
+- **File:** `\features\business-logic-modern\node-domain\view\viewText.node.tsx`
+- **Documentation:** [Markdown](./view/viewText.md) | [HTML](./view/viewText.html)
 
 ## Trigger Domain
 

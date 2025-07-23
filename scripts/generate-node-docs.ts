@@ -1246,6 +1246,82 @@ function formatBytes(bytes: number): string {
 }
 
 // ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+function extractHandlesFromNodeFile(kind: string, domain: string): { inputs: Array<{id: string, type: string, description: string, position: string}>, outputs: Array<{id: string, type: string, description: string, position: string}> } {
+  const nodeFilePath = path.join(process.cwd(), 'features', 'business-logic-modern', 'node-domain', domain, `${kind}.node.tsx`);
+  
+  if (!fs.existsSync(nodeFilePath)) {
+    console.warn(`⚠️  Node file not found: ${nodeFilePath}`);
+    return { inputs: [], outputs: [] };
+  }
+  
+  try {
+    const content = fs.readFileSync(nodeFilePath, 'utf8');
+    
+    // Extract handles array from the spec
+    const handlesMatch = content.match(/handles:\s*\[([\s\S]*?)\]/);
+    if (!handlesMatch) {
+      console.warn(`⚠️  No handles found in ${kind} node`);
+      return { inputs: [], outputs: [] };
+    }
+    
+    const handlesContent = handlesMatch[1];
+    
+    // Parse individual handle objects
+    const handleMatches = handlesContent.match(/\{[^}]*\}/g);
+    if (!handleMatches) {
+      return { inputs: [], outputs: [] };
+    }
+    
+    const inputs: Array<{id: string, type: string, description: string, position: string}> = [];
+    const outputs: Array<{id: string, type: string, description: string, position: string}> = [];
+    
+    handleMatches.forEach(handleStr => {
+      // Extract handle properties
+      const idMatch = handleStr.match(/id:\s*['"`]([^'"`]+)['"`]/);
+      const typeMatch = handleStr.match(/type:\s*['"`]([^'"`]+)['"`]/);
+      const dataTypeMatch = handleStr.match(/dataType:\s*['"`]([^'"`]+)['"`]/);
+      const positionMatch = handleStr.match(/position:\s*['"`]([^'"`]+)['"`]/);
+      
+      if (idMatch && typeMatch && positionMatch) {
+        const id = idMatch[1];
+        const type = typeMatch[1];
+        const dataType = dataTypeMatch ? dataTypeMatch[1] : 'any';
+        const position = positionMatch[1];
+        
+        // Generate description based on handle properties
+        let description = '';
+        if (type === 'target') {
+          description = `Input ${dataType} data`;
+        } else if (type === 'source') {
+          description = `Output ${dataType} data`;
+        }
+        
+        const handle = {
+          id,
+          type: dataType,
+          description,
+          position
+        };
+        
+        if (type === 'target') {
+          inputs.push(handle);
+        } else if (type === 'source') {
+          outputs.push(handle);
+        }
+      }
+    });
+    
+    return { inputs, outputs };
+  } catch (error) {
+    console.error(`❌ Error reading ${kind} node file:`, error);
+    return { inputs: [], outputs: [] };
+  }
+}
+
+// ============================================================================
 // MAIN FUNCTION
 // ============================================================================
 
@@ -1259,28 +1335,8 @@ export function generateNodeDocs(kind: string, domain: string, category: string,
     category,
     displayName,
     description: `The ${displayName} node provides functionality for ${domain} operations in the ${category} category.`,
-    inputs: [
-      {
-        id: 'json-input',
-        type: 'JSON',
-        description: 'Input data in JSON format',
-        position: 'top'
-      },
-      {
-        id: 'activate',
-        type: 'boolean',
-        description: 'Activation signal',
-        position: 'left'
-      }
-    ],
-    outputs: [
-      {
-        id: 'output',
-        type: 'string',
-        description: 'Processed output data',
-        position: 'right'
-      }
-    ],
+    inputs: [],
+    outputs: [],
     examples: [
       {
         title: 'Basic Usage',
@@ -1353,6 +1409,11 @@ export function generateNodeDocs(kind: string, domain: string, category: string,
       }
     }
   };
+
+  // Extract handles from the node file
+  const { inputs, outputs } = extractHandlesFromNodeFile(kind, domain);
+  nodeData.inputs = inputs;
+  nodeData.outputs = outputs;
 
   generateNodeDocumentation(nodeData);
 }

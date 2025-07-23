@@ -6,12 +6,13 @@
  * • Schema-driven controls in Node Inspector
  * • Type-safe data validation with Zod schema
  * • Clean separation of concerns for maximum maintainability
+ * • Comprehensive data type handling for future-proof data flow
  *
- * Keywords: {{kebabCase kind}}, content-focused, schema-driven, type-safe, clean-architecture
+ * Keywords: {{kebabCase kind}}, content-focused, schema-driven, type-safe, clean-architecture, data-propagation
  */
 
-import React from 'react';
-import { NodeProps } from '@xyflow/react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
+import { NodeProps, useReactFlow, useNodes, useEdges } from '@xyflow/react';
 import { z } from 'zod';
 import { withNodeScaffold } from '@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold';
 import { NodeSpec } from '@/features/business-logic-modern/infrastructure/node-core/NodeSpec';
@@ -39,6 +40,12 @@ const {{pascalCase kind}}DataSchema = z.object({
   isEnabled: SafeSchemas.boolean(true),
   isActive: SafeSchemas.boolean(false),
   isExpanded: SafeSchemas.boolean(false),
+  {{#if (eq dataPropagation "input")}}
+  receivedData: SafeSchemas.optionalText(), // Store received data from connected nodes
+  {{/if}}
+  {{#if (eq dataPropagation "both")}}
+  receivedData: SafeSchemas.optionalText(), // Store received data from connected nodes
+  {{/if}}
 
   // Add your fields here - controls are auto-generated:
   // description: SafeSchemas.optionalText(),
@@ -77,10 +84,190 @@ const spec: NodeSpec = {
   },
   initialData: createSafeInitialData({{pascalCase kind}}DataSchema),
   dataSchema: {{pascalCase kind}}DataSchema,
+  controls: {
+    autoGenerate: true,
+    excludeFields: ["isActive", "receivedData"], // Hide system fields from controls
+    customFields: [
+      {
+        key: "isExpanded",
+        type: "boolean",
+        label: "Expand",
+      },
+    ],
+  },
   icon: '{{icon}}' || 'LuCircle', // Placeholder - update with appropriate Lucide icon
   author: '{{author}}',
   description: '{{description}}',
   feature: '{{feature}}',
+  {{#if customTheming}}
+  theming: {
+    {{#if bgDark}}bgDark: '{{bgDark}}',{{/if}}
+    {{#if borderDark}}borderDark: '{{borderDark}}',{{/if}}
+    {{#if textDark}}textDark: '{{textDark}}',{{/if}}
+  },
+  {{/if}}
+  {{#if (eq dataPropagation "input")}}
+  receivedData: {
+    enabled: true,
+    displayMode: 'formatted',
+    showInCollapsed: true,
+    formatData: (data: any) => {
+      // Comprehensive data type handling
+      if (data === null) return 'null';
+      if (data === undefined) return 'undefined';
+      if (typeof data === 'string') return data || 'Empty string';
+      if (typeof data === 'number') return String(data);
+      if (typeof data === 'boolean') return data ? 'true' : 'false';
+      if (typeof data === 'bigint') return data.toString();
+      if (typeof data === 'symbol') return data.toString();
+      if (typeof data === 'function') return '[Function]';
+      
+      if (typeof data === 'object') {
+        if (Array.isArray(data)) {
+          if (data.length === 0) return '[] (empty array)';
+          try {
+            return JSON.stringify(data, null, 2);
+          } catch {
+            return '[Array]';
+          }
+        } else if (data instanceof Date) {
+          return data.toISOString();
+        } else if (data instanceof RegExp) {
+          return data.toString();
+        } else if (data instanceof Error) {
+          return `Error: ${data.message}`;
+        } else if (data instanceof Map) {
+          try {
+            return JSON.stringify(Array.from(data.entries()), null, 2);
+          } catch {
+            return '[Map]';
+          }
+        } else if (data instanceof Set) {
+          try {
+            return JSON.stringify(Array.from(data), null, 2);
+          } catch {
+            return '[Set]';
+          }
+        } else if (data instanceof Promise) {
+          return '[Promise]';
+        } else {
+          // Handle plain objects with common data properties
+          const dataProperties = [
+            'text', 'output', 'value', 'data', 'content', 'message', 
+            'result', 'response', 'body', 'payload', 'input', 'output'
+          ];
+          
+          for (const prop of dataProperties) {
+            if (data[prop] !== null && data[prop] !== undefined) {
+              if (typeof data[prop] === 'string') {
+                return data[prop] || 'Empty string';
+              } else if (typeof data[prop] === 'number') {
+                return String(data[prop]);
+              } else if (typeof data[prop] === 'boolean') {
+                return data[prop] ? 'true' : 'false';
+              } else if (typeof data[prop] === 'object') {
+                try {
+                  return JSON.stringify(data[prop], null, 2);
+                } catch {
+                  return `[${prop}]`;
+                }
+              } else {
+                return String(data[prop]);
+              }
+            }
+          }
+          
+          // If no common properties found, stringify the entire object
+          try {
+            return JSON.stringify(data, null, 2);
+          } catch {
+            return '[Object]';
+          }
+        }
+      }
+      
+      // Fallback for any other types
+      return String(data);
+    },
+  },
+  {{/if}}
+  {{#if (eq dataPropagation "both")}}
+  receivedData: {
+    enabled: true,
+    displayMode: 'formatted',
+    showInCollapsed: true,
+    formatData: (data: any) => {
+      // Comprehensive data type handling
+      if (data === null) return 'null';
+      if (data === undefined) return 'undefined';
+      if (typeof data === 'string') return data || 'Empty string';
+      if (typeof data === 'number') return String(data);
+      if (typeof data === 'boolean') return data ? 'true' : 'false';
+      if (typeof data === 'bigint') return data.toString();
+      if (typeof data === 'symbol') return data.toString();
+      if (typeof data === 'function') return '[Function]';
+      
+      if (typeof data === 'object') {
+        if (Array.isArray(data)) {
+          if (data.length === 0) return '[] (empty array)';
+          try {
+            return JSON.stringify(data, null, 2);
+          } catch {
+            return '[Array]';
+          }
+        } else if (data instanceof Date) {
+          return data.toISOString();
+        } else if (data instanceof RegExp) {
+          return data.toString();
+        } else if (data instanceof Set) {
+          try {
+            return JSON.stringify(Array.from(data), null, 2);
+          } catch {
+            return '[Set]';
+          }
+        } else if (data instanceof Promise) {
+          return '[Promise]';
+        } else {
+          // Handle plain objects with common data properties
+          const dataProperties = [
+            'text', 'output', 'value', 'data', 'content', 'message', 
+            'result', 'response', 'body', 'payload', 'input', 'output'
+          ];
+          
+          for (const prop of dataProperties) {
+            if (data[prop] !== null && data[prop] !== undefined) {
+              if (typeof data[prop] === 'string') {
+                return data[prop] || 'Empty string';
+              } else if (typeof data[prop] === 'number') {
+                return String(data[prop]);
+              } else if (typeof data[prop] === 'boolean') {
+                return data[prop] ? 'true' : 'false';
+              } else if (typeof data[prop] === 'object') {
+                try {
+                  return JSON.stringify(data[prop], null, 2);
+                } catch {
+                  return `[${prop}]`;
+                }
+              } else {
+                return String(data[prop]);
+              }
+            }
+          }
+          
+          // If no common properties found, stringify the entire object
+          try {
+            return JSON.stringify(data, null, 2);
+          } catch {
+            return '[Object]';
+          }
+        }
+      }
+      
+      // Fallback for any other types
+      return String(data);
+    },
+  },
+  {{/if}}
 };
 
 /**
@@ -141,24 +328,38 @@ const CATEGORY_TEXT_COLORS = {
 /**
  * {{camelCase kind}} Node Component
  *
- * Clean content-focused component:
+ * Clean content-focused component with comprehensive data type handling:
  * • withNodeScaffold handles ALL structural styling
  * • Component focuses ONLY on content and layout
  * • Uses design system tokens for text colors
  * • Schema-driven controls available in Node Inspector
  * • Maintains enterprise validation and type safety
+ * • Future-proof data propagation with comprehensive type handling
  */
 const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
   // Use proper React Flow data management
   const { nodeData, updateNodeData } = useNodeData(id, data);
+  const { getNode, getNodes } = useReactFlow();
+
+  // Local state for received data
+  const [receivedData, setReceivedData] = useState<string>('');
 
   // Get isExpanded directly from node data
   const isExpanded = (nodeData as {{pascalCase kind}}Data).isExpanded || false;
 
   // Update expanded state via node data
-  const handleToggleExpanded = () => {
+  const handleToggleExpanded = useCallback(() => {
     updateNodeData({ ...nodeData, isExpanded: !isExpanded });
-  };
+  }, [nodeData, isExpanded, updateNodeData]);
+
+  {{#if (eq dataPropagation "input")}}
+  // Ref to track if we've already updated node data to prevent infinite loops
+  const lastUpdateRef = useRef<{ text: string; active: boolean } | null>(null);
+  {{/if}}
+  {{#if (eq dataPropagation "both")}}
+  // Ref to track if we've already updated node data to prevent infinite loops
+  const lastUpdateRef = useRef<{ text: string; active: boolean } | null>(null);
+  {{/if}}
 
   // Enterprise validation with comprehensive error handling
   const validationResult = validateNodeData(nodeData);
@@ -184,24 +385,327 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
   const categoryKey = spec.category as keyof typeof CATEGORY_TEXT_COLORS;
   const categoryTextColors = CATEGORY_TEXT_COLORS[categoryKey] || CATEGORY_TEXT_COLORS.CREATE;
 
+  // Comprehensive data type handler for future-proof data processing
+  const processDataValue = (data: any): string => {
+    // Handle primitive types
+    if (data === null) {
+      return 'null';
+    } else if (data === undefined) {
+      return 'undefined';
+    } else if (typeof data === 'string') {
+      return data || 'Empty string';
+    } else if (typeof data === 'number') {
+      return String(data);
+    } else if (typeof data === 'boolean') {
+      return data ? 'true' : 'false';
+    } else if (typeof data === 'bigint') {
+      return data.toString();
+    } else if (typeof data === 'symbol') {
+      return data.toString();
+    } else if (typeof data === 'function') {
+      return '[Function]';
+    } else if (typeof data === 'object') {
+      // Handle object types comprehensively
+      if (Array.isArray(data)) {
+        // Handle arrays
+        if (data.length === 0) {
+          return '[] (empty array)';
+        } else {
+          try {
+            return JSON.stringify(data, null, 2);
+          } catch {
+            return '[Array]';
+          }
+        }
+      } else if (data instanceof Date) {
+        // Handle Date objects
+        return data.toISOString();
+      } else if (data instanceof RegExp) {
+        // Handle RegExp objects
+        return data.toString();
+      } else if (data instanceof Error) {
+        // Handle Error objects
+        return `Error: ${data.message}`;
+      } else if (data instanceof Map) {
+        // Handle Map objects
+        try {
+          return JSON.stringify(Array.from(data.entries()), null, 2);
+        } catch {
+          return '[Map]';
+        }
+      } else if (data instanceof Set) {
+        // Handle Set objects
+        try {
+          return JSON.stringify(Array.from(data), null, 2);
+        } catch {
+          return '[Set]';
+        }
+      } else if (data instanceof Promise) {
+        // Handle Promise objects
+        return '[Promise]';
+      } else {
+        // Handle plain objects with common data patterns
+        // Check for common data properties in order of preference
+        const dataProperties = [
+          'text', 'output', 'value', 'data', 'content', 'message', 
+          'result', 'response', 'body', 'payload', 'input', 'output'
+        ];
+        
+        for (const prop of dataProperties) {
+          if (data[prop] !== null && data[prop] !== undefined) {
+            if (typeof data[prop] === 'string') {
+              return data[prop] || 'Empty string';
+            } else if (typeof data[prop] === 'number') {
+              return String(data[prop]);
+            } else if (typeof data[prop] === 'boolean') {
+              return data[prop] ? 'true' : 'false';
+            } else if (typeof data[prop] === 'object') {
+              try {
+                return JSON.stringify(data[prop], null, 2);
+              } catch {
+                return `[${prop}]`;
+              }
+            } else {
+              return String(data[prop]);
+            }
+          }
+        }
+        
+        // If no common properties found, stringify the entire object
+        try {
+          return JSON.stringify(data, null, 2);
+        } catch {
+          return '[Object]';
+        }
+      }
+    } else {
+      // Fallback for any other types
+      return String(data);
+    }
+  };
+
+  {{#if (eq dataPropagation "input")}}
+  // Get all nodes and edges to find connections (input-only mode)
+  const nodes = useNodes();
+  const edges = useEdges();
+
+  // Process connected data when nodes or edges change
+  useEffect(() => {
+    const processConnectedData = () => {
+      try {
+        const connectedTexts: string[] = [];
+        
+        // Find edges that connect to this node
+        const incomingEdges = edges.filter(edge => edge.target === id);
+        
+        // Get data from source nodes using comprehensive type handler
+        incomingEdges.forEach(edge => {
+          const sourceNode = nodes.find(node => node.id === edge.source);
+          if (sourceNode && sourceNode.data) {
+            const textValue = processDataValue(sourceNode.data);
+            connectedTexts.push(textValue);
+          }
+        });
+
+        // Update received data with proper null handling and determine active state
+        if (connectedTexts.length > 0) {
+          const formattedTexts = connectedTexts.map(text => {
+            if (text === 'null') {
+              return 'null';
+            } else if (text === 'undefined') {
+              return 'undefined';
+            } else if (text === 'Empty string') {
+              return '';
+            } else if (text === 'Invalid data') {
+              return 'Invalid data';
+            } else {
+              return text;
+            }
+          });
+          
+          const finalText = formattedTexts.join('\n');
+          setReceivedData(finalText);
+          
+          // Determine if node should be active based on received data
+          const hasValidData = formattedTexts.some(text => 
+            text !== 'null' && 
+            text !== 'undefined' && 
+            text !== '' && 
+            text !== 'Invalid data' &&
+            text !== 'No connected inputs'
+          );
+          
+          // Only update node data if values have actually changed to prevent infinite loops
+          const currentUpdate = { text: finalText, active: hasValidData };
+          if (!lastUpdateRef.current || 
+              lastUpdateRef.current.text !== currentUpdate.text || 
+              lastUpdateRef.current.active !== currentUpdate.active) {
+            lastUpdateRef.current = currentUpdate;
+            updateNodeData({ 
+              ...nodeData, 
+              isActive: hasValidData,
+              receivedData: finalText,
+              text: finalText // Also update the text field for inspector display
+            });
+          }
+        } else {
+          setReceivedData('');
+          
+          // Only update node data if values have actually changed
+          const currentUpdate = { text: '', active: false };
+          if (!lastUpdateRef.current || 
+              lastUpdateRef.current.text !== currentUpdate.text || 
+              lastUpdateRef.current.active !== currentUpdate.active) {
+            lastUpdateRef.current = currentUpdate;
+            updateNodeData({ 
+              ...nodeData, 
+              isActive: false,
+              receivedData: '',
+              text: 'No connected inputs' // Update text field for inspector display
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error processing connected data:', error);
+        setReceivedData('Error processing inputs');
+      }
+    };
+
+    processConnectedData();
+  }, [nodes, edges, id]);
+  {{/if}}
+
+  {{#if (eq dataPropagation "both")}}
+  // Get all nodes and edges to find connections (full data flow mode)
+  const nodes = useNodes();
+  const edges = useEdges();
+
+  // Process connected data when nodes or edges change
+  useEffect(() => {
+    const processConnectedData = () => {
+      try {
+        const connectedTexts: string[] = [];
+        
+        // Find edges that connect to this node
+        const incomingEdges = edges.filter(edge => edge.target === id);
+        
+        // Get data from source nodes using comprehensive type handler
+        incomingEdges.forEach(edge => {
+          const sourceNode = nodes.find(node => node.id === edge.source);
+          if (sourceNode && sourceNode.data) {
+            const textValue = processDataValue(sourceNode.data);
+            connectedTexts.push(textValue);
+          }
+        });
+
+        // Update received data with proper null handling and determine active state (both mode)
+        if (connectedTexts.length > 0) {
+          const formattedTexts = connectedTexts.map(text => {
+            if (text === 'null') {
+              return 'null';
+            } else if (text === 'undefined') {
+              return 'undefined';
+            } else if (text === 'Empty string') {
+              return '';
+            } else if (text === 'Invalid data') {
+              return 'Invalid data';
+            } else {
+              return text;
+            }
+          });
+          
+          const finalText = formattedTexts.join('\n');
+          setReceivedData(finalText);
+          
+          // Determine if node should be active based on received data
+          const hasValidData = formattedTexts.some(text => 
+            text !== 'null' && 
+            text !== 'undefined' && 
+            text !== '' && 
+            text !== 'Invalid data' &&
+            text !== 'No connected inputs'
+          );
+          
+          // Only update node data if values have actually changed to prevent infinite loops
+          const currentUpdate = { text: finalText, active: hasValidData };
+          if (!lastUpdateRef.current || 
+              lastUpdateRef.current.text !== currentUpdate.text || 
+              lastUpdateRef.current.active !== currentUpdate.active) {
+            lastUpdateRef.current = currentUpdate;
+            updateNodeData({ 
+              ...nodeData, 
+              isActive: hasValidData,
+              receivedData: finalText,
+              text: finalText // Also update the text field for inspector display
+            });
+          }
+        } else {
+          setReceivedData('');
+          
+          // Only update node data if values have actually changed
+          const currentUpdate = { text: '', active: false };
+          if (!lastUpdateRef.current || 
+              lastUpdateRef.current.text !== currentUpdate.text || 
+              lastUpdateRef.current.active !== currentUpdate.active) {
+            lastUpdateRef.current = currentUpdate;
+            updateNodeData({ 
+              ...nodeData, 
+              isActive: false,
+              receivedData: '',
+              text: 'No connected inputs' // Update text field for inspector display
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error processing connected data:', error);
+        setReceivedData('Error processing inputs');
+      }
+    };
+
+    processConnectedData();
+  }, [nodes, edges, id]);
+  {{/if}}
+
   return (
     <>
       <ExpandCollapseButton showUI={isExpanded} onToggle={handleToggleExpanded} size="sm" />
 
       {isExpanded ? (
         <div className={CONTENT_STYLES.content.expanded}>
-          <div className={CONTENT_STYLES.header.container}>
-            <h3 className={`text-sm font-semibold ${categoryTextColors.primary}`}>
-              {{camelCase kind}}
-            </h3>
-            {process.env.NODE_ENV === 'development' && (
-              <span className={`text-xs ${categoryTextColors.secondary}`}>
-                Health: {getHealthScore()}%
-              </span>
-            )}
+          {{#if (eq dataPropagation "input")}}
+          {/* Display received data from connected nodes (input-only mode) */}
+          <div className={CONTENT_STYLES.main.container}>
+            <div className={CONTENT_STYLES.main.content}>
+              <div className={`text-sm ${categoryTextColors.primary} break-words p-2 bg-gray-50 dark:bg-gray-800 rounded`}>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  Received Data:
+                </div>
+                <div className="font-medium">
+                  {validatedData.text || receivedData || 'No connected inputs'}
+                </div>
+              </div>
+            </div>
           </div>
+          {{/if}}
 
-          {/* Add your node-specific UI here */}
+          {{#if (eq dataPropagation "both")}}
+          {/* Display received data from connected nodes (full data flow mode) */}
+          <div className={CONTENT_STYLES.main.container}>
+            <div className={CONTENT_STYLES.main.content}>
+              <div className={`text-sm ${categoryTextColors.primary} break-words p-2 bg-gray-50 dark:bg-gray-800 rounded`}>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  Received Data:
+                </div>
+                <div className="font-medium">
+                  {validatedData.text || receivedData || 'No connected inputs'}
+                </div>
+              </div>
+            </div>
+          </div>
+          {{/if}}
+
+          {{#if (eq dataPropagation "output")}}
+          {/* Display node-specific UI for output-only mode */}
           <div className={CONTENT_STYLES.main.container}>
             <div className={CONTENT_STYLES.main.content}>
               <div className={`text-xs font-medium ${categoryTextColors.primary} uppercase tracking-wide mb-1`}>
@@ -212,6 +716,21 @@ const {{pascalCase kind}}NodeComponent = ({ data, id }: NodeProps) => {
               </div>
             </div>
           </div>
+          {{/if}}
+
+          {{#if (eq dataPropagation "none")}}
+          {/* Display node-specific UI for standalone mode */}
+          <div className={CONTENT_STYLES.main.container}>
+            <div className={CONTENT_STYLES.main.content}>
+              <div className={`text-xs font-medium ${categoryTextColors.primary} uppercase tracking-wide mb-1`}>
+                {{titleCase kind}}
+              </div>
+              <div className={`text-xs ${categoryTextColors.secondary}`}>
+                {validatedData.isEnabled ? validatedData.text : 'Disabled'}
+              </div>
+            </div>
+          </div>
+          {{/if}}
         </div>
       ) : (
         <div className={CONTENT_STYLES.content.collapsed}>

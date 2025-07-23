@@ -400,3 +400,43 @@ export function useCategoryTheme(nodeType?: string): CategoryTheme | null {
 		};
 	}, [enabled, nodeType, customOverrides]);
 }
+
+/**
+ * Enhanced category theme hook that supports NodeSpec theming overrides
+ * @param nodeType - The node type to get theme for
+ * @param nodeSpec - Optional NodeSpec with custom theming
+ * @returns CategoryTheme with custom theming applied
+ */
+export function useCategoryThemeWithSpec(nodeType?: string, nodeSpec?: any): CategoryTheme | null {
+	const baseTheme = useCategoryTheme(nodeType);
+	
+	return useMemo(() => {
+		if (!baseTheme || !nodeSpec?.theming) return baseTheme;
+
+		// Apply custom theming from NodeSpec
+		const customTheming = nodeSpec.theming;
+		
+		return {
+			...baseTheme,
+			background: {
+				...baseTheme.background,
+				dark: customTheming.bgDark || baseTheme.background.dark,
+			},
+			border: {
+				...baseTheme.border,
+				dark: customTheming.borderDark || baseTheme.border.dark,
+			},
+			text: {
+				...baseTheme.text,
+				primary: {
+					...baseTheme.text.primary,
+					dark: customTheming.textDark || baseTheme.text.primary.dark,
+				},
+				secondary: {
+					...baseTheme.text.secondary,
+					dark: customTheming.textSecondaryDark || baseTheme.text.secondary.dark,
+				},
+			},
+		};
+	}, [baseTheme, nodeSpec?.theming]);
+}
