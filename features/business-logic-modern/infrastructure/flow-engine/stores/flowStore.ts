@@ -248,20 +248,43 @@ export const useFlowStore = create<FlowStore>()(
 					set((state) => {
 						const node = state.nodes.find((n) => n.id === nodeId);
 						if (node) {
-							// Check if any values actually changed to prevent infinite loops
-							let hasChanges = false;
-							const newData = { ...node.data };
+							// Use enhanced StateComparator for robust comparison
+							const { stateComparator } = require('../utils/StateComparator');
+							const comparisonResult = stateComparator.compare(node.data, data);
 
-							for (const [key, value] of Object.entries(data)) {
-								if (JSON.stringify(newData[key]) !== JSON.stringify(value)) {
-									newData[key] = value;
-									hasChanges = true;
+							// Log performance and debug info in production
+							if (process.env.NODE_ENV === 'production') {
+								if (comparisonResult.error) {
+									console.warn(`State comparison error for node ${nodeId}:`, comparisonResult.error);
+								}
+								
+								if (comparisonResult.hasChanges) {
+									console.debug(`Node ${nodeId} state updated:`, {
+										changedKeys: comparisonResult.changedKeys,
+										method: comparisonResult.comparisonMethod,
+										performanceMs: comparisonResult.performanceMs
+									});
 								}
 							}
 
-							// Only update if there are actual changes
-							if (hasChanges) {
+							// Update node data if changes detected
+							if (comparisonResult.hasChanges) {
+								const newData = { ...node.data };
+								
+								// Apply only the changed values
+								for (const [key, value] of Object.entries(data)) {
+									if (comparisonResult.changedKeys.includes(key)) {
+										newData[key] = value;
+									}
+								}
+								
 								node.data = newData;
+							}
+							// In development, force update even without changes for debugging
+							else if (process.env.NODE_ENV === 'development') {
+								const newData = { ...node.data, ...data };
+								node.data = newData;
+								console.debug(`Node ${nodeId} force updated in development`);
 							}
 						}
 					});
