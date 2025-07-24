@@ -12,7 +12,7 @@
  */
 
 import React from "react";
-import type { AgenNode } from "../types/nodeData";
+import type { AgenNode } from "../features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import { type DataFlowConfig, useNodeDataFlow } from "./useNodeDataFlow";
 
 // ============================================================================

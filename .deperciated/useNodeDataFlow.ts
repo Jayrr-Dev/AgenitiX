@@ -12,8 +12,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useFlowStore } from "../stores/flowStore";
-import type { AgenNode } from "../types/nodeData";
+import { useFlowStore } from "../features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
+import type { AgenNode } from "../features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import { useNodeConnections } from "./useNodeConnections";
 
 // ============================================================================

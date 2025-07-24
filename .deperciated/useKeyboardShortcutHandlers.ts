@@ -11,8 +11,8 @@
  */
 
 import { useCallback } from "react";
-import type { AgenEdge, AgenNode } from "../types/nodeData";
-import { generateNodeId } from "../utils/nodeUtils";
+import type { AgenEdge, AgenNode } from "../features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
+import { generateNodeId } from "../features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
 
 // ============================================================================
 // TYPESCRIPT INTERFACES

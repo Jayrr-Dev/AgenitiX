@@ -57,13 +57,19 @@
 | node._comment | 🎯 SINGLE SOURCE OF TRUTH: Change 'global.border-width' to update ALL node borders at once |
 | node.global.border-width | 1px |
 | node.global.border-style | solid |
-| node.create.bg | hsla(140, 100%, 1%, 1) |
+| node.create.bg | hsla(140, 80%, 40%, 1) |
 | node.create.border | hsla(140, 100%, 20%, 1) |
 | node.create.border-hover | hsla(140, 100%, 30%, 1) |
 | node.create.border-width | 1px |
 | node.create.text | hsla(0, 0%, 15%, 1) |
 | node.create.text-secondary | hsla(0, 0%, 25%, 1) |
 | node.create.bg-hover | hsla(140, 72%, 80%, 1) |
+| node.create.bg-dark | hsla(140, 80%, 20%, 1) |
+| node.create.border-dark | hsla(140, 100%, 40%, 1) |
+| node.create.border-hover-dark | hsla(140, 100%, 50%, 1) |
+| node.create.text-dark | hsla(0, 0%, 95%, 1) |
+| node.create.text-secondary-dark | hsla(0, 0%, 90%, 1) |
+| node.create.bg-hover-dark | hsla(140, 72%, 30%, 1) |
 | node.create.classes.container |  |
 | node.create.classes.header |  |
 | node.create.classes.content |  |
@@ -76,6 +82,12 @@
 | node.view.text | hsla(0, 0%, 15%, 1) |
 | node.view.text-secondary | hsla(0, 0%, 25%, 1) |
 | node.view.bg-hover | hsla(225, 72%, 80%, 1) |
+| node.view.bg-dark | hsla(225, 72%, 25%, 1) |
+| node.view.border-dark | hsla(225, 72%, 60%, 1) |
+| node.view.border-hover-dark | hsla(225, 72%, 70%, 1) |
+| node.view.text-dark | hsla(0, 0%, 85%, 1) |
+| node.view.text-secondary-dark | hsla(0, 0%, 75%, 1) |
+| node.view.bg-hover-dark | hsla(225, 72%, 35%, 1) |
 | node.view.classes.container |  |
 | node.view.classes.header |  |
 | node.view.classes.content |  |
@@ -88,6 +100,12 @@
 | node.trigger.text | hsla(0, 0%, 15%, 1) |
 | node.trigger.text-secondary | hsla(0, 0%, 25%, 1) |
 | node.trigger.bg-hover | hsla(45, 72%, 80%, 1) |
+| node.trigger.bg-dark | hsla(45, 72%, 25%, 1) |
+| node.trigger.border-dark | hsla(45, 72%, 60%, 1) |
+| node.trigger.border-hover-dark | hsla(45, 72%, 70%, 1) |
+| node.trigger.text-dark | hsla(0, 0%, 85%, 1) |
+| node.trigger.text-secondary-dark | hsla(0, 0%, 75%, 1) |
+| node.trigger.bg-hover-dark | hsla(45, 72%, 35%, 1) |
 | node.trigger.classes.container |  |
 | node.trigger.classes.header |  |
 | node.trigger.classes.content |  |
@@ -100,6 +118,12 @@
 | node.test.text | hsla(0, 0%, 15%, 1) |
 | node.test.text-secondary | hsla(0, 0%, 25%, 1) |
 | node.test.bg-hover | hsla(0, 72%, 80%, 1) |
+| node.test.bg-dark | hsla(0, 72%, 25%, 1) |
+| node.test.border-dark | hsla(0, 72%, 60%, 1) |
+| node.test.border-hover-dark | hsla(0, 72%, 70%, 1) |
+| node.test.text-dark | hsla(0, 0%, 85%, 1) |
+| node.test.text-secondary-dark | hsla(0, 0%, 75%, 1) |
+| node.test.bg-hover-dark | hsla(0, 72%, 35%, 1) |
 | node.test.classes.container |  |
 | node.test.classes.header |  |
 | node.test.classes.content |  |
@@ -112,6 +136,12 @@
 | node.cycle.text | hsla(0, 0%, 15%, 1) |
 | node.cycle.text-secondary | hsla(0, 0%, 25%, 1) |
 | node.cycle.bg-hover | hsla(280, 72%, 80%, 1) |
+| node.cycle.bg-dark | hsla(280, 72%, 25%, 1) |
+| node.cycle.border-dark | hsla(280, 72%, 60%, 1) |
+| node.cycle.border-hover-dark | hsla(280, 72%, 70%, 1) |
+| node.cycle.text-dark | hsla(0, 0%, 85%, 1) |
+| node.cycle.text-secondary-dark | hsla(0, 0%, 75%, 1) |
+| node.cycle.bg-hover-dark | hsla(280, 72%, 35%, 1) |
 | node.cycle.classes.container |  |
 | node.cycle.classes.header |  |
 | node.cycle.classes.content |  |
@@ -132,22 +162,24 @@
 | expandCollapseButton._comment | 🔘 Expand/collapse button styling - change bg and text to customize appearance |
 | expandCollapseButton.bg | transparent |
 | expandCollapseButton.text | hsla(0, 0%, 0%, 1) |
+| expandCollapseButton.text-dark | hsla(0, 0%, 95%, 1) |
 | label._comment | 📝 Node label styling - editable title at top of each node |
 | label.top | 2px |
 | label.font-size | 10px |
 | label.font-weight | 600 |
 | label.font-family | Inter, ui-sans-serif, sans-serif |
 | label.color | hsla(0, 0%, 20%, 1) |
-| handle.bg-connected | hsla(0, 0%, 0%, 0.5) |
-| handle.bg-source | hsla(0, 0%, 0%, 0.5) |
-| handle.bg-target | hsla(0, 0%, 100%, 0.1) |
+| label.color-dark | hsla(0, 0%, 85%, 1) |
+| handle.bg-connected | hsla(0, 0%, 0%, 0) |
+| handle.bg-source | hsla(0, 0%, 0%, 0) |
+| handle.bg-target | hsla(0, 0%, 100%, 0) |
 | handle.border | hsla(0, 0%, 70%, 1) |
 | handle.border-hover | hsla(0, 0%, 60%, 1) |
 | handle.text | hsla(0, 0%, 15%, 1) |
 | handle.shadow | 0 0 0.5px 0.5px |
-| handle.bg-connected-dark | hsla(0, 0%, 100%, 0.3) |
-| handle.bg-source-dark | hsla(0, 0%, 100%, 0.3) |
-| handle.bg-target-dark | hsla(0, 0%, 0%, 0.2) |
+| handle.bg-connected-dark | hsla(0, 0%, 100%, 0) |
+| handle.bg-source-dark | hsla(0, 0%, 100%, 0) |
+| handle.bg-target-dark | hsla(0, 0%, 0%, 0) |
 | handle.border-dark | hsla(0, 0%, 40%, 1) |
 | handle.border-hover-dark | hsla(0, 0%, 50%, 1) |
 | handle.text-dark | hsla(0, 0%, 85%, 1) |

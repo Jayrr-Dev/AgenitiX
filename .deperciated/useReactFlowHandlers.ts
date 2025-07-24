@@ -24,12 +24,12 @@ import {
 	reconnectEdge,
 } from "@xyflow/react";
 import { useCallback, useRef } from "react";
-import type { AgenEdge, AgenNode } from "../types/nodeData";
+import type { AgenEdge, AgenNode } from "../features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import {
 	createEdgeStyle,
 	getConnectionDataType,
 	validateConnection,
-} from "../utils/connectionUtils";
+} from "./connectionUtils";
 
 interface ReactFlowHandlersProps {
 	nodes: AgenNode[];

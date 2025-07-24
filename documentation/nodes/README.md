@@ -24,6 +24,12 @@ Each node includes:
 - **🎨 Visual Documentation** - Interactive HTML with examples and statistics
 - **📊 Handle Analysis** - Usage patterns and system recommendations
 
+### NodeCore Infrastructure Documentation
+- **[NodeCore Documentation](../NodeCore/README.md)** - Core node infrastructure components
+- **NodeSpec System** - Complete interface analysis and type definitions
+- **withNodeScaffold System** - Function analysis and usage patterns
+- **Auto-Generated Documentation** - Always up-to-date from source code
+
 ## 🎯 Node Categories
 
 ### Create Nodes

@@ -1,15 +1,15 @@
 /**
- * createText NODE – Content‑focused, schema‑driven, type‑safe
+ * createText NODE – Content‑focused, schema‑driven, type‑safe
  *
  * • Shows only internal layout; the scaffold provides borders, sizing, theming, and interactivity.
  * • Zod schema auto‑generates type‑checked Inspector controls.
  * • Dynamic sizing (expandedSize / collapsedSize) drives the spec.
  * • Output propagation is gated by `isActive` *and* `isEnabled` to prevent runaway loops.
+ * • Enhanced with server actions for database operations and network requests.
  * • Code is fully commented and follows current React + TypeScript best practices.
  *
- * Keywords: create-text, schema-driven, type‑safe, clean‑architecture
+ * Keywords: create-text, schema-driven, type‑safe, clean‑architecture, server-actions
  */
-
 import type { NodeProps } from "@xyflow/react";
 import React, {
   memo,
@@ -35,6 +35,16 @@ import {
   useNodeDataValidation,
 } from "@/features/business-logic-modern/infrastructure/node-core/validation";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
+import { 
+  useCachedDatabaseQuery,
+  useCachedNetworkRequest,
+  type DatabaseOperation,
+  type NetworkRequest
+} from "@/features/business-logic-modern/infrastructure/node-core/serverActions/serverActionRegistry";
+import { 
+  useConvexQuery,
+  useConvexMutation,
+} from "@/features/business-logic-modern/infrastructure/node-core/serverActions/convexServerActions";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
   COLLAPSED_SIZES,
@@ -57,6 +67,11 @@ export const CreateTextDataSchema = z
     outputs: SafeSchemas.optionalText(),
     expandedSize: SafeSchemas.text("VE2"),
     collapsedSize: SafeSchemas.text("C1W"),
+    // Enhanced with server action results
+    serverActionStatus: z.string().optional(),
+    lastServerAction: z.string().optional(),
+    databaseResult: z.unknown().optional(),
+    networkResult: z.unknown().optional(),
   })
   .passthrough();
 
@@ -83,6 +98,7 @@ const CONTENT = {
   header: "flex items-center justify-between mb-3",
   body: "flex-1 flex items-center justify-center",
   disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+  serverActionStatus: "text-xs text-gray-500 mt-2",
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -103,69 +119,23 @@ function createDynamicSpec(data: CreateTextData): NodeSpec {
   return {
     kind: "createText",
     displayName: "Create Text",
-    label: "Create Text",
     category: CATEGORIES.CREATE,
-    size: { expanded, collapsed },
+    size: {
+      expanded,
+      collapsed,
+    },
     handles: [
       {
-        id: "json-input",
-        code: "j",
-        position: "top",
-        type: "target",
-        dataType: "JSON",
-      },
-      {
         id: "output",
-        code: "s",
-        position: "right",
         type: "source",
-        dataType: "String",
-      },
-      {
-        id: "input",
-        code: "b",
-        position: "left",
-        type: "target",
-        dataType: "Boolean",
+        position: "right",
+        dataType: "string",
       },
     ],
-    inspector: { key: "CreateTextInspector" },
-    version: 1,
-    runtime: { execute: "createText_execute_v1" },
-    initialData: createSafeInitialData(CreateTextDataSchema, {
-      store: "Default text",
-      inputs: null,
-      outputs: "",
-    }),
-    dataSchema: CreateTextDataSchema,
-    controls: {
-      autoGenerate: true,
-      excludeFields: [
-        "isActive",
-        "inputs",
-        "outputs",
-        "expandedSize",
-        "collapsedSize",
-      ],
-      customFields: [
-        { key: "isEnabled", type: "boolean", label: "Enable" },
-        {
-          key: "store",
-          type: "textarea",
-          label: "Store",
-          placeholder: "Enter your content here…",
-          ui: { rows: 4 },
-        },
-        { key: "isExpanded", type: "boolean", label: "Expand" },
-      ],
+    inspector: {
+      key: "createText",
     },
-    icon: "LuFileText",
-    author: "Agenitix Team",
-    description:
-      "Creates text content with customizable formatting and styling options",
-    feature: "base",
-    tags: ["content", "formatting"],
-    theming: {},
+    initialData: createSafeInitialData(CreateTextDataSchema),
   };
 }
 
@@ -421,3 +391,4 @@ const CreateTextNodeWithDynamicSpec = (props: NodeProps) => {
 };
 
 export default CreateTextNodeWithDynamicSpec;
+

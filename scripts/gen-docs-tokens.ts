@@ -1037,9 +1037,15 @@ if (!fs.existsSync(outDir)) {
 	fs.mkdirSync(outDir, { recursive: true });
 }
 
+// Ensure theming directory exists
+const themingDir = join(outDir, "theming");
+if (!fs.existsSync(themingDir)) {
+	fs.mkdirSync(themingDir, { recursive: true });
+}
+
 // Write both files
 const mdOut = join(outDir, "core-tokens.md");
-const htmlOut = join(outDir, "tokens-preview.html");
+const htmlOut = join(outDir, "theming", "tokens-preview.html");
 
 writeFileSync(mdOut, md);
 writeFileSync(htmlOut, html);

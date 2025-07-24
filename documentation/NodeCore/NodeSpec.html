@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NodeSpec Documentation - Auto-Generated</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background: #f8f9fa; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; }
+        .content { padding: 30px; }
+        .section { margin-bottom: 30px; }
+        .section h2 { color: #333; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }
+        .stat-card { background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 6px; padding: 20px; text-align: center; }
+        .stat-card h3 { margin: 0; color: #1976d2; font-size: 2em; }
+        .stat-card p { margin: 5px 0 0 0; color: #0d47a1; }
+        .interface-card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 20px; margin: 15px 0; }
+        .interface-card h3 { margin-top: 0; color: #495057; }
+        .property { background: white; border: 1px solid #e9ecef; border-radius: 4px; padding: 10px; margin: 5px 0; }
+        .property strong { color: #495057; }
+        .property .type { color: #6c757d; font-size: 0.9em; }
+        .code-block { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; padding: 15px; overflow-x: auto; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; }
+        .auto-generated { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>NodeSpec Documentation</h1>
+            <p>Auto-generated from actual source code</p>
+        </div>
+        
+        <div class="content">
+            <div class="auto-generated">
+                <strong>🔄 Auto-Generated</strong><br>
+                This documentation is automatically generated from the actual NodeSpec.ts source code.
+                Last updated: 7/23/2025, 7:43:19 PM
+            </div>
+            
+            <div class="section">
+                <h2>📊 Analysis Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>4</h3>
+                        <p>Interfaces</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>0</h3>
+                        <p>Types</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>0</h3>
+                        <p>Constants</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>🔍 Interface Analysis</h2>
+                
+                <div class="interface-card">
+                    <h3>ControlFieldConfig</h3>
+                    <p>Control field configuration for custom control overrides</p>
+                    <h4>Properties:</h4>
+                    
+                    <div class="property">
+                        <strong>key</strong> <span class="type">(string)</span>
+                        <span style='color: #dc3545;'>Required</span>
+                        
+                    </div>
+                    
+                    <div class="property">
+                        <strong>type</strong> <span class="type">(| "text"
+		| "textarea"
+		| "number"
+		| "boolean"
+		| "select"
+		| "url"
+		| "email"
+		| "color"
+		| "date"
+		| "json")</span>
+                        <span style='color: #dc3545;'>Required</span>
+                        
+                    </div>
+                    
+                    <div class="property">
+                        <strong>label</strong> <span class="type">(string)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        
+                    </div>
+                    
+                    <div class="property">
+                        <strong>placeholder</strong> <span class="type">(string)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        
+                    </div>
+                    
+                    <div class="property">
+                        <strong>description</strong> <span class="type">(string)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        
+                    </div>
+                    
+                    <div class="property">
+                        <strong>required</strong> <span class="type">(boolean)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        
+                    </div>
+                    
+                    <div class="property">
+                        <strong>validation</strong> <span class="type">({
+		min?: number;
+		max?: number;
+		pattern?: string;
+		options?: Array<{ value: unknown; label: string }>;
+	})</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        
+                    </div>
+                    
+                    <div class="property">
+                        <strong>ui</strong> <span class="type">({
+		rows?: number; // For textarea
+		step?: number; // For number inputs
+		multiline?: boolean;
+		showPreview?: boolean;
+	})</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        
+                    </div>
+                    
+                </div>
+                
+                <div class="interface-card">
+                    <h3>ControlsConfig</h3>
+                    <p>Control configuration for automatic control generation</p>
+                    <h4>Properties:</h4>
+                    
+                    <div class="property">
+                        <strong>autoGenerate</strong> <span class="type">(boolean)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>Enable automatic control generation from schema</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>customFields</strong> <span class="type">(ControlFieldConfig[])</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>Custom field overrides for specific schema properties</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>excludeFields</strong> <span class="type">(string[])</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>Fields to exclude from auto-generation</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>customComponent</strong> <span class="type">(string)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>Custom control component for complete override</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>fieldGroups</strong> <span class="type">(Array<{
+		title: string;
+		fields: string[];
+		collapsible?: boolean;
+	}>)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>Group related fields together</small>
+                    </div>
+                    
+                </div>
+                
+                <div class="interface-card">
+                    <h3>NodeHandleSpec</h3>
+                    <p>Defines the static contract for a node handle (an input or output port).</p>
+                    <h4>Properties:</h4>
+                    
+                    <div class="property">
+                        <strong>id</strong> <span class="type">(string)</span>
+                        <span style='color: #dc3545;'>Required</span>
+                        <br><small>Unique handle id</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>dataType</strong> <span class="type">(string)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>Legacy single-letter data type code (mutually exclusive with tsSymbol)</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>tsSymbol</strong> <span class="type">(string)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>New dual-contract system: optional TypeScript symbol referencing real type</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>code</strong> <span class="type">(string)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>Optional fallback code when tsSymbol provided</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>position</strong> <span class="type">("top" | "bottom" | "left" | "right")</span>
+                        <span style='color: #dc3545;'>Required</span>
+                        
+                    </div>
+                    
+                    <div class="property">
+                        <strong>type</strong> <span class="type">("source" | "target")</span>
+                        <span style='color: #dc3545;'>Required</span>
+                        
+                    </div>
+                    
+                </div>
+                
+                <div class="interface-card">
+                    <h3>NodeSpec</h3>
+                    <p>Defines the static, serializable contract for every node in the system. This object is the single source of truth for a node's metadata and configuration.</p>
+                    <h4>Properties:</h4>
+                    
+                    <div class="property">
+                        <strong>kind</strong> <span class="type">(string)</span>
+                        <span style='color: #dc3545;'>Required</span>
+                        <br><small>The unique, machine-readable type for the node. (e.g., 'createText', 'viewCsv')</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>displayName</strong> <span class="type">(string)</span>
+                        <span style='color: #dc3545;'>Required</span>
+                        <br><small>The human-readable label shown in the node's header and the sidebar.</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>label</strong> <span class="type">(string)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>OPTIONAL: Custom label for the node instance (can be edited by user) If not provided, defaults to displayName</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>category</strong> <span class="type">(NodeCategory)</span>
+                        <span style='color: #dc3545;'>Required</span>
+                        <br><small>The functional category the node belongs to. Drives color, folder, and theming.</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>size</strong> <span class="type">({
+		expanded: (typeof EXPANDED_SIZES)[keyof typeof EXPANDED_SIZES];
+		collapsed: (typeof COLLAPSED_SIZES)[keyof typeof COLLAPSED_SIZES];
+	})</span>
+                        <span style='color: #dc3545;'>Required</span>
+                        <br><small>The sizing contract for the node's visual representation.</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>handles</strong> <span class="type">(NodeHandleSpec[])</span>
+                        <span style='color: #dc3545;'>Required</span>
+                        <br><small>An array defining all input and output handles for the node.</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>inspector</strong> <span class="type">({
+		key: string;
+	})</span>
+                        <span style='color: #dc3545;'>Required</span>
+                        <br><small>The key for the inspector panel associated with this node.</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>initialData</strong> <span class="type">(Record<string, any>)</span>
+                        <span style='color: #dc3545;'>Required</span>
+                        <br><small>The default data properties for a new instance of this node.</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>dataSchema</strong> <span class="type">(z.ZodSchema<any>)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>NEW: Reference to the Zod schema for automatic control generation This enables the system to introspect the schema and generate appropriate controls</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>controls</strong> <span class="type">(ControlsConfig)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>NEW: Control configuration for the Node Inspector Enables automatic control generation with customization options</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>version</strong> <span class="type">(number)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>Schema version of the node spec. Increment only on breaking changes to data shape or behaviour so migration scripts know when to run.</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>runtime</strong> <span class="type">({
+		/** Identifier used by the execution engine to look up a handler. */
+		execute?: string;
+	})</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>OPTIONAL: key that identifies the runtime executor for this node when it runs on the worker queue. Keeping it serialisable (string) avoids bundling functions inside JSON.</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>memory</strong> <span class="type">(NodeMemoryConfig)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>OPTIONAL: Memory configuration for this node's persistent cache</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>icon</strong> <span class="type">(string)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>OPTIONAL: Icon identifier for the node (e.g., 'FileText', 'Mail', 'Bot') Used for visual representation in the sidebar and node header</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>author</strong> <span class="type">(string)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>OPTIONAL: Creator or author of the node Used for attribution and tracking node ownership</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>description</strong> <span class="type">(string)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>OPTIONAL: Detailed description of what the node does Used for tooltips, documentation, and help text</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>feature</strong> <span class="type">(string)</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>OPTIONAL: The feature or module this node belongs to Examples: 'base', 'email', 'agents', 'ai', 'database', 'api' Used for organization, filtering, and feature-based grouping</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>tags</strong> <span class="type">(string[])</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>OPTIONAL: Array of tags for categorizing and filtering the node Examples: ['text', 'formatting', 'content'], ['api', 'external', 'auth'] Used for search, filtering, and organization beyond domain/category</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>theming</strong> <span class="type">({
+		/** Dark mode background color override */
+		bgDark?: string;
+		/** Dark mode border color override */
+		borderDark?: string;
+		/** Dark mode border hover color override */
+		borderHoverDark?: string;
+		/** Dark mode text color override */
+		textDark?: string;
+		/** Dark mode secondary text color override */
+		textSecondaryDark?: string;
+		/** Dark mode background hover color override */
+		bgHoverDark?: string;
+	})</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>OPTIONAL: Dark mode theming configuration Override default dark mode colors for this specific node</small>
+                    </div>
+                    
+                    <div class="property">
+                        <strong>receivedData</strong> <span class="type">({
+		/** Whether the node can receive data from connected nodes */
+		enabled?: boolean;
+		/** How to display received data (text, json, raw, etc.) */
+		displayMode?: "text" | "json" | "raw" | "formatted";
+		/** Whether to show received data in collapsed state */
+		showInCollapsed?: boolean;
+		/** Custom formatting function for received data */
+		formatData?: (data: any) => string;
+	})</span>
+                        <span style='color: #6c757d;'>Optional</span>
+                        <br><small>OPTIONAL: Received data configuration Defines how the node handles and displays received data from connected nodes</small>
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="section">
+                <h2>🏷️ Type Definitions</h2>
+                
+            </div>
+        </div>
+    </div>
+</body>
+</html>

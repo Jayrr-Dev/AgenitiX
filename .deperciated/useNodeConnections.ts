@@ -12,8 +12,8 @@
  */
 
 import { useCallback, useMemo } from "react";
-import { useFlowStore } from "../stores/flowStore";
-import type { AgenEdge, AgenNode } from "../types/nodeData";
+import { useFlowStore } from "../features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
+import type { AgenEdge, AgenNode } from "../features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 
 // ============================================================================
 // TYPES
@@ -369,4 +369,4 @@ export function useNodeConnections(nodeId: string) {
 }
 
 // Import the NodeSpec registry function
-import { getNodeSpecMetadata } from "../../node-registry/nodespec-registry";
+import { getNodeSpecMetadata } from "../features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
