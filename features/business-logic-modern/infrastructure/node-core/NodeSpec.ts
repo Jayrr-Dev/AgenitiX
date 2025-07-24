@@ -7,6 +7,22 @@ import type { z } from "zod";
 import type { NodeMemoryConfig } from "./NodeMemory";
 
 /**
+ * Feature flag configuration for node-level feature toggles
+ */
+export interface FeatureFlagConfig {
+	/** Flag name to check for enabling this node */
+	flag?: string;
+	/** Fallback behavior when flag is not available */
+	fallback?: boolean;
+	/** Custom message to show when node is disabled by flag */
+	disabledMessage?: string;
+	/** Whether to hide the node completely when flag is disabled */
+	hideWhenDisabled?: boolean;
+	/** Alternative node to show when flag is disabled */
+	alternativeNode?: string;
+}
+
+/**
  * Control field configuration for custom control overrides
  */
 export interface ControlFieldConfig {
@@ -98,7 +114,7 @@ export interface NodeSpec {
 	label?: string;
 
 	/**
-	 * The functional category the node belongs to. Drives color, folder, and theming.
+	 * The functional category that determines the node's visual theming and behavior.
 	 */
 	category: NodeCategory;
 
@@ -191,6 +207,12 @@ export interface NodeSpec {
 	 * Used for search, filtering, and organization beyond domain/category
 	 */
 	tags?: string[];
+
+	/**
+	 * OPTIONAL: Feature flag configuration for this node
+	 * Enables automatic feature flag integration for node-level feature toggles
+	 */
+	featureFlag?: FeatureFlagConfig;
 
 	/**
 	 * OPTIONAL: Dark mode theming configuration

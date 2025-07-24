@@ -272,7 +272,7 @@
     
     <div class="stats">
       <div class="stat-card">
-        <span class="stat-number">3</span>
+        <span class="stat-number">4</span>
         <div class="stat-label">Total Nodes</div>
       </div>
       <div class="stat-card">
@@ -280,11 +280,11 @@
         <div class="stat-label">Domains</div>
       </div>
       <div class="stat-card">
-        <span class="stat-number">3</span>
+        <span class="stat-number">4</span>
         <div class="stat-label">Categories</div>
       </div>
       <div class="stat-card">
-        <span class="stat-number">7/23/2025</span>
+        <span class="stat-number">7/24/2025</span>
         <div class="stat-label">Last Updated</div>
       </div>
     </div>
@@ -310,7 +310,7 @@
         
           <div class="nav-item">
             <div class="nav-item-title">Test Domain</div>
-            <div class="nav-item-count">0 nodes in 0 categories</div>
+            <div class="nav-item-count">1 nodes in 1 categories</div>
           </div>
         
       </div>
@@ -433,21 +433,15 @@
             <div class="nodes-grid">
               
                 <div class="node-card">
-                  <div class="node-title">TriggerToggle</div>
+                  <div class="node-title">Toggle</div>
                   <div class="node-type">triggerToggle</div>
-                  <div class="node-description">TriggerToggle NODE – Content‑focused, schema‑driven, type‑safe
+                  <div class="node-description">TriggerToggle NODE – Boolean toggle with circular design
  
-  • Shows only internal layout; the scaffold provides borders, sizing, theming, and interactivity.
-  • Zod schema auto‑generates type‑checked Inspector controls.
-  • Dynamic sizing (expandedSize / collapsedSize) drives the spec.
-  • Output propagation is gated by `isActive` and `isEnabled` to prevent runaway loops.
-  • Code is fully commented and follows current React + TypeScript best practices.
+  ✔ Cycles between ON / OFF and propagates the value to connected nodes.
+  ✔ Subscribes to global React‑Flow store so updates ripple automatically.
+  ✔ Fully type‑safe (Zod) + focus‑preserving scaffold memoisation.
  
-  Keywords: trigger-toggle, schema-driven, type‑safe, clean‑architecture</div>
-                  
-                    <div class="node-features">
-                      <span class="feature-tag">JSON I/O</span>
-                    </div>
+  Keywords: toggle‑button, boolean‑state, circular‑design, trigger‑control</div>
                   
                   <div class="node-links">
                     <a href="./trigger/triggerToggle.html">📄 Documentation</a>
@@ -465,11 +459,45 @@
           <h2 class="domain-title">Test Domain</h2>
           <p class="domain-description">Nodes for testing, validation, and quality assurance</p>
           <div class="domain-stats">
-            <span>0 nodes</span>
-            <span>0 categories</span>
+            <span>1 nodes</span>
+            <span>1 categories</span>
           </div>
         </div>
         
+        
+          <div class="category-section">
+            <div class="category-header">
+              <h3 class="category-title">Test Category</h3>
+              <p class="category-description">Testing and validation nodes (1 nodes)</p>
+            </div>
+            
+            <div class="nodes-grid">
+              
+                <div class="node-card">
+                  <div class="node-title">TestNode</div>
+                  <div class="node-type">testNode</div>
+                  <div class="node-description">TestNode NODE – Content‑focused, schema‑driven, type‑safe
+ 
+  • Shows only internal layout; the scaffold provides borders, sizing, theming, and interactivity.
+  • Zod schema auto‑generates type‑checked Inspector controls.
+  • Dynamic sizing (expandedSize / collapsedSize) drives the spec.
+  • Output propagation is gated by `isActive` and `isEnabled` to prevent runaway loops.
+  • Code is fully commented and follows current React + TypeScript best practices.
+ 
+  Keywords: test-node, schema-driven, type‑safe, clean‑architecture</div>
+                  
+                    <div class="node-features">
+                      <span class="feature-tag">JSON I/O</span>
+                    </div>
+                  
+                  <div class="node-links">
+                    <a href="./test/testNode.html">📄 Documentation</a>
+                    <a href="./test/testNode.md">📝 Markdown</a>
+                  </div>
+                </div>
+              
+            </div>
+          </div>
         
       </div>
     

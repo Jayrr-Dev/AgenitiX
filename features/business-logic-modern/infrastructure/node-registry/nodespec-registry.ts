@@ -6,6 +6,7 @@
  */
 
 import createText, { spec as createTextSpec } from "../../node-domain/create/createText.node";
+import testNode, { spec as testNodeSpec } from "../../node-domain/test/testNode.node";
 import triggerToggle, { spec as triggerToggleSpec } from "../../node-domain/trigger/triggerToggle.node";
 import viewText, { spec as viewTextSpec } from "../../node-domain/view/viewText.node";
 import type { NodeSpec } from "../node-core/NodeSpec";
@@ -14,6 +15,7 @@ import type { NodeSpec } from "../node-core/NodeSpec";
 const nodeSpecs: Record<string, NodeSpec> = {
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
+	testNode: testNodeSpec,
 	triggerToggle: triggerToggleSpec,
 	viewText: viewTextSpec,
 };
@@ -94,10 +96,99 @@ const nodeMetadataOverrides: Record<string, Partial<NodeSpecMetadata>> = {
 	// Add more node-specific overrides here
 };
 
+
+
+
+
 /**
- * Get NodeSpec metadata by node type
+ * Get all available NodeSpec metadata (legacy function - includes all nodes)
+ * @deprecated Use getAllNodeSpecMetadataWithFeatureFlags() for feature flag filtering
  */
-export function getNodeSpecMetadata(nodeType: string): NodeSpecMetadata | null {
+export function getAllNodeSpecMetadata(): NodeSpecMetadata[] {
+	return Object.keys(nodeSpecs).map((nodeType) => {
+		const metadata = getNodeMetadata(nodeType);
+		return metadata!; // We know it exists since we're iterating over nodeSpecs keys
+	});
+}
+
+/**
+ * Check if a node type exists in the registry
+ */
+export function hasNodeSpec(nodeType: string): boolean {
+	return nodeType in nodeSpecs;
+}
+
+/**
+ * Get nodes by category
+ */
+export function getNodesByCategory(category: string): NodeSpecMetadata[] {
+	return getAllNodeSpecMetadata().filter((node) => node.category === category);
+}
+
+/**
+ * Get nodes by folder
+ */
+export function getNodesByFolder(folder: string): NodeSpecMetadata[] {
+	return getAllNodeSpecMetadata().filter((node) => node.ui?.folder === folder);
+}
+
+/**
+ * Get all available node metadata (legacy alias)
+ */
+export function getAllNodeMetadata(): NodeSpecMetadata[] {
+	return getAllNodeSpecMetadata();
+}
+
+/**
+ * Get sidebar statistics for debugging
+ */
+export function getSidebarStatistics() {
+	const allNodes = getAllNodeSpecMetadata();
+	const categories = [...new Set(allNodes.map((node) => node.category))];
+	const folders = [...new Set(allNodes.map((node) => node.ui?.folder).filter(Boolean))];
+
+	return {
+		totalNodes: allNodes.length,
+		categories,
+		folders,
+	};
+}
+
+/**
+ * Validate sidebar configuration
+ */
+export function validateSidebarConfiguration() {
+	const allNodes = getAllNodeSpecMetadata();
+	const errors: string[] = [];
+
+	// Check for duplicate node types
+	const nodeTypes = allNodes.map((node) => node.kind);
+	const duplicates = nodeTypes.filter((type, index) => nodeTypes.indexOf(type) !== index);
+	if (duplicates.length > 0) {
+		errors.push(`Duplicate node types found: ${duplicates.join(", ")}`);
+	}
+
+	// Check for missing required fields
+	allNodes.forEach((node) => {
+		if (!node.displayName) {
+			errors.push(`Node ${node.kind} is missing displayName`);
+		}
+		if (!node.category) {
+			errors.push(`Node ${node.kind} is missing category`);
+		}
+	});
+
+	return {
+		isValid: errors.length === 0,
+		errors,
+	};
+}
+
+// Export the specs for direct access if needed
+export { nodeSpecs };
+
+// Compatibility functions to match old registry interface
+export function getNodeMetadata(nodeType: string): NodeSpecMetadata | null {
 	const spec = nodeSpecs[nodeType as keyof typeof nodeSpecs];
 	if (!spec) return null;
 
@@ -144,79 +235,9 @@ export function getNodeSpecMetadata(nodeType: string): NodeSpecMetadata | null {
 	};
 }
 
-/**
- * Get all available NodeSpec metadata
- */
-export function getAllNodeSpecMetadata(): NodeSpecMetadata[] {
-	return Object.keys(nodeSpecs).map((nodeType) => {
-		const metadata = getNodeSpecMetadata(nodeType);
-		return metadata!; // We know it exists since we're iterating over nodeSpecs keys
-	});
-}
-
-/**
- * Check if a node type exists
- */
-export function hasNodeSpec(nodeType: string): boolean {
-	return nodeType in nodeSpecs;
-}
-
-/**
- * Get all available node types
- */
-export function getAllNodeTypes(): string[] {
-	return Object.keys(nodeSpecs);
-}
-
-/**
- * Get nodes by category
- */
-export function getNodesByCategory(category: string): NodeSpecMetadata[] {
-	return getAllNodeSpecMetadata().filter((spec) => spec.category === category);
-}
-
-/**
- * Get nodes by folder (from ui.folder)
- */
-export function getNodesByFolder(folder: string): NodeSpecMetadata[] {
-	return getAllNodeSpecMetadata().filter((spec) => spec.ui?.folder === folder);
-}
-
-/**
- * Get all categories
- */
-export function getAllCategories(): string[] {
-	const categories = new Set(getAllNodeSpecMetadata().map((spec) => spec.category));
-	return Array.from(categories);
-}
-
-/**
- * Get all folders
- */
-export function getAllFolders(): string[] {
-	const folders = new Set(
-		getAllNodeSpecMetadata()
-			.map((spec) => spec.ui?.folder)
-			.filter(Boolean)
-	);
-	return Array.from(folders) as string[];
-}
-
-// Export the specs for direct access if needed
-export { nodeSpecs };
-
-// Compatibility functions to match old registry interface
-export function getNodeMetadata(nodeType: string): NodeSpecMetadata | null {
-	return getNodeSpecMetadata(nodeType);
-}
-
-export function getAllNodeMetadata(): NodeSpecMetadata[] {
-	return getAllNodeSpecMetadata();
-}
-
 // Legacy helpers for quick validation & map
 export function validateNode(nodeType: string) {
-	const meta = getNodeSpecMetadata(nodeType);
+	const meta = getNodeMetadata(nodeType);
 	return {
 		isValid: !!meta,
 		warnings: meta ? [] : [`Node type '${nodeType}' not found`],
@@ -225,4 +246,17 @@ export function validateNode(nodeType: string) {
 }
 
 // Map keyed by nodeType for convenience (mirrors old modernNodeRegistry constant)
-export const modernNodeRegistry = new Map(getAllNodeSpecMetadata().map((m) => [m.kind, m]));
+export const modernNodeRegistry = new Map(getAllNodeMetadata().map((m) => [m.kind, m]));
+
+/**
+ * Get feature flag configuration for a node type
+ */
+export function getNodeFeatureFlag(nodeType: string): any {
+	const spec = nodeSpecs[nodeType as keyof typeof nodeSpecs];
+	return spec?.featureFlag || null;
+}
+
+/**
+ * Alias for getNodeMetadata to maintain compatibility with existing code
+ */
+export const getNodeSpecMetadata = getNodeMetadata;

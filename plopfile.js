@@ -259,6 +259,40 @@ module.exports = (plop) => {
 					return `${domain}, ${kind}`;
 				},
 			},
+			{
+				type: "confirm",
+				name: "useFeatureFlag",
+				message: "Do you want to add feature flag support to this node?",
+				default: false,
+			},
+			{
+				type: "input",
+				name: "featureFlag",
+				message: "Enter the feature flag name (leave blank to use 'test' flag):",
+				default: "test",
+				when: (answers) => answers.useFeatureFlag,
+			},
+			{
+				type: "confirm",
+				name: "featureFlagFallback",
+				message: "Should the node be enabled by default if the flag is unavailable?",
+				default: true,
+				when: (answers) => answers.useFeatureFlag,
+			},
+			{
+				type: "input",
+				name: "featureFlagMessage",
+				message: "Custom message to show when the node is disabled (leave blank for default):",
+				default: (answers) => `This ${answers.kind} node is currently disabled`,
+				when: (answers) => answers.useFeatureFlag,
+			},
+			{
+				type: "confirm",
+				name: "hideWhenDisabled",
+				message: "Should the node be completely hidden when the flag is disabled?",
+				default: false,
+				when: (answers) => answers.useFeatureFlag,
+			},
 		],
 		actions: (data) => {
 			// Process custom icon

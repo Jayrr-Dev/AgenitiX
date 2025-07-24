@@ -1,5 +1,5 @@
 /**
- * {{titleCase kind}} NODE – Content‑focused, schema‑driven, type‑safe
+ * TestNode NODE – Content‑focused, schema‑driven, type‑safe
  *
  * • Shows only internal layout; the scaffold provides borders, sizing, theming, and interactivity.
  * • Zod schema auto‑generates type‑checked Inspector controls.
@@ -7,7 +7,7 @@
  * • Output propagation is gated by `isActive` *and* `isEnabled` to prevent runaway loops.
  * • Code is fully commented and follows current React + TypeScript best practices.
  *
- * Keywords: {{kebabCase kind}}, schema-driven, type‑safe, clean‑architecture
+ * Keywords: test-node, schema-driven, type‑safe, clean‑architecture
  */
 
 import type { NodeProps } from "@xyflow/react";
@@ -48,7 +48,7 @@ import { useReactFlow, useStore } from "@xyflow/react";
 // 1️⃣  Data schema & validation
 // -----------------------------------------------------------------------------
 
-export const {{pascalCase kind}}DataSchema = z
+export const TestNodeDataSchema = z
   .object({
     store: SafeSchemas.text("Default text"),
     isEnabled: SafeSchemas.boolean(true),
@@ -56,16 +56,16 @@ export const {{pascalCase kind}}DataSchema = z
     isExpanded: SafeSchemas.boolean(false),
     inputs: SafeSchemas.optionalText().nullable().default(null),
     outputs: SafeSchemas.optionalText(),
-    expandedSize: SafeSchemas.text("{{expandedSize}}"),
-    collapsedSize: SafeSchemas.text("{{collapsedSize}}"),
+    expandedSize: SafeSchemas.text("FE0"),
+    collapsedSize: SafeSchemas.text("C1"),
   })
   .passthrough();
 
-export type {{pascalCase kind}}Data = z.infer<typeof {{pascalCase kind}}DataSchema>;
+export type TestNodeData = z.infer<typeof TestNodeDataSchema>;
 
 const validateNodeData = createNodeValidator(
-  {{pascalCase kind}}DataSchema,
-  "{{pascalCase kind}}",
+  TestNodeDataSchema,
+  "TestNode",
 );
 
 // -----------------------------------------------------------------------------
@@ -73,8 +73,8 @@ const validateNodeData = createNodeValidator(
 // -----------------------------------------------------------------------------
 
 const CATEGORY_TEXT = {
-  {{constantCase category}}: {
-    primary: "text-[--node-{{kebabCase category}}-text]",
+  TEST: {
+    primary: "text-[--node--t-e-s-t-text]",
   },
 } as const;
 
@@ -93,19 +93,19 @@ const CONTENT = {
 /**
  * Builds a NodeSpec whose size keys can change at runtime via node data.
  */
-function createDynamicSpec(data: {{pascalCase kind}}Data): NodeSpec {
+function createDynamicSpec(data: TestNodeData): NodeSpec {
   const expanded =
     EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
-    EXPANDED_SIZES.{{expandedSize}};
+    EXPANDED_SIZES.FE0;
   const collapsed =
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
-    COLLAPSED_SIZES.{{collapsedSize}};
+    COLLAPSED_SIZES.C1;
 
   return {
-    kind: "{{camelCase kind}}",
-    displayName: "{{titleCase kind}}",
-    label: "{{titleCase kind}}",
-    category: CATEGORIES.{{constantCase category}},
+    kind: "testNode",
+    displayName: "TestNode",
+    label: "TestNode",
+    category: CATEGORIES.TEST,
     size: { expanded, collapsed },
     handles: [
       {
@@ -130,15 +130,15 @@ function createDynamicSpec(data: {{pascalCase kind}}Data): NodeSpec {
         dataType: "Boolean",
       },
     ],
-    inspector: { key: "{{pascalCase kind}}Inspector" },
+    inspector: { key: "TestNodeInspector" },
     version: 1,
-    runtime: { execute: "{{camelCase kind}}_execute_v1" },
-    initialData: createSafeInitialData({{pascalCase kind}}DataSchema, {
+    runtime: { execute: "testNode_execute_v1" },
+    initialData: createSafeInitialData(TestNodeDataSchema, {
       store: "Default text",
       inputs: null,
       outputs: "",
     }),
-    dataSchema: {{pascalCase kind}}DataSchema,
+    dataSchema: TestNodeDataSchema,
     controls: {
       autoGenerate: true,
       excludeFields: [
@@ -160,16 +160,16 @@ function createDynamicSpec(data: {{pascalCase kind}}Data): NodeSpec {
         { key: "isExpanded", type: "boolean", label: "Expand" },
       ],
     },
-    icon: "{{mapIconToLucide icon}}",
-    author: "{{author}}",
-    description: "{{description}}",
-    feature: "{{feature}}",
-    tags: [{{#each tags}}"{{this}}"{{#unless @last}}, {{/unless}}{{/each}}],
+    icon: "LuFileText",
+    author: "Agenitix Team",
+    description: "TestNode node for testing",
+    feature: "base",
+    tags: ["test", "testNode"],
     featureFlag: {
-      flag: "{{#if featureFlag}}{{featureFlag}}{{else}}test{{/if}}",
-      fallback: {{#if featureFlagFallback}}{{featureFlagFallback}}{{else}}true{{/if}},
-      disabledMessage: "{{#if featureFlagMessage}}{{featureFlagMessage}}{{else}}This {{kind}} node is currently disabled{{/if}}",
-      hideWhenDisabled: {{#if hideWhenDisabled}}{{hideWhenDisabled}}{{else}}false{{/if}},
+      flag: "test",
+      fallback: true,
+      disabledMessage: "This testNode node is currently disabled",
+      hideWhenDisabled: true,
     },
     theming: {},
   };
@@ -177,15 +177,15 @@ function createDynamicSpec(data: {{pascalCase kind}}Data): NodeSpec {
 
 /** Static spec for registry (uses default size keys) */
 export const spec: NodeSpec = createDynamicSpec({
-  expandedSize: "{{expandedSize}}",
-  collapsedSize: "{{collapsedSize}}",
-} as {{pascalCase kind}}Data);
+  expandedSize: "FE0",
+  collapsedSize: "C1",
+} as TestNodeData);
 
 // -----------------------------------------------------------------------------
 // 4️⃣  React component – data propagation & rendering
 // -----------------------------------------------------------------------------
 
-const {{pascalCase kind}}Node = memo(
+const TestNodeNode = memo(
   ({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
     // -------------------------------------------------------------------------
     // 4.1  Sync with React‑Flow store
@@ -196,7 +196,7 @@ const {{pascalCase kind}}Node = memo(
     // 4.2  Derived state
     // -------------------------------------------------------------------------
     const { isExpanded, isEnabled, isActive, store } =
-      nodeData as {{pascalCase kind}}Data;
+      nodeData as TestNodeData;
 
     // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
     const nodes = useStore((s) => s.nodes);
@@ -205,7 +205,7 @@ const {{pascalCase kind}}Node = memo(
     // keep last emitted output to avoid redundant writes
     const lastOutputRef = useRef<string | null>(null);
 
-    const categoryStyles = CATEGORY_TEXT.{{constantCase category}};
+    const categoryStyles = CATEGORY_TEXT.TEST;
 
     // -------------------------------------------------------------------------
     // 4.3  Feature flag evaluation (after all hooks)
@@ -275,14 +275,14 @@ const {{pascalCase kind}}Node = memo(
     /* 🔄 Whenever nodes/edges change, recompute inputs. */
     useEffect(() => {
       const inputVal = computeInput();
-      if (inputVal !== (nodeData as {{pascalCase kind}}Data).inputs) {
+      if (inputVal !== (nodeData as TestNodeData).inputs) {
         updateNodeData({ inputs: inputVal });
       }
     }, [computeInput, nodeData, updateNodeData]);
 
     /* 🔄 Make isEnabled dependent on input value only when there are connections. */
     useEffect(() => {
-      const hasInput = (nodeData as {{pascalCase kind}}Data).inputs;
+      const hasInput = (nodeData as TestNodeData).inputs;
       // Only auto-control isEnabled when there are connections (inputs !== null)
       // When inputs is null (no connections), let user manually control isEnabled
       if (hasInput !== null) {
@@ -322,15 +322,15 @@ const {{pascalCase kind}}Node = memo(
     // -------------------------------------------------------------------------
     const validation = validateNodeData(nodeData);
     if (!validation.success) {
-      reportValidationError("{{pascalCase kind}}", id, validation.errors, {
+      reportValidationError("TestNode", id, validation.errors, {
         originalData: validation.originalData,
-        component: "{{pascalCase kind}}Node",
+        component: "TestNodeNode",
       });
     }
 
     useNodeDataValidation(
-      {{pascalCase kind}}DataSchema,
-      "{{pascalCase kind}}",
+      TestNodeDataSchema,
+      "TestNode",
       validation.data,
       id,
     );
@@ -343,7 +343,7 @@ const {{pascalCase kind}}Node = memo(
     if (flagState.isLoading) {
       return (
         <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
-          Loading {{kind}} feature...
+          Loading testNode feature...
         </div>
       );
     }
@@ -430,15 +430,15 @@ const {{pascalCase kind}}Node = memo(
  * textarea loses focus).  We memoise the scaffolded component so its identity
  * stays stable across renders unless the *spec itself* really changes.
  */
-const {{pascalCase kind}}NodeWithDynamicSpec = (props: NodeProps) => {
+const TestNodeNodeWithDynamicSpec = (props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, props.data);
 
   // Recompute spec only when the size keys change
   const dynamicSpec = useMemo(
-    () => createDynamicSpec(nodeData as {{pascalCase kind}}Data),
+    () => createDynamicSpec(nodeData as TestNodeData),
     [
-      (nodeData as {{pascalCase kind}}Data).expandedSize,
-      (nodeData as {{pascalCase kind}}Data).collapsedSize,
+      (nodeData as TestNodeData).expandedSize,
+      (nodeData as TestNodeData).collapsedSize,
     ],
   );
 
@@ -446,7 +446,7 @@ const {{pascalCase kind}}NodeWithDynamicSpec = (props: NodeProps) => {
   const ScaffoldedNode = useMemo(
     () =>
       withNodeScaffold(dynamicSpec, (p) => (
-        <{{pascalCase kind}}Node {...p} spec={dynamicSpec} />
+        <TestNodeNode {...p} spec={dynamicSpec} />
       )),
     [dynamicSpec],
   );
@@ -454,4 +454,4 @@ const {{pascalCase kind}}NodeWithDynamicSpec = (props: NodeProps) => {
   return <ScaffoldedNode {...props} />;
 };
 
-export default {{pascalCase kind}}NodeWithDynamicSpec;
+export default TestNodeNodeWithDynamicSpec;
