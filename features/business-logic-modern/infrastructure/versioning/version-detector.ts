@@ -1,323 +1,379 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import { VERSION_CONFIG } from "./auto-version";
+import { VERSION_CONFIG, parseCommitTitle, hasBreakingChange } from "./auto-version";
 
 /**
- * VERSION DETECTOR - Automatically detects when to bump versions
+ * VERSION DETECTOR - GitHub Conventional Commits Based
  *
- * No manual intervention needed - just save files and versions update
+ * Analyzes GitHub commit history to determine version bumps based on conventional commits
  */
 
-interface FileHash {
-	path: string;
+interface GitCommit {
 	hash: string;
-	lastModified: number;
+	title: string;
+	message: string;
+	author: string;
+	date: string;
+	type?: string;
+	scope?: string;
 }
 
 interface VersionInfo {
 	version: string;
 	hash: string;
 	timestamp: number;
-	changedFiles: string[];
+	newCommits: GitCommit[];
 	bumpType: "major" | "minor" | "patch";
+	reason: string;
 }
 
-class AutoVersionDetector {
+interface VersionCache {
+	lastProcessedCommit: string;
+	currentVersion: {
+		major: number;
+		minor: number;
+		patch: number;
+		full: string;
+	};
+	lastUpdate: number;
+}
+
+class ConventionalCommitVersionDetector {
 	private versionFile = ".version-cache.json";
-	private lastKnownHashes: Map<string, string> = new Map();
+	private cache: VersionCache | null = null;
 
 	constructor() {
 		this.loadVersionCache();
 	}
 
 	/**
-	 * DETECT VERSION CHANGES - Call this from your build process
-	 * Returns new version if changes detected, null if no changes
+	 * DETECT VERSION CHANGES FROM GITHUB COMMITS
+	 * Analyzes commit history since last processed commit
 	 */
 	async detectChanges(): Promise<VersionInfo | null> {
 		try {
-			const currentHashes = await this.calculateCurrentHashes();
-			const changedFiles = this.getChangedFiles(currentHashes);
-
-			if (changedFiles.length === 0) {
-				return null; // No changes
+			// Get commits since last processed
+			const newCommits = await this.getNewCommits();
+			
+			if (newCommits.length === 0) {
+				return null; // No new commits
 			}
 
-			const bumpType = this.determineBumpType(changedFiles);
+			// Analyze commits for version bump type
+			const bumpType = this.determineBumpTypeFromCommits(newCommits);
+			
+			if (!bumpType) {
+				// Update cache even if no version bump needed
+				await this.updateLastProcessedCommit(newCommits[0].hash);
+				return null;
+			}
+
 			const currentVersion = this.getCurrentVersion();
 			const newVersion = this.bumpVersion(currentVersion, bumpType);
+			const reason = this.getBumpReason(newCommits, bumpType);
 
-			// Auto-save new version
-			await this.saveVersion({
+			const versionInfo: VersionInfo = {
 				version: newVersion,
-				hash: this.generateSystemHash(currentHashes),
+				hash: newCommits[0].hash,
 				timestamp: Date.now(),
-				changedFiles,
+				newCommits,
 				bumpType,
-			});
-
-			return {
-				version: newVersion,
-				hash: this.generateSystemHash(currentHashes),
-				timestamp: Date.now(),
-				changedFiles,
-				bumpType,
+				reason,
 			};
+
+			return versionInfo;
 		} catch (error) {
-			console.error("❌ Version detection error:", error);
+			console.error("Error detecting version changes:", error);
 			return null;
 		}
 	}
 
-	private async calculateCurrentHashes(): Promise<Map<string, string>> {
-		const hashes = new Map<string, string>();
-
-		// Use a simple file discovery instead of glob for now
-		const files = this.findFiles("features/business-logic-modern", [".ts", ".tsx"]);
-
-		for (const file of files) {
-			if (fs.existsSync(file)) {
-				try {
-					const content = fs.readFileSync(file, "utf8");
-					const hash = crypto.createHash("md5").update(content).digest("hex");
-					hashes.set(file, hash);
-				} catch (error) {
-					console.warn(`⚠️ Could not read file ${file}:`, error);
-				}
-			}
-		}
-
-		return hashes;
-	}
-
-	private findFiles(dir: string, extensions: string[]): string[] {
-		const files: string[] = [];
-
+	/**
+	 * Get new commits since last processed commit
+	 */
+	private async getNewCommits(): Promise<GitCommit[]> {
+		const lastProcessedCommit = this.cache?.lastProcessedCommit;
+		
 		try {
-			if (!fs.existsSync(dir)) return files;
-
-			const entries = fs.readdirSync(dir, { withFileTypes: true });
-
-			for (const entry of entries) {
-				const fullPath = path.join(dir, entry.name);
-
-				if (entry.isDirectory()) {
-					files.push(...this.findFiles(fullPath, extensions));
-				} else if (entry.isFile()) {
-					const ext = path.extname(entry.name);
-					if (extensions.includes(ext)) {
-						files.push(fullPath);
-					}
-				}
+			// Use git log to get commits
+			const { execSync } = require("child_process");
+			
+			let gitCommand = 'git log --format="%H|%s|%b|%an|%ad" --date=iso';
+			
+			if (lastProcessedCommit) {
+				gitCommand += ` ${lastProcessedCommit}..HEAD`;
+			} else {
+				// If no last commit, get last 50 commits
+				gitCommand += " -50";
 			}
+
+			const output = execSync(gitCommand, { encoding: "utf8" });
+			
+			if (!output.trim()) {
+				return [];
+			}
+
+			const commits: GitCommit[] = output
+				.trim()
+				.split("\n")
+				.filter((line: string) => line.trim())
+				.map((line: string) => {
+					const [hash, title, message, author, date] = line.split("|");
+					const fullMessage = `${title}\n${message}`.trim();
+					
+					return {
+						hash,
+						title: title || "",
+						message: fullMessage,
+						author: author || "",
+						date: date || "",
+					};
+				})
+				.reverse(); // Oldest first
+
+			return commits;
 		} catch (error) {
-			console.warn(`⚠️ Could not read directory ${dir}:`, error);
+			console.error("Error getting git commits:", error);
+			return [];
 		}
-
-		return files;
 	}
 
-	private getChangedFiles(currentHashes: Map<string, string>): string[] {
-		const changed: string[] = [];
+	/**
+	 * Determine version bump type from commits
+	 */
+	private determineBumpTypeFromCommits(commits: GitCommit[]): "major" | "minor" | "patch" | null {
+		let hasMajor = false;
+		let hasMinor = false;
+		let hasPatch = false;
 
-		// Fix TypeScript iteration issue
-		const hashEntries = Array.from(currentHashes.entries());
-		for (const [file, hash] of hashEntries) {
-			const lastHash = this.lastKnownHashes.get(file);
-			if (!lastHash || lastHash !== hash) {
-				changed.push(file);
+		for (const commit of commits) {
+			// Check for breaking changes first
+			if (hasBreakingChange(commit.message)) {
+				hasMajor = true;
+				break; // Major trumps everything
+			}
+
+			// Parse commit title
+			const bumpType = parseCommitTitle(commit.title);
+			
+			if (bumpType === "major") {
+				hasMajor = true;
+				break;
+			} else if (bumpType === "minor") {
+				hasMinor = true;
+			} else if (bumpType === "patch") {
+				hasPatch = true;
 			}
 		}
 
-		return changed;
+		// Return highest priority bump type
+		if (hasMajor) return "major";
+		if (hasMinor) return "minor";
+		if (hasPatch) return "patch";
+		
+		return null; // No conventional commits found
 	}
 
-	private determineBumpType(changedFiles: string[]): "major" | "minor" | "patch" {
-		// Check for major changes first
-		for (const file of changedFiles) {
-			if (VERSION_CONFIG.bumpRules.major.some((pattern) => this.matchesPattern(file, pattern))) {
-				return "major";
+	/**
+	 * Generate human-readable reason for version bump
+	 */
+	private getBumpReason(commits: GitCommit[], bumpType: "major" | "minor" | "patch"): string {
+		const conventionalCommits = commits.filter(c => parseCommitTitle(c.title));
+		const breakingChanges = commits.filter(c => hasBreakingChange(c.message));
+
+		if (bumpType === "major") {
+			if (breakingChanges.length > 0) {
+				return `Breaking changes detected in ${breakingChanges.length} commit(s)`;
 			}
+			return "Major version bump from commit type";
 		}
 
-		// Check for minor changes
-		for (const file of changedFiles) {
-			if (VERSION_CONFIG.bumpRules.minor.some((pattern) => this.matchesPattern(file, pattern))) {
-				return "minor";
-			}
+		if (bumpType === "minor") {
+			const features = conventionalCommits.filter(c => parseCommitTitle(c.title) === "minor");
+			return `${features.length} new feature(s) added`;
 		}
 
-		return "patch";
-	}
-
-	private bumpVersion(current: string, type: "major" | "minor" | "patch"): string {
-		const [major, minor, patch] = current.split(".").map(Number);
-
-		switch (type) {
-			case "major":
-				return `${major + 1}.0.0`;
-			case "minor":
-				return `${major}.${minor + 1}.0`;
-			case "patch":
-				return `${major}.${minor}.${patch + 1}`;
+		if (bumpType === "patch") {
+			const fixes = conventionalCommits.filter(c => parseCommitTitle(c.title) === "patch");
+			return `${fixes.length} bug fix(es) and improvements`;
 		}
+
+		return `Version bump from ${conventionalCommits.length} conventional commit(s)`;
 	}
 
-	private matchesPattern(file: string, pattern: string): boolean {
-		// Simple pattern matching - replace with more sophisticated logic if needed
-		return file.includes(pattern.replace(/\*/g, ""));
-	}
-
+	/**
+	 * Load version cache from file
+	 */
 	private loadVersionCache(): void {
 		try {
 			if (fs.existsSync(this.versionFile)) {
-				const cache = JSON.parse(fs.readFileSync(this.versionFile, "utf8"));
-				this.lastKnownHashes = new Map(cache.hashes || []);
+				const data = fs.readFileSync(this.versionFile, "utf8");
+				this.cache = JSON.parse(data);
+			} else {
+				// Initialize with current version
+				this.cache = {
+					lastProcessedCommit: "",
+					currentVersion: {
+						major: 0,
+						minor: 0,
+						patch: 0,
+						full: "0.0.0-alpha.2",
+					},
+					lastUpdate: Date.now(),
+				};
 			}
 		} catch (error) {
-			console.warn("⚠️ Could not load version cache:", error);
-			// First run - no cache exists
-		}
-	}
-
-	private async saveVersion(info: VersionInfo): Promise<void> {
-		try {
-			const currentHashes = await this.calculateCurrentHashes();
-
-			const cache = {
-				version: info.version,
-				timestamp: info.timestamp,
-				hashes: Array.from(currentHashes.entries()),
+			console.error("Error loading version cache:", error);
+			this.cache = {
+				lastProcessedCommit: "",
+				currentVersion: {
+					major: 0,
+					minor: 0,
+					patch: 0,
+					full: "0.0.0-alpha.2",
+				},
+				lastUpdate: Date.now(),
 			};
-
-			fs.writeFileSync(this.versionFile, JSON.stringify(cache, null, 2));
-			this.lastKnownHashes = currentHashes;
-
-			// Auto-update version constants
-			this.updateVersionConstants(info.version);
-		} catch (error) {
-			console.error("❌ Could not save version:", error);
 		}
 	}
 
-	private getCurrentVersion(): string {
+	/**
+	 * Save version cache to file
+	 */
+	private saveVersionCache(): void {
 		try {
-			if (fs.existsSync(this.versionFile)) {
-				const cache = JSON.parse(fs.readFileSync(this.versionFile, "utf8"));
-				return cache.version || "1.0.0";
+			fs.writeFileSync(this.versionFile, JSON.stringify(this.cache, null, 2));
+		} catch (error) {
+			console.error("Error saving version cache:", error);
+		}
+	}
+
+	/**
+	 * Get current version
+	 */
+	private getCurrentVersion(): { major: number; minor: number; patch: number } {
+		return this.cache?.currentVersion || { major: 0, minor: 0, patch: 0 };
+	}
+
+	/**
+	 * Bump version based on type
+	 */
+	private bumpVersion(
+		current: { major: number; minor: number; patch: number },
+		type: "major" | "minor" | "patch"
+	): string {
+		let { major, minor, patch } = current;
+
+		switch (type) {
+			case "major":
+				major++;
+				minor = 0;
+				patch = 0;
+				break;
+			case "minor":
+				minor++;
+				patch = 0;
+				break;
+			case "patch":
+				patch++;
+				break;
+		}
+
+		const version = `${major}.${minor}.${patch}`;
+		
+		// Update cache
+		if (this.cache) {
+			this.cache.currentVersion = { major, minor, patch, full: version };
+			this.cache.lastUpdate = Date.now();
+		}
+
+		return version;
+	}
+
+	/**
+	 * Update last processed commit
+	 */
+	private async updateLastProcessedCommit(commitHash: string): Promise<void> {
+		if (this.cache) {
+			this.cache.lastProcessedCommit = commitHash;
+			this.saveVersionCache();
+		}
+	}
+
+	/**
+	 * Update version file with new version info
+	 */
+	async updateVersionFile(versionInfo: VersionInfo): Promise<void> {
+		try {
+			// Update cache
+			if (this.cache) {
+				this.cache.lastProcessedCommit = versionInfo.hash;
+				this.saveVersionCache();
 			}
-		} catch (error) {
-			console.warn("⚠️ Could not get current version:", error);
-		}
-		return "1.0.0";
-	}
 
-	private generateSystemHash(hashes: Map<string, string>): string {
-		const combined = Array.from(hashes.values()).join("");
-		return crypto.createHash("md5").update(combined).digest("hex");
-	}
+			// Get git info
+			const gitInfo = await this.getGitInfo();
 
-	private updateVersionConstants(version: string): void {
-		try {
-			const [major, minor, patch] = version.split(".").map(Number);
-			const timestamp = new Date().toISOString();
-
-			// UPDATE VERSION CONSTANTS
-			const content = `// AUTO-GENERATED - DO NOT EDIT MANUALLY
+			// Update version.ts file
+			const versionContent = `// AUTO-GENERATED - DO NOT EDIT MANUALLY
 export const VERSION = {
-  major: ${major},
-  minor: ${minor},
-  patch: ${patch},
-  full: "${version}",
-  generated: "${timestamp}"
+	major: ${this.getCurrentVersion().major},
+	minor: ${this.getCurrentVersion().minor},
+	patch: ${this.getCurrentVersion().patch},
+	full: "${versionInfo.version}",
+	generated: "${new Date().toISOString()}",
+	git: ${JSON.stringify(gitInfo, null, 2)},
+	changelog: {
+		bumpType: "${versionInfo.bumpType}",
+		reason: "${versionInfo.reason}",
+		commits: ${versionInfo.newCommits.length},
+	},
 } as const;
 `;
 
-			const versionDir = path.dirname(
-				"features/business-logic-modern/infrastructure/versioning/version.ts"
-			);
-			if (!fs.existsSync(versionDir)) {
-				fs.mkdirSync(versionDir, { recursive: true });
-			}
+			const versionFilePath = path.join(__dirname, "version.ts");
+			fs.writeFileSync(versionFilePath, versionContent);
 
-			fs.writeFileSync(
-				"features/business-logic-modern/infrastructure/versioning/version.ts",
-				content
-			);
-
-			// UPDATE AI CONTEXT JSON
-			this.updateAIContextJson(version, timestamp);
-
-			console.log(`✅ Updated version constants to ${version}`);
+			console.log(`✅ Version updated to ${versionInfo.version} (${versionInfo.bumpType})`);
+			console.log(`📝 Reason: ${versionInfo.reason}`);
 		} catch (error) {
-			console.error("❌ Could not update version constants:", error);
+			console.error("Error updating version file:", error);
 		}
 	}
 
-	private updateAIContextJson(version: string, timestamp: string): void {
+	/**
+	 * Get current git information
+	 */
+	private async getGitInfo(): Promise<any> {
 		try {
-			const aiContextPath = "features/business-logic-modern/ai-context.json";
+			const { execSync } = require("child_process");
+			
+			const hash = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
+			const shortHash = hash.substring(0, 7);
+			const branch = execSync("git rev-parse --abbrev-ref HEAD", { encoding: "utf8" }).trim();
+			const author = execSync("git log -1 --format=%an", { encoding: "utf8" }).trim();
+			const date = execSync("git log -1 --format=%cd", { encoding: "utf8" }).trim();
 
-			// Read current context or create default
-			let context: any = {
-				project: "Agenitix - Modern Node-Based Workflow System",
-				domain: "business-logic-modern",
-				nodeTypes: ["createText", "viewOutput", "triggerOnToggle", "testError"],
-				architecture: {
-					status: "stable",
-					circularDependencies: "resolved",
-					centralizedHandles: true,
-					nodeCount: 4,
-				},
-				criticalFiles: {
-					version: "infrastructure/versioning/version.ts",
-					types: "infrastructure/node-creation/factory/types/index.ts",
-					handles: "infrastructure/node-creation/factory/constants/handles.ts",
-					registry: "infrastructure/node-creation/node-registry/nodeRegistry.ts",
-				},
-				constraints: {
-					isolation: "NEVER edit legacy files outside business-logic-modern/",
-					packaging: "Use pnpm only",
-					architecture: "Follow factory pattern for new nodes",
-					handles: "Use centralized handle system",
-					versioning: "NEVER manually edit version.ts - auto-generated",
-				},
-				versionRules: {
-					major: "Type changes, Factory changes, Registry structure",
-					minor: "New nodes, New infrastructure",
-					patch: "Bug fixes, docs, other changes",
-				},
-				documentation: {
-					location: "documentation/claude-reports/",
-					versionReference: "Import from infrastructure/versioning/version.ts",
-					format: "Markdown with auto-version integration",
-				},
+			return {
+				hash,
+				shortHash,
+				branch,
+				author,
+				date,
+				available: true,
 			};
-
-			// Try to read existing context to preserve any updates
-			if (fs.existsSync(aiContextPath)) {
-				try {
-					const existing = JSON.parse(fs.readFileSync(aiContextPath, "utf8"));
-					context = { ...context, ...existing };
-				} catch (error) {
-					console.warn("⚠️ Could not read existing AI context, using defaults");
-				}
-			}
-
-			// Update version and timestamp
-			context.version = version;
-			context.lastUpdated = new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
-			context.generated = timestamp;
-
-			// Write updated context
-			fs.writeFileSync(aiContextPath, JSON.stringify(context, null, 2));
-
-			console.log(`✅ Updated AI context JSON to version ${version}`);
 		} catch (error) {
-			console.error("❌ Could not update AI context JSON:", error);
+			return {
+				hash: "unknown",
+				shortHash: "unknown",
+				branch: "unknown",
+				author: "unknown", 
+				date: "unknown",
+				available: false,
+			};
 		}
 	}
 }
 
-export const versionDetector = new AutoVersionDetector();
+export const versionDetector = new ConventionalCommitVersionDetector();
