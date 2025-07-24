@@ -59,7 +59,6 @@
 		"version:analyze": "npx ts-node --project tsconfig.node.json scripts/version-from-commits.ts",
 		"version:bump": "pnpm version:analyze",
 		"commitlint": "commitlint --edit",
-		"prepare": "husky install",
 		"postinstall": "pnpm generate:docs"
 	},
 	"dependencies": {

@@ -40,5 +40,7 @@ module.exports = {
 		"type-empty": [2, "never"],
 		// Subject is required
 		"subject-empty": [2, "never"],
+		// Allow longer body lines for detailed descriptions
+		"body-max-line-length": [1, "always", 150], // Warning instead of error, longer limit
 	},
 }; 
