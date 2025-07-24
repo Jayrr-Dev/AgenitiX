@@ -11,7 +11,7 @@
 		"predev": "pnpm run dev:setup",
 		"gen-registry": "node scripts/gen-registry.js",
 		"build": "pnpm run build:convex && pnpm run build:frontend",
-		"build:convex": "npx convex deploy --cmd 'echo Convex deployed successfully'",
+		"build:convex": "npx convex deploy",
 		"build:frontend": "pnpm run generate:handle-types && next build",
 		"prebuild": "pnpm generate:tokens",
 		"convex:dev": "npx convex dev",
