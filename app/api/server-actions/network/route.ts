@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import type { NetworkRequest } from '@/features/business-logic-modern/infrastructure/node-core/serverActions/enhancedServerActionRegistry';
+import type { NetworkRequest } from '@/features/business-logic-modern/infrastructure/node-core/serverActions/serverActionRegistry';
 
 export async function POST(request: NextRequest) {
 	try {

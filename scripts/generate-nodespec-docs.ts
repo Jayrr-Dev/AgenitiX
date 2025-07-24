@@ -259,7 +259,7 @@ function analyzeScaffoldUsage() {
   return {
     totalNodes,
     nodesWithScaffold,
-    commonPatterns: [...new Set(patterns)]
+    commonPatterns: Array.from(new Set(patterns))
   };
 }
 
