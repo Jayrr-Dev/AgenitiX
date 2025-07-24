@@ -248,43 +248,48 @@ export const useFlowStore = create<FlowStore>()(
 					set((state) => {
 						const node = state.nodes.find((n) => n.id === nodeId);
 						if (node) {
-							// Use enhanced StateComparator for robust comparison
-							const { stateComparator } = require('../utils/StateComparator');
-							const comparisonResult = stateComparator.compare(node.data, data);
+							// Simple but robust comparison to prevent infinite loops
+							let hasChanges = false;
+							const newData = { ...node.data };
 
-							// Log performance and debug info in production
-							if (process.env.NODE_ENV === 'production') {
-								if (comparisonResult.error) {
-									console.warn(`State comparison error for node ${nodeId}:`, comparisonResult.error);
-								}
+							for (const [key, value] of Object.entries(data)) {
+								const currentValue = newData[key];
 								
-								if (comparisonResult.hasChanges) {
-									console.debug(`Node ${nodeId} state updated:`, {
-										changedKeys: comparisonResult.changedKeys,
-										method: comparisonResult.comparisonMethod,
-										performanceMs: comparisonResult.performanceMs
-									});
-								}
-							}
-
-							// Update node data if changes detected
-							if (comparisonResult.hasChanges) {
-								const newData = { ...node.data };
+								// Enhanced comparison logic with fallback
+								let valuesAreDifferent = false;
 								
-								// Apply only the changed values
-								for (const [key, value] of Object.entries(data)) {
-									if (comparisonResult.changedKeys.includes(key)) {
-										newData[key] = value;
+								try {
+									// Handle primitive values first (fastest)
+									if (typeof value !== 'object' || value === null || 
+										typeof currentValue !== 'object' || currentValue === null) {
+										valuesAreDifferent = currentValue !== value;
 									}
+									// Handle objects/arrays with careful JSON comparison
+									else {
+										const currentStr = JSON.stringify(currentValue);
+										const newStr = JSON.stringify(value);
+										valuesAreDifferent = currentStr !== newStr;
+									}
+								} catch (error) {
+									// Fallback to reference comparison if JSON.stringify fails
+									console.warn(`JSON comparison failed for key ${key}, using reference comparison:`, error);
+									valuesAreDifferent = currentValue !== value;
 								}
-								
-								node.data = newData;
+
+								if (valuesAreDifferent) {
+									newData[key] = value;
+									hasChanges = true;
+								}
 							}
-							// In development, force update even without changes for debugging
-							else if (process.env.NODE_ENV === 'development') {
-								const newData = { ...node.data, ...data };
+
+							// Only update if there are actual changes
+							if (hasChanges) {
 								node.data = newData;
-								console.debug(`Node ${nodeId} force updated in development`);
+								
+								// Add debug logging for production issues (non-blocking)
+								if (process.env.NODE_ENV === 'production') {
+									console.debug(`Node ${nodeId} data updated:`, Object.keys(data));
+								}
 							}
 						}
 					});
