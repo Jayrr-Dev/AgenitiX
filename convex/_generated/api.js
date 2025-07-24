@@ -1,4 +1,4 @@
-// biome-ignore: Generated file
+/* eslint-disable */
 /**
  * Generated `api` utility.
  *
