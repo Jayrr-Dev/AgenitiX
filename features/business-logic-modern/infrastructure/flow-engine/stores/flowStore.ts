@@ -248,12 +248,35 @@ export const useFlowStore = create<FlowStore>()(
 					set((state) => {
 						const node = state.nodes.find((n) => n.id === nodeId);
 						if (node) {
-							// Check if any values actually changed to prevent infinite loops
+							// Simple but robust comparison to prevent infinite loops
 							let hasChanges = false;
 							const newData = { ...node.data };
 
 							for (const [key, value] of Object.entries(data)) {
-								if (JSON.stringify(newData[key]) !== JSON.stringify(value)) {
+								const currentValue = newData[key];
+								
+								// Enhanced comparison logic with fallback
+								let valuesAreDifferent = false;
+								
+								try {
+									// Handle primitive values first (fastest)
+									if (typeof value !== 'object' || value === null || 
+										typeof currentValue !== 'object' || currentValue === null) {
+										valuesAreDifferent = currentValue !== value;
+									}
+									// Handle objects/arrays with careful JSON comparison
+									else {
+										const currentStr = JSON.stringify(currentValue);
+										const newStr = JSON.stringify(value);
+										valuesAreDifferent = currentStr !== newStr;
+									}
+								} catch (error) {
+									// Fallback to reference comparison if JSON.stringify fails
+									console.warn(`JSON comparison failed for key ${key}, using reference comparison:`, error);
+									valuesAreDifferent = currentValue !== value;
+								}
+
+								if (valuesAreDifferent) {
 									newData[key] = value;
 									hasChanges = true;
 								}
@@ -262,6 +285,11 @@ export const useFlowStore = create<FlowStore>()(
 							// Only update if there are actual changes
 							if (hasChanges) {
 								node.data = newData;
+								
+								// Add debug logging for production issues (non-blocking)
+								if (process.env.NODE_ENV === 'production') {
+									console.debug(`Node ${nodeId} data updated:`, Object.keys(data));
+								}
 							}
 						}
 					});
