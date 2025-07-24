@@ -1,13 +1,14 @@
 import { TabsContent } from "@/components/ui/tabs";
 import { DndContext, type DragEndEvent, closestCenter } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
-import React from "react";
+import React, { useMemo } from "react";
 import { SortableStencil } from "../SortableStencil";
 import { StencilGrid } from "../StencilGrid";
 import type { HoveredStencil } from "../StencilInfoPanel";
 import { VARIANT_CONFIG } from "../constants";
 import { useDragSensors } from "../hooks/useDragSensors";
 import { useStencilStorage } from "../hooks/useStencilStorage";
+import { useFilteredNodes } from "../hooks/useFilteredNodes";
 import type { NodeStencil, SidebarVariant, TabKey } from "../types";
 import { AddNodeButton } from "./AddNodeButton";
 
@@ -128,12 +129,26 @@ export function SidebarTabContent({
 		? [[], () => {}]
 		: useStencilStorage(variant, tabKey as TabKey<typeof variant>, getDefaultStencils());
 
-	// Notify parent of stencil changes for keyboard shortcuts
+	// Use filtered nodes hook to respect feature flags
+	const { nodes: filteredNodes } = useFilteredNodes();
+
+	// Filter stencils based on feature flags
+	const filteredStencils = useMemo(() => {
+		if (isCustomTab) return [];
+		
+		// Filter out stencils whose corresponding nodes have disabled feature flags
+		return stencils.filter(stencil => {
+			// Check if this stencil's node type is in the filtered nodes list
+			return filteredNodes.some(node => node.kind === stencil.nodeType);
+		});
+	}, [stencils, filteredNodes, isCustomTab]);
+
+	// Notify parent of stencil changes for keyboard shortcuts (use filtered stencils)
 	React.useEffect(() => {
 		if (!isCustomTab && onStencilsChange) {
-			onStencilsChange(tabKey, stencils);
+			onStencilsChange(tabKey, filteredStencils);
 		}
-	}, [stencils, tabKey, onStencilsChange, isCustomTab]);
+	}, [filteredStencils, tabKey, onStencilsChange, isCustomTab]);
 
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
@@ -184,7 +199,7 @@ export function SidebarTabContent({
 	return (
 		<TabsContent value={tabKey}>
 			<StencilGrid
-				stencils={stencils}
+				stencils={filteredStencils}
 				setStencils={setStencils}
 				onNativeDragStart={onNativeDragStart}
 				onDoubleClickCreate={onDoubleClickCreate}

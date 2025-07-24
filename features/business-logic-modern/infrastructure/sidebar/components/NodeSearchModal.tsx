@@ -21,6 +21,7 @@ import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastruc
 import { Search, X } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useFilteredNodes } from "../hooks/useFilteredNodes";
 
 interface NodeSearchModalProps {
 	isOpen: boolean;
@@ -51,33 +52,39 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedIndex, setSelectedIndex] = useState(0);
 
+	// Use filtered nodes hook to respect feature flags
+	const { nodes: filteredNodes } = useFilteredNodes();
+
 	// Fuzzy search implementation
 	const searchResults = useMemo(() => {
+		// Use filtered nodes instead of availableNodes to respect feature flags
+		const nodesToSearch = filteredNodes.length > 0 ? filteredNodes : 
+			availableNodes.map(nodeType => {
+				const metadata = getNodeSpecMetadata(nodeType);
+				return metadata;
+			}).filter(Boolean);
+
 		if (!searchQuery.trim()) {
-			// Show all nodes when no search query
-			return availableNodes
-				.map((nodeType) => {
-					const metadata = getNodeSpecMetadata(nodeType);
-					return {
-						nodeType,
-						displayName: metadata?.displayName || nodeType,
-						category: metadata?.category || "other",
-						description: metadata?.description,
-						icon: metadata?.icon,
-						score: 1,
-					};
-				})
+			// Show all filtered nodes when no search query
+			return nodesToSearch
+				.map((node) => ({
+					nodeType: node.kind,
+					displayName: node.displayName,
+					category: node.category || "other",
+					description: node.description,
+					icon: node.icon,
+					score: 1,
+				}))
 				.sort((a, b) => a.displayName.localeCompare(b.displayName));
 		}
 
 		const query = searchQuery.toLowerCase();
 		const results: SearchResult[] = [];
 
-		availableNodes.forEach((nodeType) => {
-			const metadata = getNodeSpecMetadata(nodeType);
-			const displayName = metadata?.displayName || nodeType;
-			const category = metadata?.category || "other";
-			const description = metadata?.description || "";
+		nodesToSearch.forEach((node) => {
+			const displayName = node.displayName;
+			const category = node.category || "other";
+			const description = node.description || "";
 
 			// Simple fuzzy matching
 			let score = 0;
@@ -98,18 +105,18 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 
 			if (score > 0) {
 				results.push({
-					nodeType,
+					nodeType: node.kind,
 					displayName,
 					category,
 					description,
-					icon: metadata?.icon,
+					icon: node.icon,
 					score,
 				});
 			}
 		});
 
 		return results.sort((a, b) => b.score - a.score);
-	}, [searchQuery, availableNodes]);
+	}, [searchQuery, filteredNodes, availableNodes]);
 
 	// Reset selection when results change
 	useEffect(() => {

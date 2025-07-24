@@ -17,6 +17,7 @@ import { getAllNodeMetadata } from "../../node-registry/nodespec-registry";
 import type { NodeMetadata } from "../../node-registry/types";
 import { StencilGrid } from "../StencilGrid";
 import type { HoveredStencil } from "../StencilInfoPanel";
+import { useFilteredNodes } from "../hooks/useFilteredNodes";
 
 interface SearchBarProps {
 	onNativeDragStart: (e: React.DragEvent<HTMLDivElement>, nodeType: string) => void;
@@ -88,16 +89,18 @@ export function SearchBar({
 		return gridKeyMap[index] || "";
 	};
 
-	// Create searchable stencils from all available nodes
+	// Use filtered nodes hook to get nodes that respect feature flags
+	const { nodes: filteredNodes, isLoading: nodesLoading } = useFilteredNodes();
+
+	// Create searchable stencils from filtered nodes
 	const allStencils = useMemo(() => {
-		const nodeMetadata = getAllNodeMetadata();
-		return nodeMetadata.map((node: NodeMetadata, index: number) => ({
-			id: `search-${node.nodeType.toLowerCase()}-${index}`,
-			nodeType: node.nodeType,
+		return filteredNodes.map((node, index: number) => ({
+			id: `search-${node.kind.toLowerCase()}-${index}`,
+			nodeType: node.kind,
 			label: node.displayName,
 			description: node.description,
 		}));
-	}, []);
+	}, [filteredNodes]);
 
 	// Filter stencils based on search query
 	const filteredStencils = useMemo(() => {
