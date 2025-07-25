@@ -60,7 +60,7 @@ function validateAdapterLogic() {
 		console.log("✅ NodeInspectorAdapter logic is valid!");
 		console.log("   • All node categories have controls by default");
 		console.log("   • Comprehensive approach ensures future-proof behavior");
-		console.log("   • Consistent UX across CREATE, VIEW, TRIGGER, TEST, CYCLE categories");
+		console.log("   • Consistent UX across CREATE, VIEW, TRIGGER, TEST, CYCLE, STORE categories");
 
 		return true;
 	} catch (error) {

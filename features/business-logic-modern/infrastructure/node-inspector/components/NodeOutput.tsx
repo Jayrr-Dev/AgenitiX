@@ -121,6 +121,21 @@ function getNodeSpecificStyling(
 					color: theme.text.secondary,
 					icon: metadata.icon || "CYCLE",
 				};
+			case "store":
+				return {
+					color: theme.text.primary,
+					icon: metadata.icon || "STORE",
+				};
+
+
+
+
+
+
+
+
+
+
 			default:
 				return {
 					color: theme.text.muted,

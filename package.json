@@ -39,6 +39,7 @@
 		"format": "biome format --write .",
 		"plop": "plop",
 		"new:node": "plop node",
+		"new:category": "plop category",
 		"generate:handle-types": "node scripts/gen-handle-types.js",
 		"generate:tokens": "npx ts-node --project tsconfig.node.json scripts/gen-tokens.ts",
 		"generate:docs": "npx ts-node --project tsconfig.node.json scripts/gen-docs-tokens.ts",

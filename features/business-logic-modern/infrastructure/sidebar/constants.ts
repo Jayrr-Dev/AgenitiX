@@ -239,13 +239,15 @@ export const VARIANT_CONFIG: VariantConfig = {
 			IO: createStencilsByFolder("io", "variant-a"),
 		},
 	},
-	B: {
+			B: {
 		tabs: TAB_CONFIG_B,
 		stencils: {
 			CREATE: createStencilsByCategory("CREATE", "variant-b"),
 			VIEW: createStencilsByCategory("VIEW", "variant-b"),
 			TRIGGER: createStencilsByCategory("TRIGGER", "variant-b"),
 			TEST: createStencilsByCategory("TEST", "variant-b"),
+			CYCLE: createStencilsByCategory("CYCLE", "variant-b"),
+			STORE: createStencilsByCategory("STORE", "variant-b"),
 		},
 	},
 	C: {
@@ -375,6 +377,8 @@ export function refreshStencils(): typeof VARIANT_CONFIG {
 				VIEW: createStencilsByCategory("VIEW", "variant-b"),
 				TRIGGER: createStencilsByCategory("TRIGGER", "variant-b"),
 				TEST: createStencilsByCategory("TEST", "variant-b"),
+				CYCLE: createStencilsByCategory("CYCLE", "variant-b"),
+				STORE: createStencilsByCategory("STORE", "variant-b"),
 			},
 		},
 		C: {

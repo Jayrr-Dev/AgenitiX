@@ -74,6 +74,8 @@ const categorizeTokens = (flatTokens: Record<string, string>) => {
 		"node-trigger": { tokens: {}, count: 0 },
 		"node-test": { tokens: {}, count: 0 },
 		"node-cycle": { tokens: {}, count: 0 },
+	
+		"node-store": { tokens: {}, count: 0 },
 		"infra-inspector": { tokens: {}, count: 0 },
 		"infra-sidebar": { tokens: {}, count: 0 },
 		"infra-toolbar": { tokens: {}, count: 0 },
@@ -107,6 +109,19 @@ const categorizeTokens = (flatTokens: Record<string, string>) => {
 		else if (key.startsWith("node.trigger.")) category = "node-trigger";
 		else if (key.startsWith("node.test.")) category = "node-test";
 		else if (key.startsWith("node.cycle.")) category = "node-cycle";
+		else if (key.startsWith("node.ai.")) category = "node-ai";
+		else if (key.startsWith("node.ai.")) category = "node-ai";
+		else if (key.startsWith("node.ai.")) category = "node-ai";
+		else if (key.startsWith("node.ai.")) category = "node-ai";
+		else if (key.startsWith("node.email.")) category = "node-email";
+		else if (key.startsWith("node.email.")) category = "node-email";
+		else if (key.startsWith("node.ai.")) category = "node-ai";
+		else if (key.startsWith("node.ai.")) category = "node-ai";
+		else if (key.startsWith("node.email.")) category = "node-email";
+		else if (key.startsWith("node.ai.")) category = "node-ai";
+		else if (key.startsWith("node.email.")) category = "node-email";
+
+		else if (key.startsWith("node.store.")) category = "node-store";
 		else if (key.startsWith("infra.inspector.")) category = "infra-inspector";
 		else if (key.startsWith("infra.sidebar.")) category = "infra-sidebar";
 		else if (key.startsWith("infra.toolbar.")) category = "infra-toolbar";

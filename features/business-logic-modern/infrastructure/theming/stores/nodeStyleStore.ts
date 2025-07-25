@@ -33,6 +33,15 @@ export interface CategoryTheme {
 export const CATEGORY_THEMES: Partial<Record<string, CategoryTheme>> = {
 	create: {
 		background: { light: "bg-node-create", dark: "bg-node-create" },
+
+
+
+
+
+
+
+
+
 		border: { light: "border-node-create", dark: "border-node-create" },
 		text: {
 			primary: { light: "text-node-create", dark: "text-node-create" },
@@ -100,6 +109,42 @@ export const CATEGORY_THEMES: Partial<Record<string, CategoryTheme>> = {
 			hover: {
 				light: "hover:bg-node-test-hover",
 				dark: "hover:bg-node-test-hover",
+			},
+		},
+	},
+	cycle: {
+		background: { light: "bg-node-cycle", dark: "bg-node-cycle" },
+		border: { light: "border-node-cycle", dark: "border-node-cycle" },
+		text: {
+			primary: { light: "text-node-cycle", dark: "text-node-cycle" },
+			secondary: {
+				light: "text-node-cycle-secondary",
+				dark: "text-node-cycle-secondary",
+			},
+		},
+		button: {
+			border: "border-node-cycle",
+			hover: {
+				light: "hover:bg-node-cycle-hover",
+				dark: "hover:bg-node-cycle-hover",
+			},
+		},
+	},
+	store: {
+		background: { light: "bg-node-store", dark: "bg-node-store" },
+		border: { light: "border-node-store", dark: "border-node-store" },
+		text: {
+			primary: { light: "text-node-store", dark: "text-node-store" },
+			secondary: {
+				light: "text-node-store-secondary",
+				dark: "text-node-store-secondary",
+			},
+		},
+		button: {
+			border: "border-node-store",
+			hover: {
+				light: "hover:bg-node-store-hover",
+				dark: "hover:bg-node-store-hover",
 			},
 		},
 	},

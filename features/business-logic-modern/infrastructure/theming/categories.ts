@@ -5,6 +5,7 @@ export const CATEGORIES = {
 	TRIGGER: "TRIGGER",
 	TEST: "TEST",
 	CYCLE: "CYCLE",
+	STORE: "STORE",
 } as const;
 
 export type NodeCategory = (typeof CATEGORIES)[keyof typeof CATEGORIES];

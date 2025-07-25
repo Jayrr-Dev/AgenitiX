@@ -204,7 +204,7 @@ export type NodeTypeConfigMap = Record<NodeType, NodeTypeConfig>;
 // DOMAIN CATEGORIES
 // ============================================================================
 
-export type DomainCategory = "create" | "view" | "trigger" | "test" | "cycle";
+export type DomainCategory = "create" | "view" | "trigger" | "test" | "cycle" | "store";
 
 export interface DomainMetadata {
 	category: DomainCategory;

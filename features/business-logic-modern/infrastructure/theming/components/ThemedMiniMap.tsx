@@ -51,7 +51,42 @@ export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
 					} else if (nodeCategory.startsWith("trigger")) {
 						resolvedCategory = "TRIGGER";
 					} else if (nodeCategory.startsWith("test")) {
+					resolvedCategory = "TEST";
+				} else if (nodeCategory.startsWith("ai")) {
+					resolvedCategory = "AI";
+					resolvedCategory = "TEST";
+				} else if (nodeCategory.startsWith("ai")) {
+					resolvedCategory = "AI";
+					resolvedCategory = "TEST";
+				} else if (nodeCategory.startsWith("ai")) {
+					resolvedCategory = "AI";
+					resolvedCategory = "TEST";
+				} else if (nodeCategory.startsWith("ai")) {
+					resolvedCategory = "AI";
+					resolvedCategory = "TEST";
+				} else if (nodeCategory.startsWith("email")) {
+					resolvedCategory = "EMAIL";
+					resolvedCategory = "TEST";
+				} else if (nodeCategory.startsWith("email")) {
+					resolvedCategory = "EMAIL";
+					resolvedCategory = "TEST";
+				} else if (nodeCategory.startsWith("ai")) {
+					resolvedCategory = "AI";
+					resolvedCategory = "TEST";
+				} else if (nodeCategory.startsWith("ai")) {
+					resolvedCategory = "AI";
+					resolvedCategory = "TEST";
+				} else if (nodeCategory.startsWith("email")) {
+					resolvedCategory = "EMAIL";
+					resolvedCategory = "TEST";
+				} else if (nodeCategory.startsWith("ai")) {
+					resolvedCategory = "AI";
+					resolvedCategory = "TEST";
+				} else if (nodeCategory.startsWith("email")) {
+					resolvedCategory = "EMAIL";
 						resolvedCategory = "TEST";
+					} else if (nodeCategory.startsWith("store")) {
+						resolvedCategory = "STORE";
 					} else if (nodeCategory.startsWith("cycle")) {
 						resolvedCategory = "CYCLE";
 					}
@@ -80,7 +115,53 @@ export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
 						return "var(--node-test-bg)";
 					case "CYCLE":
 						return "var(--node-cycle-bg)";
-					default:
+					case "STORE":
+						return "var(--node-store-bg)";
+				case "EMAIL":
+					return "var(--node-email-bg)";
+				case "EMAIL":
+					return "var(--node-email-bg-hover)";
+				case "AI":
+					return "var(--node-ai-bg)";
+				case "AI":
+					return "var(--node-ai-bg-hover)";
+				case "EMAIL":
+					return "var(--node-email-bg)";
+				case "EMAIL":
+					return "var(--node-email-bg-hover)";
+				case "AI":
+					return "var(--node-ai-bg)";
+				case "AI":
+					return "var(--node-ai-bg-hover)";
+				case "AI":
+					return "var(--node-ai-bg)";
+				case "AI":
+					return "var(--node-ai-bg-hover)";
+				case "EMAIL":
+					return "var(--node-email-bg)";
+				case "EMAIL":
+					return "var(--node-email-bg-hover)";
+				case "EMAIL":
+					return "var(--node-email-bg)";
+				case "EMAIL":
+					return "var(--node-email-bg-hover)";
+				case "AI":
+					return "var(--node-ai-bg)";
+				case "AI":
+					return "var(--node-ai-bg-hover)";
+				case "AI":
+					return "var(--node-ai-bg)";
+				case "AI":
+					return "var(--node-ai-bg-hover)";
+				case "AI":
+					return "var(--node-ai-bg)";
+				case "AI":
+					return "var(--node-ai-bg-hover)";
+				case "AI":
+					return "var(--node-ai-bg)";
+				case "AI":
+					return "var(--node-ai-bg-hover)";
+				default:
 						console.log(
 							`🔵 [MiniMap] Using default blue color for node ${node.id}, category: ${resolvedCategory}`
 						);

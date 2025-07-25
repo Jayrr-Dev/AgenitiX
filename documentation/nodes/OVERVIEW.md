@@ -5,9 +5,9 @@ This document provides a comprehensive overview of all available nodes in the Ag
 ## 📊 Statistics
 
 - **Total Nodes:** 4
-- **Total Domains:** 4
+- **Total Domains:** 5
 - **Total Categories:** 4
-- **Last Updated:** 7/24/2025, 3:46:39 PM
+- **Last Updated:** 7/24/2025, 6:00:30 PM
 
 ## 🎯 Quick Navigation
 
@@ -22,6 +22,8 @@ This document provides a comprehensive overview of all available nodes in the Ag
 
 ### Test Domain
 - [test](#test-test) (1 nodes)
+
+### Store Domain
 
 ## Create Domain
 
@@ -149,6 +151,10 @@ Testing and validation nodes
   - **Accessibility:** 🎯 Supported
 - **File:** `\features\business-logic-modern\node-domain\test\testNode.node.tsx`
 - **Documentation:** [Markdown](./test/testNode.md) | [HTML](./test/testNode.html)
+
+## Store Domain
+
+For nodes that store data
 
 ## 🚀 Usage
 

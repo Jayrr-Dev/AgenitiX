@@ -56,6 +56,8 @@
 			"@domain-trigger/*": ["./features/business-logic-modern/node-domain/trigger/*"],
 			"@domain-test/*": ["./features/business-logic-modern/node-domain/test/*"],
 			"@domain-cycle/*": ["./features/business-logic-modern/node-domain/cycle/*"],
+	
+			"@domain-store/*": ["./features/business-logic-modern/node-domain/store/*"],
 
 			// ============================================================================
 			// INFRASTRUCTURE LAYER

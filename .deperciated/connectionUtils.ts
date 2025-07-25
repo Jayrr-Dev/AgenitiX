@@ -22,6 +22,8 @@ const CATEGORY_EDGE_COLORS = {
 	trigger: "#6b7280", // Gray - let data types determine color (boolean = green)
 	test: "#eab308", // Yellow - matches test category
 	cycle: "#10b981", // Green - matches cycle category
+
+	store: "#6b7280", // STORE - matches store category
 } as const;
 
 /**

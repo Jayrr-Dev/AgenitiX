@@ -60,7 +60,20 @@ interface DomainInfo {
  */
 function scanNodes(): DomainInfo[] {
 	const nodeBasePath = path.join(process.cwd(), "features/business-logic-modern/node-domain");
-	const domains = ["create", "view", "trigger", "test", "cycle", "custom"];
+	
+	// Auto-discover domains by scanning directories
+	const discoveredDomains = fs.existsSync(nodeBasePath) 
+		? fs.readdirSync(nodeBasePath).filter(item => {
+			const itemPath = path.join(nodeBasePath, item);
+			return fs.statSync(itemPath).isDirectory() && item !== '.git';
+		})
+		: [];
+	
+	// Ensure core domains are always included in preferred order
+	const coreDomains = ["create", "view", "trigger", "test", "cycle", "store"];
+	const allDomains = [...coreDomains, ...discoveredDomains.filter(d => !coreDomains.includes(d))];
+	const domains = Array.from(new Set(allDomains)); // Remove duplicates while preserving order
+	
 	const domainInfo: DomainInfo[] = [];
 
 	domains.forEach((domain) => {
@@ -236,6 +249,7 @@ function getDomainDescription(domain: string): string {
 		trigger: "Nodes that respond to events, conditions, or triggers",
 		test: "Nodes for testing, validation, and quality assurance",
 		cycle: "Nodes that handle iterative operations, loops, and cycles",
+		store: "For nodes that store data",
 		custom: "Custom nodes with specialized functionality",
 	};
 	return descriptions[domain] || `Nodes for ${domain} operations`;
@@ -251,6 +265,7 @@ function getCategoryDescription(category: string): string {
 		trigger: "Event-driven and conditional nodes",
 		test: "Testing and validation nodes",
 		cycle: "Iterative and loop-based nodes",
+		store: "For nodes that store data",
 		custom: "Custom and specialized nodes",
 	};
 	return descriptions[category] || `${category} category nodes`;

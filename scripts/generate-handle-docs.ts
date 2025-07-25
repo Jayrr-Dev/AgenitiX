@@ -138,7 +138,7 @@ const HANDLE_TYPE_MAP: Record<string, HandleTypeInfo> = {
  */
 function scanNodeHandles(): NodeHandleAnalysis[] {
 	const nodeBasePath = path.join(process.cwd(), "features/business-logic-modern/node-domain");
-	const domains = ["create", "view", "trigger", "test", "cycle", "custom"];
+	const domains = ["create", "view", "trigger", "test", "cycle", "store", "custom"];
 	const analyses: NodeHandleAnalysis[] = [];
 
 	domains.forEach((domain) => {

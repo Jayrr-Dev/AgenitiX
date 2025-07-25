@@ -98,13 +98,13 @@ module.exports = (plop) => {
 				type: "list",
 				name: "domain",
 				message: "What is the domain of the node?",
-				choices: ["create", "view", "trigger", "test", "cycle", "custom"],
+				choices: ["create", "view", "trigger", "test", "cycle", "store", "custom"],
 			},
 			{
 				type: "list",
 				name: "category",
 				message: "What is the functional category of the node?",
-				choices: ["CREATE", "VIEW", "TRIGGER", "TEST", "CYCLE"],
+				choices: ["CREATE", "VIEW", "TRIGGER", "TEST", "CYCLE", "STORE"],
 			},
 			{
 				type: "list",
@@ -1188,6 +1188,580 @@ module.exports = (plop) => {
 					`   • Validation checks to ensure only target node is affected\n` +
 					`   • Rollback available from backup if needed`,
 			];
+		},
+	});
+
+	// ============================================================================
+	// CATEGORY MANAGEMENT GENERATOR
+	// ============================================================================
+
+	plop.setGenerator("category", {
+		description: "Manage node categories - add, remove, or modify categories across the entire system",
+		prompts: [
+			{
+				type: "list",
+				name: "action",
+				message: "What would you like to do with categories?",
+				choices: [
+					{ name: "Add a new category", value: "add" },
+					{ name: "Remove an existing category", value: "remove" },
+					{ name: "List current categories", value: "list" },
+				],
+			},
+			{
+				type: "input",
+				name: "categoryName",
+				message: "What is the name of the category? (e.g., PROCESS, ANALYZE, TRANSFORM)",
+				when: (answers) => answers.action === "add",
+				validate: (input) => {
+					if (input.trim().length === 0) {
+						return "Category name cannot be empty";
+					}
+					if (!/^[A-Z][A-Z0-9_]*$/.test(input)) {
+						return "Category name must be UPPERCASE with only letters, numbers, and underscores";
+					}
+					if (input.length > 20) {
+						return "Category name is too long (max 20 characters)";
+					}
+					return true;
+				},
+			},
+			{
+				type: "list",
+				name: "categoryName",
+				message: "Which category would you like to remove?",
+				when: (answers) => answers.action === "remove",
+				choices: () => {
+					// Read current categories from the file
+					const categoriesPath = path.join(__dirname, "features/business-logic-modern/infrastructure/theming/categories.ts");
+					if (fs.existsSync(categoriesPath)) {
+						const content = fs.readFileSync(categoriesPath, "utf8");
+						const matches = content.match(/^\s*([A-Z_]+):\s*"[A-Z_]+",/gm);
+						if (matches) {
+							const categories = matches.map(match => {
+								const name = match.match(/^\s*([A-Z_]+):/)?.[1];
+								return name;
+							}).filter(Boolean);
+							
+							// Filter out core categories that shouldn't be removed
+							const coreCategories = ["CREATE", "VIEW", "TRIGGER", "TEST", "CYCLE", "STORE"];
+							const removableCategories = categories.filter(cat => !coreCategories.includes(cat));
+							
+							if (removableCategories.length === 0) {
+								return [{ name: "❌ No removable categories (only core categories exist)", value: null, disabled: true }];
+							}
+							
+							return removableCategories.map(category => ({
+								name: `🗑️  ${category} - ${category.charAt(0) + category.slice(1).toLowerCase()} category`,
+								value: category.toLowerCase()
+							}));
+						}
+					}
+					return [{ name: "❌ No categories found", value: null, disabled: true }];
+				},
+			},
+			{
+				type: "input",
+				name: "domainName",
+				message: "What is the domain name for this category? (lowercase, e.g., process, analyze)",
+				when: (answers) => answers.action === "add",
+				validate: (input) => {
+					if (input.trim().length === 0) {
+						return "Domain name cannot be empty";
+					}
+					if (!/^[a-z][a-z0-9]*$/.test(input)) {
+						return "Domain name must be lowercase with only letters and numbers";
+					}
+					if (input.length > 20) {
+						return "Domain name is too long (max 20 characters)";
+					}
+					return true;
+				},
+			},
+			{
+				type: "input",
+				name: "description",
+				message: "Describe what this category is for:",
+				when: (answers) => answers.action === "add",
+				default: (answers) => {
+					const category = answers.categoryName?.toLowerCase() || "operations";
+					return `Nodes that handle ${category} operations`;
+				},
+			},
+			{
+				type: "input",
+				name: "color",
+				message: "What color should this category use? (hex color, e.g., #3b82f6)",
+				when: (answers) => answers.action === "add",
+				default: "#6b7280",
+				validate: (input) => {
+					if (!/^#[0-9A-Fa-f]{6}$/.test(input)) {
+						return "Please enter a valid hex color (e.g., #3b82f6)";
+					}
+					return true;
+				},
+			},
+			{
+				type: "confirm",
+				name: "addToSidebar",
+				message: "Add this category to the sidebar tab configuration?",
+				when: (answers) => answers.action === "add",
+				default: true,
+			},
+		],
+		actions: (data) => {
+			if (data.action === "list") {
+				// Read categories from the file and display them
+				const categoriesPath = path.join(__dirname, "features/business-logic-modern/infrastructure/theming/categories.ts");
+				if (fs.existsSync(categoriesPath)) {
+					const content = fs.readFileSync(categoriesPath, "utf8");
+					const matches = content.match(/^\s*([A-Z_]+):\s*"[A-Z_]+",/gm);
+					if (matches) {
+						const categories = matches.map(match => {
+							const name = match.match(/^\s*([A-Z_]+):/)?.[1];
+							return name;
+						}).filter(Boolean);
+						
+						console.log("\n📋 Current Categories:");
+						console.log("==================");
+						categories.forEach((category, index) => {
+							console.log(`${index + 1}. ${category}`);
+						});
+						console.log(`\nTotal: ${categories.length} categories\n`);
+					}
+				}
+				return [];
+			}
+
+			if (data.action === "add") {
+				return [
+					// 1. Update categories.ts
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/theming/categories.ts",
+						pattern: /} as const;/,
+						template: `\t${data.categoryName}: "${data.categoryName}",\n} as const;`,
+					},
+
+					// 2. Update nodeData.ts - DomainCategory type
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/flow-engine/types/nodeData.ts",
+						pattern: /export type DomainCategory = "create" \| "view" \| "trigger" \| "test" \| "cycle" \| "store";/,
+						template: `export type DomainCategory = "create" | "view" | "trigger" | "test" | "cycle" | "store" | "${data.domainName}";`,
+					},
+
+					// 3. Update sidebar types.ts - TAB_CONFIG_B
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/sidebar/types.ts",
+						pattern: /{ key: "STORE", label: "Store" },/,
+						template: `{ key: "STORE", label: "Store" },${data.addToSidebar ? `\n\t{ key: "${data.categoryName}", label: "${data.categoryName.charAt(0) + data.categoryName.slice(1).toLowerCase()}" },` : ""}`,
+					},
+
+					// 4. Update sidebar constants.ts - VARIANT_CONFIG
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/sidebar/constants.ts",
+						pattern: /STORE: createStencilsByCategory\("STORE", "variant-b"\),/,
+						template: `STORE: createStencilsByCategory("STORE", "variant-b"),${data.addToSidebar ? `\n\t\t\t\t${data.categoryName}: createStencilsByCategory("${data.categoryName}", "variant-b"),` : ""}`,
+					},
+
+					// 5. Update refreshStencils function
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/sidebar/constants.ts",
+						pattern: /STORE: createStencilsByCategory\("STORE", "variant-b"\),/,
+						template: `STORE: createStencilsByCategory("STORE", "variant-b"),${data.addToSidebar ? `\n\t\t\t\t${data.categoryName}: createStencilsByCategory("${data.categoryName}", "variant-b"),` : ""}`,
+					},
+
+					// 6. Update nodeStyleStore.ts - CATEGORY_THEMES
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/theming/stores/nodeStyleStore.ts",
+						pattern: /test: \{/,
+						template: `test: {`,
+					},
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/theming/stores/nodeStyleStore.ts",
+						pattern: /},/,
+						template: `},\n\t${data.domainName}: {\n\t\tbackground: { light: "bg-node-${data.domainName}", dark: "bg-node-${data.domainName}" },\n\t\tborder: { light: "border-node-${data.domainName}", dark: "border-node-${data.domainName}" },\n\t\ttext: {\n\t\t\tprimary: { light: "text-node-${data.domainName}", dark: "text-node-${data.domainName}" },\n\t\t\tsecondary: {\n\t\t\t\tlight: "text-node-${data.domainName}-secondary",\n\t\t\t\tdark: "text-node-${data.domainName}-secondary",\n\t\t\t},\n\t\t},\n\t\tbutton: {\n\t\t\tborder: "border-node-${data.domainName}",\n\t\t\thover: {\n\t\t\t\tlight: "hover:bg-node-${data.domainName}-hover",\n\t\t\t\tdark: "hover:bg-node-${data.domainName}-hover",\n\t\t\t},\n\t\t},\n\t},`,
+					},
+
+					// 7. Update BaseControl.tsx - getSemanticClasses
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/node-inspector/controls/BaseControl.tsx",
+						pattern: /case "test":/,
+						template: `case "test":`,
+					},
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/node-inspector/controls/BaseControl.tsx",
+						pattern: /default:/,
+						template: `case "${data.domainName}":\n		case "${data.domainName}node":\n			return {\n				primary: "bg-node-${data.domainName} text-node-${data.domainName}-text",\n				primaryHover: "hover:bg-node-${data.domainName}-hover",\n				border: "border-node-${data.domainName}",\n				borderHover: "hover:border-node-${data.domainName}-hover",\n				text: "text-node-${data.domainName}-text",\n				textSecondary: "text-node-${data.domainName}-text-secondary",\n			};\n		default:`,
+					},
+
+					// 8. Update NodeInspectorService.ts - determineHasControls
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/node-inspector/services/NodeInspectorService.ts",
+						pattern: /metadata\.category === "TEST" \|\|/,
+						template: `metadata.category === "TEST" ||\n\t\t\tmetadata.category === "${data.categoryName}" ||`,
+					},
+
+					// 9. Update NodeOutput.tsx - category-based styling
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/node-inspector/components/NodeOutput.tsx",
+						pattern: /case "test":/,
+						template: `case "test":`,
+					},
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/node-inspector/components/NodeOutput.tsx",
+						pattern: /default:/,
+						template: `case "${data.domainName}":\n\t\t\t\treturn {\n\t\t\t\t\tcolor: theme.text.primary,\n\t\t\t\t\ticon: metadata.icon || "${data.categoryName}",\n\t\t\t\t};\n\t\t\tdefault:`,
+					},
+
+					// 10. Update ThemedMiniMap.tsx - node color mapping
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/theming/components/ThemedMiniMap.tsx",
+						pattern: /} else if \(nodeCategory\.startsWith\("test"\)\) \{/,
+						template: `} else if (nodeCategory.startsWith("test")) {\n\t\t\t\t\tresolvedCategory = "TEST";\n\t\t\t\t} else if (nodeCategory.startsWith("${data.domainName}")) {\n\t\t\t\t\tresolvedCategory = "${data.categoryName}";`,
+					},
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/theming/components/ThemedMiniMap.tsx",
+						pattern: /case "TEST":/,
+						template: `case "TEST":`,
+					},
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/theming/components/ThemedMiniMap.tsx",
+						pattern: /default:/,
+						template: `case "${data.categoryName}":\n\t\t\t\t\treturn "var(--node-${data.domainName}-bg)";\n\t\t\t\tdefault:`,
+					},
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/theming/components/ThemedMiniMap.tsx",
+						pattern: /case "TEST":/,
+						template: `case "TEST":`,
+					},
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/theming/components/ThemedMiniMap.tsx",
+						pattern: /default:/,
+						template: `case "${data.categoryName}":\n\t\t\t\t\treturn "var(--node-${data.domainName}-bg-hover)";\n\t\t\t\tdefault:`,
+					},
+
+					// 11. Update connectionUtils.ts - CATEGORY_EDGE_COLORS
+					{
+						type: "modify",
+						path: ".deperciated/connectionUtils.ts",
+						pattern: /cycle: "#10b981", \/\/ Green - matches cycle category/,
+						template: `cycle: "#10b981", // Green - matches cycle category\n\t${data.domainName}: "${data.color}", // ${data.categoryName} - matches ${data.domainName} category`,
+					},
+
+					// 12. Update generate-nodes-overview.ts - core domains array (auto-discovery enabled)
+					{
+						type: "modify",
+						path: "scripts/generate-nodes-overview.ts",
+						pattern: /const coreDomains = \["create", "view", "trigger", "test", "cycle", "store"\];/,
+						template: `const coreDomains = ["create", "view", "trigger", "test", "cycle", "store", "${data.domainName}"];`,
+					},
+
+					// 13. Update getDomainDescription function
+					{
+						type: "modify",
+						path: "scripts/generate-nodes-overview.ts",
+						pattern: /(\t\tstore: "For nodes that store data",)\n(\t\tcustom: "Custom nodes with specialized functionality",)/,
+						template: `$1\n\t\t${data.domainName}: "${data.description}",\n$2`,
+					},
+
+					// 14. Update getCategoryDescription function
+					{
+						type: "modify",
+						path: "scripts/generate-nodes-overview.ts",
+						pattern: /(\t\tstore: "For nodes that store data",)\n(\t\tcustom: "Custom and specialized nodes",)/,
+						template: `$1\n\t\t${data.domainName}: "${data.description}",\n$2`,
+					},
+
+					// 15. Update gen-docs-tokens.ts - categories object
+					{
+						type: "modify",
+						path: "scripts/gen-docs-tokens.ts",
+						pattern: /"node-cycle": \{ tokens: \{\}, count: 0 \},/,
+						template: `"node-cycle": { tokens: {}, count: 0 },\n\t\t"node-${data.domainName}": { tokens: {}, count: 0 },`,
+					},
+
+					// 16. Update gen-docs-tokens.ts - categorization logic
+					{
+						type: "modify",
+						path: "scripts/gen-docs-tokens.ts",
+						pattern: /else if \(key\.startsWith\("node\.cycle\."\)\) category = "node-cycle";/,
+						template: `else if (key.startsWith("node.cycle.")) category = "node-cycle";\n\t\telse if (key.startsWith("node.${data.domainName}.")) category = "node-${data.domainName}";`,
+					},
+
+					// 17. Update plopfile.js - domain choices
+					{
+						type: "modify",
+						path: "plopfile.js",
+						pattern: /choices: \["create", "view", "trigger", "test", "cycle", "custom"\],/,
+						template: `choices: ["create", "view", "trigger", "test", "cycle", "${data.domainName}", "custom"],`,
+					},
+
+					// 18. Update plopfile.js - category choices
+					{
+						type: "modify",
+						path: "plopfile.js",
+						pattern: /choices: \["CREATE", "VIEW", "TRIGGER", "TEST", "CYCLE"\],/,
+						template: `choices: ["CREATE", "VIEW", "TRIGGER", "TEST", "CYCLE", "${data.categoryName}"],`,
+					},
+
+					// 19. Update tsconfig.json - path mapping
+					{
+						type: "modify",
+						path: "tsconfig.json",
+						pattern: /"@domain-cycle\/\*": \[".\/features\/business-logic-modern\/node-domain\/cycle\/\*"\],/,
+						template: `"@domain-cycle/*": ["./features/business-logic-modern/node-domain/cycle/*"],\n\t\t\t"@domain-${data.domainName}/*": ["./features/business-logic-modern/node-domain/${data.domainName}/*"],`,
+					},
+
+					// 20. Create domain directory
+					{
+						type: "add",
+						path: `features/business-logic-modern/node-domain/${data.domainName}/.gitkeep`,
+						template: "# This file ensures the directory is tracked by git",
+					},
+
+					// 21. Create documentation directory
+					{
+						type: "add",
+						path: `documentation/nodes/${data.domainName}/.gitkeep`,
+						template: "# This file ensures the directory is tracked by git",
+					},
+
+					// 22. Update useSidebarState.ts - DEFAULT_TABS
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/sidebar/hooks/useSidebarState.ts",
+						pattern: /B: "CREATE" as TabKeyB,/,
+						template: `B: "CREATE" as TabKeyB,`,
+					},
+
+					// 23. Update validate-adapter-logic.js - validation patterns
+					{
+						type: "modify",
+						path: "scripts/validate-adapter-logic.js",
+						pattern: /console\.log\("   • Consistent UX across CREATE, VIEW, TRIGGER, TEST, CYCLE categories"\);/,
+						template: `console.log("   • Consistent UX across CREATE, VIEW, TRIGGER, TEST, CYCLE, ${data.categoryName} categories");`,
+					},
+
+					// 24. Update generate-handle-docs.ts - domains array
+					{
+						type: "modify",
+						path: "scripts/generate-handle-docs.ts",
+						pattern: /const domains = \["create", "view", "trigger", "test", "cycle", "custom"\];/,
+						template: `const domains = ["create", "view", "trigger", "test", "cycle", "${data.domainName}", "custom"];`,
+					},
+
+					// 25. Generate tokens for the new category
+					function() {
+						console.log(`\n🎨 Generating design tokens for ${data.categoryName} category...`);
+						console.log(`💡 Run manually: pnpm generate:tokens`);
+						return "";
+					},
+
+					// 26. Regenerate documentation
+					function() {
+						console.log(`📚 Regenerating documentation for ${data.categoryName} category...`);
+						console.log(`💡 Run manually: pnpm generate:node-docs`);
+						return "";
+					},
+
+					// 27. Success message
+					function() {
+						console.log(`\n✅ Category '${data.categoryName}' successfully added to all files!`);
+						console.log(`📁 Files Updated: 26+`);
+						console.log(`🎯 Status: Complete\n`);
+						console.log(`📂 Directories created:`);
+						console.log(`• features/business-logic-modern/node-domain/${data.domainName}/`);
+						console.log(`• documentation/nodes/${data.domainName}/\n`);
+						console.log(`💡 Next steps:`);
+						console.log(`• Run: pnpm generate:tokens`);
+						console.log(`• Run: pnpm generate:node-docs`);
+						console.log(`• Create your first node: pnpm new:node\n`);
+						console.log(`Your new category is ready to use! 🎉\n`);
+						return "";
+					},
+				];
+			}
+
+			if (data.action === "remove") {
+				// Validate that a category was selected
+				if (!data.categoryName || data.categoryName === null) {
+					console.log("\n❌ No valid category selected for removal. Aborting...\n");
+					return [];
+				}
+				
+				// Automated category removal
+				const categoryName = data.categoryName.toUpperCase();
+				const domainName = data.categoryName.toLowerCase();
+				
+				console.log(`\n🗑️  Removing category '${categoryName}' from all files...`);
+				
+				return [
+					// 1. Remove from categories.ts
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/theming/categories.ts",
+						pattern: new RegExp(`\t${categoryName}: "${categoryName}",\n`),
+						template: "",
+					},
+					// 2. Remove from nodeData.ts - DomainCategory type
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/flow-engine/types/nodeData.ts",
+						pattern: new RegExp(`export type DomainCategory = "create" \\| "view" \\| "trigger" \\| "test" \\| "cycle" \\| "store" \\| "${domainName}";`),
+						template: `export type DomainCategory = "create" | "view" | "trigger" | "test" | "cycle" | "store";`,
+					},
+					// 3. Remove from sidebar types.ts - TAB_CONFIG_B
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/sidebar/types.ts",
+						pattern: new RegExp(`\t{ key: "${categoryName}", label: "${categoryName.charAt(0) + categoryName.slice(1).toLowerCase()}" },\n`),
+						template: "",
+					},
+					// 4. Remove from sidebar constants.ts - VARIANT_CONFIG
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/sidebar/constants.ts",
+						pattern: new RegExp(`\t\t\t\t${categoryName}: createStencilsByCategory\\("${categoryName}", "variant-b"\\),\n`),
+						template: "",
+					},
+					// 5. Remove from nodeStyleStore.ts - CATEGORY_THEMES (safer pattern)
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/theming/stores/nodeStyleStore.ts",
+						pattern: new RegExp(`\t${domainName}: \\{\\n\t\tbackground: \\{ light: "bg-node-${domainName}", dark: "bg-node-${domainName}" \\},\\n\t\tborder: \\{ light: "border-node-${domainName}", dark: "border-node-${domainName}" \\},\\n\t\ttext: \\{\\n\t\t\tprimary: \\{ light: "text-node-${domainName}", dark: "text-node-${domainName}" \\},\\n\t\t\tsecondary: \\{\\n\t\t\t\tlight: "text-node-${domainName}-secondary",\\n\t\t\t\tdark: "text-node-${domainName}-secondary",\\n\t\t\t\\},\\n\t\t\\},\\n\t\tbutton: \\{\\n\t\t\tborder: "border-node-${domainName}",\\n\t\t\thover: \\{\\n\t\t\t\tlight: "hover:bg-node-${domainName}-hover",\\n\t\t\t\tdark: "hover:bg-node-${domainName}-hover",\\n\t\t\t\\},\\n\t\t\\},\\n\t\\},`),
+						template: "",
+					},
+					// 6. Remove from BaseControl.tsx - getSemanticClasses (safer pattern)
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/node-inspector/controls/BaseControl.tsx",
+						pattern: new RegExp(`\t\tcase "${domainName}":\\n\t\tcase "${domainName}node":\\n\t\t\treturn \\{\\n\t\t\t\tprimary: "bg-node-${domainName} text-node-${domainName}-text",\\n\t\t\t\tprimaryHover: "hover:bg-node-${domainName}-hover",\\n\t\t\t\tborder: "border-node-${domainName}",\\n\t\t\t\tborderHover: "hover:border-node-${domainName}-hover",\\n\t\t\t\ttext: "text-node-${domainName}-text",\\n\t\t\t\ttextSecondary: "text-node-${domainName}-text-secondary",\\n\t\t\t\\};`),
+						template: "",
+					},
+					// 7. Remove from NodeOutput.tsx - getCategorySpecificStyles (safer pattern)
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/node-inspector/components/NodeOutput.tsx",
+						pattern: new RegExp(`\t\t\tcase "${domainName}":\\n\t\t\t\treturn \\{\\n\t\t\t\t\tcolor: theme\\.text\\.primary,\\n\t\t\t\t\ticon: metadata\\.icon \\|\\| "${categoryName}",\\n\t\t\t\t\\};`),
+						template: "",
+					},
+					// 8. Remove from ThemedMiniMap.tsx - category resolution
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/theming/components/ThemedMiniMap.tsx",
+						pattern: new RegExp(`\t\t\t\t\t} else if \\(nodeCategory\\.startsWith\\("${domainName}"\\)\\) \\{\n\t\t\t\t\t\tresolvedCategory = "${categoryName}";\n\t\t\t\t\t}`),
+						template: "",
+					},
+					// 9. Remove from ThemedMiniMap.tsx - color mapping
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/theming/components/ThemedMiniMap.tsx",
+						pattern: new RegExp(`\t\t\t\tcase "${categoryName}": return "var\\(--node-${domainName}-bg\\)";`),
+						template: "",
+					},
+					// 10. Remove from ThemedMiniMap.tsx - hover color mapping
+					{
+						type: "modify",
+						path: "features/business-logic-modern/infrastructure/theming/components/ThemedMiniMap.tsx",
+						pattern: new RegExp(`\t\t\t\tcase "${categoryName}": return "var\\(--node-${domainName}-bg-hover\\)";`),
+						template: "",
+					},
+					// 11. Remove from connectionUtils.ts - CATEGORY_EDGE_COLORS
+					{
+						type: "modify",
+						path: ".deperciated/connectionUtils.ts",
+						pattern: new RegExp(`\t${domainName}: "#[0-9a-fA-F]{6}", // ${categoryName} - matches ${domainName} category\n`),
+						template: "",
+					},
+					// 12. Remove from generate-nodes-overview.ts - core domains array
+					{
+						type: "modify",
+						path: "scripts/generate-nodes-overview.ts",
+						pattern: new RegExp(`const coreDomains = \\["create", "view", "trigger", "test", "cycle", "store", "${domainName}"\\];`),
+						template: `const coreDomains = ["create", "view", "trigger", "test", "cycle", "store"];`,
+					},
+					// 13. Remove from generate-nodes-overview.ts - domain descriptions (getDomainDescription)
+					{
+						type: "modify",
+						path: "scripts/generate-nodes-overview.ts",
+						pattern: new RegExp(`\t\t${domainName}: "Nodes that handle ${domainName} operations",\n`),
+						template: "",
+					},
+					// 14. Remove from generate-nodes-overview.ts - category descriptions (getCategoryDescription)
+					{
+						type: "modify",
+						path: "scripts/generate-nodes-overview.ts",
+						pattern: new RegExp(`\t\t${domainName}: "Nodes that handle ${domainName} operations",\n`),
+						template: "",
+					},
+					// 15. Remove from gen-docs-tokens.ts - categories object
+					{
+						type: "modify",
+						path: "scripts/gen-docs-tokens.ts",
+						pattern: new RegExp(`\t\t"node-${domainName}": \\{ tokens: \\{\\}, count: 0 \\},\n`),
+						template: "",
+					},
+					// 15. Remove from gen-docs-tokens.ts - categorization logic
+					{
+						type: "modify",
+						path: "scripts/gen-docs-tokens.ts",
+						pattern: new RegExp(`\t\t\telse if \\(key\\.startsWith\\("node\\.${domainName}\\."\\)\\) category = "node-${domainName}";\n`),
+						template: "",
+					},
+					// 16. Remove from plopfile.js - domain choices
+					{
+						type: "modify",
+						path: "plopfile.js",
+						pattern: new RegExp(`choices: \\["create", "view", "trigger", "test", "cycle", "${domainName}", "custom"\\],`),
+						template: `choices: ["create", "view", "trigger", "test", "cycle", "email", "custom"],`,
+					},
+					// 17. Remove from plopfile.js - category choices
+					{
+						type: "modify",
+						path: "plopfile.js",
+						pattern: new RegExp(`choices: \\["CREATE", "VIEW", "TRIGGER", "TEST", "CYCLE", "${categoryName}"\\],`),
+						template: `choices: ["CREATE", "VIEW", "TRIGGER", "TEST", "CYCLE", "EMAIL"],`,
+					},
+					// 18. Remove from tsconfig.json - path mapping
+					{
+						type: "modify",
+						path: "tsconfig.json",
+						pattern: new RegExp(`\t\t\t"@domain-${domainName}/\\*": \\["\\./features/business-logic-modern/node-domain/${domainName}/\\*"\\],\n`),
+						template: "",
+					},
+					// 19. Log completion message
+					function() {
+						console.log(`\n✅ Category '${categoryName}' successfully removed from all files!`);
+						console.log(`📁 Files Updated: 18+`);
+						console.log(`🎯 Status: Complete\n`);
+						console.log(`📂 Manual cleanup required:`);
+						console.log(`• Remove-Item -Recurse -Force "features/business-logic-modern/node-domain/${domainName}" -ErrorAction SilentlyContinue`);
+						console.log(`• Remove-Item -Recurse -Force "documentation/nodes/${domainName}" -ErrorAction SilentlyContinue\n`);
+						console.log(`Your system is now clean and ready to use! 🎉\n`);
+						return "";
+					},
+
+				];
+			}
+
+			return [];
 		},
 	});
 };

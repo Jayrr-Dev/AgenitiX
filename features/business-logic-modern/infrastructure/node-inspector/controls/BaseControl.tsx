@@ -96,6 +96,26 @@ function getSemanticClasses(nodeType?: string) {
 				text: "text-node-test-text",
 				textSecondary: "text-node-test-text-secondary",
 			};
+		case "store":
+		case "storenode":
+			return {
+				primary: "bg-node-store text-node-store-text",
+				primaryHover: "hover:bg-node-store-hover",
+				border: "border-node-store",
+				borderHover: "hover:border-node-store-hover",
+				text: "text-node-store-text",
+				textSecondary: "text-node-store-text-secondary",
+			};
+
+
+
+
+
+
+
+
+
+
 		default:
 			// Default to view node styling for unknown types
 			return {
