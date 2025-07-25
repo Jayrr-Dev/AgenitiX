@@ -1,15 +1,40 @@
-import React from "react";
+"use client";
 
-// PROTECTED ADMIN PAGE
-export default function AdminPage() {
+import React from "react";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { UserDropdown } from "@/components/auth/UserDropdown";
+import { useAuthContext } from "@/components/auth/AuthProvider";
+
+const AdminContent = () => {
+	const { user } = useAuthContext();
+
 	return (
-		<div className="min-h-screen bg-background p-8">
-			<div className="max-w-4xl mx-auto">
+		<div className="min-h-screen bg-background">
+			{/* Header with user info */}
+			<header className="bg-white border-b border-gray-200">
+				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+					<div className="flex justify-between items-center h-16">
+						<div className="flex items-center">
+							<h1 className="text-xl font-semibold text-gray-900">
+								Admin Dashboard
+							</h1>
+						</div>
+						<div className="flex items-center space-x-4">
+							<span className="text-sm text-gray-600">
+								Admin: {user?.name}
+							</span>
+							<UserDropdown />
+						</div>
+					</div>
+				</div>
+			</header>
+
+			<div className="max-w-4xl mx-auto p-8">
 				{/* HEADER */}
 				<div className="mb-8">
-					<h1 className="text-4xl font-bold text-foreground mb-2">Admin Dashboard</h1>
+					<h2 className="text-3xl font-bold text-foreground mb-2">System Overview</h2>
 					<p className="text-muted-foreground">
-						This page is protected by AgenitiX optimistic verification
+						This page is protected by AgenitiX authentication and optimistic verification
 					</p>
 				</div>
 
@@ -132,5 +157,14 @@ export default function AdminPage() {
 				</div>
 			</div>
 		</div>
+	);
+};
+
+// PROTECTED ADMIN PAGE
+export default function AdminPage() {
+	return (
+		<ProtectedRoute>
+			<AdminContent />
+		</ProtectedRoute>
 	);
 }

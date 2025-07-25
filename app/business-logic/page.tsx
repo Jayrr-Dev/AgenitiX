@@ -6,15 +6,18 @@
  * • Integrates with modern infrastructure components
  * • Uses client-side rendering for interactive flow editing
  * • Displays version information for debugging and tracking
+ * • Protected route requiring authentication
  *
- * Keywords: flow-editor, business-logic, modern, workflow, canvas, version
+ * Keywords: flow-editor, business-logic, modern, workflow, canvas, version, protected
  */
 
+"use client";
+
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import FlowEditor from "@/features/business-logic-modern/infrastructure/flow-engine/FlowEditor";
 import { VERSION } from "@/features/business-logic-modern/infrastructure/versioning";
 
-// MAIN PAGE COMPONENT
-export default function BusinessLogicPage() {
+const BusinessLogicContent = () => {
 	return (
 		<div className="h-[100vh] w-[100vw] relative">
 			<FlowEditor />
@@ -26,5 +29,14 @@ export default function BusinessLogicPage() {
 				</span>
 			</div>
 		</div>
+	);
+};
+
+// MAIN PAGE COMPONENT - PROTECTED
+export default function BusinessLogicPage() {
+	return (
+		<ProtectedRoute>
+			<BusinessLogicContent />
+		</ProtectedRoute>
 	);
 }
