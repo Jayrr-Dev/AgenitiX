@@ -1,14 +1,15 @@
 /**
- * DASHBOARD PAGE - User's main dashboard for managing flows
+ * DASHBOARD PAGE - Enhanced user dashboard for managing flows
  *
- * • Displays user's flows with enhanced information
- * • New flow creation modal with comprehensive form
+ * • Modern card-based layout with improved visual hierarchy
+ * • One-click privacy toggle with visual feedback
+ * • Enhanced flow cards with better information display
  * • Real-time flow management and navigation
  * • Secure user authentication and authorization
  * • Responsive design with modern UI components
  * • Full Convex database integration
  *
- * Keywords: dashboard, flows, modal, authentication, responsive, management, convex
+ * Keywords: dashboard, flows, modal, authentication, responsive, management, convex, privacy-toggle
  */
 
 "use client";
@@ -20,21 +21,31 @@ import { Loading } from "@/components/Loading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import type { Flow } from "@/features/business-logic-modern/dashboard/types";
 import { CreateFlowModal } from "@/features/business-logic-modern/dashboard/components/CreateFlowModal";
 import { FlowActions } from "@/features/business-logic-modern/dashboard/components/FlowActions";
-import { 
-	Activity, 
-	Bot, 
-	Code, 
-	Database, 
-	Globe, 
-	Mail, 
-	MessageSquare, 
-	Settings, 
-	Users, 
+import {
+	Activity,
+	Bot,
+	Code,
+	Database,
+	Globe,
+	Mail,
+	MessageSquare,
+	Settings,
+	Users,
 	Zap,
-	Plus 
+	Plus,
+	Lock,
+	Eye,
+	Calendar,
+	MoreHorizontal,
+	ExternalLink,
+	Search,
+	Filter
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -43,6 +54,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { DevAuthHelper } from "@/components/auth/DevAuthHelper";
+import { toast } from "sonner";
 
 // ICON MAPPING
 const ICON_MAP = {
@@ -60,16 +72,19 @@ const ICON_MAP = {
 
 const DashboardContent = () => {
 	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [searchQuery, setSearchQuery] = useState("");
+	const [showPrivateOnly, setShowPrivateOnly] = useState(false);
 	const router = useRouter();
 	const { user, isAuthenticated, isLoading: authLoading } = useAuthContext();
 
 	// Convex hooks
 	const flows = useQuery(
-		api.flows.getUserFlows, 
+		api.flows.getUserFlows,
 		user?.id ? { user_id: user.id } : "skip"
 	);
 	const createFlow = useMutation(api.flows.createFlow);
 	const deleteFlow = useMutation(api.flows.deleteFlow);
+	const updateFlow = useMutation(api.flows.updateFlow);
 
 	// Loading state
 	if (authLoading || flows === undefined) {
@@ -144,6 +159,30 @@ const DashboardContent = () => {
 		}
 	};
 
+	const handlePrivacyToggle = async (flowId: string, currentPrivacy: boolean) => {
+		if (!user?.id) {
+			toast.error("Authentication required");
+			return;
+		}
+
+		try {
+			await updateFlow({
+				flow_id: flowId as any,
+				user_id: user.id,
+				is_private: !currentPrivacy,
+			});
+
+			toast.success(
+				!currentPrivacy
+					? "Flow is now private"
+					: "Flow is now public"
+			);
+		} catch (error) {
+			console.error("Failed to update flow privacy:", error);
+			toast.error(error instanceof Error ? error.message : "Failed to update privacy setting");
+		}
+	};
+
 	const formatDate = (dateString: string) => {
 		return new Date(dateString).toLocaleDateString("en-US", {
 			year: "numeric",
@@ -158,7 +197,7 @@ const DashboardContent = () => {
 	};
 
 	// Convert Convex flows to dashboard format
-	const dashboardFlows: Flow[] = flows.map(flow => ({
+	const allFlows: Flow[] = flows.map(flow => ({
 		id: flow._id,
 		name: flow.name,
 		description: flow.description,
@@ -169,98 +208,264 @@ const DashboardContent = () => {
 		userId: flow.user_id,
 	}));
 
+	// Filter flows based on search and privacy filter
+	const dashboardFlows = allFlows.filter(flow => {
+		const matchesSearch = searchQuery === "" ||
+			flow.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+			(flow.description && flow.description.toLowerCase().includes(searchQuery.toLowerCase()));
+
+		const matchesPrivacy = !showPrivateOnly || flow.private;
+
+		return matchesSearch && matchesPrivacy;
+	});
+
 	return (
-		<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-			<div className="mb-6">
-				<h2 className="text-2xl font-bold text-foreground">My Flows</h2>
-				<p className="text-muted-foreground mt-1">
-					Create and manage your automation workflows
-				</p>
-			</div>
-
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-				{/* "New Flow" card */}
-				<Card 
-					className="cursor-pointer hover:shadow-lg transition-shadow border-dashed border-2 border-muted-foreground/20 hover:border-primary/50"
-					onClick={() => setIsModalOpen(true)}
-				>
-					<div className="flex flex-col items-center justify-center py-12">
-						<Plus size={32} className="text-muted-foreground mb-2" />
-						<CardTitle className="text-lg text-foreground">New Flow</CardTitle>
-						<p className="text-sm text-muted-foreground mt-1 text-center">
-							Create a new automation workflow
-						</p>
-					</div>
-				</Card>
-
-				{/* Existing flows */}
-				{dashboardFlows.map((flow) => (
-					<Card key={flow.id} className="relative hover:shadow-lg transition-shadow">
-						{/* Private badge */}
-						{flow.private && (
-							<Badge variant="secondary" className="absolute top-3 right-3 text-xs">
-								PRIVATE
-							</Badge>
-						)}
-
-						<CardHeader className="flex items-center space-x-4">
-							{/* Flow Icon */}
-							<div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-								{getIconComponent(flow.icon || "zap")}
+		<div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+				{/* Enhanced Header */}
+				<div className="mb-8">
+					<div className="flex flex-col gap-6">
+						<div className="flex items-center justify-between">
+							<div>
+								<h1 className="text-3xl font-bold text-foreground mb-2">My Flows</h1>
+								<p className="text-muted-foreground">
+									Create and manage your automation workflows
+								</p>
 							</div>
-							<div className="flex-1 min-w-0">
-								<CardTitle className="text-lg truncate">{flow.name}</CardTitle>
+							<div className="flex items-center gap-3">
+								<Link href="/explore">
+									<Button variant="outline" className="gap-2">
+										<Globe className="w-4 h-4" />
+										Explore
+									</Button>
+								</Link>
+								<Button
+									onClick={() => setIsModalOpen(true)}
+									className="gap-2"
+								>
+									<Plus className="w-4 h-4" />
+									New Flow
+								</Button>
+							</div>
+						</div>
+
+						{/* Search and Filter Controls */}
+						{allFlows.length > 0 && (
+							<div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+								<div className="flex items-center gap-4 flex-1 max-w-md">
+									<div className="relative flex-1">
+										<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+										<Input
+											placeholder="Search flows..."
+											value={searchQuery}
+											onChange={(e) => setSearchQuery(e.target.value)}
+											className="pl-10"
+										/>
+									</div>
+									<div className="flex items-center gap-2">
+										<Switch
+											checked={showPrivateOnly}
+											onCheckedChange={setShowPrivateOnly}
+											className="data-[state=checked]:bg-orange-600"
+										/>
+										<span className="text-sm text-muted-foreground whitespace-nowrap">
+											Private only
+										</span>
+									</div>
+								</div>
+
+								<div className="flex items-center gap-6 text-sm text-muted-foreground">
+									<span>
+										{dashboardFlows.length} of {allFlows.length} flows
+									</span>
+									<div className="flex items-center gap-4">
+										<span className="flex items-center gap-1">
+											<Eye className="w-3 h-3 text-green-600" />
+											{allFlows.filter(f => !f.private).length} public
+										</span>
+										<span className="flex items-center gap-1">
+											<Lock className="w-3 h-3 text-orange-600" />
+											{allFlows.filter(f => f.private).length} private
+										</span>
+									</div>
+								</div>
+							</div>
+						)}
+					</div>
+				</div>
+
+				{/* Enhanced Grid Layout */}
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+					{/* Enhanced "New Flow" card */}
+					<Card
+						className="group cursor-pointer hover:shadow-xl transition-all duration-300 border-dashed border-2 border-muted-foreground/30 hover:border-primary/60 hover:bg-primary/5"
+						onClick={() => setIsModalOpen(true)}
+					>
+						<CardContent className="flex flex-col items-center justify-center py-16">
+							<div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+								<Plus className="w-8 h-8 text-primary" />
+							</div>
+							<h3 className="text-lg font-semibold text-foreground mb-2">Create New Flow</h3>
+							<p className="text-sm text-muted-foreground text-center">
+								Build a new automation workflow
+							</p>
+						</CardContent>
+					</Card>
+
+					{/* Enhanced Flow Cards */}
+					{dashboardFlows.map((flow) => (
+						<Card key={flow.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+							<CardHeader className="pb-3">
+								{/* Header with Icon and Privacy Toggle */}
+								<div className="flex items-start justify-between">
+									<div className="flex items-center gap-3">
+										<div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${flow.private
+											? "bg-orange-100 text-orange-600"
+											: "bg-green-100 text-green-600"
+											}`}>
+											{getIconComponent(flow.icon || "zap")}
+										</div>
+										<div className="flex-1 min-w-0">
+											<h3 className="font-semibold text-lg truncate text-foreground">
+												{flow.name}
+											</h3>
+											<div className="flex items-center gap-2 mt-1">
+												<Badge
+													variant={flow.private ? "secondary" : "default"}
+													className={`text-xs ${flow.private
+														? "bg-orange-100 text-orange-700 border-orange-200"
+														: "bg-green-100 text-green-700 border-green-200"
+														}`}
+												>
+													{flow.private ? (
+														<><Lock className="w-3 h-3 mr-1" />Private</>
+													) : (
+														<><Eye className="w-3 h-3 mr-1" />Public</>
+													)}
+												</Badge>
+											</div>
+										</div>
+									</div>
+
+									{/* Privacy Toggle Switch */}
+									<div className="flex flex-col items-center gap-1">
+										<Switch
+											checked={!flow.private}
+											onCheckedChange={() => handlePrivacyToggle(flow.id, flow.private)}
+											className={`transition-all duration-200 ${!flow.private
+												? "data-[state=checked]:bg-green-600"
+												: "data-[state=unchecked]:bg-orange-500"
+												}`}
+										/>
+										<span className="text-xs text-muted-foreground">
+											{flow.private ? "Private" : "Public"}
+										</span>
+									</div>
+								</div>
+							</CardHeader>
+
+							<CardContent className="space-y-4">
+								{/* Description */}
 								{flow.description && (
-									<p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+									<p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
 										{flow.description}
 									</p>
 								)}
-								<p className="text-xs text-muted-foreground mt-2">
-									Updated: {formatDate(flow.updatedAt)}
-								</p>
-							</div>
-						</CardHeader>
 
-						<CardContent className="space-y-4">
-							{/* Action Buttons */}
-							<FlowActions 
-								flow={flow} 
-								onDelete={handleFlowDeleted}
-							/>
-							
-							{/* Open Flow Button */}
-							<Link href={`/matrix/${flow.id}`} passHref>
-								<Button asChild variant="default" className="w-full">
-									<div>Open Flow</div>
-								</Button>
-							</Link>
-						</CardContent>
-					</Card>
-				))}
+								{/* Metadata */}
+								<div className="flex items-center gap-4 text-xs text-muted-foreground">
+									<div className="flex items-center gap-1">
+										<Calendar className="w-3 h-3" />
+										Updated {formatDate(flow.updatedAt)}
+									</div>
+								</div>
 
-				{/* Empty state when no flows */}
-				{dashboardFlows.length === 0 && (
-					<div className="col-span-full text-center py-12">
-						<Plus size={48} className="text-muted-foreground mx-auto mb-4" />
-						<h3 className="text-lg font-medium text-foreground mb-2">
-							No flows yet
+								<Separator />
+
+								{/* Actions */}
+								<div className="flex items-center justify-between gap-2">
+									<FlowActions
+										flow={flow}
+										onDelete={handleFlowDeleted}
+									/>
+
+									<Link href={`/matrix/${flow.id}`}>
+										<Button size="sm" className="gap-2">
+											<ExternalLink className="w-3 h-3" />
+											Open
+										</Button>
+									</Link>
+								</div>
+							</CardContent>
+						</Card>
+					))}
+				</div>
+
+				{/* Empty States */}
+				{allFlows.length === 0 ? (
+					// No flows at all
+					<div className="text-center py-16">
+						<div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+							<Zap className="w-12 h-12 text-primary" />
+						</div>
+						<h3 className="text-2xl font-semibold text-foreground mb-3">
+							Ready to automate?
 						</h3>
-						<p className="text-muted-foreground mb-4">
-							Get started by creating your first automation workflow
+						<p className="text-muted-foreground mb-8 max-w-md mx-auto">
+							Create your first workflow to start automating tasks and streamlining your processes.
 						</p>
-						<Button onClick={() => setIsModalOpen(true)}>
+						<Button
+							onClick={() => setIsModalOpen(true)}
+							size="lg"
+							className="gap-2"
+						>
+							<Plus className="w-5 h-5" />
 							Create Your First Flow
 						</Button>
 					</div>
-				)}
-			</div>
+				) : dashboardFlows.length === 0 ? (
+					// No flows match current filter/search
+					<div className="text-center py-16">
+						<div className="w-24 h-24 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-6">
+							<Search className="w-12 h-12 text-muted-foreground" />
+						</div>
+						<h3 className="text-xl font-semibold text-foreground mb-3">
+							No flows found
+						</h3>
+						<p className="text-muted-foreground mb-6 max-w-md mx-auto">
+							{searchQuery
+								? `No flows match "${searchQuery}". Try adjusting your search terms.`
+								: "No private flows found. Try changing your filter settings."
+							}
+						</p>
+						<div className="flex items-center justify-center gap-4">
+							{searchQuery && (
+								<Button
+									variant="outline"
+									onClick={() => setSearchQuery("")}
+								>
+									Clear Search
+								</Button>
+							)}
+							{showPrivateOnly && (
+								<Button
+									variant="outline"
+									onClick={() => setShowPrivateOnly(false)}
+								>
+									Show All Flows
+								</Button>
+							)}
+						</div>
+					</div>
+				) : null}
 
-			{/* Create Flow Modal */}
-			<CreateFlowModal
-				isOpen={isModalOpen}
-				onClose={() => setIsModalOpen(false)}
-				onFlowCreated={handleFlowCreated}
-			/>
+				{/* Create Flow Modal */}
+				<CreateFlowModal
+					isOpen={isModalOpen}
+					onClose={() => setIsModalOpen(false)}
+					onFlowCreated={handleFlowCreated}
+				/>
+			</div>
 		</div>
 	);
 };

@@ -43,9 +43,9 @@ async function setupDevData() {
 			console.log("💡 You can use this token to authenticate in development");
 		}
 		
-		// Create test flows
-		if (!userResult.existing) {
-			console.log("\n📊 Creating test flows...");
+		// Create test flows (always try to create them)
+		console.log("\n📊 Creating test flows...");
+		try {
 			const flowsResult = await client.mutation("devHelpers:createTestFlows", {
 				user_id: userResult.userId,
 				count: 5,
@@ -55,6 +55,8 @@ async function setupDevData() {
 			flowsResult.flows.forEach((flow, index) => {
 				console.log(`  ${index + 1}. ${flow.name} (${flow.is_private ? 'Private' : 'Public'})`);
 			});
+		} catch (error) {
+			console.log("ℹ️  Test flows may already exist");
 		}
 		
 		console.log("\n🎉 Development data setup complete!");

@@ -64,25 +64,25 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete }) => {
 
 	return (
 		<>
-			{/* Action Buttons */}
-			<div className="flex items-center gap-2">
+			{/* Compact Action Buttons */}
+			<div className="flex items-center gap-1">
 				<Button
-					variant="outline"
+					variant="ghost"
 					size="sm"
 					onClick={() => setShowShareSystem(true)}
-					className="flex items-center gap-2"
+					className="h-8 px-2 text-muted-foreground hover:text-foreground"
+					title="Share flow"
 				>
 					<Share2 className="w-4 h-4" />
-					Share
 				</Button>
 				<Button
-					variant="outline"
+					variant="ghost"
 					size="sm"
 					onClick={() => setShowDeleteDialog(true)}
-					className="flex items-center gap-2 text-destructive hover:text-destructive"
+					className="h-8 px-2 text-muted-foreground hover:text-destructive"
+					title="Delete flow"
 				>
 					<Trash2 className="w-4 h-4" />
-					Delete
 				</Button>
 			</div>
 
