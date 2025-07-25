@@ -12,7 +12,8 @@
 
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { Id } from "./_generated/dataModel";
+import type { QueryCtx, MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 
 // ============================================================================
 // QUERY FUNCTIONS
@@ -35,13 +36,13 @@ export const getUserFlows = query({
  * Get public flows for discovery (excluding user's own flows)
  */
 export const getPublicFlows = query({
-	args: { 
+	args: {
 		user_id: v.optional(v.id("auth_users")),
-		limit: v.optional(v.number())
+		limit: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
 		const limit = args.limit || 20;
-		
+
 		const publicFlows = await ctx.db
 			.query("flows")
 			.filter((q) => q.eq(q.field("is_private"), false))
@@ -49,8 +50,8 @@ export const getPublicFlows = query({
 			.take(limit * 2); // Take more to filter out user's own flows
 
 		// Filter out user's own flows if user_id is provided
-		const filteredFlows = args.user_id 
-			? publicFlows.filter(flow => flow.user_id !== args.user_id)
+		const filteredFlows = args.user_id
+			? publicFlows.filter((flow) => flow.user_id !== args.user_id)
 			: publicFlows;
 
 		return filteredFlows.slice(0, limit);
@@ -85,24 +86,21 @@ export const getAccessibleFlows = query({
 		// Get public flows (excluding own flows)
 		const publicFlows = await ctx.db
 			.query("flows")
-			.filter((q) => 
-				q.and(
-					q.eq(q.field("is_private"), false),
-					q.neq(q.field("user_id"), args.user_id)
-				)
+			.filter((q) =>
+				q.and(q.eq(q.field("is_private"), false), q.neq(q.field("user_id"), args.user_id))
 			)
 			.collect();
 
 		// Combine and deduplicate
 		const allFlows = [
-			...ownFlows.map(flow => ({ ...flow, accessType: "owner" })),
-			...sharedFlows.filter(Boolean).map(flow => ({ ...flow, accessType: "shared" })),
-			...publicFlows.map(flow => ({ ...flow, accessType: "public" }))
+			...ownFlows.map((flow) => ({ ...flow, accessType: "owner" })),
+			...sharedFlows.filter(Boolean).map((flow) => ({ ...flow, accessType: "shared" })),
+			...publicFlows.map((flow) => ({ ...flow, accessType: "public" })),
 		];
 
 		// Remove duplicates based on flow ID
-		const uniqueFlows = allFlows.filter((flow, index, self) => 
-			index === self.findIndex(f => f._id === flow._id)
+		const uniqueFlows = allFlows.filter(
+			(flow, index, self) => index === self.findIndex((f) => f._id === flow._id)
 		);
 
 		return uniqueFlows;
@@ -123,9 +121,9 @@ export const getFlow = query({
  * Get a flow with proper access control
  */
 export const getFlowSecure = query({
-	args: { 
+	args: {
 		flow_id: v.id("flows"),
-		user_id: v.id("auth_users")
+		user_id: v.id("auth_users"),
 	},
 	handler: async (ctx, args) => {
 		const flow = await ctx.db.get(args.flow_id);
@@ -133,7 +131,7 @@ export const getFlowSecure = query({
 
 		// Check access permissions
 		const accessCheck = await checkFlowAccessInternal(ctx, args.flow_id, args.user_id);
-		
+
 		if (!accessCheck.hasAccess) {
 			return null; // User doesn't have access
 		}
@@ -144,7 +142,7 @@ export const getFlowSecure = query({
 			userPermission: accessCheck.permission,
 			canEdit: accessCheck.permission === "admin" || accessCheck.permission === "edit",
 			canView: accessCheck.hasAccess,
-			isOwner: flow.user_id === args.user_id
+			isOwner: flow.user_id === args.user_id,
 		};
 	},
 });
@@ -152,7 +150,11 @@ export const getFlowSecure = query({
 /**
  * Internal helper function for access checking (reusable)
  */
-async function checkFlowAccessInternal(ctx: any, flow_id: any, user_id: any) {
+async function checkFlowAccessInternal(
+	ctx: QueryCtx | MutationCtx,
+	flow_id: Id<"flows">,
+	user_id: Id<"auth_users">
+) {
 	const flow = await ctx.db.get(flow_id);
 	if (!flow) return { hasAccess: false, permission: null };
 
@@ -170,9 +172,7 @@ async function checkFlowAccessInternal(ctx: any, flow_id: any, user_id: any) {
 	try {
 		const permissions = await ctx.db
 			.query("flow_share_permissions")
-			.withIndex("by_flow_and_user", (q) => 
-				q.eq("flow_id", flow_id).eq("user_id", user_id)
-			)
+			.withIndex("by_flow_and_user", (q) => q.eq("flow_id", flow_id).eq("user_id", user_id))
 			.collect();
 
 		if (permissions.length > 0) {
@@ -197,9 +197,9 @@ async function checkFlowAccessInternal(ctx: any, flow_id: any, user_id: any) {
  * Check if user has access to a flow
  */
 export const checkFlowAccess = query({
-	args: { 
-		flow_id: v.id("flows"), 
-		user_id: v.id("auth_users") 
+	args: {
+		flow_id: v.id("flows"),
+		user_id: v.id("auth_users"),
 	},
 	handler: async (ctx, args) => {
 		return await checkFlowAccessInternal(ctx, args.flow_id, args.user_id);
@@ -210,15 +210,15 @@ export const checkFlowAccess = query({
  * Get flow share information
  */
 export const getFlowShare = query({
-	args: { 
+	args: {
 		flow_id: v.id("flows"),
-		share_token: v.optional(v.string())
+		share_token: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		if (args.share_token) {
 			return await ctx.db
 				.query("flow_shares")
-				.withIndex("by_share_token", (q) => q.eq("share_token", args.share_token!))
+				.withIndex("by_share_token", (q) => q.eq("share_token", args.share_token))
 				.first();
 		}
 
@@ -237,9 +237,7 @@ export const getFlowAccessRequests = query({
 	handler: async (ctx, args) => {
 		return await ctx.db
 			.query("flow_access_requests")
-			.withIndex("by_flow_and_status", (q) => 
-				q.eq("flow_id", args.flow_id).eq("status", "pending")
-			)
+			.withIndex("by_flow_and_status", (q) => q.eq("flow_id", args.flow_id).eq("status", "pending"))
 			.collect();
 	},
 });
@@ -261,7 +259,7 @@ export const createFlow = mutation({
 	},
 	handler: async (ctx, args) => {
 		const now = new Date().toISOString();
-		
+
 		const flow_id = await ctx.db.insert("flows", {
 			name: args.name,
 			description: args.description,
@@ -290,15 +288,18 @@ export const updateFlow = mutation({
 	},
 	handler: async (ctx, args) => {
 		const { flow_id, user_id, ...updates } = args;
-		
+
 		// Check if user has edit access
 		const accessCheck = await checkFlowAccessInternal(ctx, flow_id, user_id);
-		if (!accessCheck.hasAccess || (accessCheck.permission !== "admin" && accessCheck.permission !== "edit")) {
+		if (
+			!accessCheck.hasAccess ||
+			(accessCheck.permission !== "admin" && accessCheck.permission !== "edit")
+		) {
 			throw new Error("You don't have permission to edit this flow");
 		}
-		
+
 		const now = new Date().toISOString();
-		
+
 		await ctx.db.patch(flow_id, {
 			...updates,
 			updated_at: now,
@@ -314,13 +315,13 @@ export const deleteFlow = mutation({
 	handler: async (ctx, args) => {
 		// Delete related records first
 		await ctx.db.delete(args.flow_id);
-		
+
 		// Delete share records
 		const shares = await ctx.db
 			.query("flow_shares")
 			.withIndex("by_flow_id", (q) => q.eq("flow_id", args.flow_id))
 			.collect();
-		
+
 		for (const share of shares) {
 			await ctx.db.delete(share._id);
 		}
@@ -330,7 +331,7 @@ export const deleteFlow = mutation({
 			.query("flow_share_permissions")
 			.withIndex("by_flow_id", (q) => q.eq("flow_id", args.flow_id))
 			.collect();
-		
+
 		for (const permission of permissions) {
 			await ctx.db.delete(permission._id);
 		}
@@ -340,7 +341,7 @@ export const deleteFlow = mutation({
 			.query("flow_access_requests")
 			.withIndex("by_flow_id", (q) => q.eq("flow_id", args.flow_id))
 			.collect();
-		
+
 		for (const request of requests) {
 			await ctx.db.delete(request._id);
 		}
@@ -477,7 +478,7 @@ export const respondToAccessRequest = mutation({
 					is_active: true,
 					created_at: now,
 				});
-				
+
 				// Get the created share record
 				share = await ctx.db.get(share_id);
 			}
@@ -511,4 +512,4 @@ function generateShareToken(): string {
 		result += chars.charAt(Math.floor(Math.random() * chars.length));
 	}
 	return result;
-} 
+}
