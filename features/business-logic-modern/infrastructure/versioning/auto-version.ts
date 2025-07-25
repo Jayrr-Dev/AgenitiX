@@ -19,6 +19,8 @@ interface ConventionalCommitConfig {
 	breakingChangeIndicators: string[];
 	// Auto-migrate on version changes
 	autoMigrate: boolean;
+	// Files to track for changes
+	trackFiles: string[];
 	// GitHub integration
 	github: {
 		owner: string;
@@ -60,6 +62,22 @@ export const VERSION_CONFIG: ConventionalCommitConfig = {
 	],
 
 	autoMigrate: true,
+
+	trackFiles: [
+		"features/**/*.ts",
+		"features/**/*.tsx",
+		"app/**/*.ts",
+		"app/**/*.tsx",
+		"components/**/*.ts",
+		"components/**/*.tsx",
+		"lib/**/*.ts",
+		"hooks/**/*.ts",
+		"types/**/*.ts",
+		"convex/**/*.ts",
+		"scripts/**/*.ts",
+		"*.json",
+		"*.md"
+	],
 
 	github: {
 		owner: "Jayrr-Dev", // Update with your GitHub username/org

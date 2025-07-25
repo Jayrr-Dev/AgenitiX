@@ -26,6 +26,7 @@ interface VersionInfo {
 	newCommits: GitCommit[];
 	bumpType: "major" | "minor" | "patch";
 	reason: string;
+	changedFiles: string[];
 }
 
 interface VersionCache {
@@ -80,12 +81,37 @@ class ConventionalCommitVersionDetector {
 				newCommits,
 				bumpType,
 				reason,
+				changedFiles: this.getChangedFilesFromCommits(newCommits),
 			};
 
 			return versionInfo;
 		} catch (error) {
 			console.error("Error detecting version changes:", error);
 			return null;
+		}
+	}
+
+	/**
+	 * Get changed files from commits
+	 */
+	private getChangedFilesFromCommits(commits: GitCommit[]): string[] {
+		try {
+			const { execSync } = require("child_process");
+			const changedFiles = new Set<string>();
+			
+			for (const commit of commits) {
+				const output = execSync(`git show --name-only --format="" ${commit.hash}`, { 
+					encoding: "utf8" 
+				});
+				
+				const files = output.trim().split("\n").filter(Boolean);
+				files.forEach((file: string) => changedFiles.add(file));
+			}
+			
+			return Array.from(changedFiles);
+		} catch (error) {
+			console.error("Error getting changed files:", error);
+			return [];
 		}
 	}
 

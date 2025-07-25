@@ -67,14 +67,18 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 		if (!searchQuery.trim()) {
 			// Show all filtered nodes when no search query
 			return nodesToSearch
-				.map((node) => ({
-					nodeType: node.kind,
-					displayName: node.displayName,
-					category: node.category || "other",
-					description: node.description,
-					icon: node.icon,
-					score: 1,
-				}))
+				.map((node) => {
+					if (!node) return null;
+					return {
+						nodeType: node.kind as NodeType,
+						displayName: node.displayName,
+						category: node.category || "other",
+						description: node.description,
+						icon: node.icon,
+						score: 1,
+					};
+				})
+				.filter((item): item is NonNullable<typeof item> => item !== null)
 				.sort((a, b) => a.displayName.localeCompare(b.displayName));
 		}
 
@@ -82,6 +86,8 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 		const results: SearchResult[] = [];
 
 		nodesToSearch.forEach((node) => {
+			if (!node) return;
+			
 			const displayName = node.displayName;
 			const category = node.category || "other";
 			const description = node.description || "";
@@ -105,7 +111,7 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 
 			if (score > 0) {
 				results.push({
-					nodeType: node.kind,
+					nodeType: node.kind as NodeType,
 					displayName,
 					category,
 					description,

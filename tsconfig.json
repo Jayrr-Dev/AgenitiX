@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"target": "es5",
+		"target": "es2015",
 		"lib": ["dom", "dom.iterable", "esnext"],
 		"allowJs": true,
 		"skipLibCheck": true,
@@ -122,7 +122,7 @@
 		".deprecated/sessionStore.ts",
 		".deprecated/timesheetStore.ts",
 		".deprecated/userStore.ts"
-, ".deperciated/useNodeConnections.ts", ".deperciated/useNodeDataFlow.ts", ".deperciated/withNodeDataFlow.tsx", ".deperciated/useReactFlowHandlers.ts", ".deperciated/useFlowEditorState.ts", ".deperciated/useKeyboardShortcutHandlers.ts", ".deperciated/useDragAndDrop.ts", ".deperciated/useErrorLogging.ts", ".deperciated/connectionUtils.ts", ".deperciated/dataMigration.ts"	],
+, ".deprecated/useNodeConnections.ts", ".deprecated/useNodeDataFlow.ts", ".deprecated/withNodeDataFlow.tsx", ".deprecated/useReactFlowHandlers.ts", ".deprecated/useFlowEditorState.ts", ".deprecated/useKeyboardShortcutHandlers.ts", ".deprecated/useDragAndDrop.ts", ".deprecated/useErrorLogging.ts", ".deprecated/connectionUtils.ts", ".deprecated/dataMigration.ts"	],
 
 	// ============================================================================
 	// EXCLUSION PATTERNS

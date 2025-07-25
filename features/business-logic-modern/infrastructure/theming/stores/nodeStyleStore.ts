@@ -33,6 +33,22 @@ export interface CategoryTheme {
 export const CATEGORY_THEMES: Partial<Record<string, CategoryTheme>> = {
 	create: {
 		background: { light: "bg-node-create", dark: "bg-node-create" },
+		border: { light: "border-node-create", dark: "border-node-create" },
+		text: {
+			primary: { light: "text-node-create", dark: "text-node-create" },
+			secondary: {
+				light: "text-node-create-secondary",
+				dark: "text-node-create-secondary",
+			},
+		},
+		button: {
+			border: "border-node-create",
+			hover: {
+				light: "hover:bg-node-create-hover",
+				dark: "hover:bg-node-create-hover",
+			},
+		},
+	},
 	email: {
 		background: { light: "bg-node-email", dark: "bg-node-email" },
 		border: { light: "border-node-email", dark: "border-node-email" },
@@ -102,31 +118,6 @@ export const CATEGORY_THEMES: Partial<Record<string, CategoryTheme>> = {
 			hover: {
 				light: "hover:bg-node-ai-hover",
 				dark: "hover:bg-node-ai-hover",
-			},
-		},
-	},
-
-
-
-
-
-
-
-
-
-		border: { light: "border-node-create", dark: "border-node-create" },
-		text: {
-			primary: { light: "text-node-create", dark: "text-node-create" },
-			secondary: {
-				light: "text-node-create-secondary",
-				dark: "text-node-create-secondary",
-			},
-		},
-		button: {
-			border: "border-node-create",
-			hover: {
-				light: "hover:bg-node-create-hover",
-				dark: "hover:bg-node-create-hover",
 			},
 		},
 	},
