@@ -1,22 +1,14 @@
 /**
- * VERSIONING SYSTEM - Public API
+ * VERSIONING SYSTEM - Public API (Client-Safe)
  *
- * • Exports the main version constant for application use
+ * • Exports only client-safe version constants
  * • Provides clean imports for version-related functionality
  * • Maintains separation of concerns while offering convenience
+ * • Server-side functionality is exported separately
  */
 
-// Main version constant - most commonly imported
+// Main version constant - safe for client-side use
 export { VERSION } from "./version";
 
-// Version configuration for advanced use cases
-export { VERSION_CONFIG } from "./auto-version";
-
-// Version detector for programmatic version checking
-export { versionDetector } from "./version-detector";
-
-// Dashboard for status monitoring
-export { dashboard } from "./status-dashboard";
-
-// Auto-migrator for data migrations
-export { autoMigrator } from "./auto-migrate";
+// Note: Server-side functionality (versionDetector, dashboard, etc.) 
+// is available in the server-side versioning module
