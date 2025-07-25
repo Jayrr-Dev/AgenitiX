@@ -20,13 +20,60 @@ import {
 	featureBoxesPlain,
 } from "@/features/marketing/home-page/data";
 import { useAnubisProtection } from "@/hooks/useAnubisProtection";
+import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+	const { isAuthenticated, isLoading } = useAuthContext();
+	const router = useRouter();
+	const [mounted, setMounted] = useState(false);
+
 	// ENABLE ANUBIS PROTECTION FOR HOME PAGE
 	useAnubisProtection({
 		autoProtect: true,
 		description: "Home page protection against bots and scrapers",
 	});
+
+	// Ensure component is mounted to avoid hydration issues
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+
+	// Redirect authenticated users to dashboard
+	useEffect(() => {
+		if (mounted && !isLoading && isAuthenticated) {
+			router.push("/dashboard");
+		}
+	}, [mounted, isAuthenticated, isLoading, router]);
+
+	// Show loading while checking auth or not mounted yet
+	if (!mounted || isLoading) {
+		return (
+			<main className="grid grid-cols-12">
+				<div className="col-span-12 min-h-screen flex items-center justify-center">
+					<div className="text-center">
+						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+						<p className="text-gray-600">Loading...</p>
+					</div>
+				</div>
+			</main>
+		);
+	}
+
+	// Don't render marketing page if authenticated (will redirect)
+	if (isAuthenticated) {
+		return (
+			<main className="grid grid-cols-12">
+				<div className="col-span-12 min-h-screen flex items-center justify-center">
+					<div className="text-center">
+						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+						<p className="text-gray-600">Redirecting...</p>
+					</div>
+				</div>
+			</main>
+		);
+	}
 
 	return (
 		<main className="grid grid-cols-12">

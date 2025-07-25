@@ -43,21 +43,19 @@ export function HeroCarousel() {
 					className="brightness-[0.5] blur-xs bg-linear-to-r from-red-500 to-blue-500"
 				/>
 			),
-			heading: "talent acquisition in engineering",
+			heading: "Visual Flow Automation Platform",
 			title: (
 				<div className="flex flex-row gap-2 uppercase">
-					{" "}
-					<span className="text-white/95 ">
-						{" "}
-						<span className="text-white/95">testing is </span>
+					<span className="text-white/95">
+						<span className="text-white/95">Automation made </span>
 						<FlipWords words={words} />
-					</span>{" "}
+					</span>
 				</div>
 			),
 			message:
-				"We're constantly looking for talented professionals in Electrical Engineering Design to join our innovative team and help shape the future of technology solutions.",
-			ctaText: "Get Started",
-			ctaLink: "/careers",
+				"Create powerful automation workflows with our intuitive visual editor. Connect your email accounts, build AI-powered workflows, and streamline your business processes.",
+			ctaText: "Start Building",
+			ctaLink: "/sign-up",
 		},
 	];
 
@@ -213,13 +211,13 @@ export function HeroCarousel() {
 																<p className="hidden lg:block text-white/95 text-lg font-brand font-extralight drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] ">
 																	{slide.message}
 																</p>
-																<div className="xdebug-green flex justify-center w-full   self-center">
+																<div className="flex flex-col sm:flex-row gap-4 w-full">
 																	<Button
 																		size="lg"
-																		className="xdebug-red  border-2 border-transparent w-full group/cta bg-fill-border hover:animate-fill-transparency"
+																		className="border-2 border-transparent flex-1 group/cta bg-white text-gray-900 hover:bg-gray-100 font-semibold"
 																		onClick={() => (window.location.href = slide.ctaLink)}
 																	>
-																		<div className="flex flex-row gap-2 ">
+																		<div className="flex flex-row gap-2 items-center">
 																			{slide.ctaText}
 																			<svg
 																				className="group-hover/cta:block opacity-0 group-hover/cta:opacity-100 transition-opacity duration-300"
@@ -234,6 +232,14 @@ export function HeroCarousel() {
 																				/>
 																			</svg>
 																		</div>
+																	</Button>
+																	<Button
+																		size="lg"
+																		variant="outline"
+																		className="border-2 border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm flex-1 font-semibold"
+																		onClick={() => (window.location.href = "/sign-in")}
+																	>
+																		Sign In
 																	</Button>
 																</div>
 															</CardContent>
@@ -265,9 +271,8 @@ export function HeroCarousel() {
 					{slides.map((_, index) => (
 						<button
 							key={`dot-${index}`}
-							className={`w-3 h-3 rounded-full transition-all ${
-								activeIndex === index ? "bg-primary scale-100" : "bg-primary/30 scale-90"
-							}`}
+							className={`w-3 h-3 rounded-full transition-all ${activeIndex === index ? "bg-primary scale-100" : "bg-primary/30 scale-90"
+								}`}
 							onClick={() => emblaApi?.scrollTo(index)}
 						/>
 					))}
