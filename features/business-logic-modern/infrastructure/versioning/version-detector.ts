@@ -216,13 +216,21 @@ class ConventionalCommitVersionDetector {
 		}
 
 		if (bumpType === "minor") {
-			const features = conventionalCommits.filter(c => parseCommitTitle(c.title) === "minor");
-			return `${features.length} new feature(s) added`;
+			// Only count commits that actually triggered the minor bump
+			const minorCommits = conventionalCommits.filter(c => {
+				const commitType = parseCommitTitle(c.title);
+				return commitType === "minor";
+			});
+			return `${minorCommits.length} new feature(s) added`;
 		}
 
 		if (bumpType === "patch") {
-			const fixes = conventionalCommits.filter(c => parseCommitTitle(c.title) === "patch");
-			return `${fixes.length} bug fix(es) and improvements`;
+			// Only count commits that actually triggered the patch bump
+			const patchCommits = conventionalCommits.filter(c => {
+				const commitType = parseCommitTitle(c.title);
+				return commitType === "patch";
+			});
+			return `${patchCommits.length} bug fix(es) and improvements`;
 		}
 
 		return `Version bump from ${conventionalCommits.length} conventional commit(s)`;
