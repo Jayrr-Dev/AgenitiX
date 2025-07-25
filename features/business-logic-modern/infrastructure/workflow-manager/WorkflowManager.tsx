@@ -12,9 +12,10 @@
 
 "use client";
 
-import { Save, Download, Settings, Play, Square } from "lucide-react";
+import { Save, Download, Settings, Play, Square, ArrowLeft } from "lucide-react";
 import { useFlowStore } from "../flow-engine/stores/flowStore";
 import { useComponentClasses, useComponentButtonClasses } from "../theming/components";
+import { useRouter } from "next/navigation";
 
 interface WorkflowManagerProps {
 	className?: string;
@@ -22,6 +23,7 @@ interface WorkflowManagerProps {
 
 const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => {
 	const { nodes, edges } = useFlowStore();
+	const router = useRouter();
 
 	// Get themed classes
 	const containerClasses = useComponentClasses(
@@ -37,10 +39,21 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 	const edgeCount = edges.length;
 	const isWorkflowEmpty = nodeCount === 0;
 
+	const handleReturnToDashboard = () => {
+		router.push("/dashboard");
+	};
+
 	return (
 		<div className={containerClasses}>
-			{/* Left Section - Workflow Info */}
+			{/* Left Section - Back Button & Workflow Info */}
 			<div className="flex items-center gap-3">
+				<button
+					onClick={handleReturnToDashboard}
+					className={buttonClasses}
+					title="Return to Dashboard"
+				>
+					<ArrowLeft className="w-4 h-4" />
+				</button>
 				<div className="flex flex-col">
 					<h2 className="text-sm font-semibold text-foreground">Workflow Editor</h2>
 					<div className="flex items-center gap-2 text-xs text-muted-foreground">
