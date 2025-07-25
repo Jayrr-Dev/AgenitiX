@@ -1592,7 +1592,8 @@ module.exports = (plop) => {
 						console.log(`💡 Next steps:`);
 						console.log(`• Run: pnpm generate:tokens`);
 						console.log(`• Run: pnpm generate:node-docs`);
-						console.log(`• Create your first node: pnpm new:node\n`);
+						console.log(`• Create your first node: pnpm new:node`);
+						console.log(`• Run: pnpm version:analyze (to update version)\n`);
 						console.log(`Your new category is ready to use! 🎉\n`);
 						return "";
 					},
@@ -1753,7 +1754,8 @@ module.exports = (plop) => {
 						console.log(`🎯 Status: Complete\n`);
 						console.log(`📂 Manual cleanup required:`);
 						console.log(`• Remove-Item -Recurse -Force "features/business-logic-modern/node-domain/${domainName}" -ErrorAction SilentlyContinue`);
-						console.log(`• Remove-Item -Recurse -Force "documentation/nodes/${domainName}" -ErrorAction SilentlyContinue\n`);
+						console.log(`• Remove-Item -Recurse -Force "documentation/nodes/${domainName}" -ErrorAction SilentlyContinue`);
+						console.log(`• Run: pnpm version:analyze (to update version)\n`);
 						console.log(`Your system is now clean and ready to use! 🎉\n`);
 						return "";
 					},
