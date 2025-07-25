@@ -64,6 +64,9 @@ export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
 				} else if (nodeCategory.startsWith("ai")) {
 					resolvedCategory = "AI";
 					resolvedCategory = "TEST";
+				} else if (nodeCategory.startsWith("ai")) {
+					resolvedCategory = "AI";
+					resolvedCategory = "TEST";
 				} else if (nodeCategory.startsWith("email")) {
 					resolvedCategory = "EMAIL";
 					resolvedCategory = "TEST";
@@ -145,6 +148,10 @@ export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
 					return "var(--node-email-bg)";
 				case "EMAIL":
 					return "var(--node-email-bg-hover)";
+				case "AI":
+					return "var(--node-ai-bg)";
+				case "AI":
+					return "var(--node-ai-bg-hover)";
 				case "AI":
 					return "var(--node-ai-bg)";
 				case "AI":

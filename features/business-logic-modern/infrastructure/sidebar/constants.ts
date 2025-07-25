@@ -248,6 +248,8 @@ export const VARIANT_CONFIG: VariantConfig = {
 			TEST: createStencilsByCategory("TEST", "variant-b"),
 			CYCLE: createStencilsByCategory("CYCLE", "variant-b"),
 			STORE: createStencilsByCategory("STORE", "variant-b"),
+				AI: createStencilsByCategory("AI", "variant-b"),
+				AI: createStencilsByCategory("AI", "variant-b"),
 		},
 	},
 	C: {

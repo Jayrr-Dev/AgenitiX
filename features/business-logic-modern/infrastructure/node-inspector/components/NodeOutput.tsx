@@ -136,6 +136,11 @@ function getNodeSpecificStyling(
 
 
 
+			case "ai":
+				return {
+					color: theme.text.primary,
+					icon: metadata.icon || "AI",
+				};
 			default:
 				return {
 					color: theme.text.muted,

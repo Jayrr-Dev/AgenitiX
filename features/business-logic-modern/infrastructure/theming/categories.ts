@@ -6,6 +6,7 @@ export const CATEGORIES = {
 	TEST: "TEST",
 	CYCLE: "CYCLE",
 	STORE: "STORE",
+	AI: "AI",
 } as const;
 
 export type NodeCategory = (typeof CATEGORIES)[keyof typeof CATEGORIES];

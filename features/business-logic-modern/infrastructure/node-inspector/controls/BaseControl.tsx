@@ -116,6 +116,16 @@ function getSemanticClasses(nodeType?: string) {
 
 
 
+		case "ai":
+		case "ainode":
+			return {
+				primary: "bg-node-ai text-node-ai-text",
+				primaryHover: "hover:bg-node-ai-hover",
+				border: "border-node-ai",
+				borderHover: "hover:border-node-ai-hover",
+				text: "text-node-ai-text",
+				textSecondary: "text-node-ai-text-secondary",
+			};
 		default:
 			// Default to view node styling for unknown types
 			return {

@@ -38,6 +38,7 @@ export const TAB_CONFIG_B: readonly TabConfig[] = [
 	{ key: "TEST", label: "Test" },
 	{ key: "CYCLE", label: "Cycle" },
 	{ key: "STORE", label: "Store" },
+	{ key: "AI", label: "Ai" },
 ];
 
 export const TAB_CONFIG_C: readonly TabConfig[] = [{ key: "ALL", label: "All Nodes" }];

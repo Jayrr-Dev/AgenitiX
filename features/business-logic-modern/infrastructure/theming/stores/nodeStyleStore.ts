@@ -33,6 +33,24 @@ export interface CategoryTheme {
 export const CATEGORY_THEMES: Partial<Record<string, CategoryTheme>> = {
 	create: {
 		background: { light: "bg-node-create", dark: "bg-node-create" },
+	ai: {
+		background: { light: "bg-node-ai", dark: "bg-node-ai" },
+		border: { light: "border-node-ai", dark: "border-node-ai" },
+		text: {
+			primary: { light: "text-node-ai", dark: "text-node-ai" },
+			secondary: {
+				light: "text-node-ai-secondary",
+				dark: "text-node-ai-secondary",
+			},
+		},
+		button: {
+			border: "border-node-ai",
+			hover: {
+				light: "hover:bg-node-ai-hover",
+				dark: "hover:bg-node-ai-hover",
+			},
+		},
+	},
 
 
 
