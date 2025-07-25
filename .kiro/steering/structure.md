@@ -136,4 +136,32 @@ node-domain/[category]/[nodeName]/
 - `backups/` - Automated backups with timestamps
 - `tooling/` - Development tools and utilities
 - `branding/` - Brand assets and logos
-- `convex/` - Convex backend integration (if used)
+- `convex/` - Convex backend with database schema and server functions
+- `anubis-standalone/` - Security system components
+- `generated/` - Auto-generated files and documentation
+
+## Convex Backend Structure
+
+```
+convex/
+├── _generated/            # Auto-generated Convex API
+├── schema.ts             # Database schema definitions
+├── auth.ts               # Authentication functions
+├── nodes.ts              # Node-related server functions
+├── workflows.ts          # Workflow management functions
+└── emails.ts             # Email integration functions
+```
+
+## Current Development Focus Areas
+
+### Week 1 Critical Path
+1. **Authentication** (`convex/auth.ts`) - User management system
+2. **Storage System** (`convex/schema.ts`) - Database schema for all data
+3. **Email Integration** (`convex/emails.ts`) - Email provider connections
+
+### Email Node Implementation
+- **Receiving Logic**: Nodes that can read and process incoming emails
+- **Sending Logic**: Nodes that can compose and send emails
+- **Template System**: Email template creation and management
+- **Analytics**: Email performance tracking and reporting
+- **Error Handling**: Robust error management and retry logic
