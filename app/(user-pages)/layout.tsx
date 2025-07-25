@@ -3,16 +3,22 @@
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ProtectedNavigation } from "@/components/auth/ProtectedNavigation";
 import { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 
 interface UserPagesLayoutProps {
 	children: ReactNode;
 }
 
 export default function UserPagesLayout({ children }: UserPagesLayoutProps) {
+	const pathname = usePathname();
+	
+	// Hide navigation for matrix routes
+	const shouldHideNavigation = pathname.startsWith("/matrix");
+
 	return (
 		<ProtectedRoute>
 			<div className="min-h-screen bg-background">
-				<ProtectedNavigation />
+				{!shouldHideNavigation && <ProtectedNavigation />}
 				<main>
 					{children}
 				</main>

@@ -1,6 +1,6 @@
 {
   "name": "agentix-2",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "scripts": {
     "dev": "pnpm run dev:setup && pnpm run dev:parallel",

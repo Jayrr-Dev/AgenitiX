@@ -55,3 +55,11 @@ const hypertuneAdapter = createHypertuneAdapter<
 export const testFlag = flag(
   hypertuneAdapter.declarations.test,
 );
+
+/**
+ * Install App feature flag declaration
+ * Controls whether the PWA install prompt is shown to users
+ */
+export const installAppFlag = flag(
+  hypertuneAdapter.declarations.installApp,
+);

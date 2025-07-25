@@ -355,3 +355,32 @@ export const revokeSession = mutation({
 		return { success: true };
 	},
 });
+
+// Development helper: Reset rate limits (only available in development)
+export const resetRateLimits = mutation({
+	args: { email: v.string() },
+	handler: async (ctx, args) => {
+		// Only allow in development
+		if (process.env.NODE_ENV === 'production') {
+			throw new Error("This function is only available in development");
+		}
+
+		const user = await ctx.db
+			.query("auth_users")
+			.withIndex("by_email", (q) => q.eq("email", args.email))
+			.first();
+
+		if (!user) {
+			throw new Error("User not found");
+		}
+
+		// Reset rate limiting
+		await ctx.db.patch(user._id, {
+			login_attempts: 0,
+			last_login_attempt: undefined,
+			updated_at: Date.now(),
+		});
+
+		return { success: true, message: "Rate limits reset" };
+	},
+});

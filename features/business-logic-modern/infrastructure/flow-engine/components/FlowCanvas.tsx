@@ -31,9 +31,9 @@ import { useEffect, useMemo, useState } from "react";
 import type { AgenEdge, AgenNode } from "../types/nodeData";
 
 // Import other components - Using clean aliases
-import ActionToolbar from "@/features/business-logic-modern/infrastructure/action-toolbar/ActionToolbar";
 import HistoryPanel from "@/features/business-logic-modern/infrastructure/action-toolbar/history/HistoryPanel";
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
+import { WorkflowManager } from "@/features/business-logic-modern/infrastructure/workflow-manager";
 import {
 	ThemedControls,
 	ThemedMiniMap,
@@ -386,9 +386,9 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 					color="var(--infra-canvas-dot)"
 				/>
 
-				{/* ACTION TOOLBAR */}
-				<Panel position="top-right" className={PANEL_STYLES.margin}>
-					<ActionToolbar showHistoryPanel={showHistoryPanel} onToggleHistory={onToggleHistory} />
+				{/* WORKFLOW MANAGER */}
+				<Panel position="top-center" className="z-50">
+					<WorkflowManager />
 				</Panel>
 
 				{/* DEBUG TOOL - Clears local storage (development utility) */}

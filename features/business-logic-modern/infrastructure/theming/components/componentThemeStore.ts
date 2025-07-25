@@ -153,6 +153,7 @@ export interface ComponentThemes {
 	historyPanel: typeof HISTORY_PANEL_THEME;
 	miniMap: typeof MINI_MAP_THEME;
 	flowCanvas: typeof FLOW_CANVAS_THEME;
+	workflowManager: typeof WORKFLOW_MANAGER_THEME;
 }
 
 /**
@@ -505,6 +506,51 @@ const CSS_VARIABLE_COLOR_REFERENCE = {
 const ACTION_TOOLBAR_THEME: ComponentTheme = {
 	background: {
 		primary: "bg-background border border-border", // 🌞 White (#ffffff) 🌙 Dark blue (#0f172a)
+		secondary: "bg-muted", // 🌞 Very light gray (#f1f5f9) 🌙 Dark gray-blue (#1e293b)
+		hover: "hover:bg-muted/80", // Slightly transparent muted background
+		active: "bg-muted", // Same as secondary
+	},
+	border: {
+		default: "border-border", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
+		hover: "hover:border-border", // Same as default
+		active: "border-primary", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+	},
+	text: {
+		primary: "text-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+		secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
+		muted: "text-muted-foreground/70", // Secondary text with 70% opacity
+	},
+	glow: {
+		hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
+		active: ELEVATION_SYSTEM.surface.level2,
+		focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
+	},
+	shadow: {
+		default: ELEVATION_SYSTEM.surface.level1,
+		hover: ELEVATION_SYSTEM.surface.level2.replace("shadow-", "hover:shadow-"),
+		elevated: ELEVATION_SYSTEM.surface.level3,
+	},
+	transition: `transition-all duration-${TRANSITION_DURATION_NORMAL} ease-in-out`,
+	borderRadius: {
+		default: BORDER_RADIUS_LARGE,
+		button: BORDER_RADIUS_MEDIUM,
+		panel: BORDER_RADIUS_LARGE,
+	},
+};
+
+/**
+ * Workflow Manager Theme - Header panel styling
+ *
+ * Used for workflow management header with enhanced visibility
+ * and clear visual hierarchy for workflow controls.
+ *
+ * 🎨 COLOR BREAKDOWN:
+ * Light: White card background (#ffffff) with dark blue text (#0f172a)
+ * Dark: Dark gray-blue card background (#1e293b) with white text (#f8fafc)
+ */
+const WORKFLOW_MANAGER_THEME: ComponentTheme = {
+	background: {
+		primary: "bg-background/95 backdrop-blur-sm border border-border", // 🌞 White (#ffffff) 🌙 Dark blue (#0f172a)
 		secondary: "bg-muted", // 🌞 Very light gray (#f1f5f9) 🌙 Dark gray-blue (#1e293b)
 		hover: "hover:bg-muted/80", // Slightly transparent muted background
 		active: "bg-muted", // Same as secondary
@@ -899,6 +945,7 @@ const DEFAULT_THEME_STATE: ComponentThemeState = {
 		historyPanel: HISTORY_PANEL_THEME,
 		miniMap: MINI_MAP_THEME,
 		flowCanvas: FLOW_CANVAS_THEME,
+		workflowManager: WORKFLOW_MANAGER_THEME,
 	},
 	enabled: true,
 	customOverrides: {},

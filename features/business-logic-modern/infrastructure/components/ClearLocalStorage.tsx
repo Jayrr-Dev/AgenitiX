@@ -12,18 +12,19 @@
 
 "use client";
 
+import { Trash2 } from "lucide-react";
 import type React from "react";
 
 /* -------------------------------------------------------------------------- */
 /*  DESIGN CONSTANTS                                                          */
 /* -------------------------------------------------------------------------- */
 
-/** Wrapper positioning utility */
-const positionWrapper = "fixed top-4 left-1/2 -translate-x-1/2 z-50" as const;
+/** Wrapper positioning utility - left center */
+const positionWrapper = "fixed left-4 top-1/2 -translate-y-1/2 z-50" as const;
 
-/** Core button styling – spacing, radius, etc. */
+/** Core button styling – square with icon */
 const styleButtonBase =
-	"px-4 py-2 rounded-md shadow-lg transition-transform transition-colors duration-200 text-sm font-medium" as const;
+	"w-10 h-10 rounded-md shadow-lg transition-transform transition-colors duration-200 flex items-center justify-center" as const;
 
 /** Semantic colour tokens for destructive action – uses global destructive tokens to ensure good contrast in both themes */
 const styleButtonColour = "bg-destructive text-destructive-foreground" as const;
@@ -59,7 +60,7 @@ const ClearLocalStorage: React.FC<ClearLocalStorageProps> = ({ className = "" })
 				className={`${styleButtonBase} ${styleButtonColour} ${styleButtonInteraction}`}
 				title="Clear all local storage data"
 			>
-				Clear Local Storage
+				<Trash2 className="w-4 h-4" />
 			</button>
 		</div>
 	);

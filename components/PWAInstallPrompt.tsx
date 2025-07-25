@@ -2,6 +2,7 @@
 
 import { Download, Smartphone, X } from "lucide-react";
 import React, { useState, useEffect } from "react";
+import { useInstallAppFlag } from "@/hooks/useInstallAppFlag";
 
 interface BeforeInstallPromptEvent extends Event {
 	readonly platforms: string[];
@@ -16,8 +17,14 @@ export default function PWAInstallPrompt() {
 	const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 	const [showPrompt, setShowPrompt] = useState(false);
 	const [isInstalled, setIsInstalled] = useState(false);
+	const { isEnabled: isFeatureEnabled, isLoading } = useInstallAppFlag();
 
 	useEffect(() => {
+		// Don't proceed if feature is disabled or still loading
+		if (!isFeatureEnabled || isLoading) {
+			return;
+		}
+
 		// Check if app is already installed
 		const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
 		const isInWebAppiOS = (window.navigator as any).standalone === true;
@@ -52,7 +59,7 @@ export default function PWAInstallPrompt() {
 			window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 			window.removeEventListener("appinstalled", handleAppInstalled);
 		};
-	}, []);
+	}, [isFeatureEnabled, isLoading]);
 
 	const handleInstallClick = async () => {
 		if (!deferredPrompt) return;
@@ -80,8 +87,8 @@ export default function PWAInstallPrompt() {
 		sessionStorage.setItem("pwa-prompt-dismissed", "true");
 	};
 
-	// Don't show if already installed or dismissed this session
-	if (isInstalled || !showPrompt || sessionStorage.getItem("pwa-prompt-dismissed")) {
+	// Don't show if feature is disabled, loading, already installed, or dismissed this session
+	if (!isFeatureEnabled || isLoading || isInstalled || !showPrompt || sessionStorage.getItem("pwa-prompt-dismissed")) {
 		return null;
 	}
 
