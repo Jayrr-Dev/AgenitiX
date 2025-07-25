@@ -19,7 +19,7 @@ import {
 	useNodeErrors,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import { getNodeOutput } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/outputUtils";
-import { ChevronDown, Copy, Edit3, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, Edit3, Trash2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
 import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
 
@@ -143,14 +143,20 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 // COMPONENT IMPLEMENTATION
 // =====================================================================
 
-const NodeInspector = React.memo(function NodeInspector() {
+interface NodeInspectorProps {
+	viewMode?: "bottom" | "side";
+}
+
+const NodeInspector = React.memo(function NodeInspector({ viewMode = "bottom" }: NodeInspectorProps) {
 	const {
 		nodes,
 		edges,
 		selectedNodeId,
 		selectedEdgeId,
 		inspectorLocked,
+		inspectorViewMode,
 		setInspectorLocked,
+		toggleInspectorViewMode,
 		updateNodeData,
 		updateNodeId,
 		logNodeError,
@@ -315,7 +321,11 @@ const NodeInspector = React.memo(function NodeInspector() {
 	// Early return for locked state
 	if (inspectorLocked) {
 		return (
-			<div className={STYLING_CONTAINER_LOCKED}>
+			<div className={`${
+				viewMode === "side" 
+					? "flex items-center justify-center w-[50px] h-[50px] bg-card border border-border rounded-lg shadow-lg" 
+					: STYLING_CONTAINER_LOCKED
+			}`}>
 				<button
 					aria-label={DESIGN_CONFIG.content.aria.unlockInspector}
 					title={DESIGN_CONFIG.content.tooltips.unlockInspector}
@@ -324,6 +334,17 @@ const NodeInspector = React.memo(function NodeInspector() {
 				>
 					<FaLock className={STYLING_ICON_STATE_LARGE} />
 				</button>
+			</div>
+		);
+	}
+
+	// Early return for no node selected in side mode
+	if (!selectedNode && viewMode === "side") {
+		return (
+			<div className="flex items-center justify-center w-[50px] h-[50px] bg-card border border-border rounded-lg shadow-lg">
+				<div className="text-muted-foreground">
+					<FaSearch className="w-4 h-4" />
+				</div>
 			</div>
 		);
 	}
@@ -380,6 +401,19 @@ const NodeInspector = React.memo(function NodeInspector() {
 								<FaLock className={STYLING_ICON_ACTION_SMALL} />
 							) : (
 								<FaLockOpen className={STYLING_ICON_ACTION_SMALL} />
+							)}
+						</button>
+
+						{/* View Mode Toggle Button */}
+						<button
+							onClick={toggleInspectorViewMode}
+							className={STYLING_BUTTON_DUPLICATE}
+							title={`Switch to ${inspectorViewMode === "bottom" ? "side" : "bottom"} panel view`}
+						>
+							{inspectorViewMode === "bottom" ? (
+								<PanelLeftOpen className={STYLING_ICON_ACTION_SMALL} />
+							) : (
+								<PanelLeftClose className={STYLING_ICON_ACTION_SMALL} />
 							)}
 						</button>
 
@@ -442,9 +476,17 @@ const NodeInspector = React.memo(function NodeInspector() {
 				</div>
 
 				{/* SCROLLABLE CONTENT: NODE DATA + OUTPUT + CONTROLS + ERRORS */}
-				<div className={STYLING_CONTAINER_CONTENT_SCROLLABLE}>
+				<div className={`${
+					viewMode === "side" 
+						? "flex flex-col gap-4 p-4 flex-1 overflow-auto" 
+						: STYLING_CONTAINER_CONTENT_SCROLLABLE
+				}`}>
 					{/* COLUMN 1: NODE DESCRIPTION + NODE DATA */}
-					<div className={STYLING_CONTAINER_COLUMN_LEFT}>
+					<div className={`${
+						viewMode === "side" 
+							? "w-full space-y-4" 
+							: STYLING_CONTAINER_COLUMN_LEFT
+					}`}>
 						{/* Node Metadata Card */}
 						<AccordionSection
 							title="Node Information"
@@ -612,9 +654,13 @@ const NodeInspector = React.memo(function NodeInspector() {
 					</div>
 
 					{/* COLUMN 2: OUTPUT + CONTROLS */}
-					{hasRightColumn && (
-						<div className={STYLING_CONTAINER_COLUMN_RIGHT}>
-							{nodeConfig?.hasOutput && (
+					{(hasRightColumn || viewMode === "side") && (
+						<div className={`${
+							viewMode === "side" 
+								? "w-full space-y-4" 
+								: STYLING_CONTAINER_COLUMN_RIGHT
+						}`}>
+							{(nodeConfig?.hasOutput || viewMode === "side") && (
 								<AccordionSection
 									title="Output"
 									isOpen={accordionState.output}
@@ -624,7 +670,7 @@ const NodeInspector = React.memo(function NodeInspector() {
 								</AccordionSection>
 							)}
 
-							{nodeInfo.hasControls && (
+							{(nodeInfo.hasControls || viewMode === "side") && (
 								<AccordionSection
 									title="Controls"
 									isOpen={accordionState.controls}
@@ -918,7 +964,11 @@ const NodeInspector = React.memo(function NodeInspector() {
 
 					{/* COLUMN 3: ERROR LOG (only show when there are errors) */}
 					{errors.length > 0 && (
-						<div className={STYLING_CONTAINER_COLUMN_ERROR}>
+						<div className={`${
+							viewMode === "side" 
+								? "w-full space-y-4" 
+								: STYLING_CONTAINER_COLUMN_ERROR
+						}`}>
 							<AccordionSection
 								title="Error Log"
 								isOpen={accordionState.errors}

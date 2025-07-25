@@ -53,6 +53,7 @@ export interface FlowState {
 	// UI State
 	showHistoryPanel: boolean;
 	inspectorLocked: boolean;
+	inspectorViewMode: "bottom" | "side";
 
 	// Error State
 	nodeErrors: Record<string, NodeError[]>;
@@ -91,6 +92,7 @@ interface FlowActions {
 	// UI Operations
 	toggleHistoryPanel: () => void;
 	setInspectorLocked: (locked: boolean) => void;
+	toggleInspectorViewMode: () => void;
 
 	// Error Operations
 	logNodeError: (
@@ -189,6 +191,7 @@ const initialState: FlowState = {
 	selectedEdgeId: null,
 	showHistoryPanel: false,
 	inspectorLocked: false,
+	inspectorViewMode: "bottom",
 	nodeErrors: {},
 	copiedNodes: [],
 	copiedEdges: [],
@@ -433,6 +436,12 @@ export const useFlowStore = create<FlowStore>()(
 				setInspectorLocked: (locked: boolean) => {
 					set((state) => {
 						state.inspectorLocked = locked;
+					});
+				},
+
+				toggleInspectorViewMode: () => {
+					set((state) => {
+						state.inspectorViewMode = state.inspectorViewMode === "bottom" ? "side" : "bottom";
 					});
 				},
 

@@ -138,4 +138,60 @@ export default defineSchema({
 		.index("by_user_id", ["user_id"])
 		.index("by_model", ["model"])
 		.index("by_category", ["category"]),
+
+	// FLOW TABLES
+	flows: defineTable({
+		name: v.string(),
+		description: v.optional(v.string()),
+		icon: v.optional(v.string()),
+		is_private: v.boolean(),
+		user_id: v.id("auth_users"),
+		created_at: v.string(),
+		updated_at: v.string(),
+	})
+	.index("by_user_id", ["user_id"])
+	.index("by_created_at", ["created_at"]),
+
+	// FLOW SHARING TABLES
+	flow_shares: defineTable({
+		flow_id: v.id("flows"),
+		shared_by_user_id: v.id("auth_users"),
+		share_token: v.string(),
+		is_active: v.boolean(),
+		expires_at: v.optional(v.string()),
+		created_at: v.string(),
+	})
+	.index("by_flow_id", ["flow_id"])
+	.index("by_share_token", ["share_token"])
+	.index("by_shared_by_user_id", ["shared_by_user_id"]),
+
+	flow_share_permissions: defineTable({
+		flow_id: v.id("flows"),
+		share_id: v.id("flow_shares"),
+		user_id: v.id("auth_users"),
+		permission_type: v.union(v.literal("view"), v.literal("edit"), v.literal("admin")),
+		granted_at: v.string(),
+		granted_by_user_id: v.id("auth_users"),
+	})
+	.index("by_flow_id", ["flow_id"])
+	.index("by_share_id", ["share_id"])
+	.index("by_user_id", ["user_id"])
+	.index("by_flow_and_user", ["flow_id", "user_id"]),
+
+	// FLOW ACCESS REQUESTS
+	flow_access_requests: defineTable({
+		flow_id: v.id("flows"),
+		requesting_user_id: v.id("auth_users"),
+		requesting_user_email: v.string(),
+		permission_type: v.union(v.literal("view"), v.literal("edit"), v.literal("admin")),
+		status: v.union(v.literal("pending"), v.literal("approved"), v.literal("denied")),
+		requested_at: v.string(),
+		responded_at: v.optional(v.string()),
+		responded_by_user_id: v.optional(v.id("auth_users")),
+		response_note: v.optional(v.string()),
+	})
+	.index("by_flow_id", ["flow_id"])
+	.index("by_requesting_user_id", ["requesting_user_id"])
+	.index("by_status", ["status"])
+	.index("by_flow_and_status", ["flow_id", "status"]),
 });
