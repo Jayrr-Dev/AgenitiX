@@ -344,6 +344,15 @@ export const VERSION = {
 			const versionFilePath = path.join(__dirname, "version.ts");
 			fs.writeFileSync(versionFilePath, versionContent);
 
+			// Update package.json version
+			const packageJsonPath = path.join(process.cwd(), "package.json");
+			if (fs.existsSync(packageJsonPath)) {
+				const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+				packageJson.version = versionInfo.version;
+				fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+				console.log(`📦 package.json version synced to ${versionInfo.version}`);
+			}
+
 			console.log(`✅ Version updated to ${versionInfo.version} (${versionInfo.bumpType})`);
 			console.log(`📝 Reason: ${versionInfo.reason}`);
 		} catch (error) {
