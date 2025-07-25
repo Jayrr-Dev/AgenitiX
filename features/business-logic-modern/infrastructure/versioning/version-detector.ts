@@ -211,9 +211,14 @@ class ConventionalCommitVersionDetector {
 				const data = fs.readFileSync(this.versionFile, "utf8");
 				this.cache = JSON.parse(data);
 			} else {
-				// Initialize with current version
+				// Initialize with current version and set current commit as last processed
+				const { execSync } = require("child_process");
+				const latestCommit = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
+				
+				console.log("🔄 Initializing new cache with commit:", latestCommit.substring(0, 7));
+				
 				this.cache = {
-					lastProcessedCommit: "",
+					lastProcessedCommit: latestCommit, // Start from current commit
 					currentVersion: {
 						major: 0,
 						minor: 0,
@@ -222,6 +227,10 @@ class ConventionalCommitVersionDetector {
 					},
 					lastUpdate: Date.now(),
 				};
+				
+				// Save the cache immediately
+				this.saveVersionCache();
+				console.log("✅ Cache initialized and saved");
 			}
 		} catch (error) {
 			console.error("Error loading version cache:", error);
