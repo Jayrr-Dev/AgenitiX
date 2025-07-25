@@ -141,6 +141,21 @@ function getNodeSpecificStyling(
 					color: theme.text.primary,
 					icon: metadata.icon || "AI",
 				};
+			case "time":
+				return {
+					color: theme.text.primary,
+					icon: metadata.icon || "TIME",
+				};
+			case "flow":
+				return {
+					color: theme.text.primary,
+					icon: metadata.icon || "FLOW",
+				};
+			case "email":
+				return {
+					color: theme.text.primary,
+					icon: metadata.icon || "EMAIL",
+				};
 			default:
 				return {
 					color: theme.text.muted,

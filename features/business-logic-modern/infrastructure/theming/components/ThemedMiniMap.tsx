@@ -52,6 +52,15 @@ export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
 						resolvedCategory = "TRIGGER";
 					} else if (nodeCategory.startsWith("test")) {
 					resolvedCategory = "TEST";
+				} else if (nodeCategory.startsWith("email")) {
+					resolvedCategory = "EMAIL";
+					resolvedCategory = "TEST";
+				} else if (nodeCategory.startsWith("flow")) {
+					resolvedCategory = "FLOW";
+					resolvedCategory = "TEST";
+				} else if (nodeCategory.startsWith("time")) {
+					resolvedCategory = "TIME";
+					resolvedCategory = "TEST";
 				} else if (nodeCategory.startsWith("ai")) {
 					resolvedCategory = "AI";
 					resolvedCategory = "TEST";
@@ -168,6 +177,18 @@ export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
 					return "var(--node-ai-bg)";
 				case "AI":
 					return "var(--node-ai-bg-hover)";
+				case "TIME":
+					return "var(--node-time-bg)";
+				case "TIME":
+					return "var(--node-time-bg-hover)";
+				case "FLOW":
+					return "var(--node-flow-bg)";
+				case "FLOW":
+					return "var(--node-flow-bg-hover)";
+				case "EMAIL":
+					return "var(--node-email-bg)";
+				case "EMAIL":
+					return "var(--node-email-bg-hover)";
 				default:
 						console.log(
 							`🔵 [MiniMap] Using default blue color for node ${node.id}, category: ${resolvedCategory}`

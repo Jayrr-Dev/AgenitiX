@@ -56,6 +56,9 @@
 			"@domain-trigger/*": ["./features/business-logic-modern/node-domain/trigger/*"],
 			"@domain-test/*": ["./features/business-logic-modern/node-domain/test/*"],
 			"@domain-cycle/*": ["./features/business-logic-modern/node-domain/cycle/*"],
+			"@domain-email/*": ["./features/business-logic-modern/node-domain/email/*"],
+			"@domain-flow/*": ["./features/business-logic-modern/node-domain/flow/*"],
+			"@domain-time/*": ["./features/business-logic-modern/node-domain/time/*"],
 			"@domain-ai/*": ["./features/business-logic-modern/node-domain/ai/*"],
 	
 			"@domain-store/*": ["./features/business-logic-modern/node-domain/store/*"],

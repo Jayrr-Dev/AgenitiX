@@ -22,6 +22,9 @@ const CATEGORY_EDGE_COLORS = {
 	trigger: "#6b7280", // Gray - let data types determine color (boolean = green)
 	test: "#eab308", // Yellow - matches test category
 	cycle: "#10b981", // Green - matches cycle category
+	email: "#FFF200", // EMAIL - matches email category
+	flow: "#90D1C8", // FLOW - matches flow category
+	time: "#D6B588", // TIME - matches time category
 	ai: "#F5F5F5", // AI - matches ai category
 
 	store: "#6b7280", // STORE - matches store category

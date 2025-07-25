@@ -126,6 +126,36 @@ function getSemanticClasses(nodeType?: string) {
 				text: "text-node-ai-text",
 				textSecondary: "text-node-ai-text-secondary",
 			};
+		case "time":
+		case "timenode":
+			return {
+				primary: "bg-node-time text-node-time-text",
+				primaryHover: "hover:bg-node-time-hover",
+				border: "border-node-time",
+				borderHover: "hover:border-node-time-hover",
+				text: "text-node-time-text",
+				textSecondary: "text-node-time-text-secondary",
+			};
+		case "flow":
+		case "flownode":
+			return {
+				primary: "bg-node-flow text-node-flow-text",
+				primaryHover: "hover:bg-node-flow-hover",
+				border: "border-node-flow",
+				borderHover: "hover:border-node-flow-hover",
+				text: "text-node-flow-text",
+				textSecondary: "text-node-flow-text-secondary",
+			};
+		case "email":
+		case "emailnode":
+			return {
+				primary: "bg-node-email text-node-email-text",
+				primaryHover: "hover:bg-node-email-hover",
+				border: "border-node-email",
+				borderHover: "hover:border-node-email-hover",
+				text: "text-node-email-text",
+				textSecondary: "text-node-email-text-secondary",
+			};
 		default:
 			// Default to view node styling for unknown types
 			return {

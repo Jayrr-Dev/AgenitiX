@@ -33,6 +33,60 @@ export interface CategoryTheme {
 export const CATEGORY_THEMES: Partial<Record<string, CategoryTheme>> = {
 	create: {
 		background: { light: "bg-node-create", dark: "bg-node-create" },
+	email: {
+		background: { light: "bg-node-email", dark: "bg-node-email" },
+		border: { light: "border-node-email", dark: "border-node-email" },
+		text: {
+			primary: { light: "text-node-email", dark: "text-node-email" },
+			secondary: {
+				light: "text-node-email-secondary",
+				dark: "text-node-email-secondary",
+			},
+		},
+		button: {
+			border: "border-node-email",
+			hover: {
+				light: "hover:bg-node-email-hover",
+				dark: "hover:bg-node-email-hover",
+			},
+		},
+	},
+	flow: {
+		background: { light: "bg-node-flow", dark: "bg-node-flow" },
+		border: { light: "border-node-flow", dark: "border-node-flow" },
+		text: {
+			primary: { light: "text-node-flow", dark: "text-node-flow" },
+			secondary: {
+				light: "text-node-flow-secondary",
+				dark: "text-node-flow-secondary",
+			},
+		},
+		button: {
+			border: "border-node-flow",
+			hover: {
+				light: "hover:bg-node-flow-hover",
+				dark: "hover:bg-node-flow-hover",
+			},
+		},
+	},
+	time: {
+		background: { light: "bg-node-time", dark: "bg-node-time" },
+		border: { light: "border-node-time", dark: "border-node-time" },
+		text: {
+			primary: { light: "text-node-time", dark: "text-node-time" },
+			secondary: {
+				light: "text-node-time-secondary",
+				dark: "text-node-time-secondary",
+			},
+		},
+		button: {
+			border: "border-node-time",
+			hover: {
+				light: "hover:bg-node-time-hover",
+				dark: "hover:bg-node-time-hover",
+			},
+		},
+	},
 	ai: {
 		background: { light: "bg-node-ai", dark: "bg-node-ai" },
 		border: { light: "border-node-ai", dark: "border-node-ai" },
