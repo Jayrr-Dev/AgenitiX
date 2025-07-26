@@ -80,7 +80,6 @@ const DashboardContent = () => {
     user?.id ? { user_id: user.id } : "skip"
   );
   const createFlow = useMutation(api.flows.createFlow);
-  const deleteFlow = useMutation(api.flows.deleteFlow);
   const updateFlow = useMutation(api.flows.updateFlow);
 
   // Loading state
@@ -149,20 +148,11 @@ const DashboardContent = () => {
     }
   };
 
-  const handleFlowDeleted = async (flowId: string) => {
-    if (!user?.id) {
-      throw new Error("User not authenticated");
-    }
-
-    try {
-      await deleteFlow({
-        flow_id: flowId as any,
-        user_id: user.id,
-      });
-    } catch (error) {
-      console.error("Failed to delete flow:", error);
-      throw error;
-    }
+  const handleFlowDeleted = async (_flowId: string) => {
+    // Flow deletion is handled inside FlowActions. This callback can be used
+    // for additional side-effects or optimistic UI updates if needed.
+    // Currently, we rely on Convex reactivity to refresh the list, so no action
+    // is required here.
   };
 
   const handleFlowUpdated = async (
