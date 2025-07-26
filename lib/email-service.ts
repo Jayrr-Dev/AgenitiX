@@ -17,6 +17,7 @@ export interface EmailResult {
 	success: boolean;
 	messageId?: string;
 	error?: string;
+	magicLinkUrl?: string; // For development testing
 }
 
 /**
@@ -26,8 +27,10 @@ export interface EmailResult {
 export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<EmailResult> {
 	const { to, name, magicToken, type } = data;
 	
-	// Generate magic link URL
-	const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+	// Generate magic link URL - always use localhost in development
+	const baseUrl = process.env.NODE_ENV === 'development' 
+		? 'http://localhost:3000' 
+		: (process.env.NEXT_PUBLIC_APP_URL || 'https://agenitix.com');
 	const magicLinkUrl = `${baseUrl}/auth/verify?token=${magicToken}`;
 	
 	// Email content based on type
@@ -114,17 +117,20 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 	if (process.env.NODE_ENV === 'development') {
 		console.log('\n🔗 MAGIC LINK EMAIL (Development Mode)');
 		console.log('=====================================');
-		console.log(`To: ${to}`);
-		console.log(`Subject: ${emailContent.subject}`);
-		console.log(`Magic Link: ${magicLinkUrl}`);
+		console.log(`📧 To: ${to}`);
+		console.log(`📝 Subject: ${emailContent.subject}`);
+		console.log(`🔗 Magic Link: ${magicLinkUrl}`);
+		console.log(`⏰ Type: ${type}`);
+		console.log('=====================================');
+		console.log('👆 Click the magic link above to test authentication');
 		console.log('=====================================\n');
 		
-		// Also show in browser console for easy access
-		if (typeof window !== 'undefined') {
-			console.log(`🔗 Magic Link for ${to}: ${magicLinkUrl}`);
-		}
-		
-		return { success: true, messageId: `dev_${Date.now()}` };
+		// Return the magic link URL for the API response
+		return { 
+			success: true, 
+			messageId: `dev_${Date.now()}`,
+			magicLinkUrl // Include this for development testing
+		};
 	}
 
 	// For production: Use Resend email service
