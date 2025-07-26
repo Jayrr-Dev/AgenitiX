@@ -335,8 +335,8 @@ const CreateTextNode = memo(
       <>
         {/* Editable label or icon */}
         {!isExpanded &&
-        spec.size.collapsed.width === 60 &&
-        spec.size.collapsed.height === 60 ? (
+          spec.size.collapsed.width === 60 &&
+          spec.size.collapsed.height === 60 ? (
           <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
