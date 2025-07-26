@@ -13,6 +13,7 @@
 "use client";
 
 import FlowEditor from "@/features/business-logic-modern/infrastructure/flow-engine/FlowEditor";
+import { FlowMetadataProvider } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/FlowMetadataContext";
 import { Loading } from "@/components/Loading";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -102,61 +103,25 @@ export default function FlowPage({ params }: PageProps) {
 		);
 	}
 
-	// Render the flow editor with header
+	// Render the full-screen flow editor with metadata context
 	return (
 		<div
-			className="h-[100vh] w-[100vw] flex flex-col"
+			className="h-[100vh] w-[100vw]"
 			style={{ height: "100vh", width: "100vw", overflow: "hidden" }}
 		>
-			{/* Flow Header */}
-			<div className="flex items-center justify-between px-4 py-2 bg-background border-b border-border">
-				<div className="flex items-center gap-3">
-					<Link href="/dashboard">
-						<Button variant="ghost" size="sm" className="gap-2">
-							<ArrowLeft className="w-4 h-4" />
-							Back
-						</Button>
-					</Link>
-					<div className="h-4 w-px bg-border" />
-					<div className="flex items-center gap-2">
-						<h1 className="font-semibold text-foreground">{flow.name}</h1>
-						<Badge 
-							variant={flow.is_private ? "secondary" : "default"}
-							className={`text-xs ${
-								flow.is_private 
-									? "bg-orange-100 text-orange-700 border-orange-200" 
-									: "bg-green-100 text-green-700 border-green-200"
-							}`}
-						>
-							{flow.is_private ? "Private" : "Public"}
-						</Badge>
-						{!flow.isOwner && (
-							<Badge variant="outline" className="text-xs">
-								{flow.userPermission === "view" ? "View Only" : 
-								 flow.userPermission === "edit" ? "Can Edit" : "Admin"}
-							</Badge>
-						)}
-					</div>
-				</div>
-				
-				<div className="flex items-center gap-2">
-					{flow.description && (
-						<span className="text-sm text-muted-foreground max-w-xs truncate">
-							{flow.description}
-						</span>
-					)}
-					{!flow.canEdit && (
-						<Badge variant="outline" className="text-xs text-muted-foreground">
-							Read Only
-						</Badge>
-					)}
-				</div>
-			</div>
-
-			{/* Flow Editor */}
-			<div className="flex-1 overflow-hidden">
+			<FlowMetadataProvider
+				flow={{
+					id: flowId,
+					name: flow.name,
+					description: flow.description,
+					is_private: flow.is_private,
+					isOwner: flow.isOwner,
+					canEdit: flow.canEdit,
+					userPermission: flow.userPermission as "view" | "edit" | "admin" | undefined,
+				}}
+			>
 				<FlowEditor />
-			</div>
+			</FlowMetadataProvider>
 		</div>
 	);
 }
