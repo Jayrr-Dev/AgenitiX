@@ -1,34 +1,127 @@
-// app/build/[flowId]/page.tsx
-import { dummyFlows } from "@/features/business-logic-modern/dashboard/data";
+/**
+ * FLOW EDITOR PAGE - Individual flow editing interface
+ *
+ * • Loads flow data from Convex database
+ * • Renders the FlowEditor component for visual editing
+ * • Handles flow not found scenarios
+ * • Full-screen editor interface
+ * • Real-time flow data integration
+ *
+ * Keywords: flow-editor, convex, database, visual-editor, full-screen
+ */
+
+"use client";
+
 import FlowEditor from "@/features/business-logic-modern/infrastructure/flow-engine/FlowEditor";
-import { notFound } from "next/navigation";
+import { FlowMetadataProvider } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/FlowMetadataContext";
+import { Loading } from "@/components/Loading";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useAuthContext } from "@/components/auth/AuthProvider";
+import { use } from "react";
 
 // TYPES
 type PageProps = {
 	params: Promise<{
 		flowId: string;
 	}>;
-	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
 /**
- * Server component that looks up a Flow by ID from dummy data.
+ * Client component that loads a Flow by ID from Convex database.
  * @param params - Contains the flowId from the URL
- * @param searchParams - Contains any query parameters
  */
-export default async function FlowPage({ params, searchParams }: PageProps) {
-	const [{ flowId }, search] = await Promise.all([params, searchParams]);
+export default function FlowPage({ params }: PageProps) {
+	const { flowId } = use(params);
+	const { user, isAuthenticated, isLoading: authLoading } = useAuthContext();
 
-	// find in our dummy array
-	const flow = dummyFlows.find((f) => f.id === flowId);
-	if (!flow) notFound();
+	// Fetch flow data from Convex with proper access control
+	const flow = useQuery(
+		api.flows.getFlowSecure,
+		flowId && user?.id ? { 
+			flow_id: flowId as any,
+			user_id: user.id
+		} : "skip"
+	);
 
+	// Loading states
+	if (authLoading || flow === undefined) {
+		return (
+			<div className="h-screen w-screen flex items-center justify-center bg-background">
+				<Loading />
+			</div>
+		);
+	}
+
+	// Authentication check
+	if (!isAuthenticated || !user) {
+		return (
+			<div className="h-screen w-screen flex items-center justify-center bg-background">
+				<div className="text-center max-w-md mx-auto px-4">
+					<AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+					<h2 className="text-2xl font-bold text-foreground mb-2">Authentication Required</h2>
+					<p className="text-muted-foreground mb-6">
+						Please sign in to access this flow
+					</p>
+					<Link href="/sign-in">
+						<Button>Sign In</Button>
+					</Link>
+				</div>
+			</div>
+		);
+	}
+
+	// Flow not found or access denied
+	if (flow === null) {
+		return (
+			<div className="h-screen w-screen flex items-center justify-center bg-background">
+				<div className="text-center max-w-md mx-auto px-4">
+					<AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+					<h2 className="text-2xl font-bold text-foreground mb-2">Access Denied</h2>
+					<p className="text-muted-foreground mb-6">
+						The flow you're looking for doesn't exist or you don't have permission to access it.
+					</p>
+					<div className="flex gap-3 justify-center">
+						<Link href="/dashboard">
+							<Button variant="outline" className="gap-2">
+								<ArrowLeft className="w-4 h-4" />
+								My Flows
+							</Button>
+						</Link>
+						<Link href="/explore">
+							<Button className="gap-2">
+								Explore Public Flows
+							</Button>
+						</Link>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	// Render the full-screen flow editor with metadata context
 	return (
 		<div
 			className="h-[100vh] w-[100vw]"
 			style={{ height: "100vh", width: "100vw", overflow: "hidden" }}
 		>
-			<FlowEditor />
+			<FlowMetadataProvider
+				flow={{
+					id: flowId,
+					name: flow.name,
+					description: flow.description,
+					is_private: flow.is_private,
+					isOwner: flow.isOwner,
+					canEdit: flow.canEdit,
+					userPermission: flow.userPermission as "view" | "edit" | "admin" | undefined,
+				}}
+			>
+				<FlowEditor />
+			</FlowMetadataProvider>
 		</div>
 	);
 }

@@ -31,9 +31,9 @@ import { useEffect, useMemo, useState } from "react";
 import type { AgenEdge, AgenNode } from "../types/nodeData";
 
 // Import other components - Using clean aliases
-import ActionToolbar from "@/features/business-logic-modern/infrastructure/action-toolbar/ActionToolbar";
 import HistoryPanel from "@/features/business-logic-modern/infrastructure/action-toolbar/history/HistoryPanel";
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
+import { WorkflowManager } from "@/features/business-logic-modern/infrastructure/workflow-manager";
 import {
 	ThemedControls,
 	ThemedMiniMap,
@@ -72,6 +72,7 @@ interface FlowCanvasProps {
 	onDuplicateNode?: (nodeId: string) => void;
 	onDeleteEdge?: (edgeId: string) => void;
 	inspectorLocked: boolean;
+	inspectorViewMode: "bottom" | "side";
 	setInspectorLocked: (locked: boolean) => void;
 	reactFlowHandlers: {
 		onReconnectStart: () => void;
@@ -157,6 +158,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 	onDuplicateNode,
 	onDeleteEdge,
 	inspectorLocked,
+	inspectorViewMode,
 	setInspectorLocked,
 	reactFlowHandlers,
 }) => {
@@ -361,11 +363,17 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 			>
 				{/* NODE INSPECTOR PANEL */}
 				<Panel
-					position="bottom-center"
-					className={`hidden md:block rounded shadow-sm max-w-4xl max-h-[250px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${nodeInspectorStyles.getContainer()}`}
+					position={inspectorViewMode === "bottom" ? "bottom-center" : "top-right"}
+					className={`hidden md:block rounded shadow-sm ${
+						inspectorViewMode === "bottom" 
+							? "max-w-4xl max-h-[280px]" 
+							: inspectorLocked || !selectedNode
+								? "w-[50px] h-[50px] bg-card border border-border rounded-lg shadow-lg" 
+								: "w-[450px] max-h-[calc(100vh-370px)]"
+					} overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${nodeInspectorStyles.getContainer()}`}
 				>
 					<NodeDisplayProvider>
-						<NodeInspector />
+						<NodeInspector viewMode={inspectorViewMode} />
 					</NodeDisplayProvider>
 				</Panel>
 
@@ -386,9 +394,9 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 					color="var(--infra-canvas-dot)"
 				/>
 
-				{/* ACTION TOOLBAR */}
-				<Panel position="top-right" className={PANEL_STYLES.margin}>
-					<ActionToolbar showHistoryPanel={showHistoryPanel} onToggleHistory={onToggleHistory} />
+				{/* WORKFLOW MANAGER */}
+				<Panel position="top-center" className="z-50">
+					<WorkflowManager />
 				</Panel>
 
 				{/* DEBUG TOOL - Clears local storage (development utility) */}
@@ -438,9 +446,13 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 				{/* FLOATING HISTORY PANEL */}
 				{showHistoryPanel && (
 					<Panel
-						position="top-right"
-						className={PANEL_STYLES.historyPanel}
-						style={{ marginTop: PANEL_STYLES.historyPanelTop }}
+						position={inspectorViewMode === "side" ? "bottom-center" : "top-right"}
+						className={`${
+							inspectorViewMode === "side" 
+								? "mb-4 -translate-y-[50px]" 
+								: PANEL_STYLES.historyPanel
+						}`}
+						style={inspectorViewMode === "side" ? {} : { marginTop: PANEL_STYLES.historyPanelTop }}
 					>
 						<div className="w-80 max-h-96">
 							<HistoryPanel className="shadow-lg" />

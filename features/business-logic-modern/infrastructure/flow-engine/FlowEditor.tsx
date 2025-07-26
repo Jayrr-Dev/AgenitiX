@@ -9,6 +9,7 @@ import { generateNodeId } from "@/features/business-logic-modern/infrastructure/
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import React, { useCallback, useEffect, useRef } from "react";
 
+import ActionToolbar from "@/features/business-logic-modern/infrastructure/action-toolbar/ActionToolbar";
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
 import { UndoRedoProvider, useUndoRedo } from "../action-toolbar/history/UndoRedoContext";
 import UndoRedoManager from "../action-toolbar/history/UndoRedoManager";
@@ -164,6 +165,7 @@ const FlowEditorInternal = () => {
 		nodeErrors,
 		showHistoryPanel,
 		inspectorLocked,
+		inspectorViewMode,
 		updateNodeData,
 		updateNodeId,
 		logNodeError,
@@ -436,6 +438,17 @@ const FlowEditorInternal = () => {
 				}}
 			/>
 
+			{/* Action Toolbar */}
+			<ActionToolbar
+				showHistoryPanel={showHistoryPanel}
+				onToggleHistory={toggleHistoryPanel}
+				className={`fixed z-50 ${
+					inspectorViewMode === "side" 
+						? "bottom-4 left-1/2 transform -translate-x-1/2" 
+						: "top-4 right-4"
+				}`}
+			/>
+
 			<FlowCanvas
 				nodes={nodes}
 				edges={edges}
@@ -456,6 +469,7 @@ const FlowEditorInternal = () => {
 				onDuplicateNode={() => {}}
 				onDeleteEdge={removeEdge}
 				inspectorLocked={inspectorLocked}
+				inspectorViewMode={inspectorViewMode}
 				setInspectorLocked={setInspectorLocked}
 				reactFlowHandlers={{
 					onNodesChange,

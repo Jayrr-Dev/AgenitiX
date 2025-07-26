@@ -138,12 +138,17 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 			};
 		}
 
+		console.log('📧 Attempting to send email via Resend...');
+		console.log('📧 To:', to);
+		console.log('📧 Type:', type);
+		console.log('📧 Magic Link:', magicLinkUrl);
+
 		// Use Resend for production emails
 		const { Resend } = await import('resend');
 		const resend = new Resend(process.env.RESEND_API_KEY);
 		
 		const result = await resend.emails.send({
-			from: 'AgenitiX <onboarding@resend.dev>', // Using Resend's default domain
+			from: 'AgenitiX <noreply@agenitix.com>', // Try with a custom domain
 			to: [to],
 			subject: emailContent.subject,
 			html: emailContent.html,
@@ -153,11 +158,31 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 		return { success: true, messageId: result.data?.id || 'sent' };
 		
 	} catch (error) {
-		console.error('Email sending failed:', error);
-		return { 
-			success: false, 
-			error: error instanceof Error ? error.message : 'Unknown error' 
-		};
+		console.error('❌ Email sending failed:', error);
+		
+		// Try fallback with Resend's default domain
+		try {
+			console.log('🔄 Trying fallback with Resend default domain...');
+			const { Resend } = await import('resend');
+			const resend = new Resend(process.env.RESEND_API_KEY);
+			
+			const fallbackResult = await resend.emails.send({
+				from: 'onboarding@resend.dev', // Resend's default domain
+				to: [to],
+				subject: emailContent.subject,
+				html: emailContent.html,
+			});
+			
+			console.log('✅ Fallback email sent successfully:', fallbackResult.data?.id);
+			return { success: true, messageId: fallbackResult.data?.id || 'sent' };
+			
+		} catch (fallbackError) {
+			console.error('❌ Fallback email also failed:', fallbackError);
+			return { 
+				success: false, 
+				error: `Email sending failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
+			};
+		}
 	}
 }
 

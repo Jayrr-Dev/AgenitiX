@@ -307,7 +307,7 @@ const DeletionModal: React.FC<DeletionModalProps> = ({
 
 const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 	const { undo, redo, clearHistory, removeSelectedNode, getHistory, getFullGraph } = useUndoRedo();
-	const [isExpanded, setIsExpanded] = useState(false);
+
 	const [selectedEntry, setSelectedEntry] = useState<string | null>(null);
 	const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 	const [graphView, setGraphView] = useState(false);
@@ -605,9 +605,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 		setSelectedNodeId(nodeId);
 	}, []);
 
-	const handleToggleExpanded = useCallback(() => {
-		setIsExpanded(!isExpanded);
-	}, [isExpanded]);
+
 
 	const handleToggleGraphView = useCallback(() => {
 		setGraphView((prev) => !prev);
@@ -622,40 +620,16 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 	}, []);
 
 	// RENDER
-	if (!isExpanded) {
-		return (
-			<div className={`${PANEL_STYLES.base} ${className}`}>
-				<button onClick={handleToggleExpanded} className={COLLAPSED_STYLES.button}>
-					<div className="flex items-center gap-2">
-						<Clock className={COLLAPSED_STYLES.icon} />
-						<span className={COLLAPSED_STYLES.title}>History</span>
-						<span className={COLLAPSED_STYLES.badge}>{fullLinearHistory.length}</span>
-						{graphStats && graphStats.branches > 0 && (
-							<div className={COLLAPSED_STYLES.branchContainer}>
-								<GitBranch className={COLLAPSED_STYLES.branchIcon} />
-								<span className={COLLAPSED_STYLES.branchText}>{graphStats.branches}</span>
-							</div>
-						)}
-					</div>
-					<ChevronRight className={COLLAPSED_STYLES.chevron} />
-				</button>
-			</div>
-		);
-	}
-
 	return (
 		<div className={`${PANEL_STYLES.base} ${className}`}>
 			{/* HEADER */}
 			<div className={HEADER_STYLES.container}>
 				<div className={HEADER_STYLES.layout}>
-					<button onClick={handleToggleExpanded} className={HEADER_STYLES.collapseButton}>
-						<ChevronDown className={HEADER_STYLES.collapseIcon} />
-						<div className={HEADER_STYLES.titleContainer}>
-							<Clock className={HEADER_STYLES.titleIcon} />
-							<span className={HEADER_STYLES.titleText}>History</span>
-							<span className={HEADER_STYLES.titleBadge}>{fullLinearHistory.length}</span>
-						</div>
-					</button>
+					<div className={HEADER_STYLES.titleContainer}>
+						<Clock className={HEADER_STYLES.titleIcon} />
+						<span className={HEADER_STYLES.titleText}>History</span>
+						<span className={HEADER_STYLES.titleBadge}>{fullLinearHistory.length}</span>
+					</div>
 
 					<div className={HEADER_STYLES.rightSection}>
 						{/* Stats */}

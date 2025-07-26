@@ -437,3 +437,62 @@ export const revokeSession = mutation({
 		return { success: true };
 	},
 });
+
+// Development helper: Reset rate limits (only available in development)
+export const resetRateLimits = mutation({
+	args: { email: v.string() },
+	handler: async (ctx, args) => {
+		// Only allow in development
+		if (process.env.NODE_ENV === 'production') {
+			throw new Error("This function is only available in development");
+		}
+
+		const user = await ctx.db
+			.query("auth_users")
+			.withIndex("by_email", (q) => q.eq("email", args.email))
+			.first();
+
+		if (!user) {
+			throw new Error("User not found");
+		}
+
+		// Reset rate limiting
+		await ctx.db.patch(user._id, {
+			login_attempts: 0,
+			last_login_attempt: undefined,
+			updated_at: Date.now(),
+		});
+
+		return { success: true, message: "Rate limits reset" };
+	},
+});
+
+// Migration helper: Normalize all user emails to lowercase
+export const normalizeUserEmails = mutation({
+	args: {},
+	handler: async (ctx, args) => {
+		const users = await ctx.db
+			.query("auth_users")
+			.collect();
+
+		let updatedCount = 0;
+		
+		for (const user of users) {
+			const normalizedEmail = user.email.toLowerCase().trim();
+			if (user.email !== normalizedEmail) {
+				await ctx.db.patch(user._id, {
+					email: normalizedEmail,
+					updated_at: Date.now(),
+				});
+				updatedCount++;
+			}
+		}
+
+		return { 
+			success: true, 
+			message: `Normalized ${updatedCount} user emails to lowercase`,
+			totalUsers: users.length,
+			updatedUsers: updatedCount
+		};
+	},
+});
