@@ -1,21 +1,21 @@
 // AUTO-GENERATED - DO NOT EDIT MANUALLY
 export const VERSION = {
 	major: 0,
-	minor: 9,
+	minor: 11,
 	patch: 0,
-	full: "0.9.0",
-	generated: "2025-07-26T04:24:08.200Z",
+	full: "0.11.0",
+	generated: "2025-07-26T05:35:53.260Z",
 	git: {
-  "hash": "89c47f4c50a2bb24bcb699dba2e4d408a4f0b113",
-  "shortHash": "89c47f4",
+  "hash": "83fb5bfc938d9e5c3c228e27a866a86814baa469",
+  "shortHash": "83fb5bf",
   "branch": "main",
   "author": "Jayrr-Dev",
-  "date": "Fri Jul 25 22:23:45 2025 -0600",
+  "date": "Fri Jul 25 23:17:59 2025 -0600",
   "available": true
 },
 	changelog: {
 		bumpType: "minor",
-		reason: "17 new feature(s) added",
-		commits: 232,
+		reason: "18 new feature(s) added",
+		commits: 256,
 	},
 } as const;
