@@ -60,16 +60,15 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 				<div className="flex flex-col">
 					<div className="flex items-center gap-2">
 						<h2 className="text-xl font-semibold text-foreground">
-						{flow?.name || "Untitled Workflow"}						</h2>
-						
+							{flow?.name || "Untitled Workflow"}						</h2>
+
 						{flow && (
-							<Badge 
+							<Badge
 								variant={flow.is_private ? "secondary" : "default"}
-								className={`text-xs flex items-center scale-90 gap-1 ${
-									flow.is_private 
-										? "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100" 
-										: "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-								}`}
+								className={`text-xs flex items-center scale-90 gap-1 ${flow.is_private
+									? "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
+									: "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+									}`}
 							>
 								{flow.is_private ? (
 									<>
@@ -86,8 +85,8 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 						)}
 						{flow && !flow.isOwner && (
 							<Badge variant="outline" className="text-xs">
-								{flow.userPermission === "view" ? "View Only" : 
-								 flow.userPermission === "edit" ? "Can Edit" : "Admin"}
+								{flow.userPermission === "view" ? "View Only" :
+									flow.userPermission === "edit" ? "Can Edit" : "Admin"}
 							</Badge>
 						)}
 					</div>
