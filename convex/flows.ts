@@ -308,6 +308,76 @@ export const updateFlow = mutation({
 });
 
 /**
+ * Save canvas state (nodes and edges) for a flow
+ */
+export const saveFlowCanvas = mutation({
+	args: {
+		flow_id: v.id("flows"),
+		user_id: v.id("auth_users"),
+		nodes: v.any(),
+		edges: v.any(),
+	},
+	handler: async (ctx, args) => {
+		const { flow_id, user_id, nodes, edges } = args;
+
+		// Check if user has edit access
+		const accessCheck = await checkFlowAccessInternal(ctx, flow_id, user_id);
+		if (
+			!accessCheck.hasAccess ||
+			(accessCheck.permission !== "admin" && accessCheck.permission !== "edit")
+		) {
+			throw new Error("You don't have permission to edit this flow");
+		}
+
+		const now = new Date().toISOString();
+
+		await ctx.db.patch(flow_id, {
+			nodes,
+			edges,
+			canvas_updated_at: now,
+			updated_at: now,
+		});
+	},
+});
+
+/**
+ * Load canvas state (nodes and edges) for a flow
+ */
+export const loadFlowCanvas = query({
+	args: {
+		flow_id: v.id("flows"),
+		user_id: v.optional(v.id("auth_users")),
+	},
+	handler: async (ctx, args) => {
+		const { flow_id, user_id } = args;
+
+		// Check access if user_id is provided
+		if (user_id) {
+			const accessCheck = await checkFlowAccessInternal(ctx, flow_id, user_id);
+			if (!accessCheck.hasAccess) {
+				throw new Error("You don't have permission to view this flow");
+			}
+		}
+
+		const flow = await ctx.db.get(flow_id);
+		if (!flow) {
+			throw new Error("Flow not found");
+		}
+
+		// If no user_id provided, only allow access to public flows
+		if (!user_id && flow.is_private) {
+			throw new Error("This flow is private");
+		}
+
+		return {
+			nodes: flow.nodes || [],
+			edges: flow.edges || [],
+			canvas_updated_at: flow.canvas_updated_at,
+		};
+	},
+});
+
+/**
  * Delete a flow
  */
 export const deleteFlow = mutation({

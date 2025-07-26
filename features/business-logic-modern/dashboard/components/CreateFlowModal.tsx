@@ -304,9 +304,12 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 							placeholder="Enter flow name..."
 							required
 							minLength={1}
-							maxLength={100}
+							maxLength={12}
 							disabled={isSubmitting}
 						/>
+						<div className="text-xs text-muted-foreground text-right">
+							{formData.name.length}/12 characters
+						</div>
 					</div>
 
 					{/* Description Field */}

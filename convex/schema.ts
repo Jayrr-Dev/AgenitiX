@@ -146,6 +146,10 @@ export default defineSchema({
 		icon: v.optional(v.string()),
 		is_private: v.boolean(),
 		user_id: v.id("auth_users"),
+		// Canvas state
+		nodes: v.optional(v.any()), // React Flow nodes array
+		edges: v.optional(v.any()), // React Flow edges array
+		canvas_updated_at: v.optional(v.string()), // Last canvas save timestamp
 		created_at: v.string(),
 		updated_at: v.string(),
 	})

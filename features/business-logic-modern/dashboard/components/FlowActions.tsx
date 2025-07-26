@@ -182,7 +182,11 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 								onChange={(e) => setEditName(e.target.value)}
 								placeholder="Enter flow name"
 								disabled={isUpdating}
+								maxLength={12}
 							/>
+							<div className="text-xs text-muted-foreground text-right">
+								{editName.length}/12 characters
+							</div>
 						</div>
 						<div className="grid gap-2">
 							<Label htmlFor="description">Description</Label>

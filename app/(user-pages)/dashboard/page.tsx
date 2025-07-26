@@ -300,10 +300,13 @@ const DashboardContent = () => {
 				</div>
 
 				{/* Enhanced Grid Layout */}
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" style={{ gridAutoRows: '1fr' }}>
 					{/* Enhanced "New Flow" card */}
 					<Card
-						className="group cursor-pointer transition-all duration-300 border-dashed border-2 border-muted-foreground/30 hover:border-primary/60 hover:bg-primary/5 bg-fill-border hover:animate-fill-transparency"
+						className="group cursor-pointer transition-all duration-300 border-dashed border-2 border-muted-foreground/30 hover:border-primary/60 hover:bg-primary/5 bg-fill-border hover:animate-fill-transparency aspect-square shadow-sm dark:shadow-white/5"
+						style={{
+							backgroundColor: 'light-dark(#f5f5f5, var(--fill-border-color, #1a1a1a))'
+						}}
 						onClick={() => setIsModalOpen(true)}
 					>
 						<CardContent className="flex flex-col items-center justify-center py-16">
@@ -319,7 +322,13 @@ const DashboardContent = () => {
 
 					{/* Enhanced Flow Cards */}
 					{dashboardFlows.map((flow) => (
-						<Card key={flow.id} className="group transition-all duration-300 border border-transparent bg-fill-border hover:animate-fill-transparency">
+						<Card
+							key={flow.id}
+							className="group transition-all duration-300 border border-transparent bg-fill-border hover:animate-fill-transparency flex flex-col aspect-square shadow-sm dark:shadow-white/5"
+							style={{
+								backgroundColor: 'light-dark(#f5f5f5, var(--fill-border-color, #1a1a1a))'
+							}}
+						>
 							<CardHeader className="pb-3">
 								{/* Header with Icon and Privacy Toggle */}
 								<div className="flex items-start justify-between">
@@ -338,7 +347,7 @@ const DashboardContent = () => {
 									</div>
 
 									{/* Privacy Toggle Switch */}
-									<div className="flex flex-col items-center gap-1">
+									<div className="flex flex-col items-center gap-0 mt-2">
 										<Switch
 											checked={!flow.private}
 											onCheckedChange={() => handlePrivacyToggle(flow.id, flow.private)}
@@ -354,27 +363,32 @@ const DashboardContent = () => {
 								</div>
 							</CardHeader>
 
-							<CardContent className="space-y-4">
-								{/* Description */}
-								{flow.description && (
-									<div className="h-16 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+							<CardContent className="flex flex-col flex-1 space-y-2">
+								{/* Description - 6 lines */}
+								<div className="h-24 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+									{flow.description ? (
 										<p className="text-sm text-muted-foreground leading-relaxed break-words whitespace-normal">
 											{flow.description}
 										</p>
-									</div>
-								)}
-
-								{/* Metadata */}
-								<div className="flex items-center gap-4 text-xs text-muted-foreground">
-									<div className="flex items-center gap-1">
-										<Calendar className="w-3 h-3" />
-										Updated {formatDate(flow.updatedAt)}
-									</div>
+									) : (
+										<div className="h-full"></div>
+									)}
 								</div>
 
-								<Separator />
+								{/* Spacer to push bottom content down */}
+								<div className="flex-1"></div>
 
-								{/* Actions */}
+								{/* Updated timestamp - Above actions, left aligned, reduced spacing */}
+								<div className="flex items-center gap-1 mb-1">
+									<Calendar className="w-3 h-3 text-muted-foreground" />
+									<span className="text-xs text-muted-foreground">
+										Updated {formatDate(flow.updatedAt)}
+									</span>
+								</div>
+
+								<Separator className="my-1" />
+
+								{/* Actions - Always at bottom */}
 								<div className="flex items-center justify-between gap-2">
 									<FlowActions
 										flow={flow}
