@@ -399,10 +399,30 @@ export const loadFlowCanvas = query({
  * Delete a flow
  */
 export const deleteFlow = mutation({
-  args: { flow_id: v.id("flows") },
+  args: {
+    flow_id: v.id("flows"),
+    user_id: v.id("auth_users"),
+  },
   handler: async (ctx, args) => {
-    // Delete related records first
-    await ctx.db.delete(args.flow_id);
+    // Check if user has permission to delete the flow
+    const flow = await ctx.db.get(args.flow_id);
+    if (!flow) {
+      throw new Error("Flow not found");
+    }
+
+    if (flow.user_id !== args.user_id) {
+      throw new Error("You don't have permission to delete this flow");
+    }
+
+    // Delete upvotes first
+    const upvotes = await ctx.db
+      .query("flow_upvotes")
+      .withIndex("by_flow_id", (q) => q.eq("flow_id", args.flow_id))
+      .collect();
+
+    for (const upvote of upvotes) {
+      await ctx.db.delete(upvote._id);
+    }
 
     // Delete share records
     const shares = await ctx.db
@@ -433,6 +453,9 @@ export const deleteFlow = mutation({
     for (const request of requests) {
       await ctx.db.delete(request._id);
     }
+
+    // Finally delete the flow itself
+    await ctx.db.delete(args.flow_id);
   },
 });
 

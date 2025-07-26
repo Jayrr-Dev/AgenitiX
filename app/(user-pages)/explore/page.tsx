@@ -93,12 +93,6 @@ const ExplorePage = () => {
   // Test simple query
   const simpleFlows = useQuery(api.flows.getPublicFlowsSimple, {});
 
-  // Debug logging
-  console.log("Explore page - User:", user?.id);
-  console.log("Explore page - Public flows:", publicFlows);
-  console.log("Explore page - Debug info:", debugInfo);
-  console.log("Explore page - Simple flows:", simpleFlows);
-
   // Upvote mutation
   const toggleUpvote = useMutation(api.flows.toggleFlowUpvote);
 
@@ -261,10 +255,6 @@ const ExplorePage = () => {
   }, [publicFlows, debouncedSearch, sortBy, getIconCategory]);
 
   const totalFlows = processedFlows.length;
-
-  // Debug logging after variables are declared
-  console.log("Explore page - Processed flows:", processedFlows);
-  console.log("Explore page - Total flows:", totalFlows);
 
   // Loading state - must come after all hooks
   if (authLoading || publicFlows === undefined) {
