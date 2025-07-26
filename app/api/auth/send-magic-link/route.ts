@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
 		return NextResponse.json({
 			success: true,
 			messageId: result.messageId,
+			...(result.magicLinkUrl && { magicLinkUrl: result.magicLinkUrl }), // Include magic link URL in development
 		});
 
 	} catch (error) {

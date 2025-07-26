@@ -7,15 +7,6 @@ import type { AuthResult, AuthError } from "@/convex/auth";
 // Simple token management (in production, use secure storage)
 const TOKEN_KEY = "agenitix_auth_token";
 
-// Helper to create consistent auth errors
-function createAuthError(code: string, message: string, retryAfter?: number): AuthError {
-	return {
-		code: code as any,
-		message,
-		retryAfter
-	};
-}
-
 export const useAuth = () => {
 	const [token, setToken] = useState<string | null>(null);
 
@@ -76,14 +67,6 @@ export const useAuth = () => {
 					const error = new Error('Failed to send verification email');
 					(error as any).code = 'EMAIL_SEND_FAILED';
 					throw error;
-				}
-
-				const emailData = await emailResult.json();
-				
-				// In development, show magic link in console
-				if (process.env.NODE_ENV === 'development' && emailData.magicLinkUrl) {
-					console.log('� MAGIkC LINK FOR TESTING:', emailData.magicLinkUrl);
-					console.log('👆 Click this link to verify your account');
 				}
 				
 				return { 
@@ -214,11 +197,13 @@ export const useAuth = () => {
 		[updateProfileMutation, token]
 	);
 
+	const isAuthenticated = !!user && !!token;
+
 	return {
 		// State
 		user,
 		isLoading: user === undefined && token !== null,
-		isAuthenticated: !!user && !!token,
+		isAuthenticated,
 		token,
 
 		// Actions
