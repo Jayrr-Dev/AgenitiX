@@ -159,6 +159,11 @@ const DashboardContent = () => {
 		}
 	};
 
+	const handleFlowUpdated = async (flowId: string, updates: { name?: string; description?: string; is_private?: boolean }) => {
+		// The UI will automatically update via Convex reactivity
+		// This callback is mainly for any additional UI feedback if needed
+	};
+
 	const handlePrivacyToggle = async (flowId: string, currentPrivacy: boolean) => {
 		if (!user?.id) {
 			toast.error("Authentication required");
@@ -298,7 +303,7 @@ const DashboardContent = () => {
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
 					{/* Enhanced "New Flow" card */}
 					<Card
-						className="group cursor-pointer hover:shadow-xl transition-all duration-300 border-dashed border-2 border-muted-foreground/30 hover:border-primary/60 hover:bg-primary/5"
+						className="group cursor-pointer transition-all duration-300 border-dashed border-2 border-muted-foreground/30 hover:border-primary/60 hover:bg-primary/5 bg-fill-border hover:animate-fill-transparency"
 						onClick={() => setIsModalOpen(true)}
 					>
 						<CardContent className="flex flex-col items-center justify-center py-16">
@@ -314,7 +319,7 @@ const DashboardContent = () => {
 
 					{/* Enhanced Flow Cards */}
 					{dashboardFlows.map((flow) => (
-						<Card key={flow.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+						<Card key={flow.id} className="group transition-all duration-300 border border-transparent bg-fill-border hover:animate-fill-transparency">
 							<CardHeader className="pb-3">
 								{/* Header with Icon and Privacy Toggle */}
 								<div className="flex items-start justify-between">
@@ -329,21 +334,6 @@ const DashboardContent = () => {
 											<h3 className="font-semibold text-lg truncate text-foreground">
 												{flow.name}
 											</h3>
-											<div className="flex items-center gap-2 mt-1">
-												<Badge
-													variant={flow.private ? "secondary" : "default"}
-													className={`text-xs ${flow.private
-														? "bg-orange-100 text-orange-700 border-orange-200"
-														: "bg-green-100 text-green-700 border-green-200"
-														}`}
-												>
-													{flow.private ? (
-														<><Lock className="w-3 h-3 mr-1" />Private</>
-													) : (
-														<><Eye className="w-3 h-3 mr-1" />Public</>
-													)}
-												</Badge>
-											</div>
 										</div>
 									</div>
 
@@ -367,9 +357,11 @@ const DashboardContent = () => {
 							<CardContent className="space-y-4">
 								{/* Description */}
 								{flow.description && (
-									<p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-										{flow.description}
-									</p>
+									<div className="h-16 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+										<p className="text-sm text-muted-foreground leading-relaxed break-words whitespace-normal">
+											{flow.description}
+										</p>
+									</div>
 								)}
 
 								{/* Metadata */}
@@ -387,6 +379,7 @@ const DashboardContent = () => {
 									<FlowActions
 										flow={flow}
 										onDelete={handleFlowDeleted}
+										onUpdate={handleFlowUpdated}
 									/>
 
 									<Link href={`/matrix/${flow.id}`}>

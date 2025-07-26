@@ -318,9 +318,12 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 							onChange={(e) => handleInputChange("description", e.target.value)}
 							placeholder="Describe what this flow does..."
 							rows={3}
-							maxLength={500}
+							maxLength={200}
 							disabled={isSubmitting}
 						/>
+						<div className="text-xs text-muted-foreground text-right">
+							{formData.description.length}/200 characters
+						</div>
 					</div>
 
 					{/* Icon Selection */}
