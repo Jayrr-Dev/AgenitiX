@@ -1,6 +1,27 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { Id } from "./_generated/dataModel";
+export type AuthErrorCode = 
+	| "USER_NOT_FOUND"
+	| "RATE_LIMIT_EXCEEDED"
+	| "INVALID_MAGIC_LINK"
+	| "EXPIRED_MAGIC_LINK"
+	| "USER_ALREADY_EXISTS"
+	| "EMAIL_SEND_FAILED"
+	| "UNKNOWN_ERROR";
+
+export type AuthError = {
+	code: AuthErrorCode;
+	message: string;
+	retryAfter?: number; // Minutes until user can try again
+};
+
+export type AuthResult<T = any> = {
+	success: true;
+	data: T;
+} | {
+	success: false;
+	error: AuthError;
+};
 
 // Generate secure random token
 function generateMagicToken(): string {
@@ -12,13 +33,20 @@ function generateMagicToken(): string {
 	return result;
 }
 
+// Función de utilidad para normalizar correos electrónicos
+function normalizeEmail(email: string): string {
+	return email.toLowerCase().trim();
+}
+
 // Check if user exists (for better UX)
 export const checkUserExists = query({
 	args: { email: v.string() },
 	handler: async (ctx, args) => {
+		const normalizedEmail = normalizeEmail(args.email);
+		
 		const user = await ctx.db
 			.query("auth_users")
-			.withIndex("by_email", (q) => q.eq("email", args.email))
+			.withIndex("by_email", (q) => q.eq("email", normalizedEmail))
 			.first();
 
 		return {
@@ -37,14 +65,22 @@ export const signUp = mutation({
 		role: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
+		const normalizedEmail = normalizeEmail(args.email);
+		
 		// Check if user already exists
 		const existingUser = await ctx.db
 			.query("auth_users")
-			.withIndex("by_email", (q) => q.eq("email", args.email))
+			.withIndex("by_email", (q) => q.eq("email", normalizedEmail))
 			.first();
 
 		if (existingUser) {
-			throw new Error("User with this email already exists");
+			return {
+				success: false,
+				error: {
+					code: "USER_ALREADY_EXISTS" as const,
+					message: "An account with this email already exists. Please sign in instead."
+				}
+			};
 		}
 
 		// Generate magic link token
@@ -53,7 +89,7 @@ export const signUp = mutation({
 
 		// Create new user (unverified)
 		const userId = await ctx.db.insert("auth_users", {
-			email: args.email,
+			email: normalizedEmail,
 			name: args.name,
 			company: args.company,
 			role: args.role,
@@ -66,12 +102,15 @@ export const signUp = mutation({
 			login_attempts: 0,
 		});
 
-		return { 
-			userId, 
-			email: args.email, 
-			name: args.name,
-			magicToken,
-			needsVerification: true
+		return {
+			success: true,
+			data: {
+				userId, 
+				email: normalizedEmail, 
+				name: args.name,
+				magicToken,
+				needsVerification: true
+			}
 		};
 	},
 });
@@ -83,42 +122,70 @@ export const sendMagicLink = mutation({
 		type: v.union(v.literal("login"), v.literal("verification")),
 	},
 	handler: async (ctx, args) => {
+		const normalizedEmail = normalizeEmail(args.email);
+		
 		// Find user
 		const user = await ctx.db
 			.query("auth_users")
-			.withIndex("by_email", (q) => q.eq("email", args.email))
+			.withIndex("by_email", (q) => q.eq("email", normalizedEmail))
 			.first();
 
 		if (!user) {
-			throw new Error("No account found with this email address");
+			return {
+				success: false,
+				error: {
+					code: "USER_NOT_FOUND" as const,
+					message: "No account found with this email address. Please create an account first."
+				}
+			};
 		}
 
 		// Check rate limiting (max 3 attempts per hour)
 		const oneHourAgo = Date.now() - 60 * 60 * 1000;
-		if (user.last_login_attempt && user.last_login_attempt > oneHourAgo) {
-			if ((user.login_attempts || 0) >= 3) {
-				throw new Error("Too many attempts. Please try again in an hour.");
-			}
+		const currentAttempts = user.login_attempts || 0;
+		const lastAttempt = user.last_login_attempt || 0;
+		
+		// Reset attempts if more than an hour has passed
+		let attemptsToUse = currentAttempts;
+		if (lastAttempt < oneHourAgo) {
+			attemptsToUse = 0;
+		}
+		
+		// Check if user has exceeded rate limit
+		if (attemptsToUse >= 3) {
+			const timeUntilReset = Math.ceil((lastAttempt + 60 * 60 * 1000 - Date.now()) / (60 * 1000));
+			return {
+				success: false,
+				error: {
+					code: "RATE_LIMIT_EXCEEDED" as const,
+					message: `Too many attempts. Please try again in ${timeUntilReset} minutes.`,
+					retryAfter: timeUntilReset
+				}
+			};
 		}
 
 		// Generate new magic link token
 		const magicToken = generateMagicToken();
 		const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
 
-		// Update user with new token
+		// Update user with new token and increment attempts
+		const newAttempts = lastAttempt < oneHourAgo ? 1 : attemptsToUse + 1;
+		
 		await ctx.db.patch(user._id, {
 			magic_link_token: magicToken,
 			magic_link_expires: expiresAt,
-			login_attempts: (user.login_attempts || 0) + 1,
+			login_attempts: newAttempts,
 			last_login_attempt: Date.now(),
 			updated_at: Date.now(),
 		});
 
 		return {
 			success: true,
-			email: args.email,
-			magicToken,
-			type: args.type,
+			data: {
+				email: args.email,
+				magicToken,
+				type: args.type,
+			}
 		};
 	},
 });
@@ -138,12 +205,24 @@ export const verifyMagicLink = mutation({
 			.first();
 
 		if (!user || !user.is_active) {
-			throw new Error("Invalid or expired magic link");
+			return {
+				success: false,
+				error: {
+					code: "INVALID_MAGIC_LINK" as const,
+					message: "Invalid magic link. Please request a new one."
+				}
+			};
 		}
 
 		// Check if token is expired
 		if (!user.magic_link_expires || user.magic_link_expires < Date.now()) {
-			throw new Error("Magic link has expired. Please request a new one.");
+			return {
+				success: false,
+				error: {
+					code: "EXPIRED_MAGIC_LINK" as const,
+					message: "Magic link has expired. Please request a new one."
+				}
+			};
 		}
 
 		// Generate session token
@@ -171,16 +250,19 @@ export const verifyMagicLink = mutation({
 		});
 
 		return {
-			user: {
-				id: user._id,
-				email: user.email,
-				name: user.name,
-				company: user.company,
-				role: user.role,
-				email_verified: true,
-			},
-			sessionToken,
-			sessionId,
+			success: true,
+			data: {
+				user: {
+					id: user._id,
+					email: user.email,
+					name: user.name,
+					company: user.company,
+					role: user.role,
+					email_verified: true,
+				},
+				sessionToken,
+				sessionId,
+			}
 		};
 	},
 });
@@ -193,7 +275,7 @@ export const signIn = mutation({
 		ip_address: v.optional(v.string()),
 		user_agent: v.optional(v.string()),
 	},
-	handler: async (ctx, args) => {
+	handler: async () => {
 		// This is now just for backward compatibility
 		// In production, this should redirect to magic link flow
 		throw new Error("Please use magic link authentication");
