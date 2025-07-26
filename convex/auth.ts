@@ -16,9 +16,12 @@ function generateMagicToken(): string {
 export const checkUserExists = query({
 	args: { email: v.string() },
 	handler: async (ctx, args) => {
+		// Normalize email to lowercase for consistent lookup
+		const normalizedEmail = args.email.toLowerCase().trim();
+		
 		const user = await ctx.db
 			.query("auth_users")
-			.withIndex("by_email", (q) => q.eq("email", args.email))
+			.withIndex("by_email", (q) => q.eq("email", normalizedEmail))
 			.first();
 
 		return {
@@ -37,10 +40,13 @@ export const signUp = mutation({
 		role: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
+		// Normalize email to lowercase for consistent storage
+		const normalizedEmail = args.email.toLowerCase().trim();
+		
 		// Check if user already exists
 		const existingUser = await ctx.db
 			.query("auth_users")
-			.withIndex("by_email", (q) => q.eq("email", args.email))
+			.withIndex("by_email", (q) => q.eq("email", normalizedEmail))
 			.first();
 
 		if (existingUser) {
@@ -53,7 +59,7 @@ export const signUp = mutation({
 
 		// Create new user (unverified)
 		const userId = await ctx.db.insert("auth_users", {
-			email: args.email,
+			email: normalizedEmail,
 			name: args.name,
 			company: args.company,
 			role: args.role,
@@ -83,10 +89,13 @@ export const sendMagicLink = mutation({
 		type: v.union(v.literal("login"), v.literal("verification")),
 	},
 	handler: async (ctx, args) => {
+		// Normalize email to lowercase for consistent lookup
+		const normalizedEmail = args.email.toLowerCase().trim();
+		
 		// Find user
 		const user = await ctx.db
 			.query("auth_users")
-			.withIndex("by_email", (q) => q.eq("email", args.email))
+			.withIndex("by_email", (q) => q.eq("email", normalizedEmail))
 			.first();
 
 		if (!user) {
@@ -382,5 +391,35 @@ export const resetRateLimits = mutation({
 		});
 
 		return { success: true, message: "Rate limits reset" };
+	},
+});
+
+// Migration helper: Normalize all user emails to lowercase
+export const normalizeUserEmails = mutation({
+	args: {},
+	handler: async (ctx, args) => {
+		const users = await ctx.db
+			.query("auth_users")
+			.collect();
+
+		let updatedCount = 0;
+		
+		for (const user of users) {
+			const normalizedEmail = user.email.toLowerCase().trim();
+			if (user.email !== normalizedEmail) {
+				await ctx.db.patch(user._id, {
+					email: normalizedEmail,
+					updated_at: Date.now(),
+				});
+				updatedCount++;
+			}
+		}
+
+		return { 
+			success: true, 
+			message: `Normalized ${updatedCount} user emails to lowercase`,
+			totalUsers: users.length,
+			updatedUsers: updatedCount
+		};
 	},
 });
