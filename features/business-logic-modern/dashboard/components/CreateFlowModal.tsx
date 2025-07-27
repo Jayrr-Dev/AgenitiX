@@ -434,10 +434,12 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
                       .find((icon) => icon.value === formData.icon);
                     if (selectedIcon) {
                       const IconComponent = selectedIcon.icon;
-                      const category = Object.entries(ICON_CATEGORIES).find(
-                        ([key, cat]) =>
-                          cat.icons.some((icon) => icon.value === formData.icon)
-                      )?.[1];
+                      const categoryEntry = Object.entries(
+                        ICON_CATEGORIES
+                      ).find(([key, cat]) =>
+                        cat.icons.some((icon) => icon.value === formData.icon)
+                      );
+                      const categoryLabel = categoryEntry?.[1]?.label;
 
                       return (
                         <>
@@ -451,7 +453,7 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
                             <p className="text-xs text-muted-foreground">
                               This flow will appear in the{" "}
                               <span className="font-medium">
-                                {category?.label}
+                                {categoryLabel}
                               </span>{" "}
                               category
                             </p>

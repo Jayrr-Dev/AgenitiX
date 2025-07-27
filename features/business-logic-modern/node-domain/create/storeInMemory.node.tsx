@@ -11,20 +11,19 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import React, {
+import {
+  type ChangeEvent,
   memo,
   useCallback,
   useEffect,
   useMemo,
   useRef,
-  ChangeEvent,
 } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
@@ -119,7 +118,7 @@ export type StoreInMemoryData = z.infer<typeof StoreInMemoryDataSchema>;
 
 const validateNodeData = createNodeValidator(
   StoreInMemoryDataSchema,
-  "StoreInMemory",
+  "StoreInMemory"
 );
 
 // -----------------------------------------------------------------------------
@@ -137,7 +136,8 @@ const CONTENT = {
   collapsed: "flex items-center justify-center w-full h-full",
   header: "flex items-center justify-between mb-3",
   body: "flex-1 flex flex-col gap-2",
-  disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+  disabled:
+    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -276,15 +276,12 @@ const StoreInMemoryNode = memo(
     const {
       isExpanded,
       isEnabled,
-      isActive,
       key,
       value,
       operation,
       dataType,
       storageStatus,
     } = nodeData as StoreInMemoryData;
-
-
 
     const categoryStyles = CATEGORY_TEXT.CREATE;
     const storage = InMemoryStorage.getInstance();
@@ -305,9 +302,10 @@ const StoreInMemoryNode = memo(
       if (!val) return val;
 
       switch (type) {
-        case "number":
+        case "number": {
           const num = Number(val);
-          return isNaN(num) ? val : num;
+          return Number.isNaN(num) ? val : num;
+        }
         case "boolean":
           return val.toLowerCase() === "true" || val === "1";
         case "json":
@@ -341,24 +339,27 @@ const StoreInMemoryNode = memo(
         let status = "ready";
 
         switch (operation) {
-          case "set":
+          case "set": {
             const convertedValue = convertValue(value, dataType);
             storage.set(key, convertedValue);
             result = formatValue(convertedValue);
             status = "stored";
             break;
+          }
 
-          case "get":
+          case "get": {
             const retrievedValue = storage.get(key);
             result = formatValue(retrievedValue);
             status = retrievedValue !== undefined ? "retrieved" : "not_found";
             break;
+          }
 
-          case "delete":
+          case "delete": {
             const deleted = storage.delete(key);
             result = deleted ? "deleted" : "not_found";
             status = deleted ? "deleted" : "not_found";
             break;
+          }
 
           case "clear":
             storage.clear();
@@ -377,7 +378,8 @@ const StoreInMemoryNode = memo(
 
         lastOutputRef.current = result;
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : "Unknown error";
+        const errorMsg =
+          error instanceof Error ? error.message : "Unknown error";
         updateNodeData({
           outputs: `Error: ${errorMsg}`,
           output: `Error: ${errorMsg}`, // For compatibility with viewText
@@ -386,7 +388,17 @@ const StoreInMemoryNode = memo(
           isActive: false,
         });
       }
-    }, [isEnabled, key, value, operation, dataType, storage, convertValue, formatValue, updateNodeData]);
+    }, [
+      isEnabled,
+      key,
+      value,
+      operation,
+      dataType,
+      storage,
+      convertValue,
+      formatValue,
+      updateNodeData,
+    ]);
 
     // -------------------------------------------------------------------------
     // 5.5  Callbacks
@@ -402,7 +414,7 @@ const StoreInMemoryNode = memo(
       (e: ChangeEvent<HTMLInputElement>) => {
         updateNodeData({ key: e.target.value });
       },
-      [updateNodeData],
+      [updateNodeData]
     );
 
     /** Handle value change */
@@ -410,7 +422,7 @@ const StoreInMemoryNode = memo(
       (e: ChangeEvent<HTMLTextAreaElement>) => {
         updateNodeData({ value: e.target.value });
       },
-      [updateNodeData],
+      [updateNodeData]
     );
 
     /** Handle operation change */
@@ -418,7 +430,7 @@ const StoreInMemoryNode = memo(
       (e: ChangeEvent<HTMLSelectElement>) => {
         updateNodeData({ operation: e.target.value as any });
       },
-      [updateNodeData],
+      [updateNodeData]
     );
 
     /** Handle data type change */
@@ -426,7 +438,7 @@ const StoreInMemoryNode = memo(
       (e: ChangeEvent<HTMLSelectElement>) => {
         updateNodeData({ dataType: e.target.value as any });
       },
-      [updateNodeData],
+      [updateNodeData]
     );
 
     // -------------------------------------------------------------------------
@@ -435,13 +447,19 @@ const StoreInMemoryNode = memo(
 
     /** Monitor inputs from connected nodes */
     useEffect(() => {
-      const valueEdge = edges.find((e) => e.target === id && e.targetHandle === "value-input");
+      const valueEdge = edges.find(
+        (e) => e.target === id && e.targetHandle === "value-input"
+      );
 
       // Check value input
       if (valueEdge) {
         const valueNode = nodes.find((n) => n.id === valueEdge.source);
         if (valueNode) {
-          const inputValue = valueNode.data?.outputs ?? valueNode.data?.text ?? valueNode.data?.store ?? "";
+          const inputValue =
+            valueNode.data?.outputs ??
+            valueNode.data?.text ??
+            valueNode.data?.store ??
+            "";
           const newValue = String(inputValue || "");
           if (newValue !== value && newValue) {
             updateNodeData({ value: newValue });
@@ -455,7 +473,7 @@ const StoreInMemoryNode = memo(
       if (isEnabled && key.trim()) {
         executeOperation();
       }
-    }, [key, value, operation, dataType, isEnabled, executeOperation]);
+    }, [key, isEnabled, executeOperation]);
 
     // -------------------------------------------------------------------------
     // 5.7  Validation
@@ -472,7 +490,7 @@ const StoreInMemoryNode = memo(
       StoreInMemoryDataSchema,
       "StoreInMemory",
       validation.data,
-      id,
+      id
     );
 
     // -------------------------------------------------------------------------
@@ -480,25 +498,39 @@ const StoreInMemoryNode = memo(
     // -------------------------------------------------------------------------
     const getStatusColor = (status: string) => {
       switch (status) {
-        case "stored": return "text-green-600";
-        case "retrieved": return "text-blue-600";
-        case "deleted": return "text-orange-600";
-        case "cleared": return "text-purple-600";
-        case "error": return "text-red-600";
-        case "not_found": return "text-yellow-600";
-        default: return "text-gray-600";
+        case "stored":
+          return "text-green-600";
+        case "retrieved":
+          return "text-blue-600";
+        case "deleted":
+          return "text-orange-600";
+        case "cleared":
+          return "text-purple-600";
+        case "error":
+          return "text-red-600";
+        case "not_found":
+          return "text-yellow-600";
+        default:
+          return "text-gray-600";
       }
     };
 
     const getStatusIcon = (status: string) => {
       switch (status) {
-        case "stored": return "✓";
-        case "retrieved": return "↓";
-        case "deleted": return "✗";
-        case "cleared": return "∅";
-        case "error": return "!";
-        case "not_found": return "?";
-        default: return "○";
+        case "stored":
+          return "✓";
+        case "retrieved":
+          return "↓";
+        case "deleted":
+          return "✗";
+        case "cleared":
+          return "∅";
+        case "error":
+          return "!";
+        case "not_found":
+          return "?";
+        default:
+          return "○";
       }
     };
 
@@ -511,7 +543,9 @@ const StoreInMemoryNode = memo(
         <LabelNode nodeId={id} label={spec.displayName} />
 
         {!isExpanded ? (
-          <div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ''}`}>
+          <div
+            className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ""}`}
+          >
             <div className="text-center p-2">
               <div className={`text-xs font-mono ${categoryStyles.primary}`}>
                 {key || "memory"}
@@ -522,7 +556,9 @@ const StoreInMemoryNode = memo(
             </div>
           </div>
         ) : (
-          <div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ''}`}>
+          <div
+            className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}
+          >
             <div className={CONTENT.header}>
               <span className="text-sm font-medium">Memory Storage</span>
               <div className={`text-xs ${getStatusColor(storageStatus)}`}>
@@ -533,8 +569,14 @@ const StoreInMemoryNode = memo(
             <div className={CONTENT.body}>
               {/* Storage Key */}
               <div>
-                <label className="text-xs text-gray-600 mb-1 block">Key:</label>
+                <label
+                  htmlFor="storage-key"
+                  className="text-xs text-gray-600 mb-1 block"
+                >
+                  Key:
+                </label>
                 <input
+                  id="storage-key"
                   type="text"
                   value={key}
                   onChange={handleKeyChange}
@@ -546,8 +588,14 @@ const StoreInMemoryNode = memo(
 
               {/* Operation */}
               <div>
-                <label className="text-xs text-gray-600 mb-1 block">Operation:</label>
+                <label
+                  htmlFor="storage-operation"
+                  className="text-xs text-gray-600 mb-1 block"
+                >
+                  Operation:
+                </label>
                 <select
+                  id="storage-operation"
                   value={operation}
                   onChange={handleOperationChange}
                   className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -564,8 +612,14 @@ const StoreInMemoryNode = memo(
               {operation === "set" && (
                 <>
                   <div>
-                    <label className="text-xs text-gray-600 mb-1 block">Data Type:</label>
+                    <label
+                      htmlFor="storage-data-type"
+                      className="text-xs text-gray-600 mb-1 block"
+                    >
+                      Data Type:
+                    </label>
                     <select
+                      id="storage-data-type"
                       value={dataType}
                       onChange={handleDataTypeChange}
                       className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -579,8 +633,14 @@ const StoreInMemoryNode = memo(
                   </div>
 
                   <div>
-                    <label className="text-xs text-gray-600 mb-1 block">Value:</label>
+                    <label
+                      htmlFor="storage-value"
+                      className="text-xs text-gray-600 mb-1 block"
+                    >
+                      Value:
+                    </label>
                     <textarea
+                      id="storage-value"
                       value={value}
                       onChange={handleValueChange}
                       placeholder="Enter value to store..."
@@ -613,7 +673,7 @@ const StoreInMemoryNode = memo(
         />
       </>
     );
-  },
+  }
 );
 
 // -----------------------------------------------------------------------------
@@ -626,10 +686,7 @@ const StoreInMemoryNodeWithDynamicSpec = (props: NodeProps) => {
   // Recompute spec only when the size keys change
   const dynamicSpec = useMemo(
     () => createDynamicSpec(nodeData as StoreInMemoryData),
-    [
-      (nodeData as StoreInMemoryData).expandedSize,
-      (nodeData as StoreInMemoryData).collapsedSize,
-    ],
+    [nodeData]
   );
 
   // Memoise the scaffolded component to keep focus
@@ -638,7 +695,7 @@ const StoreInMemoryNodeWithDynamicSpec = (props: NodeProps) => {
       withNodeScaffold(dynamicSpec, (p) => (
         <StoreInMemoryNode {...p} spec={dynamicSpec} />
       )),
-    [dynamicSpec],
+    [dynamicSpec]
   );
 
   return <ScaffoldedNode {...props} />;
