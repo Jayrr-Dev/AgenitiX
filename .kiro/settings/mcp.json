@@ -34,6 +34,10 @@
     "env": {
       "REF_API_KEY": "ref-be3025baf6ed7dd91c52"
     }
+  },
+  "Sentry": {
+    "command": "npx",
+    "args": ["-y", "mcp-remote@latest", "https://mcp.sentry.dev/mcp"]
   }
   }
 }

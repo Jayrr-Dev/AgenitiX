@@ -1,6 +1,6 @@
 {
   "name": "agentix-2",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "private": true,
   "scripts": {
     "dev": "pnpm run dev:setup && pnpm run dev:parallel",
@@ -83,6 +83,7 @@
     "@radix-ui/react-tabs": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.7",
     "@react-three/fiber": "9.0.0-alpha.8",
+    "@sentry/nextjs": "^9.42.1",
     "@tabler/icons-react": "^3.31.0",
     "@tanstack/react-query": "^5.74.4",
     "@vercel/analytics": "^1.5.0",
