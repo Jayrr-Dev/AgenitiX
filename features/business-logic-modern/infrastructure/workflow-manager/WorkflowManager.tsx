@@ -12,12 +12,14 @@
 
 "use client";
 
-import { Save, Download, Settings, Play, Square, ArrowLeft, Lock, Globe } from "lucide-react";
+import { Download, Settings, Play, Square, ArrowLeft, Lock, Globe, Cloud, CloudOff, Loader2 } from "lucide-react";
 import { useFlowStore } from "../flow-engine/stores/flowStore";
 import { useFlowMetadataOptional } from "../flow-engine/contexts/FlowMetadataContext";
 import { useComponentClasses, useComponentButtonClasses } from "../theming/components";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
+import { useAutoSaveCanvas } from "../flow-engine/hooks/useAutoSaveCanvas";
+import { useLoadCanvas } from "../flow-engine/hooks/useLoadCanvas";
 
 interface WorkflowManagerProps {
 	className?: string;
@@ -27,6 +29,14 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 	const { nodes, edges } = useFlowStore();
 	const { flow } = useFlowMetadataOptional() || { flow: null };
 	const router = useRouter();
+
+	// Auto-save and load canvas state
+	const autoSave = useAutoSaveCanvas({
+		debounceMs: 2000, // Save after 2 seconds of inactivity
+		enabled: true,
+		showNotifications: false // Keep it subtle
+	});
+	const loadCanvas = useLoadCanvas();
 
 	// Get themed classes
 	const containerClasses = useComponentClasses(
@@ -52,15 +62,40 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 			<div className="flex items-center gap-3">
 				<button
 					onClick={handleReturnToDashboard}
-					className={buttonClasses}
+					className={`${buttonClasses} w-10 h-10 p-0 flex items-center justify-center mr-3 cursor-pointer`}
 					title="Return to Dashboard"
 				>
-					<ArrowLeft className="w-4 h-4" />
+					<ArrowLeft className="w-6 h-6" />
 				</button>
 				<div className="flex flex-col">
-					<div className="flex items-center gap-2">
+					<div className="flex items-center gap-2 relative">
 						<h2 className="text-xl font-semibold text-foreground">
-							{flow?.name || "Untitled Workflow"}						</h2>
+							{flow?.name || "Untitled Workflow"}
+						</h2>
+
+						{/* Auto-save Status Indicator - Absolute positioned to not affect layout */}
+						{flow?.canEdit && (
+							<div
+								className="absolute -left-4 top-1/2 -translate-y-1/2 flex items-center cursor-help"
+								title={
+									autoSave.isSaving
+										? "Saving changes..."
+										: autoSave.isEnabled && autoSave.lastSaved
+											? `Last saved at ${autoSave.lastSaved.toLocaleTimeString()}`
+											: autoSave.isEnabled
+												? "Auto-save enabled"
+												: "Auto-save disabled"
+								}
+							>
+								{autoSave.isSaving ? (
+									<div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_4px_rgba(59,130,246,0.6)]"></div>
+								) : autoSave.isEnabled ? (
+									<div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_4px_rgba(34,197,94,0.6)]"></div>
+								) : (
+									<div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_4px_rgba(249,115,22,0.6)]"></div>
+								)}
+							</div>
+						)}
 
 						{flow && (
 							<Badge
@@ -112,68 +147,57 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 
 			{/* Center Section - Workflow Actions */}
 			<div className="flex items-center gap-2">
-				<button
-					className={primaryButtonClasses}
-					title="Save Workflow"
-					onClick={() => {
-						// TODO: Implement save functionality
-						console.log("Save workflow");
-					}}
-				>
-					<Save className="w-4 h-4" />
-					<span className="ml-1 text-xs">Save</span>
-				</button>
 
 				<button
-					className={buttonClasses}
+					className={`${buttonClasses} w-10 h-10 p-0 flex items-center justify-center cursor-pointer`}
 					title="Export Workflow"
 					onClick={() => {
 						// TODO: Implement export functionality
 						console.log("Export workflow");
 					}}
 				>
-					<Download className="w-4 h-4" />
+					<Download className="w-5 h-5" />
 				</button>
 
 				<button
-					className={buttonClasses}
+					className={`${buttonClasses} w-10 h-10 p-0 flex items-center justify-center cursor-pointer`}
 					title="Run Workflow"
 					onClick={() => {
 						// TODO: Implement run functionality
 						console.log("Run workflow");
 					}}
 				>
-					<Play className="w-4 h-4" />
+					<Play className="w-5 h-5" />
 				</button>
 
 				<button
-					className={buttonClasses}
+					className={`${buttonClasses} w-10 h-10 p-0 flex items-center justify-center cursor-pointer`}
 					title="Stop Workflow"
 					onClick={() => {
 						// TODO: Implement stop functionality
 						console.log("Stop workflow");
 					}}
 				>
-					<Square className="w-4 h-4" />
+					<Square className="w-5 h-5" />
 				</button>
 			</div>
 
 			{/* Right Section - Description & Settings */}
 			<div className="flex items-center gap-3">
-				{flow?.description && (
+				{/* {flow?.description && (
 					<span className="text-sm text-muted-foreground max-w-xs truncate">
 						{flow.description}
 					</span>
-				)}
+				)} */}
 				<button
-					className={buttonClasses}
+					className={`${buttonClasses} w-10 h-10 p-0 flex items-center justify-center cursor-pointer`}
 					title="Workflow Settings"
 					onClick={() => {
 						// TODO: Implement settings functionality
 						console.log("Open settings");
 					}}
 				>
-					<Settings className="w-4 h-4" />
+					<Settings className="w-5 h-5" />
 				</button>
 			</div>
 		</div>

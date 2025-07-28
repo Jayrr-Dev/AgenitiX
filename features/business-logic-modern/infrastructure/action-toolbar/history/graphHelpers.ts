@@ -108,26 +108,32 @@ export const getLeafNodes = (graph: HistoryGraph): HistoryNode[] => {
 };
 
 // Persistence helpers
-const STORAGE_KEY = "workflow-history-graph-v4"; // bump to avoid clash with uncompressed
+const STORAGE_KEY_PREFIX = "workflow-history-graph-v5"; // bump version for flow-specific storage
 
-export const saveGraph = (graph: HistoryGraph): void => {
+const getStorageKey = (flowId?: string): string => {
+	return flowId ? `${STORAGE_KEY_PREFIX}-${flowId}` : `${STORAGE_KEY_PREFIX}-default`;
+};
+
+export const saveGraph = (graph: HistoryGraph, flowId?: string): void => {
 	// Guard against server-side execution where localStorage is unavailable
 	if (typeof window === "undefined") return;
 	try {
 		const json = JSON.stringify(graph);
 		// Compress if payload > 1 MB (threshold chosen to avoid diminishing returns on small graphs)
 		const payload = json.length > 1_000_000 ? `lz:${compressToUTF16(json)}` : json;
-		window.localStorage.setItem(STORAGE_KEY, payload);
+		const storageKey = getStorageKey(flowId);
+		window.localStorage.setItem(storageKey, payload);
 	} catch (error) {
 		console.error("[GraphHelpers] Failed to save graph to localStorage:", error);
 	}
 };
 
-export const loadGraph = (): HistoryGraph | null => {
+export const loadGraph = (flowId?: string): HistoryGraph | null => {
 	// Skip on server – nothing to load
 	if (typeof window === "undefined") return null;
 	try {
-		const stored = window.localStorage.getItem(STORAGE_KEY);
+		const storageKey = getStorageKey(flowId);
+		const stored = window.localStorage.getItem(storageKey);
 		if (!stored) return null;
 
 		const data = stored.startsWith("lz:") ? decompressFromUTF16(stored.slice(3)) : stored;
@@ -141,12 +147,28 @@ export const loadGraph = (): HistoryGraph | null => {
 	}
 };
 
-export const clearPersistedGraph = (): void => {
+export const clearPersistedGraph = (flowId?: string): void => {
 	if (typeof window === "undefined") return;
 	try {
-		window.localStorage.removeItem(STORAGE_KEY);
+		const storageKey = getStorageKey(flowId);
+		window.localStorage.removeItem(storageKey);
 	} catch (error) {
 		console.warn("[GraphHelpers] Failed to clear persisted graph:", error);
+	}
+};
+
+// Clear all flow histories (useful for cleanup)
+export const clearAllPersistedGraphs = (): void => {
+	if (typeof window === "undefined") return;
+	try {
+		const keys = Object.keys(window.localStorage);
+		keys.forEach(key => {
+			if (key.startsWith(STORAGE_KEY_PREFIX)) {
+				window.localStorage.removeItem(key);
+			}
+		});
+	} catch (error) {
+		console.warn("[GraphHelpers] Failed to clear all persisted graphs:", error);
 	}
 };
 
