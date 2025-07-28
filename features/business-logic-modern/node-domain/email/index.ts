@@ -19,5 +19,6 @@ export { outlookProvider } from './providers/outlook';
 export { imapProvider } from './providers/imap';
 export { smtpProvider } from './providers/smtp';
 
-// Export emailAccount node
+// Export email nodes
 export { default as emailAccount, spec as emailAccountSpec } from './emailAccount.node';
+export { default as emailReader, spec as emailReaderSpec } from './emailReader.node';

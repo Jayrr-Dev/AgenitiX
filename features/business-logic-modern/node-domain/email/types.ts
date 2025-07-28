@@ -183,3 +183,188 @@ export type EmailAccountEvent =
 export interface EmailAccountEventHandler {
   (event: EmailAccountEvent): void;
 }
+
+// Email Reader Types
+export interface EmailMessage {
+  id: string;
+  threadId?: string;
+  provider: EmailProviderType;
+  
+  // Basic Info
+  from: EmailAddress;
+  to: EmailAddress[];
+  cc?: EmailAddress[];
+  bcc?: EmailAddress[];
+  subject: string;
+  
+  // Content
+  textContent: string;
+  htmlContent?: string;
+  snippet: string;
+  
+  // Metadata
+  date: Date;
+  isRead: boolean;
+  isImportant?: boolean;
+  labels?: string[];
+  
+  // Attachments
+  attachments: EmailAttachment[];
+  hasAttachments: boolean;
+  
+  // Processing State
+  isProcessed: boolean;
+  processedAt?: Date;
+  processingErrors?: string[];
+}
+
+export interface EmailAddress {
+  email: string;
+  name?: string;
+}
+
+export interface EmailAttachment {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  isInline: boolean;
+  contentId?: string;
+  
+  // Download Info
+  downloadUrl?: string;
+  isDownloaded: boolean;
+  localPath?: string;
+}
+
+export interface MessageFilters {
+  sender?: {
+    addresses?: string[];
+    domains?: string[];
+    exclude?: string[];
+  };
+  
+  subject?: {
+    contains?: string;
+    regex?: string;
+    exclude?: string;
+  };
+  
+  dateRange?: {
+    from?: Date;
+    to?: Date;
+    relative?: 'last24h' | 'lastWeek' | 'lastMonth' | 'all';
+  };
+  
+  content?: {
+    search?: string;
+    regex?: string;
+    attachmentTypes?: string[];
+  };
+  
+  status?: {
+    read?: boolean;
+    important?: boolean;
+    hasAttachments?: boolean;
+  };
+  
+  labels?: {
+    include?: string[];
+    exclude?: string[];
+  };
+}
+
+export type OutputFormat = 'full' | 'summary' | 'custom';
+
+export interface EmailReaderConfig {
+  accountId: string;
+  provider: EmailProviderType;
+  filters: MessageFilters;
+  batchSize: number;
+  maxMessages: number;
+  includeAttachments: boolean;
+  markAsRead: boolean;
+  enableRealTime: boolean;
+  checkInterval: number;
+  outputFormat: OutputFormat;
+  customFields?: string[];
+}
+
+export type EmailReaderStatus = 'idle' | 'connecting' | 'connected' | 'reading' | 'processing' | 'error';
+
+export interface EmailReaderState {
+  isConnected: boolean;
+  status: EmailReaderStatus;
+  lastSync?: number;
+  processedCount: number;
+  messageCount: number;
+  lastError?: string;
+  retryCount: number;
+}
+
+// Raw message types for provider adapters
+export interface RawEmailMessage {
+  id: string;
+  threadId?: string;
+  headers: Record<string, string>;
+  payload: {
+    mimeType: string;
+    body?: {
+      data?: string;
+      size: number;
+    };
+    parts?: RawEmailMessage[];
+  };
+  snippet: string;
+  historyId?: string;
+  internalDate?: string;
+  labelIds?: string[];
+  sizeEstimate?: number;
+}
+
+// Provider adapter interfaces
+export interface EmailProviderAdapter {
+  connect(credentials: EmailAccountConfig): Promise<ProviderConnection>;
+  disconnect(connection: ProviderConnection): Promise<void>;
+  testConnection(connection: ProviderConnection): Promise<boolean>;
+  getMessages(connection: ProviderConnection, options: RetrievalOptions): Promise<RawEmailMessage[]>;
+  getMessage(connection: ProviderConnection, messageId: string): Promise<RawEmailMessage>;
+  supportsRealTime(): boolean;
+  setupWebhook?(connection: ProviderConnection, callback: WebhookCallback): Promise<void>;
+  getRateLimit(): RateLimitInfo;
+  handleRateLimit(error: RateLimitError): Promise<void>;
+}
+
+export interface ProviderConnection {
+  id: string;
+  provider: EmailProviderType;
+  credentials: EmailAccountConfig;
+  isConnected: boolean;
+  lastActivity: Date;
+}
+
+export interface RetrievalOptions {
+  maxResults?: number;
+  pageToken?: string;
+  query?: string;
+  labelIds?: string[];
+  includeSpamTrash?: boolean;
+}
+
+export interface RateLimitInfo {
+  requestsPerMinute: number;
+  requestsPerHour: number;
+  requestsPerDay: number;
+  currentUsage: {
+    minute: number;
+    hour: number;
+    day: number;
+  };
+}
+
+export interface RateLimitError extends Error {
+  retryAfter: number;
+  quotaType: 'minute' | 'hour' | 'day';
+}
+
+export type WebhookCallback = (messages: RawEmailMessage[]) => void;
