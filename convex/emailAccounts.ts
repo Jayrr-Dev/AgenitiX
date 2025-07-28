@@ -29,9 +29,9 @@ export type EmailAccountResult<T = any> = {
 async function validateUserSession(ctx: any, tokenHash: string) {
   const session = await ctx.db
     .query("auth_sessions")
-    .withIndex("by_token_hash", (q) => q.eq("token_hash", tokenHash))
-    .filter((q) => q.eq(q.field("is_active"), true))
-    .filter((q) => q.gt(q.field("expires_at"), Date.now()))
+    .withIndex("by_token_hash", (q: any) => q.eq("token_hash", tokenHash))
+    .filter((q: any) => q.eq(q.field("is_active"), true))
+    .filter((q: any) => q.gt(q.field("expires_at"), Date.now()))
     .first();
 
   if (!session) {
@@ -244,9 +244,9 @@ export const storeEmailAccount = mutation({
         // Check for duplicate email accounts for this user
         const existingAccount = await ctx.db
           .query("email_accounts")
-          .withIndex("by_user_id", (q) => q.eq("user_id", user._id))
-          .filter((q) => q.eq(q.field("email"), args.email.toLowerCase().trim()))
-          .filter((q) => q.eq(q.field("provider"), args.provider))
+          .withIndex("by_user_id", (q: any) => q.eq("user_id", user._id))
+          .filter((q: any) => q.eq(q.field("email"), args.email.toLowerCase().trim()))
+          .filter((q: any) => q.eq(q.field("provider"), args.provider))
           .first();
 
         if (existingAccount) {
@@ -318,7 +318,7 @@ export const getEmailAccounts = query({
       // Query user's email accounts
       let query = ctx.db
         .query("email_accounts")
-        .withIndex("by_user_id", (q) => q.eq("user_id", user._id));
+        .withIndex("by_user_id", (q: any) => q.eq("user_id", user._id));
 
       // Filter by active status if requested
       if (!args.include_inactive) {

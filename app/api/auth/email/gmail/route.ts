@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Generate OAuth2 URL
-    const authUrl = gmailProvider.getOAuthUrl!(redirectUri, state);
+    const authUrl = gmailProvider.getOAuthUrl!(redirectUri, state || undefined);
 
     // Return the authorization URL for client-side redirect
     return NextResponse.json({

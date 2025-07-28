@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       const frontendUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
       const redirectUrl = new URL('/dashboard', frontendUrl);
       redirectUrl.searchParams.set('auth_error', 'validation_failed');
-      redirectUrl.searchParams.set('auth_error_description', connectionResult.error.message);
+      redirectUrl.searchParams.set('auth_error_description', connectionResult.error?.message || 'Unknown validation error');
       redirectUrl.searchParams.set('provider', 'gmail');
       
       return NextResponse.redirect(redirectUrl);

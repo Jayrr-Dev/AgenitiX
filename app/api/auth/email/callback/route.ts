@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'Connection validation failed',
-          details: connectionResult.error.message,
-          code: connectionResult.error.code,
+          details: connectionResult.error?.message || 'Unknown validation error',
+          code: connectionResult.error?.code || 'VALIDATION_FAILED',
         },
         { status: 400 }
       );

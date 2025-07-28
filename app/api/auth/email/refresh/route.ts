@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       console.error('Token refresh validation failed:', sanitizeAuthData(connectionResult.error));
       return buildErrorResponse(
         'Token refresh validation failed',
-        connectionResult.error.message,
+        connectionResult.error?.message || 'Unknown validation error',
         400
       );
     }
