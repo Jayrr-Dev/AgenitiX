@@ -43,7 +43,7 @@ export default function FlowPage({ params }: PageProps) {
 		api.flows.getFlowSecure,
 		flowId && user?.id
 			? {
-					flow_id: flowId as any,
+					flow_id: flowId as string,
 					user_id: user.id,
 				}
 			: "skip"

@@ -622,7 +622,7 @@ define(["exports"], (t) => {
 		const s = e.replace(/FromIndex$/, "");
 		const n = e !== s;
 		const r = M.includes(s);
-		if (!(s in (n ? IDBIndex : IDBObjectStore).prototype) || !(r || P.includes(s))) {
+		if (!(s in (n ? IDBIndex : IDBObjectStore).prototype && (r || P.includes(s)))) {
 			return;
 		}
 		const i = async function (t, ...e) {
@@ -776,7 +776,7 @@ define(["exports"], (t) => {
 					throw new s("single-range-only", { normalizedRangeHeader: e });
 				}
 				const n = /(\d*)-(\d*)/.exec(e);
-				if (!n || !(n[1] || n[2])) {
+				if (!(n && (n[1] || n[2]))) {
 					throw new s("invalid-range-values", { normalizedRangeHeader: e });
 				}
 				return {

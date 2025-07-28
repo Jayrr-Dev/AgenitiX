@@ -97,7 +97,7 @@ export function buildErrorResponse(message: string, details?: string, status = 4
 	);
 }
 
-export function buildSuccessResponse(data: any) {
+export function buildSuccessResponse(data: Record<string, unknown>) {
 	return NextResponse.json({
 		success: true,
 		data,
@@ -147,17 +147,16 @@ export function mapOAuth2Error(error: string): { code: string; message: string }
 }
 
 // Token refresh helper
-export async function refreshAccessToken(
+export function refreshAccessToken(
 	provider: EmailProviderType,
 	_refreshToken: string
-): Promise<{ accessToken: string; expiresIn: number; refreshToken?: string }> {
-	// This would be implemented based on the provider
-	// For now, throw an error to indicate it needs implementation
+): Promise<{ accessToken: string; expiresIn: number }> {
+	// TODO: Implement token refresh for each provider
 	throw new Error(`Token refresh not implemented for provider: ${provider}`);
 }
 
 // Security helpers
-export function sanitizeAuthData(authData: any): any {
+export function sanitizeAuthData(authData: Record<string, unknown>): Record<string, unknown> {
 	// Remove sensitive data that shouldn't be logged
 	const sanitized = { ...authData };
 

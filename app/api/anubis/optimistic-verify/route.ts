@@ -1,3 +1,4 @@
+import { AnubisCrypto } from "@/lib/anubis/crypto";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
 		}
 
 		// PARSE SESSION DATA
-		let sessionData;
+		let sessionData: { sessionId: string; startTime: number; verified?: boolean };
 		try {
 			sessionData = JSON.parse(sessionCookie.value);
 		} catch (_error) {
@@ -101,46 +102,30 @@ export async function POST(request: NextRequest) {
 }
 
 // VERIFY CHALLENGE SOLUTION
-async function verifySolution(solution: any, challenge: any): Promise<boolean> {
+async function verifySolution(
+	solution: { nonce: number; hash: string; challenge: string },
+	challenge: { id: string; difficulty: number; timestamp: number }
+): Promise<boolean> {
 	try {
 		const { nonce, hash, challenge: solutionChallenge } = solution;
-		const { challenge: originalChallenge, difficulty } = challenge;
 
 		// VERIFY CHALLENGE MATCHES
-		if (solutionChallenge !== originalChallenge) {
+		if (solutionChallenge !== challenge.id) {
 			return false;
 		}
 
 		// VERIFY HASH
-		const input = originalChallenge + nonce;
-		const computedHash = await sha256(input);
+		const input = `${challenge.id}${nonce}`;
+		const computedHash = await AnubisCrypto.sha256(input);
 
-		if (computedHash !== hash) {
-			return false;
-		}
-
-		// VERIFY DIFFICULTY
-		const target = "0".repeat(difficulty);
-		if (!hash.startsWith(target)) {
-			return false;
-		}
-
-		return true;
+		return computedHash === hash;
 	} catch (error) {
 		console.error("Solution verification error:", error);
 		return false;
 	}
 }
 
-// SHA256 HASH FUNCTION
-async function sha256(message: string): Promise<string> {
-	const msgBuffer = new TextEncoder().encode(message);
-	const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-	const hashArray = Array.from(new Uint8Array(hashBuffer));
-	return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
 // HANDLE GET REQUESTS (NOT ALLOWED)
-export async function GET() {
+export function GET() {
 	return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
 }

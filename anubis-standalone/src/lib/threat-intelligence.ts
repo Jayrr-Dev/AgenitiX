@@ -18,9 +18,9 @@ interface ThreatPattern {
 	description: string;
 }
 
-export class ThreatIntelligence {
+export namespace ThreatIntelligence {
 	// STATIC THREAT PATTERNS
-	private static readonly THREAT_PATTERNS: ThreatPattern[] = [
+	const THREAT_PATTERNS: ThreatPattern[] = [
 		{
 			name: "Tor Exit Nodes",
 			pattern: /^(185\.220\.|199\.87\.|176\.10\.|51\.15\.|163\.172\.)/,
@@ -49,7 +49,7 @@ export class ThreatIntelligence {
 	];
 
 	// KNOWN MALICIOUS IP PATTERNS
-	private static readonly MALICIOUS_PATTERNS: ThreatPattern[] = [
+	const MALICIOUS_PATTERNS: ThreatPattern[] = [
 		{
 			name: "Known Botnet C&C",
 			pattern: /^(192\.168\.1\.100|10\.0\.0\.100|172\.16\.0\.100)$/, // Example patterns
@@ -65,13 +65,13 @@ export class ThreatIntelligence {
 	];
 
 	// INTERNAL BLACKLIST
-	private static readonly INTERNAL_BLACKLIST = new Set([
+	const INTERNAL_BLACKLIST = new Set([
 		// Known bad IPs can be added here
 		"127.0.0.1", // Example - never actually block localhost in real use
 	]);
 
 	// WHITELIST FOR LEGITIMATE SERVICES
-	private static readonly WHITELIST = new Set([
+	const WHITELIST = new Set([
 		// Google
 		"8.8.8.8",
 		"8.8.4.4",
@@ -85,7 +85,7 @@ export class ThreatIntelligence {
 	/**
 	 * CHECK IP REPUTATION USING MULTIPLE SOURCES
 	 */
-	static async checkIPReputation(ip: string): Promise<ThreatIntelResult> {
+	export async function checkIPReputation(ip: string): Promise<ThreatIntelResult> {
 		const result: ThreatIntelResult = {
 			isMalicious: false,
 			riskScore: 0,
@@ -96,7 +96,7 @@ export class ThreatIntelligence {
 		};
 
 		// QUICK WHITELIST CHECK
-		if (ThreatIntelligence.WHITELIST.has(ip)) {
+		if (WHITELIST.has(ip)) {
 			result.riskScore = 0;
 			result.confidence = 100;
 			result.sources.push("internal-whitelist");
@@ -104,7 +104,7 @@ export class ThreatIntelligence {
 		}
 
 		// INTERNAL BLACKLIST CHECK
-		if (ThreatIntelligence.INTERNAL_BLACKLIST.has(ip)) {
+		if (INTERNAL_BLACKLIST.has(ip)) {
 			result.isMalicious = true;
 			result.riskScore = 95;
 			result.confidence = 100;
@@ -115,9 +115,7 @@ export class ThreatIntelligence {
 		}
 
 		// CHECK AGAINST MALICIOUS PATTERNS
-		const maliciousMatch = ThreatIntelligence.MALICIOUS_PATTERNS.find((pattern) =>
-			pattern.pattern.test(ip)
-		);
+		const maliciousMatch = MALICIOUS_PATTERNS.find((pattern) => pattern.pattern.test(ip));
 		if (maliciousMatch) {
 			result.isMalicious = true;
 			result.riskScore = maliciousMatch.riskScore;
@@ -130,9 +128,7 @@ export class ThreatIntelligence {
 		}
 
 		// CHECK AGAINST THREAT PATTERNS
-		const threatMatch = ThreatIntelligence.THREAT_PATTERNS.find((pattern) =>
-			pattern.pattern.test(ip)
-		);
+		const threatMatch = THREAT_PATTERNS.find((pattern) => pattern.pattern.test(ip));
 		if (threatMatch) {
 			result.riskScore = threatMatch.riskScore;
 			result.confidence = 70;
@@ -187,84 +183,45 @@ export class ThreatIntelligence {
 	}
 
 	/**
-	 * CHECK VIRUSTOTAL (MOCK IMPLEMENTATION)
-	 */
-	private static async checkVirusTotal(_ip: string): Promise<{
-		source: string;
-		isMalicious: boolean;
-		riskScore: number;
-		categories: string[];
-	} | null> {
-		// In a real implementation, you would call the VirusTotal API
-		// For this standalone version, we'll return null to indicate no external service
-		return null;
-	}
-
-	/**
-	 * CHECK ABUSEIPDB (MOCK IMPLEMENTATION)
-	 */
-	private static async checkAbuseIPDB(_ip: string): Promise<{
-		source: string;
-		isMalicious: boolean;
-		riskScore: number;
-		categories: string[];
-	} | null> {
-		// In a real implementation, you would call the AbuseIPDB API
-		// For this standalone version, we'll return null to indicate no external service
-		return null;
-	}
-
-	/**
-	 * CHECK THREATCROWD (MOCK IMPLEMENTATION)
-	 */
-	private static async checkThreatCrowd(_ip: string): Promise<{
-		source: string;
-		isMalicious: boolean;
-		riskScore: number;
-		categories: string[];
-	} | null> {
-		// In a real implementation, you would call the ThreatCrowd API
-		// For this standalone version, we'll return null to indicate no external service
-		return null;
-	}
-
-	/**
 	 * ADD IP TO INTERNAL BLACKLIST
 	 */
-	static addToBlacklist(ip: string): void {
-		ThreatIntelligence.INTERNAL_BLACKLIST.add(ip);
+	export function addToBlacklist(ip: string): void {
+		INTERNAL_BLACKLIST.add(ip);
 	}
 
 	/**
 	 * REMOVE IP FROM INTERNAL BLACKLIST
 	 */
-	static removeFromBlacklist(ip: string): void {
-		ThreatIntelligence.INTERNAL_BLACKLIST.delete(ip);
+	export function removeFromBlacklist(ip: string): void {
+		INTERNAL_BLACKLIST.delete(ip);
 	}
 
 	/**
 	 * ADD IP TO WHITELIST
 	 */
-	static addToWhitelist(ip: string): void {
-		ThreatIntelligence.WHITELIST.add(ip);
+	export function addToWhitelist(ip: string): void {
+		WHITELIST.add(ip);
 	}
 
 	/**
 	 * REMOVE IP FROM WHITELIST
 	 */
-	static removeFromWhitelist(ip: string): void {
-		ThreatIntelligence.WHITELIST.delete(ip);
+	export function removeFromWhitelist(ip: string): void {
+		WHITELIST.delete(ip);
 	}
 
 	/**
 	 * GET THREAT STATISTICS
 	 */
-	static getThreatStats(): { blacklistedIPs: number; whitelistedIPs: number; patterns: number } {
+	export function getThreatStats(): {
+		blacklistedIPs: number;
+		whitelistedIPs: number;
+		patterns: number;
+	} {
 		return {
-			blacklistedIPs: ThreatIntelligence.INTERNAL_BLACKLIST.size,
-			whitelistedIPs: ThreatIntelligence.WHITELIST.size,
-			patterns:
-				ThreatIntelligence.THREAT_PATTERNS.length + ThreatIntelligence.MALICIOUS_PATTERNS.length,
+			blacklistedIPs: INTERNAL_BLACKLIST.size,
+			whitelistedIPs: WHITELIST.size,
+			patterns: THREAT_PATTERNS.length + MALICIOUS_PATTERNS.length,
 		};
 	}
 }

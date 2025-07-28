@@ -12,6 +12,7 @@ import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "next-themes";
 import { Geist, Inter } from "next/font/google";
 import Script from "next/script";
+import type React from "react";
 import { Suspense } from "react";
 import { Toaster } from "sonner";
 import "./globals.css";

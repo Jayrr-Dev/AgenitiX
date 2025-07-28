@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { useDebounce } from "@/hooks";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -101,7 +102,7 @@ const ExplorePage = () => {
 
 	// All hooks must be called before any conditional returns
 	const handleUpvote = useCallback(
-		async (flowId: string) => {
+		async (flowId: Id<"flows">) => {
 			if (!user?.id) {
 				toast.error("Please sign in to upvote flows");
 				return;
@@ -109,7 +110,7 @@ const ExplorePage = () => {
 
 			try {
 				await toggleUpvote({
-					flow_id: flowId as any,
+					flow_id: flowId,
 					user_id: user.id,
 				});
 			} catch (error) {
@@ -141,7 +142,7 @@ const ExplorePage = () => {
 				description: "A test public flow for debugging",
 				icon: "zap",
 				is_private: false,
-				user_id: user.id as any,
+				user_id: user.id,
 			});
 			toast.success("Test public flow created!");
 		} catch (error) {

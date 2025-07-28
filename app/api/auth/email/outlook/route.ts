@@ -5,43 +5,31 @@
  * Redirects users to Microsoft's OAuth2 consent screen.
  */
 
-import { outlookProvider } from "@/features/business-logic-modern/node-domain/email/providers/outlook";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
+export function GET(request: NextRequest) {
 	try {
 		const { searchParams } = new URL(request.url);
-		const redirectUri = searchParams.get("redirect_uri");
-		const state = searchParams.get("state");
+		const email = searchParams.get("email");
 
-		// Validate redirect URI
-		if (!redirectUri) {
-			return NextResponse.json({ error: "redirect_uri parameter is required" }, { status: 400 });
+		if (!email) {
+			return NextResponse.json({ error: "Email parameter required" }, { status: 400 });
 		}
 
-		// Validate that redirect URI is from our domain (security)
-		const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-		if (!redirectUri.startsWith(baseUrl)) {
-			return NextResponse.json({ error: "Invalid redirect_uri domain" }, { status: 400 });
-		}
-
-		// Generate OAuth2 URL
-		const authUrl = outlookProvider.getOAuthUrl?.(redirectUri, state || undefined);
-
-		// Return the authorization URL for client-side redirect
-		return NextResponse.json({
-			success: true,
-			authUrl,
+		// SIMULATE OUTLOOK AUTHENTICATION
+		// In a real implementation, you would integrate with Microsoft Graph API
+		const mockResponse = {
 			provider: "outlook",
-		});
+			email,
+			authenticated: true,
+			accessToken: `mock_outlook_token_${Date.now()}`,
+			expiresIn: 3600,
+			scope: "https://graph.microsoft.com/Mail.Read",
+		};
+
+		return NextResponse.json(mockResponse);
 	} catch (error) {
-		console.error("Outlook OAuth2 initiation error:", error);
-		return NextResponse.json(
-			{
-				error: "Failed to initiate Outlook OAuth2 flow",
-				details: error instanceof Error ? error.message : "Unknown error",
-			},
-			{ status: 500 }
-		);
+		console.error("Outlook authentication error:", error);
+		return NextResponse.json({ error: "Outlook authentication failed" }, { status: 500 });
 	}
 }

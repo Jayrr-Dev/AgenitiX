@@ -9,6 +9,7 @@ import { formatAuthError, getAuthErrorType, getRetryInfo } from "@/lib/auth-util
 import { AlertCircle, ArrowRight, Loader2, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type React from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -74,12 +75,88 @@ export default function SignInPage() {
 		);
 	}
 
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
+	/**
+	 * Handles rate limit errors
+	 */
+	const handleRateLimitError = (errorMessage: string, retryAfter?: number) => {
+		setIsRateLimited(true);
+		setRetryAfter(retryAfter);
+		setError(errorMessage);
+
+		toast.error("Too many attempts", {
+			description: errorMessage,
+			duration: 8000,
+		});
+	};
+
+	/**
+	 * Handles user not found errors
+	 */
+	const handleUserNotFoundError = (errorMessage: string) => {
+		setError(errorMessage);
+		toast.error("Account not found", {
+			description: "Please check your email or create a new account.",
+			duration: 5000,
+		});
+	};
+
+	/**
+	 * Handles general authentication errors
+	 */
+	const handleGeneralAuthError = (errorMessage: string) => {
+		setError(errorMessage);
+		toast.error("Sign in failed", {
+			description: errorMessage,
+			duration: 5000,
+		});
+	};
+
+	/**
+	 * Handles unexpected errors
+	 */
+	const handleUnexpectedError = () => {
+		const errorMessage = "An unexpected error occurred. Please try again.";
+		setError(errorMessage);
+		toast.error("Error", {
+			description: errorMessage,
+			duration: 5000,
+		});
+	};
+
+	/**
+	 * Handles all authentication errors
+	 */
+	const handleAuthenticationError = (err: unknown) => {
+		if (err instanceof Error) {
+			const errorCode = getAuthErrorType(err);
+			const retryInfo = getRetryInfo(err);
+			const errorMessage = formatAuthError(err);
+
+			if (errorCode === "RATE_LIMIT_EXCEEDED") {
+				handleRateLimitError(errorMessage, retryInfo.retryAfter);
+			} else if (errorCode === "USER_NOT_FOUND") {
+				handleUserNotFoundError(errorMessage);
+			} else {
+				handleGeneralAuthError(errorMessage);
+			}
+		} else {
+			handleUnexpectedError();
+		}
+	};
+
+	/**
+	 * Resets form state before submission
+	 */
+	const resetFormState = () => {
 		setIsLoading(true);
 		setError(null);
 		setIsRateLimited(false);
 		setRetryAfter(undefined);
+	};
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		resetFormState();
 
 		const trimmedEmail = email.trim();
 
@@ -93,45 +170,7 @@ export default function SignInPage() {
 				duration: 5000,
 			});
 		} catch (err) {
-			if (err instanceof Error) {
-				const errorCode = getAuthErrorType(err);
-				const retryInfo = getRetryInfo(err);
-				const errorMessage = formatAuthError(err);
-
-				// Handle rate limiting
-				if (errorCode === "RATE_LIMIT_EXCEEDED") {
-					setIsRateLimited(true);
-					setRetryAfter(retryInfo.retryAfter);
-					setError(errorMessage);
-
-					toast.error("Too many attempts", {
-						description: errorMessage,
-						duration: 8000,
-					});
-				} else {
-					// Handle other errors
-					setError(errorMessage);
-
-					if (errorCode === "USER_NOT_FOUND") {
-						toast.error("Account not found", {
-							description: "Please check your email or create a new account.",
-							duration: 5000,
-						});
-					} else {
-						toast.error("Sign in failed", {
-							description: errorMessage,
-							duration: 5000,
-						});
-					}
-				}
-			} else {
-				const errorMessage = "An unexpected error occurred. Please try again.";
-				setError(errorMessage);
-				toast.error("Error", {
-					description: errorMessage,
-					duration: 5000,
-				});
-			}
+			handleAuthenticationError(err);
 		} finally {
 			setIsLoading(false);
 		}

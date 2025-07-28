@@ -2,7 +2,7 @@ import { loadAnubisConfig } from "@/lib/anubis/config";
 import { NextResponse } from "next/server";
 
 // ANUBIS STATUS ENDPOINT
-export async function GET() {
+export function GET() {
 	try {
 		const config = loadAnubisConfig();
 

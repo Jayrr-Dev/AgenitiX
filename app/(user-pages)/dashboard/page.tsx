@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { CreateFlowModal } from "@/features/business-logic-modern/dashboard/components/CreateFlowModal";
 import { FlowActions } from "@/features/business-logic-modern/dashboard/components/FlowActions";
 import type { Flow } from "@/features/business-logic-modern/dashboard/types";
@@ -68,56 +69,43 @@ const ICON_MAP = {
 	users: Users,
 };
 
-const DashboardContent = () => {
-	const [isModalOpen, setIsModalOpen] = useState(false);
-	const [searchQuery, setSearchQuery] = useState("");
-	const [showPrivateOnly, setShowPrivateOnly] = useState(false);
-	const router = useRouter();
-	const { user, isAuthenticated, isLoading: authLoading } = useAuthContext();
+/**
+ * Loading state component
+ */
+const DashboardLoading = () => <Loading />;
 
-	// Convex hooks
-	const flows = useQuery(api.flows.getUserFlows, user?.id ? { user_id: user.id } : "skip");
-	const createFlow = useMutation(api.flows.createFlow);
-	const updateFlow = useMutation(api.flows.updateFlow);
+/**
+ * Authentication required state component
+ */
+const DashboardAuthRequired = () => (
+	<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+		<div className="py-12 text-center">
+			<h2 className="mb-2 font-bold text-2xl text-foreground">Authentication Required</h2>
+			<p className="mb-4 text-muted-foreground">Please sign in to access your dashboard</p>
+			<DevAuthHelper onAuthenticate={() => window.location.reload()} />
+		</div>
+	</div>
+);
 
-	// Handle potential SSR issues
-	if (typeof window === "undefined") {
-		return <Loading />;
-	}
+/**
+ * Error state component
+ */
+const DashboardError = () => (
+	<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+		<div className="py-12 text-center">
+			<h2 className="mb-2 font-bold text-2xl text-destructive">Error Loading Flows</h2>
+			<p className="mb-4 text-muted-foreground">
+				Unable to load your flows. Please try refreshing the page.
+			</p>
+			<Button onClick={() => window.location.reload()}>Refresh Page</Button>
+		</div>
+	</div>
+);
 
-	// Loading state
-	if (authLoading || flows === undefined) {
-		return <Loading />;
-	}
-
-	// Authentication check
-	if (!(isAuthenticated && user)) {
-		return (
-			<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-				<div className="py-12 text-center">
-					<h2 className="mb-2 font-bold text-2xl text-foreground">Authentication Required</h2>
-					<p className="mb-4 text-muted-foreground">Please sign in to access your dashboard</p>
-					<DevAuthHelper onAuthenticate={() => window.location.reload()} />
-				</div>
-			</div>
-		);
-	}
-
-	// Error state
-	if (flows === null) {
-		return (
-			<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-				<div className="py-12 text-center">
-					<h2 className="mb-2 font-bold text-2xl text-destructive">Error Loading Flows</h2>
-					<p className="mb-4 text-muted-foreground">
-						Unable to load your flows. Please try refreshing the page.
-					</p>
-					<Button onClick={() => window.location.reload()}>Refresh Page</Button>
-				</div>
-			</div>
-		);
-	}
-
+/**
+ * Flow event handlers hook
+ */
+const useFlowHandlers = (user: any, createFlow: any, updateFlow: any, router: any) => {
 	const handleFlowCreated = async (flowData: {
 		name: string;
 		description?: string;
@@ -168,7 +156,7 @@ const DashboardContent = () => {
 
 		try {
 			await updateFlow({
-				flow_id: flowId as any,
+				flow_id: flowId as Id<"flows">,
 				user_id: user.id,
 				is_private: !currentPrivacy,
 			});
@@ -180,6 +168,18 @@ const DashboardContent = () => {
 		}
 	};
 
+	return {
+		handleFlowCreated,
+		handleFlowDeleted,
+		handleFlowUpdated,
+		handlePrivacyToggle,
+	};
+};
+
+/**
+ * Utility functions for flow processing
+ */
+const useFlowUtils = () => {
 	const formatDate = (dateString: string) => {
 		return new Date(dateString).toLocaleDateString("en-US", {
 			year: "numeric",
@@ -193,6 +193,13 @@ const DashboardContent = () => {
 		return <IconComponent className="h-5 w-5" />;
 	};
 
+	return { formatDate, getIconComponent };
+};
+
+/**
+ * Flow data processing hook
+ */
+const useFlowData = (flows: any[], searchQuery: string, showPrivateOnly: boolean) => {
 	// Convert Convex flows to dashboard format
 	const allFlows: Flow[] = flows.map((flow) => ({
 		id: flow._id,
@@ -216,6 +223,47 @@ const DashboardContent = () => {
 
 		return matchesSearch && matchesPrivacy;
 	});
+
+	return { allFlows, dashboardFlows };
+};
+
+const DashboardContent = () => {
+	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [searchQuery, setSearchQuery] = useState("");
+	const [showPrivateOnly, setShowPrivateOnly] = useState(false);
+	const router = useRouter();
+	const { user, isAuthenticated, isLoading: authLoading } = useAuthContext();
+
+	// Convex hooks
+	const flows = useQuery(api.flows.getUserFlows, user?.id ? { user_id: user.id } : "skip");
+	const createFlow = useMutation(api.flows.createFlow);
+	const updateFlow = useMutation(api.flows.updateFlow);
+
+	// Custom hooks
+	const { handleFlowCreated, handleFlowDeleted, handleFlowUpdated, handlePrivacyToggle } = 
+		useFlowHandlers(user, createFlow, updateFlow, router);
+	const { formatDate, getIconComponent } = useFlowUtils();
+	const { allFlows, dashboardFlows } = useFlowData(flows || [], searchQuery, showPrivateOnly);
+
+	// Handle potential SSR issues
+	if (typeof window === "undefined") {
+		return <DashboardLoading />;
+	}
+
+	// Loading state
+	if (authLoading || flows === undefined) {
+		return <DashboardLoading />;
+	}
+
+	// Authentication check
+	if (!(isAuthenticated && user)) {
+		return <DashboardAuthRequired />;
+	}
+
+	// Error state
+	if (flows === null) {
+		return <DashboardError />;
+	}
 
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
