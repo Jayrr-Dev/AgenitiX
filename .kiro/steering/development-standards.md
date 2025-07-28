@@ -1,4 +1,8 @@
-AgenitiX Dev Standards — Ultra‑Simple Version
+---
+inclusion: always
+---
+
+# AgenitiX Development Standards
 
 Rule 0: Ship small, typed, tested, documented slices. Leave it cleaner.
 

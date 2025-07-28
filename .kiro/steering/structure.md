@@ -1,3 +1,7 @@
+---
+inclusion: always
+---
+
 # Project Structure & Organization
 
 ## Root Level Organization

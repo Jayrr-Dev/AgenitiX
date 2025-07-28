@@ -1,3 +1,7 @@
+---
+inclusion: always
+---
+
 # Product Overview
 
 AgenitiX is a visual flow automation platform competing with Flowise AI, providing a superior node-based editor for creating and managing automation workflows. The platform offers enhanced architecture and capabilities beyond existing solutions like n8n and Flowise.

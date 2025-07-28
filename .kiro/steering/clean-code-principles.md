@@ -1,7 +1,5 @@
 Clean Code Principles (Minimalist Core)
 
-Same intent, far fewer words. Keep this as the living "why/how" backbone for AgenitiX.
-
 0. Mantras
 
 KISS. Boy Scout Rule. Fix root causes. No side effects at import. Composition over conditionals. DI over globals. One thing per function/effect/test.
