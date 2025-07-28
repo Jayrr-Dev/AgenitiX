@@ -524,6 +524,10 @@ export const validateEmailConnection = mutation({
 			};
 		}
 	},
+        error: {
+          code: "INTERNAL_ERROR",
+          message: error instanceof Error ? error.message : "Connection validation failed",
+
 });
 
 // Delete email account
@@ -578,6 +582,356 @@ export const deleteEmailAccount = mutation({
 		}
 	},
 });
+
+// Send email through configured account
+export const sendEmail = mutation({
+  args: {
+    token_hash: v.string(),
+    account_id: v.id("email_accounts"),
+    recipients: v.object({
+      to: v.array(v.string()),
+      cc: v.optional(v.array(v.string())),
+      bcc: v.optional(v.array(v.string())),
+    }),
+    subject: v.string(),
+    content: v.object({
+      text: v.string(),
+      html: v.optional(v.string()),
+    }),
+    attachments: v.optional(v.array(v.any())),
+  },
+  handler: async (ctx, args): Promise<EmailAccountResult> => {
+    try {
+      // Validate user session
+      const { user } = await validateUserSession(ctx, args.token_hash);
+
+      // Rate limiting check for sending
+      const rateLimitResult = checkRateLimit(`send_email_${user._id}`);
+      if (!rateLimitResult.allowed) {
+        return {
+          success: false,
+          error: {
+            code: "RATE_LIMIT_EXCEEDED",
+            message: `Too many email sends. Try again in ${rateLimitResult.retryAfter} seconds.`,
+          },
+        };
+      }
+
+      // Get account with credentials
+      const account = await ctx.db.get(args.account_id);
+      if (!account || account.user_id !== user._id) {
+        return {
+          success: false,
+          error: {
+            code: "ACCOUNT_NOT_FOUND",
+            message: "Email account not found or access denied",
+          },
+        };
+      }
+
+      if (!account.is_active) {
+        return {
+          success: false,
+          error: {
+            code: "ACCOUNT_INACTIVE",
+            message: "Email account is inactive",
+          },
+        };
+      }
+
+      // Validate recipients
+      if (!args.recipients.to || args.recipients.to.length === 0) {
+        return {
+          success: false,
+          error: {
+            code: "INVALID_RECIPIENTS",
+            message: "At least one recipient is required",
+          },
+        };
+      }
+
+      // Validate all email addresses
+      const allRecipients = [
+        ...args.recipients.to,
+        ...(args.recipients.cc || []),
+        ...(args.recipients.bcc || []),
+      ];
+
+      for (const email of allRecipients) {
+        if (!validateEmailFormat(email)) {
+          return {
+            success: false,
+            error: {
+              code: "INVALID_EMAIL",
+              message: `Invalid email address: ${email}`,
+            },
+          };
+        }
+      }
+
+      // Validate content
+      if (!args.subject.trim()) {
+        return {
+          success: false,
+          error: {
+            code: "INVALID_CONTENT",
+            message: "Subject is required",
+          },
+        };
+      }
+
+      if (!args.content.text.trim() && !args.content.html?.trim()) {
+        return {
+          success: false,
+          error: {
+            code: "INVALID_CONTENT",
+            message: "Message content is required",
+          },
+        };
+      }
+
+      // Decrypt credentials
+      const credentials = decryptCredentials(account.encrypted_credentials);
+
+      // Send email based on provider
+      const sendResult = await sendEmailByProvider(
+        account.provider,
+        credentials,
+        {
+          recipients: args.recipients,
+          subject: args.subject,
+          content: args.content,
+          attachments: args.attachments,
+        }
+      );
+
+      if (sendResult.success) {
+        // Log successful send
+        logSecurityEvent({
+          userId: user._id,
+          action: "SEND_EMAIL",
+          resource: `email_account:${args.account_id}`,
+          details: { 
+            provider: account.provider, 
+            recipientCount: args.recipients.to.length,
+            messageId: sendResult.messageId,
+          },
+          timestamp: Date.now(),
+        });
+
+        return {
+          success: true,
+          data: {
+            messageId: (sendResult as any).messageId || "unknown",
+            recipients: args.recipients,
+            deliveryStatus: "sent",
+            message: `Email sent successfully to ${args.recipients.to.length} recipient(s)`,
+          },
+        };
+      } else {
+        return {
+          success: false,
+          error: (sendResult as any).error || {
+            code: "SEND_FAILED",
+            message: "Failed to send email",
+          },
+        };
+      }
+    } catch (error) {
+      console.error("Send email error:", error);
+      return {
+        success: false,
+        error: {
+          code: "INTERNAL_ERROR",
+          message: error instanceof Error ? error.message : "Failed to send email",
+        },
+      };
+    }
+  },
+});
+
+// Helper function to send email by provider
+async function sendEmailByProvider(
+  provider: EmailProviderType,
+  credentials: any,
+  emailData: {
+    recipients: { to: string[]; cc?: string[]; bcc?: string[] };
+    subject: string;
+    content: { text: string; html?: string };
+    attachments?: any[];
+  }
+) {
+  switch (provider) {
+    case 'gmail':
+      return await sendGmailEmail(credentials, emailData);
+    case 'outlook':
+      return await sendOutlookEmail(credentials, emailData);
+    case 'smtp':
+      return await sendSmtpEmail(credentials, emailData);
+    default:
+      return {
+        success: false,
+        error: {
+          code: "UNSUPPORTED_PROVIDER",
+          message: `Email sending not implemented for provider: ${provider}`,
+        },
+      };
+  }
+}
+
+// Gmail email sending implementation
+async function sendGmailEmail(
+  credentials: any,
+  emailData: {
+    recipients: { to: string[]; cc?: string[]; bcc?: string[] };
+    subject: string;
+    content: { text: string; html?: string };
+    attachments?: any[];
+  }
+) {
+  try {
+    // Validate Gmail credentials
+    if (!credentials.accessToken) {
+      return {
+        success: false,
+        error: {
+          code: "INVALID_CREDENTIALS",
+          message: "Gmail access token is required",
+        },
+      };
+    }
+
+    // Build email message in RFC 2822 format
+    const boundary = `boundary_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    let message = '';
+    message += `To: ${emailData.recipients.to.join(', ')}\r\n`;
+    
+    if (emailData.recipients.cc && emailData.recipients.cc.length > 0) {
+      message += `Cc: ${emailData.recipients.cc.join(', ')}\r\n`;
+    }
+    
+    if (emailData.recipients.bcc && emailData.recipients.bcc.length > 0) {
+      message += `Bcc: ${emailData.recipients.bcc.join(', ')}\r\n`;
+    }
+    
+    message += `Subject: ${emailData.subject}\r\n`;
+    message += `MIME-Version: 1.0\r\n`;
+    
+    if (emailData.content.html) {
+      message += `Content-Type: multipart/alternative; boundary="${boundary}"\r\n\r\n`;
+      message += `--${boundary}\r\n`;
+      message += `Content-Type: text/plain; charset=UTF-8\r\n\r\n`;
+      message += `${emailData.content.text}\r\n\r\n`;
+      message += `--${boundary}\r\n`;
+      message += `Content-Type: text/html; charset=UTF-8\r\n\r\n`;
+      message += `${emailData.content.html}\r\n\r\n`;
+      message += `--${boundary}--\r\n`;
+    } else {
+      message += `Content-Type: text/plain; charset=UTF-8\r\n\r\n`;
+      message += `${emailData.content.text}\r\n`;
+    }
+
+    // Encode message in base64url format
+    const encodedMessage = Buffer.from(message)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    // Send via Gmail API
+    const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${credentials.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        raw: encodedMessage,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      
+      // Handle specific Gmail API errors
+      if (response.status === 401) {
+        return {
+          success: false,
+          error: {
+            code: "AUTHENTICATION_FAILED",
+            message: "Gmail authentication failed. Please reconnect your account.",
+          },
+        };
+      } else if (response.status === 403) {
+        return {
+          success: false,
+          error: {
+            code: "PERMISSION_DENIED",
+            message: "Insufficient permissions to send email. Please check your Gmail settings.",
+          },
+        };
+      } else if (response.status === 429) {
+        return {
+          success: false,
+          error: {
+            code: "RATE_LIMIT_EXCEEDED",
+            message: "Gmail API rate limit exceeded. Please try again later.",
+          },
+        };
+      } else {
+        return {
+          success: false,
+          error: {
+            code: "GMAIL_API_ERROR",
+            message: errorData.error?.message || `Gmail API error: ${response.status}`,
+          },
+        };
+      }
+    }
+
+    const result = await response.json();
+    
+    return {
+      success: true,
+      messageId: result.id,
+      threadId: result.threadId,
+    };
+  } catch (error) {
+    console.error("Gmail send error:", error);
+    return {
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: error instanceof Error ? error.message : "Failed to send email via Gmail",
+      },
+    };
+  }
+}
+
+// Outlook email sending implementation (placeholder)
+async function sendOutlookEmail(credentials: any, emailData: any) {
+  // TODO: Implement Outlook/Microsoft Graph API sending
+  return {
+    success: false,
+    error: {
+      code: "NOT_IMPLEMENTED",
+      message: "Outlook email sending not yet implemented",
+    },
+  };
+}
+
+// SMTP email sending implementation (placeholder)
+async function sendSmtpEmail(credentials: any, emailData: any) {
+  // TODO: Implement SMTP sending
+  return {
+    success: false,
+    error: {
+      code: "NOT_IMPLEMENTED",
+      message: "SMTP email sending not yet implemented",
+    },
+  };
+}
 
 // Helper function to simulate connection validation
 // TODO: Replace with actual provider-specific validation
