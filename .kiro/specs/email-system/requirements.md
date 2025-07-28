@@ -1,5 +1,6 @@
 # Email System Requirements
 
+
 ## Introduction
 
 The email system provides comprehensive email management capabilities for AgenitiX workflows. This system enables users to connect email accounts, send/receive emails, manage templates, and track email analytics within visual workflows.
@@ -7,7 +8,6 @@ The email system provides comprehensive email management capabilities for Agenit
 ## Requirements
 
 ### Requirement 1: Email Account Configuration
-
 **User Story:** As a workflow creator, I want to configure email accounts (Gmail, Outlook, IMAP/SMTP), so that I can send and receive emails through my workflows.
 
 #### Acceptance Criteria
