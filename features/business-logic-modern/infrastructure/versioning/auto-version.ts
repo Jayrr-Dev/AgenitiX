@@ -41,16 +41,16 @@ export const VERSION_CONFIG: ConventionalCommitConfig = {
 
 		// Patch: Bug fixes, docs, chores, etc.
 		patch: [
-			"fix",      // bug fix
-			"docs",     // documentation changes
+			"fix", // bug fix
+			"docs", // documentation changes
 			"refactor", // code restructuring
-			"test",     // test additions/changes
-			"chore",    // maintenance tasks
-			"style",    // formatting, missing semi colons, etc.
-			"perf",     // performance improvements
-			"ci",       // CI configuration changes
-			"build",    // build system changes
-			"revert",   // reverts
+			"test", // test additions/changes
+			"chore", // maintenance tasks
+			"style", // formatting, missing semi colons, etc.
+			"perf", // performance improvements
+			"ci", // CI configuration changes
+			"build", // build system changes
+			"revert", // reverts
 		],
 	},
 
@@ -76,7 +76,7 @@ export const VERSION_CONFIG: ConventionalCommitConfig = {
 		"convex/**/*.ts",
 		"scripts/**/*.ts",
 		"*.json",
-		"*.md"
+		"*.md",
 	],
 
 	github: {
@@ -110,7 +110,7 @@ export function parseCommitTitle(commitTitle: string): "major" | "minor" | "patc
 	if (VERSION_CONFIG.typeMapping.minor.includes(type)) {
 		return "minor";
 	}
-	
+
 	if (VERSION_CONFIG.typeMapping.patch.includes(type)) {
 		return "patch";
 	}
@@ -125,7 +125,7 @@ export function parseCommitTitle(commitTitle: string): "major" | "minor" | "patc
  * @returns true if breaking change detected
  */
 export function hasBreakingChange(commitMessage: string): boolean {
-	return VERSION_CONFIG.breakingChangeIndicators.some(indicator => 
+	return VERSION_CONFIG.breakingChangeIndicators.some((indicator) =>
 		commitMessage.includes(indicator)
 	);
 }

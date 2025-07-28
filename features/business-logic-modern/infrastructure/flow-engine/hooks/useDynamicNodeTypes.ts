@@ -7,8 +7,8 @@ import emailReader from "../../../node-domain/email/emailReader.node";
 // Import all available node components
 // This should be automatically updated when new nodes are created via Plop
 // Add new node imports here (Plop can auto-inject these)
-import testNode from '../../../node-domain/test/testNode.node';
-import triggerToggle from '../../../node-domain/trigger/triggerToggle.node';
+import testNode from "../../../node-domain/test/testNode.node";
+import triggerToggle from "../../../node-domain/trigger/triggerToggle.node";
 import viewText from "../../../node-domain/view/viewText.node";
 
 /**

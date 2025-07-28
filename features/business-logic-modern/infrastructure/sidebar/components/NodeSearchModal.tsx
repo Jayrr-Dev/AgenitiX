@@ -58,11 +58,15 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 	// Fuzzy search implementation
 	const searchResults = useMemo(() => {
 		// Use filtered nodes instead of availableNodes to respect feature flags
-		const nodesToSearch = filteredNodes.length > 0 ? filteredNodes : 
-			availableNodes.map(nodeType => {
-				const metadata = getNodeSpecMetadata(nodeType);
-				return metadata;
-			}).filter(Boolean);
+		const nodesToSearch =
+			filteredNodes.length > 0
+				? filteredNodes
+				: availableNodes
+						.map((nodeType) => {
+							const metadata = getNodeSpecMetadata(nodeType);
+							return metadata;
+						})
+						.filter(Boolean);
 
 		if (!searchQuery.trim()) {
 			// Show all filtered nodes when no search query
@@ -87,7 +91,7 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 
 		nodesToSearch.forEach((node) => {
 			if (!node) return;
-			
+
 			const displayName = node.displayName;
 			const category = node.category || "other";
 			const description = node.description || "";

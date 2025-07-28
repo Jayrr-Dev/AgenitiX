@@ -1,16 +1,15 @@
 /**
  * Email Service for Magic Links
- * 
+ *
  * For development: Logs to console
  * For production: Replace with real email service (Resend, SendGrid, etc.)
  */
-
 
 export interface MagicLinkEmailData {
 	to: string;
 	name: string;
 	magicToken: string;
-	type: 'verification' | 'login';
+	type: "verification" | "login";
 }
 
 export interface EmailResult {
@@ -26,18 +25,20 @@ export interface EmailResult {
  */
 export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<EmailResult> {
 	const { to, name, magicToken, type } = data;
-	
+
 	// Generate magic link URL - always use localhost in development
-	const baseUrl = process.env.NODE_ENV === 'development' 
-		? 'http://localhost:3000' 
-		: (process.env.NEXT_PUBLIC_APP_URL || 'https://agenitix.com');
+	const baseUrl =
+		process.env.NODE_ENV === "development"
+			? "http://localhost:3000"
+			: process.env.NEXT_PUBLIC_APP_URL || "https://agenitix.com";
 	const magicLinkUrl = `${baseUrl}/auth/verify?token=${magicToken}`;
-	
+
 	// Email content based on type
-	const emailContent = type === 'verification' 
-		? {
-			subject: '🚀 Welcome to AgenitiX - Verify your account',
-			html: `
+	const emailContent =
+		type === "verification"
+			? {
+					subject: "🚀 Welcome to AgenitiX - Verify your account",
+					html: `
 				<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
 					<div style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); padding: 40px 20px; text-align: center;">
 						<h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">Welcome to AgenitiX!</h1>
@@ -72,11 +73,11 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 						</p>
 					</div>
 				</div>
-			`
-		}
-		: {
-			subject: '🔐 Your AgenitiX magic link is here',
-			html: `
+			`,
+				}
+			: {
+					subject: "🔐 Your AgenitiX magic link is here",
+					html: `
 				<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
 					<div style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); padding: 40px 20px; text-align: center;">
 						<h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">Sign in to AgenitiX</h1>
@@ -110,26 +111,26 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 						</p>
 					</div>
 				</div>
-			`
-		};
+			`,
+				};
 
 	// For development: Log to console
-	if (process.env.NODE_ENV === 'development') {
-		console.log('\n🔗 MAGIC LINK EMAIL (Development Mode)');
-		console.log('=====================================');
+	if (process.env.NODE_ENV === "development") {
+		console.log("\n🔗 MAGIC LINK EMAIL (Development Mode)");
+		console.log("=====================================");
 		console.log(`📧 To: ${to}`);
 		console.log(`📝 Subject: ${emailContent.subject}`);
 		console.log(`🔗 Magic Link: ${magicLinkUrl}`);
 		console.log(`⏰ Type: ${type}`);
-		console.log('=====================================');
-		console.log('👆 Click the magic link above to test authentication');
-		console.log('=====================================\n');
-		
+		console.log("=====================================");
+		console.log("👆 Click the magic link above to test authentication");
+		console.log("=====================================\n");
+
 		// Return the magic link URL for the API response
-		return { 
-			success: true, 
+		return {
+			success: true,
 			messageId: `dev_${Date.now()}`,
-			magicLinkUrl // Include this for development testing
+			magicLinkUrl, // Include this for development testing
 		};
 	}
 
@@ -137,56 +138,54 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 	try {
 		// Check if we have Resend API key
 		if (!process.env.RESEND_API_KEY) {
-			console.error('RESEND_API_KEY not found in environment variables');
-			return { 
-				success: false, 
-				error: 'Email service not configured. Please add RESEND_API_KEY to environment variables.' 
+			console.error("RESEND_API_KEY not found in environment variables");
+			return {
+				success: false,
+				error: "Email service not configured. Please add RESEND_API_KEY to environment variables.",
 			};
 		}
 
-		console.log('📧 Attempting to send email via Resend...');
-		console.log('📧 To:', to);
-		console.log('📧 Type:', type);
-		console.log('📧 Magic Link:', magicLinkUrl);
+		console.log("📧 Attempting to send email via Resend...");
+		console.log("📧 To:", to);
+		console.log("📧 Type:", type);
+		console.log("📧 Magic Link:", magicLinkUrl);
 
 		// Use Resend for production emails
-		const { Resend } = await import('resend');
+		const { Resend } = await import("resend");
 		const resend = new Resend(process.env.RESEND_API_KEY);
-		
+
 		const result = await resend.emails.send({
-			from: 'AgenitiX <noreply@agenitix.com>', // Try with a custom domain
+			from: "AgenitiX <noreply@agenitix.com>", // Try with a custom domain
 			to: [to],
 			subject: emailContent.subject,
 			html: emailContent.html,
 		});
-		
-		console.log('✅ Email sent successfully via Resend:', result.data?.id);
-		return { success: true, messageId: result.data?.id || 'sent' };
-		
+
+		console.log("✅ Email sent successfully via Resend:", result.data?.id);
+		return { success: true, messageId: result.data?.id || "sent" };
 	} catch (error) {
-		console.error('❌ Email sending failed:', error);
-		
+		console.error("❌ Email sending failed:", error);
+
 		// Try fallback with Resend's default domain
 		try {
-			console.log('🔄 Trying fallback with Resend default domain...');
-			const { Resend } = await import('resend');
+			console.log("🔄 Trying fallback with Resend default domain...");
+			const { Resend } = await import("resend");
 			const resend = new Resend(process.env.RESEND_API_KEY);
-			
+
 			const fallbackResult = await resend.emails.send({
-				from: 'onboarding@resend.dev', // Resend's default domain
+				from: "onboarding@resend.dev", // Resend's default domain
 				to: [to],
 				subject: emailContent.subject,
 				html: emailContent.html,
 			});
-			
-			console.log('✅ Fallback email sent successfully:', fallbackResult.data?.id);
-			return { success: true, messageId: fallbackResult.data?.id || 'sent' };
-			
+
+			console.log("✅ Fallback email sent successfully:", fallbackResult.data?.id);
+			return { success: true, messageId: fallbackResult.data?.id || "sent" };
 		} catch (fallbackError) {
-			console.error('❌ Fallback email also failed:', fallbackError);
-			return { 
-				success: false, 
-				error: `Email sending failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
+			console.error("❌ Fallback email also failed:", fallbackError);
+			return {
+				success: false,
+				error: `Email sending failed: ${error instanceof Error ? error.message : "Unknown error"}`,
 			};
 		}
 	}

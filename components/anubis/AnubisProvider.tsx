@@ -48,14 +48,20 @@ export function AnubisProvider({ children, initialConfig }: AnubisProviderProps)
 
 	// Handle SSR - return early if not in browser
 	if (typeof window === "undefined") {
-		return <AnubisContext.Provider value={{
-			isEnabled: false,
-			isProtected: false,
-			currentRoute: "/",
-			toggleProtection: () => {},
-			updateConfig: () => {},
-			getRouteConfig: () => null,
-		}}>{children}</AnubisContext.Provider>;
+		return (
+			<AnubisContext.Provider
+				value={{
+					isEnabled: false,
+					isProtected: false,
+					currentRoute: "/",
+					toggleProtection: () => {},
+					updateConfig: () => {},
+					getRouteConfig: () => null,
+				}}
+			>
+				{children}
+			</AnubisContext.Provider>
+		);
 	}
 
 	// SAVE ROUTES TO LOCAL STORAGE

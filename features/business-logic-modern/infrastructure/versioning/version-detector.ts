@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import { VERSION_CONFIG, parseCommitTitle, hasBreakingChange } from "./auto-version";
+import { VERSION_CONFIG, hasBreakingChange, parseCommitTitle } from "./auto-version";
 
 /**
  * VERSION DETECTOR - GitHub Conventional Commits Based
@@ -56,14 +56,14 @@ class ConventionalCommitVersionDetector {
 		try {
 			// Get commits since last processed
 			const newCommits = await this.getNewCommits();
-			
+
 			if (newCommits.length === 0) {
 				return null; // No new commits
 			}
 
 			// Analyze commits for version bump type
 			const bumpType = this.determineBumpTypeFromCommits(newCommits);
-			
+
 			if (!bumpType) {
 				// Update cache even if no version bump needed
 				await this.updateLastProcessedCommit(newCommits[0].hash);
@@ -98,16 +98,16 @@ class ConventionalCommitVersionDetector {
 		try {
 			const { execSync } = require("child_process");
 			const changedFiles = new Set<string>();
-			
+
 			for (const commit of commits) {
-				const output = execSync(`git show --name-only --format="" ${commit.hash}`, { 
-					encoding: "utf8" 
+				const output = execSync(`git show --name-only --format="" ${commit.hash}`, {
+					encoding: "utf8",
 				});
-				
+
 				const files = output.trim().split("\n").filter(Boolean);
 				files.forEach((file: string) => changedFiles.add(file));
 			}
-			
+
 			return Array.from(changedFiles);
 		} catch (error) {
 			console.error("Error getting changed files:", error);
@@ -120,13 +120,13 @@ class ConventionalCommitVersionDetector {
 	 */
 	private async getNewCommits(): Promise<GitCommit[]> {
 		const lastProcessedCommit = this.cache?.lastProcessedCommit;
-		
+
 		try {
 			// Use git log to get commits
 			const { execSync } = require("child_process");
-			
+
 			let gitCommand = 'git log --format="%H|%s|%b|%an|%ad" --date=iso';
-			
+
 			if (lastProcessedCommit) {
 				gitCommand += ` ${lastProcessedCommit}..HEAD`;
 			} else {
@@ -135,7 +135,7 @@ class ConventionalCommitVersionDetector {
 			}
 
 			const output = execSync(gitCommand, { encoding: "utf8" });
-			
+
 			if (!output.trim()) {
 				return [];
 			}
@@ -147,7 +147,7 @@ class ConventionalCommitVersionDetector {
 				.map((line: string) => {
 					const [hash, title, message, author, date] = line.split("|");
 					const fullMessage = `${title}\n${message}`.trim();
-					
+
 					return {
 						hash,
 						title: title || "",
@@ -182,7 +182,7 @@ class ConventionalCommitVersionDetector {
 
 			// Parse commit title
 			const bumpType = parseCommitTitle(commit.title);
-			
+
 			if (bumpType === "major") {
 				hasMajor = true;
 				break;
@@ -197,7 +197,7 @@ class ConventionalCommitVersionDetector {
 		if (hasMajor) return "major";
 		if (hasMinor) return "minor";
 		if (hasPatch) return "patch";
-		
+
 		return null; // No conventional commits found
 	}
 
@@ -205,8 +205,8 @@ class ConventionalCommitVersionDetector {
 	 * Generate human-readable reason for version bump
 	 */
 	private getBumpReason(commits: GitCommit[], bumpType: "major" | "minor" | "patch"): string {
-		const conventionalCommits = commits.filter(c => parseCommitTitle(c.title));
-		const breakingChanges = commits.filter(c => hasBreakingChange(c.message));
+		const conventionalCommits = commits.filter((c) => parseCommitTitle(c.title));
+		const breakingChanges = commits.filter((c) => hasBreakingChange(c.message));
 
 		if (bumpType === "major") {
 			if (breakingChanges.length > 0) {
@@ -217,7 +217,7 @@ class ConventionalCommitVersionDetector {
 
 		if (bumpType === "minor") {
 			// Only count commits that actually triggered the minor bump
-			const minorCommits = conventionalCommits.filter(c => {
+			const minorCommits = conventionalCommits.filter((c) => {
 				const commitType = parseCommitTitle(c.title);
 				return commitType === "minor";
 			});
@@ -226,7 +226,7 @@ class ConventionalCommitVersionDetector {
 
 		if (bumpType === "patch") {
 			// Only count commits that actually triggered the patch bump
-			const patchCommits = conventionalCommits.filter(c => {
+			const patchCommits = conventionalCommits.filter((c) => {
 				const commitType = parseCommitTitle(c.title);
 				return commitType === "patch";
 			});
@@ -248,9 +248,9 @@ class ConventionalCommitVersionDetector {
 				// Initialize with current version and set current commit as last processed
 				const { execSync } = require("child_process");
 				const latestCommit = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
-				
+
 				console.log("🔄 Initializing new cache with commit:", latestCommit.substring(0, 7));
-				
+
 				this.cache = {
 					lastProcessedCommit: latestCommit, // Start from current commit
 					currentVersion: {
@@ -261,7 +261,7 @@ class ConventionalCommitVersionDetector {
 					},
 					lastUpdate: Date.now(),
 				};
-				
+
 				// Save the cache immediately
 				this.saveVersionCache();
 				console.log("✅ Cache initialized and saved");
@@ -324,7 +324,7 @@ class ConventionalCommitVersionDetector {
 		}
 
 		const version = `${major}.${minor}.${patch}`;
-		
+
 		// Update cache
 		if (this.cache) {
 			this.cache.currentVersion = { major, minor, patch, full: version };
@@ -400,7 +400,7 @@ export const VERSION = {
 	private async getGitInfo(): Promise<any> {
 		try {
 			const { execSync } = require("child_process");
-			
+
 			const hash = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
 			const shortHash = hash.substring(0, 7);
 			const branch = execSync("git rev-parse --abbrev-ref HEAD", { encoding: "utf8" }).trim();
@@ -420,7 +420,7 @@ export const VERSION = {
 				hash: "unknown",
 				shortHash: "unknown",
 				branch: "unknown",
-				author: "unknown", 
+				author: "unknown",
 				date: "unknown",
 				available: false,
 			};

@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useContext, ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { type ReactNode, createContext, useContext } from "react";
 
 type AuthContextType = ReturnType<typeof useAuth>;
 

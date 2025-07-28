@@ -239,7 +239,7 @@ export const VARIANT_CONFIG: VariantConfig = {
 			IO: createStencilsByFolder("io", "variant-a"),
 		},
 	},
-			B: {
+	B: {
 		tabs: TAB_CONFIG_B,
 		stencils: {
 			CREATE: createStencilsByCategory("CREATE", "variant-b"),

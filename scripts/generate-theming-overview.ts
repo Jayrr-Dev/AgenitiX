@@ -11,101 +11,116 @@
  * Keywords: theming-overview, documentation-generation, interactive-preview, design-tokens
  */
 
-import { writeFileSync, existsSync, readdirSync, statSync } from 'fs';
-import { join } from 'path';
+import { existsSync, readdirSync, statSync, writeFileSync } from "fs";
+import { join } from "path";
 
 interface ThemingSection {
-  name: string;
-  description: string;
-  files: string[];
-  category: 'core' | 'components' | 'tools' | 'documentation';
-  features: string[];
+	name: string;
+	description: string;
+	files: string[];
+	category: "core" | "components" | "tools" | "documentation";
+	features: string[];
 }
 
 interface ThemingStats {
-  totalFiles: number;
-  totalSections: number;
-  categories: Record<string, number>;
-  lastUpdated: string;
+	totalFiles: number;
+	totalSections: number;
+	categories: Record<string, number>;
+	lastUpdated: string;
 }
 
 function scanThemingStructure(): ThemingSection[] {
-  const sections: ThemingSection[] = [
-    {
-      name: 'Design Tokens',
-      description: 'Core design system tokens including spacing, typography, colors, and effects',
-      files: ['_generated_tokens.css', 'core-tokens.md'],
-      category: 'core',
-      features: ['Auto-generated', 'CSS Custom Properties', 'Theme Switching', 'Component Isolation']
-    },
-    {
-      name: 'Global Styles',
-      description: 'Foundation styles and theme definitions for the entire application',
-      files: ['_globals.css'],
-      category: 'core',
-      features: ['Theme Definition', 'Light/Dark Support', 'Base Styles', 'Animations']
-    },
-    {
-      name: 'Node Theming',
-      description: 'Component-specific theming for different node types (create, view, trigger, test)',
-      files: ['_nodes.css'],
-      category: 'components',
-      features: ['Node-Specific Colors', 'Hover States', 'Border Styling', 'Text Colors']
-    },
-    {
-      name: 'Infrastructure Theming',
-      description: 'Theming for infrastructure components (inspector, toolbar, sidebar, canvas)',
-      files: ['_infra.css'],
-      category: 'components',
-      features: ['Component Isolation', 'Semantic Theming', 'Card-Based Design', 'Border Styling']
-    },
-    {
-      name: 'Token Preview',
-      description: 'Interactive HTML preview for exploring all design tokens',
-      files: ['tokens-preview.html'],
-      category: 'tools',
-      features: ['Interactive Explorer', 'Search & Filter', 'Category Tabs', 'Visual Testing']
-    },
-    {
-      name: 'Documentation',
-      description: 'Comprehensive documentation covering architecture, guidelines, and best practices',
-      files: ['README.md'],
-      category: 'documentation',
-      features: ['Architecture Guide', 'Development Guidelines', 'Best Practices', 'Tools Reference']
-    }
-  ];
+	const sections: ThemingSection[] = [
+		{
+			name: "Design Tokens",
+			description: "Core design system tokens including spacing, typography, colors, and effects",
+			files: ["_generated_tokens.css", "core-tokens.md"],
+			category: "core",
+			features: [
+				"Auto-generated",
+				"CSS Custom Properties",
+				"Theme Switching",
+				"Component Isolation",
+			],
+		},
+		{
+			name: "Global Styles",
+			description: "Foundation styles and theme definitions for the entire application",
+			files: ["_globals.css"],
+			category: "core",
+			features: ["Theme Definition", "Light/Dark Support", "Base Styles", "Animations"],
+		},
+		{
+			name: "Node Theming",
+			description:
+				"Component-specific theming for different node types (create, view, trigger, test)",
+			files: ["_nodes.css"],
+			category: "components",
+			features: ["Node-Specific Colors", "Hover States", "Border Styling", "Text Colors"],
+		},
+		{
+			name: "Infrastructure Theming",
+			description: "Theming for infrastructure components (inspector, toolbar, sidebar, canvas)",
+			files: ["_infra.css"],
+			category: "components",
+			features: ["Component Isolation", "Semantic Theming", "Card-Based Design", "Border Styling"],
+		},
+		{
+			name: "Token Preview",
+			description: "Interactive HTML preview for exploring all design tokens",
+			files: ["tokens-preview.html"],
+			category: "tools",
+			features: ["Interactive Explorer", "Search & Filter", "Category Tabs", "Visual Testing"],
+		},
+		{
+			name: "Documentation",
+			description:
+				"Comprehensive documentation covering architecture, guidelines, and best practices",
+			files: ["README.md"],
+			category: "documentation",
+			features: [
+				"Architecture Guide",
+				"Development Guidelines",
+				"Best Practices",
+				"Tools Reference",
+			],
+		},
+	];
 
-  return sections;
+	return sections;
 }
 
 function generateStats(sections: ThemingSection[]): ThemingStats {
-  const categories: Record<string, number> = {};
-  
-  sections.forEach(section => {
-    categories[section.category] = (categories[section.category] || 0) + 1;
-  });
+	const categories: Record<string, number> = {};
 
-  return {
-    totalFiles: sections.reduce((sum, section) => sum + section.files.length, 0),
-    totalSections: sections.length,
-    categories,
-    lastUpdated: new Date().toISOString().split('T')[0]
-  };
+	sections.forEach((section) => {
+		categories[section.category] = (categories[section.category] || 0) + 1;
+	});
+
+	return {
+		totalFiles: sections.reduce((sum, section) => sum + section.files.length, 0),
+		totalSections: sections.length,
+		categories,
+		lastUpdated: new Date().toISOString().split("T")[0],
+	};
 }
 
 function generateSectionCard(section: ThemingSection): string {
-  const categoryColors = {
-    core: 'bg-blue-50 border-blue-200 text-blue-800',
-    components: 'bg-green-50 border-green-200 text-green-800',
-    tools: 'bg-purple-50 border-purple-200 text-purple-800',
-    documentation: 'bg-orange-50 border-orange-200 text-orange-800'
-  };
+	const categoryColors = {
+		core: "bg-blue-50 border-blue-200 text-blue-800",
+		components: "bg-green-50 border-green-200 text-green-800",
+		tools: "bg-purple-50 border-purple-200 text-purple-800",
+		documentation: "bg-orange-50 border-orange-200 text-orange-800",
+	};
 
-  const featuresList = section.features.map(feature => 
-    `<span class="inline-block bg-white px-2 py-1 rounded text-xs font-medium mr-2 mb-2">${feature}</span>`
-  ).join('');
+	const featuresList = section.features
+		.map(
+			(feature) =>
+				`<span class="inline-block bg-white px-2 py-1 rounded text-xs font-medium mr-2 mb-2">${feature}</span>`
+		)
+		.join("");
 
-  return `
+	return `
     <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
       <div class="flex items-start justify-between mb-4">
         <div>
@@ -120,9 +135,12 @@ function generateSectionCard(section: ThemingSection): string {
       <div class="mb-4">
         <h4 class="text-sm font-medium text-gray-700 mb-2">Files:</h4>
         <div class="flex flex-wrap gap-2">
-          ${section.files.map(file => 
-            `<span class="inline-block bg-gray-100 px-2 py-1 rounded text-xs font-mono">${file}</span>`
-          ).join('')}
+          ${section.files
+						.map(
+							(file) =>
+								`<span class="inline-block bg-gray-100 px-2 py-1 rounded text-xs font-mono">${file}</span>`
+						)
+						.join("")}
         </div>
       </div>
       
@@ -137,9 +155,9 @@ function generateSectionCard(section: ThemingSection): string {
 }
 
 function generateHTML(sections: ThemingSection[], stats: ThemingStats): string {
-  const sectionsHTML = sections.map(generateSectionCard).join('');
+	const sectionsHTML = sections.map(generateSectionCard).join("");
 
-  return `<!DOCTYPE html>
+	return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -295,38 +313,37 @@ function generateHTML(sections: ThemingSection[], stats: ThemingStats): string {
 }
 
 async function main() {
-  console.log('🎨 Generating theming overview...');
-  
-  try {
-    const sections = scanThemingStructure();
-    console.log(`Found ${sections.length} sections`);
-    
-    const stats = generateStats(sections);
-    console.log(`Generated stats: ${JSON.stringify(stats)}`);
-    
-    const html = generateHTML(sections, stats);
-    console.log(`Generated HTML (${html.length} characters)`);
-    
-    // Ensure theming directory exists
-    const themingDir = join(process.cwd(), 'documentation', 'theming');
-    console.log(`Theming directory: ${themingDir}`);
-    console.log(`Directory exists: ${existsSync(themingDir)}`);
-    
-    if (!existsSync(themingDir)) {
-      throw new Error('Theming directory does not exist');
-    }
-    
-    const outputPath = join(themingDir, 'overview.html');
-    writeFileSync(outputPath, html);
-    
-    console.log('✅ Theming overview generated successfully!');
-    console.log(`📁 Output: ${outputPath}`);
-    console.log(`📊 Stats: ${stats.totalSections} sections, ${stats.totalFiles} files`);
-    
-  } catch (error) {
-    console.error('❌ Error generating theming overview:', error);
-    process.exit(1);
-  }
+	console.log("🎨 Generating theming overview...");
+
+	try {
+		const sections = scanThemingStructure();
+		console.log(`Found ${sections.length} sections`);
+
+		const stats = generateStats(sections);
+		console.log(`Generated stats: ${JSON.stringify(stats)}`);
+
+		const html = generateHTML(sections, stats);
+		console.log(`Generated HTML (${html.length} characters)`);
+
+		// Ensure theming directory exists
+		const themingDir = join(process.cwd(), "documentation", "theming");
+		console.log(`Theming directory: ${themingDir}`);
+		console.log(`Directory exists: ${existsSync(themingDir)}`);
+
+		if (!existsSync(themingDir)) {
+			throw new Error("Theming directory does not exist");
+		}
+
+		const outputPath = join(themingDir, "overview.html");
+		writeFileSync(outputPath, html);
+
+		console.log("✅ Theming overview generated successfully!");
+		console.log(`📁 Output: ${outputPath}`);
+		console.log(`📊 Stats: ${stats.totalSections} sections, ${stats.totalFiles} files`);
+	} catch (error) {
+		console.error("❌ Error generating theming overview:", error);
+		process.exit(1);
+	}
 }
 
-export { main as generateThemingOverview }; 
+export { main as generateThemingOverview };

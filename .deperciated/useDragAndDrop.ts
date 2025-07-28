@@ -13,8 +13,8 @@
 import type { AgenNode } from "@infrastructure/flow-engine/types/nodeData";
 import type { ReactFlowInstance } from "@xyflow/react";
 import { useCallback } from "react";
-import { getNodeMetadata } from "../features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 import { generateNodeId } from "../features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
+import { getNodeMetadata } from "../features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 
 interface DragAndDropProps {
 	flowInstance: React.RefObject<ReactFlowInstance<AgenNode, any> | null>;

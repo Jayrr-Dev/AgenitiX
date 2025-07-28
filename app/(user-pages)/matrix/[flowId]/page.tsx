@@ -12,15 +12,15 @@
 
 "use client";
 
+import { Loading } from "@/components/Loading";
+import { useAuthContext } from "@/components/auth/AuthProvider";
+import { Button } from "@/components/ui/button";
+import { api } from "@/convex/_generated/api";
 import FlowEditor from "@/features/business-logic-modern/infrastructure/flow-engine/FlowEditor";
 import { FlowMetadataProvider } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/FlowMetadataContext";
-import { Loading } from "@/components/Loading";
-import { Button } from "@/components/ui/button";
+import { useQuery } from "convex/react";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { useAuthContext } from "@/components/auth/AuthProvider";
 import { use } from "react";
 
 // TYPES
@@ -41,10 +41,12 @@ export default function FlowPage({ params }: PageProps) {
 	// Fetch flow data from Convex with proper access control
 	const flow = useQuery(
 		api.flows.getFlowSecure,
-		flowId && user?.id ? { 
-			flow_id: flowId as any,
-			user_id: user.id
-		} : "skip"
+		flowId && user?.id
+			? {
+					flow_id: flowId as any,
+					user_id: user.id,
+				}
+			: "skip"
 	);
 
 	// Loading states
@@ -63,9 +65,7 @@ export default function FlowPage({ params }: PageProps) {
 				<div className="text-center max-w-md mx-auto px-4">
 					<AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
 					<h2 className="text-2xl font-bold text-foreground mb-2">Authentication Required</h2>
-					<p className="text-muted-foreground mb-6">
-						Please sign in to access this flow
-					</p>
+					<p className="text-muted-foreground mb-6">Please sign in to access this flow</p>
 					<Link href="/sign-in">
 						<Button>Sign In</Button>
 					</Link>
@@ -92,9 +92,7 @@ export default function FlowPage({ params }: PageProps) {
 							</Button>
 						</Link>
 						<Link href="/explore">
-							<Button className="gap-2">
-								Explore Public Flows
-							</Button>
+							<Button className="gap-2">Explore Public Flows</Button>
 						</Link>
 					</div>
 				</div>

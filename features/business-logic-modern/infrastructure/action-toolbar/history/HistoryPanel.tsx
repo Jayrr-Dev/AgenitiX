@@ -605,8 +605,6 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 		setSelectedNodeId(nodeId);
 	}, []);
 
-
-
 	const handleToggleGraphView = useCallback(() => {
 		setGraphView((prev) => !prev);
 	}, []);

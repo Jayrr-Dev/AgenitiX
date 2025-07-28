@@ -12,14 +12,25 @@
 
 "use client";
 
-import { Download, Settings, Play, Square, ArrowLeft, Lock, Globe, Cloud, CloudOff, Loader2 } from "lucide-react";
-import { useFlowStore } from "../flow-engine/stores/flowStore";
-import { useFlowMetadataOptional } from "../flow-engine/contexts/FlowMetadataContext";
-import { useComponentClasses, useComponentButtonClasses } from "../theming/components";
 import { Badge } from "@/components/ui/badge";
+import {
+	ArrowLeft,
+	Cloud,
+	CloudOff,
+	Download,
+	Globe,
+	Loader2,
+	Lock,
+	Play,
+	Settings,
+	Square,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useFlowMetadataOptional } from "../flow-engine/contexts/FlowMetadataContext";
 import { useAutoSaveCanvas } from "../flow-engine/hooks/useAutoSaveCanvas";
 import { useLoadCanvas } from "../flow-engine/hooks/useLoadCanvas";
+import { useFlowStore } from "../flow-engine/stores/flowStore";
+import { useComponentButtonClasses, useComponentClasses } from "../theming/components";
 
 interface WorkflowManagerProps {
 	className?: string;
@@ -34,7 +45,7 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 	const autoSave = useAutoSaveCanvas({
 		debounceMs: 2000, // Save after 2 seconds of inactivity
 		enabled: true,
-		showNotifications: false // Keep it subtle
+		showNotifications: false, // Keep it subtle
 	});
 	const loadCanvas = useLoadCanvas();
 
@@ -100,10 +111,11 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 						{flow && (
 							<Badge
 								variant={flow.is_private ? "secondary" : "default"}
-								className={`text-xs flex items-center scale-90 gap-1 ${flow.is_private
-									? "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
-									: "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-									}`}
+								className={`text-xs flex items-center scale-90 gap-1 ${
+									flow.is_private
+										? "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
+										: "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+								}`}
 							>
 								{flow.is_private ? (
 									<>
@@ -120,8 +132,11 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 						)}
 						{flow && !flow.isOwner && (
 							<Badge variant="outline" className="text-xs">
-								{flow.userPermission === "view" ? "View Only" :
-									flow.userPermission === "edit" ? "Can Edit" : "Admin"}
+								{flow.userPermission === "view"
+									? "View Only"
+									: flow.userPermission === "edit"
+										? "Can Edit"
+										: "Admin"}
 							</Badge>
 						)}
 					</div>
@@ -147,7 +162,6 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 
 			{/* Center Section - Workflow Actions */}
 			<div className="flex items-center gap-2">
-
 				<button
 					className={`${buttonClasses} w-10 h-10 p-0 flex items-center justify-center cursor-pointer`}
 					title="Export Workflow"
@@ -204,4 +218,4 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 	);
 };
 
-export default WorkflowManager; 
+export default WorkflowManager;

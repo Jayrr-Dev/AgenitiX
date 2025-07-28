@@ -10,15 +10,15 @@
  * Keywords: feature-flags, hypertune, type-safety, server-side, vercel-integration
  */
 
-import { Identify } from "flags";
-import { dedupe, flag } from "flags/next";
 import { createHypertuneAdapter } from "@flags-sdk/hypertune";
+import type { Identify } from "flags";
+import { dedupe, flag } from "flags/next";
 import {
-  createSource,
-  flagFallbacks,
-  vercelFlagDefinitions as flagDefinitions,
-  Context,
-  RootFlagValues,
+	type Context,
+	type RootFlagValues,
+	createSource,
+	vercelFlagDefinitions as flagDefinitions,
+	flagFallbacks,
 } from "./generated/hypertune";
 
 /**
@@ -28,38 +28,31 @@ import {
  * @returns Context object with environment and user information
  */
 const identify: Identify<Context> = dedupe(
-  async ({ headers, cookies }: { headers: Headers; cookies: any }) => {
-    return {
-      environment: process.env.NODE_ENV,
-      user: { id: "1", name: "Test User", email: "hi@test.com" },
-    };
-  },
+	async ({ headers, cookies }: { headers: Headers; cookies: any }) => {
+		return {
+			environment: process.env.NODE_ENV,
+			user: { id: "1", name: "Test User", email: "hi@test.com" },
+		};
+	}
 );
 
 /**
  * Hypertune adapter for type-safe feature flag management
  */
-const hypertuneAdapter = createHypertuneAdapter<
-  RootFlagValues,
-  Context
->({
-  createSource,
-  flagFallbacks,
-  flagDefinitions,
-  identify,
+const hypertuneAdapter = createHypertuneAdapter<RootFlagValues, Context>({
+	createSource,
+	flagFallbacks,
+	flagDefinitions,
+	identify,
 });
 
 /**
  * Test feature flag declaration
  */
-export const testFlag = flag(
-  hypertuneAdapter.declarations.test,
-);
+export const testFlag = flag(hypertuneAdapter.declarations.test);
 
 /**
  * Install App feature flag declaration
  * Controls whether the PWA install prompt is shown to users
  */
-export const installAppFlag = flag(
-  hypertuneAdapter.declarations.installApp,
-);
+export const installAppFlag = flag(hypertuneAdapter.declarations.installApp);

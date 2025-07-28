@@ -213,7 +213,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 				data: props.data as any,
 				onStateUpdate: (updates) => {
 					// Update node data with server action results
-					if (props.data && typeof props.data === 'object') {
+					if (props.data && typeof props.data === "object") {
 						Object.assign(props.data, updates);
 					}
 				},
@@ -224,7 +224,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 				onSuccess: (result) => {
 					console.log(`Server action success for node ${props.id}:`, result);
 					// Could trigger success UI state here
-				}
+				},
 			});
 		}, []);
 

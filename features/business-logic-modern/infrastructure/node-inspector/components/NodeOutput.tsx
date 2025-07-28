@@ -127,15 +127,6 @@ function getNodeSpecificStyling(
 					icon: metadata.icon || "STORE",
 				};
 
-
-
-
-
-
-
-
-
-
 			case "ai":
 				return {
 					color: theme.text.primary,

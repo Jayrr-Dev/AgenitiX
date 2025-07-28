@@ -60,20 +60,20 @@ interface DomainInfo {
  */
 function scanNodes(): DomainInfo[] {
 	const nodeBasePath = path.join(process.cwd(), "features/business-logic-modern/node-domain");
-	
+
 	// Auto-discover domains by scanning directories
-	const discoveredDomains = fs.existsSync(nodeBasePath) 
-		? fs.readdirSync(nodeBasePath).filter(item => {
-			const itemPath = path.join(nodeBasePath, item);
-			return fs.statSync(itemPath).isDirectory() && item !== '.git';
-		})
+	const discoveredDomains = fs.existsSync(nodeBasePath)
+		? fs.readdirSync(nodeBasePath).filter((item) => {
+				const itemPath = path.join(nodeBasePath, item);
+				return fs.statSync(itemPath).isDirectory() && item !== ".git";
+			})
 		: [];
-	
+
 	// Ensure core domains are always included in preferred order
 	const coreDomains = ["create", "view", "trigger", "test", "cycle", "store", "ai"];
-	const allDomains = [...coreDomains, ...discoveredDomains.filter(d => !coreDomains.includes(d))];
+	const allDomains = [...coreDomains, ...discoveredDomains.filter((d) => !coreDomains.includes(d))];
 	const domains = Array.from(new Set(allDomains)); // Remove duplicates while preserving order
-	
+
 	const domainInfo: DomainInfo[] = [];
 
 	domains.forEach((domain) => {

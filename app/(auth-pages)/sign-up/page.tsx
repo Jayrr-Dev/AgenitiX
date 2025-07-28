@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/components/auth/AuthProvider";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Mail, ArrowRight, User, Building } from "lucide-react";
+import { ArrowRight, Building, Loader2, Mail, User } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function SignUpPage() {
 	const { signUp, isAuthenticated, isLoading: authLoading } = useAuthContext();
@@ -43,9 +43,10 @@ export default function SignUpPage() {
 		return null;
 	}
 
-	const handleChange = (field: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement>) => {
-		setFormData(prev => ({ ...prev, [field]: e.target.value }));
-	};
+	const handleChange =
+		(field: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+			setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+		};
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -59,7 +60,7 @@ export default function SignUpPage() {
 				company: formData.company.trim() || undefined,
 				role: formData.role.trim() || undefined,
 			});
-			
+
 			// Show success message with toast
 			setError(null);
 			const { toast } = await import("sonner");
@@ -67,12 +68,11 @@ export default function SignUpPage() {
 				description: result.message,
 				duration: 5000,
 			});
-			
 		} catch (err) {
 			const { formatAuthError } = await import("@/lib/auth-utils");
 			const errorMessage = formatAuthError(err);
 			setError(errorMessage);
-			
+
 			// Also show toast for better UX
 			const { toast } = await import("sonner");
 			toast.error("Sign up failed", {
@@ -92,11 +92,9 @@ export default function SignUpPage() {
 			<div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-purple-600 to-blue-700 p-12 text-white flex-col justify-between">
 				<div>
 					<h1 className="text-4xl font-bold mb-4">Join AgenitiX</h1>
-					<p className="text-xl opacity-90">
-						Start automating your workflows today
-					</p>
+					<p className="text-xl opacity-90">Start automating your workflows today</p>
 				</div>
-				
+
 				<div className="space-y-6">
 					<div className="flex items-start space-x-4">
 						<div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
@@ -109,7 +107,7 @@ export default function SignUpPage() {
 							</p>
 						</div>
 					</div>
-					
+
 					<div className="flex items-start space-x-4">
 						<div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
 							<Building className="w-4 h-4" />
@@ -121,7 +119,7 @@ export default function SignUpPage() {
 							</p>
 						</div>
 					</div>
-					
+
 					<div className="flex items-start space-x-4">
 						<div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
 							<ArrowRight className="w-4 h-4" />
@@ -134,10 +132,8 @@ export default function SignUpPage() {
 						</div>
 					</div>
 				</div>
-				
-				<div className="text-sm opacity-70">
-					© 2025 AgenitiX. All rights reserved.
-				</div>
+
+				<div className="text-sm opacity-70">© 2025 AgenitiX. All rights reserved.</div>
 			</div>
 
 			{/* Right side - Sign up form */}
@@ -151,9 +147,7 @@ export default function SignUpPage() {
 
 					<Card className="border-0 shadow-lg">
 						<CardHeader className="space-y-1">
-							<CardTitle className="text-2xl font-bold text-center">
-								Create your account
-							</CardTitle>
+							<CardTitle className="text-2xl font-bold text-center">Create your account</CardTitle>
 							<CardDescription className="text-center">
 								Join thousands of users automating their workflows
 							</CardDescription>
@@ -222,11 +216,7 @@ export default function SignUpPage() {
 									</Alert>
 								)}
 
-								<Button 
-									type="submit" 
-									className="w-full h-11" 
-									disabled={isLoading || !isFormValid}
-								>
+								<Button type="submit" className="w-full h-11" disabled={isLoading || !isFormValid}>
 									{isLoading ? (
 										<>
 											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -239,10 +229,7 @@ export default function SignUpPage() {
 
 								<div className="text-center text-sm">
 									<span className="text-gray-600">Already have an account? </span>
-									<Link 
-										href="/sign-in" 
-										className="font-medium text-blue-600 hover:text-blue-500"
-									>
+									<Link href="/sign-in" className="font-medium text-blue-600 hover:text-blue-500">
 										Sign in
 									</Link>
 								</div>

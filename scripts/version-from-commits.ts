@@ -12,10 +12,10 @@ import { versionDetector } from "../features/business-logic-modern/infrastructur
 
 async function main() {
 	console.log("🔍 Analyzing commit history for version changes...");
-	
+
 	try {
 		const versionInfo = await versionDetector.detectChanges();
-		
+
 		if (!versionInfo) {
 			console.log("✅ No version changes needed - no new conventional commits found");
 			return;
@@ -26,7 +26,7 @@ async function main() {
 		console.log(`📈 Bump Type: ${versionInfo.bumpType}`);
 		console.log(`📝 Reason: ${versionInfo.reason}`);
 		console.log(`📦 Commits Analyzed: ${versionInfo.newCommits.length}`);
-		
+
 		if (versionInfo.newCommits.length > 0) {
 			console.log("\n📋 New Commits:");
 			versionInfo.newCommits.forEach((commit, index) => {
@@ -36,9 +36,8 @@ async function main() {
 
 		// Update version file
 		await versionDetector.updateVersionFile(versionInfo);
-		
+
 		console.log("\n🎉 Version successfully updated!");
-		
 	} catch (error) {
 		console.error("❌ Error analyzing commits:", error);
 		process.exit(1);
@@ -50,4 +49,4 @@ if (require.main === module) {
 	main();
 }
 
-export { main as analyzeCommitsForVersioning }; 
+export { main as analyzeCommitsForVersioning };

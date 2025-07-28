@@ -1,169 +1,206 @@
 /**
  * Infrastructure Overview Generator
- * 
+ *
  * Automatically generates the infrastructure components overview by scanning
  * the features/business-logic-modern/infrastructure directory and creating
  * documentation for all infrastructure components.
- * 
+ *
  * Features:
  * - Scans infrastructure directory for all components
  * - Generates comprehensive documentation
  * - Creates overview with links to detailed docs
  * - Updates main infrastructure README
- * 
+ *
  * Usage: pnpm run generate:infrastructure-overview
  */
 
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
 interface InfrastructureComponent {
-  name: string;
-  path: string;
-  description: string;
-  features: string[];
-  hasDocumentation: boolean;
-  hasReadme: boolean;
-  componentCount: number;
-  fileCount: number;
+	name: string;
+	path: string;
+	description: string;
+	features: string[];
+	hasDocumentation: boolean;
+	hasReadme: boolean;
+	componentCount: number;
+	fileCount: number;
 }
 
 interface InfrastructureStats {
-  total: number;
-  documented: number;
-  components: InfrastructureComponent[];
+	total: number;
+	documented: number;
+	components: InfrastructureComponent[];
 }
 
-const INFRASTRUCTURE_DIR = path.join(process.cwd(), 'features/business-logic-modern/infrastructure');
-const DOCUMENTATION_DIR = path.join(process.cwd(), 'documentation/infrastructure');
-const OUTPUT_FILE = path.join(process.cwd(), 'documentation/infrastructure/overview.html');
+const INFRASTRUCTURE_DIR = path.join(
+	process.cwd(),
+	"features/business-logic-modern/infrastructure"
+);
+const DOCUMENTATION_DIR = path.join(process.cwd(), "documentation/infrastructure");
+const OUTPUT_FILE = path.join(process.cwd(), "documentation/infrastructure/overview.html");
 
 const COMPONENT_DESCRIPTIONS: { [key: string]: string } = {
-  'action-toolbar': 'Centralized action management with undo/redo functionality and history tracking',
-  'node-core': 'Core node functionality including data schemas, validation, and utilities',
-  'node-inspector': 'Primary interface for inspecting and editing nodes with dynamic controls',
-  'node-registry': 'Node registration, discovery, and metadata management system',
-  'sidebar': 'Enhanced node creation and management panel with registry integration and drag-and-drop',
-  'theming': 'Comprehensive design system with design tokens and theme switching',
-  'versioning': 'Version control system for flows and components with migration support',
-  'telemetry': 'Analytics and monitoring infrastructure for tracking user interactions',
-  'run-history': 'Workflow run tracking and execution history management with performance analytics',
-  'flow-engine': 'Core execution engine for running flows and managing node states',
-  'credentials': 'Secure credential management system for API keys and authentication',
-  'components': 'Shared infrastructure components and utilities'
+	"action-toolbar":
+		"Centralized action management with undo/redo functionality and history tracking",
+	"node-core": "Core node functionality including data schemas, validation, and utilities",
+	"node-inspector": "Primary interface for inspecting and editing nodes with dynamic controls",
+	"node-registry": "Node registration, discovery, and metadata management system",
+	sidebar:
+		"Enhanced node creation and management panel with registry integration and drag-and-drop",
+	theming: "Comprehensive design system with design tokens and theme switching",
+	versioning: "Version control system for flows and components with migration support",
+	telemetry: "Analytics and monitoring infrastructure for tracking user interactions",
+	"run-history":
+		"Workflow run tracking and execution history management with performance analytics",
+	"flow-engine": "Core execution engine for running flows and managing node states",
+	credentials: "Secure credential management system for API keys and authentication",
+	components: "Shared infrastructure components and utilities",
 };
 
 const COMPONENT_FEATURES: { [key: string]: string[] } = {
-  'action-toolbar': ['Undo/Redo', 'History Tracking', 'Branch Management', 'Action Routing'],
-  'node-core': ['Data Schemas', 'Validation', 'Core Utilities', 'Type Safety'],
-  'node-inspector': ['Dynamic Controls', 'Real-time Validation', 'Error Management', 'Responsive Design'],
-  'node-registry': ['Node Registration', 'Discovery', 'Metadata Management', 'Dynamic Loading'],
-  'sidebar': ['Registry Integration', 'Tabbed Interface', 'Drag-and-Drop', 'Custom Node Management', 'Variant System'],
-  'theming': ['Design Tokens', 'Theme Switching', 'Component Theming', 'CSS Variables'],
-  'versioning': ['Version Control', 'Migration Support', 'Backward Compatibility', 'Change Tracking'],
-  'telemetry': ['Analytics', 'Monitoring', 'Performance Tracking', 'Error Reporting'],
-  'run-history': ['Run Tracking', 'Status Management', 'Timing Metrics', 'Performance Analytics', 'Integration Ready'],
-  'flow-engine': ['Flow Execution', 'Node States', 'Error Handling', 'Performance'],
-  'credentials': ['Secure Storage', 'API Keys', 'Authentication', 'Encryption'],
-  'components': ['Shared Components', 'Utilities', 'Hooks', 'Services']
+	"action-toolbar": ["Undo/Redo", "History Tracking", "Branch Management", "Action Routing"],
+	"node-core": ["Data Schemas", "Validation", "Core Utilities", "Type Safety"],
+	"node-inspector": [
+		"Dynamic Controls",
+		"Real-time Validation",
+		"Error Management",
+		"Responsive Design",
+	],
+	"node-registry": ["Node Registration", "Discovery", "Metadata Management", "Dynamic Loading"],
+	sidebar: [
+		"Registry Integration",
+		"Tabbed Interface",
+		"Drag-and-Drop",
+		"Custom Node Management",
+		"Variant System",
+	],
+	theming: ["Design Tokens", "Theme Switching", "Component Theming", "CSS Variables"],
+	versioning: ["Version Control", "Migration Support", "Backward Compatibility", "Change Tracking"],
+	telemetry: ["Analytics", "Monitoring", "Performance Tracking", "Error Reporting"],
+	"run-history": [
+		"Run Tracking",
+		"Status Management",
+		"Timing Metrics",
+		"Performance Analytics",
+		"Integration Ready",
+	],
+	"flow-engine": ["Flow Execution", "Node States", "Error Handling", "Performance"],
+	credentials: ["Secure Storage", "API Keys", "Authentication", "Encryption"],
+	components: ["Shared Components", "Utilities", "Hooks", "Services"],
 };
 
 function getComponentDescription(componentName: string): string {
-  return COMPONENT_DESCRIPTIONS[componentName] || 
-    'Infrastructure component providing essential services and functionality.';
+	return (
+		COMPONENT_DESCRIPTIONS[componentName] ||
+		"Infrastructure component providing essential services and functionality."
+	);
 }
 
 function getComponentFeatures(componentName: string): string[] {
-  return COMPONENT_FEATURES[componentName] || ['Core Functionality', 'Integration', 'Performance', 'Security'];
+	return (
+		COMPONENT_FEATURES[componentName] || [
+			"Core Functionality",
+			"Integration",
+			"Performance",
+			"Security",
+		]
+	);
 }
 
 function countFiles(dir: string): number {
-  if (!fs.existsSync(dir)) return 0;
-  
-  let count = 0;
-  const items = fs.readdirSync(dir);
-  
-  for (const item of items) {
-    const itemPath = path.join(dir, item);
-    const stat = fs.statSync(itemPath);
-    
-    if (stat.isDirectory()) {
-      count += countFiles(itemPath);
-    } else if (item.endsWith('.ts') || item.endsWith('.tsx') || item.endsWith('.js') || item.endsWith('.jsx')) {
-      count++;
-    }
-  }
-  
-  return count;
+	if (!fs.existsSync(dir)) return 0;
+
+	let count = 0;
+	const items = fs.readdirSync(dir);
+
+	for (const item of items) {
+		const itemPath = path.join(dir, item);
+		const stat = fs.statSync(itemPath);
+
+		if (stat.isDirectory()) {
+			count += countFiles(itemPath);
+		} else if (
+			item.endsWith(".ts") ||
+			item.endsWith(".tsx") ||
+			item.endsWith(".js") ||
+			item.endsWith(".jsx")
+		) {
+			count++;
+		}
+	}
+
+	return count;
 }
 
 function countComponents(dir: string): number {
-  if (!fs.existsSync(dir)) return 0;
-  
-  let count = 0;
-  const items = fs.readdirSync(dir);
-  
-  for (const item of items) {
-    const itemPath = path.join(dir, item);
-    const stat = fs.statSync(itemPath);
-    
-    if (stat.isDirectory()) {
-      count += countComponents(itemPath);
-    } else if (item.endsWith('.tsx') && !item.startsWith('.')) {
-      count++;
-    }
-  }
-  
-  return count;
+	if (!fs.existsSync(dir)) return 0;
+
+	let count = 0;
+	const items = fs.readdirSync(dir);
+
+	for (const item of items) {
+		const itemPath = path.join(dir, item);
+		const stat = fs.statSync(itemPath);
+
+		if (stat.isDirectory()) {
+			count += countComponents(itemPath);
+		} else if (item.endsWith(".tsx") && !item.startsWith(".")) {
+			count++;
+		}
+	}
+
+	return count;
 }
 
 function scanInfrastructureComponents(): InfrastructureComponent[] {
-  const components: InfrastructureComponent[] = [];
-  
-  if (!fs.existsSync(INFRASTRUCTURE_DIR)) {
-    console.log('❌ Infrastructure directory not found');
-    return components;
-  }
-  
-  const items = fs.readdirSync(INFRASTRUCTURE_DIR);
-  
-  for (const item of items) {
-    const itemPath = path.join(INFRASTRUCTURE_DIR, item);
-    const stat = fs.statSync(itemPath);
-    
-    if (stat.isDirectory()) {
-      const componentName = item;
-      const docPath = path.join(DOCUMENTATION_DIR, componentName, 'README.md');
-      const readmePath = path.join(itemPath, 'README.md');
-      
-      components.push({
-        name: componentName,
-        path: itemPath,
-        description: getComponentDescription(componentName),
-        features: getComponentFeatures(componentName),
-        hasDocumentation: fs.existsSync(docPath),
-        hasReadme: fs.existsSync(readmePath),
-        componentCount: countComponents(itemPath),
-        fileCount: countFiles(itemPath)
-      });
-    }
-  }
-  
-  return components;
+	const components: InfrastructureComponent[] = [];
+
+	if (!fs.existsSync(INFRASTRUCTURE_DIR)) {
+		console.log("❌ Infrastructure directory not found");
+		return components;
+	}
+
+	const items = fs.readdirSync(INFRASTRUCTURE_DIR);
+
+	for (const item of items) {
+		const itemPath = path.join(INFRASTRUCTURE_DIR, item);
+		const stat = fs.statSync(itemPath);
+
+		if (stat.isDirectory()) {
+			const componentName = item;
+			const docPath = path.join(DOCUMENTATION_DIR, componentName, "README.md");
+			const readmePath = path.join(itemPath, "README.md");
+
+			components.push({
+				name: componentName,
+				path: itemPath,
+				description: getComponentDescription(componentName),
+				features: getComponentFeatures(componentName),
+				hasDocumentation: fs.existsSync(docPath),
+				hasReadme: fs.existsSync(readmePath),
+				componentCount: countComponents(itemPath),
+				fileCount: countFiles(itemPath),
+			});
+		}
+	}
+
+	return components;
 }
 
 function generateStats(components: InfrastructureComponent[]): InfrastructureStats {
-  return {
-    total: components.length,
-    documented: components.filter(c => c.hasDocumentation).length,
-    components
-  };
+	return {
+		total: components.length,
+		documented: components.filter((c) => c.hasDocumentation).length,
+		components,
+	};
 }
 
 function generateComponentCard(component: InfrastructureComponent): string {
-  const searchTerms = [component.name, ...component.features].join(' ').toLowerCase();
-  
-  return `
+	const searchTerms = [component.name, ...component.features].join(" ").toLowerCase();
+
+	return `
       <div class="component-card" data-search="${searchTerms}">
         <div class="component-header">
           <div class="component-title">${component.name.charAt(0).toUpperCase() + component.name.slice(1)}</div>
@@ -176,20 +213,20 @@ function generateComponentCard(component: InfrastructureComponent): string {
           ${component.description}
         </div>
         <div class="component-features">
-          ${component.features.map(feature => `<span class="feature-tag">${feature}</span>`).join('\n          ')}
+          ${component.features.map((feature) => `<span class="feature-tag">${feature}</span>`).join("\n          ")}
         </div>
         <div class="component-actions">
-          ${component.hasDocumentation ? `<a href="./${component.name}/README.md" class="action-btn">Documentation</a>` : ''}
-          ${component.hasReadme ? `<a href="../../features/business-logic-modern/infrastructure/${component.name}/README.md" class="action-btn">Source README</a>` : ''}
+          ${component.hasDocumentation ? `<a href="./${component.name}/README.md" class="action-btn">Documentation</a>` : ""}
+          ${component.hasReadme ? `<a href="../../features/business-logic-modern/infrastructure/${component.name}/README.md" class="action-btn">Source README</a>` : ""}
           <a href="../../features/business-logic-modern/infrastructure/${component.name}/" class="action-btn primary">Source Code</a>
         </div>
       </div>`;
 }
 
 function generateHTML(components: InfrastructureComponent[], stats: InfrastructureStats): string {
-  const componentCards = components.map(generateComponentCard).join('\n');
-  
-  return `<!DOCTYPE html>
+	const componentCards = components.map(generateComponentCard).join("\n");
+
+	return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -514,33 +551,35 @@ ${componentCards}
 }
 
 function main() {
-  console.log('🔍 Scanning infrastructure components...');
-  
-  const components = scanInfrastructureComponents();
-  const stats = generateStats(components);
-  
-  console.log(`📊 Found ${components.length} infrastructure components:`);
-  components.forEach(component => {
-    console.log(`  - ${component.name}: ${component.componentCount} components, ${component.fileCount} files`);
-  });
-  
-  console.log('📝 Generating overview HTML...');
-  const html = generateHTML(components, stats);
-  
-  // Ensure documentation directory exists
-  const docDir = path.dirname(OUTPUT_FILE);
-  if (!fs.existsSync(docDir)) {
-    fs.mkdirSync(docDir, { recursive: true });
-  }
-  
-  fs.writeFileSync(OUTPUT_FILE, html);
-  
-  console.log(`✅ Generated overview at: ${OUTPUT_FILE}`);
-  console.log(`📈 Statistics: ${stats.total} total components, ${stats.documented} documented`);
+	console.log("🔍 Scanning infrastructure components...");
+
+	const components = scanInfrastructureComponents();
+	const stats = generateStats(components);
+
+	console.log(`📊 Found ${components.length} infrastructure components:`);
+	components.forEach((component) => {
+		console.log(
+			`  - ${component.name}: ${component.componentCount} components, ${component.fileCount} files`
+		);
+	});
+
+	console.log("📝 Generating overview HTML...");
+	const html = generateHTML(components, stats);
+
+	// Ensure documentation directory exists
+	const docDir = path.dirname(OUTPUT_FILE);
+	if (!fs.existsSync(docDir)) {
+		fs.mkdirSync(docDir, { recursive: true });
+	}
+
+	fs.writeFileSync(OUTPUT_FILE, html);
+
+	console.log(`✅ Generated overview at: ${OUTPUT_FILE}`);
+	console.log(`📈 Statistics: ${stats.total} total components, ${stats.documented} documented`);
 }
 
 if (require.main === module) {
-  main();
+	main();
 }
 
-export { main as generateInfrastructureOverview }; 
+export { main as generateInfrastructureOverview };

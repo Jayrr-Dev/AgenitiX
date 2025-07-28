@@ -1,8 +1,8 @@
-import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import type { AuthError, AuthResult } from "@/convex/auth";
+import { useMutation, useQuery } from "convex/react";
 import { useCallback, useEffect, useState } from "react";
-import { Id } from "@/convex/_generated/dataModel";
-import type { AuthResult, AuthError } from "@/convex/auth";
 
 // Simple token management (in production, use secure storage)
 const TOKEN_KEY = "agenitix_auth_token";
@@ -19,10 +19,7 @@ export const useAuth = () => {
 	}, []);
 
 	// Get current user
-	const user = useQuery(
-		api.auth.getCurrentUser,
-		token ? { token_hash: token } : "skip"
-	);
+	const user = useQuery(api.auth.getCurrentUser, token ? { token_hash: token } : "skip");
 
 	// Authentication mutations
 	const signUpMutation = useMutation(api.auth.signUp);
@@ -40,8 +37,8 @@ export const useAuth = () => {
 			role?: string;
 		}) => {
 			// Create user account (unverified)
-			const result = await signUpMutation(data) as AuthResult;
-			
+			const result = (await signUpMutation(data)) as AuthResult;
+
 			// Handle Convex errors
 			if (!result.success) {
 				const error = new Error(result.error.message);
@@ -49,29 +46,29 @@ export const useAuth = () => {
 				(error as any).retryAfter = result.error.retryAfter;
 				throw error;
 			}
-			
+
 			// Send verification email
 			try {
-				const emailResult = await fetch('/api/auth/send-magic-link', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
+				const emailResult = await fetch("/api/auth/send-magic-link", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
 						email: data.email,
 						name: data.name,
 						magicToken: result.data.magicToken,
-						type: 'verification',
+						type: "verification",
 					}),
 				});
 
 				if (!emailResult.ok) {
-					const error = new Error('Failed to send verification email');
-					(error as any).code = 'EMAIL_SEND_FAILED';
+					const error = new Error("Failed to send verification email");
+					(error as any).code = "EMAIL_SEND_FAILED";
 					throw error;
 				}
-				
-				return { 
-					...result.data, 
-					message: 'Account created! Check your email to verify and sign in.'
+
+				return {
+					...result.data,
+					message: "Account created! Check your email to verify and sign in.",
 				};
 			} catch (emailError) {
 				console.error("Email send error:", emailError);
@@ -85,11 +82,11 @@ export const useAuth = () => {
 	const signIn = useCallback(
 		async (data: { email: string }) => {
 			// Request magic link from Convex
-			const result = await sendMagicLinkMutation({
+			const result = (await sendMagicLinkMutation({
 				email: data.email,
-				type: 'login',
-			}) as AuthResult;
-			
+				type: "login",
+			})) as AuthResult;
+
 			// Handle Convex errors
 			if (!result.success) {
 				const error = new Error(result.error.message);
@@ -97,30 +94,30 @@ export const useAuth = () => {
 				(error as any).retryAfter = result.error.retryAfter;
 				throw error;
 			}
-			
+
 			// Send email with magic link
 			try {
-				const emailResult = await fetch('/api/auth/send-magic-link', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
+				const emailResult = await fetch("/api/auth/send-magic-link", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
 						email: data.email,
-						name: data.email.split('@')[0], // Use email prefix as fallback name
+						name: data.email.split("@")[0], // Use email prefix as fallback name
 						magicToken: result.data.magicToken,
-						type: 'login',
+						type: "login",
 					}),
 				});
 
 				if (!emailResult.ok) {
-					const error = new Error('Failed to send magic link email');
-					(error as any).code = 'EMAIL_SEND_FAILED';
+					const error = new Error("Failed to send magic link email");
+					(error as any).code = "EMAIL_SEND_FAILED";
 					throw error;
 				}
-				
-				return { 
+
+				return {
 					success: true,
 					email: data.email,
-					message: 'Magic link sent! Check your email to sign in.'
+					message: "Magic link sent! Check your email to sign in.",
 				};
 			} catch (emailError) {
 				console.error("Email send error:", emailError);
@@ -149,24 +146,24 @@ export const useAuth = () => {
 	// Verify Magic Link and sign in
 	const verifyMagicLink = useCallback(
 		async (magicToken: string, ipAddress?: string, userAgent?: string) => {
-			const result = await verifyMagicLinkMutation({
+			const result = (await verifyMagicLinkMutation({
 				token: magicToken,
 				ip_address: ipAddress,
 				user_agent: userAgent,
-			}) as AuthResult;
-			
+			})) as AuthResult;
+
 			// Handle Convex errors
 			if (!result.success) {
 				const error = new Error(result.error.message);
 				(error as any).code = result.error.code;
 				throw error;
 			}
-			
+
 			// Set session token
 			const sessionToken = result.data.sessionToken;
 			setToken(sessionToken);
 			localStorage.setItem(TOKEN_KEY, sessionToken);
-			
+
 			return result.data;
 		},
 		[verifyMagicLinkMutation]
@@ -226,10 +223,7 @@ export const useUserSessions = () => {
 		}
 	}, []);
 
-	const sessions = useQuery(
-		api.auth.getUserSessions,
-		token ? { token_hash: token } : "skip"
-	);
+	const sessions = useQuery(api.auth.getUserSessions, token ? { token_hash: token } : "skip");
 
 	const revokeSessionMutation = useMutation(api.auth.revokeSession);
 

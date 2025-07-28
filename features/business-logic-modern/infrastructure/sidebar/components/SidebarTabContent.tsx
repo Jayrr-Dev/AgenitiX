@@ -7,8 +7,8 @@ import { StencilGrid } from "../StencilGrid";
 import type { HoveredStencil } from "../StencilInfoPanel";
 import { VARIANT_CONFIG } from "../constants";
 import { useDragSensors } from "../hooks/useDragSensors";
-import { useStencilStorage } from "../hooks/useStencilStorage";
 import { useFilteredNodes } from "../hooks/useFilteredNodes";
+import { useStencilStorage } from "../hooks/useStencilStorage";
 import type { NodeStencil, SidebarVariant, TabKey } from "../types";
 import { AddNodeButton } from "./AddNodeButton";
 
@@ -135,11 +135,11 @@ export function SidebarTabContent({
 	// Filter stencils based on feature flags
 	const filteredStencils = useMemo(() => {
 		if (isCustomTab) return [];
-		
+
 		// Filter out stencils whose corresponding nodes have disabled feature flags
-		return stencils.filter(stencil => {
+		return stencils.filter((stencil) => {
 			// Check if this stencil's node type is in the filtered nodes list
-			return filteredNodes.some(node => node.kind === stencil.nodeType);
+			return filteredNodes.some((node) => node.kind === stencil.nodeType);
 		});
 	}, [stencils, filteredNodes, isCustomTab]);
 

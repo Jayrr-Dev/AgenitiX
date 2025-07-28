@@ -1,10 +1,10 @@
 {
-  "lastProcessedCommit": "",
-  "currentVersion": {
-    "major": 0,
-    "minor": 11,
-    "patch": 0,
-    "full": "0.11.0"
-  },
-  "lastUpdate": 1753508152630
+	"lastProcessedCommit": "",
+	"currentVersion": {
+		"major": 0,
+		"minor": 11,
+		"patch": 0,
+		"full": "0.11.0"
+	},
+	"lastUpdate": 1753508152630
 }

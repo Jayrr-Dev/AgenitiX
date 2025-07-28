@@ -11,7 +11,7 @@
 
 "use client";
 
-import React, { createContext, useContext, ReactNode } from "react";
+import React, { createContext, useContext, type ReactNode } from "react";
 
 // Flow metadata interface
 export interface FlowMetadata {
@@ -42,17 +42,10 @@ interface FlowProviderProps {
 	initialFlow?: FlowMetadata | null;
 }
 
-export const FlowProvider: React.FC<FlowProviderProps> = ({ 
-	children, 
-	initialFlow = null 
-}) => {
+export const FlowProvider: React.FC<FlowProviderProps> = ({ children, initialFlow = null }) => {
 	const [flow, setFlow] = React.useState<FlowMetadata | null>(initialFlow);
 
-	return (
-		<FlowContext.Provider value={{ flow, setFlow }}>
-			{children}
-		</FlowContext.Provider>
-	);
+	return <FlowContext.Provider value={{ flow, setFlow }}>{children}</FlowContext.Provider>;
 };
 
 export const useFlowContext = () => {

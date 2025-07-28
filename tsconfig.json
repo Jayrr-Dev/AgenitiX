@@ -60,7 +60,7 @@
 			"@domain-flow/*": ["./features/business-logic-modern/node-domain/flow/*"],
 			"@domain-time/*": ["./features/business-logic-modern/node-domain/time/*"],
 			"@domain-ai/*": ["./features/business-logic-modern/node-domain/ai/*"],
-	
+
 			"@domain-store/*": ["./features/business-logic-modern/node-domain/store/*"],
 
 			// ============================================================================
@@ -121,8 +121,18 @@
 		".deprecated/projectStore.ts",
 		".deprecated/sessionStore.ts",
 		".deprecated/timesheetStore.ts",
-		".deprecated/userStore.ts"
-, ".deprecated/useNodeConnections.ts", ".deprecated/useNodeDataFlow.ts", ".deprecated/withNodeDataFlow.tsx", ".deprecated/useReactFlowHandlers.ts", ".deprecated/useFlowEditorState.ts", ".deprecated/useKeyboardShortcutHandlers.ts", ".deprecated/useDragAndDrop.ts", ".deprecated/useErrorLogging.ts", ".deprecated/connectionUtils.ts", ".deprecated/dataMigration.ts"	],
+		".deprecated/userStore.ts",
+		".deprecated/useNodeConnections.ts",
+		".deprecated/useNodeDataFlow.ts",
+		".deprecated/withNodeDataFlow.tsx",
+		".deprecated/useReactFlowHandlers.ts",
+		".deprecated/useFlowEditorState.ts",
+		".deprecated/useKeyboardShortcutHandlers.ts",
+		".deprecated/useDragAndDrop.ts",
+		".deprecated/useErrorLogging.ts",
+		".deprecated/connectionUtils.ts",
+		".deprecated/dataMigration.ts"
+	],
 
 	// ============================================================================
 	// EXCLUSION PATTERNS

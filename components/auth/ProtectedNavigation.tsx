@@ -1,8 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useAuthContext } from "./AuthProvider";
 import { UserDropdown } from "./UserDropdown";
-import Link from "next/link";
 
 export const ProtectedNavigation = () => {
 	const { user } = useAuthContext();
@@ -14,9 +14,7 @@ export const ProtectedNavigation = () => {
 					{/* Logo and main navigation */}
 					<div className="flex items-center space-x-8">
 						<Link href="/dashboard" className="flex items-center">
-							<h1 className="text-xl font-bold text-foreground">
-								AgenitiX
-							</h1>
+							<h1 className="text-xl font-bold text-foreground">AgenitiX</h1>
 						</Link>
 					</div>
 

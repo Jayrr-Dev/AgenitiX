@@ -3,6 +3,7 @@
 // Force dynamic rendering to avoid prerendering issues
 export const dynamic = "force-dynamic";
 
+import { useAuthContext } from "@/components/auth/AuthProvider";
 import FAQ from "@/features/marketing/home-page/components/FAQ";
 import FeatureBoxesBento from "@/features/marketing/home-page/components/FeatureBoxesBento";
 import FeatureBoxesIconed from "@/features/marketing/home-page/components/FeatureBoxesIconed";
@@ -20,9 +21,8 @@ import {
 	featureBoxesPlain,
 } from "@/features/marketing/home-page/data";
 import { useAnubisProtection } from "@/hooks/useAnubisProtection";
-import { useAuthContext } from "@/components/auth/AuthProvider";
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Home() {
 	const { isAuthenticated, isLoading } = useAuthContext();

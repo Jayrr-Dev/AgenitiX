@@ -10,8 +10,8 @@
  * Keywords: convex-integration, type-safety, real-time, caching, server-actions
  */
 
-import { useQuery, useMutation } from '@tanstack/react-query';
-import type { ServerActionContext } from './serverActionRegistry';
+import { useMutation, useQuery } from "@tanstack/react-query";
+import type { ServerActionContext } from "./serverActionRegistry";
 
 // ============================================================================
 // CONVEX CLIENT INTEGRATION
@@ -27,10 +27,10 @@ export const executeConvexQuery = async <T>(
 	// TODO: Import and use actual Convex client
 	// const { api } = await import('@/convex/_generated/api');
 	// const { useQuery } = await import('@/convex/_generated/react');
-	
+
 	// Placeholder implementation
 	console.log(`[CONVEX] Query: ${queryName}`, params);
-	return { message: 'Convex query executed', queryName, params } as T;
+	return { message: "Convex query executed", queryName, params } as T;
 };
 
 /**
@@ -43,10 +43,10 @@ export const executeConvexMutation = async <T>(
 	// TODO: Import and use actual Convex client
 	// const { api } = await import('@/convex/_generated/api');
 	// const { useMutation } = await import('@/convex/_generated/react');
-	
+
 	// Placeholder implementation
 	console.log(`[CONVEX] Mutation: ${mutationName}`, params);
-	return { message: 'Convex mutation executed', mutationName, params } as T;
+	return { message: "Convex mutation executed", mutationName, params } as T;
 };
 
 // ============================================================================
@@ -65,7 +65,7 @@ export const useConvexQuery = <T>(
 	}
 ) => {
 	return useQuery({
-		queryKey: ['convex', 'query', queryName, params],
+		queryKey: ["convex", "query", queryName, params],
 		queryFn: () => executeConvexQuery<T>(queryName, params),
 		enabled: options?.enabled ?? true,
 		staleTime: options?.staleTime ?? 2 * 60 * 1000, // 2 minutes
@@ -84,8 +84,7 @@ export const useConvexMutation = <TData, TVariables extends Record<string, unkno
 	}
 ) => {
 	return useMutation({
-		mutationFn: (variables: TVariables) => 
-			executeConvexMutation<TData>(mutationName, variables),
+		mutationFn: (variables: TVariables) => executeConvexMutation<TData>(mutationName, variables),
 		onSuccess: options?.onSuccess,
 		onError: options?.onError,
 	});
@@ -118,27 +117,21 @@ export const createConvexServerAction = (
 /**
  * Convex mutation server action
  */
-export const createConvexMutationAction = (
-	ctx: ServerActionContext,
-	mutationName: string
-) => {
+export const createConvexMutationAction = (ctx: ServerActionContext, mutationName: string) => {
 	const { nodeId, nodeKind, data, onStateUpdate, onError, onSuccess } = ctx;
 
-	return useConvexMutation(
-		mutationName,
-		{
-			onSuccess: (result) => {
-				onStateUpdate?.({
-					lastConvexMutation: new Date().toISOString(),
-					mutationResult: result,
-				});
-				onSuccess?.(result);
-			},
-			onError: (error) => {
-				onError?.(error);
-			},
-		}
-	);
+	return useConvexMutation(mutationName, {
+		onSuccess: (result) => {
+			onStateUpdate?.({
+				lastConvexMutation: new Date().toISOString(),
+				mutationResult: result,
+			});
+			onSuccess?.(result);
+		},
+		onError: (error) => {
+			onError?.(error);
+		},
+	});
 };
 
 // ============================================================================
@@ -150,7 +143,7 @@ export const createConvexMutationAction = (
  */
 export const useNodeDataQuery = (nodeId: string) => {
 	return useConvexQuery(
-		'getNodeById',
+		"getNodeById",
 		{ nodeId },
 		{
 			enabled: !!nodeId,
@@ -163,15 +156,12 @@ export const useNodeDataQuery = (nodeId: string) => {
  * Example: Update node data in Convex
  */
 export const useUpdateNodeMutation = () => {
-	return useConvexMutation(
-		'updateNode',
-		{
-			onSuccess: (result) => {
-				console.log('Node updated successfully:', result);
-			},
-			onError: (error) => {
-				console.error('Failed to update node:', error);
-			},
-		}
-	);
-}; 
+	return useConvexMutation("updateNode", {
+		onSuccess: (result) => {
+			console.log("Node updated successfully:", result);
+		},
+		onError: (error) => {
+			console.error("Failed to update node:", error);
+		},
+	});
+};

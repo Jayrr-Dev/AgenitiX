@@ -162,7 +162,7 @@ export const clearAllPersistedGraphs = (): void => {
 	if (typeof window === "undefined") return;
 	try {
 		const keys = Object.keys(window.localStorage);
-		keys.forEach(key => {
+		keys.forEach((key) => {
 			if (key.startsWith(STORAGE_KEY_PREFIX)) {
 				window.localStorage.removeItem(key);
 			}

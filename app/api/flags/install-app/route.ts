@@ -9,14 +9,14 @@
  * Keywords: api-route, feature-flag, server-side, hypertune-integration
  */
 
-import { NextRequest, NextResponse } from "next/server";
 import { installAppFlag } from "@/flag";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
 	try {
 		// Get the flag value server-side
 		const isEnabled = await installAppFlag();
-		
+
 		return NextResponse.json({
 			success: true,
 			isEnabled,
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 		});
 	} catch (error) {
 		console.error("Error evaluating install app flag:", error);
-		
+
 		// Return fallback value on error
 		return NextResponse.json({
 			success: false,
@@ -33,4 +33,4 @@ export async function GET(request: NextRequest) {
 			timestamp: new Date().toISOString(),
 		});
 	}
-} 
+}

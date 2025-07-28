@@ -33,12 +33,12 @@ import type { AgenEdge, AgenNode } from "../types/nodeData";
 // Import other components - Using clean aliases
 import HistoryPanel from "@/features/business-logic-modern/infrastructure/action-toolbar/history/HistoryPanel";
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
-import { WorkflowManager } from "@/features/business-logic-modern/infrastructure/workflow-manager";
 import {
 	ThemedControls,
 	ThemedMiniMap,
 	nodeInspectorStyles,
 } from "@/features/business-logic-modern/infrastructure/theming/components";
+import { WorkflowManager } from "@/features/business-logic-modern/infrastructure/workflow-manager";
 import { NodeDisplayProvider } from "../contexts/NodeDisplayContext";
 
 // Node components are now loaded via useDynamicNodeTypes hook
@@ -365,10 +365,10 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 				<Panel
 					position={inspectorViewMode === "bottom" ? "bottom-center" : "top-right"}
 					className={`hidden md:block rounded shadow-sm ${
-						inspectorViewMode === "bottom" 
-							? "max-w-4xl max-h-[280px]" 
+						inspectorViewMode === "bottom"
+							? "max-w-4xl max-h-[280px]"
 							: inspectorLocked || !selectedNode
-								? "w-[50px] h-[50px] bg-card border border-border rounded-lg shadow-lg" 
+								? "w-[50px] h-[50px] bg-card border border-border rounded-lg shadow-lg"
 								: "w-[450px] max-h-[calc(100vh-370px)]"
 					} overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${nodeInspectorStyles.getContainer()}`}
 				>
@@ -448,9 +448,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 					<Panel
 						position={inspectorViewMode === "side" ? "bottom-center" : "top-right"}
 						className={`${
-							inspectorViewMode === "side" 
-								? "mb-4 -translate-y-[50px]" 
-								: PANEL_STYLES.historyPanel
+							inspectorViewMode === "side" ? "mb-4 -translate-y-[50px]" : PANEL_STYLES.historyPanel
 						}`}
 						style={inspectorViewMode === "side" ? {} : { marginTop: PANEL_STYLES.historyPanelTop }}
 					>

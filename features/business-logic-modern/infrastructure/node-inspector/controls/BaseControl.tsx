@@ -107,15 +107,6 @@ function getSemanticClasses(nodeType?: string) {
 				textSecondary: "text-node-store-text-secondary",
 			};
 
-
-
-
-
-
-
-
-
-
 		case "ai":
 		case "ainode":
 			return {

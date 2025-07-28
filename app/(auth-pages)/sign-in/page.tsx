@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Mail, ArrowRight, AlertCircle } from "lucide-react";
 import { formatAuthError, getAuthErrorType, getRetryInfo } from "@/lib/auth-utils";
-import { toast } from "sonner";
+import { AlertCircle, ArrowRight, Loader2, Mail } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function SignInPage() {
 	const { signIn, isAuthenticated, isLoading: authLoading } = useAuthContext();
@@ -21,7 +21,7 @@ export default function SignInPage() {
 	const [isRateLimited, setIsRateLimited] = useState(false);
 	const [retryAfter, setRetryAfter] = useState<number | undefined>();
 	const [mounted, setMounted] = useState(false);
-	
+
 	// Ensure component is mounted to avoid hydration issues
 	useEffect(() => {
 		setMounted(true);
@@ -37,11 +37,14 @@ export default function SignInPage() {
 	// Handle rate limit countdown
 	useEffect(() => {
 		if (isRateLimited && retryAfter) {
-			const timer = setTimeout(() => {
-				setIsRateLimited(false);
-				setRetryAfter(undefined);
-				setError(null);
-			}, retryAfter * 60 * 1000); // Convert minutes to milliseconds
+			const timer = setTimeout(
+				() => {
+					setIsRateLimited(false);
+					setRetryAfter(undefined);
+					setError(null);
+				},
+				retryAfter * 60 * 1000
+			); // Convert minutes to milliseconds
 
 			return () => clearTimeout(timer);
 		}
@@ -79,29 +82,28 @@ export default function SignInPage() {
 		setRetryAfter(undefined);
 
 		const trimmedEmail = email.trim();
-		
+
 		try {
 			const result = await signIn({ email: trimmedEmail });
-			
+
 			// Clear any previous errors and show success
 			setError(null);
 			toast.success("Magic link sent!", {
 				description: result.message,
 				duration: 5000,
 			});
-			
 		} catch (err) {
 			if (err instanceof Error) {
 				const errorCode = getAuthErrorType(err);
 				const retryInfo = getRetryInfo(err);
 				const errorMessage = formatAuthError(err);
-				
+
 				// Handle rate limiting
 				if (errorCode === "RATE_LIMIT_EXCEEDED") {
 					setIsRateLimited(true);
 					setRetryAfter(retryInfo.retryAfter);
 					setError(errorMessage);
-					
+
 					toast.error("Too many attempts", {
 						description: errorMessage,
 						duration: 8000,
@@ -109,7 +111,7 @@ export default function SignInPage() {
 				} else {
 					// Handle other errors
 					setError(errorMessage);
-					
+
 					if (errorCode === "USER_NOT_FOUND") {
 						toast.error("Account not found", {
 							description: "Please check your email or create a new account.",
@@ -141,11 +143,9 @@ export default function SignInPage() {
 			<div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-purple-700 p-12 text-white flex-col justify-between">
 				<div>
 					<h1 className="text-4xl font-bold mb-4">AgenitiX</h1>
-					<p className="text-xl opacity-90">
-						Visual Flow Automation Platform
-					</p>
+					<p className="text-xl opacity-90">Visual Flow Automation Platform</p>
 				</div>
-				
+
 				<div className="space-y-6">
 					<div className="flex items-start space-x-4">
 						<div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
@@ -158,7 +158,7 @@ export default function SignInPage() {
 							</p>
 						</div>
 					</div>
-					
+
 					<div className="flex items-start space-x-4">
 						<div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
 							<Mail className="w-4 h-4" />
@@ -170,7 +170,7 @@ export default function SignInPage() {
 							</p>
 						</div>
 					</div>
-					
+
 					<div className="flex items-start space-x-4">
 						<div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
 							<ArrowRight className="w-4 h-4" />
@@ -183,10 +183,8 @@ export default function SignInPage() {
 						</div>
 					</div>
 				</div>
-				
-				<div className="text-sm opacity-70">
-					© 2025 AgenitiX. All rights reserved.
-				</div>
+
+				<div className="text-sm opacity-70">© 2025 AgenitiX. All rights reserved.</div>
 			</div>
 
 			{/* Right side - Sign in form */}
@@ -200,9 +198,7 @@ export default function SignInPage() {
 
 					<Card className="border-0 shadow-lg">
 						<CardHeader className="space-y-1">
-							<CardTitle className="text-2xl font-bold text-center">
-								Welcome back
-							</CardTitle>
+							<CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
 							<CardDescription className="text-center">
 								Sign in to your account to continue building workflows
 							</CardDescription>
@@ -236,14 +232,15 @@ export default function SignInPage() {
 											<AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
 											<div className="flex-1">
 												<p>{error}</p>
-												
+
 												{/* Rate limit specific info */}
 												{isRateLimited && retryAfter && (
 													<p className="mt-1 text-xs text-red-500">
-														You can try again in {retryAfter} {retryAfter === 1 ? 'minute' : 'minutes'}.
+														You can try again in {retryAfter}{" "}
+														{retryAfter === 1 ? "minute" : "minutes"}.
 													</p>
 												)}
-												
+
 												{/* Account not found - show sign up option */}
 												{error.includes("Account not found") && (
 													<div className="mt-3">
@@ -259,11 +256,7 @@ export default function SignInPage() {
 									</div>
 								)}
 
-								<Button 
-									type="submit" 
-									className="w-full h-11" 
-									disabled={isLoading || !email.trim()}
-								>
+								<Button type="submit" className="w-full h-11" disabled={isLoading || !email.trim()}>
 									{isLoading ? (
 										<>
 											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -276,10 +269,7 @@ export default function SignInPage() {
 
 								<div className="text-center text-sm">
 									<span className="text-gray-600">Don't have an account? </span>
-									<Link 
-										href="/sign-up" 
-										className="font-medium text-blue-600 hover:text-blue-500"
-									>
+									<Link href="/sign-up" className="font-medium text-blue-600 hover:text-blue-500">
 										Sign up
 									</Link>
 								</div>

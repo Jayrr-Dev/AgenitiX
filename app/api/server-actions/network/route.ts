@@ -8,39 +8,36 @@
  * Keywords: api-route, network-requests, server-actions, http-client, external-apis
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import type { NetworkRequest } from '@/features/business-logic-modern/infrastructure/node-core/serverActions/serverActionRegistry';
+import type { NetworkRequest } from "@/features/business-logic-modern/infrastructure/node-core/serverActions/serverActionRegistry";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
 	try {
 		const networkRequest: NetworkRequest = await request.json();
-		
+
 		// Validate request
 		if (!networkRequest.url || !networkRequest.method) {
-			return NextResponse.json(
-				{ error: 'Invalid network request' },
-				{ status: 400 }
-			);
+			return NextResponse.json({ error: "Invalid network request" }, { status: 400 });
 		}
 
 		// Validate URL
 		try {
 			new URL(networkRequest.url);
 		} catch {
-			return NextResponse.json(
-				{ error: 'Invalid URL' },
-				{ status: 400 }
-			);
+			return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
 		}
 
 		// Execute the network request
 		const result = await executeNetworkRequest(networkRequest);
-		
+
 		return NextResponse.json({ success: true, data: result });
 	} catch (error) {
-		console.error('Network server action error:', error);
+		console.error("Network server action error:", error);
 		return NextResponse.json(
-			{ error: 'Network request failed', details: error instanceof Error ? error.message : 'Unknown error' },
+			{
+				error: "Network request failed",
+				details: error instanceof Error ? error.message : "Unknown error",
+			},
 			{ status: 500 }
 		);
 	}
@@ -53,19 +50,19 @@ async function executeNetworkRequest(request: NetworkRequest) {
 	const fetchOptions: RequestInit = {
 		method,
 		headers: {
-			'Content-Type': 'application/json',
+			"Content-Type": "application/json",
 			...headers,
 		},
 	};
 
 	// Add body for POST, PUT, PATCH requests
-	if (body && ['POST', 'PUT', 'PATCH'].includes(method)) {
+	if (body && ["POST", "PUT", "PATCH"].includes(method)) {
 		fetchOptions.body = JSON.stringify(body);
 	}
 
 	// Execute the request
 	const response = await fetch(url, fetchOptions);
-	
+
 	if (!response.ok) {
 		throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 	}
@@ -84,4 +81,4 @@ async function executeNetworkRequest(request: NetworkRequest) {
 		headers: Object.fromEntries(response.headers.entries()),
 		data,
 	};
-} 
+}

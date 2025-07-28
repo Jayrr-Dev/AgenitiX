@@ -61,7 +61,7 @@ module.exports = (plop) => {
 	plop.setHelper("mapIconToLucide", (iconName) => {
 		const iconMap = {
 			FileText: "LuFileText",
-			BarChart3: "LuBarChart3", 
+			BarChart3: "LuBarChart3",
 			Link: "LuLink",
 			Settings: "LuSettings",
 			Mail: "LuMail",
@@ -77,23 +77,23 @@ module.exports = (plop) => {
 	plop.setGenerator("node", {
 		description: "Create a new node using the NodeSpec architecture",
 		prompts: [
-					{
-			type: "input",
-			name: "kind",
-			message: "What is the kind of the node? (e.g., createText, viewCsv)",
-			validate: (input) => {
-				if (input.trim().length === 0) {
-					return "Node kind cannot be empty";
-				}
-				if (!/^[a-z][a-zA-Z0-9]*$/.test(input)) {
-					return "Node kind must start with lowercase letter and contain only letters and numbers";
-				}
-				if (input.length > 50) {
-					return "Node kind is too long (max 50 characters)";
-				}
-				return true;
+			{
+				type: "input",
+				name: "kind",
+				message: "What is the kind of the node? (e.g., createText, viewCsv)",
+				validate: (input) => {
+					if (input.trim().length === 0) {
+						return "Node kind cannot be empty";
+					}
+					if (!/^[a-z][a-zA-Z0-9]*$/.test(input)) {
+						return "Node kind must start with lowercase letter and contain only letters and numbers";
+					}
+					if (input.length > 50) {
+						return "Node kind is too long (max 50 characters)";
+					}
+					return true;
+				},
 			},
-		},
 			{
 				type: "list",
 				name: "domain",
@@ -165,34 +165,34 @@ module.exports = (plop) => {
 				message: "Who is the author/creator of this node?",
 				default: "Agenitix Team",
 			},
-					{
-			type: "input",
-			name: "description",
-			message: "Describe what this node does (press Enter to use default):",
-			default: (answers) => {
-				const kind = answers.kind || "Node";
-				const domain = answers.domain || "general";
-				const domainMap = {
-					create: "creation",
-					view: "display",
-					trigger: "triggering",
-					test: "testing",
-					cycle: "cycling",
-					custom: "custom operations"
-				};
-				const domainDesc = domainMap[answers.domain] || "operations";
-				return `${kind.charAt(0).toUpperCase() + kind.slice(1)} node for ${domainDesc}`;
+			{
+				type: "input",
+				name: "description",
+				message: "Describe what this node does (press Enter to use default):",
+				default: (answers) => {
+					const kind = answers.kind || "Node";
+					const domain = answers.domain || "general";
+					const domainMap = {
+						create: "creation",
+						view: "display",
+						trigger: "triggering",
+						test: "testing",
+						cycle: "cycling",
+						custom: "custom operations",
+					};
+					const domainDesc = domainMap[answers.domain] || "operations";
+					return `${kind.charAt(0).toUpperCase() + kind.slice(1)} node for ${domainDesc}`;
+				},
+				validate: (input) => {
+					if (input.trim().length === 0) {
+						return "Description cannot be empty";
+					}
+					if (input.length > 200) {
+						return "Description is too long (max 200 characters)";
+					}
+					return true;
+				},
 			},
-			validate: (input) => {
-				if (input.trim().length === 0) {
-					return "Description cannot be empty";
-				}
-				if (input.length > 200) {
-					return "Description is too long (max 200 characters)";
-				}
-				return true;
-			},
-		},
 			{
 				type: "list",
 				name: "feature",
@@ -856,11 +856,11 @@ module.exports = (plop) => {
 							// Pattern 1: Remove node entry with trailing comma and newline
 							const pattern1 = new RegExp(`\\s*${kind},\\s*\\r?\\n`, "g");
 							content = content.replace(pattern1, "\n");
-							
+
 							// Pattern 2: Remove node entry that might be the last one (no trailing comma)
 							const pattern2 = new RegExp(`\\s*${kind}\\s*(?=\\s*}|\\s*\\))`, "g");
 							content = content.replace(pattern2, "");
-							
+
 							// Pattern 3: Remove any orphaned commas that might result
 							content = content.replace(/,(\s*[,}\)])/g, "$1");
 							content = content.replace(/(\{\s*),/g, "$1");
@@ -916,11 +916,11 @@ module.exports = (plop) => {
 							// Pattern 1: Remove registry entry with trailing comma and newline
 							const pattern1 = new RegExp(`\\s*${kind}: ${kind}Spec,\\s*\\r?\\n`, "g");
 							content = content.replace(pattern1, "\n");
-							
+
 							// Pattern 2: Remove registry entry that might be the last one (no trailing comma)
 							const pattern2 = new RegExp(`\\s*${kind}: ${kind}Spec\\s*(?=\\s*}|\\s*\\))`, "g");
 							content = content.replace(pattern2, "");
-							
+
 							// Pattern 3: Remove any orphaned commas that might result
 							content = content.replace(/,(\s*[,}\)])/g, "$1");
 							content = content.replace(/(\{\s*),/g, "$1");
@@ -1107,7 +1107,7 @@ module.exports = (plop) => {
 								const hasEntry = content.includes(`${node}: ${node}Spec`);
 								return !hasImport || !hasEntry;
 							});
-							
+
 							if (missingNodes.length > 0) {
 								issues.push(`⚠️ CRITICAL: Missing nodes after deletion: ${missingNodes.join(", ")}`);
 							}
@@ -1122,7 +1122,9 @@ module.exports = (plop) => {
 								return `⚠️  Registry validation issues: ${issues.join(", ")}`;
 							}
 
-							const remainingNodes = expectedNodes.filter((node) => content.includes(`${node}: ${node}Spec`));
+							const remainingNodes = expectedNodes.filter((node) =>
+								content.includes(`${node}: ${node}Spec`)
+							);
 							return `✅ Registry validated successfully (${remainingNodes.length} nodes remaining: ${remainingNodes.join(", ")})`;
 						} catch (error) {
 							return `❌ Error validating registry: ${error.message}`;
@@ -1196,7 +1198,8 @@ module.exports = (plop) => {
 	// ============================================================================
 
 	plop.setGenerator("category", {
-		description: "Manage node categories - add, remove, or modify categories across the entire system",
+		description:
+			"Manage node categories - add, remove, or modify categories across the entire system",
 		prompts: [
 			{
 				type: "list",
@@ -1233,27 +1236,38 @@ module.exports = (plop) => {
 				when: (answers) => answers.action === "remove",
 				choices: () => {
 					// Read current categories from the file
-					const categoriesPath = path.join(__dirname, "features/business-logic-modern/infrastructure/theming/categories.ts");
+					const categoriesPath = path.join(
+						__dirname,
+						"features/business-logic-modern/infrastructure/theming/categories.ts"
+					);
 					if (fs.existsSync(categoriesPath)) {
 						const content = fs.readFileSync(categoriesPath, "utf8");
 						const matches = content.match(/^\s*([A-Z_]+):\s*"[A-Z_]+",/gm);
 						if (matches) {
-							const categories = matches.map(match => {
-								const name = match.match(/^\s*([A-Z_]+):/)?.[1];
-								return name;
-							}).filter(Boolean);
-							
+							const categories = matches
+								.map((match) => {
+									const name = match.match(/^\s*([A-Z_]+):/)?.[1];
+									return name;
+								})
+								.filter(Boolean);
+
 							// Filter out core categories that shouldn't be removed
 							const coreCategories = ["CREATE", "VIEW", "TRIGGER", "TEST", "CYCLE", "STORE"];
-							const removableCategories = categories.filter(cat => !coreCategories.includes(cat));
-							
+							const removableCategories = categories.filter((cat) => !coreCategories.includes(cat));
+
 							if (removableCategories.length === 0) {
-								return [{ name: "❌ No removable categories (only core categories exist)", value: null, disabled: true }];
+								return [
+									{
+										name: "❌ No removable categories (only core categories exist)",
+										value: null,
+										disabled: true,
+									},
+								];
 							}
-							
-							return removableCategories.map(category => ({
+
+							return removableCategories.map((category) => ({
 								name: `🗑️  ${category} - ${category.charAt(0) + category.slice(1).toLowerCase()} category`,
-								value: category.toLowerCase()
+								value: category.toLowerCase(),
 							}));
 						}
 					}
@@ -1312,16 +1326,21 @@ module.exports = (plop) => {
 		actions: (data) => {
 			if (data.action === "list") {
 				// Read categories from the file and display them
-				const categoriesPath = path.join(__dirname, "features/business-logic-modern/infrastructure/theming/categories.ts");
+				const categoriesPath = path.join(
+					__dirname,
+					"features/business-logic-modern/infrastructure/theming/categories.ts"
+				);
 				if (fs.existsSync(categoriesPath)) {
 					const content = fs.readFileSync(categoriesPath, "utf8");
 					const matches = content.match(/^\s*([A-Z_]+):\s*"[A-Z_]+",/gm);
 					if (matches) {
-						const categories = matches.map(match => {
-							const name = match.match(/^\s*([A-Z_]+):/)?.[1];
-							return name;
-						}).filter(Boolean);
-						
+						const categories = matches
+							.map((match) => {
+								const name = match.match(/^\s*([A-Z_]+):/)?.[1];
+								return name;
+							})
+							.filter(Boolean);
+
 						console.log("\n📋 Current Categories:");
 						console.log("==================");
 						categories.forEach((category, index) => {
@@ -1347,7 +1366,8 @@ module.exports = (plop) => {
 					{
 						type: "modify",
 						path: "features/business-logic-modern/infrastructure/flow-engine/types/nodeData.ts",
-						pattern: /export type DomainCategory = "create" \| "view" \| "trigger" \| "test" \| "cycle" \| "store";/,
+						pattern:
+							/export type DomainCategory = "create" \| "view" \| "trigger" \| "test" \| "cycle" \| "store";/,
 						template: `export type DomainCategory = "create" | "view" | "trigger" | "test" | "cycle" | "store" | "${data.domainName}";`,
 					},
 
@@ -1469,7 +1489,8 @@ module.exports = (plop) => {
 					{
 						type: "modify",
 						path: "scripts/generate-nodes-overview.ts",
-						pattern: /const coreDomains = \["create", "view", "trigger", "test", "cycle", "store"\];/,
+						pattern:
+							/const coreDomains = \["create", "view", "trigger", "test", "cycle", "store"\];/,
 						template: `const coreDomains = ["create", "view", "trigger", "test", "cycle", "store", "${data.domainName}"];`,
 					},
 
@@ -1477,7 +1498,8 @@ module.exports = (plop) => {
 					{
 						type: "modify",
 						path: "scripts/generate-nodes-overview.ts",
-						pattern: /(\t\tstore: "For nodes that store data",)\n(\t\tcustom: "Custom nodes with specialized functionality",)/,
+						pattern:
+							/(\t\tstore: "For nodes that store data",)\n(\t\tcustom: "Custom nodes with specialized functionality",)/,
 						template: `$1\n\t\t${data.domainName}: "${data.description}",\n$2`,
 					},
 
@@ -1485,7 +1507,8 @@ module.exports = (plop) => {
 					{
 						type: "modify",
 						path: "scripts/generate-nodes-overview.ts",
-						pattern: /(\t\tstore: "For nodes that store data",)\n(\t\tcustom: "Custom and specialized nodes",)/,
+						pattern:
+							/(\t\tstore: "For nodes that store data",)\n(\t\tcustom: "Custom and specialized nodes",)/,
 						template: `$1\n\t\t${data.domainName}: "${data.description}",\n$2`,
 					},
 
@@ -1525,7 +1548,8 @@ module.exports = (plop) => {
 					{
 						type: "modify",
 						path: "tsconfig.json",
-						pattern: /"@domain-cycle\/\*": \[".\/features\/business-logic-modern\/node-domain\/cycle\/\*"\],/,
+						pattern:
+							/"@domain-cycle\/\*": \[".\/features\/business-logic-modern\/node-domain\/cycle\/\*"\],/,
 						template: `"@domain-cycle/*": ["./features/business-logic-modern/node-domain/cycle/*"],\n\t\t\t"@domain-${data.domainName}/*": ["./features/business-logic-modern/node-domain/${data.domainName}/*"],`,
 					},
 
@@ -1555,7 +1579,8 @@ module.exports = (plop) => {
 					{
 						type: "modify",
 						path: "scripts/validate-adapter-logic.js",
-						pattern: /console\.log\("   • Consistent UX across CREATE, VIEW, TRIGGER, TEST, CYCLE categories"\);/,
+						pattern:
+							/console\.log\(" {3}• Consistent UX across CREATE, VIEW, TRIGGER, TEST, CYCLE categories"\);/,
 						template: `console.log("   • Consistent UX across CREATE, VIEW, TRIGGER, TEST, CYCLE, ${data.categoryName} categories");`,
 					},
 
@@ -1568,21 +1593,21 @@ module.exports = (plop) => {
 					},
 
 					// 25. Generate tokens for the new category
-					function() {
+					() => {
 						console.log(`\n🎨 Generating design tokens for ${data.categoryName} category...`);
 						console.log(`💡 Run manually: pnpm generate:tokens`);
 						return "";
 					},
 
 					// 26. Regenerate documentation
-					function() {
+					() => {
 						console.log(`📚 Regenerating documentation for ${data.categoryName} category...`);
 						console.log(`💡 Run manually: pnpm generate:node-docs`);
 						return "";
 					},
 
 					// 27. Success message
-					function() {
+					() => {
 						console.log(`\n✅ Category '${data.categoryName}' successfully added to all files!`);
 						console.log(`📁 Files Updated: 26+`);
 						console.log(`🎯 Status: Complete\n`);
@@ -1606,13 +1631,13 @@ module.exports = (plop) => {
 					console.log("\n❌ No valid category selected for removal. Aborting...\n");
 					return [];
 				}
-				
+
 				// Automated category removal
 				const categoryName = data.categoryName.toUpperCase();
 				const domainName = data.categoryName.toLowerCase();
-				
+
 				console.log(`\n🗑️  Removing category '${categoryName}' from all files...`);
-				
+
 				return [
 					// 1. Remove from categories.ts
 					{
@@ -1625,91 +1650,117 @@ module.exports = (plop) => {
 					{
 						type: "modify",
 						path: "features/business-logic-modern/infrastructure/flow-engine/types/nodeData.ts",
-						pattern: new RegExp(`export type DomainCategory = "create" \\| "view" \\| "trigger" \\| "test" \\| "cycle" \\| "store" \\| "${domainName}";`),
+						pattern: new RegExp(
+							`export type DomainCategory = "create" \\| "view" \\| "trigger" \\| "test" \\| "cycle" \\| "store" \\| "${domainName}";`
+						),
 						template: `export type DomainCategory = "create" | "view" | "trigger" | "test" | "cycle" | "store";`,
 					},
 					// 3. Remove from sidebar types.ts - TAB_CONFIG_B
 					{
 						type: "modify",
 						path: "features/business-logic-modern/infrastructure/sidebar/types.ts",
-						pattern: new RegExp(`\t{ key: "${categoryName}", label: "${categoryName.charAt(0) + categoryName.slice(1).toLowerCase()}" },\n`),
+						pattern: new RegExp(
+							`\t{ key: "${categoryName}", label: "${categoryName.charAt(0) + categoryName.slice(1).toLowerCase()}" },\n`
+						),
 						template: "",
 					},
 					// 4. Remove from sidebar constants.ts - VARIANT_CONFIG
 					{
 						type: "modify",
 						path: "features/business-logic-modern/infrastructure/sidebar/constants.ts",
-						pattern: new RegExp(`\t\t\t\t${categoryName}: createStencilsByCategory\\("${categoryName}", "variant-b"\\),\n`),
+						pattern: new RegExp(
+							`\t\t\t\t${categoryName}: createStencilsByCategory\\("${categoryName}", "variant-b"\\),\n`
+						),
 						template: "",
 					},
 					// 5. Remove from nodeStyleStore.ts - CATEGORY_THEMES (safer pattern)
 					{
 						type: "modify",
 						path: "features/business-logic-modern/infrastructure/theming/stores/nodeStyleStore.ts",
-						pattern: new RegExp(`\t${domainName}: \\{\\n\t\tbackground: \\{ light: "bg-node-${domainName}", dark: "bg-node-${domainName}" \\},\\n\t\tborder: \\{ light: "border-node-${domainName}", dark: "border-node-${domainName}" \\},\\n\t\ttext: \\{\\n\t\t\tprimary: \\{ light: "text-node-${domainName}", dark: "text-node-${domainName}" \\},\\n\t\t\tsecondary: \\{\\n\t\t\t\tlight: "text-node-${domainName}-secondary",\\n\t\t\t\tdark: "text-node-${domainName}-secondary",\\n\t\t\t\\},\\n\t\t\\},\\n\t\tbutton: \\{\\n\t\t\tborder: "border-node-${domainName}",\\n\t\t\thover: \\{\\n\t\t\t\tlight: "hover:bg-node-${domainName}-hover",\\n\t\t\t\tdark: "hover:bg-node-${domainName}-hover",\\n\t\t\t\\},\\n\t\t\\},\\n\t\\},`),
+						pattern: new RegExp(
+							`\t${domainName}: \\{\\n\t\tbackground: \\{ light: "bg-node-${domainName}", dark: "bg-node-${domainName}" \\},\\n\t\tborder: \\{ light: "border-node-${domainName}", dark: "border-node-${domainName}" \\},\\n\t\ttext: \\{\\n\t\t\tprimary: \\{ light: "text-node-${domainName}", dark: "text-node-${domainName}" \\},\\n\t\t\tsecondary: \\{\\n\t\t\t\tlight: "text-node-${domainName}-secondary",\\n\t\t\t\tdark: "text-node-${domainName}-secondary",\\n\t\t\t\\},\\n\t\t\\},\\n\t\tbutton: \\{\\n\t\t\tborder: "border-node-${domainName}",\\n\t\t\thover: \\{\\n\t\t\t\tlight: "hover:bg-node-${domainName}-hover",\\n\t\t\t\tdark: "hover:bg-node-${domainName}-hover",\\n\t\t\t\\},\\n\t\t\\},\\n\t\\},`
+						),
 						template: "",
 					},
 					// 6. Remove from BaseControl.tsx - getSemanticClasses (safer pattern)
 					{
 						type: "modify",
 						path: "features/business-logic-modern/infrastructure/node-inspector/controls/BaseControl.tsx",
-						pattern: new RegExp(`\t\tcase "${domainName}":\\n\t\tcase "${domainName}node":\\n\t\t\treturn \\{\\n\t\t\t\tprimary: "bg-node-${domainName} text-node-${domainName}-text",\\n\t\t\t\tprimaryHover: "hover:bg-node-${domainName}-hover",\\n\t\t\t\tborder: "border-node-${domainName}",\\n\t\t\t\tborderHover: "hover:border-node-${domainName}-hover",\\n\t\t\t\ttext: "text-node-${domainName}-text",\\n\t\t\t\ttextSecondary: "text-node-${domainName}-text-secondary",\\n\t\t\t\\};`),
+						pattern: new RegExp(
+							`\t\tcase "${domainName}":\\n\t\tcase "${domainName}node":\\n\t\t\treturn \\{\\n\t\t\t\tprimary: "bg-node-${domainName} text-node-${domainName}-text",\\n\t\t\t\tprimaryHover: "hover:bg-node-${domainName}-hover",\\n\t\t\t\tborder: "border-node-${domainName}",\\n\t\t\t\tborderHover: "hover:border-node-${domainName}-hover",\\n\t\t\t\ttext: "text-node-${domainName}-text",\\n\t\t\t\ttextSecondary: "text-node-${domainName}-text-secondary",\\n\t\t\t\\};`
+						),
 						template: "",
 					},
 					// 7. Remove from NodeOutput.tsx - getCategorySpecificStyles (safer pattern)
 					{
 						type: "modify",
 						path: "features/business-logic-modern/infrastructure/node-inspector/components/NodeOutput.tsx",
-						pattern: new RegExp(`\t\t\tcase "${domainName}":\\n\t\t\t\treturn \\{\\n\t\t\t\t\tcolor: theme\\.text\\.primary,\\n\t\t\t\t\ticon: metadata\\.icon \\|\\| "${categoryName}",\\n\t\t\t\t\\};`),
+						pattern: new RegExp(
+							`\t\t\tcase "${domainName}":\\n\t\t\t\treturn \\{\\n\t\t\t\t\tcolor: theme\\.text\\.primary,\\n\t\t\t\t\ticon: metadata\\.icon \\|\\| "${categoryName}",\\n\t\t\t\t\\};`
+						),
 						template: "",
 					},
 					// 8. Remove from ThemedMiniMap.tsx - category resolution
 					{
 						type: "modify",
 						path: "features/business-logic-modern/infrastructure/theming/components/ThemedMiniMap.tsx",
-						pattern: new RegExp(`\t\t\t\t\t} else if \\(nodeCategory\\.startsWith\\("${domainName}"\\)\\) \\{\n\t\t\t\t\t\tresolvedCategory = "${categoryName}";\n\t\t\t\t\t}`),
+						pattern: new RegExp(
+							`\t\t\t\t\t} else if \\(nodeCategory\\.startsWith\\("${domainName}"\\)\\) \\{\n\t\t\t\t\t\tresolvedCategory = "${categoryName}";\n\t\t\t\t\t}`
+						),
 						template: "",
 					},
 					// 9. Remove from ThemedMiniMap.tsx - color mapping
 					{
 						type: "modify",
 						path: "features/business-logic-modern/infrastructure/theming/components/ThemedMiniMap.tsx",
-						pattern: new RegExp(`\t\t\t\tcase "${categoryName}": return "var\\(--node-${domainName}-bg\\)";`),
+						pattern: new RegExp(
+							`\t\t\t\tcase "${categoryName}": return "var\\(--node-${domainName}-bg\\)";`
+						),
 						template: "",
 					},
 					// 10. Remove from ThemedMiniMap.tsx - hover color mapping
 					{
 						type: "modify",
 						path: "features/business-logic-modern/infrastructure/theming/components/ThemedMiniMap.tsx",
-						pattern: new RegExp(`\t\t\t\tcase "${categoryName}": return "var\\(--node-${domainName}-bg-hover\\)";`),
+						pattern: new RegExp(
+							`\t\t\t\tcase "${categoryName}": return "var\\(--node-${domainName}-bg-hover\\)";`
+						),
 						template: "",
 					},
 					// 11. Remove from connectionUtils.ts - CATEGORY_EDGE_COLORS
 					{
 						type: "modify",
 						path: ".deperciated/connectionUtils.ts",
-						pattern: new RegExp(`\t${domainName}: "#[0-9a-fA-F]{6}", // ${categoryName} - matches ${domainName} category\n`),
+						pattern: new RegExp(
+							`\t${domainName}: "#[0-9a-fA-F]{6}", // ${categoryName} - matches ${domainName} category\n`
+						),
 						template: "",
 					},
 					// 12. Remove from generate-nodes-overview.ts - core domains array
 					{
 						type: "modify",
 						path: "scripts/generate-nodes-overview.ts",
-						pattern: new RegExp(`const coreDomains = \\["create", "view", "trigger", "test", "cycle", "store", "${domainName}"\\];`),
+						pattern: new RegExp(
+							`const coreDomains = \\["create", "view", "trigger", "test", "cycle", "store", "${domainName}"\\];`
+						),
 						template: `const coreDomains = ["create", "view", "trigger", "test", "cycle", "store"];`,
 					},
 					// 13. Remove from generate-nodes-overview.ts - domain descriptions (getDomainDescription)
 					{
 						type: "modify",
 						path: "scripts/generate-nodes-overview.ts",
-						pattern: new RegExp(`\t\t${domainName}: "Nodes that handle ${domainName} operations",\n`),
+						pattern: new RegExp(
+							`\t\t${domainName}: "Nodes that handle ${domainName} operations",\n`
+						),
 						template: "",
 					},
 					// 14. Remove from generate-nodes-overview.ts - category descriptions (getCategoryDescription)
 					{
 						type: "modify",
 						path: "scripts/generate-nodes-overview.ts",
-						pattern: new RegExp(`\t\t${domainName}: "Nodes that handle ${domainName} operations",\n`),
+						pattern: new RegExp(
+							`\t\t${domainName}: "Nodes that handle ${domainName} operations",\n`
+						),
 						template: "",
 					},
 					// 15. Remove from gen-docs-tokens.ts - categories object
@@ -1723,43 +1774,54 @@ module.exports = (plop) => {
 					{
 						type: "modify",
 						path: "scripts/gen-docs-tokens.ts",
-						pattern: new RegExp(`\t\t\telse if \\(key\\.startsWith\\("node\\.${domainName}\\."\\)\\) category = "node-${domainName}";\n`),
+						pattern: new RegExp(
+							`\t\t\telse if \\(key\\.startsWith\\("node\\.${domainName}\\."\\)\\) category = "node-${domainName}";\n`
+						),
 						template: "",
 					},
 					// 16. Remove from plopfile.js - domain choices
 					{
 						type: "modify",
 						path: "plopfile.js",
-						pattern: new RegExp(`choices: \\["create", "view", "trigger", "test", "cycle", "${domainName}", "custom"\\],`),
+						pattern: new RegExp(
+							`choices: \\["create", "view", "trigger", "test", "cycle", "${domainName}", "custom"\\],`
+						),
 						template: `choices: ["create", "view", "trigger", "test", "cycle", "email", "custom"],`,
 					},
 					// 17. Remove from plopfile.js - category choices
 					{
 						type: "modify",
 						path: "plopfile.js",
-						pattern: new RegExp(`choices: \\["CREATE", "VIEW", "TRIGGER", "TEST", "CYCLE", "${categoryName}"\\],`),
+						pattern: new RegExp(
+							`choices: \\["CREATE", "VIEW", "TRIGGER", "TEST", "CYCLE", "${categoryName}"\\],`
+						),
 						template: `choices: ["CREATE", "VIEW", "TRIGGER", "TEST", "CYCLE", "EMAIL"],`,
 					},
 					// 18. Remove from tsconfig.json - path mapping
 					{
 						type: "modify",
 						path: "tsconfig.json",
-						pattern: new RegExp(`\t\t\t"@domain-${domainName}/\\*": \\["\\./features/business-logic-modern/node-domain/${domainName}/\\*"\\],\n`),
+						pattern: new RegExp(
+							`\t\t\t"@domain-${domainName}/\\*": \\["\\./features/business-logic-modern/node-domain/${domainName}/\\*"\\],\n`
+						),
 						template: "",
 					},
 					// 19. Log completion message
-					function() {
+					() => {
 						console.log(`\n✅ Category '${categoryName}' successfully removed from all files!`);
 						console.log(`📁 Files Updated: 18+`);
 						console.log(`🎯 Status: Complete\n`);
 						console.log(`📂 Manual cleanup required:`);
-						console.log(`• Remove-Item -Recurse -Force "features/business-logic-modern/node-domain/${domainName}" -ErrorAction SilentlyContinue`);
-						console.log(`• Remove-Item -Recurse -Force "documentation/nodes/${domainName}" -ErrorAction SilentlyContinue`);
+						console.log(
+							`• Remove-Item -Recurse -Force "features/business-logic-modern/node-domain/${domainName}" -ErrorAction SilentlyContinue`
+						);
+						console.log(
+							`• Remove-Item -Recurse -Force "documentation/nodes/${domainName}" -ErrorAction SilentlyContinue`
+						);
 						console.log(`• Run: pnpm version:analyze (to update version)\n`);
 						console.log(`Your system is now clean and ready to use! 🎉\n`);
 						return "";
 					},
-
 				];
 			}
 

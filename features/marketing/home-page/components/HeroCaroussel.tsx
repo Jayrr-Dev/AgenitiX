@@ -271,8 +271,9 @@ export function HeroCarousel() {
 					{slides.map((_, index) => (
 						<button
 							key={`dot-${index}`}
-							className={`w-3 h-3 rounded-full transition-all ${activeIndex === index ? "bg-primary scale-100" : "bg-primary/30 scale-90"
-								}`}
+							className={`w-3 h-3 rounded-full transition-all ${
+								activeIndex === index ? "bg-primary scale-100" : "bg-primary/30 scale-90"
+							}`}
 							onClick={() => emblaApi?.scrollTo(index)}
 						/>
 					))}

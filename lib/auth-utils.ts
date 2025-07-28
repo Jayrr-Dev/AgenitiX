@@ -16,36 +16,40 @@ export function formatAuthError(error: unknown): string {
 	// Check for specific error codes
 	const errorCode = (error as any).code as AuthErrorCode;
 	const retryAfter = (error as any).retryAfter as number | undefined;
-	
+
 	switch (errorCode) {
 		case "USER_NOT_FOUND":
 			return "Account not found. Please check your email or create a new account.";
-		
+
 		case "USER_ALREADY_EXISTS":
 			return "An account with this email already exists. Please sign in instead.";
-		
+
 		case "RATE_LIMIT_EXCEEDED":
 			if (retryAfter) {
 				const timeText = retryAfter === 1 ? "1 minute" : `${retryAfter} minutes`;
 				return `Too many login attempts. Please wait ${timeText} before trying again.`;
 			}
 			return "Too many login attempts. Please wait before trying again.";
-		
+
 		case "INVALID_MAGIC_LINK":
 			return "Invalid magic link. Please request a new one.";
-		
+
 		case "EXPIRED_MAGIC_LINK":
 			return "Magic link has expired. Please request a new one to continue.";
-		
+
 		case "EMAIL_SEND_FAILED":
 			return "Failed to send email. Please try again or contact support.";
-		
+
 		default:
 			// If the error message is already user-friendly (from Convex), use it
-			if (error.message.length < 150 && !error.message.includes("handler") && !error.message.includes("convex")) {
+			if (
+				error.message.length < 150 &&
+				!error.message.includes("handler") &&
+				!error.message.includes("convex")
+			) {
 				return error.message;
 			}
-			
+
 			// Fallback for unknown errors
 			return "Something went wrong. Please try again.";
 	}
@@ -58,8 +62,8 @@ export function getAuthErrorType(error: unknown): AuthErrorCode | null {
 	if (!(error instanceof Error)) {
 		return null;
 	}
-	
-	return (error as any).code as AuthErrorCode || null;
+
+	return ((error as any).code as AuthErrorCode) || null;
 }
 
 /**
@@ -69,17 +73,17 @@ export function getRetryInfo(error: unknown): { canRetry: boolean; retryAfter?: 
 	if (!(error instanceof Error)) {
 		return { canRetry: true };
 	}
-	
+
 	const errorCode = (error as any).code as AuthErrorCode;
 	const retryAfter = (error as any).retryAfter as number | undefined;
-	
+
 	if (errorCode === "RATE_LIMIT_EXCEEDED") {
-		return { 
-			canRetry: false, 
-			retryAfter 
+		return {
+			canRetry: false,
+			retryAfter,
 		};
 	}
-	
+
 	return { canRetry: true };
 }
 

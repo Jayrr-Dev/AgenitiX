@@ -12,7 +12,7 @@ export const DevAuthHelper = ({ onAuthenticate }: DevAuthHelperProps) => {
 	const [isLoading, setIsLoading] = useState(false);
 
 	// Only show in development
-	if (process.env.NODE_ENV === 'production') {
+	if (process.env.NODE_ENV === "production") {
 		return null;
 	}
 
@@ -20,13 +20,13 @@ export const DevAuthHelper = ({ onAuthenticate }: DevAuthHelperProps) => {
 		setIsLoading(true);
 		// Use the session token from the setup script
 		const devToken = "dev_session_jd7bvyrc83wrykgb68y42vz5817md7je_1753479786106";
-		
+
 		// Store in localStorage
 		localStorage.setItem("agenitix_auth_token", devToken);
-		
+
 		// Trigger authentication
 		onAuthenticate(devToken);
-		
+
 		setIsLoading(false);
 	};
 
@@ -36,10 +36,8 @@ export const DevAuthHelper = ({ onAuthenticate }: DevAuthHelperProps) => {
 				<CardTitle className="text-yellow-800">Development Mode</CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-4">
-				<p className="text-sm text-yellow-700">
-					Quick authentication for development testing
-				</p>
-				<Button 
+				<p className="text-sm text-yellow-700">Quick authentication for development testing</p>
+				<Button
 					onClick={handleDevAuth}
 					disabled={isLoading}
 					variant="outline"
@@ -47,9 +45,7 @@ export const DevAuthHelper = ({ onAuthenticate }: DevAuthHelperProps) => {
 				>
 					{isLoading ? "Authenticating..." : "Sign in as Test User"}
 				</Button>
-				<p className="text-xs text-yellow-600">
-					Email: test@example.com
-				</p>
+				<p className="text-xs text-yellow-600">Email: test@example.com</p>
 			</CardContent>
 		</Card>
 	);

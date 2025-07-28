@@ -12,34 +12,34 @@
 import { useEffect, useRef, useState } from "react";
 
 interface UseInViewOptions {
-  threshold?: number;
-  rootMargin?: string;
+	threshold?: number;
+	rootMargin?: string;
 }
 
 export function useInView(options: UseInViewOptions = {}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
+	const ref = useRef<HTMLDivElement>(null);
+	const [inView, setInView] = useState(false);
 
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
+	useEffect(() => {
+		const element = ref.current;
+		if (!element) return;
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setInView(entry.isIntersecting);
-      },
-      {
-        threshold: options.threshold || 0,
-        rootMargin: options.rootMargin || "0px",
-      }
-    );
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				setInView(entry.isIntersecting);
+			},
+			{
+				threshold: options.threshold || 0,
+				rootMargin: options.rootMargin || "0px",
+			}
+		);
 
-    observer.observe(element);
+		observer.observe(element);
 
-    return () => {
-      observer.unobserve(element);
-    };
-  }, [options.threshold, options.rootMargin]);
+		return () => {
+			observer.unobserve(element);
+		};
+	}, [options.threshold, options.rootMargin]);
 
-  return { ref, inView };
+	return { ref, inView };
 }

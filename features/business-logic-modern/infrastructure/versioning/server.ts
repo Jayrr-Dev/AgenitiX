@@ -17,4 +17,4 @@ export { versionDetector } from "./version-detector";
 export { dashboard } from "./status-dashboard";
 
 // Auto-migrator for data migrations
-export { autoMigrator } from "./auto-migrate"; 
+export { autoMigrator } from "./auto-migrate";

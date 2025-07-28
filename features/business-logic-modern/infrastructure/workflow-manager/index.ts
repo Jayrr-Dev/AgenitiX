@@ -8,4 +8,4 @@
  * Keywords: workflow-management, module-exports, component-organization
  */
 
-export { default as WorkflowManager } from "./WorkflowManager"; 
+export { default as WorkflowManager } from "./WorkflowManager";

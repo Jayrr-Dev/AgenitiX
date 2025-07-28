@@ -6,11 +6,15 @@
  */
 
 import createText, { spec as createTextSpec } from "../../node-domain/create/createText.node";
-import storeInMemory, { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
+import storeInMemory, {
+	spec as storeInMemorySpec,
+} from "../../node-domain/create/storeInMemory.node";
 import emailAccount, { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
 import emailReader, { spec as emailReaderSpec } from "../../node-domain/email/emailReader.node";
 import testNode, { spec as testNodeSpec } from "../../node-domain/test/testNode.node";
-import triggerToggle, { spec as triggerToggleSpec } from "../../node-domain/trigger/triggerToggle.node";
+import triggerToggle, {
+	spec as triggerToggleSpec,
+} from "../../node-domain/trigger/triggerToggle.node";
 import viewText, { spec as viewTextSpec } from "../../node-domain/view/viewText.node";
 import type { NodeSpec } from "../node-core/NodeSpec";
 
@@ -93,18 +97,14 @@ const defaultNodeMetadata = {
 	ui: {
 		defaultCollapsed: false,
 		folder: "general",
-		order: 1
-	}
+		order: 1,
+	},
 };
 
 // Node-specific metadata overrides
 const nodeMetadataOverrides: Record<string, Partial<NodeSpecMetadata>> = {
 	// Add more node-specific overrides here
 };
-
-
-
-
 
 /**
  * Get all available NodeSpec metadata (legacy function - includes all nodes)
@@ -219,12 +219,12 @@ export function getNodeMetadata(nodeType: string): NodeSpecMetadata | null {
 		size: {
 			expanded: {
 				width: spec.size.expanded.width,
-				height: spec.size.expanded.height
+				height: spec.size.expanded.height,
 			},
 			collapsed: {
 				width: spec.size.collapsed.width,
-				height: spec.size.collapsed.height
-			}
+				height: spec.size.collapsed.height,
+			},
 		},
 		handles: spec.handles,
 		initialData: spec.initialData,
@@ -232,12 +232,12 @@ export function getNodeMetadata(nodeType: string): NodeSpecMetadata | null {
 		inspector: spec.inspector,
 		ui: {
 			...defaults.ui,
-			...overrides.ui
+			...overrides.ui,
 		},
 		sidebar: {
 			folder: spec.kind,
-			order: 1
-		}
+			order: 1,
+		},
 	};
 }
 
@@ -247,7 +247,7 @@ export function validateNode(nodeType: string) {
 	return {
 		isValid: !!meta,
 		warnings: meta ? [] : [`Node type '${nodeType}' not found`],
-		suggestions: meta ? [] : ["Generate the node via Plop and ensure it is registered."]
+		suggestions: meta ? [] : ["Generate the node via Plop and ensure it is registered."],
 	};
 }
 

@@ -78,7 +78,7 @@ const categorizeTokens = (flatTokens: Record<string, string>) => {
 		"node-flow": { tokens: {}, count: 0 },
 		"node-time": { tokens: {}, count: 0 },
 		"node-ai": { tokens: {}, count: 0 },
-	
+
 		"node-store": { tokens: {}, count: 0 },
 		"infra-inspector": { tokens: {}, count: 0 },
 		"infra-sidebar": { tokens: {}, count: 0 },
@@ -128,7 +128,6 @@ const categorizeTokens = (flatTokens: Record<string, string>) => {
 		else if (key.startsWith("node.email.")) category = "node-email";
 		else if (key.startsWith("node.ai.")) category = "node-ai";
 		else if (key.startsWith("node.email.")) category = "node-email";
-
 		else if (key.startsWith("node.store.")) category = "node-store";
 		else if (key.startsWith("infra.inspector.")) category = "infra-inspector";
 		else if (key.startsWith("infra.sidebar.")) category = "infra-sidebar";

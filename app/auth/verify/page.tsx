@@ -1,22 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthContext } from "@/components/auth/AuthProvider";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle, XCircle, Mail } from "lucide-react";
-import { toast } from "sonner";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckCircle, Loader2, Mail, XCircle } from "lucide-react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function VerifyMagicLinkPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const token = searchParams.get("token");
-	
+
 	const [status, setStatus] = useState<"loading" | "success" | "error" | "expired">("loading");
 	const [error, setError] = useState<string | null>(null);
-	
+
 	const { verifyMagicLink, isAuthenticated } = useAuthContext();
 
 	// Redirect if already authenticated
@@ -29,7 +29,9 @@ export default function VerifyMagicLinkPage() {
 	useEffect(() => {
 		if (!token) {
 			setStatus("error");
-			setError("No verification token provided in the URL. Please check the magic link and try again.");
+			setError(
+				"No verification token provided in the URL. Please check the magic link and try again."
+			);
 			return;
 		}
 
@@ -54,25 +56,24 @@ export default function VerifyMagicLinkPage() {
 				);
 
 				setStatus("success");
-				
+
 				// Show success toast
 				toast.success("Account verified!", {
 					description: "Welcome to AgenitiX! Redirecting to your dashboard...",
 					duration: 3000,
 				});
-				
+
 				// Wait a moment for the auth state to update, then redirect
 				setTimeout(() => {
 					router.push("/dashboard");
 				}, 1500);
-
 			} catch (err) {
 				console.error("Magic link verification failed:", err);
-				
+
 				if (err instanceof Error) {
 					// Check for specific error codes
 					const errorCode = (err as any).code;
-					
+
 					switch (errorCode) {
 						case "EXPIRED_MAGIC_LINK":
 							setStatus("expired");
@@ -84,7 +85,9 @@ export default function VerifyMagicLinkPage() {
 							break;
 						case "INVALID_MAGIC_LINK":
 							setStatus("error");
-							setError("This magic link is invalid or has already been used. Please request a new one.");
+							setError(
+								"This magic link is invalid or has already been used. Please request a new one."
+							);
 							toast.error("Invalid magic link", {
 								description: "This link may have been used already or is malformed.",
 								duration: 5000,
@@ -117,29 +120,34 @@ export default function VerifyMagicLinkPage() {
 					description: "Please wait while we verify your magic link.",
 					showRetry: false,
 				};
-			
+
 			case "success":
 				return {
 					icon: <CheckCircle className="h-12 w-12 text-green-600" />,
 					title: "Welcome to AgenitiX!",
-					description: "Your account has been verified successfully. Taking you to your dashboard...",
+					description:
+						"Your account has been verified successfully. Taking you to your dashboard...",
 					showRetry: false,
 				};
-			
+
 			case "expired":
 				return {
 					icon: <XCircle className="h-12 w-12 text-orange-600" />,
 					title: "Magic Link Expired",
-					description: error || "This magic link has expired for security reasons. Please request a new one to continue.",
+					description:
+						error ||
+						"This magic link has expired for security reasons. Please request a new one to continue.",
 					showRetry: true,
 				};
-			
+
 			case "error":
 			default:
 				return {
 					icon: <XCircle className="h-12 w-12 text-red-600" />,
 					title: "Verification Failed",
-					description: error || "We couldn't verify this magic link. It may be invalid, expired, or already used.",
+					description:
+						error ||
+						"We couldn't verify this magic link. It may be invalid, expired, or already used.",
 					showRetry: true,
 				};
 		}
@@ -152,28 +160,18 @@ export default function VerifyMagicLinkPage() {
 			<div className="max-w-md w-full space-y-8">
 				{/* Logo */}
 				<div className="text-center">
-					<h1 className="text-3xl font-bold text-gray-900 mb-2">
-						AgenitiX
-					</h1>
-					<p className="text-gray-600">
-						Visual Flow Automation Platform
-					</p>
+					<h1 className="text-3xl font-bold text-gray-900 mb-2">AgenitiX</h1>
+					<p className="text-gray-600">Visual Flow Automation Platform</p>
 				</div>
 
 				{/* Status Card */}
 				<Card className="border-0 shadow-lg">
 					<CardHeader className="text-center pb-4">
-						<div className="flex justify-center mb-4">
-							{content.icon}
-						</div>
-						<CardTitle className="text-xl font-bold">
-							{content.title}
-						</CardTitle>
-						<CardDescription className="text-center">
-							{content.description}
-						</CardDescription>
+						<div className="flex justify-center mb-4">{content.icon}</div>
+						<CardTitle className="text-xl font-bold">{content.title}</CardTitle>
+						<CardDescription className="text-center">{content.description}</CardDescription>
 					</CardHeader>
-					
+
 					{content.showRetry && (
 						<CardContent className="pt-0">
 							<div className="space-y-4">
@@ -183,18 +181,12 @@ export default function VerifyMagicLinkPage() {
 										{status === "expired" ? "Get New Magic Link" : "Try Again"}
 									</Button>
 								</Link>
-								
+
 								<div className="text-center space-y-2">
-									<Link 
-										href="/sign-up" 
-										className="text-sm text-gray-600 hover:text-gray-800 block"
-									>
+									<Link href="/sign-up" className="text-sm text-gray-600 hover:text-gray-800 block">
 										Don't have an account? Sign up
 									</Link>
-									<Link 
-										href="/" 
-										className="text-sm text-blue-600 hover:text-blue-500 block"
-									>
+									<Link href="/" className="text-sm text-blue-600 hover:text-blue-500 block">
 										← Back to Home
 									</Link>
 								</div>

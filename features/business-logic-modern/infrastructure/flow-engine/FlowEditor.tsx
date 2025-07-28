@@ -8,7 +8,7 @@ import type {
 import { generateNodeId } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import React, { useCallback, useEffect, useRef } from "react";
-import { FlowProvider, type FlowMetadata } from "./contexts/FlowContext";
+import { type FlowMetadata, FlowProvider } from "./contexts/FlowContext";
 
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/action-toolbar/ActionToolbar";
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
@@ -17,8 +17,8 @@ import UndoRedoManager from "../action-toolbar/history/UndoRedoManager";
 import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
-import { useMultiSelectionCopyPaste } from "./hooks/useMultiSelectionCopyPaste";
 import { useLoadCanvas } from "./hooks/useLoadCanvas";
+import { useMultiSelectionCopyPaste } from "./hooks/useMultiSelectionCopyPaste";
 
 // Import the new NodeSpec registry
 import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
@@ -429,8 +429,8 @@ const FlowEditorInternal = () => {
 					<div className="text-destructive text-4xl mb-4">⚠️</div>
 					<h2 className="text-xl font-bold text-foreground mb-2">Failed to Load Canvas</h2>
 					<p className="text-muted-foreground mb-4">{canvasLoader.error}</p>
-					<button 
-						onClick={() => window.location.reload()} 
+					<button
+						onClick={() => window.location.reload()}
 						className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
 					>
 						Retry
@@ -479,8 +479,8 @@ const FlowEditorInternal = () => {
 				showHistoryPanel={showHistoryPanel}
 				onToggleHistory={toggleHistoryPanel}
 				className={`fixed z-50 ${
-					inspectorViewMode === "side" 
-						? "bottom-4 left-1/2 transform -translate-x-1/2" 
+					inspectorViewMode === "side"
+						? "bottom-4 left-1/2 transform -translate-x-1/2"
 						: "top-4 right-4"
 				}`}
 			/>

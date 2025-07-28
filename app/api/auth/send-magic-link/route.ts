@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { sendMagicLinkEmail, isValidEmail } from '@/lib/email-service';
+import { isValidEmail, sendMagicLinkEmail } from "@/lib/email-service";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
 	try {
@@ -8,24 +8,15 @@ export async function POST(request: NextRequest) {
 
 		// Validate input
 		if (!email || !name || !magicToken || !type) {
-			return NextResponse.json(
-				{ error: 'Missing required fields' },
-				{ status: 400 }
-			);
+			return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
 		}
 
 		if (!isValidEmail(email)) {
-			return NextResponse.json(
-				{ error: 'Invalid email format' },
-				{ status: 400 }
-			);
+			return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
 		}
 
-		if (!['verification', 'login'].includes(type)) {
-			return NextResponse.json(
-				{ error: 'Invalid email type' },
-				{ status: 400 }
-			);
+		if (!["verification", "login"].includes(type)) {
+			return NextResponse.json({ error: "Invalid email type" }, { status: 400 });
 		}
 
 		// Send magic link email
@@ -37,10 +28,7 @@ export async function POST(request: NextRequest) {
 		});
 
 		if (!result.success) {
-			return NextResponse.json(
-				{ error: result.error || 'Failed to send email' },
-				{ status: 500 }
-			);
+			return NextResponse.json({ error: result.error || "Failed to send email" }, { status: 500 });
 		}
 
 		return NextResponse.json({
@@ -48,12 +36,8 @@ export async function POST(request: NextRequest) {
 			messageId: result.messageId,
 			...(result.magicLinkUrl && { magicLinkUrl: result.magicLinkUrl }), // Include magic link URL in development
 		});
-
 	} catch (error) {
-		console.error('Magic link API error:', error);
-		return NextResponse.json(
-			{ error: 'Internal server error' },
-			{ status: 500 }
-		);
+		console.error("Magic link API error:", error);
+		return NextResponse.json({ error: "Internal server error" }, { status: 500 });
 	}
 }

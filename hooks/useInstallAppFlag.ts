@@ -9,7 +9,7 @@
  * Keywords: feature-flag, pwa-install, hypertune, type-safety, graceful-degradation
  */
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface UseInstallAppFlagReturn {
 	isEnabled: boolean;
@@ -31,11 +31,11 @@ export function useInstallAppFlag(): UseInstallAppFlagReturn {
 			try {
 				setIsLoading(true);
 				setError(null);
-				
+
 				// Fetch flag value from server-side API
 				const response = await fetch("/api/flags/install-app");
 				const data = await response.json();
-				
+
 				if (data.success) {
 					setIsEnabled(data.isEnabled);
 				} else {
@@ -55,4 +55,4 @@ export function useInstallAppFlag(): UseInstallAppFlagReturn {
 	}, []);
 
 	return { isEnabled, isLoading, error };
-} 
+}

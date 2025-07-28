@@ -20,53 +20,53 @@ import * as ts from "typescript";
 // ============================================================================
 
 interface NodeSpecAnalysis {
-  interfaces: {
-    name: string;
-    properties: Array<{
-      name: string;
-      type: string;
-      required: boolean;
-      description?: string;
-      defaultValue?: string;
-    }>;
-    description?: string;
-  }[];
-  types: {
-    name: string;
-    definition: string;
-    description?: string;
-  }[];
-  constants: {
-    name: string;
-    value: string;
-    description?: string;
-  }[];
-  imports: string[];
-  exports: string[];
+	interfaces: {
+		name: string;
+		properties: Array<{
+			name: string;
+			type: string;
+			required: boolean;
+			description?: string;
+			defaultValue?: string;
+		}>;
+		description?: string;
+	}[];
+	types: {
+		name: string;
+		definition: string;
+		description?: string;
+	}[];
+	constants: {
+		name: string;
+		value: string;
+		description?: string;
+	}[];
+	imports: string[];
+	exports: string[];
 }
 
 interface ScaffoldAnalysis {
-  functions: {
-    name: string;
-    parameters: Array<{
-      name: string;
-      type: string;
-      required: boolean;
-      description?: string;
-    }>;
-    returnType: string;
-    description?: string;
-  }[];
-  types: {
-    name: string;
-    definition: string;
-    description?: string;
-  }[];
-  usage: {
-    totalNodes: number;
-    nodesWithScaffold: number;
-    commonPatterns: string[];
-  };
+	functions: {
+		name: string;
+		parameters: Array<{
+			name: string;
+			type: string;
+			required: boolean;
+			description?: string;
+		}>;
+		returnType: string;
+		description?: string;
+	}[];
+	types: {
+		name: string;
+		definition: string;
+		description?: string;
+	}[];
+	usage: {
+		totalNodes: number;
+		nodesWithScaffold: number;
+		commonPatterns: string[];
+	};
 }
 
 // ============================================================================
@@ -77,190 +77,186 @@ interface ScaffoldAnalysis {
  * Analyze NodeSpec.ts source code
  */
 function analyzeNodeSpec(): NodeSpecAnalysis {
-  const nodeSpecPath = path.join(process.cwd(), "features/business-logic-modern/infrastructure/node-core/NodeSpec.ts");
-  
-  if (!fs.existsSync(nodeSpecPath)) {
-    throw new Error(`NodeSpec.ts not found at ${nodeSpecPath}`);
-  }
+	const nodeSpecPath = path.join(
+		process.cwd(),
+		"features/business-logic-modern/infrastructure/node-core/NodeSpec.ts"
+	);
 
-  const sourceCode = fs.readFileSync(nodeSpecPath, "utf-8");
-  const sourceFile = ts.createSourceFile(
-    nodeSpecPath,
-    sourceCode,
-    ts.ScriptTarget.Latest,
-    true
-  );
+	if (!fs.existsSync(nodeSpecPath)) {
+		throw new Error(`NodeSpec.ts not found at ${nodeSpecPath}`);
+	}
 
-  const analysis: NodeSpecAnalysis = {
-    interfaces: [],
-    types: [],
-    constants: [],
-    imports: [],
-    exports: []
-  };
+	const sourceCode = fs.readFileSync(nodeSpecPath, "utf-8");
+	const sourceFile = ts.createSourceFile(nodeSpecPath, sourceCode, ts.ScriptTarget.Latest, true);
 
-  // Extract interfaces
-  ts.forEachChild(sourceFile, (node) => {
-    if (ts.isInterfaceDeclaration(node)) {
-      const properties = node.members
-        .map((member) => {
-          if (ts.isPropertySignature(member)) {
-            return {
-              name: member.name.getText(sourceFile),
-              type: member.type ? member.type.getText(sourceFile) : "any",
-              required: !member.questionToken,
-              description: extractJSDocComment(member, sourceFile)
-            };
-          }
-          return null;
-        })
-        .filter((prop): prop is NonNullable<typeof prop> => prop !== null);
+	const analysis: NodeSpecAnalysis = {
+		interfaces: [],
+		types: [],
+		constants: [],
+		imports: [],
+		exports: [],
+	};
 
-      const interfaceInfo = {
-        name: node.name.text,
-        properties,
-        description: extractJSDocComment(node, sourceFile)
-      };
-      analysis.interfaces.push(interfaceInfo);
-    }
-    
-    if (ts.isTypeAliasDeclaration(node)) {
-      analysis.types.push({
-        name: node.name.text,
-        definition: node.type.getText(sourceFile),
-        description: extractJSDocComment(node, sourceFile)
-      });
-    }
-  });
+	// Extract interfaces
+	ts.forEachChild(sourceFile, (node) => {
+		if (ts.isInterfaceDeclaration(node)) {
+			const properties = node.members
+				.map((member) => {
+					if (ts.isPropertySignature(member)) {
+						return {
+							name: member.name.getText(sourceFile),
+							type: member.type ? member.type.getText(sourceFile) : "any",
+							required: !member.questionToken,
+							description: extractJSDocComment(member, sourceFile),
+						};
+					}
+					return null;
+				})
+				.filter((prop): prop is NonNullable<typeof prop> => prop !== null);
 
-  return analysis;
+			const interfaceInfo = {
+				name: node.name.text,
+				properties,
+				description: extractJSDocComment(node, sourceFile),
+			};
+			analysis.interfaces.push(interfaceInfo);
+		}
+
+		if (ts.isTypeAliasDeclaration(node)) {
+			analysis.types.push({
+				name: node.name.text,
+				definition: node.type.getText(sourceFile),
+				description: extractJSDocComment(node, sourceFile),
+			});
+		}
+	});
+
+	return analysis;
 }
 
 /**
  * Analyze withNodeScaffold.tsx source code
  */
 function analyzeScaffold(): ScaffoldAnalysis {
-  const scaffoldPath = path.join(process.cwd(), "features/business-logic-modern/infrastructure/node-core/withNodeScaffold.tsx");
-  
-  if (!fs.existsSync(scaffoldPath)) {
-    throw new Error(`withNodeScaffold.tsx not found at ${scaffoldPath}`);
-  }
+	const scaffoldPath = path.join(
+		process.cwd(),
+		"features/business-logic-modern/infrastructure/node-core/withNodeScaffold.tsx"
+	);
 
-  const sourceCode = fs.readFileSync(scaffoldPath, "utf-8");
-  const sourceFile = ts.createSourceFile(
-    scaffoldPath,
-    sourceCode,
-    ts.ScriptTarget.Latest,
-    true
-  );
+	if (!fs.existsSync(scaffoldPath)) {
+		throw new Error(`withNodeScaffold.tsx not found at ${scaffoldPath}`);
+	}
 
-  const analysis: ScaffoldAnalysis = {
-    functions: [],
-    types: [],
-    usage: {
-      totalNodes: 0,
-      nodesWithScaffold: 0,
-      commonPatterns: []
-    }
-  };
+	const sourceCode = fs.readFileSync(scaffoldPath, "utf-8");
+	const sourceFile = ts.createSourceFile(scaffoldPath, sourceCode, ts.ScriptTarget.Latest, true);
 
-  // Extract functions
-  ts.forEachChild(sourceFile, (node) => {
-    if (ts.isFunctionDeclaration(node) && node.name) {
-      analysis.functions.push({
-        name: node.name.text,
-        parameters: node.parameters.map((param) => ({
-          name: param.name.getText(sourceFile),
-          type: param.type ? param.type.getText(sourceFile) : "any",
-          required: !param.questionToken,
-          description: extractJSDocComment(param, sourceFile)
-        })),
-        returnType: node.type ? node.type.getText(sourceFile) : "any",
-        description: extractJSDocComment(node, sourceFile)
-      });
-    }
-    
-    if (ts.isTypeAliasDeclaration(node)) {
-      analysis.types.push({
-        name: node.name.text,
-        definition: node.type.getText(sourceFile),
-        description: extractJSDocComment(node, sourceFile)
-      });
-    }
-  });
+	const analysis: ScaffoldAnalysis = {
+		functions: [],
+		types: [],
+		usage: {
+			totalNodes: 0,
+			nodesWithScaffold: 0,
+			commonPatterns: [],
+		},
+	};
 
-  // Analyze usage patterns
-  analysis.usage = analyzeScaffoldUsage();
+	// Extract functions
+	ts.forEachChild(sourceFile, (node) => {
+		if (ts.isFunctionDeclaration(node) && node.name) {
+			analysis.functions.push({
+				name: node.name.text,
+				parameters: node.parameters.map((param) => ({
+					name: param.name.getText(sourceFile),
+					type: param.type ? param.type.getText(sourceFile) : "any",
+					required: !param.questionToken,
+					description: extractJSDocComment(param, sourceFile),
+				})),
+				returnType: node.type ? node.type.getText(sourceFile) : "any",
+				description: extractJSDocComment(node, sourceFile),
+			});
+		}
 
-  return analysis;
+		if (ts.isTypeAliasDeclaration(node)) {
+			analysis.types.push({
+				name: node.name.text,
+				definition: node.type.getText(sourceFile),
+				description: extractJSDocComment(node, sourceFile),
+			});
+		}
+	});
+
+	// Analyze usage patterns
+	analysis.usage = analyzeScaffoldUsage();
+
+	return analysis;
 }
 
 /**
  * Extract JSDoc comments from AST nodes
  */
 function extractJSDocComment(node: ts.Node, sourceFile: ts.SourceFile): string | undefined {
-  const text = node.getFullText(sourceFile);
-  const start = node.getLeadingTriviaWidth(sourceFile);
-  const trivia = text.substring(0, start);
-  
-  const jsDocMatch = trivia.match(/\/\*\*([\s\S]*?)\*\//);
-  if (jsDocMatch) {
-    return jsDocMatch[1]
-      .replace(/\s*\*\s*/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-  
-  return undefined;
+	const text = node.getFullText(sourceFile);
+	const start = node.getLeadingTriviaWidth(sourceFile);
+	const trivia = text.substring(0, start);
+
+	const jsDocMatch = trivia.match(/\/\*\*([\s\S]*?)\*\//);
+	if (jsDocMatch) {
+		return jsDocMatch[1]
+			.replace(/\s*\*\s*/g, " ")
+			.replace(/\s+/g, " ")
+			.trim();
+	}
+
+	return undefined;
 }
 
 /**
  * Analyze scaffold usage patterns
  */
 function analyzeScaffoldUsage() {
-  const nodeDomainPath = path.join(process.cwd(), "features/business-logic-modern/node-domain");
-  const patterns: string[] = [];
-  let totalNodes = 0;
-  let nodesWithScaffold = 0;
+	const nodeDomainPath = path.join(process.cwd(), "features/business-logic-modern/node-domain");
+	const patterns: string[] = [];
+	let totalNodes = 0;
+	let nodesWithScaffold = 0;
 
-  if (fs.existsSync(nodeDomainPath)) {
-    const scanDirectory = (dir: string) => {
-      const files = fs.readdirSync(dir);
-      
-      files.forEach((file) => {
-        const filePath = path.join(dir, file);
-        const stat = fs.statSync(filePath);
-        
-        if (stat.isDirectory()) {
-          scanDirectory(filePath);
-        } else if (file.endsWith(".tsx") || file.endsWith(".ts")) {
-          totalNodes++;
-          const content = fs.readFileSync(filePath, "utf-8");
-          
-          if (content.includes("withNodeScaffold")) {
-            nodesWithScaffold++;
-            
-            // Detect usage patterns
-            if (content.includes("withNodeScaffold(spec,")) {
-              patterns.push("Static spec pattern");
-            } else if (content.includes("useMemo") && content.includes("withNodeScaffold")) {
-              patterns.push("Dynamic spec pattern");
-            } else if (content.includes("withNodeScaffold(") && content.includes("options")) {
-              patterns.push("Custom options pattern");
-            }
-          }
-        }
-      });
-    };
-    
-    scanDirectory(nodeDomainPath);
-  }
+	if (fs.existsSync(nodeDomainPath)) {
+		const scanDirectory = (dir: string) => {
+			const files = fs.readdirSync(dir);
 
-  return {
-    totalNodes,
-    nodesWithScaffold,
-    commonPatterns: Array.from(new Set(patterns))
-  };
+			files.forEach((file) => {
+				const filePath = path.join(dir, file);
+				const stat = fs.statSync(filePath);
+
+				if (stat.isDirectory()) {
+					scanDirectory(filePath);
+				} else if (file.endsWith(".tsx") || file.endsWith(".ts")) {
+					totalNodes++;
+					const content = fs.readFileSync(filePath, "utf-8");
+
+					if (content.includes("withNodeScaffold")) {
+						nodesWithScaffold++;
+
+						// Detect usage patterns
+						if (content.includes("withNodeScaffold(spec,")) {
+							patterns.push("Static spec pattern");
+						} else if (content.includes("useMemo") && content.includes("withNodeScaffold")) {
+							patterns.push("Dynamic spec pattern");
+						} else if (content.includes("withNodeScaffold(") && content.includes("options")) {
+							patterns.push("Custom options pattern");
+						}
+					}
+				}
+			});
+		};
+
+		scanDirectory(nodeDomainPath);
+	}
+
+	return {
+		totalNodes,
+		nodesWithScaffold,
+		commonPatterns: Array.from(new Set(patterns)),
+	};
 }
 
 // ============================================================================
@@ -271,59 +267,59 @@ function analyzeScaffoldUsage() {
  * Generate comprehensive NodeSpec documentation
  */
 function generateNodeSpecDocs(analysis: NodeSpecAnalysis) {
-  const docsDir = path.join(process.cwd(), "documentation/NodeCore");
-  
-  // Ensure directory exists
-  if (!fs.existsSync(docsDir)) {
-    fs.mkdirSync(docsDir, { recursive: true });
-  }
-  
-  // Generate markdown documentation
-  const markdownContent = generateNodeSpecMarkdown(analysis);
-  const markdownPath = path.join(docsDir, "NodeSpec.md");
-  fs.writeFileSync(markdownPath, markdownContent);
+	const docsDir = path.join(process.cwd(), "documentation/NodeCore");
 
-  // Generate HTML documentation
-  const htmlContent = generateNodeSpecHTML(analysis);
-  const htmlPath = path.join(docsDir, "NodeSpec.html");
-  fs.writeFileSync(htmlPath, htmlContent);
+	// Ensure directory exists
+	if (!fs.existsSync(docsDir)) {
+		fs.mkdirSync(docsDir, { recursive: true });
+	}
 
-  console.log(`✅ Generated NodeSpec documentation`);
-  console.log(`   📄 Markdown: ${markdownPath}`);
-  console.log(`   🌐 HTML: ${htmlPath}`);
+	// Generate markdown documentation
+	const markdownContent = generateNodeSpecMarkdown(analysis);
+	const markdownPath = path.join(docsDir, "NodeSpec.md");
+	fs.writeFileSync(markdownPath, markdownContent);
+
+	// Generate HTML documentation
+	const htmlContent = generateNodeSpecHTML(analysis);
+	const htmlPath = path.join(docsDir, "NodeSpec.html");
+	fs.writeFileSync(htmlPath, htmlContent);
+
+	console.log(`✅ Generated NodeSpec documentation`);
+	console.log(`   📄 Markdown: ${markdownPath}`);
+	console.log(`   🌐 HTML: ${htmlPath}`);
 }
 
 /**
  * Generate comprehensive Scaffold documentation
  */
 function generateScaffoldDocs(analysis: ScaffoldAnalysis) {
-  const docsDir = path.join(process.cwd(), "documentation/NodeCore");
-  
-  // Ensure directory exists
-  if (!fs.existsSync(docsDir)) {
-    fs.mkdirSync(docsDir, { recursive: true });
-  }
-  
-  // Generate markdown documentation
-  const markdownContent = generateScaffoldMarkdown(analysis);
-  const markdownPath = path.join(docsDir, "withNodeScaffold.md");
-  fs.writeFileSync(markdownPath, markdownContent);
+	const docsDir = path.join(process.cwd(), "documentation/NodeCore");
 
-  // Generate HTML documentation
-  const htmlContent = generateScaffoldHTML(analysis);
-  const htmlPath = path.join(docsDir, "withNodeScaffold.html");
-  fs.writeFileSync(htmlPath, htmlContent);
+	// Ensure directory exists
+	if (!fs.existsSync(docsDir)) {
+		fs.mkdirSync(docsDir, { recursive: true });
+	}
 
-  console.log(`✅ Generated Scaffold documentation`);
-  console.log(`   📄 Markdown: ${markdownPath}`);
-  console.log(`   🌐 HTML: ${htmlPath}`);
+	// Generate markdown documentation
+	const markdownContent = generateScaffoldMarkdown(analysis);
+	const markdownPath = path.join(docsDir, "withNodeScaffold.md");
+	fs.writeFileSync(markdownPath, markdownContent);
+
+	// Generate HTML documentation
+	const htmlContent = generateScaffoldHTML(analysis);
+	const htmlPath = path.join(docsDir, "withNodeScaffold.html");
+	fs.writeFileSync(htmlPath, htmlContent);
+
+	console.log(`✅ Generated Scaffold documentation`);
+	console.log(`   📄 Markdown: ${markdownPath}`);
+	console.log(`   🌐 HTML: ${htmlPath}`);
 }
 
 /**
  * Generate NodeSpec markdown documentation
  */
 function generateNodeSpecMarkdown(analysis: NodeSpecAnalysis): string {
-  return `# NodeSpec Documentation
+	return `# NodeSpec Documentation
 
 ## Overview
 
@@ -338,32 +334,40 @@ The \`NodeSpec\` system is the **core contract and blueprint** for all nodes in 
 
 ## 🔍 Interface Analysis
 
-${analysis.interfaces.map(iface => `
+${analysis.interfaces
+	.map(
+		(iface) => `
 ### ${iface.name}
 
 ${iface.description ? `${iface.description}\n\n` : ""}
 **Properties:**
 
-${iface.properties.map(prop => `- **${prop.name}** (\`${prop.type}\`)${prop.required ? " - Required" : " - Optional"}${prop.description ? ` - ${prop.description}` : ""}`).join("\n")}
-`).join("\n")}
+${iface.properties.map((prop) => `- **${prop.name}** (\`${prop.type}\`)${prop.required ? " - Required" : " - Optional"}${prop.description ? ` - ${prop.description}` : ""}`).join("\n")}
+`
+	)
+	.join("\n")}
 
 ## 🏷️ Type Definitions
 
-${analysis.types.map(type => `
+${analysis.types
+	.map(
+		(type) => `
 ### ${type.name}
 
 ${type.description ? `${type.description}\n\n` : ""}
 \`\`\`typescript
 type ${type.name} = ${type.definition};
 \`\`\`
-`).join("\n")}
+`
+	)
+	.join("\n")}
 
 ## 📋 Usage Statistics
 
 - **Total Interfaces**: ${analysis.interfaces.length}
 - **Total Types**: ${analysis.types.length}
-- **Required Properties**: ${analysis.interfaces.reduce((sum, iface) => sum + iface.properties.filter(p => p.required).length, 0)}
-- **Optional Properties**: ${analysis.interfaces.reduce((sum, iface) => sum + iface.properties.filter(p => !p.required).length, 0)}
+- **Required Properties**: ${analysis.interfaces.reduce((sum, iface) => sum + iface.properties.filter((p) => p.required).length, 0)}
+- **Optional Properties**: ${analysis.interfaces.reduce((sum, iface) => sum + iface.properties.filter((p) => !p.required).length, 0)}
 
 ## 🔗 Integration Points
 
@@ -382,7 +386,7 @@ This documentation is automatically generated from:
  * Generate Scaffold markdown documentation
  */
 function generateScaffoldMarkdown(analysis: ScaffoldAnalysis): string {
-  return `# withNodeScaffold Documentation
+	return `# withNodeScaffold Documentation
 
 ## Overview
 
@@ -398,27 +402,35 @@ The \`withNodeScaffold\` system provides **automated scaffolding and infrastruct
 
 ## 🔧 Function Analysis
 
-${analysis.functions.map(func => `
+${analysis.functions
+	.map(
+		(func) => `
 ### ${func.name}
 
 ${func.description ? `${func.description}\n\n` : ""}
 **Parameters:**
 
-${func.parameters.map(param => `- **${param.name}** (\`${param.type}\`)${param.required ? " - Required" : " - Optional"}${param.description ? ` - ${param.description}` : ""}`).join("\n")}
+${func.parameters.map((param) => `- **${param.name}** (\`${param.type}\`)${param.required ? " - Required" : " - Optional"}${param.description ? ` - ${param.description}` : ""}`).join("\n")}
 
 **Returns:** \`${func.returnType}\`
-`).join("\n")}
+`
+	)
+	.join("\n")}
 
 ## 🏷️ Type Definitions
 
-${analysis.types.map(type => `
+${analysis.types
+	.map(
+		(type) => `
 ### ${type.name}
 
 ${type.description ? `${type.description}\n\n` : ""}
 \`\`\`typescript
 type ${type.name} = ${type.definition};
 \`\`\`
-`).join("\n")}
+`
+	)
+	.join("\n")}
 
 ## 📈 Usage Statistics
 
@@ -429,11 +441,15 @@ type ${type.name} = ${type.definition};
 
 ## 🎯 Usage Patterns
 
-${analysis.usage.commonPatterns.map(pattern => `
+${analysis.usage.commonPatterns
+	.map(
+		(pattern) => `
 ### ${pattern}
 
 This pattern is used by ${analysis.usage.nodesWithScaffold} nodes.
-`).join("\n")}
+`
+	)
+	.join("\n")}
 
 ## 🔗 Integration Points
 
@@ -452,7 +468,7 @@ This documentation is automatically generated from:
  * Generate NodeSpec HTML documentation
  */
 function generateNodeSpecHTML(analysis: NodeSpecAnalysis): string {
-  return `<!DOCTYPE html>
+	return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -512,25 +528,35 @@ function generateNodeSpecHTML(analysis: NodeSpecAnalysis): string {
             
             <div class="section">
                 <h2>🔍 Interface Analysis</h2>
-                ${analysis.interfaces.map(iface => `
+                ${analysis.interfaces
+									.map(
+										(iface) => `
                 <div class="interface-card">
                     <h3>${iface.name}</h3>
                     ${iface.description ? `<p>${iface.description}</p>` : ""}
                     <h4>Properties:</h4>
-                    ${iface.properties.map(prop => `
+                    ${iface.properties
+											.map(
+												(prop) => `
                     <div class="property">
                         <strong>${prop.name}</strong> <span class="type">(${prop.type})</span>
                         ${prop.required ? "<span style='color: #dc3545;'>Required</span>" : "<span style='color: #6c757d;'>Optional</span>"}
                         ${prop.description ? `<br><small>${prop.description}</small>` : ""}
                     </div>
-                    `).join("")}
+                    `
+											)
+											.join("")}
                 </div>
-                `).join("")}
+                `
+									)
+									.join("")}
             </div>
             
             <div class="section">
                 <h2>🏷️ Type Definitions</h2>
-                ${analysis.types.map(type => `
+                ${analysis.types
+									.map(
+										(type) => `
                 <div class="interface-card">
                     <h3>${type.name}</h3>
                     ${type.description ? `<p>${type.description}</p>` : ""}
@@ -538,7 +564,9 @@ function generateNodeSpecHTML(analysis: NodeSpecAnalysis): string {
                         type ${type.name} = ${type.definition};
                     </div>
                 </div>
-                `).join("")}
+                `
+									)
+									.join("")}
             </div>
         </div>
     </div>
@@ -550,7 +578,7 @@ function generateNodeSpecHTML(analysis: NodeSpecAnalysis): string {
  * Generate Scaffold HTML documentation
  */
 function generateScaffoldHTML(analysis: ScaffoldAnalysis): string {
-  return `<!DOCTYPE html>
+	return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -622,27 +650,37 @@ function generateScaffoldHTML(analysis: ScaffoldAnalysis): string {
             
             <div class="section">
                 <h2>🔧 Function Analysis</h2>
-                ${analysis.functions.map(func => `
+                ${analysis.functions
+									.map(
+										(func) => `
                 <div class="function-card">
                     <h3>${func.name}</h3>
                     ${func.description ? `<p>${func.description}</p>` : ""}
                     <h4>Parameters:</h4>
-                    ${func.parameters.map(param => `
+                    ${func.parameters
+											.map(
+												(param) => `
                     <div class="parameter">
                         <strong>${param.name}</strong> <span class="type">(${param.type})</span>
                         ${param.required ? "<span style='color: #dc3545;'>Required</span>" : "<span style='color: #6c757d;'>Optional</span>"}
                         ${param.description ? `<br><small>${param.description}</small>` : ""}
                     </div>
-                    `).join("")}
+                    `
+											)
+											.join("")}
                     <h4>Returns:</h4>
                     <div class="code-block">${func.returnType}</div>
                 </div>
-                `).join("")}
+                `
+									)
+									.join("")}
             </div>
             
             <div class="section">
                 <h2>🏷️ Type Definitions</h2>
-                ${analysis.types.map(type => `
+                ${analysis.types
+									.map(
+										(type) => `
                 <div class="function-card">
                     <h3>${type.name}</h3>
                     ${type.description ? `<p>${type.description}</p>` : ""}
@@ -650,17 +688,23 @@ function generateScaffoldHTML(analysis: ScaffoldAnalysis): string {
                         type ${type.name} = ${type.definition};
                     </div>
                 </div>
-                `).join("")}
+                `
+									)
+									.join("")}
             </div>
             
             <div class="section">
                 <h2>🎯 Usage Patterns</h2>
-                ${analysis.usage.commonPatterns.map(pattern => `
+                ${analysis.usage.commonPatterns
+									.map(
+										(pattern) => `
                 <div class="function-card">
                     <h3>${pattern}</h3>
                     <p>This pattern is used by ${analysis.usage.nodesWithScaffold} nodes.</p>
                 </div>
-                `).join("")}
+                `
+									)
+									.join("")}
             </div>
         </div>
     </div>
@@ -676,23 +720,22 @@ function generateScaffoldHTML(analysis: ScaffoldAnalysis): string {
  * Generate comprehensive documentation for NodeSpec and Scaffold
  */
 function generateNodespecDocs() {
-  console.log("🔍 Analyzing NodeSpec and Scaffold source code...");
-  
-  try {
-    // Analyze NodeSpec
-    const nodeSpecAnalysis = analyzeNodeSpec();
-    generateNodeSpecDocs(nodeSpecAnalysis);
-    
-    // Analyze Scaffold
-    const scaffoldAnalysis = analyzeScaffold();
-    generateScaffoldDocs(scaffoldAnalysis);
-    
-    console.log("✅ NodeSpec and Scaffold documentation generation complete!");
-    
-  } catch (error) {
-    console.error("❌ Error generating documentation:", error);
-    process.exit(1);
-  }
+	console.log("🔍 Analyzing NodeSpec and Scaffold source code...");
+
+	try {
+		// Analyze NodeSpec
+		const nodeSpecAnalysis = analyzeNodeSpec();
+		generateNodeSpecDocs(nodeSpecAnalysis);
+
+		// Analyze Scaffold
+		const scaffoldAnalysis = analyzeScaffold();
+		generateScaffoldDocs(scaffoldAnalysis);
+
+		console.log("✅ NodeSpec and Scaffold documentation generation complete!");
+	} catch (error) {
+		console.error("❌ Error generating documentation:", error);
+		process.exit(1);
+	}
 }
 
 // ============================================================================
@@ -700,7 +743,7 @@ function generateNodespecDocs() {
 // ============================================================================
 
 if (require.main === module) {
-  generateNodespecDocs();
+	generateNodespecDocs();
 }
 
-export { generateNodespecDocs }; 
+export { generateNodespecDocs };

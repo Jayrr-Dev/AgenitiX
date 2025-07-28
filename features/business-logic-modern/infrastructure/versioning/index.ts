@@ -10,5 +10,5 @@
 // Main version constant - safe for client-side use
 export { VERSION } from "./version";
 
-// Note: Server-side functionality (versionDetector, dashboard, etc.) 
+// Note: Server-side functionality (versionDetector, dashboard, etc.)
 // is available in the server-side versioning module

@@ -1,9 +1,9 @@
 "use client";
 
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ProtectedNavigation } from "@/components/auth/ProtectedNavigation";
-import { ReactNode } from "react";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 
 interface UserPagesLayoutProps {
 	children: ReactNode;
@@ -11,7 +11,7 @@ interface UserPagesLayoutProps {
 
 export default function UserPagesLayout({ children }: UserPagesLayoutProps) {
 	const pathname = usePathname();
-	
+
 	// Hide navigation for matrix routes
 	const shouldHideNavigation = pathname.startsWith("/matrix");
 
@@ -19,9 +19,7 @@ export default function UserPagesLayout({ children }: UserPagesLayoutProps) {
 		<ProtectedRoute>
 			<div className="min-h-screen bg-background">
 				{!shouldHideNavigation && <ProtectedNavigation />}
-				<main>
-					{children}
-				</main>
+				<main>{children}</main>
 			</div>
 		</ProtectedRoute>
 	);

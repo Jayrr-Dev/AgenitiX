@@ -12,7 +12,7 @@
  * Keywords: server-actions, database-operations, network-requests, state-management, react-query
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, type useQueryClient } from "@tanstack/react-query";
 
 export interface ServerActionContext {
 	nodeId: string;
@@ -57,7 +57,7 @@ export const useServerActionQuery = <T>(
 	}
 ) => {
 	return useQuery({
-		queryKey: ['server-action', ...queryKey],
+		queryKey: ["server-action", ...queryKey],
 		queryFn,
 		enabled: options?.enabled ?? true,
 		staleTime: options?.staleTime ?? 5 * 60 * 1000, // 5 minutes
@@ -87,7 +87,7 @@ export const useServerActionMutation = <TData, TVariables>(
 // ============================================================================
 
 export interface DatabaseOperation {
-	type: 'query' | 'mutation' | 'action';
+	type: "query" | "mutation" | "action";
 	table: string;
 	operation: string;
 	params?: Record<string, unknown>;
@@ -95,13 +95,13 @@ export interface DatabaseOperation {
 
 export interface NetworkRequest {
 	url: string;
-	method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+	method: "GET" | "POST" | "PUT" | "DELETE";
 	headers?: Record<string, string>;
 	body?: unknown;
 }
 
 export interface FileOperation {
-	type: 'read' | 'write' | 'delete';
+	type: "read" | "write" | "delete";
 	path: string;
 	content?: string;
 }
@@ -111,44 +111,44 @@ export interface FileOperation {
 // ============================================================================
 
 export const executeDatabaseOperation = async (operation: DatabaseOperation) => {
-	const response = await fetch('/api/server-actions/database', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+	const response = await fetch("/api/server-actions/database", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(operation),
 	});
-	
+
 	if (!response.ok) {
 		throw new Error(`Database operation failed: ${response.statusText}`);
 	}
-	
+
 	return response.json();
 };
 
 export const executeNetworkRequest = async (request: NetworkRequest) => {
-	const response = await fetch('/api/server-actions/network', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+	const response = await fetch("/api/server-actions/network", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(request),
 	});
-	
+
 	if (!response.ok) {
 		throw new Error(`Network request failed: ${response.statusText}`);
 	}
-	
+
 	return response.json();
 };
 
 export const executeFileOperation = async (operation: FileOperation) => {
-	const response = await fetch('/api/server-actions/files', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+	const response = await fetch("/api/server-actions/files", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(operation),
 	});
-	
+
 	if (!response.ok) {
 		throw new Error(`File operation failed: ${response.statusText}`);
 	}
-	
+
 	return response.json();
 };
 
@@ -168,7 +168,7 @@ export const useCachedDatabaseQuery = (
 	}
 ) => {
 	return useServerActionQuery(
-		['database', nodeId, operation.table, operation.operation],
+		["database", nodeId, operation.table, operation.operation],
 		() => executeDatabaseOperation(operation),
 		{
 			enabled: options?.enabled ?? true,
@@ -189,7 +189,7 @@ export const useCachedNetworkRequest = (
 	}
 ) => {
 	return useServerActionQuery(
-		['network', nodeId, request.url, request.method],
+		["network", nodeId, request.url, request.method],
 		() => executeNetworkRequest(request),
 		{
 			enabled: options?.enabled ?? true,

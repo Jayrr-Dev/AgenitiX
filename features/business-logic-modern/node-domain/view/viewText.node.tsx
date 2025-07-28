@@ -328,9 +328,7 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 							{validation.data.store || "..."}
 						</div>
 					) : (
-						<div className={`text-xs font-medium tracking-wide ${categoryStyles.primary}`}>
-							...
-						</div>
+						<div className={`text-xs font-medium tracking-wide ${categoryStyles.primary}`}>...</div>
 					)}
 				</div>
 			) : (

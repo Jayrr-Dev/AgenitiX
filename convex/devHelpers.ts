@@ -1,6 +1,6 @@
 /**
  * DEVELOPMENT HELPERS - Functions to help with development and testing
- * 
+ *
  * These functions should only be used in development environment
  * and help with seeding test data and debugging.
  */
@@ -20,7 +20,7 @@ export const createTestUser = mutation({
 	},
 	handler: async (ctx, args) => {
 		// Only allow in development
-		if (process.env.NODE_ENV === 'production') {
+		if (process.env.NODE_ENV === "production") {
 			throw new Error("This function is only available in development");
 		}
 
@@ -53,7 +53,7 @@ export const createTestUser = mutation({
 
 		// Create a test session token
 		const sessionToken = `dev_session_${userId}_${Date.now()}`;
-		
+
 		const sessionId = await ctx.db.insert("auth_sessions", {
 			user_id: userId,
 			token_hash: sessionToken,
@@ -84,13 +84,13 @@ export const createTestFlows = mutation({
 	},
 	handler: async (ctx, args) => {
 		// Only allow in development
-		if (process.env.NODE_ENV === 'production') {
+		if (process.env.NODE_ENV === "production") {
 			throw new Error("This function is only available in development");
 		}
 
 		const count = args.count || 3;
 		const now = new Date().toISOString();
-		
+
 		const testFlows = [
 			{
 				name: "Email Marketing Campaign",
@@ -125,7 +125,7 @@ export const createTestFlows = mutation({
 		];
 
 		const createdFlows = [];
-		
+
 		for (let i = 0; i < Math.min(count, testFlows.length); i++) {
 			const flowData = testFlows[i];
 			const flowId = await ctx.db.insert("flows", {
@@ -134,7 +134,7 @@ export const createTestFlows = mutation({
 				created_at: now,
 				updated_at: now,
 			});
-			
+
 			createdFlows.push({ id: flowId, ...flowData });
 		}
 
@@ -152,7 +152,7 @@ export const clearTestData = mutation({
 	args: {},
 	handler: async (ctx, args) => {
 		// Only allow in development
-		if (process.env.NODE_ENV === 'production') {
+		if (process.env.NODE_ENV === "production") {
 			throw new Error("This function is only available in development");
 		}
 
@@ -206,13 +206,13 @@ export const getAllUsers = query({
 	args: {},
 	handler: async (ctx, args) => {
 		// Only allow in development
-		if (process.env.NODE_ENV === 'production') {
+		if (process.env.NODE_ENV === "production") {
 			throw new Error("This function is only available in development");
 		}
 
 		const users = await ctx.db.query("auth_users").collect();
-		
-		return users.map(user => ({
+
+		return users.map((user) => ({
 			id: user._id,
 			email: user.email,
 			name: user.name,

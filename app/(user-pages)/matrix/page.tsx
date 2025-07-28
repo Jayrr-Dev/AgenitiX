@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+import { redirect } from "next/navigation";
 
 /**
  * MATRIX PAGE - Redirects to dashboard
@@ -10,5 +10,5 @@ import { redirect } from 'next/navigation';
  * Keywords: redirect, navigation, dashboard, matrix
  */
 export default function MatrixPage() {
-	redirect('/dashboard');
+	redirect("/dashboard");
 }

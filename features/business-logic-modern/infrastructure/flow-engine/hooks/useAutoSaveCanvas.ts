@@ -10,13 +10,13 @@
  * Keywords: auto-save, canvas, debounce, real-time, convex
  */
 
-import { useEffect, useRef, useCallback } from "react";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { useFlowStore } from "../stores/flowStore";
 import { useAuthContext } from "@/components/auth/AuthProvider";
-import { useFlowMetadataOptional } from "../contexts/FlowMetadataContext";
+import { api } from "@/convex/_generated/api";
+import { useMutation } from "convex/react";
+import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { useFlowMetadataOptional } from "../contexts/FlowMetadataContext";
+import { useFlowStore } from "../stores/flowStore";
 
 interface UseAutoSaveCanvasOptions {
 	/** Debounce delay in milliseconds (default: 1000) */
@@ -41,11 +41,7 @@ interface AutoSaveStatus {
 }
 
 export function useAutoSaveCanvas(options: UseAutoSaveCanvasOptions = {}): AutoSaveStatus {
-	const {
-		debounceMs = 1000,
-		enabled = true,
-		showNotifications = false,
-	} = options;
+	const { debounceMs = 1000, enabled = true, showNotifications = false } = options;
 
 	// Hooks
 	const { user } = useAuthContext();
@@ -96,9 +92,9 @@ export function useAutoSaveCanvas(options: UseAutoSaveCanvasOptions = {}): AutoS
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : "Failed to save canvas";
 			lastErrorRef.current = errorMessage;
-			
+
 			console.error("Auto-save failed:", error);
-			
+
 			if (showNotifications) {
 				toast.error(`Save failed: ${errorMessage}`, {
 					duration: 3000,
@@ -107,7 +103,16 @@ export function useAutoSaveCanvas(options: UseAutoSaveCanvasOptions = {}): AutoS
 		} finally {
 			isSavingRef.current = false;
 		}
-	}, [user?.id, flow?.id, flow?.canEdit, currentData, nodes, edges, saveFlowCanvas, showNotifications]);
+	}, [
+		user?.id,
+		flow?.id,
+		flow?.canEdit,
+		currentData,
+		nodes,
+		edges,
+		saveFlowCanvas,
+		showNotifications,
+	]);
 
 	// Manual save function
 	const saveNow = useCallback(() => {
@@ -116,7 +121,7 @@ export function useAutoSaveCanvas(options: UseAutoSaveCanvasOptions = {}): AutoS
 			clearTimeout(debounceTimeoutRef.current);
 			debounceTimeoutRef.current = null;
 		}
-		
+
 		performSave();
 	}, [performSave]);
 

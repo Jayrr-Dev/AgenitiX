@@ -19,19 +19,22 @@ export const RateLimitWarning = ({ email, onDismiss }: RateLimitWarningProps) =>
 					<div>
 						<strong>Too many login attempts</strong>
 						<p className="text-sm mt-1">
-							For security reasons, we've temporarily limited login attempts for <strong>{email}</strong>.
+							For security reasons, we've temporarily limited login attempts for{" "}
+							<strong>{email}</strong>.
 						</p>
 					</div>
-					
+
 					<div className="text-sm space-y-1">
-						<p>• You can try again in <strong>1 hour</strong></p>
+						<p>
+							• You can try again in <strong>1 hour</strong>
+						</p>
 						<p>• Check your email for any pending magic links</p>
 						<p>• Make sure you're using the correct email address</p>
 					</div>
 
 					<div className="flex gap-2 pt-2">
-						<Button 
-							size="sm" 
+						<Button
+							size="sm"
 							variant="outline"
 							onClick={onDismiss}
 							className="border-orange-300 text-orange-700 hover:bg-orange-100"
@@ -39,8 +42,8 @@ export const RateLimitWarning = ({ email, onDismiss }: RateLimitWarningProps) =>
 							Try Different Email
 						</Button>
 						<Link href="mailto:support@agenitix.com">
-							<Button 
-								size="sm" 
+							<Button
+								size="sm"
 								variant="outline"
 								className="border-orange-300 text-orange-700 hover:bg-orange-100"
 							>

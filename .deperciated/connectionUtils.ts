@@ -11,9 +11,9 @@
  */
 
 import type { Connection } from "@xyflow/react";
-import { getNodeMetadata } from "../features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 import { TYPE_MAP } from "../features/business-logic-modern/infrastructure/flow-engine/constants";
 import type { AgenNode } from "../features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
+import { getNodeMetadata } from "../features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 
 // CATEGORY COLOR MAPPING
 const CATEGORY_EDGE_COLORS = {

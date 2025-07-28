@@ -15,17 +15,17 @@ module.exports = {
 			2,
 			"always",
 			[
-				"feat",     // new feature
-				"fix",      // bug fix
-				"docs",     // documentation changes
+				"feat", // new feature
+				"fix", // bug fix
+				"docs", // documentation changes
 				"refactor", // code restructuring
-				"test",     // test additions/changes
-				"chore",    // maintenance tasks
-				"style",    // formatting, missing semi colons, etc.
-				"perf",     // performance improvements
-				"ci",       // CI configuration changes
-				"build",    // build system changes
-				"revert",   // reverts
+				"test", // test additions/changes
+				"chore", // maintenance tasks
+				"style", // formatting, missing semi colons, etc.
+				"perf", // performance improvements
+				"ci", // CI configuration changes
+				"build", // build system changes
+				"revert", // reverts
 			],
 		],
 		// Subject case
@@ -43,4 +43,4 @@ module.exports = {
 		// Allow longer body lines for detailed descriptions
 		"body-max-line-length": [1, "always", 150], // Warning instead of error, longer limit
 	},
-}; 
+};

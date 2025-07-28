@@ -1,223 +1,254 @@
 /**
  * UI Overview Generator
- * 
+ *
  * Automatically generates the UI components overview HTML by scanning
  * the components/ui directory and creating component cards dynamically.
- * 
+ *
  * Features:
  * - Scans components/ui directory for all UI components
  * - Categorizes components based on their location and content
  * - Generates statistics and component cards
  * - Creates interactive HTML with search and filter functionality
- * 
+ *
  * Usage: pnpm run generate-ui-overview
  */
 
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
 interface ComponentInfo {
-  name: string;
-  category: string;
-  description: string;
-  features: string[];
-  filePath: string;
-  hasDocumentation: boolean;
-  hasInteractive: boolean;
+	name: string;
+	category: string;
+	description: string;
+	features: string[];
+	filePath: string;
+	hasDocumentation: boolean;
+	hasInteractive: boolean;
 }
 
 interface CategoryStats {
-  [key: string]: number;
+	[key: string]: number;
 }
 
-const COMPONENTS_DIR = path.join(process.cwd(), 'components/ui');
-const DOCUMENTATION_DIR = path.join(process.cwd(), 'documentation/ui');
-const OUTPUT_FILE = path.join(process.cwd(), 'documentation/ui/overview.html');
+const COMPONENTS_DIR = path.join(process.cwd(), "components/ui");
+const DOCUMENTATION_DIR = path.join(process.cwd(), "documentation/ui");
+const OUTPUT_FILE = path.join(process.cwd(), "documentation/ui/overview.html");
 
 const CATEGORY_MAPPING: { [key: string]: string } = {
-  'core': 'Core',
-  'interactive': 'Interactive', 
-  'animation': 'Animation',
-  'layout': 'Layout',
-  'effects': 'Effects'
+	core: "Core",
+	interactive: "Interactive",
+	animation: "Animation",
+	layout: "Layout",
+	effects: "Effects",
 };
 
 const CATEGORY_DESCRIPTIONS: { [key: string]: string } = {
-  'core': 'Essential UI components for basic functionality',
-  'interactive': 'Interactive components with user interactions',
-  'animation': 'Animated components with motion effects',
-  'layout': 'Layout and structural components',
-  'effects': 'Special visual effects and enhancements'
+	core: "Essential UI components for basic functionality",
+	interactive: "Interactive components with user interactions",
+	animation: "Animated components with motion effects",
+	layout: "Layout and structural components",
+	effects: "Special visual effects and enhancements",
 };
 
 const FEATURE_MAPPING: { [key: string]: string[] } = {
-  'button': ['Variants', 'Sizes', 'Accessible', 'Polymorphic'],
-  'card': ['Header', 'Content', 'Footer', 'Responsive'],
-  'dialog': ['Modal', 'Overlay', 'Animated', 'Accessible'],
-  'accordion': ['Collapsible', 'Animated', 'Keyboard', 'Single/Multiple'],
-  'tabs': ['Navigation', 'Animated', 'Keyboard', 'Responsive'],
-  '3d-marquee': ['3D Rotation', 'Motion', 'Grid Layout', 'Responsive'],
-  'canvas-reveal-effect': ['Canvas', 'Reveal', 'Smooth', 'Performance'],
-  'scroll-area': ['Custom Scroll', 'Styled', 'Smooth', 'Cross-platform'],
-  'input': ['Form', 'Accessible', 'Styled', 'Responsive'],
-  'label': ['Form', 'Accessible', 'Semantic', 'Styled'],
-  'checkbox': ['Form', 'Custom', 'Accessible', 'Styled'],
-  'badge': ['Status', 'Labels', 'Variants', 'Compact'],
-  'dropdown-menu': ['Context Menu', 'Submenus', 'Keyboard', 'Animated'],
-  'navigation-menu': ['Navigation', 'Dropdowns', 'Keyboard', 'Responsive'],
-  'tooltip': ['Hover', 'Positioning', 'Accessible', 'Animated'],
-  'sheet': ['Slide-out', 'Overlay', 'Animated', 'Responsive'],
-  'infinite-moving-cards': ['Infinite', 'Scrolling', 'Smooth', 'Performance'],
-  'container-scroll-animation': ['Scroll-triggered', 'Intersection', 'Performance', 'Smooth'],
-  'flip-words': ['Text', 'Flip', 'Smooth', 'Animated'],
-  'logo-ticker': ['Logo', 'Scrolling', 'Continuous', 'Smooth'],
-  'carousel': ['Carousel', 'Navigation', 'Controls', 'Responsive'],
-  'carousel-dot-buttons': ['Dots', 'Navigation', 'Indicators', 'Controls'],
-  'animated-testimonials': ['Testimonials', 'Animated', 'Smooth', 'Responsive'],
-  'blur-image': ['Blur', 'Loading', 'Transitions', 'Performance'],
-  'sonner': ['Toast', 'Notifications', 'Animated', 'Positioning'],
-  'apple-cards-carousel': ['Carousel', 'Apple Style', 'Gestures', 'Smooth'],
-  'google-gemini-effect': ['Particles', 'Gemini Style', 'Interactive', 'Performance']
+	button: ["Variants", "Sizes", "Accessible", "Polymorphic"],
+	card: ["Header", "Content", "Footer", "Responsive"],
+	dialog: ["Modal", "Overlay", "Animated", "Accessible"],
+	accordion: ["Collapsible", "Animated", "Keyboard", "Single/Multiple"],
+	tabs: ["Navigation", "Animated", "Keyboard", "Responsive"],
+	"3d-marquee": ["3D Rotation", "Motion", "Grid Layout", "Responsive"],
+	"canvas-reveal-effect": ["Canvas", "Reveal", "Smooth", "Performance"],
+	"scroll-area": ["Custom Scroll", "Styled", "Smooth", "Cross-platform"],
+	input: ["Form", "Accessible", "Styled", "Responsive"],
+	label: ["Form", "Accessible", "Semantic", "Styled"],
+	checkbox: ["Form", "Custom", "Accessible", "Styled"],
+	badge: ["Status", "Labels", "Variants", "Compact"],
+	"dropdown-menu": ["Context Menu", "Submenus", "Keyboard", "Animated"],
+	"navigation-menu": ["Navigation", "Dropdowns", "Keyboard", "Responsive"],
+	tooltip: ["Hover", "Positioning", "Accessible", "Animated"],
+	sheet: ["Slide-out", "Overlay", "Animated", "Responsive"],
+	"infinite-moving-cards": ["Infinite", "Scrolling", "Smooth", "Performance"],
+	"container-scroll-animation": ["Scroll-triggered", "Intersection", "Performance", "Smooth"],
+	"flip-words": ["Text", "Flip", "Smooth", "Animated"],
+	"logo-ticker": ["Logo", "Scrolling", "Continuous", "Smooth"],
+	carousel: ["Carousel", "Navigation", "Controls", "Responsive"],
+	"carousel-dot-buttons": ["Dots", "Navigation", "Indicators", "Controls"],
+	"animated-testimonials": ["Testimonials", "Animated", "Smooth", "Responsive"],
+	"blur-image": ["Blur", "Loading", "Transitions", "Performance"],
+	sonner: ["Toast", "Notifications", "Animated", "Positioning"],
+	"apple-cards-carousel": ["Carousel", "Apple Style", "Gestures", "Smooth"],
+	"google-gemini-effect": ["Particles", "Gemini Style", "Interactive", "Performance"],
 };
 
 const COMPONENT_DESCRIPTIONS: { [key: string]: string } = {
-  'button': 'Versatile button component with multiple variants, sizes, and accessibility features.',
-  'card': 'Flexible container component for displaying content in a structured layout.',
-  'dialog': 'Modal dialog component with overlay, animations, and accessibility features.',
-  'accordion': 'Collapsible content component with smooth animations and keyboard navigation.',
-  'tabs': 'Tabbed content navigation with smooth transitions and accessibility.',
-  '3d-marquee': 'Sophisticated 3D rotating image gallery with motion effects and grid overlays.',
-  'canvas-reveal-effect': 'Animated reveal component with canvas-based effects and smooth transitions.',
-  'scroll-area': 'Custom scrollable container with styled scrollbars and smooth scrolling.',
-  'input': 'Form input component with consistent styling and accessibility features.',
-  'label': 'Form label component with proper accessibility and styling.',
-  'checkbox': 'Checkbox input component with custom styling and accessibility.',
-  'badge': 'Status and label badge component with various styles and colors.',
-  'dropdown-menu': 'Context menu component with submenus and keyboard navigation.',
-  'navigation-menu': 'Navigation component with dropdowns and keyboard accessibility.',
-  'tooltip': 'Hover tooltip component with positioning and accessibility.',
-  'sheet': 'Slide-out panel component with overlay and animations.',
-  'infinite-moving-cards': 'Continuously scrolling cards with smooth infinite animation.',
-  'container-scroll-animation': 'Scroll-triggered animations with intersection observer.',
-  'flip-words': 'Text flip animation component with smooth transitions.',
-  'logo-ticker': 'Scrolling logo display with smooth continuous animation.',
-  'carousel': 'Image/content carousel with navigation and controls.',
-  'carousel-dot-buttons': 'Carousel navigation with dot indicators and controls.',
-  'animated-testimonials': 'Animated testimonial display with smooth transitions and effects.',
-  'blur-image': 'Blur effect image component with loading states and transitions.',
-  'sonner': 'Toast notification component with smooth animations and positioning.',
-  'apple-cards-carousel': 'Apple-style card carousel with smooth animations and gesture support.',
-  'google-gemini-effect': 'Google Gemini-style visual effect with particle animations and interactions.'
+	button: "Versatile button component with multiple variants, sizes, and accessibility features.",
+	card: "Flexible container component for displaying content in a structured layout.",
+	dialog: "Modal dialog component with overlay, animations, and accessibility features.",
+	accordion: "Collapsible content component with smooth animations and keyboard navigation.",
+	tabs: "Tabbed content navigation with smooth transitions and accessibility.",
+	"3d-marquee": "Sophisticated 3D rotating image gallery with motion effects and grid overlays.",
+	"canvas-reveal-effect":
+		"Animated reveal component with canvas-based effects and smooth transitions.",
+	"scroll-area": "Custom scrollable container with styled scrollbars and smooth scrolling.",
+	input: "Form input component with consistent styling and accessibility features.",
+	label: "Form label component with proper accessibility and styling.",
+	checkbox: "Checkbox input component with custom styling and accessibility.",
+	badge: "Status and label badge component with various styles and colors.",
+	"dropdown-menu": "Context menu component with submenus and keyboard navigation.",
+	"navigation-menu": "Navigation component with dropdowns and keyboard accessibility.",
+	tooltip: "Hover tooltip component with positioning and accessibility.",
+	sheet: "Slide-out panel component with overlay and animations.",
+	"infinite-moving-cards": "Continuously scrolling cards with smooth infinite animation.",
+	"container-scroll-animation": "Scroll-triggered animations with intersection observer.",
+	"flip-words": "Text flip animation component with smooth transitions.",
+	"logo-ticker": "Scrolling logo display with smooth continuous animation.",
+	carousel: "Image/content carousel with navigation and controls.",
+	"carousel-dot-buttons": "Carousel navigation with dot indicators and controls.",
+	"animated-testimonials": "Animated testimonial display with smooth transitions and effects.",
+	"blur-image": "Blur effect image component with loading states and transitions.",
+	sonner: "Toast notification component with smooth animations and positioning.",
+	"apple-cards-carousel": "Apple-style card carousel with smooth animations and gesture support.",
+	"google-gemini-effect":
+		"Google Gemini-style visual effect with particle animations and interactions.",
 };
 
 function getComponentCategory(filePath: string): string {
-  const fileName = path.basename(filePath, '.tsx');
-  
-  // Check if it's in a specific category folder
-  const relativePath = path.relative(COMPONENTS_DIR, filePath);
-  const parts = relativePath.split(path.sep);
-  
-  if (parts.length > 1) {
-    const category = parts[0];
-    if (CATEGORY_MAPPING[category]) {
-      return category;
-    }
-  }
-  
-  // Default categorization based on component name
-  if (fileName.includes('button') || fileName.includes('input') || fileName.includes('card') || 
-      fileName.includes('dialog') || fileName.includes('label') || fileName.includes('checkbox') || 
-      fileName.includes('badge')) {
-    return 'core';
-  }
-  
-  if (fileName.includes('accordion') || fileName.includes('tabs') || fileName.includes('dropdown') || 
-      fileName.includes('navigation') || fileName.includes('tooltip') || fileName.includes('sheet')) {
-    return 'interactive';
-  }
-  
-  if (fileName.includes('marquee') || fileName.includes('animation') || fileName.includes('scroll') || 
-      fileName.includes('flip') || fileName.includes('ticker') || fileName.includes('moving')) {
-    return 'animation';
-  }
-  
-  if (fileName.includes('carousel') || fileName.includes('scroll-area')) {
-    return 'layout';
-  }
-  
-  if (fileName.includes('testimonials') || fileName.includes('blur') || fileName.includes('sonner') || 
-      fileName.includes('apple') || fileName.includes('gemini')) {
-    return 'effects';
-  }
-  
-  return 'core'; // Default to core
+	const fileName = path.basename(filePath, ".tsx");
+
+	// Check if it's in a specific category folder
+	const relativePath = path.relative(COMPONENTS_DIR, filePath);
+	const parts = relativePath.split(path.sep);
+
+	if (parts.length > 1) {
+		const category = parts[0];
+		if (CATEGORY_MAPPING[category]) {
+			return category;
+		}
+	}
+
+	// Default categorization based on component name
+	if (
+		fileName.includes("button") ||
+		fileName.includes("input") ||
+		fileName.includes("card") ||
+		fileName.includes("dialog") ||
+		fileName.includes("label") ||
+		fileName.includes("checkbox") ||
+		fileName.includes("badge")
+	) {
+		return "core";
+	}
+
+	if (
+		fileName.includes("accordion") ||
+		fileName.includes("tabs") ||
+		fileName.includes("dropdown") ||
+		fileName.includes("navigation") ||
+		fileName.includes("tooltip") ||
+		fileName.includes("sheet")
+	) {
+		return "interactive";
+	}
+
+	if (
+		fileName.includes("marquee") ||
+		fileName.includes("animation") ||
+		fileName.includes("scroll") ||
+		fileName.includes("flip") ||
+		fileName.includes("ticker") ||
+		fileName.includes("moving")
+	) {
+		return "animation";
+	}
+
+	if (fileName.includes("carousel") || fileName.includes("scroll-area")) {
+		return "layout";
+	}
+
+	if (
+		fileName.includes("testimonials") ||
+		fileName.includes("blur") ||
+		fileName.includes("sonner") ||
+		fileName.includes("apple") ||
+		fileName.includes("gemini")
+	) {
+		return "effects";
+	}
+
+	return "core"; // Default to core
 }
 
 function getComponentFeatures(componentName: string): string[] {
-  return FEATURE_MAPPING[componentName] || ['Responsive', 'Accessible', 'Styled', 'Modern'];
+	return FEATURE_MAPPING[componentName] || ["Responsive", "Accessible", "Styled", "Modern"];
 }
 
 function getComponentDescription(componentName: string): string {
-  return COMPONENT_DESCRIPTIONS[componentName] || 
-    'Modern UI component with responsive design and accessibility features.';
+	return (
+		COMPONENT_DESCRIPTIONS[componentName] ||
+		"Modern UI component with responsive design and accessibility features."
+	);
 }
 
 function scanComponents(): ComponentInfo[] {
-  const components: ComponentInfo[] = [];
-  
-  function scanDirectory(dir: string, category: string = 'core') {
-    if (!fs.existsSync(dir)) return;
-    
-    const files = fs.readdirSync(dir);
-    
-    for (const file of files) {
-      const filePath = path.join(dir, file);
-      const stat = fs.statSync(filePath);
-      
-      if (stat.isDirectory()) {
-        scanDirectory(filePath, file);
-      } else if (file.endsWith('.tsx') && !file.startsWith('.')) {
-        const componentName = path.basename(file, '.tsx');
-        const componentCategory = getComponentCategory(filePath);
-        
-        // Check if documentation exists
-        const docPath = path.join(DOCUMENTATION_DIR, componentCategory, `${componentName}.md`);
-        const interactivePath = path.join(DOCUMENTATION_DIR, componentCategory, `${componentName}.html`);
-        
-        components.push({
-          name: componentName,
-          category: componentCategory,
-          description: getComponentDescription(componentName),
-          features: getComponentFeatures(componentName),
-          filePath,
-          hasDocumentation: fs.existsSync(docPath),
-          hasInteractive: fs.existsSync(interactivePath)
-        });
-      }
-    }
-  }
-  
-  scanDirectory(COMPONENTS_DIR);
-  return components;
+	const components: ComponentInfo[] = [];
+
+	function scanDirectory(dir: string, category = "core") {
+		if (!fs.existsSync(dir)) return;
+
+		const files = fs.readdirSync(dir);
+
+		for (const file of files) {
+			const filePath = path.join(dir, file);
+			const stat = fs.statSync(filePath);
+
+			if (stat.isDirectory()) {
+				scanDirectory(filePath, file);
+			} else if (file.endsWith(".tsx") && !file.startsWith(".")) {
+				const componentName = path.basename(file, ".tsx");
+				const componentCategory = getComponentCategory(filePath);
+
+				// Check if documentation exists
+				const docPath = path.join(DOCUMENTATION_DIR, componentCategory, `${componentName}.md`);
+				const interactivePath = path.join(
+					DOCUMENTATION_DIR,
+					componentCategory,
+					`${componentName}.html`
+				);
+
+				components.push({
+					name: componentName,
+					category: componentCategory,
+					description: getComponentDescription(componentName),
+					features: getComponentFeatures(componentName),
+					filePath,
+					hasDocumentation: fs.existsSync(docPath),
+					hasInteractive: fs.existsSync(interactivePath),
+				});
+			}
+		}
+	}
+
+	scanDirectory(COMPONENTS_DIR);
+	return components;
 }
 
 function generateStats(components: ComponentInfo[]): CategoryStats {
-  const stats: CategoryStats = {
-    total: components.length
-  };
-  
-  components.forEach(component => {
-    stats[component.category] = (stats[component.category] || 0) + 1;
-  });
-  
-  return stats;
+	const stats: CategoryStats = {
+		total: components.length,
+	};
+
+	components.forEach((component) => {
+		stats[component.category] = (stats[component.category] || 0) + 1;
+	});
+
+	return stats;
 }
 
 function generateComponentCard(component: ComponentInfo): string {
-  const categoryClass = `category-${component.category}`;
-  const searchTerms = [component.name, ...component.features].join(' ').toLowerCase();
-  
-  return `
+	const categoryClass = `category-${component.category}`;
+	const searchTerms = [component.name, ...component.features].join(" ").toLowerCase();
+
+	return `
       <div class="component-card" data-category="${component.category}" data-search="${searchTerms}">
         <div class="component-header">
           <div class="component-title">${component.name.charAt(0).toUpperCase() + component.name.slice(1)}</div>
@@ -227,27 +258,30 @@ function generateComponentCard(component: ComponentInfo): string {
           ${component.description}
         </div>
         <div class="component-features">
-          ${component.features.map(feature => `<span class="feature-tag">${feature}</span>`).join('\n          ')}
+          ${component.features.map((feature) => `<span class="feature-tag">${feature}</span>`).join("\n          ")}
         </div>
         <div class="component-actions">
-          ${component.hasDocumentation ? `<a href="./${component.category}/${component.name}.md" class="action-btn">Documentation</a>` : ''}
-          ${component.hasInteractive ? `<a href="./${component.category}/${component.name}.html" class="action-btn primary">Interactive</a>` : ''}
+          ${component.hasDocumentation ? `<a href="./${component.category}/${component.name}.md" class="action-btn">Documentation</a>` : ""}
+          ${component.hasInteractive ? `<a href="./${component.category}/${component.name}.html" class="action-btn primary">Interactive</a>` : ""}
         </div>
       </div>`;
 }
 
 function generateHTML(components: ComponentInfo[], stats: CategoryStats): string {
-  const componentCards = components.map(generateComponentCard).join('\n');
-  
-  const categoryStats = Object.entries(stats)
-    .filter(([key]) => key !== 'total')
-    .map(([category, count]) => `
+	const componentCards = components.map(generateComponentCard).join("\n");
+
+	const categoryStats = Object.entries(stats)
+		.filter(([key]) => key !== "total")
+		.map(
+			([category, count]) => `
       <div class="stat-card">
         <span class="stat-number">${count}</span>
         <div class="stat-label">${CATEGORY_MAPPING[category]} Components</div>
-      </div>`).join('');
+      </div>`
+		)
+		.join("");
 
-  return `<!DOCTYPE html>
+	return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -534,9 +568,12 @@ function generateHTML(components: ComponentInfo[], stats: CategoryStats): string
       >
       <div class="filter-buttons">
         <button class="filter-btn active" data-category="all">All</button>
-        ${Object.keys(CATEGORY_MAPPING).map(category => 
-          `<button class="filter-btn" data-category="${category}">${CATEGORY_MAPPING[category]}</button>`
-        ).join('\n        ')}
+        ${Object.keys(CATEGORY_MAPPING)
+					.map(
+						(category) =>
+							`<button class="filter-btn" data-category="${category}">${CATEGORY_MAPPING[category]}</button>`
+					)
+					.join("\n        ")}
       </div>
     </div>
 
@@ -610,35 +647,35 @@ ${componentCards}
 }
 
 function main() {
-  console.log('🔍 Scanning UI components...');
-  
-  const components = scanComponents();
-  const stats = generateStats(components);
-  
-  console.log(`📊 Found ${components.length} components:`);
-  Object.entries(stats).forEach(([category, count]) => {
-    if (category !== 'total') {
-      console.log(`  - ${CATEGORY_MAPPING[category]}: ${count}`);
-    }
-  });
-  
-  console.log('📝 Generating overview HTML...');
-  const html = generateHTML(components, stats);
-  
-  // Ensure documentation directory exists
-  const docDir = path.dirname(OUTPUT_FILE);
-  if (!fs.existsSync(docDir)) {
-    fs.mkdirSync(docDir, { recursive: true });
-  }
-  
-  fs.writeFileSync(OUTPUT_FILE, html);
-  
-  console.log(`✅ Generated overview at: ${OUTPUT_FILE}`);
-  console.log(`📈 Statistics: ${stats.total} total components`);
+	console.log("🔍 Scanning UI components...");
+
+	const components = scanComponents();
+	const stats = generateStats(components);
+
+	console.log(`📊 Found ${components.length} components:`);
+	Object.entries(stats).forEach(([category, count]) => {
+		if (category !== "total") {
+			console.log(`  - ${CATEGORY_MAPPING[category]}: ${count}`);
+		}
+	});
+
+	console.log("📝 Generating overview HTML...");
+	const html = generateHTML(components, stats);
+
+	// Ensure documentation directory exists
+	const docDir = path.dirname(OUTPUT_FILE);
+	if (!fs.existsSync(docDir)) {
+		fs.mkdirSync(docDir, { recursive: true });
+	}
+
+	fs.writeFileSync(OUTPUT_FILE, html);
+
+	console.log(`✅ Generated overview at: ${OUTPUT_FILE}`);
+	console.log(`📈 Statistics: ${stats.total} total components`);
 }
 
 if (require.main === module) {
-  main();
+	main();
 }
 
-export { main as generateUIOverview }; 
+export { main as generateUIOverview };
