@@ -352,14 +352,14 @@ const EmailReaderNode = memo(
     // 4.4  Available accounts for selection
     // -------------------------------------------------------------------------
     const availableAccounts = useMemo(() => {
-      if (!emailAccounts?.success || !emailAccounts.data) return [];
+      if (!emailAccounts || !Array.isArray(emailAccounts)) return [];
       
-      return emailAccounts.data.map(account => ({
-        value: account._id,
+      return emailAccounts.map(account => ({
+        value: account.id,
         label: `${account.email} (${account.provider})`,
         provider: account.provider,
         email: account.email,
-        isActive: account.is_active,
+        isActive: account.isActive,
       }));
     }, [emailAccounts]);
 

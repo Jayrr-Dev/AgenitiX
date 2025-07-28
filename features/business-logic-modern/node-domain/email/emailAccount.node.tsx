@@ -256,7 +256,10 @@ const EmailAccountNode = memo(
     // -------------------------------------------------------------------------
     // 4.1  Sync with React‑Flow store and auth
     // -------------------------------------------------------------------------
-    const { nodeData, updateNodeData } = useNodeData(id, {});
+    const { nodeData, updateNodeData } = useNodeData(id, {}) as { 
+      nodeData: EmailAccountData; 
+      updateNodeData: (data: Partial<EmailAccountData>) => void; 
+    };
     const { user, token } = useAuthContext();
 
     // -------------------------------------------------------------------------
@@ -555,14 +558,14 @@ const EmailAccountNode = memo(
 
     /** Test connection */
     const handleTestConnection = useCallback(async () => {
-      if (!token || !nodeData.accountId) return;
+      if (!token || !nodeData.accountId || typeof nodeData.accountId !== 'string') return;
 
       try {
         updateNodeData({ connectionStatus: "connecting", lastError: "" });
 
         const result = await validateConnection({
           token_hash: token,
-          account_id: nodeData.accountId,
+          account_id: nodeData.accountId as any,
         });
 
         if (result.success) {

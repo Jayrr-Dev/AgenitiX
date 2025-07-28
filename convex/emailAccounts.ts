@@ -453,7 +453,10 @@ export const validateEmailConnection = mutation({
 
         return {
           success: false,
-          error: isValid.error,
+          error: isValid.error || {
+            code: "VALIDATION_FAILED",
+            message: "Connection validation failed",
+          },
         };
       }
     } catch (error) {

@@ -16,6 +16,7 @@
 
 // Force dynamic rendering to avoid prerendering issues
 export const dynamic = "force-dynamic";
+export const runtime = "edge";
 
 import { Loading } from "@/components/Loading";
 import { useAuthContext } from "@/components/auth/AuthProvider";
@@ -81,6 +82,11 @@ const DashboardContent = () => {
   );
   const createFlow = useMutation(api.flows.createFlow);
   const updateFlow = useMutation(api.flows.updateFlow);
+
+  // Handle potential SSR issues
+  if (typeof window === 'undefined') {
+    return <Loading />;
+  }
 
   // Loading state
   if (authLoading || flows === undefined) {
