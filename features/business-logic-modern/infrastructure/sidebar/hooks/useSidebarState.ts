@@ -40,10 +40,10 @@ const STORAGE_KEYS = {
 } as const;
 
 /** Default state values for consistent SSR/client rendering */
-const DEFAULT_VARIANT: SidebarVariant = "A";
+const DEFAULT_VARIANT: SidebarVariant = "C";
 const DEFAULT_TABS = {
 	A: "MAIN" as TabKeyA,
-	B: "CREATE" as TabKeyB,
+	B: "EMAIL" as TabKeyB,
 	C: "ALL" as TabKeyC,
 	D: "TOP_NODES" as TabKeyD,
 	E: "ESSENTIALS" as TabKeyE,

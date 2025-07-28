@@ -15,6 +15,7 @@ import type {
 } from "convex/server";
 import type * as auth from "../auth.js";
 import type * as devHelpers from "../devHelpers.js";
+import type * as emailAccounts from "../emailAccounts.js";
 import type * as flows from "../flows.js";
 
 /**
@@ -28,6 +29,7 @@ import type * as flows from "../flows.js";
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   devHelpers: typeof devHelpers;
+  emailAccounts: typeof emailAccounts;
   flows: typeof flows;
 }>;
 export declare const api: FilterApi<
