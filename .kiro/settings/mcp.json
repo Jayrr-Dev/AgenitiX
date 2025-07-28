@@ -1,33 +1,46 @@
 {
-	"mcpServers": {
-		"convex": {
-			"command": "npx",
-			"args": ["-y", "convex@latest", "mcp", "start"]
-		},
-
-		"Context7": {
-			"command": "npx",
-			"args": ["-y", "@upstash/context7-mcp"],
-			"env": {},
-			"disabled": false,
-			"autoApprove": []
-		},
-
-		"playwright": {
-			"command": "npx",
-			"args": ["@playwright/mcp@latest"]
-		},
-
-		"Ref": {
-			"command": "npx",
-			"args": ["ref-tools-mcp@latest"],
-			"env": {
-				"REF_API_KEY": "ref-be3025baf6ed7dd91c52"
-			}
-		},
-		"Sentry": {
-			"command": "npx",
-			"args": ["-y", "mcp-remote@latest", "https://mcp.sentry.dev/mcp"]
-		}
-	}
+  "mcpServers": {
+    "convex": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "convex@latest",
+        "mcp",
+        "start"
+      ]
+    },
+    "Context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    },
+    "Ref": {
+      "command": "npx",
+      "args": [
+        "ref-tools-mcp@latest"
+      ],
+      "env": {
+        "REF_API_KEY": "ref-be3025baf6ed7dd91c52"
+      }
+    },
+    "Sentry": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote@latest",
+        "https://mcp.sentry.dev/mcp"
+      ]
+    }
+  }
 }
