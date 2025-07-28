@@ -722,7 +722,7 @@ export const sendEmail = mutation({
         return {
           success: true,
           data: {
-            messageId: (sendResult as any).messageId || "unknown",
+            messageId: sendResult.success ? (sendResult as any).messageId : "unknown",
             recipients: args.recipients,
             deliveryStatus: "sent",
             message: `Email sent successfully to ${args.recipients.to.length} recipient(s)`,
