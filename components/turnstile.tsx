@@ -30,7 +30,9 @@ export default function Turnstile({
 		}
 
 		const handleRender = () => {
-			if (!containerRef.current || !(window as any).turnstile) return;
+			if (!(containerRef.current && (window as any).turnstile)) {
+				return;
+			}
 
 			// If a widget was already rendered, remove it first instead of resetting
 			if (widgetIdRef.current) {

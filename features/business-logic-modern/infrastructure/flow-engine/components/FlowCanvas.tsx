@@ -162,11 +162,11 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 	setInspectorLocked,
 	reactFlowHandlers,
 }) => {
-	const componentName = "FlowCanvas";
+	const _componentName = "FlowCanvas";
 
 	// Theme integration
 	const { resolvedTheme } = useTheme();
-	const [mounted, setMounted] = useState(false);
+	const [_mounted, setMounted] = useState(false);
 
 	useEffect(() => {
 		setMounted(true);
@@ -185,7 +185,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 	// ============================================================================
 
 	const [isMobile, setIsMobile] = useState(false);
-	const [hasFilteredNodes, setHasFilteredNodes] = useState(false);
+	const [_hasFilteredNodes, setHasFilteredNodes] = useState(false);
 
 	// Get themed classes for components
 	// const nodeInspectorTheme = useComponentTheme("nodeInspector");
@@ -225,7 +225,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 				return false;
 			}
 
-			if (!node.id || !node.type) {
+			if (!(node.id && node.type)) {
 				console.warn("🔍 [FlowCanvas] Filtered out node missing id or type:", node);
 				return false;
 			}
@@ -277,7 +277,9 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 	// ============================================================================
 
 	const isMac = useMemo(() => {
-		if (typeof navigator === "undefined") return false;
+		if (typeof navigator === "undefined") {
+			return false;
+		}
 		return navigator.platform.toUpperCase().includes("MAC");
 	}, []);
 
@@ -300,7 +302,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 	return (
 		<div
 			ref={wrapperRef}
-			className="relative flex-1 w-full h-full"
+			className="relative h-full w-full flex-1"
 			onDragOver={onDragOver}
 			onDrop={onDrop}
 			style={{
@@ -337,21 +339,21 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 				multiSelectionKeyCode={selectionKeys.multiSelectionKeyCode}
 				deleteKeyCode={["Delete", "Backspace"]}
 				// Interaction Settings
-				snapToGrid
+				snapToGrid={true}
 				snapGrid={SNAP_GRID}
-				panOnDrag
-				panOnScroll
+				panOnDrag={true}
+				panOnScroll={true}
 				panOnScrollMode={PanOnScrollMode.Free}
-				zoomOnScroll
-				zoomOnPinch
+				zoomOnScroll={true}
+				zoomOnPinch={true}
 				zoomOnDoubleClick={false}
 				// Node/Edge Behavior
-				nodesDraggable
-				nodesConnectable
-				elementsSelectable
-				edgesReconnectable
+				nodesDraggable={true}
+				nodesConnectable={true}
+				elementsSelectable={true}
+				edgesReconnectable={true}
 				// Visual Settings
-				fitView
+				fitView={true}
 				colorMode={colorMode}
 				proOptions={{ hideAttribution: true }}
 				defaultEdgeOptions={{
@@ -364,13 +366,13 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 				{/* NODE INSPECTOR PANEL */}
 				<Panel
 					position={inspectorViewMode === "bottom" ? "bottom-center" : "top-right"}
-					className={`hidden md:block rounded shadow-sm ${
+					className={`hidden rounded shadow-sm md:block ${
 						inspectorViewMode === "bottom"
-							? "max-w-4xl max-h-[280px]"
+							? "max-h-[280px] max-w-4xl"
 							: inspectorLocked || !selectedNode
-								? "w-[50px] h-[50px] bg-card border border-border rounded-lg shadow-lg"
-								: "w-[450px] max-h-[calc(100vh-370px)]"
-					} overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${nodeInspectorStyles.getContainer()}`}
+								? "h-[50px] w-[50px] rounded-lg border border-border bg-card shadow-lg"
+								: "max-h-[calc(100vh-370px)] w-[450px]"
+					} overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${nodeInspectorStyles.getContainer()}`}
 				>
 					<NodeDisplayProvider>
 						<NodeInspector viewMode={inspectorViewMode} />
@@ -422,7 +424,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 								selectedNode
 									? `Delete ${selectedNode.data?.label || selectedNode.type} node`
 									: selectedEdge
-										? `Delete connection`
+										? "Delete connection"
 										: "Delete"
 							}
 						>
@@ -448,11 +450,11 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 					<Panel
 						position={inspectorViewMode === "side" ? "bottom-center" : "top-right"}
 						className={`${
-							inspectorViewMode === "side" ? "mb-4 -translate-y-[50px]" : PANEL_STYLES.historyPanel
+							inspectorViewMode === "side" ? "-translate-y-[50px] mb-4" : PANEL_STYLES.historyPanel
 						}`}
 						style={inspectorViewMode === "side" ? {} : { marginTop: PANEL_STYLES.historyPanelTop }}
 					>
-						<div className="w-80 max-h-96">
+						<div className="max-h-96 w-80">
 							<HistoryPanel className="shadow-lg" />
 						</div>
 					</Panel>

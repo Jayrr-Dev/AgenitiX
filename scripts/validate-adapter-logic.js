@@ -10,8 +10,8 @@
  * Keywords: validation, adapter-logic, comprehensive-approach, future-proof, regression-prevention
  */
 
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 // Constants for file paths
 const ADAPTER_FILE_PATH = path.join(
@@ -28,8 +28,6 @@ const CATEGORY_CHECK_PATTERN = /metadata\.category ===/;
  * Validate that the NodeInspectorAdapter includes TEST category in determineHasControls
  */
 function validateAdapterLogic() {
-	console.log("🔍 Validating NodeInspectorAdapter logic...");
-
 	try {
 		// Check if adapter file exists
 		if (!fs.existsSync(ADAPTER_FILE_PATH)) {
@@ -56,11 +54,6 @@ function validateAdapterLogic() {
 		if (hasCategoryChecks) {
 			console.warn("⚠️  Found hardcoded category checks - consider using comprehensive approach");
 		}
-
-		console.log("✅ NodeInspectorAdapter logic is valid!");
-		console.log("   • All node categories have controls by default");
-		console.log("   • Comprehensive approach ensures future-proof behavior");
-		console.log("   • Consistent UX across CREATE, VIEW, TRIGGER, TEST, CYCLE, STORE categories");
 
 		return true;
 	} catch (error) {

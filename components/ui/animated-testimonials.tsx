@@ -104,13 +104,13 @@ export const AnimatedTestimonials = ({
 						exit={{ y: -20, opacity: 0 }}
 						transition={{ duration: 0.2, ease: "easeInOut" }}
 					>
-						<h3 className="text-2xl font-bold text-black dark:text-white">
+						<h3 className="font-bold text-2xl text-black dark:text-white">
 							{testimonials[active].name}
 						</h3>
-						<p className="text-sm text-gray-500 dark:text-neutral-500">
+						<p className="text-gray-500 text-sm dark:text-neutral-500">
 							{testimonials[active].designation}
 						</p>
-						<motion.p className="mt-8 text-lg text-gray-500 dark:text-neutral-300">
+						<motion.p className="mt-8 text-gray-500 text-lg dark:text-neutral-300">
 							{testimonials[active].quote.split(" ").map((word, index) => (
 								<motion.span
 									key={index}
@@ -140,7 +140,7 @@ export const AnimatedTestimonials = ({
 							onClick={handleNext}
 							className="group/button flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 dark:bg-neutral-800"
 						>
-							<IconArrowRight className="h-5 w-5 text-black transition-transform duration-300 group-hover/button:-rotate-12 dark:text-neutral-400" />
+							<IconArrowRight className="group-hover/button:-rotate-12 h-5 w-5 text-black transition-transform duration-300 dark:text-neutral-400" />
 						</button>
 					</div>
 				</div>

@@ -63,14 +63,16 @@ export async function POST(request: NextRequest) {
 
 		// Validate the required fields
 		if (
-			!consultationData.name ||
-			!consultationData.email ||
-			!consultationData.phone ||
-			!consultationData.company ||
-			!consultationData.role ||
-			!consultationData.date ||
-			!consultationData.time ||
-			!consultationData.topic
+			!(
+				consultationData.name &&
+				consultationData.email &&
+				consultationData.phone &&
+				consultationData.company &&
+				consultationData.role &&
+				consultationData.date &&
+				consultationData.time &&
+				consultationData.topic
+			)
 		) {
 			return NextResponse.json(
 				{ success: false, message: "Missing required fields" },

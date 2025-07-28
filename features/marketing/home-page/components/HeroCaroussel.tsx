@@ -10,8 +10,6 @@ import type { typeMarqueeImages, typeSlides } from "@/features/marketing/home-pa
 import useEmblaCarousel from "embla-carousel-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTheme } from "next-themes";
-import dynamic from "next/dynamic";
-import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 
 interface ImageItem {
@@ -25,7 +23,7 @@ export function HeroCarousel() {
 	const videoRef = useRef<HTMLVideoElement>(null);
 	const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
 	const { theme } = useTheme();
-	const isDark = theme === "dark";
+	const _isDark = theme === "dark";
 	const images: ImageItem[] = imagesMarquee.map((image: typeMarqueeImages) => ({
 		key: image.key,
 		url: image.url,
@@ -40,7 +38,7 @@ export function HeroCarousel() {
 			component: (
 				<ThreeDMarquee
 					images={images.map((img) => img.url)}
-					className="brightness-[0.5] blur-xs bg-linear-to-r from-red-500 to-blue-500"
+					className="bg-linear-to-r from-red-500 to-blue-500 blur-xs brightness-[0.5]"
 				/>
 			),
 			heading: "Visual Flow Automation Platform",
@@ -61,7 +59,9 @@ export function HeroCarousel() {
 
 	// Track embla carousel's active index
 	useEffect(() => {
-		if (!emblaApi) return;
+		if (!emblaApi) {
+			return;
+		}
 
 		const onSelect = () => {
 			setActiveIndex(emblaApi.selectedScrollSnap());
@@ -78,7 +78,9 @@ export function HeroCarousel() {
 
 	// Auto-scroll carousel
 	useEffect(() => {
-		if (!emblaApi) return;
+		if (!emblaApi) {
+			return;
+		}
 
 		const interval = setInterval(() => {
 			emblaApi.scrollNext();
@@ -141,28 +143,28 @@ export function HeroCarousel() {
 	};
 
 	return (
-		<div className="xdebug-blue relative overflow-hidden w-full">
-			<div ref={emblaRef} className=" w-full z-10 relative overflow-hidden">
+		<div className="xdebug-blue relative w-full overflow-hidden">
+			<div ref={emblaRef} className=" relative z-10 w-full overflow-hidden">
 				{/* Navigation buttons */}
 
-				<div className="xdebug-green lg:mx-20  flex">
+				<div className="xdebug-green flex lg:mx-20">
 					{slides.map((slide, index) => (
 						<div
 							key={index}
-							className="relative flex-[0_0_100%] min-w-0"
+							className="relative min-w-0 flex-[0_0_100%]"
 							style={{ overflow: "hidden" }}
 						>
 							<Card className="rounded-none">
-								<CardContent className="flex items-center justify-center m-0 p-0 overflow-hidden ">
+								<CardContent className="m-0 flex items-center justify-center overflow-hidden p-0 ">
 									{slide.type === "video" ? (
 										// VIDEO CAROUSEL
 										<video
 											ref={videoRef}
 											src={slide.src}
-											autoPlay
-											muted
-											playsInline
-											loop
+											autoPlay={true}
+											muted={true}
+											playsInline={true}
+											loop={true}
 											className="w-full object-cover brightness-[0.7]"
 											style={{ height: "calc(100vh - 96px)" }}
 										/>
@@ -172,7 +174,7 @@ export function HeroCarousel() {
 											src={slide.src}
 											alt={`hero-carousel-${index + 1}`}
 											loading="lazy"
-											className="w-full h-full object-cover transition-transform duration-300"
+											className="h-full w-full object-cover transition-transform duration-300"
 											style={{
 												height: "calc(100vh - 96px)",
 												transform: `translateY(${scrollY * 0.1}px)`,
@@ -180,7 +182,7 @@ export function HeroCarousel() {
 										/>
 									) : slide.type === "component" ? (
 										// COMPONENT CAROUSEL
-										<div className="w-full h-full">{slide.component}</div>
+										<div className="h-full w-full">{slide.component}</div>
 									) : null}
 
 									{/* Animated Message Card with CTA */}
@@ -197,30 +199,30 @@ export function HeroCarousel() {
 												>
 													<motion.div variants={buttonVariants}>
 														{/* Message Card */}
-														<Card className="xdebug-red bg-transparent border-none  md:pl-16 lg:pl-32 mb-52">
-															<CardContent className="flex flex-col w-3/5 gap-8">
+														<Card className="xdebug-red mb-52 border-none bg-transparent md:pl-16 lg:pl-32">
+															<CardContent className="flex w-3/5 flex-col gap-8">
 																{/* Subheading */}
-																<h2 className="text-xl text-white/95 font-extralight drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] ">
+																<h2 className="font-extralight text-white/95 text-xl drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] ">
 																	{slide.heading.toUpperCase()}
 																</h2>
 																{/* Heading */}
-																<h2 className="lg:text-5xl text-4xl text-white/95 font-sans font-bold drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] ">
+																<h2 className="font-bold font-sans text-4xl text-white/95 drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] lg:text-5xl ">
 																	{slide.title}
 																</h2>
 																{/* Message */}
-																<p className="hidden lg:block text-white/95 text-lg font-brand font-extralight drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] ">
+																<p className="hidden font-brand font-extralight text-lg text-white/95 drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] lg:block ">
 																	{slide.message}
 																</p>
-																<div className="flex flex-col sm:flex-row gap-4 w-full">
+																<div className="flex w-full flex-col gap-4 sm:flex-row">
 																	<Button
 																		size="lg"
-																		className="border-2 border-transparent flex-1 group/cta bg-white text-gray-900 hover:bg-gray-100 font-semibold"
+																		className="group/cta flex-1 border-2 border-transparent bg-white font-semibold text-gray-900 hover:bg-gray-100"
 																		onClick={() => (window.location.href = slide.ctaLink)}
 																	>
-																		<div className="flex flex-row gap-2 items-center">
+																		<div className="flex flex-row items-center gap-2">
 																			{slide.ctaText}
 																			<svg
-																				className="group-hover/cta:block opacity-0 group-hover/cta:opacity-100 transition-opacity duration-300"
+																				className="opacity-0 transition-opacity duration-300 group-hover/cta:block group-hover/cta:opacity-100"
 																				xmlns="http://www.w3.org/2000/svg"
 																				width="24"
 																				height="24"
@@ -236,7 +238,7 @@ export function HeroCarousel() {
 																	<Button
 																		size="lg"
 																		variant="outline"
-																		className="border-2 border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm flex-1 font-semibold"
+																		className="flex-1 border-2 border-white/30 bg-white/10 font-semibold text-white backdrop-blur-sm hover:bg-white/20"
 																		onClick={() => (window.location.href = "/sign-in")}
 																	>
 																		Sign In
@@ -256,30 +258,28 @@ export function HeroCarousel() {
 				</div>
 
 				<button
-					className="absolute left-0 top-1/2 -translate-y-1/2 rounded-none h-full w-1/5 
-            bg-linear-to-l from-transparent to-black/50 opacity-0 transition-opacity duration-500 hover:opacity-100 z-10"
+					className="-translate-y-1/2 absolute top-1/2 left-0 z-10 h-full w-1/5 rounded-none bg-linear-to-l from-transparent to-black/50 opacity-0 transition-opacity duration-500 hover:opacity-100"
 					onClick={() => emblaApi?.scrollPrev()}
 				/>
 				<button
-					className="absolute right-0 top-1/2 -translate-y-1/2 rounded-none h-full w-1/5 
-            bg-linear-to-r from-transparent to-black/50 opacity-0 transition-opacity duration-500 hover:opacity-100 z-10"
+					className="-translate-y-1/2 absolute top-1/2 right-0 z-10 h-full w-1/5 rounded-none bg-linear-to-r from-transparent to-black/50 opacity-0 transition-opacity duration-500 hover:opacity-100"
 					onClick={() => emblaApi?.scrollNext()}
 				/>
 
 				{/* Carousel Dots */}
-				<div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-50">
+				<div className="absolute right-0 bottom-4 left-0 z-50 flex justify-center gap-2">
 					{slides.map((_, index) => (
 						<button
 							key={`dot-${index}`}
-							className={`w-3 h-3 rounded-full transition-all ${
-								activeIndex === index ? "bg-primary scale-100" : "bg-primary/30 scale-90"
+							className={`h-3 w-3 rounded-full transition-all ${
+								activeIndex === index ? "scale-100 bg-primary" : "scale-90 bg-primary/30"
 							}`}
 							onClick={() => emblaApi?.scrollTo(index)}
 						/>
 					))}
 				</div>
 				{/* Decorative Shape Divider */}
-				<div className="custom-shape-divider-bottom-1741703122 absolute bottom-0 left-0 right-0 z-20">
+				<div className="custom-shape-divider-bottom-1741703122 absolute right-0 bottom-0 left-0 z-20">
 					<svg
 						data-name="Layer 1"
 						xmlns="http://www.w3.org/2000/svg"
@@ -287,11 +287,11 @@ export function HeroCarousel() {
 						preserveAspectRatio="none"
 						fill="background"
 					>
-						<path d="M598.97 114.72L0 0 0 120 1200 120 1200 0 598.97 114.72z"></path>
+						<path d="M598.97 114.72L0 0 0 120 1200 120 1200 0 598.97 114.72z" />
 					</svg>
 				</div>
 
-				<div className="custom-shape-divider-top-1745800192 absolute bottom-0 left-0 right-0 z-20"></div>
+				<div className="custom-shape-divider-top-1745800192 absolute right-0 bottom-0 left-0 z-20" />
 			</div>
 		</div>
 	);

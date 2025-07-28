@@ -11,21 +11,12 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import React, {
-	memo,
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-	type ChangeEvent,
-} from "react";
+import { type ChangeEvent, memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
 	SafeSchemas,
 	createSafeInitialData,
@@ -44,13 +35,10 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 
-// Email domain imports
-import type { EmailMessage, EmailProviderType, MessageFilters } from "./types";
-
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
 // Convex integration
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { toast } from "sonner";
 
 // -----------------------------------------------------------------------------
@@ -331,11 +319,11 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 	const categoryStyles = CATEGORY_TEXT.EMAIL;
 
 	// Global React‑Flow store (nodes & edges) – triggers re‑render on change
-	const nodes = useStore((s) => s.nodes);
-	const edges = useStore((s) => s.edges);
+	const _nodes = useStore((s) => s.nodes);
+	const _edges = useStore((s) => s.edges);
 
 	// Keep last emitted output to avoid redundant writes
-	const lastOutputRef = useRef<string | null>(null);
+	const _lastOutputRef = useRef<string | null>(null);
 
 	// -------------------------------------------------------------------------
 	// 4.3  Convex integration
@@ -349,7 +337,9 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 	// 4.4  Available accounts for selection
 	// -------------------------------------------------------------------------
 	const availableAccounts = useMemo(() => {
-		if (!emailAccounts || !Array.isArray(emailAccounts)) return [];
+		if (!(emailAccounts && Array.isArray(emailAccounts))) {
+			return [];
+		}
 
 		return emailAccounts.map((account) => ({
 			value: account.id,
@@ -423,7 +413,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
 	/** Handle read messages action */
 	const handleReadMessages = useCallback(async () => {
-		if (!accountId || !token) {
+		if (!(accountId && token)) {
 			toast.error("Please select an email account first");
 			return;
 		}
@@ -505,30 +495,10 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 			{/* Editable label */}
 			<LabelNode nodeId={id} label={spec.displayName} />
 
-			{!isExpanded ? (
-				<div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ""}`}>
-					<div className="text-center p-2">
-						<div className={`text-xs font-mono ${categoryStyles.primary}`}>
-							{accountId ? `${messageCount} messages` : "No account"}
-						</div>
-						<div
-							className={`text-xs ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}
-						>
-							{connectionStatus === "reading"
-								? "📖"
-								: connectionStatus === "connected"
-									? "✓"
-									: connectionStatus === "error"
-										? "✗"
-										: "○"}{" "}
-							{connectionStatus}
-						</div>
-					</div>
-				</div>
-			) : (
-				<div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}>
+			{isExpanded ? (
+				<div className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}>
 					<div className={CONTENT.header}>
-						<span className="text-sm font-medium">Email Reader</span>
+						<span className="font-medium text-sm">Email Reader</span>
 						<div
 							className={`text-xs ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}
 						>
@@ -543,20 +513,20 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 						</div>
 					</div>
 
-					<div className={`${CONTENT.body} overflow-y-auto max-h-[400px]`}>
+					<div className={`${CONTENT.body} max-h-[400px] overflow-y-auto`}>
 						{/* Account Selection */}
 						<div>
-							<label className="text-xs text-gray-600 mb-1 block">Email Account:</label>
+							<label className="mb-1 block text-gray-600 text-xs">Email Account:</label>
 							<select
 								value={accountId}
 								onChange={handleAccountChange}
-								className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+								className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
 								disabled={!isEnabled || connectionStatus === "reading"}
 							>
 								<option value="">Select email account...</option>
 								{availableAccounts.map((account) => (
 									<option key={account.value} value={account.value} disabled={!account.isActive}>
-										{account.label} {!account.isActive ? "(inactive)" : ""}
+										{account.label} {account.isActive ? "" : "(inactive)"}
 									</option>
 								))}
 							</select>
@@ -565,26 +535,26 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 						{/* Processing Options */}
 						<div className="grid grid-cols-2 gap-2">
 							<div>
-								<label className="text-xs text-gray-600 mb-1 block">Batch Size:</label>
+								<label className="mb-1 block text-gray-600 text-xs">Batch Size:</label>
 								<input
 									type="number"
 									value={batchSize}
 									onChange={handleBatchSizeChange}
 									min="1"
 									max="100"
-									className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+									className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
 									disabled={!isEnabled}
 								/>
 							</div>
 							<div>
-								<label className="text-xs text-gray-600 mb-1 block">Max Messages:</label>
+								<label className="mb-1 block text-gray-600 text-xs">Max Messages:</label>
 								<input
 									type="number"
 									value={maxMessages}
 									onChange={handleMaxMessagesChange}
 									min="1"
 									max="1000"
-									className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+									className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
 									disabled={!isEnabled}
 								/>
 							</div>
@@ -627,7 +597,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 						{/* Real-time Interval */}
 						{enableRealTime && (
 							<div>
-								<label className="text-xs text-gray-600 mb-1 block">
+								<label className="mb-1 block text-gray-600 text-xs">
 									Check Interval (minutes):
 								</label>
 								<input
@@ -636,7 +606,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 									onChange={handleCheckIntervalChange}
 									min="1"
 									max="60"
-									className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+									className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
 									disabled={!isEnabled}
 								/>
 							</div>
@@ -646,21 +616,41 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 						<div className="flex gap-2">
 							<button
 								onClick={handleReadMessages}
-								disabled={!isEnabled || !accountId || connectionStatus === "reading"}
-								className="flex-1 text-xs p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+								disabled={!(isEnabled && accountId) || connectionStatus === "reading"}
+								className="flex-1 rounded bg-blue-500 p-2 text-white text-xs hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{connectionStatus === "reading" ? "Reading..." : "Read Messages"}
 							</button>
 						</div>
 
 						{/* Status Information */}
-						<div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
+						<div className="rounded bg-gray-50 p-2 text-gray-500 text-xs">
 							<div>
 								Messages: {messageCount} | Processed: {processedCount}
 							</div>
 							{lastSync && <div>Last sync: {new Date(lastSync).toLocaleString()}</div>}
-							{lastError && <div className="text-red-600 mt-1">Error: {lastError}</div>}
+							{lastError && <div className="mt-1 text-red-600">Error: {lastError}</div>}
 							{retryCount > 0 && <div className="text-yellow-600">Retries: {retryCount}</div>}
+						</div>
+					</div>
+				</div>
+			) : (
+				<div className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}>
+					<div className="p-2 text-center">
+						<div className={`font-mono text-xs ${categoryStyles.primary}`}>
+							{accountId ? `${messageCount} messages` : "No account"}
+						</div>
+						<div
+							className={`text-xs ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}
+						>
+							{connectionStatus === "reading"
+								? "📖"
+								: connectionStatus === "connected"
+									? "✓"
+									: connectionStatus === "error"
+										? "✗"
+										: "○"}{" "}
+							{connectionStatus}
 						</div>
 					</div>
 				</div>

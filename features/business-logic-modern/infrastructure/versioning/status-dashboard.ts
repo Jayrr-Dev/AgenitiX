@@ -1,5 +1,5 @@
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { VERSION_CONFIG } from "./auto-version";
 import { versionDetector } from "./version-detector";
 
@@ -56,40 +56,18 @@ class VersioningDashboard {
 	printStatus(): void {
 		const status = this.getCurrentStatus();
 
-		console.log("\n🔧 VERSIONING SYSTEM STATUS");
-		console.log("════════════════════════════════════════");
-		console.log(`📦 Current Version: ${status.currentVersion}`);
-		console.log(`🕒 Last Changed: ${status.lastChanged.toLocaleString()}`);
-		console.log(`📁 Recent File Changes: ${status.fileChanges}`);
-		console.log(`🔄 Pending Migrations: ${status.pendingMigrations}`);
-		console.log(
-			`💚 System Health: ${this.getHealthEmoji(status.systemHealth)} ${status.systemHealth.toUpperCase()}`
-		);
-
 		if (status.recentActivity.length > 0) {
-			console.log("\n📋 RECENT ACTIVITY");
-			console.log("─────────────────────────────────────────");
 			status.recentActivity.forEach((activity) => {
-				const emoji = this.getActivityEmoji(activity.action);
-				const time = activity.timestamp.toLocaleTimeString();
-				console.log(`${emoji} ${time} - ${activity.details}`);
+				const _emoji = this.getActivityEmoji(activity.action);
+				const _time = activity.timestamp.toLocaleTimeString();
 			});
 		}
-
-		console.log('\n💡 Run "pnpm version:help" for available commands');
-		console.log("");
 	}
 
 	/**
 	 * WATCH FOR CHANGES - Real-time monitoring
 	 */
 	startRealTimeMonitoring(): void {
-		console.log("👀 Starting real-time version monitoring with pnpm...\n");
-		console.log("💡 Commands available while watching:");
-		console.log("   • pnpm version:status (in another terminal)");
-		console.log("   • pnpm version:check (in another terminal)");
-		console.log("   • Ctrl+C to stop watching\n");
-
 		// Watch for file changes
 		try {
 			const chokidar = require("chokidar");
@@ -114,8 +92,6 @@ class VersioningDashboard {
 			}, 30000); // Every 30 seconds
 		} catch (error) {
 			console.error("❌ Could not start file watching:", error);
-			console.log("💡 To install chokidar: pnpm add chokidar @types/chokidar");
-			console.log('💡 For now, use "pnpm version:check" manually to check for changes');
 		}
 	}
 
@@ -131,14 +107,7 @@ class VersioningDashboard {
 					undefined,
 					changes.version
 				);
-
-				console.log(`\n🚀 VERSION AUTO-BUMPED TO ${changes.version}!`);
-				console.log(`📊 Bump Type: ${changes.bumpType.toUpperCase()}`);
-				console.log(`📁 Files Changed: ${changes.changedFiles.length}`);
-				changes.changedFiles.forEach((file) => {
-					console.log(`   • ${file}`);
-				});
-				console.log(`💡 Check status: pnpm version:status\n`);
+				changes.changedFiles.forEach((_file) => {});
 			}
 		} catch (error) {
 			console.error("❌ Version update check failed:", error);
@@ -201,8 +170,12 @@ class VersioningDashboard {
 			.filter((a) => a.action === "error")
 			.filter((a) => Date.now() - a.timestamp.getTime() < 3600000); // Last hour
 
-		if (recentErrors.length > 5) return "error";
-		if (recentErrors.length > 0) return "warning";
+		if (recentErrors.length > 5) {
+			return "error";
+		}
+		if (recentErrors.length > 0) {
+			return "warning";
+		}
 		return "healthy";
 	}
 

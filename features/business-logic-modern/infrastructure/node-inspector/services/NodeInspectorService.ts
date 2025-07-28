@@ -96,8 +96,6 @@ class NodeInspectorServiceImpl {
 				return [];
 			}
 
-			console.log(`[NodeInspectorService] Generating control fields for: ${nodeType}`);
-
 			// Get the node spec metadata
 			const metadata = getNodeSpecMetadata(nodeType);
 			if (!metadata) {
@@ -105,20 +103,12 @@ class NodeInspectorServiceImpl {
 				return [];
 			}
 
-			console.log(`[NodeInspectorService] Found metadata for ${nodeType}:`, metadata);
-
 			// Get the actual NodeSpec to access schema and controls config
 			const nodeSpec = this.getNodeSpec(nodeType);
 			if (!nodeSpec) {
 				console.warn(`No nodeSpec found for node type: ${nodeType}`);
 				return [];
 			}
-
-			console.log(`[NodeInspectorService] Found nodeSpec for ${nodeType}:`, {
-				hasDataSchema: !!nodeSpec.dataSchema,
-				hasControls: !!nodeSpec.controls,
-				controls: nodeSpec.controls,
-			});
 
 			if (!nodeSpec.dataSchema) {
 				console.warn(`No schema found for node type: ${nodeType}`);
@@ -128,36 +118,16 @@ class NodeInspectorServiceImpl {
 			// Use schema introspection to analyze the Zod schema
 			const schemaFields = SchemaIntrospector.analyzeSchema(nodeSpec.dataSchema);
 
-			console.log(
-				`[NodeInspectorService] Schema analysis for ${nodeType} found ${schemaFields.length} fields:`,
-				schemaFields
-			);
-
 			// Convert schema field info to control fields
 			let controlFields = schemaFields.map(this.convertSchemaFieldToControl);
 
-			console.log(
-				`[NodeInspectorService] Converted to ${controlFields.length} control fields:`,
-				controlFields
-			);
-
 			// Apply control configuration customizations
 			if (nodeSpec.controls) {
-				console.log(`[NodeInspectorService] Applying control customizations for ${nodeType}`);
 				controlFields = this.applyControlCustomizations(controlFields, nodeSpec.controls);
-				console.log(
-					`[NodeInspectorService] After customizations: ${controlFields.length} fields:`,
-					controlFields
-				);
 			}
 
 			// Filter out excluded fields and system fields
 			controlFields = this.filterControlFields(controlFields, nodeSpec.controls);
-
-			console.log(
-				`[NodeInspectorService] Final control fields for ${nodeType}: ${controlFields.length} fields:`,
-				controlFields
-			);
 
 			return controlFields;
 		} catch (error) {
@@ -217,7 +187,9 @@ class NodeInspectorServiceImpl {
 	 */
 	private getNodeSpec(nodeType: NodeType): any {
 		try {
-			if (!nodeType) return null;
+			if (!nodeType) {
+				return null;
+			}
 
 			// Access the actual NodeSpec from the registry
 			const nodeSpec = nodeSpecs[nodeType as keyof typeof nodeSpecs];
@@ -257,11 +229,15 @@ class NodeInspectorServiceImpl {
 		fields: ControlField[],
 		controlsConfig: ControlsConfig
 	): ControlField[] {
-		if (!controlsConfig.customFields) return fields;
+		if (!controlsConfig.customFields) {
+			return fields;
+		}
 
 		return fields.map((field) => {
 			const customField = controlsConfig.customFields?.find((cf) => cf.key === field.key);
-			if (!customField) return field;
+			if (!customField) {
+				return field;
+			}
 
 			// Merge custom configuration with generated field
 			return {
@@ -299,7 +275,9 @@ class NodeInspectorServiceImpl {
 	 * Get node metadata from the registry
 	 */
 	getNodeMetadata(nodeType: NodeType) {
-		if (!nodeType) return null;
+		if (!nodeType) {
+			return null;
+		}
 		return getNodeSpecMetadata(nodeType);
 	}
 
@@ -307,7 +285,9 @@ class NodeInspectorServiceImpl {
 	 * Check if a node type exists in the registry
 	 */
 	nodeExists(nodeType: NodeType): boolean {
-		if (!nodeType) return false;
+		if (!nodeType) {
+			return false;
+		}
 		return hasNodeSpec(nodeType);
 	}
 
@@ -315,7 +295,7 @@ class NodeInspectorServiceImpl {
 	 * Update node data with validation
 	 */
 	updateNodeData(
-		node: AgenNode,
+		_node: AgenNode,
 		updates: Record<string, unknown>
 	): { success: boolean; errors: string[] } {
 		try {

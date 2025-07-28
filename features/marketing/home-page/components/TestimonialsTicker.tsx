@@ -9,13 +9,13 @@ const InfiniteMovingCards = dynamic(
 
 export const Testimonials = () => {
 	return (
-		<div className="w-full h-full">
+		<div className="h-full w-full">
 			<div className="px-8">
-				<h4 className="text-3xl lg:text-5xl lg:leading-tight max-w-5xl mx-auto text-center tracking-tight font-medium text-black dark:text-white">
+				<h4 className="mx-auto max-w-5xl text-center font-medium text-3xl text-black tracking-tight lg:text-5xl lg:leading-tight dark:text-white">
 					What Our Clients Are Saying
 				</h4>
 
-				<p className="text-sm lg:text-base max-w-2xl my-4 mx-auto text-neutral-500 text-center font-normal dark:text-neutral-300">
+				<p className="mx-auto my-4 max-w-2xl text-center font-normal text-neutral-500 text-sm lg:text-base dark:text-neutral-300">
 					Join the community of forward-thinking businesses and creators who rely on our AI
 					solutions to transform their workflows and unlock new possibilities.
 				</p>

@@ -30,7 +30,9 @@ import { runServerActions } from "./serverActions/serverActionRegistry";
  * This allows us to inject Tailwind classes from tokens.json
  */
 const getInjectableClasses = (cssVar: string): string => {
-	if (typeof window === "undefined") return "";
+	if (typeof window === "undefined") {
+		return "";
+	}
 	const value = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim();
 	return value || "";
 };
@@ -131,9 +133,9 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 	// The returned component is what React Flow will render.
 	const WrappedComponent = (props: NodeProps) => {
 		// Extract React Flow state for theming
-		const isSelected = props.selected || false;
+		const isSelected = props.selected;
 		const isError = false; // TODO: Extract from node data or validation state
-		const isActive = (props.data as any)?.isActive || false;
+		const isActive = (props.data as any)?.isActive;
 
 		// Get theming classes from the theming system
 		const nodeStyleClasses = useNodeStyleClasses(isSelected, isError, isActive);
@@ -160,7 +162,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 
 		// Extract expanded state from component data or use collapsed as default
 		// Node components manage isExpanded through their data schema and useNodeData hook
-		const isExpanded = (props.data as any)?.isExpanded || false;
+		const isExpanded = (props.data as any)?.isExpanded;
 		const currentSize = isExpanded ? spec.size.expanded : spec.size.collapsed;
 
 		const sizeConfig = currentSize as any;
@@ -184,7 +186,9 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 
 			allHandles.forEach((handle) => {
 				const pos = handle.position;
-				if (!grouped[pos]) grouped[pos] = [];
+				if (!grouped[pos]) {
+					grouped[pos] = [];
+				}
 				grouped[pos].push(handle);
 			});
 			return grouped;
@@ -221,8 +225,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 					console.error(`Server action error for node ${props.id}:`, error);
 					// Could trigger error UI state here
 				},
-				onSuccess: (result) => {
-					console.log(`Server action success for node ${props.id}:`, result);
+				onSuccess: (_result) => {
 					// Could trigger success UI state here
 				},
 			});
@@ -241,7 +244,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 				{(() => {
 					const allHandles = spec.handles || [];
 
-					return allHandles.map((handle, index) => {
+					return allHandles.map((handle, _index) => {
 						const handlesOnSameSide = handlesByPosition[handle.position] || [];
 						const handleIndex = handlesOnSameSide.findIndex((h) => h.id === handle.id);
 						const totalHandlesOnSide = handlesOnSameSide.length;
@@ -249,7 +252,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 						return (
 							<TypeSafeHandle
 								key={handle.id}
-								id={handle.id + "__" + (handle.code ?? handle.dataType ?? "x")}
+								id={`${handle.id}__${handle.code ?? handle.dataType ?? "x"}`}
 								type={handle.type}
 								position={handle.position as Position}
 								dataType={handle.dataType}

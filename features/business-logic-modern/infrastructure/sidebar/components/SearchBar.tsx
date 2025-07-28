@@ -13,8 +13,6 @@
 import { Search, X } from "lucide-react";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getAllNodeMetadata } from "../../node-registry/nodespec-registry";
-import type { NodeMetadata } from "../../node-registry/types";
 import { StencilGrid } from "../StencilGrid";
 import type { HoveredStencil } from "../StencilInfoPanel";
 import { useFilteredNodes } from "../hooks/useFilteredNodes";
@@ -104,7 +102,9 @@ export function SearchBar({
 
 	// Filter stencils based on search query
 	const filteredStencils = useMemo(() => {
-		if (!searchQuery.trim()) return allStencils;
+		if (!searchQuery.trim()) {
+			return allStencils;
+		}
 
 		const query = searchQuery.toLowerCase();
 		return allStencils.filter(
@@ -133,7 +133,9 @@ export function SearchBar({
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			// Only handle events when search is visible
-			if (!isVisible) return;
+			if (!isVisible) {
+				return;
+			}
 
 			// PREVENT KEY REPEAT SPAM - Block browser key repeat events (EXCEPT Alt+Q for fast deletion)
 			if (e.repeat) {
@@ -256,7 +258,9 @@ export function SearchBar({
 						}
 
 						// If cursor is at the beginning, do nothing
-						if (start === 0) return;
+						if (start === 0) {
+							return;
+						}
 
 						// Alt+Ctrl+Q - Delete from cursor to beginning of line
 						if (e.ctrlKey) {
@@ -344,7 +348,7 @@ export function SearchBar({
 			}
 
 			// QWERTY SHORTCUTS - Create nodes from search results (when not typing in input)
-			if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+			if (!(e.ctrlKey || e.metaKey || e.shiftKey || e.altKey)) {
 				// Don't execute shortcuts if user is typing in ANY input field
 				if (isTypingInAnyInput) {
 					return; // Let the input field handle the typing naturally
@@ -381,9 +385,6 @@ export function SearchBar({
 					if (position < filteredStencils.length) {
 						const stencil = filteredStencils[position];
 						onDoubleClickCreate(stencil.nodeType);
-						console.log(
-							`Created node from search results: ${stencil.label} (${currentKey.toUpperCase()})`
-						);
 					}
 				}
 			}
@@ -401,7 +402,9 @@ export function SearchBar({
 		}
 	}, [isVisible]);
 
-	if (!isVisible) return null;
+	if (!isVisible) {
+		return null;
+	}
 
 	return (
 		<div
@@ -409,11 +412,11 @@ export function SearchBar({
 		>
 			{/* Search Header */}
 			<div
-				className={`flex items-center gap-2 px-7 pt-3  ${theme.border.default} border-b flex-shrink-0`}
+				className={`flex items-center gap-2 px-7 pt-3 ${theme.border.default} flex-shrink-0 border-b`}
 			>
 				<div className="relative flex-1">
 					<Search
-						className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme.text.muted} h-4 w-4`}
+						className={`-translate-y-1/2 absolute top-1/2 left-3 transform ${theme.text.muted} h-4 w-4`}
 					/>
 					<input
 						type="text"
@@ -422,14 +425,13 @@ export function SearchBar({
 						onChange={(e) => setSearchQuery(e.target.value)}
 						onFocus={() => setIsInputFocused(true)}
 						onBlur={() => setIsInputFocused(false)}
-						className={`w-full pl-10 pr-10 py-0 ${theme.border.default} border ${theme.borderRadius.button} ${theme.background.secondary} ${theme.text.primary} focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 ${theme.transition}`}
-						autoFocus
+						className={`w-full py-0 pr-10 pl-10 ${theme.border.default} border ${theme.borderRadius.button} ${theme.background.secondary} ${theme.text.primary} focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 ${theme.transition}`}
 						ref={inputRef}
 					/>
 					{searchQuery && (
 						<button
 							onClick={handleClearSearch}
-							className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${theme.text.muted} ${theme.background.hover} ${theme.transition}`}
+							className={`-translate-y-1/2 absolute top-1/2 right-3 transform ${theme.text.muted} ${theme.background.hover} ${theme.transition}`}
 						>
 							<X className="h-4 w-4" />
 						</button>
@@ -445,7 +447,7 @@ export function SearchBar({
 			</div>
 
 			{/* Search Results */}
-			<div className="flex-1 overflow-y-auto pb-2 min-h-0">
+			<div className="min-h-0 flex-1 overflow-y-auto pb-2">
 				{searchQuery.trim() && (
 					<div className="mb-3 px-3">
 						<div className={`text-sm ${theme.text.secondary}`}>
@@ -468,7 +470,7 @@ export function SearchBar({
 				)}
 
 				{filteredStencils.length > 0 ? (
-					<div className="flex-1 outline-none px-6 border-l-[1px]">
+					<div className="flex-1 border-l-[1px] px-6 outline-none">
 						<StencilGrid
 							stencils={filteredStencils}
 							setStencils={() => {}} // Read-only for search results
@@ -480,18 +482,18 @@ export function SearchBar({
 					</div>
 				) : searchQuery.trim() ? (
 					<div className={`text-center ${theme.text.muted} mt-8 px-3`}>
-						<Search className={`h-12 w-12 mx-auto mb-4 ${theme.text.muted}`} />
-						<p className={`text-lg font-medium ${theme.text.secondary}`}>No nodes found</p>
+						<Search className={`mx-auto mb-4 h-12 w-12 ${theme.text.muted}`} />
+						<p className={`font-medium text-lg ${theme.text.secondary}`}>No nodes found</p>
 						<p className={`text-sm ${theme.text.muted}`}>Try searching with different keywords</p>
 					</div>
 				) : (
 					<div className={`text-center ${theme.text.muted} mt-8 px-3`}>
-						<Search className={`h-12 w-12 mx-auto mb-4 ${theme.text.muted}`} />
-						<p className={`text-lg font-medium ${theme.text.secondary}`}>Search all nodes</p>
-						<p className={`text-sm mb-4 ${theme.text.secondary}`}>
+						<Search className={`mx-auto mb-4 h-12 w-12 ${theme.text.muted}`} />
+						<p className={`font-medium text-lg ${theme.text.secondary}`}>Search all nodes</p>
+						<p className={`mb-4 text-sm ${theme.text.secondary}`}>
 							Type to find nodes by name or description
 						</p>
-						<div className={`text-xs ${theme.text.muted} max-w-xs mx-auto`}>
+						<div className={`text-xs ${theme.text.muted} mx-auto max-w-xs`}>
 							<p>
 								💡 <strong>Quick workflow:</strong>
 							</p>

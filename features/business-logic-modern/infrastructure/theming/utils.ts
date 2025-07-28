@@ -45,7 +45,9 @@ export function getVariant<
 	T extends Record<C, V>,
 >(variantsByCategory: T, category: C, variant: string, fallback = ""): string {
 	const cat = variantsByCategory[category] as Record<string, string> | undefined;
-	if (!cat) return fallback;
+	if (!cat) {
+		return fallback;
+	}
 	return cat[variant] ?? fallback;
 }
 

@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 
 import createText from "../../../node-domain/create/createText.node";
 // Import all available node components

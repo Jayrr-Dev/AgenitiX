@@ -37,7 +37,7 @@ export const BrandWordmark: React.FC<BrandWordmarkProps> = ({ className = "" }) 
 			className
 		)}
 	>
-		<span className="font-brand text-[32px] font-semibold leading-none tracking-tight">
+		<span className="font-brand font-semibold text-[32px] leading-none tracking-tight">
 			AgenitiX
 		</span>
 	</div>

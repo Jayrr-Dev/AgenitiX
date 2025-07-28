@@ -10,8 +10,8 @@
  * Keywords: handle-documentation, type-system, validation-rules, connection-system, auto-generation
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 // ============================================================================
 // TYPES AND INTERFACES
@@ -143,7 +143,9 @@ function scanNodeHandles(): NodeHandleAnalysis[] {
 
 	domains.forEach((domain) => {
 		const domainPath = path.join(nodeBasePath, domain);
-		if (!fs.existsSync(domainPath)) return;
+		if (!fs.existsSync(domainPath)) {
+			return;
+		}
 
 		const files = fs
 			.readdirSync(domainPath)
@@ -160,7 +162,7 @@ function scanNodeHandles(): NodeHandleAnalysis[] {
 				if (analysis) {
 					analyses.push(analysis);
 				}
-			} catch (error) {
+			} catch (_error) {
 				console.warn(`⚠️  Could not analyze handles for: ${filePath}`);
 			}
 		});
@@ -175,13 +177,15 @@ function scanNodeHandles(): NodeHandleAnalysis[] {
 function analyzeNodeHandles(
 	content: string,
 	kind: string,
-	domain: string
+	_domain: string
 ): NodeHandleAnalysis | null {
 	// Extract NodeSpec
 	const specMatch = content.match(/const\s+spec:\s+NodeSpec\s*=\s*{([^}]+)}/);
-	if (!specMatch) return null;
+	if (!specMatch) {
+		return null;
+	}
 
-	const specContent = specMatch[1];
+	const _specContent = specMatch[1];
 
 	// Extract display name
 	const displayNameMatch = content.match(/displayName:\s*["']([^"']+)["']/);
@@ -193,7 +197,9 @@ function analyzeNodeHandles(
 
 	// Extract handles array
 	const handlesMatch = content.match(/handles:\s*\[([\s\S]*?)\]/);
-	if (!handlesMatch) return null;
+	if (!handlesMatch) {
+		return null;
+	}
 
 	const handlesContent = handlesMatch[1];
 	const handles = parseHandlesArray(handlesContent);
@@ -292,7 +298,7 @@ function generateHandleStats(analyses: NodeHandleAnalysis[]): HandleSystemStats 
 		if (analysis.outputCount === 0) {
 			stats.validationErrors.push(`${analysis.nodeKind}: No output handles`);
 		}
-		if (analysis.handles.some((h) => !h.code && !h.tsSymbol)) {
+		if (analysis.handles.some((h) => !(h.code || h.tsSymbol))) {
 			stats.validationErrors.push(`${analysis.nodeKind}: Handle without type specification`);
 		}
 	});
@@ -319,19 +325,13 @@ function generateHandleStats(analyses: NodeHandleAnalysis[]): HandleSystemStats 
  * Generate comprehensive handle system documentation
  */
 function generateHandleDocumentation() {
-	console.log("🔗 Analyzing handle system...");
-
 	const analyses = scanNodeHandles();
 	const stats = generateHandleStats(analyses);
-
-	console.log(`✅ Found ${analyses.length} nodes with ${stats.totalHandles} handles`);
 
 	// Generate documentation formats
 	generateMarkdownDoc(analyses, stats);
 	generateHTMLDoc(analyses, stats);
 	generateTypeReferenceDoc(analyses, stats);
-
-	console.log("✅ Handle system documentation generated");
 }
 
 /**
@@ -464,7 +464,7 @@ const spec: NodeSpec = {
 ### Type Colors
 
 ${Object.entries(HANDLE_TYPE_MAP)
-	.map(([code, info]) => `- **${info.label}**: \`${info.color}\` (${info.icon})`)
+	.map(([_code, info]) => `- **${info.label}**: \`${info.color}\` (${info.icon})`)
 	.join("\n")}
 
 ### Connection Validation
@@ -481,7 +481,6 @@ ${Object.entries(HANDLE_TYPE_MAP)
 
 	const markdownPath = path.join(docsDir, "HANDLE_SYSTEM.md");
 	fs.writeFileSync(markdownPath, markdown);
-	console.log(`   📄 Markdown: ${markdownPath}`);
 }
 
 /**
@@ -644,13 +643,12 @@ function generateHTMLDoc(analyses: NodeHandleAnalysis[], stats: HandleSystemStat
 
 	const htmlPath = path.join(docsDir, "handle-system.html");
 	fs.writeFileSync(htmlPath, htmlContent);
-	console.log(`   🌐 HTML: ${htmlPath}`);
 }
 
 /**
  * Generate type reference documentation
  */
-function generateTypeReferenceDoc(analyses: NodeHandleAnalysis[], stats: HandleSystemStats) {
+function generateTypeReferenceDoc(_analyses: NodeHandleAnalysis[], stats: HandleSystemStats) {
 	const docsDir = path.join(process.cwd(), "documentation", "handles");
 	if (!fs.existsSync(docsDir)) {
 		fs.mkdirSync(docsDir, { recursive: true });
@@ -678,7 +676,7 @@ ${Object.keys(HANDLE_TYPE_MAP)
 		const source = HANDLE_TYPE_MAP[sourceType];
 		return `| **${source.label}** | ${Object.keys(HANDLE_TYPE_MAP)
 			.map((targetType) => {
-				const target = HANDLE_TYPE_MAP[targetType];
+				const _target = HANDLE_TYPE_MAP[targetType];
 				const compatible = isTypeCompatible(sourceType, targetType);
 				return compatible ? "✅" : "❌";
 			})
@@ -762,7 +760,6 @@ handles: [
 
 	const referencePath = path.join(docsDir, "TYPE_REFERENCE.md");
 	fs.writeFileSync(referencePath, reference);
-	console.log(`   📚 Type Reference: ${referencePath}`);
 }
 
 /**
@@ -770,28 +767,44 @@ handles: [
  */
 function isTypeCompatible(sourceType: string, targetType: string): boolean {
 	// Any type can connect to any type
-	if (sourceType === "x" || targetType === "x") return true;
+	if (sourceType === "x" || targetType === "x") {
+		return true;
+	}
 
 	// Same types are compatible
-	if (sourceType === targetType) return true;
+	if (sourceType === targetType) {
+		return true;
+	}
 
 	// JSON can connect to most types
-	if (sourceType === "j") return ["s", "n", "b", "a", "o"].includes(targetType);
+	if (sourceType === "j") {
+		return ["s", "n", "b", "a", "o"].includes(targetType);
+	}
 
 	// String can connect to string
-	if (sourceType === "s" && targetType === "s") return true;
+	if (sourceType === "s" && targetType === "s") {
+		return true;
+	}
 
 	// Number can connect to number
-	if (sourceType === "n" && targetType === "n") return true;
+	if (sourceType === "n" && targetType === "n") {
+		return true;
+	}
 
 	// Boolean can connect to boolean
-	if (sourceType === "b" && targetType === "b") return true;
+	if (sourceType === "b" && targetType === "b") {
+		return true;
+	}
 
 	// Array can connect to array
-	if (sourceType === "a" && targetType === "a") return true;
+	if (sourceType === "a" && targetType === "a") {
+		return true;
+	}
 
 	// Object can connect to object
-	if (sourceType === "o" && targetType === "o") return true;
+	if (sourceType === "o" && targetType === "o") {
+		return true;
+	}
 
 	return false;
 }
@@ -801,9 +814,7 @@ function isTypeCompatible(sourceType: string, targetType: string): boolean {
 // ============================================================================
 
 if (require.main === module) {
-	console.log("🔗 Generating handle system documentation...");
 	generateHandleDocumentation();
-	console.log("✅ Handle system documentation complete");
 }
 
 export { generateHandleDocumentation };

@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 
 		// Exchange code for tokens
 		const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/email/outlook/callback`;
-		const tokens = await outlookProvider.exchangeCodeForTokens!(code, redirectUri);
+		const tokens = await outlookProvider.exchangeCodeForTokens?.(code, redirectUri);
 
 		// Validate the connection to get user info
 		const connectionResult = await outlookProvider.validateConnection({

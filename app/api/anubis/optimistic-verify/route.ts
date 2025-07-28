@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
 		const { sessionId, solution, challenge } = await request.json();
 
 		// VALIDATE INPUT
-		if (!sessionId || !solution || !challenge) {
+		if (!(sessionId && solution && challenge)) {
 			return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
 		}
 
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 		let sessionData;
 		try {
 			sessionData = JSON.parse(sessionCookie.value);
-		} catch (error) {
+		} catch (_error) {
 			return NextResponse.json({ error: "Invalid session data" }, { status: 401 });
 		}
 

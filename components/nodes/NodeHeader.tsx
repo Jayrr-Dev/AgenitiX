@@ -19,7 +19,7 @@ interface NodeHeaderProps {
 export const NodeHeader: React.FC<NodeHeaderProps> = ({ title, className = "" }) => {
 	return (
 		<div
-			className={`p-2 border-b border-node-view text-node-view font-medium text-sm ${className}`}
+			className={`border-node-view border-b p-2 font-medium text-node-view text-sm ${className}`}
 		>
 			{title}
 		</div>

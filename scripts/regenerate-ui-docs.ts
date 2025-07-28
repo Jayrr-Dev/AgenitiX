@@ -10,14 +10,9 @@
 import { generateUIOverview } from "./generate-ui-overview";
 
 async function main() {
-	console.log("🔄 Regenerating UI documentation...");
-
 	try {
 		// Generate the overview
 		await generateUIOverview();
-
-		console.log("✅ UI documentation regeneration complete!");
-		console.log("📁 Check the documentation/ui/ directory for updated files.");
 	} catch (error) {
 		console.error("❌ Error regenerating UI documentation:", error);
 		process.exit(1);

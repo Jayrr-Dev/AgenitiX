@@ -2,7 +2,7 @@
 
 import { CustomLogo } from "@/branding/custom-logo";
 import type { RouteProtectionConfig } from "@/types/anubis";
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAnubis } from "./AnubisProvider";
 
 // AGENITIX CONTROL PANEL COMPONENT
@@ -24,7 +24,9 @@ export function AnubisControlPanel() {
 
 	// LOAD PROTECTED ROUTES
 	useEffect(() => {
-		if (typeof window === "undefined") return;
+		if (typeof window === "undefined") {
+			return;
+		}
 
 		const loadRoutes = () => {
 			try {
@@ -43,7 +45,9 @@ export function AnubisControlPanel() {
 	}, [isEnabled]);
 
 	// NOW WE CAN HAVE CONDITIONAL RETURNS
-	if (!showUI) return null;
+	if (!showUI) {
+		return null;
+	}
 
 	// TOGGLE GLOBAL PROTECTION
 	const handleGlobalToggle = () => {
@@ -54,7 +58,9 @@ export function AnubisControlPanel() {
 
 	// ADD NEW PROTECTED ROUTE
 	const handleAddRoute = () => {
-		if (!newRoutePath.trim()) return;
+		if (!newRoutePath.trim()) {
+			return;
+		}
 
 		const path = newRoutePath.startsWith("/") ? newRoutePath : `/${newRoutePath}`;
 		toggleProtection(path, true);
@@ -121,7 +127,7 @@ export function AnubisControlPanel() {
 		return (
 			<button
 				onClick={() => setIsOpen(true)}
-				className="fixed bottom-4 left-4 p-3 rounded-full shadow-lg transition-all duration-300 border border-transparent bg-fill-border hover:animate-fill-transparency backdrop-blur-lg"
+				className="fixed bottom-4 left-4 rounded-full border border-transparent bg-fill-border p-3 shadow-lg backdrop-blur-lg transition-all duration-300 hover:animate-fill-transparency"
 				title="Open AgenitiX-Anti-Bot Control Panel"
 			>
 				<CustomLogo size={24} />
@@ -131,37 +137,37 @@ export function AnubisControlPanel() {
 
 	// MAIN CONTROL PANEL
 	return (
-		<div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-			<div className="bg-background border border-transparent bg-fill-border rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto backdrop-blur-lg">
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+			<div className="mx-4 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-transparent bg-background bg-fill-border shadow-2xl backdrop-blur-lg">
 				{/* HEADER */}
-				<div className="flex items-center justify-between p-6 border-b border-border">
+				<div className="flex items-center justify-between border-border border-b p-6">
 					<div className="flex items-center gap-3">
-						<div className="border border-transparent bg-fill-border hover:animate-fill-transparency rounded-lg p-2">
+						<div className="rounded-lg border border-transparent bg-fill-border p-2 hover:animate-fill-transparency">
 							<CustomLogo size={32} />
 						</div>
 						<div>
-							<h2 className="text-xl font-brand text-foreground">AgenitiX Control Panel</h2>
-							<p className="text-sm text-muted-foreground">Manage bot protection settings</p>
+							<h2 className="font-brand text-foreground text-xl">AgenitiX Control Panel</h2>
+							<p className="text-muted-foreground text-sm">Manage bot protection settings</p>
 						</div>
 					</div>
 					<button
 						onClick={() => setIsOpen(false)}
-						className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg border border-transparent bg-fill-border hover:animate-fill-transparency"
+						className="rounded-lg border border-transparent bg-fill-border p-2 text-muted-foreground transition-colors hover:animate-fill-transparency hover:text-foreground"
 					>
 						✕
 					</button>
 				</div>
 
 				{/* GLOBAL SETTINGS */}
-				<div className="p-6 border-b border-border">
-					<h3 className="text-lg font-ui font-semibold text-foreground mb-4">Global Settings</h3>
+				<div className="border-border border-b p-6">
+					<h3 className="mb-4 font-semibold font-ui text-foreground text-lg">Global Settings</h3>
 
-					<div className="flex items-center justify-between p-4 rounded-lg border border-transparent bg-fill-border hover:animate-fill-transparency">
+					<div className="flex items-center justify-between rounded-lg border border-transparent bg-fill-border p-4 hover:animate-fill-transparency">
 						<div>
-							<label className="text-sm font-medium text-foreground">
+							<label className="font-medium text-foreground text-sm">
 								Enable AgenitiX Protection
 							</label>
-							<p className="text-xs text-muted-foreground">
+							<p className="text-muted-foreground text-xs">
 								Globally enable or disable bot protection
 							</p>
 						</div>
@@ -181,25 +187,25 @@ export function AnubisControlPanel() {
 				</div>
 
 				{/* CURRENT ROUTE */}
-				<div className="p-6 border-b border-border">
-					<h3 className="text-lg font-ui font-semibold text-foreground mb-4">Current Route</h3>
+				<div className="border-border border-b p-6">
+					<h3 className="mb-4 font-semibold font-ui text-foreground text-lg">Current Route</h3>
 
-					<div className="flex items-center justify-between p-4 rounded-lg border border-transparent bg-fill-border hover:animate-fill-transparency">
+					<div className="flex items-center justify-between rounded-lg border border-transparent bg-fill-border p-4 hover:animate-fill-transparency">
 						<div>
-							<code className="text-sm font-mono text-foreground bg-muted px-2 py-1 rounded">
+							<code className="rounded bg-muted px-2 py-1 font-mono text-foreground text-sm">
 								{currentRoute}
 							</code>
-							<p className="text-xs text-muted-foreground mt-1">
+							<p className="mt-1 text-muted-foreground text-xs">
 								{isCurrentRouteProtected ? "🛡️ Protected" : "🔓 Unprotected"}
 							</p>
 						</div>
 						<button
 							onClick={handleProtectCurrentRoute}
 							disabled={isCurrentRouteProtected}
-							className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 border border-transparent ${
+							className={`rounded-lg border border-transparent px-4 py-2 font-medium text-sm transition-all duration-300 ${
 								isCurrentRouteProtected
-									? "bg-muted text-muted-foreground cursor-not-allowed"
-									: "bg-fill-border hover:animate-fill-transparency text-foreground"
+									? "cursor-not-allowed bg-muted text-muted-foreground"
+									: "bg-fill-border text-foreground hover:animate-fill-transparency"
 							}`}
 						>
 							{isCurrentRouteProtected ? "Protected" : "Protect This Route"}
@@ -208,8 +214,8 @@ export function AnubisControlPanel() {
 				</div>
 
 				{/* ADD NEW ROUTE */}
-				<div className="p-6 border-b border-border">
-					<h3 className="text-lg font-ui font-semibold text-foreground mb-4">
+				<div className="border-border border-b p-6">
+					<h3 className="mb-4 font-semibold font-ui text-foreground text-lg">
 						Add Protected Route
 					</h3>
 
@@ -219,13 +225,13 @@ export function AnubisControlPanel() {
 							value={newRoutePath}
 							onChange={(e) => setNewRoutePath(e.target.value)}
 							placeholder="/path/to/protect"
-							className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-secondary"
+							className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-secondary"
 							onKeyPress={(e) => e.key === "Enter" && handleAddRoute()}
 						/>
 						<button
 							onClick={handleAddRoute}
 							disabled={!newRoutePath.trim()}
-							className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 border border-transparent bg-fill-border hover:animate-fill-transparency text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+							className="rounded-lg border border-transparent bg-fill-border px-4 py-2 font-medium text-foreground text-sm transition-all duration-300 hover:animate-fill-transparency disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							Add Route
 						</button>
@@ -234,12 +240,12 @@ export function AnubisControlPanel() {
 
 				{/* PROTECTED ROUTES LIST */}
 				<div className="p-6">
-					<h3 className="text-lg font-ui font-semibold text-foreground mb-4">
+					<h3 className="mb-4 font-semibold font-ui text-foreground text-lg">
 						Protected Routes ({protectedRoutes.length})
 					</h3>
 
 					{protectedRoutes.length === 0 ? (
-						<p className="text-muted-foreground text-sm text-center py-8">
+						<p className="py-8 text-center text-muted-foreground text-sm">
 							No protected routes configured. Add routes above to get started.
 						</p>
 					) : (
@@ -247,14 +253,14 @@ export function AnubisControlPanel() {
 							{protectedRoutes.map((route) => (
 								<div
 									key={route.path}
-									className="flex items-center justify-between p-3 rounded-lg border border-transparent bg-fill-border hover:animate-fill-transparency"
+									className="flex items-center justify-between rounded-lg border border-transparent bg-fill-border p-3 hover:animate-fill-transparency"
 								>
 									<div className="flex-1">
-										<code className="text-sm font-mono text-foreground bg-muted px-2 py-1 rounded">
+										<code className="rounded bg-muted px-2 py-1 font-mono text-foreground text-sm">
 											{route.path}
 										</code>
 										{route.description && (
-											<p className="text-xs text-muted-foreground mt-1">{route.description}</p>
+											<p className="mt-1 text-muted-foreground text-xs">{route.description}</p>
 										)}
 									</div>
 
@@ -276,7 +282,7 @@ export function AnubisControlPanel() {
 
 										<button
 											onClick={() => handleRemoveRoute(route.path)}
-											className="p-1 rounded text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+											className="rounded p-1 text-red-500 transition-colors hover:bg-red-500/10 hover:text-red-400"
 											title="Remove route"
 										>
 											🗑️
@@ -289,8 +295,8 @@ export function AnubisControlPanel() {
 				</div>
 
 				{/* FOOTER */}
-				<div className="p-6 bg-muted/30 rounded-b-xl border-t border-border">
-					<p className="text-xs text-muted-foreground text-center">
+				<div className="rounded-b-xl border-border border-t bg-muted/30 p-6">
+					<p className="text-center text-muted-foreground text-xs">
 						<span className="font-brand">AgenitiX</span> protection uses advanced verification to
 						ensure legitimate access. Protected routes will require visitors to complete a
 						verification process before accessing the content.

@@ -11,8 +11,8 @@
  * Keywords: nodespec-documentation, scaffold-documentation, auto-generation, type-analysis, interface-extraction
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import * as ts from "typescript";
 
 // ============================================================================
@@ -283,10 +283,6 @@ function generateNodeSpecDocs(analysis: NodeSpecAnalysis) {
 	const htmlContent = generateNodeSpecHTML(analysis);
 	const htmlPath = path.join(docsDir, "NodeSpec.html");
 	fs.writeFileSync(htmlPath, htmlContent);
-
-	console.log(`✅ Generated NodeSpec documentation`);
-	console.log(`   📄 Markdown: ${markdownPath}`);
-	console.log(`   🌐 HTML: ${htmlPath}`);
 }
 
 /**
@@ -309,10 +305,6 @@ function generateScaffoldDocs(analysis: ScaffoldAnalysis) {
 	const htmlContent = generateScaffoldHTML(analysis);
 	const htmlPath = path.join(docsDir, "withNodeScaffold.html");
 	fs.writeFileSync(htmlPath, htmlContent);
-
-	console.log(`✅ Generated Scaffold documentation`);
-	console.log(`   📄 Markdown: ${markdownPath}`);
-	console.log(`   🌐 HTML: ${htmlPath}`);
 }
 
 /**
@@ -720,8 +712,6 @@ function generateScaffoldHTML(analysis: ScaffoldAnalysis): string {
  * Generate comprehensive documentation for NodeSpec and Scaffold
  */
 function generateNodespecDocs() {
-	console.log("🔍 Analyzing NodeSpec and Scaffold source code...");
-
 	try {
 		// Analyze NodeSpec
 		const nodeSpecAnalysis = analyzeNodeSpec();
@@ -730,8 +720,6 @@ function generateNodespecDocs() {
 		// Analyze Scaffold
 		const scaffoldAnalysis = analyzeScaffold();
 		generateScaffoldDocs(scaffoldAnalysis);
-
-		console.log("✅ NodeSpec and Scaffold documentation generation complete!");
 	} catch (error) {
 		console.error("❌ Error generating documentation:", error);
 		process.exit(1);

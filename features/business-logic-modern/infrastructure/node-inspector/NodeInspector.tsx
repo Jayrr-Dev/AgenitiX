@@ -58,21 +58,21 @@ const STYLING_CONTAINER_COLUMN_ERROR = `flex-1 ${DESIGN_CONFIG.layout.flexColumn
 const STYLING_CONTAINER_EDGE_CONTENT = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} gap-3 ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
 
 // SECTION CONTAINERS - Minimal styling with original colors
-const STYLING_CONTAINER_NODE_HEADER = `${DESIGN_CONFIG.effects.borderBottom} ${DESIGN_CONFIG.colors.header.border} ${DESIGN_CONFIG.spacing.headerPadding}`;
-const STYLING_CONTAINER_HEADER_CONTENT = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} ${DESIGN_CONFIG.layout.justifyBetween}`;
+const _STYLING_CONTAINER_NODE_HEADER = `${DESIGN_CONFIG.effects.borderBottom} ${DESIGN_CONFIG.colors.header.border} ${DESIGN_CONFIG.spacing.headerPadding}`;
+const _STYLING_CONTAINER_HEADER_CONTENT = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} ${DESIGN_CONFIG.layout.justifyBetween}`;
 const STYLING_CONTAINER_HEADER_ICON_TEXT = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} ${DESIGN_CONFIG.spacing.iconTextGap}`;
 const STYLING_CONTAINER_HEADER_LEFT_SECTION = `${DESIGN_CONFIG.layout.flexColumn}`;
 const STYLING_CONTAINER_HEADER_RIGHT_SECTION = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1`;
-const STYLING_CONTAINER_NODE_METADATA_SECTION = `${DESIGN_CONFIG.layout.flexColumn} gap-1`;
-const STYLING_CONTAINER_NODE_DESCRIPTION = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.descriptionPadding} mb-2`;
-const STYLING_CONTAINER_NODE_DATA = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
-const STYLING_CONTAINER_NODE_DATA_ADAPTIVE = `${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.dimensions.fullWidth}`;
-const STYLING_CONTAINER_JSON_DATA = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.jsonPadding} ${DESIGN_CONFIG.effects.overflow} ${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
-const STYLING_CONTAINER_JSON_DATA_ADAPTIVE = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.jsonPadding} ${DESIGN_CONFIG.effects.overflowAdaptive} ${DESIGN_CONFIG.dimensions.fullWidth}`;
-const STYLING_CONTAINER_ACTION_BUTTONS = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1`;
-const STYLING_CONTAINER_OUTPUT_SECTION = `${DESIGN_CONFIG.layout.flexColumn} gap-2`;
-const STYLING_CONTAINER_CONTROLS_SECTION = `${DESIGN_CONFIG.layout.flexColumn} gap-2`;
-const STYLING_CONTAINER_COLUMNS_ROW = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.spacing.sectionGap} flex-1`;
+const _STYLING_CONTAINER_NODE_METADATA_SECTION = `${DESIGN_CONFIG.layout.flexColumn} gap-1`;
+const _STYLING_CONTAINER_NODE_DESCRIPTION = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.descriptionPadding} mb-2`;
+const _STYLING_CONTAINER_NODE_DATA = `${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
+const _STYLING_CONTAINER_NODE_DATA_ADAPTIVE = `${DESIGN_CONFIG.layout.flexColumn} ${DESIGN_CONFIG.dimensions.fullWidth}`;
+const _STYLING_CONTAINER_JSON_DATA = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.jsonPadding} ${DESIGN_CONFIG.effects.overflow} ${DESIGN_CONFIG.dimensions.flexBasis} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.fullWidth}`;
+const _STYLING_CONTAINER_JSON_DATA_ADAPTIVE = `${DESIGN_CONFIG.colors.data.background} ${DESIGN_CONFIG.effects.roundedMd} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.data.border} ${DESIGN_CONFIG.spacing.jsonPadding} ${DESIGN_CONFIG.effects.overflowAdaptive} ${DESIGN_CONFIG.dimensions.fullWidth}`;
+const _STYLING_CONTAINER_ACTION_BUTTONS = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1`;
+const _STYLING_CONTAINER_OUTPUT_SECTION = `${DESIGN_CONFIG.layout.flexColumn} gap-2`;
+const _STYLING_CONTAINER_CONTROLS_SECTION = `${DESIGN_CONFIG.layout.flexColumn} gap-2`;
+const _STYLING_CONTAINER_COLUMNS_ROW = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.spacing.sectionGap} flex-1`;
 
 // BUTTON STYLES - Minimal buttons with original colors
 const STYLING_BUTTON_UNLOCK_LARGE = `${DESIGN_CONFIG.colors.inspector.background} ${DESIGN_CONFIG.colors.inspector.text} ${DESIGN_CONFIG.colors.states.locked.textHover} ${DESIGN_CONFIG.colors.states.locked.borderHover} border ${DESIGN_CONFIG.effects.borderTransparent} ${DESIGN_CONFIG.spacing.statePadding} ${DESIGN_CONFIG.effects.roundedFull}`;
@@ -82,23 +82,23 @@ const STYLING_BUTTON_DUPLICATE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFI
 const STYLING_BUTTON_DELETE = `${DESIGN_CONFIG.layout.flexRow} ${DESIGN_CONFIG.layout.itemsCenter} gap-1 px-2 py-1 ${DESIGN_CONFIG.typography.buttonText} ${DESIGN_CONFIG.colors.actions.delete.background} ${DESIGN_CONFIG.effects.border} ${DESIGN_CONFIG.colors.actions.delete.border} ${DESIGN_CONFIG.colors.actions.delete.text} ${DESIGN_CONFIG.effects.rounded} ${DESIGN_CONFIG.colors.actions.delete.backgroundHover} ${DESIGN_CONFIG.effects.transition}`;
 
 // TEXT STYLES - Compact typography with tighter spacing
-const STYLING_TEXT_NODE_ICON = `text-sm w-3 h-3`;
+const STYLING_TEXT_NODE_ICON = "text-sm w-3 h-3";
 const STYLING_TEXT_NODE_NAME = `${DESIGN_CONFIG.typography.nodeName} ${DESIGN_CONFIG.colors.header.text}`;
 const STYLING_TEXT_NODE_METADATA = `${DESIGN_CONFIG.typography.metadata} ${DESIGN_CONFIG.colors.header.textSecondary}`;
 const STYLING_TEXT_NODE_DESCRIPTION = `${DESIGN_CONFIG.typography.description} ${DESIGN_CONFIG.colors.data.text}`;
-const STYLING_TEXT_SECTION_HEADER = `${DESIGN_CONFIG.typography.sectionHeader} ${DESIGN_CONFIG.colors.data.text} mb-1`;
+const _STYLING_TEXT_SECTION_HEADER = `${DESIGN_CONFIG.typography.sectionHeader} ${DESIGN_CONFIG.colors.data.text} mb-1`;
 
 // ICON STYLES - Minimal icon sizing
-const STYLING_ICON_ACTION_SMALL = `w-3 h-3`;
+const STYLING_ICON_ACTION_SMALL = "w-3 h-3";
 const STYLING_ICON_STATE_LARGE = DESIGN_CONFIG.icons.large;
 
 // COMPONENT STYLES - Minimal component styling
 const STYLING_JSON_HIGHLIGHTER = `${DESIGN_CONFIG.dimensions.fullWidth} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.flexBasis}`;
 
 // CARD STYLES - Compact card components
-const STYLING_CARD_SECTION = `p-3 bg-card rounded-lg border border-border shadow-sm`;
-const STYLING_CARD_SECTION_HEADER = `p-3 bg-muted/30 rounded-t-lg border-b border-border/30`;
-const STYLING_CARD_SECTION_CONTENT = `p-3 bg-card rounded-b-lg`;
+const STYLING_CARD_SECTION = "p-3 bg-card rounded-lg border border-border shadow-sm";
+const _STYLING_CARD_SECTION_HEADER = "p-3 bg-muted/30 rounded-t-lg border-b border-border/30";
+const _STYLING_CARD_SECTION_CONTENT = "p-3 bg-card rounded-b-lg";
 
 // =====================================================================
 // ACCORDION COMPONENT
@@ -121,11 +121,11 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 		<div className={STYLING_CARD_SECTION}>
 			<button
 				onClick={onToggle}
-				className="w-full flex items-center justify-between px-3 py-0 bg-muted/30 rounded-t-lg border-b border-border/30 hover:bg-muted/50 transition-colors duration-200"
+				className="flex w-full items-center justify-between rounded-t-lg border-border/30 border-b bg-muted/30 px-3 py-0 transition-colors duration-200 hover:bg-muted/50"
 			>
-				<h4 className="text-xs font-medium text-muted-foreground mb-1">{title}</h4>
+				<h4 className="mb-1 font-medium text-muted-foreground text-xs">{title}</h4>
 				<ChevronDown
-					className={`w-3 h-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+					className={`h-3 w-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
 				/>
 			</button>
 			<div
@@ -133,7 +133,7 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 					isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
 				}`}
 			>
-				<div className="p-3 bg-card rounded-b-lg overflow-y-auto max-h-[550px]">{children}</div>
+				<div className="max-h-[550px] overflow-y-auto rounded-b-lg bg-card p-3">{children}</div>
 			</div>
 		</div>
 	);
@@ -190,7 +190,7 @@ const NodeInspector = React.memo(function NodeInspector({
 	};
 
 	// Get theme for node inspector
-	const theme = useComponentTheme("nodeInspector");
+	const _theme = useComponentTheme("nodeInspector");
 
 	// Get selected items
 	const selectedNode = selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) || null : null;
@@ -198,7 +198,9 @@ const NodeInspector = React.memo(function NodeInspector({
 
 	// Get node category for display
 	const nodeCategory = useMemo(() => {
-		if (!selectedNode) return null;
+		if (!selectedNode) {
+			return null;
+		}
 		// Try to get category from node metadata or spec
 		const nodeMetadata = NodeInspectorAdapter.getNodeInfo(selectedNode.type as NodeType);
 		return nodeMetadata?.category || "unknown";
@@ -209,17 +211,23 @@ const NodeInspector = React.memo(function NodeInspector({
 
 	// Get output for selected node
 	const output = useMemo(() => {
-		if (!selectedNode) return null;
+		if (!selectedNode) {
+			return null;
+		}
 		// Get the most up-to-date node data by finding it again
 		const currentNode = nodes.find((n) => n.id === selectedNode.id);
-		if (!currentNode) return null;
+		if (!currentNode) {
+			return null;
+		}
 		const result = getNodeOutput(currentNode, nodes, edges);
 		return result;
 	}, [selectedNode?.id, nodes, edges]);
 
 	// Get connections for selected node
 	const connections = useMemo(() => {
-		if (!selectedNode) return { incoming: [], outgoing: [] };
+		if (!selectedNode) {
+			return { incoming: [], outgoing: [] };
+		}
 
 		const incoming = edges
 			.filter((edge) => edge.target === selectedNode.id)
@@ -247,7 +255,9 @@ const NodeInspector = React.memo(function NodeInspector({
 	}, [selectedNode, nodes, edges]);
 
 	const nodeInfo = useMemo(() => {
-		if (!selectedNode) return null;
+		if (!selectedNode) {
+			return null;
+		}
 		return NodeInspectorAdapter.getNodeInfo(selectedNode.type as NodeType);
 	}, [selectedNode]);
 
@@ -275,7 +285,9 @@ const NodeInspector = React.memo(function NodeInspector({
 	const handleDuplicateNode = useCallback(
 		(nodeId: string) => {
 			const nodeToDuplicate = nodes.find((n) => n.id === nodeId);
-			if (!nodeToDuplicate) return;
+			if (!nodeToDuplicate) {
+				return;
+			}
 
 			// Create a new node with a unique ID and offset position
 			const newId = `${nodeId}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
@@ -326,7 +338,7 @@ const NodeInspector = React.memo(function NodeInspector({
 			<div
 				className={`${
 					viewMode === "side"
-						? "flex items-center justify-center w-[50px] h-[50px] bg-card border border-border rounded-lg shadow-lg"
+						? "flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card shadow-lg"
 						: STYLING_CONTAINER_LOCKED
 				}`}
 			>
@@ -345,9 +357,9 @@ const NodeInspector = React.memo(function NodeInspector({
 	// Early return for no node selected in side mode
 	if (!selectedNode && viewMode === "side") {
 		return (
-			<div className="flex items-center justify-center w-[50px] h-[50px] bg-card border border-border rounded-lg shadow-lg">
+			<div className="flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card shadow-lg">
 				<div className="text-muted-foreground">
-					<FaSearch className="w-4 h-4" />
+					<FaSearch className="h-4 w-4" />
 				</div>
 			</div>
 		);
@@ -483,7 +495,7 @@ const NodeInspector = React.memo(function NodeInspector({
 				<div
 					className={`${
 						viewMode === "side"
-							? "flex flex-col gap-4 p-4 flex-1 overflow-auto"
+							? "flex flex-1 flex-col gap-4 overflow-auto p-4"
 							: STYLING_CONTAINER_CONTENT_SCROLLABLE
 					}`}
 				>
@@ -501,13 +513,13 @@ const NodeInspector = React.memo(function NodeInspector({
 						>
 							<div className="space-y-2">
 								<div className="flex items-center gap-2">
-									<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+									<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
 										TYPE
 									</span>
 									<span className={STYLING_TEXT_NODE_METADATA}>{selectedNode.type}</span>
 								</div>
 								<div className="flex items-center gap-2">
-									<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+									<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
 										LABEL
 									</span>
 									<div className="flex items-center gap-1">
@@ -525,28 +537,28 @@ const NodeInspector = React.memo(function NodeInspector({
 											onClick={(e) => {
 												(e.target as HTMLInputElement).select();
 											}}
-											className="text-sm font-mono text-muted-foreground bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-500 rounded px-1"
+											className="rounded border-none bg-transparent px-1 font-mono text-muted-foreground text-sm outline-none focus:ring-1 focus:ring-blue-500"
 											placeholder={nodeInfo.displayName}
 										/>
-										<Edit3 className="w-3 h-3 text-muted-foreground/60" />
+										<Edit3 className="h-3 w-3 text-muted-foreground/60" />
 									</div>
 								</div>
 								<div className="flex items-center gap-2">
-									<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+									<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
 										ID
 									</span>
 									<div className="flex items-center gap-1">
 										<EditableNodeId
 											nodeId={selectedNode.id}
 											onUpdateId={handleUpdateNodeId}
-											className="text-sm font-mono text-muted-foreground"
+											className="font-mono text-muted-foreground text-sm"
 										/>
-										<Edit3 className="w-3 h-3 text-muted-foreground/60" />
+										<Edit3 className="h-3 w-3 text-muted-foreground/60" />
 									</div>
 								</div>
 								{nodeInfo.author && (
 									<div className="flex items-center gap-2">
-										<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+										<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
 											AUTHOR
 										</span>
 										<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.author}</span>
@@ -554,7 +566,7 @@ const NodeInspector = React.memo(function NodeInspector({
 								)}
 								{nodeInfo.feature && (
 									<div className="flex items-center gap-2">
-										<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+										<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
 											FEATURE
 										</span>
 										<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.feature}</span>
@@ -562,14 +574,14 @@ const NodeInspector = React.memo(function NodeInspector({
 								)}
 								{nodeInfo.tags && nodeInfo.tags.length > 0 && (
 									<div className="flex items-center gap-2">
-										<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+										<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
 											TAGS
 										</span>
 										<div className="flex flex-wrap gap-1">
 											{nodeInfo.tags.map((tag, index) => (
 												<span
 													key={index}
-													className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded"
+													className="rounded bg-blue-100 px-2 py-0.5 text-blue-800 text-xs dark:bg-blue-900 dark:text-blue-200"
 												>
 													{tag}
 												</span>
@@ -579,7 +591,7 @@ const NodeInspector = React.memo(function NodeInspector({
 								)}
 								{nodeInfo.version && (
 									<div className="flex items-center gap-2">
-										<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+										<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
 											VERSION
 										</span>
 										<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.version}</span>
@@ -587,10 +599,10 @@ const NodeInspector = React.memo(function NodeInspector({
 								)}
 								{nodeInfo.runtime?.execute && (
 									<div className="flex items-center gap-2">
-										<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+										<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
 											RUNTIME
 										</span>
-										<span className="text-sm font-mono text-muted-foreground">
+										<span className="font-mono text-muted-foreground text-sm">
 											{nodeInfo.runtime.execute}
 										</span>
 									</div>
@@ -620,7 +632,7 @@ const NodeInspector = React.memo(function NodeInspector({
 							isOpen={accordionState.nodeData}
 							onToggle={() => toggleAccordion("nodeData")}
 						>
-							<div className="bg-muted/20 rounded-md border border-border/30 overflow-hidden -mx-1">
+							<div className="-mx-1 overflow-hidden rounded-md border border-border/30 bg-muted/20">
 								<EditableJsonEditor
 									data={{
 										id: selectedNode.id,
@@ -628,9 +640,9 @@ const NodeInspector = React.memo(function NodeInspector({
 										store: selectedNode.data?.store ?? "",
 										inputs: selectedNode.data?.inputs ?? null,
 										outputs: selectedNode.data?.outputs ?? null,
-										isActive: selectedNode.data?.isActive || false,
-										isEnabled: selectedNode.data?.isEnabled || true,
-										isExpanded: selectedNode.data?.isExpanded || false,
+										isActive: selectedNode.data?.isActive,
+										isEnabled: true,
+										isExpanded: selectedNode.data?.isExpanded,
 									}}
 									onUpdateData={(newData) => {
 										// Extract the system fields and update only the data portion
@@ -698,7 +710,7 @@ const NodeInspector = React.memo(function NodeInspector({
 							>
 								{/* Handles Summary */}
 								{nodeInfo.handles && nodeInfo.handles.length > 0 && (
-									<div className="mb-3 p-2 bg-muted/30 rounded border border-border/30">
+									<div className="mb-3 rounded border border-border/30 bg-muted/30 p-2">
 										<div className="flex items-center justify-between text-xs">
 											<span className="font-medium text-foreground">
 												{nodeInfo.handles.length} handle{nodeInfo.handles.length !== 1 ? "s" : ""}
@@ -723,35 +735,47 @@ const NodeInspector = React.memo(function NodeInspector({
 								)}
 
 								<div className="space-y-2">
-									{nodeInfo.handles?.map((handle, index) => {
+									{nodeInfo.handles?.map((handle, _index) => {
 										// Find connections for this handle - improved logic with suffix handling
 										const handleConnections = edges.filter((edge) => {
 											// Check if this edge involves the selected node
 											const isSource = edge.source === selectedNode.id;
 											const isTarget = edge.target === selectedNode.id;
 
-											if (!isSource && !isTarget) return false;
+											if (!(isSource || isTarget)) {
+												return false;
+											}
 
 											// For source connections (output handles), check sourceHandle
 											if (isSource) {
 												// Check exact match first
-												if (edge.sourceHandle === handle.id) return true;
-												// Check with __s suffix
-												if (edge.sourceHandle === `${handle.id}__s`) return true;
-												// Check if handle starts with the base ID
-												if (edge.sourceHandle && edge.sourceHandle.startsWith(handle.id))
+												if (edge.sourceHandle === handle.id) {
 													return true;
+												}
+												// Check with __s suffix
+												if (edge.sourceHandle === `${handle.id}__s`) {
+													return true;
+												}
+												// Check if handle starts with the base ID
+												if (edge.sourceHandle?.startsWith(handle.id)) {
+													return true;
+												}
 											}
 
 											// For target connections (input handles), check targetHandle
 											if (isTarget) {
 												// Check exact match first
-												if (edge.targetHandle === handle.id) return true;
-												// Check with __s suffix
-												if (edge.targetHandle === `${handle.id}__s`) return true;
-												// Check if handle starts with the base ID
-												if (edge.targetHandle && edge.targetHandle.startsWith(handle.id))
+												if (edge.targetHandle === handle.id) {
 													return true;
+												}
+												// Check with __s suffix
+												if (edge.targetHandle === `${handle.id}__s`) {
+													return true;
+												}
+												// Check if handle starts with the base ID
+												if (edge.targetHandle?.startsWith(handle.id)) {
+													return true;
+												}
 											}
 
 											// Fallback: if no specific handle is specified, check handle type
@@ -783,23 +807,23 @@ const NodeInspector = React.memo(function NodeInspector({
 										return (
 											<div
 												key={handle.id}
-												className="p-3 bg-muted/20 rounded border border-border/50"
+												className="rounded border border-border/50 bg-muted/20 p-3"
 											>
-												<div className="flex items-center justify-between mb-2">
+												<div className="mb-2 flex items-center justify-between">
 													<div className="flex items-center gap-2">
 														<span
-															className={`w-3 h-3 rounded-full ${
+															className={`h-3 w-3 rounded-full ${
 																handle.type === "source" ? "bg-green-500" : "bg-blue-500"
 															}`}
 															title={handle.type}
 														/>
 														<div>
-															<span className="text-xs font-medium text-foreground">
+															<span className="font-medium text-foreground text-xs">
 																{handle.dataType || "Any"} (
 																{handle.type === "source" ? "Output" : "Input"})
 															</span>
 															{handle.position && (
-																<span className="text-xs text-muted-foreground ml-1">
+																<span className="ml-1 text-muted-foreground text-xs">
 																	[{handle.position}]
 																</span>
 															)}
@@ -807,7 +831,7 @@ const NodeInspector = React.memo(function NodeInspector({
 													</div>
 													<div className="flex items-center gap-1">
 														<span
-															className={`text-xs px-2 py-1 rounded-full ${
+															className={`rounded-full px-2 py-1 text-xs ${
 																handleConnections.length > 0
 																	? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
 																	: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
@@ -822,13 +846,13 @@ const NodeInspector = React.memo(function NodeInspector({
 												{/* Connected Nodes List */}
 												{connectedNodes.length > 0 && (
 													<div className="space-y-1">
-														{connectedNodes.map((connection, connIndex) => (
+														{connectedNodes.map((connection, _connIndex) => (
 															<div
 																key={connection.edge.id}
-																className={`text-xs p-2 rounded border ${
+																className={`rounded border p-2 text-xs ${
 																	connection.isIncoming
-																		? "bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800"
-																		: "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800"
+																		? "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20"
+																		: "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20"
 																}`}
 															>
 																<div className="flex items-center justify-between">
@@ -853,7 +877,7 @@ const NodeInspector = React.memo(function NodeInspector({
 
 												{/* No Connections Message */}
 												{handleConnections.length === 0 && (
-													<div className="text-xs text-muted-foreground/60 text-center py-1">
+													<div className="py-1 text-center text-muted-foreground/60 text-xs">
 														No connections
 													</div>
 												)}
@@ -861,7 +885,7 @@ const NodeInspector = React.memo(function NodeInspector({
 										);
 									})}
 									{(!nodeInfo.handles || nodeInfo.handles.length === 0) && (
-										<div className="text-xs text-muted-foreground/60 text-center py-2">
+										<div className="py-2 text-center text-muted-foreground/60 text-xs">
 											No handles defined for this node
 										</div>
 									)}
@@ -878,35 +902,35 @@ const NodeInspector = React.memo(function NodeInspector({
 									{/* Incoming Connections */}
 									{connections.incoming.length > 0 && (
 										<div>
-											<div className="flex items-center gap-2 mb-2">
-												<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+											<div className="mb-2 flex items-center gap-2">
+												<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
 													INCOMING
 												</span>
-												<span className="text-xs text-muted-foreground">
+												<span className="text-muted-foreground text-xs">
 													({connections.incoming.length})
 												</span>
 											</div>
 											<div className="space-y-2">
-												{connections.incoming.map((connection, index) => (
+												{connections.incoming.map((connection, _index) => (
 													<div
 														key={connection.edge.id}
-														className="p-2 bg-muted/20 rounded border border-border/50"
+														className="rounded border border-border/50 bg-muted/20 p-2"
 													>
-														<div className="flex items-center justify-between mb-1">
+														<div className="mb-1 flex items-center justify-between">
 															<div className="flex items-center gap-2">
-																<span className="text-xs font-medium text-muted-foreground bg-blue-100 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">
+																<span className="rounded bg-blue-100 px-1.5 py-0.5 font-medium text-muted-foreground text-xs dark:bg-blue-900/30">
 																	FROM
 																</span>
-																<span className="text-xs font-medium text-foreground">
+																<span className="font-medium text-foreground text-xs">
 																	{connection.sourceNode?.type || "Unknown"}
 																</span>
 															</div>
-															<span className="text-xs text-muted-foreground font-mono">
+															<span className="font-mono text-muted-foreground text-xs">
 																{connection.edge.source}
 															</span>
 														</div>
 														{connection.sourceOutput && (
-															<div className="text-xs text-muted-foreground bg-background p-1.5 rounded border border-border/30">
+															<div className="rounded border border-border/30 bg-background p-1.5 text-muted-foreground text-xs">
 																{connection.sourceOutput}
 															</div>
 														)}
@@ -919,35 +943,35 @@ const NodeInspector = React.memo(function NodeInspector({
 									{/* Outgoing Connections */}
 									{connections.outgoing.length > 0 && (
 										<div>
-											<div className="flex items-center gap-2 mb-2">
-												<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+											<div className="mb-2 flex items-center gap-2">
+												<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
 													OUTGOING
 												</span>
-												<span className="text-xs text-muted-foreground">
+												<span className="text-muted-foreground text-xs">
 													({connections.outgoing.length})
 												</span>
 											</div>
 											<div className="space-y-2">
-												{connections.outgoing.map((connection, index) => (
+												{connections.outgoing.map((connection, _index) => (
 													<div
 														key={connection.edge.id}
-														className="p-2 bg-muted/20 rounded border border-border/50"
+														className="rounded border border-border/50 bg-muted/20 p-2"
 													>
-														<div className="flex items-center justify-between mb-1">
+														<div className="mb-1 flex items-center justify-between">
 															<div className="flex items-center gap-2">
-																<span className="text-xs font-medium text-muted-foreground bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded">
+																<span className="rounded bg-green-100 px-1.5 py-0.5 font-medium text-muted-foreground text-xs dark:bg-green-900/30">
 																	TO
 																</span>
-																<span className="text-xs font-medium text-foreground">
+																<span className="font-medium text-foreground text-xs">
 																	{connection.targetNode?.type || "Unknown"}
 																</span>
 															</div>
-															<span className="text-xs text-muted-foreground font-mono">
+															<span className="font-mono text-muted-foreground text-xs">
 																{connection.edge.target}
 															</span>
 														</div>
 														{connection.targetInput && (
-															<div className="text-xs text-muted-foreground bg-background p-1.5 rounded border border-border/30">
+															<div className="rounded border border-border/30 bg-background p-1.5 text-muted-foreground text-xs">
 																{connection.targetInput}
 															</div>
 														)}
@@ -959,7 +983,7 @@ const NodeInspector = React.memo(function NodeInspector({
 
 									{/* No Connections */}
 									{connections.incoming.length === 0 && connections.outgoing.length === 0 && (
-										<div className="text-xs text-muted-foreground/60 text-center py-4">
+										<div className="py-4 text-center text-muted-foreground/60 text-xs">
 											No connections
 										</div>
 									)}

@@ -2,7 +2,7 @@
 
 import { useInstallAppFlag } from "@/hooks/useInstallAppFlag";
 import { Download, Smartphone, X } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
 	readonly platforms: string[];
@@ -62,16 +62,16 @@ export default function PWAInstallPrompt() {
 	}, [isFeatureEnabled, isLoading]);
 
 	const handleInstallClick = async () => {
-		if (!deferredPrompt) return;
+		if (!deferredPrompt) {
+			return;
+		}
 
 		try {
 			await deferredPrompt.prompt();
 			const { outcome } = await deferredPrompt.userChoice;
 
 			if (outcome === "accepted") {
-				console.log("User accepted the install prompt");
 			} else {
-				console.log("User dismissed the install prompt");
 			}
 		} catch (error) {
 			console.error("Error during installation:", error);
@@ -99,22 +99,22 @@ export default function PWAInstallPrompt() {
 	}
 
 	return (
-		<div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-50">
-			<div className="bg-background border border-border rounded-lg shadow-lg p-4">
-				<div className="flex items-start justify-between mb-3">
+		<div className="fixed right-4 bottom-4 left-4 z-50 md:right-4 md:left-auto md:w-80">
+			<div className="rounded-lg border border-border bg-background p-4 shadow-lg">
+				<div className="mb-3 flex items-start justify-between">
 					<div className="flex items-center gap-2">
-						<Smartphone className="w-5 h-5 text-primary" />
+						<Smartphone className="h-5 w-5 text-primary" />
 						<h3 className="font-semibold text-sm">Install App</h3>
 					</div>
 					<button
 						onClick={handleDismiss}
-						className="text-muted-foreground hover:text-foreground transition-colors"
+						className="text-muted-foreground transition-colors hover:text-foreground"
 					>
-						<X className="w-4 h-4" />
+						<X className="h-4 w-4" />
 					</button>
 				</div>
 
-				<p className="text-sm text-muted-foreground mb-4">
+				<p className="mb-4 text-muted-foreground text-sm">
 					Install AgenitiX Flow Editor for a better experience with offline access and faster
 					loading.
 				</p>
@@ -122,14 +122,14 @@ export default function PWAInstallPrompt() {
 				<div className="flex gap-2">
 					<button
 						onClick={handleInstallClick}
-						className="flex-1 bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+						className="flex flex-1 items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 font-medium text-primary-foreground text-sm transition-colors hover:bg-primary/90"
 					>
-						<Download className="w-4 h-4" />
+						<Download className="h-4 w-4" />
 						Install
 					</button>
 					<button
 						onClick={handleDismiss}
-						className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+						className="px-3 py-2 text-muted-foreground text-sm transition-colors hover:text-foreground"
 					>
 						Not now
 					</button>

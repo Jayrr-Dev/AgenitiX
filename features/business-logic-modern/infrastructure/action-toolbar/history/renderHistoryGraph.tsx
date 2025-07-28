@@ -206,14 +206,20 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 		while (queue.length) {
 			const { id, depth } = queue.shift()!;
 
-			if (processedNodes.has(id)) continue;
+			if (processedNodes.has(id)) {
+				continue;
+			}
 			processedNodes.add(id);
 
 			const node = graph.nodes[id];
-			if (!node) continue;
+			if (!node) {
+				continue;
+			}
 
 			// Track sibling index per depth to space nodes evenly
-			if (!levelWidths[depth]) levelWidths[depth] = 0;
+			if (!levelWidths[depth]) {
+				levelWidths[depth] = 0;
+			}
 			const siblingIndex = levelWidths[depth]++;
 
 			const isCursor = node.id === graph.cursor;
@@ -275,7 +281,7 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 
 	// Memoize click handler to prevent unnecessary re-renders
 	const handleNodeClick = useCallback(
-		(event: any, node: any) => {
+		(_event: any, node: any) => {
 			// Handle selection
 			if (onNodeSelect) {
 				onNodeSelect(node.id);

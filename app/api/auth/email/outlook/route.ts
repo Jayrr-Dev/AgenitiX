@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 		}
 
 		// Generate OAuth2 URL
-		const authUrl = outlookProvider.getOAuthUrl!(redirectUri, state || undefined);
+		const authUrl = outlookProvider.getOAuthUrl?.(redirectUri, state || undefined);
 
 		// Return the authorization URL for client-side redirect
 		return NextResponse.json({

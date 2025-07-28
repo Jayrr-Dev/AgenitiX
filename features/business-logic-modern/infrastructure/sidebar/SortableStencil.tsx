@@ -83,7 +83,6 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
 	// Touch event handlers
 	const handleTouchStart = useCallback(
 		(e: React.TouchEvent) => {
-			console.log("Touch start on stencil:", stencil.label);
 			const touch = e.touches[0];
 			touchStartTime.current = Date.now();
 			touchStartPos.current = { x: touch.clientX, y: touch.clientY };
@@ -93,8 +92,6 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
 			const now = Date.now();
 			const timeSinceLastTap = now - lastTapTime.current;
 			if (timeSinceLastTap < 400 && timeSinceLastTap > 50) {
-				// 400ms double tap threshold, min 50ms to avoid accidental
-				console.log("Double tap detected, creating node:", stencil.nodeType);
 				e.preventDefault();
 				e.stopPropagation();
 				onDoubleClickCreate(stencil.nodeType);
@@ -119,7 +116,6 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
 
 			// If moved more than 10px, consider it a drag
 			if (distance > 10 && !isTouchDragging.current) {
-				console.log("Touch drag started for:", stencil.label);
 				isTouchDragging.current = true;
 				e.preventDefault();
 
@@ -131,8 +127,7 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
 	);
 
 	const startTouchDrag = useCallback(
-		(touch: React.Touch, element: EventTarget) => {
-			console.log("Starting touch drag simulation for:", stencil.label);
+		(touch: React.Touch, _element: EventTarget) => {
 			// Create a visual drag preview
 			const dragPreview = document.createElement("div");
 			dragPreview.textContent = stencil.label;
@@ -154,10 +149,9 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
 			// Handle touch end (drop)
 			const handleTouchEndGlobal = (e: TouchEvent) => {
 				e.preventDefault();
-				console.log("Touch drag ended");
 
 				// Remove the drag preview
-				if (dragPreview && dragPreview.parentNode) {
+				if (dragPreview?.parentNode) {
 					dragPreview.parentNode.removeChild(dragPreview);
 				}
 
@@ -168,7 +162,6 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
 				// Check if we're dropping on the ReactFlow canvas
 				const flowCanvas = dropTarget?.closest(".react-flow");
 				if (flowCanvas) {
-					console.log("Dropping on ReactFlow canvas, creating node:", stencil.nodeType);
 					// Create a synthetic drop event
 					const syntheticDropEvent = new DragEvent("drop", {
 						bubbles: true,
@@ -196,7 +189,6 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
 					// Dispatch the drop event on the flow canvas
 					flowCanvas.dispatchEvent(syntheticDropEvent);
 				} else {
-					console.log("Touch drag ended outside ReactFlow canvas");
 				}
 
 				// Clean up event listeners
@@ -247,7 +239,7 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
 		<div
 			ref={setNodeRef}
 			style={style}
-			className="relative flex h-[70px] w-[70px] select-none items-center justify-center rounded border-2 bg-[var(--infra-sidebar-bg)] border-[var(--infra-sidebar-border)] text-[var(--infra-sidebar-text)] hover:bg-[var(--infra-sidebar-bg-hover)] transition-colors group cursor-pointer"
+			className="group relative flex h-[70px] w-[70px] cursor-pointer select-none items-center justify-center rounded border-2 border-[var(--infra-sidebar-border)] bg-[var(--infra-sidebar-bg)] text-[var(--infra-sidebar-text)] transition-colors hover:bg-[var(--infra-sidebar-bg-hover)]"
 			title={keyboardShortcut ? `${stencil.label} (${keyboardShortcut})` : stencil.label}
 			onDoubleClick={() => onDoubleClickCreate(stencil.nodeType)}
 			onMouseEnter={() =>
@@ -272,14 +264,13 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
 			onTouchStart={handleTouchStart}
 			onTouchMove={handleTouchMove}
 			onTouchEnd={handleTouchEnd}
-			tabIndex={0}
 		>
 			<button
 				{...attributes}
 				{...listeners}
 				type="button"
 				title="Re-order"
-				className="absolute left-1 top-1 h-3 w-3 cursor-grab text-[8px] text-[var(--infra-sidebar-text-secondary)] active:cursor-grabbing"
+				className="absolute top-1 left-1 h-3 w-3 cursor-grab text-[8px] text-[var(--infra-sidebar-text-secondary)] active:cursor-grabbing"
 				draggable={false}
 			>
 				⦿
@@ -293,18 +284,16 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
 						e.stopPropagation();
 						onRemove(stencil.id);
 					}}
-					className="absolute right-1 top-1 h-3 w-3 cursor-pointer text-[12px] text-destructive hover:text-destructive/80
-                      rounded-full flex items-center justify-center
-                     opacity-0 group-hover:opacity-100 transition-opacity"
+					className="absolute top-1 right-1 flex h-3 w-3 cursor-pointer items-center justify-center rounded-full text-[12px] text-destructive opacity-0 transition-opacity hover:text-destructive/80 group-hover:opacity-100"
 				>
 					x
 				</button>
 			)}
 
 			<div
-				draggable
+				draggable={true}
 				onDragStart={(e) => onNativeDragStart(e, stencil.nodeType)}
-				className="flex h-full w-full flex-col items-center justify-center text-center text-xs font-medium"
+				className="flex h-full w-full flex-col items-center justify-center text-center font-medium text-xs"
 			>
 				{renderLucideIcon(stencil.icon, "", 24)}
 				<div className="mt-1 text-[10px] text-[var(--infra-sidebar-text-secondary)] leading-tight">

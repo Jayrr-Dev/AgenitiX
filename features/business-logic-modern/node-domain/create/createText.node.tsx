@@ -11,7 +11,7 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import React, { memo, useCallback, useEffect, useMemo, useRef, type ChangeEvent } from "react";
+import { type ChangeEvent, memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
@@ -34,7 +34,7 @@ import {
 	EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { useReactFlow, useStore } from "@xyflow/react";
+import { useStore } from "@xyflow/react";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -204,7 +204,7 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 
 	/** Clear JSON‑ish fields when inactive or disabled */
 	const blockJsonWhenInactive = useCallback(() => {
-		if (!isActive || !isEnabled) {
+		if (!(isActive && isEnabled)) {
 			updateNodeData({
 				json: null,
 				data: null,
@@ -218,10 +218,14 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 	/** Compute the latest text coming from the *first* upstream node. */
 	const computeInput = useCallback((): string | null => {
 		const incoming = edges.find((e) => e.target === id);
-		if (!incoming) return null;
+		if (!incoming) {
+			return null;
+		}
 
 		const src = nodes.find((n) => n.id === incoming.source);
-		if (!src) return null;
+		if (!src) {
+			return null;
+		}
 
 		// priority: outputs ➜ store ➜ whole data
 		const inputValue = src.data?.outputs ?? src.data?.store ?? src.data;
@@ -271,12 +275,12 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 		const hasValidStore = currentStore.trim().length > 0 && currentStore !== "Default text";
 
 		// If disabled, always set isActive to false
-		if (!isEnabled) {
-			if (isActive) updateNodeData({ isActive: false });
-		} else {
+		if (isEnabled) {
 			if (isActive !== hasValidStore) {
 				updateNodeData({ isActive: hasValidStore });
 			}
+		} else if (isActive) {
+			updateNodeData({ isActive: false });
 		}
 	}, [store, isEnabled, isActive, updateNodeData]);
 
@@ -308,30 +312,30 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 		<>
 			{/* Editable label or icon */}
 			{!isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60 ? (
-				<div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+				<div className="absolute inset-0 flex justify-center p-1 text-foreground/80 text-lg">
 					{spec.icon && renderLucideIcon(spec.icon, "", 16)}
 				</div>
 			) : (
 				<LabelNode nodeId={id} label={spec.displayName} />
 			)}
 
-			{!isExpanded ? (
-				<div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ""}`}>
-					<textarea
-						value={store === "Default text" ? "" : (store ?? "")}
-						onChange={handleStoreChange}
-						placeholder="..."
-						className={` resize-none text-center nowheel rounded-md h-8 m-4 translate-y-2 text-xs p-1 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
-						disabled={!isEnabled}
-					/>
-				</div>
-			) : (
-				<div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}>
+			{isExpanded ? (
+				<div className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}>
 					<textarea
 						value={store === "Default text" ? "" : (store ?? "")}
 						onChange={handleStoreChange}
 						placeholder="Enter your content here…"
-						className={` resize-none nowheel bg-background rounded-md p-2 text-xs h-32 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
+						className={` nowheel h-32 resize-none overflow-y-auto rounded-md bg-background p-2 text-xs focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
+						disabled={!isEnabled}
+					/>
+				</div>
+			) : (
+				<div className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}>
+					<textarea
+						value={store === "Default text" ? "" : (store ?? "")}
+						onChange={handleStoreChange}
+						placeholder="..."
+						className={` nowheel m-4 h-8 translate-y-2 resize-none overflow-y-auto rounded-md p-1 text-center text-xs focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
 						disabled={!isEnabled}
 					/>
 				</div>

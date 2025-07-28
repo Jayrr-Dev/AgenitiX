@@ -90,16 +90,16 @@ const ColorSwatch: React.FC<{
 	return (
 		<button
 			onClick={handleCopy}
-			className="flex items-center gap-3 p-2 rounded-md bg-card border border-border text-left hover:ring-2 hover:ring-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/50"
+			className="flex items-center gap-3 rounded-md border border-border bg-card p-2 text-left hover:ring-2 hover:ring-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/50"
 			title="Click to copy CSS variable"
 		>
 			<span
-				className="w-8 h-8 rounded border border-border shadow-sm flex-shrink-0"
+				className="h-8 w-8 flex-shrink-0 rounded border border-border shadow-sm"
 				style={{ backgroundColor: colorInfo.hex }}
 			/>
-			<span className="flex-1 min-w-0">
-				<span className="block font-mono text-sm text-foreground">{variable}</span>
-				<span className="block text-xs text-muted-foreground truncate">
+			<span className="min-w-0 flex-1">
+				<span className="block font-mono text-foreground text-sm">{variable}</span>
+				<span className="block truncate text-muted-foreground text-xs">
 					{colorInfo.hex} • {colorInfo.name}
 				</span>
 			</span>
@@ -120,14 +120,14 @@ const ComponentThemePreview: React.FC<{
 	};
 
 	return (
-		<div className="p-4 rounded-lg bg-card border border-border">
-			<div className="flex items-center justify-between mb-3">
+		<div className="rounded-lg border border-border bg-card p-4">
+			<div className="mb-3 flex items-center justify-between">
 				<h3 className="font-semibold text-card-foreground capitalize">
 					{componentName.replace(/([A-Z])/g, " $1").trim()}
 				</h3>
 				<button
 					onClick={handleDebugColors}
-					className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+					className="rounded bg-primary px-3 py-1 text-primary-foreground text-xs transition-colors hover:bg-primary/90"
 				>
 					Debug in Console
 				</button>
@@ -181,24 +181,26 @@ export const ColorDebugger: React.FC<ColorDebuggerProps> = ({
 	const filteredVariables = CSS_VARIABLES.filter((v) => v.includes(search));
 
 	// Only render in development mode
-	if (!IS_DEVELOPMENT || !isVisible) return null;
+	if (!(IS_DEVELOPMENT && isVisible)) {
+		return null;
+	}
 
 	return (
-		<div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-			<div className="bg-card border border-border rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
+			<div className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-lg border border-border bg-card shadow-xl">
 				{/* Header */}
-				<div className="flex items-center justify-between p-4 border-b border-border">
+				<div className="flex items-center justify-between border-border border-b p-4">
 					<div className="flex items-center gap-4">
-						<h2 className="text-lg font-semibold text-card-foreground">
+						<h2 className="font-semibold text-card-foreground text-lg">
 							🎨 Color Debugger{" "}
-							<span className="text-xs bg-status-edge-add text-node-test-text px-2 py-1 rounded">
+							<span className="rounded bg-status-edge-add px-2 py-1 text-node-test-text text-xs">
 								DEV
 							</span>
 						</h2>
-						<div className="flex bg-muted rounded-md p-1">
+						<div className="flex rounded-md bg-muted p-1">
 							<button
 								onClick={() => setActiveTab("colors")}
-								className={`px-3 py-1 text-sm rounded transition-colors ${
+								className={`rounded px-3 py-1 text-sm transition-colors ${
 									activeTab === "colors"
 										? "bg-background text-foreground shadow-sm"
 										: "text-muted-foreground hover:text-foreground"
@@ -208,7 +210,7 @@ export const ColorDebugger: React.FC<ColorDebuggerProps> = ({
 							</button>
 							<button
 								onClick={() => setActiveTab("components")}
-								className={`px-3 py-1 text-sm rounded transition-colors ${
+								className={`rounded px-3 py-1 text-sm transition-colors ${
 									activeTab === "components"
 										? "bg-background text-foreground shadow-sm"
 										: "text-muted-foreground hover:text-foreground"
@@ -220,23 +222,23 @@ export const ColorDebugger: React.FC<ColorDebuggerProps> = ({
 					</div>
 					<button
 						onClick={() => onVisibilityChange?.(false)}
-						className="text-muted-foreground hover:text-foreground transition-colors"
+						className="text-muted-foreground transition-colors hover:text-foreground"
 					>
 						✕
 					</button>
 				</div>
 
 				{/* Content */}
-				<div className="p-4 overflow-y-auto max-h-[calc(90vh-80px)]">
+				<div className="max-h-[calc(90vh-80px)] overflow-y-auto p-4">
 					{activeTab === "colors" && (
 						<div>
 							{/* Theme & Search */}
-							<div className="flex items-center gap-4 mb-6">
-								<span className="text-sm font-medium text-card-foreground">Theme:</span>
-								<div className="flex bg-muted rounded-md p-1">
+							<div className="mb-6 flex items-center gap-4">
+								<span className="font-medium text-card-foreground text-sm">Theme:</span>
+								<div className="flex rounded-md bg-muted p-1">
 									<button
 										onClick={() => setSelectedTheme("light")}
-										className={`px-3 py-1 text-sm rounded transition-colors ${
+										className={`rounded px-3 py-1 text-sm transition-colors ${
 											selectedTheme === "light"
 												? "bg-background text-foreground shadow-sm"
 												: "text-muted-foreground hover:text-foreground"
@@ -246,7 +248,7 @@ export const ColorDebugger: React.FC<ColorDebuggerProps> = ({
 									</button>
 									<button
 										onClick={() => setSelectedTheme("dark")}
-										className={`px-3 py-1 text-sm rounded transition-colors ${
+										className={`rounded px-3 py-1 text-sm transition-colors ${
 											selectedTheme === "dark"
 												? "bg-background text-foreground shadow-sm"
 												: "text-muted-foreground hover:text-foreground"
@@ -260,13 +262,13 @@ export const ColorDebugger: React.FC<ColorDebuggerProps> = ({
 									placeholder="Filter…"
 									value={search}
 									onChange={(e) => setSearch(e.target.value)}
-									className="ml-4 px-3 py-1 text-sm bg-background border border-border rounded placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+									className="ml-4 rounded border border-border bg-background px-3 py-1 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
 									aria-label="Filter variables"
 								/>
 							</div>
 
 							{/* Color Grid */}
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+							<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
 								{filteredVariables.map((variable) => (
 									<ColorSwatch key={variable} variable={variable} theme={selectedTheme} />
 								))}
@@ -275,7 +277,7 @@ export const ColorDebugger: React.FC<ColorDebuggerProps> = ({
 					)}
 
 					{activeTab === "components" && (
-						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+						<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 							{COMPONENT_TYPES.map((componentName) => (
 								<ComponentThemePreview key={componentName} componentName={componentName} />
 							))}
@@ -317,7 +319,9 @@ export const useColorDebugger = () => {
 
 	// Add keyboard shortcut (Ctrl/Cmd + Shift + C) - only in development
 	useEffect(() => {
-		if (!IS_DEVELOPMENT) return;
+		if (!IS_DEVELOPMENT) {
+			return;
+		}
 
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === "C") {
@@ -357,38 +361,18 @@ if (typeof window !== "undefined" && IS_DEVELOPMENT) {
 	(window as any).showColorDebugger = () => {
 		// Dispatch a custom event to show the debugger
 		window.dispatchEvent(new CustomEvent("show-color-debugger"));
-		console.log("🎨 Color Debugger opened (Development Mode)");
 	};
 
 	(window as any).debugColors = (componentName?: string) => {
 		if (componentName) {
 			// Import and use the debug function
-			import("./colorDebugUtils").then(({ debugComponentColors }) => {
-				// This is a simplified version - in practice you'd need the actual theme
-				console.log(
-					`🎨 Debug colors for ${componentName} - use the visual debugger for full details`
-				);
-				console.log("Call showColorDebugger() to open the visual interface");
-			});
+			import("./colorDebugUtils").then(({ debugComponentColors }) => {});
 		} else {
-			console.log("🎨 Available debug commands (Development Mode):");
-			console.log("• showColorDebugger() - Opens the visual color debugger");
-			console.log('• debugColors("componentName") - Debug specific component colors');
-			console.log(
-				"• Available components: actionToolbar, historyPanel, sidePanel, sidebarIcons, variantSelector, nodeInspector, miniMap"
-			);
 		}
 	};
-
-	// Log that debug functions are available
-	console.log("🎨 Color Debugger available! Use showColorDebugger() or Ctrl+Shift+C");
 } else if (typeof window !== "undefined" && !IS_DEVELOPMENT) {
 	// In production, provide helpful messages
-	(window as any).showColorDebugger = () => {
-		console.log("🎨 Color Debugger is only available in development mode");
-	};
+	(window as any).showColorDebugger = () => {};
 
-	(window as any).debugColors = () => {
-		console.log("🎨 Color debugging is only available in development mode");
-	};
+	(window as any).debugColors = () => {};
 }

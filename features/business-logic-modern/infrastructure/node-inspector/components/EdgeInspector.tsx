@@ -16,7 +16,6 @@ import type {
 	AgenEdge,
 	AgenNode,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
-import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { JsonHighlighter } from "@/features/business-logic-modern/infrastructure/node-inspector/utils/JsonHighlighter";
 import { nodeSpecs } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 import { ArrowRight, Trash2, Zap } from "lucide-react";
@@ -39,12 +38,14 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 
 	// Enhanced data type detection using node specs
 	const getActualDataType = (node: any, handle: string, isOutput: boolean) => {
-		if (!node) return { label: "Unknown", color: "text-muted-foreground", value: null };
+		if (!node) {
+			return { label: "Unknown", color: "text-muted-foreground", value: null };
+		}
 
 		try {
 			// Get the node spec to find the correct handle type
 			const nodeSpec = (nodeSpecs as any)[node.type];
-			if (nodeSpec && nodeSpec.handles) {
+			if (nodeSpec?.handles) {
 				// Find the specific handle in the node spec
 				const specHandle = nodeSpec.handles.find((h: any) => h.id === handle);
 				if (specHandle) {
@@ -139,18 +140,18 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 	return (
 		<div className="space-y-3">
 			{/* Edge Header */}
-			<div className="flex items-center justify-between p-3 bg-muted/30 rounded-t-lg border-b border-border/30">
+			<div className="flex items-center justify-between rounded-t-lg border-border/30 border-b bg-muted/30 p-3">
 				<div className="flex items-center gap-2">
-					<Zap className="w-4 h-4 text-foreground" />
-					<h3 className="text-sm font-medium text-foreground">Edge Connection</h3>
+					<Zap className="h-4 w-4 text-foreground" />
+					<h3 className="font-medium text-foreground text-sm">Edge Connection</h3>
 				</div>
 				{onDeleteEdge && (
 					<button
 						onClick={() => onDeleteEdge(edge.id)}
-						className="p-1 text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
+						className="rounded p-1 text-red-600 transition-colors hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900/30"
 						title="Delete Edge"
 					>
-						<Trash2 className="w-4 h-4" />
+						<Trash2 className="h-4 w-4" />
 					</button>
 				)}
 			</div>
@@ -158,10 +159,10 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 			{/* Edge ID */}
 			<div className="px-3">
 				<div className="flex items-center gap-2">
-					<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+					<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
 						ID
 					</span>
-					<span className="text-xs font-mono text-muted-foreground underline cursor-pointer">
+					<span className="cursor-pointer font-mono text-muted-foreground text-xs underline">
 						{edge.id}
 					</span>
 				</div>
@@ -170,18 +171,18 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 			{/* Connection Flow */}
 			<div className="space-y-3 px-3">
 				{/* Source Node */}
-				<div className="p-3 bg-muted/20 rounded border border-border/50">
-					<div className="flex items-center justify-between mb-2">
+				<div className="rounded border border-border/50 bg-muted/20 p-3">
+					<div className="mb-2 flex items-center justify-between">
 						<div className="flex items-center gap-2">
-							<span className="text-xs font-medium text-muted-foreground bg-blue-100 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">
+							<span className="rounded bg-blue-100 px-1.5 py-0.5 font-medium text-muted-foreground text-xs dark:bg-blue-900/30">
 								SOURCE
 							</span>
-							<span className="text-xs font-medium text-foreground">
+							<span className="font-medium text-foreground text-xs">
 								{sourceNode?.type || "Unknown"}
 							</span>
 						</div>
 					</div>
-					<div className="text-xs font-mono text-muted-foreground mb-2">
+					<div className="mb-2 font-mono text-muted-foreground text-xs">
 						{sourceNode?.id || "Unknown Node"}
 					</div>
 					<div className="flex items-center gap-2 text-xs">
@@ -194,7 +195,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 					{sourceType.value !== null && sourceType.value !== undefined && (
 						<div className="mt-2 text-xs">
 							<span className="text-muted-foreground">Value: </span>
-							<span className="font-mono text-foreground bg-background p-1 rounded border border-border/30">
+							<span className="rounded border border-border/30 bg-background p-1 font-mono text-foreground">
 								{typeof sourceType.value === "string"
 									? `"${sourceType.value}"`
 									: String(sourceType.value)}
@@ -206,25 +207,25 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 				{/* Connection Arrow */}
 				<div className="flex justify-center">
 					<div className="flex items-center gap-2 text-muted-foreground">
-						<ArrowRight className="w-4 h-4" />
-						<span className="text-xs font-medium">Data Flow</span>
-						<ArrowRight className="w-4 h-4" />
+						<ArrowRight className="h-4 w-4" />
+						<span className="font-medium text-xs">Data Flow</span>
+						<ArrowRight className="h-4 w-4" />
 					</div>
 				</div>
 
 				{/* Target Node */}
-				<div className="p-3 bg-muted/20 rounded border border-border/50">
-					<div className="flex items-center justify-between mb-2">
+				<div className="rounded border border-border/50 bg-muted/20 p-3">
+					<div className="mb-2 flex items-center justify-between">
 						<div className="flex items-center gap-2">
-							<span className="text-xs font-medium text-muted-foreground bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded">
+							<span className="rounded bg-green-100 px-1.5 py-0.5 font-medium text-muted-foreground text-xs dark:bg-green-900/30">
 								TARGET
 							</span>
-							<span className="text-xs font-medium text-foreground">
+							<span className="font-medium text-foreground text-xs">
 								{targetNode?.type || "Unknown"}
 							</span>
 						</div>
 					</div>
-					<div className="text-xs font-mono text-muted-foreground mb-2">
+					<div className="mb-2 font-mono text-muted-foreground text-xs">
 						{targetNode?.id || "Unknown Node"}
 					</div>
 					<div className="flex items-center gap-2 text-xs">
@@ -239,19 +240,19 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 
 			{/* Type Compatibility Check */}
 			<div className="px-3">
-				<div className="p-3 bg-muted/20 rounded border border-border/50">
-					<div className="flex items-center gap-2 mb-2">
-						<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+				<div className="rounded border border-border/50 bg-muted/20 p-3">
+					<div className="mb-2 flex items-center gap-2">
+						<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
 							COMPATIBILITY
 						</span>
 					</div>
 					<div className="text-xs">
 						{isCompatible ? (
-							<span className="text-green-600 dark:text-green-400 font-medium">
+							<span className="font-medium text-green-600 dark:text-green-400">
 								✓ Compatible types
 							</span>
 						) : (
-							<span className="text-orange-600 dark:text-orange-400 font-medium">
+							<span className="font-medium text-orange-600 dark:text-orange-400">
 								⚠ Type mismatch warning
 							</span>
 						)}
@@ -261,13 +262,13 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 
 			{/* Edge Data (if any) */}
 			{edge.data && Object.keys(edge.data).length > 0 && (
-				<div className="px-3 space-y-2">
+				<div className="space-y-2 px-3">
 					<div className="flex items-center gap-2">
-						<span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+						<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
 							EDGE DATA
 						</span>
 					</div>
-					<div className="p-2 bg-background rounded border border-border/30">
+					<div className="rounded border border-border/30 bg-background p-2">
 						<JsonHighlighter data={edge.data} />
 					</div>
 				</div>

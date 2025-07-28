@@ -4,44 +4,44 @@ import Link from "next/link";
 export default function SitemapPage() {
 	return (
 		<div className="container mx-auto px-4 py-12">
-			<div className="text-center mb-12">
-				<h1 className="text-4xl font-bold mb-4">Sitemap</h1>
-				<p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+			<div className="mb-12 text-center">
+				<h1 className="mb-4 font-bold text-4xl">Sitemap</h1>
+				<p className="mx-auto max-w-2xl text-gray-600 text-xl dark:text-gray-400">
 					Find all the pages on our website organized in one place.
 				</p>
 			</div>
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-16">
-				<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+			<div className="mb-16 rounded-lg bg-white p-8 shadow-md dark:bg-gray-800">
+				<div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
 					<div>
-						<h2 className="text-2xl font-semibold mb-4 text-[#f6733c]">Main Pages</h2>
+						<h2 className="mb-4 font-semibold text-2xl text-[#f6733c]">Main Pages</h2>
 						<ul className="space-y-2 text-gray-700 dark:text-gray-300">
 							<li>
-								<Link href="/" className="hover:text-[#f6733c] transition-colors">
+								<Link href="/" className="transition-colors hover:text-[#f6733c]">
 									Home
 								</Link>
 							</li>
 							<li>
-								<Link href="/about" className="hover:text-[#f6733c] transition-colors">
+								<Link href="/about" className="transition-colors hover:text-[#f6733c]">
 									About Us
 								</Link>
 							</li>
 							<li>
-								<Link href="/expertise" className="hover:text-[#f6733c] transition-colors">
+								<Link href="/expertise" className="transition-colors hover:text-[#f6733c]">
 									Expertise
 								</Link>
 							</li>
 							<li>
-								<Link href="/projects" className="hover:text-[#f6733c] transition-colors">
+								<Link href="/projects" className="transition-colors hover:text-[#f6733c]">
 									Projects
 								</Link>
 							</li>
 							<li>
-								<Link href="/careers" className="hover:text-[#f6733c] transition-colors">
+								<Link href="/careers" className="transition-colors hover:text-[#f6733c]">
 									Careers
 								</Link>
 							</li>
 							<li>
-								<Link href="/contact" className="hover:text-[#f6733c] transition-colors">
+								<Link href="/contact" className="transition-colors hover:text-[#f6733c]">
 									Contact
 								</Link>
 							</li>
@@ -101,20 +101,20 @@ export default function SitemapPage() {
           </div> */}
 
 					<div>
-						<h2 className="text-2xl font-semibold mb-4 text-[#f6733c]">Legal</h2>
+						<h2 className="mb-4 font-semibold text-2xl text-[#f6733c]">Legal</h2>
 						<ul className="space-y-2 text-gray-700 dark:text-gray-300">
 							<li>
-								<Link href="/terms" className="hover:text-[#f6733c] transition-colors">
+								<Link href="/terms" className="transition-colors hover:text-[#f6733c]">
 									Terms of Service
 								</Link>
 							</li>
 							<li>
-								<Link href="/privacy" className="hover:text-[#f6733c] transition-colors">
+								<Link href="/privacy" className="transition-colors hover:text-[#f6733c]">
 									Privacy Policy
 								</Link>
 							</li>
 							<li>
-								<Link href="/sitemap" className="hover:text-[#f6733c] transition-colors">
+								<Link href="/sitemap" className="transition-colors hover:text-[#f6733c]">
 									Sitemap
 								</Link>
 							</li>
@@ -122,15 +122,15 @@ export default function SitemapPage() {
 					</div>
 
 					<div>
-						<h2 className="text-2xl font-semibold mb-4 text-[#f6733c]">Resources</h2>
+						<h2 className="mb-4 font-semibold text-2xl text-[#f6733c]">Resources</h2>
 						<ul className="space-y-2 text-gray-700 dark:text-gray-300">
 							<li>
-								<Link href="/blog" className="hover:text-[#f6733c] transition-colors">
+								<Link href="/blog" className="transition-colors hover:text-[#f6733c]">
 									Blog
 								</Link>
 							</li>
 							<li>
-								<Link href="/faq" className="hover:text-[#f6733c] transition-colors">
+								<Link href="/faq" className="transition-colors hover:text-[#f6733c]">
 									FAQ
 								</Link>
 							</li>
@@ -139,13 +139,13 @@ export default function SitemapPage() {
 				</div>
 			</div>
 			{/* CTA Section */}
-			<div className="bg-blue-50 dark:bg-blue-900 p-8 rounded-lg text-center">
-				<h2 className="text-2xl font-semibold mb-4">Can't find what you're looking for?</h2>
-				<p className="text-gray-700 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
+			<div className="rounded-lg bg-blue-50 p-8 text-center dark:bg-blue-900">
+				<h2 className="mb-4 font-semibold text-2xl">Can't find what you're looking for?</h2>
+				<p className="mx-auto mb-6 max-w-2xl text-gray-700 dark:text-gray-300">
 					Our team is here to help you navigate our services and find the information you need.
 				</p>
-				<div className="flex flex-col sm:flex-row gap-4 justify-center">
-					<Link href="/contact" legacyBehavior>
+				<div className="flex flex-col justify-center gap-4 sm:flex-row">
+					<Link href="/contact" legacyBehavior={true}>
 						<Button size="lg" className="bg-[#f6733c] hover:bg-[#e45f2d]">
 							Contact Us
 						</Button>

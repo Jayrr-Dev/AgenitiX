@@ -50,7 +50,6 @@ export async function POST(request: NextRequest) {
 		const { action } = await request.json().catch(() => ({ action: "refresh" }));
 
 		if (action === "refresh") {
-			console.log("🔄 Manual threat intelligence cache refresh requested");
 			await ThreatIntelligence.refreshCache();
 
 			const stats = ThreatIntelligence.getCacheStats();

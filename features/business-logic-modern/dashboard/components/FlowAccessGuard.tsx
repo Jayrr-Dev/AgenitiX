@@ -97,7 +97,7 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 			toast.success("Access request sent to the flow owner");
 			setShowRequestDialog(false);
 			setRequestEmail("");
-		} catch (error) {
+		} catch (_error) {
 			toast.error("Failed to send access request");
 		}
 	};
@@ -105,13 +105,13 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 	const getPermissionIcon = (permission: string) => {
 		switch (permission) {
 			case "view":
-				return <Eye className="w-4 h-4" />;
+				return <Eye className="h-4 w-4" />;
 			case "edit":
-				return <Edit className="w-4 h-4" />;
+				return <Edit className="h-4 w-4" />;
 			case "admin":
-				return <Shield className="w-4 h-4" />;
+				return <Shield className="h-4 w-4" />;
 			default:
-				return <Eye className="w-4 h-4" />;
+				return <Eye className="h-4 w-4" />;
 		}
 	};
 
@@ -130,9 +130,9 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 
 	if (isLoading) {
 		return (
-			<div className="flex items-center justify-center min-h-screen">
+			<div className="flex min-h-screen items-center justify-center">
 				<div className="text-center">
-					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+					<div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-primary border-b-2" />
 					<p className="text-muted-foreground">Checking access...</p>
 				</div>
 			</div>
@@ -144,8 +144,8 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 			<div>
 				{/* Access Banner */}
 				{permission && permission !== "admin" && (
-					<div className="bg-blue-50 dark:bg-blue-950/20 border-b border-blue-200 dark:border-blue-800 p-3">
-						<div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
+					<div className="border-blue-200 border-b bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/20">
+						<div className="flex items-center gap-2 text-blue-800 text-sm dark:text-blue-200">
 							{getPermissionIcon(permission)}
 							<span>
 								You have <strong>{getPermissionLabel(permission)}</strong> access to this flow
@@ -160,14 +160,14 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 
 	// No access - show request dialog
 	return (
-		<div className="flex items-center justify-center min-h-screen bg-muted/50">
+		<div className="flex min-h-screen items-center justify-center bg-muted/50">
 			<Card className="w-full max-w-md">
 				<CardHeader className="text-center">
-					<div className="mx-auto mb-4 w-12 h-12 bg-amber-100 dark:bg-amber-900/20 rounded-full flex items-center justify-center">
-						<Lock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+					<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/20">
+						<Lock className="h-6 w-6 text-amber-600 dark:text-amber-400" />
 					</div>
 					<CardTitle>Access Required</CardTitle>
-					<p className="text-sm text-muted-foreground">
+					<p className="text-muted-foreground text-sm">
 						This flow is private and requires permission to access
 					</p>
 				</CardHeader>
@@ -176,18 +176,18 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 						<div className="text-center">
 							<h3 className="font-medium">{flow.name}</h3>
 							{flow.description && (
-								<p className="text-sm text-muted-foreground mt-1">{flow.description}</p>
+								<p className="mt-1 text-muted-foreground text-sm">{flow.description}</p>
 							)}
 						</div>
 					)}
 
-					<div className="flex items-center gap-2 justify-center">
+					<div className="flex items-center justify-center gap-2">
 						<Badge variant="secondary">Private</Badge>
-						<span className="text-sm text-muted-foreground">Only the owner can grant access</span>
+						<span className="text-muted-foreground text-sm">Only the owner can grant access</span>
 					</div>
 
 					<Button onClick={() => setShowRequestDialog(true)} className="w-full">
-						<UserPlus className="w-4 h-4 mr-2" />
+						<UserPlus className="mr-2 h-4 w-4" />
 						Request Access
 					</Button>
 
@@ -231,14 +231,14 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 											key={permission.value}
 											type="button"
 											onClick={() => setRequestPermission(permission.value as any)}
-											className={`p-3 rounded-lg border-2 transition-all ${
+											className={`rounded-lg border-2 p-3 transition-all ${
 												requestPermission === permission.value
 													? "border-primary bg-primary/10"
 													: "border-border hover:border-primary/50"
 											}`}
 										>
-											<IconComponent className="w-4 h-4 mx-auto mb-1" />
-											<p className="text-xs text-center">{permission.label}</p>
+											<IconComponent className="mx-auto mb-1 h-4 w-4" />
+											<p className="text-center text-xs">{permission.label}</p>
 										</button>
 									);
 								})}
@@ -246,14 +246,14 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 						</div>
 
 						{/* Privacy Warning */}
-						<div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+						<div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/20">
 							<div className="flex items-start gap-2">
-								<AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5" />
+								<AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600 dark:text-amber-400" />
 								<div>
-									<p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
+									<p className="font-medium text-amber-800 text-sm dark:text-amber-200">
 										Private Flow
 									</p>
-									<p className="text-sm text-amber-700 dark:text-amber-300">
+									<p className="text-amber-700 text-sm dark:text-amber-300">
 										The flow owner will review your request and decide whether to grant access.
 									</p>
 								</div>
@@ -266,7 +266,7 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 							Cancel
 						</Button>
 						<Button onClick={handleRequestAccess} disabled={!requestEmail.trim()}>
-							<Mail className="w-4 h-4 mr-2" />
+							<Mail className="mr-2 h-4 w-4" />
 							Send Request
 						</Button>
 					</DialogFooter>

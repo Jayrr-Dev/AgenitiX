@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 type VideoCarouselProps = {
 	src: string;
@@ -19,9 +19,7 @@ export function videoCarousel(props: VideoCarouselProps) {
 					if (videoRef.current) {
 						await videoRef.current.play();
 					}
-				} catch (error) {
-					console.log("Autoplay prevented:", error);
-				}
+				} catch (_error) {}
 			};
 
 			playVideo();
@@ -32,11 +30,11 @@ export function videoCarousel(props: VideoCarouselProps) {
 		<video
 			ref={videoRef}
 			src={props.src}
-			autoPlay
-			muted
-			playsInline
-			loop
-			className="w-full h-full object-cover"
+			autoPlay={true}
+			muted={true}
+			playsInline={true}
+			loop={true}
+			className="h-full w-full object-cover"
 			style={{ height: "calc(90vh - 112px)" }}
 		/>
 	);

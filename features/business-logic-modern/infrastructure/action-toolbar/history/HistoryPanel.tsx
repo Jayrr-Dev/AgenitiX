@@ -14,16 +14,7 @@
 
 "use client";
 
-import {
-	AlertTriangle,
-	ChevronDown,
-	ChevronRight,
-	Clock,
-	GitBranch,
-	List as ListIcon,
-	Trash2,
-	X,
-} from "lucide-react";
+import { AlertTriangle, Clock, GitBranch, List as ListIcon, Trash2, X } from "lucide-react";
 import React, { Suspense, useCallback, useMemo, useState } from "react";
 import { useUndoRedo } from "./UndoRedoContext";
 // Lazy-load the heavy ReactFlow-powered graph renderer only when needed for significant memory & bundle savings
@@ -34,7 +25,7 @@ const PANEL_STYLES = {
 	base: "bg-[var(--infra-history-bg)] border border-[var(--infra-history-border)] rounded-lg shadow-lg overflow-hidden max-w-full min-w-0",
 } as const;
 
-const COLLAPSED_STYLES = {
+const _COLLAPSED_STYLES = {
 	button:
 		"w-full p-4 flex items-center justify-between hover:bg-[var(--infra-history-bg-hover)] transition-colors group",
 	icon: "w-4 h-4 text-[var(--infra-history-text)] group-hover:text-primary transition-colors",
@@ -223,7 +214,9 @@ const DeletionModal: React.FC<DeletionModalProps> = ({
 		};
 	}, [isOpen, onClose]);
 
-	if (!isOpen) return null;
+	if (!isOpen) {
+		return null;
+	}
 
 	const handleOverlayClick = (e: React.MouseEvent) => {
 		if (e.target === e.currentTarget) {
@@ -296,7 +289,7 @@ const DeletionModal: React.FC<DeletionModalProps> = ({
 					<button onClick={onClose} className={MODAL_STYLES.cancelButton}>
 						Cancel
 					</button>
-					<button onClick={handleConfirm} className={MODAL_STYLES.deleteButton} autoFocus>
+					<button onClick={handleConfirm} className={MODAL_STYLES.deleteButton}>
 						{isFullClear ? "Clear All History" : "Delete Node"}
 					</button>
 				</div>
@@ -308,7 +301,7 @@ const DeletionModal: React.FC<DeletionModalProps> = ({
 const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 	const { undo, redo, clearHistory, removeSelectedNode, getHistory, getFullGraph } = useUndoRedo();
 
-	const [selectedEntry, setSelectedEntry] = useState<string | null>(null);
+	const [_selectedEntry, _setSelectedEntry] = useState<string | null>(null);
 	const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 	const [graphView, setGraphView] = useState(false);
 	const [deletionModalOpen, setDeletionModalOpen] = useState(false);
@@ -334,14 +327,16 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 	}, [fullGraphData?.cursor]);
 
 	// COMPUTED VALUES - Memoized for performance
-	const visibleHistory = useMemo(() => {
+	const _visibleHistory = useMemo(() => {
 		// Show last 20 entries for performance
 		return historyEntries.slice(-20);
 	}, [historyEntries]);
 
 	// GET FULL LINEAR HISTORY (including future states) - Memoized
 	const fullLinearHistory = useMemo(() => {
-		if (!fullGraphData) return [];
+		if (!fullGraphData) {
+			return [];
+		}
 
 		// Build the current branch timeline: path to cursor + available futures
 		const currentPath: any[] = [];
@@ -350,7 +345,9 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 		// Trace back to root to build the main timeline
 		while (currentId) {
 			const node: any = fullGraphData.nodes[currentId];
-			if (!node) break;
+			if (!node) {
+				break;
+			}
 			currentPath.unshift(node);
 			currentId = node.parentId;
 		}
@@ -358,7 +355,9 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 		// Add future states (children of current cursor)
 		const addFutureStates = (nodeId: string) => {
 			const node: any = fullGraphData.nodes[nodeId];
-			if (!node) return;
+			if (!node) {
+				return;
+			}
 
 			node.childrenIds.forEach((childId: string) => {
 				const childNode = fullGraphData.nodes[childId];
@@ -380,18 +379,24 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 
 	// Memoize current index calculation
 	const currentIndexInTimeline = useMemo(() => {
-		if (!fullGraphData) return -1;
+		if (!fullGraphData) {
+			return -1;
+		}
 		return fullLinearHistory.findIndex((state) => state?.id === fullGraphData.cursor);
 	}, [fullLinearHistory, fullGraphData]);
 
 	// Memoized callback functions
 	const jumpToHistoryState = useCallback(
 		(targetNodeId: string) => {
-			if (!fullGraphData) return;
+			if (!fullGraphData) {
+				return;
+			}
 
 			// Find the target node
 			const targetNode = fullGraphData.nodes[targetNodeId];
-			if (!targetNode) return;
+			if (!targetNode) {
+				return;
+			}
 
 			// Build path from root to target
 			const pathToTarget: string[] = [];
@@ -399,7 +404,9 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 
 			while (currentId) {
 				const node: any = fullGraphData.nodes[currentId];
-				if (!node) break;
+				if (!node) {
+					break;
+				}
 				pathToTarget.unshift(currentId);
 				currentId = node.parentId;
 			}
@@ -410,7 +417,9 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 
 			while (cursor) {
 				const node: any = fullGraphData.nodes[cursor];
-				if (!node) break;
+				if (!node) {
+					break;
+				}
 				currentPath.unshift(cursor);
 				cursor = node.parentId;
 			}
@@ -445,10 +454,18 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 		const now = Date.now();
 		const diff = now - timestamp;
 
-		if (diff < 1000) return "now";
-		if (diff < 60000) return `${Math.floor(diff / 1000)}s ago`;
-		if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-		if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+		if (diff < 1000) {
+			return "now";
+		}
+		if (diff < 60000) {
+			return `${Math.floor(diff / 1000)}s ago`;
+		}
+		if (diff < 3600000) {
+			return `${Math.floor(diff / 60000)}m ago`;
+		}
+		if (diff < 86400000) {
+			return `${Math.floor(diff / 3600000)}h ago`;
+		}
 		return `${Math.floor(diff / 86400000)}d ago`;
 	}, []);
 
@@ -591,7 +608,6 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 			// Remove selected node and its children
 			const success = removeSelectedNode(selectedNodeId);
 			if (success) {
-				console.log(`Removed node ${selectedNodeId} and its children`);
 			} else {
 				console.warn(`Failed to remove node ${selectedNodeId}`);
 			}
@@ -668,7 +684,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 								className={CONTROLS_STYLES.buttonDestructive}
 								title={
 									selectedNodeId && selectedNodeId !== fullGraphData?.root
-										? `Remove selected node and its children`
+										? "Remove selected node and its children"
 										: "Clear entire history"
 								}
 							>
@@ -720,7 +736,9 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 									const isClickable = index !== currentIndexInTimeline;
 									const isSelected = selectedNodeId === state?.id;
 
-									if (!state) return null;
+									if (!state) {
+										return null;
+									}
 
 									// Get action-specific styling
 									const actionIcon = getActionIcon(state.metadata);
@@ -728,7 +746,10 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 									const actionIndicatorStyle = getActionIndicatorStyle(state.metadata);
 
 									// Determine styling based on state
-									let itemStyle, indicatorStyle, badgeStyle, textStyle;
+									let itemStyle;
+									let indicatorStyle;
+									let badgeStyle;
+									let textStyle;
 									if (isCurrentState) {
 										itemStyle = HISTORY_ITEM_STYLES.current;
 										indicatorStyle = HISTORY_ITEM_INDICATOR_STYLES.current;
@@ -793,8 +814,8 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 													)}
 													{state.childrenIds && state.childrenIds.length > 1 && (
 														<div className="flex items-center gap-1">
-															<GitBranch className="w-3 h-3 text-amber-500" />
-															<span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+															<GitBranch className="h-3 w-3 text-amber-500" />
+															<span className="font-medium text-amber-600 text-xs dark:text-amber-400">
 																{state.childrenIds.length}
 															</span>
 														</div>
@@ -803,7 +824,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 														<span className={HISTORY_ITEM_META_STYLES.currentBadge}>Current</span>
 													)}
 													{isFutureState && (
-														<span className="text-xs text-muted-foreground/50 bg-muted/30 px-1.5 py-0.5 rounded-full">
+														<span className="rounded-full bg-muted/30 px-1.5 py-0.5 text-muted-foreground/50 text-xs">
 															Future
 														</span>
 													)}
@@ -862,11 +883,15 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 							: "selected node"
 					}
 					childrenCount={(() => {
-						if (!selectedNodeId || !fullGraphData?.nodes[selectedNodeId]) return 0;
+						if (!(selectedNodeId && fullGraphData?.nodes[selectedNodeId])) {
+							return 0;
+						}
 
 						const countDescendants = (nodeId: string): number => {
 							const node = fullGraphData.nodes[nodeId];
-							if (!node) return 0;
+							if (!node) {
+								return 0;
+							}
 
 							let count = 0;
 							node.childrenIds.forEach((childId: string) => {

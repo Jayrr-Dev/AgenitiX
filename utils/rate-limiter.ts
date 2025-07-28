@@ -15,7 +15,7 @@ interface RateLimitConfig {
 
 // In-memory storage for rate limiting (for smaller applications)
 // For production, consider using Redis or a distributed cache
-const requestLog: Record<string, Array<number>> = {};
+const requestLog: Record<string, number[]> = {};
 
 /**
  * Apply rate limiting to a specific endpoint

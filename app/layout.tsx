@@ -79,7 +79,7 @@ const geistSans = Geist({
 	subsets: ["latin"],
 });
 
-const inter = Inter({
+const _inter = Inter({
 	subsets: ["latin"],
 });
 
@@ -90,8 +90,13 @@ export default function RootLayout({
 }) {
 	return (
 		<html lang="en" className={geistSans.className}>
-			<body className="bg-background text-foreground" suppressHydrationWarning>
-				<ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+			<body className="bg-background text-foreground" suppressHydrationWarning={true}>
+				<ThemeProvider
+					attribute="class"
+					defaultTheme="dark"
+					enableSystem={true}
+					disableTransitionOnChange={true}
+				>
 					<AnubisProvider>
 						<OptimisticVerificationProvider>
 							<Providers>

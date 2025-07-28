@@ -92,7 +92,7 @@ const EditableNodeDescription: React.FC<EditableNodeDescriptionProps> = ({
 			<span
 				ref={spanRef}
 				contentEditable={editing}
-				suppressContentEditableWarning
+				suppressContentEditableWarning={true}
 				onBlur={handleBlur}
 				onKeyDown={handleKeyDown}
 				style={{ outline: "none" }}

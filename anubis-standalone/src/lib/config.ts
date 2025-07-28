@@ -204,7 +204,7 @@ function generateDefaultSecret(): string {
 	if (process.env.NODE_ENV === "production") {
 		throw new Error("JWT secret must be provided in production");
 	}
-	return "dev-secret-" + Math.random().toString(36).substring(2);
+	return `dev-secret-${Math.random().toString(36).substring(2)}`;
 }
 
 // ROUTE PROTECTION UTILITIES
@@ -217,21 +217,25 @@ export class RouteProtectionManager {
 
 	// INITIALIZE PROTECTED ROUTES
 	private initializeRoutes(): void {
-		this.config.protectedRoutes.forEach((path) => {
+		for (const path of this.config.protectedRoutes) {
 			this.protectedRoutes.set(path, {
 				path,
 				enabled: true,
 				description: `Protected route: ${path}`,
 			});
-		});
+		}
 	}
 
 	// CHECK IF ROUTE IS PROTECTED
 	isRouteProtected(pathname: string): boolean {
-		if (!this.config.enabled) return false;
+		if (!this.config.enabled) {
+			return false;
+		}
 
 		// CHECK EXCLUDED ROUTES
-		if (this.isRouteExcluded(pathname)) return false;
+		if (this.isRouteExcluded(pathname)) {
+			return false;
+		}
 
 		// CHECK PROTECTED ROUTES
 		for (const [path, config] of Array.from(this.protectedRoutes.entries())) {
@@ -255,7 +259,7 @@ export class RouteProtectionManager {
 		if (pattern.endsWith("*")) {
 			return pathname.startsWith(pattern.slice(0, -1));
 		}
-		return pathname === pattern || pathname.startsWith(pattern + "/");
+		return pathname === pattern || pathname.startsWith(`${pattern}/`);
 	}
 
 	// ADD PROTECTED ROUTE

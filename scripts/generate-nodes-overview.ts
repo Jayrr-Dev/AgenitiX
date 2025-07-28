@@ -10,8 +10,8 @@
  * Keywords: nodes-overview, category-documentation, node-inventory, auto-generation
  */
 
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 
 interface NodeInfo {
 	kind: string;
@@ -78,7 +78,9 @@ function scanNodes(): DomainInfo[] {
 
 	domains.forEach((domain) => {
 		const domainPath = path.join(nodeBasePath, domain);
-		if (!fs.existsSync(domainPath)) return;
+		if (!fs.existsSync(domainPath)) {
+			return;
+		}
 
 		const domainDescription = getDomainDescription(domain);
 		const categories: CategoryInfo[] = [];
@@ -102,8 +104,8 @@ function scanNodes(): DomainInfo[] {
 				if (!categoryMap.has(nodeInfo.category)) {
 					categoryMap.set(nodeInfo.category, []);
 				}
-				categoryMap.get(nodeInfo.category)!.push(nodeInfo);
-			} catch (error) {
+				categoryMap.get(nodeInfo.category)?.push(nodeInfo);
+			} catch (_error) {
 				console.warn(`⚠️  Could not read node file: ${filePath}`);
 			}
 		});
@@ -163,12 +165,24 @@ function extractNodeInfo(
 
 	// Extract features from comments
 	const features: string[] = [];
-	if (content.includes("Type-safe")) features.push("Type-safe validation");
-	if (content.includes("Schema-driven")) features.push("Schema-driven controls");
-	if (content.includes("Enterprise")) features.push("Enterprise validation");
-	if (content.includes("Design system")) features.push("Design system integration");
-	if (content.includes("Expandable")) features.push("Expandable UI");
-	if (content.includes("JSON")) features.push("JSON I/O");
+	if (content.includes("Type-safe")) {
+		features.push("Type-safe validation");
+	}
+	if (content.includes("Schema-driven")) {
+		features.push("Schema-driven controls");
+	}
+	if (content.includes("Enterprise")) {
+		features.push("Enterprise validation");
+	}
+	if (content.includes("Design system")) {
+		features.push("Design system integration");
+	}
+	if (content.includes("Expandable")) {
+		features.push("Expandable UI");
+	}
+	if (content.includes("JSON")) {
+		features.push("JSON I/O");
+	}
 
 	// Extract theming information
 	const theming = extractThemingInfo(content, category);
@@ -799,17 +813,11 @@ open documentation/nodes/create/your-node.html</code></pre>
  * Main function
  */
 function generateNodesOverview() {
-	console.log("🔍 Scanning for nodes...");
 	const domainInfo = scanNodes();
 
 	if (domainInfo.length === 0) {
-		console.log("❌ No nodes found");
 		return;
 	}
-
-	console.log(
-		`✅ Found ${domainInfo.reduce((sum, domain) => sum + domain.totalNodes, 0)} nodes across ${domainInfo.length} domains`
-	);
 
 	// Ensure documentation directory exists
 	const docsDir = path.join(process.cwd(), "documentation", "nodes");
@@ -826,10 +834,6 @@ function generateNodesOverview() {
 	const htmlContent = generateHTMLOverview(domainInfo);
 	const htmlPath = path.join(docsDir, "overview.html");
 	fs.writeFileSync(htmlPath, htmlContent);
-
-	console.log("✅ Generated nodes overview");
-	console.log(`   📄 Markdown: ${markdownPath}`);
-	console.log(`   🌐 HTML: ${htmlPath}`);
 }
 
 // CLI support

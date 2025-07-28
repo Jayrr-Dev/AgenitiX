@@ -277,7 +277,9 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 
 	/** Convert value based on data type */
 	const convertValue = useCallback((val: string, type: string): any => {
-		if (!val) return val;
+		if (!val) {
+			return val;
+		}
 
 		switch (type) {
 			case "number": {
@@ -299,8 +301,12 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 
 	/** Format value for display */
 	const formatValue = useCallback((val: any): string => {
-		if (val === null || val === undefined) return "";
-		if (typeof val === "object") return JSON.stringify(val, null, 2);
+		if (val === null || val === undefined) {
+			return "";
+		}
+		if (typeof val === "object") {
+			return JSON.stringify(val, null, 2);
+		}
 		return String(val);
 	}, []);
 
@@ -310,7 +316,9 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 
 	/** Execute storage operation */
 	const executeOperation = useCallback(() => {
-		if (!isEnabled || !key.trim()) return;
+		if (!(isEnabled && key.trim())) {
+			return;
+		}
 
 		try {
 			let result: any = "";
@@ -509,19 +517,10 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 			{/* Editable label or icon */}
 			<LabelNode nodeId={id} label={spec.displayName} />
 
-			{!isExpanded ? (
-				<div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ""}`}>
-					<div className="text-center p-2">
-						<div className={`text-xs font-mono ${categoryStyles.primary}`}>{key || "memory"}</div>
-						<div className={`text-xs ${getStatusColor(storageStatus)}`}>
-							{getStatusIcon(storageStatus)} {operation}
-						</div>
-					</div>
-				</div>
-			) : (
-				<div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}>
+			{isExpanded ? (
+				<div className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}>
 					<div className={CONTENT.header}>
-						<span className="text-sm font-medium">Memory Storage</span>
+						<span className="font-medium text-sm">Memory Storage</span>
 						<div className={`text-xs ${getStatusColor(storageStatus)}`}>
 							{getStatusIcon(storageStatus)} {storageStatus}
 						</div>
@@ -530,7 +529,7 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 					<div className={CONTENT.body}>
 						{/* Storage Key */}
 						<div>
-							<label htmlFor="storage-key" className="text-xs text-gray-600 mb-1 block">
+							<label htmlFor="storage-key" className="mb-1 block text-gray-600 text-xs">
 								Key:
 							</label>
 							<input
@@ -539,21 +538,21 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 								value={key}
 								onChange={handleKeyChange}
 								placeholder="Storage key..."
-								className={`w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${categoryStyles.primary}`}
+								className={`w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 ${categoryStyles.primary}`}
 								disabled={!isEnabled}
 							/>
 						</div>
 
 						{/* Operation */}
 						<div>
-							<label htmlFor="storage-operation" className="text-xs text-gray-600 mb-1 block">
+							<label htmlFor="storage-operation" className="mb-1 block text-gray-600 text-xs">
 								Operation:
 							</label>
 							<select
 								id="storage-operation"
 								value={operation}
 								onChange={handleOperationChange}
-								className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+								className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
 								disabled={!isEnabled}
 							>
 								<option value="set">Set Value</option>
@@ -567,14 +566,14 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 						{operation === "set" && (
 							<>
 								<div>
-									<label htmlFor="storage-data-type" className="text-xs text-gray-600 mb-1 block">
+									<label htmlFor="storage-data-type" className="mb-1 block text-gray-600 text-xs">
 										Data Type:
 									</label>
 									<select
 										id="storage-data-type"
 										value={dataType}
 										onChange={handleDataTypeChange}
-										className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+										className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
 										disabled={!isEnabled}
 									>
 										<option value="string">String</option>
@@ -585,7 +584,7 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 								</div>
 
 								<div>
-									<label htmlFor="storage-value" className="text-xs text-gray-600 mb-1 block">
+									<label htmlFor="storage-value" className="mb-1 block text-gray-600 text-xs">
 										Value:
 									</label>
 									<textarea
@@ -593,7 +592,7 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 										value={value}
 										onChange={handleValueChange}
 										placeholder="Enter value to store..."
-										className={`w-full text-xs p-2 border rounded resize-none focus:outline-none focus:ring-1 focus:ring-blue-500 ${categoryStyles.primary}`}
+										className={`w-full resize-none rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 ${categoryStyles.primary}`}
 										rows={3}
 										disabled={!isEnabled}
 									/>
@@ -602,7 +601,7 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 						)}
 
 						{/* Storage Info */}
-						<div className="text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded">
+						<div className="mt-2 rounded bg-gray-50 p-2 text-gray-500 text-xs">
 							<div>Keys in memory: {storage.size()}</div>
 							{storage.size() > 0 && (
 								<div className="mt-1">
@@ -610,6 +609,15 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 									{storage.size() > 3 && "..."}
 								</div>
 							)}
+						</div>
+					</div>
+				</div>
+			) : (
+				<div className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}>
+					<div className="p-2 text-center">
+						<div className={`font-mono text-xs ${categoryStyles.primary}`}>{key || "memory"}</div>
+						<div className={`text-xs ${getStatusColor(storageStatus)}`}>
+							{getStatusIcon(storageStatus)} {operation}
 						</div>
 					</div>
 				</div>

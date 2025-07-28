@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useId, useMemo } from "react";
+import { useId } from "react";
 import type { typeFeatureBoxesPlain } from "../types";
 
 /* ✨ Types */
@@ -30,7 +30,7 @@ export default function FeaturesBoxesPlain({ features }: { features: typeFeature
 						className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-neutral-100 to-white p-6 dark:from-neutral-900 dark:to-neutral-950"
 					>
 						<Grid size={20} pattern={generateDeterministicPattern(index)} />
-						<h3 className="relative z-20 text-base font-bold text-neutral-800 dark:text-white">
+						<h3 className="relative z-20 font-bold text-base text-neutral-800 dark:text-white">
 							{feature.title}
 						</h3>
 						<p className="relative z-20 mt-4 text-base text-neutral-600 dark:text-neutral-400">
@@ -46,8 +46,8 @@ export default function FeaturesBoxesPlain({ features }: { features: typeFeature
 /* 🟩 Grid Overlay */
 const Grid: React.FC<GridProps> = ({ pattern, size = 20 }) => {
 	return (
-		<div className="pointer-events-none absolute inset-0 -top-2 left-1/2 -translate-x-1/2 h-full w-full [mask-image:linear-gradient(white,transparent)]">
-			<div className="absolute inset-0 opacity-100 bg-gradient-to-r from-zinc-100/30 to-zinc-300/30 dark:from-zinc-900/30 dark:to-zinc-900/30 [mask-image:radial-gradient(farthest-side_at_top,white,transparent)]">
+		<div className="-top-2 -translate-x-1/2 pointer-events-none absolute inset-0 left-1/2 h-full w-full [mask-image:linear-gradient(white,transparent)]">
+			<div className="absolute inset-0 bg-gradient-to-r from-zinc-100/30 to-zinc-300/30 opacity-100 [mask-image:radial-gradient(farthest-side_at_top,white,transparent)] dark:from-zinc-900/30 dark:to-zinc-900/30">
 				<GridPattern
 					width={size}
 					height={size}
@@ -84,7 +84,7 @@ const GridPattern: React.FC<GridPatternProps> = ({ width, height, x, y, squares,
 
 			{squares && (
 				<svg x={x} y={y} className="overflow-visible">
-					{squares.map(([sx, sy], idx) => (
+					{squares.map(([sx, sy], _idx) => (
 						<rect
 							key={`${sx}-${sy}`}
 							width={width + 1}

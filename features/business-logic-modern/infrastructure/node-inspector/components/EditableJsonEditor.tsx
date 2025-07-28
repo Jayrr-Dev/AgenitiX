@@ -40,7 +40,7 @@ export const EditableJsonEditor: React.FC<EditableJsonEditorProps> = ({
 	const formatJson = useMemo(() => {
 		try {
 			return JSON.stringify(data, null, 2);
-		} catch (error) {
+		} catch (_error) {
 			return String(data);
 		}
 	}, [data]);
@@ -102,22 +102,22 @@ export const EditableJsonEditor: React.FC<EditableJsonEditorProps> = ({
 			<div className={`space-y-2 ${className} p-1`}>
 				{/* Edit Mode Header */}
 				<div className="flex items-center justify-between">
-					<div className="text-xs font-medium text-gray-700 dark:text-gray-300">Edit JSON Data</div>
+					<div className="font-medium text-gray-700 text-xs dark:text-gray-300">Edit JSON Data</div>
 					<div className="flex items-center gap-1">
 						<button
 							onClick={saveJson}
-							className="flex items-center gap-1 px-2 py-1 text-xs bg-green-100 hover:bg-green-200 dark:bg-green-900 dark:hover:bg-green-800 text-green-700 dark:text-green-300 rounded border border-green-300 dark:border-green-700 transition-colors"
+							className="flex items-center gap-1 rounded border border-green-300 bg-green-100 px-2 py-1 text-green-700 text-xs transition-colors hover:bg-green-200 dark:border-green-700 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800"
 							title="Save (Ctrl+Enter)"
 						>
-							<Save className="w-3 h-3" />
+							<Save className="h-3 w-3" />
 							Save
 						</button>
 						<button
 							onClick={cancelEditing}
-							className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded border border-gray-300 dark:border-gray-600 transition-colors"
+							className="flex items-center gap-1 rounded border border-gray-300 bg-gray-100 px-2 py-1 text-gray-700 text-xs transition-colors hover:bg-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
 							title="Cancel (Escape)"
 						>
-							<X className="w-3 h-3" />
+							<X className="h-3 w-3" />
 							Cancel
 						</button>
 					</div>
@@ -129,38 +129,32 @@ export const EditableJsonEditor: React.FC<EditableJsonEditorProps> = ({
 						value={jsonValue}
 						onChange={(e) => handleJsonChange(e.target.value)}
 						onKeyDown={handleKeyDown}
-						className={`
-              w-full h-64 px-3 py-2 text-sm font-mono
-              bg-white dark:bg-gray-800
-              border rounded-md resize-none
-              focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
-              ${
-								jsonError
-									? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-									: "border-gray-300 dark:border-gray-600"
-							}
+						className={`h-64 w-full resize-none rounded-md border bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:bg-gray-800 ${
+							jsonError
+								? "border-red-300 bg-red-50/50 dark:border-red-600 dark:bg-red-900/10"
+								: "border-gray-300 dark:border-gray-600"
+						}
             `}
 						placeholder="Enter valid JSON..."
 						spellCheck={false}
-						autoFocus
 					/>
 				</div>
 
 				{/* Error Message */}
 				{jsonError && (
-					<div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-200 dark:border-red-800">
+					<div className="rounded border border-red-200 bg-red-50 p-2 text-red-600 text-xs dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
 						<div className="font-medium">JSON Error:</div>
 						<div className="mt-1">{jsonError}</div>
 					</div>
 				)}
 
 				{/* Help Text */}
-				<div className="text-xs text-gray-500 dark:text-gray-400">
-					<kbd className="px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded">
+				<div className="text-gray-500 text-xs dark:text-gray-400">
+					<kbd className="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 text-xs dark:border-gray-600 dark:bg-gray-800">
 						Ctrl+Enter
 					</kbd>{" "}
 					to save •{" "}
-					<kbd className="px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded">
+					<kbd className="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 text-xs dark:border-gray-600 dark:bg-gray-800">
 						Esc
 					</kbd>{" "}
 					to cancel
@@ -174,18 +168,18 @@ export const EditableJsonEditor: React.FC<EditableJsonEditorProps> = ({
 		<div className={`space-y-2 ${className} p-1`}>
 			{/* View Mode Header */}
 			<div className="flex items-center justify-between ">
-				<div className="text-xs font-medium text-gray-700 dark:text-gray-300 ">JSON Data</div>
+				<div className="font-medium text-gray-700 text-xs dark:text-gray-300 ">JSON Data</div>
 				<button
 					onClick={startEditing}
-					className="flex items-center gap-1 px-2 py-0.5 text-xs bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded border border-blue-300 dark:border-blue-700 transition-colors"
+					className="flex items-center gap-1 rounded border border-blue-300 bg-blue-100 px-2 py-0.5 text-blue-700 text-xs transition-colors hover:bg-blue-200 dark:border-blue-700 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
 					title="Edit JSON"
 				>
-					<Edit3 className="w-3 h-3" />
+					<Edit3 className="h-3 w-3" />
 				</button>
 			</div>
 
 			{/* JSON Display */}
-			<div className="bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-300 dark:border-gray-600 p-3 overflow-y-auto overflow-x-auto">
+			<div className="overflow-x-auto overflow-y-auto rounded-md border border-gray-300 bg-gray-50 p-3 dark:border-gray-600 dark:bg-gray-800">
 				<JsonHighlighter data={data} className="w-full" />
 			</div>
 		</div>

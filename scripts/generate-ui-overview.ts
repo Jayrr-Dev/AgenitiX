@@ -13,8 +13,8 @@
  * Usage: pnpm run generate-ui-overview
  */
 
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 
 interface ComponentInfo {
 	name: string;
@@ -42,7 +42,7 @@ const CATEGORY_MAPPING: { [key: string]: string } = {
 	effects: "Effects",
 };
 
-const CATEGORY_DESCRIPTIONS: { [key: string]: string } = {
+const _CATEGORY_DESCRIPTIONS: { [key: string]: string } = {
 	core: "Essential UI components for basic functionality",
 	interactive: "Interactive components with user interactions",
 	animation: "Animated components with motion effects",
@@ -192,8 +192,10 @@ function getComponentDescription(componentName: string): string {
 function scanComponents(): ComponentInfo[] {
 	const components: ComponentInfo[] = [];
 
-	function scanDirectory(dir: string, category = "core") {
-		if (!fs.existsSync(dir)) return;
+	function scanDirectory(dir: string, _category = "core") {
+		if (!fs.existsSync(dir)) {
+			return;
+		}
 
 		const files = fs.readdirSync(dir);
 
@@ -647,19 +649,12 @@ ${componentCards}
 }
 
 function main() {
-	console.log("🔍 Scanning UI components...");
-
 	const components = scanComponents();
 	const stats = generateStats(components);
-
-	console.log(`📊 Found ${components.length} components:`);
-	Object.entries(stats).forEach(([category, count]) => {
+	Object.entries(stats).forEach(([category, _count]) => {
 		if (category !== "total") {
-			console.log(`  - ${CATEGORY_MAPPING[category]}: ${count}`);
 		}
 	});
-
-	console.log("📝 Generating overview HTML...");
 	const html = generateHTML(components, stats);
 
 	// Ensure documentation directory exists
@@ -669,9 +664,6 @@ function main() {
 	}
 
 	fs.writeFileSync(OUTPUT_FILE, html);
-
-	console.log(`✅ Generated overview at: ${OUTPUT_FILE}`);
-	console.log(`📈 Statistics: ${stats.total} total components`);
 }
 
 if (require.main === module) {

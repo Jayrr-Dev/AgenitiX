@@ -1,5 +1,5 @@
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
-import { Node, useReactFlow } from "@xyflow/react";
+import { useReactFlow } from "@xyflow/react";
 import { useCallback, useMemo } from "react";
 
 /**

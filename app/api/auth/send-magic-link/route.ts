@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
 		const { email, name, magicToken, type } = body;
 
 		// Validate input
-		if (!email || !name || !magicToken || !type) {
+		if (!(email && name && magicToken && type)) {
 			return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
 		}
 

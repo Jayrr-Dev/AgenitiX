@@ -17,7 +17,7 @@ import { BaseEmailProvider } from "./base";
 const OUTLOOK_OAUTH_CONFIG = {
 	clientId: process.env.NEXT_PUBLIC_OUTLOOK_CLIENT_ID || "f8cdef31-a31e-4b4a-93e4-5f571e91255a",
 	clientSecret: process.env.OUTLOOK_CLIENT_SECRET || "f8cdef31-a31e-4b4a-93e4-5f571e91255a",
-	redirectUri: process.env.NEXT_PUBLIC_BASE_URL + "/api/auth/email/outlook/callback",
+	redirectUri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/email/outlook/callback`,
 	scope:
 		"https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/User.Read",
 	authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",

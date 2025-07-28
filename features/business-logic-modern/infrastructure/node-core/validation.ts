@@ -111,7 +111,9 @@ export function getValidationMetrics(): ValidationMetrics[] {
  */
 export function getValidationHealthScore(nodeType: string): number {
 	const metrics = validationMetrics.get(nodeType);
-	if (!metrics || metrics.validationCount === 0) return 100;
+	if (!metrics || metrics.validationCount === 0) {
+		return 100;
+	}
 
 	const successRate = (metrics.validationCount - metrics.failureCount) / metrics.validationCount;
 	return Math.round(successRate * 100);

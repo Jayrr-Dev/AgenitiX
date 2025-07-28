@@ -67,7 +67,9 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 
 	// Check fullscreen state on mount and listen for changes (only in browser)
 	useEffect(() => {
-		if (!isBrowserEnvironment) return;
+		if (!isBrowserEnvironment) {
+			return;
+		}
 
 		const checkFullscreen = () => {
 			setIsFullscreen(!!document.fullscreenElement);
@@ -80,7 +82,9 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 
 	// Keyboard shortcut for fullscreen (F11) - only in browser
 	useEffect(() => {
-		if (!isBrowserEnvironment) return;
+		if (!isBrowserEnvironment) {
+			return;
+		}
 
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "F11") {
@@ -94,13 +98,15 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 	}, [isBrowserEnvironment]);
 
 	const toggleFullscreen = async () => {
-		if (!isBrowserEnvironment) return;
+		if (!isBrowserEnvironment) {
+			return;
+		}
 
 		try {
-			if (!document.fullscreenElement) {
-				await document.documentElement.requestFullscreen();
-			} else {
+			if (document.fullscreenElement) {
 				await document.exitFullscreen();
+			} else {
+				await document.documentElement.requestFullscreen();
 			}
 		} catch (error) {
 			console.error("Error toggling fullscreen:", error);
@@ -115,7 +121,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 				className={buttonClasses}
 				title="Undo (Ctrl+Z)"
 			>
-				<RotateCcw className="w-4 h-4" />
+				<RotateCcw className="h-4 w-4" />
 			</button>
 
 			<button
@@ -124,23 +130,23 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 				className={buttonClasses}
 				title="Redo (Ctrl+Y)"
 			>
-				<RotateCw className="w-4 h-4" />
+				<RotateCw className="h-4 w-4" />
 			</button>
 
-			<div className="w-px h-6 bg-[var(--infra-toolbar-border)] mx-1" />
+			<div className="mx-1 h-6 w-px bg-[var(--infra-toolbar-border)]" />
 
 			<button
 				onClick={onToggleHistory}
 				className={showHistoryPanel ? activeButtonClasses : buttonClasses}
 				title="Toggle History Panel (Ctrl+H)"
 			>
-				<History className="w-4 h-4" />
+				<History className="h-4 w-4" />
 			</button>
 
 			{/* FULLSCREEN BUTTON - Only show in browser environments */}
 			{isBrowserEnvironment && (
 				<>
-					<div className="w-px h-6 bg-[var(--infra-toolbar-border)] mx-1" />
+					<div className="mx-1 h-6 w-px bg-[var(--infra-toolbar-border)]" />
 
 					{/* THEME SWITCHER */}
 					{/* <div className="w-px h-6 bg-[var(--infra-toolbar-border)] mx-1" /> */}
@@ -154,7 +160,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 						className={isFullscreen ? activeButtonClasses : buttonClasses}
 						title={isFullscreen ? "Exit Fullscreen (F11)" : "Enter Fullscreen (F11)"}
 					>
-						{isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+						{isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
 					</button>
 				</>
 			)}

@@ -36,14 +36,9 @@ export const CustomLogo: React.FC<CustomLogoProps> = ({ className = "", size = 5
 				alt="Custom Logo"
 				width={size}
 				height={size}
-				className={`
-          rounded-full 
-          object-cover 
-          transition-all 
-          duration-300
-          ${isDarkMode ? "brightness-110 contrast-110" : "brightness-95 contrast-105"}
+				className={`rounded-full object-cover transition-all duration-300 ${isDarkMode ? "brightness-110 contrast-110" : "brightness-95 contrast-105"}
         `}
-				priority
+				priority={true}
 			/>
 		</div>
 	);
@@ -55,5 +50,5 @@ export const CustomLogo: React.FC<CustomLogoProps> = ({ className = "", size = 5
  * - Maintains consistency with existing brand
  */
 export const CustomBrandWordmark: React.FC<{ className?: string }> = ({ className = "" }) => (
-	<span className={`font-brand text-xl font-semibold tracking-tight ${className}`}>AgenitiX</span>
+	<span className={`font-brand font-semibold text-xl tracking-tight ${className}`}>AgenitiX</span>
 );

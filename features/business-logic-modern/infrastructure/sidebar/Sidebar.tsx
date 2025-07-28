@@ -112,7 +112,9 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
 
 		// REGISTRY VALIDATION - Memoized validation results
 		const validationResults = useMemo(() => {
-			if (!enableDebug) return null;
+			if (!enableDebug) {
+				return null;
+			}
 			return validateSidebarConfiguration();
 		}, [enableDebug]);
 
@@ -260,23 +262,15 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
 
 		return (
 			<div
-				className={`
-        bg-[var(--infra-sidebar-bg)]
-        border-[var(--infra-sidebar-border)]
-        text-[var(--infra-sidebar-text)]
-        border-r
-        transition-all
-        duration-300
-        ease-in-out
-        ${isHidden ? "w-0 overflow-hidden" : "w-80"}
+				className={`border-[var(--infra-sidebar-border)] border-r bg-[var(--infra-sidebar-bg)] text-[var(--infra-sidebar-text)] transition-all duration-300 ease-in-out ${isHidden ? "w-0 overflow-hidden" : "w-80"}
         ${className}
         ${enableDebug ? "debug-mode" : ""}
       `}
 			>
 				{/* REGISTRY DEBUG PANEL - Development Only */}
 				{enableDebug && process.env.NODE_ENV === "development" && (
-					<div className="bg-[var(--infra-sidebar-bg-hover)] border-[var(--infra-sidebar-border-hover)] p-2 text-xs border-b">
-						<div className="text-[var(--infra-sidebar-text)] font-semibold mb-1">
+					<div className="border-[var(--infra-sidebar-border-hover)] border-b bg-[var(--infra-sidebar-bg-hover)] p-2 text-xs">
+						<div className="mb-1 font-semibold text-[var(--infra-sidebar-text)]">
 							🔧 Registry Integration
 						</div>
 						{registryStats && (
@@ -287,7 +281,7 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
 							</div>
 						)}
 						{validationResults && !validationResults.isValid && (
-							<div className="text-error mt-1">
+							<div className="mt-1 text-error">
 								⚠️ {validationResults.errors.length} validation errors
 							</div>
 						)}

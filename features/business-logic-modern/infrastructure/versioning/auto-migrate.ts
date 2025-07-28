@@ -49,7 +49,6 @@ class AutoMigrator {
 				this.versionMatches(fromVersion, migration.fromPattern) &&
 				this.versionMatches(toVersion, migration.toPattern)
 			) {
-				console.log(`📦 Auto-migrating: ${migration.description}`);
 				migrated = migration.transform(migrated);
 			}
 		}
@@ -78,8 +77,6 @@ class AutoMigrator {
 
 					flow.version = newVersion;
 					await this.saveFlow(flow);
-
-					console.log(`✅ Migrated flow ${flow.id} from ${oldVersion} to ${newVersion}`);
 				}
 			}
 		} catch (error) {
@@ -106,7 +103,7 @@ class AutoMigrator {
 			}
 
 			// Node.js environment - could check for file storage
-			const fs = await import("fs");
+			const fs = await import("node:fs");
 			if (fs.existsSync("flows.json")) {
 				const content = fs.readFileSync("flows.json", "utf8");
 				return JSON.parse(content);
@@ -135,7 +132,7 @@ class AutoMigrator {
 			}
 
 			// Node.js environment
-			const fs = await import("fs");
+			const fs = await import("node:fs");
 			const flows = await this.getStoredFlows();
 			const index = flows.findIndex((f: any) => f.id === flow.id);
 			if (index >= 0) {

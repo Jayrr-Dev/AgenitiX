@@ -47,7 +47,9 @@ export function useInspectorState(node: AgenNode | null) {
 	 * Sync inputs with node data
 	 */
 	useEffect(() => {
-		if (!node) return;
+		if (!node) {
+			return;
+		}
 
 		const nodeData = node.data as any;
 
@@ -100,23 +102,26 @@ export function useInspectorState(node: AgenNode | null) {
 		return {
 			duration: {
 				isValid:
-					!isNaN(Number(inspectorState.durationInput)) && Number(inspectorState.durationInput) >= 0,
+					!Number.isNaN(Number(inspectorState.durationInput)) &&
+					Number(inspectorState.durationInput) >= 0,
 				value: Number(inspectorState.durationInput),
 			},
 			count: {
 				isValid:
-					!isNaN(Number(inspectorState.countInput)) && Number(inspectorState.countInput) >= 0,
+					!Number.isNaN(Number(inspectorState.countInput)) &&
+					Number(inspectorState.countInput) >= 0,
 				value: Number(inspectorState.countInput),
 			},
 			multiplier: {
 				isValid:
-					!isNaN(Number(inspectorState.multiplierInput)) &&
+					!Number.isNaN(Number(inspectorState.multiplierInput)) &&
 					Number(inspectorState.multiplierInput) > 0,
 				value: Number(inspectorState.multiplierInput),
 			},
 			delay: {
 				isValid:
-					!isNaN(Number(inspectorState.delayInput)) && Number(inspectorState.delayInput) >= 0,
+					!Number.isNaN(Number(inspectorState.delayInput)) &&
+					Number(inspectorState.delayInput) >= 0,
 				value: Number(inspectorState.delayInput),
 			},
 		};

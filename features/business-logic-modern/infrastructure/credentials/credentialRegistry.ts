@@ -15,7 +15,9 @@ export const resolveCredential = async <T = any>(
 	credentialId: string
 ): Promise<T | null> => {
 	const fn = providers[providerId];
-	if (!fn) return null;
+	if (!fn) {
+		return null;
+	}
 	try {
 		return (await fn(credentialId)) as T;
 	} catch {

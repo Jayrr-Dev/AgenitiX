@@ -1,9 +1,9 @@
 // Git-integrated versioning system
 
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
-const { execSync } = require("child_process");
+const fs = require("node:fs");
+const path = require("node:path");
+const crypto = require("node:crypto");
+const { execSync } = require("node:child_process");
 
 /**
  * GIT-INTEGRATED VERSION DETECTOR
@@ -71,8 +71,6 @@ class GitVersionDetector {
 	// ENHANCED VERSION DETECTION WITH GIT
 	async detectChanges() {
 		try {
-			console.log("🔍 Scanning for changes with git integration...");
-
 			const gitInfo = this.getGitInfo();
 			const currentFiles = this.findFiles(this.trackPattern);
 			const currentHashes = new Map();
@@ -83,7 +81,7 @@ class GitVersionDetector {
 					const content = fs.readFileSync(file, "utf8");
 					const hash = crypto.createHash("md5").update(content).digest("hex");
 					currentHashes.set(file, hash);
-				} catch (error) {
+				} catch (_error) {
 					console.warn(`⚠️ Could not read ${file}`);
 				}
 			}
@@ -99,7 +97,7 @@ class GitVersionDetector {
 					previousHashes = new Map(cache.hashes || []);
 					currentVersion = cache.version || "1.0.0";
 					lastGitHash = cache.gitInfo?.hash;
-				} catch (error) {
+				} catch (_error) {
 					console.warn("⚠️ Could not load version cache");
 				}
 			}
@@ -118,7 +116,6 @@ class GitVersionDetector {
 
 			// No changes detected
 			if (changedFiles.length === 0 && !gitChanged) {
-				console.log("📦 No file changes or git changes detected");
 				return null;
 			}
 
@@ -133,14 +130,14 @@ class GitVersionDetector {
 					) {
 						bumpType = "major";
 						break;
-					} else if (file.includes("node-domain/") || file.includes("infrastructure/")) {
+					}
+					if (file.includes("node-domain/") || file.includes("infrastructure/")) {
 						bumpType = "minor";
 					}
 				}
 			} else if (gitChanged) {
 				// Git changed but no tracked files changed
 				bumpType = "patch";
-				console.log("🔄 Git commit detected, triggering patch version bump");
 			}
 
 			// Bump version
@@ -204,7 +201,6 @@ export const VERSION = {
 		}
 
 		fs.writeFileSync(this.versionFile, versionContent);
-		console.log(`✅ Updated version constants to ${version}`);
 
 		// Auto-sync package.json version
 		try {
@@ -213,19 +209,17 @@ export const VERSION = {
 				const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
 				packageJson.version = version;
 				fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-				console.log(`📦 Updated package.json version to ${version}`);
 			}
 		} catch (error) {
 			console.warn(`⚠️ Could not update package.json: ${error.message}`);
 		}
 
 		if (gitInfo.available) {
-			console.log(`📝 Git info: ${gitInfo.shortHash} on ${gitInfo.branch} by ${gitInfo.author}`);
 		}
 	}
 
 	// UTILITY METHODS (same as before)
-	findFiles(patterns, extensions = [".ts", ".tsx", ".js", ".json"]) {
+	findFiles(_patterns, extensions = [".ts", ".tsx", ".js", ".json"]) {
 		const files = [];
 
 		try {
@@ -274,7 +268,7 @@ export const VERSION = {
 					}
 				}
 			}
-		} catch (error) {
+		} catch (_error) {
 			console.warn(`⚠️ Could not read directory ${dir}`);
 		}
 	}
@@ -335,14 +329,12 @@ export const VERSION = {
 			if (type === preReleaseType) {
 				// Bump the same pre-release type
 				return `${parsed.major}.${parsed.minor}.${parsed.patch}-${preReleaseType}.${num + 1}`;
-			} else {
-				// Switch to new pre-release type
-				return `${parsed.major}.${parsed.minor}.${parsed.patch}-${preReleaseType}.1`;
 			}
-		} else {
-			// Start new pre-release
+			// Switch to new pre-release type
 			return `${parsed.major}.${parsed.minor}.${parsed.patch}-${preReleaseType}.1`;
 		}
+		// Start new pre-release
+		return `${parsed.major}.${parsed.minor}.${parsed.patch}-${preReleaseType}.1`;
 	}
 
 	getCurrentVersion() {
@@ -351,7 +343,7 @@ export const VERSION = {
 				const cache = JSON.parse(fs.readFileSync(this.cacheFile, "utf8"));
 				return cache.version || "1.0.0";
 			}
-		} catch (error) {
+		} catch (_error) {
 			console.warn("⚠️ Could not get current version");
 		}
 		return "1.0.0";
@@ -359,54 +351,22 @@ export const VERSION = {
 
 	// ENHANCED STATUS WITH GIT INFO
 	showStatus() {
-		console.log("\n🔧 GIT-INTEGRATED VERSIONING STATUS");
-		console.log("════════════════════════════════════════");
-
-		const version = this.getCurrentVersion();
-		console.log(`📦 Current Version: ${version}`);
+		const _version = this.getCurrentVersion();
 
 		try {
 			const cache = JSON.parse(fs.readFileSync(this.cacheFile, "utf8"));
-			console.log(`🕒 Last Changed: ${new Date(cache.timestamp).toLocaleString()}`);
-			console.log(`📁 Files Tracked: ${cache.hashes ? cache.hashes.length : 0}`);
 
-			if (cache.gitInfo && cache.gitInfo.available) {
-				console.log(`\n📝 Git Information:`);
-				console.log(`   Branch: ${cache.gitInfo.branch}`);
-				console.log(`   Commit: ${cache.gitInfo.shortHash}`);
-				console.log(`   Author: ${cache.gitInfo.author}`);
-				console.log(`   Date: ${new Date(cache.gitInfo.date).toLocaleString()}`);
+			if (cache.gitInfo?.available) {
 			}
 
 			if (cache.changes) {
-				console.log(`\n🔄 Last Change:`);
-				console.log(`   Type: ${cache.changes.bumpType}`);
-				console.log(`   Reason: ${cache.changes.reason}`);
-				console.log(`   Files: ${cache.changes.files.length}`);
 			}
-		} catch {
-			console.log("🕒 Last Changed: Unknown (first run)");
-		}
-
-		console.log("\n💡 Available commands:");
-		console.log("   pnpm git-version status   # Show this status");
-		console.log("   pnpm git-version check    # Check for changes");
-		console.log("   pnpm git-version major    # Manual major bump");
-		console.log("   pnpm git-version minor    # Manual minor bump");
-		console.log("   pnpm git-version patch    # Manual patch bump");
-		console.log("   pnpm git-version alpha    # Manual alpha pre-release");
-		console.log("   pnpm git-version beta     # Manual beta pre-release");
-		console.log("   pnpm git-version rc       # Manual rc pre-release");
-		console.log("   pnpm git-version release  # Convert to stable release");
-		console.log("   pnpm git-version reset    # Reset to 0.0.0-alpha.1");
-		console.log("");
+		} catch {}
 	}
 
 	// MANUAL VERSION BUMPING
 	async manualBump(bumpType) {
 		try {
-			console.log(`🔧 Manually bumping ${bumpType} version...`);
-
 			const gitInfo = this.getGitInfo();
 			const currentVersion = this.getCurrentVersion();
 			const newVersion = this.bumpVersion(currentVersion, bumpType);
@@ -420,7 +380,7 @@ export const VERSION = {
 					const content = fs.readFileSync(file, "utf8");
 					const hash = crypto.createHash("md5").update(content).digest("hex");
 					currentHashes.set(file, hash);
-				} catch (error) {
+				} catch (_error) {
 					console.warn(`⚠️ Could not read ${file}`);
 				}
 			}
@@ -457,8 +417,6 @@ export const VERSION = {
 	// MANUAL PRE-RELEASE BUMPING
 	async manualPreReleaseBump(preReleaseType) {
 		try {
-			console.log(`🔧 Manually bumping ${preReleaseType} pre-release version...`);
-
 			const gitInfo = this.getGitInfo();
 			const currentVersion = this.getCurrentVersion();
 			const newVersion = this.bumpPreRelease(currentVersion, preReleaseType);
@@ -472,7 +430,7 @@ export const VERSION = {
 					const content = fs.readFileSync(file, "utf8");
 					const hash = crypto.createHash("md5").update(content).digest("hex");
 					currentHashes.set(file, hash);
-				} catch (error) {
+				} catch (_error) {
 					console.warn(`⚠️ Could not read ${file}`);
 				}
 			}
@@ -509,8 +467,6 @@ export const VERSION = {
 	// CONVERT PRE-RELEASE TO STABLE RELEASE
 	async convertToRelease() {
 		try {
-			console.log("🚀 Converting pre-release to stable release...");
-
 			const currentVersion = this.getCurrentVersion();
 			const parsed = this.parseVersion(currentVersion);
 
@@ -531,7 +487,7 @@ export const VERSION = {
 					const content = fs.readFileSync(file, "utf8");
 					const hash = crypto.createHash("md5").update(content).digest("hex");
 					currentHashes.set(file, hash);
-				} catch (error) {
+				} catch (_error) {
 					console.warn(`⚠️ Could not read ${file}`);
 				}
 			}
@@ -568,8 +524,6 @@ export const VERSION = {
 	// RESET TO 0.0.0-ALPHA.1
 	async resetToAlpha() {
 		try {
-			console.log("🔄 Resetting to 0.0.0-alpha.1 for fresh alpha development...");
-
 			const gitInfo = this.getGitInfo();
 			const newVersion = "0.0.0-alpha.1";
 
@@ -582,7 +536,7 @@ export const VERSION = {
 					const content = fs.readFileSync(file, "utf8");
 					const hash = crypto.createHash("md5").update(content).digest("hex");
 					currentHashes.set(file, hash);
-				} catch (error) {
+				} catch (_error) {
 					console.warn(`⚠️ Could not read ${file}`);
 				}
 			}
@@ -626,127 +580,74 @@ async function handleCommand(command) {
 			detector.showStatus();
 			break;
 
-		case "check":
-			console.log("🔍 Checking for changes with git integration...");
+		case "check": {
 			const changes = await detector.detectChanges();
 
 			if (changes) {
-				console.log(`✅ Changes detected! New version: ${changes.version}`);
-				console.log(`📊 Bump type: ${changes.bumpType}`);
-				console.log(`📁 Changed files: ${changes.changedFiles.length}`);
-
-				if (changes.gitInfo && changes.gitInfo.available) {
-					console.log(`📝 Git: ${changes.gitInfo.shortHash} on ${changes.gitInfo.branch}`);
+				if (changes.gitInfo?.available) {
 				}
 			} else {
-				console.log("✅ No changes detected");
 			}
 			break;
+		}
 
-		case "major":
-			console.log("🚀 Manually bumping major version...");
+		case "major": {
 			const majorChanges = await detector.manualBump("major");
 			if (majorChanges) {
-				console.log(`✅ Major version bumped to: ${majorChanges.version}`);
-				console.log(`📝 Git: ${majorChanges.gitInfo.shortHash} on ${majorChanges.gitInfo.branch}`);
 			}
 			break;
+		}
 
-		case "minor":
-			console.log("📈 Manually bumping minor version...");
+		case "minor": {
 			const minorChanges = await detector.manualBump("minor");
 			if (minorChanges) {
-				console.log(`✅ Minor version bumped to: ${minorChanges.version}`);
-				console.log(`📝 Git: ${minorChanges.gitInfo.shortHash} on ${minorChanges.gitInfo.branch}`);
 			}
 			break;
+		}
 
-		case "patch":
-			console.log("🔧 Manually bumping patch version...");
+		case "patch": {
 			const patchChanges = await detector.manualBump("patch");
 			if (patchChanges) {
-				console.log(`✅ Patch version bumped to: ${patchChanges.version}`);
-				console.log(`📝 Git: ${patchChanges.gitInfo.shortHash} on ${patchChanges.gitInfo.branch}`);
 			}
 			break;
+		}
 
-		case "alpha":
-			console.log("🧪 Manually bumping alpha version...");
+		case "alpha": {
 			const alphaChanges = await detector.manualPreReleaseBump("alpha");
 			if (alphaChanges) {
-				console.log(`✅ Alpha version bumped to: ${alphaChanges.version}`);
-				console.log(`📝 Git: ${alphaChanges.gitInfo.shortHash} on ${alphaChanges.gitInfo.branch}`);
 			}
 			break;
+		}
 
-		case "beta":
-			console.log("🔬 Manually bumping beta version...");
+		case "beta": {
 			const betaChanges = await detector.manualPreReleaseBump("beta");
 			if (betaChanges) {
-				console.log(`✅ Beta version bumped to: ${betaChanges.version}`);
-				console.log(`📝 Git: ${betaChanges.gitInfo.shortHash} on ${betaChanges.gitInfo.branch}`);
 			}
 			break;
+		}
 
-		case "rc":
-			console.log("🎯 Manually bumping release candidate version...");
+		case "rc": {
 			const rcChanges = await detector.manualPreReleaseBump("rc");
 			if (rcChanges) {
-				console.log(`✅ Release candidate version bumped to: ${rcChanges.version}`);
-				console.log(`📝 Git: ${rcChanges.gitInfo.shortHash} on ${rcChanges.gitInfo.branch}`);
 			}
 			break;
+		}
 
-		case "release":
-			console.log("🚀 Converting pre-release to stable release...");
+		case "release": {
 			const releaseChanges = await detector.convertToRelease();
 			if (releaseChanges) {
-				console.log(`✅ Released stable version: ${releaseChanges.version}`);
-				console.log(
-					`📝 Git: ${releaseChanges.gitInfo.shortHash} on ${releaseChanges.gitInfo.branch}`
-				);
 			}
 			break;
+		}
 
-		case "reset":
-			console.log("🔄 Resetting version to 0.0.0-alpha.1...");
+		case "reset": {
 			const resetChanges = await detector.resetToAlpha();
 			if (resetChanges) {
-				console.log(`✅ Version reset to: ${resetChanges.version}`);
-				console.log(`📝 Git: ${resetChanges.gitInfo.shortHash} on ${resetChanges.gitInfo.branch}`);
 			}
 			break;
+		}
 
 		default:
-			console.log(`
-🔧 GIT-INTEGRATED VERSIONING SYSTEM
-
-Available commands:
-  status    Show current system status with git info
-  check     Check for changes and update version automatically
-  major     Manually bump major version (breaking changes)
-  minor     Manually bump minor version (new features)
-  patch     Manually bump patch version (bug fixes)
-  alpha     Manually bump alpha pre-release version
-  beta      Manually bump beta pre-release version
-  rc        Manually bump release candidate pre-release version
-  release   Convert current pre-release to stable release
-  reset     Reset version to 0.0.0-alpha.1 for fresh alpha development
-
-Usage:
-  pnpm git-version status    # Show detailed status
-  pnpm git-version check     # Check for changes automatically
-  pnpm git-version major     # Manual major version bump
-  pnpm git-version minor     # Manual minor version bump
-  pnpm git-version patch     # Manual patch version bump
-  pnpm git-version alpha     # Manual alpha pre-release bump
-  pnpm git-version beta      # Manual beta pre-release bump
-  pnpm git-version rc        # Manual rc pre-release bump
-  pnpm git-version release   # Convert pre-release to stable
-  pnpm git-version reset     # Reset to 0.0.0-alpha.1
-
-💡 This version includes git commit information and history.
-`);
 	}
 }
 

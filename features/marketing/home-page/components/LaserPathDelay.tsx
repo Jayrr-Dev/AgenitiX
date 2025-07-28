@@ -18,7 +18,7 @@ export function LaserPathDelay() {
 
 	return (
 		<div
-			className="h-[400vh] bg-background w-full dark:border dark:border-white/[0.1] rounded-md relative pt-40 overflow-clip"
+			className="relative h-[400vh] w-full overflow-clip rounded-md bg-background pt-40 dark:border dark:border-white/[0.1]"
 			ref={ref}
 		>
 			<GoogleGeminiEffect

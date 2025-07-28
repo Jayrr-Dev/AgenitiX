@@ -261,7 +261,7 @@ export interface ComponentThemeActions {
  * • Dark theme text on backgrounds: 4.5:1 minimum contrast
  * • All color combinations tested for accessibility
  */
-const CSS_VARIABLE_COLOR_REFERENCE = {
+const _CSS_VARIABLE_COLOR_REFERENCE = {
 	light: {
 		backgrounds: {
 			"bg-background": {
@@ -1035,7 +1035,9 @@ export const useComponentThemeStore = create<ComponentThemeState & ComponentThem
 		getComponentClasses: (component, state = "default") => {
 			const { themes, customOverrides, enabled } = get();
 
-			if (!enabled) return "";
+			if (!enabled) {
+				return "";
+			}
 
 			const theme = customOverrides[component]
 				? { ...themes[component], ...customOverrides[component] }
@@ -1183,10 +1185,14 @@ export function useComponentTheme(component: keyof ComponentThemes): ComponentTh
 	const enabled = useComponentThemeStore((state) => state.enabled);
 
 	return useMemo(() => {
-		if (!enabled) return themes[component];
+		if (!enabled) {
+			return themes[component];
+		}
 
 		const override = customOverrides[component];
-		if (!override) return themes[component];
+		if (!override) {
+			return themes[component];
+		}
 
 		// Deep merge the override with the base theme
 		return {
@@ -1252,7 +1258,9 @@ export function useComponentClasses(
 	const enabled = useComponentThemeStore((state) => state.enabled);
 
 	return useMemo(() => {
-		if (!enabled) return additionalClasses;
+		if (!enabled) {
+			return additionalClasses;
+		}
 
 		const baseClasses = [
 			// Background and styling with actual colors:
@@ -1423,7 +1431,7 @@ export function useDesignSystemClasses(
 	} = {}
 ): string {
 	const { variant, state = "default", additionalClasses = "" } = options;
-	const componentTheme = useComponentTheme(component);
+	const _componentTheme = useComponentTheme(component);
 	const componentClasses = useComponentClasses(component, state);
 
 	return useMemo(() => {

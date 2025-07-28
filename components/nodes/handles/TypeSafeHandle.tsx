@@ -34,7 +34,9 @@ const HANDLE_SPACING = 7.5; // pixels between multiple handles on the same side
  * This allows us to inject Tailwind classes from tokens.json
  */
 const getInjectableClasses = (cssVar: string): string => {
-	if (typeof window === "undefined") return "";
+	if (typeof window === "undefined") {
+		return "";
+	}
 	const value = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim();
 	return value || "";
 };
@@ -145,7 +147,9 @@ const TYPE_DESCRIPTIONS: Record<string, string> = {
  * Parse union types from type string
  */
 function parseUnionTypes(typeStr?: string | null): string[] {
-	if (!typeStr) return DEFAULT_TYPE_FALLBACK;
+	if (!typeStr) {
+		return DEFAULT_TYPE_FALLBACK;
+	}
 	return typeStr.split("|").map((t) => t.trim());
 }
 
@@ -203,7 +207,9 @@ function getPositionOffset(
  * Get handle background color based on connection state using semantic tokens
  */
 function getHandleBackgroundColor(isConnected: boolean, isSource: boolean): string {
-	if (isConnected) return UNIFIED_HANDLE_STYLES.backgrounds.connected;
+	if (isConnected) {
+		return UNIFIED_HANDLE_STYLES.backgrounds.connected;
+	}
 	return isSource
 		? UNIFIED_HANDLE_STYLES.backgrounds.source
 		: UNIFIED_HANDLE_STYLES.backgrounds.target;
@@ -292,7 +298,9 @@ function getTooltipContent(
 }
 
 function isTypeCompatible(sourceType: string, targetType: string): boolean {
-	if (sourceType === "x" || targetType === "x") return true;
+	if (sourceType === "x" || targetType === "x") {
+		return true;
+	}
 	const sourceTypes = parseUnionTypes(sourceType);
 	const targetTypes = parseUnionTypes(targetType);
 	return sourceTypes.some((s) => targetTypes.includes(s));
@@ -309,7 +317,7 @@ export const useUltimateFlowConnectionPrevention = () => {
 		const sourceDataType = sourceHandle?.split("__")[1];
 		const targetDataType = targetHandle?.split("__")[1];
 
-		if (!sourceDataType || !targetDataType) {
+		if (!(sourceDataType && targetDataType)) {
 			// If types aren't encoded in the handle, default to allowing the connection.
 			// This maintains compatibility with older/un-migrated nodes.
 			return true;
@@ -357,9 +365,8 @@ const UltimateTypesafeHandle: React.FC<any> = ({
 	const isConnected = edges.some((edge) => {
 		if (props.type === "source") {
 			return edge.source === nodeId && edge.sourceHandle === props.id;
-		} else {
-			return edge.target === nodeId && edge.targetHandle === props.id;
 		}
+		return edge.target === nodeId && edge.targetHandle === props.id;
 	});
 
 	const isSource = props.type === "source";

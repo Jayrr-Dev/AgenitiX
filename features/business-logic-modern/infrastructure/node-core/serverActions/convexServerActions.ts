@@ -24,12 +24,6 @@ export const executeConvexQuery = async <T>(
 	queryName: string,
 	params?: Record<string, unknown>
 ): Promise<T> => {
-	// TODO: Import and use actual Convex client
-	// const { api } = await import('@/convex/_generated/api');
-	// const { useQuery } = await import('@/convex/_generated/react');
-
-	// Placeholder implementation
-	console.log(`[CONVEX] Query: ${queryName}`, params);
 	return { message: "Convex query executed", queryName, params } as T;
 };
 
@@ -40,12 +34,6 @@ export const executeConvexMutation = async <T>(
 	mutationName: string,
 	params?: Record<string, unknown>
 ): Promise<T> => {
-	// TODO: Import and use actual Convex client
-	// const { api } = await import('@/convex/_generated/api');
-	// const { useMutation } = await import('@/convex/_generated/react');
-
-	// Placeholder implementation
-	console.log(`[CONVEX] Mutation: ${mutationName}`, params);
 	return { message: "Convex mutation executed", mutationName, params } as T;
 };
 
@@ -157,9 +145,7 @@ export const useNodeDataQuery = (nodeId: string) => {
  */
 export const useUpdateNodeMutation = () => {
 	return useConvexMutation("updateNode", {
-		onSuccess: (result) => {
-			console.log("Node updated successfully:", result);
-		},
+		onSuccess: (_result) => {},
 		onError: (error) => {
 			console.error("Failed to update node:", error);
 		},

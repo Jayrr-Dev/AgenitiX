@@ -96,7 +96,6 @@ export function SidebarTabs({
 	// IMPROVED DRAG START HANDLER
 	const handleNativeDragStart = useCallback(
 		(e: React.DragEvent<HTMLDivElement>, nodeType: string) => {
-			console.log("Drag start:", nodeType);
 			e.dataTransfer.setData("application/reactflow", nodeType);
 			e.dataTransfer.effectAllowed = "move";
 		},
@@ -309,14 +308,16 @@ export function SidebarTabs({
 		setIsSearchVisible,
 	]);
 
-	if (isHidden) return null;
+	if (isHidden) {
+		return null;
+	}
 
 	return (
 		<Tabs value={activeTab} onValueChange={onTabChange}>
-			<aside className="absolute bottom-4 right-4 z-30 h-[200px] sm:h-[280px] w-full sm:w-[400px] lg:w-[450px] pl-3 sm:pl-6 pr-3 sm:pr-5 pt-2 rounded-lg bg-[var(--infra-sidebar-bg)] border border-[var(--infra-sidebar-border)] shadow-lg transition-all duration-300 ease-in-out">
+			<aside className="absolute right-4 bottom-4 z-30 h-[200px] w-full rounded-lg border border-[var(--infra-sidebar-border)] bg-[var(--infra-sidebar-bg)] pt-2 pr-3 pl-3 shadow-lg transition-all duration-300 ease-in-out sm:h-[280px] sm:w-[400px] sm:pr-5 sm:pl-6 lg:w-[450px]">
 				<StencilInfoPanel stencil={uiState.hovered} />
 
-				<TabsList className="bg-[var(--infra-sidebar-bg)] items-stretch justify-start w-full gap-1 border-0 border-[var(--infra-sidebar-border)] overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent flex-nowrap">
+				<TabsList className="scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent w-full flex-nowrap items-stretch justify-start gap-1 overflow-x-auto border-0 border-[var(--infra-sidebar-border)] bg-[var(--infra-sidebar-bg)]">
 					{tabs.map(({ key, label }, index) => {
 						const shortcutNumber = index + 1;
 
@@ -325,7 +326,7 @@ export function SidebarTabs({
 								key={key}
 								value={key}
 								title={`${label} (${shortcutNumber})`}
-								className="text-[var(--infra-sidebar-text)] hover:bg-[var(--infra-sidebar-bg-hover)] hover:border-[var(--infra-sidebar-border-hover)] data-[state=active]:bg-[var(--infra-sidebar-bg-active)] data-[state=active]:text-[var(--infra-sidebar-text)] transition-colors rounded px-3 py-2 border border-transparent"
+								className="rounded border border-transparent px-3 py-2 text-[var(--infra-sidebar-text)] transition-colors hover:border-[var(--infra-sidebar-border-hover)] hover:bg-[var(--infra-sidebar-bg-hover)] data-[state=active]:bg-[var(--infra-sidebar-bg-active)] data-[state=active]:text-[var(--infra-sidebar-text)]"
 							>
 								{label}
 							</TabsTrigger>
@@ -335,7 +336,7 @@ export function SidebarTabs({
 					{/* Search Button */}
 					<button
 						onClick={() => setIsSearchVisible(true)}
-						className="p-2 mr-1 rounded hover:bg-[var(--infra-sidebar-bg-hover)] hover:border-[var(--infra-sidebar-border-hover)] text-[var(--infra-sidebar-text)] flex items-center gap-1 border border-transparent transition-colors"
+						className="mr-1 flex items-center gap-1 rounded border border-transparent p-2 text-[var(--infra-sidebar-text)] transition-colors hover:border-[var(--infra-sidebar-border-hover)] hover:bg-[var(--infra-sidebar-bg-hover)]"
 						title="Search all nodes (6)"
 					>
 						<Search className="h-4 w-4 text-[var(--infra-sidebar-text)]" />
@@ -344,7 +345,7 @@ export function SidebarTabs({
 					</button>
 				</TabsList>
 
-				<div className="max-h-[150px] sm:max-h-[230px] overflow-y-auto scrollbar pb-2 border-0 bg-[var(--infra-sidebar-bg)]">
+				<div className="scrollbar max-h-[150px] overflow-y-auto border-0 bg-[var(--infra-sidebar-bg)] pb-2 sm:max-h-[230px]">
 					{tabs.map(({ key }) => {
 						const isCustomTab = variant === "E" && key === "custom";
 
@@ -361,7 +362,7 @@ export function SidebarTabs({
 								onAddCustomNode={isCustomTab ? () => setIsSearchModalOpen(true) : undefined}
 								onRemoveCustomNode={isCustomTab ? onRemoveCustomNode : undefined}
 								onReorderCustomNodes={isCustomTab ? onReorderCustomNodes : undefined}
-								onStencilsChange={!isCustomTab ? updateTabStencils : undefined}
+								onStencilsChange={isCustomTab ? undefined : updateTabStencils}
 							/>
 						);
 					})}

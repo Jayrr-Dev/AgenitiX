@@ -436,7 +436,9 @@ export const useNodeStyleStore = create<NodeStyleState & NodeStyleActions>((set)
 // -----------------------------------------------------------------------------
 
 export const getNodeCategory = (nodeType?: string): string | null => {
-	if (!nodeType) return null;
+	if (!nodeType) {
+		return null;
+	}
 	const meta = getNodeMetadata(nodeType);
 	return meta?.category ?? null;
 };
@@ -454,14 +456,20 @@ export function useNodeStyleClasses(
 
 	return useMemo(() => {
 		const classes = [base.transition, hover.glow];
-		if (isSelected) classes.push(selection.glow);
+		if (isSelected) {
+			classes.push(selection.glow);
+		}
 		if (isError) {
 			classes.push(error.glow);
-			if (error.border) classes.push(error.border); // Only add border if defined
+			if (error.border) {
+				classes.push(error.border); // Only add border if defined
+			}
 		}
 		if (isActive) {
 			classes.push(activation.glow);
-			if (activation.border) classes.push(activation.border); // Only add border if defined
+			if (activation.border) {
+				classes.push(activation.border); // Only add border if defined
+			}
 		}
 
 		return classes.join(" ");
@@ -473,15 +481,21 @@ export function useCategoryTheme(nodeType?: string): CategoryTheme | null {
 	const customOverrides = useNodeStyleStore((s) => s.categoryTheming.customOverrides);
 
 	return useMemo(() => {
-		if (!enabled || !nodeType) return null;
+		if (!(enabled && nodeType)) {
+			return null;
+		}
 
 		const category = getNodeCategory(nodeType);
-		if (!category) return null;
+		if (!category) {
+			return null;
+		}
 
 		const defaultTheme = CATEGORY_THEMES[category] ?? null;
 		const overrideTheme = customOverrides[category] ?? {};
 
-		if (!defaultTheme) return null;
+		if (!defaultTheme) {
+			return null;
+		}
 
 		// Deep merge overrides
 		return {
@@ -519,7 +533,9 @@ export function useCategoryThemeWithSpec(nodeType?: string, nodeSpec?: any): Cat
 	const baseTheme = useCategoryTheme(nodeType);
 
 	return useMemo(() => {
-		if (!baseTheme || !nodeSpec?.theming) return baseTheme;
+		if (!(baseTheme && nodeSpec?.theming)) {
+			return baseTheme;
+		}
 
 		// Apply custom theming from NodeSpec
 		const customTheming = nodeSpec.theming;

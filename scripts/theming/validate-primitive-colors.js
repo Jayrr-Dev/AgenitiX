@@ -9,8 +9,8 @@
  * Keywords: primitive-colors, token-enforcement, ci-validation, semantic-tokens
  */
 
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 const glob = require("fast-glob");
 
 // ============================================================================
@@ -117,16 +117,12 @@ function findPrimitiveColors(filePath, content) {
  * Validate all files in business-logic scope
  */
 async function validatePrimitiveColors() {
-	console.log("🔍 Scanning for primitive color usage in business-logic components...");
-
 	try {
 		// Find all files to validate
 		const files = await glob(BUSINESS_LOGIC_PATHS, {
 			ignore: EXCLUDED_PATHS,
 			absolute: true,
 		});
-
-		console.log(`📋 Found ${files.length} files to validate`);
 
 		const allViolations = [];
 		let filesScanned = 0;
@@ -144,22 +140,13 @@ async function validatePrimitiveColors() {
 				filesScanned++;
 
 				if (filesScanned % 50 === 0) {
-					console.log(`📋 Scanned ${filesScanned}/${files.length} files...`);
 				}
 			} catch (error) {
 				console.warn(`⚠️  Could not read file ${filePath}: ${error.message}`);
 			}
 		}
 
-		// Report results
-		console.log("\n📊 PRIMITIVE COLOR VALIDATION RESULTS");
-		console.log("========================================");
-		console.log(`Files scanned: ${filesScanned}`);
-		console.log(`Violations found: ${allViolations.length}`);
-		console.log("========================================");
-
 		if (allViolations.length === 0) {
-			console.log("🎉 No primitive color violations found!");
 			return { isValid: true, violations: [] };
 		}
 
@@ -172,23 +159,10 @@ async function validatePrimitiveColors() {
 			}
 			violationsByFile[relativePath].push(violation);
 		}
-
-		// Print violations
-		console.log("\n❌ PRIMITIVE COLOR VIOLATIONS:");
-		for (const [filePath, violations] of Object.entries(violationsByFile)) {
-			console.log(`\n📄 ${filePath}:`);
-			for (const violation of violations) {
-				console.log(`  Line ${violation.line}: ${violation.colorClass}`);
-				console.log(`    💡 Suggestion: ${violation.suggestion}`);
+		for (const [_filePath, violations] of Object.entries(violationsByFile)) {
+			for (const _violation of violations) {
 			}
 		}
-
-		console.log("\n💡 MIGRATION GUIDE:");
-		console.log("Replace primitive colors with semantic tokens:");
-		console.log("• Node backgrounds: bg-blue-50 → bg-node-create");
-		console.log("• Action statuses: bg-green-500 → bg-status-node-add");
-		console.log("• Infrastructure: bg-card → bg-infra-inspector");
-		console.log("\nSee documentation/theming/migrateThemeSystem.md for complete guide");
 
 		return { isValid: false, violations: allViolations };
 	} catch (error) {

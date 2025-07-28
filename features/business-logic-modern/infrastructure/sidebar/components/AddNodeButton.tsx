@@ -30,21 +30,15 @@ export const AddNodeButton: React.FC<AddNodeButtonProps> = ({
 			onClick={onClick}
 			disabled={disabled}
 			title={title}
-			className={`
-        group relative w-full p-3 rounded-lg border-2 border-dashed
-        border-node-view hover:border-node-create
-        bg-node-create hover:bg-node-create-hover
-        transition-all duration-200 ease-in-out
-        focus:outline-none focus:ring-2 focus:ring-node-create focus:ring-offset-2
-        ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+			className={`group relative w-full rounded-lg border-2 border-node-view border-dashed bg-node-create p-3 transition-all duration-200 ease-in-out hover:border-node-create hover:bg-node-create-hover focus:outline-none focus:ring-2 focus:ring-node-create focus:ring-offset-2 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}
         ${className}
       `}
 		>
 			<div className="flex flex-col items-center space-y-2">
-				<div className="text-lg text-control-debug group-hover:text-node-create-text transition-colors">
+				<div className="text-control-debug text-lg transition-colors group-hover:text-node-create-text">
 					+
 				</div>
-				<div className="text-xs text-node-create-text group-hover:text-node-create-text font-medium">
+				<div className="font-medium text-node-create-text text-xs group-hover:text-node-create-text">
 					Add Node
 				</div>
 			</div>

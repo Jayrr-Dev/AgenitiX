@@ -72,7 +72,7 @@ export function useFilteredNodes(): FilteredNodesState {
 										continue;
 									}
 								}
-							} catch (err) {
+							} catch (_err) {
 								// If flag evaluation fails, use fallback
 								const isEnabled = featureFlag.fallback ?? false;
 								if (!isEnabled && featureFlag.hideWhenDisabled) {
@@ -124,15 +124,15 @@ export function useFilteredNodesByCategory(category: string): FilteredNodesState
 	});
 
 	useEffect(() => {
-		if (!isLoading) {
+		if (isLoading) {
+			setFilteredState({ nodes: [], isLoading, error });
+		} else {
 			const categoryNodes = nodes.filter((node) => node.category === category);
 			setFilteredState({
 				nodes: categoryNodes,
 				isLoading: false,
 				error,
 			});
-		} else {
-			setFilteredState({ nodes: [], isLoading, error });
 		}
 	}, [nodes, isLoading, error, category]);
 
@@ -154,15 +154,15 @@ export function useFilteredNodesByFolder(folder: string): FilteredNodesState {
 	});
 
 	useEffect(() => {
-		if (!isLoading) {
+		if (isLoading) {
+			setFilteredState({ nodes: [], isLoading, error });
+		} else {
 			const folderNodes = nodes.filter((node) => node.ui?.folder === folder);
 			setFilteredState({
 				nodes: folderNodes,
 				isLoading: false,
 				error,
 			});
-		} else {
-			setFilteredState({ nodes: [], isLoading, error });
 		}
 	}, [nodes, isLoading, error, folder]);
 

@@ -5,9 +5,9 @@
  * No duplication, no manual maintenance - everything comes from NodeSpec.
  */
 
-import createText, { spec as createTextSpec } from "../../node-domain/create/createText.node";
-import testDocNode, { spec as testDocNodeSpec } from "../../node-domain/view/testDocNode.node";
-import viewText, { spec as viewTextSpec } from "../../node-domain/view/viewText.node";
+import { spec as createTextSpec } from "../../node-domain/create/createText.node";
+import { spec as testDocNodeSpec } from "../../node-domain/view/testDocNode.node";
+import { spec as viewTextSpec } from "../../node-domain/view/viewText.node";
 import type { NodeSpec } from "../node-core/NodeSpec";
 
 // Collect all specs in one place
@@ -98,7 +98,9 @@ const nodeMetadataOverrides: Record<string, Partial<NodeSpecMetadata>> = {
  */
 export function getNodeSpecMetadata(nodeType: string): NodeSpecMetadata | null {
 	const spec = nodeSpecs[nodeType as keyof typeof nodeSpecs];
-	if (!spec) return null;
+	if (!spec) {
+		return null;
+	}
 
 	const overrides = nodeMetadataOverrides[nodeType] || {};
 	const defaults = defaultNodeMetadata;

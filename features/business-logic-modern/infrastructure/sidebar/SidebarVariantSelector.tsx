@@ -162,7 +162,9 @@ export function VariantSelector({
 	// EARLY RETURNS
 	// ========================================================================
 
-	if (isHidden) return null;
+	if (isHidden) {
+		return null;
+	}
 
 	// ========================================================================
 	// COMPUTED VALUES
@@ -203,19 +205,19 @@ export function VariantSelector({
 	// ========================================================================
 
 	return (
-		<div className="absolute bottom-56 sm:bottom-78 right-5 z-40">
-			<div className="flex gap-2 flex-row w-[450px]">
+		<div className="absolute right-5 bottom-56 z-40 sm:bottom-78">
+			<div className="flex w-[450px] flex-row gap-2">
 				{/* Floating Text Display - Half width */}
-				<div className="w-1/2 flex justify-center">
+				<div className="flex w-1/2 justify-center">
 					{displayText && (
-						<div className="hidden sm:block text-[var(--infra-sidebar-text)] font-extralight px-2 py-1 ml-10 rounded whitespace-nowrap pointer-events-none tracking-widest shadow-lg">
+						<div className="pointer-events-none ml-10 hidden whitespace-nowrap rounded px-2 py-1 font-extralight text-[var(--infra-sidebar-text)] tracking-widest shadow-lg sm:block">
 							{VARIANT_NAMES[displayText]}
 						</div>
 					)}
 				</div>
 
 				{/* Variant Buttons Container - Half width */}
-				<div className="w-1/2 flex gap-2 justify-end">
+				<div className="flex w-1/2 justify-end gap-2">
 					{SIDEBAR_VARIANTS.map((variantKey, index) => {
 						const shortcutNumber = index + 1;
 						const variantName = VARIANT_NAMES[variantKey];

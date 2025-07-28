@@ -86,7 +86,7 @@ function getOutputFormattingPreferences(nodeType: string): {
  * Returns node-specific styling based on registry metadata using component theme
  */
 function getNodeSpecificStyling(
-	nodeType: NodeType,
+	_nodeType: NodeType,
 	preferences: ReturnType<typeof getOutputFormattingPreferences>,
 	theme: any
 ): Partial<FormattedOutput> {
@@ -179,8 +179,6 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
 	const copyToClipboard = useCallback(async (text: string) => {
 		try {
 			await navigator.clipboard.writeText(text);
-			// You could add a toast notification here
-			console.log("Copied to clipboard:", text);
 		} catch (error) {
 			console.error("Failed to copy to clipboard:", error);
 		}
@@ -309,15 +307,15 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
 	}, [output, nodeType, outputPreferences, theme]);
 
 	return (
-		<div className="flex flex-col h-full min-h-0">
+		<div className="flex h-full min-h-0 flex-col">
 			{/* Output Header with Metadata */}
-			<div className="flex items-center justify-between mb-3">
+			<div className="mb-3 flex items-center justify-between">
 				<div className="flex items-center gap-3">
-					<span className="text-sm font-semibold text-foreground uppercase tracking-wide">
+					<span className="font-semibold text-foreground text-sm uppercase tracking-wide">
 						{formatOutput.type}
 					</span>
 					{formatOutput.metadata?.nodeDisplayName && (
-						<span className="text-xs text-muted-foreground font-medium">
+						<span className="font-medium text-muted-foreground text-xs">
 							from {formatOutput.metadata.nodeDisplayName}
 						</span>
 					)}
@@ -325,7 +323,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
 				{formatOutput.fullText && (
 					<button
 						onClick={() => copyToClipboard(formatOutput.fullText!)}
-						className="px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/50 rounded transition-all duration-200 uppercase tracking-wide"
+						className="rounded bg-muted/30 px-3 py-1 font-semibold text-muted-foreground text-xs uppercase tracking-wide transition-all duration-200 hover:bg-muted/50 hover:text-foreground"
 						title="Copy to clipboard"
 					>
 						COPY
@@ -335,7 +333,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
 
 			{/* Output Content */}
 			<div className="flex-1 overflow-auto">
-				<pre className="text-sm font-mono leading-relaxed whitespace-pre-wrap break-words text-foreground p-3 bg-muted/20 rounded border">
+				<pre className="whitespace-pre-wrap break-words rounded border bg-muted/20 p-3 font-mono text-foreground text-sm leading-relaxed">
 					{formatOutput.text}
 				</pre>
 			</div>

@@ -139,13 +139,19 @@ function wouldCreateCircularConnection(edges: AgenEdge[], source: string, target
 
 	// Initialize graph with existing edges
 	edges.forEach((edge) => {
-		if (!graph[edge.source]) graph[edge.source] = [];
-		if (!graph[edge.target]) graph[edge.target] = [];
+		if (!graph[edge.source]) {
+			graph[edge.source] = [];
+		}
+		if (!graph[edge.target]) {
+			graph[edge.target] = [];
+		}
 		graph[edge.source].push(edge.target);
 	});
 
 	// Add the new potential edge
-	if (!graph[source]) graph[source] = [];
+	if (!graph[source]) {
+		graph[source] = [];
+	}
 	graph[source].push(target);
 
 	// DFS to detect cycles
@@ -153,15 +159,21 @@ function wouldCreateCircularConnection(edges: AgenEdge[], source: string, target
 	const recStack = new Set<string>();
 
 	function hasCycle(node: string): boolean {
-		if (recStack.has(node)) return true;
-		if (visited.has(node)) return false;
+		if (recStack.has(node)) {
+			return true;
+		}
+		if (visited.has(node)) {
+			return false;
+		}
 
 		visited.add(node);
 		recStack.add(node);
 
 		const neighbors = graph[node] || [];
 		for (const neighbor of neighbors) {
-			if (hasCycle(neighbor)) return true;
+			if (hasCycle(neighbor)) {
+				return true;
+			}
 		}
 
 		recStack.delete(node);
@@ -171,7 +183,9 @@ function wouldCreateCircularConnection(edges: AgenEdge[], source: string, target
 	// Check for cycles starting from each node
 	for (const node of Object.keys(graph)) {
 		if (!visited.has(node)) {
-			if (hasCycle(node)) return true;
+			if (hasCycle(node)) {
+				return true;
+			}
 		}
 	}
 
@@ -498,7 +512,9 @@ export const useFlowStore = create<FlowStore>()(
 
 					// Get all selected nodes from ReactFlow state
 					const selectedNodes = nodes.filter((node) => node.selected);
-					if (selectedNodes.length === 0) return;
+					if (selectedNodes.length === 0) {
+						return;
+					}
 
 					// Get all selected edges
 					const selectedEdges = edges.filter((edge) => edge.selected);
@@ -525,7 +541,9 @@ export const useFlowStore = create<FlowStore>()(
 
 				pasteNodes: () => {
 					const { copiedNodes, copiedEdges } = get();
-					if (copiedNodes.length === 0) return;
+					if (copiedNodes.length === 0) {
+						return;
+					}
 
 					set((state) => {
 						// Create mapping from old IDs to new IDs
@@ -572,7 +590,9 @@ export const useFlowStore = create<FlowStore>()(
 
 				pasteNodesAtPosition: (position?: { x: number; y: number }) => {
 					const { copiedNodes, copiedEdges } = get();
-					if (copiedNodes.length === 0) return;
+					if (copiedNodes.length === 0) {
+						return;
+					}
 
 					set((state) => {
 						// Calculate the center of the copied nodes
@@ -688,8 +708,7 @@ export const useFlowStore = create<FlowStore>()(
 
 					// MEMORY LEAK FIX: Comprehensive cleanup of ALL accumulated data
 					try {
-						const memoryStats = performCompleteMemoryCleanup();
-						console.log("Memory cleanup stats:", memoryStats);
+						const _memoryStats = performCompleteMemoryCleanup();
 					} catch (error) {
 						console.error("Memory cleanup failed:", error);
 						// Fallback to timer cleanup only
@@ -700,8 +719,6 @@ export const useFlowStore = create<FlowStore>()(
 						...initialState,
 						_hasHydrated: true,
 					}));
-
-					console.log("✅ Force reset complete");
 				},
 
 				// Hydration
@@ -758,7 +775,9 @@ export const useNodeById = (nodeId: string) => {
 
 export const useNodeErrors = (nodeId: string | null) => {
 	return useFlowStore((state) => {
-		if (!nodeId || !state.nodeErrors) return EMPTY_ARRAY;
+		if (!(nodeId && state.nodeErrors)) {
+			return EMPTY_ARRAY;
+		}
 		return state.nodeErrors[nodeId] || EMPTY_ARRAY;
 	});
 };

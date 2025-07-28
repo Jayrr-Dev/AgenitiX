@@ -17,7 +17,7 @@ export class AnubisCrypto {
 		acceptLanguage?: string;
 		ip?: string;
 	}): string {
-		const weekStart = this.getWeekStart();
+		const weekStart = AnubisCrypto.getWeekStart();
 		const components = [
 			request.acceptLanguage || "en-US",
 			request.ip || "127.0.0.1",
@@ -49,7 +49,7 @@ export class AnubisCrypto {
 
 			// RECREATE HASH
 			const input = `${challenge}${nonce}`;
-			const computedHash = await this.sha256(input);
+			const computedHash = await AnubisCrypto.sha256(input);
 
 			// VERIFY HASH MATCHES
 			if (computedHash !== providedHash) {
@@ -86,10 +86,10 @@ export class AnubisCrypto {
 		difficulty: number
 	): AnubisChallenge {
 		return {
-			challenge: this.generateChallenge(request),
+			challenge: AnubisCrypto.generateChallenge(request),
 			difficulty,
 			timestamp: Date.now(),
-			clientFingerprint: this.generateFingerprint(request),
+			clientFingerprint: AnubisCrypto.generateFingerprint(request),
 		};
 	}
 }
@@ -100,10 +100,10 @@ export class AnubisJWT {
 	static async sign(payload: AnubisJWTPayload, secret: string): Promise<string> {
 		const header = { alg: "HS256", typ: "JWT" };
 
-		const encodedHeader = this.base64UrlEncode(JSON.stringify(header));
-		const encodedPayload = this.base64UrlEncode(JSON.stringify(payload));
+		const encodedHeader = AnubisJWT.base64UrlEncode(JSON.stringify(header));
+		const encodedPayload = AnubisJWT.base64UrlEncode(JSON.stringify(payload));
 
-		const signature = await this.createSignature(`${encodedHeader}.${encodedPayload}`, secret);
+		const signature = await AnubisJWT.createSignature(`${encodedHeader}.${encodedPayload}`, secret);
 
 		return `${encodedHeader}.${encodedPayload}.${signature}`;
 	}
@@ -113,12 +113,12 @@ export class AnubisJWT {
 		try {
 			const [encodedHeader, encodedPayload, signature] = token.split(".");
 
-			if (!encodedHeader || !encodedPayload || !signature) {
+			if (!(encodedHeader && encodedPayload && signature)) {
 				return null;
 			}
 
 			// VERIFY SIGNATURE
-			const expectedSignature = await this.createSignature(
+			const expectedSignature = await AnubisJWT.createSignature(
 				`${encodedHeader}.${encodedPayload}`,
 				secret
 			);
@@ -128,7 +128,7 @@ export class AnubisJWT {
 			}
 
 			// DECODE PAYLOAD
-			const payload = JSON.parse(this.base64UrlDecode(encodedPayload)) as AnubisJWTPayload;
+			const payload = JSON.parse(AnubisJWT.base64UrlDecode(encodedPayload)) as AnubisJWTPayload;
 
 			// CHECK EXPIRATION
 			if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
@@ -154,7 +154,7 @@ export class AnubisJWT {
 		);
 
 		const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
-		return this.base64UrlEncode(new Uint8Array(signature));
+		return AnubisJWT.base64UrlEncode(new Uint8Array(signature));
 	}
 
 	// BASE64 URL ENCODING

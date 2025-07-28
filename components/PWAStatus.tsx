@@ -1,7 +1,7 @@
 "use client";
 
-import { Cloud, CloudOff, Loader2, Wifi, WifiOff } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import { Loader2, Wifi, WifiOff } from "lucide-react";
+import { useEffect, useState } from "react";
 
 // Extend ServiceWorkerRegistration to include sync
 interface ServiceWorkerRegistrationWithSync extends ServiceWorkerRegistration {
@@ -73,28 +73,26 @@ export default function PWAStatus() {
 	return (
 		<div className="fixed top-4 right-4 z-50">
 			<div
-				className={`
-        flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300
-        ${
+				className={`flex items-center gap-2 rounded-md px-3 py-2 font-medium text-sm transition-all duration-300 ${
 					isOnline
-						? "bg-green-100 text-green-800 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
-						: "bg-red-100 text-red-800 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
+						? "border border-green-200 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400"
+						: "border border-red-200 bg-red-100 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400"
 				}
       `}
 			>
 				{isSyncing ? (
 					<>
-						<Loader2 className="w-4 h-4 animate-spin" />
+						<Loader2 className="h-4 w-4 animate-spin" />
 						<span>Syncing...</span>
 					</>
 				) : isOnline ? (
 					<>
-						<Wifi className="w-4 h-4" />
+						<Wifi className="h-4 w-4" />
 						<span>Online</span>
 					</>
 				) : (
 					<>
-						<WifiOff className="w-4 h-4" />
+						<WifiOff className="h-4 w-4" />
 						<span>Offline</span>
 					</>
 				)}

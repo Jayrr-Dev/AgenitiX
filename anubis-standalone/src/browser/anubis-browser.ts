@@ -108,7 +108,9 @@ export class AnubisBrowser {
 
 	// SOLVE PROOF-OF-WORK CHALLENGE
 	private async solveChallenge(challenge: BrowserChallenge): Promise<void> {
-		if (this.isWorking) return;
+		if (this.isWorking) {
+			return;
+		}
 
 		this.isWorking = true;
 		this.log(`Solving challenge with difficulty ${challenge.difficulty}...`);
@@ -277,7 +279,9 @@ export class AnubisBrowser {
 		try {
 			const canvas = document.createElement("canvas");
 			const ctx = canvas.getContext("2d");
-			if (!ctx) return "no-canvas";
+			if (!ctx) {
+				return "no-canvas";
+			}
 
 			ctx.textBaseline = "top";
 			ctx.font = "14px Arial";
@@ -294,7 +298,9 @@ export class AnubisBrowser {
 		try {
 			const canvas = document.createElement("canvas");
 			const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-			if (!gl) return "no-webgl";
+			if (!gl) {
+				return "no-webgl";
+			}
 
 			const webglContext = gl as WebGLRenderingContext;
 			const renderer = webglContext.getParameter(webglContext.RENDERER);
@@ -329,7 +335,9 @@ export class AnubisBrowser {
 		try {
 			// Basic JWT expiration check (decode payload)
 			const parts = token.split(".");
-			if (parts.length !== 3) return false;
+			if (parts.length !== 3) {
+				return false;
+			}
 
 			const payload = JSON.parse(atob(parts[1]));
 			return payload.exp > Math.floor(Date.now() / 1000);
@@ -339,9 +347,8 @@ export class AnubisBrowser {
 	}
 
 	// LOGGING
-	private log(...args: any[]): void {
+	private log(..._args: any[]): void {
 		if (this.config.debug) {
-			console.log("[Anubis]", ...args);
 		}
 	}
 

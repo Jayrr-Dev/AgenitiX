@@ -64,8 +64,6 @@
 				"noArrayIndexKey": "warn",
 				"noCommentText": "warn",
 				"noDoubleEquals": "error",
-				"noGlobalObjectCalls": "error",
-				"noSelfAssign": "error",
 				"noThenProperty": "error",
 				"useAwait": "error",
 				"useValidTypeof": "error"
@@ -107,12 +105,10 @@
 				"noConstantCondition": "error",
 				"noEmptyCharacterClassInRegex": "error",
 				"noEmptyPattern": "error",
-				"noGlobalObjectCalls": "error",
 				"noInvalidConstructorSuper": "error",
 				"noNewSymbol": "error",
 				"noNonoctalDecimalEscape": "error",
 				"noPrecisionLoss": "error",
-				"noSelfAssign": "error",
 				"noSetterReturn": "error",
 				"noSwitchDeclarations": "error",
 				"noUnnecessaryContinue": "error",
@@ -160,12 +156,7 @@
 				"useValidLang": "error"
 			},
 			"nursery": {
-				"noReactSpecificProps": "error",
-				"noUndeclaredDependencies": "error",
-				"noUnusedFunctionParameters": "warn",
-				"useAwaitKeyword": "error",
 				"useConsistentMemberAccessibility": "error",
-				"useImportExtensions": "off",
 				"useSortedClasses": "warn"
 			}
 		}

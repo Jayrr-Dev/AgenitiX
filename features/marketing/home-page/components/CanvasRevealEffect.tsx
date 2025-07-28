@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 export function CanvasRevealEffectDemo() {
 	return (
 		<>
-			<div className="py-20 flex flex-col lg:flex-row items-center justify-center bg-white dark:bg-black w-full gap-4 mx-auto px-8">
+			<div className="mx-auto flex w-full flex-col items-center justify-center gap-4 bg-white px-8 py-20 lg:flex-row dark:bg-black">
 				<Card title="Sheetal is Nisha" icon={<AceternityIcon />}>
 					<CanvasRevealEffect animationSpeed={5.1} containerClassName="bg-emerald-900" />
 				</Card>
@@ -22,7 +22,7 @@ export function CanvasRevealEffectDemo() {
 						dotSize={2}
 					/>
 					{/* Radial gradient for the cute fade */}
-					<div className="absolute inset-0 [mask-image:radial-gradient(400px_at_center,white,transparent)] bg-black/50 dark:bg-black/90" />
+					<div className="absolute inset-0 bg-black/50 [mask-image:radial-gradient(400px_at_center,white,transparent)] dark:bg-black/90" />
 				</Card>
 				<Card title="Munni is Aditi" icon={<AceternityIcon />}>
 					<CanvasRevealEffect
@@ -50,19 +50,19 @@ const Card = ({
 		<div
 			onMouseEnter={() => setHovered(true)}
 			onMouseLeave={() => setHovered(false)}
-			className="border border-black/[0.2] group/canvas-card flex items-center justify-center dark:border-white/[0.2]  max-w-sm w-full mx-auto p-4 relative h-[30rem] relative"
+			className="group/canvas-card relative relative mx-auto flex h-[30rem] w-full max-w-sm items-center justify-center border border-black/[0.2] p-4 dark:border-white/[0.2]"
 		>
-			<Icon className="absolute h-6 w-6 -top-3 -left-3 dark:text-white text-black" />
-			<Icon className="absolute h-6 w-6 -bottom-3 -left-3 dark:text-white text-black" />
-			<Icon className="absolute h-6 w-6 -top-3 -right-3 dark:text-white text-black" />
-			<Icon className="absolute h-6 w-6 -bottom-3 -right-3 dark:text-white text-black" />
+			<Icon className="-top-3 -left-3 absolute h-6 w-6 text-black dark:text-white" />
+			<Icon className="-bottom-3 -left-3 absolute h-6 w-6 text-black dark:text-white" />
+			<Icon className="-top-3 -right-3 absolute h-6 w-6 text-black dark:text-white" />
+			<Icon className="-bottom-3 -right-3 absolute h-6 w-6 text-black dark:text-white" />
 
 			<AnimatePresence>
 				{hovered && (
 					<motion.div
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
-						className="h-full w-full absolute inset-0"
+						className="absolute inset-0 h-full w-full"
 					>
 						{children}
 					</motion.div>
@@ -70,10 +70,10 @@ const Card = ({
 			</AnimatePresence>
 
 			<div className="relative z-20">
-				<div className="text-center group-hover/canvas-card:-translate-y-4 group-hover/canvas-card:opacity-0 transition duration-200 w-full  mx-auto flex items-center justify-center">
+				<div className="group-hover/canvas-card:-translate-y-4 mx-auto flex w-full items-center justify-center text-center transition duration-200 group-hover/canvas-card:opacity-0">
 					{icon}
 				</div>
-				<h2 className="dark:text-white text-xl opacity-0 group-hover/canvas-card:opacity-100 relative z-10 text-black mt-4  font-bold group-hover/canvas-card:text-white group-hover/canvas-card:-translate-y-2 transition duration-200">
+				<h2 className="group-hover/canvas-card:-translate-y-2 relative z-10 mt-4 font-bold text-black text-xl opacity-0 transition duration-200 group-hover/canvas-card:text-white group-hover/canvas-card:opacity-100 dark:text-white">
 					{title}
 				</h2>
 			</div>
@@ -89,7 +89,7 @@ const AceternityIcon = () => {
 			viewBox="0 0 66 65"
 			fill="none"
 			xmlns="http://www.w3.org/2000/svg"
-			className="h-10 w-10 text-black dark:text-white group-hover/canvas-card:text-white "
+			className="h-10 w-10 text-black group-hover/canvas-card:text-white dark:text-white "
 		>
 			<path
 				d="M8 8.05571C8 8.05571 54.9009 18.1782 57.8687 30.062C60.8365 41.9458 9.05432 57.4696 9.05432 57.4696"

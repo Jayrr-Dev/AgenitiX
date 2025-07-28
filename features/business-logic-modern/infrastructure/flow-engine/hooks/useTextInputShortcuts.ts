@@ -31,7 +31,9 @@ export function useTextInputShortcuts(options: UseTextInputShortcutsOptions = {}
 				const start = input.selectionStart || 0;
 				const end = input.selectionEnd || 0;
 
-				if (!setValue) return;
+				if (!setValue) {
+					return;
+				}
 
 				// If there's a selection, delete the selected text
 				if (start !== end) {
@@ -47,7 +49,9 @@ export function useTextInputShortcuts(options: UseTextInputShortcutsOptions = {}
 				}
 
 				// If cursor is at the beginning, do nothing
-				if (start === 0) return;
+				if (start === 0) {
+					return;
+				}
 
 				// Alt+Ctrl+Q - Delete from cursor to beginning of line
 				if (e.ctrlKey) {

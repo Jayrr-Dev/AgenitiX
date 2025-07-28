@@ -161,15 +161,18 @@ export class RiskEngine {
 			dangerous: Number.parseInt(process.env.ANUBIS_RISK_THRESHOLD_HIGH || "70", 10),
 		};
 
-		console.log(
-			`🎯 Risk thresholds: MODERATE=${thresholds.moderate}, ELEVATED=${thresholds.elevated}, HIGH=${thresholds.high}, DANGEROUS=${thresholds.dangerous}`
-		);
-		console.log(`📊 Current score: ${score}`);
-
-		if (score >= thresholds.dangerous) return RISK_LEVELS[5]; // DANGEROUS
-		if (score >= thresholds.high) return RISK_LEVELS[4]; // HIGH
-		if (score >= thresholds.elevated) return RISK_LEVELS[3]; // ELEVATED
-		if (score >= thresholds.moderate) return RISK_LEVELS[2]; // MODERATE
+		if (score >= thresholds.dangerous) {
+			return RISK_LEVELS[5]; // DANGEROUS
+		}
+		if (score >= thresholds.high) {
+			return RISK_LEVELS[4]; // HIGH
+		}
+		if (score >= thresholds.elevated) {
+			return RISK_LEVELS[3]; // ELEVATED
+		}
+		if (score >= thresholds.moderate) {
+			return RISK_LEVELS[2]; // MODERATE
+		}
 		return RISK_LEVELS[1]; // LOW
 	}
 
@@ -187,29 +190,25 @@ export class RiskEngine {
 		timestamp: number;
 	}): Promise<{ riskLevel: RiskLevel; config: AdaptiveConfig; factors: RiskFactors }> {
 		const factors: RiskFactors = {
-			ipReputation: await this.checkIPReputation(request.ip),
-			geolocation: await this.checkGeolocation(request.ip),
-			userAgent: this.analyzeUserAgent(request.userAgent),
-			requestPattern: this.analyzeRequestPattern(request),
-			timeOfDay: this.analyzeTimeOfDay(request.timestamp),
-			sessionHistory: this.analyzeSessionHistory(request.sessionHistory),
-			deviceFingerprint: this.analyzeDeviceFingerprint(request.headers),
-			networkBehavior: await this.analyzeNetworkBehavior(request.ip),
+			ipReputation: await RiskEngine.checkIPReputation(request.ip),
+			geolocation: await RiskEngine.checkGeolocation(request.ip),
+			userAgent: RiskEngine.analyzeUserAgent(request.userAgent),
+			requestPattern: RiskEngine.analyzeRequestPattern(request),
+			timeOfDay: RiskEngine.analyzeTimeOfDay(request.timestamp),
+			sessionHistory: RiskEngine.analyzeSessionHistory(request.sessionHistory),
+			deviceFingerprint: RiskEngine.analyzeDeviceFingerprint(request.headers),
+			networkBehavior: await RiskEngine.analyzeNetworkBehavior(request.ip),
 		};
 
-		const score = this.calculateRiskScore(factors);
-		const riskLevel = this.getRiskLevel(score);
-		const config = this.getAdaptiveConfig(riskLevel.level);
-
-		console.log(`🛡️ Risk: ${riskLevel.name} (${score})`);
+		const score = RiskEngine.calculateRiskScore(factors);
+		const riskLevel = RiskEngine.getRiskLevel(score);
+		const config = RiskEngine.getAdaptiveConfig(riskLevel.level);
 
 		return { riskLevel, config, factors };
 	}
 
 	// INDIVIDUAL RISK FACTOR ANALYZERS
 	private static async checkIPReputation(ip: string): Promise<number> {
-		console.log(`🌐 Starting enhanced IP reputation check for: ${ip}`);
-
 		// LOCAL/PRIVATE IPS (SAFE)
 		if (
 			ip.startsWith("127.") ||
@@ -217,7 +216,6 @@ export class RiskEngine {
 			ip.startsWith("10.") ||
 			ip.startsWith("172.16.")
 		) {
-			console.log(`🏠 Local/private IP detected: ${ip}`);
 			return 0;
 		}
 
@@ -226,18 +224,15 @@ export class RiskEngine {
 			const threatResult = await ThreatIntelligence.checkIPReputation(ip);
 
 			if (threatResult.isMalicious) {
-				console.log(
-					`🚨 Malicious IP detected: ${ip} - Risk: ${threatResult.riskScore}, Confidence: ${threatResult.confidence}, Sources: ${threatResult.sources.join(", ")}, Blacklist hits: ${threatResult.blacklistHits}`
-				);
 				return threatResult.riskScore;
 			}
 
 			// NOT IN THREAT FEEDS - CHECK ADDITIONAL PATTERNS
-			return this.checkAdditionalIPPatterns(ip);
+			return RiskEngine.checkAdditionalIPPatterns(ip);
 		} catch (error) {
 			console.error(`❌ Error checking IP reputation for ${ip}:`, error);
 			// FALLBACK TO BASIC CHECKS
-			return this.checkAdditionalIPPatterns(ip);
+			return RiskEngine.checkAdditionalIPPatterns(ip);
 		}
 	}
 
@@ -253,7 +248,6 @@ export class RiskEngine {
 		];
 
 		if (torPatterns.some((pattern) => pattern.test(ip))) {
-			console.log(`🧅 Potential Tor exit node (backup check): ${ip}`);
 			return 85;
 		}
 
@@ -270,7 +264,6 @@ export class RiskEngine {
 		];
 
 		if (hostingRanges.some((pattern) => pattern.test(ip))) {
-			console.log(`🏢 Hosting provider range detected: ${ip}`);
 			return 60;
 		}
 
@@ -287,23 +280,16 @@ export class RiskEngine {
 		];
 
 		if (suspiciousRanges.some((pattern) => pattern.test(ip))) {
-			console.log(`⚠️ Suspicious IP range detected: ${ip}`);
 			return 40;
 		}
-
-		console.log(`✅ IP appears clean: ${ip}`);
 		return 15; // Low risk for unknown but clean IPs
 	}
 
-	private static async checkGeolocation(ip: string): Promise<number> {
+	private static async checkGeolocation(_ip: string): Promise<number> {
 		// High-risk countries/regions
-		const highRiskCountries = new Set(["CN", "RU", "KP", "IR"]);
+		const _highRiskCountries = new Set(["CN", "RU", "KP", "IR"]);
 
 		try {
-			// Implement geolocation lookup
-			// const geo = await geolocateIP(ip);
-			// if (highRiskCountries.has(geo.country)) return 80;
-			console.log(`🗺️ Geolocation check for: ${ip}`);
 			return 35; // Increased from 20 - default moderate risk
 		} catch {
 			return 45; // Increased from 30 - unknown location = higher risk
@@ -311,7 +297,9 @@ export class RiskEngine {
 	}
 
 	private static analyzeUserAgent(userAgent: string): number {
-		if (!userAgent) return 95; // No user agent = very suspicious
+		if (!userAgent) {
+			return 95; // No user agent = very suspicious
+		}
 
 		// AGGRESSIVE BOT DETECTION PATTERNS
 		const botPatterns = [
@@ -363,42 +351,32 @@ export class RiskEngine {
 
 		// CHECK FOR KNOWN BOTS (highest risk)
 		if (botPatterns.some((pattern) => pattern.test(userAgent))) {
-			console.log(`🤖 Bot detected: ${userAgent}`);
 			return 98; // Very high risk for obvious bots
 		}
 
 		// CHECK FOR HEADLESS BROWSERS (high risk)
 		if (headlessPatterns.some((pattern) => pattern.test(userAgent))) {
-			console.log(`🕷️ Headless browser detected: ${userAgent}`);
 			return 85; // High risk for automation tools
 		}
 
 		// CHECK FOR SUSPICIOUS PATTERNS (moderate-high risk)
 		if (suspiciousPatterns.some((pattern) => pattern.test(userAgent))) {
-			console.log(`⚠️ Suspicious user agent: ${userAgent}`);
 			return 70; // Moderate-high risk for suspicious patterns
 		}
 
 		// CHECK FOR LEGITIMATE BROWSERS (low risk)
 		if (legitimateBrowsers.some((pattern) => pattern.test(userAgent))) {
-			console.log(`✅ Legitimate browser: ${userAgent}`);
 			return 5; // Very low risk for real browsers
 		}
 
 		// FALLBACK: Unknown user agent patterns
 		if (userAgent.length < 30) {
-			console.log(`📏 Short user agent: ${userAgent}`);
 			return 60; // Moderate risk for short user agents
 		}
-
-		console.log(`❓ Unknown user agent pattern: ${userAgent}`);
 		return 25; // Default moderate risk for unknown patterns
 	}
 
 	private static analyzeRequestPattern(request: any): number {
-		// ANALYZE REQUEST TIMING, FREQUENCY, AND PATTERNS
-		console.log(`⏱️ Request pattern analysis`);
-
 		let riskScore = 0;
 		const headers = request.headers || {};
 
@@ -416,25 +394,22 @@ export class RiskEngine {
 		);
 
 		if (hasAutomationHeaders) {
-			console.log(`🤖 Automation headers detected`);
 			riskScore += 40;
 		}
 
 		// CHECK FOR MISSING STANDARD BROWSER HEADERS
 		const expectedHeaders = ["accept", "accept-language", "accept-encoding"];
 		const missingHeaders = expectedHeaders.filter(
-			(header) => !headers[header] && !headers[header.toLowerCase()]
+			(header) => !(headers[header] || headers[header.toLowerCase()])
 		);
 
 		if (missingHeaders.length > 0) {
-			console.log(`📄 Missing standard headers: ${missingHeaders.join(", ")}`);
 			riskScore += missingHeaders.length * 15;
 		}
 
 		// CHECK FOR SUSPICIOUS HEADER VALUES
-		const acceptHeader = headers["accept"] || headers["Accept"] || "";
+		const acceptHeader = headers.accept || headers.Accept || "";
 		if (acceptHeader === "*/*" && !headers["accept-language"]) {
-			console.log(`⚠️ Generic accept header without language preference`);
 			riskScore += 25;
 		}
 
@@ -444,7 +419,6 @@ export class RiskEngine {
 
 		// Chrome browser should have accept-language
 		if (userAgent.includes("Chrome") && !acceptLanguage) {
-			console.log(`🌐 Chrome without accept-language header`);
 			riskScore += 30;
 		}
 
@@ -454,9 +428,8 @@ export class RiskEngine {
 		// if (requestFrequency > threshold) riskScore += 50;
 
 		// CHECK FOR SUSPICIOUS CONNECTION PATTERNS
-		const connection = headers["connection"] || headers["Connection"] || "";
+		const connection = headers.connection || headers.Connection || "";
 		if (connection.toLowerCase() === "close" && userAgent.includes("Mozilla")) {
-			console.log(`🔌 Suspicious connection header for browser`);
 			riskScore += 20;
 		}
 
@@ -467,16 +440,13 @@ export class RiskEngine {
 		const hour = new Date(timestamp).getHours();
 		// Higher risk during typical bot hours (2-6 AM)
 		if (hour >= 2 && hour <= 6) {
-			console.log(`🌙 High-risk time detected: ${hour}:00`);
 			return 60; // Increased from 40
 		}
-		console.log(`☀️ Normal time: ${hour}:00`);
 		return 15; // Increased from 10
 	}
 
 	private static analyzeSessionHistory(history: any): number {
 		if (!history) {
-			console.log(`📝 No session history available`);
 			return 35; // Increased from 20 - no history is more suspicious
 		}
 
@@ -484,19 +454,14 @@ export class RiskEngine {
 		const challenges = history.challenges || 0;
 
 		if (failures > 3) {
-			console.log(`❌ High failure count: ${failures}`);
 			return 95; // Increased from 90
 		}
 		if (failures > 1) {
-			console.log(`⚠️ Multiple failures: ${failures}`);
 			return 70; // Increased from 60
 		}
 		if (challenges > 5) {
-			console.log(`🔄 Many challenges: ${challenges}`);
 			return 50; // Increased from 40
 		}
-
-		console.log(`✅ Clean session history`);
 		return 5; // Decreased from 10 - clean history is very good
 	}
 
@@ -504,41 +469,31 @@ export class RiskEngine {
 		// Analyze browser capabilities, screen resolution, etc.
 		const acceptLanguage = headers["accept-language"];
 		const acceptEncoding = headers["accept-encoding"];
-		const acceptHeader = headers["accept"];
+		const acceptHeader = headers.accept;
 
 		let suspiciousCount = 0;
 
 		if (!acceptLanguage) {
-			console.log(`🌐 Missing Accept-Language header`);
 			suspiciousCount++;
 		}
 		if (!acceptEncoding) {
-			console.log(`📦 Missing Accept-Encoding header`);
 			suspiciousCount++;
 		}
 		if (!acceptHeader) {
-			console.log(`📄 Missing Accept header`);
 			suspiciousCount++;
 		}
 
 		// More missing headers = higher risk
 		if (suspiciousCount >= 2) {
-			console.log(`🚨 Multiple missing headers: ${suspiciousCount}`);
 			return 75; // High risk for missing multiple headers
 		}
 		if (suspiciousCount === 1) {
-			console.log(`⚠️ One missing header`);
 			return 45; // Moderate risk for one missing header
 		}
-
-		console.log(`✅ Complete headers present`);
 		return 10; // Low risk for complete headers
 	}
 
-	private static async analyzeNetworkBehavior(ip: string): Promise<number> {
-		// Check for VPN, proxy, hosting provider
-		// This would integrate with services like IPQualityScore
-		console.log(`🔗 Network behavior analysis for: ${ip}`);
+	private static async analyzeNetworkBehavior(_ip: string): Promise<number> {
 		return 35; // Increased from 25 - default moderate risk
 	}
 }
@@ -548,11 +503,11 @@ export class RiskMonitor {
 	private static riskHistory: Map<string, RiskLevel[]> = new Map();
 
 	static trackRisk(identifier: string, riskLevel: RiskLevel) {
-		if (!this.riskHistory.has(identifier)) {
-			this.riskHistory.set(identifier, []);
+		if (!RiskMonitor.riskHistory.has(identifier)) {
+			RiskMonitor.riskHistory.set(identifier, []);
 		}
 
-		const history = this.riskHistory.get(identifier)!;
+		const history = RiskMonitor.riskHistory.get(identifier)!;
 		history.push(riskLevel);
 
 		// Keep only last 10 entries
@@ -561,11 +516,13 @@ export class RiskMonitor {
 		}
 
 		// Check for escalating risk
-		this.checkRiskEscalation(identifier, history);
+		RiskMonitor.checkRiskEscalation(identifier, history);
 	}
 
 	private static checkRiskEscalation(identifier: string, history: RiskLevel[]) {
-		if (history.length < 3) return;
+		if (history.length < 3) {
+			return;
+		}
 
 		const recent = history.slice(-3);
 		const isEscalating = recent.every(
@@ -579,8 +536,10 @@ export class RiskMonitor {
 	}
 
 	static getRiskTrend(identifier: string): "increasing" | "decreasing" | "stable" {
-		const history = this.riskHistory.get(identifier);
-		if (!history || history.length < 2) return "stable";
+		const history = RiskMonitor.riskHistory.get(identifier);
+		if (!history || history.length < 2) {
+			return "stable";
+		}
 
 		const recent = history.slice(-5);
 		const avgRecent = recent.reduce((sum, r) => sum + r.level, 0) / recent.length;
@@ -588,8 +547,12 @@ export class RiskMonitor {
 		const avgOlder =
 			older.length > 0 ? older.reduce((sum, r) => sum + r.level, 0) / older.length : avgRecent;
 
-		if (avgRecent > avgOlder + 0.5) return "increasing";
-		if (avgRecent < avgOlder - 0.5) return "decreasing";
+		if (avgRecent > avgOlder + 0.5) {
+			return "increasing";
+		}
+		if (avgRecent < avgOlder - 0.5) {
+			return "decreasing";
+		}
 		return "stable";
 	}
 }

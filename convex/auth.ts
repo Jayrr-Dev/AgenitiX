@@ -206,7 +206,7 @@ export const verifyMagicLink = mutation({
 			.withIndex("by_magic_link_token", (q) => q.eq("magic_link_token", args.token))
 			.first();
 
-		if (!user || !user.is_active) {
+		if (!user?.is_active) {
 			return {
 				success: false,
 				error: {
@@ -306,7 +306,7 @@ export const getCurrentUser = query({
 
 		// Get user data
 		const user = await ctx.db.get(session.user_id);
-		if (!user || !user.is_active) {
+		if (!user?.is_active) {
 			return null;
 		}
 
@@ -367,10 +367,18 @@ export const updateProfile = mutation({
 
 		// Update user profile
 		const updateData: any = { updated_at: Date.now() };
-		if (args.name !== undefined) updateData.name = args.name;
-		if (args.company !== undefined) updateData.company = args.company;
-		if (args.role !== undefined) updateData.role = args.role;
-		if (args.timezone !== undefined) updateData.timezone = args.timezone;
+		if (args.name !== undefined) {
+			updateData.name = args.name;
+		}
+		if (args.company !== undefined) {
+			updateData.company = args.company;
+		}
+		if (args.role !== undefined) {
+			updateData.role = args.role;
+		}
+		if (args.timezone !== undefined) {
+			updateData.timezone = args.timezone;
+		}
 
 		await ctx.db.patch(session.user_id, updateData);
 
@@ -472,7 +480,7 @@ export const resetRateLimits = mutation({
 // Migration helper: Normalize all user emails to lowercase
 export const normalizeUserEmails = mutation({
 	args: {},
-	handler: async (ctx, args) => {
+	handler: async (ctx, _args) => {
 		const users = await ctx.db.query("auth_users").collect();
 
 		let updatedCount = 0;

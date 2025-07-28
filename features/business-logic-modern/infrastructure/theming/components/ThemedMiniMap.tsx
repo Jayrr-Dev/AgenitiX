@@ -32,7 +32,7 @@ export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
 }) => {
 	return (
 		<MiniMap
-			className={`bg-[var(--infra-minimap-bg)] border-[var(--infra-minimap-border)] hover:bg-[var(--infra-minimap-bg-hover)] hover:border-[var(--infra-minimap-border-hover)] rounded border shadow-sm transition-colors duration-200 ${className}`}
+			className={`rounded border border-[var(--infra-minimap-border)] bg-[var(--infra-minimap-bg)] shadow-sm transition-colors duration-200 hover:border-[var(--infra-minimap-border-hover)] hover:bg-[var(--infra-minimap-bg-hover)] ${className}`}
 			position={position}
 			pannable={pannable}
 			zoomable={zoomable}
@@ -106,18 +106,10 @@ export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
 
 				// Debug logging to see what categories we're getting
 				if (process.env.NODE_ENV === "development") {
-					console.log(`🗺️ [MiniMap] Node color mapping:`, {
-						nodeId: node.id,
-						nodeType: node.type,
-						nodeDataCategory: node.data?.category,
-						originalCategory: nodeCategory,
-						resolvedCategory: resolvedCategory,
-					});
 				}
 
 				switch (resolvedCategory) {
 					case "CREATE":
-						console.log(`🟢 [MiniMap] Applying CREATE green color for node ${node.id}`);
 						return "var(--node-create-bg)";
 					case "VIEW":
 						return "var(--node-view-bg)";
@@ -190,9 +182,6 @@ export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
 					case "EMAIL":
 						return "var(--node-email-bg-hover)";
 					default:
-						console.log(
-							`🔵 [MiniMap] Using default blue color for node ${node.id}, category: ${resolvedCategory}`
-						);
 						return "var(--node-view-bg)";
 				}
 			}}

@@ -59,7 +59,9 @@ export function StencilGrid({
 	const handleDragEnd = useCallback(
 		(e: DragEndEvent) => {
 			const { active, over } = e;
-			if (!over || active.id === over.id) return;
+			if (!over || active.id === over.id) {
+				return;
+			}
 
 			const oldIdx = stencils.findIndex((s) => s.id === active.id);
 			const newIdx = stencils.findIndex((s) => s.id === over.id);
@@ -71,7 +73,7 @@ export function StencilGrid({
 	return (
 		<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
 			<SortableContext items={ids} strategy={rectSortingStrategy}>
-				<div className="flex flex-wrap justify-evenly gap-2 sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center sm:mx-auto">
+				<div className="flex flex-wrap justify-evenly gap-2 sm:mx-auto sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center">
 					{stencils.map((stencil, index) => (
 						<SortableStencil
 							key={stencil.id}

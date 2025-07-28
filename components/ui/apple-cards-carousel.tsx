@@ -3,7 +3,7 @@ import { useOutsideClick } from "@/hooks/use-outside-click";
 import { cn } from "@/lib/utils";
 import { IconArrowNarrowLeft, IconArrowNarrowRight, IconX } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "motion/react";
-import Image, { type ImageProps } from "next/image";
+import type { ImageProps } from "next/image";
 import React, {
 	useEffect,
 	useRef,
@@ -95,7 +95,7 @@ export const Carousel = ({ items, initialScroll = 0 }: CarouselProps) => {
 						className={cn(
 							"absolute right-0 z-[1000] h-auto w-[5%] overflow-hidden bg-gradient-to-l"
 						)}
-					></div>
+					/>
 
 					<div
 						className={cn(
@@ -119,7 +119,7 @@ export const Carousel = ({ items, initialScroll = 0 }: CarouselProps) => {
 										once: true,
 									},
 								}}
-								key={"card" + index}
+								key={`card${index}`}
 								className="rounded-3xl last:pr-[5%] md:last:pr-[33%]"
 							>
 								{item}
@@ -216,13 +216,13 @@ export const Card = ({
 							</button>
 							<motion.p
 								layoutId={layout ? `category-${card.title}` : undefined}
-								className="text-base font-medium text-black dark:text-white"
+								className="font-medium text-base text-black dark:text-white"
 							>
 								{card.category}
 							</motion.p>
 							<motion.p
 								layoutId={layout ? `title-${card.title}` : undefined}
-								className="mt-4 text-2xl font-semibold text-neutral-700 md:text-5xl dark:text-white"
+								className="mt-4 font-semibold text-2xl text-neutral-700 md:text-5xl dark:text-white"
 							>
 								{card.title}
 							</motion.p>
@@ -240,13 +240,13 @@ export const Card = ({
 				<div className="relative z-40 p-8">
 					<motion.p
 						layoutId={layout ? `category-${card.category}` : undefined}
-						className="text-left font-sans text-sm font-medium text-white md:text-base"
+						className="text-left font-medium font-sans text-sm text-white md:text-base"
 					>
 						{card.category}
 					</motion.p>
 					<motion.p
 						layoutId={layout ? `title-${card.title}` : undefined}
-						className="mt-2 max-w-xs text-left font-sans text-xl font-semibold [text-wrap:balance] text-white md:text-3xl"
+						className="mt-2 max-w-xs text-left font-sans font-semibold text-white text-xl [text-wrap:balance] md:text-3xl"
 					>
 						{card.title}
 					</motion.p>
@@ -254,7 +254,7 @@ export const Card = ({
 				<BlurImage
 					src={card.src}
 					alt={card.title}
-					fill
+					fill={true}
 					className="absolute inset-0 z-10 object-cover"
 				/>
 			</motion.button>

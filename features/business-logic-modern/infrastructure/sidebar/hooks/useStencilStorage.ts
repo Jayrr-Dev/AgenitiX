@@ -10,7 +10,9 @@ export function useStencilStorage<V extends SidebarVariant, K extends TabKey<V>>
 	const key = `${STORAGE_PREFIX}-${variant}-${tab}`;
 
 	const [stencils, setStencils] = useState<NodeStencil[]>(() => {
-		if (typeof window === "undefined") return defaults;
+		if (typeof window === "undefined") {
+			return defaults;
+		}
 
 		try {
 			const raw = window.localStorage.getItem(key);

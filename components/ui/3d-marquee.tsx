@@ -29,7 +29,7 @@ export const ThreeDMarquee = ({
 						style={{
 							transform: "rotateX(55deg) rotateY(0deg) rotateZ(-45deg) translatey(800px)",
 						}}
-						className="relative top-96 right-[50%] grid size-full origin-top-left grid-cols-4 gap-8 transform-3d"
+						className="transform-3d relative top-96 right-[50%] grid size-full origin-top-left grid-cols-4 gap-8"
 					>
 						{chunks.map((subarray, colIndex) => (
 							<motion.div
@@ -39,7 +39,7 @@ export const ThreeDMarquee = ({
 									repeat: Number.POSITIVE_INFINITY,
 									repeatType: "reverse",
 								}}
-								key={colIndex + "marquee"}
+								key={`${colIndex}marquee`}
 								className="flex flex-col items-start gap-8"
 							>
 								<GridLineVertical className="-left-4" offset="80px" />
@@ -103,7 +103,7 @@ const GridLineHorizontal = ({
 				"dark:bg-[linear-gradient(to_right,var(--color-dark),var(--color-dark)_50%,transparent_0,transparent)]",
 				className
 			)}
-		></div>
+		/>
 	);
 };
 
@@ -138,6 +138,6 @@ const GridLineVertical = ({
 				"dark:bg-[linear-gradient(to_bottom,var(--color-dark),var(--color-dark)_50%,transparent_0,transparent)]",
 				className
 			)}
-		></div>
+		/>
 	);
 };

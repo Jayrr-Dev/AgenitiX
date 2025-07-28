@@ -11,9 +11,8 @@
  * Keywords: command-documentation, script-analysis, auto-generation, cli-documentation, usage-patterns
  */
 
-import * as fs from "fs";
-import * as path from "path";
-import * as ts from "typescript";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 // ============================================================================
 // TYPES AND INTERFACES
@@ -345,7 +344,7 @@ function extractInputFiles(script: string): string[] {
 /**
  * Generate description for command
  */
-function generateDescription(name: string, script: string): string {
+function generateDescription(name: string, _script: string): string {
 	const descriptions: { [key: string]: string } = {
 		dev: "Start development server with hot reload",
 		build: "Build application for production",
@@ -747,11 +746,6 @@ function generateCommandDocs(analysis: ScriptAnalysis) {
 			fs.writeFileSync(categoryPath, categoryMarkdown);
 		}
 	});
-
-	console.log(`✅ Generated Command documentation`);
-	console.log(`   📄 Markdown: ${markdownPath}`);
-	console.log(`   🌐 HTML: ${htmlPath}`);
-	console.log(`   📁 Categories: ${analysis.statistics.categories.length} category files`);
 }
 
 /**
@@ -1110,8 +1104,6 @@ function generateCommandHTML(analysis: ScriptAnalysis): string {
  * Generate comprehensive documentation for all commands
  */
 function generateAllCommandDocs() {
-	console.log("🔍 Analyzing commands and scripts...");
-
 	try {
 		// Analyze all command types
 		const packageScripts = analyzePackageScripts();
@@ -1143,12 +1135,6 @@ function generateAllCommandDocs() {
 		};
 
 		generateCommandDocs(analysis);
-
-		console.log("✅ Command documentation generation complete!");
-		console.log(`   📊 Total Commands: ${analysis.statistics.totalCommands}`);
-		console.log(`   📦 Package Scripts: ${analysis.statistics.totalScripts}`);
-		console.log(`   🔧 Plop Generators: ${analysis.statistics.totalGenerators}`);
-		console.log(`   📁 Categories: ${analysis.statistics.categories.join(", ")}`);
 	} catch (error) {
 		console.error("❌ Error generating command documentation:", error);
 		process.exit(1);

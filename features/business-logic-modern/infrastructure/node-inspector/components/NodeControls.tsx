@@ -29,7 +29,7 @@ export const NodeControls: React.FC<NodeControlsProps> = ({ node, updateNodeData
 
 	if (!nodeInfo) {
 		return (
-			<div className="text-xs text-control-error p-3 text-center">
+			<div className="p-3 text-center text-control-error text-xs">
 				<div className="mb-2">⚠️ Unknown Node Type</div>
 				<div className="text-control-debug">
 					Node type: <code>{node.type}</code>
@@ -57,13 +57,13 @@ export const NodeControls: React.FC<NodeControlsProps> = ({ node, updateNodeData
 
 	// Default fallback with helpful information
 	return (
-		<div className="text-xs text-control-placeholder p-3 text-center">
+		<div className="p-3 text-center text-control-placeholder text-xs">
 			<div className="mb-2">📋 {nodeInfo.displayName}</div>
-			<div className="text-control-debug mb-2">
+			<div className="mb-2 text-control-debug">
 				Category: <code>{nodeInfo.category}</code>
 			</div>
 			{nodeInfo.description && (
-				<div className="text-control-placeholder mb-2 italic">{nodeInfo.description}</div>
+				<div className="mb-2 text-control-placeholder italic">{nodeInfo.description}</div>
 			)}
 			<div className="text-control-debug">No controls available for this node type.</div>
 		</div>

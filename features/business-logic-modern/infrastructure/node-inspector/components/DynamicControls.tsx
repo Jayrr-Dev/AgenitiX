@@ -21,7 +21,7 @@ import { type ControlField, NodeInspectorService } from "../services/NodeInspect
 // CONSTANTS - Apple Design System
 // ============================================================================
 
-const APPLE_COLORS = {
+const _APPLE_COLORS = {
 	primary: "rgb(0, 122, 255)",
 	success: "rgb(52, 199, 89)",
 	warning: "rgb(255, 149, 0)",
@@ -40,7 +40,7 @@ const APPLE_COLORS = {
 	},
 } as const;
 
-const APPLE_SPACING = {
+const _APPLE_SPACING = {
 	xs: "4px",
 	sm: "8px",
 	md: "12px",
@@ -84,7 +84,7 @@ const AppleTextInput: React.FC<ControlRendererProps> = ({
 }) => {
 	return (
 		<div className="space-y-2">
-			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+			<label className="block font-medium text-gray-900 text-sm dark:text-white">
 				{field.label}
 			</label>
 			<input
@@ -92,23 +92,16 @@ const AppleTextInput: React.FC<ControlRendererProps> = ({
 				value={String(value || "")}
 				onChange={(e) => onChange(e.target.value)}
 				placeholder={field.placeholder}
-				className={`
-          w-full px-3 py-2.5 text-sm
-          bg-white dark:bg-gray-800
-          border rounded-lg
-          transition-all duration-200 ease-out
-          focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
-          placeholder:text-gray-400 dark:placeholder:text-gray-500
-          ${
-						hasError
-							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-					}
+				className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm transition-all duration-200 ease-out placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:bg-gray-800 dark:placeholder:text-gray-500 ${
+					hasError
+						? "border-red-300 bg-red-50/50 dark:border-red-600 dark:bg-red-900/10"
+						: "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
+				}
         `}
 			/>
 			{hasError && errorMessage && (
-				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-					<span className="w-3 h-3 text-red-500">⚠</span>
+				<p className="flex items-center gap-1 text-red-600 text-xs dark:text-red-400">
+					<span className="h-3 w-3 text-red-500">⚠</span>
 					{errorMessage}
 				</p>
 			)}
@@ -128,7 +121,7 @@ const AppleTextarea: React.FC<ControlRendererProps> = ({
 }) => {
 	return (
 		<div className="space-y-2">
-			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+			<label className="block font-medium text-gray-900 text-sm dark:text-white">
 				{field.label}
 			</label>
 			<textarea
@@ -136,24 +129,16 @@ const AppleTextarea: React.FC<ControlRendererProps> = ({
 				onChange={(e) => onChange(e.target.value)}
 				placeholder={field.placeholder}
 				rows={field.ui?.rows || 3}
-				className={`
-          w-full px-3 py-2.5 text-sm
-          bg-white dark:bg-gray-800
-          border rounded-lg
-          transition-all duration-200 ease-out
-          focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
-          placeholder:text-gray-400 dark:placeholder:text-gray-500
-          resize-none
-          ${
-						hasError
-							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-					}
+				className={`w-full resize-none rounded-lg border bg-white px-3 py-2.5 text-sm transition-all duration-200 ease-out placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:bg-gray-800 dark:placeholder:text-gray-500 ${
+					hasError
+						? "border-red-300 bg-red-50/50 dark:border-red-600 dark:bg-red-900/10"
+						: "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
+				}
         `}
 			/>
 			{hasError && errorMessage && (
-				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-					<span className="w-3 h-3 text-red-500">⚠</span>
+				<p className="flex items-center gap-1 text-red-600 text-xs dark:text-red-400">
+					<span className="h-3 w-3 text-red-500">⚠</span>
 					{errorMessage}
 				</p>
 			)}
@@ -174,7 +159,7 @@ const AppleNumberInput: React.FC<ControlRendererProps> = ({
 	const handleChange = useCallback(
 		(newValue: string) => {
 			const numValue = Number.parseFloat(newValue);
-			if (!isNaN(numValue)) {
+			if (!Number.isNaN(numValue)) {
 				onChange(numValue);
 			} else if (newValue === "") {
 				onChange(field.defaultValue);
@@ -185,7 +170,7 @@ const AppleNumberInput: React.FC<ControlRendererProps> = ({
 
 	return (
 		<div className="space-y-2">
-			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+			<label className="block font-medium text-gray-900 text-sm dark:text-white">
 				{field.label}
 			</label>
 			<input
@@ -196,23 +181,16 @@ const AppleNumberInput: React.FC<ControlRendererProps> = ({
 				step={field.ui?.step || 1}
 				min={field.validation?.min}
 				max={field.validation?.max}
-				className={`
-          w-full px-3 py-2.5 text-sm
-          bg-white dark:bg-gray-800
-          border rounded-lg
-          transition-all duration-200 ease-out
-          focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
-          placeholder:text-gray-400 dark:placeholder:text-gray-500
-          ${
-						hasError
-							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-					}
+				className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm transition-all duration-200 ease-out placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:bg-gray-800 dark:placeholder:text-gray-500 ${
+					hasError
+						? "border-red-300 bg-red-50/50 dark:border-red-600 dark:bg-red-900/10"
+						: "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
+				}
         `}
 			/>
 			{hasError && errorMessage && (
-				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-					<span className="w-3 h-3 text-red-500">⚠</span>
+				<p className="flex items-center gap-1 text-red-600 text-xs dark:text-red-400">
+					<span className="h-3 w-3 text-red-500">⚠</span>
 					{errorMessage}
 				</p>
 			)}
@@ -235,29 +213,22 @@ const AppleToggle: React.FC<ControlRendererProps> = ({
 	return (
 		<div className="space-y-2">
 			<div className="flex items-center justify-between">
-				<label className="text-sm font-medium text-gray-900 dark:text-white">{field.label}</label>
+				<label className="font-medium text-gray-900 text-sm dark:text-white">{field.label}</label>
 				<button
 					onClick={() => onChange(!boolValue)}
-					className={`
-            relative inline-flex h-6 w-11 items-center rounded-full
-            transition-colors duration-200 ease-out
-            focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2
-            ${boolValue ? "bg-blue-600 shadow-sm" : "bg-gray-200 dark:bg-gray-700"}
+					className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 ${boolValue ? "bg-blue-600 shadow-sm" : "bg-gray-200 dark:bg-gray-700"}
           `}
 					type="button"
 				>
 					<span
-						className={`
-              inline-block h-4 w-4 transform rounded-full bg-white
-              transition-transform duration-200 ease-out shadow-sm
-              ${boolValue ? "translate-x-6" : "translate-x-1"}
+						className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-out ${boolValue ? "translate-x-6" : "translate-x-1"}
             `}
 					/>
 				</button>
 			</div>
 			{hasError && errorMessage && (
-				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-					<span className="w-3 h-3 text-red-500">⚠</span>
+				<p className="flex items-center gap-1 text-red-600 text-xs dark:text-red-400">
+					<span className="h-3 w-3 text-red-500">⚠</span>
 					{errorMessage}
 				</p>
 			)}
@@ -279,23 +250,17 @@ const AppleSelect: React.FC<ControlRendererProps> = ({
 
 	return (
 		<div className="space-y-2">
-			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+			<label className="block font-medium text-gray-900 text-sm dark:text-white">
 				{field.label}
 			</label>
 			<select
 				value={String(value || "")}
 				onChange={(e) => onChange(e.target.value)}
-				className={`
-          w-full px-3 py-2.5 text-sm
-          bg-white dark:bg-gray-800
-          border rounded-lg
-          transition-all duration-200 ease-out
-          focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
-          ${
-						hasError
-							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-					}
+				className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm transition-all duration-200 ease-out focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:bg-gray-800 ${
+					hasError
+						? "border-red-300 bg-red-50/50 dark:border-red-600 dark:bg-red-900/10"
+						: "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
+				}
         `}
 			>
 				{!field.required && <option value="">Select {field.label}</option>}
@@ -306,8 +271,8 @@ const AppleSelect: React.FC<ControlRendererProps> = ({
 				))}
 			</select>
 			{hasError && errorMessage && (
-				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-					<span className="w-3 h-3 text-red-500">⚠</span>
+				<p className="flex items-center gap-1 text-red-600 text-xs dark:text-red-400">
+					<span className="h-3 w-3 text-red-500">⚠</span>
 					{errorMessage}
 				</p>
 			)}
@@ -327,7 +292,7 @@ const AppleUrlInput: React.FC<ControlRendererProps> = ({
 }) => {
 	return (
 		<div className="space-y-2">
-			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+			<label className="block font-medium text-gray-900 text-sm dark:text-white">
 				{field.label}
 			</label>
 			<input
@@ -335,23 +300,16 @@ const AppleUrlInput: React.FC<ControlRendererProps> = ({
 				value={String(value || "")}
 				onChange={(e) => onChange(e.target.value)}
 				placeholder={field.placeholder || "https://example.com"}
-				className={`
-          w-full px-3 py-2.5 text-sm
-          bg-white dark:bg-gray-800
-          border rounded-lg
-          transition-all duration-200 ease-out
-          focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
-          placeholder:text-gray-400 dark:placeholder:text-gray-500
-          ${
-						hasError
-							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-					}
+				className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm transition-all duration-200 ease-out placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:bg-gray-800 dark:placeholder:text-gray-500 ${
+					hasError
+						? "border-red-300 bg-red-50/50 dark:border-red-600 dark:bg-red-900/10"
+						: "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
+				}
         `}
 			/>
 			{hasError && errorMessage && (
-				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-					<span className="w-3 h-3 text-red-500">⚠</span>
+				<p className="flex items-center gap-1 text-red-600 text-xs dark:text-red-400">
+					<span className="h-3 w-3 text-red-500">⚠</span>
 					{errorMessage}
 				</p>
 			)}
@@ -371,7 +329,7 @@ const AppleEmailInput: React.FC<ControlRendererProps> = ({
 }) => {
 	return (
 		<div className="space-y-2">
-			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+			<label className="block font-medium text-gray-900 text-sm dark:text-white">
 				{field.label}
 			</label>
 			<input
@@ -379,23 +337,16 @@ const AppleEmailInput: React.FC<ControlRendererProps> = ({
 				value={String(value || "")}
 				onChange={(e) => onChange(e.target.value)}
 				placeholder={field.placeholder || "user@example.com"}
-				className={`
-          w-full px-3 py-2.5 text-sm
-          bg-white dark:bg-gray-800
-          border rounded-lg
-          transition-all duration-200 ease-out
-          focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
-          placeholder:text-gray-400 dark:placeholder:text-gray-500
-          ${
-						hasError
-							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-					}
+				className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm transition-all duration-200 ease-out placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:bg-gray-800 dark:placeholder:text-gray-500 ${
+					hasError
+						? "border-red-300 bg-red-50/50 dark:border-red-600 dark:bg-red-900/10"
+						: "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
+				}
         `}
 			/>
 			{hasError && errorMessage && (
-				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-					<span className="w-3 h-3 text-red-500">⚠</span>
+				<p className="flex items-center gap-1 text-red-600 text-xs dark:text-red-400">
+					<span className="h-3 w-3 text-red-500">⚠</span>
 					{errorMessage}
 				</p>
 			)}
@@ -415,7 +366,7 @@ const AppleColorPicker: React.FC<ControlRendererProps> = ({
 }) => {
 	return (
 		<div className="space-y-2">
-			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+			<label className="block font-medium text-gray-900 text-sm dark:text-white">
 				{field.label}
 			</label>
 			<div className="flex items-center gap-3">
@@ -423,31 +374,24 @@ const AppleColorPicker: React.FC<ControlRendererProps> = ({
 					type="color"
 					value={String(value || "#000000")}
 					onChange={(e) => onChange(e.target.value)}
-					className="w-12 h-10 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer"
+					className="h-10 w-12 cursor-pointer rounded-lg border border-gray-200 dark:border-gray-700"
 				/>
 				<input
 					type="text"
 					value={String(value || "")}
 					onChange={(e) => onChange(e.target.value)}
 					placeholder="#000000"
-					className={`
-            flex-1 px-3 py-2.5 text-sm font-mono
-            bg-white dark:bg-gray-800
-            border rounded-lg
-            transition-all duration-200 ease-out
-            focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
-            placeholder:text-gray-400 dark:placeholder:text-gray-500
-            ${
-							hasError
-								? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-								: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-						}
+					className={`flex-1 rounded-lg border bg-white px-3 py-2.5 font-mono text-sm transition-all duration-200 ease-out placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:bg-gray-800 dark:placeholder:text-gray-500 ${
+						hasError
+							? "border-red-300 bg-red-50/50 dark:border-red-600 dark:bg-red-900/10"
+							: "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
+					}
           `}
 				/>
 			</div>
 			{hasError && errorMessage && (
-				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-					<span className="w-3 h-3 text-red-500">⚠</span>
+				<p className="flex items-center gap-1 text-red-600 text-xs dark:text-red-400">
+					<span className="h-3 w-3 text-red-500">⚠</span>
 					{errorMessage}
 				</p>
 			)}
@@ -467,29 +411,23 @@ const AppleDateInput: React.FC<ControlRendererProps> = ({
 }) => {
 	return (
 		<div className="space-y-2">
-			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+			<label className="block font-medium text-gray-900 text-sm dark:text-white">
 				{field.label}
 			</label>
 			<input
 				type="date"
 				value={String(value || "")}
 				onChange={(e) => onChange(e.target.value)}
-				className={`
-          w-full px-3 py-2.5 text-sm
-          bg-white dark:bg-gray-800
-          border rounded-lg
-          transition-all duration-200 ease-out
-          focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
-          ${
-						hasError
-							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-					}
+				className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm transition-all duration-200 ease-out focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:bg-gray-800 ${
+					hasError
+						? "border-red-300 bg-red-50/50 dark:border-red-600 dark:bg-red-900/10"
+						: "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
+				}
         `}
 			/>
 			{hasError && errorMessage && (
-				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-					<span className="w-3 h-3 text-red-500">⚠</span>
+				<p className="flex items-center gap-1 text-red-600 text-xs dark:text-red-400">
+					<span className="h-3 w-3 text-red-500">⚠</span>
 					{errorMessage}
 				</p>
 			)}
@@ -520,7 +458,7 @@ const AppleJsonEditor: React.FC<ControlRendererProps> = ({
 					setJsonError(null);
 					onChange(null);
 				}
-			} catch (error) {
+			} catch (_error) {
 				setJsonError("Invalid JSON format");
 				// Still update the raw value for editing
 				onChange(newValue);
@@ -530,14 +468,18 @@ const AppleJsonEditor: React.FC<ControlRendererProps> = ({
 	);
 
 	const displayValue = useMemo(() => {
-		if (typeof value === "string") return value;
-		if (value === null || value === undefined) return "";
+		if (typeof value === "string") {
+			return value;
+		}
+		if (value === null || value === undefined) {
+			return "";
+		}
 		return JSON.stringify(value, null, 2);
 	}, [value]);
 
 	return (
 		<div className="space-y-2">
-			<label className="block text-sm font-medium text-gray-900 dark:text-white">
+			<label className="block font-medium text-gray-900 text-sm dark:text-white">
 				{field.label}
 			</label>
 			<textarea
@@ -545,31 +487,23 @@ const AppleJsonEditor: React.FC<ControlRendererProps> = ({
 				onChange={(e) => handleJsonChange(e.target.value)}
 				placeholder={field.placeholder || '{"key": "value"}'}
 				rows={field.ui?.rows || 4}
-				className={`
-          w-full px-3 py-2.5 text-sm font-mono
-          bg-white dark:bg-gray-800
-          border rounded-lg
-          transition-all duration-200 ease-out
-          focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
-          placeholder:text-gray-400 dark:placeholder:text-gray-500
-          resize-none
-          ${
-						hasError || jsonError
-							? "border-red-300 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10"
-							: "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-					}
+				className={`w-full resize-none rounded-lg border bg-white px-3 py-2.5 font-mono text-sm transition-all duration-200 ease-out placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:bg-gray-800 dark:placeholder:text-gray-500 ${
+					hasError || jsonError
+						? "border-red-300 bg-red-50/50 dark:border-red-600 dark:bg-red-900/10"
+						: "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
+				}
         `}
 			/>
 			{(hasError || jsonError) && (
-				<p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-					<span className="w-3 h-3 text-red-500">⚠</span>
+				<p className="flex items-center gap-1 text-red-600 text-xs dark:text-red-400">
+					<span className="h-3 w-3 text-red-500">⚠</span>
 					{jsonError || errorMessage}
 				</p>
 			)}
 			{field.ui?.showPreview && !jsonError && displayValue && (
-				<div className="text-xs text-gray-500 dark:text-gray-400">
-					<div className="font-medium mb-1">Preview:</div>
-					<pre className="p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs overflow-auto max-h-20 border">
+				<div className="text-gray-500 text-xs dark:text-gray-400">
+					<div className="mb-1 font-medium">Preview:</div>
+					<pre className="max-h-20 overflow-auto rounded border bg-gray-50 p-2 text-xs dark:bg-gray-800">
 						{JSON.stringify(typeof value === "string" ? JSON.parse(value) : value, null, 2)}
 					</pre>
 				</div>
@@ -593,10 +527,6 @@ export const DynamicControls: React.FC<DynamicControlsProps> = ({
 	// Generate control fields from the node's schema using enhanced service
 	const controlFields = useMemo(() => {
 		const fields = NodeInspectorService.generateControlFields(node.type as any);
-		console.log(
-			`[DynamicControls] Generated ${fields.length} control fields for ${node.type}:`,
-			fields
-		);
 		return fields;
 	}, [node.type]);
 
@@ -688,7 +618,6 @@ export const DynamicControls: React.FC<DynamicControlsProps> = ({
 					return <AppleDateInput key={field.key} {...commonProps} />;
 				case "json":
 					return <AppleJsonEditor key={field.key} {...commonProps} />;
-				case "text":
 				default:
 					return <AppleTextInput key={field.key} {...commonProps} />;
 			}
@@ -702,29 +631,29 @@ export const DynamicControls: React.FC<DynamicControlsProps> = ({
 
 	if (!hasControls) {
 		return (
-			<div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-				<div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
-					<span className="text-gray-400 dark:text-gray-500 text-lg">⚙️</span>
+			<div className="flex flex-col items-center justify-center px-4 py-8 text-center">
+				<div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+					<span className="text-gray-400 text-lg dark:text-gray-500">⚙️</span>
 				</div>
-				<p className="text-sm text-gray-500 dark:text-gray-400 mb-1">No configuration needed</p>
-				<p className="text-xs text-gray-400 dark:text-gray-500">This node works automatically</p>
+				<p className="mb-1 text-gray-500 text-sm dark:text-gray-400">No configuration needed</p>
+				<p className="text-gray-400 text-xs dark:text-gray-500">This node works automatically</p>
 			</div>
 		);
 	}
 
 	return (
-		<div className="p-4 space-y-4">
+		<div className="space-y-4 p-4">
 			{/* Control Fields */}
 			<div className="space-y-4">{controlFields.map(renderControl)}</div>
 
 			{/* Validation Status */}
 			{Object.keys(validationErrors).length > 0 && (
-				<div className="mt-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-					<div className="flex items-center gap-2 text-sm text-red-800 dark:text-red-200">
+				<div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20">
+					<div className="flex items-center gap-2 text-red-800 text-sm dark:text-red-200">
 						<span className="text-red-500">⚠</span>
 						<span className="font-medium">Configuration Issues</span>
 					</div>
-					<p className="text-xs text-red-600 dark:text-red-400 mt-1">
+					<p className="mt-1 text-red-600 text-xs dark:text-red-400">
 						Please fix the errors above to ensure proper node operation.
 					</p>
 				</div>

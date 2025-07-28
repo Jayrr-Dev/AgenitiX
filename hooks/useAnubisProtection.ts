@@ -37,13 +37,13 @@ export function useAnubisProtection(options: UseAnubisProtectionOptions = {}) {
 
 	const toggleCurrentRoute = () => {
 		const currentConfig = getRouteConfig(pathname);
-		const isCurrentlyProtected = currentConfig?.enabled || false;
+		const isCurrentlyProtected = currentConfig?.enabled;
 		toggleProtection(pathname, !isCurrentlyProtected);
 	};
 
 	// GET CURRENT PROTECTION STATUS
 	const currentConfig = getRouteConfig(pathname);
-	const isProtected = currentConfig?.enabled || false;
+	const isProtected = currentConfig?.enabled;
 
 	return {
 		isProtected,

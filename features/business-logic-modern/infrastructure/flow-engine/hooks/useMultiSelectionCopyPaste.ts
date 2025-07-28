@@ -37,7 +37,9 @@ export function useMultiSelectionCopyPaste() {
 
 		// Find all selected nodes
 		const selectedNodes = nodes.filter((node) => node.selected);
-		if (selectedNodes.length === 0) return;
+		if (selectedNodes.length === 0) {
+			return;
+		}
 
 		// Find selected edges
 		const selectedEdges = edges.filter((edge) => edge.selected);
@@ -62,8 +64,6 @@ export function useMultiSelectionCopyPaste() {
 			copiedNodes: [...selectedNodes],
 			copiedEdges: allRelevantEdges,
 		}));
-
-		console.log(`Copied ${selectedNodes.length} nodes and ${allRelevantEdges.length} edges`);
 	}, [reactFlow]);
 
 	// Enhanced paste function that uses mouse position for smart placement

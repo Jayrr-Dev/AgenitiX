@@ -60,11 +60,11 @@ export const UndoRedoProvider: React.FC<UndoRedoProviderProps> = ({ children }) 
 
 	// Wrapper functions that delegate to the registered manager
 	const undo = useCallback(() => {
-		return managerRef.current?.undo() || false;
+		return managerRef.current?.undo();
 	}, []);
 
 	const redo = useCallback((childId?: string) => {
-		return managerRef.current?.redo(childId) || false;
+		return managerRef.current?.redo(childId);
 	}, []);
 
 	const recordAction = useCallback((type: ActionType, metadata?: Record<string, unknown>) => {
@@ -83,7 +83,7 @@ export const UndoRedoProvider: React.FC<UndoRedoProviderProps> = ({ children }) 
 	}, []);
 
 	const removeSelectedNode = useCallback((nodeId?: string) => {
-		return managerRef.current?.removeSelectedNode?.(nodeId) || false;
+		return managerRef.current?.removeSelectedNode?.(nodeId);
 	}, []);
 
 	const getHistory = useCallback(() => {

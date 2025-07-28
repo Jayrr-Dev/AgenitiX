@@ -64,15 +64,15 @@ const JsonValue: React.FC<JsonValueProps> = ({ value, depth, maxDepth, isLast = 
 			<div className="inline-block">
 				<button
 					onClick={() => setIsCollapsed(!isCollapsed)}
-					className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 focus:outline-none"
+					className="text-gray-600 hover:text-gray-800 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200"
 				>
 					<span className="text-gray-600 dark:text-gray-400">[</span>
 					{isCollapsed && (
-						<span className="text-gray-500 dark:text-gray-500 ml-1">... {value.length} items</span>
+						<span className="ml-1 text-gray-500 dark:text-gray-500">... {value.length} items</span>
 					)}
 				</button>
 				{!isCollapsed && (
-					<div className="ml-4 border-l border-gray-300 dark:border-gray-600 pl-2">
+					<div className="ml-4 border-gray-300 border-l pl-2 dark:border-gray-600">
 						{value.map((item, index) => (
 							<div key={index} className="my-1">
 								<JsonValue
@@ -103,17 +103,17 @@ const JsonValue: React.FC<JsonValueProps> = ({ value, depth, maxDepth, isLast = 
 			<div className="inline-block">
 				<button
 					onClick={() => setIsCollapsed(!isCollapsed)}
-					className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 focus:outline-none"
+					className="text-gray-600 hover:text-gray-800 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200"
 				>
 					<span className="text-gray-600 dark:text-gray-400">{"{"}</span>
 					{isCollapsed && (
-						<span className="text-gray-500 dark:text-gray-500 ml-1">
+						<span className="ml-1 text-gray-500 dark:text-gray-500">
 							... {keys.length} properties
 						</span>
 					)}
 				</button>
 				{!isCollapsed && (
-					<div className="ml-4 border-l border-gray-300 dark:border-gray-600 pl-2">
+					<div className="ml-4 border-gray-300 border-l pl-2 dark:border-gray-600">
 						{keys.map((key, index) => (
 							<div key={key} className="my-1">
 								<span className="text-red-600 dark:text-red-400">"</span>

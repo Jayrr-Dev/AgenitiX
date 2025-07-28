@@ -32,7 +32,9 @@ export const getCoreToken = (
 ): string => {
 	// @ts-ignore – index signature dynamic access
 	const group = CORE_TOKENS[category] as Record<string, any> | undefined;
-	if (!group) return fallback;
+	if (!group) {
+		return fallback;
+	}
 	return group[key] ?? fallback;
 };
 

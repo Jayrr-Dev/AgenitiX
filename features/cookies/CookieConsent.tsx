@@ -33,19 +33,21 @@ export default function CookieConsent() {
 		setIsVisible(false);
 	};
 
-	if (!isVisible) return null;
+	if (!isVisible) {
+		return null;
+	}
 
 	return (
-		<div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-background border-t shadow-lg animate-in slide-in-from-bottom-5 duration-500">
-			<div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+		<div className="slide-in-from-bottom-5 fixed right-0 bottom-0 left-0 z-50 animate-in border-t bg-background p-4 shadow-lg duration-500">
+			<div className="container mx-auto flex flex-col items-center justify-between gap-4 sm:flex-row">
 				<div className="flex-1">
-					<p className="text-sm text-foreground">
+					<p className="text-foreground text-sm">
 						We use cookies to enhance your browsing experience, serve personalized ads or content,
 						and analyze our traffic. By clicking "Accept", you consent to our use of cookies.{" "}
 						<CookiePolicy />
 					</p>
 				</div>
-				<div className="flex items-center gap-3 shrink-0">
+				<div className="flex shrink-0 items-center gap-3">
 					<Button variant="outline" size="sm" onClick={declineCookies}>
 						Decline
 					</Button>

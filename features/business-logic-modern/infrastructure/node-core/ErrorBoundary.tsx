@@ -52,7 +52,7 @@ class NodeErrorBoundaryClass extends React.Component<
 		if (this.state.hasError) {
 			return (
 				<div
-					className="flex flex-col items-center justify-center w-full h-full bg-red-500/20 text-red-700 p-2 text-xs select-none"
+					className="flex h-full w-full select-none flex-col items-center justify-center bg-red-500/20 p-2 text-red-700 text-xs"
 					onDoubleClick={this.handleReset}
 					title="Double-click to reset error state"
 				>

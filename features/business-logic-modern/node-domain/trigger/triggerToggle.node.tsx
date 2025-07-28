@@ -9,14 +9,13 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import { useReactFlow, useStore } from "@xyflow/react";
+import { useStore } from "@xyflow/react";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
 	SafeSchemas,
 	createSafeInitialData,
@@ -172,10 +171,14 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 	/** Compute the latest boolean coming from the *first* upstream node. */
 	const computeInput = useCallback((): boolean | null => {
 		const incoming = edges.find((e) => e.target === id);
-		if (!incoming) return null;
+		if (!incoming) {
+			return null;
+		}
 
 		const src = nodes.find((n) => n.id === incoming.source);
-		if (!src) return null;
+		if (!src) {
+			return null;
+		}
 
 		return toBool(
 			// priority: outputs ➜ store ➜ whole data
@@ -235,7 +238,9 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 
 	/** Flip boolean state (only when enabled). */
 	const toggleState = useCallback(() => {
-		if (isEnabled) updateNodeData({ store: !toBool(store) });
+		if (isEnabled) {
+			updateNodeData({ store: !toBool(store) });
+		}
 	}, [isEnabled, store, updateNodeData]);
 
 	// -----------------------------------------------------------------------
@@ -255,14 +260,14 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 	// 4.7  Render
 	// -----------------------------------------------------------------------
 
-	const categoryStyles = CATEGORY_TEXT.TRIGGER;
+	const _categoryStyles = CATEGORY_TEXT.TRIGGER;
 	const isToggled = toBool(store);
 
 	return (
 		<>
 			{/* Label (hidden for 60×60 icons) */}
 			{!isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60 ? (
-				<div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+				<div className="absolute inset-0 flex justify-center p-1 text-foreground/80 text-lg">
 					{/* {spec.icon && renderLucideIcon(spec.icon)} */}
 				</div>
 			) : (
@@ -270,24 +275,7 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 			)}
 
 			{/* ───────────────────────────────────────── UI ───────────────────────────────────────── */}
-			{!isExpanded ? (
-				/* Collapsed view */
-				<div className={CONTENT.collapsed}>
-					<div
-						className={`${CONTENT.toggle} ${
-							isEnabled
-								? isToggled
-									? CONTENT.toggleOn
-									: CONTENT.toggleOff
-								: CONTENT.toggleDisabled
-						}`}
-						onClick={toggleState}
-						title={isEnabled ? "Click to toggle" : "Disabled"}
-					>
-						<div className={CONTENT.toggleText}>{isToggled ? "ON" : "OFF"}</div>
-					</div>
-				</div>
-			) : (
+			{isExpanded ? (
 				/* Expanded view */
 				<div className={CONTENT.expanded}>
 					<div className={CONTENT.body}>
@@ -306,11 +294,28 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 								<div className={CONTENT.toggleText}>{isToggled ? "ON" : "OFF"}</div>
 							</div>
 							<div className="text-center">
-								<div className="text-xs text-muted-foreground mt-1">
+								<div className="mt-1 text-muted-foreground text-xs">
 									{isEnabled ? "Click to toggle" : "Toggle disabled"}
 								</div>
 							</div>
 						</div>
+					</div>
+				</div>
+			) : (
+				/* Collapsed view */
+				<div className={CONTENT.collapsed}>
+					<div
+						className={`${CONTENT.toggle} ${
+							isEnabled
+								? isToggled
+									? CONTENT.toggleOn
+									: CONTENT.toggleOff
+								: CONTENT.toggleDisabled
+						}`}
+						onClick={toggleState}
+						title={isEnabled ? "Click to toggle" : "Disabled"}
+					>
+						<div className={CONTENT.toggleText}>{isToggled ? "ON" : "OFF"}</div>
 					</div>
 				</div>
 			)}

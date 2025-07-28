@@ -94,7 +94,9 @@ export const getPathToCursor = (graph: HistoryGraph): HistoryNode[] => {
 
 	while (currentId) {
 		const node: HistoryNode = graph.nodes[currentId];
-		if (!node) break;
+		if (!node) {
+			break;
+		}
 		path.unshift(node);
 		currentId = node.parentId;
 	}
@@ -116,7 +118,9 @@ const getStorageKey = (flowId?: string): string => {
 
 export const saveGraph = (graph: HistoryGraph, flowId?: string): void => {
 	// Guard against server-side execution where localStorage is unavailable
-	if (typeof window === "undefined") return;
+	if (typeof window === "undefined") {
+		return;
+	}
 	try {
 		const json = JSON.stringify(graph);
 		// Compress if payload > 1 MB (threshold chosen to avoid diminishing returns on small graphs)
@@ -130,15 +134,21 @@ export const saveGraph = (graph: HistoryGraph, flowId?: string): void => {
 
 export const loadGraph = (flowId?: string): HistoryGraph | null => {
 	// Skip on server – nothing to load
-	if (typeof window === "undefined") return null;
+	if (typeof window === "undefined") {
+		return null;
+	}
 	try {
 		const storageKey = getStorageKey(flowId);
 		const stored = window.localStorage.getItem(storageKey);
-		if (!stored) return null;
+		if (!stored) {
+			return null;
+		}
 
 		const data = stored.startsWith("lz:") ? decompressFromUTF16(stored.slice(3)) : stored;
 
-		if (!data) return null; // decompression failure
+		if (!data) {
+			return null; // decompression failure
+		}
 
 		return JSON.parse(data);
 	} catch (error) {
@@ -148,7 +158,9 @@ export const loadGraph = (flowId?: string): HistoryGraph | null => {
 };
 
 export const clearPersistedGraph = (flowId?: string): void => {
-	if (typeof window === "undefined") return;
+	if (typeof window === "undefined") {
+		return;
+	}
 	try {
 		const storageKey = getStorageKey(flowId);
 		window.localStorage.removeItem(storageKey);
@@ -159,7 +171,9 @@ export const clearPersistedGraph = (flowId?: string): void => {
 
 // Clear all flow histories (useful for cleanup)
 export const clearAllPersistedGraphs = (): void => {
-	if (typeof window === "undefined") return;
+	if (typeof window === "undefined") {
+		return;
+	}
 	try {
 		const keys = Object.keys(window.localStorage);
 		keys.forEach((key) => {
@@ -195,7 +209,9 @@ export const getGraphStats = (graph: HistoryGraph) => {
 // effectively "moving the initial state forward".
 export const pruneGraphToLimit = (graph: HistoryGraph, maxSize: number): void => {
 	// Safety checks
-	if (maxSize <= 0) return;
+	if (maxSize <= 0) {
+		return;
+	}
 
 	// Continue pruning until we meet the size requirement
 	while (Object.keys(graph.nodes).length > maxSize) {
@@ -287,7 +303,5 @@ export const removeNodeAndChildren = (graph: HistoryGraph, nodeId: NodeId): bool
 	nodesToRemove.forEach((id) => {
 		delete graph.nodes[id];
 	});
-
-	console.log(`[GraphHelpers] Removed ${nodesToRemove.size} nodes from history`);
 	return true;
 };

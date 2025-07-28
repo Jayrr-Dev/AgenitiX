@@ -6,7 +6,6 @@
  */
 
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 
 // Types for email account operations
@@ -41,7 +40,7 @@ async function validateUserSession(ctx: any, tokenHash: string) {
 	}
 
 	const user = await ctx.db.get(session.user_id);
-	if (!user || !user.is_active) {
+	if (!user?.is_active) {
 		throw new Error("User not found or inactive");
 	}
 
@@ -95,10 +94,12 @@ function validateCredentials(credentials: any): { code: string; message: string 
 
 		case "imap":
 			if (
-				!credentials.imapHost ||
-				!credentials.imapPort ||
-				!credentials.username ||
-				!credentials.password
+				!(
+					credentials.imapHost &&
+					credentials.imapPort &&
+					credentials.username &&
+					credentials.password
+				)
 			) {
 				return {
 					code: "CONFIGURATION_INVALID",
@@ -109,10 +110,12 @@ function validateCredentials(credentials: any): { code: string; message: string 
 
 		case "smtp":
 			if (
-				!credentials.smtpHost ||
-				!credentials.smtpPort ||
-				!credentials.username ||
-				!credentials.password
+				!(
+					credentials.smtpHost &&
+					credentials.smtpPort &&
+					credentials.username &&
+					credentials.password
+				)
 			) {
 				return {
 					code: "CONFIGURATION_INVALID",
@@ -159,9 +162,7 @@ function checkRateLimit(identifier: string): { allowed: boolean; retryAfter?: nu
 }
 
 // Audit logging
-function logSecurityEvent(event: any): void {
-	console.log("Security Event:", event);
-}
+function logSecurityEvent(_event: any): void {}
 
 // Store or update email account
 export const storeEmailAccount = mutation({
@@ -266,57 +267,56 @@ export const storeEmailAccount = mutation({
 						message: "Email account updated successfully",
 					},
 				};
-			} else {
-				// Check for duplicate email accounts for this user
-				const existingAccount = await ctx.db
-					.query("email_accounts")
-					.withIndex("by_user_id", (q: any) => q.eq("user_id", user._id))
-					.filter((q: any) => q.eq(q.field("email"), args.email.toLowerCase().trim()))
-					.filter((q: any) => q.eq(q.field("provider"), args.provider))
-					.first();
+			}
+			// Check for duplicate email accounts for this user
+			const existingAccount = await ctx.db
+				.query("email_accounts")
+				.withIndex("by_user_id", (q: any) => q.eq("user_id", user._id))
+				.filter((q: any) => q.eq(q.field("email"), args.email.toLowerCase().trim()))
+				.filter((q: any) => q.eq(q.field("provider"), args.provider))
+				.first();
 
-				if (existingAccount) {
-					return {
-						success: false,
-						error: {
-							code: "ACCOUNT_EXISTS",
-							message: "An account with this email and provider already exists",
-						},
-					};
-				}
-
-				// Create new account
-				const accountId = await ctx.db.insert("email_accounts", {
-					user_id: user._id,
-					provider: args.provider,
-					email: args.email.toLowerCase().trim(),
-					display_name: args.display_name,
-					encrypted_credentials: encryptedCredentials,
-					is_active: true,
-					connection_status: "disconnected" as ConnectionStatus,
-					created_at: now,
-					updated_at: now,
-				});
-
-				// Log security event
-				logSecurityEvent({
-					userId: user._id,
-					action: "CREATE_EMAIL_ACCOUNT",
-					resource: `email_account:${accountId}`,
-					details: { provider: args.provider, email: args.email },
-					timestamp: now,
-				});
-
+			if (existingAccount) {
 				return {
-					success: true,
-					data: {
-						accountId,
-						email: args.email,
-						provider: args.provider,
-						message: "Email account created successfully",
+					success: false,
+					error: {
+						code: "ACCOUNT_EXISTS",
+						message: "An account with this email and provider already exists",
 					},
 				};
 			}
+
+			// Create new account
+			const accountId = await ctx.db.insert("email_accounts", {
+				user_id: user._id,
+				provider: args.provider,
+				email: args.email.toLowerCase().trim(),
+				display_name: args.display_name,
+				encrypted_credentials: encryptedCredentials,
+				is_active: true,
+				connection_status: "disconnected" as ConnectionStatus,
+				created_at: now,
+				updated_at: now,
+			});
+
+			// Log security event
+			logSecurityEvent({
+				userId: user._id,
+				action: "CREATE_EMAIL_ACCOUNT",
+				resource: `email_account:${accountId}`,
+				details: { provider: args.provider, email: args.email },
+				timestamp: now,
+			});
+
+			return {
+				success: true,
+				data: {
+					accountId,
+					email: args.email,
+					provider: args.provider,
+					message: "Email account created successfully",
+				},
+			};
 		} catch (error) {
 			console.error("Store email account error:", error);
 			return {
@@ -469,22 +469,21 @@ export const validateEmailConnection = mutation({
 						accountInfo: isValid.accountInfo,
 					},
 				};
-			} else {
-				// Update failed connection
-				await ctx.db.patch(args.account_id, {
-					connection_status: "error" as ConnectionStatus,
-					last_error: JSON.stringify(isValid.error),
-					updated_at: now,
-				});
-
-				return {
-					success: false,
-					error: isValid.error || {
-						code: "VALIDATION_FAILED",
-						message: "Connection validation failed",
-					},
-				};
 			}
+			// Update failed connection
+			await ctx.db.patch(args.account_id, {
+				connection_status: "error" as ConnectionStatus,
+				last_error: JSON.stringify(isValid.error),
+				updated_at: now,
+			});
+
+			return {
+				success: false,
+				error: isValid.error || {
+					code: "VALIDATION_FAILED",
+					message: "Connection validation failed",
+				},
+			};
 		} catch (error) {
 			console.error("Validate email connection error:", error);
 			return {
@@ -586,10 +585,7 @@ async function simulateConnectionValidation(provider: EmailProviderType, credent
 		case "imap":
 		case "smtp":
 			if (
-				!credentials.email ||
-				!credentials.password ||
-				!credentials.imapHost ||
-				!credentials.smtpHost
+				!(credentials.email && credentials.password && credentials.imapHost && credentials.smtpHost)
 			) {
 				return {
 					success: false,

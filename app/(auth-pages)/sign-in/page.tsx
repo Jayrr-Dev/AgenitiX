@@ -53,8 +53,8 @@ export default function SignInPage() {
 	// Don't render if not mounted or authenticated (will redirect)
 	if (!mounted || authLoading) {
 		return (
-			<div className="min-h-screen flex">
-				<div className="flex-1 flex items-center justify-center">
+			<div className="flex min-h-screen">
+				<div className="flex flex-1 items-center justify-center">
 					<Loader2 className="h-8 w-8 animate-spin" />
 				</div>
 			</div>
@@ -63,10 +63,10 @@ export default function SignInPage() {
 
 	if (isAuthenticated) {
 		return (
-			<div className="min-h-screen flex">
-				<div className="flex-1 flex items-center justify-center">
+			<div className="flex min-h-screen">
+				<div className="flex flex-1 items-center justify-center">
 					<div className="text-center">
-						<Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+						<Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin" />
 						<p className="text-gray-600">Redirecting to dashboard...</p>
 					</div>
 				</div>
@@ -138,18 +138,18 @@ export default function SignInPage() {
 	};
 
 	return (
-		<div className="min-h-screen flex">
+		<div className="flex min-h-screen">
 			{/* Left side - Branding */}
-			<div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-purple-700 p-12 text-white flex-col justify-between">
+			<div className="hidden flex-col justify-between bg-gradient-to-br from-blue-600 to-purple-700 p-12 text-white lg:flex lg:w-1/2">
 				<div>
-					<h1 className="text-4xl font-bold mb-4">AgenitiX</h1>
+					<h1 className="mb-4 font-bold text-4xl">AgenitiX</h1>
 					<p className="text-xl opacity-90">Visual Flow Automation Platform</p>
 				</div>
 
 				<div className="space-y-6">
 					<div className="flex items-start space-x-4">
-						<div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-							<ArrowRight className="w-4 h-4" />
+						<div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
+							<ArrowRight className="h-4 w-4" />
 						</div>
 						<div>
 							<h3 className="font-semibold">Visual Workflow Builder</h3>
@@ -160,8 +160,8 @@ export default function SignInPage() {
 					</div>
 
 					<div className="flex items-start space-x-4">
-						<div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-							<Mail className="w-4 h-4" />
+						<div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
+							<Mail className="h-4 w-4" />
 						</div>
 						<div>
 							<h3 className="font-semibold">Email Automation</h3>
@@ -172,8 +172,8 @@ export default function SignInPage() {
 					</div>
 
 					<div className="flex items-start space-x-4">
-						<div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-							<ArrowRight className="w-4 h-4" />
+						<div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
+							<ArrowRight className="h-4 w-4" />
 						</div>
 						<div>
 							<h3 className="font-semibold">AI-Powered Insights</h3>
@@ -188,17 +188,17 @@ export default function SignInPage() {
 			</div>
 
 			{/* Right side - Sign in form */}
-			<div className="flex-1 flex items-center justify-center p-8">
+			<div className="flex flex-1 items-center justify-center p-8">
 				<div className="w-full max-w-md space-y-8">
 					{/* Mobile branding */}
-					<div className="lg:hidden text-center">
-						<h1 className="text-3xl font-bold text-gray-900 mb-2">AgenitiX</h1>
+					<div className="text-center lg:hidden">
+						<h1 className="mb-2 font-bold text-3xl text-gray-900">AgenitiX</h1>
 						<p className="text-gray-600">Visual Flow Automation Platform</p>
 					</div>
 
 					<Card className="border-0 shadow-lg">
 						<CardHeader className="space-y-1">
-							<CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
+							<CardTitle className="text-center font-bold text-2xl">Welcome back</CardTitle>
 							<CardDescription className="text-center">
 								Sign in to your account to continue building workflows
 							</CardDescription>
@@ -219,7 +219,7 @@ export default function SignInPage() {
 												setError(null);
 											}
 										}}
-										required
+										required={true}
 										disabled={isLoading}
 										className="h-11"
 									/>
@@ -227,15 +227,15 @@ export default function SignInPage() {
 
 								{/* Error messages */}
 								{error && (
-									<div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">
+									<div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-600 text-sm">
 										<div className="flex items-start space-x-2">
-											<AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+											<AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
 											<div className="flex-1">
 												<p>{error}</p>
 
 												{/* Rate limit specific info */}
 												{isRateLimited && retryAfter && (
-													<p className="mt-1 text-xs text-red-500">
+													<p className="mt-1 text-red-500 text-xs">
 														You can try again in {retryAfter}{" "}
 														{retryAfter === 1 ? "minute" : "minutes"}.
 													</p>
@@ -256,7 +256,7 @@ export default function SignInPage() {
 									</div>
 								)}
 
-								<Button type="submit" className="w-full h-11" disabled={isLoading || !email.trim()}>
+								<Button type="submit" className="h-11 w-full" disabled={isLoading || !email.trim()}>
 									{isLoading ? (
 										<>
 											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -278,7 +278,7 @@ export default function SignInPage() {
 					</Card>
 
 					{/* Additional info */}
-					<div className="text-center text-xs text-gray-500">
+					<div className="text-center text-gray-500 text-xs">
 						By signing in, you agree to our{" "}
 						<Link href="/terms" className="underline hover:text-gray-700">
 							Terms of Service

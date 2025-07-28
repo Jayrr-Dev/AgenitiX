@@ -41,7 +41,9 @@ export function getNodeOutput(
 	}
 
 	// For all other node types, format the extracted value
-	if (extractedValue === undefined || extractedValue === null) return null;
+	if (extractedValue === undefined || extractedValue === null) {
+		return null;
+	}
 
 	return formatValue(extractedValue);
 }
@@ -50,16 +52,26 @@ export function getNodeOutput(
  * Formats a value for display in the output
  */
 export function formatValue(value: unknown): string {
-	if (typeof value === "string") return value;
+	if (typeof value === "string") {
+		return value;
+	}
 
 	if (typeof value === "number") {
-		if (Number.isNaN(value)) return "NaN";
-		if (!Number.isFinite(value)) return value > 0 ? "Infinity" : "-Infinity";
+		if (Number.isNaN(value)) {
+			return "NaN";
+		}
+		if (!Number.isFinite(value)) {
+			return value > 0 ? "Infinity" : "-Infinity";
+		}
 		return value.toString();
 	}
 
-	if (typeof value === "boolean") return value ? "true" : "false";
-	if (typeof value === "bigint") return value.toString() + "n";
+	if (typeof value === "boolean") {
+		return value ? "true" : "false";
+	}
+	if (typeof value === "bigint") {
+		return `${value.toString()}n`;
+	}
 
 	try {
 		return safeStringify(value);

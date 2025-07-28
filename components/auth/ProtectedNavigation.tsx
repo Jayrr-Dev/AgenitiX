@@ -8,19 +8,19 @@ export const ProtectedNavigation = () => {
 	const { user } = useAuthContext();
 
 	return (
-		<header className="bg-background border-b border-border sticky top-0 z-40">
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-				<div className="flex justify-between items-center h-16">
+		<header className="sticky top-0 z-40 border-border border-b bg-background">
+			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+				<div className="flex h-16 items-center justify-between">
 					{/* Logo and main navigation */}
 					<div className="flex items-center space-x-8">
 						<Link href="/dashboard" className="flex items-center">
-							<h1 className="text-xl font-bold text-foreground">AgenitiX</h1>
+							<h1 className="font-bold text-foreground text-xl">AgenitiX</h1>
 						</Link>
 					</div>
 
 					{/* User info and dropdown */}
 					<div className="flex items-center space-x-4">
-						<span className="hidden sm:block text-sm text-muted-foreground">
+						<span className="hidden text-muted-foreground text-sm sm:block">
 							Welcome back, {user?.name}
 						</span>
 						<UserDropdown />

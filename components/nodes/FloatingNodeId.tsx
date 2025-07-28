@@ -53,34 +53,34 @@ export const FloatingNodeId: React.FC<FloatingNodeIdProps> = ({ nodeId, position
 
 	return (
 		<div
-			className="fixed z-50 pointer-events-auto"
+			className="pointer-events-auto fixed z-50"
 			style={{
 				left: position.x,
 				top: position.y,
 				transform: "translate(-50%, -100%)",
 			}}
 		>
-			<div className="bg-info border-info rounded-lg shadow-lg p-3 min-w-48">
+			<div className="min-w-48 rounded-lg border-info bg-info p-3 shadow-lg">
 				<div className="flex items-center gap-2">
 					<div className="flex-1">
-						<div className="text-xs text-info-text font-medium mb-1">Node ID</div>
-						<div className="font-mono text-sm text-info-text-secondary break-all">{nodeId}</div>
+						<div className="mb-1 font-medium text-info-text text-xs">Node ID</div>
+						<div className="break-all font-mono text-info-text-secondary text-sm">{nodeId}</div>
 					</div>
 					<button
 						onClick={handleCopy}
 						onKeyDown={handleKeyDown}
-						className="p-2 hover:bg-info-hover rounded transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+						className="rounded p-2 transition-colors hover:bg-info-hover focus:outline-none focus:ring-2 focus:ring-primary"
 						title={copied ? "Copied!" : "Copy to clipboard"}
 					>
 						{copied ? (
-							<Check className="w-4 h-4 text-success" />
+							<Check className="h-4 w-4 text-success" />
 						) : (
-							<Copy className="w-4 h-4 text-info-text-secondary" />
+							<Copy className="h-4 w-4 text-info-text-secondary" />
 						)}
 					</button>
 				</div>
 				{copied && (
-					<div className="mt-2 text-xs text-success font-medium">Copied to clipboard!</div>
+					<div className="mt-2 font-medium text-success text-xs">Copied to clipboard!</div>
 				)}
 			</div>
 		</div>

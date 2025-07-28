@@ -216,7 +216,7 @@ export function createStencilsByFilter(
 
 	// Apply nodeTypes filter
 	if (filter.nodeTypes && filter.nodeTypes.length > 0) {
-		allMeta = allMeta.filter((meta) => filter.nodeTypes!.includes(meta.kind as NodeType));
+		allMeta = allMeta.filter((meta) => filter.nodeTypes?.includes(meta.kind as NodeType));
 	}
 
 	return allMeta.map((meta, i) => createStencilFromNodeMetadata(meta, prefix, i));
@@ -413,8 +413,8 @@ export function refreshStencils(): typeof VARIANT_CONFIG {
  * Outputs comprehensive debug information about the sidebar state
  */
 export function logSidebarDebugInfo(): void {
-	const stats = getSidebarStatistics();
-	const validation = validateSidebarConfiguration();
+	const _stats = getSidebarStatistics();
+	const _validation = validateSidebarConfiguration();
 
 	// Debug info available but not logged to console
 }

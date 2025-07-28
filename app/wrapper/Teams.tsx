@@ -30,24 +30,24 @@ const teamMembers: TeamMember[] = [
 
 export default function Teams() {
 	return (
-		<section className="py-24 bg-white">
-			<div className="container px-4 mx-auto">
-				<div className="max-w-3xl mx-auto text-center mb-16">
-					<h2 className="text-4xl font-bold mb-4">Our Team</h2>
+		<section className="bg-white py-24">
+			<div className="container mx-auto px-4">
+				<div className="mx-auto mb-16 max-w-3xl text-center">
+					<h2 className="mb-4 font-bold text-4xl">Our Team</h2>
 					<p className="text-gray-600">Meet the experts behind Utilitek's innovative solutions</p>
 				</div>
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+				<div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
 					{teamMembers.map((member, index) => (
 						<div
 							key={index}
-							className="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105"
+							className="overflow-hidden rounded-lg bg-white shadow-lg transition-transform hover:scale-105"
 						>
 							<div className="relative h-64 w-full">
-								<Image src={member.image} alt={member.name} fill className="object-cover" />
+								<Image src={member.image} alt={member.name} fill={true} className="object-cover" />
 							</div>
 							<div className="p-6">
-								<h3 className="text-xl font-bold mb-2">{member.name}</h3>
-								<p className="text-blue-600 mb-3">{member.role}</p>
+								<h3 className="mb-2 font-bold text-xl">{member.name}</h3>
+								<p className="mb-3 text-blue-600">{member.role}</p>
 								<p className="text-gray-600">{member.bio}</p>
 							</div>
 						</div>

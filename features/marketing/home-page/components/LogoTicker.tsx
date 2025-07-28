@@ -30,9 +30,9 @@ const logosArray: Logo[] = logos.map((logo) => ({
 
 export const InfiniteLogoTicker = () => {
 	return (
-		<div className="w-full h-full flex flex-col items-center justify-center">
-			<h3 className="text-4xl font-bold text-center w-2/3">Trusted by 150,000+ Content</h3>
-			<h3 className="text-4xl font-bold text-center w-2/3">Creators, SEOs, Agencies, and Teams</h3>
+		<div className="flex h-full w-full flex-col items-center justify-center">
+			<h3 className="w-2/3 text-center font-bold text-4xl">Trusted by 150,000+ Content</h3>
+			<h3 className="w-2/3 text-center font-bold text-4xl">Creators, SEOs, Agencies, and Teams</h3>
 			<LogoTicker logos={logosArray} />
 		</div>
 	);

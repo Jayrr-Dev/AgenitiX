@@ -84,7 +84,7 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 		}
 
 		try {
-			const result = await shareFlow({
+			const _result = await shareFlow({
 				flow_id: flow.id as any,
 				shared_by_user_id: user.id,
 			});
@@ -152,7 +152,7 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 			setCopied(true);
 			toast.success("Share link copied to clipboard");
 			setTimeout(() => setCopied(false), 2000);
-		} catch (error) {
+		} catch (_error) {
 			toast.error("Failed to copy to clipboard");
 		}
 	};
@@ -167,13 +167,13 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 	const getPermissionIcon = (permission: string) => {
 		switch (permission) {
 			case "view":
-				return <Eye className="w-4 h-4" />;
+				return <Eye className="h-4 w-4" />;
 			case "edit":
-				return <Edit className="w-4 h-4" />;
+				return <Edit className="h-4 w-4" />;
 			case "admin":
-				return <Shield className="w-4 h-4" />;
+				return <Shield className="h-4 w-4" />;
 			default:
-				return <Eye className="w-4 h-4" />;
+				return <Eye className="h-4 w-4" />;
 		}
 	};
 
@@ -192,7 +192,7 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+			<DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-[600px]">
 				<DialogHeader>
 					<DialogTitle>Share Flow</DialogTitle>
 					<DialogDescription>Manage sharing and access for "{flow.name}"</DialogDescription>
@@ -215,11 +215,11 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 					{/* Share Tab */}
 					<TabsContent value="share" className="space-y-4">
 						{/* Privacy Status */}
-						<div className="flex items-center gap-2 p-3 border rounded-lg">
+						<div className="flex items-center gap-2 rounded-lg border p-3">
 							<Badge variant={flow.private ? "secondary" : "default"}>
 								{flow.private ? "Private" : "Public"}
 							</Badge>
-							<span className="text-sm text-muted-foreground">
+							<span className="text-muted-foreground text-sm">
 								{flow.private
 									? "Only you can access this flow"
 									: "Anyone with the link can view this flow"}
@@ -235,7 +235,7 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 									className="w-full"
 									disabled={!!flowShare?.share_token}
 								>
-									<Share2 className="w-4 h-4 mr-2" />
+									<Share2 className="mr-2 h-4 w-4" />
 									{flowShare?.share_token ? "Already Shared" : "Generate Share Link"}
 								</Button>
 							</div>
@@ -245,7 +245,7 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 						<div className="space-y-2">
 							<Label>Share Link</Label>
 							<div className="flex items-center gap-2">
-								<Input value={getShareUrl()} readOnly className="flex-1" />
+								<Input value={getShareUrl()} readOnly={true} className="flex-1" />
 								<Button
 									variant="outline"
 									size="sm"
@@ -254,12 +254,12 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 								>
 									{copied ? (
 										<>
-											<Check className="w-4 h-4" />
+											<Check className="h-4 w-4" />
 											Copied
 										</>
 									) : (
 										<>
-											<Copy className="w-4 h-4" />
+											<Copy className="h-4 w-4" />
 											Copy
 										</>
 									)}
@@ -269,14 +269,14 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 
 						{/* Privacy Note */}
 						{flow.private && (
-							<div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+							<div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/20">
 								<div className="flex items-start gap-2">
-									<AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5" />
+									<AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600 dark:text-amber-400" />
 									<div>
-										<p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
+										<p className="font-medium text-amber-800 text-sm dark:text-amber-200">
 											Private Flow
 										</p>
-										<p className="text-sm text-amber-700 dark:text-amber-300">
+										<p className="text-amber-700 text-sm dark:text-amber-300">
 											Users with the link will need your permission to access this flow.
 										</p>
 									</div>
@@ -289,24 +289,24 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 					<TabsContent value="requests" className="space-y-4">
 						{accessRequests === undefined ? (
 							<div className="flex items-center justify-center py-8">
-								<Loader2 className="w-6 h-6 animate-spin" />
+								<Loader2 className="h-6 w-6 animate-spin" />
 								<span className="ml-2 text-muted-foreground">Loading requests...</span>
 							</div>
 						) : accessRequests && accessRequests.length > 0 ? (
 							<div className="space-y-3">
 								{accessRequests.map((request) => (
-									<div key={request._id} className="p-3 border rounded-lg">
-										<div className="flex items-center justify-between mb-2">
+									<div key={request._id} className="rounded-lg border p-3">
+										<div className="mb-2 flex items-center justify-between">
 											<div className="flex items-center gap-2">
-												<Mail className="w-4 h-4 text-muted-foreground" />
+												<Mail className="h-4 w-4 text-muted-foreground" />
 												<span className="font-medium">{request.requesting_user_email}</span>
 												{getPermissionIcon(request.permission_type)}
 												<Badge variant="outline">
 													{getPermissionLabel(request.permission_type)}
 												</Badge>
 											</div>
-											<div className="flex items-center gap-1 text-xs text-muted-foreground">
-												<Clock className="w-3 h-3" />
+											<div className="flex items-center gap-1 text-muted-foreground text-xs">
+												<Clock className="h-3 w-3" />
 												{new Date(request.requested_at).toLocaleDateString()}
 											</div>
 										</div>
@@ -330,8 +330,8 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 								))}
 							</div>
 						) : (
-							<div className="text-center py-8 text-muted-foreground">
-								<Users className="w-8 h-8 mx-auto mb-2" />
+							<div className="py-8 text-center text-muted-foreground">
+								<Users className="mx-auto mb-2 h-8 w-8" />
 								<p>No pending access requests</p>
 							</div>
 						)}
@@ -341,8 +341,8 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 					<TabsContent value="access" className="space-y-4">
 						{flow.private ? (
 							<div className="space-y-4">
-								<div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-									<p className="text-sm text-blue-800 dark:text-blue-200">
+								<div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/20">
+									<p className="text-blue-800 text-sm dark:text-blue-200">
 										This flow is private. Request access from the owner.
 									</p>
 								</div>
@@ -372,14 +372,14 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 													key={permission.value}
 													type="button"
 													onClick={() => setRequestPermission(permission.value as any)}
-													className={`p-3 rounded-lg border-2 transition-all ${
+													className={`rounded-lg border-2 p-3 transition-all ${
 														requestPermission === permission.value
 															? "border-primary bg-primary/10"
 															: "border-border hover:border-primary/50"
 													}`}
 												>
-													<IconComponent className="w-4 h-4 mx-auto mb-1" />
-													<p className="text-xs text-center">{permission.label}</p>
+													<IconComponent className="mx-auto mb-1 h-4 w-4" />
+													<p className="text-center text-xs">{permission.label}</p>
 												</button>
 											);
 										})}
@@ -402,13 +402,13 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 									className="w-full"
 									disabled={!requestEmail.trim()}
 								>
-									<UserPlus className="w-4 h-4 mr-2" />
+									<UserPlus className="mr-2 h-4 w-4" />
 									Request Access
 								</Button>
 							</div>
 						) : (
-							<div className="text-center py-8 text-muted-foreground">
-								<Share2 className="w-8 h-8 mx-auto mb-2" />
+							<div className="py-8 text-center text-muted-foreground">
+								<Share2 className="mx-auto mb-2 h-8 w-8" />
 								<p>This flow is public and doesn't require access requests</p>
 							</div>
 						)}

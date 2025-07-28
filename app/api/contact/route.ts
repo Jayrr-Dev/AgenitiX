@@ -30,12 +30,14 @@ export async function POST(request: NextRequest) {
 
 		// Validate the required fields
 		if (
-			!formData.firstName ||
-			!formData.lastName ||
-			!formData.email ||
-			!formData.subject ||
-			!formData.message ||
-			!formData.consent
+			!(
+				formData.firstName &&
+				formData.lastName &&
+				formData.email &&
+				formData.subject &&
+				formData.message &&
+				formData.consent
+			)
 		) {
 			return NextResponse.json(
 				{ success: false, message: "Missing required fields" },

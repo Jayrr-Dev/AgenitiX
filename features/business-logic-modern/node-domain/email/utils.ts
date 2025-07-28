@@ -89,10 +89,10 @@ export function maskSensitiveData(config: EmailAccountConfig): Partial<EmailAcco
 		masked.password = "***";
 	}
 	if (masked.accessToken) {
-		masked.accessToken = masked.accessToken.substring(0, 10) + "...";
+		masked.accessToken = `${masked.accessToken.substring(0, 10)}...`;
 	}
 	if (masked.refreshToken) {
-		masked.refreshToken = masked.refreshToken.substring(0, 10) + "...";
+		masked.refreshToken = `${masked.refreshToken.substring(0, 10)}...`;
 	}
 
 	return masked;
@@ -128,22 +128,26 @@ export function formatLastValidated(timestamp?: number): string {
 
 	if (diffMins < 1) {
 		return "Just now";
-	} else if (diffMins < 60) {
-		return `${diffMins} minute${diffMins === 1 ? "" : "s"} ago`;
-	} else if (diffHours < 24) {
-		return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
-	} else if (diffDays < 7) {
-		return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
-	} else {
-		return date.toLocaleDateString();
 	}
+	if (diffMins < 60) {
+		return `${diffMins} minute${diffMins === 1 ? "" : "s"} ago`;
+	}
+	if (diffHours < 24) {
+		return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+	}
+	if (diffDays < 7) {
+		return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+	}
+	return date.toLocaleDateString();
 }
 
 // Provider detection utilities
 export function detectProviderFromEmail(email: string): string | null {
 	const domain = email.split("@")[1]?.toLowerCase();
 
-	if (!domain) return null;
+	if (!domain) {
+		return null;
+	}
 
 	const providerMap: Record<string, string> = {
 		"gmail.com": "gmail",
@@ -191,7 +195,7 @@ export function shouldRetryError(error: EmailError): boolean {
 
 export function getRetryDelay(attempt: number, baseDelay = 1000): number {
 	// Exponential backoff with jitter
-	const delay = baseDelay * Math.pow(2, attempt);
+	const delay = baseDelay * 2 ** attempt;
 	const jitter = Math.random() * 0.1 * delay;
 	return Math.min(delay + jitter, 30000); // Max 30 seconds
 }
@@ -205,7 +209,6 @@ export function getStatusColor(status: string): string {
 			return "text-blue-600";
 		case "error":
 			return "text-red-600";
-		case "disconnected":
 		default:
 			return "text-gray-600";
 	}
@@ -219,7 +222,6 @@ export function getStatusIcon(status: string): string {
 			return "⟳";
 		case "error":
 			return "✗";
-		case "disconnected":
 		default:
 			return "○";
 	}

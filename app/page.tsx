@@ -51,9 +51,9 @@ export default function Home() {
 	if (!mounted || isLoading) {
 		return (
 			<main className="grid grid-cols-12">
-				<div className="col-span-12 min-h-screen flex items-center justify-center">
+				<div className="col-span-12 flex min-h-screen items-center justify-center">
 					<div className="text-center">
-						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+						<div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-blue-600 border-b-2" />
 						<p className="text-gray-600">Loading...</p>
 					</div>
 				</div>
@@ -65,9 +65,9 @@ export default function Home() {
 	if (isAuthenticated) {
 		return (
 			<main className="grid grid-cols-12">
-				<div className="col-span-12 min-h-screen flex items-center justify-center">
+				<div className="col-span-12 flex min-h-screen items-center justify-center">
 					<div className="text-center">
-						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+						<div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-blue-600 border-b-2" />
 						<p className="text-gray-600">Redirecting...</p>
 					</div>
 				</div>
@@ -78,27 +78,27 @@ export default function Home() {
 	return (
 		<main className="grid grid-cols-12">
 			{/* Hero */}
-			<div id="hero" className="w-full h-full col-span-12">
+			<div id="hero" className="col-span-12 h-full w-full">
 				<Hero />
 			</div>
 
 			{/* Trust Us */}
-			<div id="trust-us" className="w-full h-full col-span-8 col-start-3 pt-20 pb-40">
+			<div id="trust-us" className="col-span-8 col-start-3 h-full w-full pt-20 pb-40">
 				<InfiniteLogoTicker />
 			</div>
-			<div className="flex flex-col w-full h-full col-span-12 pb-40">
+			<div className="col-span-12 flex h-full w-full flex-col pb-40">
 				<TabletScroller />
 			</div>
 
 			{/* Container Scroll */}
-			<div id="container-scroll" className="w-full h-full col-span-8 col-start-3 ">
+			<div id="container-scroll" className="col-span-8 col-start-3 h-full w-full ">
 				{/* Features Bento */}
 				<div id="features-bento" className=" col-span-8 col-start-3 ">
 					<FeatureBoxesBento features={featureBoxesBento} />
 				</div>
 
 				{/* Infinite Moving Cards */}
-				<div id="infinite-moving-cards" className="w-full h-full col-span-8 col-start-3 ">
+				<div id="infinite-moving-cards" className="col-span-8 col-start-3 h-full w-full ">
 					<Testimonials />
 				</div>
 			</div>
@@ -120,27 +120,27 @@ export default function Home() {
 			{/* <Main /> */}
 			{/* <BrandWordmark/> */}
 			{/* Features Section */}
-			<div id="features-section" className="w-full h-full col-span-8 col-start-3 ">
+			<div id="features-section" className="col-span-8 col-start-3 h-full w-full ">
 				<FeaturesBoxesPlain features={featureBoxesPlain} />
 			</div>
 
 			{/* Animated Testimonials */}
-			<div id="animated-testimonials" className="w-full h-full col-span-8 col-start-3 ">
+			<div id="animated-testimonials" className="col-span-8 col-start-3 h-full w-full ">
 				<AnimatedTestimonialsDemo />
 			</div>
 
 			{/* Features Section 2 */}
-			<div id="features-section-2" className="w-full h-full col-span-8 col-start-3 ">
+			<div id="features-section-2" className="col-span-8 col-start-3 h-full w-full ">
 				<FeatureBoxesIconed features={featureBoxesIconed} />
 			</div>
 
 			{/* Canvas Reveal Effect */}
-			<div id="canvas-reveal-effect" className="w-full h-full col-span-8 col-start-3 ">
+			<div id="canvas-reveal-effect" className="col-span-8 col-start-3 h-full w-full ">
 				<Revealer />
 			</div>
 
 			{/* FAQ */}
-			<div id="faq" className="w-full h-full col-span-8 col-start-3 ">
+			<div id="faq" className="col-span-8 col-start-3 h-full w-full ">
 				<FAQ faq={faq} />
 			</div>
 			{/* Footer */}

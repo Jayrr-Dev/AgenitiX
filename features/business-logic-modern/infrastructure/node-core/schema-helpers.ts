@@ -191,7 +191,7 @@ export class SchemaIntrospector {
 				const shape = schema.shape;
 
 				Object.entries(shape).forEach(([key, fieldSchema]) => {
-					const fieldInfo = this.analyzeField(key, fieldSchema as z.ZodTypeAny);
+					const fieldInfo = SchemaIntrospector.analyzeField(key, fieldSchema as z.ZodTypeAny);
 					if (fieldInfo) {
 						fields.push(fieldInfo);
 					}
@@ -226,14 +226,16 @@ export class SchemaIntrospector {
 			}
 
 			// Determine control type and extract validation
-			const controlInfo = this.mapZodTypeToControl(actualSchema, key);
-			if (!controlInfo) return null;
+			const controlInfo = SchemaIntrospector.mapZodTypeToControl(actualSchema, key);
+			if (!controlInfo) {
+				return null;
+			}
 
 			return {
 				key,
 				zodType: actualSchema.constructor.name,
 				controlType: controlInfo.type,
-				label: this.humanizeLabel(key),
+				label: SchemaIntrospector.humanizeLabel(key),
 				defaultValue: defaultValue ?? controlInfo.defaultValue,
 				required: !isOptional,
 				validation: controlInfo.validation,
@@ -306,7 +308,7 @@ export class SchemaIntrospector {
 				type: isTextarea ? "textarea" : "text",
 				defaultValue: "",
 				validation,
-				placeholder: `Enter ${this.humanizeLabel(key).toLowerCase()}...`,
+				placeholder: `Enter ${SchemaIntrospector.humanizeLabel(key).toLowerCase()}...`,
 				ui: isTextarea ? { rows: 3 } : undefined,
 			};
 		}
@@ -348,7 +350,7 @@ export class SchemaIntrospector {
 		if (schema instanceof z.ZodEnum) {
 			const options = (schema as any)._def.values.map((value: string) => ({
 				value,
-				label: this.humanizeLabel(value),
+				label: SchemaIntrospector.humanizeLabel(value),
 			}));
 
 			return {

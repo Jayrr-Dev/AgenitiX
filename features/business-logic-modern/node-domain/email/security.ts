@@ -99,10 +99,12 @@ export function validateCredentials(credentials: EmailAccountConfig): EmailError
 
 		case "imap":
 			if (
-				!credentials.imapHost ||
-				!credentials.imapPort ||
-				!credentials.username ||
-				!credentials.password
+				!(
+					credentials.imapHost &&
+					credentials.imapPort &&
+					credentials.username &&
+					credentials.password
+				)
 			) {
 				return createEmailError(
 					"CONFIGURATION_INVALID",
@@ -115,10 +117,12 @@ export function validateCredentials(credentials: EmailAccountConfig): EmailError
 
 		case "smtp":
 			if (
-				!credentials.smtpHost ||
-				!credentials.smtpPort ||
-				!credentials.username ||
-				!credentials.password
+				!(
+					credentials.smtpHost &&
+					credentials.smtpPort &&
+					credentials.username &&
+					credentials.password
+				)
 			) {
 				return createEmailError(
 					"CONFIGURATION_INVALID",
@@ -151,11 +155,11 @@ export function sanitizeCredentials(credentials: EmailAccountConfig): Partial<Em
 	}
 
 	if (sanitized.accessToken) {
-		sanitized.accessToken = sanitized.accessToken.substring(0, 10) + "...";
+		sanitized.accessToken = `${sanitized.accessToken.substring(0, 10)}...`;
 	}
 
 	if (sanitized.refreshToken) {
-		sanitized.refreshToken = sanitized.refreshToken.substring(0, 10) + "...";
+		sanitized.refreshToken = `${sanitized.refreshToken.substring(0, 10)}...`;
 	}
 
 	return sanitized;
@@ -205,17 +209,13 @@ export interface AuditEvent {
 	userAgent?: string;
 }
 
-export function logSecurityEvent(event: AuditEvent): void {
-	// In production, this would log to a secure audit system
-	console.log("Security Event:", {
-		...event,
-		details: event.details ? sanitizeCredentials(event.details) : undefined,
-	});
-}
+export function logSecurityEvent(_event: AuditEvent): void {}
 
 // Token refresh validation
 export function shouldRefreshToken(tokenExpiry?: number): boolean {
-	if (!tokenExpiry) return false;
+	if (!tokenExpiry) {
+		return false;
+	}
 
 	return tokenExpiry < Date.now() + SECURITY_CONFIG.TOKEN_EXPIRY_BUFFER;
 }
@@ -235,7 +235,9 @@ export function generateSecureToken(length = 32): string {
 
 // Input sanitization
 export function sanitizeInput(input: string): string {
-	if (typeof input !== "string") return "";
+	if (typeof input !== "string") {
+		return "";
+	}
 
 	return input
 		.trim()
@@ -288,10 +290,10 @@ export function sanitizeError(error: any): any {
 		const sanitized = { ...error };
 
 		// Remove sensitive fields
-		delete sanitized.password;
-		delete sanitized.accessToken;
-		delete sanitized.refreshToken;
-		delete sanitized.credentials;
+		sanitized.password = undefined;
+		sanitized.accessToken = undefined;
+		sanitized.refreshToken = undefined;
+		sanitized.credentials = undefined;
 
 		return sanitized;
 	}

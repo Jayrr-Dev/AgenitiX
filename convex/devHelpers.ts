@@ -150,7 +150,7 @@ export const createTestFlows = mutation({
  */
 export const clearTestData = mutation({
 	args: {},
-	handler: async (ctx, args) => {
+	handler: async (ctx, _args) => {
 		// Only allow in development
 		if (process.env.NODE_ENV === "production") {
 			throw new Error("This function is only available in development");
@@ -204,7 +204,7 @@ export const clearTestData = mutation({
  */
 export const getAllUsers = query({
 	args: {},
-	handler: async (ctx, args) => {
+	handler: async (ctx, _args) => {
 		// Only allow in development
 		if (process.env.NODE_ENV === "production") {
 			throw new Error("This function is only available in development");

@@ -18,7 +18,9 @@ export const UserDropdown = () => {
 	const { user, signOut } = useAuthContext();
 	const [isLoading, setIsLoading] = useState(false);
 
-	if (!user) return null;
+	if (!user) {
+		return null;
+	}
 
 	const handleSignOut = async () => {
 		setIsLoading(true);
@@ -42,7 +44,7 @@ export const UserDropdown = () => {
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
+			<DropdownMenuTrigger asChild={true}>
 				<Button variant="ghost" className="relative h-8 w-8 rounded-full">
 					<Avatar className="h-8 w-8">
 						<AvatarImage src={user.avatar_url} alt={user.name} />
@@ -50,13 +52,13 @@ export const UserDropdown = () => {
 					</Avatar>
 				</Button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent className="w-56" align="end" forceMount>
+			<DropdownMenuContent className="w-56" align="end" forceMount={true}>
 				<DropdownMenuLabel className="font-normal">
 					<div className="flex flex-col space-y-1">
-						<p className="text-sm font-medium leading-none">{user.name}</p>
-						<p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+						<p className="font-medium text-sm leading-none">{user.name}</p>
+						<p className="text-muted-foreground text-xs leading-none">{user.email}</p>
 						{user.company && (
-							<p className="text-xs leading-none text-muted-foreground">{user.company}</p>
+							<p className="text-muted-foreground text-xs leading-none">{user.company}</p>
 						)}
 					</div>
 				</DropdownMenuLabel>

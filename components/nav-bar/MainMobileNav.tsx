@@ -11,10 +11,10 @@ import Link from "next/link";
 export default function MobileNav() {
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
+			<DropdownMenuTrigger asChild={true}>
 				<Button
 					variant="link"
-					className="px-0 text-2xl md:hidden hover:border-b-2 t data-[state=open]:border-b-2 data-[state=open]:border-[#f6733c] data-[state=open]:text-[#f6733c]"
+					className="t px-0 text-2xl hover:border-b-2 data-[state=open]:border-[#f6733c] data-[state=open]:border-b-2 data-[state=open]:text-[#f6733c] md:hidden"
 					onClick={(e) => {
 						e.currentTarget.classList.add("border-b-2", "border-[#f6733c]", "text-[#f6733c]");
 						setTimeout(() => {
@@ -28,13 +28,13 @@ export default function MobileNav() {
 			</DropdownMenuTrigger>
 			{/* If user is not logged in, show the navigation menu */}
 			<DropdownMenuContent align="end" className="w-[85vw] px-8 text-xl">
-				<DropdownMenuItem asChild>
-					<Link href="/" className="flex items-center w-full" legacyBehavior>
+				<DropdownMenuItem asChild={true}>
+					<Link href="/" className="flex w-full items-center" legacyBehavior={true}>
 						{/* <Image src="/logo.png" alt="logo" width={24} height={24} className="h-5 w-auto mr-2" /> */}
 						<span className="font-medium">Home</span>
 					</Link>
 				</DropdownMenuItem>
-				<DropdownMenuItem asChild>
+				<DropdownMenuItem asChild={true}>
 					<Link href="/dashboard" className="w-full">
 						Dashboard
 					</Link>

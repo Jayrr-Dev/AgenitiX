@@ -1,26 +1,32 @@
 if (!self.define) {
-	let e,
-		s = {};
+	let e;
+	const s = {};
 	const a = (a, i) => (
-		(a = new URL(a + ".js", i).href),
+		(a = new URL(`${a}.js`, i).href),
 		s[a] ||
 			new Promise((s) => {
 				if ("document" in self) {
 					const e = document.createElement("script");
 					(e.src = a), (e.onload = s), document.head.appendChild(e);
-				} else (e = a), importScripts(a), s();
+				} else {
+					(e = a), importScripts(a), s();
+				}
 			}).then(() => {
 				const e = s[a];
-				if (!e) throw new Error(`Module ${a} didn’t register its module`);
+				if (!e) {
+					throw new Error(`Module ${a} didn’t register its module`);
+				}
 				return e;
 			})
 	);
 	self.define = (i, n) => {
 		const r = e || ("document" in self ? document.currentScript.src : "") || location.href;
-		if (s[r]) return;
+		if (s[r]) {
+			return;
+		}
 		const c = {};
-		const t = (e) => a(e, r),
-			o = { module: { uri: r }, exports: c, require: t };
+		const t = (e) => a(e, r);
+		const o = { module: { uri: r }, exports: c, require: t };
 		s[r] = Promise.all(i.map((e) => o[e] || t(e))).then((e) => (n(...e), c));
 	};
 }
@@ -621,7 +627,9 @@ define(["./workbox-e9849328"], (e) => {
 		),
 		e.registerRoute(
 			({ url: e }) => {
-				if (!(self.origin === e.origin)) return !1;
+				if (!(self.origin === e.origin)) {
+					return !1;
+				}
 				const s = e.pathname;
 				return !s.startsWith("/api/auth/") && !!s.startsWith("/api/");
 			},
@@ -634,7 +642,9 @@ define(["./workbox-e9849328"], (e) => {
 		),
 		e.registerRoute(
 			({ url: e }) => {
-				if (!(self.origin === e.origin)) return !1;
+				if (!(self.origin === e.origin)) {
+					return !1;
+				}
 				return !e.pathname.startsWith("/api/");
 			},
 			new e.NetworkFirst({

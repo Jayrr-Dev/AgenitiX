@@ -11,8 +11,8 @@
  * Keywords: theming-overview, documentation-generation, interactive-preview, design-tokens
  */
 
-import { existsSync, readdirSync, statSync, writeFileSync } from "fs";
-import { join } from "path";
+import { existsSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 interface ThemingSection {
 	name: string;
@@ -313,22 +313,15 @@ function generateHTML(sections: ThemingSection[], stats: ThemingStats): string {
 }
 
 async function main() {
-	console.log("🎨 Generating theming overview...");
-
 	try {
 		const sections = scanThemingStructure();
-		console.log(`Found ${sections.length} sections`);
 
 		const stats = generateStats(sections);
-		console.log(`Generated stats: ${JSON.stringify(stats)}`);
 
 		const html = generateHTML(sections, stats);
-		console.log(`Generated HTML (${html.length} characters)`);
 
 		// Ensure theming directory exists
 		const themingDir = join(process.cwd(), "documentation", "theming");
-		console.log(`Theming directory: ${themingDir}`);
-		console.log(`Directory exists: ${existsSync(themingDir)}`);
 
 		if (!existsSync(themingDir)) {
 			throw new Error("Theming directory does not exist");
@@ -336,10 +329,6 @@ async function main() {
 
 		const outputPath = join(themingDir, "overview.html");
 		writeFileSync(outputPath, html);
-
-		console.log("✅ Theming overview generated successfully!");
-		console.log(`📁 Output: ${outputPath}`);
-		console.log(`📊 Stats: ${stats.totalSections} sections, ${stats.totalFiles} files`);
 	} catch (error) {
 		console.error("❌ Error generating theming overview:", error);
 		process.exit(1);

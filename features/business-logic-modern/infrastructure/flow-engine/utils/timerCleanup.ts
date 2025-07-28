@@ -43,7 +43,7 @@ export const registerTimeout = (nodeId: string, timeoutId: number): void => {
 			customCleanup: new Set(),
 		});
 	}
-	nodeTimers.get(nodeId)!.timeouts.add(timeoutId);
+	nodeTimers.get(nodeId)?.timeouts.add(timeoutId);
 };
 
 /**
@@ -59,7 +59,7 @@ export const registerInterval = (nodeId: string, intervalId: number): void => {
 			customCleanup: new Set(),
 		});
 	}
-	nodeTimers.get(nodeId)!.intervals.add(intervalId);
+	nodeTimers.get(nodeId)?.intervals.add(intervalId);
 };
 
 /**
@@ -75,7 +75,7 @@ export const registerRAF = (nodeId: string, rafId: number): void => {
 			customCleanup: new Set(),
 		});
 	}
-	nodeTimers.get(nodeId)!.rafs.add(rafId);
+	nodeTimers.get(nodeId)?.rafs.add(rafId);
 };
 
 /**
@@ -91,7 +91,7 @@ export const registerCustomCleanup = (nodeId: string, cleanupFn: () => void): vo
 			customCleanup: new Set(),
 		});
 	}
-	nodeTimers.get(nodeId)!.customCleanup.add(cleanupFn);
+	nodeTimers.get(nodeId)?.customCleanup.add(cleanupFn);
 };
 
 // ============================================================================
@@ -175,9 +175,9 @@ export const safeRequestAnimationFrame = (
  */
 export const cleanupNodeTimers = (nodeId: string): void => {
 	const registry = nodeTimers.get(nodeId);
-	if (!registry) return;
-
-	console.log(`🧹 Cleaning up timers for node ${nodeId}`);
+	if (!registry) {
+		return;
+	}
 
 	// Clear all timeouts
 	registry.timeouts.forEach((timeoutId) => {
@@ -214,23 +214,19 @@ export const cleanupNodeTimers = (nodeId: string): void => {
 export const emergencyCleanupAllTimers = (): void => {
 	console.warn("🚨 Emergency cleanup - clearing ALL node timers");
 
-	let totalTimeouts = 0;
-	let totalIntervals = 0;
-	let totalRAFs = 0;
-	let totalCustomCleanup = 0;
+	let _totalTimeouts = 0;
+	let _totalIntervals = 0;
+	let _totalRAFs = 0;
+	let _totalCustomCleanup = 0;
 
 	nodeTimers.forEach((registry, nodeId) => {
-		totalTimeouts += registry.timeouts.size;
-		totalIntervals += registry.intervals.size;
-		totalRAFs += registry.rafs.size;
-		totalCustomCleanup += registry.customCleanup.size;
+		_totalTimeouts += registry.timeouts.size;
+		_totalIntervals += registry.intervals.size;
+		_totalRAFs += registry.rafs.size;
+		_totalCustomCleanup += registry.customCleanup.size;
 
 		cleanupNodeTimers(nodeId);
 	});
-
-	console.log(
-		`Cleaned up: ${totalTimeouts} timeouts, ${totalIntervals} intervals, ${totalRAFs} RAFs, ${totalCustomCleanup} custom cleanup functions`
-	);
 };
 
 // ============================================================================

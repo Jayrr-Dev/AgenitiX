@@ -56,7 +56,7 @@ export interface FlowEditorHandlersProps {
 /**
  * Generate unique node ID for duplication
  */
-function generateUniqueId(originalId: string): string {
+function generateUniqueId(_originalId: string): string {
 	return generateNodeId();
 }
 
@@ -198,7 +198,9 @@ export function useFlowEditorHandlers({
 	const handleDeleteNode = useCallback(
 		(nodeId: string) => {
 			const nodeToDelete = nodes.find((n) => n.id === nodeId);
-			if (!nodeToDelete) return;
+			if (!nodeToDelete) {
+				return;
+			}
 
 			// Store metadata before deletion
 			const nodeMetadata = {
@@ -226,7 +228,9 @@ export function useFlowEditorHandlers({
 	const handleDuplicateNode = useCallback(
 		(nodeId: string) => {
 			const nodeToDuplicate = nodes.find((n) => n.id === nodeId);
-			if (!nodeToDuplicate) return;
+			if (!nodeToDuplicate) {
+				return;
+			}
 
 			// Create duplicated node
 			const newId = generateUniqueId(nodeId);
@@ -256,10 +260,7 @@ export function useFlowEditorHandlers({
 		[nodes, addNode, selectNode, recordAction]
 	);
 
-	const handleUpdateNodeId = useCallback((oldId: string, newId: string) => {
-		// Feature not implemented yet - keeping placeholder for future development
-		console.log("Update node ID not implemented yet:", oldId, newId);
-	}, []);
+	const handleUpdateNodeId = useCallback((_oldId: string, _newId: string) => {}, []);
 
 	// ============================================================================
 	// RETURN HANDLERS

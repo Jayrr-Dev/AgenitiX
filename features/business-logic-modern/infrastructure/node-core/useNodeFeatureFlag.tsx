@@ -60,7 +60,7 @@ export function useNodeFeatureFlag(featureFlag?: FeatureFlagConfig) {
 					setIsEnabled(flagValue);
 				}
 			} catch (err) {
-				console.error(`Error evaluating feature flag for node:`, err);
+				console.error("Error evaluating feature flag for node:", err);
 				setError(err instanceof Error ? err.message : "Unknown error");
 
 				// Use fallback value if available, otherwise disable
@@ -99,7 +99,7 @@ export function withFeatureFlag(
 		// If flag is loading, show loading state
 		if (flagState.isLoading) {
 			return (
-				<div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
+				<div className="flex items-center justify-center p-4 text-muted-foreground text-sm">
 					Loading feature...
 				</div>
 			);
@@ -113,7 +113,7 @@ export function withFeatureFlag(
 		// If flag is disabled, show disabled message or alternative
 		if (!flagState.isEnabled) {
 			return (
-				<div className="flex items-center justify-center p-4 text-sm text-muted-foreground border border-dashed border-muted-foreground/20 rounded-lg">
+				<div className="flex items-center justify-center rounded-lg border border-muted-foreground/20 border-dashed p-4 text-muted-foreground text-sm">
 					{flagState.disabledMessage}
 				</div>
 			);

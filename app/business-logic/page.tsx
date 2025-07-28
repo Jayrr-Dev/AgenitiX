@@ -19,12 +19,12 @@ import { VERSION } from "@/features/business-logic-modern/infrastructure/version
 
 const BusinessLogicContent = () => {
 	return (
-		<div className="h-[100vh] w-[100vw] relative">
+		<div className="relative h-[100vh] w-[100vw]">
 			<FlowEditor />
 
 			{/* VERSION DISPLAY - Bottom right corner */}
-			<div className="absolute bottom-2 right-2 z-50 pointer-events-none select-none">
-				<span className="text-xs text-gray-400/60 font-mono bg-black/10 backdrop-blur-sm px-2 py-1 rounded">
+			<div className="pointer-events-none absolute right-2 bottom-2 z-50 select-none">
+				<span className="rounded bg-black/10 px-2 py-1 font-mono text-gray-400/60 text-xs backdrop-blur-sm">
 					v{VERSION.full}
 				</span>
 			</div>

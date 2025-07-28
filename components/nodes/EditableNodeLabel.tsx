@@ -90,7 +90,7 @@ const EditableNodeLabel: React.FC<EditableNodeLabelProps> = ({
 		<span
 			ref={spanRef}
 			contentEditable={editing}
-			suppressContentEditableWarning
+			suppressContentEditableWarning={true}
 			onDoubleClick={() => setEditing(true)}
 			onBlur={onBlur}
 			onKeyDown={onKeyDown}

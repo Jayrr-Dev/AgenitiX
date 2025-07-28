@@ -221,7 +221,7 @@ export function debugComponentColors(componentName: string, theme: "light" | "da
 	console.group(`🎨 ${componentName.toUpperCase()} COLORS (${themeName} Theme):`);
 
 	// Helper function to extract and log color info from CSS classes
-	const logColorInfo = (label: string, cssClasses: string) => {
+	const _logColorInfo = (_label: string, cssClasses: string) => {
 		// Extract CSS variables from classes (e.g., "bg-background" from "bg-background border border-border")
 		const colorMatches = cssClasses.match(/(?:bg-|text-|border-)[\w-]+/g) || [];
 		const uniqueColors = Array.from(new Set(colorMatches));
@@ -229,14 +229,9 @@ export function debugComponentColors(componentName: string, theme: "light" | "da
 		uniqueColors.forEach((cssVar) => {
 			const colorInfo = getColorInfo(cssVar, theme);
 			if (colorInfo) {
-				console.log(
-					`  ${label}: ${cssVar} → ${colorInfo.name} (${colorInfo.hex}) - ${colorInfo.usage}`
-				);
 			}
 		});
 	};
-
-	console.log("  See ColorDebugger component for complete theme information");
 	console.groupEnd();
 }
 
@@ -249,17 +244,12 @@ if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
 	// Make color debugging functions available globally in development
 	(globalThis as any).getColorInfo = getColorInfo;
 	(globalThis as any).debugComponentColors = debugComponentColors;
-	(globalThis as any).showColorDebugger = () => {
-		console.log("🎨 Color Debugger: Use Ctrl/Cmd + Shift + C or check the theme switcher dropdown");
-	};
+	(globalThis as any).showColorDebugger = () => {};
 	(globalThis as any).debugColors = (component?: string) => {
 		if (component) {
-			console.log("🌞 Light Theme Colors:");
 			debugComponentColors(component, "light");
-			console.log("🌙 Dark Theme Colors:");
 			debugComponentColors(component, "dark");
 		} else {
-			console.log("🎨 Available components for color debugging:");
 			const components = [
 				"actionToolbar",
 				"historyPanel",
@@ -269,10 +259,7 @@ if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
 				"nodeInspector",
 				"miniMap",
 			];
-			components.forEach((name) => {
-				console.log(`  • ${name}`);
-			});
-			console.log('Usage: debugColors("componentName")');
+			components.forEach((_name) => {});
 		}
 	};
 }

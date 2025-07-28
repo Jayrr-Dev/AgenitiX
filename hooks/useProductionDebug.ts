@@ -90,7 +90,9 @@ export function useProductionDebug(config: ProductionDebugConfig): DebugUtilitie
 
 	// Monitor state changes and performance
 	useEffect(() => {
-		if (!node || !logStateChanges) return;
+		if (!(node && logStateChanges)) {
+			return;
+		}
 
 		const currentData = node.data;
 		const previousData = previousDataRef.current;
@@ -107,7 +109,7 @@ export function useProductionDebug(config: ProductionDebugConfig): DebugUtilitie
 						changes.push(key);
 					}
 				}
-			} catch (error) {
+			} catch (_error) {
 				// Fallback comparison if JSON.stringify fails
 				for (const key in currentData) {
 					if (currentData[key] !== previousData[key]) {
@@ -157,7 +159,9 @@ export function useProductionDebug(config: ProductionDebugConfig): DebugUtilitie
 
 	// Stuck state detection
 	useEffect(() => {
-		if (!detectStuckState || process.env.NODE_ENV !== "production") return;
+		if (!detectStuckState || process.env.NODE_ENV !== "production") {
+			return;
+		}
 
 		const interval = setInterval(() => {
 			const timeSinceLastChange = Date.now() - lastChangeTimeRef.current;
@@ -173,12 +177,12 @@ export function useProductionDebug(config: ProductionDebugConfig): DebugUtilitie
 					performanceMetrics: {
 						averageUpdateTime:
 							performanceMetricsRef.current.updateCount > 0
-								? (
+								? `${(
 										performanceMetricsRef.current.totalTime /
-										performanceMetricsRef.current.updateCount
-									).toFixed(2) + "ms"
+											performanceMetricsRef.current.updateCount
+									).toFixed(2)}ms`
 								: "0ms",
-						slowestUpdate: performanceMetricsRef.current.slowestUpdate.toFixed(2) + "ms",
+						slowestUpdate: `${performanceMetricsRef.current.slowestUpdate.toFixed(2)}ms`,
 					},
 				});
 

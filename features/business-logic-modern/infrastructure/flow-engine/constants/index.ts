@@ -11,11 +11,9 @@
  */
 
 import { ULTIMATE_TYPE_MAP } from "@/components/nodes/handles/TypeSafeHandle";
-import { Position } from "@xyflow/react";
 import type {
 	AgenEdge,
 	AgenNode,
-	NodeType,
 	NodeTypeConfig,
 	NodeTypeConfigMap,
 	TypeMap,
@@ -29,7 +27,7 @@ import type {
  * UNIFIED TYPE SYSTEM - Now uses UltimateTypesafeHandle as single source of truth
  */
 export const TYPE_MAP: TypeMap = new Proxy({} as TypeMap, {
-	get(target, prop: string) {
+	get(_target, prop: string) {
 		// Direct mapping for types
 		if (ULTIMATE_TYPE_MAP[prop]) {
 			return {
@@ -43,7 +41,7 @@ export const TYPE_MAP: TypeMap = new Proxy({} as TypeMap, {
 	ownKeys() {
 		return Object.keys(ULTIMATE_TYPE_MAP);
 	},
-	has(target, prop) {
+	has(_target, prop) {
 		return prop in ULTIMATE_TYPE_MAP;
 	},
 });
@@ -59,7 +57,7 @@ import { getNodeMetadata, modernNodeRegistry } from "../../node-registry/nodespe
  * This creates a proxy that dynamically generates node configurations from the registry
  */
 export const NODE_TYPE_CONFIG = new Proxy({} as Record<string, NodeTypeConfig>, {
-	get(target, nodeType: string) {
+	get(_target, nodeType: string) {
 		const metadata = getNodeMetadata(nodeType);
 		if (!metadata) {
 			console.warn(`No metadata found for node type: ${nodeType}`);
@@ -80,7 +78,7 @@ export const NODE_TYPE_CONFIG = new Proxy({} as Record<string, NodeTypeConfig>, 
 			displayName: metadata.displayName,
 		} as NodeTypeConfig;
 	},
-	has(target, nodeType) {
+	has(_target, nodeType) {
 		return modernNodeRegistry.has(nodeType as string);
 	},
 	ownKeys() {

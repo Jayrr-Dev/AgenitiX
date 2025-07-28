@@ -71,7 +71,9 @@ type TabsState = {
  * @returns {T} The loaded data or fallback
  */
 const loadFromStorage = <T>(key: string, fallback: T): T => {
-	if (typeof window === "undefined") return fallback;
+	if (typeof window === "undefined") {
+		return fallback;
+	}
 
 	try {
 		const stored = localStorage.getItem(key);
@@ -89,7 +91,9 @@ const loadFromStorage = <T>(key: string, fallback: T): T => {
  * @param {T} value - The data to save
  */
 const saveToStorage = <T>(key: string, value: T): void => {
-	if (typeof window === "undefined") return;
+	if (typeof window === "undefined") {
+		return;
+	}
 
 	try {
 		localStorage.setItem(key, JSON.stringify(value));
@@ -203,7 +207,9 @@ export function useSidebarState() {
 	 */
 	useEffect(() => {
 		// Only run on client side
-		if (typeof window === "undefined") return;
+		if (typeof window === "undefined") {
+			return;
+		}
 
 		// Load and validate variant from localStorage
 		const storedVariant = loadFromStorage(STORAGE_KEYS.SIDEBAR_VARIANT, DEFAULT_VARIANT);

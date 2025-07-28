@@ -49,7 +49,7 @@ export default function VerifyMagicLinkPage() {
 
 		const verify = async () => {
 			try {
-				const result = await verifyMagicLink(
+				const _result = await verifyMagicLink(
 					token,
 					"127.0.0.1", // In production, get real IP
 					navigator.userAgent
@@ -139,8 +139,6 @@ export default function VerifyMagicLinkPage() {
 						"This magic link has expired for security reasons. Please request a new one to continue.",
 					showRetry: true,
 				};
-
-			case "error":
 			default:
 				return {
 					icon: <XCircle className="h-12 w-12 text-red-600" />,
@@ -156,19 +154,19 @@ export default function VerifyMagicLinkPage() {
 	const content = getStatusContent();
 
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-			<div className="max-w-md w-full space-y-8">
+		<div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+			<div className="w-full max-w-md space-y-8">
 				{/* Logo */}
 				<div className="text-center">
-					<h1 className="text-3xl font-bold text-gray-900 mb-2">AgenitiX</h1>
+					<h1 className="mb-2 font-bold text-3xl text-gray-900">AgenitiX</h1>
 					<p className="text-gray-600">Visual Flow Automation Platform</p>
 				</div>
 
 				{/* Status Card */}
 				<Card className="border-0 shadow-lg">
-					<CardHeader className="text-center pb-4">
-						<div className="flex justify-center mb-4">{content.icon}</div>
-						<CardTitle className="text-xl font-bold">{content.title}</CardTitle>
+					<CardHeader className="pb-4 text-center">
+						<div className="mb-4 flex justify-center">{content.icon}</div>
+						<CardTitle className="font-bold text-xl">{content.title}</CardTitle>
 						<CardDescription className="text-center">{content.description}</CardDescription>
 					</CardHeader>
 
@@ -182,11 +180,11 @@ export default function VerifyMagicLinkPage() {
 									</Button>
 								</Link>
 
-								<div className="text-center space-y-2">
-									<Link href="/sign-up" className="text-sm text-gray-600 hover:text-gray-800 block">
+								<div className="space-y-2 text-center">
+									<Link href="/sign-up" className="block text-gray-600 text-sm hover:text-gray-800">
 										Don't have an account? Sign up
 									</Link>
-									<Link href="/" className="text-sm text-blue-600 hover:text-blue-500 block">
+									<Link href="/" className="block text-blue-600 text-sm hover:text-blue-500">
 										← Back to Home
 									</Link>
 								</div>
@@ -196,7 +194,7 @@ export default function VerifyMagicLinkPage() {
 				</Card>
 
 				{/* Help text */}
-				<div className="text-center text-xs text-gray-500">
+				<div className="text-center text-gray-500 text-xs">
 					Having trouble? Contact support at{" "}
 					<a href="mailto:support@agenitix.com" className="underline hover:text-gray-700">
 						support@agenitix.com

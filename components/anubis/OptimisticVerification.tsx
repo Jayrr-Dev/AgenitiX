@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 // ADAPTIVE OPTIMISTIC VERIFICATION COMPONENT
 export function OptimisticVerification() {
@@ -15,7 +15,9 @@ export function OptimisticVerification() {
 	}, []);
 
 	// NOW WE CAN HAVE CONDITIONAL RETURNS
-	if (!showUI) return null;
+	if (!showUI) {
+		return null;
+	}
 
 	// HIDDEN FOR NOW - UNCOMMENT TO SHOW VERIFICATION STATUS
 	return null;

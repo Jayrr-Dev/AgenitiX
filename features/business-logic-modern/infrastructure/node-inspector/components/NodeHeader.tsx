@@ -119,7 +119,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 	// ============================================================================
 
 	return (
-		<div className="border-b border-gray-200 dark:border-gray-700 pb-2">
+		<div className="border-gray-200 border-b pb-2 dark:border-gray-700">
 			{/* HEADER ROW - Icon, Name, Status */}
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
@@ -134,17 +134,17 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 					)}
 
 					{/* DISPLAY NAME - Registry-enhanced */}
-					<h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{displayName}</h3>
+					<h3 className="font-semibold text-gray-900 text-sm dark:text-gray-100">{displayName}</h3>
 				</div>
 			</div>
 
 			{/* ENHANCED DESCRIPTION - From registry metadata */}
 			{description && (
-				<div className="mt-1 text-xs text-gray-600 dark:text-gray-400 italic">{description}</div>
+				<div className="mt-1 text-gray-600 text-xs italic dark:text-gray-400">{description}</div>
 			)}
 
 			{/* NODE ID & ACTIONS ROW */}
-			<div className="flex items-center justify-between mt-2">
+			<div className="mt-2 flex items-center justify-between">
 				<div className="flex items-center gap-2">
 					{isEditingId ? (
 						<input
@@ -153,13 +153,12 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 							onChange={(e) => setEditingId(e.target.value)}
 							onKeyDown={handleKeyDown}
 							onBlur={handleIdCancel}
-							className="bg-gray-100 dark:bg-gray-800 text-xs p-1 rounded border border-blue-500"
-							autoFocus
+							className="rounded border border-blue-500 bg-gray-100 p-1 text-xs dark:bg-gray-800"
 						/>
 					) : (
 						showNodeIds && (
 							<span
-								className="text-xs text-gray-500 dark:text-gray-400 font-mono cursor-pointer"
+								className="cursor-pointer font-mono text-gray-500 text-xs dark:text-gray-400"
 								onDoubleClick={handleIdEdit}
 								title="Double-click to edit ID"
 							>
@@ -178,7 +177,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 							className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
 							title="Duplicate Node (Alt+D)"
 						>
-							<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path
 									strokeLinecap="round"
 									strokeLinejoin="round"
@@ -195,7 +194,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 							className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
 							title="Delete Node (Delete)"
 						>
-							<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path
 									strokeLinecap="round"
 									strokeLinejoin="round"

@@ -11,8 +11,8 @@
  * Keywords: node-documentation, infrastructure-integration, sidebar, inspector, auto-generation, node-spec
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 // ============================================================================
 // TYPES AND INTERFACES
@@ -181,7 +181,7 @@ function detectSidebarIntegration(
 	if (fs.existsSync(sidebarRegistryPath)) {
 		const registryContent = fs.readFileSync(sidebarRegistryPath, "utf-8");
 		const isRegistered =
-			registryContent.includes(`createText: createTextSpec`) ||
+			registryContent.includes("createText: createTextSpec") ||
 			registryContent.includes(`${kind}: ${kind}Spec`);
 
 		return {
@@ -218,11 +218,21 @@ function detectInspectorIntegration(kind: string): NodeDocData["infrastructure"]
 			serviceContent.includes("NodeInspectorService");
 
 		// Detect common control types
-		if (serviceContent.includes("text")) controlTypes.push("text");
-		if (serviceContent.includes("textarea")) controlTypes.push("textarea");
-		if (serviceContent.includes("boolean")) controlTypes.push("boolean");
-		if (serviceContent.includes("number")) controlTypes.push("number");
-		if (serviceContent.includes("select")) controlTypes.push("select");
+		if (serviceContent.includes("text")) {
+			controlTypes.push("text");
+		}
+		if (serviceContent.includes("textarea")) {
+			controlTypes.push("textarea");
+		}
+		if (serviceContent.includes("boolean")) {
+			controlTypes.push("boolean");
+		}
+		if (serviceContent.includes("number")) {
+			controlTypes.push("number");
+		}
+		if (serviceContent.includes("select")) {
+			controlTypes.push("select");
+		}
 	}
 
 	return {
@@ -293,7 +303,7 @@ function extractNodeSpecification(kind: string, domain: string): NodeDocData["sp
 		/const\s+\w+DataSchema\s*=\s*z\s*\.\s*object\s*\(\s*{([\s\S]*?)}\s*\)/
 	);
 	if (schemaMatch) {
-		const dataSchema = parseDataSchema(schemaMatch[1]);
+		const _dataSchema = parseDataSchema(schemaMatch[1]);
 	} else {
 		// Try alternative pattern for multi-line schema with passthrough
 		const altSchemaMatch = nodeContent.match(
@@ -482,13 +492,21 @@ function parseDataSchema(schemaStr: string): NodeDocData["specification"]["dataS
 			const defaultMatch = line.match(/\.default\(([^)]+)\)/);
 			if (defaultMatch) {
 				const defaultStr = defaultMatch[1];
-				if (defaultStr === '""') defaultValue = "";
-				else if (defaultStr === "false") defaultValue = false;
-				else if (defaultStr === "true") defaultValue = true;
-				else if (defaultStr === "0") defaultValue = 0;
-				else if (defaultStr === "[]") defaultValue = [];
-				else if (defaultStr === "{}") defaultValue = {};
-				else defaultValue = defaultStr;
+				if (defaultStr === '""') {
+					defaultValue = "";
+				} else if (defaultStr === "false") {
+					defaultValue = false;
+				} else if (defaultStr === "true") {
+					defaultValue = true;
+				} else if (defaultStr === "0") {
+					defaultValue = 0;
+				} else if (defaultStr === "[]") {
+					defaultValue = [];
+				} else if (defaultStr === "{}") {
+					defaultValue = {};
+				} else {
+					defaultValue = defaultStr;
+				}
 			}
 
 			// Only add if we have a valid field name and type
@@ -509,7 +527,7 @@ function parseDataSchema(schemaStr: string): NodeDocData["specification"]["dataS
 /**
  * Get default specification for nodes without detailed specs
  */
-function getDefaultSpecification(kind: string): NodeDocData["specification"] {
+function getDefaultSpecification(_kind: string): NodeDocData["specification"] {
 	return {
 		size: {
 			expanded: { width: 120, height: 120 },
@@ -956,7 +974,6 @@ This node follows the modern NodeSpec architecture and integrates with:
 
 	const markdownPath = path.join(docsDir, `${kind}.md`);
 	fs.writeFileSync(markdownPath, markdownContent);
-	console.log(`   📄 Markdown: ${markdownPath}`);
 }
 
 /**
@@ -1187,7 +1204,6 @@ function generateHTMLDoc(nodeData: NodeDocData) {
 
 	const htmlPath = path.join(docsDir, `${kind}.html`);
 	fs.writeFileSync(htmlPath, htmlContent);
-	console.log(`   🌐 HTML: ${htmlPath}`);
 }
 
 /**
@@ -1199,7 +1215,7 @@ function generateAPIDoc(nodeData: NodeDocData) {
 	const spec = nodeData.specification;
 
 	// Fix interface name (remove spaces and make camelCase)
-	const interfaceName = displayName.replace(/\s+/g, "") + "Data";
+	const interfaceName = `${displayName.replace(/\s+/g, "")}Data`;
 
 	const apiDir = path.join(process.cwd(), "documentation", "api");
 	if (!fs.existsSync(apiDir)) {
@@ -1207,7 +1223,7 @@ function generateAPIDoc(nodeData: NodeDocData) {
 	}
 
 	// Generate data schema fields
-	const schemaFields =
+	const _schemaFields =
 		spec.dataSchema?.fields
 			.map((field) => {
 				const zodType =
@@ -1232,19 +1248,27 @@ function generateAPIDoc(nodeData: NodeDocData) {
 		.map((handle) => {
 			// Map handle types to proper codes based on actual node specification
 			let code = "j"; // default to JSON
-			if (handle.type.includes("string") || handle.type.includes("text") || handle.type === "s")
+			if (handle.type.includes("string") || handle.type.includes("text") || handle.type === "s") {
 				code = "s";
-			else if (handle.type.includes("number") || handle.type.includes("num") || handle.type === "n")
+			} else if (
+				handle.type.includes("number") ||
+				handle.type.includes("num") ||
+				handle.type === "n"
+			) {
 				code = "n";
-			else if (
+			} else if (
 				handle.type.includes("boolean") ||
 				handle.type.includes("bool") ||
 				handle.type === "b"
-			)
+			) {
 				code = "b";
-			else if (handle.type.includes("array") || handle.type === "a") code = "a";
-			else if (handle.type.includes("object") || handle.type === "o") code = "o";
-			else if (handle.type === "j") code = "j";
+			} else if (handle.type.includes("array") || handle.type === "a") {
+				code = "a";
+			} else if (handle.type.includes("object") || handle.type === "o") {
+				code = "o";
+			} else if (handle.type === "j") {
+				code = "j";
+			}
 
 			return `    { id: "${handle.id}", code: "${code}", position: "${handle.position}", type: "${handle.type}" },`;
 		})
@@ -1319,7 +1343,7 @@ export const ${kind}Spec = {
     enabled: ${spec.memory.enabled},
     maxSize: ${spec.memory.maxSize || 0}, 
     maxEntries: ${spec.memory.maxEntries || 1000}, 
-    persistent: ${spec.memory.persistent || false}, 
+    persistent: ${spec.memory.persistent}, 
     evictionPolicy: "${spec.memory.evictionPolicy || "LRU"}" 
   },`
 			: ""
@@ -1334,7 +1358,7 @@ ${handleSpecs}
 ${initialDataFields}
   },
   controls: {
-    autoGenerate: ${spec.controls?.autoGenerate || true},
+    autoGenerate: ${true},
     excludeFields: ${spec.controls ? JSON.stringify(spec.controls.excludeFields) : "[]"},
     customFields: ${spec.controls ? JSON.stringify(spec.controls.customFields, null, 2) : "[]"}
   },
@@ -1356,7 +1380,6 @@ export default ${displayName.replace(/\s+/g, "")}Node;
 
 	const apiPath = path.join(apiDir, `${kind}.ts`);
 	fs.writeFileSync(apiPath, apiContent);
-	console.log(`   📚 API: ${apiPath}`);
 }
 
 /**
@@ -1400,11 +1423,13 @@ function updateDocsIndex(nodeData: NodeDocData) {
  * Format bytes to human readable format
  */
 function formatBytes(bytes: number): string {
-	if (bytes === 0) return "0 Bytes";
+	if (bytes === 0) {
+		return "0 Bytes";
+	}
 	const k = 1024;
 	const sizes = ["Bytes", "KB", "MB", "GB"];
 	const i = Math.floor(Math.log(bytes) / Math.log(k));
-	return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+	return `${Number.parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
 }
 
 // ============================================================================
@@ -1611,8 +1636,5 @@ if (require.main === module) {
 	}
 
 	const [kind, domain, category, displayName] = args;
-
-	console.log(`📚 Generating documentation for ${displayName} node...`);
 	generateNodeDocs(kind, domain, category, displayName);
-	console.log("✅ Generated documentation for", displayName, "node");
 }

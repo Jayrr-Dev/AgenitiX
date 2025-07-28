@@ -179,11 +179,11 @@ export const BaseControl: React.FC<ControlWrapperProps> = ({
 	return (
 		<div className={`space-y-2 ${className}`}>
 			{title && (
-				<div className={`text-xs font-semibold ${semanticClasses.text} uppercase tracking-wide`}>
+				<div className={`font-semibold text-xs ${semanticClasses.text} uppercase tracking-wide`}>
 					{title}
 				</div>
 			)}
-			<div className="space-y-2 pl-2 border-l-2 border-control-group">{children}</div>
+			<div className="space-y-2 border-control-group border-l-2 pl-2">{children}</div>
 		</div>
 	);
 };
@@ -200,15 +200,15 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 	falseColor,
 	nodeType,
 }) => {
-	const semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
+	const _semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
 
 	// Use semantic tokens for status colors
 	const statusClasses = status
-		? `bg-control-success text-control-success border-control-success`
-		: `bg-control-error text-control-error border-control-error`;
+		? "bg-control-success text-control-success border-control-success"
+		: "bg-control-error text-control-error border-control-error";
 
 	return (
-		<span className={`text-xs px-2 py-1 rounded border font-medium ${statusClasses}`}>
+		<span className={`rounded border px-2 py-1 font-medium text-xs ${statusClasses}`}>
 			{status ? trueLabel : falseLabel}
 		</span>
 	);
@@ -235,9 +235,9 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
 			case "primary":
 				return `${semanticClasses.primary} ${semanticClasses.primaryHover} ${semanticClasses.border}`;
 			case "secondary":
-				return `bg-control-debug text-control-debug border-control-input hover:bg-control-input-dark`;
+				return "bg-control-debug text-control-debug border-control-input hover:bg-control-input-dark";
 			case "danger":
-				return `bg-control-error text-control-error border-control-error hover:bg-control-warning`;
+				return "bg-control-error text-control-error border-control-error hover:bg-control-warning";
 			default:
 				return `${semanticClasses.primary} ${semanticClasses.primaryHover} ${semanticClasses.border}`;
 		}
@@ -255,7 +255,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
 			onClick={handleClick}
 			disabled={disabled}
 			className={`${baseClasses} ${variantClasses} ${
-				disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+				disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
 			} ${className}`}
 		>
 			{children}
@@ -299,14 +299,7 @@ export const EnhancedInput: React.FC<EnhancedInputProps> = ({
 			onChange={(e) => onChange(e.target.value)}
 			placeholder={placeholder}
 			disabled={disabled}
-			className={`
-        text-xs px-2 py-1.5 rounded border
-        bg-control-input dark:bg-control-input-dark
-        text-control-input
-        ${semanticClasses.border} focus:border-control-input-focus
-        focus:outline-none focus:ring-2 focus:ring-control-input-focus
-        placeholder-control-placeholder
-        ${disabled ? "opacity-50 cursor-not-allowed" : ""}
+			className={`rounded border bg-control-input px-2 py-1.5 text-control-input text-xs dark:bg-control-input-dark ${semanticClasses.border} placeholder-control-placeholder focus:border-control-input-focus focus:outline-none focus:ring-2 focus:ring-control-input-focus ${disabled ? "cursor-not-allowed opacity-50" : ""}
         ${className}
       `}
 		/>
@@ -345,14 +338,7 @@ export const EnhancedTextarea: React.FC<EnhancedTextareaProps> = ({
 			placeholder={placeholder}
 			disabled={disabled}
 			rows={rows}
-			className={`
-        text-xs px-2 py-1.5 rounded border resize-none
-        bg-control-input dark:bg-control-input-dark
-        text-control-input
-        ${semanticClasses.border} focus:border-control-input-focus
-        focus:outline-none focus:ring-2 focus:ring-control-input-focus
-        placeholder-control-placeholder
-        ${disabled ? "opacity-50 cursor-not-allowed" : ""}
+			className={`resize-none rounded border bg-control-input px-2 py-1.5 text-control-input text-xs dark:bg-control-input-dark ${semanticClasses.border} placeholder-control-placeholder focus:border-control-input-focus focus:outline-none focus:ring-2 focus:ring-control-input-focus ${disabled ? "cursor-not-allowed opacity-50" : ""}
         ${className}
       `}
 		/>
@@ -386,12 +372,12 @@ export const ControlGroup: React.FC<ControlGroupProps> = ({
 		<div className={`space-y-2 ${className}`}>
 			{title && (
 				<div
-					className={`text-xs font-semibold ${semanticClasses.textSecondary} uppercase tracking-wide`}
+					className={`font-semibold text-xs ${semanticClasses.textSecondary} uppercase tracking-wide`}
 				>
 					{title}
 				</div>
 			)}
-			<div className="space-y-2 pl-2 border-l-2 border-control-group">{children}</div>
+			<div className="space-y-2 border-control-group border-l-2 pl-2">{children}</div>
 		</div>
 	);
 };
@@ -412,7 +398,7 @@ export const RegistryDebugBadge: React.FC<RegistryDebugBadgeProps> = ({ nodeType
 	const metadata = getNodeMetadata(nodeType as NodeType);
 
 	return (
-		<div className="mt-2 text-[10px] text-control-debug flex items-center gap-1">
+		<div className="mt-2 flex items-center gap-1 text-[10px] text-control-debug">
 			<span>🔧</span>
 			<span>Registry: ✅</span>
 			{metadata && <span>• Category: {metadata.category}</span>}

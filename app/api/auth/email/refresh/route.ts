@@ -6,7 +6,7 @@
 
 import { getProvider } from "@/features/business-logic-modern/node-domain/email/providers";
 import type { EmailProviderType } from "@/features/business-logic-modern/node-domain/email/types";
-import { type NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { buildErrorResponse, buildSuccessResponse, sanitizeAuthData } from "../utils";
 
 export async function POST(request: NextRequest) {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 		const { provider, refreshToken, accountId } = body;
 
 		// Validate required parameters
-		if (!provider || !refreshToken) {
+		if (!(provider && refreshToken)) {
 			return buildErrorResponse("Missing required parameters: provider, refreshToken");
 		}
 
@@ -60,8 +60,6 @@ export async function POST(request: NextRequest) {
 			accountInfo: connectionResult.accountInfo,
 			accountId,
 		};
-
-		console.log("Token refresh success:", sanitizeAuthData(refreshData));
 
 		return buildSuccessResponse(refreshData);
 	} catch (error) {

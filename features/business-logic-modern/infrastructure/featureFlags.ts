@@ -25,7 +25,9 @@ export const isFlagEnabled = (flag: string): boolean => {
 };
 
 export const setLocalFlag = (flag: string, value: boolean) => {
-	if (typeof window === "undefined") return;
+	if (typeof window === "undefined") {
+		return;
+	}
 	let obj: Record<string, boolean> = {};
 	try {
 		obj = JSON.parse(localStorage.getItem(LS_KEY) || "{}");

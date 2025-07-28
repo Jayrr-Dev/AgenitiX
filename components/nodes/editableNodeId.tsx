@@ -108,13 +108,13 @@ const EditableNodeId: React.FC<EditableNodeIdProps> = ({ nodeId, onUpdateId, cla
 			<span
 				ref={spanRef}
 				contentEditable={editing}
-				suppressContentEditableWarning
+				suppressContentEditableWarning={true}
 				onClick={() => setEditing(true)}
 				onBlur={onBlur}
 				onKeyDown={onKeyDown}
 				className={`inline-block ${editing ? "cursor-text" : "cursor-pointer"} ${
 					error ? "text-red-500" : ""
-				} ${editing ? "focus:ring-1 focus:ring-blue-500 rounded px-1" : ""}`}
+				} ${editing ? "rounded px-1 focus:ring-1 focus:ring-blue-500" : ""}`}
 				style={{
 					outline: "none",
 					userSelect: editing ? "text" : "none",
@@ -126,7 +126,7 @@ const EditableNodeId: React.FC<EditableNodeIdProps> = ({ nodeId, onUpdateId, cla
 			>
 				{nodeId}
 			</span>
-			{error && <div className="text-xs text-red-500 mt-1">{error}</div>}
+			{error && <div className="mt-1 text-red-500 text-xs">{error}</div>}
 		</div>
 	);
 };

@@ -3,7 +3,6 @@ import {
 	NavigationMenuItem,
 	NavigationMenuLink,
 	NavigationMenuList,
-	navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -14,14 +13,14 @@ const navItemStyle =
 export default function MainDesktopNav() {
 	return (
 		<NavigationMenu>
-			<NavigationMenuList className="flex flex-row gap-4 flex-wrap">
+			<NavigationMenuList className="flex flex-row flex-wrap gap-4">
 				<NavigationMenuItem>
-					<Link href="/" legacyBehavior passHref>
+					<Link href="/" legacyBehavior={true} passHref={true}>
 						<NavigationMenuLink className={navItemStyle}>Home</NavigationMenuLink>
 					</Link>
 				</NavigationMenuItem>
 				<NavigationMenuItem>
-					<Link href="/dashboard" legacyBehavior passHref>
+					<Link href="/dashboard" legacyBehavior={true} passHref={true}>
 						<NavigationMenuLink className={cn(navItemStyle)}>Dashboard</NavigationMenuLink>
 					</Link>
 				</NavigationMenuItem>

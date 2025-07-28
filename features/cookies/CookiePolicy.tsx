@@ -15,19 +15,19 @@ export default function CookiePolicy() {
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogTrigger asChild>
-				<Button variant="link" className="h-auto p-0 text-sm text-muted-foreground underline">
+			<DialogTrigger asChild={true}>
+				<Button variant="link" className="h-auto p-0 text-muted-foreground text-sm underline">
 					Cookie Policy
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+			<DialogContent className="max-h-[80vh] max-w-3xl overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle className="text-2xl">Cookie Policy</DialogTitle>
 				</DialogHeader>
 				<div className="space-y-4 text-sm">
 					<p>Last updated: March 18, 2025</p>
 
-					<h3 className="text-lg font-medium">What are cookies?</h3>
+					<h3 className="font-medium text-lg">What are cookies?</h3>
 					<p>
 						Cookies are small text files that are stored on your browser or device by websites,
 						apps, online media, and advertisements. They are used to remember your preferences, to
@@ -35,9 +35,9 @@ export default function CookiePolicy() {
 						advertisements.
 					</p>
 
-					<h3 className="text-lg font-medium">How we use cookies</h3>
+					<h3 className="font-medium text-lg">How we use cookies</h3>
 					<p>We use cookies for several purposes, including:</p>
-					<ul className="list-disc pl-5 space-y-2">
+					<ul className="list-disc space-y-2 pl-5">
 						<li>
 							<strong>Essential cookies:</strong> These are necessary for the website to function
 							and cannot be switched off. They are usually only set in response to actions made by
@@ -61,7 +61,7 @@ export default function CookiePolicy() {
 						</li>
 					</ul>
 
-					<h3 className="text-lg font-medium">Managing cookies</h3>
+					<h3 className="font-medium text-lg">Managing cookies</h3>
 					<p>
 						Most web browsers allow you to manage your cookie preferences. You can set your browser
 						to refuse cookies, or to alert you when cookies are being sent. The Help portion of the
@@ -70,14 +70,14 @@ export default function CookiePolicy() {
 						disable cookies altogether.
 					</p>
 
-					<h3 className="text-lg font-medium">Changes to this policy</h3>
+					<h3 className="font-medium text-lg">Changes to this policy</h3>
 					<p>
 						We may update this Cookie Policy from time to time. When we do, we will revise the "last
 						updated" date at the top of the policy. We encourage you to check this page periodically
 						to stay informed about our use of cookies.
 					</p>
 
-					<h3 className="text-lg font-medium">Contact us</h3>
+					<h3 className="font-medium text-lg">Contact us</h3>
 					<p>If you have any questions about this Cookie Policy, please contact us at:</p>
 					<p>
 						Email: privacy@utilitek.ca

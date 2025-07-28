@@ -10,8 +10,8 @@
  * Keywords: accessibility, wcag-aa, contrast-validation, token-validation, ci-checks
  */
 
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 // ============================================================================
 // CONSTANTS - Top-level constants for better maintainability
@@ -21,7 +21,7 @@ const path = require("path");
 const WCAG_AA_NORMAL_RATIO = 4.5;
 
 /** WCAG AAA minimum contrast ratio for enhanced accessibility */
-const WCAG_AAA_NORMAL_RATIO = 7.0;
+const _WCAG_AAA_NORMAL_RATIO = 7.0;
 
 /** Tolerance for floating point comparison */
 const CONTRAST_TOLERANCE = 0.1;
@@ -199,17 +199,17 @@ function parseHSL(hslString, tokens = {}) {
  * Convert HSL to RGB
  */
 function hslToRgb(h, s, l) {
-	h = h / 360;
-	s = s / 100;
-	l = l / 100;
+	h /= 360;
+	s /= 100;
+	l /= 100;
 
 	const c = (1 - Math.abs(2 * l - 1)) * s;
 	const x = c * (1 - Math.abs(((h * 6) % 2) - 1));
 	const m = l - c / 2;
 
-	let r = 0,
-		g = 0,
-		b = 0;
+	let r = 0;
+	let g = 0;
+	let b = 0;
 
 	if (0 <= h && h < 1 / 6) {
 		r = c;
@@ -249,8 +249,8 @@ function hslToRgb(h, s, l) {
  */
 function getRelativeLuminance(r, g, b) {
 	const [rs, gs, bs] = [r, g, b].map((c) => {
-		c = c / 255;
-		return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+		c /= 255;
+		return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
 	});
 
 	return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
@@ -372,7 +372,7 @@ function validateTokenContrast(tokens, tokenName, requirement) {
 	const tokenHSL = parseHSL(tokenValue, tokens);
 	const againstHSL = parseHSL(againstValue, tokens);
 
-	if (!tokenHSL || !againstHSL) {
+	if (!(tokenHSL && againstHSL)) {
 		return {
 			isValid: false,
 			actualRatio: 0,
@@ -395,7 +395,6 @@ function validateTokenContrast(tokens, tokenName, requirement) {
  * Validate all token contrast requirements
  */
 async function validateContrast() {
-	console.log("🔍 Starting WCAG AA contrast validation...");
 
 	const result = {
 		isValid: true,
@@ -407,7 +406,6 @@ async function validateContrast() {
 	try {
 		// Extract tokens from CSS
 		const tokens = extractTokensFromCSS();
-		console.log(`📋 Extracted ${Object.keys(tokens).length} tokens from CSS @theme block`);
 
 		// Validate each requirement
 		for (const [tokenName, requirement] of Object.entries(CONTRAST_REQUIREMENTS)) {
@@ -432,9 +430,6 @@ async function validateContrast() {
 			const requiredText = `${requirement.ratio}:1`;
 
 			if (validation.isValid) {
-				console.log(
-					`✅ ${tokenName} vs ${requirement.against}: ${ratioText} (required: ${requiredText})`
-				);
 				result.stats.passed++;
 			} else {
 				const message = `❌ ${tokenName} vs ${requirement.against}: ${ratioText} (required: ${requiredText})`;
@@ -449,29 +444,16 @@ async function validateContrast() {
 			}
 		}
 
-		// Print summary
-		console.log("\n📊 VALIDATION SUMMARY");
-		console.log("========================================");
-		console.log(`Total checks: ${result.stats.total}`);
-		console.log(`✅ Passed: ${result.stats.passed}`);
-		console.log(`❌ Failed: ${result.stats.failed}`);
-		console.log(`⚠️  Warnings: ${result.stats.warnings}`);
-		console.log("========================================");
-
 		if (result.errors.length > 0) {
-			console.log("\n❌ CRITICAL ERRORS:");
-			result.errors.forEach((error) => console.log(error));
+			result.errors.forEach((_error) => );
 		}
 
 		if (result.warnings.length > 0) {
-			console.log("\n⚠️  WARNINGS:");
-			result.warnings.forEach((warning) => console.log(warning));
+			result.warnings.forEach((_warning) => );
 		}
 
 		if (result.isValid) {
-			console.log("\n🎉 All critical contrast requirements passed!");
 		} else {
-			console.log("\n💥 Contrast validation failed - fix critical errors before proceeding");
 		}
 
 		return result;

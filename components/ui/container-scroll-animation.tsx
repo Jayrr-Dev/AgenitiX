@@ -50,9 +50,9 @@ export const ContainerScroll = ({
 	const isInView = useInView(sectionRef, { once: true, margin: "-20%" });
 
 	return (
-		<div className="flex items-center justify-center relative " ref={containerRef}>
+		<div className="relative flex items-center justify-center " ref={containerRef}>
 			<div
-				className="w-full relative"
+				className="relative w-full"
 				style={{
 					perspective: "1000px",
 				}}
@@ -91,7 +91,7 @@ export const InfiniteScrollContent = ({
 	className?: string;
 }) => {
 	// ANIMATION STATE AND REFS
-	const [scope, animate] = useAnimate();
+	const [scope, _animate] = useAnimate();
 	const [animation, setAnimation] = useState<Animation | null>(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -102,14 +102,18 @@ export const InfiniteScrollContent = ({
 
 	// Start animation once in view
 	useEffect(() => {
-		if (!isInView || animation) return;
+		if (!isInView || animation) {
+			return;
+		}
 
 		const animateScroll = async () => {
 			// Wait until children are rendered
 			await new Promise((res) => setTimeout(res, 0));
 
 			const scroller = scope.current?.querySelector(".scroller-inner") as HTMLElement;
-			if (!scroller) return;
+			if (!scroller) {
+				return;
+			}
 
 			// Duplicate content for infinite scroll
 			scroller.innerHTML += scroller.innerHTML;
@@ -133,7 +137,9 @@ export const InfiniteScrollContent = ({
 	// Pause/resume on hover
 	useEffect(() => {
 		const node = wrapperRef.current;
-		if (!node || !pauseOnHover || !animation) return;
+		if (!(node && pauseOnHover && animation)) {
+			return;
+		}
 
 		const handleEnter = () => animation.pause();
 		const handleLeave = () => animation.play();
@@ -168,7 +174,7 @@ export const Header = ({
 	titleComponent: string | React.ReactNode;
 }) => {
 	return (
-		<motion.div style={{ translateY: translate }} className="max-w-5xl mx-auto text-center">
+		<motion.div style={{ translateY: translate }} className="mx-auto max-w-5xl text-center">
 			{titleComponent}
 		</motion.div>
 	);
@@ -196,9 +202,9 @@ export const Card = ({
 				boxShadow:
 					"0 0 #0000004d, 0 9px 20px #0000004a, 0 37px 37px #00000042, 0 84px 50px #00000026, 0 149px 60px #0000000a, 0 233px 65px #00000003",
 			}}
-			className="max-w-5xl -mt-12 mx-auto h-[30rem] md:h-[40rem] w-full  border-4 border-[#6C6C6C] p-2 md:p-6 bg-[#222222] rounded-[30px] shadow-2xl md:mt-0"
+			className="-mt-12 mx-auto h-[30rem] w-full max-w-5xl rounded-[30px] border-4 border-[#6C6C6C] bg-[#222222] p-2 shadow-2xl md:mt-0 md:h-[40rem] md:p-6"
 		>
-			<div className="h-full w-full overflow-hidden rounded-2xl bg-gray-100 dark:bg-zinc-900 md:p-4">
+			<div className="h-full w-full overflow-hidden rounded-2xl bg-gray-100 md:p-4 dark:bg-zinc-900">
 				{children}
 			</div>
 		</motion.div>
@@ -211,9 +217,9 @@ export const Card = ({
 				boxShadow:
 					"0 0 #0000004d, 0 9px 20px #0000004a, 0 37px 37px #00000042, 0 84px 50px #00000026, 0 149px 60px #0000000a, 0 233px 65px #00000003",
 			}}
-			className="max-w-5xl -mt-12 mx-auto h-120 md:h-160 w-full  border-4 border-[#6C6C6C] p-2 md:p-6 bg-[#222222] rounded-[30px] shadow-2xl md:mt-0"
+			className="-mt-12 mx-auto h-120 w-full max-w-5xl rounded-[30px] border-4 border-[#6C6C6C] bg-[#222222] p-2 shadow-2xl md:mt-0 md:h-160 md:p-6"
 		>
-			<div className="h-full w-full overflow-hidden rounded-2xl bg-gray-100 dark:bg-zinc-900 md:p-4">
+			<div className="h-full w-full overflow-hidden rounded-2xl bg-gray-100 md:p-4 dark:bg-zinc-900">
 				{children}
 			</div>
 		</motion.div>

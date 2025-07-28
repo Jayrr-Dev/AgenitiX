@@ -10,8 +10,8 @@
  * Keywords: plop, node-generation, comprehensive-deletion, registry-management, file-cleanup
  */
 
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 module.exports = (plop) => {
 	// Helpers to resolve size constants for templates
@@ -22,7 +22,9 @@ module.exports = (plop) => {
 
 	// Helper to truncate strings
 	plop.setHelper("truncate", (str, length) => {
-		if (str.length <= length) return str;
+		if (str.length <= length) {
+			return str;
+		}
 		return str.substring(0, length);
 	});
 
@@ -171,7 +173,7 @@ module.exports = (plop) => {
 				message: "Describe what this node does (press Enter to use default):",
 				default: (answers) => {
 					const kind = answers.kind || "Node";
-					const domain = answers.domain || "general";
+					const _domain = answers.domain || "general";
 					const domainMap = {
 						create: "creation",
 						view: "display",
@@ -380,19 +382,12 @@ module.exports = (plop) => {
 							const categoryKey = category.toLowerCase();
 
 							// Check if tokens exist for this category
-							if (!tokens.node || !tokens.node[categoryKey]) {
-								console.log(
-									`⚠️  Warning: No theming tokens found for category '${categoryKey}' in tokens.json`
-								);
-								console.log(
-									`   Add tokens for '${categoryKey}' in features/business-logic-modern/infrastructure/theming/tokens.json`
-								);
-								console.log(`   Then run 'pnpm generate:tokens' to regenerate CSS variables`);
+							if (!tokens.node?.[categoryKey]) {
 							}
 
 							return `✅ Theming tokens verified for category '${categoryKey}'`;
 						}
-						return `⚠️  tokens.json not found - theming may not work properly`;
+						return "⚠️  tokens.json not found - theming may not work properly";
 					} catch (error) {
 						return `❌ Error checking theming tokens: ${error.message}`;
 					}
@@ -401,8 +396,7 @@ module.exports = (plop) => {
 				// 8. Auto-regenerate CSS tokens (NEW)
 				() => {
 					return new Promise((resolve) => {
-						const { spawn } = require("child_process");
-						console.log("🎨 Regenerating CSS tokens...");
+						const { spawn } = require("node:child_process");
 
 						const tokenProcess = spawn("pnpm", ["generate:tokens"], {
 							stdio: "inherit",
@@ -427,8 +421,7 @@ module.exports = (plop) => {
 				// 9. Auto-generate node documentation (NEW)
 				(data) => {
 					return new Promise((resolve) => {
-						const { spawn } = require("child_process");
-						console.log("📚 Generating node documentation...");
+						const { spawn } = require("node:child_process");
 
 						const docProcess = spawn(
 							"npx",
@@ -466,8 +459,7 @@ module.exports = (plop) => {
 				// 10. Auto-generate nodes overview (NEW)
 				() => {
 					return new Promise((resolve) => {
-						const { spawn } = require("child_process");
-						console.log("📋 Generating nodes overview...");
+						const { spawn } = require("node:child_process");
 
 						const overviewProcess = spawn(
 							"npx",
@@ -496,56 +488,7 @@ module.exports = (plop) => {
 				// 11. Final success message with comprehensive instructions
 				(data) => {
 					const { kind, domain, category } = data;
-					return (
-						`🎯 Successfully created node '${kind}' with improved architecture:\n\n` +
-						`📁 FILES CREATED/UPDATED:\n` +
-						`   ✅ Node file: features/business-logic-modern/node-domain/${domain}/${kind}.node.tsx\n` +
-						`   ✅ Registry entries: useDynamicNodeTypes.ts, nodespec-registry.ts\n` +
-						`   ✅ Export statements: node-domain/index.ts\n` +
-						`   ✅ CSS tokens: Regenerated from tokens.json\n` +
-						`   ✅ Documentation: documentation/nodes/${domain}/${kind}.md\n` +
-						`   ✅ HTML docs: documentation/nodes/${domain}/${kind}.html\n` +
-						`   ✅ API reference: documentation/api/${kind}.ts\n` +
-						`   ✅ Nodes overview: documentation/nodes/overview.html\n\n` +
-						`🏗️  IMPROVED ARCHITECTURE:\n` +
-						`   ✅ Enhanced import organization and grouping\n` +
-						`   ✅ Better schema design with improved defaults\n` +
-						`   ✅ Sophisticated data propagation patterns\n` +
-						`   ✅ Focus-preserving memoization (no more focus loss!)\n` +
-						`   ✅ Enhanced UI patterns with better textarea handling\n` +
-						`   ✅ Robust validation and error handling\n` +
-						`   ✅ Clean separation of concerns\n\n` +
-						`🎨 THEMING INTEGRATION:\n` +
-						`   ✅ Node uses category '${category}' theming tokens\n` +
-						`   ✅ CSS variables: --node-${category.toLowerCase()}-*\n` +
-						`   ✅ Auto-integrated with sidebar, inspector, minimap\n` +
-						`   ✅ Follows semantic token system\n\n` +
-						`📚 DOCUMENTATION GENERATED:\n` +
-						`   ✅ Comprehensive markdown documentation\n` +
-						`   ✅ Interactive HTML documentation\n` +
-						`   ✅ API reference with TypeScript types\n` +
-						`   ✅ Usage examples and integration guides\n` +
-						`   ✅ Troubleshooting and development tips\n\n` +
-						`🚀 READY TO USE:\n` +
-						`   • Node automatically appears in sidebar\n` +
-						`   • Inspector controls auto-generated from schema\n` +
-						`   • NODE_TYPE_CONFIG dynamically provides configuration\n` +
-						`   • Theming matches existing ${category} category nodes\n` +
-						`   • Documentation available at documentation/nodes/${domain}/\n` +
-						`   • No focus loss issues during editing\n\n` +
-						`🔧 NEXT STEPS:\n` +
-						`   • Customize node schema in the generated file\n` +
-						`   • Add custom UI in the expanded/collapsed sections\n` +
-						`   • Review generated documentation\n` +
-						`   • Test with 'pnpm dev' - no additional setup needed!\n\n` +
-						`💡 KEY IMPROVEMENTS:\n` +
-						`   • Better organized imports and code structure\n` +
-						`   • Enhanced data propagation with proper state management\n` +
-						`   • Improved textarea handling with proper event types\n` +
-						`   • Memoized scaffold component prevents focus loss\n` +
-						`   • Better validation and error reporting\n` +
-						`   • Cleaner separation between pure and impure functions`
-					);
+					return `🎯 Successfully created node '${kind}' with improved architecture:\n\n📁 FILES CREATED/UPDATED:\n   ✅ Node file: features/business-logic-modern/node-domain/${domain}/${kind}.node.tsx\n   ✅ Registry entries: useDynamicNodeTypes.ts, nodespec-registry.ts\n   ✅ Export statements: node-domain/index.ts\n   ✅ CSS tokens: Regenerated from tokens.json\n   ✅ Documentation: documentation/nodes/${domain}/${kind}.md\n   ✅ HTML docs: documentation/nodes/${domain}/${kind}.html\n   ✅ API reference: documentation/api/${kind}.ts\n   ✅ Nodes overview: documentation/nodes/overview.html\n\n🏗️  IMPROVED ARCHITECTURE:\n   ✅ Enhanced import organization and grouping\n   ✅ Better schema design with improved defaults\n   ✅ Sophisticated data propagation patterns\n   ✅ Focus-preserving memoization (no more focus loss!)\n   ✅ Enhanced UI patterns with better textarea handling\n   ✅ Robust validation and error handling\n   ✅ Clean separation of concerns\n\n🎨 THEMING INTEGRATION:\n   ✅ Node uses category '${category}' theming tokens\n   ✅ CSS variables: --node-${category.toLowerCase()}-*\n   ✅ Auto-integrated with sidebar, inspector, minimap\n   ✅ Follows semantic token system\n\n📚 DOCUMENTATION GENERATED:\n   ✅ Comprehensive markdown documentation\n   ✅ Interactive HTML documentation\n   ✅ API reference with TypeScript types\n   ✅ Usage examples and integration guides\n   ✅ Troubleshooting and development tips\n\n🚀 READY TO USE:\n   • Node automatically appears in sidebar\n   • Inspector controls auto-generated from schema\n   • NODE_TYPE_CONFIG dynamically provides configuration\n   • Theming matches existing ${category} category nodes\n   • Documentation available at documentation/nodes/${domain}/\n   • No focus loss issues during editing\n\n🔧 NEXT STEPS:\n   • Customize node schema in the generated file\n   • Add custom UI in the expanded/collapsed sections\n   • Review generated documentation\n   • Test with 'pnpm dev' - no additional setup needed!\n\n💡 KEY IMPROVEMENTS:\n   • Better organized imports and code structure\n   • Enhanced data propagation with proper state management\n   • Improved textarea handling with proper event types\n   • Memoized scaffold component prevents focus loss\n   • Better validation and error reporting\n   • Cleaner separation between pure and impure functions`;
 				},
 			];
 		},
@@ -593,15 +536,11 @@ module.exports = (plop) => {
 			const { kind, domain, filePath } = data.nodeToDelete;
 
 			if (!kind) {
-				console.log("No node selected. Aborting.");
 				return [];
 			}
 
-			console.log(`Preparing to comprehensively delete node: ${kind} from domain: ${domain}`);
-
 			// Validate that the node file actually exists before proceeding
 			if (!fs.existsSync(filePath)) {
-				console.log(`❌ Error: Node file ${filePath} does not exist. Aborting deletion.`);
 				return [];
 			}
 
@@ -837,7 +776,7 @@ module.exports = (plop) => {
 							return `Error cleaning import from useDynamicNodeTypes.ts: ${error.message}`;
 						}
 					}
-					return `useDynamicNodeTypes.ts file not found`;
+					return "useDynamicNodeTypes.ts file not found";
 				},
 
 				// 4. Clean up useDynamicNodeTypes.ts - export in array
@@ -874,7 +813,7 @@ module.exports = (plop) => {
 							return `Error cleaning useDynamicNodeTypes.ts: ${error.message}`;
 						}
 					}
-					return `useDynamicNodeTypes.ts file not found`;
+					return "useDynamicNodeTypes.ts file not found";
 				},
 
 				// 5. Clean up nodespec-registry.ts - import statement
@@ -934,7 +873,7 @@ module.exports = (plop) => {
 							return `Error cleaning registry entry: ${error.message}`;
 						}
 					}
-					return `Registry file not found`;
+					return "Registry file not found";
 				},
 
 				// 7. Clean up node-domain/index.ts - export statement
@@ -1049,8 +988,7 @@ module.exports = (plop) => {
 				// 16. Auto-regenerate CSS tokens after cleanup (NEW)
 				() => {
 					return new Promise((resolve) => {
-						const { spawn } = require("child_process");
-						console.log("🎨 Regenerating CSS tokens after cleanup...");
+						const { spawn } = require("node:child_process");
 
 						const tokenProcess = spawn("pnpm", ["generate:tokens"], {
 							stdio: "inherit",
@@ -1105,7 +1043,7 @@ module.exports = (plop) => {
 								// Check both import and registry entry
 								const hasImport = content.includes(`import ${node}`);
 								const hasEntry = content.includes(`${node}: ${node}Spec`);
-								return !hasImport || !hasEntry;
+								return !(hasImport && hasEntry);
 							});
 
 							if (missingNodes.length > 0) {
@@ -1130,14 +1068,13 @@ module.exports = (plop) => {
 							return `❌ Error validating registry: ${error.message}`;
 						}
 					}
-					return `Registry file not found for validation`;
+					return "Registry file not found for validation";
 				},
 
 				// 18. Regenerate documentation overview after cleanup (NEW)
 				() => {
 					return new Promise((resolve) => {
-						const { spawn } = require("child_process");
-						console.log("📚 Regenerating documentation overview after cleanup...");
+						const { spawn } = require("node:child_process");
 
 						const docProcess = spawn(
 							"npx",
@@ -1165,30 +1102,7 @@ module.exports = (plop) => {
 
 				// 19. Final success message
 				() =>
-					`🎯 Successfully deleted node '${kind}' and all associated files:\n` +
-					`   ✅ Main node file\n` +
-					`   ✅ Migration directory\n` +
-					`   ✅ Registry entries\n` +
-					`   ✅ Type definitions\n` +
-					`   ✅ Data migration mappings\n` +
-					`   ✅ Generated files\n` +
-					`   ✅ Theming references\n` +
-					`   ✅ Documentation references\n` +
-					`   ✅ Node documentation files (.md, .html)\n` +
-					`   ✅ API documentation files (.ts)\n` +
-					`   ✅ All imports and exports\n` +
-					`   ✅ CSS tokens regenerated\n\n` +
-					`⚠️  Remember to:\n` +
-					`   • Run 'pnpm generate:handle-types' to regenerate handle types\n` +
-					`   • Test the application to ensure no broken references remain\n` +
-					`   • The NODE_TYPE_CONFIG uses a proxy system, so no manual cleanup needed there\n` +
-					`   • Sidebar uses registry-based organization, so it will auto-update\n` +
-					`   • All theming tokens and CSS variables have been regenerated\n\n` +
-					`🛡️  Safety features:\n` +
-					`   • Backup created before deletion\n` +
-					`   • Precise regex patterns to avoid affecting other nodes\n` +
-					`   • Validation checks to ensure only target node is affected\n` +
-					`   • Rollback available from backup if needed`,
+					`🎯 Successfully deleted node '${kind}' and all associated files:\n   ✅ Main node file\n   ✅ Migration directory\n   ✅ Registry entries\n   ✅ Type definitions\n   ✅ Data migration mappings\n   ✅ Generated files\n   ✅ Theming references\n   ✅ Documentation references\n   ✅ Node documentation files (.md, .html)\n   ✅ API documentation files (.ts)\n   ✅ All imports and exports\n   ✅ CSS tokens regenerated\n\n⚠️  Remember to:\n   • Run 'pnpm generate:handle-types' to regenerate handle types\n   • Test the application to ensure no broken references remain\n   • The NODE_TYPE_CONFIG uses a proxy system, so no manual cleanup needed there\n   • Sidebar uses registry-based organization, so it will auto-update\n   • All theming tokens and CSS variables have been regenerated\n\n🛡️  Safety features:\n   • Backup created before deletion\n   • Precise regex patterns to avoid affecting other nodes\n   • Validation checks to ensure only target node is affected\n   • Rollback available from backup if needed`,
 			];
 		},
 	});
@@ -1340,13 +1254,7 @@ module.exports = (plop) => {
 								return name;
 							})
 							.filter(Boolean);
-
-						console.log("\n📋 Current Categories:");
-						console.log("==================");
-						categories.forEach((category, index) => {
-							console.log(`${index + 1}. ${category}`);
-						});
-						console.log(`\nTotal: ${categories.length} categories\n`);
+						categories.forEach((_category, _index) => {});
 					}
 				}
 				return [];
@@ -1400,7 +1308,7 @@ module.exports = (plop) => {
 						type: "modify",
 						path: "features/business-logic-modern/infrastructure/theming/stores/nodeStyleStore.ts",
 						pattern: /test: \{/,
-						template: `test: {`,
+						template: "test: {",
 					},
 					{
 						type: "modify",
@@ -1594,32 +1502,16 @@ module.exports = (plop) => {
 
 					// 25. Generate tokens for the new category
 					() => {
-						console.log(`\n🎨 Generating design tokens for ${data.categoryName} category...`);
-						console.log(`💡 Run manually: pnpm generate:tokens`);
 						return "";
 					},
 
 					// 26. Regenerate documentation
 					() => {
-						console.log(`📚 Regenerating documentation for ${data.categoryName} category...`);
-						console.log(`💡 Run manually: pnpm generate:node-docs`);
 						return "";
 					},
 
 					// 27. Success message
 					() => {
-						console.log(`\n✅ Category '${data.categoryName}' successfully added to all files!`);
-						console.log(`📁 Files Updated: 26+`);
-						console.log(`🎯 Status: Complete\n`);
-						console.log(`📂 Directories created:`);
-						console.log(`• features/business-logic-modern/node-domain/${data.domainName}/`);
-						console.log(`• documentation/nodes/${data.domainName}/\n`);
-						console.log(`💡 Next steps:`);
-						console.log(`• Run: pnpm generate:tokens`);
-						console.log(`• Run: pnpm generate:node-docs`);
-						console.log(`• Create your first node: pnpm new:node`);
-						console.log(`• Run: pnpm version:analyze (to update version)\n`);
-						console.log(`Your new category is ready to use! 🎉\n`);
 						return "";
 					},
 				];
@@ -1628,15 +1520,12 @@ module.exports = (plop) => {
 			if (data.action === "remove") {
 				// Validate that a category was selected
 				if (!data.categoryName || data.categoryName === null) {
-					console.log("\n❌ No valid category selected for removal. Aborting...\n");
 					return [];
 				}
 
 				// Automated category removal
 				const categoryName = data.categoryName.toUpperCase();
 				const domainName = data.categoryName.toLowerCase();
-
-				console.log(`\n🗑️  Removing category '${categoryName}' from all files...`);
 
 				return [
 					// 1. Remove from categories.ts
@@ -1808,18 +1697,6 @@ module.exports = (plop) => {
 					},
 					// 19. Log completion message
 					() => {
-						console.log(`\n✅ Category '${categoryName}' successfully removed from all files!`);
-						console.log(`📁 Files Updated: 18+`);
-						console.log(`🎯 Status: Complete\n`);
-						console.log(`📂 Manual cleanup required:`);
-						console.log(
-							`• Remove-Item -Recurse -Force "features/business-logic-modern/node-domain/${domainName}" -ErrorAction SilentlyContinue`
-						);
-						console.log(
-							`• Remove-Item -Recurse -Force "documentation/nodes/${domainName}" -ErrorAction SilentlyContinue`
-						);
-						console.log(`• Run: pnpm version:analyze (to update version)\n`);
-						console.log(`Your system is now clean and ready to use! 🎉\n`);
 						return "";
 					},
 				];

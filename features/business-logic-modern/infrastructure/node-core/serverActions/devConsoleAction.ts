@@ -27,18 +27,12 @@ const logAction = async (ctx: ServerActionContext) => {
 	const { nodeId, nodeKind, data, onStateUpdate, onError, onSuccess } = ctx;
 	const key = `${nodeId}-mounted`;
 
-	if (seen.has(key)) return;
+	if (seen.has(key)) {
+		return;
+	}
 	seen.add(key);
 
 	try {
-		// Legacy console logging
-		console.log(
-			`%c🛰️  [serverAction] node_created %c${nodeKind} %c(${nodeId})`,
-			"color:cyan",
-			"color:yellow",
-			"color:white"
-		);
-
 		// Enhanced capabilities demonstration
 		// 1. Database Operation Example
 		const dbOperation: DatabaseOperation = {
@@ -49,7 +43,6 @@ const logAction = async (ctx: ServerActionContext) => {
 		};
 
 		const dbResult = await executeDatabaseOperation(dbOperation);
-		console.log("🛰️ [ENHANCED] Database query result:", dbResult);
 
 		// 2. Network Request Example
 		const networkRequest: NetworkRequest = {
@@ -61,7 +54,6 @@ const logAction = async (ctx: ServerActionContext) => {
 		};
 
 		const networkResult = await executeNetworkRequest(networkRequest);
-		console.log("🌐 [ENHANCED] Network request result:", networkResult);
 
 		// 3. File Operation Example
 		const fileOperation: FileOperation = {
@@ -80,7 +72,6 @@ const logAction = async (ctx: ServerActionContext) => {
 		};
 
 		const fileResult = await executeFileOperation(fileOperation);
-		console.log("📁 [ENHANCED] File operation result:", fileResult);
 
 		// 4. UI State Update Example
 		onStateUpdate?.({

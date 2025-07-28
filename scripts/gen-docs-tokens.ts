@@ -1,5 +1,5 @@
-import fs, { writeFileSync } from "fs";
-import { join } from "path";
+import fs, { writeFileSync } from "node:fs";
+import { join } from "node:path";
 import tokens from "../features/business-logic-modern/infrastructure/theming/tokens.json";
 
 const flatten = (
@@ -98,49 +98,93 @@ const categorizeTokens = (flatTokens: Record<string, string>) => {
 	for (const [key, value] of Object.entries(flatTokens)) {
 		let category = "other";
 
-		if (key.startsWith("spacing.")) category = "spacing";
-		else if (key.startsWith("typography.")) category = "typography";
-		else if (key.startsWith("colors.")) category = "colors";
-		else if (key.startsWith("layout.")) category = "layout";
-		else if (key.startsWith("effects.")) category = "effects";
-		else if (key.startsWith("dimensions.")) category = "dimensions";
-		else if (key.startsWith("palette.")) category = "palette";
-		else if (key.startsWith("elevation.")) category = "elevation";
-		else if (key.startsWith("status.")) category = "status";
-		else if (key.startsWith("node.global.")) category = "node-global";
-		else if (key.startsWith("node.create.")) category = "node-create";
-		else if (key.startsWith("node.view.")) category = "node-view";
-		else if (key.startsWith("node.trigger.")) category = "node-trigger";
-		else if (key.startsWith("node.test.")) category = "node-test";
-		else if (key.startsWith("node.cycle.")) category = "node-cycle";
-		else if (key.startsWith("node.email.")) category = "node-email";
-		else if (key.startsWith("node.flow.")) category = "node-flow";
-		else if (key.startsWith("node.time.")) category = "node-time";
-		else if (key.startsWith("node.ai.")) category = "node-ai";
-		else if (key.startsWith("node.ai.")) category = "node-ai";
-		else if (key.startsWith("node.ai.")) category = "node-ai";
-		else if (key.startsWith("node.ai.")) category = "node-ai";
-		else if (key.startsWith("node.ai.")) category = "node-ai";
-		else if (key.startsWith("node.email.")) category = "node-email";
-		else if (key.startsWith("node.email.")) category = "node-email";
-		else if (key.startsWith("node.ai.")) category = "node-ai";
-		else if (key.startsWith("node.ai.")) category = "node-ai";
-		else if (key.startsWith("node.email.")) category = "node-email";
-		else if (key.startsWith("node.ai.")) category = "node-ai";
-		else if (key.startsWith("node.email.")) category = "node-email";
-		else if (key.startsWith("node.store.")) category = "node-store";
-		else if (key.startsWith("infra.inspector.")) category = "infra-inspector";
-		else if (key.startsWith("infra.sidebar.")) category = "infra-sidebar";
-		else if (key.startsWith("infra.toolbar.")) category = "infra-toolbar";
-		else if (key.startsWith("infra.canvas.")) category = "infra-canvas";
-		else if (key.startsWith("infra.panel.")) category = "infra-panel";
-		else if (key.startsWith("infra.minimap.")) category = "infra-minimap";
-		else if (key.startsWith("infra.history.")) category = "infra-history";
-		else if (key.startsWith("infra.controls.")) category = "infra-controls";
-		else if (key.startsWith("handle.")) category = "handle";
-		else if (key.startsWith("expandCollapseButton.")) category = "expandCollapseButton";
-		else if (key.startsWith("label.")) category = "label";
-		else if (key.startsWith("coreNode.")) category = "coreNode";
+		if (key.startsWith("spacing.")) {
+			category = "spacing";
+		} else if (key.startsWith("typography.")) {
+			category = "typography";
+		} else if (key.startsWith("colors.")) {
+			category = "colors";
+		} else if (key.startsWith("layout.")) {
+			category = "layout";
+		} else if (key.startsWith("effects.")) {
+			category = "effects";
+		} else if (key.startsWith("dimensions.")) {
+			category = "dimensions";
+		} else if (key.startsWith("palette.")) {
+			category = "palette";
+		} else if (key.startsWith("elevation.")) {
+			category = "elevation";
+		} else if (key.startsWith("status.")) {
+			category = "status";
+		} else if (key.startsWith("node.global.")) {
+			category = "node-global";
+		} else if (key.startsWith("node.create.")) {
+			category = "node-create";
+		} else if (key.startsWith("node.view.")) {
+			category = "node-view";
+		} else if (key.startsWith("node.trigger.")) {
+			category = "node-trigger";
+		} else if (key.startsWith("node.test.")) {
+			category = "node-test";
+		} else if (key.startsWith("node.cycle.")) {
+			category = "node-cycle";
+		} else if (key.startsWith("node.email.")) {
+			category = "node-email";
+		} else if (key.startsWith("node.flow.")) {
+			category = "node-flow";
+		} else if (key.startsWith("node.time.")) {
+			category = "node-time";
+		} else if (key.startsWith("node.ai.")) {
+			category = "node-ai";
+		} else if (key.startsWith("node.ai.")) {
+			category = "node-ai";
+		} else if (key.startsWith("node.ai.")) {
+			category = "node-ai";
+		} else if (key.startsWith("node.ai.")) {
+			category = "node-ai";
+		} else if (key.startsWith("node.ai.")) {
+			category = "node-ai";
+		} else if (key.startsWith("node.email.")) {
+			category = "node-email";
+		} else if (key.startsWith("node.email.")) {
+			category = "node-email";
+		} else if (key.startsWith("node.ai.")) {
+			category = "node-ai";
+		} else if (key.startsWith("node.ai.")) {
+			category = "node-ai";
+		} else if (key.startsWith("node.email.")) {
+			category = "node-email";
+		} else if (key.startsWith("node.ai.")) {
+			category = "node-ai";
+		} else if (key.startsWith("node.email.")) {
+			category = "node-email";
+		} else if (key.startsWith("node.store.")) {
+			category = "node-store";
+		} else if (key.startsWith("infra.inspector.")) {
+			category = "infra-inspector";
+		} else if (key.startsWith("infra.sidebar.")) {
+			category = "infra-sidebar";
+		} else if (key.startsWith("infra.toolbar.")) {
+			category = "infra-toolbar";
+		} else if (key.startsWith("infra.canvas.")) {
+			category = "infra-canvas";
+		} else if (key.startsWith("infra.panel.")) {
+			category = "infra-panel";
+		} else if (key.startsWith("infra.minimap.")) {
+			category = "infra-minimap";
+		} else if (key.startsWith("infra.history.")) {
+			category = "infra-history";
+		} else if (key.startsWith("infra.controls.")) {
+			category = "infra-controls";
+		} else if (key.startsWith("handle.")) {
+			category = "handle";
+		} else if (key.startsWith("expandCollapseButton.")) {
+			category = "expandCollapseButton";
+		} else if (key.startsWith("label.")) {
+			category = "label";
+		} else if (key.startsWith("coreNode.")) {
+			category = "coreNode";
+		}
 
 		categories[category].tokens[key] = value;
 		categories[category].count++;
@@ -597,7 +641,7 @@ let html = `<!DOCTYPE html>
         <div class="stat-label">Total Tokens</div>
       </div>
       <div class="stat-card">
-        <span class="stat-number">${Object.entries(flat).filter(([k, v]) => isColorValue(v)).length}</span>
+        <span class="stat-number">${Object.entries(flat).filter(([_k, v]) => isColorValue(v)).length}</span>
         <div class="stat-label">Color Tokens</div>
       </div>
       <div class="stat-card">
@@ -820,7 +864,9 @@ const categoryIcons: Record<string, string> = {
 };
 
 for (const [category, data] of Object.entries(categorizedTokens)) {
-	if (data.count === 0) continue;
+	if (data.count === 0) {
+		continue;
+	}
 
 	const icon = categoryIcons[category] || "📝";
 	const displayName = category.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
@@ -1071,6 +1117,3 @@ const htmlOut = join(outDir, "theming", "tokens-preview.html");
 
 writeFileSync(mdOut, md);
 writeFileSync(htmlOut, html);
-
-console.log("✔ Generated", mdOut);
-console.log("✔ Generated", htmlOut, "- open in browser for visual preview");

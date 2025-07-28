@@ -86,8 +86,6 @@ export class ThreatIntelligence {
 	 * CHECK IP REPUTATION USING MULTIPLE SOURCES
 	 */
 	static async checkIPReputation(ip: string): Promise<ThreatIntelResult> {
-		console.log(`🛡️ Starting comprehensive threat intelligence check for: ${ip}`);
-
 		const result: ThreatIntelResult = {
 			isMalicious: false,
 			riskScore: 0,
@@ -98,8 +96,7 @@ export class ThreatIntelligence {
 		};
 
 		// QUICK WHITELIST CHECK
-		if (this.WHITELIST.has(ip)) {
-			console.log(`✅ IP ${ip} is whitelisted`);
+		if (ThreatIntelligence.WHITELIST.has(ip)) {
 			result.riskScore = 0;
 			result.confidence = 100;
 			result.sources.push("internal-whitelist");
@@ -107,8 +104,7 @@ export class ThreatIntelligence {
 		}
 
 		// INTERNAL BLACKLIST CHECK
-		if (this.INTERNAL_BLACKLIST.has(ip)) {
-			console.log(`🚨 IP ${ip} found in internal blacklist`);
+		if (ThreatIntelligence.INTERNAL_BLACKLIST.has(ip)) {
 			result.isMalicious = true;
 			result.riskScore = 95;
 			result.confidence = 100;
@@ -119,9 +115,10 @@ export class ThreatIntelligence {
 		}
 
 		// CHECK AGAINST MALICIOUS PATTERNS
-		const maliciousMatch = this.MALICIOUS_PATTERNS.find((pattern) => pattern.pattern.test(ip));
+		const maliciousMatch = ThreatIntelligence.MALICIOUS_PATTERNS.find((pattern) =>
+			pattern.pattern.test(ip)
+		);
 		if (maliciousMatch) {
-			console.log(`🚨 IP ${ip} matches malicious pattern: ${maliciousMatch.name}`);
 			result.isMalicious = true;
 			result.riskScore = maliciousMatch.riskScore;
 			result.confidence = 85;
@@ -133,9 +130,10 @@ export class ThreatIntelligence {
 		}
 
 		// CHECK AGAINST THREAT PATTERNS
-		const threatMatch = this.THREAT_PATTERNS.find((pattern) => pattern.pattern.test(ip));
+		const threatMatch = ThreatIntelligence.THREAT_PATTERNS.find((pattern) =>
+			pattern.pattern.test(ip)
+		);
 		if (threatMatch) {
-			console.log(`⚠️ IP ${ip} matches threat pattern: ${threatMatch.name}`);
 			result.riskScore = threatMatch.riskScore;
 			result.confidence = 70;
 			result.sources.push("internal-patterns");
@@ -154,12 +152,12 @@ export class ThreatIntelligence {
 		// TRY EXTERNAL THREAT INTELLIGENCE SOURCES
 		try {
 			const externalResults = await Promise.allSettled([
-				this.checkVirusTotal(ip),
-				this.checkAbuseIPDB(ip),
-				this.checkThreatCrowd(ip),
+				ThreatIntelligence.checkVirusTotal(ip),
+				ThreatIntelligence.checkAbuseIPDB(ip),
+				ThreatIntelligence.checkThreatCrowd(ip),
 			]);
 
-			externalResults.forEach((resultPromise, index) => {
+			externalResults.forEach((resultPromise, _index) => {
 				if (resultPromise.status === "fulfilled" && resultPromise.value) {
 					const sourceResult = resultPromise.value;
 					result.sources.push(sourceResult.source);
@@ -176,7 +174,7 @@ export class ThreatIntelligence {
 			// CALCULATE CONFIDENCE BASED ON NUMBER OF SOURCES
 			result.confidence = Math.min(result.sources.length * 25, 100);
 		} catch (error) {
-			console.error(`❌ Error checking external threat intelligence:`, error);
+			console.error("❌ Error checking external threat intelligence:", error);
 		}
 
 		// DEFAULT ASSESSMENT FOR UNKNOWN IPs
@@ -185,15 +183,13 @@ export class ThreatIntelligence {
 			result.confidence = 10;
 			result.sources.push("default-assessment");
 		}
-
-		console.log(`📊 Threat intelligence result for ${ip}:`, result);
 		return result;
 	}
 
 	/**
 	 * CHECK VIRUSTOTAL (MOCK IMPLEMENTATION)
 	 */
-	private static async checkVirusTotal(ip: string): Promise<{
+	private static async checkVirusTotal(_ip: string): Promise<{
 		source: string;
 		isMalicious: boolean;
 		riskScore: number;
@@ -207,7 +203,7 @@ export class ThreatIntelligence {
 	/**
 	 * CHECK ABUSEIPDB (MOCK IMPLEMENTATION)
 	 */
-	private static async checkAbuseIPDB(ip: string): Promise<{
+	private static async checkAbuseIPDB(_ip: string): Promise<{
 		source: string;
 		isMalicious: boolean;
 		riskScore: number;
@@ -221,7 +217,7 @@ export class ThreatIntelligence {
 	/**
 	 * CHECK THREATCROWD (MOCK IMPLEMENTATION)
 	 */
-	private static async checkThreatCrowd(ip: string): Promise<{
+	private static async checkThreatCrowd(_ip: string): Promise<{
 		source: string;
 		isMalicious: boolean;
 		riskScore: number;
@@ -236,32 +232,28 @@ export class ThreatIntelligence {
 	 * ADD IP TO INTERNAL BLACKLIST
 	 */
 	static addToBlacklist(ip: string): void {
-		this.INTERNAL_BLACKLIST.add(ip);
-		console.log(`🚨 Added ${ip} to internal blacklist`);
+		ThreatIntelligence.INTERNAL_BLACKLIST.add(ip);
 	}
 
 	/**
 	 * REMOVE IP FROM INTERNAL BLACKLIST
 	 */
 	static removeFromBlacklist(ip: string): void {
-		this.INTERNAL_BLACKLIST.delete(ip);
-		console.log(`✅ Removed ${ip} from internal blacklist`);
+		ThreatIntelligence.INTERNAL_BLACKLIST.delete(ip);
 	}
 
 	/**
 	 * ADD IP TO WHITELIST
 	 */
 	static addToWhitelist(ip: string): void {
-		this.WHITELIST.add(ip);
-		console.log(`✅ Added ${ip} to whitelist`);
+		ThreatIntelligence.WHITELIST.add(ip);
 	}
 
 	/**
 	 * REMOVE IP FROM WHITELIST
 	 */
 	static removeFromWhitelist(ip: string): void {
-		this.WHITELIST.delete(ip);
-		console.log(`🚨 Removed ${ip} from whitelist`);
+		ThreatIntelligence.WHITELIST.delete(ip);
 	}
 
 	/**
@@ -269,9 +261,10 @@ export class ThreatIntelligence {
 	 */
 	static getThreatStats(): { blacklistedIPs: number; whitelistedIPs: number; patterns: number } {
 		return {
-			blacklistedIPs: this.INTERNAL_BLACKLIST.size,
-			whitelistedIPs: this.WHITELIST.size,
-			patterns: this.THREAT_PATTERNS.length + this.MALICIOUS_PATTERNS.length,
+			blacklistedIPs: ThreatIntelligence.INTERNAL_BLACKLIST.size,
+			whitelistedIPs: ThreatIntelligence.WHITELIST.size,
+			patterns:
+				ThreatIntelligence.THREAT_PATTERNS.length + ThreatIntelligence.MALICIOUS_PATTERNS.length,
 		};
 	}
 }

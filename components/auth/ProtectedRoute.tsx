@@ -29,9 +29,9 @@ export const ProtectedRoute = ({ children, fallback }: ProtectedRouteProps) => {
 	// Show loading state while checking auth or not mounted yet
 	if (!mounted || isLoading) {
 		return (
-			<div className="min-h-screen flex items-center justify-center bg-gray-50">
+			<div className="flex min-h-screen items-center justify-center bg-gray-50">
 				<div className="text-center">
-					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+					<div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-blue-600 border-b-2" />
 					<p className="text-gray-600">Loading...</p>
 				</div>
 			</div>
@@ -39,11 +39,11 @@ export const ProtectedRoute = ({ children, fallback }: ProtectedRouteProps) => {
 	}
 
 	// Show loading while redirecting if not authenticated
-	if (!isAuthenticated || !user) {
+	if (!(isAuthenticated && user)) {
 		return (
-			<div className="min-h-screen flex items-center justify-center bg-gray-50">
+			<div className="flex min-h-screen items-center justify-center bg-gray-50">
 				<div className="text-center">
-					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+					<div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-blue-600 border-b-2" />
 					<p className="text-gray-600">Redirecting to sign in...</p>
 				</div>
 			</div>

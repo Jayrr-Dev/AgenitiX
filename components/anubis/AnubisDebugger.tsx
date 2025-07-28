@@ -1,7 +1,7 @@
 "use client";
 
 import { CustomLogo } from "@/branding/custom-logo";
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAnubis } from "./AnubisProvider";
 
 // AGENITIX DEBUG COMPONENT
@@ -30,7 +30,7 @@ export function AnubisDebugger() {
 				} else {
 					setServerStatus("disabled");
 				}
-			} catch (error) {
+			} catch (_error) {
 				setServerStatus("disabled");
 			}
 		};
@@ -39,7 +39,9 @@ export function AnubisDebugger() {
 	}, []);
 
 	// NOW WE CAN HAVE CONDITIONAL RETURNS
-	if (!showUI) return null;
+	if (!showUI) {
+		return null;
+	}
 
 	// TOGGLE VISIBILITY
 	const toggleVisibility = () => setIsVisible(!isVisible);
@@ -55,7 +57,7 @@ export function AnubisDebugger() {
 		return (
 			<button
 				onClick={toggleVisibility}
-				className="fixed top-4 right-4 px-3 py-2 rounded-lg text-sm font-medium shadow-lg z-50 flex items-center gap-2 border border-transparent bg-fill-border hover:animate-fill-transparency backdrop-blur-lg text-foreground transition-all duration-300"
+				className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg border border-transparent bg-fill-border px-3 py-2 font-medium text-foreground text-sm shadow-lg backdrop-blur-lg transition-all duration-300 hover:animate-fill-transparency"
 				title="Show AgenitiX Debug Info"
 			>
 				<CustomLogo size={16} />
@@ -65,16 +67,16 @@ export function AnubisDebugger() {
 	}
 
 	return (
-		<div className="fixed top-4 right-4 w-80 bg-background border border-transparent bg-fill-border rounded-lg shadow-xl z-50 backdrop-blur-lg">
+		<div className="fixed top-4 right-4 z-50 w-80 rounded-lg border border-transparent bg-background bg-fill-border shadow-xl backdrop-blur-lg">
 			<div className="p-4">
-				<div className="flex items-center justify-between mb-4">
+				<div className="mb-4 flex items-center justify-between">
 					<div className="flex items-center gap-2">
 						<CustomLogo size={20} />
 						<h3 className="font-brand font-semibold text-foreground">AgenitiX Debug</h3>
 					</div>
 					<button
 						onClick={toggleVisibility}
-						className="text-muted-foreground hover:text-foreground transition-colors"
+						className="text-muted-foreground transition-colors hover:text-foreground"
 						title="Hide Debug Info"
 					>
 						✕
@@ -83,8 +85,8 @@ export function AnubisDebugger() {
 
 				<div className="space-y-4">
 					{/* CLIENT STATUS */}
-					<div className="border-b border-border pb-3">
-						<h4 className="font-ui font-semibold text-secondary mb-2">Client Status</h4>
+					<div className="border-border border-b pb-3">
+						<h4 className="mb-2 font-semibold font-ui text-secondary">Client Status</h4>
 						<div className="space-y-1">
 							<div className="flex justify-between">
 								<span className="text-muted-foreground">Enabled:</span>
@@ -106,8 +108,8 @@ export function AnubisDebugger() {
 					</div>
 
 					{/* SERVER STATUS */}
-					<div className="border-b border-border pb-3">
-						<h4 className="font-ui font-semibold text-secondary mb-2">Server Status</h4>
+					<div className="border-border border-b pb-3">
+						<h4 className="mb-2 font-semibold font-ui text-secondary">Server Status</h4>
 						<div className="flex justify-between">
 							<span className="text-muted-foreground">Server:</span>
 							<span
@@ -129,8 +131,8 @@ export function AnubisDebugger() {
 					</div>
 
 					{/* ENVIRONMENT INFO */}
-					<div className="border-b border-border pb-3">
-						<h4 className="font-ui font-semibold text-secondary mb-2">Environment</h4>
+					<div className="border-border border-b pb-3">
+						<h4 className="mb-2 font-semibold font-ui text-secondary">Environment</h4>
 						<div className="space-y-1">
 							<div className="flex justify-between">
 								<span className="text-muted-foreground">Mode:</span>
@@ -147,10 +149,10 @@ export function AnubisDebugger() {
 
 					{/* ACTIONS */}
 					<div>
-						<h4 className="font-ui font-semibold text-secondary mb-2">Actions</h4>
+						<h4 className="mb-2 font-semibold font-ui text-secondary">Actions</h4>
 						<button
 							onClick={triggerTestChallenge}
-							className="w-full px-3 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors text-sm font-medium"
+							className="w-full rounded-lg bg-secondary px-3 py-2 font-medium text-secondary-foreground text-sm transition-colors hover:bg-secondary/80"
 						>
 							🧪 Trigger Test Challenge
 						</button>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 // SIMPLE ANUBIS UI TOGGLE
 export function AnubisToggle() {
@@ -25,12 +25,12 @@ export function AnubisToggle() {
 	};
 
 	return (
-		<div className="fixed top-4 left-4 z-50 bg-background/90 backdrop-blur-sm border border-border rounded-lg p-3 shadow-lg">
+		<div className="fixed top-4 left-4 z-50 rounded-lg border border-border bg-background/90 p-3 shadow-lg backdrop-blur-sm">
 			<div className="flex items-center gap-3">
-				<span className="text-sm font-medium text-foreground">Anubis UI:</span>
+				<span className="font-medium text-foreground text-sm">Anubis UI:</span>
 				<button
 					onClick={handleToggle}
-					className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+					className={`rounded px-3 py-1 font-medium text-sm transition-colors ${
 						showAnubisUI ? "bg-green-500 text-white" : "bg-red-500 text-white"
 					}`}
 				>

@@ -152,7 +152,9 @@ const ExplorePage = () => {
 
 	// Helper function to get icon category
 	const getIconCategory = useCallback((iconName?: string) => {
-		if (!iconName) return null;
+		if (!iconName) {
+			return null;
+		}
 
 		const iconCategories: Record<string, string> = {
 			// Popular icons
@@ -209,7 +211,9 @@ const ExplorePage = () => {
 
 	// Memoized filtered and sorted flows
 	const processedFlows = useMemo(() => {
-		if (!publicFlows) return [];
+		if (!publicFlows) {
+			return [];
+		}
 
 		let filtered = publicFlows;
 
@@ -260,12 +264,12 @@ const ExplorePage = () => {
 	// Error state
 	if (publicFlows === null) {
 		return (
-			<div className="text-center py-16">
-				<div className="w-24 h-24 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-6">
-					<Globe className="w-12 h-12 text-muted-foreground" />
+			<div className="py-16 text-center">
+				<div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
+					<Globe className="h-12 w-12 text-muted-foreground" />
 				</div>
-				<h3 className="text-2xl font-semibold text-foreground mb-3">Error loading flows</h3>
-				<p className="text-muted-foreground mb-8 max-w-md mx-auto">
+				<h3 className="mb-3 font-semibold text-2xl text-foreground">Error loading flows</h3>
+				<p className="mx-auto mb-8 max-w-md text-muted-foreground">
 					Unable to load public flows. Please try refreshing the page.
 				</p>
 				<Button onClick={() => window.location.reload()}>Refresh Page</Button>
@@ -275,7 +279,7 @@ const ExplorePage = () => {
 
 	const getIconComponent = (iconName: string) => {
 		const IconComponent = ICON_MAP[iconName as keyof typeof ICON_MAP] || Zap;
-		return <IconComponent className="w-5 h-5" />;
+		return <IconComponent className="h-5 w-5" />;
 	};
 
 	const formatDate = (dateString: string) => {
@@ -288,20 +292,20 @@ const ExplorePage = () => {
 
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+			<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 				{/* Enhanced Header with SEO */}
 				<header className="mb-8">
 					<div className="flex flex-col gap-6">
 						<div className="flex items-center justify-between">
 							<div>
-								<h1 className="text-3xl font-bold text-foreground mb-2">Explore Flows</h1>
+								<h1 className="mb-2 font-bold text-3xl text-foreground">Explore Flows</h1>
 								<p className="text-muted-foreground">
 									Discover {totalFlows.toLocaleString()}+ public automation workflows from the
 									community
 								</p>
 								{/* Debug info */}
 								{debugInfo && (
-									<div className="text-xs text-muted-foreground mt-2">
+									<div className="mt-2 text-muted-foreground text-xs">
 										Debug: {debugInfo.totalFlows} total, {debugInfo.publicFlows} public,{" "}
 										{debugInfo.privateFlows} private
 										{simpleFlows && ` | Simple query: ${simpleFlows.length} flows`}
@@ -321,10 +325,10 @@ const ExplorePage = () => {
 						</div>
 
 						{/* Enhanced Search and Filter Controls */}
-						<div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-							<div className="flex items-center gap-4 flex-1 max-w-md">
+						<div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+							<div className="flex max-w-md flex-1 items-center gap-4">
 								<div className="relative flex-1">
-									<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+									<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 transform text-muted-foreground" />
 									<Input
 										placeholder="Search public flows..."
 										value={searchQuery}
@@ -336,11 +340,11 @@ const ExplorePage = () => {
 
 							{/* Sort Controls */}
 							<div className="flex items-center gap-2">
-								<Filter className="w-4 h-4 text-muted-foreground" />
+								<Filter className="h-4 w-4 text-muted-foreground" />
 								<select
 									value={sortBy}
 									onChange={(e) => handleSort(e.target.value as SortOption)}
-									className="text-sm bg-background border border-border rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
+									className="rounded-md border border-border bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
 								>
 									{Object.entries(SORT_OPTIONS).map(([key, option]) => (
 										<option key={key} value={key}>
@@ -350,7 +354,7 @@ const ExplorePage = () => {
 								</select>
 							</div>
 
-							<div className="text-sm text-muted-foreground">
+							<div className="text-muted-foreground text-sm">
 								{totalFlows.toLocaleString()} flows
 							</div>
 						</div>
@@ -359,13 +363,13 @@ const ExplorePage = () => {
 
 				{/* Optimized Flows Grid with Virtual Scrolling */}
 				<div
-					className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+					className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
 					style={{ gridAutoRows: "1fr" }}
 				>
 					{processedFlows.map((flow) => (
 						<Card
 							key={flow._id}
-							className="group transition-all duration-300 border border-transparent bg-fill-border hover:animate-fill-transparency flex flex-col aspect-square shadow-sm dark:shadow-white/5"
+							className="group flex aspect-square flex-col border border-transparent bg-fill-border shadow-sm transition-all duration-300 hover:animate-fill-transparency dark:shadow-white/5"
 							style={{
 								backgroundColor: "light-dark(#f5f5f5, var(--fill-border-color, #1a1a1a))",
 							}}
@@ -374,19 +378,19 @@ const ExplorePage = () => {
 								{/* Header with Icon and Creator */}
 								<div className="flex items-start justify-between">
 									<div className="flex items-center gap-3">
-										<div className="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center">
+										<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 text-green-600">
 											{getIconComponent(flow.icon || "zap")}
 										</div>
-										<div className="flex-1 min-w-0">
-											<h3 className="font-semibold text-lg text-foreground break-words whitespace-normal">
+										<div className="min-w-0 flex-1">
+											<h3 className="whitespace-normal break-words font-semibold text-foreground text-lg">
 												{flow.name}
 											</h3>
 											{flow.creator ? (
-												<p className="text-sm text-muted-foreground mt-1">
+												<p className="mt-1 text-muted-foreground text-sm">
 													Created by {flow.creator.name}
 												</p>
 											) : (
-												<p className="text-sm text-muted-foreground mt-1">
+												<p className="mt-1 text-muted-foreground text-sm">
 													Created by Community Member
 												</p>
 											)}
@@ -395,11 +399,11 @@ const ExplorePage = () => {
 								</div>
 							</CardHeader>
 
-							<CardContent className="flex flex-col flex-1 space-y-2">
+							<CardContent className="flex flex-1 flex-col space-y-2">
 								{/* Description - 6 lines */}
-								<div className="h-24 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+								<div className="scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent h-24 overflow-y-auto overflow-x-hidden">
 									{flow.description ? (
-										<p className="text-sm text-muted-foreground leading-relaxed break-words whitespace-normal">
+										<p className="whitespace-normal break-words text-muted-foreground text-sm leading-relaxed">
 											{flow.description}
 										</p>
 									) : (
@@ -411,16 +415,16 @@ const ExplorePage = () => {
 								<div className="flex-1" />
 
 								{/* Creator and timestamp info */}
-								<div className="flex items-center justify-between mb-1">
+								<div className="mb-1 flex items-center justify-between">
 									<div className="flex items-center gap-1">
-										<Calendar className="w-3 h-3 text-muted-foreground" />
-										<span className="text-xs text-muted-foreground">
+										<Calendar className="h-3 w-3 text-muted-foreground" />
+										<span className="text-muted-foreground text-xs">
 											Updated {formatDate(flow.updated_at)}
 										</span>
 									</div>
 									<div className="flex items-center gap-1">
-										<Users className="w-3 h-3 text-muted-foreground" />
-										<span className="text-xs text-muted-foreground">
+										<Users className="h-3 w-3 text-muted-foreground" />
+										<span className="text-muted-foreground text-xs">
 											by {flow.creator?.name || "Community Member"}
 										</span>
 									</div>
@@ -442,9 +446,9 @@ const ExplorePage = () => {
 											}`}
 										>
 											{flow.hasUpvoted ? (
-												<ThumbsUp className="w-3 h-3 fill-current" />
+												<ThumbsUp className="h-3 w-3 fill-current" />
 											) : (
-												<ThumbsUp className="w-3 h-3" />
+												<ThumbsUp className="h-3 w-3" />
 											)}
 											<span className="text-xs">{flow.upvoteCount || 0}</span>
 										</Button>
@@ -452,7 +456,7 @@ const ExplorePage = () => {
 
 									<Link href={`/matrix/${flow._id}`}>
 										<Button size="sm" className="gap-2">
-											<ExternalLink className="w-3 h-3" />
+											<ExternalLink className="h-3 w-3" />
 											Open
 										</Button>
 									</Link>
@@ -464,12 +468,12 @@ const ExplorePage = () => {
 
 				{/* Enhanced Empty States */}
 				{publicFlows && publicFlows.length === 0 ? (
-					<div className="text-center py-16">
-						<div className="w-24 h-24 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-6">
-							<Globe className="w-12 h-12 text-muted-foreground" />
+					<div className="py-16 text-center">
+						<div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
+							<Globe className="h-12 w-12 text-muted-foreground" />
 						</div>
-						<h3 className="text-2xl font-semibold text-foreground mb-3">No public flows yet</h3>
-						<p className="text-muted-foreground mb-8 max-w-md mx-auto">
+						<h3 className="mb-3 font-semibold text-2xl text-foreground">No public flows yet</h3>
+						<p className="mx-auto mb-8 max-w-md text-muted-foreground">
 							Be the first to share a public flow with the community!
 						</p>
 						<Link href="/dashboard">
@@ -477,12 +481,12 @@ const ExplorePage = () => {
 						</Link>
 					</div>
 				) : processedFlows.length === 0 ? (
-					<div className="text-center py-16">
-						<div className="w-24 h-24 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-6">
-							<Search className="w-12 h-12 text-muted-foreground" />
+					<div className="py-16 text-center">
+						<div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
+							<Search className="h-12 w-12 text-muted-foreground" />
 						</div>
-						<h3 className="text-xl font-semibold text-foreground mb-3">No flows found</h3>
-						<p className="text-muted-foreground mb-6 max-w-md mx-auto">
+						<h3 className="mb-3 font-semibold text-foreground text-xl">No flows found</h3>
+						<p className="mx-auto mb-6 max-w-md text-muted-foreground">
 							No public flows match "{searchQuery}". Try adjusting your search terms.
 						</p>
 						<Button variant="outline" onClick={() => handleSearch("")}>

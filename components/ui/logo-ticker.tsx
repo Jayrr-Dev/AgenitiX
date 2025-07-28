@@ -61,17 +61,17 @@ export default function LogoTicker({
 	};
 
 	return (
-		<section className={`w-full py-12 bg-background ${className}`} style={styleVars}>
+		<section className={`w-full bg-background py-12 ${className}`} style={styleVars}>
 			<div className="relative w-full overflow-hidden" style={maskStyle}>
 				<div
 					/*  w-max + gap ⇒ total width is symmetrical,    */
 					/*  so the –50 % slide lines copy #2 up perfectly */
-					className={`flex w-max gap-8 md:gap-12 items-center whitespace-nowrap ${
+					className={`flex w-max items-center gap-8 whitespace-nowrap md:gap-12 ${
 						start ? "animate-scroll-x-loop" : ""
 					}`}
 				>
 					{strip.map((logo, i) => (
-						<div key={i} className="flex items-center grayscale opacity-99 contrast-50">
+						<div key={i} className="flex items-center opacity-99 contrast-50 grayscale">
 							<Image
 								src={logo.url}
 								alt={logo.name}

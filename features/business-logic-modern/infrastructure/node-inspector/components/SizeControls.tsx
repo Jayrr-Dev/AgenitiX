@@ -66,11 +66,11 @@ export const SizeControls: React.FC<SizeControlsProps> = ({ nodeData, updateNode
 	return (
 		<div className="space-y-4">
 			<div>
-				<label className="text-sm font-medium text-foreground mb-2 block">Collapsed Size</label>
+				<label className="mb-2 block font-medium text-foreground text-sm">Collapsed Size</label>
 				<select
 					value={nodeData.collapsedSize || "C1W"}
 					onChange={(e) => handleCollapsedSizeChange(e.target.value)}
-					className="w-full p-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+					className="w-full rounded-md border border-border bg-background p-2 text-foreground text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-ring"
 				>
 					{COLLAPSED_SIZE_OPTIONS.map((option) => (
 						<option key={option.value} value={option.value}>
@@ -81,11 +81,11 @@ export const SizeControls: React.FC<SizeControlsProps> = ({ nodeData, updateNode
 			</div>
 
 			<div>
-				<label className="text-sm font-medium text-foreground mb-2 block">Expanded Size</label>
+				<label className="mb-2 block font-medium text-foreground text-sm">Expanded Size</label>
 				<select
 					value={nodeData.expandedSize || "VE2"}
 					onChange={(e) => handleExpandedSizeChange(e.target.value)}
-					className="w-full p-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+					className="w-full rounded-md border border-border bg-background p-2 text-foreground text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-ring"
 				>
 					{EXPANDED_SIZE_OPTIONS.map((option) => (
 						<option key={option.value} value={option.value}>

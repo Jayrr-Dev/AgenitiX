@@ -33,7 +33,7 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { type NodeProps, useReactFlow } from "@xyflow/react";
-import React, { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
 // -----------------------------------------------------------------------------
@@ -79,14 +79,19 @@ type Primitive = string | number | boolean | bigint | symbol | null | undefined;
 
 function formatValue(value: unknown): string {
 	// ── Primitives ──────────────────────────────────────────────────────────────
-	if (value === null || value === undefined || value === false || value === "" || value === 0)
+	if (value === null || value === undefined || value === false || value === "" || value === 0) {
 		return "";
+	}
 
-	if (typeof value !== "object") return String(value);
+	if (typeof value !== "object") {
+		return String(value);
+	}
 
 	// ── Objects / Arrays ────────────────────────────────────────────────────────
 	if (Array.isArray(value)) {
-		if (value.length === 0) return "";
+		if (value.length === 0) {
+			return "";
+		}
 		try {
 			return JSON.stringify(value, null, 2);
 		} catch {
@@ -94,18 +99,31 @@ function formatValue(value: unknown): string {
 		}
 	}
 
-	if (value instanceof Date) return value.toISOString();
-	if (value instanceof RegExp) return value.toString();
-	if (value instanceof Error) return `Error: ${value.message}`;
-	if (value instanceof Map)
+	if (value instanceof Date) {
+		return value.toISOString();
+	}
+	if (value instanceof RegExp) {
+		return value.toString();
+	}
+	if (value instanceof Error) {
+		return `Error: ${value.message}`;
+	}
+	if (value instanceof Map) {
 		return value.size ? JSON.stringify(Array.from(value.entries()), null, 2) : "";
-	if (value instanceof Set) return value.size ? JSON.stringify(Array.from(value), null, 2) : "";
-	if (value instanceof Promise) return "[Promise]";
+	}
+	if (value instanceof Set) {
+		return value.size ? JSON.stringify(Array.from(value), null, 2) : "";
+	}
+	if (value instanceof Promise) {
+		return "[Promise]";
+	}
 
 	// Plain object – try common prop names first
 	for (const prop of COMMON_OBJECT_PROPS) {
 		const inner = (value as Record<string, unknown>)[prop];
-		if (inner !== undefined && inner !== null) return formatValue(inner);
+		if (inner !== undefined && inner !== null) {
+			return formatValue(inner);
+		}
 	}
 
 	try {
@@ -197,7 +215,7 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 	const { getNodes, getEdges } = useReactFlow();
 
 	// Derived state -------------------------------------------------------------
-	const isExpanded = (nodeData as ViewTextData).isExpanded || false;
+	const isExpanded = (nodeData as ViewTextData).isExpanded;
 	const categoryStyles = CATEGORY_TEXT.VIEW;
 
 	// Helpers -------------------------------------------------------------------
@@ -243,7 +261,9 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 			.filter((n) => {
 				// Only accept content from active source nodes
 				const sourceIsActive = n.data?.isActive === true;
-				if (!sourceIsActive) return false;
+				if (!sourceIsActive) {
+					return false;
+				}
 
 				// Get text from source node
 				let nodeText = "";
@@ -268,11 +288,11 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 				// Get the meaningful text
 				if (n.data?.output !== undefined) {
 					return formatValue(n.data.output);
-				} else if (n.data?.store !== undefined) {
-					return formatValue(n.data.store);
-				} else {
-					return formatValue(n.data);
 				}
+				if (n.data?.store !== undefined) {
+					return formatValue(n.data.store);
+				}
+				return formatValue(n.data);
 			})
 			.filter((t) => t.trim().length > 0);
 
@@ -312,32 +332,32 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 		<>
 			{/* Editable label or icon */}
 			{!isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60 ? (
-				<div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+				<div className="absolute inset-0 flex justify-center p-1 text-foreground/80 text-lg">
 					{spec.icon && renderLucideIcon(spec.icon, "", 16)}
 				</div>
 			) : (
 				<LabelNode nodeId={id} label={spec.displayName} />
 			)}
 
-			{!isExpanded ? (
+			{isExpanded ? (
+				<div className={CONTENT.expanded}>
+					<div className={CONTENT.body}>
+						<div className="whitespace-pre-line break-words text-center font-normal text-xs">
+							{validation.data.store || "No inputs"}
+						</div>
+					</div>
+				</div>
+			) : (
 				<div className={CONTENT.collapsed}>
 					{spec.receivedData?.showInCollapsed && validation.data.store !== "No inputs" ? (
 						<div
-							className={`  text-xs text-center w-[100px] h-[80px] overflow-y-auto nowheel  ${categoryStyles.primary}`}
+							className={` nowheel h-[80px] w-[100px] overflow-y-auto text-center text-xs ${categoryStyles.primary}`}
 						>
 							{validation.data.store || "..."}
 						</div>
 					) : (
-						<div className={`text-xs font-medium tracking-wide ${categoryStyles.primary}`}>...</div>
+						<div className={`font-medium text-xs tracking-wide ${categoryStyles.primary}`}>...</div>
 					)}
-				</div>
-			) : (
-				<div className={CONTENT.expanded}>
-					<div className={CONTENT.body}>
-						<div className="text-xs font-normal text-center break-words whitespace-pre-line">
-							{validation.data.store || "No inputs"}
-						</div>
-					</div>
 				</div>
 			)}
 

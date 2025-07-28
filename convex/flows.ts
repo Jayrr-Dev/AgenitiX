@@ -127,7 +127,9 @@ export const getFlowSecure = query({
 	},
 	handler: async (ctx, args) => {
 		const flow = await ctx.db.get(args.flow_id);
-		if (!flow) return null;
+		if (!flow) {
+			return null;
+		}
 
 		// Check access permissions
 		const accessCheck = await checkFlowAccessInternal(ctx, args.flow_id, args.user_id);
@@ -156,7 +158,9 @@ async function checkFlowAccessInternal(
 	user_id: Id<"auth_users">
 ) {
 	const flow = await ctx.db.get(flow_id);
-	if (!flow) return { hasAccess: false, permission: null };
+	if (!flow) {
+		return { hasAccess: false, permission: null };
+	}
 
 	// Owner has full access
 	if (flow.user_id === user_id) {
@@ -740,9 +744,6 @@ export const getPublicFlowsWithUpvotes = query({
 
 		// Debug logging in development
 		if (process.env.NODE_ENV === "development") {
-			console.log(
-				`[getPublicFlowsWithUpvotes] Found ${publicFlows.length} public flows, returning ${flowsWithUpvotes.length} with upvotes`
-			);
 		}
 
 		return flowsWithUpvotes;

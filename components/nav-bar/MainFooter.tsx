@@ -6,18 +6,18 @@ import { CookiePolicy } from "@/features/cookies";
 import Link from "next/link";
 export default function Footer() {
 	return (
-		<footer className="w-full border-t border-border bg-background">
+		<footer className="w-full border-border border-t bg-background">
 			<div className="container mx-auto px-6 py-12">
 				{/* GRID */}
 				<div className="grid grid-cols-1 gap-8 md:grid-cols-4">
 					{/* Brand & blurb */}
 					<div className="space-y-4">
 						<div className="flex items-center pt-2">
-							<LogomarkLight className="mr-2 w-8 h-8" />
-							<span className="font-brand text-xl text-brand">Agenitix</span>
+							<LogomarkLight className="mr-2 h-8 w-8" />
+							<span className="font-brand text-brand text-xl">Agenitix</span>
 						</div>
 
-						<p className="font-serif text-sm text-mutedFg">
+						<p className="font-serif text-mutedFg text-sm">
 							Agenitix builds agentic-AI tooling for developers who need production-grade autonomy
 							out of the box.
 						</p>
@@ -25,7 +25,7 @@ export default function Footer() {
 
 					{/* Quick links */}
 					<div className="space-y-4">
-						<h3 className="font-ui text-lg font-semibold text-foreground">Quick Links</h3>
+						<h3 className="font-semibold font-ui text-foreground text-lg">Quick Links</h3>
 						<ul className="space-y-2 font-ui text-sm">
 							{[
 								{ href: "/about", label: "About" },
@@ -38,7 +38,7 @@ export default function Footer() {
 									<Link
 										href={l.href}
 										className="text-mutedFg transition-colors hover:text-secondary"
-										legacyBehavior
+										legacyBehavior={true}
 									>
 										{l.label}
 									</Link>
@@ -49,8 +49,8 @@ export default function Footer() {
 
 					{/* Contact */}
 					<div className="space-y-4">
-						<h3 className="font-ui text-lg font-semibold text-foreground">Contact</h3>
-						<ul className="space-y-2 font-ui text-sm text-mutedFg">
+						<h3 className="font-semibold font-ui text-foreground text-lg">Contact</h3>
+						<ul className="space-y-2 font-ui text-mutedFg text-sm">
 							<li className="flex items-center gap-2">
 								{/* mail icon */}
 								<svg
@@ -91,7 +91,7 @@ export default function Footer() {
 
 					{/* Social + theme toggle */}
 					<div className="space-y-4">
-						<h3 className="font-ui text-lg font-semibold text-foreground">Connect</h3>
+						<h3 className="font-semibold font-ui text-foreground text-lg">Connect</h3>
 						<div className="mb-4 flex items-center space-x-4">
 							{[
 								{ href: "#", icon: "facebook" },
@@ -118,7 +118,7 @@ export default function Footer() {
 				</div>
 
 				{/* bottom bar */}
-				<div className="mt-8 flex flex-col items-center justify-between gap-6 border-t border-border pt-8 font-ui text-sm text-mutedFg md:flex-row">
+				<div className="mt-8 flex flex-col items-center justify-between gap-6 border-border border-t pt-8 font-ui text-mutedFg text-sm md:flex-row">
 					<p>© {new Date().getFullYear()} Agenitix. All rights reserved.</p>
 
 					<div className="flex flex-wrap items-center gap-6">

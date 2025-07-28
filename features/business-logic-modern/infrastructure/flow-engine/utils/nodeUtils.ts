@@ -18,7 +18,7 @@ export const safeStringify = (value: any, space = 2): string => {
 	const cache = new Set();
 	return JSON.stringify(
 		value,
-		(key, value) => {
+		(_key, value) => {
 			if (typeof value === "object" && value !== null) {
 				if (cache.has(value)) {
 					// Circular reference found, discard key
@@ -45,12 +45,24 @@ export const extractNodeValue = (data: Record<string, any> | null | undefined): 
 	}
 
 	// Prioritize specific, meaningful keys for output
-	if (data.output !== undefined) return data.output;
-	if (data.outputs !== undefined) return data.outputs;
-	if (data.value !== undefined) return data.value;
-	if (data.text !== undefined) return data.text;
-	if (data.result !== undefined) return data.result;
-	if (data.payload !== undefined) return data.payload;
+	if (data.output !== undefined) {
+		return data.output;
+	}
+	if (data.outputs !== undefined) {
+		return data.outputs;
+	}
+	if (data.value !== undefined) {
+		return data.value;
+	}
+	if (data.text !== undefined) {
+		return data.text;
+	}
+	if (data.result !== undefined) {
+		return data.result;
+	}
+	if (data.payload !== undefined) {
+		return data.payload;
+	}
 
 	// Fallback for objects with a single key
 	const keys = Object.keys(data);

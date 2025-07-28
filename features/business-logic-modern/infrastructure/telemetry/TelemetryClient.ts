@@ -33,10 +33,14 @@ interface TelemetryStorage {
 }
 
 const loadStorage = (): TelemetryStorage => {
-	if (typeof window === "undefined") return { counts: {} };
+	if (typeof window === "undefined") {
+		return { counts: {} };
+	}
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY);
-		if (raw) return JSON.parse(raw);
+		if (raw) {
+			return JSON.parse(raw);
+		}
 	} catch {
 		/* ignore */
 	}
@@ -44,7 +48,9 @@ const loadStorage = (): TelemetryStorage => {
 };
 
 const saveStorage = (data: TelemetryStorage) => {
-	if (typeof window === "undefined") return;
+	if (typeof window === "undefined") {
+		return;
+	}
 	try {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 	} catch {
@@ -69,10 +75,15 @@ export const TelemetryClient = {
 		const dateKey = new Date(payload.timestamp).toISOString().slice(0, 10); // YYYY-MM-DD
 		const store = loadStorage();
 
-		if (!store.counts[event]) store.counts[event] = {};
-		if (!store.counts[event][dateKey]) store.counts[event][dateKey] = {};
-		if (!store.counts[event][dateKey][payload.nodeKind])
+		if (!store.counts[event]) {
+			store.counts[event] = {};
+		}
+		if (!store.counts[event][dateKey]) {
+			store.counts[event][dateKey] = {};
+		}
+		if (!store.counts[event][dateKey][payload.nodeKind]) {
 			store.counts[event][dateKey][payload.nodeKind] = 0;
+		}
 
 		store.counts[event][dateKey][payload.nodeKind] += 1;
 		saveStorage(store);

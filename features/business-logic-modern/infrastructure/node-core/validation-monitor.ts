@@ -155,7 +155,7 @@ function generateValidationAlerts(reports: ValidationNodeReport[]): ValidationAl
 				id: `recent-failure-${report.nodeType}`,
 				nodeType: report.nodeType,
 				severity: "medium",
-				message: `Recent validation failures detected`,
+				message: "Recent validation failures detected",
 				timestamp: new Date(),
 				resolved: false,
 			});
@@ -293,8 +293,7 @@ export const ValidationMonitoringUtils = {
 	 * Log validation health summary to console
 	 */
 	logHealthSummary: () => {
-		const dashboard = generateValidationDashboard();
-		console.log(ValidationMonitorUtils.getHealthSummary(dashboard));
+		const _dashboard = generateValidationDashboard();
 	},
 
 	/**

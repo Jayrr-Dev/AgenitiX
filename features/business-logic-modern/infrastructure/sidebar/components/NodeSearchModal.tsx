@@ -13,7 +13,7 @@
 
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import type { NodeType } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
@@ -72,7 +72,9 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 			// Show all filtered nodes when no search query
 			return nodesToSearch
 				.map((node) => {
-					if (!node) return null;
+					if (!node) {
+						return null;
+					}
 					return {
 						nodeType: node.kind as NodeType,
 						displayName: node.displayName,
@@ -90,7 +92,9 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 		const results: SearchResult[] = [];
 
 		nodesToSearch.forEach((node) => {
-			if (!node) return;
+			if (!node) {
+				return;
+			}
 
 			const displayName = node.displayName;
 			const category = node.category || "other";
@@ -189,30 +193,30 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className="max-w-2xl max-h-[80vh] p-0 bg-modal border-modal">
+			<DialogContent className="max-h-[80vh] max-w-2xl border-modal bg-modal p-0">
 				{/* Header */}
-				<div className="flex items-center gap-3 p-4 border-b border-modal">
-					<Search className="w-5 h-5 text-modal-secondary" />
+				<div className="flex items-center gap-3 border-modal border-b p-4">
+					<Search className="h-5 w-5 text-modal-secondary" />
 					<Input
 						placeholder="Search for nodes..."
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 						onKeyDown={handleKeyDown}
-						className="flex-1 border-0 bg-transparent text-modal focus:ring-0 focus:outline-none"
-						autoFocus
+						className="flex-1 border-0 bg-transparent text-modal focus:outline-none focus:ring-0"
+						autoFocus={true}
 					/>
 					<button
 						onClick={onClose}
-						className="p-1 hover:bg-modal-overlay rounded text-modal-secondary hover:text-modal"
+						className="rounded p-1 text-modal-secondary hover:bg-modal-overlay hover:text-modal"
 					>
-						<X className="w-4 h-4" />
+						<X className="h-4 w-4" />
 					</button>
 				</div>
 
 				{/* Search Results */}
 				<div className="flex-1 overflow-hidden">
 					{searchResults.length === 0 ? (
-						<div className="flex items-center justify-center h-32 text-modal-secondary">
+						<div className="flex h-32 items-center justify-center text-modal-secondary">
 							{searchQuery ? "No nodes found" : "No nodes available"}
 						</div>
 					) : (
@@ -221,27 +225,27 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 								<button
 									key={result.nodeType}
 									onClick={() => handleSelectNode(result.nodeType, result.displayName)}
-									className={`w-full text-left p-3 border-b border-modal hover:bg-search-hover transition-colors ${
+									className={`w-full border-modal border-b p-3 text-left transition-colors hover:bg-search-hover ${
 										index === selectedIndex ? "bg-search-highlight" : ""
 									}`}
 								>
 									<div className="flex items-center gap-3">
 										{result.icon && (
-											<span className="text-lg flex-shrink-0">{renderLucideIcon(result.icon)}</span>
+											<span className="flex-shrink-0 text-lg">{renderLucideIcon(result.icon)}</span>
 										)}
-										<div className="flex-1 min-w-0">
+										<div className="min-w-0 flex-1">
 											<div className="font-medium text-modal">{result.displayName}</div>
-											<div className="text-xs text-modal-secondary capitalize">
+											<div className="text-modal-secondary text-xs capitalize">
 												{result.category}
 											</div>
 											{result.description && (
-												<div className="text-xs text-modal-secondary mt-1 line-clamp-2">
+												<div className="mt-1 line-clamp-2 text-modal-secondary text-xs">
 													{result.description}
 												</div>
 											)}
 										</div>
 										{searchQuery && (
-											<div className="text-xs text-info px-2 py-1 bg-info rounded">
+											<div className="rounded bg-info px-2 py-1 text-info text-xs">
 												{result.score}
 											</div>
 										)}
@@ -253,7 +257,7 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 				</div>
 
 				{/* Footer */}
-				<div className="p-3 border-t border-modal bg-search text-xs text-search-placeholder">
+				<div className="border-modal border-t bg-search p-3 text-search-placeholder text-xs">
 					Use ↑↓ to navigate, Enter to select, Esc to close
 				</div>
 			</DialogContent>

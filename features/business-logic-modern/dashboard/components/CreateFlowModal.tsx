@@ -273,12 +273,14 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 			[field]: value,
 		}));
 		// Clear error when user starts typing
-		if (error) setError(null);
+		if (error) {
+			setError(null);
+		}
 	};
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+			<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
 				<DialogHeader>
 					<DialogTitle>Create New Flow</DialogTitle>
 					<DialogDescription>
@@ -295,12 +297,12 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 							value={formData.name}
 							onChange={(e) => handleInputChange("name", e.target.value)}
 							placeholder="Enter flow name..."
-							required
+							required={true}
 							minLength={1}
 							maxLength={12}
 							disabled={isSubmitting}
 						/>
-						<div className="text-xs text-muted-foreground text-right">
+						<div className="text-right text-muted-foreground text-xs">
 							{formData.name.length}/12 characters
 						</div>
 					</div>
@@ -317,7 +319,7 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 							maxLength={200}
 							disabled={isSubmitting}
 						/>
-						<div className="text-xs text-muted-foreground text-right">
+						<div className="text-right text-muted-foreground text-xs">
 							{formData.description?.length || 0}/200 characters
 						</div>
 					</div>
@@ -330,18 +332,18 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 								Icon determines category
 							</Badge>
 						</div>
-						<p className="text-sm text-muted-foreground">
+						<p className="text-muted-foreground text-sm">
 							Choose an icon to automatically categorize your flow. The icon you select will help
 							others discover and understand your workflow.
 						</p>
 
 						<Tabs value={activeIconTab} onValueChange={setActiveIconTab} className="w-full">
-							<TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 h-auto p-1">
+							<TabsList className="grid h-auto w-full grid-cols-4 p-1 lg:grid-cols-8">
 								{Object.entries(ICON_CATEGORIES).map(([key, category]) => (
 									<TabsTrigger
 										key={key}
 										value={key}
-										className="text-xs px-1.5 py-2 h-auto font-medium"
+										className="h-auto px-1.5 py-2 font-medium text-xs"
 									>
 										{category.label}
 									</TabsTrigger>
@@ -350,13 +352,13 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 
 							{Object.entries(ICON_CATEGORIES).map(([key, category]) => (
 								<TabsContent key={key} value={key} className="mt-4">
-									<div className="mb-3 p-3 bg-muted/30 rounded-lg border border-border">
-										<div className="flex items-center gap-2 mb-2">
+									<div className="mb-3 rounded-lg border border-border bg-muted/30 p-3">
+										<div className="mb-2 flex items-center gap-2">
 											<Badge variant="secondary" className="text-xs">
 												{category.label} Category
 											</Badge>
 										</div>
-										<p className="text-xs text-muted-foreground">
+										<p className="text-muted-foreground text-xs">
 											Flows with {category.label.toLowerCase()} icons will appear in the{" "}
 											{category.label.toLowerCase()} category when shared publicly.
 										</p>
@@ -373,7 +375,7 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 													type="button"
 													onClick={() => handleInputChange("icon", option.value)}
 													disabled={isSubmitting}
-													className={`group relative p-3 rounded-xl border-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:shadow-lg ${
+													className={`group relative rounded-xl border-2 p-3 transition-all duration-200 hover:scale-105 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 ${
 														isSelected
 															? "border-primary bg-primary/10 shadow-md ring-2 ring-primary/20"
 															: "border-border hover:border-primary/50 hover:bg-primary/5"
@@ -381,24 +383,24 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 													title={`${option.label} - ${category.label} Category`}
 												>
 													<IconComponent
-														className={`w-6 h-6 mx-auto transition-colors ${
+														className={`mx-auto h-6 w-6 transition-colors ${
 															isSelected
 																? "text-primary"
 																: "text-foreground group-hover:text-primary"
 														}`}
 													/>
 													<p
-														className={`text-xs mt-2 text-center truncate transition-colors ${
+														className={`mt-2 truncate text-center text-xs transition-colors ${
 															isSelected
-																? "text-primary font-medium"
+																? "font-medium text-primary"
 																: "text-muted-foreground group-hover:text-foreground"
 														}`}
 													>
 														{option.label}
 													</p>
 													{isSelected && (
-														<div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full flex items-center justify-center">
-															<CheckCircle className="w-2 h-2 text-white" />
+														<div className="-top-1 -right-1 absolute flex h-3 w-3 items-center justify-center rounded-full bg-primary">
+															<CheckCircle className="h-2 w-2 text-white" />
 														</div>
 													)}
 												</button>
@@ -411,7 +413,7 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 
 						{/* Selected Icon Info */}
 						{formData.icon && (
-							<div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+							<div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
 								<div className="flex items-center gap-3">
 									{(() => {
 										const selectedIcon = Object.values(ICON_CATEGORIES)
@@ -419,19 +421,19 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 											.find((icon) => icon.value === formData.icon);
 										if (selectedIcon) {
 											const IconComponent = selectedIcon.icon;
-											const categoryEntry = Object.entries(ICON_CATEGORIES).find(([key, cat]) =>
+											const categoryEntry = Object.entries(ICON_CATEGORIES).find(([_key, cat]) =>
 												cat.icons.some((icon) => icon.value === formData.icon)
 											);
 											const categoryLabel = categoryEntry?.[1]?.label;
 
 											return (
 												<>
-													<div className="p-2 bg-primary/10 rounded-lg">
-														<IconComponent className="w-5 h-5 text-primary" />
+													<div className="rounded-lg bg-primary/10 p-2">
+														<IconComponent className="h-5 w-5 text-primary" />
 													</div>
 													<div className="flex-1">
-														<p className="text-sm font-medium">Selected: {selectedIcon.label}</p>
-														<p className="text-xs text-muted-foreground">
+														<p className="font-medium text-sm">Selected: {selectedIcon.label}</p>
+														<p className="text-muted-foreground text-xs">
 															This flow will appear in the{" "}
 															<span className="font-medium">{categoryLabel}</span> category
 														</p>
@@ -461,16 +463,16 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 									<div className="space-y-2">
 										<div className="flex items-center gap-3">
 											<div
-												className={`p-1.5 rounded-full transition-colors ${
+												className={`rounded-full p-1.5 transition-colors ${
 													formData.private
 														? "bg-orange-100 text-orange-600"
 														: "bg-green-100 text-green-600"
 												}`}
 											>
 												{formData.private ? (
-													<Lock className="w-3 h-3" />
+													<Lock className="h-3 w-3" />
 												) : (
-													<Eye className="w-3 h-3" />
+													<Eye className="h-3 w-3" />
 												)}
 											</div>
 											<span className="font-semibold text-base">
@@ -480,14 +482,14 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 												variant={formData.private ? "secondary" : "default"}
 												className={`text-xs ${
 													formData.private
-														? "bg-orange-100 text-orange-800 border-orange-200"
-														: "bg-green-100 text-green-800 border-green-200"
+														? "border-orange-200 bg-orange-100 text-orange-800"
+														: "border-green-200 bg-green-100 text-green-800"
 												}`}
 											>
 												{formData.private ? "Only you" : "Everyone"}
 											</Badge>
 										</div>
-										<p className="text-sm text-muted-foreground leading-relaxed">
+										<p className="text-muted-foreground text-sm leading-relaxed">
 											{formData.private
 												? "This flow will only be visible to you and cannot be shared with others"
 												: "This flow will be visible to everyone and can be shared publicly"}
@@ -499,13 +501,13 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 											onCheckedChange={(checked) => handleInputChange("private", !checked)}
 											disabled={isSubmitting}
 											className={`transition-all duration-200 ${
-												!formData.private
-													? "data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
-													: "data-[state=unchecked]:bg-orange-500 data-[state=unchecked]:border-orange-500"
+												formData.private
+													? "data-[state=unchecked]:border-orange-500 data-[state=unchecked]:bg-orange-500"
+													: "data-[state=checked]:border-green-600 data-[state=checked]:bg-green-600"
 											}`}
 										/>
 										<span
-											className={`text-xs font-medium transition-colors ${
+											className={`font-medium text-xs transition-colors ${
 												formData.private ? "text-orange-600" : "text-green-600"
 											}`}
 										>
@@ -519,8 +521,8 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 
 					{/* Error Display */}
 					{error && (
-						<div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-							<p className="text-sm text-destructive">{error}</p>
+						<div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+							<p className="text-destructive text-sm">{error}</p>
 						</div>
 					)}
 

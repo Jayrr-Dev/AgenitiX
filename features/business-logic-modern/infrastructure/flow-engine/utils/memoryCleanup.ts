@@ -97,7 +97,7 @@ export const registerEventListener = (
 		eventListeners.set(nodeId, []);
 	}
 
-	eventListeners.get(nodeId)!.push({
+	eventListeners.get(nodeId)?.push({
 		element,
 		event,
 		handler,
@@ -118,7 +118,7 @@ export const registerObserver = (
 		observers.set(nodeId, []);
 	}
 
-	observers.get(nodeId)!.push({
+	observers.get(nodeId)?.push({
 		observer,
 		type,
 	});
@@ -192,8 +192,6 @@ export const safeCreateResizeObserver = (
  * Clean up all memory references for a specific node
  */
 export const cleanupNodeMemory = (nodeId: string): void => {
-	console.log(`🧹 Cleaning up memory for node ${nodeId}`);
-
 	// Clean up event listeners
 	const nodeEventListeners = eventListeners.get(nodeId);
 	if (nodeEventListeners) {
@@ -222,7 +220,7 @@ export const cleanupNodeMemory = (nodeId: string): void => {
 
 	// Clean up DOM element references
 	const keysToDelete: string[] = [];
-	domElementRefs.forEach((weakRef, key) => {
+	domElementRefs.forEach((_weakRef, key) => {
 		if (key.startsWith(nodeId)) {
 			keysToDelete.push(key);
 		}
@@ -262,19 +260,19 @@ export const performCompleteMemoryCleanup = (): MemoryCleanupStats => {
 	);
 
 	// Clean up all event listeners
-	eventListeners.forEach((listeners, nodeId) => {
+	eventListeners.forEach((listeners, _nodeId) => {
 		listeners.forEach(({ element, event, handler, options }) => {
 			try {
 				element.removeEventListener(event, handler, options);
 			} catch (error) {
-				console.warn(`Failed to remove event listener during cleanup:`, error);
+				console.warn("Failed to remove event listener during cleanup:", error);
 			}
 		});
 	});
 	eventListeners.clear();
 
 	// Clean up all observers
-	observers.forEach((observerList, nodeId) => {
+	observers.forEach((observerList, _nodeId) => {
 		observerList.forEach(({ observer, type }) => {
 			try {
 				observer.disconnect();
@@ -292,7 +290,7 @@ export const performCompleteMemoryCleanup = (): MemoryCleanupStats => {
 	if (typeof window !== "undefined" && "gc" in window) {
 		try {
 			(window as any).gc();
-		} catch (error) {
+		} catch (_error) {
 			// Garbage collection not available, continue
 		}
 	}
@@ -314,8 +312,6 @@ export const performCompleteMemoryCleanup = (): MemoryCleanupStats => {
 			memoryFreed: memoryBefore - memoryAfter,
 		},
 	};
-
-	console.log("✅ Complete memory cleanup finished:", stats);
 	return stats;
 };
 

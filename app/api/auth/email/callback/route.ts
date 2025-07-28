@@ -8,12 +8,7 @@
 import { getProvider } from "@/features/business-logic-modern/node-domain/email/providers";
 import type { EmailProviderType } from "@/features/business-logic-modern/node-domain/email/types";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-	buildErrorRedirect,
-	buildSuccessRedirect,
-	mapOAuth2Error,
-	sanitizeAuthData,
-} from "../utils";
+import { buildErrorRedirect, mapOAuth2Error, sanitizeAuthData } from "../utils";
 
 export async function POST(request: NextRequest) {
 	try {
@@ -21,7 +16,7 @@ export async function POST(request: NextRequest) {
 		const { provider, code, state, redirectUri } = body;
 
 		// Validate required parameters
-		if (!provider || !code || !redirectUri) {
+		if (!(provider && code && redirectUri)) {
 			return NextResponse.json(
 				{ error: "Missing required parameters: provider, code, redirectUri" },
 				{ status: 400 }
@@ -77,8 +72,6 @@ export async function POST(request: NextRequest) {
 			accountInfo: connectionResult.accountInfo,
 		};
 
-		console.log("OAuth2 callback success:", sanitizeAuthData(authData));
-
 		return NextResponse.json({
 			success: true,
 			data: authData,
@@ -102,7 +95,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
 	try {
 		const { searchParams } = new URL(request.url);
-		const code = searchParams.get("code");
+		const _code = searchParams.get("code");
 		const state = searchParams.get("state");
 		const error = searchParams.get("error");
 		const provider = searchParams.get("provider") as EmailProviderType;

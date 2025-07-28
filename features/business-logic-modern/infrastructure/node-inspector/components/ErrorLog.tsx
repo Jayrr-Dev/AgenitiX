@@ -26,7 +26,7 @@ export const ErrorLog: React.FC<ErrorLogProps> = ({ errors, onClearErrors }) => 
 	const theme = useComponentTheme("nodeInspector");
 
 	return (
-		<div className="flex flex-col h-full min-h-0">
+		<div className="flex h-full min-h-0 flex-col">
 			{/* Sticky Header - Transparent */}
 			<div className="sticky top-0 z-10 pb-3">
 				<div className="flex items-center justify-between px-1">
@@ -36,7 +36,7 @@ export const ErrorLog: React.FC<ErrorLogProps> = ({ errors, onClearErrors }) => 
 					{errors.length > 0 && onClearErrors && (
 						<button
 							onClick={onClearErrors}
-							className={`px-2 py-1 text-xs text-error hover:text-error-secondary hover:bg-error-hover ${theme.borderRadius.button} ${theme.transition}`}
+							className={`px-2 py-1 text-error text-xs hover:bg-error-hover hover:text-error-secondary ${theme.borderRadius.button} ${theme.transition}`}
 						>
 							Clear All
 						</button>
@@ -45,22 +45,22 @@ export const ErrorLog: React.FC<ErrorLogProps> = ({ errors, onClearErrors }) => 
 			</div>
 
 			{/* Scrollable Error Container */}
-			<div className="flex-1 overflow-hidden flex flex-col min-h-0">
+			<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
 				{errors.length === 0 ? (
-					<div className="flex-1 flex items-center justify-center">
-						<span className={`${theme.text.muted} italic text-sm`}>No errors detected</span>
+					<div className="flex flex-1 items-center justify-center">
+						<span className={`${theme.text.muted} text-sm italic`}>No errors detected</span>
 					</div>
 				) : (
-					<div className="flex-1 overflow-y-auto overflow-x-hidden space-y-3 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+					<div className="scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent flex-1 space-y-3 overflow-y-auto overflow-x-hidden">
 						{errors.map((error, index) => (
 							<div
 								key={`${error.timestamp}-${index}`}
 								className={`${theme.background.hover} ${theme.border.default} border ${theme.borderRadius.panel} p-3`}
 							>
 								{/* Error Header */}
-								<div className="flex items-center gap-2 mb-2">
+								<div className="mb-2 flex items-center gap-2">
 									<span
-										className={`w-2 h-2 rounded-full flex-shrink-0 ${
+										className={`h-2 w-2 flex-shrink-0 rounded-full ${
 											error.type === "error"
 												? "bg-destructive"
 												: error.type === "warning"
@@ -79,14 +79,14 @@ export const ErrorLog: React.FC<ErrorLogProps> = ({ errors, onClearErrors }) => 
 									>
 										{error.type}
 									</span>
-									<span className={`${theme.text.muted} text-xs ml-auto`}>
+									<span className={`${theme.text.muted} ml-auto text-xs`}>
 										{new Date(error.timestamp).toLocaleTimeString()}
 									</span>
 								</div>
 
 								{/* Error Message */}
 								<div
-									className={`text-sm font-mono leading-relaxed break-words whitespace-pre-wrap ${
+									className={`whitespace-pre-wrap break-words font-mono text-sm leading-relaxed ${
 										error.type === "error"
 											? "text-destructive-foreground"
 											: error.type === "warning"
@@ -99,7 +99,7 @@ export const ErrorLog: React.FC<ErrorLogProps> = ({ errors, onClearErrors }) => 
 
 								{/* Error Source */}
 								{error.source && (
-									<div className={`mt-2 pt-2 border-t ${theme.border.default}`}>
+									<div className={`mt-2 border-t pt-2 ${theme.border.default}`}>
 										<span className={`text-xs ${theme.text.muted}`}>
 											Source: <span className="font-mono">{error.source}</span>
 										</span>

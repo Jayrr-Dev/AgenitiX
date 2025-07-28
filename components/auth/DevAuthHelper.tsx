@@ -31,7 +31,7 @@ export const DevAuthHelper = ({ onAuthenticate }: DevAuthHelperProps) => {
 	};
 
 	return (
-		<Card className="max-w-md mx-auto mt-8 border-yellow-200 bg-yellow-50">
+		<Card className="mx-auto mt-8 max-w-md border-yellow-200 bg-yellow-50">
 			<CardHeader>
 				<CardTitle className="text-yellow-800">Development Mode</CardTitle>
 			</CardHeader>

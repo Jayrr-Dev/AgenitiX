@@ -1,6 +1,6 @@
 // biome-ignore lint/style/noVarRequires: This file uses require for dynamic imports
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 const fg = require("fast-glob");
 const { createGenerator } = require("ts-json-schema-generator");
 
@@ -28,7 +28,6 @@ async function generate() {
 	files.forEach((f) => extractSymbolsFromFile(f).forEach((s) => unique.add(s)));
 
 	if (unique.size === 0) {
-		console.log("No tsSymbol handles found. Skipping schema generation.");
 		return;
 	}
 
@@ -51,10 +50,11 @@ async function generate() {
 	});
 
 	const outDir = path.join(projectRoot, "generated");
-	if (!fs.existsSync(outDir)) fs.mkdirSync(outDir);
+	if (!fs.existsSync(outDir)) {
+		fs.mkdirSync(outDir);
+	}
 	const outFile = path.join(outDir, "handle-types.manifest.json");
 	fs.writeFileSync(outFile, JSON.stringify(manifest, null, 2));
-	console.log(`✅ handle-types manifest generated with ${Object.keys(manifest).length} entries.`);
 }
 
 generate().catch((err) => {

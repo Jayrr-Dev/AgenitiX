@@ -25,26 +25,17 @@ export class ThreatIntelligence {
 
 	// MAIN IP REPUTATION CHECK
 	static async checkIPReputation(ip: string): Promise<ThreatIntelligenceResult> {
-		console.log(`🔍 Checking threat intelligence for IP: ${ip}`);
-
 		// ENSURE IPSUM DATA IS FRESH
-		await this.updateIPsumData();
+		await ThreatIntelligence.updateIPsumData();
 
 		// CHECK IPSUM FEED
-		const ipsumResult = this.checkIPsumFeed(ip);
+		const ipsumResult = ThreatIntelligence.checkIPsumFeed(ip);
 
 		// CHECK OTHER THREAT SOURCES
-		const additionalChecks = await this.checkAdditionalSources(ip);
+		const additionalChecks = await ThreatIntelligence.checkAdditionalSources(ip);
 
 		// COMBINE RESULTS
-		const combinedResult = this.combineResults(ip, ipsumResult, additionalChecks);
-
-		console.log(`🎯 Threat intelligence result for ${ip}:`, {
-			isMalicious: combinedResult.isMalicious,
-			riskScore: combinedResult.riskScore,
-			confidence: combinedResult.confidence,
-			blacklistHits: combinedResult.blacklistHits,
-		});
+		const combinedResult = ThreatIntelligence.combineResults(ip, ipsumResult, additionalChecks);
 
 		return combinedResult;
 	}
@@ -54,14 +45,15 @@ export class ThreatIntelligence {
 		const now = Date.now();
 
 		// CHECK IF UPDATE IS NEEDED
-		if (now - this.lastUpdate < this.CACHE_DURATION && this.ipsumCache.size > 0) {
+		if (
+			now - ThreatIntelligence.lastUpdate < ThreatIntelligence.CACHE_DURATION &&
+			ThreatIntelligence.ipsumCache.size > 0
+		) {
 			return; // Data is still fresh
 		}
 
 		try {
-			console.log(`📥 Updating IPsum threat intelligence data...`);
-
-			const response = await fetch(this.IPSUM_URL, {
+			const response = await fetch(ThreatIntelligence.IPSUM_URL, {
 				headers: {
 					"User-Agent": "AgenitiX-Anubis-Bot-Protection/1.0",
 				},
@@ -72,12 +64,10 @@ export class ThreatIntelligence {
 			}
 
 			const data = await response.text();
-			this.parseIPsumData(data);
-			this.lastUpdate = now;
-
-			console.log(`✅ IPsum data updated: ${this.ipsumCache.size} malicious IPs loaded`);
+			ThreatIntelligence.parseIPsumData(data);
+			ThreatIntelligence.lastUpdate = now;
 		} catch (error) {
-			console.error(`❌ Failed to update IPsum data:`, error);
+			console.error("❌ Failed to update IPsum data:", error);
 			// Continue with cached data if available
 		}
 	}
@@ -85,7 +75,7 @@ export class ThreatIntelligence {
 	// PARSE IPSUM TEXT DATA
 	private static parseIPsumData(data: string): void {
 		const lines = data.split("\n");
-		this.ipsumCache.clear();
+		ThreatIntelligence.ipsumCache.clear();
 
 		for (const line of lines) {
 			// SKIP COMMENTS AND EMPTY LINES
@@ -99,8 +89,8 @@ export class ThreatIntelligence {
 				const ip = parts[0];
 				const hits = Number.parseInt(parts[1], 10);
 
-				if (this.isValidIP(ip) && !isNaN(hits)) {
-					this.ipsumCache.set(ip, { ip, hits });
+				if (ThreatIntelligence.isValidIP(ip) && !Number.isNaN(hits)) {
+					ThreatIntelligence.ipsumCache.set(ip, { ip, hits });
 				}
 			}
 		}
@@ -108,7 +98,7 @@ export class ThreatIntelligence {
 
 	// CHECK IP AGAINST IPSUM FEED
 	private static checkIPsumFeed(ip: string): Partial<ThreatIntelligenceResult> {
-		const entry = this.ipsumCache.get(ip);
+		const entry = ThreatIntelligence.ipsumCache.get(ip);
 
 		if (!entry) {
 			return {
@@ -165,7 +155,7 @@ export class ThreatIntelligence {
 		};
 
 		// CHECK FOR TOR EXIT NODES
-		if (this.isTorExitNode(ip)) {
+		if (ThreatIntelligence.isTorExitNode(ip)) {
 			results.isMalicious = true;
 			results.riskScore = Math.max(results.riskScore || 0, 85);
 			results.sources?.push("Tor Exit Node");
@@ -173,13 +163,13 @@ export class ThreatIntelligence {
 		}
 
 		// CHECK FOR HOSTING PROVIDERS
-		if (this.isHostingProvider(ip)) {
+		if (ThreatIntelligence.isHostingProvider(ip)) {
 			results.riskScore = Math.max(results.riskScore || 0, 60);
 			results.sources?.push("Hosting Provider");
 		}
 
 		// CHECK FOR SUSPICIOUS RANGES
-		if (this.isSuspiciousRange(ip)) {
+		if (ThreatIntelligence.isSuspiciousRange(ip)) {
 			results.riskScore = Math.max(results.riskScore || 0, 40);
 			results.sources?.push("Suspicious Range");
 		}
@@ -189,11 +179,11 @@ export class ThreatIntelligence {
 
 	// COMBINE RESULTS FROM MULTIPLE SOURCES
 	private static combineResults(
-		ip: string,
+		_ip: string,
 		ipsumResult: Partial<ThreatIntelligenceResult>,
 		additionalResult: Partial<ThreatIntelligenceResult>
 	): ThreatIntelligenceResult {
-		const isMalicious = ipsumResult.isMalicious || additionalResult.isMalicious || false;
+		const isMalicious = ipsumResult.isMalicious || additionalResult.isMalicious;
 		const maxRiskScore = Math.max(ipsumResult.riskScore || 0, additionalResult.riskScore || 0);
 		const combinedSources = [...(ipsumResult.sources || []), ...(additionalResult.sources || [])];
 		const totalHits = (ipsumResult.blacklistHits || 0) + (additionalResult.blacklistHits || 0);
@@ -270,18 +260,19 @@ export class ThreatIntelligence {
 	// GET CACHE STATISTICS
 	static getCacheStats(): { size: number; lastUpdate: Date | null; isStale: boolean } {
 		const now = Date.now();
-		const isStale = now - this.lastUpdate > this.CACHE_DURATION;
+		const isStale = now - ThreatIntelligence.lastUpdate > ThreatIntelligence.CACHE_DURATION;
 
 		return {
-			size: this.ipsumCache.size,
-			lastUpdate: this.lastUpdate > 0 ? new Date(this.lastUpdate) : null,
+			size: ThreatIntelligence.ipsumCache.size,
+			lastUpdate:
+				ThreatIntelligence.lastUpdate > 0 ? new Date(ThreatIntelligence.lastUpdate) : null,
 			isStale,
 		};
 	}
 
 	// FORCE CACHE REFRESH
 	static async refreshCache(): Promise<void> {
-		this.lastUpdate = 0; // Force refresh
-		await this.updateIPsumData();
+		ThreatIntelligence.lastUpdate = 0; // Force refresh
+		await ThreatIntelligence.updateIPsumData();
 	}
 }

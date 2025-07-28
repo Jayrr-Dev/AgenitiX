@@ -1,5 +1,5 @@
 import { getRouteProtectionManager, loadAnubisConfig } from "@/lib/anubis/config";
-import { AnubisCrypto, AnubisJWT } from "@/lib/anubis/crypto";
+import { AnubisJWT } from "@/lib/anubis/crypto";
 import { adaptiveRateLimiter } from "@/lib/anubis/rate-limiter";
 import { RiskEngine, RiskMonitor } from "@/lib/anubis/risk-engine";
 // middleware.ts
@@ -57,10 +57,6 @@ export async function middleware(request: NextRequest) {
 	const rateLimitResult = adaptiveRateLimiter.checkLimit(requestMetadata, riskLevel.name);
 
 	if (!rateLimitResult.allowed) {
-		console.log(
-			`🚦 Rate limit exceeded: ${rateLimitResult.totalHits}/${rateLimitResult.remaining}`
-		);
-
 		const response = NextResponse.json(
 			{
 				error: "Rate limit exceeded",
@@ -107,7 +103,7 @@ export async function middleware(request: NextRequest) {
 				response.headers.set("X-Anubis-Risk-Score", riskLevel.score.toString());
 				return response;
 			}
-		} catch (error) {
+		} catch (_error) {
 			// Invalid token - continue to verification flow
 		}
 	}
@@ -140,21 +136,20 @@ export async function middleware(request: NextRequest) {
 					response.headers.set("X-Anubis-Grace-Period", adaptiveConfig.gracePeriod.toString());
 
 					return response;
-				} else {
-					// GRACE PERIOD EXPIRED - CHECK VERIFICATION STATUS
-					if (!sessionData.verified) {
-						// VERIFICATION FAILED - INCREMENT FAILURES AND BLOCK
-						const response = redirectToChallenge(request, adaptiveConfig.challengeDifficulty);
-						response.cookies.set("anubis-failures", String(failures + 1), {
-							maxAge: 3600, // 1 hour
-							httpOnly: true,
-							secure: true,
-							sameSite: "strict",
-						});
-						return response;
-					}
 				}
-			} catch (error) {
+				// GRACE PERIOD EXPIRED - CHECK VERIFICATION STATUS
+				if (!sessionData.verified) {
+					// VERIFICATION FAILED - INCREMENT FAILURES AND BLOCK
+					const response = redirectToChallenge(request, adaptiveConfig.challengeDifficulty);
+					response.cookies.set("anubis-failures", String(failures + 1), {
+						maxAge: 3600, // 1 hour
+						httpOnly: true,
+						secure: true,
+						sameSite: "strict",
+					});
+					return response;
+				}
+			} catch (_error) {
 				// Invalid session cookie - start new adaptive flow
 			}
 		}
@@ -189,11 +184,8 @@ export async function middleware(request: NextRequest) {
 		});
 
 		return response;
-	} else {
-		// IMMEDIATE CHALLENGE MODE
-		console.log(`🛡️ Immediate challenge required for ${riskLevel.name} risk`);
-		return redirectToChallenge(request, adaptiveConfig.challengeDifficulty);
 	}
+	return redirectToChallenge(request, adaptiveConfig.challengeDifficulty);
 }
 
 // HELPER FUNCTIONS
@@ -233,7 +225,7 @@ async function getSessionHistory(request: NextRequest): Promise<any> {
 			const sessionData = JSON.parse(sessionCookie.value);
 			history.challenges = sessionData.challengeCount || 0;
 			history.lastActivity = sessionData.startTime || Date.now();
-		} catch (error) {
+		} catch (_error) {
 			// Invalid session data
 		}
 	}
@@ -247,16 +239,24 @@ function getClientIP(request: NextRequest): string {
 	const realIP = request.headers.get("x-real-ip");
 	const cfConnectingIP = request.headers.get("cf-connecting-ip");
 
-	if (cfConnectingIP) return cfConnectingIP;
-	if (realIP) return realIP;
-	if (forwarded) return forwarded.split(",")[0].trim();
+	if (cfConnectingIP) {
+		return cfConnectingIP;
+	}
+	if (realIP) {
+		return realIP;
+	}
+	if (forwarded) {
+		return forwarded.split(",")[0].trim();
+	}
 
 	return "127.0.0.1"; // FALLBACK IP
 }
 
 // CHECK IF USER AGENT IS ALLOWED (SEARCH BOTS)
 function isAllowedUserAgent(userAgent: string | undefined, allowedAgents: string[]): boolean {
-	if (!userAgent) return false;
+	if (!userAgent) {
+		return false;
+	}
 
 	return allowedAgents.some((allowed) => userAgent.toLowerCase().includes(allowed.toLowerCase()));
 }

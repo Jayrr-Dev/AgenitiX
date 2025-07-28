@@ -43,7 +43,7 @@ const ThemeSwitcher = () => {
 	return (
 		<>
 			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
+				<DropdownMenuTrigger asChild={true}>
 					<Button variant="ghost" size={"sm"}>
 						{theme === "light" ? (
 							<Sun key="light" size={ICON_SIZE} className={"text-muted-foreground"} />
@@ -76,7 +76,7 @@ const ThemeSwitcher = () => {
 							<Button
 								variant="ghost"
 								size="sm"
-								className="w-full justify-start gap-2 h-8 px-2 py-1.5"
+								className="h-8 w-full justify-start gap-2 px-2 py-1.5"
 								onClick={colorDebugger.show}
 							>
 								<Palette size={ICON_SIZE} className="text-muted-foreground" />

@@ -30,11 +30,10 @@ class MemoryStore {
 			// NEW WINDOW OR EXPIRED
 			this.hits.set(key, { count: 1, resetTime });
 			return { totalHits: 1, resetTime };
-		} else {
-			// INCREMENT EXISTING
-			current.count++;
-			return { totalHits: current.count, resetTime: current.resetTime };
 		}
+		// INCREMENT EXISTING
+		current.count++;
+		return { totalHits: current.count, resetTime: current.resetTime };
 	}
 
 	// GET CURRENT COUNT
@@ -91,10 +90,6 @@ export class RateLimiter {
 
 		const allowed = totalHits <= this.config.maxRequests;
 		const remaining = Math.max(0, this.config.maxRequests - totalHits);
-
-		console.log(
-			`🚦 Rate limit check for ${key}: ${totalHits}/${this.config.maxRequests} (${allowed ? "ALLOWED" : "BLOCKED"})`
-		);
 
 		return {
 			allowed,
@@ -180,13 +175,13 @@ export class AdaptiveRateLimiter {
 	// CHECK RATE LIMIT BASED ON RISK LEVEL
 	checkLimit(request: any, riskLevel: string): RateLimitResult {
 		const limiter = this.limiters.get(riskLevel) || this.limiters.get("MODERATE");
-		return limiter!.checkLimit(request);
+		return limiter?.checkLimit(request);
 	}
 
 	// GET STATUS WITHOUT INCREMENTING
 	getStatus(request: any, riskLevel: string): RateLimitResult {
 		const limiter = this.limiters.get(riskLevel) || this.limiters.get("MODERATE");
-		return limiter!.getStatus(request);
+		return limiter?.getStatus(request);
 	}
 }
 

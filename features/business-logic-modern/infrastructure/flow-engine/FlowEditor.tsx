@@ -85,14 +85,14 @@ class ErrorBoundary extends React.Component<
 		if (this.state.hasError) {
 			return (
 				<div className={wrapErrorScreen}>
-					<div className="text-center p-8">
+					<div className="p-8 text-center">
 						<h1 className={styleErrorTitle}>Something went wrong</h1>
 						<p className={styleErrorSubtitle}>
 							{this.state.error?.message || "Unknown error occurred"}
 						</p>
 						<button
 							onClick={() => this.setState({ hasError: false })}
-							className={styleRetryBase + " " + styleRetryColour}
+							className={`${styleRetryBase} ${styleRetryColour}`}
 						>
 							Try again
 						</button>
@@ -205,11 +205,11 @@ const FlowEditorInternal = () => {
 	const { undo, redo, recordAction } = useUndoRedo();
 
 	const handleUndo = useCallback(() => {
-		const success = undo();
+		const _success = undo();
 	}, [undo]);
 
 	const handleRedo = useCallback(() => {
-		const success = redo();
+		const _success = redo();
 	}, [redo]);
 
 	// ============================================================================
@@ -412,9 +412,9 @@ const FlowEditorInternal = () => {
 	// Show loading state while canvas is being loaded
 	if (canvasLoader.isLoading) {
 		return (
-			<div className="h-screen w-screen flex items-center justify-center bg-background">
+			<div className="flex h-screen w-screen items-center justify-center bg-background">
 				<div className="text-center">
-					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+					<div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-primary border-b-2" />
 					<p className="text-muted-foreground">Loading canvas...</p>
 				</div>
 			</div>
@@ -424,14 +424,14 @@ const FlowEditorInternal = () => {
 	// Show error state if canvas loading failed
 	if (canvasLoader.error) {
 		return (
-			<div className="h-screen w-screen flex items-center justify-center bg-background">
-				<div className="text-center max-w-md mx-auto px-4">
-					<div className="text-destructive text-4xl mb-4">⚠️</div>
-					<h2 className="text-xl font-bold text-foreground mb-2">Failed to Load Canvas</h2>
-					<p className="text-muted-foreground mb-4">{canvasLoader.error}</p>
+			<div className="flex h-screen w-screen items-center justify-center bg-background">
+				<div className="mx-auto max-w-md px-4 text-center">
+					<div className="mb-4 text-4xl text-destructive">⚠️</div>
+					<h2 className="mb-2 font-bold text-foreground text-xl">Failed to Load Canvas</h2>
+					<p className="mb-4 text-muted-foreground">{canvasLoader.error}</p>
 					<button
 						onClick={() => window.location.reload()}
-						className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+						className="rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
 					>
 						Retry
 					</button>
@@ -469,7 +469,7 @@ const FlowEditorInternal = () => {
 					enableViewportTracking: false,
 					enableCompression: true,
 				}}
-				onHistoryChange={(path, currentIndex) => {
+				onHistoryChange={(_path, _currentIndex) => {
 					// History updated callback - silent
 				}}
 			/>
@@ -480,7 +480,7 @@ const FlowEditorInternal = () => {
 				onToggleHistory={toggleHistoryPanel}
 				className={`fixed z-50 ${
 					inspectorViewMode === "side"
-						? "bottom-4 left-1/2 transform -translate-x-1/2"
+						? "-translate-x-1/2 bottom-4 left-1/2 transform"
 						: "top-4 right-4"
 				}`}
 			/>

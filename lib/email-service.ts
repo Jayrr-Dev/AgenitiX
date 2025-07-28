@@ -116,16 +116,6 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 
 	// For development: Log to console
 	if (process.env.NODE_ENV === "development") {
-		console.log("\n🔗 MAGIC LINK EMAIL (Development Mode)");
-		console.log("=====================================");
-		console.log(`📧 To: ${to}`);
-		console.log(`📝 Subject: ${emailContent.subject}`);
-		console.log(`🔗 Magic Link: ${magicLinkUrl}`);
-		console.log(`⏰ Type: ${type}`);
-		console.log("=====================================");
-		console.log("👆 Click the magic link above to test authentication");
-		console.log("=====================================\n");
-
 		// Return the magic link URL for the API response
 		return {
 			success: true,
@@ -145,11 +135,6 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 			};
 		}
 
-		console.log("📧 Attempting to send email via Resend...");
-		console.log("📧 To:", to);
-		console.log("📧 Type:", type);
-		console.log("📧 Magic Link:", magicLinkUrl);
-
 		// Use Resend for production emails
 		const { Resend } = await import("resend");
 		const resend = new Resend(process.env.RESEND_API_KEY);
@@ -160,15 +145,12 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 			subject: emailContent.subject,
 			html: emailContent.html,
 		});
-
-		console.log("✅ Email sent successfully via Resend:", result.data?.id);
 		return { success: true, messageId: result.data?.id || "sent" };
 	} catch (error) {
 		console.error("❌ Email sending failed:", error);
 
 		// Try fallback with Resend's default domain
 		try {
-			console.log("🔄 Trying fallback with Resend default domain...");
 			const { Resend } = await import("resend");
 			const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -178,8 +160,6 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 				subject: emailContent.subject,
 				html: emailContent.html,
 			});
-
-			console.log("✅ Fallback email sent successfully:", fallbackResult.data?.id);
 			return { success: true, messageId: fallbackResult.data?.id || "sent" };
 		} catch (fallbackError) {
 			console.error("❌ Fallback email also failed:", fallbackError);

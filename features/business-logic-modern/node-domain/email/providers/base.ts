@@ -36,7 +36,7 @@ export abstract class BaseEmailProvider implements EmailProvider {
 
 	// Common validation methods
 	protected validateEmailConfig(config: EmailAccountConfig): EmailError | null {
-		if (!config.email || !validateEmailAddress(config.email)) {
+		if (!(config.email && validateEmailAddress(config.email))) {
 			return createEmailError(
 				"CONFIGURATION_INVALID",
 				"Please enter a valid email address",

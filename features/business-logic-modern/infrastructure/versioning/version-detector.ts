@@ -1,7 +1,6 @@
-import crypto from "crypto";
-import fs from "fs";
-import path from "path";
-import { VERSION_CONFIG, hasBreakingChange, parseCommitTitle } from "./auto-version";
+import fs from "node:fs";
+import path from "node:path";
+import { hasBreakingChange, parseCommitTitle } from "./auto-version";
 
 /**
  * VERSION DETECTOR - GitHub Conventional Commits Based
@@ -96,7 +95,7 @@ class ConventionalCommitVersionDetector {
 	 */
 	private getChangedFilesFromCommits(commits: GitCommit[]): string[] {
 		try {
-			const { execSync } = require("child_process");
+			const { execSync } = require("node:child_process");
 			const changedFiles = new Set<string>();
 
 			for (const commit of commits) {
@@ -123,7 +122,7 @@ class ConventionalCommitVersionDetector {
 
 		try {
 			// Use git log to get commits
-			const { execSync } = require("child_process");
+			const { execSync } = require("node:child_process");
 
 			let gitCommand = 'git log --format="%H|%s|%b|%an|%ad" --date=iso';
 
@@ -186,7 +185,8 @@ class ConventionalCommitVersionDetector {
 			if (bumpType === "major") {
 				hasMajor = true;
 				break;
-			} else if (bumpType === "minor") {
+			}
+			if (bumpType === "minor") {
 				hasMinor = true;
 			} else if (bumpType === "patch") {
 				hasPatch = true;
@@ -194,9 +194,15 @@ class ConventionalCommitVersionDetector {
 		}
 
 		// Return highest priority bump type
-		if (hasMajor) return "major";
-		if (hasMinor) return "minor";
-		if (hasPatch) return "patch";
+		if (hasMajor) {
+			return "major";
+		}
+		if (hasMinor) {
+			return "minor";
+		}
+		if (hasPatch) {
+			return "patch";
+		}
 
 		return null; // No conventional commits found
 	}
@@ -246,10 +252,8 @@ class ConventionalCommitVersionDetector {
 				this.cache = JSON.parse(data);
 			} else {
 				// Initialize with current version and set current commit as last processed
-				const { execSync } = require("child_process");
+				const { execSync } = require("node:child_process");
 				const latestCommit = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
-
-				console.log("🔄 Initializing new cache with commit:", latestCommit.substring(0, 7));
 
 				this.cache = {
 					lastProcessedCommit: latestCommit, // Start from current commit
@@ -264,7 +268,6 @@ class ConventionalCommitVersionDetector {
 
 				// Save the cache immediately
 				this.saveVersionCache();
-				console.log("✅ Cache initialized and saved");
 			}
 		} catch (error) {
 			console.error("Error loading version cache:", error);
@@ -384,11 +387,7 @@ export const VERSION = {
 				const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
 				packageJson.version = versionInfo.version;
 				fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-				console.log(`📦 package.json version synced to ${versionInfo.version}`);
 			}
-
-			console.log(`✅ Version updated to ${versionInfo.version} (${versionInfo.bumpType})`);
-			console.log(`📝 Reason: ${versionInfo.reason}`);
 		} catch (error) {
 			console.error("Error updating version file:", error);
 		}
@@ -399,7 +398,7 @@ export const VERSION = {
 	 */
 	private async getGitInfo(): Promise<any> {
 		try {
-			const { execSync } = require("child_process");
+			const { execSync } = require("node:child_process");
 
 			const hash = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
 			const shortHash = hash.substring(0, 7);
@@ -415,7 +414,7 @@ export const VERSION = {
 				date,
 				available: true,
 			};
-		} catch (error) {
+		} catch (_error) {
 			return {
 				hash: "unknown",
 				shortHash: "unknown",

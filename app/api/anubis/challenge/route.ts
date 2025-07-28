@@ -4,7 +4,7 @@ import type { AnubisChallengeResponse } from "@/types/anubis";
 import { type NextRequest, NextResponse } from "next/server";
 
 // ANUBIS CHALLENGE API ENDPOINTS
-export async function GET(request: NextRequest) {
+export function GET(request: NextRequest) {
 	try {
 		const config = loadAnubisConfig();
 		const { searchParams } = new URL(request.url);
@@ -92,15 +92,24 @@ function getClientIP(request: NextRequest): string {
 	const realIP = request.headers.get("x-real-ip");
 	const cfConnectingIP = request.headers.get("cf-connecting-ip");
 
-	if (cfConnectingIP) return cfConnectingIP;
-	if (realIP) return realIP;
-	if (forwarded) return forwarded.split(",")[0].trim();
+	if (cfConnectingIP) {
+		return cfConnectingIP;
+	}
+	if (realIP) {
+		return realIP;
+	}
+	if (forwarded) {
+		return forwarded.split(",")[0].trim();
+	}
 
 	return "127.0.0.1";
 }
 
 // GENERATE CHALLENGE PAGE HTML
-function generateChallengePageHTML(challenge: any, returnTo: string): string {
+function generateChallengePageHTML(
+	challenge: { id: string; difficulty: number; timestamp: number; [key: string]: unknown },
+	returnTo: string
+): string {
 	return `
 <!DOCTYPE html>
 <html lang="en">

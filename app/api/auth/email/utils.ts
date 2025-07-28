@@ -21,7 +21,7 @@ export function validateStateToken(
 	receivedState: string | null,
 	expectedState: string | null
 ): boolean {
-	if (!receivedState || !expectedState) {
+	if (!(receivedState && expectedState)) {
 		return false;
 	}
 	return receivedState === expectedState;
@@ -149,7 +149,7 @@ export function mapOAuth2Error(error: string): { code: string; message: string }
 // Token refresh helper
 export async function refreshAccessToken(
 	provider: EmailProviderType,
-	refreshToken: string
+	_refreshToken: string
 ): Promise<{ accessToken: string; expiresIn: number; refreshToken?: string }> {
 	// This would be implemented based on the provider
 	// For now, throw an error to indicate it needs implementation
@@ -162,11 +162,11 @@ export function sanitizeAuthData(authData: any): any {
 	const sanitized = { ...authData };
 
 	if (sanitized.accessToken) {
-		sanitized.accessToken = sanitized.accessToken.substring(0, 10) + "...";
+		sanitized.accessToken = `${sanitized.accessToken.substring(0, 10)}...`;
 	}
 
 	if (sanitized.refreshToken) {
-		sanitized.refreshToken = sanitized.refreshToken.substring(0, 10) + "...";
+		sanitized.refreshToken = `${sanitized.refreshToken.substring(0, 10)}...`;
 	}
 
 	return sanitized;

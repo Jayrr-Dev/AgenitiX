@@ -12,8 +12,8 @@
  * NOTE: This does not overwrite manual edits; it rewrites the file fully.
  */
 
-import { writeFileSync } from "fs";
-import { join } from "path";
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
 import tokens from "../features/business-logic-modern/infrastructure/theming/tokens.json";
 
 // ---------------------------------------------------------------------
@@ -56,27 +56,26 @@ for (const [name, val] of Object.entries(flat)) {
 }
 
 // Build CSS
-let css = `/* AUTO-GENERATED FILE — do not edit directly  */\n`;
+let css = "/* AUTO-GENERATED FILE — do not edit directly  */\n";
 
 // Light theme / default variables (use :root instead of @theme for broad browser support)
-css += `:root {\n`;
+css += ":root {\n";
 for (const [name, val] of Object.entries(lightTokens)) {
-	const needsCorePrefix = !name.startsWith("node-") && !name.startsWith("infra-");
+	const needsCorePrefix = !(name.startsWith("node-") || name.startsWith("infra-"));
 	const varName = needsCorePrefix ? `--core-${name}` : `--${name}`;
 	css += `  ${varName}: ${val};\n`;
 }
-css += `}\n\n`;
+css += "}\n\n";
 
 // Dark theme overrides
-css += `html.dark {\n`;
+css += "html.dark {\n";
 for (const [name, val] of Object.entries(darkTokens)) {
-	const needsCorePrefix = !name.startsWith("node-") && !name.startsWith("infra-");
+	const needsCorePrefix = !(name.startsWith("node-") || name.startsWith("infra-"));
 	const varName = needsCorePrefix ? `--core-${name}` : `--${name}`;
 	css += `  ${varName}: ${val};\n`;
 }
-css += `}\n`;
+css += "}\n";
 
 // Write
 const outPath = join(process.cwd(), "app/styles/_generated_tokens.css");
 writeFileSync(outPath, css);
-console.log(`✔  wrote ${Object.keys(flat).length} tokens to ${outPath}`);

@@ -2,7 +2,6 @@
 
 import Autoplay from "embla-carousel-autoplay";
 import useEmblaCarousel, { type UseEmblaCarouselType } from "embla-carousel-react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
 import * as React from "react";
 
 import type { Button } from "@/components/ui/button";
@@ -54,7 +53,9 @@ const Carousel = React.forwardRef<
 	const [totalSlides, setTotalSlides] = React.useState(0);
 
 	const onSelect = React.useCallback((api: CarouselApi) => {
-		if (!api) return;
+		if (!api) {
+			return;
+		}
 		setCanScrollPrev(api.canScrollPrev());
 		setCanScrollNext(api.canScrollNext());
 		setSelectedIndex(api.selectedScrollSnap());
@@ -66,12 +67,16 @@ const Carousel = React.forwardRef<
 	const scrollTo = React.useCallback((index: number) => api?.scrollTo(index), [api]);
 
 	React.useEffect(() => {
-		if (!api || !setApi) return;
+		if (!(api && setApi)) {
+			return;
+		}
 		setApi(api);
 	}, [api, setApi]);
 
 	React.useEffect(() => {
-		if (!api) return;
+		if (!api) {
+			return;
+		}
 		onSelect(api);
 		api.on("reInit", onSelect);
 		api.on("select", onSelect);
@@ -161,8 +166,8 @@ const CarouselPrevious = React.forwardRef<HTMLButtonElement, React.ComponentProp
 				className={cn(
 					"absolute h-8 w-8 rounded-full",
 					orientation === "horizontal"
-						? "-left-12 top-1/2 -translate-y-1/2"
-						: "-top-12 left-1/2 -translate-x-1/2 rotate-90",
+						? "-left-12 -translate-y-1/2 top-1/2"
+						: "-top-12 -translate-x-1/2 left-1/2 rotate-90",
 					className
 				)}
 				disabled={!canScrollPrev}
@@ -188,8 +193,8 @@ const CarouselNext = React.forwardRef<HTMLButtonElement, React.ComponentProps<ty
 				className={cn(
 					"absolute h-8 w-8 rounded-full",
 					orientation === "horizontal"
-						? "-right-12 top-1/2 -translate-y-1/2"
-						: "-bottom-12 left-1/2 -translate-x-1/2 rotate-90",
+						? "-right-12 -translate-y-1/2 top-1/2"
+						: "-bottom-12 -translate-x-1/2 left-1/2 rotate-90",
 					className
 				)}
 				disabled={!canScrollNext}
@@ -207,7 +212,7 @@ CarouselNext.displayName = "CarouselNext";
 const CarouselDots = ({ className }: { className?: string }) => {
 	const { selectedIndex, totalSlides, scrollTo } = useCarousel();
 	return (
-		<div className={cn("absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2 z-10", className)}>
+		<div className={cn("-translate-x-1/2 absolute bottom-4 left-1/2 z-10 flex gap-2", className)}>
 			{Array.from({ length: totalSlides }).map((_, index) => (
 				<button
 					key={index}

@@ -153,7 +153,7 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 					className="h-8 px-2 text-muted-foreground hover:text-foreground"
 					title="Share flow"
 				>
-					<Share2 className="w-4 h-4" />
+					<Share2 className="h-4 w-4" />
 				</Button>
 				<Button
 					variant="ghost"
@@ -162,7 +162,7 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 					className="h-8 px-2 text-muted-foreground hover:text-foreground"
 					title="Edit flow"
 				>
-					<Edit3 className="w-4 h-4" />
+					<Edit3 className="h-4 w-4" />
 				</Button>
 				<Button
 					variant="ghost"
@@ -171,7 +171,7 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 					className="h-8 px-2 text-muted-foreground hover:text-destructive"
 					title="Delete flow"
 				>
-					<Trash2 className="w-4 h-4" />
+					<Trash2 className="h-4 w-4" />
 				</Button>
 			</div>
 
@@ -195,7 +195,7 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 								disabled={isUpdating}
 								maxLength={12}
 							/>
-							<div className="text-xs text-muted-foreground text-right">
+							<div className="text-right text-muted-foreground text-xs">
 								{editName.length}/12 characters
 							</div>
 						</div>
@@ -210,14 +210,14 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 								rows={3}
 								maxLength={200}
 							/>
-							<div className="text-xs text-muted-foreground text-right">
+							<div className="text-right text-muted-foreground text-xs">
 								{editDescription.length}/200 characters
 							</div>
 						</div>
 						<div className="flex items-center justify-between">
 							<div className="space-y-0.5">
 								<Label htmlFor="privacy">Privacy</Label>
-								<div className="text-sm text-muted-foreground">
+								<div className="text-muted-foreground text-sm">
 									{editIsPrivate ? "Only you can see this flow" : "Anyone can see this flow"}
 								</div>
 							</div>
@@ -227,9 +227,9 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 								onCheckedChange={(checked: boolean) => setEditIsPrivate(!checked)}
 								disabled={isUpdating}
 								className={`transition-all duration-200 ${
-									!editIsPrivate
-										? "data-[state=checked]:bg-green-600"
-										: "data-[state=unchecked]:bg-orange-500"
+									editIsPrivate
+										? "data-[state=unchecked]:bg-orange-500"
+										: "data-[state=checked]:bg-green-600"
 								}`}
 							/>
 						</div>

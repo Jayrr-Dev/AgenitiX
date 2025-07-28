@@ -61,7 +61,7 @@ export function useAutoSaveCanvas(options: UseAutoSaveCanvasOptions = {}): AutoS
 
 	// Save function
 	const performSave = useCallback(async () => {
-		if (!user?.id || !flow?.id || !flow.canEdit) {
+		if (!(user?.id && flow?.id && flow.canEdit)) {
 			return;
 		}
 
@@ -127,7 +127,7 @@ export function useAutoSaveCanvas(options: UseAutoSaveCanvasOptions = {}): AutoS
 
 	// Auto-save effect with debouncing
 	useEffect(() => {
-		if (!enabled || !user?.id || !flow?.id || !flow.canEdit) {
+		if (!(enabled && user?.id && flow?.id && flow.canEdit)) {
 			return;
 		}
 

@@ -89,11 +89,11 @@ export class Anubis {
 	}
 
 	// ANALYZE REQUEST RISK
-	async analyzeRequest(request: {
+	analyzeRequest(request: {
 		ip: string;
 		userAgent: string;
 		headers: Record<string, string>;
-		sessionHistory?: any;
+		sessionHistory?: Record<string, unknown>;
 		timestamp?: number;
 	}) {
 		return RiskEngine.analyzeRequest({
@@ -108,10 +108,7 @@ export class Anubis {
 	}
 
 	// VALIDATE PROOF OF WORK
-	async validateProofOfWork(
-		response: AnubisChallengeResponse,
-		difficulty?: number
-	): Promise<boolean> {
+	validateProofOfWork(response: AnubisChallengeResponse, difficulty?: number): boolean {
 		return AnubisCrypto.validateProofOfWork(response, difficulty || this.config.difficulty);
 	}
 
@@ -128,17 +125,20 @@ export class Anubis {
 	}
 
 	// VERIFY JWT TOKEN
-	async verifyToken(token: string): Promise<AnubisJWTPayload | null> {
+	verifyToken(token: string): AnubisJWTPayload | null {
 		return AnubisJWT.verify(token, this.config.jwtSecret);
 	}
 
 	// SIGN JWT TOKEN
-	async signToken(payload: AnubisJWTPayload): Promise<string> {
+	signToken(payload: AnubisJWTPayload): string {
 		return AnubisJWT.sign(payload, this.config.jwtSecret);
 	}
 
 	// CHECK RATE LIMIT
-	checkRateLimit(request: any, riskLevel: string) {
+	checkRateLimit(
+		request: { ip: string; userAgent: string; [key: string]: unknown },
+		riskLevel: string
+	) {
 		return adaptiveRateLimiter.checkLimit(request, riskLevel);
 	}
 

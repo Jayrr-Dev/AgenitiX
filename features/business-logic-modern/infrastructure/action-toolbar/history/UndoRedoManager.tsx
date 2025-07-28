@@ -127,7 +127,9 @@ const createStateHash = (state: FlowState): string => {
  */
 const areStatesEqualOptimized = (state1: FlowState, state2: FlowState): boolean => {
 	// 🚀 Immediate shortcut when both references are identical
-	if (state1 === state2) return true;
+	if (state1 === state2) {
+		return true;
+	}
 
 	// If both hashes exist we can short-circuit immediately
 	if (state1.__hash && state2.__hash) {
@@ -147,8 +149,8 @@ const areStatesEqualOptimized = (state1: FlowState, state2: FlowState): boolean 
 };
 
 // COMPATIBILITY ALIASES - Use optimized versions
-const createFlowState = createFlowStateOptimized;
-const areStatesEqual = areStatesEqualOptimized;
+const _createFlowState = createFlowStateOptimized;
+const _areStatesEqual = areStatesEqualOptimized;
 
 const getActionDescription = (type: ActionType, metadata: Record<string, unknown>): string => {
 	switch (type) {
@@ -156,18 +158,20 @@ const getActionDescription = (type: ActionType, metadata: Record<string, unknown
 			return `Add ${metadata.nodeType || "node"}`;
 		case "node_delete":
 			return `Delete ${metadata.nodeType || "node"}`;
-		case "node_move":
+		case "node_move": {
 			const nodeCount = metadata.nodeCount as number;
 			return nodeCount > 1 ? `Move ${nodeCount} nodes` : "Move node";
+		}
 		case "edge_add":
 			return "Connect nodes";
 		case "edge_delete":
 			return "Delete connection";
 		case "duplicate":
 			return `Duplicate ${metadata.nodeType || "node"}`;
-		case "paste":
+		case "paste": {
 			const pasteCount = metadata.nodeCount as number;
 			return pasteCount > 1 ? `Paste ${pasteCount} nodes` : "Paste node";
+		}
 		default:
 			return `${type}`;
 	}
@@ -190,7 +194,9 @@ const usePerformanceMonitor = () => {
 	});
 
 	const measureStateCreation = useCallback((fn: () => any): any => {
-		if (!DEBUG_MODE) return fn();
+		if (!DEBUG_MODE) {
+			return fn();
+		}
 
 		const start = performance.now();
 		const result = fn();
@@ -207,7 +213,9 @@ const usePerformanceMonitor = () => {
 	}, []);
 
 	const measureComparison = useCallback((fn: () => any): any => {
-		if (!DEBUG_MODE) return fn();
+		if (!DEBUG_MODE) {
+			return fn();
+		}
 
 		const start = performance.now();
 		const result = fn();
@@ -219,15 +227,11 @@ const usePerformanceMonitor = () => {
 	}, []);
 
 	const logMetrics = useCallback(() => {
-		if (!DEBUG_MODE) return;
+		if (!DEBUG_MODE) {
+			return;
+		}
 
-		const metrics = metricsRef.current;
-		console.log("📊 [UndoRedo] Performance Metrics:", {
-			stateCreation: `${metrics.stateCreationTime.toFixed(2)}ms`,
-			comparison: `${metrics.comparisonTime.toFixed(2)}ms`,
-			memoryUsage: `${(metrics.memoryUsage / 1024 / 1024).toFixed(2)}MB`,
-			historySize: metrics.historySize,
-		});
+		const _metrics = metricsRef.current;
 	}, []);
 
 	return { measureStateCreation, measureComparison, logMetrics };
@@ -310,9 +314,8 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 	}, [nodes, edges, finalConfig.enableViewportTracking, reactFlowInstance, measureStateCreation]);
 
 	const applyState = useCallback(
-		(state: FlowState, actionType: string) => {
+		(state: FlowState, _actionType: string) => {
 			if (DEBUG_MODE) {
-				console.log(`🔄 [UndoRedo] Applying state for: ${actionType}`);
 			}
 
 			isUndoRedoOperationRef.current = true;
@@ -334,7 +337,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 				setTimeout(() => {
 					isUndoRedoOperationRef.current = false;
 					if (DEBUG_MODE) {
-						console.log("✅ [UndoRedo] State application completed");
 					}
 				}, 50);
 			}
@@ -377,7 +379,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 			// Skip if states are identical
 			if (areStatesEqualOptimized(cursorNode.after, nextState)) {
 				if (DEBUG_MODE) {
-					console.log("🚫 [UndoRedo] Skipping identical states");
 				}
 				return;
 			}
@@ -385,7 +386,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 			// Skip if this is an undo/redo operation
 			if (isUndoRedoOperationRef.current) {
 				if (DEBUG_MODE) {
-					console.log("🚫 [UndoRedo] Skipping during undo/redo operation");
 				}
 				return;
 			}
@@ -409,7 +409,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 			lastActionTimestampRef.current = Date.now();
 
 			if (DEBUG_MODE) {
-				console.log(`📝 [UndoRedo] Push: ${label}`, getGraphStats(graph));
 			}
 
 			// Notify history change with compatible format
@@ -425,7 +424,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
 	const clearHistory = useCallback(() => {
 		if (DEBUG_MODE) {
-			console.log("🗑️ [UndoRedo] Clearing history");
 		}
 
 		const currentState = captureCurrentState();
@@ -465,7 +463,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 				onHistoryChange?.(path, path.length - 1);
 
 				if (DEBUG_MODE) {
-					console.log(`🗑️ [UndoRedo] Removed node ${targetNodeId} and its children`);
 				}
 			}
 
@@ -492,7 +489,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
 		if (!current.parentId) {
 			if (DEBUG_MODE) {
-				console.log("❌ [UndoRedo] Cannot undo, at root");
 			}
 			return false;
 		}
@@ -503,7 +499,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 		saveGraph(graph, flowId);
 
 		if (DEBUG_MODE) {
-			console.log(`↩️ [UndoRedo] Undo: ${current.label}`);
 		}
 
 		// Notify history change
@@ -527,7 +522,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
 			if (!current.childrenIds.length) {
 				if (DEBUG_MODE) {
-					console.log("❌ [UndoRedo] Cannot redo, no children");
 				}
 				return false;
 			}
@@ -537,7 +531,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
 			if (!graph.nodes[targetId]) {
 				if (DEBUG_MODE) {
-					console.log(`❌ [UndoRedo] Invalid child ID: ${targetId}`);
 				}
 				return false;
 			}
@@ -548,7 +541,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 			saveGraph(graph, flowId);
 
 			if (DEBUG_MODE) {
-				console.log(`↪️ [UndoRedo] Redo: ${target.label}`);
 			}
 
 			// Notify history change
@@ -563,7 +555,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 		(type: ActionType, metadata: Record<string, unknown> = {}) => {
 			if (isUndoRedoOperationRef.current) {
 				if (DEBUG_MODE) {
-					console.log("🚫 [UndoRedo] Skipping recordAction during undo/redo");
 				}
 				return;
 			}
@@ -575,7 +566,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 		[captureCurrentState, push]
 	);
 
-	const recordActionImmediate = useCallback(
+	const _recordActionImmediate = useCallback(
 		(type: ActionType, metadata: Record<string, unknown> = {}) => {
 			// Clear any pending position actions since we have an immediate action
 			if (positionDebounceRef.current) {
@@ -646,7 +637,9 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 	// ============================================================================
 
 	useEffect(() => {
-		if (isUndoRedoOperationRef.current) return;
+		if (isUndoRedoOperationRef.current) {
+			return;
+		}
 
 		const currentState = captureCurrentState();
 		const timeSinceLastAction = Date.now() - lastActionTimestampRef.current;
@@ -664,7 +657,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
 		// Check for position changes (node movements)
 		const nodePositionChanges = currentState.nodes.filter((node, index) => {
-			const oldNode = lastCapturedStateRef.current!.nodes[index];
+			const oldNode = lastCapturedStateRef.current?.nodes[index];
 			return (
 				oldNode &&
 				(oldNode.position.x !== node.position.x || oldNode.position.y !== node.position.y)
@@ -673,16 +666,16 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
 		// Handle position changes with debouncing
 		if (nodePositionChanges.length > 0) {
-			if (!pendingPositionActionRef.current) {
+			if (pendingPositionActionRef.current) {
+				// Add newly moved nodes to the set
+				nodePositionChanges.forEach((node) =>
+					pendingPositionActionRef.current?.movedNodes.add(node.id)
+				);
+			} else {
 				pendingPositionActionRef.current = {
 					movedNodes: new Set(nodePositionChanges.map((n) => n.id)),
 					startTime: Date.now(),
 				};
-			} else {
-				// Add newly moved nodes to the set
-				nodePositionChanges.forEach((node) =>
-					pendingPositionActionRef.current!.movedNodes.add(node.id)
-				);
 			}
 
 			// Clear existing timeout
@@ -696,7 +689,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 					const movedNodeCount = pendingPositionActionRef.current.movedNodes.size;
 
 					if (DEBUG_MODE) {
-						console.log(`🎯 [UndoRedo] Recording position change for ${movedNodeCount} nodes`);
 					}
 
 					const description = movedNodeCount > 1 ? `Move ${movedNodeCount} nodes` : "Move node";
@@ -746,7 +738,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 			}
 
 			if (DEBUG_MODE) {
-				console.log(`🔍 [UndoRedo] Auto-detected: ${description}`, metadata);
 			}
 
 			push(description, currentState, { ...metadata, actionType });
@@ -770,7 +761,9 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 			const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
 			const ctrlKey = isMac ? event.metaKey : event.ctrlKey;
 
-			if (!ctrlKey) return;
+			if (!ctrlKey) {
+				return;
+			}
 
 			// Check if user is typing in an input field
 			const activeElement = document.activeElement;
@@ -780,7 +773,9 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 					activeElement.tagName === "TEXTAREA" ||
 					activeElement.getAttribute("contenteditable") === "true");
 
-			if (isTypingInInput) return;
+			if (isTypingInInput) {
+				return;
+			}
 
 			if (event.key === "z" || event.key === "y") {
 				event.preventDefault();

@@ -52,20 +52,20 @@ export default function FlowPage({ params }: PageProps) {
 	// Loading states
 	if (authLoading || flow === undefined) {
 		return (
-			<div className="h-screen w-screen flex items-center justify-center bg-background">
+			<div className="flex h-screen w-screen items-center justify-center bg-background">
 				<Loading />
 			</div>
 		);
 	}
 
 	// Authentication check
-	if (!isAuthenticated || !user) {
+	if (!(isAuthenticated && user)) {
 		return (
-			<div className="h-screen w-screen flex items-center justify-center bg-background">
-				<div className="text-center max-w-md mx-auto px-4">
-					<AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-					<h2 className="text-2xl font-bold text-foreground mb-2">Authentication Required</h2>
-					<p className="text-muted-foreground mb-6">Please sign in to access this flow</p>
+			<div className="flex h-screen w-screen items-center justify-center bg-background">
+				<div className="mx-auto max-w-md px-4 text-center">
+					<AlertCircle className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+					<h2 className="mb-2 font-bold text-2xl text-foreground">Authentication Required</h2>
+					<p className="mb-6 text-muted-foreground">Please sign in to access this flow</p>
 					<Link href="/sign-in">
 						<Button>Sign In</Button>
 					</Link>
@@ -77,17 +77,17 @@ export default function FlowPage({ params }: PageProps) {
 	// Flow not found or access denied
 	if (flow === null) {
 		return (
-			<div className="h-screen w-screen flex items-center justify-center bg-background">
-				<div className="text-center max-w-md mx-auto px-4">
-					<AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-					<h2 className="text-2xl font-bold text-foreground mb-2">Access Denied</h2>
-					<p className="text-muted-foreground mb-6">
+			<div className="flex h-screen w-screen items-center justify-center bg-background">
+				<div className="mx-auto max-w-md px-4 text-center">
+					<AlertCircle className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+					<h2 className="mb-2 font-bold text-2xl text-foreground">Access Denied</h2>
+					<p className="mb-6 text-muted-foreground">
 						The flow you're looking for doesn't exist or you don't have permission to access it.
 					</p>
-					<div className="flex gap-3 justify-center">
+					<div className="flex justify-center gap-3">
 						<Link href="/dashboard">
 							<Button variant="outline" className="gap-2">
-								<ArrowLeft className="w-4 h-4" />
+								<ArrowLeft className="h-4 w-4" />
 								My Flows
 							</Button>
 						</Link>

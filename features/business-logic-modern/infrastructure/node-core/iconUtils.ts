@@ -25,7 +25,9 @@ export function renderLucideIcon(
 	className = "",
 	size = 16
 ): React.ReactElement | null {
-	if (!iconName) return null;
+	if (!iconName) {
+		return null;
+	}
 
 	// Check if the icon exists in the LuIcons object
 	const IconComponent = (LuIcons as Record<string, IconType>)[iconName];

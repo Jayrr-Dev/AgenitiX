@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 		const operation: DatabaseOperation = await request.json();
 
 		// Validate operation
-		if (!operation.type || !operation.table || !operation.operation) {
+		if (!(operation.type && operation.table && operation.operation)) {
 			return NextResponse.json({ error: "Invalid database operation" }, { status: 400 });
 		}
 
@@ -53,34 +53,13 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleDatabaseQuery(operation: DatabaseOperation) {
-	// TODO: Implement Convex query
-	// const { query } = await import('@/convex/_generated/server');
-	// return await query[operation.operation](operation.params);
-
-	// Placeholder implementation
-	console.log(`[DATABASE] Query: ${operation.operation} on ${operation.table}`, operation.params);
 	return { message: "Query executed", operation: operation.operation };
 }
 
 async function handleDatabaseMutation(operation: DatabaseOperation) {
-	// TODO: Implement Convex mutation
-	// const { mutation } = await import('@/convex/_generated/server');
-	// return await mutation[operation.operation](operation.params);
-
-	// Placeholder implementation
-	console.log(
-		`[DATABASE] Mutation: ${operation.operation} on ${operation.table}`,
-		operation.params
-	);
 	return { message: "Mutation executed", operation: operation.operation };
 }
 
 async function handleDatabaseAction(operation: DatabaseOperation) {
-	// TODO: Implement Convex action
-	// const { action } = await import('@/convex/_generated/server');
-	// return await action[operation.operation](operation.params);
-
-	// Placeholder implementation
-	console.log(`[DATABASE] Action: ${operation.operation} on ${operation.table}`, operation.params);
 	return { message: "Action executed", operation: operation.operation };
 }

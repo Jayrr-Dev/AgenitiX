@@ -1,7 +1,3 @@
-import { CustomLogo } from "@/branding/custom-logo";
-import { CustomBrandWordmark } from "@/branding/custom-logo";
-import { cn } from "@/lib/utils";
-import React from "react";
 import { twMerge } from "tailwind-merge";
 
 // LOADING COMPONENT FOLLOWING DASHBOARD PATTERN

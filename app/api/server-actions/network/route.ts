@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 		const networkRequest: NetworkRequest = await request.json();
 
 		// Validate request
-		if (!networkRequest.url || !networkRequest.method) {
+		if (!(networkRequest.url && networkRequest.method)) {
 			return NextResponse.json({ error: "Invalid network request" }, { status: 400 });
 		}
 

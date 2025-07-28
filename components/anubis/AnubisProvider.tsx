@@ -1,7 +1,7 @@
 "use client";
 
 import type { AnubisConfig, AnubisContextType, RouteProtectionConfig } from "@/types/anubis";
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { type ReactNode, createContext, useContext, useEffect, useState } from "react";
 
 // ANUBIS CONTEXT
 const AnubisContext = createContext<AnubisContextType | null>(null);
@@ -23,7 +23,9 @@ export function AnubisProvider({ children, initialConfig }: AnubisProviderProps)
 	// INITIALIZE ANUBIS STATE
 	useEffect(() => {
 		// Check if we're in the browser
-		if (typeof window === "undefined") return;
+		if (typeof window === "undefined") {
+			return;
+		}
 
 		// GET CURRENT ROUTE
 		setCurrentRoute(window.location.pathname);
@@ -66,7 +68,9 @@ export function AnubisProvider({ children, initialConfig }: AnubisProviderProps)
 
 	// SAVE ROUTES TO LOCAL STORAGE
 	const saveRoutesToStorage = (routes: Map<string, RouteProtectionConfig>) => {
-		if (typeof window === "undefined") return;
+		if (typeof window === "undefined") {
+			return;
+		}
 
 		try {
 			const routesArray = Array.from(routes.values());
@@ -122,7 +126,7 @@ export function AnubisProvider({ children, initialConfig }: AnubisProviderProps)
 	};
 
 	// CHECK IF CURRENT ROUTE IS PROTECTED
-	const isProtected = protectedRoutes.get(currentRoute)?.enabled || false;
+	const isProtected = protectedRoutes.get(currentRoute)?.enabled;
 
 	// CONTEXT VALUE
 	const contextValue: AnubisContextType = {
@@ -159,18 +163,20 @@ export function AnubisStatus() {
 		}
 	}, []);
 
-	if (!showUI || !isEnabled) return null;
+	if (!(showUI && isEnabled)) {
+		return null;
+	}
 
 	return (
-		<div className="fixed bottom-4 right-4 bg-background border border-transparent bg-fill-border rounded-lg p-3 shadow-lg text-sm backdrop-blur-lg">
+		<div className="fixed right-4 bottom-4 rounded-lg border border-transparent bg-background bg-fill-border p-3 text-sm shadow-lg backdrop-blur-lg">
 			<div className="flex items-center gap-2">
 				<div
-					className={`w-2 h-2 rounded-full ${isProtected ? "bg-secondary shadow-[0_0_4px_rgba(34,197,94,0.8)]" : "bg-muted"}`}
-				></div>
+					className={`h-2 w-2 rounded-full ${isProtected ? "bg-secondary shadow-[0_0_4px_rgba(34,197,94,0.8)]" : "bg-muted"}`}
+				/>
 				<span className="font-brand text-foreground">AgenitiX Protection</span>
 			</div>
-			<div className="text-muted-foreground mt-1">
-				Route: <code className="text-xs bg-muted px-1 rounded">{currentRoute}</code>
+			<div className="mt-1 text-muted-foreground">
+				Route: <code className="rounded bg-muted px-1 text-xs">{currentRoute}</code>
 			</div>
 			<div className="text-muted-foreground">
 				Status:{" "}

@@ -8,7 +8,7 @@
  * – Environment‑agnostic (Node, browser, edge)
  */
 
-import { EventEmitter } from "events";
+import { EventEmitter } from "node:events";
 import { z } from "zod";
 
 /* ------------------------------------------------------------------ */
@@ -64,7 +64,9 @@ export interface StorageAdapter {
 /** Default adapter – browser only (localStorage). No‑op in Node/Edge */
 export const LocalStorageAdapter: StorageAdapter = {
 	async load(id) {
-		if (typeof localStorage === "undefined") return null;
+		if (typeof localStorage === "undefined") {
+			return null;
+		}
 		try {
 			return JSON.parse(localStorage.getItem(`node_mem_${id}`) ?? "null");
 		} catch {
@@ -142,10 +144,14 @@ export class NodeMemoryManager extends EventEmitter {
 		const serial = this.serialize(value);
 		const size = this.byteSize(serial);
 
-		if (size > this.cfg.maxSize) throw new Error("MEMORY_FULL: entry too large");
+		if (size > this.cfg.maxSize) {
+			throw new Error("MEMORY_FULL: entry too large");
+		}
 
 		/* overwrite handling */
-		if (this.cache.has(key)) this.removeEntry(key);
+		if (this.cache.has(key)) {
+			this.removeEntry(key);
+		}
 
 		this.ensureCapacity(size);
 
@@ -171,7 +177,9 @@ export class NodeMemoryManager extends EventEmitter {
 	get<T>(key: string): T | undefined {
 		const e = this.cache.get(key);
 		if (!e || this.isExpired(e)) {
-			if (e) this.removeEntry(key);
+			if (e) {
+				this.removeEntry(key);
+			}
 			this.metrics.miss++;
 			this.updatePressure();
 			this.emit("miss", key);
@@ -191,7 +199,9 @@ export class NodeMemoryManager extends EventEmitter {
 
 	delete(key: string): boolean {
 		const existed = this.cache.has(key);
-		if (existed) this.removeEntry(key);
+		if (existed) {
+			this.removeEntry(key);
+		}
 		return existed;
 	}
 
@@ -204,7 +214,9 @@ export class NodeMemoryManager extends EventEmitter {
 
 	compute<T>(key: string, fn: () => Promise<T> | T, ttl?: number): Promise<T> {
 		const cached = this.get<T>(key);
-		if (cached !== undefined) return Promise.resolve(cached);
+		if (cached !== undefined) {
+			return Promise.resolve(cached);
+		}
 
 		return Promise.resolve(fn()).then((val) => {
 			this.set(key, val, ttl);
@@ -260,7 +272,9 @@ export class NodeMemoryManager extends EventEmitter {
 	/* -------------------------------------------------------------- */
 
 	private assertKey(key: string) {
-		if (!key || key.length > 250) throw new Error("INVALID_KEY");
+		if (!key || key.length > 250) {
+			throw new Error("INVALID_KEY");
+		}
 	}
 
 	private serialize(v: unknown): string {
@@ -269,7 +283,9 @@ export class NodeMemoryManager extends EventEmitter {
 
 	private byteSize(str: string): number {
 		/* Node & Edge have Buffer; browser has TextEncoder. */
-		if (typeof Buffer !== "undefined") return Buffer.byteLength(str);
+		if (typeof Buffer !== "undefined") {
+			return Buffer.byteLength(str);
+		}
 		return new TextEncoder().encode(str).length;
 	}
 
@@ -279,7 +295,9 @@ export class NodeMemoryManager extends EventEmitter {
 
 	private removeEntry(key: string) {
 		const e = this.cache.get(key);
-		if (!e) return;
+		if (!e) {
+			return;
+		}
 		this.cache.delete(key);
 		this.metrics.totalSize -= e.size;
 		this.metrics.entryCount = this.cache.size;
@@ -309,7 +327,6 @@ export class NodeMemoryManager extends EventEmitter {
 			case "TTL":
 				targetKey = entries.filter(([_, v]) => this.isExpired(v)).map(([k]) => k)[0];
 				break;
-			case "LRU":
 			default:
 				targetKey = entries.reduce((a, b) => (a[1].lastAccessed <= b[1].lastAccessed ? a : b))[0];
 		}
@@ -336,8 +353,12 @@ export class NodeMemoryManager extends EventEmitter {
 	/* ---------- persistence (debounced) ---------- */
 
 	private queuePersist(flush = false) {
-		if (!this.cfg.persistent) return;
-		if (flush) return void this.persistNow();
+		if (!this.cfg.persistent) {
+			return;
+		}
+		if (flush) {
+			return void this.persistNow();
+		}
 
 		if (!this.persistQueued) {
 			this.persistQueued = true;

@@ -93,7 +93,7 @@ const LabelNode: React.FC<LabelNodeProps> = ({ nodeId, label }) => {
 
 	return (
 		<div
-			className="absolute left-1/2 -translate-x-1/2 px-1 text-center select-none truncate"
+			className="-translate-x-1/2 absolute left-1/2 select-none truncate px-1 text-center"
 			onClick={handleContainerClick}
 			style={{
 				pointerEvents: editing ? "none" : "auto", // Disable pointer events when editing
@@ -108,7 +108,7 @@ const LabelNode: React.FC<LabelNodeProps> = ({ nodeId, label }) => {
 			<span
 				ref={spanRef}
 				contentEditable={editing}
-				suppressContentEditableWarning
+				suppressContentEditableWarning={true}
 				onBlur={onBlur}
 				onKeyDown={onKeyDown}
 				style={{

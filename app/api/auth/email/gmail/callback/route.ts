@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 
 		// Exchange code for tokens
 		const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/email/gmail/callback`;
-		const tokens = await gmailProvider.exchangeCodeForTokens!(code, redirectUri);
+		const tokens = await gmailProvider.exchangeCodeForTokens?.(code, redirectUri);
 
 		// Validate the connection to get user info
 		const connectionResult = await gmailProvider.validateConnection({

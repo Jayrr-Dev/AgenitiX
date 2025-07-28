@@ -11,21 +11,12 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import React, {
-	memo,
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-	type ChangeEvent,
-} from "react";
+import { type ChangeEvent, memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
 	SafeSchemas,
 	createSafeInitialData,
@@ -43,16 +34,7 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
-
-// Email domain imports
-import { getAllProviders, getProvider } from "./providers";
-import type { ConnectionResult, EmailAccountConfig, EmailProviderType } from "./types";
-import {
-	formatConnectionStatus,
-	formatLastValidated,
-	getStatusColor,
-	getStatusIcon,
-} from "./utils";
+import type { EmailAccountConfig, EmailProviderType } from "./types";
 
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
@@ -280,18 +262,18 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 	const categoryStyles = CATEGORY_TEXT.EMAIL;
 
 	// Global React‑Flow store (nodes & edges) – triggers re‑render on change
-	const nodes = useStore((s) => s.nodes);
-	const edges = useStore((s) => s.edges);
+	const _nodes = useStore((s) => s.nodes);
+	const _edges = useStore((s) => s.edges);
 
 	// Keep last emitted output to avoid redundant writes
-	const lastOutputRef = useRef<string | null>(null);
+	const _lastOutputRef = useRef<string | null>(null);
 
 	// -------------------------------------------------------------------------
 	// 4.3  Convex integration
 	// -------------------------------------------------------------------------
 	const storeEmailAccount = useMutation(api.emailAccounts.storeEmailAccount);
 	const validateConnection = useMutation(api.emailAccounts.validateEmailConnection);
-	const emailAccounts = useQuery(
+	const _emailAccounts = useQuery(
 		api.emailAccounts.getEmailAccounts,
 		token ? { token_hash: token } : "skip"
 	);
@@ -378,7 +360,9 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 
 	/** Handle OAuth2 authentication */
 	const handleOAuth2Auth = useCallback(async () => {
-		if (!currentProvider || !isOAuth2Provider) return;
+		if (!(currentProvider && isOAuth2Provider)) {
+			return;
+		}
 
 		try {
 			updateNodeData({ isAuthenticating: true, lastError: "" });
@@ -432,7 +416,9 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 	/** Handle authentication success */
 	const handleAuthSuccess = useCallback(
 		async (authDataEncoded: string | null) => {
-			if (!authDataEncoded || !token) return;
+			if (!(authDataEncoded && token)) {
+				return;
+			}
 
 			try {
 				const authData = JSON.parse(atob(authDataEncoded));
@@ -499,7 +485,9 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 
 	/** Handle manual configuration save */
 	const handleManualSave = useCallback(async () => {
-		if (!token || !isManualProvider) return;
+		if (!(token && isManualProvider)) {
+			return;
+		}
 
 		try {
 			updateNodeData({ connectionStatus: "connecting", lastError: "" });
@@ -573,7 +561,9 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 
 	/** Test connection */
 	const handleTestConnection = useCallback(async () => {
-		if (!token || !nodeData.accountId || typeof nodeData.accountId !== "string") return;
+		if (!(token && nodeData.accountId) || typeof nodeData.accountId !== "string") {
+			return;
+		}
 
 		try {
 			updateNodeData({ connectionStatus: "connecting", lastError: "" });
@@ -667,22 +657,10 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 			{/* Editable label */}
 			<LabelNode nodeId={id} label={spec.displayName} />
 
-			{!isExpanded ? (
-				<div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ""}`}>
-					<div className="text-center p-2">
-						<div className={`text-xs font-mono ${categoryStyles.primary}`}>{email || provider}</div>
-						<div
-							className={`text-xs ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}
-						>
-							{connectionStatus === "connected" ? "✓" : connectionStatus === "error" ? "✗" : "○"}{" "}
-							{connectionStatus}
-						</div>
-					</div>
-				</div>
-			) : (
-				<div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}>
+			{isExpanded ? (
+				<div className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}>
 					<div className={CONTENT.header}>
-						<span className="text-sm font-medium">Email Account</span>
+						<span className="font-medium text-sm">Email Account</span>
 						<div
 							className={`text-xs ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}
 						>
@@ -694,11 +672,11 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 					<div className={CONTENT.body}>
 						{/* Provider Selection */}
 						<div>
-							<label className="text-xs text-gray-600 mb-1 block">Provider:</label>
+							<label className="mb-1 block text-gray-600 text-xs">Provider:</label>
 							<select
 								value={provider}
 								onChange={handleProviderChange}
-								className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+								className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
 								disabled={!isEnabled || isAuthenticating}
 							>
 								{availableProviders.map((p) => (
@@ -711,26 +689,26 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 
 						{/* Email Address */}
 						<div>
-							<label className="text-xs text-gray-600 mb-1 block">Email:</label>
+							<label className="mb-1 block text-gray-600 text-xs">Email:</label>
 							<input
 								type="email"
 								value={email}
 								onChange={handleEmailChange}
 								placeholder="your.email@example.com"
-								className={`w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${categoryStyles.primary}`}
+								className={`w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 ${categoryStyles.primary}`}
 								disabled={!isEnabled || isAuthenticating}
 							/>
 						</div>
 
 						{/* Display Name */}
 						<div>
-							<label className="text-xs text-gray-600 mb-1 block">Display Name:</label>
+							<label className="mb-1 block text-gray-600 text-xs">Display Name:</label>
 							<input
 								type="text"
 								value={displayName}
 								onChange={handleDisplayNameChange}
 								placeholder="Your Name"
-								className={`w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${categoryStyles.primary}`}
+								className={`w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 ${categoryStyles.primary}`}
 								disabled={!isEnabled || isAuthenticating}
 							/>
 						</div>
@@ -741,7 +719,7 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 								<button
 									onClick={handleOAuth2Auth}
 									disabled={!isEnabled || isAuthenticating || !email}
-									className="w-full text-xs p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+									className="w-full rounded bg-blue-500 p-2 text-white text-xs hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
 								>
 									{isAuthenticating ? "Authenticating..." : `Connect ${currentProvider?.name}`}
 								</button>
@@ -752,83 +730,79 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 						{isManualProvider && (
 							<>
 								{provider === "imap" && (
-									<>
-										<div className="grid grid-cols-2 gap-2">
-											<div>
-												<label className="text-xs text-gray-600 mb-1 block">IMAP Host:</label>
-												<input
-													type="text"
-													value={imapHost}
-													onChange={handleManualFieldChange("imapHost")}
-													placeholder="imap.example.com"
-													className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-													disabled={!isEnabled}
-												/>
-											</div>
-											<div>
-												<label className="text-xs text-gray-600 mb-1 block">Port:</label>
-												<input
-													type="number"
-													value={imapPort}
-													onChange={handleManualFieldChange("imapPort")}
-													placeholder="993"
-													className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-													disabled={!isEnabled}
-												/>
-											</div>
+									<div className="grid grid-cols-2 gap-2">
+										<div>
+											<label className="mb-1 block text-gray-600 text-xs">IMAP Host:</label>
+											<input
+												type="text"
+												value={imapHost}
+												onChange={handleManualFieldChange("imapHost")}
+												placeholder="imap.example.com"
+												className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+												disabled={!isEnabled}
+											/>
 										</div>
-									</>
+										<div>
+											<label className="mb-1 block text-gray-600 text-xs">Port:</label>
+											<input
+												type="number"
+												value={imapPort}
+												onChange={handleManualFieldChange("imapPort")}
+												placeholder="993"
+												className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+												disabled={!isEnabled}
+											/>
+										</div>
+									</div>
 								)}
 
 								{provider === "smtp" && (
-									<>
-										<div className="grid grid-cols-2 gap-2">
-											<div>
-												<label className="text-xs text-gray-600 mb-1 block">SMTP Host:</label>
-												<input
-													type="text"
-													value={smtpHost}
-													onChange={handleManualFieldChange("smtpHost")}
-													placeholder="smtp.example.com"
-													className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-													disabled={!isEnabled}
-												/>
-											</div>
-											<div>
-												<label className="text-xs text-gray-600 mb-1 block">Port:</label>
-												<input
-													type="number"
-													value={smtpPort}
-													onChange={handleManualFieldChange("smtpPort")}
-													placeholder="587"
-													className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-													disabled={!isEnabled}
-												/>
-											</div>
+									<div className="grid grid-cols-2 gap-2">
+										<div>
+											<label className="mb-1 block text-gray-600 text-xs">SMTP Host:</label>
+											<input
+												type="text"
+												value={smtpHost}
+												onChange={handleManualFieldChange("smtpHost")}
+												placeholder="smtp.example.com"
+												className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+												disabled={!isEnabled}
+											/>
 										</div>
-									</>
+										<div>
+											<label className="mb-1 block text-gray-600 text-xs">Port:</label>
+											<input
+												type="number"
+												value={smtpPort}
+												onChange={handleManualFieldChange("smtpPort")}
+												placeholder="587"
+												className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+												disabled={!isEnabled}
+											/>
+										</div>
+									</div>
 								)}
 
 								<div className="grid grid-cols-2 gap-2">
 									<div>
-										<label className="text-xs text-gray-600 mb-1 block">Username:</label>
+										<label className="mb-1 block text-gray-600 text-xs">Username:</label>
 										<input
 											type="text"
 											value={username}
 											onChange={handleManualFieldChange("username")}
 											placeholder="Usually your email"
-											className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+											className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
 											disabled={!isEnabled}
 										/>
 									</div>
 									<div>
-										<label className="text-xs text-gray-600 mb-1 block">Password:</label>
+										<label className="mb-1 block text-gray-600 text-xs">Password:</label>
 										<input
 											type="password"
 											value={password}
 											onChange={handleManualFieldChange("password")}
 											placeholder="Password or app password"
-											className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+											className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
 											disabled={!isEnabled}
 										/>
 									</div>
@@ -849,8 +823,8 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 
 								<button
 									onClick={handleManualSave}
-									disabled={!isEnabled || !email || !username || !password}
-									className="w-full text-xs p-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+									disabled={!(isEnabled && email && username && password)}
+									className="w-full rounded bg-green-500 p-2 text-white text-xs hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50"
 								>
 									Save Configuration
 								</button>
@@ -863,7 +837,7 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 								<button
 									onClick={handleTestConnection}
 									disabled={!isEnabled || connectionStatus === "connecting"}
-									className="flex-1 text-xs p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+									className="flex-1 rounded bg-blue-500 p-2 text-white text-xs hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
 								>
 									{connectionStatus === "connecting" ? "Testing..." : "Test Connection"}
 								</button>
@@ -871,12 +845,24 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 						)}
 
 						{/* Status Information */}
-						<div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
+						<div className="rounded bg-gray-50 p-2 text-gray-500 text-xs">
 							<div>Status: {connectionStatus}</div>
 							{lastValidated && (
 								<div>Last validated: {new Date(lastValidated).toLocaleString()}</div>
 							)}
-							{lastError && <div className="text-red-600 mt-1">Error: {lastError}</div>}
+							{lastError && <div className="mt-1 text-red-600">Error: {lastError}</div>}
+						</div>
+					</div>
+				</div>
+			) : (
+				<div className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}>
+					<div className="p-2 text-center">
+						<div className={`font-mono text-xs ${categoryStyles.primary}`}>{email || provider}</div>
+						<div
+							className={`text-xs ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}
+						>
+							{connectionStatus === "connected" ? "✓" : connectionStatus === "error" ? "✗" : "○"}{" "}
+							{connectionStatus}
 						</div>
 					</div>
 				</div>

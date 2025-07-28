@@ -132,7 +132,7 @@ export class StateComparator {
 				if (currentStr !== incomingStr) {
 					changedKeys.push(key);
 				}
-			} catch (error) {
+			} catch (_error) {
 				// JSON.stringify failed (circular reference, etc.)
 				// Fall back to reference comparison
 				if (currentValue !== incomingValue) {

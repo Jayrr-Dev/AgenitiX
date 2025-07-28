@@ -42,7 +42,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
 				<button
 					onClick={handleUndo}
 					disabled={!canUndo}
-					className="px-3 py-1 text-sm bg-[var(--infra-toolbar-bg)] hover:bg-[var(--infra-toolbar-bg-hover)] disabled:opacity-50 disabled:cursor-not-allowed rounded"
+					className="rounded bg-[var(--infra-toolbar-bg)] px-3 py-1 text-sm hover:bg-[var(--infra-toolbar-bg-hover)] disabled:cursor-not-allowed disabled:opacity-50"
 					title="Undo"
 				>
 					↶ Undo
@@ -50,7 +50,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
 				<button
 					onClick={() => handleRedo()}
 					disabled={!canRedo}
-					className="px-3 py-1 text-sm bg-[var(--infra-toolbar-bg)] hover:bg-[var(--infra-toolbar-bg-hover)] disabled:opacity-50 disabled:cursor-not-allowed rounded"
+					className="rounded bg-[var(--infra-toolbar-bg)] px-3 py-1 text-sm hover:bg-[var(--infra-toolbar-bg-hover)] disabled:cursor-not-allowed disabled:opacity-50"
 					title="Redo"
 				>
 					↷ Redo
@@ -61,18 +61,18 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
 
 	// Multi-branch UI
 	return (
-		<div className={`flex gap-2 items-center ${className || ""}`}>
+		<div className={`flex items-center gap-2 ${className || ""}`}>
 			<button
 				onClick={handleUndo}
 				disabled={!canUndo}
-				className="px-3 py-1 text-sm bg-[var(--infra-toolbar-bg)] hover:bg-[var(--infra-toolbar-bg-hover)] disabled:opacity-50 disabled:cursor-not-allowed rounded"
+				className="rounded bg-[var(--infra-toolbar-bg)] px-3 py-1 text-sm hover:bg-[var(--infra-toolbar-bg-hover)] disabled:cursor-not-allowed disabled:opacity-50"
 				title="Undo"
 			>
 				↶ Undo
 			</button>
 
 			<div className="flex gap-1">
-				<span className="text-xs text-gray-500 px-2 py-1">Redo:</span>
+				<span className="px-2 py-1 text-gray-500 text-xs">Redo:</span>
 				{branchOptions.map((branchId, index) => {
 					// Get the branch node to show its label
 					const branchNode = currentNode?.children?.find((child: any) => child.id === branchId);
@@ -82,7 +82,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
 						<button
 							key={branchId}
 							onClick={() => handleRedo(branchId)}
-							className="px-2 py-1 text-xs bg-node-create hover:bg-node-create-hover text-node-create-text rounded border border-node-create-border transition-colors"
+							className="rounded border border-node-create-border bg-node-create px-2 py-1 text-node-create-text text-xs transition-colors hover:bg-node-create-hover"
 							title={`Redo: ${branchLabel}`}
 						>
 							↷ {branchLabel.slice(0, 12)}
@@ -109,7 +109,9 @@ export const useUndoRedoShortcuts = () => {
 			const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
 			const ctrlKey = isMac ? event.metaKey : event.ctrlKey;
 
-			if (!ctrlKey) return;
+			if (!ctrlKey) {
+				return;
+			}
 
 			if (event.key === "z" && !event.shiftKey) {
 				event.preventDefault();

@@ -14,8 +14,8 @@
  * Usage: pnpm run generate:infrastructure-overview
  */
 
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 
 interface InfrastructureComponent {
 	name: string;
@@ -110,7 +110,9 @@ function getComponentFeatures(componentName: string): string[] {
 }
 
 function countFiles(dir: string): number {
-	if (!fs.existsSync(dir)) return 0;
+	if (!fs.existsSync(dir)) {
+		return 0;
+	}
 
 	let count = 0;
 	const items = fs.readdirSync(dir);
@@ -135,7 +137,9 @@ function countFiles(dir: string): number {
 }
 
 function countComponents(dir: string): number {
-	if (!fs.existsSync(dir)) return 0;
+	if (!fs.existsSync(dir)) {
+		return 0;
+	}
 
 	let count = 0;
 	const items = fs.readdirSync(dir);
@@ -158,7 +162,6 @@ function scanInfrastructureComponents(): InfrastructureComponent[] {
 	const components: InfrastructureComponent[] = [];
 
 	if (!fs.existsSync(INFRASTRUCTURE_DIR)) {
-		console.log("❌ Infrastructure directory not found");
 		return components;
 	}
 
@@ -551,19 +554,9 @@ ${componentCards}
 }
 
 function main() {
-	console.log("🔍 Scanning infrastructure components...");
-
 	const components = scanInfrastructureComponents();
 	const stats = generateStats(components);
-
-	console.log(`📊 Found ${components.length} infrastructure components:`);
-	components.forEach((component) => {
-		console.log(
-			`  - ${component.name}: ${component.componentCount} components, ${component.fileCount} files`
-		);
-	});
-
-	console.log("📝 Generating overview HTML...");
+	components.forEach((_component) => {});
 	const html = generateHTML(components, stats);
 
 	// Ensure documentation directory exists
@@ -573,9 +566,6 @@ function main() {
 	}
 
 	fs.writeFileSync(OUTPUT_FILE, html);
-
-	console.log(`✅ Generated overview at: ${OUTPUT_FILE}`);
-	console.log(`📈 Statistics: ${stats.total} total components, ${stats.documented} documented`);
 }
 
 if (require.main === module) {

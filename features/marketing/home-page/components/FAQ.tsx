@@ -6,21 +6,26 @@ import type { typeFAQ } from "../types";
 
 export default function FAQ({ faq }: { faq: typeFAQ[] }) {
 	return (
-		<div className="min-h-screen flex items-center justify-center px-6 py-12">
+		<div className="flex min-h-screen items-center justify-center px-6 py-12">
 			<div className="w-full max-w-2xl">
-				<h2 className="text-4xl md:text-5xl !leading-[1.15] font-bold tracking-tight">
+				<h2 className="!leading-[1.15] font-bold text-4xl tracking-tight md:text-5xl">
 					Frequently Asked Questions
 				</h2>
 				<p className="mt-1.5 text-lg text-muted-foreground">
 					Quick answers to common questions about our products and services.
 				</p>
 
-				<Accordion type="single" collapsible className="mt-8 space-y-4" defaultValue="question-0">
+				<Accordion
+					type="single"
+					collapsible={true}
+					className="mt-8 space-y-4"
+					defaultValue="question-0"
+				>
 					{faq.map(({ question, answer }, index) => (
 						<AccordionItem
 							key={question}
 							value={`question-${index}`}
-							className="bg-accent py-1 px-4 rounded-xl border-none"
+							className="rounded-xl border-none bg-accent px-4 py-1"
 						>
 							<AccordionPrimitive.Header className="flex">
 								<AccordionPrimitive.Trigger

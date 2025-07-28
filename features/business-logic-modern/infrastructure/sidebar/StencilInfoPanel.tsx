@@ -37,11 +37,15 @@ interface StencilInfoPanelProps {
 
 // Helper function to get category information
 const getCategoryInfo = (nodeType?: string) => {
-	if (!nodeType) return null;
+	if (!nodeType) {
+		return null;
+	}
 
 	try {
 		const metadata = getNodeSpecMetadata(nodeType);
-		if (!metadata) return null;
+		if (!metadata) {
+			return null;
+		}
 
 		return {
 			category: metadata.category,
@@ -66,7 +70,7 @@ export const StencilInfoPanel: React.FC<StencilInfoPanelProps> = ({ stencil }) =
 					animate={{ opacity: 0.95, y: 0 }}
 					exit={{ opacity: 0, y: 0 }}
 					transition={{ duration: 0.3, ease: "easeOut" }}
-					className="mb-2 px-3 py-2 text-xs leading-snug absolute top-0 right-[50%] translate-x-1/2 border -translate-y-full w-[450px] h-auto bg-[var(--infra-sidebar-bg)] border-[var(--infra-sidebar-border)] text-[var(--infra-sidebar-text)] rounded-lg shadow-lg"
+					className="-translate-y-full absolute top-0 right-[50%] mb-2 h-auto w-[450px] translate-x-1/2 rounded-lg border border-[var(--infra-sidebar-border)] bg-[var(--infra-sidebar-bg)] px-3 py-2 text-[var(--infra-sidebar-text)] text-xs leading-snug shadow-lg"
 				>
 					<div className="space-y-2">
 						<div className="flex items-center justify-between">

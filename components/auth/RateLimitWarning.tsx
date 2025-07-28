@@ -18,13 +18,13 @@ export const RateLimitWarning = ({ email, onDismiss }: RateLimitWarningProps) =>
 				<div className="space-y-3">
 					<div>
 						<strong>Too many login attempts</strong>
-						<p className="text-sm mt-1">
+						<p className="mt-1 text-sm">
 							For security reasons, we've temporarily limited login attempts for{" "}
 							<strong>{email}</strong>.
 						</p>
 					</div>
 
-					<div className="text-sm space-y-1">
+					<div className="space-y-1 text-sm">
 						<p>
 							• You can try again in <strong>1 hour</strong>
 						</p>
@@ -47,7 +47,7 @@ export const RateLimitWarning = ({ email, onDismiss }: RateLimitWarningProps) =>
 								variant="outline"
 								className="border-orange-300 text-orange-700 hover:bg-orange-100"
 							>
-								<Mail className="w-4 h-4 mr-2" />
+								<Mail className="mr-2 h-4 w-4" />
 								Contact Support
 							</Button>
 						</Link>
