@@ -216,9 +216,10 @@ export const getFlowShare = query({
 	},
 	handler: async (ctx, args) => {
 		if (args.share_token) {
+			const token = args.share_token as string;
 			return await ctx.db
 				.query("flow_shares")
-				.withIndex("by_share_token", (q) => q.eq("share_token", args.share_token))
+				.withIndex("by_share_token", (q) => q.eq("share_token", token))
 				.first();
 		}
 

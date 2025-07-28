@@ -8,6 +8,7 @@ import type {
 import { generateNodeId } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import React, { useCallback, useEffect, useRef } from "react";
+import { FlowProvider, type FlowMetadata } from "./contexts/FlowContext";
 
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/action-toolbar/ActionToolbar";
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
@@ -487,14 +488,20 @@ const FlowEditorInternal = () => {
 	);
 };
 
-export default function FlowEditor() {
+interface FlowEditorProps {
+	flowMetadata?: FlowMetadata | null;
+}
+
+export default function FlowEditor({ flowMetadata = null }: FlowEditorProps) {
 	return (
 		<ErrorBoundary>
-			<ReactFlowProvider>
-				<UndoRedoProvider>
-					<FlowEditorInternal />
-				</UndoRedoProvider>
-			</ReactFlowProvider>
+			<FlowProvider initialFlow={flowMetadata}>
+				<ReactFlowProvider>
+					<UndoRedoProvider>
+						<FlowEditorInternal />
+					</UndoRedoProvider>
+				</ReactFlowProvider>
+			</FlowProvider>
 		</ErrorBoundary>
 	);
 }
