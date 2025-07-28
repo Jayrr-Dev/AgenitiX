@@ -3,6 +3,7 @@ import React, { useMemo } from "react";
 import createText from "../../../node-domain/create/createText.node";
 import storeInMemory from "../../../node-domain/create/storeInMemory.node";
 import emailAccount from "../../../node-domain/email/emailAccount.node";
+import emailReader from "../../../node-domain/email/emailReader.node";
 // Import all available node components
 // This should be automatically updated when new nodes are created via Plop
 // Add new node imports here (Plop can auto-inject these)
@@ -21,11 +22,12 @@ export function useDynamicNodeTypes() {
 	const nodeTypes = useMemo(
 		() => ({
 			// Add new node types here
-    testNode,
-    triggerToggle,
+			testNode,
+			triggerToggle,
 			createText,
 			storeInMemory,
 			emailAccount,
+			emailReader,
 			viewText,
 		}),
 		[]
