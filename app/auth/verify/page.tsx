@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useAuthContext } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, XCircle, Mail } from "lucide-react";
+import { toast } from "sonner";
 import Link from "next/link";
 
 export default function VerifyMagicLinkPage() {
@@ -17,53 +17,96 @@ export default function VerifyMagicLinkPage() {
 	const [status, setStatus] = useState<"loading" | "success" | "error" | "expired">("loading");
 	const [error, setError] = useState<string | null>(null);
 	
-	const verifyMagicLink = useMutation(api.auth.verifyMagicLink);
+	const { verifyMagicLink, isAuthenticated } = useAuthContext();
+
+	// Redirect if already authenticated
+	useEffect(() => {
+		if (isAuthenticated) {
+			router.push("/dashboard");
+		}
+	}, [isAuthenticated, router]);
 
 	useEffect(() => {
 		if (!token) {
 			setStatus("error");
-			setError("No verification token provided");
+			setError("No verification token provided in the URL. Please check the magic link and try again.");
+			return;
+		}
+
+		// Basic token validation
+		if (token.length < 10) {
+			setStatus("error");
+			setError("Invalid verification token format. Please request a new magic link.");
+			return;
+		}
+
+		// Don't verify if already authenticated
+		if (isAuthenticated) {
 			return;
 		}
 
 		const verify = async () => {
 			try {
-				const result = await verifyMagicLink({
+				const result = await verifyMagicLink(
 					token,
-					ip_address: "127.0.0.1", // In production, get real IP
-					user_agent: navigator.userAgent,
-				});
+					"127.0.0.1", // In production, get real IP
+					navigator.userAgent
+				);
 
-				// Store session token
-				localStorage.setItem("agenitix_auth_token", result.sessionToken);
-				
 				setStatus("success");
 				
-				// Force a page reload to ensure auth context updates
-				// This prevents hydration issues and ensures clean state
+				// Show success toast
+				toast.success("Account verified!", {
+					description: "Welcome to AgenitiX! Redirecting to your dashboard...",
+					duration: 3000,
+				});
+				
+				// Wait a moment for the auth state to update, then redirect
 				setTimeout(() => {
-					window.location.href = "/dashboard";
+					router.push("/dashboard");
 				}, 1500);
 
 			} catch (err) {
 				console.error("Magic link verification failed:", err);
 				
 				if (err instanceof Error) {
-					if (err.message.includes("expired")) {
-						setStatus("expired");
-					} else {
-						setStatus("error");
-						setError(err.message);
+					// Check for specific error codes
+					const errorCode = (err as any).code;
+					
+					switch (errorCode) {
+						case "EXPIRED_MAGIC_LINK":
+							setStatus("expired");
+							setError("This magic link has expired. Please request a new one.");
+							toast.error("Magic link expired", {
+								description: "Please request a new magic link to continue.",
+								duration: 5000,
+							});
+							break;
+						case "INVALID_MAGIC_LINK":
+							setStatus("error");
+							setError("This magic link is invalid or has already been used. Please request a new one.");
+							toast.error("Invalid magic link", {
+								description: "This link may have been used already or is malformed.",
+								duration: 5000,
+							});
+							break;
+						default:
+							setStatus("error");
+							setError(err.message || "Verification failed. Please try again.");
+							toast.error("Verification failed", {
+								description: err.message || "Please try requesting a new magic link.",
+								duration: 5000,
+							});
 					}
 				} else {
 					setStatus("error");
-					setError("Verification failed");
+					setError("An unexpected error occurred during verification. Please try again.");
 				}
 			}
 		};
 
 		verify();
-	}, [token, verifyMagicLink, router]);
+	}, [token, verifyMagicLink, router, isAuthenticated]);
 
 	const getStatusContent = () => {
 		switch (status) {
@@ -86,8 +129,8 @@ export default function VerifyMagicLinkPage() {
 			case "expired":
 				return {
 					icon: <XCircle className="h-12 w-12 text-orange-600" />,
-					title: "Link Expired",
-					description: "This magic link has expired. Please request a new one to continue.",
+					title: "Magic Link Expired",
+					description: error || "This magic link has expired for security reasons. Please request a new one to continue.",
 					showRetry: true,
 				};
 			
@@ -96,7 +139,7 @@ export default function VerifyMagicLinkPage() {
 				return {
 					icon: <XCircle className="h-12 w-12 text-red-600" />,
 					title: "Verification Failed",
-					description: error || "Something went wrong during verification. Please try again.",
+					description: error || "We couldn't verify this magic link. It may be invalid, expired, or already used.",
 					showRetry: true,
 				};
 		}
@@ -137,14 +180,20 @@ export default function VerifyMagicLinkPage() {
 								<Link href="/sign-in">
 									<Button className="w-full">
 										<Mail className="mr-2 h-4 w-4" />
-										Request New Magic Link
+										{status === "expired" ? "Get New Magic Link" : "Try Again"}
 									</Button>
 								</Link>
 								
-								<div className="text-center">
+								<div className="text-center space-y-2">
+									<Link 
+										href="/sign-up" 
+										className="text-sm text-gray-600 hover:text-gray-800 block"
+									>
+										Don't have an account? Sign up
+									</Link>
 									<Link 
 										href="/" 
-										className="text-sm text-blue-600 hover:text-blue-500"
+										className="text-sm text-blue-600 hover:text-blue-500 block"
 									>
 										← Back to Home
 									</Link>

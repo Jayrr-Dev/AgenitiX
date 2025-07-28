@@ -18,6 +18,7 @@ import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useMultiSelectionCopyPaste } from "./hooks/useMultiSelectionCopyPaste";
+import { useLoadCanvas } from "./hooks/useLoadCanvas";
 
 // Import the new NodeSpec registry
 import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
@@ -141,6 +142,9 @@ class ErrorBoundary extends React.Component<
 const FlowEditorInternal = () => {
 	const flowWrapperRef = useRef<HTMLDivElement>(null);
 	const { screenToFlowPosition } = useReactFlow();
+
+	// Load canvas state from Convex
+	const canvasLoader = useLoadCanvas();
 
 	// Initialize theme system on mount
 	useEffect(() => {
@@ -404,6 +408,37 @@ const FlowEditorInternal = () => {
 		},
 		[selectNode, selectEdge]
 	);
+
+	// Show loading state while canvas is being loaded
+	if (canvasLoader.isLoading) {
+		return (
+			<div className="h-screen w-screen flex items-center justify-center bg-background">
+				<div className="text-center">
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+					<p className="text-muted-foreground">Loading canvas...</p>
+				</div>
+			</div>
+		);
+	}
+
+	// Show error state if canvas loading failed
+	if (canvasLoader.error) {
+		return (
+			<div className="h-screen w-screen flex items-center justify-center bg-background">
+				<div className="text-center max-w-md mx-auto px-4">
+					<div className="text-destructive text-4xl mb-4">⚠️</div>
+					<h2 className="text-xl font-bold text-foreground mb-2">Failed to Load Canvas</h2>
+					<p className="text-muted-foreground mb-4">{canvasLoader.error}</p>
+					<button 
+						onClick={() => window.location.reload()} 
+						className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+					>
+						Retry
+					</button>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="h-screen w-screen" style={{ height: "100vh", width: "100vw" }}>

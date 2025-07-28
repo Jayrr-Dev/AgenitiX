@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/components/auth/AuthProvider";
-import { useUserCheck } from "@/hooks/useUserCheck";
-import { RateLimitWarning } from "@/components/auth/RateLimitWarning";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Mail, ArrowRight } from "lucide-react";
+import { Loader2, Mail, ArrowRight, AlertCircle } from "lucide-react";
+import { formatAuthError, getAuthErrorType, getRetryInfo } from "@/lib/auth-utils";
+import { toast } from "sonner";
 import Link from "next/link";
 
 export default function SignInPage() {
@@ -18,13 +18,10 @@ export default function SignInPage() {
 	const [email, setEmail] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [emailToCheck, setEmailToCheck] = useState<string | null>(null);
-	const [showRateLimit, setShowRateLimit] = useState(false);
+	const [isRateLimited, setIsRateLimited] = useState(false);
+	const [retryAfter, setRetryAfter] = useState<number | undefined>();
 	const [mounted, setMounted] = useState(false);
 	
-	// Check if user exists (only when we have a valid email)
-	const { exists: userExists, isLoading: checkingUser } = useUserCheck(emailToCheck);
-
 	// Ensure component is mounted to avoid hydration issues
 	useEffect(() => {
 		setMounted(true);
@@ -36,6 +33,19 @@ export default function SignInPage() {
 			router.push("/dashboard");
 		}
 	}, [mounted, isAuthenticated, authLoading, router]);
+
+	// Handle rate limit countdown
+	useEffect(() => {
+		if (isRateLimited && retryAfter) {
+			const timer = setTimeout(() => {
+				setIsRateLimited(false);
+				setRetryAfter(undefined);
+				setError(null);
+			}, retryAfter * 60 * 1000); // Convert minutes to milliseconds
+
+			return () => clearTimeout(timer);
+		}
+	}, [isRateLimited, retryAfter]);
 
 	// Don't render if not mounted or authenticated (will redirect)
 	if (!mounted || authLoading) {
@@ -65,53 +75,57 @@ export default function SignInPage() {
 		e.preventDefault();
 		setIsLoading(true);
 		setError(null);
+		setIsRateLimited(false);
+		setRetryAfter(undefined);
 
 		const trimmedEmail = email.trim();
 		
-		// First check if user exists to provide better UX
-		setEmailToCheck(trimmedEmail);
-		
-		// Wait a bit for the user check to complete
-		await new Promise(resolve => setTimeout(resolve, 100));
-		
-		// If user doesn't exist, show friendly error without calling signIn
-		if (emailToCheck && !checkingUser && !userExists) {
-			setError("Account not found. Please check your email or create a new account.");
-			setIsLoading(false);
-			return;
-		}
-
 		try {
 			const result = await signIn({ email: trimmedEmail });
 			
-			// Show success message with toast
+			// Clear any previous errors and show success
 			setError(null);
-			const { toast } = await import("sonner");
 			toast.success("Magic link sent!", {
 				description: result.message,
 				duration: 5000,
 			});
 			
 		} catch (err) {
-			const { formatAuthError } = await import("@/lib/auth-utils");
-			const errorMessage = formatAuthError(err);
-			
-			// Check if it's a rate limiting error
-			if (err instanceof Error && err.message.includes("Too many attempts")) {
-				setShowRateLimit(true);
-				setError(null);
+			if (err instanceof Error) {
+				const errorCode = getAuthErrorType(err);
+				const retryInfo = getRetryInfo(err);
+				const errorMessage = formatAuthError(err);
 				
-				const { toast } = await import("sonner");
-				toast.error("Too many attempts", {
-					description: "Please wait an hour before trying again for security reasons.",
-					duration: 8000,
-				});
+				// Handle rate limiting
+				if (errorCode === "RATE_LIMIT_EXCEEDED") {
+					setIsRateLimited(true);
+					setRetryAfter(retryInfo.retryAfter);
+					setError(errorMessage);
+					
+					toast.error("Too many attempts", {
+						description: errorMessage,
+						duration: 8000,
+					});
+				} else {
+					// Handle other errors
+					setError(errorMessage);
+					
+					if (errorCode === "USER_NOT_FOUND") {
+						toast.error("Account not found", {
+							description: "Please check your email or create a new account.",
+							duration: 5000,
+						});
+					} else {
+						toast.error("Sign in failed", {
+							description: errorMessage,
+							duration: 5000,
+						});
+					}
+				}
 			} else {
+				const errorMessage = "An unexpected error occurred. Please try again.";
 				setError(errorMessage);
-				
-				// Also show toast for better UX
-				const { toast } = await import("sonner");
-				toast.error("Sign in failed", {
+				toast.error("Error", {
 					description: errorMessage,
 					duration: 5000,
 				});
@@ -204,52 +218,44 @@ export default function SignInPage() {
 										value={email}
 										onChange={(e) => {
 											setEmail(e.target.value);
-											setError(null); // Clear error when user types
-											// Check user existence after a delay
-											const trimmedEmail = e.target.value.trim();
-											if (trimmedEmail.includes('@') && trimmedEmail.length > 5) {
-												setTimeout(() => {
-													setEmailToCheck(trimmedEmail);
-												}, 500);
+											// Clear errors when user types (but keep rate limiting)
+											if (!isRateLimited) {
+												setError(null);
 											}
 										}}
 										required
 										disabled={isLoading}
 										className="h-11"
 									/>
-									{/* Show loading indicator when checking user */}
-									{checkingUser && emailToCheck && (
-										<p className="text-xs text-gray-500 flex items-center">
-											<Loader2 className="w-3 h-3 animate-spin mr-1" />
-											Checking account...
-										</p>
-									)}
 								</div>
 
-								{/* Rate limiting warning */}
-								{showRateLimit && (
-									<RateLimitWarning 
-										email={email}
-										onDismiss={() => {
-											setShowRateLimit(false);
-											setEmail("");
-										}}
-									/>
-								)}
-
-								{/* Regular error messages */}
-								{error && !showRateLimit && (
+								{/* Error messages */}
+								{error && (
 									<div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">
-										{error}
-										{error.includes("Account not found") && (
-											<div className="mt-2">
-												<Link href="/sign-up">
-													<Button variant="outline" size="sm" className="w-full">
-														Create New Account
-													</Button>
-												</Link>
+										<div className="flex items-start space-x-2">
+											<AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+											<div className="flex-1">
+												<p>{error}</p>
+												
+												{/* Rate limit specific info */}
+												{isRateLimited && retryAfter && (
+													<p className="mt-1 text-xs text-red-500">
+														You can try again in {retryAfter} {retryAfter === 1 ? 'minute' : 'minutes'}.
+													</p>
+												)}
+												
+												{/* Account not found - show sign up option */}
+												{error.includes("Account not found") && (
+													<div className="mt-3">
+														<Link href="/sign-up">
+															<Button variant="outline" size="sm" className="w-full">
+																Create New Account
+															</Button>
+														</Link>
+													</div>
+												)}
 											</div>
-										)}
+										</div>
 									</div>
 								)}
 

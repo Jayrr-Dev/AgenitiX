@@ -13,6 +13,7 @@
 "use client";
 
 import FlowEditor from "@/features/business-logic-modern/infrastructure/flow-engine/FlowEditor";
+import { FlowMetadataProvider } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/FlowMetadataContext";
 import { Loading } from "@/components/Loading";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, ArrowLeft } from "lucide-react";
@@ -101,13 +102,25 @@ export default function FlowPage({ params }: PageProps) {
 		);
 	}
 
-	// Render the flow editor
+	// Render the full-screen flow editor with metadata context
 	return (
 		<div
 			className="h-[100vh] w-[100vw]"
 			style={{ height: "100vh", width: "100vw", overflow: "hidden" }}
 		>
-			<FlowEditor flowMetadata={flow} />
+			<FlowMetadataProvider
+				flow={{
+					id: flowId,
+					name: flow.name,
+					description: flow.description,
+					is_private: flow.is_private,
+					isOwner: flow.isOwner,
+					canEdit: flow.canEdit,
+					userPermission: flow.userPermission as "view" | "edit" | "admin" | undefined,
+				}}
+			>
+				<FlowEditor />
+			</FlowMetadataProvider>
 		</div>
 	);
 }

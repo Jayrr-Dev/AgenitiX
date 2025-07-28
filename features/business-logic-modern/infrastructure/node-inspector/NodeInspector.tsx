@@ -129,11 +129,10 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 				/>
 			</button>
 			<div
-				className={`overflow-hidden transition-all duration-300 ease-in-out ${
-					isOpen ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
-				}`}
+				className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+					}`}
 			>
-				<div className="p-3 bg-card rounded-b-lg">{children}</div>
+				<div className="p-3 bg-card rounded-b-lg overflow-y-auto max-h-[550px]">{children}</div>
 			</div>
 		</div>
 	);
@@ -321,11 +320,10 @@ const NodeInspector = React.memo(function NodeInspector({ viewMode = "bottom" }:
 	// Early return for locked state
 	if (inspectorLocked) {
 		return (
-			<div className={`${
-				viewMode === "side" 
-					? "flex items-center justify-center w-[50px] h-[50px] bg-card border border-border rounded-lg shadow-lg" 
+			<div className={`${viewMode === "side"
+					? "flex items-center justify-center w-[50px] h-[50px] bg-card border border-border rounded-lg shadow-lg"
 					: STYLING_CONTAINER_LOCKED
-			}`}>
+				}`}>
 				<button
 					aria-label={DESIGN_CONFIG.content.aria.unlockInspector}
 					title={DESIGN_CONFIG.content.tooltips.unlockInspector}
@@ -476,17 +474,15 @@ const NodeInspector = React.memo(function NodeInspector({ viewMode = "bottom" }:
 				</div>
 
 				{/* SCROLLABLE CONTENT: NODE DATA + OUTPUT + CONTROLS + ERRORS */}
-				<div className={`${
-					viewMode === "side" 
-						? "flex flex-col gap-4 p-4 flex-1 overflow-auto" 
+				<div className={`${viewMode === "side"
+						? "flex flex-col gap-4 p-4 flex-1 overflow-auto"
 						: STYLING_CONTAINER_CONTENT_SCROLLABLE
-				}`}>
-					{/* COLUMN 1: NODE DESCRIPTION + NODE DATA */}
-					<div className={`${
-						viewMode === "side" 
-							? "w-full space-y-4" 
-							: STYLING_CONTAINER_COLUMN_LEFT
 					}`}>
+					{/* COLUMN 1: NODE DESCRIPTION + NODE DATA */}
+					<div className={`${viewMode === "side"
+							? "w-full space-y-4"
+							: STYLING_CONTAINER_COLUMN_LEFT
+						}`}>
 						{/* Node Metadata Card */}
 						<AccordionSection
 							title="Node Information"
@@ -655,11 +651,10 @@ const NodeInspector = React.memo(function NodeInspector({ viewMode = "bottom" }:
 
 					{/* COLUMN 2: OUTPUT + CONTROLS */}
 					{(hasRightColumn || viewMode === "side") && (
-						<div className={`${
-							viewMode === "side" 
-								? "w-full space-y-4" 
+						<div className={`${viewMode === "side"
+								? "w-full space-y-4"
 								: STYLING_CONTAINER_COLUMN_RIGHT
-						}`}>
+							}`}>
 							{(nodeConfig?.hasOutput || viewMode === "side") && (
 								<AccordionSection
 									title="Output"
@@ -782,9 +777,8 @@ const NodeInspector = React.memo(function NodeInspector({ viewMode = "bottom" }:
 												<div className="flex items-center justify-between mb-2">
 													<div className="flex items-center gap-2">
 														<span
-															className={`w-3 h-3 rounded-full ${
-																handle.type === "source" ? "bg-green-500" : "bg-blue-500"
-															}`}
+															className={`w-3 h-3 rounded-full ${handle.type === "source" ? "bg-green-500" : "bg-blue-500"
+																}`}
 															title={handle.type}
 														/>
 														<div>
@@ -801,11 +795,10 @@ const NodeInspector = React.memo(function NodeInspector({ viewMode = "bottom" }:
 													</div>
 													<div className="flex items-center gap-1">
 														<span
-															className={`text-xs px-2 py-1 rounded-full ${
-																handleConnections.length > 0
+															className={`text-xs px-2 py-1 rounded-full ${handleConnections.length > 0
 																	? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
 																	: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-															}`}
+																}`}
 														>
 															{handleConnections.length} connection
 															{handleConnections.length !== 1 ? "s" : ""}
@@ -819,19 +812,17 @@ const NodeInspector = React.memo(function NodeInspector({ viewMode = "bottom" }:
 														{connectedNodes.map((connection, connIndex) => (
 															<div
 																key={connection.edge.id}
-																className={`text-xs p-2 rounded border ${
-																	connection.isIncoming
+																className={`text-xs p-2 rounded border ${connection.isIncoming
 																		? "bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800"
 																		: "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800"
-																}`}
+																	}`}
 															>
 																<div className="flex items-center justify-between">
 																	<span
-																		className={`font-medium ${
-																			connection.isIncoming
+																		className={`font-medium ${connection.isIncoming
 																				? "text-blue-700 dark:text-blue-300"
 																				: "text-green-700 dark:text-green-300"
-																		}`}
+																			}`}
 																	>
 																		{connection.isIncoming ? "←" : "→"}{" "}
 																		{connection.node?.type || "Unknown"}
@@ -964,11 +955,10 @@ const NodeInspector = React.memo(function NodeInspector({ viewMode = "bottom" }:
 
 					{/* COLUMN 3: ERROR LOG (only show when there are errors) */}
 					{errors.length > 0 && (
-						<div className={`${
-							viewMode === "side" 
-								? "w-full space-y-4" 
+						<div className={`${viewMode === "side"
+								? "w-full space-y-4"
 								: STYLING_CONTAINER_COLUMN_ERROR
-						}`}>
+							}`}>
 							<AccordionSection
 								title="Error Log"
 								isOpen={accordionState.errors}

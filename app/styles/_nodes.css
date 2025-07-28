@@ -88,6 +88,44 @@
 	color: hsl(var(--node-test-text-secondary));
 } /* #a16207 */
 
+@utility bg-node-cycle {
+	background-color: hsl(var(--node-cycle-bg));
+} /* #faf5ff */
+@utility bg-node-cycle-hover {
+	background-color: hsl(var(--node-cycle-bg-hover));
+} /* #f3e8ff */
+@utility border-node-cycle {
+	border-color: hsl(var(--node-cycle-border));
+} /* #c4b5fd */
+@utility border-node-cycle-hover {
+	border-color: hsl(var(--node-cycle-border-hover));
+} /* #a78bfa */
+@utility text-node-cycle {
+	color: hsl(var(--node-cycle-text));
+} /* #581c87 */
+@utility text-node-cycle-secondary {
+	color: hsl(var(--node-cycle-text-secondary));
+} /* #6b21a8 */
+
+@utility bg-node-email {
+	background-color: hsl(var(--node-email-bg));
+} /* #e0f7fa */
+@utility bg-node-email-hover {
+	background-color: hsl(var(--node-email-bg-hover));
+} /* #b2ebf2 */
+@utility border-node-email {
+	border-color: hsl(var(--node-email-border));
+} /* #4dd0e1 */
+@utility border-node-email-hover {
+	border-color: hsl(var(--node-email-border-hover));
+} /* #26c6da */
+@utility text-node-email {
+	color: hsl(var(--node-email-text));
+} /* #006064 */
+@utility text-node-email-secondary {
+	color: hsl(var(--node-email-text-secondary));
+} /* #00838f */
+
 /* Node Sizing Utilities */
 @utility w-node-size-fe1h {
 	width: var(--node-size-fe1h-width);
