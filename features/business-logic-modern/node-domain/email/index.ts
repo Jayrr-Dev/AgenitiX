@@ -22,3 +22,4 @@ export { smtpProvider } from "./providers/smtp";
 // Export email nodes
 export { default as emailAccount, spec as emailAccountSpec } from "./emailAccount.node";
 export { default as emailReader, spec as emailReaderSpec } from "./emailReader.node";
+export { default as emailSender, spec as emailSenderSpec } from "./emailSender.node";
