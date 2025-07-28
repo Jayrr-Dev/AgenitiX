@@ -316,7 +316,7 @@ export function SidebarTabs({
 			<aside className="absolute bottom-4 right-4 z-30 h-[200px] sm:h-[280px] w-full sm:w-[400px] lg:w-[450px] pl-3 sm:pl-6 pr-3 sm:pr-5 pt-2 rounded-lg bg-[var(--infra-sidebar-bg)] border border-[var(--infra-sidebar-border)] shadow-lg transition-all duration-300 ease-in-out">
 				<StencilInfoPanel stencil={uiState.hovered} />
 
-				<TabsList className="bg-[var(--infra-sidebar-bg)] items-stretch justify-between w-full gap-1 border-0 border-[var(--infra-sidebar-border)]">
+				<TabsList className="bg-[var(--infra-sidebar-bg)] items-stretch justify-start w-full gap-1 border-0 border-[var(--infra-sidebar-border)] overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent flex-nowrap">
 					{tabs.map(({ key, label }, index) => {
 						const shortcutNumber = index + 1;
 

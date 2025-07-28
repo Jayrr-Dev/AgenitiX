@@ -42,6 +42,36 @@ export default defineSchema({
 		.index("by_is_active", ["is_active"]),
 
 	// Email Domain
+	email_accounts: defineTable({
+		user_id: v.id("auth_users"),
+		provider: v.union(
+			v.literal("gmail"),
+			v.literal("outlook"),
+			v.literal("imap"),
+			v.literal("smtp")
+		),
+		email: v.string(),
+		display_name: v.optional(v.string()),
+		encrypted_credentials: v.string(), // JSON string of encrypted EmailAccountConfig
+		is_active: v.boolean(),
+		last_validated: v.optional(v.number()),
+		connection_status: v.union(
+			v.literal("disconnected"),
+			v.literal("connecting"),
+			v.literal("connected"),
+			v.literal("error")
+		),
+		last_error: v.optional(v.string()), // JSON string of last EmailError
+		created_at: v.number(),
+		updated_at: v.number(),
+	})
+		.index("by_user_id", ["user_id"])
+		.index("by_provider", ["provider"])
+		.index("by_email", ["email"])
+		.index("by_user_and_provider", ["user_id", "provider"])
+		.index("by_is_active", ["is_active"])
+		.index("by_connection_status", ["connection_status"]),
+
 	email_templates: defineTable({
 		user_id: v.id("auth_users"),
 		name: v.string(),
@@ -60,6 +90,7 @@ export default defineSchema({
 
 	email_logs: defineTable({
 		user_id: v.id("auth_users"),
+		account_id: v.optional(v.id("email_accounts")), // Reference to email account used
 		template_id: v.optional(v.id("email_templates")),
 		to_email: v.string(),
 		from_email: v.string(),
@@ -82,6 +113,7 @@ export default defineSchema({
 		created_at: v.number(),
 	})
 		.index("by_user_id", ["user_id"])
+		.index("by_account_id", ["account_id"])
 		.index("by_status", ["status"])
 		.index("by_to_email", ["to_email"])
 		.index("by_created_at", ["created_at"]),

@@ -7,6 +7,7 @@
 
 import createText, { spec as createTextSpec } from "../../node-domain/create/createText.node";
 import storeInMemory, { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
+import emailAccount, { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
 import testNode, { spec as testNodeSpec } from "../../node-domain/test/testNode.node";
 import triggerToggle, { spec as triggerToggleSpec } from "../../node-domain/trigger/triggerToggle.node";
 import viewText, { spec as viewTextSpec } from "../../node-domain/view/viewText.node";
@@ -17,6 +18,7 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
 	storeInMemory: storeInMemorySpec,
+	emailAccount: emailAccountSpec,
 	testNode: testNodeSpec,
 	triggerToggle: triggerToggleSpec,
 	viewText: viewTextSpec,
