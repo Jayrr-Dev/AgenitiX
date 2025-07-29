@@ -1,13 +1,15 @@
 /**
- * NODE ERROR BOUNDARY - Isolates runtime errors to individual nodes
+ * NODE-LEVEL ERROR BOUNDARY - Isolates runtime errors to individual nodes
  *
- * • Catches any rendering/runtime error thrown by a node component
- * • Prevents the entire React Flow canvas from unmounting
+ * • Catches any rendering/runtime error thrown by a single node component
+ * • Prevents the entire React Flow canvas from unmounting when one node fails
  * • Logs the error via flowStore.logNodeError so it appears in inspector
- * • Displays a minimal fallback UI inside the node (red background + icon)
+ * • Displays a minimal fallback UI inside the failed node (red background + icon)
  * • Active only for its wrapped node; other nodes remain functional
+ * • Allows users to continue working with other nodes while one is broken
  *
- * Keywords: error-boundary, react, node-isolation, runtime-errors, flowStore
+ * Usage: Wraps individual node components in the flow editor
+ * Keywords: node-error-boundary, react, node-isolation, runtime-errors, flowStore
  */
 
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
@@ -25,7 +27,7 @@ interface NodeErrorBoundaryState {
 	message: string;
 }
 
-// Stable class component
+// Stable class component for node-level error handling
 class NodeErrorBoundaryClass extends React.Component<
 	{
 		nodeId: string;

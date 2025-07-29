@@ -74,8 +74,9 @@ const styleRetryBase =
 const styleRetryColour =
 	"bg-destructive text-destructive-foreground hover:opacity-90 hover:shadow-effect-glow-error hover:scale-105 active:scale-100" as const;
 
-// Error Boundary Component
-class ErrorBoundary extends React.Component<
+// FLOW-LEVEL ERROR BOUNDARY - Catches errors that would crash the entire flow editor
+// This is different from NodeErrorBoundary which handles individual node errors
+class FlowEditorErrorBoundary extends React.Component<
 	{ children: React.ReactNode },
 	{ hasError: boolean; error?: Error }
 > {
@@ -540,7 +541,7 @@ interface FlowEditorProps {
 
 export default function FlowEditor({ flowMetadata = null }: FlowEditorProps) {
 	return (
-		<ErrorBoundary>
+		<FlowEditorErrorBoundary>
 			<FlowProvider initialFlow={flowMetadata}>
 				<ReactFlowProvider>
 					<UndoRedoProvider>
@@ -548,6 +549,6 @@ export default function FlowEditor({ flowMetadata = null }: FlowEditorProps) {
 					</UndoRedoProvider>
 				</ReactFlowProvider>
 			</FlowProvider>
-		</ErrorBoundary>
+		</FlowEditorErrorBoundary>
 	);
 }
