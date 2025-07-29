@@ -62,43 +62,43 @@ export default function FlowPage({ params }: PageProps) {
 	// Authentication check
 	if (!(isAuthenticated && user)) {
 		return (
-			<div className="flex h-screen w-screen items-center justify-center bg-background">
-				<div className="mx-auto max-w-md px-4 text-center">
+            <div className="flex h-screen w-screen items-center justify-center bg-background">
+                <div className="mx-auto max-w-md px-4 text-center">
 					<AlertCircle className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
 					<h2 className="mb-2 font-bold text-2xl text-foreground">Authentication Required</h2>
 					<p className="mb-6 text-muted-foreground">Please sign in to access this flow</p>
-					<Link href="/sign-in">
+					<Link href="/sign-in" legacyBehavior>
 						<Button>Sign In</Button>
 					</Link>
 				</div>
-			</div>
-		);
+            </div>
+        );
 	}
 
 	// Flow not found or access denied
 	if (flow === null) {
 		return (
-			<div className="flex h-screen w-screen items-center justify-center bg-background">
-				<div className="mx-auto max-w-md px-4 text-center">
+            <div className="flex h-screen w-screen items-center justify-center bg-background">
+                <div className="mx-auto max-w-md px-4 text-center">
 					<AlertCircle className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
 					<h2 className="mb-2 font-bold text-2xl text-foreground">Access Denied</h2>
 					<p className="mb-6 text-muted-foreground">
 						The flow you're looking for doesn't exist or you don't have permission to access it.
 					</p>
 					<div className="flex justify-center gap-3">
-						<Link href="/dashboard">
+						<Link href="/dashboard" legacyBehavior>
 							<Button variant="outline" className="gap-2">
 								<ArrowLeft className="h-4 w-4" />
 								My Flows
 							</Button>
 						</Link>
-						<Link href="/explore">
+						<Link href="/explore" legacyBehavior>
 							<Button className="gap-2">Explore Public Flows</Button>
 						</Link>
 					</div>
 				</div>
-			</div>
-		);
+            </div>
+        );
 	}
 
 	// Render the full-screen flow editor with metadata context

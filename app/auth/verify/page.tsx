@@ -154,8 +154,8 @@ export default function VerifyMagicLinkPage() {
 	const content = getStatusContent();
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-			<div className="w-full max-w-md space-y-8">
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+            <div className="w-full max-w-md space-y-8">
 				{/* Logo */}
 				<div className="text-center">
 					<h1 className="mb-2 font-bold text-3xl text-gray-900">AgenitiX</h1>
@@ -173,7 +173,7 @@ export default function VerifyMagicLinkPage() {
 					{content.showRetry && (
 						<CardContent className="pt-0">
 							<div className="space-y-4">
-								<Link href="/sign-in">
+								<Link href="/sign-in" legacyBehavior>
 									<Button className="w-full">
 										<Mail className="mr-2 h-4 w-4" />
 										{status === "expired" ? "Get New Magic Link" : "Try Again"}
@@ -201,6 +201,6 @@ export default function VerifyMagicLinkPage() {
 					</a>
 				</div>
 			</div>
-		</div>
-	);
+        </div>
+    );
 }

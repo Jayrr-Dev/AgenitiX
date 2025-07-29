@@ -143,8 +143,8 @@ export function HeroCarousel() {
 	};
 
 	return (
-		<div className="xdebug-blue relative w-full overflow-hidden">
-			<div ref={emblaRef} className=" relative z-10 w-full overflow-hidden">
+        <div className="xdebug-blue relative w-full overflow-hidden">
+            <div ref={emblaRef} className=" relative z-10 w-full overflow-hidden">
 				{/* Navigation buttons */}
 
 				<div className="xdebug-green flex lg:mx-20">
@@ -158,7 +158,7 @@ export function HeroCarousel() {
 								<CardContent className="m-0 flex items-center justify-center overflow-hidden p-0 ">
 									{slide.type === "video" ? (
 										// VIDEO CAROUSEL
-										<video
+										(<video
 											ref={videoRef}
 											src={slide.src}
 											autoPlay={true}
@@ -167,10 +167,10 @@ export function HeroCarousel() {
 											loop={true}
 											className="w-full object-cover brightness-[0.7]"
 											style={{ height: "calc(100vh - 96px)" }}
-										/>
+										/>)
 									) : slide.type === "image" ? (
 										// IMAGE CAROUSEL
-										<img
+										(<img
 											src={slide.src}
 											alt={
 												typeof slide.title === "string"
@@ -183,10 +183,10 @@ export function HeroCarousel() {
 												height: "calc(100vh - 96px)",
 												transform: `translateY(${scrollY * 0.1}px)`,
 											}}
-										/>
+										/>)
 									) : slide.type === "component" ? (
 										// COMPONENT CAROUSEL
-										<div className="h-full w-full">{slide.component}</div>
+										(<div className="h-full w-full">{slide.component}</div>)
 									) : null}
 
 									{/* Animated Message Card with CTA */}
@@ -315,6 +315,6 @@ export function HeroCarousel() {
 
 				<div className="custom-shape-divider-top-1745800192 absolute right-0 bottom-0 left-0 z-20" />
 			</div>
-		</div>
-	);
+        </div>
+    );
 }

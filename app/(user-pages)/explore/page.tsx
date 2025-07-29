@@ -314,8 +314,8 @@ const ExplorePage = () => {
 	};
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-			<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+            <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 				{/* Enhanced Header with SEO */}
 				<header className="mb-8">
 					<div className="flex flex-col gap-6">
@@ -336,7 +336,7 @@ const ExplorePage = () => {
 								)}
 							</div>
 							<div className="flex items-center gap-2">
-								<Link href="/dashboard">
+								<Link href="/dashboard" legacyBehavior>
 									<Button variant="outline">My Flows</Button>
 								</Link>
 								{user?.id && (
@@ -477,7 +477,7 @@ const ExplorePage = () => {
 										</Button>
 									</div>
 
-									<Link href={`/matrix/${flow._id}`}>
+									<Link href={`/matrix/${flow._id}`} legacyBehavior>
 										<Button size="sm" className="gap-2">
 											<ExternalLink className="h-3 w-3" />
 											Open
@@ -499,7 +499,7 @@ const ExplorePage = () => {
 						<p className="mx-auto mb-8 max-w-md text-muted-foreground">
 							Be the first to share a public flow with the community!
 						</p>
-						<Link href="/dashboard">
+						<Link href="/dashboard" legacyBehavior>
 							<Button>Create a Flow</Button>
 						</Link>
 					</div>
@@ -518,8 +518,8 @@ const ExplorePage = () => {
 					</div>
 				) : null}
 			</div>
-		</div>
-	);
+        </div>
+    );
 };
 
 export default ExplorePage;

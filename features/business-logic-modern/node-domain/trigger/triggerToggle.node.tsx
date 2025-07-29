@@ -264,21 +264,20 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 	const isToggled = toBool(store);
 
 	return (
-		<>
-			{/* Label (hidden for 60×60 icons) */}
-			{!isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60 ? (
+        <>
+            {/* Label (hidden for 60×60 icons) */}
+            {!isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60 ? (
 				<div className="absolute inset-0 flex justify-center p-1 text-foreground/80 text-lg">
 					{/* {spec.icon && renderLucideIcon(spec.icon)} */}
 				</div>
 			) : (
 				<LabelNode nodeId={id} label={spec.displayName} />
 			)}
-
-			{/* ───────────────────────────────────────── UI ───────────────────────────────────────── */}
-			{isExpanded ? (
+            {/* ───────────────────────────────────────── UI ───────────────────────────────────────── */}
+            {isExpanded ? (
 				/* Expanded view */
-				<div className={CONTENT.expanded}>
-					<div className={CONTENT.body}>
+				(<div className={CONTENT.expanded}>
+                    <div className={CONTENT.body}>
 						<div className="flex flex-col items-center gap-0">
 							<button
 								className={`${CONTENT.toggle} ${
@@ -308,11 +307,11 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 							</div>
 						</div>
 					</div>
-				</div>
+                </div>)
 			) : (
 				/* Collapsed view */
-				<div className={CONTENT.collapsed}>
-					<button
+				(<div className={CONTENT.collapsed}>
+                    <button
 						className={`${CONTENT.toggle} ${
 							isEnabled
 								? isToggled
@@ -333,12 +332,11 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 					>
 						<div className={CONTENT.toggleText}>{isToggled ? "ON" : "OFF"}</div>
 					</button>
-				</div>
+                </div>)
 			)}
-
-			<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
-		</>
-	);
+            <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
+        </>
+    );
 });
 
 // -----------------------------------------------------------------------------

@@ -35,7 +35,7 @@ export default function MainMobileNav() {
 			{/* If user is not logged in, show the navigation menu */}
 			<DropdownMenuContent align="end" className="w-[85vw] px-8 text-xl">
 				<DropdownMenuItem asChild={true}>
-					<Link href="/" className="flex w-full items-center" legacyBehavior={true}>
+					<Link href="/" className="flex w-full items-center">
 						{/* <Image src="/logo.png" alt="logo" width={24} height={24} className="h-5 w-auto mr-2" /> */}
 						<span className="font-medium">Home</span>
 					</Link>

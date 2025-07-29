@@ -8,12 +8,12 @@ export const ProtectedNavigation = () => {
 	const { user } = useAuthContext();
 
 	return (
-		<header className="sticky top-0 z-40 border-border border-b bg-background">
-			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-40 border-border border-b bg-background">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 				<div className="flex h-16 items-center justify-between">
 					{/* Logo and main navigation */}
 					<div className="flex items-center space-x-8">
-						<Link href="/dashboard" className="flex items-center">
+						<Link href="/dashboard" className="flex items-center" legacyBehavior>
 							<h1 className="font-bold text-foreground text-xl">AgenitiX</h1>
 						</Link>
 					</div>
@@ -27,6 +27,6 @@ export const ProtectedNavigation = () => {
 					</div>
 				</div>
 			</div>
-		</header>
-	);
+        </header>
+    );
 };

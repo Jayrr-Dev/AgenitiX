@@ -50,7 +50,6 @@ export default function Footer() {
 									<Link
 										href={l.href}
 										className="text-mutedFg transition-colors hover:text-secondary"
-										legacyBehavior={true}
 									>
 										{l.label}
 									</Link>
