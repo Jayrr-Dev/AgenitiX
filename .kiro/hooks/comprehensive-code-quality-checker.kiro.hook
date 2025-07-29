@@ -1,0 +1,35 @@
+{
+  "enabled": true,
+  "name": "Comprehensive Code Quality Checker",
+  "description": "Unified code quality hook that combines Biome linting/fixing, TypeScript error checking/fixing, and security analysis into one comprehensive check after file saves",
+  "version": "1.1.0",
+  "author": "AgenitiX Team",
+  "tags": ["code-quality", "linting", "security", "typescript"],
+  "estimatedExecutionTime": "30-60 seconds",
+  "when": {
+    "type": "fileEdited",
+    "debounceMs": 2000,
+    "patterns": [
+      "**/*.{ts,tsx,js,jsx}",
+      "!**/*.test.{ts,tsx,js,jsx}",
+      "!**/*.spec.{ts,tsx,js,jsx}",
+      "!**/*.stories.{ts,tsx,js,jsx}",
+      "!node_modules/**",
+      "!.next/**",
+      "!dist/**",
+      "!build/**",
+      "!coverage/**",
+      "!.git/**",
+      "!convex/_generated/**",
+      "!generated/**",
+      "!public/**",
+      "!*.config.{ts,js,mjs}",
+      "!*.d.ts",
+      "!backups/**"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A file has been saved. Please perform a comprehensive code quality check that combines multiple analysis tools and fixes. Execute the following steps in order:\n\n## 1. BIOME LINTING & FORMATTING\n- Run `pnpm lint:fix` to automatically fix all Biome linting errors\n- Ensure code follows AgenitiX naming conventions (PascalCase for components, camelCase for hooks, kebab-case for utilities)\n- Fix formatting issues, import organization, and code style violations\n- Report any remaining Biome errors that couldn't be auto-fixed\n\n## 2. TYPESCRIPT ERROR CHECKING & FIXING\n- Run TypeScript type checking to identify compilation errors\n- Analyze and fix all TypeScript errors including:\n  - Type errors and mismatches\n  - Missing imports or exports\n  - Incorrect type annotations\n  - Interface/type definition issues\n  - Generic type problems\n  - Async/await type issues\n  - React component prop type errors\n- Ensure all fixes maintain code functionality and follow project TypeScript best practices\n\n## 3. SECURITY ANALYSIS\nPerform security analysis focusing on:\n- **Input Validation**: Check for unvalidated user inputs, missing sanitization\n- **XSS Prevention**: Ensure proper output encoding, safe use of dangerouslySetInnerHTML\n- **Authentication/Authorization**: Verify proper auth checks, session management\n- **Data Exposure**: Check for sensitive data leaks, console.log with sensitive info\n- **SQL Injection**: Ensure parameterized queries in Convex functions\n- **CSRF Protection**: Verify proper CSRF tokens in forms\n- **Environment Variables**: Check for hardcoded secrets, proper env var usage\n- **API Security**: Validate API route security, rate limiting, CORS configuration\n- **File Upload Security**: Check file type validation, size limits\n- **Error Handling**: Ensure errors don't expose sensitive information\n\n## 4. CODE QUALITY IMPROVEMENTS\nAnalyze for:\n- **Performance Issues**: Unnecessary re-renders, inefficient algorithms, memory leaks\n- **React Best Practices**: Proper hook usage, component patterns, state management\n- **Architecture Compliance**: DDD patterns, feature-based organization\n- **Maintainability**: Code complexity, readability, modularity\n- **Testing Opportunities**: Suggest areas that need test coverage\n\n## 5. REPORTING\nProvide a structured report with:\n- ✅ **Fixed Issues**: List all automatically fixed problems\n- ⚠️ **Security Concerns**: Highlight any security vulnerabilities found\n- 🔧 **Manual Fixes Needed**: Issues requiring manual intervention\n- 📈 **Improvement Suggestions**: Code quality enhancements\n- 🎯 **Priority Actions**: Most critical items to address first\n\n## EXECUTION GUIDELINES\n- Fix issues automatically where possible\n- Provide specific code examples for manual fixes\n- Prioritize security issues as highest priority\n- Maintain existing functionality while improving code quality\n- Follow AgenitiX development standards and architectural patterns\n- Consider the tech stack: Next.js 15, React 19, TypeScript, Convex, Zustand, Tailwind CSS\n\nExecute this comprehensive analysis and provide actionable results with clear next steps."
+  }
+}

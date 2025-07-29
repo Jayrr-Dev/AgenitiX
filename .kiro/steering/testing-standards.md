@@ -205,7 +205,6 @@ describe("Workflow Actions", () => {
 // features/flow-editor/FlowEditor.test.tsx
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { FlowEditor } from "./FlowEditor";
-import { ConvexProvider } from "convex/react";
 import { ConvexTestProvider } from "convex/react";
 
 describe("Flow Editor Integration", () => {
@@ -329,7 +328,6 @@ test.describe("Workflow Creation", () => {
 ```typescript
 // test-utils/renderWithProviders.tsx
 import { render, RenderOptions } from "@testing-library/react";
-import { ConvexProvider } from "convex/react";
 import { ConvexTestProvider } from "convex/react";
 
 interface CustomRenderOptions extends Omit<RenderOptions, "wrapper"> {
@@ -422,43 +420,6 @@ describe("Button Accessibility", () => {
     render(<Button loading aria-label="Submit form">Submit</Button>);
     
     expect(screen.getByLabelText("Submit form")).toHaveAttribute("aria-busy", "true");
-  });
-});
-```
-
-## Performance Testing
-
-### Component Performance Testing
-```typescript
-// components/FlowEditor.test.tsx
-import { render } from "@testing-library/react";
-import { FlowEditor } from "./FlowEditor";
-
-describe("Flow Editor Performance", () => {
-  it("renders large workflows efficiently", () => {
-    const startTime = performance.now();
-    
-    render(<FlowEditor nodes={generateLargeWorkflow(100)} />);
-    
-    const endTime = performance.now();
-    expect(endTime - startTime).toBeLessThan(1000); // Should render in < 1s
-  });
-
-  it("handles rapid node updates", () => {
-    const { rerender } = render(<FlowEditor />);
-    
-    const updates = Array.from({ length: 50 }, (_, i) => ({
-      nodes: generateNodes(i + 1),
-    }));
-
-    const startTime = performance.now();
-    
-    updates.forEach(update => {
-      rerender(<FlowEditor {...update} />);
-    });
-    
-    const endTime = performance.now();
-    expect(endTime - startTime).toBeLessThan(5000); // Should handle 50 updates in < 5s
   });
 });
 ```

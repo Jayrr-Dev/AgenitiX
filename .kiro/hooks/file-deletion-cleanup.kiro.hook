@@ -4,7 +4,7 @@
   "description": "When a file is deleted, automatically scan and clean up all relevant code and logic dependencies in other files including imports, references, and related code",
   "version": "1",
   "when": {
-    "type": "fileEdited",
+    "type": "fileDeleted",
     "patterns": [
       "**/*"
     ]

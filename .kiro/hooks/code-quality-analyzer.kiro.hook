@@ -4,7 +4,7 @@
   "description": "Monitors source code files for changes and analyzes the modified code for potential improvements including code smells, design patterns, maintainability issues, and best practices. Generates actionable suggestions for improving code quality while maintaining existing functionality.",
   "version": "1",
   "when": {
-    "type": "fileEdited",
+    "type": "userTriggered",
     "patterns": [
       "**/*.{ts",
       "tsx",

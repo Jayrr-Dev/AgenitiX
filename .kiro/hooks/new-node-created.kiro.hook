@@ -1,10 +1,10 @@
 {
   "enabled": true,
   "name": "New Node Created",
-  "description": "Automatically updates node controls, sidebar registry, and other dependent files when a new node file (*.node.tsx) is created",
+  "description": "Automatically updates node controls, sidebar registry, and other dependent files when a new node file (*.node.tsx) is created and Automatically runs Biome linting and fixes all errors after file saves to maintain code quality and formatting standards",
   "version": "1",
   "when": {
-    "type": "fileEdited",
+    "type": "fileCreated",
     "patterns": [
       "**/*.node.tsx"
     ]

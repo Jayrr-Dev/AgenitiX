@@ -4,7 +4,7 @@
   "description": "Listen to all source files in this TypeScript/Next.js repository and automatically update documentation in README or /docs folder when source code changes",
   "version": "1",
   "when": {
-    "type": "fileEdited",
+    "type": "userTriggered",
     "patterns": [
       "**/*.ts",
       "**/*.tsx",

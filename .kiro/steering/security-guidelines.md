@@ -90,19 +90,6 @@ const requireResourceAccess = async (
   
   return resource;
 };
-
-// Usage in functions
-export const updateEmailTemplate = mutation({
-  args: { templateId: v.id("email_templates"), data: v.any() },
-  handler: async (ctx, args) => {
-    const template = await requireResourceAccess(ctx, args.templateId, "email_templates");
-    
-    // Update template
-    await ctx.db.patch(args.templateId, args.data);
-    
-    return { success: true };
-  },
-});
 ```
 
 ### Role-Based Access Control
@@ -185,16 +172,6 @@ export const validateNodeInput = (input: any, spec: NodeInput): string[] => {
   // Type validation
   if (input && !validateType(input, spec.type)) {
     errors.push(`${spec.name} must be of type ${spec.type}`);
-  }
-  
-  // Length validation
-  if (typeof input === "string") {
-    if (spec.minLength && input.length < spec.minLength) {
-      errors.push(`${spec.name} must be at least ${spec.minLength} characters`);
-    }
-    if (spec.maxLength && input.length > spec.maxLength) {
-      errors.push(`${spec.name} must be no more than ${spec.maxLength} characters`);
-    }
   }
   
   // Pattern validation
@@ -362,22 +339,6 @@ export const rateLimit = async (
   
   return true; // Request allowed
 };
-
-// Usage in functions
-export const sendEmail = action({
-  args: { to: v.string(), subject: v.string(), body: v.string() },
-  handler: async (ctx, args) => {
-    const identity = await requireAuth(ctx);
-    
-    // Rate limit: 10 emails per minute per user
-    const allowed = await rateLimit(ctx, `email:${identity.subject}`, 10, 60000);
-    if (!allowed) {
-      throw new Error("Rate limit exceeded");
-    }
-    
-    // Send email logic
-  },
-});
 ```
 
 ### CORS Configuration
@@ -455,27 +416,6 @@ export const logAuditEvent = mutation({
       userAgent: args.userAgent,
       timestamp: new Date(),
     });
-  },
-});
-
-// Usage in functions
-export const deleteEmailTemplate = mutation({
-  args: { templateId: v.id("email_templates") },
-  handler: async (ctx, args) => {
-    const template = await requireResourceAccess(ctx, args.templateId, "email_templates");
-    
-    // Log the deletion
-    await logAuditEvent(ctx, {
-      action: "delete",
-      resource: "email_templates",
-      resourceId: args.templateId,
-      details: { templateName: template.name },
-    });
-    
-    // Delete the template
-    await ctx.db.delete(args.templateId);
-    
-    return { success: true };
   },
 });
 ```
@@ -557,19 +497,6 @@ export const handleError = (error: unknown, context: string): never => {
   
   throw new Error(userMessage);
 };
-
-// Usage
-export const processEmail = action({
-  args: { emailData: v.any() },
-  handler: async (ctx, args) => {
-    try {
-      // Process email logic
-      return { success: true };
-    } catch (error) {
-      handleError(error, "processEmail");
-    }
-  },
-});
 ```
 
 ## File References

@@ -31,25 +31,6 @@ export const emailTemplates = defineTable({
   createdAt: v.number(),
   updatedAt: v.number(),
 });
-
-// Template with variables example
-const welcomeTemplate = {
-  name: "Welcome Email",
-  subject: "Welcome to AgenitiX, {{name}}!",
-  body: `
-    <h1>Welcome to AgenitiX!</h1>
-    <p>Hello {{name}},</p>
-    <p>Thank you for joining AgenitiX. We're excited to help you automate your workflows.</p>
-    <p>Your account details:</p>
-    <ul>
-      <li>Email: {{email}}</li>
-      <li>Plan: {{plan}}</li>
-      <li>Created: {{createdAt}}</li>
-    </ul>
-    <p>Best regards,<br>The AgenitiX Team</p>
-  `,
-  variables: ["name", "email", "plan", "createdAt"],
-};
 ```
 
 ### Template Variable Processing
@@ -63,13 +44,6 @@ export const processTemplate = (
     return variables[variable] || "";
   });
 };
-
-// Usage
-const processedSubject = processTemplate(
-  "Welcome to AgenitiX, {{name}}!",
-  { name: "John", email: "john@example.com" }
-);
-// Result: "Welcome to AgenitiX, John!"
 ```
 
 ## Email Sending Nodes
@@ -135,35 +109,6 @@ export const createEmailSpec: NodeSpec = {
       description: "Scheduled delivery time",
     },
   ],
-  
-  execute: async (inputs, context) => {
-    const { templateId, to, subject, variables, scheduleFor } = inputs;
-    
-    // Validate email address
-    if (!isValidEmail(to)) {
-      throw new Error("Invalid email address");
-    }
-    
-    // Process template
-    const template = await context.convex.query("emails.getTemplate", { templateId });
-    const processedSubject = processTemplate(template.subject, variables);
-    const processedBody = processTemplate(template.body, variables);
-    
-    // Create email record
-    const emailId = await context.convex.mutation("emails.createEmail", {
-      to,
-      subject: processedSubject,
-      body: processedBody,
-      variables,
-      scheduledFor: scheduleFor ? new Date(scheduleFor) : null,
-      userId: context.userId,
-    });
-    
-    return {
-      emailId,
-      scheduledFor: scheduleFor || null,
-    };
-  },
 };
 ```
 
@@ -207,21 +152,6 @@ export const sendEmailSpec: NodeSpec = {
       description: "Email delivery status",
     },
   ],
-  
-  execute: async (inputs, context) => {
-    const { emailId, priority = "normal" } = inputs;
-    
-    // Send email via action
-    const result = await context.convex.action("emails.sendEmail", {
-      emailId,
-      priority,
-    });
-    
-    return {
-      sentAt: result.sentAt,
-      status: result.status,
-    };
-  },
 };
 ```
 
@@ -267,19 +197,7 @@ export const receiveEmailSpec: NodeSpec = {
     },
   ],
   
-  // This node doesn't execute - it's a trigger
   isTrigger: true,
-  
-  setupWebhook: async (inputs, context) => {
-    const { webhookUrl, filters } = inputs;
-    
-    // Register webhook with email provider
-    await context.convex.mutation("emails.setupWebhook", {
-      webhookUrl,
-      filters,
-      nodeId: context.nodeId,
-    });
-  },
 };
 ```
 
@@ -322,24 +240,6 @@ export const processEmailSpec: NodeSpec = {
       description: "Extracted field values",
     },
   ],
-  
-  execute: async (inputs, context) => {
-    const { emailData, extractFields = [] } = inputs;
-    
-    // Parse email content
-    const parsedEmail = parseEmailContent(emailData);
-    
-    // Extract specified fields
-    const extracted = {};
-    extractFields.forEach(field => {
-      extracted[field] = parsedEmail[field] || "";
-    });
-    
-    return {
-      processedData: parsedEmail,
-      extractedFields: extracted,
-    };
-  },
 };
 ```
 
@@ -355,15 +255,6 @@ export const trackEmailOpen = mutation({
       openedAt: new Date(),
       isOpened: true,
     });
-    
-    // Log analytics event
-    await ctx.db.insert("email_analytics", {
-      emailId: args.emailId,
-      event: "open",
-      timestamp: new Date(),
-      userAgent: args.userAgent,
-      ipAddress: args.ipAddress,
-    });
   },
 });
 
@@ -374,14 +265,6 @@ export const trackEmailClick = mutation({
       clickedAt: new Date(),
       isClicked: true,
       lastClickedUrl: args.linkUrl,
-    });
-    
-    // Log analytics event
-    await ctx.db.insert("email_analytics", {
-      emailId: args.emailId,
-      event: "click",
-      linkUrl: args.linkUrl,
-      timestamp: new Date(),
     });
   },
 });
@@ -426,24 +309,6 @@ export const viewEmailAnalyticsSpec: NodeSpec = {
       description: "Calculated performance metrics",
     },
   ],
-  
-  execute: async (inputs, context) => {
-    const { emailId, dateRange } = inputs;
-    
-    // Get analytics data
-    const analytics = await context.convex.query("emails.getAnalytics", {
-      emailId,
-      dateRange,
-    });
-    
-    // Calculate metrics
-    const metrics = calculateEmailMetrics(analytics);
-    
-    return {
-      analytics,
-      metrics,
-    };
-  },
 };
 ```
 
@@ -476,51 +341,6 @@ export const addToEmailQueue = mutation({
     return { queueId };
   },
 });
-
-export const processEmailQueue = action({
-  handler: async (ctx) => {
-    const now = new Date();
-    
-    // Get pending emails
-    const pendingEmails = await ctx.db
-      .query("email_queue")
-      .withIndex("by_status_and_scheduled", (q) =>
-        q.eq("status", "pending")
-          .lte("scheduledFor", now)
-      )
-      .take(10); // Process 10 at a time
-    
-    for (const email of pendingEmails) {
-      try {
-        // Send email
-        await sendEmailViaProvider(email);
-        
-        // Mark as sent
-        await ctx.db.patch(email._id, {
-          status: "sent",
-          sentAt: new Date(),
-        });
-      } catch (error) {
-        // Increment attempts
-        const newAttempts = email.attempts + 1;
-        
-        if (newAttempts >= email.maxAttempts) {
-          // Mark as failed
-          await ctx.db.patch(email._id, {
-            status: "failed",
-            error: error.message,
-          });
-        } else {
-          // Retry later
-          await ctx.db.patch(email._id, {
-            attempts: newAttempts,
-            scheduledFor: new Date(now.getTime() + 5 * 60 * 1000), // 5 minutes
-          });
-        }
-      }
-    }
-  },
-});
 ```
 
 ## Email Provider Integration
@@ -535,7 +355,7 @@ interface EmailProvider {
   validateCredentials: (credentials: any) => Promise<boolean>;
 }
 
-// Resend provider
+// Resend provider example
 export const resendProvider: EmailProvider = {
   name: "resend",
   
@@ -563,38 +383,6 @@ export const resendProvider: EmailProvider = {
       messageId: result.id,
       status: "sent",
     };
-  },
-  
-  async setupWebhook(webhookUrl: string): Promise<void> {
-    // Setup webhook with Resend
-    const response = await fetch("https://api.resend.com/webhooks", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        url: webhookUrl,
-        events: ["email.delivered", "email.opened", "email.clicked"],
-      }),
-    });
-    
-    if (!response.ok) {
-      throw new Error("Failed to setup webhook");
-    }
-  },
-  
-  async validateCredentials(credentials: any): Promise<boolean> {
-    try {
-      const response = await fetch("https://api.resend.com/domains", {
-        headers: {
-          "Authorization": `Bearer ${credentials.apiKey}`,
-        },
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
   },
 };
 ```
