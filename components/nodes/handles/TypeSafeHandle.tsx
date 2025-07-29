@@ -191,14 +191,14 @@ function getPositionOffset(
 		case "right":
 			return {
 				...base,
-				top: `calc(50% + ${currentOffset}px)` as React.CSSProperties["top"],
+				top: `calc(50% + ${currentOffset}px)`,
 				transform: "translateY(-50%)",
 			};
 		case "top":
 		case "bottom":
 			return {
 				...base,
-				left: `calc(50% + ${currentOffset}px)` as React.CSSProperties["left"],
+				left: `calc(50% + ${currentOffset}px)`,
 				transform: "translateX(-50%)",
 			};
 		default:
@@ -352,6 +352,11 @@ interface UltimateTypesafeHandleProps {
 	position: "left" | "right" | "top" | "bottom";
 	style?: React.CSSProperties;
 	className?: string;
+	tsSymbol?: string;
+	code?: string;
+	nodeId?: string;
+	handleIndex?: number;
+	totalHandlesOnSide?: number;
 }
 
 const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = ({

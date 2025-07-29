@@ -160,11 +160,11 @@ export function sanitizeAuthData(authData: Record<string, unknown>): Record<stri
 	// Remove sensitive data that shouldn't be logged
 	const sanitized = { ...authData };
 
-	if (sanitized.accessToken) {
+	if (sanitized.accessToken && typeof sanitized.accessToken === "string") {
 		sanitized.accessToken = `${sanitized.accessToken.substring(0, 10)}...`;
 	}
 
-	if (sanitized.refreshToken) {
+	if (sanitized.refreshToken && typeof sanitized.refreshToken === "string") {
 		sanitized.refreshToken = `${sanitized.refreshToken.substring(0, 10)}...`;
 	}
 

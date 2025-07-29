@@ -1,12 +1,18 @@
 /**
- * OAuth2 Token Refresh Handler
+ * Route: api/auth/email/refresh/route.ts
+ * EMAIL TOKEN REFRESH API - Handles OAuth2 token refresh for email providers
  *
- * Handles refreshing expired OAuth2 access tokens using refresh tokens.
+ * • Validates refresh tokens and generates new access tokens
+ * • Supports Gmail and Outlook OAuth2 providers
+ * • Handles token expiration and authentication errors
+ * • Provides standardized error responses for client handling
+ *
+ * Keywords: oauth2, token-refresh, email-providers, authentication
  */
 
+import { NextRequest } from "next/server";
 import { getProvider } from "@/features/business-logic-modern/node-domain/email/providers";
 import type { EmailProviderType } from "@/features/business-logic-modern/node-domain/email/types";
-import type { NextRequest } from "next/server";
 import { buildErrorResponse, buildSuccessResponse, sanitizeAuthData } from "../utils";
 
 /**
@@ -142,6 +148,15 @@ export async function POST(request: NextRequest) {
 
 		// Get and validate provider
 		const providerInstance = getRefreshProvider(provider as EmailProviderType);
+		
+		// Additional type guard to ensure providerInstance is not null
+		if (!providerInstance || !providerInstance.refreshTokens) {
+			return buildErrorResponse(
+				"Provider not supported",
+				`Provider ${provider} does not support token refresh`,
+				400
+			);
+		}
 
 		// Refresh tokens
 		const newTokens = await providerInstance.refreshTokens(refreshToken);

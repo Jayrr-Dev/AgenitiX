@@ -126,7 +126,7 @@ export function AnubisProvider({ children, initialConfig }: AnubisProviderProps)
 	};
 
 	// CHECK IF CURRENT ROUTE IS PROTECTED
-	const isProtected = protectedRoutes.get(currentRoute)?.enabled;
+	const isProtected = protectedRoutes.get(currentRoute)?.enabled ?? false;
 
 	// CONTEXT VALUE
 	const contextValue: AnubisContextType = {

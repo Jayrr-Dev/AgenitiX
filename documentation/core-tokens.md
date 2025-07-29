@@ -147,6 +147,24 @@
 | node.cycle.classes.content |  |
 | node.cycle.classes.icon |  |
 | node.cycle.classes.text |  |
+| node.email.bg | hsla(195, 72%, 85%, 1) |
+| node.email.border | hsla(195, 72%, 40%, 1) |
+| node.email.border-hover | hsla(195, 72%, 30%, 1) |
+| node.email.border-width | 0 |
+| node.email.text | hsla(0, 0%, 15%, 1) |
+| node.email.text-secondary | hsla(0, 0%, 25%, 1) |
+| node.email.bg-hover | hsla(195, 72%, 80%, 1) |
+| node.email.bg-dark | hsla(195, 72%, 25%, 1) |
+| node.email.border-dark | hsla(195, 72%, 60%, 1) |
+| node.email.border-hover-dark | hsla(195, 72%, 70%, 1) |
+| node.email.text-dark | hsla(0, 0%, 85%, 1) |
+| node.email.text-secondary-dark | hsla(0, 0%, 75%, 1) |
+| node.email.bg-hover-dark | hsla(195, 72%, 35%, 1) |
+| node.email.classes.container |  |
+| node.email.classes.header |  |
+| node.email.classes.content |  |
+| node.email.classes.icon |  |
+| node.email.classes.text |  |
 | coreNode.border | hsla(0, 0%, 85%, 1) |
 | coreNode.border-hover | hsla(0, 0%, 75%, 1) |
 | coreNode.border-width |  |

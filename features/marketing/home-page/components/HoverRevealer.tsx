@@ -1,7 +1,7 @@
 import dynamic from "next/dynamic";
 
 const CanvasRevealEffectDemo = dynamic(
-	() => import("./CanvasRevealEffect").then((mod) => mod.CanvasRevealEffectDemo),
+	() => import("./canvasRevealEffect").then((mod) => mod.CanvasRevealEffectDemo),
 	{
 		loading: () => <div>Loading...</div>,
 	}
