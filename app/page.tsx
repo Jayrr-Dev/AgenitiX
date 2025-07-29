@@ -4,16 +4,16 @@
 export const dynamic = "force-dynamic";
 
 import { useAuthContext } from "@/components/auth/AuthProvider";
+import FAQ from "@/features/marketing/home-page/components/faq";
+import FeatureBoxesBento from "@/features/marketing/home-page/components/featureBoxesBento";
+import FeatureBoxesIconed from "@/features/marketing/home-page/components/featureBoxesIconed";
+import { TabletScroller } from "@/features/marketing/home-page/components/TabletScroller";
 import FeatureBoxesPlain from "@/features/marketing/home-page/components/FeatureBoxesPlain";
 import Hero from "@/features/marketing/home-page/components/HeroSection";
 import { Revealer } from "@/features/marketing/home-page/components/HoverRevealer";
 import { InfiniteLogoTicker } from "@/features/marketing/home-page/components/LogoTicker";
-import { TabletScroller } from "@/features/marketing/home-page/components/TabletScroller";
 import { AnimatedTestimonialsDemo } from "@/features/marketing/home-page/components/TestimonialsSlides";
 import { Testimonials } from "@/features/marketing/home-page/components/TestimonialsTicker";
-import FAQ from "@/features/marketing/home-page/components/faq";
-import FeatureBoxesBento from "@/features/marketing/home-page/components/featureBoxesBento";
-import FeatureBoxesIconed from "@/features/marketing/home-page/components/featureBoxesIconed";
 import {
 	faq,
 	featureBoxesBento,
