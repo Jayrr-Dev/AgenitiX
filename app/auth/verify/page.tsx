@@ -154,8 +154,8 @@ export default function VerifyMagicLinkPage() {
 	const content = getStatusContent();
 
 	return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-            <div className="w-full max-w-md space-y-8">
+		<div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+			<div className="w-full max-w-md space-y-8">
 				{/* Logo */}
 				<div className="text-center">
 					<h1 className="mb-2 font-bold text-3xl text-gray-900">AgenitiX</h1>
@@ -201,6 +201,6 @@ export default function VerifyMagicLinkPage() {
 					</a>
 				</div>
 			</div>
-        </div>
-    );
+		</div>
+	);
 }

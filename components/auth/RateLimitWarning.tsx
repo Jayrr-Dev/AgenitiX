@@ -12,9 +12,9 @@ interface RateLimitWarningProps {
 
 export const RateLimitWarning = ({ email, onDismiss }: RateLimitWarningProps) => {
 	return (
-        <Alert variant="destructive" className="border-orange-200 bg-orange-50">
-            <Clock className="h-4 w-4 text-orange-600" />
-            <AlertDescription className="text-orange-800">
+		<Alert variant="destructive" className="border-orange-200 bg-orange-50">
+			<Clock className="h-4 w-4 text-orange-600" />
+			<AlertDescription className="text-orange-800">
 				<div className="space-y-3">
 					<div>
 						<strong>Too many login attempts</strong>
@@ -54,6 +54,6 @@ export const RateLimitWarning = ({ email, onDismiss }: RateLimitWarningProps) =>
 					</div>
 				</div>
 			</AlertDescription>
-        </Alert>
-    );
+		</Alert>
+	);
 };

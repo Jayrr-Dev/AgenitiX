@@ -62,8 +62,8 @@ export default function FlowPage({ params }: PageProps) {
 	// Authentication check
 	if (!(isAuthenticated && user)) {
 		return (
-            <div className="flex h-screen w-screen items-center justify-center bg-background">
-                <div className="mx-auto max-w-md px-4 text-center">
+			<div className="flex h-screen w-screen items-center justify-center bg-background">
+				<div className="mx-auto max-w-md px-4 text-center">
 					<AlertCircle className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
 					<h2 className="mb-2 font-bold text-2xl text-foreground">Authentication Required</h2>
 					<p className="mb-6 text-muted-foreground">Please sign in to access this flow</p>
@@ -71,15 +71,15 @@ export default function FlowPage({ params }: PageProps) {
 						<Button>Sign In</Button>
 					</Link>
 				</div>
-            </div>
-        );
+			</div>
+		);
 	}
 
 	// Flow not found or access denied
 	if (flow === null) {
 		return (
-            <div className="flex h-screen w-screen items-center justify-center bg-background">
-                <div className="mx-auto max-w-md px-4 text-center">
+			<div className="flex h-screen w-screen items-center justify-center bg-background">
+				<div className="mx-auto max-w-md px-4 text-center">
 					<AlertCircle className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
 					<h2 className="mb-2 font-bold text-2xl text-foreground">Access Denied</h2>
 					<p className="mb-6 text-muted-foreground">
@@ -97,8 +97,8 @@ export default function FlowPage({ params }: PageProps) {
 						</Link>
 					</div>
 				</div>
-            </div>
-        );
+			</div>
+		);
 	}
 
 	// Render the full-screen flow editor with metadata context

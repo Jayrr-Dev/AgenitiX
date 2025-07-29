@@ -310,7 +310,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 	// Helper to get graph
 	const getGraph = useCallback(() => {
 		const graph = graphRef.current;
-		
+
 		// Ensure graph has basic structure
 		if (!graph.nodes) {
 			graph.nodes = {};
@@ -321,7 +321,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 		if (!graph.cursor) {
 			graph.cursor = graph.root;
 		}
-		
+
 		// Ensure root node exists
 		if (!graph.nodes[graph.root]) {
 			console.warn(`⚠️ [UndoRedo] Root node missing in getGraph, creating default root`);
@@ -336,13 +336,13 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 				createdAt: Date.now(),
 			};
 		}
-		
+
 		// Ensure cursor points to valid node
 		if (!graph.nodes[graph.cursor]) {
 			console.warn(`⚠️ [UndoRedo] Cursor points to missing node in getGraph, resetting to root`);
 			graph.cursor = graph.root;
 		}
-		
+
 		return graph;
 	}, [captureCurrentState]);
 
@@ -391,7 +391,14 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 				return;
 			}
 
-			const newNodeId = createChildNode(graph, graph.cursor, label, cursorNode.after, nextState, metadata);
+			const newNodeId = createChildNode(
+				graph,
+				graph.cursor,
+				label,
+				cursorNode.after,
+				nextState,
+				metadata
+			);
 			graph.cursor = newNodeId;
 
 			// Prune graph to stay within memory limits
@@ -488,14 +495,14 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
 		graph.cursor = current.parentId;
 		const parent = graph.nodes[graph.cursor];
-		
+
 		// Safety check: if parent node doesn't exist, cannot undo
 		if (!parent) {
 			console.warn(`⚠️ [UndoRedo] Parent node "${graph.cursor}" missing in undo, cannot proceed`);
 			graph.cursor = current.id; // Restore cursor to current
 			return false;
 		}
-		
+
 		applyState(parent.after, `undo ${current.label}`);
 		saveGraph(graph, flowId);
 
@@ -598,7 +605,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 			console.warn(`⚠️ [UndoRedo] Invalid cursor "${graph.cursor}", resetting to root`);
 			graph.cursor = graph.root;
 			let rootNode = graph.nodes[graph.root];
-			
+
 			// Safety check: if root node doesn't exist, create it
 			if (!rootNode) {
 				console.warn(`⚠️ [UndoRedo] Root node "${graph.root}" missing, creating new root`);
@@ -614,12 +621,12 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 				};
 				graph.nodes[graph.root] = rootNode;
 			}
-			
+
 			// Ensure rootNode has childrenIds initialized
 			if (!rootNode.childrenIds) {
 				rootNode.childrenIds = [];
 			}
-			
+
 			saveGraph(graph, flowId);
 
 			return {
@@ -661,10 +668,12 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 			);
 			graph.cursor = graph.root;
 			let rootNode = graph.nodes[graph.root];
-			
+
 			// Safety check: if root node doesn't exist, create it
 			if (!rootNode) {
-				console.warn(`⚠️ [UndoRedo] Root node "${graph.root}" missing in getBranchOptions, creating new root`);
+				console.warn(
+					`⚠️ [UndoRedo] Root node "${graph.root}" missing in getBranchOptions, creating new root`
+				);
 				const currentState = captureCurrentState();
 				rootNode = {
 					id: graph.root,
@@ -677,12 +686,12 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 				};
 				graph.nodes[graph.root] = rootNode;
 			}
-			
+
 			// Ensure rootNode has childrenIds initialized
 			if (!rootNode.childrenIds) {
 				rootNode.childrenIds = [];
 			}
-			
+
 			saveGraph(graph, flowId);
 			return [...rootNode.childrenIds];
 		}

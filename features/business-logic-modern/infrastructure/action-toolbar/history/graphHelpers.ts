@@ -195,7 +195,7 @@ const validateAndFixGraphData = (graph: HistoryGraph): HistoryGraph => {
 	if (!graph.nodes) {
 		graph.nodes = {};
 	}
-	
+
 	// Ensure root node exists
 	if (!graph.nodes[graph.root]) {
 		console.warn(`⚠️ [GraphHelpers] Root node "${graph.root}" missing, creating default root`);
@@ -209,27 +209,29 @@ const validateAndFixGraphData = (graph: HistoryGraph): HistoryGraph => {
 			createdAt: Date.now(),
 		};
 	}
-	
+
 	// Ensure cursor points to a valid node
 	if (!graph.nodes[graph.cursor]) {
-		console.warn(`⚠️ [GraphHelpers] Cursor "${graph.cursor}" points to missing node, resetting to root`);
+		console.warn(
+			`⚠️ [GraphHelpers] Cursor "${graph.cursor}" points to missing node, resetting to root`
+		);
 		graph.cursor = graph.root;
 	}
-	
+
 	// Ensure all nodes have required properties
 	for (const nodeId in graph.nodes) {
 		const node = graph.nodes[nodeId];
-		
+
 		// Ensure childrenIds is always an array
 		if (!node.childrenIds) {
 			node.childrenIds = [];
 		}
-		
+
 		// Ensure parentId is properly set (null for root, string for others)
 		if (node.parentId === undefined) {
 			node.parentId = nodeId === graph.root ? null : graph.root;
 		}
-		
+
 		// Ensure required fields exist
 		if (!node.id) {
 			node.id = nodeId;
@@ -247,7 +249,7 @@ const validateAndFixGraphData = (graph: HistoryGraph): HistoryGraph => {
 			node.createdAt = Date.now();
 		}
 	}
-	
+
 	return graph;
 };
 
@@ -270,7 +272,7 @@ export const loadGraph = (flowId?: string): HistoryGraph | null => {
 		}
 
 		const rawGraph = JSON.parse(data);
-		
+
 		// Validate and fix the loaded graph data
 		return validateAndFixGraphData(rawGraph);
 	} catch (error) {
@@ -308,7 +310,9 @@ export const clearAllPersistedGraphs = (): void => {
 // Graph statistics for debugging/UI
 export const getGraphStats = (graph: HistoryGraph) => {
 	const totalNodes = Object.keys(graph.nodes).length;
-	const branches = Object.values(graph.nodes).filter((node) => (node.childrenIds || []).length > 1).length;
+	const branches = Object.values(graph.nodes).filter(
+		(node) => (node.childrenIds || []).length > 1
+	).length;
 	const leafNodes = getLeafNodes(graph).length;
 	const maxDepth = getPathToCursor(graph).length - 1; // -1 to exclude root
 

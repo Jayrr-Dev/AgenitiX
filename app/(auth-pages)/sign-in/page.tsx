@@ -187,9 +187,9 @@ export default function SignInPage() {
 	};
 
 	return (
-        <div className="flex min-h-screen">
-            {/* Left side - Branding */}
-            <div className="hidden flex-col justify-between bg-gradient-to-br from-blue-600 to-purple-700 p-12 text-white lg:flex lg:w-1/2">
+		<div className="flex min-h-screen">
+			{/* Left side - Branding */}
+			<div className="hidden flex-col justify-between bg-gradient-to-br from-blue-600 to-purple-700 p-12 text-white lg:flex lg:w-1/2">
 				<div>
 					<h1 className="mb-4 font-bold text-4xl">AgenitiX</h1>
 					<p className="text-xl opacity-90">Visual Flow Automation Platform</p>
@@ -235,8 +235,8 @@ export default function SignInPage() {
 
 				<div className="text-sm opacity-70">© 2025 AgenitiX. All rights reserved.</div>
 			</div>
-            {/* Right side - Sign in form */}
-            <div className="flex flex-1 items-center justify-center p-8">
+			{/* Right side - Sign in form */}
+			<div className="flex flex-1 items-center justify-center p-8">
 				<div className="w-full max-w-md space-y-8">
 					{/* Mobile branding */}
 					<div className="text-center lg:hidden">
@@ -338,6 +338,6 @@ export default function SignInPage() {
 					</div>
 				</div>
 			</div>
-        </div>
-    );
+		</div>
+	);
 }

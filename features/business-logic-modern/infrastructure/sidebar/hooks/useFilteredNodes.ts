@@ -51,13 +51,13 @@ async function getCachedFlagValue(flagName: string): Promise<boolean> {
 		if (response.ok) {
 			const data = await response.json();
 			const enabled = data.enabled;
-			
+
 			// Cache the result
 			FLAG_CACHE.set(flagName, {
 				enabled,
 				timestamp: Date.now(),
 			});
-			
+
 			return enabled;
 		}
 	} catch (error) {
@@ -84,10 +84,10 @@ export function useFilteredNodes(): FilteredNodesState {
 			try {
 				// Get all nodes first
 				const allNodes = getAllNodeMetadata();
-				
+
 				// Quick synchronous check - if no nodes have feature flags, return immediately
-				const hasFeatureFlags = allNodes.some(node => getNodeFeatureFlag(node.kind));
-				
+				const hasFeatureFlags = allNodes.some((node) => getNodeFeatureFlag(node.kind));
+
 				if (!hasFeatureFlags) {
 					// No feature flags - return all nodes immediately (synchronous)
 					setState({
@@ -107,7 +107,10 @@ export function useFilteredNodes(): FilteredNodesState {
 				if (typeof window !== "undefined") {
 					// Collect unique flags to batch evaluate them
 					const uniqueFlags = new Set<string>();
-					const nodeFlags = new Map<string, { flag: string; hideWhenDisabled: boolean; fallback?: boolean }>();
+					const nodeFlags = new Map<
+						string,
+						{ flag: string; hideWhenDisabled: boolean; fallback?: boolean }
+					>();
 
 					// First pass: collect all unique flags
 					for (const node of allNodes) {
@@ -134,10 +137,11 @@ export function useFilteredNodes(): FilteredNodesState {
 						// Second pass: filter nodes based on flag results
 						for (const node of allNodes) {
 							const featureFlag = nodeFlags.get(node.kind);
-							
+
 							if (featureFlag) {
-								const isEnabled = flagResults.get(featureFlag.flag) ?? featureFlag.fallback ?? false;
-								
+								const isEnabled =
+									flagResults.get(featureFlag.flag) ?? featureFlag.fallback ?? false;
+
 								// If flag is disabled and should hide, skip this node
 								if (!isEnabled && featureFlag.hideWhenDisabled) {
 									continue;

@@ -219,8 +219,8 @@ const DashboardContent = () => {
 	});
 
 	return (
-        <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+		<div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 				{/* Enhanced Header */}
 				<div className="mb-8">
 					<div className="flex flex-col gap-6">
@@ -407,32 +407,32 @@ const DashboardContent = () => {
 				{/* Empty States */}
 				{allFlows.length === 0 ? (
 					// No flows at all
-					(<div className="text-center py-16">
-                        <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+					<div className="text-center py-16">
+						<div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
 							<Zap className="w-12 h-12 text-primary" />
 						</div>
-                        <h3 className="text-2xl font-semibold text-foreground mb-3">Ready to automate?</h3>
-                        <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+						<h3 className="text-2xl font-semibold text-foreground mb-3">Ready to automate?</h3>
+						<p className="text-muted-foreground mb-8 max-w-md mx-auto">
 							Create your first workflow to start automating tasks and streamlining your processes.
 						</p>
-                        <Button onClick={() => setIsModalOpen(true)} size="lg" className="gap-2">
+						<Button onClick={() => setIsModalOpen(true)} size="lg" className="gap-2">
 							<Plus className="w-5 h-5" />
 							Create Your First Flow
 						</Button>
-                    </div>)
+					</div>
 				) : dashboardFlows.length === 0 ? (
 					// No flows match current filter/search
-					(<div className="text-center py-16">
-                        <div className="w-24 h-24 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-6">
+					<div className="text-center py-16">
+						<div className="w-24 h-24 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-6">
 							<Search className="w-12 h-12 text-muted-foreground" />
 						</div>
-                        <h3 className="text-xl font-semibold text-foreground mb-3">No flows found</h3>
-                        <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+						<h3 className="text-xl font-semibold text-foreground mb-3">No flows found</h3>
+						<p className="text-muted-foreground mb-6 max-w-md mx-auto">
 							{searchQuery
 								? `No flows match "${searchQuery}". Try adjusting your search terms.`
 								: "No private flows found. Try changing your filter settings."}
 						</p>
-                        <div className="flex items-center justify-center gap-4">
+						<div className="flex items-center justify-center gap-4">
 							{searchQuery && (
 								<Button variant="outline" onClick={() => setSearchQuery("")}>
 									Clear Search
@@ -444,7 +444,7 @@ const DashboardContent = () => {
 								</Button>
 							)}
 						</div>
-                    </div>)
+					</div>
 				) : null}
 
 				{/* Create Flow Modal */}
@@ -454,8 +454,8 @@ const DashboardContent = () => {
 					onFlowCreated={handleFlowCreated}
 				/>
 			</div>
-        </div>
-    );
+		</div>
+	);
 };
 
 export default function DashboardPage() {

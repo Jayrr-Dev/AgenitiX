@@ -121,8 +121,8 @@ const ComponentThemePreview: React.FC<{
 	};
 
 	return (
-        <div className="rounded-lg border border-border bg-card p-4">
-            <div className="mb-3 flex items-center justify-between">
+		<div className="rounded-lg border border-border bg-card p-4">
+			<div className="mb-3 flex items-center justify-between">
 				<h3 className="font-semibold text-card-foreground capitalize">
 					{componentName.replace(/([A-Z])/g, " $1").trim()}
 				</h3>
@@ -134,7 +134,7 @@ const ComponentThemePreview: React.FC<{
 					Debug in Console
 				</button>
 			</div>
-            <div className="grid grid-cols-1 gap-2 text-xs">
+			<div className="grid grid-cols-1 gap-2 text-xs">
 				<div>
 					<span className="font-medium text-muted-foreground">Primary BG:</span>
 					<span className="ml-2 font-mono text-foreground">{theme.background.primary}</span>
@@ -152,8 +152,8 @@ const ComponentThemePreview: React.FC<{
 					<span className="ml-2 font-mono text-foreground">{theme.background.hover}</span>
 				</div>
 			</div>
-        </div>
-    );
+		</div>
+	);
 };
 
 // ============================================================================

@@ -218,7 +218,7 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 
 			// Calculate position with better branch spacing
 			let xPosition = siblingIndex * (LAYOUT_CONFIG.nodeWidth + LAYOUT_CONFIG.xGap);
-			
+
 			// For branches (nodes with siblings), add extra spacing to prevent overlap
 			if (node.parentId && graph.nodes[node.parentId]) {
 				const parent = graph.nodes[node.parentId];
@@ -229,7 +229,10 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 					const branchSpacing = LAYOUT_CONFIG.nodeWidth + LAYOUT_CONFIG.xGap * 2;
 					const totalBranchWidth = (siblingCount - 1) * branchSpacing;
 					const startOffset = -totalBranchWidth / 2;
-					xPosition = parentSiblingIndex * (LAYOUT_CONFIG.nodeWidth + LAYOUT_CONFIG.xGap) + startOffset + (siblingIndex * branchSpacing);
+					xPosition =
+						parentSiblingIndex * (LAYOUT_CONFIG.nodeWidth + LAYOUT_CONFIG.xGap) +
+						startOffset +
+						siblingIndex * branchSpacing;
 				}
 			}
 
@@ -293,7 +296,7 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 
 		// BFS traversal to assign positions with proper branch spacing
 		const queue: Array<{ id: string; depth: number; parentId?: string; siblingIndex: number }> = [
-			{ id: graph.root, depth: 0, siblingIndex: 0 }
+			{ id: graph.root, depth: 0, siblingIndex: 0 },
 		];
 
 		while (queue.length > 0) {
@@ -332,11 +335,11 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 			const children = node.childrenIds || [];
 			children.forEach((childId, index) => {
 				if (!processedNodes.has(childId)) {
-					queue.push({ 
-						id: childId, 
-						depth: depth + 1, 
+					queue.push({
+						id: childId,
+						depth: depth + 1,
 						parentId: id,
-						siblingIndex: index
+						siblingIndex: index,
 					});
 				}
 			});
