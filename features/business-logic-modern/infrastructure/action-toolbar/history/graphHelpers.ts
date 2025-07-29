@@ -59,7 +59,11 @@ export const createChildNode = (
 	};
 
 	// Add child to parent's children list
-	graph.nodes[parentId].childrenIds.push(id);
+	const parentNode = graph.nodes[parentId];
+	if (!parentNode.childrenIds) {
+		parentNode.childrenIds = [];
+	}
+	parentNode.childrenIds.push(id);
 	// Add node to graph
 	graph.nodes[id] = node;
 
@@ -106,7 +110,7 @@ export const getPathToCursor = (graph: HistoryGraph): HistoryNode[] => {
 
 // Get all leaf nodes (endpoints) in the graph
 export const getLeafNodes = (graph: HistoryGraph): HistoryNode[] => {
-	return Object.values(graph.nodes).filter((node) => node.childrenIds.length === 0);
+	return Object.values(graph.nodes).filter((node) => (node.childrenIds || []).length === 0);
 };
 
 // Persistence helpers
@@ -179,6 +183,74 @@ export const saveGraph = (graph: HistoryGraph, flowId?: string): void => {
 	}
 };
 
+// Validate and fix graph data structure after loading
+const validateAndFixGraphData = (graph: HistoryGraph): HistoryGraph => {
+	// Ensure graph has required top-level properties
+	if (!graph.root) {
+		graph.root = "root";
+	}
+	if (!graph.cursor) {
+		graph.cursor = graph.root;
+	}
+	if (!graph.nodes) {
+		graph.nodes = {};
+	}
+	
+	// Ensure root node exists
+	if (!graph.nodes[graph.root]) {
+		console.warn(`⚠️ [GraphHelpers] Root node "${graph.root}" missing, creating default root`);
+		graph.nodes[graph.root] = {
+			id: graph.root,
+			parentId: null,
+			childrenIds: [],
+			label: "INITIAL",
+			before: { nodes: [], edges: [] },
+			after: { nodes: [], edges: [] },
+			createdAt: Date.now(),
+		};
+	}
+	
+	// Ensure cursor points to a valid node
+	if (!graph.nodes[graph.cursor]) {
+		console.warn(`⚠️ [GraphHelpers] Cursor "${graph.cursor}" points to missing node, resetting to root`);
+		graph.cursor = graph.root;
+	}
+	
+	// Ensure all nodes have required properties
+	for (const nodeId in graph.nodes) {
+		const node = graph.nodes[nodeId];
+		
+		// Ensure childrenIds is always an array
+		if (!node.childrenIds) {
+			node.childrenIds = [];
+		}
+		
+		// Ensure parentId is properly set (null for root, string for others)
+		if (node.parentId === undefined) {
+			node.parentId = nodeId === graph.root ? null : graph.root;
+		}
+		
+		// Ensure required fields exist
+		if (!node.id) {
+			node.id = nodeId;
+		}
+		if (!node.label) {
+			node.label = "Unknown Action";
+		}
+		if (!node.before) {
+			node.before = { nodes: [], edges: [] };
+		}
+		if (!node.after) {
+			node.after = { nodes: [], edges: [] };
+		}
+		if (!node.createdAt) {
+			node.createdAt = Date.now();
+		}
+	}
+	
+	return graph;
+};
+
 export const loadGraph = (flowId?: string): HistoryGraph | null => {
 	// Skip on server – nothing to load
 	if (typeof window === "undefined") {
@@ -197,7 +269,10 @@ export const loadGraph = (flowId?: string): HistoryGraph | null => {
 			return null; // decompression failure
 		}
 
-		return JSON.parse(data);
+		const rawGraph = JSON.parse(data);
+		
+		// Validate and fix the loaded graph data
+		return validateAndFixGraphData(rawGraph);
 	} catch (error) {
 		console.error("[GraphHelpers] Failed to load graph:", error);
 		return null;
@@ -233,7 +308,7 @@ export const clearAllPersistedGraphs = (): void => {
 // Graph statistics for debugging/UI
 export const getGraphStats = (graph: HistoryGraph) => {
 	const totalNodes = Object.keys(graph.nodes).length;
-	const branches = Object.values(graph.nodes).filter((node) => node.childrenIds.length > 1).length;
+	const branches = Object.values(graph.nodes).filter((node) => (node.childrenIds || []).length > 1).length;
 	const leafNodes = getLeafNodes(graph).length;
 	const maxDepth = getPathToCursor(graph).length - 1; // -1 to exclude root
 
@@ -267,7 +342,7 @@ export const pruneGraphToLimit = (graph: HistoryGraph, maxSize: number): void =>
 		}
 
 		// If the current root has no children we cannot prune further safely
-		if (currentRoot.childrenIds.length === 0) {
+		if (!currentRoot.childrenIds || currentRoot.childrenIds.length === 0) {
 			console.warn("[GraphHelpers] pruneGraphToLimit: reached leaf root – cannot prune further");
 			break;
 		}
@@ -323,7 +398,7 @@ export const removeNodeAndChildren = (graph: HistoryGraph, nodeId: NodeId): bool
 	const collectDescendants = (id: NodeId) => {
 		nodesToRemove.add(id);
 		const node = graph.nodes[id];
-		if (node) {
+		if (node && node.childrenIds) {
 			node.childrenIds.forEach(collectDescendants);
 		}
 	};
@@ -338,7 +413,7 @@ export const removeNodeAndChildren = (graph: HistoryGraph, nodeId: NodeId): bool
 	// Remove the node from its parent's children list
 	if (nodeToRemove.parentId) {
 		const parent = graph.nodes[nodeToRemove.parentId];
-		if (parent) {
+		if (parent && parent.childrenIds) {
 			parent.childrenIds = parent.childrenIds.filter((id) => id !== nodeId);
 		}
 	}

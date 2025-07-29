@@ -80,7 +80,7 @@ const geistSans = Geist({
 	subsets: ["latin"],
 });
 
-const _inter = Inter({
+const inter = Inter({
 	subsets: ["latin"],
 });
 
@@ -90,7 +90,13 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<html lang="en" className={geistSans.className}>
+		<html lang="en" className={`${geistSans.className} ${inter.variable}`}>
+			<head>
+				<link
+					href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Work+Sans:wght@400;600&family=Source+Serif+Pro:ital,wght@0,400;1,400&display=swap"
+					rel="stylesheet"
+				/>
+			</head>
 			<body className="bg-background text-foreground" suppressHydrationWarning={true}>
 				<ThemeProvider
 					attribute="class"

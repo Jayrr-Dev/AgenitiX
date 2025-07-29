@@ -42,7 +42,7 @@ const DEBUG_MODE = false; // Disable debug logging completely
 // ============================================================================
 
 const ACTION_SEPARATOR_DELAY = 200; // ms between distinct actions
-const POSITION_DEBOUNCE_DELAY = 0; // ms for position changes
+const POSITION_DEBOUNCE_DELAY = 300; // ms for position changes - debounce node movements
 
 // ============================================================================
 // TYPES (keeping existing ones for compatibility)
@@ -255,8 +255,8 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
 	const finalConfig = useMemo(
 		() => ({
-			// Default maximum history size is 300 unless overridden via config
-			maxHistorySize: config.maxHistorySize ?? 300,
+			// Default maximum history size is 50 unless overridden via config
+			maxHistorySize: config.maxHistorySize ?? 50,
 			positionDebounceMs: config.positionDebounceMs ?? POSITION_DEBOUNCE_DELAY,
 			actionSeparatorMs: config.actionSeparatorMs ?? ACTION_SEPARATOR_DELAY,
 			enableViewportTracking: config.enableViewportTracking ?? false,
@@ -283,11 +283,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
 	const graphRef = useRef<HistoryGraph>(initialGraph);
 
-	// Helper to get graph
-	const getGraph = useCallback(() => {
-		return graphRef.current;
-	}, []);
-
 	const isUndoRedoOperationRef = useRef(false);
 	const lastCapturedStateRef = useRef<FlowState | null>(null);
 	const lastActionTimestampRef = useRef(0);
@@ -311,6 +306,45 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 			return createFlowStateOptimized(nodes, edges, viewport);
 		});
 	}, [nodes, edges, finalConfig.enableViewportTracking, reactFlowInstance, measureStateCreation]);
+
+	// Helper to get graph
+	const getGraph = useCallback(() => {
+		const graph = graphRef.current;
+		
+		// Ensure graph has basic structure
+		if (!graph.nodes) {
+			graph.nodes = {};
+		}
+		if (!graph.root) {
+			graph.root = "root";
+		}
+		if (!graph.cursor) {
+			graph.cursor = graph.root;
+		}
+		
+		// Ensure root node exists
+		if (!graph.nodes[graph.root]) {
+			console.warn(`⚠️ [UndoRedo] Root node missing in getGraph, creating default root`);
+			const currentState = captureCurrentState();
+			graph.nodes[graph.root] = {
+				id: graph.root,
+				parentId: null,
+				childrenIds: [],
+				label: "INITIAL",
+				before: currentState,
+				after: currentState,
+				createdAt: Date.now(),
+			};
+		}
+		
+		// Ensure cursor points to valid node
+		if (!graph.nodes[graph.cursor]) {
+			console.warn(`⚠️ [UndoRedo] Cursor points to missing node in getGraph, resetting to root`);
+			graph.cursor = graph.root;
+		}
+		
+		return graph;
+	}, [captureCurrentState]);
 
 	const applyState = useCallback(
 		(state: FlowState, _actionType: string) => {
@@ -348,69 +382,27 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 			const graph = getGraph();
 			const cursorNode = graph.nodes[graph.cursor];
 
-			// Safety check: if cursor points to non-existent node, reset to root
+			// Safety check: if cursor points to non-existent node, recreate graph
 			if (!cursorNode) {
-				console.warn(`⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in push, resetting to root`);
-				graph.cursor = graph.root;
-				const rootNode = graph.nodes[graph.root];
-				saveGraph(graph, flowId);
-				// Use root node as cursor node for this operation
-				const newId = createChildNode(
-					graph,
-					rootNode.id,
-					label,
-					rootNode.after,
-					nextState,
-					metadata
-				);
-				graph.cursor = newId;
+				console.warn(`⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in push, resetting graph`);
+				const root = createRootGraph(nextState);
+				graphRef.current = root;
+				saveGraph(root, flowId);
+				return;
+			}
 
-				// Enforce maximum history size
+			const newNodeId = createChildNode(graph, graph.cursor, label, cursorNode.after, nextState, metadata);
+			graph.cursor = newNodeId;
+
+			// Prune graph to stay within memory limits
+			if (finalConfig.maxHistorySize > 0) {
 				pruneGraphToLimit(graph, finalConfig.maxHistorySize);
-
-				saveGraph(graph, flowId);
-				lastActionTimestampRef.current = Date.now();
-				const path = getPathToCursor(graph);
-				onHistoryChange?.(path, path.length - 1);
-				return;
 			}
 
-			// Skip if states are identical
-			if (areStatesEqualOptimized(cursorNode.after, nextState)) {
-				if (DEBUG_MODE) {
-				}
-				return;
-			}
-
-			// Skip if this is an undo/redo operation
-			if (isUndoRedoOperationRef.current) {
-				if (DEBUG_MODE) {
-				}
-				return;
-			}
-
-			const newId = createChildNode(
-				graph,
-				cursorNode.id,
-				label,
-				cursorNode.after,
-				nextState,
-				metadata
-			);
-
-			graph.cursor = newId;
-
-			// Enforce maximum history size via pruning
-			pruneGraphToLimit(graph, finalConfig.maxHistorySize);
-
-			// Persist changes after pruning
+			// Persist the updated graph
 			saveGraph(graph, flowId);
-			lastActionTimestampRef.current = Date.now();
 
-			if (DEBUG_MODE) {
-			}
-
-			// Notify history change with compatible format
+			// Notify of history change
 			const path = getPathToCursor(graph);
 			onHistoryChange?.(path, path.length - 1);
 		},
@@ -496,6 +488,14 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
 		graph.cursor = current.parentId;
 		const parent = graph.nodes[graph.cursor];
+		
+		// Safety check: if parent node doesn't exist, cannot undo
+		if (!parent) {
+			console.warn(`⚠️ [UndoRedo] Parent node "${graph.cursor}" missing in undo, cannot proceed`);
+			graph.cursor = current.id; // Restore cursor to current
+			return false;
+		}
+		
 		applyState(parent.after, `undo ${current.label}`);
 		saveGraph(graph, flowId);
 
@@ -520,6 +520,11 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 				graph.cursor = graph.root;
 				saveGraph(graph, flowId);
 				return false;
+			}
+
+			// Ensure current node has childrenIds initialized
+			if (!current.childrenIds) {
+				current.childrenIds = [];
 			}
 
 			if (!current.childrenIds.length) {
@@ -592,7 +597,29 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 		if (!current) {
 			console.warn(`⚠️ [UndoRedo] Invalid cursor "${graph.cursor}", resetting to root`);
 			graph.cursor = graph.root;
-			const rootNode = graph.nodes[graph.root];
+			let rootNode = graph.nodes[graph.root];
+			
+			// Safety check: if root node doesn't exist, create it
+			if (!rootNode) {
+				console.warn(`⚠️ [UndoRedo] Root node "${graph.root}" missing, creating new root`);
+				const currentState = captureCurrentState();
+				rootNode = {
+					id: graph.root,
+					parentId: null,
+					childrenIds: [],
+					label: "INITIAL",
+					before: currentState,
+					after: currentState,
+					createdAt: Date.now(),
+				};
+				graph.nodes[graph.root] = rootNode;
+			}
+			
+			// Ensure rootNode has childrenIds initialized
+			if (!rootNode.childrenIds) {
+				rootNode.childrenIds = [];
+			}
+			
 			saveGraph(graph, flowId);
 
 			return {
@@ -604,6 +631,11 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 				graphStats: getGraphStats(graph),
 				currentNode: rootNode,
 			};
+		}
+
+		// Ensure current node has childrenIds initialized
+		if (!current.childrenIds) {
+			current.childrenIds = [];
 		}
 
 		return {
@@ -628,8 +660,36 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 				`⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in getBranchOptions, resetting to root`
 			);
 			graph.cursor = graph.root;
+			let rootNode = graph.nodes[graph.root];
+			
+			// Safety check: if root node doesn't exist, create it
+			if (!rootNode) {
+				console.warn(`⚠️ [UndoRedo] Root node "${graph.root}" missing in getBranchOptions, creating new root`);
+				const currentState = captureCurrentState();
+				rootNode = {
+					id: graph.root,
+					parentId: null,
+					childrenIds: [],
+					label: "INITIAL",
+					before: currentState,
+					after: currentState,
+					createdAt: Date.now(),
+				};
+				graph.nodes[graph.root] = rootNode;
+			}
+			
+			// Ensure rootNode has childrenIds initialized
+			if (!rootNode.childrenIds) {
+				rootNode.childrenIds = [];
+			}
+			
 			saveGraph(graph, flowId);
-			return [...graph.nodes[graph.root].childrenIds];
+			return [...rootNode.childrenIds];
+		}
+
+		// Ensure current node has childrenIds initialized
+		if (!current.childrenIds) {
+			current.childrenIds = [];
 		}
 
 		return [...current.childrenIds];

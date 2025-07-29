@@ -205,7 +205,7 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 			siblingIndex: number,
 			reachableNodes: Set<string>,
 			currentSelectedNodeId: string | null,
-			graph: { cursor: string }
+			graph: { cursor: string; nodes: Record<string, HistoryNode> }
 		): Node => {
 			const isCursor = node.id === graph.cursor;
 			const isFuture = !reachableNodes.has(node.id);
@@ -216,11 +216,28 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 				ACTION_TYPE_COLORS[actionType as keyof typeof ACTION_TYPE_COLORS] ||
 				ACTION_TYPE_COLORS.special;
 
+			// Calculate position with better branch spacing
+			let xPosition = siblingIndex * (LAYOUT_CONFIG.nodeWidth + LAYOUT_CONFIG.xGap);
+			
+			// For branches (nodes with siblings), add extra spacing to prevent overlap
+			if (node.parentId && graph.nodes[node.parentId]) {
+				const parent = graph.nodes[node.parentId];
+				const siblingCount = (parent.childrenIds || []).length;
+				if (siblingCount > 1) {
+					// Center the branches around the parent's x position if possible
+					const parentSiblingIndex = 0; // We'd need to track this better for perfect centering
+					const branchSpacing = LAYOUT_CONFIG.nodeWidth + LAYOUT_CONFIG.xGap * 2;
+					const totalBranchWidth = (siblingCount - 1) * branchSpacing;
+					const startOffset = -totalBranchWidth / 2;
+					xPosition = parentSiblingIndex * (LAYOUT_CONFIG.nodeWidth + LAYOUT_CONFIG.xGap) + startOffset + (siblingIndex * branchSpacing);
+				}
+			}
+
 			return {
 				id: node.id,
 				data: { label: node.label || "" },
 				position: {
-					x: siblingIndex * (LAYOUT_CONFIG.nodeWidth + LAYOUT_CONFIG.xGap),
+					x: xPosition,
 					y: depth * (LAYOUT_CONFIG.nodeHeight + LAYOUT_CONFIG.yGap),
 				},
 				type: "default",
@@ -244,7 +261,7 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 		(node: HistoryNode, reachableNodes: Set<string>, processedNodes: Set<string>): Edge[] => {
 			const edges: Edge[] = [];
 
-			for (const childId of node.childrenIds) {
+			for (const childId of node.childrenIds || []) {
 				if (!processedNodes.has(childId)) {
 					const isChildFuture = !reachableNodes.has(childId);
 					const isParentFuture = !reachableNodes.has(node.id);
@@ -274,16 +291,17 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 		const rfEdges: Edge[] = [];
 		const processedNodes = new Set<string>();
 
-		// BFS traversal to assign positions
-		const queue: Array<{ id: string; depth: number }> = [{ id: graph.root, depth: 0 }];
-		const levelWidths: Record<number, number> = {};
+		// BFS traversal to assign positions with proper branch spacing
+		const queue: Array<{ id: string; depth: number; parentId?: string; siblingIndex: number }> = [
+			{ id: graph.root, depth: 0, siblingIndex: 0 }
+		];
 
 		while (queue.length > 0) {
 			const item = queue.shift();
 			if (!item) {
 				continue;
 			}
-			const { id, depth } = item;
+			const { id, depth, parentId, siblingIndex } = item;
 
 			if (processedNodes.has(id)) {
 				continue;
@@ -295,13 +313,7 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 				continue;
 			}
 
-			// Track sibling index per depth to space nodes evenly
-			if (!levelWidths[depth]) {
-				levelWidths[depth] = 0;
-			}
-			const siblingIndex = levelWidths[depth]++;
-
-			// Create node using helper function
+			// Create node using helper function with improved positioning
 			const nodeObj = createHistoryNode(
 				node,
 				depth,
@@ -316,13 +328,18 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 			const nodeEdges = createHistoryEdges(node, reachableNodes, processedNodes);
 			rfEdges.push(...nodeEdges);
 
-			// Add children to queue
-			for (const childId of node.childrenIds) {
+			// Add children to queue with proper sibling indexing
+			const children = node.childrenIds || [];
+			children.forEach((childId, index) => {
 				if (!processedNodes.has(childId)) {
-					queue.push({ id: childId, depth: depth + 1 });
-					processedNodes.add(childId);
+					queue.push({ 
+						id: childId, 
+						depth: depth + 1, 
+						parentId: id,
+						siblingIndex: index
+					});
 				}
-			}
+			});
 		}
 
 		return { nodes: rfNodes, edges: rfEdges };

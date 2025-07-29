@@ -332,26 +332,6 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 			return [];
 		}
 
-		// Debug: Log graph data to understand structure
-		if (process.env.NODE_ENV === "development") {
-			console.log("🔍 [HistoryPanel] Graph Debug:", {
-				totalNodes: Object.keys(fullGraphData.nodes).length,
-				root: fullGraphData.root,
-				cursor: fullGraphData.cursor,
-				nodesWithBranches: Object.values(fullGraphData.nodes).filter(
-					(n) => n.childrenIds.length > 1
-				).length,
-				branchingNodes: Object.values(fullGraphData.nodes)
-					.filter((n) => n.childrenIds.length > 1)
-					.map((n) => ({
-						id: n.id,
-						label: n.label,
-						childrenCount: n.childrenIds.length,
-						children: n.childrenIds,
-					})),
-			});
-		}
-
 		// Build the current branch timeline: path to cursor + available futures
 		const currentPath: HistoryNode[] = [];
 		let currentId: string | null = fullGraphData.cursor;
@@ -373,7 +353,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 				return;
 			}
 
-			for (const childId of node.childrenIds) {
+			for (const childId of node.childrenIds || []) {
 				const childNode = fullGraphData.nodes[childId];
 				if (childNode) {
 					currentPath.push(childNode);
@@ -725,9 +705,17 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 							</div>
 						</div>
 						<div className={HISTORY_ITEM_STYLES.rightSection}>
-							{state.createdAt && (
+							{state.createdAt && !isCurrentState && !isFutureState && (
 								<span className={HISTORY_ITEM_META_STYLES.timestamp}>
 									{formatTimestamp(state.createdAt)}
+								</span>
+							)}
+							{isCurrentState && (
+								<span className={HISTORY_ITEM_META_STYLES.currentBadge}>Current</span>
+							)}
+							{isFutureState && (
+								<span className="rounded-full bg-muted/30 px-1.5 py-0.5 text-muted-foreground/50 text-xs">
+									Future
 								</span>
 							)}
 							{state.childrenIds && state.childrenIds.length > 1 && (
@@ -737,14 +725,6 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 										{state.childrenIds.length}
 									</span>
 								</div>
-							)}
-							{isCurrentState && (
-								<span className={HISTORY_ITEM_META_STYLES.currentBadge}>Current</span>
-							)}
-							{isFutureState && (
-								<span className="rounded-full bg-muted/30 px-1.5 py-0.5 text-muted-foreground/50 text-xs">
-									Future
-								</span>
 							)}
 						</div>
 					</div>
@@ -804,16 +784,6 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 	const handleToggleGraphView = useCallback(() => {
 		setGraphView((prev) => {
 			const newView = !prev;
-			if (process.env.NODE_ENV === "development") {
-				console.log("🔄 [HistoryPanel] Toggling graph view:", {
-					from: prev ? "graph" : "list",
-					to: newView ? "graph" : "list",
-					totalNodes: fullGraphData ? Object.keys(fullGraphData.nodes).length : 0,
-					branchingNodes: fullGraphData
-						? Object.values(fullGraphData.nodes).filter((n) => n.childrenIds.length > 1).length
-						: 0,
-				});
-			}
 			return newView;
 		});
 	}, [fullGraphData]);
@@ -870,20 +840,6 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 									<GitBranch className={CONTROLS_STYLES.icon} />
 								)}
 							</button>
-
-							{/* Debug: Test action button (only in development) */}
-							{process.env.NODE_ENV === "development" && (
-								<button
-									onClick={() => {
-										recordAction("node_add", { testAction: true, timestamp: Date.now() });
-									}}
-									className="p-1 rounded bg-blue-500 hover:bg-blue-600 text-white text-xs"
-									title="Test action recording"
-									type="button"
-								>
-									Test
-								</button>
-							)}
 
 							<div className={CONTROLS_STYLES.separator} />
 
@@ -942,7 +898,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 								{renderHistoryList()}
 
 								{/* Show branching info */}
-								{graphStats && graphStats.branches === 0 && (
+								{graphStats && graphStats.totalNodes <= 2 && (
 									<div className="mt-4 p-3 bg-muted/50 border border-border rounded-lg">
 										<div className="flex items-center gap-2 text-sm text-muted-foreground">
 											<GitBranch className="w-4 h-4" />
@@ -1017,7 +973,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 							}
 
 							let count = 0;
-							for (const childId of node.childrenIds) {
+							for (const childId of node.childrenIds || []) {
 								count += 1 + countDescendants(childId);
 							}
 							return count;
