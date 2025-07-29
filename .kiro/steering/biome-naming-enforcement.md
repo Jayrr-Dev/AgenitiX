@@ -6,165 +6,224 @@ inclusion: always
 
 ## Overview
 
-This document outlines how Biome is configured to enforce AgenitiX naming conventions. The current configuration uses a **simplified approach** with flexible file naming conventions while maintaining code quality through other linting rules.
+This document outlines how Biome is configured to systematically enforce AgenitiX naming conventions across the codebase. The configuration uses Biome's `useFilenamingConvention` and `useNamingConvention` rules with specific overrides for different file types and directories.
 
-## Current Biome Configuration
+## File Naming Enforcement
 
-### File Naming Convention (Current)
+### **Components** - `PascalCase.tsx`
+```typescript
+// ✅ Correct
+FlowEditor.tsx
+NodeInspector.tsx
+EmailTemplate.tsx
 
-**Rule**: `useFilenamingConvention` is set to **warn** level with flexible options:
+// ❌ Incorrect (Biome will error)
+flowEditor.tsx
+node-inspector.tsx
+email_template.tsx
+```
 
+**Biome Rule**: Applied to `components/**/*.{ts,tsx}`
 ```json
 {
   "useFilenamingConvention": {
-    "level": "warn",
+    "level": "error",
     "options": {
-      "strictCase": false,
+      "strictCase": true,
       "requireAscii": true,
-      "filenameCases": ["kebab-case", "PascalCase", "camelCase"]
+      "filenameCases": ["PascalCase"]
     }
   }
 }
 ```
 
-### Variable Naming Convention (Current)
-
-**Rule**: `useNamingConvention` is currently **disabled** (`"off"`)
-
-This means Biome does not enforce specific variable, function, or type naming conventions - this is left to team standards and code review.
-
-## Accepted File Naming Patterns
-
-Since `strictCase: false` and multiple cases are allowed, these patterns are all acceptable:
-
-### **Components**
+### **Hooks** - `camelCase.ts`
 ```typescript
-// ✅ All acceptable
-FlowEditor.tsx       // PascalCase (preferred)
-flow-editor.tsx      // kebab-case
-flowEditor.tsx       // camelCase
+// ✅ Correct
+useNodeData.ts
+useWorkflowExecution.ts
+useEmailTemplates.ts
+
+// ❌ Incorrect (Biome will error)
+UseNodeData.ts
+use-node-data.ts
+use_node_data.ts
 ```
 
-### **Hooks**
+**Biome Rule**: Applied to `hooks/**/*.{ts,tsx}` and `**/hooks/**/*.{ts,tsx}`
+
+### **Utilities & Libraries** - `kebab-case.ts`
 ```typescript
-// ✅ All acceptable
-useNodeData.ts       // camelCase (preferred)
-use-node-data.ts     // kebab-case  
-UseNodeData.ts       // PascalCase
+// ✅ Correct
+node-utils.ts
+email-helpers.ts
+workflow-validator.ts
+
+// ❌ Incorrect (Biome will error)
+nodeUtils.ts
+EmailHelpers.ts
+workflow_validator.ts
 ```
 
-### **Utilities & Libraries**
+**Biome Rule**: Applied to `lib/**/*.{ts,tsx}`, `utils/**/*.{ts,tsx}`, `types/**/*.{ts,tsx}`, `constants/**/*.{ts,tsx}`
+
+### **Node Domain Files** - `camelCase.ts`
 ```typescript
-// ✅ All acceptable
-node-utils.ts        // kebab-case (preferred)
-nodeUtils.ts         // camelCase
-NodeUtils.ts         // PascalCase
+// ✅ Correct (Node naming convention)
+createText.tsx
+viewCsv.tsx
+triggerToggle.tsx
+testEmail.tsx
+cycleTimer.tsx
+
+// ❌ Incorrect (Biome will error)
+CreateText.tsx
+create-text.tsx
+create_text.tsx
 ```
 
-### **Node Domain Files**
+**Biome Rule**: Applied to `features/business-logic-modern/node-domain/**/*.{ts,tsx}`
+
+### **Convex Files** - `kebab-case.ts`
 ```typescript
-// ✅ All acceptable
-createText.tsx       // camelCase (preferred for nodes)
-create-text.tsx      // kebab-case
-CreateText.tsx       // PascalCase
+// ✅ Correct
+auth-users.ts
+email-templates.ts
+workflow-runs.ts
+
+// ❌ Incorrect (Biome will error)
+authUsers.ts
+EmailTemplates.ts
+workflow_runs.ts
 ```
 
-### **Convex Files**
-```typescript
-// ✅ All acceptable
-auth-users.ts        // kebab-case (preferred)
-authUsers.ts         // camelCase
-AuthUsers.ts         // PascalCase
+**Biome Rule**: Applied to `convex/**/*.{ts,tsx}`
+
+### **Documentation & Steering** - `kebab-case.md`
+```markdown
+<!-- ✅ Correct -->
+biome-naming-enforcement.md
+convex-best-practices.md
+typescript-best-practices.md
+
+<!-- ❌ Incorrect (Biome will error) -->
+BiomeNamingEnforcement.md
+convex_best_practices.md
+TypeScriptBestPractices.md
 ```
 
-## Configuration Overrides
+**Biome Rule**: Applied to `.kiro/steering/**/*.md`, `documentation/**/*.md`, `**/*.md`
 
-### **Config Files Exception**
-Config files are completely exempt from naming conventions:
+## Code Naming Enforcement
 
-```json
-{
-  "include": ["**/*.config.{ts,js,mjs}"],
-  "linter": {
-    "rules": {
-      "style": {
-        "useFilenamingConvention": "off",
-        "useNamingConvention": "off"
-      }
-    }
-  }
+### **Functions & Variables** - `camelCase`
+```typescript
+// ✅ Correct
+const userName = "john";
+function validateEmail(email: string) { }
+const handleSubmit = () => { };
+
+// ❌ Incorrect (Biome will error)
+const user_name = "john";
+const UserName = "john";
+function ValidateEmail(email: string) { }
+```
+
+### **Types & Interfaces** - `PascalCase`
+```typescript
+// ✅ Correct
+interface NodeData {
+  id: string;
+  type: string;
+}
+
+type WorkflowConfig = {
+  name: string;
+  nodes: NodeData[];
+};
+
+class EmailService {
+  // ...
+}
+
+// ❌ Incorrect (Biome will error)
+interface nodeData { }
+type workflowConfig = { };
+class emailService { }
+```
+
+### **Constants** - `CONSTANT_CASE`
+```typescript
+// ✅ Correct (Global constants)
+const NODE_EXECUTION_TIMEOUT = 30000;
+const MAX_WORKFLOW_NODES = 100;
+const EMAIL_RATE_LIMIT = 10;
+
+// ✅ Correct (Local constants can be camelCase)
+const localConfig = { timeout: 5000 };
+
+// ❌ Incorrect (Global constants)
+const nodeExecutionTimeout = 30000;
+const maxWorkflowNodes = 100;
+```
+
+### **Enum Members** - `CONSTANT_CASE`
+```typescript
+// ✅ Correct
+enum NodeType {
+  CREATE_TEXT = "createText",
+  VIEW_CSV = "viewCsv",
+  TRIGGER_TOGGLE = "triggerToggle",
+}
+
+// ❌ Incorrect (Biome will error)
+enum NodeType {
+  createText = "createText",
+  viewCsv = "viewCsv",
+  triggerToggle = "triggerToggle",
 }
 ```
 
-**Examples**:
-```typescript
-// ✅ Allowed (no restrictions)
-next.config.ts
-tailwind.config.js
-biome.json
+## Directory Structure Enforcement
+
+### **App Router** - `kebab-case` or `PascalCase`
+```
+app/
+├── (auth-pages)/          # ✅ kebab-case with route groups
+├── flows/                 # ✅ kebab-case
+├── user-settings/         # ✅ kebab-case
+├── EmailTemplates/        # ✅ PascalCase (component-like)
+└── api/                   # ✅ kebab-case
 ```
 
-### **UI Components Exception**
-Shadcn/UI components have relaxed accessibility rules:
-
-```json
-{
-  "include": ["components/ui/**/*.{ts,tsx}"],
-  "linter": {
-    "rules": {
-      "a11y": {
-        "useButtonType": "off",
-        "noSvgWithoutTitle": "off"
-      }
-    }
-  }
-}
+### **Test Files** - `kebab-case` or `camelCase`
+```
+__tests__/
+├── node-utils.test.ts     # ✅ kebab-case
+├── useNodeData.test.ts    # ✅ camelCase (matches hook name)
+├── FlowEditor.spec.tsx    # ✅ PascalCase (matches component name)
 ```
 
-### **Layout File Exception**
-The main layout file can use `dangerouslySetInnerHTML`:
+## Biome Configuration Structure
 
-```json
-{
-  "include": ["app/layout.tsx"],
-  "linter": {
-    "rules": {
-      "security": {
-        "noDangerouslySetInnerHtml": "off"
-      }
-    }
-  }
-}
-```
+The naming enforcement is implemented through a hierarchical override system:
 
-## Other Enforced Code Quality Rules
+1. **Base Rules**: Applied to all files
+   - `useNamingConvention` with comprehensive conventions
+   - `useFilenamingConvention` with default cases
 
-While naming conventions are relaxed, Biome enforces many other important code quality rules:
+2. **Directory-Specific Overrides**: More specific rules for different areas
+   - Components: PascalCase only
+   - Hooks: camelCase only
+   - Utils/Lib: kebab-case only
+   - Node Domain: camelCase only
+   - Convex: kebab-case only
 
-### **Style Rules (Active)**
-- `useTemplate`: Prefer template literals over string concatenation
-- `useConst`: Use `const` for variables that are never reassigned
-- `useShorthandArrayType`: Use `T[]` instead of `Array<T>`
-- `useBlockStatements`: Require braces around block statements
-- `noImplicitBoolean`: Avoid implicit boolean conversions
+3. **Exception Overrides**: Disable rules where needed
+   - Config files: Naming rules disabled
+   - Generated files: Excluded from linting
 
-### **Correctness Rules (Active)**
-- `noUnusedVariables`: Warn about unused variables
-- `noUnusedImports`: Error on unused imports
-- `noUndeclaredVariables`: Error on undeclared variables
-- `noConstAssign`: Error on reassigning const variables
-
-### **Accessibility Rules (Active)**
-- `useButtonType`: Require explicit button type attributes
-- `useAltText`: Require alt text for images
-- `useHtmlLang`: Require lang attribute on html element
-- `useValidAnchor`: Ensure anchors have valid href
-
-### **Security Rules (Active)**
-- `noDangerouslySetInnerHtml`: Prevent dangerous HTML injection
-- `noDangerouslySetInnerHtmlWithChildren`: Prevent conflicts with children
-
-## Running Biome Checks
+## Running Naming Checks
 
 ### **Check All Files**
 ```bash
@@ -189,79 +248,112 @@ pnpm format
 pnpm lint
 ```
 
-## Team Guidelines (Not Enforced by Biome)
+## Common Violations & Fixes
 
-While Biome allows flexibility, the team should follow these **preferred** conventions:
+### **Component File Naming**
+```bash
+# ❌ Error: File should be PascalCase
+components/flowEditor.tsx
 
-### **Preferred File Naming**
-- **Components**: `PascalCase.tsx` (e.g., `FlowEditor.tsx`)
-- **Hooks**: `camelCase.ts` (e.g., `useNodeData.ts`)
-- **Utilities**: `kebab-case.ts` (e.g., `node-utils.ts`)
-- **Node Domain**: `camelCase.tsx` (e.g., `createText.tsx`)
-- **Convex**: `kebab-case.ts` (e.g., `auth-users.ts`)
-- **Documentation**: `kebab-case.md` (e.g., `biome-naming-enforcement.md`)
-
-### **Preferred Code Naming**
-- **Variables & Functions**: `camelCase` (e.g., `userName`, `validateEmail`)
-- **Types & Interfaces**: `PascalCase` (e.g., `NodeData`, `WorkflowConfig`)
-- **Constants**: `CONSTANT_CASE` (e.g., `MAX_NODES`, `API_TIMEOUT`)
-- **Enum Members**: `CONSTANT_CASE` (e.g., `CREATE_TEXT`, `SEND_EMAIL`)
-
-## Ignored Files and Directories
-
-Biome ignores these files/directories completely:
-
-```json
-[
-  "node_modules/**",
-  ".next/**",
-  "dist/**", 
-  "build/**",
-  "coverage/**",
-  ".vercel/**",
-  "convex/_generated/**",
-  "generated/**",
-  "*.min.js",
-  "*.min.css",
-  ".github/**",
-  ".husky/**", 
-  "src/components/ui/**",
-  "*.config.ts",
-  "*.config.js",
-  "*.config.mjs",
-  "backups/**",
-  "app/styles/_generated_tokens.css",
-  "public/sw.js",
-  "public/workbox-*.js"
-]
+# ✅ Fix: Rename to PascalCase
+components/FlowEditor.tsx
 ```
 
-## Benefits of Current Approach
+### **Hook File Naming**
+```bash
+# ❌ Error: File should be camelCase
+hooks/UseNodeData.ts
 
-### **Flexibility**
-- Allows teams to gradually adopt naming conventions
-- Doesn't block development with strict naming requirements
-- Warning level alerts without breaking builds
+# ✅ Fix: Rename to camelCase
+hooks/useNodeData.ts
+```
 
-### **Focus on Code Quality**
-- Emphasizes functional correctness over naming
-- Catches real bugs and security issues
-- Maintains accessibility standards
+### **Utility File Naming**
+```bash
+# ❌ Error: File should be kebab-case
+lib/nodeUtils.ts
 
-### **Developer Experience**
-- Reduced friction during development
-- Focus on business logic rather than naming debates
-- Gradual improvement through warnings
+# ✅ Fix: Rename to kebab-case
+lib/node-utils.ts
+```
 
-## Future Considerations
+### **Variable Naming**
+```typescript
+// ❌ Error: Variable should be camelCase
+const user_name = "john";
 
-The team may choose to:
+// ✅ Fix: Use camelCase
+const userName = "john";
+```
 
-1. **Enable `useNamingConvention`** with specific rules for variables/types
-2. **Increase file naming to error level** for stricter enforcement
-3. **Add directory-specific overrides** for more granular control
-4. **Create custom rules** for AgenitiX-specific patterns
+### **Type Naming**
+```typescript
+// ❌ Error: Interface should be PascalCase
+interface nodeData {
+  id: string;
+}
 
+// ✅ Fix: Use PascalCase
+interface NodeData {
+  id: string;
+}
+```
+
+## Integration with Development Workflow
+
+### **Pre-commit Hooks**
+The naming conventions are enforced through:
+- Biome linting in pre-commit hooks
+- CI/CD pipeline checks
+- IDE integration with Biome extension
+
+### **IDE Configuration**
+Ensure your IDE has the Biome extension installed and configured to:
+- Show naming violations as errors
+- Auto-fix on save where possible
+- Highlight violations in real-time
+
+### **Team Workflow**
+1. **Development**: Biome catches violations during development
+2. **Pre-commit**: Automated checks prevent bad commits
+3. **CI/CD**: Pipeline fails if naming violations exist
+4. **Code Review**: Reviewers can focus on logic, not naming
+
+## Exceptions and Special Cases
+
+### **Config Files**
+Config files are exempt from naming conventions:
+```typescript
+// ✅ Allowed
+next.config.ts
+tailwind.config.js
+biome.json
+```
+
+### **Generated Files**
+Auto-generated files are excluded:
+```typescript
+// ✅ Excluded from linting
+convex/_generated/
+generated/
+*.min.js
+```
+
+### **Third-party Integration**
+When integrating with third-party libraries that require specific naming:
+```typescript
+// ✅ Use object property naming for external APIs
+const apiPayload = {
+  user_id: userId,        // External API requirement
+  first_name: firstName,  // External API requirement
+};
+
+// ✅ Internal code still follows conventions
+const userData = {
+  userId: user.id,
+  firstName: user.name,
+};
+```
 ## File References
 
 - **Biome Configuration**: #[[file:biome.json]]
@@ -273,4 +365,4 @@ The team may choose to:
 
 - [Biome Naming Convention Rules](https://biomejs.dev/linter/rules/use-naming-convention/)
 - [Biome File Naming Convention](https://biomejs.dev/linter/rules/use-filenaming-convention/)
-- [Biome Configuration Schema](https://biomejs.dev/schemas/1.9.4/schema.json)
+- [AgenitiX Development Standards](https://github.com/agenitix/agenitix)
