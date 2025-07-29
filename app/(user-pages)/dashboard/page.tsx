@@ -18,7 +18,6 @@
 export const dynamic = "force-dynamic";
 export const runtime = "edge";
 
-import type React from "react";
 import { Loading } from "@/components/Loading";
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { DevAuthHelper } from "@/components/auth/DevAuthHelper";
@@ -51,6 +50,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type React from "react";
 import { useState } from "react";
 
 // ICON MAPPING
@@ -195,7 +195,22 @@ const useFlowUtils = () => {
 /**
  * Flow data processing hook
  */
-const useFlowData = (flows: any[] | undefined, searchQuery: string, showPrivateOnly: boolean) => {
+const useFlowData = (
+	flows:
+		| Array<{
+				_id: string;
+				name: string;
+				description?: string;
+				icon?: string;
+				is_private: boolean;
+				created_at: string;
+				updated_at: string;
+				user_id: string;
+		  }>
+		| undefined,
+	searchQuery: string,
+	showPrivateOnly: boolean
+) => {
 	// Convert Convex flows to dashboard format
 	const allFlows: Flow[] = (flows || []).map((flow) => ({
 		id: flow._id,
@@ -387,7 +402,7 @@ const FlowGrid = ({
 					</div>
 				</CardHeader>
 
-				<CardContent className="relative z-10 pb-4 pt-0">
+				<CardContent className="relative z-10 pt-0 pb-4">
 					<div className="flex items-center justify-between text-xs">
 						<div className="flex items-center gap-1 text-muted-foreground">
 							{flow.private ? (
@@ -426,7 +441,7 @@ const EmptyState = ({ onCreateFlow }: { onCreateFlow: () => void }) => (
 		<div className="mb-4 rounded-full bg-primary/10 p-4">
 			<MessageSquare className="h-8 w-8 text-primary" />
 		</div>
-		<h3 className="mb-2 font-medium text-lg text-foreground">No flows yet</h3>
+		<h3 className="mb-2 font-medium text-foreground text-lg">No flows yet</h3>
 		<p className="mb-6 max-w-sm text-muted-foreground">
 			Create your first automation flow to get started with workflow management.
 		</p>
@@ -450,8 +465,12 @@ const DashboardContent = () => {
 	const updateFlow = useMutation(api.flows.updateFlow);
 
 	// Custom hooks
-	const { handleFlowCreated, handleFlowDeleted, handleFlowUpdated } =
-		useFlowHandlers(user, createFlow, updateFlow, router);
+	const { handleFlowCreated, handleFlowDeleted, handleFlowUpdated } = useFlowHandlers(
+		user,
+		createFlow,
+		updateFlow,
+		router
+	);
 	const { formatDate, getIconComponent } = useFlowUtils();
 	const { allFlows, dashboardFlows } = useFlowData(flows || [], searchQuery, showPrivateOnly);
 

@@ -37,9 +37,9 @@ export default function Teams() {
 					<p className="text-gray-600">Meet the experts behind Utilitek's innovative solutions</p>
 				</div>
 				<div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-					{teamMembers.map((member, index) => (
+					{teamMembers.map((member) => (
 						<div
-							key={index}
+							key={member.name}
 							className="overflow-hidden rounded-lg bg-white shadow-lg transition-transform hover:scale-105"
 						>
 							<div className="relative h-64 w-full">

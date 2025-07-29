@@ -73,9 +73,21 @@ const SORT_OPTIONS = {
 type SortOption = keyof typeof SORT_OPTIONS;
 
 /**
+ * Flow interface for typing
+ */
+interface FlowType {
+	_id: Id<"flows">;
+	name: string;
+	created_at: string;
+	updated_at: string;
+	upvoteCount?: number;
+	[key: string]: unknown; // Allow additional properties
+}
+
+/**
  * Sorts flows based on the specified criteria
  */
-const sortFlows = (flows: typeof publicFlows, sortBy: string) => {
+const sortFlows = (flows: FlowType[], sortBy: string) => {
 	return [...flows].sort((a, b) => {
 		if (sortBy === "popular") {
 			return (b.upvoteCount || 0) - (a.upvoteCount || 0);
@@ -231,14 +243,16 @@ const ExplorePage = () => {
 
 	// Process and filter flows
 	const processedFlows = useMemo(() => {
-		if (!publicFlows) return [];
+		if (!publicFlows) {
+			return [];
+		}
 
 		// Apply filtering
 		let filtered = publicFlows.filter((flow) => {
-			const matchesSearch = 
+			const matchesSearch =
 				flow.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
 				flow.description.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-				getIconCategory(flow.icon).toLowerCase().includes(debouncedSearch.toLowerCase());
+				getIconCategory(flow.icon)?.toLowerCase().includes(debouncedSearch.toLowerCase());
 
 			return matchesSearch;
 		});

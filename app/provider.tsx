@@ -1,9 +1,9 @@
 "use client";
 
-import type React from "react";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
+import type React from "react";
 import { useState } from "react";
 
 // Fix the Convex URL by removing trailing slash to prevent WebSocket connection issues

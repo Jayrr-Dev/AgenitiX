@@ -10,7 +10,9 @@ export default function OfflinePage() {
 						fill="none"
 						stroke="currentColor"
 						viewBox="0 0 24 24"
+						aria-label="Offline indicator"
 					>
+						<title>You are currently offline</title>
 						<path
 							strokeLinecap="round"
 							strokeLinejoin="round"
@@ -29,6 +31,7 @@ export default function OfflinePage() {
 
 				<div className="space-y-4">
 					<button
+						type="button"
 						onClick={() => window.location.reload()}
 						className="w-full rounded-md bg-primary px-4 py-2 text-primary-foreground transition-colors hover:bg-primary/90"
 					>
@@ -36,6 +39,7 @@ export default function OfflinePage() {
 					</button>
 
 					<button
+						type="button"
 						onClick={() => window.history.back()}
 						className="w-full rounded-md border border-border px-4 py-2 text-foreground transition-colors hover:bg-accent"
 					>
