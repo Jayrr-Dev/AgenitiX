@@ -330,7 +330,7 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 
 	// Memoize click handler to prevent unnecessary re-renders
 	const handleNodeClick = useCallback(
-		(_event: NodeEvent, node: Node) => {
+		(event: React.MouseEvent, node: Node) => {
 			// Handle selection
 			if (onNodeSelect) {
 				onNodeSelect(node.id);

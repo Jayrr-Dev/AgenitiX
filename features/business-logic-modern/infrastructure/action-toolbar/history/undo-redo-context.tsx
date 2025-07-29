@@ -119,7 +119,7 @@ export const UndoRedoProvider: React.FC<UndoRedoProviderProps> = ({ children }) 
 	}, []);
 
 	const removeSelectedNode = useCallback((nodeId?: string) => {
-		return managerRef.current?.removeSelectedNode?.(nodeId);
+		return managerRef.current?.removeSelectedNode?.(nodeId) ?? false;
 	}, []);
 
 	const getHistory = useCallback(() => {
@@ -137,9 +137,12 @@ export const UndoRedoProvider: React.FC<UndoRedoProviderProps> = ({ children }) 
 		return managerRef.current?.getFullGraph?.() || null;
 	}, []);
 
-	const contextValue: UndoRedoContextType & {
-		registerManager: (manager: UndoRedoManagerAPI) => void;
-	} = {
+	const unregisterManager = useCallback((managerId: string) => {
+		// For now, just clear the manager reference
+		managerRef.current = null;
+	}, []);
+
+	const contextValue: UndoRedoContextType = {
 		undo,
 		redo,
 		recordAction,
@@ -149,6 +152,7 @@ export const UndoRedoProvider: React.FC<UndoRedoProviderProps> = ({ children }) 
 		getHistory,
 		getFullGraph,
 		registerManager,
+		unregisterManager,
 	};
 
 	return <UndoRedoContext.Provider value={contextValue}>{children}</UndoRedoContext.Provider>;
@@ -174,6 +178,8 @@ export const useUndoRedo = (): UndoRedoContextType => {
 				canRedo: false,
 			}),
 			getFullGraph: () => null,
+			registerManager: () => {},
+			unregisterManager: () => {},
 		};
 	}
 

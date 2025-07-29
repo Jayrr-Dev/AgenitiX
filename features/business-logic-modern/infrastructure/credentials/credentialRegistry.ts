@@ -40,8 +40,8 @@ export const registerEnvironmentProvider = () => {
 	registerCredentialProvider<string>("env", async (key: string) => {
 		// process.env is undefined in browsers; this provider is meant for server / Vercel edge.
 		if (typeof process !== "undefined" && process.env) {
-			return process.env[key] || null;
+			return process.env[key] || "";
 		}
-		return null;
+		return "";
 	});
 };

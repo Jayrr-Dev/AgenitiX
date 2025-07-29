@@ -14,21 +14,18 @@
 import React, { useCallback, useMemo } from "react";
 import { useUndoRedo } from "./undo-redo-context";
 
-interface BranchNode {
-	id: string;
-	label?: string;
-	children?: BranchNode[];
-}
-
 interface BranchSelectorProps {
 	className?: string;
 }
 
 export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => {
-	const { undo, redo, getHistory } = useUndoRedo();
+	const { undo, redo, getHistory, getFullGraph } = useUndoRedo();
 
 	const historyData = useMemo(() => getHistory(), [getHistory]);
-	const { canUndo, canRedo, branchOptions = [], currentNode, fullGraph } = historyData;
+	const { canUndo, canRedo, branchOptions = [], currentNode } = historyData;
+
+	// Get the full graph to access child nodes
+	const fullGraph = useMemo(() => getFullGraph(), [getFullGraph]);
 
 	const handleUndo = useCallback(() => {
 		undo();
