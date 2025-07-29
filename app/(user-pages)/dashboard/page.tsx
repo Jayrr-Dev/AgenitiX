@@ -52,8 +52,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
 
 // ICON MAPPING
 const ICON_MAP = {
@@ -74,7 +75,31 @@ const DashboardContent = () => {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [showPrivateOnly, setShowPrivateOnly] = useState(false);
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const { user, isAuthenticated, isLoading: authLoading } = useAuthContext();
+	
+	// Handle search query from URL parameters
+	useEffect(() => {
+		const query = searchParams.get('q');
+		if (query) {
+			setSearchQuery(query);
+		}
+	}, [searchParams]);
+	
+	// Listen for search events from navigation bar
+	useEffect(() => {
+		const handleNavigationSearch = (event: CustomEvent) => {
+			if (event.detail?.query) {
+				setSearchQuery(event.detail.query);
+			}
+		};
+		
+		window.addEventListener('navigation-search', handleNavigationSearch as EventListener);
+		
+		return () => {
+			window.removeEventListener('navigation-search', handleNavigationSearch as EventListener);
+		};
+	}, []);
 
 	// Convex hooks
 	const flows = useQuery(api.flows.getUserFlows, user?.id ? { user_id: user.id } : "skip");
@@ -324,9 +349,9 @@ const DashboardContent = () => {
 							<CardHeader className="pb-3">
 								{/* Header with Icon and Privacy Toggle */}
 								<div className="flex items-start justify-between">
-									<div className="flex items-center gap-3">
+									<div className="flex items-center gap-3 w-full max-w-[calc(100%-50px)]">
 										<div
-											className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+											className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
 												flow.private
 													? "bg-orange-100 text-orange-600"
 													: "bg-green-100 text-green-600"
@@ -334,8 +359,8 @@ const DashboardContent = () => {
 										>
 											{getIconComponent(flow.icon || "zap")}
 										</div>
-										<div className="flex-1 min-w-0">
-											<h3 className="font-semibold text-lg truncate text-foreground">
+										<div className="flex-1 min-w-0 overflow-hidden">
+											<h3 className="font-semibold text-lg truncate text-foreground" title={flow.name}>
 												{flow.name}
 											</h3>
 										</div>
