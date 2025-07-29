@@ -41,7 +41,7 @@ export const RateLimitWarning = ({ email, onDismiss }: RateLimitWarningProps) =>
 						>
 							Try Different Email
 						</Button>
-						<Link href="mailto:support@agenitix.com" legacyBehavior>
+						<Link href="mailto:support@agenitix.com">
 							<Button
 								size="sm"
 								variant="outline"

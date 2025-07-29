@@ -13,7 +13,7 @@ export const ProtectedNavigation = () => {
 				<div className="flex h-16 items-center justify-between">
 					{/* Logo and main navigation */}
 					<div className="flex items-center space-x-8">
-						<Link href="/dashboard" className="flex items-center" legacyBehavior>
+						<Link href="/dashboard" className="flex items-center">
 							<h1 className="font-bold text-foreground text-xl">AgenitiX</h1>
 						</Link>
 					</div>

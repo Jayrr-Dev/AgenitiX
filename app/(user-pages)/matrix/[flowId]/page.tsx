@@ -67,7 +67,7 @@ export default function FlowPage({ params }: PageProps) {
 					<AlertCircle className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
 					<h2 className="mb-2 font-bold text-2xl text-foreground">Authentication Required</h2>
 					<p className="mb-6 text-muted-foreground">Please sign in to access this flow</p>
-					<Link href="/sign-in" legacyBehavior>
+					<Link href="/sign-in">
 						<Button>Sign In</Button>
 					</Link>
 				</div>
@@ -86,13 +86,13 @@ export default function FlowPage({ params }: PageProps) {
 						The flow you're looking for doesn't exist or you don't have permission to access it.
 					</p>
 					<div className="flex justify-center gap-3">
-						<Link href="/dashboard" legacyBehavior>
+						<Link href="/dashboard">
 							<Button variant="outline" className="gap-2">
 								<ArrowLeft className="h-4 w-4" />
 								My Flows
 							</Button>
 						</Link>
-						<Link href="/explore" legacyBehavior>
+						<Link href="/explore">
 							<Button className="gap-2">Explore Public Flows</Button>
 						</Link>
 					</div>

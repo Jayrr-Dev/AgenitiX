@@ -336,7 +336,7 @@ const ExplorePage = () => {
 								)}
 							</div>
 							<div className="flex items-center gap-2">
-								<Link href="/dashboard" legacyBehavior>
+								<Link href="/dashboard">
 									<Button variant="outline">My Flows</Button>
 								</Link>
 								{user?.id && (
@@ -477,7 +477,7 @@ const ExplorePage = () => {
 										</Button>
 									</div>
 
-									<Link href={`/matrix/${flow._id}`} legacyBehavior>
+									<Link href={`/matrix/${flow._id}`}>
 										<Button size="sm" className="gap-2">
 											<ExternalLink className="h-3 w-3" />
 											Open
@@ -499,7 +499,7 @@ const ExplorePage = () => {
 						<p className="mx-auto mb-8 max-w-md text-muted-foreground">
 							Be the first to share a public flow with the community!
 						</p>
-						<Link href="/dashboard" legacyBehavior>
+						<Link href="/dashboard">
 							<Button>Create a Flow</Button>
 						</Link>
 					</div>

@@ -10,8 +10,8 @@
  */
 
 import { useEffect, useState } from "react";
-import { getAllNodeMetadata, getNodeFeatureFlag } from "../../../node-registry/types";
-import type { NodeSpecMetadata } from "../../../node-registry/types";
+import { getAllNodeMetadata, getNodeFeatureFlag } from "../../node-registry/nodespec-registry";
+import type { NodeSpecMetadata } from "../../node-registry/nodespec-registry";
 
 interface FilteredNodesState {
 	nodes: NodeSpecMetadata[];
@@ -82,10 +82,25 @@ export function useFilteredNodes(): FilteredNodesState {
 	useEffect(() => {
 		const filterNodes = async () => {
 			try {
-				setState((prev) => ({ ...prev, isLoading: true, error: null }));
-
 				// Get all nodes first
 				const allNodes = getAllNodeMetadata();
+				
+				// Quick synchronous check - if no nodes have feature flags, return immediately
+				const hasFeatureFlags = allNodes.some(node => getNodeFeatureFlag(node.kind));
+				
+				if (!hasFeatureFlags) {
+					// No feature flags - return all nodes immediately (synchronous)
+					setState({
+						nodes: allNodes,
+						isLoading: false,
+						error: null,
+					});
+					return;
+				}
+
+				// Feature flags exist - proceed with async evaluation
+				setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
 				const filteredNodes: NodeSpecMetadata[] = [];
 
 				// Check if we're on the client side
@@ -103,29 +118,34 @@ export function useFilteredNodes(): FilteredNodesState {
 						}
 					}
 
-					// Batch evaluate all unique flags
-					const flagResults = new Map<string, boolean>();
-					await Promise.all(
-						Array.from(uniqueFlags).map(async (flagName) => {
-							const isEnabled = await getCachedFlagValue(flagName);
-							flagResults.set(flagName, isEnabled);
-						})
-					);
+					// If no feature flags exist, skip API calls and add all nodes immediately
+					if (uniqueFlags.size === 0) {
+						filteredNodes.push(...allNodes);
+					} else {
+						// Batch evaluate all unique flags
+						const flagResults = new Map<string, boolean>();
+						await Promise.all(
+							Array.from(uniqueFlags).map(async (flagName) => {
+								const isEnabled = await getCachedFlagValue(flagName);
+								flagResults.set(flagName, isEnabled);
+							})
+						);
 
-					// Second pass: filter nodes based on flag results
-					for (const node of allNodes) {
-						const featureFlag = nodeFlags.get(node.kind);
-						
-						if (featureFlag) {
-							const isEnabled = flagResults.get(featureFlag.flag) ?? featureFlag.fallback ?? false;
+						// Second pass: filter nodes based on flag results
+						for (const node of allNodes) {
+							const featureFlag = nodeFlags.get(node.kind);
 							
-							// If flag is disabled and should hide, skip this node
-							if (!isEnabled && featureFlag.hideWhenDisabled) {
-								continue;
+							if (featureFlag) {
+								const isEnabled = flagResults.get(featureFlag.flag) ?? featureFlag.fallback ?? false;
+								
+								// If flag is disabled and should hide, skip this node
+								if (!isEnabled && featureFlag.hideWhenDisabled) {
+									continue;
+								}
 							}
-						}
 
-						filteredNodes.push(node);
+							filteredNodes.push(node);
+						}
 					}
 				} else {
 					// Server-side: include all nodes (feature flags will be evaluated at render time)

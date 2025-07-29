@@ -230,7 +230,7 @@ const DashboardContent = () => {
 								<p className="text-muted-foreground">Create and manage your automation workflows</p>
 							</div>
 							<div className="flex items-center gap-3">
-								<Link href="/explore" legacyBehavior>
+								<Link href="/explore">
 									<Button variant="outline" className="gap-2">
 										<Globe className="w-4 h-4" />
 										Explore
@@ -392,7 +392,7 @@ const DashboardContent = () => {
 										onUpdate={handleFlowUpdated}
 									/>
 
-									<Link href={`/matrix/${flow.id}`} legacyBehavior>
+									<Link href={`/matrix/${flow.id}`}>
 										<Button size="sm" className="gap-2">
 											<ExternalLink className="w-3 h-3" />
 											Open

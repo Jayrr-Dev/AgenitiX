@@ -173,7 +173,7 @@ export default function VerifyMagicLinkPage() {
 					{content.showRetry && (
 						<CardContent className="pt-0">
 							<div className="space-y-4">
-								<Link href="/sign-in" legacyBehavior>
+								<Link href="/sign-in">
 									<Button className="w-full">
 										<Mail className="mr-2 h-4 w-4" />
 										{status === "expired" ? "Get New Magic Link" : "Try Again"}

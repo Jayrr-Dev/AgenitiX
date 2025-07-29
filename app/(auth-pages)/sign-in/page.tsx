@@ -292,7 +292,7 @@ export default function SignInPage() {
 												{/* Account not found - show sign up option */}
 												{error.includes("Account not found") && (
 													<div className="mt-3">
-														<Link href="/sign-up" legacyBehavior>
+														<Link href="/sign-up">
 															<Button variant="outline" size="sm" className="w-full">
 																Create New Account
 															</Button>
