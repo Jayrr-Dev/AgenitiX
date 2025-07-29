@@ -126,6 +126,25 @@
 	color: hsl(var(--node-email-text-secondary));
 } /* #00838f */
 
+@utility bg-node-ai {
+	background-color: hsl(var(--node-ai-bg));
+} /* #f3f4f6 */
+@utility bg-node-ai-hover {
+	background-color: hsl(var(--node-ai-bg-hover));
+} /* #e5e7eb */
+@utility border-node-ai {
+	border-color: hsl(var(--node-ai-border));
+} /* #9ca3af */
+@utility border-node-ai-hover {
+	border-color: hsl(var(--node-ai-border-hover));
+} /* #6b7280 */
+@utility text-node-ai {
+	color: hsl(var(--node-ai-text));
+} /* #374151 */
+@utility text-node-ai-secondary {
+	color: hsl(var(--node-ai-text-secondary));
+} /* #6b7280 */
+
 /* Node Sizing Utilities */
 @utility w-node-size-fe1h {
 	width: var(--node-size-fe1h-width);

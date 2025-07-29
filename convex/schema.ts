@@ -154,7 +154,7 @@ export default defineSchema({
 		.index("by_workflow_id", ["workflow_id"])
 		.index("by_node_type", ["node_type"]),
 
-	// AI Domain (for future implementation)
+	// AI Domain
 	ai_prompts: defineTable({
 		user_id: v.id("auth_users"),
 		name: v.string(),
@@ -170,6 +170,34 @@ export default defineSchema({
 		.index("by_user_id", ["user_id"])
 		.index("by_model", ["model"])
 		.index("by_category", ["category"]),
+
+	// AI Agent Domain (for Convex AI Agent integration)
+	ai_agent_threads: defineTable({
+		user_id: v.id("auth_users"),
+		title: v.optional(v.string()),
+		summary: v.optional(v.string()),
+		status: v.optional(v.string()),
+		created_at: v.number(),
+		updated_at: v.number(),
+	})
+		.index("by_user_id", ["user_id"])
+		.index("by_created_at", ["created_at"]),
+
+	ai_agent_messages: defineTable({
+		thread_id: v.id("ai_agent_threads"),
+		role: v.union(v.literal("user"), v.literal("assistant"), v.literal("system")),
+		content: v.string(),
+		model: v.optional(v.string()),
+		provider: v.optional(v.string()),
+		usage: v.optional(v.object({
+			promptTokens: v.number(),
+			completionTokens: v.number(),
+			totalTokens: v.number(),
+		})),
+		created_at: v.number(),
+	})
+		.index("by_thread_id", ["thread_id"])
+		.index("by_created_at", ["created_at"]),
 
 	// FLOW TABLES
 	flows: defineTable({

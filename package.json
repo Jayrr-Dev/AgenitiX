@@ -68,6 +68,9 @@
 		"sentry:sourcemaps:conditional": "node -e \"if (process.env.SENTRY_AUTH_TOKEN && process.env.VERCEL_ENV === 'production') { require('child_process').execSync('sentry-cli sourcemaps inject --org utilitek-solutions --project agenitix .next && sentry-cli sourcemaps upload --org utilitek-solutions --project agenitix .next', { stdio: 'inherit', shell: true }); } else { console.log('Skipping Sentry sourcemap upload - not in production or missing SENTRY_AUTH_TOKEN'); }\""
 	},
 	"dependencies": {
+		"@ai-sdk/anthropic": "^1.2.12",
+		"@ai-sdk/openai": "^1.3.23",
+		"@convex-dev/agent": "^0.1.16",
 		"@dnd-kit/core": "^6.3.1",
 		"@dnd-kit/sortable": "^10.0.0",
 		"@dnd-kit/utilities": "^3.2.2",
