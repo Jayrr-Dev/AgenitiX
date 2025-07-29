@@ -1,13 +1,13 @@
 /**
- * FLOW ACTIONS - Action buttons for flow management
+ * FLOW ACTIONS COMPONENT - Action buttons for individual flow cards
  *
  * • Delete flow with confirmation dialog
- * • Share flow with comprehensive access management
- * • Secure user authentication checks
- * • Responsive design with modern UI
- * • Full Convex database integration
+ * • Share flow with external users
+ * • Edit flow metadata (name, description)
+ * • Responsive dropdown menu for mobile
+ * • Proper error handling and user feedback
  *
- * Keywords: flow-actions, delete, share, confirmation, authentication, responsive, convex
+ * Keywords: flow-actions, delete-flow, share-flow, dropdown, responsive
  */
 
 "use client";
@@ -39,6 +39,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
 import { useMutation } from "convex/react";
 import { Edit3, Share2, Trash2 } from "lucide-react";
+import type React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Flow } from "../types";

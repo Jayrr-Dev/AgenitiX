@@ -2,7 +2,7 @@
 
 import { IconArrowLeft, IconArrowRight } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type Testimonial = {
 	quote: string;
@@ -28,9 +28,9 @@ export const AnimatedTestimonials = ({
 		});
 	}, [testimonials]);
 
-	const handleNext = () => {
+	const handleNext = useCallback(() => {
 		setActive((prev) => (prev + 1) % testimonials.length);
-	};
+	}, [testimonials.length]);
 
 	const handlePrev = () => {
 		setActive((prev) => (prev - 1 + testimonials.length) % testimonials.length);

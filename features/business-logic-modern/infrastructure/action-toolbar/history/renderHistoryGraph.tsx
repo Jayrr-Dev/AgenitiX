@@ -204,7 +204,11 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 		const levelWidths: Record<number, number> = {};
 
 		while (queue.length) {
-			const { id, depth } = queue.shift()!;
+			const item = queue.shift();
+			if (!item) {
+				break;
+			}
+			const { id, depth } = item;
 
 			if (processedNodes.has(id)) {
 				continue;

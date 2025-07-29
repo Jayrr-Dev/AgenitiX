@@ -21,7 +21,7 @@ class BrowserEventEmitter {
 		if (!this.listeners.has(event)) {
 			this.listeners.set(event, []);
 		}
-		this.listeners.get(event)!.push(listener);
+		this.listeners.get(event)?.push(listener);
 		return this;
 	}
 
@@ -30,15 +30,15 @@ class BrowserEventEmitter {
 		if (!eventListeners || eventListeners.length === 0) {
 			return false;
 		}
-		
-		eventListeners.forEach(listener => {
+
+		eventListeners.forEach((listener) => {
 			try {
 				listener(...args);
 			} catch (error) {
 				console.error(`Error in event listener for ${event}:`, error);
 			}
 		});
-		
+
 		return true;
 	}
 
@@ -56,16 +56,16 @@ class BrowserEventEmitter {
 		if (!eventListeners) {
 			return this;
 		}
-		
+
 		const index = eventListeners.indexOf(listener);
 		if (index > -1) {
 			eventListeners.splice(index, 1);
 		}
-		
+
 		if (eventListeners.length === 0) {
 			this.listeners.delete(event);
 		}
-		
+
 		return this;
 	}
 }
@@ -122,25 +122,27 @@ export interface StorageAdapter {
 
 /** Default adapter – browser only (localStorage). No‑op in Node/Edge */
 export const LocalStorageAdapter: StorageAdapter = {
-	async load(id) {
+	load(id) {
 		if (typeof localStorage === "undefined") {
-			return null;
+			return Promise.resolve(null);
 		}
 		try {
-			return JSON.parse(localStorage.getItem(`node_mem_${id}`) ?? "null");
+			return Promise.resolve(JSON.parse(localStorage.getItem(`node_mem_${id}`) ?? "null"));
 		} catch {
-			return null;
+			return Promise.resolve(null);
 		}
 	},
-	async save(id, data) {
+	save(id, data) {
 		if (typeof localStorage !== "undefined") {
 			localStorage.setItem(`node_mem_${id}`, JSON.stringify(data));
 		}
+		return Promise.resolve();
 	},
-	async delete(id) {
+	delete(id) {
 		if (typeof localStorage !== "undefined") {
 			localStorage.removeItem(`node_mem_${id}`);
 		}
+		return Promise.resolve();
 	},
 };
 
@@ -446,7 +448,11 @@ export class GlobalNodeMemoryManager {
 		if (!this.map.has(nodeId)) {
 			this.map.set(nodeId, new NodeMemoryManager(nodeId, cfg, this.adapter));
 		}
-		return this.map.get(nodeId)!;
+		const manager = this.map.get(nodeId);
+		if (!manager) {
+			throw new Error(`Failed to create or retrieve NodeMemoryManager for ${nodeId}`);
+		}
+		return manager;
 	}
 
 	destroy(nodeId: string) {

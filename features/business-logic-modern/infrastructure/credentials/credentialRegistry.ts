@@ -29,7 +29,7 @@ export const resolveCredential = async <T = any>(
 // DEFAULT "env" provider – resolves secrets from process.env for quick testing
 // ---------------------------------------------------------------------------
 
-registerCredentialProvider("env", async (key: string) => {
+registerCredentialProvider("env", (key: string) => {
 	// process.env is undefined in browsers; this provider is meant for server / Vercel edge.
 	if (typeof process !== "undefined" && process.env) {
 		return process.env[key] as any;

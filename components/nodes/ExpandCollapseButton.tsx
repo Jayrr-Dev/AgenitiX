@@ -11,7 +11,6 @@
  * Keywords: expand-collapse, token-styling, unified-design, accessibility, dark-mode
  */
 
-import { useTheme } from "next-themes";
 import React from "react";
 
 import { IoIosRadioButtonOn } from "react-icons/io";
@@ -30,7 +29,6 @@ interface ExpandCollapseButtonProps {
 	showUI: boolean;
 	onToggle: () => void;
 	className?: string;
-	size?: "sm" | "md";
 }
 
 /**
@@ -48,10 +46,7 @@ export const ExpandCollapseButton: React.FC<ExpandCollapseButtonProps> = ({
 	showUI,
 	onToggle,
 	className = "",
-	size = "sm",
 }) => {
-	const { resolvedTheme } = useTheme();
-
 	// Get theme-aware button color (simplified to avoid hydration issues)
 	const buttonColor = "var(--core-expandCollapseButton-text)";
 
@@ -79,7 +74,7 @@ export const ExpandCollapseButton: React.FC<ExpandCollapseButtonProps> = ({
 			opacity: ".7",
 			scale: "1.2",
 		}),
-		[buttonColor]
+		[]
 	);
 
 	return (

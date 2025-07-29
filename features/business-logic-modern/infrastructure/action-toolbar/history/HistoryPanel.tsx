@@ -746,10 +746,10 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 									const actionIndicatorStyle = getActionIndicatorStyle(state.metadata);
 
 									// Determine styling based on state
-									let itemStyle;
-									let indicatorStyle;
-									let badgeStyle;
-									let textStyle;
+									let itemStyle: string;
+									let indicatorStyle: string;
+									let badgeStyle: string;
+									let textStyle: string;
 									if (isCurrentState) {
 										itemStyle = HISTORY_ITEM_STYLES.current;
 										indicatorStyle = HISTORY_ITEM_INDICATOR_STYLES.current;

@@ -24,24 +24,28 @@ import { useMultiSelectionCopyPaste } from "./hooks/useMultiSelectionCopyPaste";
 import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 
 // Helper function to get node spec from the new NodeSpec registry system
-const getNodeSpecForType = async (nodeType: string) => {
+const getNodeSpecForType = (nodeType: string) => {
 	try {
-		// Get metadata from the new NodeSpec registry
-		const metadata = getNodeSpecMetadata(nodeType);
-		if (!metadata) {
-			console.warn(`No metadata found for node type: ${nodeType}`);
-			return null;
+		// 1. Check the new NodeSpec registry first
+		const registeredSpec = getNodeSpecMetadata(nodeType);
+		if (registeredSpec) {
+			return {
+				kind: registeredSpec.kind,
+				displayName: registeredSpec.displayName,
+				category: registeredSpec.category,
+				initialData: registeredSpec.initialData,
+			};
 		}
 
-		// Return spec format for initial data
-		return {
-			kind: metadata.kind,
-			displayName: metadata.displayName,
-			category: metadata.category,
-			initialData: metadata.initialData,
-		};
+		// 2. Check the legacy NODESPECS for backward compatibility
+		// This part of the original code was removed, so we'll keep it empty or remove it if not needed.
+		// The original code had NODESPECS defined elsewhere, but it's not imported here.
+		// For now, we'll just return null if no registered spec is found.
+
+		console.warn(`[getNodeSpecForType] No spec found for node type: ${nodeType}`);
+		return null;
 	} catch (error) {
-		console.error(`Failed to get spec for node type: ${nodeType}`, error);
+		console.error(`[getNodeSpecForType] Error getting spec for ${nodeType}:`, error);
 		return null;
 	}
 };

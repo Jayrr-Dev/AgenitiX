@@ -1,13 +1,13 @@
 /**
- * FLOW ACCESS GUARD - Flow access control and authentication
+ * FLOW ACCESS GUARD - Authentication and authorization guard for flows
  *
- * • Check user permissions for flow access
- * • Handle token-based authentication for shared flows
- * • Request access for private flows
- * • Secure user authentication and authorization
- * • Integration with Convex database
+ * • Access control for private/public flows
+ * • User authentication verification
+ * • Request access functionality for private flows
+ * • Proper loading states and error handling
+ * • Responsive design with user-friendly messaging
  *
- * Keywords: flow-access, authentication, permissions, security, convex
+ * Keywords: access-guard, authentication, authorization, private-flows, access-request
  */
 
 "use client";
@@ -30,7 +30,9 @@ import { api } from "@/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { AlertTriangle, Edit, Eye, Lock, Mail, Shield, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import type React from "react";
+import { useState } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 interface FlowAccessGuardProps {

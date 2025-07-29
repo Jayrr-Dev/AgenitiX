@@ -20,20 +20,17 @@ import type { ServerActionContext } from "./serverActionRegistry";
 /**
  * Direct Convex query execution
  */
-export const executeConvexQuery = async <T>(
-	queryName: string,
-	params?: Record<string, unknown>
-): Promise<T> => {
+export const executeConvexQuery = <T>(queryName: string, params?: Record<string, unknown>): T => {
 	return { message: "Convex query executed", queryName, params } as T;
 };
 
 /**
  * Direct Convex mutation execution
  */
-export const executeConvexMutation = async <T>(
+export const executeConvexMutation = <T>(
 	mutationName: string,
 	params?: Record<string, unknown>
-): Promise<T> => {
+): T => {
 	return { message: "Convex mutation executed", mutationName, params } as T;
 };
 

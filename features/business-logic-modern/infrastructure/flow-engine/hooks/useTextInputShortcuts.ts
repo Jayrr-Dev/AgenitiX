@@ -1,3 +1,15 @@
+/**
+ * TEXT INPUT SHORTCUTS HOOK - Enhanced keyboard shortcuts for text inputs
+ *
+ * • ALT+Q: Enhanced ergonomic backspace for better text editing
+ * • Custom word boundary detection for better editing flow
+ * • Prevents event bubbling to avoid conflicts
+ * • Optimized for developer productivity
+ *
+ * Keywords: keyboard-shortcuts, text-editing, ergonomic, productivity
+ */
+
+import type React from "react";
 import { useCallback, useRef } from "react";
 
 interface UseTextInputShortcutsOptions {

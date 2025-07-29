@@ -1,16 +1,15 @@
 /**
- * FLOW EDITOR HANDLERS HOOK - ReactFlow event handler management
+ * FLOW EDITOR HANDLERS HOOK - Centralized handlers for flow editor operations
  *
- * • Manages ReactFlow node and edge change events with Zustand integration
- * • Handles node creation, deletion, duplication, and position updates
- * • Records user actions for undo/redo functionality
- * • Provides type-safe event handlers with proper cleanup and validation
- * • Integrates with Zustand store actions for state synchronization
- * • Supports selection management and instance initialization
+ * • Node connection and edge management
+ * • Flow state synchronization with Zustand
+ * • Event handling with proper cleanup
+ * • Performance optimized with proper memoization
  *
- * Keywords: ReactFlow, handlers, Zustand, nodes, edges, events, state-sync, undo-redo
+ * Keywords: flow-editor, handlers, zustand, connections, performance
  */
 
+import type React from "react";
 import { useCallback } from "react";
 import { useUndoRedo } from "../../action-toolbar/history/UndoRedoContext";
 import type { AgenEdge, AgenNode } from "../types/nodeData";

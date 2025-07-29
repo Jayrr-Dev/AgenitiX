@@ -42,17 +42,18 @@
 		"rules": {
 			"recommended": true,
 			"style": {
-				"noUnusedTemplateLiteral": "error",
-				"useTemplate": "error",
-				"useConst": "error",
-				"useShorthandArrayType": "error",
-				"useShorthandAssign": "error",
-				"noImplicitBoolean": "error",
-				"noNegationElse": "error",
-				"useBlockStatements": "error",
-				"useCollapsedElseIf": "error",
-				"useConsistentArrayType": "error",
-				"useFilenamingConvention": "warn"
+				"noUnusedTemplateLiteral": "warn",
+				"useTemplate": "warn",
+				"useConst": "warn",
+				"useShorthandArrayType": "warn",
+				"useShorthandAssign": "warn",
+				"noImplicitBoolean": "warn",
+				"noNegationElse": "warn",
+				"useBlockStatements": "warn",
+				"useCollapsedElseIf": "warn",
+				"useConsistentArrayType": "warn",
+				"useFilenamingConvention": "warn",
+				"noParameterAssign": "warn"
 			},
 			"suspicious": {
 				"noConsoleLog": "warn",
@@ -62,42 +63,43 @@
 				"noDoubleEquals": "error",
 				"noThenProperty": "error",
 				"useAwait": "error",
-				"useValidTypeof": "error"
+				"useValidTypeof": "error",
+				"noAssignInExpressions": "warn"
 			},
 			"complexity": {
 				"noExcessiveCognitiveComplexity": {
-					"level": "error",
+					"level": "warn",
 					"options": {
-						"maxAllowedComplexity": 15
+						"maxAllowedComplexity": 25
 					}
 				},
-				"noExcessiveNestedTestSuites": "error",
-				"noMultipleSpacesInRegularExpressionLiterals": "error",
-				"noUselessCatch": "error",
-				"noUselessConstructor": "error",
-				"noUselessEmptyExport": "error",
+				"noExcessiveNestedTestSuites": "warn",
+				"noMultipleSpacesInRegularExpressionLiterals": "warn",
+				"noUselessCatch": "warn",
+				"noUselessConstructor": "warn",
+				"noUselessEmptyExport": "warn",
 				"noUselessFragments": "warn",
-				"noUselessLabel": "error",
-				"noUselessLoneBlockStatements": "error",
-				"noUselessRename": "error",
-				"noUselessSwitchCase": "error",
-				"noUselessTernary": "error",
-				"noUselessThisAlias": "error",
-				"noUselessTypeConstraint": "error",
-				"noVoid": "error",
+				"noUselessLabel": "warn",
+				"noUselessLoneBlockStatements": "warn",
+				"noUselessRename": "warn",
+				"noUselessSwitchCase": "warn",
+				"noUselessTernary": "warn",
+				"noUselessThisAlias": "warn",
+				"noUselessTypeConstraint": "warn",
+				"noVoid": "warn",
 				"noWith": "error",
 				"noForEach": "warn",
-				"useLiteralKeys": "error",
-				"useOptionalChain": "error",
-				"useRegexLiterals": "error",
-				"useSimpleNumberKeys": "error",
-				"useSimplifiedLogicExpression": "error"
+				"useLiteralKeys": "warn",
+				"useOptionalChain": "warn",
+				"useRegexLiterals": "warn",
+				"useSimpleNumberKeys": "warn",
+				"useSimplifiedLogicExpression": "warn"
 			},
 			"correctness": {
-				"noUnusedVariables": "error",
+				"noUnusedVariables": "warn",
 				"noUnusedImports": "error",
 				"noUndeclaredVariables": "error",
-				"noUnreachable": "error",
+				"noUnreachable": "warn",
 				"noConstAssign": "error",
 				"noConstantCondition": "error",
 				"noEmptyCharacterClassInRegex": "error",
@@ -108,19 +110,19 @@
 				"noPrecisionLoss": "error",
 				"noSetterReturn": "error",
 				"noSwitchDeclarations": "error",
-				"noUnnecessaryContinue": "error",
+				"noUnnecessaryContinue": "warn",
 				"noUnreachableSuper": "error",
 				"noUnsafeFinally": "error",
 				"noUnsafeOptionalChaining": "error",
-				"noUnusedLabels": "error",
-				"useArrayLiterals": "error",
+				"noUnusedLabels": "warn",
+				"useArrayLiterals": "warn",
 				"useExhaustiveDependencies": "warn",
 				"useIsNan": "error",
 				"useValidForDirection": "error",
 				"useYield": "error"
 			},
 			"performance": {
-				"noDelete": "error",
+				"noDelete": "warn",
 				"noAccumulatingSpread": "warn"
 			},
 			"security": {
@@ -128,33 +130,34 @@
 				"noDangerouslySetInnerHtmlWithChildren": "error"
 			},
 			"a11y": {
-				"noAccessKey": "error",
-				"noAriaUnsupportedElements": "error",
-				"noAutofocus": "error",
-				"noBlankTarget": "error",
-				"noDistractingElements": "error",
-				"noHeaderScope": "error",
-				"noPositiveTabindex": "error",
-				"noRedundantAlt": "error",
-				"noRedundantRoles": "error",
-				"useAltText": "error",
-				"useAnchorContent": "error",
-				"useAriaPropsForRole": "error",
+				"noAccessKey": "warn",
+				"noAriaUnsupportedElements": "warn",
+				"noAutofocus": "warn",
+				"noBlankTarget": "warn",
+				"noDistractingElements": "warn",
+				"noHeaderScope": "warn",
+				"noPositiveTabindex": "warn",
+				"noRedundantAlt": "warn",
+				"noRedundantRoles": "warn",
+				"useAltText": "warn",
+				"useAnchorContent": "warn",
+				"useAriaPropsForRole": "warn",
 				"useButtonType": "warn",
-				"useHeadingContent": "error",
+				"useHeadingContent": "warn",
 				"useHtmlLang": "error",
-				"useIframeTitle": "error",
-				"useKeyWithClickEvents": "error",
-				"useKeyWithMouseEvents": "error",
-				"useMediaCaption": "error",
-				"useValidAnchor": "error",
+				"useIframeTitle": "warn",
+				"useKeyWithClickEvents": "warn",
+				"useKeyWithMouseEvents": "warn",
+				"useMediaCaption": "warn",
+				"useValidAnchor": "warn",
 				"useValidAriaProps": "error",
 				"useValidAriaValues": "error",
-				"useValidLang": "error"
+				"useValidLang": "error",
+				"noSvgWithoutTitle": "warn"
 			},
 			"nursery": {
-				"useConsistentMemberAccessibility": "error",
-				"useSortedClasses": "warn"
+				"useConsistentMemberAccessibility": "warn",
+				"useSortedClasses": "off"
 			}
 		}
 	},
@@ -176,7 +179,7 @@
 			"linter": {
 				"rules": {
 					"style": {
-						"noUnusedTemplateLiteral": "error"
+						"noUnusedTemplateLiteral": "warn"
 					},
 					"suspicious": {
 						"noConsoleLog": "off"

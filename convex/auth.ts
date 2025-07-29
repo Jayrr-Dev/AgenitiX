@@ -277,7 +277,7 @@ export const signIn = mutation({
 		ip_address: v.optional(v.string()),
 		user_agent: v.optional(v.string()),
 	},
-	handler: async () => {
+	handler: () => {
 		// This is now just for backward compatibility
 		// In production, this should redirect to magic link flow
 		throw new Error("Please use magic link authentication");
@@ -295,10 +295,10 @@ export const getCurrentUser = query({
 		// Find active session
 		const session = await ctx.db
 			.query("auth_sessions")
-			.withIndex("by_token_hash", (q) => q.eq("token_hash", args.token_hash!))
+			.withIndex("by_token_hash", (q) => q.eq("token_hash", args.token_hash || ""))
 			.filter((q) => q.eq(q.field("is_active"), true))
 			.filter((q) => q.gt(q.field("expires_at"), Date.now()))
-			.first();
+			.unique();
 
 		if (!session) {
 			return null;
