@@ -90,7 +90,7 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<html lang="en" className={`${geistSans.className} ${inter.variable}`}>
+		<html lang="en" className={`${geistSans.className} ${inter.className}`}>
 			<head>
 				<link
 					href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Work+Sans:wght@400;600&family=Source+Serif+Pro:ital,wght@0,400;1,400&display=swap"
