@@ -1,14 +1,16 @@
 /**
- * COMPONENT ERROR BOUNDARY - Node-specific error handling and recovery
+ * NODE ERROR BOUNDARY - Isolates runtime errors to individual nodes
  *
- * • Catches and displays errors within individual node components
- * • Provides error recovery mechanisms and user-friendly error messages
- * • Integrates with node inspector for debugging and error reporting
- * • Maintains node state during error conditions
+ * • Catches any rendering/runtime error thrown by a node component
+ * • Prevents the entire React Flow canvas from unmounting
+ * • Logs the error via flowStore.logNodeError so it appears in inspector
+ * • Displays a minimal fallback UI inside the node (red background + icon)
+ * • Active only for its wrapped node; other nodes remain functional
  *
- * Keywords: error-handling, node-recovery, error-boundary, debugging
+ * Keywords: error-boundary, react, node-isolation, runtime-errors, flowStore
  */
 
+import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import React from "react";
 
 interface NodeErrorBoundaryProps {
@@ -21,8 +23,14 @@ interface NodeErrorBoundaryState {
 	message: string;
 }
 
+// Stable class component
 class NodeErrorBoundaryClass extends React.Component<
-	NodeErrorBoundaryProps,
+	{
+		nodeId: string;
+		onError: (msg: string) => void;
+		onReset: () => void;
+		children: React.ReactNode;
+	},
 	NodeErrorBoundaryState
 > {
 	state: NodeErrorBoundaryState = { hasError: false, message: "" };
@@ -31,36 +39,42 @@ class NodeErrorBoundaryClass extends React.Component<
 		return { hasError: true, message: error.message };
 	}
 
-	componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-		console.error("Node Error Boundary caught an error:", error, errorInfo);
+	componentDidCatch(error: Error) {
+		this.props.onError(error.message);
 	}
+
+	handleReset = () => {
+		this.setState({ hasError: false, message: "" });
+		this.props.onReset();
+	};
 
 	render() {
 		if (this.state.hasError) {
 			return (
-				<div className="p-4 border border-red-200 bg-red-50 rounded-md">
-					<div className="flex items-center space-x-2">
-						<div className="w-2 h-2 bg-red-500 rounded-full"></div>
-						<span className="text-sm font-medium text-red-800">
-							Node Error: {this.state.message}
-						</span>
-					</div>
+				<div
+					className="flex h-full w-full select-none flex-col items-center justify-center bg-red-500/20 p-2 text-red-700 text-xs"
+					onDoubleClick={this.handleReset}
+					title="Double-click to reset error state"
+				>
+					<span className="text-lg">💥</span>
+					<span className="mt-1">Node Error</span>
 				</div>
 			);
 		}
-
-		return this.props.children;
+		return this.props.children as React.ReactElement;
 	}
 }
 
+// Functional wrapper to inject store callbacks once (stable refs)
 const NodeErrorBoundary: React.FC<NodeErrorBoundaryProps> = ({ nodeId, children }) => {
-	const onError = (error: Error) => {
-		console.error(`Error in node ${nodeId}:`, error);
-	};
+	const { logNodeError, clearNodeErrors } = useFlowStore();
 
-	const onReset = () => {
-		console.log(`Resetting node ${nodeId}`);
-	};
+	const onError = React.useCallback(
+		(msg: string) => logNodeError(nodeId, msg, "error", "ERROR_BOUNDARY"),
+		[logNodeError, nodeId]
+	);
+
+	const onReset = React.useCallback(() => clearNodeErrors(nodeId), [clearNodeErrors, nodeId]);
 
 	return (
 		<NodeErrorBoundaryClass nodeId={nodeId} onError={onError} onReset={onReset}>

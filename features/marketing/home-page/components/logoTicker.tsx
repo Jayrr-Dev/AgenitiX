@@ -1,47 +1,38 @@
+import { logos } from "@/features/marketing/home-page/data";
 import dynamic from "next/dynamic";
 
 // Dynamically import the LogoTicker component
 // Note: Make sure the default export from logo-ticker is named LogoTicker
 const LogoTicker = dynamic(() => import("@/components/ui/logo-ticker"));
 
-const logosArray = [
-	{
-		src: "/svg/logo-1.svg",
-		alt: "Logo 1",
-	},
-	{
-		src: "/svg/logo-2.svg",
-		alt: "Logo 2",
-	},
-	{
-		src: "/svg/logo-3.svg",
-		alt: "Logo 3",
-	},
-	{
-		src: "/svg/logo-4.svg",
-		alt: "Logo 4",
-	},
-	{
-		src: "/svg/logo-5.svg",
-		alt: "Logo 5",
-	},
-	{
-		src: "/svg/logo-6.svg",
-		alt: "Logo 6",
-	},
-	{
-		src: "/svg/logo-7.svg",
-		alt: "Logo 7",
-	},
-	{
-		src: "/svg/logo-8.svg",
-		alt: "Logo 8",
-	},
-];
+/**
+ * Interface representing a logo entity
+ */
+interface Logo {
+	name: string;
+	key: string;
+	customId: string | null;
+	url: string;
+	uploadedAt: string;
+	width: number;
+	height: number;
+}
+
+const logosArray: Logo[] = logos.map((logo) => ({
+	name: logo.name,
+	key: logo.key,
+	customId: logo.customId,
+	url: logo.url,
+	width: logo.width,
+	height: logo.height,
+	uploadedAt: logo.uploadedAt,
+}));
 
 export const InfiniteLogoTicker = () => {
 	return (
-		<div className="w-full overflow-hidden">
+		<div className="flex h-full w-full flex-col items-center justify-center">
+			<h3 className="w-2/3 text-center font-bold text-4xl">Trusted by 150,000+ Content</h3>
+			<h3 className="w-2/3 text-center font-bold text-4xl">Creators, SEOs, Agencies, and Teams</h3>
 			<LogoTicker logos={logosArray} />
 		</div>
 	);
