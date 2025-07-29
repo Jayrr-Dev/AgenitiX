@@ -16,6 +16,8 @@ import React from "react";
 interface NodeErrorBoundaryProps {
 	nodeId: string;
 	children: React.ReactNode;
+	onError?: (msg: string) => void;
+	onReset?: () => void;
 }
 
 interface NodeErrorBoundaryState {
@@ -66,18 +68,24 @@ class NodeErrorBoundaryClass extends React.Component<
 }
 
 // Functional wrapper to inject store callbacks once (stable refs)
-const NodeErrorBoundary: React.FC<NodeErrorBoundaryProps> = ({ nodeId, children }) => {
+const NodeErrorBoundary: React.FC<NodeErrorBoundaryProps> = ({ nodeId, children, onError, onReset }) => {
 	const { logNodeError, clearNodeErrors } = useFlowStore();
 
-	const onError = React.useCallback(
-		(msg: string) => logNodeError(nodeId, msg, "error", "ERROR_BOUNDARY"),
-		[logNodeError, nodeId]
+	const handleError = React.useCallback(
+		(msg: string) => {
+			logNodeError(nodeId, msg, "error", "ERROR_BOUNDARY");
+			onError?.(msg);
+		},
+		[logNodeError, nodeId, onError]
 	);
 
-	const onReset = React.useCallback(() => clearNodeErrors(nodeId), [clearNodeErrors, nodeId]);
+	const handleReset = React.useCallback(() => {
+		clearNodeErrors(nodeId);
+		onReset?.();
+	}, [clearNodeErrors, nodeId, onReset]);
 
 	return (
-		<NodeErrorBoundaryClass nodeId={nodeId} onError={onError} onReset={onReset}>
+		<NodeErrorBoundaryClass nodeId={nodeId} onError={handleError} onReset={handleReset}>
 			{children}
 		</NodeErrorBoundaryClass>
 	);
