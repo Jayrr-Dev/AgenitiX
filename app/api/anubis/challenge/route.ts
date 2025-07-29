@@ -112,7 +112,12 @@ function getClientIP(request: NextRequest): string {
 
 // GENERATE CHALLENGE PAGE HTML
 function generateChallengePageHTML(
-	challenge: { challenge: string; difficulty: number; timestamp: number; clientFingerprint: string },
+	challenge: {
+		challenge: string;
+		difficulty: number;
+		timestamp: number;
+		clientFingerprint: string;
+	},
 	returnTo: string
 ): string {
 	return `

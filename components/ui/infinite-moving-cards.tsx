@@ -44,18 +44,12 @@ export const InfiniteMovingCards = ({
 
 		setStart(true);
 
-		// Duplicate items once
-		for (const item of items) {
-			const duplicatedItem = item.cloneNode(true);
-			scrollerRef.current?.appendChild(duplicatedItem);
-		}
-
 		// Apply direction and speed
 		const scrollerContent = scrollerRef.current;
 		if (scrollerContent) {
 			scrollerContent.style.transform = `translateX(-${scrollerContent.scrollWidth / 2}px)`;
 		}
-	}, [items]);
+	}, []);
 
 	useEffect(() => {
 		if (isInView && !start) {

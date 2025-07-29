@@ -179,7 +179,9 @@ export function useTextInputShortcuts(options: UseTextInputShortcutsOptions = {}
 		(e: React.KeyboardEvent<HTMLInputElement>) => {
 			// ALT+Q - Enhanced ergonomic backspace
 			if (e.altKey && e.key.toLowerCase() === "q") {
-				handleAltQDeletion(e, value, setValue);
+				if (setValue) {
+					handleAltQDeletion(e, value, setValue);
+				}
 				return;
 			}
 

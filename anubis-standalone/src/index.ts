@@ -108,7 +108,10 @@ export class Anubis {
 	}
 
 	// VALIDATE PROOF OF WORK
-	async validateProofOfWork(response: AnubisChallengeResponse, difficulty?: number): Promise<boolean> {
+	async validateProofOfWork(
+		response: AnubisChallengeResponse,
+		difficulty?: number
+	): Promise<boolean> {
 		return AnubisCrypto.validateProofOfWork(response, difficulty || this.config.difficulty);
 	}
 

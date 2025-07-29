@@ -172,7 +172,7 @@ function combineResults(
 		100
 	);
 
-	const isMalicious = ipsumResult.isMalicious || additionalResult.isMalicious;
+	const isMalicious = Boolean(ipsumResult.isMalicious || additionalResult.isMalicious);
 
 	// DETERMINE CONFIDENCE LEVEL
 	let confidence: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" = "LOW";

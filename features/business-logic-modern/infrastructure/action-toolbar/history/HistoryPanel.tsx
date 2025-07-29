@@ -681,7 +681,10 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 			// Create keyboard handlers
 			const { handleKeyDown } = createKeyboardHandlers(isClickable, index, state);
 
-			const stateLabel = state.label || state.metadata?.action || "Initial State";
+			const stateLabel =
+				state.label ||
+				(typeof state.metadata?.action === "string" ? state.metadata.action : null) ||
+				"Initial State";
 
 			return (
 				<div
@@ -717,7 +720,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 							<div className="flex items-center gap-2">
 								<span className="text-sm">{actionIcon}</span>
 								<span className={`${HISTORY_ITEM_TEXT_STYLES.base} ${textStyle} ${actionColor}`}>
-									{stateLabel}
+									{stateLabel || "Unknown Action"}
 								</span>
 							</div>
 						</div>

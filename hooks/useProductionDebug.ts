@@ -215,7 +215,7 @@ export function useProductionDebug(config: ProductionDebugConfig): DebugUtilitie
 			hasHydrated,
 			stateChangeCount: stateChangeCountRef.current,
 			timeSinceLastChange: Date.now() - lastChangeTimeRef.current,
-			currentData: node?.data,
+			currentData: node?.data || {},
 			lastComparisonMethod: lastComparisonMethodRef.current,
 			performanceMetrics: {
 				averageUpdateTime: metrics.updateCount > 0 ? metrics.totalTime / metrics.updateCount : 0,

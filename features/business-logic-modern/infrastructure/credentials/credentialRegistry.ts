@@ -24,7 +24,8 @@ export const resolveCredential = async <T = unknown>(
 	}
 
 	try {
-		return await resolver(credentialId);
+		const result = await resolver(credentialId);
+		return result as T;
 	} catch (error) {
 		console.error(
 			`Failed to resolve credential ${credentialId} from provider ${providerId}:`,
@@ -36,11 +37,11 @@ export const resolveCredential = async <T = unknown>(
 
 // Environment variable provider
 export const registerEnvironmentProvider = () => {
-	registerCredentialProvider<string>("env", (key: string) => {
+	registerCredentialProvider<string>("env", async (key: string) => {
 		// process.env is undefined in browsers; this provider is meant for server / Vercel edge.
 		if (typeof process !== "undefined" && process.env) {
-			return Promise.resolve(process.env[key] as string);
+			return process.env[key] || null;
 		}
-		return Promise.resolve(null);
+		return null;
 	});
 };

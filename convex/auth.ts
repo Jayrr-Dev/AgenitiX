@@ -22,7 +22,7 @@ export type AuthResult<T = unknown> =
 	  }
 	| {
 			success: false;
-			error: string;
+			error: AuthError;
 	  };
 
 // Generate secure random token

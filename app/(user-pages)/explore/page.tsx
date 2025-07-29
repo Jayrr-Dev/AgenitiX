@@ -262,7 +262,8 @@ const ExplorePage = () => {
 		let filtered = publicFlows.filter((flow) => {
 			const matchesSearch =
 				flow.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-				(flow.description?.toLowerCase().includes(debouncedSearch.toLowerCase()) || false) ||
+				flow.description?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+				false ||
 				getIconCategory(flow.icon)?.toLowerCase().includes(debouncedSearch.toLowerCase());
 
 			return matchesSearch;

@@ -1,10 +1,17 @@
 // RATE LIMITING FOR ANUBIS BOT PROTECTION
+interface RateLimitRequest {
+	ip?: string;
+	headers?: Record<string, string>;
+	userAgent?: string;
+	[key: string]: unknown;
+}
+
 export interface RateLimitConfig {
 	windowMs: number; // Time window in milliseconds
 	maxRequests: number; // Max requests per window
 	skipSuccessfulRequests: boolean;
 	skipFailedRequests: boolean;
-	keyGenerator: (request: any) => string;
+	keyGenerator: (request: RateLimitRequest) => string;
 }
 
 export interface RateLimitResult {
@@ -77,14 +84,14 @@ export class RateLimiter {
 	}
 
 	// DEFAULT KEY GENERATOR (IP + USER AGENT)
-	private defaultKeyGenerator(request: any): string {
+	private defaultKeyGenerator(request: RateLimitRequest): string {
 		const ip = request.ip || "unknown";
 		const userAgent = request.userAgent || "unknown";
 		return `${ip}:${userAgent.substring(0, 50)}`;
 	}
 
 	// CHECK RATE LIMIT
-	checkLimit(request: any): RateLimitResult {
+	checkLimit(request: RateLimitRequest): RateLimitResult {
 		const key = this.config.keyGenerator(request);
 		const { totalHits, resetTime } = this.store.increment(key, this.config.windowMs);
 
@@ -100,7 +107,7 @@ export class RateLimiter {
 	}
 
 	// GET CURRENT STATUS WITHOUT INCREMENTING
-	getStatus(request: any): RateLimitResult {
+	getStatus(request: RateLimitRequest): RateLimitResult {
 		const key = this.config.keyGenerator(request);
 		const current = this.store.get(key);
 
@@ -173,15 +180,29 @@ export class AdaptiveRateLimiter {
 	}
 
 	// CHECK RATE LIMIT BASED ON RISK LEVEL
-	checkLimit(request: any, riskLevel: string): RateLimitResult {
+	checkLimit(request: RateLimitRequest, riskLevel: string): RateLimitResult {
 		const limiter = this.limiters.get(riskLevel) || this.limiters.get("MODERATE");
-		return limiter?.checkLimit(request);
+		return (
+			limiter?.checkLimit(request) || {
+				allowed: false,
+				remaining: 0,
+				resetTime: Date.now() + 60000,
+				totalHits: 0,
+			}
+		);
 	}
 
 	// GET STATUS WITHOUT INCREMENTING
-	getStatus(request: any, riskLevel: string): RateLimitResult {
+	getStatus(request: RateLimitRequest, riskLevel: string): RateLimitResult {
 		const limiter = this.limiters.get(riskLevel) || this.limiters.get("MODERATE");
-		return limiter?.getStatus(request);
+		return (
+			limiter?.getStatus(request) || {
+				allowed: false,
+				remaining: 0,
+				resetTime: Date.now() + 60000,
+				totalHits: 0,
+			}
+		);
 	}
 }
 

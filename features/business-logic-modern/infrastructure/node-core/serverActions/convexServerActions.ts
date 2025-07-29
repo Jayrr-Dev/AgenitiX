@@ -69,7 +69,10 @@ export const useConvexMutation = <TData, TVariables extends Record<string, unkno
 	}
 ) => {
 	return useMutation({
-		mutationFn: (variables: TVariables) => executeConvexMutation<TData>(mutationName, variables),
+		mutationFn: async (variables: TVariables) => {
+			const result = executeConvexMutation<TData>(mutationName, variables);
+			return result;
+		},
 		onSuccess: options?.onSuccess,
 		onError: options?.onError,
 	});
@@ -92,7 +95,10 @@ export const createConvexQueryAction = (
 	return useConvexQuery(
 		queryName,
 		params,
-		nodeId // Unique cache key per node
+		{
+			enabled: true,
+			staleTime: 2 * 60 * 1000, // 2 minutes
+		}
 	);
 };
 
@@ -103,7 +109,6 @@ export const createConvexMutationAction = (ctx: ServerActionContext, mutationNam
 	const { nodeId, onStateUpdate, onError, onSuccess } = ctx;
 
 	return useConvexMutation(mutationName, {
-		nodeId, // For tracking which node initiated the mutation
 		onSuccess: (result) => {
 			onStateUpdate?.({
 				lastConvexMutation: new Date().toISOString(),

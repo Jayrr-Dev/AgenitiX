@@ -178,8 +178,14 @@ export const Header = ({
 ============================= */
 export const Card = ({
 	children,
+	rotate,
+	translate,
+	scale,
 }: {
 	children: React.ReactNode;
+	rotate?: MotionValue<number>;
+	translate?: MotionValue<number>;
+	scale?: MotionValue<number>;
 }) => {
 	return (
 		<motion.div
@@ -187,6 +193,11 @@ export const Card = ({
 			whileInView={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.5 }}
 			className="relative"
+			style={{
+				rotate,
+				translateY: translate,
+				scale,
+			}}
 		>
 			{children}
 		</motion.div>

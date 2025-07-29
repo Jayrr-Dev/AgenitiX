@@ -82,7 +82,7 @@ const AppleTextInput: React.FC<ControlRendererProps> = ({
 	hasError,
 	errorMessage,
 }) => {
-	const inputId = `input-${field.name}`;
+	const inputId = `input-${field.key}`;
 	return (
 		<div className="space-y-2">
 			<label htmlFor={inputId} className="block font-medium text-gray-900 text-sm dark:text-white">
@@ -121,7 +121,7 @@ const AppleTextarea: React.FC<ControlRendererProps> = ({
 	hasError,
 	errorMessage,
 }) => {
-	const textareaId = `textarea-${field.name}`;
+	const textareaId = `textarea-${field.key}`;
 	return (
 		<div className="space-y-2">
 			<label
@@ -163,7 +163,7 @@ const AppleNumberInput: React.FC<ControlRendererProps> = ({
 	hasError,
 	errorMessage,
 }) => {
-	const inputId = `number-${field.name}`;
+	const inputId = `number-${field.key}`;
 	const handleChange = useCallback(
 		(newValue: string) => {
 			const numValue = Number.parseFloat(newValue);
@@ -218,7 +218,7 @@ const AppleToggle: React.FC<ControlRendererProps> = ({
 	errorMessage,
 }) => {
 	const boolValue = Boolean(value);
-	const toggleId = `toggle-${field.name}`;
+	const toggleId = `toggle-${field.key}`;
 
 	return (
 		<div className="space-y-2">
@@ -260,7 +260,7 @@ const AppleSelect: React.FC<ControlRendererProps> = ({
 	errorMessage,
 }) => {
 	const options = field.validation?.options || [];
-	const selectId = `select-${field.name}`;
+	const selectId = `select-${field.key}`;
 
 	return (
 		<div className="space-y-2">
@@ -305,7 +305,7 @@ const AppleUrlInput: React.FC<ControlRendererProps> = ({
 	hasError,
 	errorMessage,
 }) => {
-	const inputId = `url-${field.name}`;
+	const inputId = `url-${field.key}`;
 	return (
 		<div className="space-y-2">
 			<label htmlFor={inputId} className="block font-medium text-gray-900 text-sm dark:text-white">
@@ -344,7 +344,7 @@ const AppleEmailInput: React.FC<ControlRendererProps> = ({
 	hasError,
 	errorMessage,
 }) => {
-	const inputId = `email-${field.name}`;
+	const inputId = `email-${field.key}`;
 	return (
 		<div className="space-y-2">
 			<label htmlFor={inputId} className="block font-medium text-gray-900 text-sm dark:text-white">
@@ -383,7 +383,7 @@ const AppleColorPicker: React.FC<ControlRendererProps> = ({
 	hasError,
 	errorMessage,
 }) => {
-	const colorPickerId = `color-picker-${field.name}`;
+	const colorPickerId = `color-picker-${field.key}`;
 	return (
 		<div className="space-y-2">
 			<label
@@ -433,7 +433,7 @@ const AppleDateInput: React.FC<ControlRendererProps> = ({
 	hasError,
 	errorMessage,
 }) => {
-	const dateInputId = `date-input-${field.name}`;
+	const dateInputId = `date-input-${field.key}`;
 	return (
 		<div className="space-y-2">
 			<label
@@ -475,7 +475,7 @@ const AppleJsonEditor: React.FC<ControlRendererProps> = ({
 	errorMessage,
 }) => {
 	const [jsonError, setJsonError] = useState<string | null>(null);
-	const jsonEditorId = `json-editor-${field.name}`;
+	const jsonEditorId = `json-editor-${field.key}`;
 
 	const handleJsonChange = useCallback(
 		(newValue: string) => {

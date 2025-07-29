@@ -29,6 +29,7 @@ interface ExpandCollapseButtonProps {
 	showUI: boolean;
 	onToggle: () => void;
 	className?: string;
+	size?: "sm" | "md" | "lg";
 }
 
 /**

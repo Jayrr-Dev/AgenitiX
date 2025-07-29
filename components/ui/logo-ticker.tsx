@@ -12,6 +12,7 @@ export interface Logo {
 	width: number;
 	height: number;
 	uploadedAt: string;
+	alt?: string;
 }
 
 interface LogoTickerProps {
@@ -76,7 +77,7 @@ export default function LogoTicker({
 						>
 							<Image
 								src={logo.url}
-								alt={logo.alt}
+								alt={logo.alt || logo.name || "Logo"}
 								width={logo.width}
 								height={logo.height}
 								className="h-8 w-auto object-contain"

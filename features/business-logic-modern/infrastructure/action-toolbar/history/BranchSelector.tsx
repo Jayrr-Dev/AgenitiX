@@ -28,7 +28,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
 	const { undo, redo, getHistory } = useUndoRedo();
 
 	const historyData = useMemo(() => getHistory(), [getHistory]);
-	const { canUndo, canRedo, branchOptions = [], currentNode } = historyData;
+	const { canUndo, canRedo, branchOptions = [], currentNode, fullGraph } = historyData;
 
 	const handleUndo = useCallback(() => {
 		undo();
@@ -83,10 +83,8 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
 			<div className="flex gap-1">
 				<span className="px-2 py-1 text-gray-500 text-xs">Redo:</span>
 				{branchOptions.map((branchId, index) => {
-					// Get the branch node to show its label
-					const branchNode = currentNode?.children?.find(
-						(child: BranchNode) => child.id === branchId
-					);
+					// Get the branch node from the full graph using childrenIds
+					const branchNode = fullGraph?.nodes?.[branchId];
 					const branchLabel = branchNode?.label || `Branch ${index + 1}`;
 
 					return (

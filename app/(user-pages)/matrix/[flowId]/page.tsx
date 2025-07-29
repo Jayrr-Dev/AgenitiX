@@ -18,11 +18,11 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import FlowEditor from "@/features/business-logic-modern/infrastructure/flow-engine/FlowEditor";
 import { FlowMetadataProvider } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
+import type { Id } from "convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
-import { Id } from "convex/_generated/dataModel";
 
 // TYPES
 type PageProps = {

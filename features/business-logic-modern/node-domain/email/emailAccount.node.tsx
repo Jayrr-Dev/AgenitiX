@@ -516,12 +516,18 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 			});
 
 			if (result.success) {
+				const accountData = result.data as {
+					accountId: string;
+					email: string;
+					provider: string;
+					message: string;
+				};
 				updateNodeData({
 					isConfigured: true,
 					isConnected: true,
 					connectionStatus: "connected",
 					lastValidated: Date.now(),
-					accountId: result.data.accountId,
+					accountId: accountData.accountId,
 					lastError: "",
 				});
 

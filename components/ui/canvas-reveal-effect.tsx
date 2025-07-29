@@ -186,7 +186,7 @@ const ShaderMaterial = ({
 		const preparedUniforms: Record<string, THREE.IUniform> = {};
 
 		for (const uniformName in uniforms) {
-			const uniform = uniforms[uniformName] as THREE.IUniform;
+			const uniform = uniforms[uniformName] as THREE.IUniform & { type: string };
 
 			switch (uniform.type) {
 				case "f":
@@ -222,12 +222,12 @@ const ShaderMaterial = ({
 					break;
 				case "m3":
 					preparedUniforms[uniformName] = {
-						value: new THREE.Matrix3().setFromArray(uniform.value),
+						value: new THREE.Matrix3().fromArray(uniform.value),
 					};
 					break;
 				case "m4":
 					preparedUniforms[uniformName] = {
-						value: new THREE.Matrix4().setFromArray(uniform.value),
+						value: new THREE.Matrix4().fromArray(uniform.value),
 					};
 					break;
 			}

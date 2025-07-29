@@ -362,7 +362,7 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 				isActive: true,
 			});
 
-			lastOutputRef.current = result;
+			lastOutputRef.current = String(result);
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : "Unknown error";
 			updateNodeData({

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FlipWords } from "@/components/ui/flip-words";
 import { imagesMarquee } from "@/features/marketing/home-page/data";
-import type { typeMarqueeImages, typeSlides } from "@/features/marketing/home-page/types";
+import type { slide, typeMarqueeImages } from "@/features/marketing/home-page/types";
 import useEmblaCarousel from "embla-carousel-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTheme } from "next-themes";
@@ -31,7 +31,7 @@ export function HeroCarousel() {
 	const words = ["better", "cute", "beautiful", "modern"];
 
 	// Slide content with unique messages and CTAs
-	const slides: typeSlides[] = [
+	const slides: slide[] = [
 		{
 			type: "component",
 			src: "",

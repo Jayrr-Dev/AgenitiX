@@ -357,6 +357,8 @@ interface UltimateTypesafeHandleProps {
 	nodeId?: string;
 	handleIndex?: number;
 	totalHandlesOnSide?: number;
+	type?: "source" | "target";
+	id?: string;
 }
 
 const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = ({
@@ -400,7 +402,7 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = ({
 			: getInjectableClasses("--core-handle-classes-target");
 
 	// Generate tooltip content
-	const tooltipContent = getTooltipContent(props.type, dataType, code, tsSymbol);
+	const tooltipContent = getTooltipContent(props.type || "target", dataType, code, tsSymbol);
 
 	const IconComponent = typeDisplay.icon;
 
@@ -429,7 +431,7 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = ({
 			isConnectableStart={connectableStart}
 			isConnectableEnd={connectableEnd}
 		>
-			<IconComponent size={8} style={{ pointerEvents: "none" }} />
+			<IconComponent width={8} height={8} style={{ pointerEvents: "none" }} />
 		</Handle>
 	);
 };

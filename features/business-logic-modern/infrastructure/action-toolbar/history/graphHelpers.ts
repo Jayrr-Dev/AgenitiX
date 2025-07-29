@@ -125,20 +125,48 @@ export const saveGraph = (graph: HistoryGraph, flowId?: string): void => {
 		// Optimize graph data before serialization to reduce size
 		const optimizedGraph = {
 			...graph,
-			nodes: graph.nodes.map(node => ({
+			nodes: Object.values(graph.nodes).map((node) => ({
 				...node,
 				// Remove unnecessary data for storage
-				data: node.data ? {
-					...node.data,
+				before: {
+					...node.before,
 					// Remove large objects that don't need persistence
-					inputs: undefined,
-					outputs: undefined,
-					// Keep only essential data
-					label: node.data.label,
-					type: node.data.type,
-					isExpanded: node.data.isExpanded,
-				} : node.data
-			}))
+					nodes: node.before.nodes.map((n) => ({
+						...n,
+						data: n.data
+							? {
+									...n.data,
+									// Remove large objects that don't need persistence
+									inputs: undefined,
+									outputs: undefined,
+									// Keep only essential data
+									label: n.data.label,
+									type: n.data.type,
+									isExpanded: n.data.isExpanded,
+								}
+							: n.data,
+					})),
+				},
+				after: {
+					...node.after,
+					// Remove large objects that don't need persistence
+					nodes: node.after.nodes.map((n) => ({
+						...n,
+						data: n.data
+							? {
+									...n.data,
+									// Remove large objects that don't need persistence
+									inputs: undefined,
+									outputs: undefined,
+									// Keep only essential data
+									label: n.data.label,
+									type: n.data.type,
+									isExpanded: n.data.isExpanded,
+								}
+							: n.data,
+					})),
+				},
+			})),
 		};
 
 		const json = JSON.stringify(optimizedGraph);

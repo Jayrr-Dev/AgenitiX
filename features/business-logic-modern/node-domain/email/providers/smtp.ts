@@ -103,22 +103,22 @@ const smtpConfigFields: ConfigField[] = [
 function validateSmtpConnection(config: EmailAccountConfig): Promise<ConnectionResult> {
 	try {
 		// Basic validation of config
-		if (!(config.host && config.port)) {
+		if (!(config.smtpHost && config.smtpPort)) {
 			return Promise.resolve({
 				success: false,
-				error: {
-					type: "INVALID_SETTINGS",
-					message: "Host and port are required",
-					details: "SMTP configuration is incomplete",
-					timestamp: new Date().toISOString(),
-				},
+				error: createEmailError(
+					"CONFIGURATION_INVALID",
+					"SMTP host and port are required",
+					{ provider: "smtp" },
+					true
+				),
 			});
 		}
 
 		// Validate required fields
-		const requiredFields = ["email", "smtpHost", "smtpPort", "username", "password"];
+		const requiredFields = ["email", "smtpHost", "smtpPort", "username", "password"] as const;
 		for (const field of requiredFields) {
-			const value = (config as any)[field];
+			const value = config[field];
 			if (!value || (typeof value === "string" && value.trim() === "")) {
 				return Promise.resolve({
 					success: false,
@@ -143,34 +143,6 @@ function validateSmtpConnection(config: EmailAccountConfig): Promise<ConnectionR
 					true
 				),
 			});
-		}
-
-		// Auto-configure common providers
-		const domain = config.email.split("@")[1];
-		const commonConfig = COMMON_SMTP_CONFIGS[domain as keyof typeof COMMON_SMTP_CONFIGS];
-
-		if (commonConfig) {
-			// Suggest common configuration if user hasn't set it correctly
-			if (config.smtpHost !== commonConfig.host || config.smtpPort !== commonConfig.port) {
-				return Promise.resolve({
-					success: false,
-					error: createEmailError(
-						"CONFIGURATION_INVALID",
-						`For ${domain}, recommended settings: Host: ${commonConfig.host}, Port: ${commonConfig.port}, TLS: ${commonConfig.tls ? "Yes" : "No"}`,
-						{
-							provider: "smtp",
-							domain,
-							recommended: commonConfig,
-							current: {
-								host: config.smtpHost,
-								port: config.smtpPort,
-								tls: config.useTLS,
-							},
-						},
-						true
-					),
-				});
-			}
 		}
 
 		// In a real implementation, this would test actual SMTP connection

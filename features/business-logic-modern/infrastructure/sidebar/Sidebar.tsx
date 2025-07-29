@@ -49,7 +49,7 @@ const validateNode = (nodeType: string) => ({
 // FACTORY INTEGRATION - REMOVED
 
 import { SidebarTabs } from "./SidebarTabs";
-import { VariantSelector } from "./sidebarVariantSelector";
+import { VariantSelector } from "./SidebarVariantSelector";
 import { ToggleButton } from "./ToggleButton";
 import { useSidebarState } from "./hooks/useSidebarState";
 

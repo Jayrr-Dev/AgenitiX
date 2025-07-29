@@ -103,24 +103,24 @@ const imapConfigFields: ConfigField[] = [
 function validateImapConnection(config: EmailAccountConfig): Promise<ConnectionResult> {
 	try {
 		// Basic validation of config
-		if (!(config.host && config.port)) {
+		if (!(config.imapHost && config.imapPort)) {
 			return Promise.resolve({
 				success: false,
-				error: {
-					type: "INVALID_SETTINGS",
-					message: "Host and port are required",
-					details: "IMAP configuration is incomplete",
-					timestamp: new Date().toISOString(),
-				},
+				error: createEmailError(
+					"CONFIGURATION_INVALID",
+					"IMAP host and port are required",
+					{ provider: "imap" },
+					true
+				),
 			});
 		}
 
 		// Validate required fields
-		const requiredFields = ["email", "imapHost", "imapPort", "username", "password"];
+		const requiredFields = ["email", "imapHost", "imapPort", "username", "password"] as const;
 		for (const field of requiredFields) {
-			const value = (config as any)[field];
+			const value = config[field];
 			if (!value || (typeof value === "string" && value.trim() === "")) {
-				return {
+				return Promise.resolve({
 					success: false,
 					error: createEmailError(
 						"CONFIGURATION_INVALID",
@@ -128,13 +128,13 @@ function validateImapConnection(config: EmailAccountConfig): Promise<ConnectionR
 						{ provider: "imap", field },
 						true
 					),
-				};
+				});
 			}
 		}
 
 		// Validate port range
 		if (config.imapPort && (config.imapPort < 1 || config.imapPort > 65535)) {
-			return {
+			return Promise.resolve({
 				success: false,
 				error: createEmailError(
 					"CONFIGURATION_INVALID",
@@ -142,7 +142,7 @@ function validateImapConnection(config: EmailAccountConfig): Promise<ConnectionR
 					{ provider: "imap", port: config.imapPort },
 					true
 				),
-			};
+			});
 		}
 
 		// Auto-configure common providers
@@ -152,7 +152,7 @@ function validateImapConnection(config: EmailAccountConfig): Promise<ConnectionR
 		if (commonConfig) {
 			// Suggest common configuration if user hasn't set it correctly
 			if (config.imapHost !== commonConfig.host || config.imapPort !== commonConfig.port) {
-				return {
+				return Promise.resolve({
 					success: false,
 					error: createEmailError(
 						"CONFIGURATION_INVALID",
@@ -169,21 +169,21 @@ function validateImapConnection(config: EmailAccountConfig): Promise<ConnectionR
 						},
 						true
 					),
-				};
+				});
 			}
 		}
 
 		// In a real implementation, this would test actual IMAP connection
 		// For now, we'll simulate success after basic validation
-		return {
+		return Promise.resolve({
 			success: true,
 			accountInfo: {
 				email: config.email,
 				displayName: config.displayName || config.email,
 			},
-		};
+		});
 	} catch (error) {
-		return {
+		return Promise.resolve({
 			success: false,
 			error: createEmailError(
 				"NETWORK_ERROR",
@@ -191,7 +191,7 @@ function validateImapConnection(config: EmailAccountConfig): Promise<ConnectionR
 				{ provider: "imap", originalError: error },
 				true
 			),
-		};
+		});
 	}
 }
 

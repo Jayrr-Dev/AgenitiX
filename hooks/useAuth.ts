@@ -4,6 +4,11 @@ import type { AuthResult } from "@/convex/auth";
 import { useMutation, useQuery } from "convex/react";
 import { useCallback, useEffect, useState } from "react";
 
+interface AuthError extends Error {
+	code?: string;
+	retryAfter?: number;
+}
+
 // Simple token management (in production, use secure storage)
 const TOKEN_KEY = "agenitix_auth_token";
 
@@ -37,13 +42,18 @@ export const useAuth = () => {
 			role?: string;
 		}) => {
 			// Create user account (unverified)
-			const result = (await signUpMutation(data)) as AuthResult;
+			const result = (await signUpMutation(data)) as AuthResult<{
+				magicToken: string;
+				userId: string;
+				email: string;
+				name: string;
+			}>;
 
 			// Handle Convex errors
 			if (!result.success) {
 				const error = new Error(result.error.message);
-				(error as any).code = result.error.code;
-				(error as any).retryAfter = result.error.retryAfter;
+				(error as AuthError).code = result.error.code;
+				(error as AuthError).retryAfter = result.error.retryAfter;
 				throw error;
 			}
 
@@ -62,7 +72,7 @@ export const useAuth = () => {
 
 				if (!emailResult.ok) {
 					const error = new Error("Failed to send verification email");
-					(error as any).code = "EMAIL_SEND_FAILED";
+					(error as AuthError).code = "EMAIL_SEND_FAILED";
 					throw error;
 				}
 
@@ -84,14 +94,14 @@ export const useAuth = () => {
 			// Request magic link from Convex
 			const result = (await sendMagicLinkMutation({
 				email: data.email,
-				type: "login",
-			})) as AuthResult;
+				type: "verification",
+			})) as AuthResult<{ magicToken: string }>;
 
 			// Handle Convex errors
 			if (!result.success) {
 				const error = new Error(result.error.message);
-				(error as any).code = result.error.code;
-				(error as any).retryAfter = result.error.retryAfter;
+				(error as AuthError).code = result.error.code;
+				(error as AuthError).retryAfter = result.error.retryAfter;
 				throw error;
 			}
 
@@ -110,7 +120,7 @@ export const useAuth = () => {
 
 				if (!emailResult.ok) {
 					const error = new Error("Failed to send magic link email");
-					(error as any).code = "EMAIL_SEND_FAILED";
+					(error as AuthError).code = "EMAIL_SEND_FAILED";
 					throw error;
 				}
 
@@ -150,12 +160,15 @@ export const useAuth = () => {
 				token: magicToken,
 				ip_address: ipAddress,
 				user_agent: userAgent,
-			})) as AuthResult;
+			})) as AuthResult<{
+				sessionToken: string;
+				user: { id: string; email: string; name: string };
+			}>;
 
 			// Handle Convex errors
 			if (!result.success) {
 				const error = new Error(result.error.message);
-				(error as any).code = result.error.code;
+				(error as AuthError).code = result.error.code;
 				throw error;
 			}
 

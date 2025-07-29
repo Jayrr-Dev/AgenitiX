@@ -358,7 +358,7 @@ export class NodeMemoryManager extends BrowserEventEmitter {
 
 		if (typeof v === "object") {
 			if (Array.isArray(v)) {
-				return v.map(item => this.sanitizeForSerialization(item));
+				return v.map((item) => this.sanitizeForSerialization(item));
 			}
 
 			const sanitized: Record<string, unknown> = {};

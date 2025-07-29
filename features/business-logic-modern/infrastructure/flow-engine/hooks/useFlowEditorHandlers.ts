@@ -209,7 +209,7 @@ export function useFlowEditorHandlers({
 
 	const handleInit = useCallback((instance: ReactFlowInstance) => {
 		flowInstanceRef.current = instance;
-	});
+	}, []);
 
 	// ============================================================================
 	// NODE ACTION HANDLERS

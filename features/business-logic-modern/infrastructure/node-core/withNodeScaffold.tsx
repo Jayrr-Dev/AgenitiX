@@ -18,10 +18,10 @@ import {
 import type { NodeProps, Position } from "@xyflow/react";
 import { useTheme } from "next-themes";
 import React from "react";
-import NodeErrorBoundary from "./errorBoundary";
-import { globalNodeMemoryManager } from "./nodeMemory";
+import { globalNodeMemoryManager } from "./NodeMemory";
 import type { NodeSpec } from "./NodeSpec";
 import NodeTelemetry from "./NodeTelemetry";
+import NodeErrorBoundary from "./errorBoundary";
 import { getNodePlugins } from "./plugins/nodePluginRegistry";
 import { runServerActions } from "./serverActions/serverActionRegistry";
 
@@ -260,7 +260,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 								id={`${handle.id}__${handle.code ?? handle.dataType ?? "x"}`}
 								type={handle.type}
 								position={handle.position as Position}
-								dataType={handle.dataType}
+								dataType={handle.dataType || "any"}
 								code={(handle as any).code}
 								tsSymbol={(handle as any).tsSymbol}
 								nodeId={props.id}

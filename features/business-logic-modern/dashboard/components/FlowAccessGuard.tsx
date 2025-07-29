@@ -238,7 +238,9 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 										<button
 											key={permission.value}
 											type="button"
-											onClick={() => setRequestPermission(permission.value as string)}
+											onClick={() =>
+												setRequestPermission(permission.value as "view" | "edit" | "admin")
+											}
 											className={`rounded-lg border-2 p-3 transition-all ${
 												requestPermission === permission.value
 													? "border-primary bg-primary/10"

@@ -374,7 +374,7 @@ if (typeof window !== "undefined" && IS_DEVELOPMENT) {
 		if (componentName) {
 			// Import and use the debug function
 			import("./colorDebugUtils").then(({ debugComponentColors }) => {
-				debugComponentColors(componentName);
+				debugComponentColors(componentName, "light");
 			});
 		} else {
 		}

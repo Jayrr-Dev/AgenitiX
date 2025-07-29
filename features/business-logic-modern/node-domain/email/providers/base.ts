@@ -11,6 +11,7 @@ import type {
 	ConnectionResult,
 	EmailAccountConfig,
 	EmailError,
+	EmailErrorCode,
 	EmailProvider,
 	EmailProviderType,
 	OAuth2Tokens,
@@ -74,32 +75,32 @@ export abstract class BaseEmailProvider implements EmailProvider {
 		console.error(`${this.name} ${context} error:`, error);
 
 		// Determine error type based on error message/code
-		let errorType: ConnectionResult["error"]["type"] = "UNKNOWN_ERROR";
+		let errorCode: EmailErrorCode = "PROVIDER_ERROR";
 		let message = "An unknown error occurred";
 		const details = error.message || String(error);
 
 		// Parse common error patterns
 		if (details.includes("ENOTFOUND") || details.includes("getaddrinfo")) {
-			errorType = "NETWORK_ERROR";
+			errorCode = "NETWORK_ERROR";
 			message = "Network error: Unable to resolve server address";
 		} else if (details.includes("ECONNREFUSED") || details.includes("ECONNRESET")) {
-			errorType = "CONNECTION_FAILED";
+			errorCode = "CONNECTION_TIMEOUT";
 			message = "Connection refused by server";
 		} else if (details.includes("ETIMEDOUT") || details.includes("timeout")) {
-			errorType = "TIMEOUT";
+			errorCode = "CONNECTION_TIMEOUT";
 			message = "Connection timed out";
 		} else if (details.includes("authentication") || details.includes("login")) {
-			errorType = "AUTH_ERROR";
+			errorCode = "AUTHENTICATION_FAILED";
 			message = "Authentication failed";
 		} else if (
 			details.includes("certificate") ||
 			details.includes("SSL") ||
 			details.includes("TLS")
 		) {
-			errorType = "SSL_ERROR";
+			errorCode = "PROVIDER_ERROR";
 			message = "SSL/TLS certificate error";
 		} else if (details.includes("Invalid host") || details.includes("Invalid port")) {
-			errorType = "INVALID_SETTINGS";
+			errorCode = "CONFIGURATION_INVALID";
 			message = "Invalid server settings";
 		}
 
@@ -107,10 +108,10 @@ export abstract class BaseEmailProvider implements EmailProvider {
 		const connectionResult: ConnectionResult = {
 			success: false,
 			error: {
-				type: errorType,
+				code: errorCode,
 				message,
 				details,
-				timestamp: new Date().toISOString(),
+				recoverable: true,
 			},
 		};
 
