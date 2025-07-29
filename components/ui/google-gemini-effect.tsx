@@ -38,10 +38,11 @@ export const GoogleGeminiEffect = ({
 			</div>
 			<svg
 				width="1440"
-				height="100"
-				viewBox="0 0 1440 100"
+				height="890"
+				viewBox="0 0 1440 890"
 				xmlns="http://www.w3.org/2000/svg"
-				className=" -top-60 md:-top-40 absolute w-full"
+				className="absolute inset-x-0 bottom-0 z-10"
+				aria-hidden="true"
 			>
 				<title>Decorative wave pattern</title>
 				<motion.path

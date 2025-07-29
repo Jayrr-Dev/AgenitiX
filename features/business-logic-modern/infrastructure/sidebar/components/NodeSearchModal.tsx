@@ -47,7 +47,6 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 	onSelectNode,
 	onAddNode,
 	availableNodes = [],
-	existingNodes = [],
 }) => {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedIndex, setSelectedIndex] = useState(0);

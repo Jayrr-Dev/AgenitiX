@@ -322,7 +322,8 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
 				</div>
 				{formatOutput.fullText && (
 					<button
-						onClick={() => copyToClipboard(formatOutput.fullText!)}
+						type="button"
+						onClick={() => copyToClipboard(formatOutput.fullText ?? "")}
 						className="rounded bg-muted/30 px-3 py-1 font-semibold text-muted-foreground text-xs uppercase tracking-wide transition-all duration-200 hover:bg-muted/50 hover:text-foreground"
 						title="Copy to clipboard"
 					>

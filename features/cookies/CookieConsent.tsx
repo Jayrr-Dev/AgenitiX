@@ -48,14 +48,14 @@ export default function CookieConsent() {
 					</p>
 				</div>
 				<div className="flex shrink-0 items-center gap-3">
-					<Button variant="outline" size="sm" onClick={declineCookies}>
+					<Button variant="outline" size="sm" onClick={declineCookies} type="button">
 						Decline
 					</Button>
 					<Button
-						variant="default"
 						size="sm"
-						className="bg-[#f6733c] hover:bg-[#e45f2d]"
 						onClick={acceptCookies}
+						className="bg-primary text-primary-foreground hover:bg-primary/90"
+						type="button"
 					>
 						Accept
 					</Button>
@@ -63,6 +63,7 @@ export default function CookieConsent() {
 						className="text-muted-foreground hover:text-foreground"
 						onClick={declineCookies}
 						aria-label="Close cookie consent popup"
+						type="button"
 					>
 						<X size={18} />
 					</button>

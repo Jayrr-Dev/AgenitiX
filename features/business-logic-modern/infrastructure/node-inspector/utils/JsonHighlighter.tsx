@@ -14,19 +14,19 @@ import type React from "react";
 import { useState } from "react";
 
 interface JsonHighlighterProps {
-	data: any;
+	data: unknown;
 	maxDepth?: number;
 	className?: string;
 }
 
 interface JsonValueProps {
-	value: any;
+	value: unknown;
 	depth: number;
 	maxDepth: number;
 	isLast?: boolean;
 }
 
-const JsonValue: React.FC<JsonValueProps> = ({ value, depth, maxDepth, isLast = false }) => {
+const JsonValue: React.FC<JsonValueProps> = ({ value, depth, maxDepth }) => {
 	const [isCollapsed, setIsCollapsed] = useState(depth >= maxDepth);
 
 	if (value === null) {
@@ -63,6 +63,7 @@ const JsonValue: React.FC<JsonValueProps> = ({ value, depth, maxDepth, isLast = 
 		return (
 			<div className="inline-block">
 				<button
+					type="button"
 					onClick={() => setIsCollapsed(!isCollapsed)}
 					className="text-gray-600 hover:text-gray-800 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200"
 				>
@@ -74,13 +75,11 @@ const JsonValue: React.FC<JsonValueProps> = ({ value, depth, maxDepth, isLast = 
 				{!isCollapsed && (
 					<div className="ml-4 border-gray-300 border-l pl-2 dark:border-gray-600">
 						{value.map((item, index) => (
-							<div key={index} className="my-1">
-								<JsonValue
-									value={item}
-									depth={depth + 1}
-									maxDepth={maxDepth}
-									isLast={index === value.length - 1}
-								/>
+							<div
+								key={`array-item-${depth}-${index}-${JSON.stringify(item).slice(0, 20)}`}
+								className="my-1"
+							>
+								<JsonValue value={item} depth={depth + 1} maxDepth={maxDepth} />
 								{index < value.length - 1 && (
 									<span className="text-gray-600 dark:text-gray-400">,</span>
 								)}
@@ -102,6 +101,7 @@ const JsonValue: React.FC<JsonValueProps> = ({ value, depth, maxDepth, isLast = 
 		return (
 			<div className="inline-block">
 				<button
+					type="button"
 					onClick={() => setIsCollapsed(!isCollapsed)}
 					className="text-gray-600 hover:text-gray-800 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200"
 				>
@@ -115,16 +115,15 @@ const JsonValue: React.FC<JsonValueProps> = ({ value, depth, maxDepth, isLast = 
 				{!isCollapsed && (
 					<div className="ml-4 border-gray-300 border-l pl-2 dark:border-gray-600">
 						{keys.map((key, index) => (
-							<div key={key} className="my-1">
+							<div key={`object-key-${depth}-${key}`} className="my-1">
 								<span className="text-red-600 dark:text-red-400">"</span>
 								<span className="text-red-600 dark:text-red-400">{key}</span>
 								<span className="text-red-600 dark:text-red-400">"</span>
 								<span className="text-gray-600 dark:text-gray-400">: </span>
 								<JsonValue
-									value={value[key]}
+									value={(value as Record<string, unknown>)[key]}
 									depth={depth + 1}
 									maxDepth={maxDepth}
-									isLast={index === keys.length - 1}
 								/>
 								{index < keys.length - 1 && (
 									<span className="text-gray-600 dark:text-gray-400">,</span>

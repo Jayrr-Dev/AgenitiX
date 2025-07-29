@@ -1,4 +1,4 @@
-import { AnubisCrypto } from "@/lib/anubis/crypto";
+import { sha256 } from "@/lib/anubis/crypto";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -116,7 +116,7 @@ async function verifySolution(
 
 		// VERIFY HASH
 		const input = `${challenge.id}${nonce}`;
-		const computedHash = await AnubisCrypto.sha256(input);
+		const computedHash = await sha256(input);
 
 		return computedHash === hash;
 	} catch (error) {

@@ -280,7 +280,7 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 				<div className={CONTENT.expanded}>
 					<div className={CONTENT.body}>
 						<div className="flex flex-col items-center gap-0">
-							<div
+							<button
 								className={`${CONTENT.toggle} ${
 									isEnabled
 										? isToggled
@@ -289,10 +289,18 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 										: CONTENT.toggleDisabled
 								}`}
 								onClick={toggleState}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" || e.key === " ") {
+										e.preventDefault();
+										toggleState();
+									}
+								}}
+								disabled={!isEnabled}
+								type="button"
 								title={isEnabled ? "Click to toggle" : "Disabled"}
 							>
 								<div className={CONTENT.toggleText}>{isToggled ? "ON" : "OFF"}</div>
-							</div>
+							</button>
 							<div className="text-center">
 								<div className="mt-1 text-muted-foreground text-xs">
 									{isEnabled ? "Click to toggle" : "Toggle disabled"}
@@ -304,7 +312,7 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 			) : (
 				/* Collapsed view */
 				<div className={CONTENT.collapsed}>
-					<div
+					<button
 						className={`${CONTENT.toggle} ${
 							isEnabled
 								? isToggled
@@ -313,10 +321,18 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 								: CONTENT.toggleDisabled
 						}`}
 						onClick={toggleState}
+						onKeyDown={(e) => {
+							if (e.key === "Enter" || e.key === " ") {
+								e.preventDefault();
+								toggleState();
+							}
+						}}
+						disabled={!isEnabled}
+						type="button"
 						title={isEnabled ? "Click to toggle" : "Disabled"}
 					>
 						<div className={CONTENT.toggleText}>{isToggled ? "ON" : "OFF"}</div>
-					</div>
+					</button>
 				</div>
 			)}
 

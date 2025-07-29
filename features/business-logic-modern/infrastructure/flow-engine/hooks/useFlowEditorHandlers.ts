@@ -9,9 +9,10 @@
  * Keywords: flow-editor, handlers, zustand, connections, performance
  */
 
+import type { EdgeChange, NodeChange, ReactFlowInstance } from "@xyflow/react";
 import type React from "react";
 import { useCallback } from "react";
-import { useUndoRedo } from "../../action-toolbar/history/UndoRedoContext";
+import { useUndoRedo } from "../../action-toolbar/history/undo-redo-context";
 import type { AgenEdge, AgenNode } from "../types/nodeData";
 import { generateNodeId } from "../utils/nodeUtils";
 
@@ -19,11 +20,16 @@ import { generateNodeId } from "../utils/nodeUtils";
 // TYPES
 // ============================================================================
 
+export interface SelectionState {
+	nodes: AgenNode[];
+	edges: AgenEdge[];
+}
+
 export interface FlowEditorHandlers {
-	handleNodesChange: (changes: any[]) => void;
-	handleEdgesChange: (changes: any[]) => void;
-	handleSelectionChange: (selection: any) => void;
-	handleInit: (instance: any) => void;
+	handleNodesChange: (changes: NodeChange[]) => void;
+	handleEdgesChange: (changes: EdgeChange[]) => void;
+	handleSelectionChange: (selection: SelectionState) => void;
+	handleInit: (instance: ReactFlowInstance) => void;
 	handleDeleteNode: (nodeId: string) => void;
 	handleDuplicateNode: (nodeId: string) => void;
 	handleUpdateNodeId: (oldId: string, newId: string) => void;
@@ -33,6 +39,7 @@ export interface ZustandActions {
 	setNodes: (nodes: AgenNode[]) => void;
 	setEdges: (edges: AgenEdge[]) => void;
 	updateNodePosition: (id: string, position: { x: number; y: number }) => void;
+	updateNodeDimensions: (id: string, dimensions: { width: number; height: number }) => void;
 	removeNode: (id: string) => void;
 	removeEdge: (id: string) => void;
 	selectNode: (id: string) => void;
@@ -44,7 +51,7 @@ export interface ZustandActions {
 export interface FlowEditorHandlersProps {
 	nodes: AgenNode[];
 	edges: AgenEdge[];
-	flowInstanceRef: React.MutableRefObject<any>;
+	flowInstanceRef: React.MutableRefObject<ReactFlowInstance | null>;
 	zustandActions: ZustandActions;
 }
 
@@ -76,10 +83,11 @@ function calculateOffset(originalPosition: { x: number; y: number }): {
  * Apply ReactFlow changes to nodes with Zustand sync
  */
 function applyNodeChanges(
-	changes: any[],
+	changes: NodeChange[],
 	nodes: AgenNode[],
 	setNodes: (nodes: AgenNode[]) => void,
 	updateNodePosition: (id: string, position: { x: number; y: number }) => void,
+	updateNodeDimensions: (id: string, dimensions: { width: number; height: number }) => void,
 	removeNode: (id: string) => void,
 	selectNode: (id: string) => void
 ) {
@@ -90,26 +98,30 @@ function applyNodeChanges(
 
 	// Update Zustand store for specific operations
 	// Note: UndoRedoManager automatically detects and records these changes
-	changes.forEach((change) => {
+	for (const change of changes) {
 		if (change.type === "position" && change.position) {
+			// Update node position in store
 			updateNodePosition(change.id, change.position);
+		} else if (change.type === "dimensions" && change.dimensions) {
+			// Update node dimensions in store
+			updateNodeDimensions(change.id, change.dimensions);
 		} else if (change.type === "remove") {
 			removeNode(change.id);
 		} else if (change.type === "select" && change.selected) {
 			selectNode(change.id);
 		}
-	});
+	}
 }
 
 /**
  * Apply ReactFlow changes to edges with Zustand sync
  */
 function applyEdgeChanges(
-	changes: any[],
+	changes: EdgeChange[],
 	edges: AgenEdge[],
 	setEdges: (edges: AgenEdge[]) => void,
 	removeEdge: (id: string) => void,
-	selectEdge: (id: string) => void
+	_selectEdge: (id: string) => void
 ) {
 	// Create deep copy to avoid read-only property issues with Zustand immer
 	const edgesCopy = JSON.parse(JSON.stringify(edges)) as AgenEdge[];
@@ -118,13 +130,13 @@ function applyEdgeChanges(
 
 	// Update Zustand store for specific operations
 	// Note: UndoRedoManager automatically detects and records these changes
-	changes.forEach((change) => {
+	for (const change of changes) {
 		if (change.type === "remove") {
 			removeEdge(change.id);
 		} else if (change.type === "select" && change.selected) {
-			selectEdge(change.id);
+			// Handle edge selection if needed
 		}
-	});
+	}
 }
 
 // ============================================================================
@@ -144,6 +156,7 @@ export function useFlowEditorHandlers({
 		setNodes,
 		setEdges,
 		updateNodePosition,
+		updateNodeDimensions,
 		removeNode,
 		removeEdge,
 		selectNode,
@@ -160,21 +173,29 @@ export function useFlowEditorHandlers({
 	// ============================================================================
 
 	const handleNodesChange = useCallback(
-		(changes: any[]) => {
-			applyNodeChanges(changes, nodes, setNodes, updateNodePosition, removeNode, selectNode);
+		(changes: NodeChange[]) => {
+			applyNodeChanges(
+				changes,
+				nodes,
+				setNodes,
+				updateNodePosition,
+				updateNodeDimensions,
+				removeNode,
+				selectNode
+			);
 		},
-		[nodes, setNodes, updateNodePosition, removeNode, selectNode]
+		[nodes, setNodes, updateNodePosition, updateNodeDimensions, removeNode, selectNode]
 	);
 
 	const handleEdgesChange = useCallback(
-		(changes: any[]) => {
+		(changes: EdgeChange[]) => {
 			applyEdgeChanges(changes, edges, setEdges, removeEdge, selectEdge);
 		},
 		[edges, setEdges, removeEdge, selectEdge]
 	);
 
 	const handleSelectionChange = useCallback(
-		(selection: any) => {
+		(selection: SelectionState) => {
 			if (selection.nodes.length > 0) {
 				selectNode(selection.nodes[0].id);
 			} else if (selection.edges.length > 0) {
@@ -186,9 +207,9 @@ export function useFlowEditorHandlers({
 		[selectNode, selectEdge, clearSelection]
 	);
 
-	const handleInit = useCallback((instance: any) => {
+	const handleInit = useCallback((instance: ReactFlowInstance) => {
 		flowInstanceRef.current = instance;
-	}, []);
+	});
 
 	// ============================================================================
 	// NODE ACTION HANDLERS

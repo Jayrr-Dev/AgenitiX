@@ -286,27 +286,25 @@ export const spec: NodeSpec = createDynamicSpec({
 
 const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 	// -------------------------------------------------------------------------
-	// 4.1  Sync with React‑Flow store and auth
-	// -------------------------------------------------------------------------
 	const { nodeData, updateNodeData } = useNodeData(id, {});
-	const { user, token } = useAuthContext();
+	const { token } = useAuthContext();
 
 	// -------------------------------------------------------------------------
-	// 4.2  Derived state
+	// STATE MANAGEMENT (grouped for clarity)
 	// -------------------------------------------------------------------------
 	const {
 		isExpanded,
 		isEnabled,
 		accountId,
-		provider,
-		filters,
+		// provider, // unused but kept for potential future use
+		// filters, // unused but kept for potential future use
 		batchSize,
 		maxMessages,
 		includeAttachments,
 		markAsRead,
 		enableRealTime,
 		checkInterval,
-		outputFormat,
+		// outputFormat, // unused
 		connectionStatus,
 		isConnected,
 		lastSync,
@@ -516,11 +514,14 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 					<div className={`${CONTENT.body} max-h-[400px] overflow-y-auto`}>
 						{/* Account Selection */}
 						<div>
-							<label className="mb-1 block text-gray-600 text-xs">Email Account:</label>
+							<label htmlFor="email-account-select" className="mb-1 block text-gray-600 text-xs">
+								Email Account:
+							</label>
 							<select
+								id="email-account-select"
 								value={accountId}
 								onChange={handleAccountChange}
-								className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+								className="w-full rounded border border-gray-300 p-2 text-xs"
 								disabled={!isEnabled || connectionStatus === "reading"}
 							>
 								<option value="">Select email account...</option>
@@ -535,27 +536,33 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 						{/* Processing Options */}
 						<div className="grid grid-cols-2 gap-2">
 							<div>
-								<label className="mb-1 block text-gray-600 text-xs">Batch Size:</label>
+								<label htmlFor="batch-size-input" className="mb-1 block text-gray-600 text-xs">
+									Batch Size:
+								</label>
 								<input
+									id="batch-size-input"
 									type="number"
 									value={batchSize}
 									onChange={handleBatchSizeChange}
 									min="1"
 									max="100"
-									className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-									disabled={!isEnabled}
+									className="w-full rounded border border-gray-300 p-2 text-xs"
+									disabled={!isEnabled || connectionStatus === "reading"}
 								/>
 							</div>
 							<div>
-								<label className="mb-1 block text-gray-600 text-xs">Max Messages:</label>
+								<label htmlFor="max-messages-input" className="mb-1 block text-gray-600 text-xs">
+									Max Messages:
+								</label>
 								<input
+									id="max-messages-input"
 									type="number"
 									value={maxMessages}
 									onChange={handleMaxMessagesChange}
 									min="1"
 									max="1000"
-									className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-									disabled={!isEnabled}
+									className="w-full rounded border border-gray-300 p-2 text-xs"
+									disabled={!isEnabled || connectionStatus === "reading"}
 								/>
 							</div>
 						</div>
@@ -597,16 +604,17 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 						{/* Real-time Interval */}
 						{enableRealTime && (
 							<div>
-								<label className="mb-1 block text-gray-600 text-xs">
+								<label htmlFor="check-interval-input" className="mb-1 block text-gray-600 text-xs">
 									Check Interval (minutes):
 								</label>
 								<input
+									id="check-interval-input"
 									type="number"
 									value={checkInterval}
 									onChange={handleCheckIntervalChange}
 									min="1"
 									max="60"
-									className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+									className="w-full rounded border border-gray-300 p-2 text-xs"
 									disabled={!isEnabled}
 								/>
 							</div>
@@ -618,6 +626,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 								onClick={handleReadMessages}
 								disabled={!(isEnabled && accountId) || connectionStatus === "reading"}
 								className="flex-1 rounded bg-blue-500 p-2 text-white text-xs hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+								type="button"
 							>
 								{connectionStatus === "reading" ? "Reading..." : "Read Messages"}
 							</button>
@@ -656,7 +665,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 				</div>
 			)}
 
-			<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
+			<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} />
 		</>
 	);
 });

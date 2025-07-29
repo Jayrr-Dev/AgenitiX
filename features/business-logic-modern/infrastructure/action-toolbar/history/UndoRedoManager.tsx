@@ -17,10 +17,8 @@ import { type Edge, type Node, useReactFlow } from "@xyflow/react";
 import { enableMapSet, produce } from "immer";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useRegisterUndoRedoManager } from "./undo-redo-context";
 import { useFlowMetadataOptional } from "../../flow-engine/contexts/flow-metadata-context";
 import {
-	clearPersistedGraph,
 	createChildNode,
 	createRootGraph,
 	getGraphStats,
@@ -31,6 +29,7 @@ import {
 	saveGraph,
 } from "./graphHelpers";
 import type { FlowState, HistoryGraph, HistoryNode } from "./historyGraph";
+import { useRegisterUndoRedoManager } from "./undo-redo-context";
 
 // Enable Immer Map/Set support
 enableMapSet();
@@ -250,7 +249,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 	onHistoryChange,
 }) => {
 	const reactFlowInstance = useReactFlow();
-	const { measureStateCreation, measureComparison, logMetrics } = usePerformanceMonitor();
+	const { measureStateCreation } = usePerformanceMonitor();
 	const { flow } = useFlowMetadataOptional() || { flow: null };
 	const flowId = flow?.id;
 
@@ -415,7 +414,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 			const path = getPathToCursor(graph);
 			onHistoryChange?.(path, path.length - 1);
 		},
-		[onHistoryChange, getGraph, finalConfig.maxHistorySize]
+		[onHistoryChange, getGraph, finalConfig.maxHistorySize, flowId]
 	);
 
 	// ============================================================================
@@ -436,7 +435,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
 		const path = getPathToCursor(newGraph);
 		onHistoryChange?.(path, path.length - 1);
-	}, [captureCurrentState, onHistoryChange]);
+	}, [captureCurrentState, onHistoryChange, flowId]);
 
 	const removeSelectedNode = useCallback(
 		(nodeId?: string) => {
@@ -464,11 +463,13 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
 				if (DEBUG_MODE) {
 				}
+
+				return true;
 			}
 
-			return success;
+			return false;
 		},
-		[getGraph, applyState, onHistoryChange]
+		[getGraph, applyState, onHistoryChange, flowId]
 	);
 
 	// ============================================================================
@@ -504,8 +505,9 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 		// Notify history change
 		const path = getPathToCursor(graph);
 		onHistoryChange?.(path, path.length - 1);
+
 		return true;
-	}, [applyState, onHistoryChange, getGraph]);
+	}, [applyState, onHistoryChange, getGraph, flowId]);
 
 	const redo = useCallback(
 		(childId?: string): boolean => {
@@ -546,9 +548,10 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 			// Notify history change
 			const path = getPathToCursor(graph);
 			onHistoryChange?.(path, path.length - 1);
+
 			return true;
 		},
-		[applyState, onHistoryChange, getGraph]
+		[applyState, onHistoryChange, getGraph, flowId]
 	);
 
 	const recordAction = useCallback(
@@ -613,7 +616,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 			graphStats: getGraphStats(graph),
 			currentNode: current,
 		};
-	}, [getGraph]);
+	}, [getGraph, flowId]);
 
 	const getBranchOptions = useCallback((): string[] => {
 		const graph = getGraph();
@@ -630,7 +633,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 		}
 
 		return [...current.childrenIds];
-	}, [getGraph]);
+	}, [getGraph, flowId]);
 
 	// ============================================================================
 	// AUTO-DETECTION SYSTEM
@@ -668,9 +671,9 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 		if (nodePositionChanges.length > 0) {
 			if (pendingPositionActionRef.current) {
 				// Add newly moved nodes to the set
-				nodePositionChanges.forEach((node) =>
-					pendingPositionActionRef.current?.movedNodes.add(node.id)
-				);
+				for (const node of nodePositionChanges) {
+					pendingPositionActionRef.current?.movedNodes.add(node.id);
+				}
 			} else {
 				pendingPositionActionRef.current = {
 					movedNodes: new Set(nodePositionChanges.map((n) => n.id)),
@@ -743,14 +746,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 			push(description, currentState, { ...metadata, actionType });
 			lastCapturedStateRef.current = currentState;
 		}
-	}, [
-		nodes,
-		edges,
-		captureCurrentState,
-		push,
-		finalConfig.positionDebounceMs,
-		finalConfig.actionSeparatorMs,
-	]);
+	}, [captureCurrentState, push, finalConfig.positionDebounceMs, finalConfig.actionSeparatorMs]);
 
 	// ============================================================================
 	// KEYBOARD SHORTCUTS
@@ -830,7 +826,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 		registerManager(managerAPI);
 
 		if (typeof window !== "undefined" && DEBUG_MODE) {
-			(window as any).undoRedoManager = {
+			(window as typeof window & { undoRedoManager?: unknown }).undoRedoManager = {
 				...managerAPI,
 				getGraph: () => getGraph(),
 				exportGraph: () => JSON.stringify(getGraph(), null, 2),
@@ -845,7 +841,6 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 						console.error("Failed to import graph:", error);
 					}
 				},
-				clearPersisted: clearPersistedGraph,
 			};
 		}
 	}, [
@@ -856,8 +851,10 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 		removeSelectedNode,
 		getHistory,
 		getBranchOptions,
-		applyState,
+		registerManager,
 		getGraph,
+		applyState,
+		flowId,
 	]);
 
 	return null;

@@ -27,13 +27,16 @@ export function LogomarkSvg({ className, width = 50, height = 50 }: LogomarkSvgP
 
 	return (
 		<svg
-			xmlns="http://www.w3.org/2000/svg"
 			width={width}
 			height={height}
-			viewBox="0 0 120 120"
+			viewBox="0 0 200 200"
+			fill="none"
+			xmlns="http://www.w3.org/2000/svg"
 			className={className}
+			role="img"
+			aria-labelledby="logomark-title"
 		>
-			<title>AgenitiX Logo</title>
+			<title id="logomark-title">Company Logomark</title>
 			<path
 				style={{
 					stroke: fill,

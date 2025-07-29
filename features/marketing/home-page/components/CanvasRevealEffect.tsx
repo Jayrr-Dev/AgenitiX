@@ -90,6 +90,7 @@ const AceternityIcon = () => {
 			fill="none"
 			xmlns="http://www.w3.org/2000/svg"
 			className="h-10 w-10 text-black group-hover/canvas-card:text-white dark:text-white "
+			aria-hidden="true"
 		>
 			<path
 				d="M8 8.05571C8 8.05571 54.9009 18.1782 57.8687 30.062C60.8365 41.9458 9.05432 57.4696 9.05432 57.4696"
@@ -112,6 +113,7 @@ export const Icon = ({ className, ...rest }: any) => {
 			strokeWidth="1.5"
 			stroke="currentColor"
 			className={className}
+			aria-hidden="true"
 			{...rest}
 		>
 			<path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />

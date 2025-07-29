@@ -1,9 +1,21 @@
-/* components/footer.tsx */
+/**
+ * components/nav-bar/main-footer.tsx - Main site footer with branding, links, and social media
+ *
+ * • Company branding and description section
+ * • Quick navigation links (About, Expertise, Projects, etc.)
+ * • Contact information with email and business hours
+ * • Social media links with proper accessibility support
+ * • Theme switcher integration and privacy policy
+ * • Responsive grid layout with proper semantic structure
+ *
+ * Keywords: footer, navigation, social-media, accessibility, responsive-design
+ */
 "use client";
 import { LogomarkSvg } from "@/branding/logomark-svg";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { CookiePolicy } from "@/features/cookies";
 import Link from "next/link";
+
 export default function Footer() {
 	return (
 		<footer className="w-full border-border border-t bg-background">
@@ -58,6 +70,7 @@ export default function Footer() {
 									fill="none"
 									stroke="currentColor"
 									viewBox="0 0 24 24"
+									aria-hidden="true"
 								>
 									<title>Email</title>
 									<path
@@ -76,6 +89,7 @@ export default function Footer() {
 									fill="none"
 									stroke="currentColor"
 									viewBox="0 0 24 24"
+									aria-hidden="true"
 								>
 									<title>Business Hours</title>
 									<path
@@ -94,23 +108,31 @@ export default function Footer() {
 						<h3 className="font-semibold font-ui text-foreground text-lg">Connect</h3>
 						<div className="mb-4 flex items-center space-x-4">
 							{[
-								{ href: "#", icon: "facebook" },
-								{ href: "#", icon: "instagram" },
+								{ href: "#", icon: "facebook", label: "Facebook" },
+								{ href: "#", icon: "instagram", label: "Instagram" },
 								{
 									href: "https://www.linkedin.com/company/agenitix",
 									icon: "linkedin",
+									label: "LinkedIn",
 								},
 							].map((s) => (
 								<a
 									key={s.icon}
 									href={s.href}
 									className="text-mutedFg transition-colors hover:text-secondary"
+									aria-label={`Visit our ${s.label} page`}
 								>
-									<svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-										<title>Social Media</title>
+									<svg
+										className="h-6 w-6"
+										fill="currentColor"
+										viewBox="0 0 24 24"
+										aria-hidden="true"
+									>
+										<title>{s.label}</title>
 										{/* — Replace with real icons or lucide-react — */}
 										<circle cx="12" cy="12" r="10" />
 									</svg>
+									<span className="sr-only">{s.label}</span>
 								</a>
 							))}
 							<ThemeSwitcher />

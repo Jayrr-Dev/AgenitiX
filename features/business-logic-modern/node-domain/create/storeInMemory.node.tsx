@@ -54,11 +54,11 @@ class InMemoryStorage {
 		return InMemoryStorage.instance;
 	}
 
-	set(key: string, value: any): void {
+	set(key: string, value: unknown): void {
 		this.storage.set(key, value);
 	}
 
-	get(key: string): any {
+	get(key: string): unknown {
 		return this.storage.get(key);
 	}
 
@@ -276,7 +276,7 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 	// -------------------------------------------------------------------------
 
 	/** Convert value based on data type */
-	const convertValue = useCallback((val: string, type: string): any => {
+	const convertValue = useCallback((val: string, type: string): unknown => {
 		if (!val) {
 			return val;
 		}
@@ -300,7 +300,7 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 	}, []);
 
 	/** Format value for display */
-	const formatValue = useCallback((val: any): string => {
+	const formatValue = useCallback((val: unknown): string => {
 		if (val === null || val === undefined) {
 			return "";
 		}
@@ -321,7 +321,7 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 		}
 
 		try {
-			let result: any = "";
+			let result: unknown = "";
 			let status = "ready";
 
 			switch (operation) {

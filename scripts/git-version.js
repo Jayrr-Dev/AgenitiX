@@ -422,7 +422,7 @@ export const VERSION = {
 	}
 
 	// CONVERT PRE-RELEASE TO STABLE RELEASE
-	async convertToRelease() {
+	convertToRelease() {
 		try {
 			const currentVersion = this.getCurrentVersion();
 			const parsed = this.parseVersion(currentVersion);
@@ -479,7 +479,7 @@ export const VERSION = {
 	}
 
 	// RESET TO 0.0.0-ALPHA.1
-	async resetToAlpha() {
+	resetToAlpha() {
 		try {
 			const gitInfo = this.getGitInfo();
 			const newVersion = "0.0.0-alpha.1";

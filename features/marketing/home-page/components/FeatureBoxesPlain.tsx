@@ -84,13 +84,16 @@ const GridPattern: React.FC<GridPatternProps> = ({ width, height, x, y, squares,
 
 			{squares && (
 				<svg x={x} y={y} className="overflow-visible">
+					<title>Feature background pattern</title>
 					{squares.map(([sx, sy], _idx) => (
 						<rect
 							key={`${sx}-${sy}`}
-							width={width + 1}
-							height={height + 1}
-							x={sx * width}
-							y={sy * height}
+							x={sx}
+							y={sy}
+							width={1}
+							height={1}
+							fill="currentColor"
+							className="text-neutral-400/20"
 						/>
 					))}
 				</svg>

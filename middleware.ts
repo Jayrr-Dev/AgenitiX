@@ -1,7 +1,7 @@
 import { getRouteProtectionManager, loadAnubisConfig } from "@/lib/anubis/config";
-import { AnubisJWT } from "@/lib/anubis/crypto";
+import { verifyJWT } from "@/lib/anubis/crypto";
 import { adaptiveRateLimiter } from "@/lib/anubis/rate-limiter";
-import { RiskEngine, RiskMonitor } from "@/lib/anubis/risk-engine";
+import { analyzeRequest, trackRisk } from "@/lib/anubis/risk-engine";
 // middleware.ts
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -39,19 +39,15 @@ export async function middleware(request: NextRequest) {
 		ip: getClientIP(request),
 		userAgent: userAgent,
 		headers: Object.fromEntries(request.headers.entries()),
-		sessionHistory: await getSessionHistory(request),
+		sessionHistory: getSessionHistory(request),
 		timestamp: Date.now(),
 	};
 
 	// PERFORM RISK ANALYSIS
-	const {
-		riskLevel,
-		config: adaptiveConfig,
-		factors,
-	} = await RiskEngine.analyzeRequest(requestMetadata);
+	const { riskLevel, config: adaptiveConfig, factors } = await analyzeRequest(requestMetadata);
 
 	// TRACK RISK FOR MONITORING
-	RiskMonitor.trackRisk(requestMetadata.ip, riskLevel);
+	trackRisk(requestMetadata.ip, riskLevel);
 
 	// CHECK RATE LIMITING BASED ON RISK LEVEL
 	const rateLimitResult = adaptiveRateLimiter.checkLimit(requestMetadata, riskLevel.name);
@@ -92,7 +88,7 @@ export async function middleware(request: NextRequest) {
 	// CHECK FOR EXISTING VALID AUTH TOKEN
 	if (authCookie?.value) {
 		try {
-			const payload = await AnubisJWT.verify(
+			const payload = await verifyJWT(
 				authCookie.value,
 				process.env.ANUBIS_SECRET || "default-secret"
 			);
@@ -210,7 +206,7 @@ function generateChallenge(difficulty = 4) {
 }
 
 // GET SESSION HISTORY FOR RISK ANALYSIS
-async function getSessionHistory(request: NextRequest): Promise<any> {
+function getSessionHistory(request: NextRequest): any {
 	const failuresCookie = request.cookies.get("anubis-failures");
 	const sessionCookie = request.cookies.get("anubis-session");
 

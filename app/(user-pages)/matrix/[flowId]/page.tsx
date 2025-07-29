@@ -22,6 +22,7 @@ import { useQuery } from "convex/react";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
+import { Id } from "convex/_generated/dataModel";
 
 // TYPES
 type PageProps = {
@@ -43,7 +44,7 @@ export default function FlowPage({ params }: PageProps) {
 		api.flows.getFlowSecure,
 		flowId && user?.id
 			? {
-					flow_id: flowId as string,
+					flow_id: flowId as Id<"flows">,
 					user_id: user.id,
 				}
 			: "skip"

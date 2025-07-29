@@ -370,7 +370,7 @@ module.exports = (plop) => {
 
 				// 7. Ensure theming tokens exist for the category (NEW)
 				(data) => {
-					const { category, domain } = data;
+					const { category } = data;
 					const tokensPath = path.join(
 						__dirname,
 						"features/business-logic-modern/infrastructure/theming/tokens.json"

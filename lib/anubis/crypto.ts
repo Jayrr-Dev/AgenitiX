@@ -1,179 +1,174 @@
 import type { AnubisChallenge, AnubisChallengeResponse, AnubisJWTPayload } from "@/types/anubis";
 
 // CRYPTO UTILITIES FOR ANUBIS
-export class AnubisCrypto {
-	// GENERATE SHA256 HASH
-	static async sha256(input: string): Promise<string> {
-		const encoder = new TextEncoder();
-		const data = encoder.encode(input);
-		const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-		const hashArray = Array.from(new Uint8Array(hashBuffer));
-		return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-	}
 
-	// GENERATE CHALLENGE STRING
-	static generateChallenge(request: {
-		userAgent?: string;
-		acceptLanguage?: string;
-		ip?: string;
-	}): string {
-		const weekStart = AnubisCrypto.getWeekStart();
-		const components = [
-			request.acceptLanguage || "en-US",
-			request.ip || "127.0.0.1",
-			request.userAgent || "Unknown",
-			weekStart.toISOString(),
-			"anubis-challenge",
-		];
+// GENERATE SHA256 HASH
+export async function sha256(input: string): Promise<string> {
+	const encoder = new TextEncoder();
+	const data = encoder.encode(input);
+	const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+	const hashArray = Array.from(new Uint8Array(hashBuffer));
+	return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
-		return components.join("|");
-	}
+// GET WEEK START (SUNDAY)
+function getWeekStart(): Date {
+	const now = new Date();
+	const dayOfWeek = now.getDay();
+	const weekStart = new Date(now);
+	weekStart.setDate(now.getDate() - dayOfWeek);
+	weekStart.setHours(0, 0, 0, 0);
+	return weekStart;
+}
 
-	// GET WEEK START (SUNDAY)
-	private static getWeekStart(): Date {
-		const now = new Date();
-		const dayOfWeek = now.getDay();
-		const weekStart = new Date(now);
-		weekStart.setDate(now.getDate() - dayOfWeek);
-		weekStart.setHours(0, 0, 0, 0);
-		return weekStart;
-	}
+// GENERATE CHALLENGE STRING
+export function generateChallenge(request: {
+	userAgent?: string;
+	acceptLanguage?: string;
+	ip?: string;
+}): string {
+	const weekStart = getWeekStart();
+	const components = [
+		request.acceptLanguage || "en-US",
+		request.ip || "127.0.0.1",
+		request.userAgent || "Unknown",
+		weekStart.toISOString(),
+		"anubis-challenge",
+	];
 
-	// VALIDATE PROOF OF WORK
-	static async validateProofOfWork(
-		response: AnubisChallengeResponse,
-		difficulty: number
-	): Promise<boolean> {
-		try {
-			const { nonce, challenge, hash: providedHash } = response;
+	return components.join("|");
+}
 
-			// RECREATE HASH
-			const input = `${challenge}${nonce}`;
-			const computedHash = await AnubisCrypto.sha256(input);
+// VALIDATE PROOF OF WORK
+export async function validateProofOfWork(
+	response: AnubisChallengeResponse,
+	difficulty: number
+): Promise<boolean> {
+	try {
+		const { nonce, challenge, hash: providedHash } = response;
 
-			// VERIFY HASH MATCHES
-			if (computedHash !== providedHash) {
-				return false;
-			}
+		// RECREATE HASH
+		const input = `${challenge}${nonce}`;
+		const computedHash = await sha256(input);
 
-			// VERIFY DIFFICULTY (LEADING ZEROS)
-			const requiredPrefix = "0".repeat(difficulty);
-			return computedHash.startsWith(requiredPrefix);
-		} catch (error) {
-			console.error("Proof of work validation error:", error);
+		// VERIFY HASH MATCHES
+		if (computedHash !== providedHash) {
 			return false;
 		}
-	}
 
-	// GENERATE CLIENT FINGERPRINT
-	static generateFingerprint(request: {
-		userAgent?: string;
-		acceptLanguage?: string;
-		ip?: string;
-	}): string {
-		const components = [request.userAgent || "", request.acceptLanguage || "", request.ip || ""];
-
-		return Buffer.from(components.join("|")).toString("base64");
-	}
-
-	// CREATE ANUBIS CHALLENGE
-	static createChallenge(
-		request: {
-			userAgent?: string;
-			acceptLanguage?: string;
-			ip?: string;
-		},
-		difficulty: number
-	): AnubisChallenge {
-		return {
-			challenge: AnubisCrypto.generateChallenge(request),
-			difficulty,
-			timestamp: Date.now(),
-			clientFingerprint: AnubisCrypto.generateFingerprint(request),
-		};
+		// VERIFY DIFFICULTY (LEADING ZEROS)
+		const requiredPrefix = "0".repeat(difficulty);
+		return computedHash.startsWith(requiredPrefix);
+	} catch (error) {
+		console.error("Proof of work validation error:", error);
+		return false;
 	}
 }
 
+// GENERATE CLIENT FINGERPRINT
+export function generateFingerprint(request: {
+	userAgent?: string;
+	acceptLanguage?: string;
+	ip?: string;
+}): string {
+	const components = [request.userAgent || "", request.acceptLanguage || "", request.ip || ""];
+
+	return Buffer.from(components.join("|")).toString("base64");
+}
+
+// CREATE ANUBIS CHALLENGE
+export function createChallenge(
+	request: {
+		userAgent?: string;
+		acceptLanguage?: string;
+		ip?: string;
+	},
+	difficulty: number
+): AnubisChallenge {
+	return {
+		challenge: generateChallenge(request),
+		difficulty,
+		timestamp: Date.now(),
+		clientFingerprint: generateFingerprint(request),
+	};
+}
+
 // JWT UTILITIES
-export class AnubisJWT {
-	// SIMPLE JWT IMPLEMENTATION (FOR DEMONSTRATION)
-	static async sign(payload: AnubisJWTPayload, secret: string): Promise<string> {
-		const header = { alg: "HS256", typ: "JWT" };
 
-		const encodedHeader = AnubisJWT.base64UrlEncode(JSON.stringify(header));
-		const encodedPayload = AnubisJWT.base64UrlEncode(JSON.stringify(payload));
+// SIMPLE JWT IMPLEMENTATION (FOR DEMONSTRATION)
+export async function signJWT(payload: AnubisJWTPayload, secret: string): Promise<string> {
+	const header = { alg: "HS256", typ: "JWT" };
 
-		const signature = await AnubisJWT.createSignature(`${encodedHeader}.${encodedPayload}`, secret);
+	const encodedHeader = base64UrlEncode(JSON.stringify(header));
+	const encodedPayload = base64UrlEncode(JSON.stringify(payload));
 
-		return `${encodedHeader}.${encodedPayload}.${signature}`;
-	}
+	const signature = await createSignature(`${encodedHeader}.${encodedPayload}`, secret);
 
-	// VERIFY JWT TOKEN
-	static async verify(token: string, secret: string): Promise<AnubisJWTPayload | null> {
-		try {
-			const [encodedHeader, encodedPayload, signature] = token.split(".");
+	return `${encodedHeader}.${encodedPayload}.${signature}`;
+}
 
-			if (!(encodedHeader && encodedPayload && signature)) {
-				return null;
-			}
+// VERIFY JWT TOKEN
+export async function verifyJWT(token: string, secret: string): Promise<AnubisJWTPayload | null> {
+	try {
+		const [encodedHeader, encodedPayload, signature] = token.split(".");
 
-			// VERIFY SIGNATURE
-			const expectedSignature = await AnubisJWT.createSignature(
-				`${encodedHeader}.${encodedPayload}`,
-				secret
-			);
-
-			if (signature !== expectedSignature) {
-				return null;
-			}
-
-			// DECODE PAYLOAD
-			const payload = JSON.parse(AnubisJWT.base64UrlDecode(encodedPayload)) as AnubisJWTPayload;
-
-			// CHECK EXPIRATION
-			if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-				return null;
-			}
-
-			return payload;
-		} catch (error) {
-			console.error("JWT verification error:", error);
+		if (!(encodedHeader && encodedPayload && signature)) {
 			return null;
 		}
+
+		// VERIFY SIGNATURE
+		const expectedSignature = await createSignature(`${encodedHeader}.${encodedPayload}`, secret);
+
+		if (signature !== expectedSignature) {
+			return null;
+		}
+
+		// DECODE PAYLOAD
+		const payload = JSON.parse(base64UrlDecode(encodedPayload)) as AnubisJWTPayload;
+
+		// CHECK EXPIRATION
+		if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+			return null;
+		}
+
+		return payload;
+	} catch (error) {
+		console.error("JWT verification error:", error);
+		return null;
 	}
+}
 
-	// CREATE HMAC SIGNATURE
-	private static async createSignature(data: string, secret: string): Promise<string> {
-		const encoder = new TextEncoder();
-		const key = await crypto.subtle.importKey(
-			"raw",
-			encoder.encode(secret),
-			{ name: "HMAC", hash: "SHA-256" },
-			false,
-			["sign"]
-		);
+// CREATE HMAC SIGNATURE
+async function createSignature(data: string, secret: string): Promise<string> {
+	const encoder = new TextEncoder();
+	const key = await crypto.subtle.importKey(
+		"raw",
+		encoder.encode(secret),
+		{ name: "HMAC", hash: "SHA-256" },
+		false,
+		["sign"]
+	);
 
-		const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
-		return AnubisJWT.base64UrlEncode(new Uint8Array(signature));
-	}
+	const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
+	return base64UrlEncode(new Uint8Array(signature));
+}
 
-	// BASE64 URL ENCODING
-	private static base64UrlEncode(data: string | Uint8Array): string {
-		const base64 =
-			typeof data === "string"
-				? Buffer.from(data).toString("base64")
-				: Buffer.from(data).toString("base64");
+// BASE64 URL ENCODING
+function base64UrlEncode(data: string | Uint8Array): string {
+	const base64 =
+		typeof data === "string"
+			? Buffer.from(data).toString("base64")
+			: Buffer.from(data).toString("base64");
 
-		return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-	}
+	return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+}
 
-	// BASE64 URL DECODING
-	private static base64UrlDecode(data: string): string {
-		const base64 = data.replace(/-/g, "+").replace(/_/g, "/");
+// BASE64 URL DECODING
+function base64UrlDecode(data: string): string {
+	const base64 = data.replace(/-/g, "+").replace(/_/g, "/");
 
-		const padding = base64.length % 4;
-		const paddedBase64 = padding ? base64 + "=".repeat(4 - padding) : base64;
+	const padding = base64.length % 4;
+	const paddedBase64 = padding ? base64 + "=".repeat(4 - padding) : base64;
 
-		return Buffer.from(paddedBase64, "base64").toString();
-	}
+	return Buffer.from(paddedBase64, "base64").toString();
 }

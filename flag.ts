@@ -27,14 +27,12 @@ import {
  * @param cookies - Request cookies for context
  * @returns Context object with environment and user information
  */
-const identify: Identify<Context> = dedupe(
-	async ({ headers, cookies }: { headers: Headers; cookies: any }) => {
-		return {
-			environment: process.env.NODE_ENV,
-			user: { id: "1", name: "Test User", email: "hi@test.com" },
-		};
-	}
-);
+const identify: Identify<Context> = dedupe(() => {
+	return {
+		environment: process.env.NODE_ENV,
+		user: { id: "1", name: "Test User", email: "hi@test.com" },
+	};
+});
 
 /**
  * Hypertune adapter for type-safe feature flag management

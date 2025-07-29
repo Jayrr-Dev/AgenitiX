@@ -223,7 +223,7 @@ class OutlookProvider extends BaseEmailProvider {
 		useSSL: true,
 	};
 
-	async validateConnection(config: EmailAccountConfig): Promise<ConnectionResult> {
+	validateConnection(config: EmailAccountConfig): Promise<ConnectionResult> {
 		return validateOutlookConnection(config);
 	}
 
@@ -231,16 +231,16 @@ class OutlookProvider extends BaseEmailProvider {
 		return getOutlookOAuthUrl(redirectUri, state);
 	}
 
-	async exchangeCodeForTokens(code: string, redirectUri: string): Promise<OAuth2Tokens> {
+	exchangeCodeForTokens(code: string, redirectUri: string): Promise<OAuth2Tokens> {
 		return exchangeOutlookCodeForTokens(code, redirectUri);
 	}
 
-	async refreshTokens(refreshToken: string): Promise<OAuth2Tokens> {
+	refreshTokens(refreshToken: string): Promise<OAuth2Tokens> {
 		return this.exchangeTokens(OUTLOOK_OAUTH_CONFIG.tokenUrl, {
+			grant_type: "refresh_token",
+			refresh_token: refreshToken,
 			client_id: OUTLOOK_OAUTH_CONFIG.clientId,
 			client_secret: OUTLOOK_OAUTH_CONFIG.clientSecret,
-			refresh_token: refreshToken,
-			grant_type: "refresh_token",
 		});
 	}
 }

@@ -198,73 +198,75 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 	}, [graph.cursor, graph.nodes]);
 
 	// Helper function to create a node object
-	const createHistoryNode = useCallback((
-		node: HistoryNode,
-		depth: number,
-		siblingIndex: number,
-		reachableNodes: Set<string>,
-		currentSelectedNodeId: string | null,
-		graph: { cursor: string }
-	): Node => {
-		const isCursor = node.id === graph.cursor;
-		const isFuture = !reachableNodes.has(node.id);
-		const isSelected = currentSelectedNodeId === node.id;
-		const actionType = node.metadata?.actionType || "special";
+	const createHistoryNode = useCallback(
+		(
+			node: HistoryNode,
+			depth: number,
+			siblingIndex: number,
+			reachableNodes: Set<string>,
+			currentSelectedNodeId: string | null,
+			graph: { cursor: string }
+		): Node => {
+			const isCursor = node.id === graph.cursor;
+			const isFuture = !reachableNodes.has(node.id);
+			const isSelected = currentSelectedNodeId === node.id;
+			const actionType = node.metadata?.actionType || "special";
 
-		const { bg: bgVar, border: borderVar } =
-			ACTION_TYPE_COLORS[actionType as keyof typeof ACTION_TYPE_COLORS] ||
-			ACTION_TYPE_COLORS.special;
+			const { bg: bgVar, border: borderVar } =
+				ACTION_TYPE_COLORS[actionType as keyof typeof ACTION_TYPE_COLORS] ||
+				ACTION_TYPE_COLORS.special;
 
-		return {
-			id: node.id,
-			data: { label: node.label || "" },
-			position: {
-				x: siblingIndex * (LAYOUT_CONFIG.nodeWidth + LAYOUT_CONFIG.xGap),
-				y: depth * (LAYOUT_CONFIG.nodeHeight + LAYOUT_CONFIG.yGap),
-			},
-			type: "default",
-			width: LAYOUT_CONFIG.nodeWidth,
-			height: LAYOUT_CONFIG.nodeHeight,
-			className: `${NODE_STYLES.className} ${isCursor ? NODE_STYLES.cursorRing : ""} ${isSelected ? "history-node-selected" : ""}`,
-			style: {
-				...NODE_STYLES.base,
-				backgroundColor: `var(${bgVar})`,
-				borderColor: `var(${borderVar})`,
-				...(isFuture ? NODE_STYLES.futureNode : {}),
-			},
-			draggable: false,
-		};
-	}, []);
+			return {
+				id: node.id,
+				data: { label: node.label || "" },
+				position: {
+					x: siblingIndex * (LAYOUT_CONFIG.nodeWidth + LAYOUT_CONFIG.xGap),
+					y: depth * (LAYOUT_CONFIG.nodeHeight + LAYOUT_CONFIG.yGap),
+				},
+				type: "default",
+				width: LAYOUT_CONFIG.nodeWidth,
+				height: LAYOUT_CONFIG.nodeHeight,
+				className: `${NODE_STYLES.className} ${isCursor ? NODE_STYLES.cursorRing : ""} ${isSelected ? "history-node-selected" : ""}`,
+				style: {
+					...NODE_STYLES.base,
+					backgroundColor: `var(${bgVar})`,
+					borderColor: `var(${borderVar})`,
+					...(isFuture ? NODE_STYLES.futureNode : {}),
+				},
+				draggable: false,
+			};
+		},
+		[]
+	);
 
 	// Helper function to create edges for a node
-	const createHistoryEdges = useCallback((
-		node: HistoryNode,
-		reachableNodes: Set<string>,
-		processedNodes: Set<string>
-	): Edge[] => {
-		const edges: Edge[] = [];
+	const createHistoryEdges = useCallback(
+		(node: HistoryNode, reachableNodes: Set<string>, processedNodes: Set<string>): Edge[] => {
+			const edges: Edge[] = [];
 
-		for (const childId of node.childrenIds) {
-			if (!processedNodes.has(childId)) {
-				const isChildFuture = !reachableNodes.has(childId);
-				const isParentFuture = !reachableNodes.has(node.id);
-				const isEdgeFuture = isChildFuture || isParentFuture;
+			for (const childId of node.childrenIds) {
+				if (!processedNodes.has(childId)) {
+					const isChildFuture = !reachableNodes.has(childId);
+					const isParentFuture = !reachableNodes.has(node.id);
+					const isEdgeFuture = isChildFuture || isParentFuture;
 
-				edges.push({
-					id: `${node.id}-${childId}`,
-					source: node.id,
-					target: childId,
-					animated: EDGE_STYLES.animated,
-					style: {
-						...EDGE_STYLES.style,
-						...(isEdgeFuture ? { opacity: 0.4 } : {}),
-					},
-				});
+					edges.push({
+						id: `${node.id}-${childId}`,
+						source: node.id,
+						target: childId,
+						animated: EDGE_STYLES.animated,
+						style: {
+							...EDGE_STYLES.style,
+							...(isEdgeFuture ? { opacity: 0.4 } : {}),
+						},
+					});
+				}
 			}
-		}
 
-		return edges;
-	}, []);
+			return edges;
+		},
+		[]
+	);
 
 	// Memoize node creation with stable references
 	const { nodes, edges } = useMemo(() => {
@@ -276,10 +278,10 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 		const queue: Array<{ id: string; depth: number }> = [{ id: graph.root, depth: 0 }];
 		const levelWidths: Record<number, number> = {};
 
-		while (queue.length) {
+		while (queue.length > 0) {
 			const item = queue.shift();
 			if (!item) {
-				break;
+				continue;
 			}
 			const { id, depth } = item;
 
@@ -328,7 +330,7 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 
 	// Memoize click handler to prevent unnecessary re-renders
 	const handleNodeClick = useCallback(
-		(_event: NodeEvent, node: HistoryNode) => {
+		(_event: NodeEvent, node: Node) => {
 			// Handle selection
 			if (onNodeSelect) {
 				onNodeSelect(node.id);

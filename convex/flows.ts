@@ -25,21 +25,6 @@ interface UserDocument {
 	isAnonymous?: boolean;
 }
 
-interface FlowNode {
-	id: string;
-	type: string;
-	position: { x: number; y: number };
-	data: Record<string, unknown>;
-}
-
-interface FlowEdge {
-	id: string;
-	source: string;
-	target: string;
-	sourceHandle?: string;
-	targetHandle?: string;
-}
-
 // ============================================================================
 // QUERY FUNCTIONS
 // ============================================================================
@@ -208,8 +193,10 @@ async function checkFlowAccessInternal(
 			// Return highest permission level
 			const permissionLevels = { view: 1, edit: 2, admin: 3 };
 			const highestPermission = permissions.reduce((highest, perm) => {
-				const currentLevel = permissionLevels[perm.permission_type as keyof typeof permissionLevels];
-				const highestLevel = permissionLevels[highest.permission_type as keyof typeof permissionLevels];
+				const currentLevel =
+					permissionLevels[perm.permission_type as keyof typeof permissionLevels];
+				const highestLevel =
+					permissionLevels[highest.permission_type as keyof typeof permissionLevels];
 				return currentLevel > highestLevel ? perm : highest;
 			});
 			return { hasAccess: true, permission: highestPermission.permission_type };
@@ -743,7 +730,9 @@ export const getPublicFlowsWithUpvotes = query({
 					const userUpvote = await ctx.db
 						.query("flow_upvotes")
 						.withIndex("by_flow_and_user", (q) =>
-							q.eq("flow_id", flow._id as Id<"flows">).eq("user_id", args.user_id as Id<"auth_users">)
+							q
+								.eq("flow_id", flow._id as Id<"flows">)
+								.eq("user_id", args.user_id as Id<"auth_users">)
 						)
 						.first();
 					hasUpvoted = !!userUpvote;

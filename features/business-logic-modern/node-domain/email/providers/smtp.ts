@@ -100,14 +100,27 @@ const smtpConfigFields: ConfigField[] = [
 	},
 ];
 
-async function validateSmtpConnection(config: EmailAccountConfig): Promise<ConnectionResult> {
+function validateSmtpConnection(config: EmailAccountConfig): Promise<ConnectionResult> {
 	try {
+		// Basic validation of config
+		if (!(config.host && config.port)) {
+			return Promise.resolve({
+				success: false,
+				error: {
+					type: "INVALID_SETTINGS",
+					message: "Host and port are required",
+					details: "SMTP configuration is incomplete",
+					timestamp: new Date().toISOString(),
+				},
+			});
+		}
+
 		// Validate required fields
 		const requiredFields = ["email", "smtpHost", "smtpPort", "username", "password"];
 		for (const field of requiredFields) {
 			const value = (config as any)[field];
 			if (!value || (typeof value === "string" && value.trim() === "")) {
-				return {
+				return Promise.resolve({
 					success: false,
 					error: createEmailError(
 						"CONFIGURATION_INVALID",
@@ -115,13 +128,13 @@ async function validateSmtpConnection(config: EmailAccountConfig): Promise<Conne
 						{ provider: "smtp", field },
 						true
 					),
-				};
+				});
 			}
 		}
 
 		// Validate port range
 		if (config.smtpPort && (config.smtpPort < 1 || config.smtpPort > 65535)) {
-			return {
+			return Promise.resolve({
 				success: false,
 				error: createEmailError(
 					"CONFIGURATION_INVALID",
@@ -129,7 +142,7 @@ async function validateSmtpConnection(config: EmailAccountConfig): Promise<Conne
 					{ provider: "smtp", port: config.smtpPort },
 					true
 				),
-			};
+			});
 		}
 
 		// Auto-configure common providers
@@ -139,7 +152,7 @@ async function validateSmtpConnection(config: EmailAccountConfig): Promise<Conne
 		if (commonConfig) {
 			// Suggest common configuration if user hasn't set it correctly
 			if (config.smtpHost !== commonConfig.host || config.smtpPort !== commonConfig.port) {
-				return {
+				return Promise.resolve({
 					success: false,
 					error: createEmailError(
 						"CONFIGURATION_INVALID",
@@ -156,21 +169,21 @@ async function validateSmtpConnection(config: EmailAccountConfig): Promise<Conne
 						},
 						true
 					),
-				};
+				});
 			}
 		}
 
 		// In a real implementation, this would test actual SMTP connection
 		// For now, we'll simulate success after basic validation
-		return {
+		return Promise.resolve({
 			success: true,
 			accountInfo: {
 				email: config.email,
 				displayName: config.displayName || config.email,
 			},
-		};
+		});
 	} catch (error) {
-		return {
+		return Promise.resolve({
 			success: false,
 			error: createEmailError(
 				"NETWORK_ERROR",
@@ -178,7 +191,7 @@ async function validateSmtpConnection(config: EmailAccountConfig): Promise<Conne
 				{ provider: "smtp", originalError: error },
 				true
 			),
-		};
+		});
 	}
 }
 
@@ -205,7 +218,7 @@ class SmtpProvider extends BaseEmailProvider {
 		useTLS: true,
 	};
 
-	async validateConnection(config: EmailAccountConfig): Promise<ConnectionResult> {
+	validateConnection(config: EmailAccountConfig): Promise<ConnectionResult> {
 		return validateSmtpConnection(config);
 	}
 }

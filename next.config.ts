@@ -7,6 +7,26 @@ const nextConfig: NextConfig = {
 	images: {
 		domains: ["placehold.co", "d63wj7axnd.ufs.sh", "86apvmagmm.ufs.sh", "images.unsplash.com"],
 	},
+	// WEBPACK CACHE OPTIMIZATION
+	webpack: (config, { dev, isServer }) => {
+		// Optimize cache for better performance with large strings
+		if (!dev) {
+			config.cache = {
+				...config.cache,
+				type: "filesystem",
+				compression: "gzip",
+				maxMemoryGenerations: 1,
+				allowCollectingMemory: true,
+				// Reduce cache size to prevent large string serialization issues
+				maxAge: 24 * 60 * 60 * 1000, // 24 hours
+			};
+		}
+
+		// Optimize module resolution for better performance
+		config.resolve.cacheWithContext = false;
+
+		return config;
+	},
 };
 
 // MINIMAL PWA CONFIGURATION
@@ -34,8 +54,8 @@ export default withSentryConfig(configWithPWA, {
 	// For all available options, see:
 	// https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
-	// Upload a larger set of source maps for prettier stack traces (increases build time)
-	widenClientFileUpload: true,
+	// Disable source map widening to reduce cache size and improve build performance
+	widenClientFileUpload: false,
 
 	// Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
 	// This can increase your server load as well as your hosting bill.

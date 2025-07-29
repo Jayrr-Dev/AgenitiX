@@ -189,12 +189,17 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 						<span className="text-muted-foreground text-sm">Only the owner can grant access</span>
 					</div>
 
-					<Button onClick={() => setShowRequestDialog(true)} className="w-full">
+					<Button onClick={() => setShowRequestDialog(true)} className="w-full" type="button">
 						<UserPlus className="mr-2 h-4 w-4" />
 						Request Access
 					</Button>
 
-					<Button variant="outline" onClick={() => router.push("/dashboard")} className="w-full">
+					<Button
+						variant="outline"
+						onClick={() => router.push("/dashboard")}
+						className="w-full"
+						type="button"
+					>
 						Back to Dashboard
 					</Button>
 				</CardContent>
@@ -265,10 +270,10 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 					</div>
 
 					<DialogFooter>
-						<Button variant="outline" onClick={() => setShowRequestDialog(false)}>
+						<Button variant="outline" onClick={() => setShowRequestDialog(false)} type="button">
 							Cancel
 						</Button>
-						<Button onClick={handleRequestAccess} disabled={!requestEmail.trim()}>
+						<Button onClick={handleRequestAccess} disabled={!requestEmail.trim()} type="button">
 							<Mail className="mr-2 h-4 w-4" />
 							Send Request
 						</Button>

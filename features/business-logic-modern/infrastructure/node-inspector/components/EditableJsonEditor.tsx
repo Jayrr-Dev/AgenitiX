@@ -17,9 +17,9 @@ import { JsonHighlighter } from "../utils/JsonHighlighter";
 
 interface EditableJsonEditorProps {
 	/** Current node data */
-	data: any;
+	data: Record<string, unknown>;
 	/** Callback to update node data */
-	onUpdateData: (newData: any) => void;
+	onUpdateData: (newData: Record<string, unknown>) => void;
 	/** Optional CSS classes */
 	className?: string;
 }

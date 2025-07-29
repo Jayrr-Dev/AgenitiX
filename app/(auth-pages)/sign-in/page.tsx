@@ -165,6 +165,16 @@ export default function SignInPage() {
 
 			// Clear any previous errors and show success
 			setError(null);
+
+			// Log success in development
+			if (process.env.NODE_ENV === "development") {
+				console.log("\n🎉 MAGIC LINK REQUEST SUCCESSFUL:");
+				console.log(`📧 Email: ${trimmedEmail}`);
+				console.log(`✅ Status: ${result.message}`);
+				console.log("📋 Check the server console for the magic link URL");
+				console.log("");
+			}
+
 			toast.success("Magic link sent!", {
 				description: result.message,
 				duration: 5000,

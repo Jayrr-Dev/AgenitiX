@@ -75,8 +75,6 @@ const COMMON_OBJECT_PROPS = [
 	"input",
 ] as const;
 
-type Primitive = string | number | boolean | bigint | symbol | null | undefined;
-
 function formatValue(value: unknown): string {
 	// ── Primitives ──────────────────────────────────────────────────────────────
 	if (value === null || value === undefined || value === false || value === "" || value === 0) {

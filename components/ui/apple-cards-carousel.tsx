@@ -1,3 +1,15 @@
+/**
+ * components/ui/apple-cards-carousel.tsx - Apple-style carousel with expandable cards
+ *
+ * • Horizontally scrolling carousel with smooth navigation controls
+ * • Interactive cards that expand into full-screen modal views
+ * • Blur-effect image loading with proper accessibility support
+ * • Motion animations for card interactions and transitions
+ * • Context-based card management and keyboard navigation
+ * • Responsive design with mobile and desktop optimizations
+ *
+ * Keywords: carousel, cards, modal, blur-images, motion, accessibility, responsive
+ */
 "use client";
 import { useOutsideClick } from "@/hooks/use-outside-click";
 import { cn } from "@/lib/utils";
@@ -266,12 +278,18 @@ export const BlurImage = ({
 	...rest
 }: React.ImgHTMLAttributes<HTMLImageElement>) => {
 	const [isLoading, setLoading] = useState(true);
+
+	// Accessibility: Images must either have meaningful alt text OR be marked as decorative
+	// This ensures compliance with WCAG guidelines for screen readers
+	const isDecorative = !alt || alt.trim() === "";
+
 	return (
 		<img
-			{...(alt ? { alt } : { "aria-hidden": "true" })}
 			height={height}
 			width={width}
 			src={src as string}
+			alt={alt || ""}
+			aria-hidden={isDecorative || undefined}
 			className={cn(
 				"duration-700 ease-in-out",
 				isLoading ? "scale-110 blur-2xl grayscale" : "scale-100 blur-0 grayscale-0",

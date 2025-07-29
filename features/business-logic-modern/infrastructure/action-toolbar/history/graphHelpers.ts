@@ -122,9 +122,28 @@ export const saveGraph = (graph: HistoryGraph, flowId?: string): void => {
 		return;
 	}
 	try {
-		const json = JSON.stringify(graph);
-		// Compress if payload > 1 MB (threshold chosen to avoid diminishing returns on small graphs)
-		const payload = json.length > 1_000_000 ? `lz:${compressToUTF16(json)}` : json;
+		// Optimize graph data before serialization to reduce size
+		const optimizedGraph = {
+			...graph,
+			nodes: graph.nodes.map(node => ({
+				...node,
+				// Remove unnecessary data for storage
+				data: node.data ? {
+					...node.data,
+					// Remove large objects that don't need persistence
+					inputs: undefined,
+					outputs: undefined,
+					// Keep only essential data
+					label: node.data.label,
+					type: node.data.type,
+					isExpanded: node.data.isExpanded,
+				} : node.data
+			}))
+		};
+
+		const json = JSON.stringify(optimizedGraph);
+		// Lower compression threshold to reduce large string serialization
+		const payload = json.length > 500_000 ? `lz:${compressToUTF16(json)}` : json;
 		const storageKey = getStorageKey(flowId);
 		window.localStorage.setItem(storageKey, payload);
 	} catch (error) {

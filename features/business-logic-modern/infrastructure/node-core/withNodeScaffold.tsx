@@ -235,7 +235,12 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 			<NodeScaffoldWrapper style={style} className={themeClasses} spec={spec}>
 				{/* Render registered node plugins */}
 				{getNodePlugins().map((Plugin, idx) => (
-					<Plugin key={idx} nodeId={props.id} nodeKind={spec.kind} data={props.data as any} />
+					<Plugin
+						key={`plugin-${props.id}-${idx}`}
+						nodeId={props.id}
+						nodeKind={spec.kind}
+						data={props.data as any}
+					/>
 				))}
 				{/* Telemetry event: node created */}
 				<NodeTelemetry nodeId={props.id} nodeKind={spec.kind} />

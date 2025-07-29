@@ -233,8 +233,9 @@ function analyzeNodeHandles(
 function parseHandlesArray(handlesContent: string): HandleSpec[] {
 	const handles: HandleSpec[] = [];
 	const handleRegex = /{\s*([^}]+)\s*}/g;
-	let match;
+	let match: RegExpExecArray | null;
 
+	// biome-ignore lint/suspicious/noAssignInExpressions: This is a valid pattern for regex.exec
 	while ((match = handleRegex.exec(handlesContent)) !== null) {
 		const handleContent = match[1];
 

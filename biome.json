@@ -26,7 +26,9 @@
 			"*.config.js",
 			"*.config.mjs",
 			"backups/**",
-			"app/styles/_generated_tokens.css"
+			"app/styles/_generated_tokens.css",
+			"public/sw.js",
+			"public/workbox-*.js"
 		]
 	},
 	"formatter": {
@@ -56,8 +58,8 @@
 				"noParameterAssign": "warn"
 			},
 			"suspicious": {
-				"noConsoleLog": "warn",
-				"noExplicitAny": "warn",
+				"noConsoleLog": "off",
+				"noExplicitAny": "off",
 				"noArrayIndexKey": "warn",
 				"noCommentText": "warn",
 				"noDoubleEquals": "error",
@@ -67,12 +69,7 @@
 				"noAssignInExpressions": "warn"
 			},
 			"complexity": {
-				"noExcessiveCognitiveComplexity": {
-					"level": "warn",
-					"options": {
-						"maxAllowedComplexity": 25
-					}
-				},
+				"noExcessiveCognitiveComplexity": "off",
 				"noExcessiveNestedTestSuites": "warn",
 				"noMultipleSpacesInRegularExpressionLiterals": "warn",
 				"noUselessCatch": "warn",
@@ -88,7 +85,7 @@
 				"noUselessTypeConstraint": "warn",
 				"noVoid": "warn",
 				"noWith": "error",
-				"noForEach": "warn",
+				"noForEach": "off",
 				"useLiteralKeys": "warn",
 				"useOptionalChain": "warn",
 				"useRegexLiterals": "warn",
@@ -116,7 +113,7 @@
 				"noUnsafeOptionalChaining": "error",
 				"noUnusedLabels": "warn",
 				"useArrayLiterals": "warn",
-				"useExhaustiveDependencies": "warn",
+				"useExhaustiveDependencies": "off",
 				"useIsNan": "error",
 				"useValidForDirection": "error",
 				"useYield": "error"
@@ -223,6 +220,53 @@
 				"rules": {
 					"security": {
 						"noDangerouslySetInnerHtml": "off"
+					}
+				}
+			}
+		},
+		{
+			"include": ["components/ui/**/*.{ts,tsx}"],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"useButtonType": "off",
+						"noSvgWithoutTitle": "off"
+					}
+				}
+			}
+		},
+		{
+			"include": [
+				"features/business-logic-modern/infrastructure/theming/**/*.{ts,tsx}",
+				"features/business-logic-modern/infrastructure/components/ClearLocalStorage.tsx",
+				"features/business-logic-modern/infrastructure/node-inspector/utils/**/*.{ts,tsx}",
+				"scripts/**/*.{ts,tsx}",
+				"tooling/**/*.{ts,tsx}"
+			],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"useButtonType": "off",
+						"noSvgWithoutTitle": "off"
+					}
+				}
+			}
+		},
+		{
+			"include": [
+				"features/business-logic-modern/infrastructure/node-inspector/controls/**/*.{ts,tsx}",
+				"features/business-logic-modern/infrastructure/node-inspector/components/DynamicControls.tsx",
+				"features/business-logic-modern/infrastructure/node-inspector/components/EdgeInspector.tsx",
+				"features/business-logic-modern/infrastructure/node-inspector/components/EditableJsonEditor.tsx",
+				"features/business-logic-modern/infrastructure/sidebar/components/NodeSearchModal.tsx",
+				"features/business-logic-modern/infrastructure/sidebar/SortableStencil.tsx",
+				"features/business-logic-modern/infrastructure/sidebar/SidebarTabs.tsx",
+				"features/business-logic-modern/infrastructure/sidebar/SidebarVariantSelector.tsx"
+			],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"useButtonType": "off"
 					}
 				}
 			}

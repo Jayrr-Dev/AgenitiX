@@ -339,7 +339,40 @@ export class NodeMemoryManager extends BrowserEventEmitter {
 	}
 
 	private serialize(v: unknown): string {
-		return this.cfg.serializer === "json" ? JSON.stringify(v) : JSON.stringify(v); // placeholder for msgpack
+		// Optimize serialization to reduce cache size
+		if (this.cfg.serializer === "json") {
+			// Remove circular references and large objects before serialization
+			const sanitized = this.sanitizeForSerialization(v);
+			return JSON.stringify(sanitized);
+		}
+		return JSON.stringify(v); // placeholder for msgpack
+	}
+
+	/**
+	 * Sanitize data for serialization to reduce size
+	 */
+	private sanitizeForSerialization(v: unknown): unknown {
+		if (v === null || v === undefined) {
+			return v;
+		}
+
+		if (typeof v === "object") {
+			if (Array.isArray(v)) {
+				return v.map(item => this.sanitizeForSerialization(item));
+			}
+
+			const sanitized: Record<string, unknown> = {};
+			for (const [key, value] of Object.entries(v as Record<string, unknown>)) {
+				// Skip large objects that don't need persistence
+				if (key === "inputs" || key === "outputs" || key === "rawData") {
+					continue;
+				}
+				sanitized[key] = this.sanitizeForSerialization(value);
+			}
+			return sanitized;
+		}
+
+		return v;
 	}
 
 	private byteSize(str: string): number {
@@ -418,7 +451,7 @@ export class NodeMemoryManager extends BrowserEventEmitter {
 			return;
 		}
 		if (flush) {
-			return void this.persistNow();
+			return this.persistNow();
 		}
 
 		if (!this.persistQueued) {

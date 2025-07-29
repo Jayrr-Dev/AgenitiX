@@ -17,7 +17,7 @@ export function useAnubisProtection(options: UseAnubisProtectionOptions = {}) {
 	const { toggleProtection, getRouteConfig, isEnabled: globalEnabled } = useAnubis();
 	const pathname = usePathname();
 
-	const { enabled = true, customDifficulty, description, autoProtect = true } = options;
+	const { enabled = true, autoProtect = true } = options;
 
 	// AUTO-PROTECT CURRENT ROUTE
 	useEffect(() => {

@@ -183,13 +183,23 @@ export class AdaptiveRateLimiter {
 	// CHECK RATE LIMIT BASED ON RISK LEVEL
 	checkLimit(request: RateLimitRequest, riskLevel: string): RateLimitResult {
 		const limiter = this.limiters.get(riskLevel) || this.limiters.get("MODERATE");
-		return limiter?.checkLimit(request);
+		return limiter?.checkLimit(request) || {
+			allowed: false,
+			remaining: 0,
+			resetTime: Date.now(),
+			totalHits: 0,
+		};
 	}
 
 	// GET STATUS WITHOUT INCREMENTING
 	getStatus(request: RateLimitRequest, riskLevel: string): RateLimitResult {
 		const limiter = this.limiters.get(riskLevel) || this.limiters.get("MODERATE");
-		return limiter?.getStatus(request);
+		return limiter?.getStatus(request) || {
+			allowed: false,
+			remaining: 0,
+			resetTime: Date.now(),
+			totalHits: 0,
+		};
 	}
 }
 

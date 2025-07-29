@@ -21,12 +21,9 @@ import {
 	type ColorMode,
 	type Connection,
 	ConnectionMode,
-	type EdgeChange,
-	type NodeChange,
 	PanOnScrollMode,
 	Panel,
 	ReactFlow,
-	type ReactFlowInstance,
 	SelectionMode,
 } from "@xyflow/react";
 import { useTheme } from "next-themes";
@@ -154,23 +151,23 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 	edges,
 	selectedNode,
 	selectedEdge,
-	selectedOutput,
-	nodeErrors,
+	// selectedOutput,
+	// nodeErrors,
 	showHistoryPanel,
 	wrapperRef,
-	updateNodeData,
-	updateNodeId,
-	logNodeError,
-	clearNodeErrors,
-	onToggleHistory,
+	// updateNodeData,
+	// updateNodeId,
+	// logNodeError,
+	// clearNodeErrors,
+	// onToggleHistory,
 	onDragOver,
 	onDrop,
 	onDeleteNode,
-	onDuplicateNode,
+	// onDuplicateNode,
 	onDeleteEdge,
 	inspectorLocked,
 	inspectorViewMode,
-	setInspectorLocked,
+	// setInspectorLocked,
 	reactFlowHandlers,
 }) => {
 	const _componentName = "FlowCanvas";
@@ -438,14 +435,17 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 										? "Delete connection"
 										: "Delete"
 							}
+							type="button"
 						>
 							<svg
 								className={MOBILE_DELETE_BUTTON_STYLES.icon}
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
+								role="img"
+								aria-labelledby="delete-icon-title"
 							>
-								<title>Delete Icon</title>
+								<title id="delete-icon-title">Delete Icon</title>
 								<path
 									strokeLinecap="round"
 									strokeLinejoin="round"

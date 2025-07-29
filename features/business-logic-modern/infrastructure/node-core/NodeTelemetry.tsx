@@ -25,8 +25,7 @@ const NodeTelemetry: React.FC<NodeTelemetryProps> = ({ nodeId, nodeKind }) => {
 			nodeKind,
 			timestamp: Date.now(),
 		});
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []); // fire only once per mount
+	}, [nodeId, nodeKind]); // Include dependencies for telemetry tracking
 
 	return null;
 };

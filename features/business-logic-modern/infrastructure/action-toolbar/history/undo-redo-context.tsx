@@ -15,63 +15,66 @@
 import type React from "react";
 import { type ReactNode, createContext, useCallback, useContext, useRef } from "react";
 import type { ActionType } from "./UndoRedoManager";
+import type { HistoryNode } from "./historyGraph";
 
-interface UndoRedoManager {
-	id: string;
+interface UndoRedoManagerAPI {
 	undo: () => boolean;
-	redo: () => boolean;
-	canUndo: boolean;
-	canRedo: boolean;
-	addEntry: (entry: HistoryEntry) => void;
+	redo: (childId?: string) => boolean;
+	recordAction: (type: ActionType, metadata?: Record<string, unknown>) => void;
+	recordActionDebounced: (type: ActionType, metadata?: Record<string, unknown>) => void;
 	clearHistory: () => void;
+	removeSelectedNode: (nodeId?: string) => boolean;
+	getHistory: () => {
+		entries: HistoryNode[];
+		currentIndex: number;
+		canUndo: boolean;
+		canRedo: boolean;
+		branchOptions?: string[];
+		graphStats?: GraphStats;
+		currentNode?: HistoryNode;
+	};
+	getBranchOptions: () => string[];
+	getFullGraph: () => {
+		nodes: Record<string, HistoryNode>;
+		root: string;
+		cursor: string;
+	};
+	redoSpecificBranch: (childId?: string) => boolean;
 }
 
 // TYPES
 export interface UndoRedoContextType {
-	registerManager: (manager: UndoRedoManager) => void;
+	registerManager: (manager: UndoRedoManagerAPI) => void;
 	unregisterManager: (managerId: string) => void;
 	undo: () => boolean;
-	redo: () => boolean;
-	canUndo: boolean;
-	canRedo: boolean;
-	addEntry: (entry: HistoryEntry) => void;
+	redo: (childId?: string) => boolean;
+	recordAction: (type: ActionType, metadata?: Record<string, unknown>) => void;
+	recordActionDebounced: (type: ActionType, metadata?: Record<string, unknown>) => void;
 	clearHistory: () => void;
 	getHistory: () => {
-		entries: HistoryEntry[];
+		entries: HistoryNode[];
 		currentIndex: number;
 		canUndo: boolean;
 		canRedo: boolean;
 		// Additional graph-specific properties (optional for backward compatibility)
 		branchOptions?: string[];
 		graphStats?: GraphStats;
-		currentNode?: GraphNode;
+		currentNode?: HistoryNode;
 	};
 	getFullGraph: () => {
-		nodes: Record<string, GraphNode>;
+		nodes: Record<string, HistoryNode>;
 		root: string;
 		cursor: string;
-	};
+	} | null;
 	removeSelectedNode: (nodeId?: string) => boolean;
 }
 
-interface HistoryEntry {
-	id: string;
-	timestamp: number;
-	description: string;
-	data: Record<string, unknown>;
-}
-
 interface GraphStats {
-	nodeCount: number;
-	edgeCount: number;
-	branchCount: number;
-}
-
-interface GraphNode {
-	id: string;
-	label?: string;
-	children?: GraphNode[];
-	data?: Record<string, unknown>;
+	totalNodes: number;
+	branches: number;
+	leafNodes: number;
+	maxDepth: number;
+	currentDepth: number;
 }
 
 // CONTEXT
@@ -84,20 +87,20 @@ interface UndoRedoProviderProps {
 
 export const UndoRedoProvider: React.FC<UndoRedoProviderProps> = ({ children }) => {
 	// Store the actual manager functions
-	const managerRef = useRef<UndoRedoContextType | null>(null);
+	const managerRef = useRef<UndoRedoManagerAPI | null>(null);
 
 	// Register the manager (called by UndoRedoManager)
-	const registerManager = useCallback((manager: UndoRedoContextType) => {
+	const registerManager = useCallback((manager: UndoRedoManagerAPI) => {
 		managerRef.current = manager;
 	}, []);
 
 	// Wrapper functions that delegate to the registered manager
 	const undo = useCallback(() => {
-		return managerRef.current?.undo();
+		return managerRef.current?.undo() ?? false;
 	}, []);
 
 	const redo = useCallback((childId?: string) => {
-		return managerRef.current?.redo(childId);
+		return managerRef.current?.redo(childId) ?? false;
 	}, []);
 
 	const recordAction = useCallback((type: ActionType, metadata?: Record<string, unknown>) => {
@@ -135,7 +138,7 @@ export const UndoRedoProvider: React.FC<UndoRedoProviderProps> = ({ children }) 
 	}, []);
 
 	const contextValue: UndoRedoContextType & {
-		registerManager: (manager: UndoRedoContextType) => void;
+		registerManager: (manager: UndoRedoManagerAPI) => void;
 	} = {
 		undo,
 		redo,

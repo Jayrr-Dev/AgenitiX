@@ -2,7 +2,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useFlowStore } from "../flow-engine/stores/flowStore";
 import { type HoveredStencil, StencilInfoPanel } from "./StencilInfoPanel";
 import { NodeSearchModal } from "./components/NodeSearchModal";
 import { SearchBar } from "./components/SearchBar";
@@ -34,7 +33,6 @@ export function SidebarTabs({
 	onRemoveCustomNode,
 	onReorderCustomNodes,
 	onVariantChange,
-	onToggle,
 }: SidebarTabsProps) {
 	// IMPROVED VARIANT HANDLING - More defensive programming
 	const normalizedVariant = (
@@ -85,7 +83,7 @@ export function SidebarTabs({
 	const KEY_REPEAT_COOLDOWN = 150; // 150ms cooldown between same key presses
 
 	// Get flow store for node deletion
-	const { selectedNodeId, removeNode } = useFlowStore();
+	// const {} = useFlowStore();
 
 	// Get existing node types in custom section to prevent duplicates
 	const existingCustomNodeTypes = useMemo(

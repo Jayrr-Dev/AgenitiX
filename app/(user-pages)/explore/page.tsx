@@ -77,10 +77,21 @@ type SortOption = keyof typeof SORT_OPTIONS;
  */
 interface FlowType {
 	_id: Id<"flows">;
+	_creationTime: number;
 	name: string;
+	description?: string;
 	created_at: string;
 	updated_at: string;
-	upvoteCount?: number;
+	upvoteCount: number;
+	hasUpvoted: boolean;
+	creator: {
+		id: Id<"auth_users">;
+		name: string;
+		email: string;
+	} | null;
+	user_id: Id<"auth_users">;
+	is_private: boolean;
+	icon?: string;
 	[key: string]: unknown; // Allow additional properties
 }
 
@@ -251,7 +262,7 @@ const ExplorePage = () => {
 		let filtered = publicFlows.filter((flow) => {
 			const matchesSearch =
 				flow.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-				flow.description.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+				(flow.description?.toLowerCase().includes(debouncedSearch.toLowerCase()) || false) ||
 				getIconCategory(flow.icon)?.toLowerCase().includes(debouncedSearch.toLowerCase());
 
 			return matchesSearch;
@@ -281,7 +292,9 @@ const ExplorePage = () => {
 				<p className="mx-auto mb-8 max-w-md text-muted-foreground">
 					Unable to load public flows. Please try refreshing the page.
 				</p>
-				<Button onClick={() => window.location.reload()}>Refresh Page</Button>
+				<Button onClick={() => window.location.reload()} type="button">
+					Refresh Page
+				</Button>
 			</div>
 		);
 	}

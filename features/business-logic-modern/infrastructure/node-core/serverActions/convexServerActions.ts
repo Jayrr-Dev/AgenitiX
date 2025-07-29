@@ -82,30 +82,28 @@ export const useConvexMutation = <TData, TVariables extends Record<string, unkno
 /**
  * Convex-aware server action for database operations
  */
-export const createConvexServerAction = (
+export const createConvexQueryAction = (
 	ctx: ServerActionContext,
 	queryName: string,
 	params?: Record<string, unknown>
 ) => {
-	const { nodeId, nodeKind, data, onStateUpdate, onError, onSuccess } = ctx;
+	const { nodeId } = ctx;
 
 	return useConvexQuery(
 		queryName,
-		{ nodeId, nodeKind, ...params },
-		{
-			enabled: true,
-			staleTime: 2 * 60 * 1000, // 2 minutes
-		}
+		params,
+		nodeId // Unique cache key per node
 	);
 };
 
 /**
- * Convex mutation server action
+ * Creates a Convex mutation action with proper error handling and state management
  */
 export const createConvexMutationAction = (ctx: ServerActionContext, mutationName: string) => {
-	const { nodeId, nodeKind, data, onStateUpdate, onError, onSuccess } = ctx;
+	const { nodeId, onStateUpdate, onError, onSuccess } = ctx;
 
 	return useConvexMutation(mutationName, {
+		nodeId, // For tracking which node initiated the mutation
 		onSuccess: (result) => {
 			onStateUpdate?.({
 				lastConvexMutation: new Date().toISOString(),

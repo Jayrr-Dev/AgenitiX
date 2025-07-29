@@ -66,6 +66,17 @@ export default function SignUpPage() {
 
 			// Show success message with toast
 			setError(null);
+
+			// Log success in development
+			if (process.env.NODE_ENV === "development") {
+				console.log("\n🎉 ACCOUNT CREATION SUCCESSFUL:");
+				console.log(`👤 Name: ${formData.name.trim()}`);
+				console.log(`📧 Email: ${formData.email.trim()}`);
+				console.log(`✅ Status: ${result.message}`);
+				console.log("📋 Check the server console for the verification magic link URL");
+				console.log("");
+			}
+
 			toast.success("Account created!", {
 				description: result.message,
 				duration: 5000,

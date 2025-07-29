@@ -11,9 +11,10 @@
 
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { useEffect, useState } from "react";
-import { useFlowMetadataOptional } from "../contexts/FlowMetadataContext";
+import { useFlowMetadataOptional } from "../contexts/flow-metadata-context";
 import { useFlowStore } from "../stores/flowStore";
 
 interface UseLoadCanvasResult {
@@ -38,7 +39,7 @@ export function useLoadCanvas(): UseLoadCanvasResult {
 		api.flows.loadFlowCanvas,
 		flow?.id
 			? {
-					flow_id: flow.id as any,
+					flow_id: flow.id as Id<"flows">,
 					user_id: user?.id,
 				}
 			: "skip"
@@ -73,7 +74,7 @@ export function useLoadCanvas(): UseLoadCanvasResult {
 	useEffect(() => {
 		setHasLoaded(false);
 		setError(null);
-	}, [flow?.id]);
+	}, []);
 
 	return {
 		isLoading: canvasData === undefined && !hasLoaded && !error,

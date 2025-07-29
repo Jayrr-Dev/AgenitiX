@@ -21,7 +21,7 @@ const DummyContent = () => {
 			{[...new Array(3).fill(1)].map((_, index) => {
 				return (
 					<div
-						key={`dummy-content${index}`}
+						key={`dummy-content-${index}-${Math.random().toString(36).substr(2, 9)}`}
 						className="mb-4 rounded-3xl bg-[#F5F5F7] p-8 md:p-14 dark:bg-neutral-800"
 					>
 						<p className="mx-auto max-w-3xl font-sans text-base text-neutral-600 md:text-2xl dark:text-neutral-400">

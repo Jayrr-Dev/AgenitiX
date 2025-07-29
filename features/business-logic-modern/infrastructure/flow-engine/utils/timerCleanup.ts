@@ -180,28 +180,28 @@ export const cleanupNodeTimers = (nodeId: string): void => {
 	}
 
 	// Clear all timeouts
-	registry.timeouts.forEach((timeoutId) => {
+	for (const timeoutId of registry.timeouts) {
 		window.clearTimeout(timeoutId);
-	});
+	}
 
 	// Clear all intervals
-	registry.intervals.forEach((intervalId) => {
+	for (const intervalId of registry.intervals) {
 		window.clearInterval(intervalId);
-	});
+	}
 
 	// Cancel all RAF
-	registry.rafs.forEach((rafId) => {
+	for (const rafId of registry.rafs) {
 		window.cancelAnimationFrame(rafId);
-	});
+	}
 
 	// Run custom cleanup functions
-	registry.customCleanup.forEach((cleanupFn) => {
+	for (const cleanupFn of registry.customCleanup) {
 		try {
 			cleanupFn();
 		} catch (error) {
-			console.error(`Cleanup function failed for node ${nodeId}:`, error);
+			console.warn("Timer cleanup function failed:", error);
 		}
-	});
+	}
 
 	// Remove registry
 	nodeTimers.delete(nodeId);
@@ -249,12 +249,12 @@ export const getTimerStats = (): {
 	let totalRAFs = 0;
 	let customCleanupCount = 0;
 
-	nodeTimers.forEach((registry) => {
+	for (const registry of nodeTimers.values()) {
 		totalTimeouts += registry.timeouts.size;
 		totalIntervals += registry.intervals.size;
 		totalRAFs += registry.rafs.size;
 		customCleanupCount += registry.customCleanup.size;
-	});
+	}
 
 	return {
 		nodeCount: nodeTimers.size,

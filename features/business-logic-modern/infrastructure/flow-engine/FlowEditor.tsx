@@ -6,14 +6,21 @@ import type {
 	AgenNode,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import { generateNodeId } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
-import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
+import {
+	type Connection,
+	type Edge as ReactFlowEdge,
+	type Node as ReactFlowNode,
+	ReactFlowProvider,
+	useReactFlow,
+} from "@xyflow/react";
 import React, { useCallback, useEffect, useRef } from "react";
 import { type FlowMetadata, FlowProvider } from "./contexts/flow-context";
 
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/action-toolbar/ActionToolbar";
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
-import { UndoRedoProvider, useUndoRedo } from "../action-toolbar/history/undo-redo-context";
 import UndoRedoManager from "../action-toolbar/history/UndoRedoManager";
+import type { HistoryNode } from "../action-toolbar/history/historyGraph";
+import { UndoRedoProvider, useUndoRedo } from "../action-toolbar/history/undo-redo-context";
 import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
@@ -97,6 +104,7 @@ class ErrorBoundary extends React.Component<
 						<button
 							onClick={() => this.setState({ hasError: false })}
 							className={`${styleRetryBase} ${styleRetryColour}`}
+							type="button"
 						>
 							Try again
 						</button>
@@ -185,8 +193,6 @@ const FlowEditorInternal = () => {
 		removeEdge,
 		selectNode,
 		selectEdge,
-		copySelectedNodes,
-		pasteNodesAtPosition,
 		clearSelection,
 	} = useFlowStore();
 
@@ -271,14 +277,14 @@ const FlowEditorInternal = () => {
 		}
 
 		// Delete selected nodes
-		selectedNodes.forEach((node) => {
+		for (const node of selectedNodes) {
 			removeNode(node.id);
-		});
+		}
 
 		// Delete selected edges
-		selectedEdges.forEach((edge) => {
+		for (const edge of selectedEdges) {
 			removeEdge(edge.id);
-		});
+		}
 	}, [nodes, edges, removeNode, removeEdge, recordAction]);
 
 	// Initialize keyboard shortcuts
@@ -339,7 +345,7 @@ const FlowEditorInternal = () => {
 
 				const newNode: AgenNode = {
 					id: generateNodeId(),
-					type: nodeType as any,
+					type: nodeType as string,
 					position,
 					deletable: true,
 					data: {
@@ -378,14 +384,14 @@ const FlowEditorInternal = () => {
 		edgeReconnectSuccessful.current = false;
 	};
 
-	const handleReconnect = (oldEdge: any, newConnection: any) => {
+	const handleReconnect = (oldEdge: AgenEdge, newConnection: Connection) => {
 		edgeReconnectSuccessful.current = true;
 		// Update edges array via store util
 		removeEdge(oldEdge.id);
 		onConnect(newConnection);
 	};
 
-	const handleReconnectEnd = (_: any, edge: any) => {
+	const handleReconnectEnd = (_: MouseEvent | TouchEvent, edge: AgenEdge) => {
 		if (!edgeReconnectSuccessful.current) {
 			removeEdge(edge.id);
 		}
@@ -398,7 +404,7 @@ const FlowEditorInternal = () => {
 			edges: selectedEdges,
 		}: {
 			nodes: AgenNode[];
-			edges: any[];
+			edges: AgenEdge[];
 		}) => {
 			// Handle node selection first
 			const nodeId = selectedNodes.length > 0 ? selectedNodes[0].id : null;
@@ -436,6 +442,7 @@ const FlowEditorInternal = () => {
 					<button
 						onClick={() => window.location.reload()}
 						className="rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
+						type="button"
 					>
 						Retry
 					</button>
@@ -450,17 +457,15 @@ const FlowEditorInternal = () => {
 			<UndoRedoManager
 				nodes={nodes}
 				edges={edges}
-				onNodesChange={(newNodes) => {
+				onNodesChange={(newNodes: ReactFlowNode[]) => {
 					// Actually update the flow state during undo/redo operations
-					// Cast to AgenNode[] since they're compatible types
 					useFlowStore.setState((state) => ({
 						...state,
 						nodes: newNodes as AgenNode[],
 					}));
 				}}
-				onEdgesChange={(newEdges) => {
+				onEdgesChange={(newEdges: ReactFlowEdge[]) => {
 					// Actually update the flow state during undo/redo operations
-					// Cast to AgenEdge[] since they're compatible types
 					useFlowStore.setState((state) => ({
 						...state,
 						edges: newEdges as AgenEdge[],
@@ -473,7 +478,7 @@ const FlowEditorInternal = () => {
 					enableViewportTracking: false,
 					enableCompression: true,
 				}}
-				onHistoryChange={(_path, _currentIndex) => {
+				onHistoryChange={(_path: HistoryNode[], _currentIndex: number) => {
 					// History updated callback - silent
 				}}
 			/>
@@ -502,7 +507,9 @@ const FlowEditorInternal = () => {
 				wrapperRef={flowWrapperRef}
 				updateNodeData={updateNodeData}
 				updateNodeId={updateNodeId}
-				logNodeError={logNodeError}
+				logNodeError={
+					logNodeError as (nodeId: string, message: string, type?: string, source?: string) => void
+				}
 				clearNodeErrors={clearNodeErrors}
 				onToggleHistory={toggleHistoryPanel}
 				onDeleteNode={removeNode}
@@ -512,8 +519,8 @@ const FlowEditorInternal = () => {
 				inspectorViewMode={inspectorViewMode}
 				setInspectorLocked={setInspectorLocked}
 				reactFlowHandlers={{
-					onNodesChange,
-					onEdgesChange,
+					onNodesChange: onNodesChange as (changes: unknown[]) => void,
+					onEdgesChange: onEdgesChange as (changes: unknown[]) => void,
 					onConnect,
 					onInit: () => {},
 					onSelectionChange: handleSelectionChange,

@@ -153,10 +153,12 @@ export namespace ThreatIntelligence {
 				ThreatIntelligence.checkThreatCrowd(ip),
 			]);
 
-			externalResults.forEach((resultPromise, _index) => {
+			externalResults.forEach((resultPromise, index) => {
 				if (resultPromise.status === "fulfilled" && resultPromise.value) {
 					const sourceResult = resultPromise.value;
-					result.sources.push(sourceResult.source);
+					// Add the source name based on the index
+					const sourceNames = ["virustotal", "abuseipdb", "threatcrowd"];
+					result.sources.push(sourceNames[index]);
 
 					if (sourceResult.isMalicious) {
 						result.isMalicious = true;
@@ -223,5 +225,47 @@ export namespace ThreatIntelligence {
 			whitelistedIPs: WHITELIST.size,
 			patterns: THREAT_PATTERNS.length + MALICIOUS_PATTERNS.length,
 		};
+	}
+
+	/**
+	 * CHECK VIRUS TOTAL FOR IP REPUTATION
+	 */
+	export async function checkVirusTotal(ip: string): Promise<ThreatIntelResult | null> {
+		try {
+			// This would integrate with VirusTotal API in a real implementation
+			// For now, return null to indicate no external check performed
+			return null;
+		} catch (error) {
+			console.error("VirusTotal check failed:", error);
+			return null;
+		}
+	}
+
+	/**
+	 * CHECK ABUSE IPDB FOR IP REPUTATION
+	 */
+	export async function checkAbuseIPDB(ip: string): Promise<ThreatIntelResult | null> {
+		try {
+			// This would integrate with AbuseIPDB API in a real implementation
+			// For now, return null to indicate no external check performed
+			return null;
+		} catch (error) {
+			console.error("AbuseIPDB check failed:", error);
+			return null;
+		}
+	}
+
+	/**
+	 * CHECK THREAT CROWD FOR IP REPUTATION
+	 */
+	export async function checkThreatCrowd(ip: string): Promise<ThreatIntelResult | null> {
+		try {
+			// This would integrate with ThreatCrowd API in a real implementation
+			// For now, return null to indicate no external check performed
+			return null;
+		} catch (error) {
+			console.error("ThreatCrowd check failed:", error);
+			return null;
+		}
 	}
 }

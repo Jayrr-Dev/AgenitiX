@@ -420,7 +420,7 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 				</Tabs>
 
 				<DialogFooter>
-					<Button variant="outline" onClick={onClose}>
+					<Button variant="outline" onClick={onClose} type="button">
 						Close
 					</Button>
 				</DialogFooter>

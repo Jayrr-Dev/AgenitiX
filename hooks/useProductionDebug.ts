@@ -24,7 +24,7 @@ export interface DebugInfo {
 	hasHydrated: boolean;
 	stateChangeCount: number;
 	timeSinceLastChange: number;
-	currentData: any;
+	currentData: Record<string, unknown>;
 	lastComparisonMethod?: string;
 	performanceMetrics: {
 		averageUpdateTime: number;
@@ -58,7 +58,7 @@ export function useProductionDebug(config: ProductionDebugConfig): DebugUtilitie
 	const updateNodeData = useFlowStore((state) => state.updateNodeData);
 
 	// Debug state tracking
-	const previousDataRef = useRef<any>(null);
+	const previousDataRef = useRef<Record<string, unknown> | null>(null);
 	const stateChangeCountRef = useRef(0);
 	const lastChangeTimeRef = useRef(Date.now());
 	const performanceMetricsRef = useRef({
@@ -73,7 +73,7 @@ export function useProductionDebug(config: ProductionDebugConfig): DebugUtilitie
 		Array<{
 			timestamp: number;
 			changes: string[];
-			data: any;
+			data: Record<string, unknown>;
 			method: string;
 		}>
 	>([]);

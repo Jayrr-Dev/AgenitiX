@@ -100,8 +100,21 @@ const imapConfigFields: ConfigField[] = [
 	},
 ];
 
-async function validateImapConnection(config: EmailAccountConfig): Promise<ConnectionResult> {
+function validateImapConnection(config: EmailAccountConfig): Promise<ConnectionResult> {
 	try {
+		// Basic validation of config
+		if (!(config.host && config.port)) {
+			return Promise.resolve({
+				success: false,
+				error: {
+					type: "INVALID_SETTINGS",
+					message: "Host and port are required",
+					details: "IMAP configuration is incomplete",
+					timestamp: new Date().toISOString(),
+				},
+			});
+		}
+
 		// Validate required fields
 		const requiredFields = ["email", "imapHost", "imapPort", "username", "password"];
 		for (const field of requiredFields) {
@@ -205,7 +218,7 @@ class ImapProvider extends BaseEmailProvider {
 		useSSL: true,
 	};
 
-	async validateConnection(config: EmailAccountConfig): Promise<ConnectionResult> {
+	validateConnection(config: EmailAccountConfig): Promise<ConnectionResult> {
 		return validateImapConnection(config);
 	}
 }

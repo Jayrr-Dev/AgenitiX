@@ -19,6 +19,147 @@ interface UseTextInputShortcutsOptions {
 }
 
 /**
+ * Helper function to position cursor after text deletion
+ */
+const positionCursor = (input: HTMLInputElement, position: number): void => {
+	requestAnimationFrame(() => {
+		if (input) {
+			input.setSelectionRange(position, position);
+		}
+	});
+};
+
+/**
+ * Helper function to handle selected text deletion
+ */
+const handleSelectionDeletion = (
+	value: string,
+	start: number,
+	end: number,
+	setValue: (value: string) => void,
+	input: HTMLInputElement
+): void => {
+	const newValue = value.slice(0, start) + value.slice(end);
+	setValue(newValue);
+	positionCursor(input, start);
+};
+
+/**
+ * Helper function to handle deletion from cursor to beginning of line
+ */
+const handleLineStartDeletion = (
+	value: string,
+	start: number,
+	setValue: (value: string) => void,
+	input: HTMLInputElement
+): void => {
+	const newValue = value.slice(start);
+	setValue(newValue);
+	positionCursor(input, 0);
+};
+
+/**
+ * Helper function to handle word deletion
+ */
+const handleWordDeletion = (
+	value: string,
+	start: number,
+	setValue: (value: string) => void,
+	input: HTMLInputElement
+): void => {
+	const beforeCursor = value.slice(0, start);
+	const afterCursor = value.slice(start);
+
+	// Find the start of the current word by looking backwards
+	let wordStart = beforeCursor.length;
+
+	// Skip trailing whitespace
+	while (wordStart > 0 && /\s/.test(beforeCursor[wordStart - 1])) {
+		wordStart--;
+	}
+
+	// Find the start of the word (non-whitespace to whitespace boundary)
+	while (wordStart > 0 && !/\s/.test(beforeCursor[wordStart - 1])) {
+		wordStart--;
+	}
+
+	const newValue = beforeCursor.slice(0, wordStart) + afterCursor;
+	setValue(newValue);
+	positionCursor(input, wordStart);
+};
+
+/**
+ * Helper function to handle single character deletion
+ */
+const handleCharacterDeletion = (
+	value: string,
+	start: number,
+	setValue: (value: string) => void,
+	input: HTMLInputElement
+): void => {
+	const newValue = value.slice(0, start - 1) + value.slice(start);
+	setValue(newValue);
+	positionCursor(input, start - 1);
+};
+
+/**
+ * Helper function to handle Alt+Q deletion logic
+ */
+const handleAltQDeletion = (
+	e: React.KeyboardEvent<HTMLInputElement>,
+	value: string,
+	setValue: (value: string) => void
+): void => {
+	e.preventDefault();
+	const input = e.currentTarget;
+	const start = input.selectionStart || 0;
+	const end = input.selectionEnd || 0;
+
+	if (!setValue) {
+		return;
+	}
+
+	// If there's a selection, delete the selected text
+	if (start !== end) {
+		handleSelectionDeletion(value, start, end, setValue, input);
+		return;
+	}
+
+	// If cursor is at the beginning, do nothing
+	if (start === 0) {
+		return;
+	}
+
+	// Alt+Ctrl+Q - Delete from cursor to beginning of line
+	if (e.ctrlKey) {
+		handleLineStartDeletion(value, start, setValue, input);
+		return;
+	}
+
+	// Alt+Shift+Q - Delete entire word
+	if (e.shiftKey) {
+		handleWordDeletion(value, start, setValue, input);
+		return;
+	}
+
+	// Alt+Q - Delete single character (standard behavior)
+	handleCharacterDeletion(value, start, setValue, input);
+};
+
+/**
+ * Helper function to handle Alt+W enter logic
+ */
+const handleAltWEnter = (e: React.KeyboardEvent<HTMLInputElement>, onEnter?: () => void): void => {
+	e.preventDefault();
+	if (onEnter) {
+		onEnter();
+	} else {
+		// Default behavior: blur the input
+		e.currentTarget.blur();
+	}
+};
+
+/**
  * ERGONOMIC TEXT INPUT SHORTCUTS HOOK
  *
  * Provides enhanced Alt+Q (backspace) and Alt+W (enter) functionality for text input fields.
@@ -38,96 +179,13 @@ export function useTextInputShortcuts(options: UseTextInputShortcutsOptions = {}
 		(e: React.KeyboardEvent<HTMLInputElement>) => {
 			// ALT+Q - Enhanced ergonomic backspace
 			if (e.altKey && e.key.toLowerCase() === "q") {
-				e.preventDefault();
-				const input = e.currentTarget;
-				const start = input.selectionStart || 0;
-				const end = input.selectionEnd || 0;
-
-				if (!setValue) {
-					return;
-				}
-
-				// If there's a selection, delete the selected text
-				if (start !== end) {
-					const newValue = value.slice(0, start) + value.slice(end);
-					setValue(newValue);
-					// Immediate cursor positioning for fast deletion
-					requestAnimationFrame(() => {
-						if (input) {
-							input.setSelectionRange(start, start);
-						}
-					});
-					return;
-				}
-
-				// If cursor is at the beginning, do nothing
-				if (start === 0) {
-					return;
-				}
-
-				// Alt+Ctrl+Q - Delete from cursor to beginning of line
-				if (e.ctrlKey) {
-					const newValue = value.slice(start);
-					setValue(newValue);
-					// Immediate cursor positioning for fast deletion
-					requestAnimationFrame(() => {
-						if (input) {
-							input.setSelectionRange(0, 0);
-						}
-					});
-					return;
-				}
-
-				// Alt+Shift+Q - Delete entire word
-				if (e.shiftKey) {
-					const beforeCursor = value.slice(0, start);
-					const afterCursor = value.slice(start);
-
-					// Find the start of the current word by looking backwards
-					let wordStart = beforeCursor.length;
-
-					// Skip trailing whitespace
-					while (wordStart > 0 && /\s/.test(beforeCursor[wordStart - 1])) {
-						wordStart--;
-					}
-
-					// Find the start of the word (non-whitespace to whitespace boundary)
-					while (wordStart > 0 && !/\s/.test(beforeCursor[wordStart - 1])) {
-						wordStart--;
-					}
-
-					const newValue = beforeCursor.slice(0, wordStart) + afterCursor;
-					setValue(newValue);
-					// Immediate cursor positioning for fast deletion
-					requestAnimationFrame(() => {
-						if (input) {
-							input.setSelectionRange(wordStart, wordStart);
-						}
-					});
-					return;
-				}
-
-				// Alt+Q - Delete single character (standard behavior)
-				const newValue = value.slice(0, start - 1) + value.slice(start);
-				setValue(newValue);
-				// Immediate cursor positioning for fast deletion
-				requestAnimationFrame(() => {
-					if (input) {
-						input.setSelectionRange(start - 1, start - 1);
-					}
-				});
+				handleAltQDeletion(e, value, setValue);
 				return;
 			}
 
 			// ALT+W - Ergonomic enter
 			if (e.altKey && e.key.toLowerCase() === "w") {
-				e.preventDefault();
-				if (onEnter) {
-					onEnter();
-				} else {
-					// Default behavior: blur the input
-					e.currentTarget.blur();
-				}
+				handleAltWEnter(e, onEnter);
 				return;
 			}
 		},

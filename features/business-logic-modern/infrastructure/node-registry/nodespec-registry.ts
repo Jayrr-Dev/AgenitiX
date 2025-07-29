@@ -107,10 +107,16 @@ const nodeMetadataOverrides: Record<string, Partial<NodeSpecMetadata>> = {
  * @deprecated Use getAllNodeSpecMetadataWithFeatureFlags() for feature flag filtering
  */
 export function getAllNodeSpecMetadata(): NodeSpecMetadata[] {
-	return Object.keys(nodeSpecs).map((nodeType) => {
-		const metadata = getNodeMetadata(nodeType);
-		return metadata!; // We know it exists since we're iterating over nodeSpecs keys
-	});
+	return Object.keys(nodeSpecs)
+		.map((nodeType) => {
+			const metadata = getNodeMetadata(nodeType);
+			if (!metadata) {
+				console.warn(`No metadata found for node type: ${nodeType}`);
+				return null;
+			}
+			return metadata;
+		})
+		.filter((metadata): metadata is NodeSpecMetadata => metadata !== null);
 }
 
 /**

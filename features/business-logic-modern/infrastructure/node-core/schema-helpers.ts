@@ -146,7 +146,7 @@ export const SafeSchemas = {
 	/**
 	 * JSON field with safe defaults
 	 */
-	json: (defaultValue: any = {}) => z.any().default(defaultValue),
+	json: (defaultValue: Record<string, unknown> = {}) => z.record(z.unknown()).default(defaultValue),
 
 	/**
 	 * Array field with safe defaults
@@ -213,7 +213,7 @@ export namespace SchemaIntrospector {
 		if (schema instanceof z.ZodObject) {
 			return processZodObject(schema, basePath);
 		}
-		
+
 		// For non-object schemas, return empty array
 		return [];
 	}
@@ -254,7 +254,7 @@ export namespace SchemaIntrospector {
 		return {
 			label: _fieldName,
 			description: undefined,
-			placeholder: undefined
+			placeholder: undefined,
 		};
 	}
 
@@ -298,21 +298,25 @@ export namespace SchemaIntrospector {
 	/**
 	 * Analyzes a single Zod field to extract field information
 	 */
-	function analyzeZodField(key: string, zodType: z.ZodType<any>, basePath = ""): SchemaFieldInfo | null {
+	function analyzeZodField(
+		key: string,
+		zodType: z.ZodType<any>,
+		basePath = ""
+	): SchemaFieldInfo | null {
 		const fullKey = basePath ? `${basePath}.${key}` : key;
 
 		// Get the base type by unwrapping optionals, defaults, etc.
 		const baseType = getBaseZodType(zodType);
-		
+
 		// Map to control type
 		const controlType = mapZodToControlType(baseType);
-		
+
 		// Extract validation info
 		const validation = extractZodValidation(zodType);
-		
+
 		// Check if field is required
 		const required = !isZodOptional(zodType);
-		
+
 		// Extract default value
 		const defaultValue = extractZodDefault(zodType);
 
@@ -326,7 +330,7 @@ export namespace SchemaIntrospector {
 			validation,
 			description: extractZodDescription(zodType),
 			placeholder: generateFieldPlaceholder(key, controlType),
-			ui: generateFieldUI(baseType, key)
+			ui: generateFieldUI(baseType, key),
 		};
 	}
 
@@ -368,7 +372,7 @@ export namespace SchemaIntrospector {
 		if (zodType instanceof z.ZodObject || zodType instanceof z.ZodArray) {
 			return "json";
 		}
-		
+
 		// Default fallback
 		return "text";
 	}
@@ -378,24 +382,32 @@ export namespace SchemaIntrospector {
 	 */
 	function extractZodValidation(zodType: z.ZodType<any>): SchemaFieldInfo["validation"] {
 		const validation: SchemaFieldInfo["validation"] = {};
-		
+
 		// Handle string validations
 		if (zodType instanceof z.ZodString) {
-			if (zodType.minLength !== null) validation.min = zodType.minLength;
-			if (zodType.maxLength !== null) validation.max = zodType.maxLength;
+			if (zodType.minLength !== null) {
+				validation.min = zodType.minLength;
+			}
+			if (zodType.maxLength !== null) {
+				validation.max = zodType.maxLength;
+			}
 		}
-		
+
 		// Handle number validations
 		if (zodType instanceof z.ZodNumber) {
-			if (zodType.minValue !== null) validation.min = zodType.minValue;
-			if (zodType.maxValue !== null) validation.max = zodType.maxValue;
+			if (zodType.minValue !== null) {
+				validation.min = zodType.minValue;
+			}
+			if (zodType.maxValue !== null) {
+				validation.max = zodType.maxValue;
+			}
 		}
 
 		// Handle enum/union options
 		if (zodType instanceof z.ZodEnum) {
 			validation.options = zodType.options.map((value: any) => ({
 				value,
-				label: String(value)
+				label: String(value),
 			}));
 		}
 
@@ -431,8 +443,8 @@ export namespace SchemaIntrospector {
 	 */
 	function generateFieldLabel(key: string): string {
 		return key
-			.replace(/([A-Z])/g, ' $1')
-			.replace(/^./, str => str.toUpperCase())
+			.replace(/([A-Z])/g, " $1")
+			.replace(/^./, (str) => str.toUpperCase())
 			.trim();
 	}
 
@@ -441,7 +453,7 @@ export namespace SchemaIntrospector {
 	 */
 	function generateFieldPlaceholder(key: string, controlType: ControlFieldConfig["type"]): string {
 		const label = generateFieldLabel(key);
-		
+
 		switch (controlType) {
 			case "text":
 			case "textarea":
@@ -466,7 +478,10 @@ export namespace SchemaIntrospector {
 		const ui: SchemaFieldInfo["ui"] = {};
 
 		// Configure textarea for long text fields
-		if (zodType instanceof z.ZodString && (key.includes('description') || key.includes('content'))) {
+		if (
+			zodType instanceof z.ZodString &&
+			(key.includes("description") || key.includes("content"))
+		) {
 			ui.rows = 3;
 			ui.multiline = true;
 		}

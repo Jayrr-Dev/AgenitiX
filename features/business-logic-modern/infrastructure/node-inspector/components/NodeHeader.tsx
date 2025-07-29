@@ -54,12 +54,11 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 	onUpdateNodeId,
 	onDeleteNode,
 	onDuplicateNode,
-	inspectorState,
 }) => {
 	// STATE MANAGEMENT
 	const [isEditingId, setIsEditingId] = useState(false);
 	const [editingId, setEditingId] = useState(nodeId);
-	const { showNodeIds, setShowNodeIds } = useNodeDisplay();
+	const { showNodeIds } = useNodeDisplay();
 
 	// EVENT HANDLERS
 	const handleIdEdit = useCallback(() => {
@@ -177,7 +176,15 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 							className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
 							title="Duplicate Node (Alt+D)"
 						>
-							<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg
+								className="h-4 w-4"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+								role="img"
+								aria-labelledby="duplicate-icon-title"
+							>
+								<title id="duplicate-icon-title">Duplicate Node</title>
 								<path
 									strokeLinecap="round"
 									strokeLinejoin="round"
@@ -194,7 +201,15 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 							className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
 							title="Delete Node (Delete)"
 						>
-							<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg
+								className="h-4 w-4"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+								role="img"
+								aria-labelledby="delete-icon-title-header"
+							>
+								<title id="delete-icon-title-header">Delete Node</title>
 								<path
 									strokeLinecap="round"
 									strokeLinejoin="round"
