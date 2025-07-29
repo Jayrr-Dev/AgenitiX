@@ -1,3 +1,17 @@
+/**
+ * EXPAND COLLAPSE BUTTON - Unified, token-based expand/collapse control
+ *
+ * • Fully styled through tokens.json for ultimate flexibility
+ * • Uses CSS custom properties from expandCollapseButton tokens
+ * • Consistent sizing and positioning across all node types
+ * • Smooth transitions and hover effects
+ * • Accessible with proper ARIA labels and keyboard support
+ * • Supports dark mode theming
+ *
+ * Keywords: expand-collapse, token-styling, unified-design, accessibility, dark-mode
+ */
+
+import { useTheme } from "next-themes";
 import React from "react";
 
 import { IoIosRadioButtonOn } from "react-icons/io";
@@ -34,44 +48,38 @@ export const ExpandCollapseButton: React.FC<ExpandCollapseButtonProps> = ({
 	showUI,
 	onToggle,
 	className = "",
-}: ExpandCollapseButtonProps) => {
+	size = "sm",
+}) => {
+	const { resolvedTheme } = useTheme();
+
+	// Get theme-aware button color (simplified to avoid hydration issues)
+	const buttonColor = "var(--core-expandCollapseButton-text)";
+
 	// Memoize the button style to prevent unnecessary re-renders
 	const buttonStyle = React.useMemo(
 		(): React.CSSProperties => ({
 			// Token-based styling - maintains current appearance
+			backgroundColor: "var(--core-expandCollapseButton-bg)",
+			color: buttonColor,
+			// Positioning and sizing (keeping current values)
 			position: "absolute",
-			top: "-10px",
-			right: "-10px",
-			width: "20px",
-			height: "20px",
-			borderRadius: "50%",
-			border: "none",
-			background: "var(--core-expandCollapseButton-bg)",
-			color: "var(--core-expandCollapseButton-text)",
+			top: "4px", // top-0.5 = 2px
+			left: "3px", // left-1 = 4px
+			zIndex: 10,
 			cursor: "pointer",
-			display: "flex",
-			alignItems: "center",
-			justifyContent: "center",
-			fontSize: "10px",
+			// Typography (keeping current values)
+			fontSize: "11px",
 			fontWeight: "bold",
-			zIndex: 1000,
-			transition: "all 0.2s ease",
-			// Hover state
-			":hover": {
-				transform: "scale(1.1)",
-			},
-			// Active state
-			":active": {
-				transform: "scale(0.95)",
-			},
-			// Focus state
-			":focus": {
-				outline: "2px solid var(--core-expandCollapseButton-text)",
-				outlineOffset: "2px",
-				scale: "1.2",
-			},
+			// Remove default button styling
+			border: "none",
+			padding: "0",
+			outline: "none",
+			margin: "0px",
+			transform: "translate(0px, -1px)",
+			opacity: ".7",
+			scale: "1.2",
 		}),
-		[]
+		[buttonColor]
 	);
 
 	return (

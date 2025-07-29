@@ -2,17 +2,76 @@
 /**
  * NODE MEMORY SYSTEM (v2) — per‑node programmable cache with isolation
  *
- * – Size & entry caps, four eviction strategies, per‑key TTL
- * – Optional persistence via pluggable StorageAdapter (default: localStorage in browser)
- * – Accurate metrics & pressure index
- * – Environment‑agnostic (Node, browser, edge)
+ * – Size & entry caps, four eviction strategies, per‑key TTL
+ * – Optional persistence via pluggable StorageAdapter (default: localStorage in browser)
+ * – Accurate metrics & pressure index
+ * – Environment‑agnostic (Node, browser, edge)
  */
 
-import { EventEmitter } from "node:events";
 import { z } from "zod";
 
 /* ------------------------------------------------------------------ */
-/* 1. Public config / types                                            */
+/* 0. Browser-compatible EventEmitter                                */
+/* ------------------------------------------------------------------ */
+
+class BrowserEventEmitter {
+	private listeners = new Map<string, Array<(...args: unknown[]) => void>>();
+
+	on(event: string, listener: (...args: unknown[]) => void): this {
+		if (!this.listeners.has(event)) {
+			this.listeners.set(event, []);
+		}
+		this.listeners.get(event)!.push(listener);
+		return this;
+	}
+
+	emit(event: string, ...args: unknown[]): boolean {
+		const eventListeners = this.listeners.get(event);
+		if (!eventListeners || eventListeners.length === 0) {
+			return false;
+		}
+		
+		eventListeners.forEach(listener => {
+			try {
+				listener(...args);
+			} catch (error) {
+				console.error(`Error in event listener for ${event}:`, error);
+			}
+		});
+		
+		return true;
+	}
+
+	removeAllListeners(event?: string): this {
+		if (event) {
+			this.listeners.delete(event);
+		} else {
+			this.listeners.clear();
+		}
+		return this;
+	}
+
+	off(event: string, listener: (...args: unknown[]) => void): this {
+		const eventListeners = this.listeners.get(event);
+		if (!eventListeners) {
+			return this;
+		}
+		
+		const index = eventListeners.indexOf(listener);
+		if (index > -1) {
+			eventListeners.splice(index, 1);
+		}
+		
+		if (eventListeners.length === 0) {
+			this.listeners.delete(event);
+		}
+		
+		return this;
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* 1. Public config / types                                            */
 /* ------------------------------------------------------------------ */
 
 export const NodeMemoryConfigSchema = z.object({
@@ -52,7 +111,7 @@ export interface MemoryMetrics {
 }
 
 /* ------------------------------------------------------------------ */
-/* 2. Pluggable storage adapter                                        */
+/* 2. Pluggable storage adapter                                        */
 /* ------------------------------------------------------------------ */
 
 export interface StorageAdapter {
@@ -86,10 +145,10 @@ export const LocalStorageAdapter: StorageAdapter = {
 };
 
 /* ------------------------------------------------------------------ */
-/* 3. Main class                                                       */
+/* 3. Main class                                                       */
 /* ------------------------------------------------------------------ */
 
-export class NodeMemoryManager extends EventEmitter {
+export class NodeMemoryManager extends BrowserEventEmitter {
 	private readonly cache = new Map<string, MemoryEntry>();
 	private readonly cfg: Required<NodeMemoryConfig>;
 	private readonly metrics: MemoryMetrics = {
@@ -376,7 +435,7 @@ export class NodeMemoryManager extends EventEmitter {
 }
 
 /* ------------------------------------------------------------------ */
-/* 4. Global manager (singleton)                                       */
+/* 4. Global manager (singleton)                                       */
 /* ------------------------------------------------------------------ */
 
 export class GlobalNodeMemoryManager {
@@ -419,7 +478,7 @@ export class GlobalNodeMemoryManager {
 export const globalNodeMemoryManager = new GlobalNodeMemoryManager();
 
 /* ------------------------------------------------------------------ */
-/* 5. React hook (unchanged API)                                       */
+/* 5. React hook (unchanged API)                                       */
 /* ------------------------------------------------------------------ */
 
 export const useNodeMemory = (

@@ -166,9 +166,9 @@ export function AnubisControlPanel() {
 
 					<div className="flex items-center justify-between rounded-lg border border-transparent bg-fill-border p-4 hover:animate-fill-transparency">
 						<div>
-							<label className="font-medium text-foreground text-sm">
+							<div className="font-medium text-foreground text-sm">
 								Enable AgenitiX Protection
-							</label>
+							</div>
 							<p className="text-muted-foreground text-xs">
 								Globally enable or disable bot protection
 							</p>

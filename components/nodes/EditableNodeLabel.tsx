@@ -20,7 +20,7 @@ interface EditableNodeLabelProps {
 	/** Fallback display name when no custom label */
 	displayName: string;
 	/** Callback to update node data */
-	onUpdateNodeData: (nodeId: string, data: any) => void;
+	onUpdateNodeData: (nodeId: string, data: Record<string, unknown>) => void;
 	/** Optional styling class */
 	className?: string;
 }

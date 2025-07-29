@@ -8,7 +8,13 @@ import {
 import { Menu } from "lucide-react";
 import Link from "next/link";
 
-export default function MobileNav() {
+/**
+ * main-mobile-nav.tsx - Mobile navigation component
+ *
+ * Dropdown menu navigation for mobile devices with hamburger menu trigger
+ */
+
+export default function MainMobileNav() {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild={true}>

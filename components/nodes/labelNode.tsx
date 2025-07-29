@@ -20,12 +20,14 @@ interface LabelNodeProps {
 	nodeId: string;
 	/** Current label value */
 	label: string;
+	/** Callback to handle editing */
+	onEdit?: (nodeId: string) => void;
 }
 
 /**
  * Editable label component that stores its value inside the node's data.
  */
-const LabelNode: React.FC<LabelNodeProps> = ({ nodeId, label }) => {
+const LabelNode: React.FC<LabelNodeProps> = ({ nodeId, label, onEdit }) => {
 	const [editing, setEditing] = useState(false);
 	const spanRef = useRef<HTMLSpanElement>(null);
 	const { setNodes } = useReactFlow();
@@ -41,19 +43,16 @@ const LabelNode: React.FC<LabelNodeProps> = ({ nodeId, label }) => {
 	const isDarkMode = mounted && resolvedTheme === "dark";
 	const labelColor = isDarkMode ? "var(--core-label-color)" : "var(--core-label-color)";
 
-	// focus when entering edit mode
+	// Focus and select all text when entering edit mode
 	useEffect(() => {
-		if (editing) {
-			const span = spanRef.current;
-			if (span) {
-				span.focus();
-				// Select all text when entering edit mode
-				const range = document.createRange();
-				range.selectNodeContents(span);
-				const selection = window.getSelection();
-				selection?.removeAllRanges();
-				selection?.addRange(range);
-			}
+		if (editing && spanRef.current) {
+			spanRef.current.focus();
+			// Select all text for easy editing
+			const range = document.createRange();
+			range.selectNodeContents(spanRef.current);
+			const selection = window.getSelection();
+			selection?.removeAllRanges();
+			selection?.addRange(range);
 		}
 	}, [editing]);
 
@@ -84,25 +83,24 @@ const LabelNode: React.FC<LabelNodeProps> = ({ nodeId, label }) => {
 		}
 	};
 
-	const handleContainerClick = (e: React.MouseEvent) => {
-		// Only handle double-click when not editing
-		if (!editing && e.detail === 2) {
-			setEditing(true);
-		}
-	};
-
 	return (
-		<div
+		<button
+			type="button"
 			className="-translate-x-1/2 absolute left-1/2 select-none truncate px-1 text-center"
-			onClick={handleContainerClick}
+			onClick={() => {
+				// Handle editing if callback is provided
+				if (typeof onEdit === "function") {
+					onEdit(nodeId);
+				}
+			}}
+			aria-label="Edit node label"
 			style={{
-				pointerEvents: editing ? "none" : "auto", // Disable pointer events when editing
-				top: "var(--core-label-top)",
-				fontSize: "var(--core-label-font-size)",
-				fontWeight: "var(--core-label-font-weight)",
-				fontFamily: "var(--core-label-font-family, inherit)",
-				color: labelColor,
-				zIndex: editing ? 10 : 1, // Higher z-index when editing
+				maxWidth: "200px",
+				fontSize: "14px",
+				color: "var(--core-text-primary)",
+				backgroundColor: "var(--core-fill-bg)",
+				border: "1px solid var(--core-fill-border)",
+				borderRadius: "4px",
 			}}
 		>
 			<span
@@ -125,7 +123,7 @@ const LabelNode: React.FC<LabelNodeProps> = ({ nodeId, label }) => {
 			>
 				{label}
 			</span>
-		</div>
+		</button>
 	);
 };
 

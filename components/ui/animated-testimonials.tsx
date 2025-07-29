@@ -41,7 +41,7 @@ export const AnimatedTestimonials = ({
 			const interval = setInterval(handleNext, 5000);
 			return () => clearInterval(interval);
 		}
-	}, [autoplay]);
+	}, [autoplay, handleNext]);
 
 	return (
 		<div className="mx-auto max-w-sm px-4 py-20 font-sans antialiased md:max-w-4xl md:px-8 lg:px-12">
@@ -113,7 +113,7 @@ export const AnimatedTestimonials = ({
 						<motion.p className="mt-8 text-gray-500 text-lg dark:text-neutral-300">
 							{testimonials[active].quote.split(" ").map((word, index) => (
 								<motion.span
-									key={index}
+									key={`${word}-${index}-${active}`}
 									initial={{ filter: "blur(10px)", opacity: 0, y: 5 }}
 									animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
 									transition={{
@@ -131,12 +131,14 @@ export const AnimatedTestimonials = ({
 
 					<div className="flex gap-4 pt-12 md:pt-0">
 						<button
+							type="button"
 							onClick={handlePrev}
 							className="group/button flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 dark:bg-neutral-800"
 						>
 							<IconArrowLeft className="h-5 w-5 text-black transition-transform duration-300 group-hover/button:rotate-12 dark:text-neutral-400" />
 						</button>
 						<button
+							type="button"
 							onClick={handleNext}
 							className="group/button flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 dark:bg-neutral-800"
 						>

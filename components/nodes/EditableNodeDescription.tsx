@@ -94,7 +94,6 @@ const EditableNodeDescription: React.FC<EditableNodeDescriptionProps> = ({
 			}}
 			className={className}
 			style={{ cursor: editing ? "text" : "pointer" }}
-			tabIndex={0}
 			aria-label="Double-click or press Enter to edit description"
 		>
 			<span

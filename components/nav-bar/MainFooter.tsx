@@ -1,6 +1,6 @@
 /* components/footer.tsx */
 "use client";
-import { LogomarkLight } from "@/branding/logomark-svg";
+import { LogomarkSvg } from "@/branding/logomark-svg";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { CookiePolicy } from "@/features/cookies";
 import Link from "next/link";
@@ -13,7 +13,7 @@ export default function Footer() {
 					{/* Brand & blurb */}
 					<div className="space-y-4">
 						<div className="flex items-center pt-2">
-							<LogomarkLight className="mr-2 h-8 w-8" />
+							<LogomarkSvg className="mr-2 h-8 w-8" />
 							<span className="font-brand text-brand text-xl">Agenitix</span>
 						</div>
 
