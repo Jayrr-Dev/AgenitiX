@@ -4,9 +4,9 @@
 export const dynamic = "force-dynamic";
 
 import { useAuthContext } from "@/components/auth/AuthProvider";
-import FAQ from "@/features/marketing/home-page/components/FAQ";
-import FeatureBoxesBento from "@/features/marketing/home-page/components/FeatureBoxesBento";
-import FeatureBoxesIconed from "@/features/marketing/home-page/components/FeatureBoxesIconed";
+import FAQ from "@/features/marketing/home-page/components/faq";
+import FeatureBoxesBento from "@/features/marketing/home-page/components/featureBoxesBento";
+import FeatureBoxesIconed from "@/features/marketing/home-page/components/featureBoxesIconed";
 import { TabletScroller } from "@/features/marketing/home-page/components/TabletScroller";
 import FeatureBoxesPlain from "@/features/marketing/home-page/components/featureBoxesPlain";
 import Hero from "@/features/marketing/home-page/components/heroSection";
