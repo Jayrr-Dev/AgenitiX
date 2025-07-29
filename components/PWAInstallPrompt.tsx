@@ -27,7 +27,7 @@ export default function PWAInstallPrompt() {
 
 		// Check if app is already installed
 		const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
-		const isInWebAppiOS = (window.navigator as any).standalone === true;
+		const isInWebAppiOS = (window.navigator as { standalone?: boolean }).standalone === true;
 
 		if (isStandalone || isInWebAppiOS) {
 			setIsInstalled(true);
@@ -107,6 +107,7 @@ export default function PWAInstallPrompt() {
 						<h3 className="font-semibold text-sm">Install App</h3>
 					</div>
 					<button
+						type="button"
 						onClick={handleDismiss}
 						className="text-muted-foreground transition-colors hover:text-foreground"
 					>
@@ -121,6 +122,7 @@ export default function PWAInstallPrompt() {
 
 				<div className="flex gap-2">
 					<button
+						type="button"
 						onClick={handleInstallClick}
 						className="flex flex-1 items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 font-medium text-primary-foreground text-sm transition-colors hover:bg-primary/90"
 					>
@@ -128,6 +130,7 @@ export default function PWAInstallPrompt() {
 						Install
 					</button>
 					<button
+						type="button"
 						onClick={handleDismiss}
 						className="px-3 py-2 text-muted-foreground text-sm transition-colors hover:text-foreground"
 					>

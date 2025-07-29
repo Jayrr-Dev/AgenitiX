@@ -118,7 +118,6 @@ export default function RootLayout({
 
 					<Analytics />
 
-					{/* biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD structured data is safe static content */}
 					<Script
 						type="application/ld+json"
 						dangerouslySetInnerHTML={{

@@ -37,6 +37,7 @@
 		"start": "next start",
 		"lint": "biome lint .",
 		"lint:fix": "biome check --write .",
+		"lint:ci": "biome ci .",
 		"format": "biome format --write .",
 		"plop": "plop",
 		"new:node": "plop node",

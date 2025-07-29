@@ -1,7 +1,7 @@
 "use client";
 
-import Footer from "@/components/nav-bar/MainFooter";
 import MainNavBar from "@/components/nav-bar/MainNavBar";
+import Footer from "@/components/nav-bar/main-footer";
 import { CookieConsent } from "@/features/cookies";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";

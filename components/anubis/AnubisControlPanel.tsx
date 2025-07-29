@@ -7,7 +7,7 @@ import { useAnubis } from "./AnubisProvider";
 
 // AGENITIX CONTROL PANEL COMPONENT
 export function AnubisControlPanel() {
-	const { isEnabled, currentRoute, toggleProtection, updateConfig, getRouteConfig } = useAnubis();
+	const { isEnabled, currentRoute, toggleProtection, updateConfig } = useAnubis();
 
 	// ALL STATE HOOKS MUST BE DECLARED BEFORE ANY CONDITIONAL RETURNS
 	const [showUI, setShowUI] = useState(false);
@@ -126,6 +126,7 @@ export function AnubisControlPanel() {
 	if (!isOpen) {
 		return (
 			<button
+				type="button"
 				onClick={() => setIsOpen(true)}
 				className="fixed bottom-4 left-4 rounded-full border border-transparent bg-fill-border p-3 shadow-lg backdrop-blur-lg transition-all duration-300 hover:animate-fill-transparency"
 				title="Open AgenitiX-Anti-Bot Control Panel"
@@ -151,6 +152,7 @@ export function AnubisControlPanel() {
 						</div>
 					</div>
 					<button
+						type="button"
 						onClick={() => setIsOpen(false)}
 						className="rounded-lg border border-transparent bg-fill-border p-2 text-muted-foreground transition-colors hover:animate-fill-transparency hover:text-foreground"
 					>
@@ -172,6 +174,7 @@ export function AnubisControlPanel() {
 							</p>
 						</div>
 						<button
+							type="button"
 							onClick={handleGlobalToggle}
 							className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 ${
 								globalEnabled ? "bg-secondary shadow-[0_0_8px_2px_rgba(34,197,94,0.6)]" : "bg-muted"
@@ -200,6 +203,7 @@ export function AnubisControlPanel() {
 							</p>
 						</div>
 						<button
+							type="button"
 							onClick={handleProtectCurrentRoute}
 							disabled={isCurrentRouteProtected}
 							className={`rounded-lg border border-transparent px-4 py-2 font-medium text-sm transition-all duration-300 ${
@@ -229,6 +233,7 @@ export function AnubisControlPanel() {
 							onKeyPress={(e) => e.key === "Enter" && handleAddRoute()}
 						/>
 						<button
+							type="button"
 							onClick={handleAddRoute}
 							disabled={!newRoutePath.trim()}
 							className="rounded-lg border border-transparent bg-fill-border px-4 py-2 font-medium text-foreground text-sm transition-all duration-300 hover:animate-fill-transparency disabled:cursor-not-allowed disabled:opacity-50"
@@ -266,6 +271,7 @@ export function AnubisControlPanel() {
 
 									<div className="flex items-center gap-2">
 										<button
+											type="button"
 											onClick={() => handleRouteToggle(route.path, !route.enabled)}
 											className={`relative inline-flex h-5 w-9 items-center rounded-full transition-all duration-300 ${
 												route.enabled
@@ -281,6 +287,7 @@ export function AnubisControlPanel() {
 										</button>
 
 										<button
+											type="button"
 											onClick={() => handleRemoveRoute(route.path)}
 											className="rounded p-1 text-red-500 transition-colors hover:bg-red-500/10 hover:text-red-400"
 											title="Remove route"

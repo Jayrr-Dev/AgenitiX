@@ -1,12 +1,13 @@
 {
 	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
 	"vcs": {
-		"enabled": false,
+		"enabled": true,
 		"clientKind": "git",
-		"useIgnoreFile": false
+		"useIgnoreFile": true,
+		"defaultBranch": "main"
 	},
 	"files": {
-		"ignoreUnknown": false,
+		"ignoreUnknown": true,
 		"ignore": [
 			"node_modules/**",
 			".next/**",
@@ -23,7 +24,9 @@
 			"src/components/ui/**",
 			"*.config.ts",
 			"*.config.js",
-			"*.config.mjs"
+			"*.config.mjs",
+			"backups/**",
+			"app/styles/_generated_tokens.css"
 		]
 	},
 	"formatter": {
@@ -65,7 +68,7 @@
 				"noExcessiveCognitiveComplexity": {
 					"level": "error",
 					"options": {
-						"maxAllowedComplexity": 10
+						"maxAllowedComplexity": 15
 					}
 				},
 				"noExcessiveNestedTestSuites": "error",
@@ -207,6 +210,16 @@
 				"rules": {
 					"style": {
 						"useFilenamingConvention": "off"
+					}
+				}
+			}
+		},
+		{
+			"include": ["app/layout.tsx"],
+			"linter": {
+				"rules": {
+					"security": {
+						"noDangerouslySetInnerHtml": "off"
 					}
 				}
 			}

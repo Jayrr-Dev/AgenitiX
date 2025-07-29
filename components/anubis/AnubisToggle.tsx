@@ -29,6 +29,7 @@ export function AnubisToggle() {
 			<div className="flex items-center gap-3">
 				<span className="font-medium text-foreground text-sm">Anubis UI:</span>
 				<button
+					type="button"
 					onClick={handleToggle}
 					className={`rounded px-3 py-1 font-medium text-sm transition-colors ${
 						showAnubisUI ? "bg-green-500 text-white" : "bg-red-500 text-white"

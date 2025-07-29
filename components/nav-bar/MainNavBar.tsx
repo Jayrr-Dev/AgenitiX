@@ -2,7 +2,7 @@
 
 import { LogomarkLight } from "@/branding/logomark-svg";
 import MainDesktopNav from "@/components/nav-bar/MainDesktopNav";
-import MainMobileNav from "@/components/nav-bar/MainMobileNav";
+import MainMobileNav from "@/components/nav-bar/main-mobile-nav";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { cn } from "@/lib/utils";
 import * as React from "react";

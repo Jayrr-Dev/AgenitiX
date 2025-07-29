@@ -67,6 +67,7 @@ export const FloatingNodeId: React.FC<FloatingNodeIdProps> = ({ nodeId, position
 						<div className="break-all font-mono text-info-text-secondary text-sm">{nodeId}</div>
 					</div>
 					<button
+						type="button"
 						onClick={handleCopy}
 						onKeyDown={handleKeyDown}
 						className="rounded p-2 transition-colors hover:bg-info-hover focus:outline-none focus:ring-2 focus:ring-primary"
