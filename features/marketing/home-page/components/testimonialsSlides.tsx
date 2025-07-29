@@ -1,5 +1,5 @@
 import { testimonialsSlides } from "@/features/marketing/home-page/data";
-import { AnimatedTestimonials } from "@/features/marketing/home-page/components/animatedTestimonials";
+import { AnimatedTestimonials } from "@/components/ui/animated-testimonials";
 
 export const AnimatedTestimonialsDemo = () => {
 	return (

@@ -1,11 +1,11 @@
-import { testimonialsTicker } from "@/features/marketing/home-page/data";
+import { testimonials } from "@/features/marketing/home-page/data";
 
 export const Testimonials = () => {
 	return (
 		<div className="w-full">
-			{testimonialsTicker.map((testimonial, index) => (
+			{testimonials.map((testimonial, index) => (
 				<div key={index} className="testimonial">
-					{testimonial.content}
+					{testimonial.review}
 				</div>
 			))}
 		</div>
