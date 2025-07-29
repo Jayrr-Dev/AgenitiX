@@ -10,8 +10,9 @@
 		"dev:frontend": "next dev --turbo",
 		"predev": "pnpm run dev:setup",
 		"gen-registry": "node scripts/gen-registry.js",
-		"build": "pnpm run build:convex && pnpm run build:frontend && pnpm sentry:sourcemaps",
+		"build": "pnpm run build:convex:conditional && pnpm run build:frontend && pnpm sentry:sourcemaps:conditional",
 		"build:convex": "npx convex deploy",
+		"build:convex:conditional": "node -e \"if (process.env.VERCEL && process.env.CONVEX_DEPLOY_KEY && process.env.VERCEL_ENV === 'production') { require('child_process').execSync('npx convex deploy', { stdio: 'inherit' }); } else { console.log('Skipping Convex deployment - not on Vercel production or missing requirements'); }\"",
 		"build:frontend": "pnpm run generate:handle-types && next build --turbopack",
 		"prebuild": "pnpm generate:tokens",
 		"convex:dev": "npx convex dev",
@@ -63,7 +64,8 @@
 		"version:bump": "pnpm version:analyze",
 		"commitlint": "commitlint --edit",
 		"postinstall": "pnpm generate:docs",
-		"sentry:sourcemaps": "sentry-cli sourcemaps inject --org utilitek-solutions --project agenitix .next && sentry-cli sourcemaps upload --org utilitek-solutions --project agenitix .next"
+		"sentry:sourcemaps": "sentry-cli sourcemaps inject --org utilitek-solutions --project agenitix .next && sentry-cli sourcemaps upload --org utilitek-solutions --project agenitix .next",
+		"sentry:sourcemaps:conditional": "node -e \"if (process.env.SENTRY_AUTH_TOKEN && process.env.VERCEL_ENV === 'production') { require('child_process').execSync('sentry-cli sourcemaps inject --org utilitek-solutions --project agenitix .next && sentry-cli sourcemaps upload --org utilitek-solutions --project agenitix .next', { stdio: 'inherit', shell: true }); } else { console.log('Skipping Sentry sourcemap upload - not in production or missing SENTRY_AUTH_TOKEN'); }\""
 	},
 	"dependencies": {
 		"@dnd-kit/core": "^6.3.1",
