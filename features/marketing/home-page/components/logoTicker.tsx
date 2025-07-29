@@ -1,0 +1,48 @@
+import dynamic from "next/dynamic";
+
+// Dynamically import the LogoTicker component
+// Note: Make sure the default export from logo-ticker is named LogoTicker
+const LogoTicker = dynamic(() => import("@/components/ui/logo-ticker"));
+
+const logosArray = [
+	{
+		src: "/svg/logo-1.svg",
+		alt: "Logo 1",
+	},
+	{
+		src: "/svg/logo-2.svg",
+		alt: "Logo 2",
+	},
+	{
+		src: "/svg/logo-3.svg",
+		alt: "Logo 3",
+	},
+	{
+		src: "/svg/logo-4.svg",
+		alt: "Logo 4",
+	},
+	{
+		src: "/svg/logo-5.svg",
+		alt: "Logo 5",
+	},
+	{
+		src: "/svg/logo-6.svg",
+		alt: "Logo 6",
+	},
+	{
+		src: "/svg/logo-7.svg",
+		alt: "Logo 7",
+	},
+	{
+		src: "/svg/logo-8.svg",
+		alt: "Logo 8",
+	},
+];
+
+export const InfiniteLogoTicker = () => {
+	return (
+		<div className="w-full overflow-hidden">
+			<LogoTicker logos={logosArray} />
+		</div>
+	);
+};

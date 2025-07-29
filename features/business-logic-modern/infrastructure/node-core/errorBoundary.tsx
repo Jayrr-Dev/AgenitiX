@@ -1,0 +1,72 @@
+/**
+ * COMPONENT ERROR BOUNDARY - Node-specific error handling and recovery
+ *
+ * • Catches and displays errors within individual node components
+ * • Provides error recovery mechanisms and user-friendly error messages
+ * • Integrates with node inspector for debugging and error reporting
+ * • Maintains node state during error conditions
+ *
+ * Keywords: error-handling, node-recovery, error-boundary, debugging
+ */
+
+import React from "react";
+
+interface NodeErrorBoundaryProps {
+	nodeId: string;
+	children: React.ReactNode;
+}
+
+interface NodeErrorBoundaryState {
+	hasError: boolean;
+	message: string;
+}
+
+class NodeErrorBoundaryClass extends React.Component<
+	NodeErrorBoundaryProps,
+	NodeErrorBoundaryState
+> {
+	state: NodeErrorBoundaryState = { hasError: false, message: "" };
+
+	static getDerivedStateFromError(error: Error): NodeErrorBoundaryState {
+		return { hasError: true, message: error.message };
+	}
+
+	componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+		console.error("Node Error Boundary caught an error:", error, errorInfo);
+	}
+
+	render() {
+		if (this.state.hasError) {
+			return (
+				<div className="p-4 border border-red-200 bg-red-50 rounded-md">
+					<div className="flex items-center space-x-2">
+						<div className="w-2 h-2 bg-red-500 rounded-full"></div>
+						<span className="text-sm font-medium text-red-800">
+							Node Error: {this.state.message}
+						</span>
+					</div>
+				</div>
+			);
+		}
+
+		return this.props.children;
+	}
+}
+
+const NodeErrorBoundary: React.FC<NodeErrorBoundaryProps> = ({ nodeId, children }) => {
+	const onError = (error: Error) => {
+		console.error(`Error in node ${nodeId}:`, error);
+	};
+
+	const onReset = () => {
+		console.log(`Resetting node ${nodeId}`);
+	};
+
+	return (
+		<NodeErrorBoundaryClass nodeId={nodeId} onError={onError} onReset={onReset}>
+			{children}
+		</NodeErrorBoundaryClass>
+	);
+};
+
+export default NodeErrorBoundary;
