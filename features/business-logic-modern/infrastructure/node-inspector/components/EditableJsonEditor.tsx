@@ -105,6 +105,7 @@ export const EditableJsonEditor: React.FC<EditableJsonEditorProps> = ({
 					<div className="font-medium text-gray-700 text-xs dark:text-gray-300">Edit JSON Data</div>
 					<div className="flex items-center gap-1">
 						<button
+							type="button"
 							onClick={saveJson}
 							className="flex items-center gap-1 rounded border border-green-300 bg-green-100 px-2 py-1 text-green-700 text-xs transition-colors hover:bg-green-200 dark:border-green-700 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800"
 							title="Save (Ctrl+Enter)"
@@ -113,6 +114,7 @@ export const EditableJsonEditor: React.FC<EditableJsonEditorProps> = ({
 							Save
 						</button>
 						<button
+							type="button"
 							onClick={cancelEditing}
 							className="flex items-center gap-1 rounded border border-gray-300 bg-gray-100 px-2 py-1 text-gray-700 text-xs transition-colors hover:bg-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
 							title="Cancel (Escape)"
@@ -170,6 +172,7 @@ export const EditableJsonEditor: React.FC<EditableJsonEditorProps> = ({
 			<div className="flex items-center justify-between ">
 				<div className="font-medium text-gray-700 text-xs dark:text-gray-300 ">JSON Data</div>
 				<button
+					type="button"
 					onClick={startEditing}
 					className="flex items-center gap-1 rounded border border-blue-300 bg-blue-100 px-2 py-0.5 text-blue-700 text-xs transition-colors hover:bg-blue-200 dark:border-blue-700 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
 					title="Edit JSON"

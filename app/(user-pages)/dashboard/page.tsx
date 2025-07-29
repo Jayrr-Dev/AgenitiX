@@ -52,9 +52,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 // ICON MAPPING
 const ICON_MAP = {
@@ -77,15 +77,15 @@ const DashboardContent = () => {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { user, isAuthenticated, isLoading: authLoading } = useAuthContext();
-	
+
 	// Handle search query from URL parameters
 	useEffect(() => {
-		const query = searchParams.get('q');
+		const query = searchParams.get("q");
 		if (query) {
 			setSearchQuery(query);
 		}
 	}, [searchParams]);
-	
+
 	// Listen for search events from navigation bar
 	useEffect(() => {
 		const handleNavigationSearch = (event: CustomEvent) => {
@@ -93,11 +93,11 @@ const DashboardContent = () => {
 				setSearchQuery(event.detail.query);
 			}
 		};
-		
-		window.addEventListener('navigation-search', handleNavigationSearch as EventListener);
-		
+
+		window.addEventListener("navigation-search", handleNavigationSearch as EventListener);
+
 		return () => {
-			window.removeEventListener('navigation-search', handleNavigationSearch as EventListener);
+			window.removeEventListener("navigation-search", handleNavigationSearch as EventListener);
 		};
 	}, []);
 
@@ -360,7 +360,10 @@ const DashboardContent = () => {
 											{getIconComponent(flow.icon || "zap")}
 										</div>
 										<div className="flex-1 min-w-0 overflow-hidden">
-											<h3 className="font-semibold text-lg truncate text-foreground" title={flow.name}>
+											<h3
+												className="font-semibold text-lg truncate text-foreground"
+												title={flow.name}
+											>
 												{flow.name}
 											</h3>
 										</div>

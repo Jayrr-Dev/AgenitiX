@@ -147,6 +147,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 				</div>
 				{onDeleteEdge && (
 					<button
+						type="button"
 						onClick={() => onDeleteEdge(edge.id)}
 						className="rounded p-1 text-red-600 transition-colors hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900/30"
 						title="Delete Edge"

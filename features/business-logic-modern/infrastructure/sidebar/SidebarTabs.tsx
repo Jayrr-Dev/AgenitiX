@@ -333,6 +333,7 @@ export function SidebarTabs({
 
 					{/* Search Button */}
 					<button
+						type="button"
 						onClick={() => setIsSearchVisible(true)}
 						className="mr-1 flex items-center gap-1 rounded border border-transparent p-2 text-[var(--infra-sidebar-text)] transition-colors hover:border-[var(--infra-sidebar-border-hover)] hover:bg-[var(--infra-sidebar-bg-hover)]"
 						title="Search all nodes (6)"

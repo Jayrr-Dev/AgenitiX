@@ -69,9 +69,9 @@ export const useConvexMutation = <TData, TVariables extends Record<string, unkno
 	}
 ) => {
 	return useMutation({
-		mutationFn: async (variables: TVariables) => {
+		mutationFn: (variables: TVariables) => {
 			const result = executeConvexMutation<TData>(mutationName, variables);
-			return result;
+			return Promise.resolve(result);
 		},
 		onSuccess: options?.onSuccess,
 		onError: options?.onError,

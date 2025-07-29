@@ -307,8 +307,7 @@ const DeletionModal: React.FC<DeletionModalProps> = ({
 };
 
 const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
-	const { undo, redo, clearHistory, removeSelectedNode, getHistory, getFullGraph } =
-		useUndoRedo();
+	const { undo, redo, clearHistory, removeSelectedNode, getHistory, getFullGraph } = useUndoRedo();
 
 	const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 	const [graphView, setGraphView] = useState(false);

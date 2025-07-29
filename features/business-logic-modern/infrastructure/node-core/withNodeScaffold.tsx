@@ -18,10 +18,10 @@ import {
 import type { NodeProps, Position } from "@xyflow/react";
 import { useTheme } from "next-themes";
 import React from "react";
-import { globalNodeMemoryManager } from "./nodeMemory";
+import NodeErrorBoundary from "./ErrorBoundary";
 import type { NodeSpec } from "./NodeSpec";
 import NodeTelemetry from "./NodeTelemetry";
-import NodeErrorBoundary from "./ErrorBoundary";
+import { globalNodeMemoryManager } from "./nodeMemory";
 import { getNodePlugins } from "./plugins/nodePluginRegistry";
 import { runServerActions } from "./serverActions/serverActionRegistry";
 

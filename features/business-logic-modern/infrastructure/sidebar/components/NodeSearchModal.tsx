@@ -205,6 +205,7 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 						autoFocus={true}
 					/>
 					<button
+						type="button"
 						onClick={onClose}
 						className="rounded p-1 text-modal-secondary hover:bg-modal-overlay hover:text-modal"
 					>
@@ -222,6 +223,7 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 						<div className="max-h-96 overflow-y-auto">
 							{searchResults.map((result, index) => (
 								<button
+									type="button"
 									key={result.nodeType}
 									onClick={() => handleSelectNode(result.nodeType, result.displayName)}
 									className={`w-full border-modal border-b p-3 text-left transition-colors hover:bg-search-hover ${

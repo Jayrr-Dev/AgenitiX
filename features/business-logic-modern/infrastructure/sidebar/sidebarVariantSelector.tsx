@@ -225,6 +225,7 @@ export function VariantSelector({
 
 						return (
 							<button
+								type="button"
 								key={variantKey}
 								onClick={() => handleVariantClick(variantKey)}
 								onMouseEnter={() => handleMouseEnter(variantKey)}

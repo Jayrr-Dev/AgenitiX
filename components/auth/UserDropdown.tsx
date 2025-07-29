@@ -6,14 +6,13 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
-	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ProfileModal } from "@/features/business-logic-modern/dashboard/components/ProfileModal";
 import { Cog, LogOut, User } from "lucide-react";
 import { useState } from "react";
 import { useAuthContext } from "./AuthProvider";
-import { ProfileModal } from "@/features/business-logic-modern/dashboard/components/ProfileModal";
 
 export const UserDropdown = () => {
 	const { user, signOut } = useAuthContext();
@@ -47,7 +46,11 @@ export const UserDropdown = () => {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild={true}>
-				<Button type="button" variant="ghost" className="relative h-8 w-8 rounded-full border-2 border-transparent hover:border-primary/20 transition-all">
+				<Button
+					type="button"
+					variant="ghost"
+					className="relative h-8 w-8 rounded-full border-2 border-transparent hover:border-primary/20 transition-all"
+				>
 					<Avatar className="h-8 w-8">
 						<AvatarImage src={user.avatar_url} alt={user.name} />
 						<AvatarFallback>{getInitials(user.name)}</AvatarFallback>
@@ -89,12 +92,9 @@ export const UserDropdown = () => {
 					</div>
 				</div>
 			</DropdownMenuContent>
-			
+
 			{/* Profile Modal */}
-			<ProfileModal 
-				isOpen={isProfileModalOpen}
-				onClose={() => setIsProfileModalOpen(false)}
-			/>
+			<ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
 		</DropdownMenu>
 	);
 };

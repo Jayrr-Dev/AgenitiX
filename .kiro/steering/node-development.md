@@ -1,6 +1,5 @@
 ---
-inclusion: fileMatch
-fileMatchPattern: "features/**/node-domain/**/*, components/nodes/**/*, features/**/node-*.tsx"
+inclusion: always
 ---
 
 # Node Development Standards

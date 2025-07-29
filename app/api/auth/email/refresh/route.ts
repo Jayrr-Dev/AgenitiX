@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
 		const providerInstance = getRefreshProvider(provider as EmailProviderType);
 
 		// Additional type guard to ensure providerInstance is not null
-		if (!(providerInstance?.refreshTokens)) {
+		if (!providerInstance?.refreshTokens) {
 			return buildErrorResponse(
 				"Provider not supported",
 				`Provider ${provider} does not support token refresh`,
