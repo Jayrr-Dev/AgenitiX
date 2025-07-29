@@ -8,12 +8,12 @@ import FAQ from "@/features/marketing/home-page/components/faq";
 import FeatureBoxesBento from "@/features/marketing/home-page/components/featureBoxesBento";
 import FeatureBoxesIconed from "@/features/marketing/home-page/components/featureBoxesIconed";
 import { TabletScroller } from "@/features/marketing/home-page/components/TabletScroller";
-import FeatureBoxesPlain from "@/features/marketing/home-page/components/featureBoxesPlain";
-import Hero from "@/features/marketing/home-page/components/heroSection";
-import { Revealer } from "@/features/marketing/home-page/components/hoverRevealer";
-import { InfiniteLogoTicker } from "@/features/marketing/home-page/components/logoTicker";
-import { AnimatedTestimonialsDemo } from "@/features/marketing/home-page/components/testimonialsSlides";
-import { Testimonials } from "@/features/marketing/home-page/components/testimonialsTicker";
+import FeatureBoxesPlain from "@/features/marketing/home-page/components/FeatureBoxesPlain";
+import Hero from "@/features/marketing/home-page/components/HeroSection";
+import { Revealer } from "@/features/marketing/home-page/components/HoverRevealer";
+import { InfiniteLogoTicker } from "@/features/marketing/home-page/components/LogoTicker";
+import { AnimatedTestimonialsDemo } from "@/features/marketing/home-page/components/TestimonialsSlides";
+import { Testimonials } from "@/features/marketing/home-page/components/TestimonialsTicker";
 import {
 	faq,
 	featureBoxesBento,

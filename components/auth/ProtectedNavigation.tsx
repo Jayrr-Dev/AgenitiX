@@ -3,9 +3,28 @@
 import Link from "next/link";
 import { useAuthContext } from "./AuthProvider";
 import { UserDropdown } from "./UserDropdown";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { api } from "@/convex/_generated/api";
+import { useQuery } from "convex/react";
 
 export const ProtectedNavigation = () => {
 	const { user } = useAuthContext();
+	const { theme, setTheme } = useTheme();
+	const [searchQuery, setSearchQuery] = useState("");
+	const router = useRouter();
+	const pathname = usePathname();
+	
+	// Fetch flows for search functionality
+	const flows = useQuery(api.flows.getUserFlows, user?.id ? { user_id: user.id } : "skip");
+
+	const toggleTheme = () => {
+		setTheme(theme === "dark" ? "light" : "dark");
+	};
 
 	return (
 		<header className="sticky top-0 z-40 border-border border-b bg-background">
@@ -18,11 +37,53 @@ export const ProtectedNavigation = () => {
 						</Link>
 					</div>
 
-					{/* User info and dropdown */}
+					{/* Search, theme toggle, and user dropdown */}
 					<div className="flex items-center space-x-4">
-						<span className="hidden text-muted-foreground text-sm sm:block">
-							Welcome back, {user?.name}
-						</span>
+						<div className="relative hidden md:block w-64">
+							<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+							<Input 
+								type="search" 
+								placeholder="Search workflows..." 
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === 'Enter' && searchQuery.trim() !== '') {
+										// If already on dashboard, just update the URL with search param
+										if (pathname === '/dashboard') {
+											const searchParams = new URLSearchParams(window.location.search);
+											searchParams.set('q', searchQuery);
+											const newUrl = `/dashboard?${searchParams.toString()}`;
+											window.history.pushState({}, '', newUrl);
+											// Dispatch a custom event to notify dashboard of search
+											window.dispatchEvent(new CustomEvent('navigation-search', { 
+												detail: { query: searchQuery } 
+											}));
+										} else {
+											// Navigate to dashboard with search query
+											router.push(`/dashboard?q=${encodeURIComponent(searchQuery)}`);
+										}
+									}
+								}}
+								className="pl-8 h-9 md:w-[200px] lg:w-[250px] bg-background" 
+							/>
+						</div>
+						
+
+						
+						{/* Theme toggle */}
+						<Button 
+							variant="ghost" 
+							size="icon" 
+							className="rounded-full" 
+							onClick={toggleTheme}
+							aria-label="Toggle theme"
+						>
+							{theme === "dark" ? (
+								<Sun className="h-5 w-5" />
+							) : (
+								<Moon className="h-5 w-5" />
+							)}
+						</Button>
 						<UserDropdown />
 					</div>
 				</div>

@@ -21,7 +21,7 @@ import React from "react";
 import { globalNodeMemoryManager } from "./nodeMemory";
 import type { NodeSpec } from "./NodeSpec";
 import NodeTelemetry from "./NodeTelemetry";
-import NodeErrorBoundary from "./errorBoundary";
+import NodeErrorBoundary from "./ErrorBoundary";
 import { getNodePlugins } from "./plugins/nodePluginRegistry";
 import { runServerActions } from "./serverActions/serverActionRegistry";
 
