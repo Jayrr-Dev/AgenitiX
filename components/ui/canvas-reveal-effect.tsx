@@ -1,7 +1,7 @@
 "use client";
 import { cn } from "@/lib/utils";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import React, { useMemo, useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import React, { useMemo, useRef, useCallback } from "react";
 import * as THREE from "three";
 
 export const CanvasRevealEffect = ({
@@ -182,7 +182,7 @@ const ShaderMaterial = ({
 		}
 	});
 
-	const getUniforms = () => {
+	const getUniforms = useCallback(() => {
 		const preparedUniforms: Record<string, THREE.IUniform> = {};
 
 		for (const uniformName in uniforms) {
@@ -193,31 +193,48 @@ const ShaderMaterial = ({
 					preparedUniforms[uniformName] = { value: uniform.value };
 					break;
 				case "v2":
-					preparedUniforms[uniformName] = { value: new THREE.Vector2(uniform.value.x, uniform.value.y) };
+					preparedUniforms[uniformName] = {
+						value: new THREE.Vector2(uniform.value.x, uniform.value.y),
+					};
 					break;
 				case "v3":
-					preparedUniforms[uniformName] = { value: new THREE.Vector3(uniform.value.x, uniform.value.y, uniform.value.z) };
+					preparedUniforms[uniformName] = {
+						value: new THREE.Vector3(uniform.value.x, uniform.value.y, uniform.value.z),
+					};
 					break;
 				case "v4":
-					preparedUniforms[uniformName] = { value: new THREE.Vector4(uniform.value.x, uniform.value.y, uniform.value.z, uniform.value.w) };
+					preparedUniforms[uniformName] = {
+						value: new THREE.Vector4(
+							uniform.value.x,
+							uniform.value.y,
+							uniform.value.z,
+							uniform.value.w
+						),
+					};
 					break;
 				case "c":
-					preparedUniforms[uniformName] = { value: new THREE.Color(uniform.value.r, uniform.value.g, uniform.value.b) };
+					preparedUniforms[uniformName] = {
+						value: new THREE.Color(uniform.value.r, uniform.value.g, uniform.value.b),
+					};
 					break;
 				case "t":
 					preparedUniforms[uniformName] = { value: uniform.value };
 					break;
 				case "m3":
-					preparedUniforms[uniformName] = { value: new THREE.Matrix3().setFromArray(uniform.value) };
+					preparedUniforms[uniformName] = {
+						value: new THREE.Matrix3().setFromArray(uniform.value),
+					};
 					break;
 				case "m4":
-					preparedUniforms[uniformName] = { value: new THREE.Matrix4().setFromArray(uniform.value) };
+					preparedUniforms[uniformName] = {
+						value: new THREE.Matrix4().setFromArray(uniform.value),
+					};
 					break;
 			}
 		}
 
 		return preparedUniforms;
-	};
+	}, [uniforms]);
 
 	// Shader material
 	const material = useMemo(() => {

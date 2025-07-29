@@ -15,7 +15,7 @@
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Download, Globe, Lock, Play, Settings, Square } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useFlowMetadataOptional } from "../flow-engine/contexts/FlowMetadataContext";
+import { useFlowMetadataOptional } from "../flow-engine/contexts/flow-metadata-context";
 import { useAutoSaveCanvas } from "../flow-engine/hooks/useAutoSaveCanvas";
 import { useLoadCanvas } from "../flow-engine/hooks/useLoadCanvas";
 import { useFlowStore } from "../flow-engine/stores/flowStore";

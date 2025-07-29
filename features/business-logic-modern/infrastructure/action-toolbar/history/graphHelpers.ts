@@ -171,16 +171,13 @@ export const clearPersistedGraph = (flowId?: string): void => {
 
 // Clear all flow histories (useful for cleanup)
 export const clearAllPersistedGraphs = (): void => {
-	if (typeof window === "undefined") {
-		return;
-	}
 	try {
 		const keys = Object.keys(window.localStorage);
-		keys.forEach((key) => {
+		for (const key of keys) {
 			if (key.startsWith(STORAGE_KEY_PREFIX)) {
 				window.localStorage.removeItem(key);
 			}
-		});
+		}
 	} catch (error) {
 		console.warn("[GraphHelpers] Failed to clear all persisted graphs:", error);
 	}
@@ -238,12 +235,12 @@ export const pruneGraphToLimit = (graph: HistoryGraph, maxSize: number): void =>
 		}
 
 		// All siblings of the new root also become top-level nodes (parentId = null)
-		remainingChildren.forEach((childId) => {
+		for (const childId of remainingChildren) {
 			const childNode = graph.nodes[childId];
 			if (childNode) {
 				childNode.parentId = null;
 			}
-		});
+		}
 
 		// Remove the old root
 		delete graph.nodes[graph.root];
@@ -300,8 +297,8 @@ export const removeNodeAndChildren = (graph: HistoryGraph, nodeId: NodeId): bool
 	}
 
 	// Remove all collected nodes from the graph
-	nodesToRemove.forEach((id) => {
+	for (const id of nodesToRemove) {
 		delete graph.nodes[id];
-	});
+	}
 	return true;
 };

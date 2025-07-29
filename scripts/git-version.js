@@ -68,108 +68,65 @@ class GitVersionDetector {
 		return execSync(command, { encoding: "utf8", cwd: process.cwd() });
 	}
 
+	// Helper function to determine version bump type
+	determineVersionBumpType(gitInfo) {
+		// Automatic version bump based on commit messages
+		const commitMessages = gitInfo.recentCommits?.join(" ") || "";
+
+		if (commitMessages.includes("BREAKING CHANGE") || commitMessages.includes("!:")) {
+			return "major";
+		}
+		if (commitMessages.includes("feat:") || commitMessages.includes("feature:")) {
+			return "minor";
+		}
+		if (commitMessages.includes("fix:") || commitMessages.includes("bugfix:")) {
+			return "patch";
+		}
+		return "patch"; // default
+	}
+
+	// Helper function to get build metadata
+	getBuildMetadata(gitInfo) {
+		const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+		return {
+			buildTime: timestamp,
+			buildHash: gitInfo.shortSha,
+			buildNumber: gitInfo.commitCount,
+		};
+	}
+
 	// ENHANCED VERSION DETECTION WITH GIT
-	async detectChanges() {
+	detectChanges() {
 		try {
 			const gitInfo = this.getGitInfo();
-			const currentFiles = this.findFiles(this.trackPattern);
-			const currentHashes = new Map();
 
-			// Calculate current hashes
-			for (const file of currentFiles) {
-				try {
-					const content = fs.readFileSync(file, "utf8");
-					const hash = crypto.createHash("md5").update(content).digest("hex");
-					currentHashes.set(file, hash);
-				} catch (_error) {
-					console.warn(`⚠️ Could not read ${file}`);
-				}
+			if (!gitInfo) {
+				return this.createDefaultVersion();
 			}
 
-			// Load previous state
-			let previousHashes = new Map();
-			let currentVersion = "1.0.0";
-			let lastGitHash = null;
-
-			if (fs.existsSync(this.cacheFile)) {
-				try {
-					const cache = JSON.parse(fs.readFileSync(this.cacheFile, "utf8"));
-					previousHashes = new Map(cache.hashes || []);
-					currentVersion = cache.version || "1.0.0";
-					lastGitHash = cache.gitInfo?.hash;
-				} catch (_error) {
-					console.warn("⚠️ Could not load version cache");
-				}
-			}
-
-			// Check if git commit changed (even if files didn't)
-			const gitChanged = gitInfo.available && lastGitHash && lastGitHash !== gitInfo.hash;
-
-			// Find changed files
-			const changedFiles = [];
-			for (const [file, hash] of currentHashes) {
-				const prevHash = previousHashes.get(file);
-				if (!prevHash || prevHash !== hash) {
-					changedFiles.push(file);
-				}
-			}
-
-			// No changes detected
-			if (changedFiles.length === 0 && !gitChanged) {
-				return null;
-			}
-
-			// Determine bump type
-			let bumpType = "patch";
-			if (changedFiles.length > 0) {
-				for (const file of changedFiles) {
-					if (
-						file.includes("types/nodeData.ts") ||
-						file.includes("factory/NodeFactory.tsx") ||
-						file.includes("node-registry/nodeRegistry.ts")
-					) {
-						bumpType = "major";
-						break;
-					}
-					if (file.includes("node-domain/") || file.includes("infrastructure/")) {
-						bumpType = "minor";
-					}
-				}
-			} else if (gitChanged) {
-				// Git changed but no tracked files changed
-				bumpType = "patch";
-			}
-
-			// Bump version
-			const newVersion = this.bumpVersion(currentVersion, bumpType);
-
-			// Enhanced cache with git information
-			const cache = {
-				version: newVersion,
-				timestamp: Date.now(),
-				hashes: Array.from(currentHashes.entries()),
-				gitInfo: gitInfo,
-				changes: {
-					files: changedFiles,
-					bumpType,
-					reason: changedFiles.length > 0 ? "file_changes" : "git_commit",
-				},
-			};
-
-			fs.writeFileSync(this.cacheFile, JSON.stringify(cache, null, 2));
-			this.updateVersionConstants(newVersion, gitInfo);
+			const bumpType = this.determineVersionBumpType(gitInfo);
+			const buildMetadata = this.getBuildMetadata(gitInfo);
 
 			return {
-				version: newVersion,
+				version: this.bumpVersion(bumpType),
 				bumpType,
-				changedFiles,
-				timestamp: Date.now(),
-				gitInfo,
+				...buildMetadata,
+				...gitInfo,
 			};
 		} catch (error) {
-			console.error("❌ Version detection failed:", error.message);
+			console.error("Error detecting changes:", error);
 			return null;
 		}
+	}
+
+	createDefaultVersion() {
+		return {
+			version: "1.0.0",
+			bumpType: "patch",
+			buildTime: new Date().toISOString(),
+			buildHash: "unknown",
+			buildNumber: 0,
+		};
 	}
 
 	// ENHANCED VERSION CONSTANTS WITH GIT INFO
@@ -365,7 +322,7 @@ export const VERSION = {
 	}
 
 	// MANUAL VERSION BUMPING
-	async manualBump(bumpType) {
+	manualBump(bumpType) {
 		try {
 			const gitInfo = this.getGitInfo();
 			const currentVersion = this.getCurrentVersion();
@@ -409,13 +366,13 @@ export const VERSION = {
 				gitInfo,
 			};
 		} catch (error) {
-			console.error("❌ Manual version bump failed:", error.message);
+			console.error("Error in manual bump:", error);
 			return null;
 		}
 	}
 
 	// MANUAL PRE-RELEASE BUMPING
-	async manualPreReleaseBump(preReleaseType) {
+	manualPreReleaseBump(preReleaseType) {
 		try {
 			const gitInfo = this.getGitInfo();
 			const currentVersion = this.getCurrentVersion();
@@ -459,7 +416,7 @@ export const VERSION = {
 				gitInfo,
 			};
 		} catch (error) {
-			console.error("❌ Manual pre-release version bump failed:", error.message);
+			console.error("Error in manual pre-release bump:", error);
 			return null;
 		}
 	}

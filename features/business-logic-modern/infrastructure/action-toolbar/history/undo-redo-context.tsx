@@ -16,29 +16,62 @@ import type React from "react";
 import { type ReactNode, createContext, useCallback, useContext, useRef } from "react";
 import type { ActionType } from "./UndoRedoManager";
 
+interface UndoRedoManager {
+	id: string;
+	undo: () => boolean;
+	redo: () => boolean;
+	canUndo: boolean;
+	canRedo: boolean;
+	addEntry: (entry: HistoryEntry) => void;
+	clearHistory: () => void;
+}
+
 // TYPES
 export interface UndoRedoContextType {
+	registerManager: (manager: UndoRedoManager) => void;
+	unregisterManager: (managerId: string) => void;
 	undo: () => boolean;
-	redo: (childId?: string) => boolean;
-	recordAction: (type: ActionType, metadata?: Record<string, unknown>) => void;
-	recordActionDebounced: (type: ActionType, metadata?: Record<string, unknown>) => void;
+	redo: () => boolean;
+	canUndo: boolean;
+	canRedo: boolean;
+	addEntry: (entry: HistoryEntry) => void;
 	clearHistory: () => void;
-	removeSelectedNode: (nodeId?: string) => boolean;
 	getHistory: () => {
-		entries: any[];
+		entries: HistoryEntry[];
 		currentIndex: number;
 		canUndo: boolean;
 		canRedo: boolean;
 		// Additional graph-specific properties (optional for backward compatibility)
 		branchOptions?: string[];
-		graphStats?: any;
-		currentNode?: any;
+		graphStats?: GraphStats;
+		currentNode?: GraphNode;
 	};
 	getFullGraph: () => {
-		nodes: Record<string, any>;
+		nodes: Record<string, GraphNode>;
 		root: string;
 		cursor: string;
-	} | null;
+	};
+	removeSelectedNode: (nodeId?: string) => boolean;
+}
+
+interface HistoryEntry {
+	id: string;
+	timestamp: number;
+	description: string;
+	data: Record<string, unknown>;
+}
+
+interface GraphStats {
+	nodeCount: number;
+	edgeCount: number;
+	branchCount: number;
+}
+
+interface GraphNode {
+	id: string;
+	label?: string;
+	children?: GraphNode[];
+	data?: Record<string, unknown>;
 }
 
 // CONTEXT
@@ -146,6 +179,6 @@ export const useUndoRedo = (): UndoRedoContextType => {
 
 // HOOK TO REGISTER MANAGER (used by UndoRedoManager)
 export const useRegisterUndoRedoManager = () => {
-	const context = useContext(UndoRedoContext) as any;
+	const context = useContext(UndoRedoContext) as UndoRedoContextType;
 	return context?.registerManager || (() => {});
 };

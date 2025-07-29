@@ -27,7 +27,6 @@ export default function LogoTicker({
 	logos,
 	speed = 2,
 	fadeWidth = 64,
-	darkMode = true,
 	className = "",
 }: LogoTickerProps) {
 	const [start, setStart] = useState(false);
@@ -71,7 +70,10 @@ export default function LogoTicker({
 					}`}
 				>
 					{strip.map((logo, i) => (
-						<div key={`logo-${logo.url}-${i}`} className="flex items-center opacity-99 contrast-50 grayscale">
+						<div
+							key={`logo-${logo.url}-${i}`}
+							className="flex items-center opacity-99 contrast-50 grayscale"
+						>
 							<Image
 								src={logo.url}
 								alt={logo.alt}

@@ -20,9 +20,18 @@ declare namespace NodeJS {
 declare global {
 	interface Window {
 		turnstile?: {
-			render: (container: HTMLElement, options: any) => string;
+			render: (container: HTMLElement, options: TurnstileOptions) => string;
 			reset: (widgetId: string) => void;
 			remove: (widgetId: string) => void;
 		};
 	}
+}
+
+interface TurnstileOptions {
+	sitekey: string;
+	theme?: "light" | "dark";
+	size?: "normal" | "compact";
+	callback?: (token: string) => void;
+	"expired-callback"?: () => void;
+	"error-callback"?: () => void;
 }

@@ -3,7 +3,6 @@ import { useOutsideClick } from "@/hooks/use-outside-click";
 import { cn } from "@/lib/utils";
 import { IconArrowNarrowLeft, IconArrowNarrowRight, IconX } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "motion/react";
-import type { ImageProps } from "next/image";
 import React, {
 	useEffect,
 	useRef,
@@ -252,22 +251,24 @@ export const Card = ({
 						{card.title}
 					</motion.p>
 				</div>
-				<BlurImage
-					src={card.src}
-					alt={card.title}
-					fill={true}
-					className="absolute inset-0 z-10 object-cover"
-				/>
+				<BlurImage src={card.src} alt={card.title} className="absolute inset-0 z-10 object-cover" />
 			</motion.button>
 		</>
 	);
 };
 
-export const BlurImage = ({ height, width, src, className, alt, ...rest }: ImageProps) => {
+export const BlurImage = ({
+	height,
+	width,
+	src,
+	className,
+	alt,
+	...rest
+}: React.ImgHTMLAttributes<HTMLImageElement>) => {
 	const [isLoading, setLoading] = useState(true);
 	return (
 		<img
-			alt={alt || "Carousel image"}
+			{...(alt ? { alt } : { "aria-hidden": "true" })}
 			height={height}
 			width={width}
 			src={src as string}

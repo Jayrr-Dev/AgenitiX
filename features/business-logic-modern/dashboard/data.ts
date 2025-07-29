@@ -1,3 +1,5 @@
+import type { Flow } from "./types";
+
 /**
  * FLOW DATA - Legacy dummy data (DEPRECATED)
  *
@@ -8,4 +10,4 @@
  */
 
 // This file is deprecated - use Convex flows.ts instead
-export const dummyFlows: any[] = [];
+export const dummyFlows: Flow[] = [];

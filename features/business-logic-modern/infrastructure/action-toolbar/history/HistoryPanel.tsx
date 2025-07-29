@@ -16,7 +16,7 @@
 
 import { AlertTriangle, Clock, GitBranch, List as ListIcon, Trash2, X } from "lucide-react";
 import React, { Suspense, useCallback, useMemo, useState } from "react";
-import { useUndoRedo } from "./UndoRedoContext";
+import { useUndoRedo } from "./undo-redo-context";
 // Lazy-load the heavy ReactFlow-powered graph renderer only when needed for significant memory & bundle savings
 const RenderHistoryGraph = React.lazy(() => import("./renderHistoryGraph"));
 

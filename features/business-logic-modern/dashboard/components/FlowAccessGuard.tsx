@@ -27,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { AlertTriangle, Edit, Eye, Lock, Mail, Shield, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -55,12 +56,12 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 	const { user } = useAuthContext();
 
 	// Convex queries
-	const flow = useQuery(api.flows.getFlow, { flow_id: flowId as any });
+	const flow = useQuery(api.flows.getFlow, { flow_id: flowId as Id<"flows"> });
 	const accessCheck = useQuery(
 		api.flows.checkFlowAccess,
 		user?.id
 			? {
-					flow_id: flowId as any,
+					flow_id: flowId as Id<"flows">,
 					user_id: user.id,
 				}
 			: "skip"
@@ -90,7 +91,7 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 
 		try {
 			await requestFlowAccess({
-				flow_id: flowId as any,
+				flow_id: flowId as Id<"flows">,
 				requesting_user_id: user.id,
 				requesting_user_email: requestEmail,
 				permission_type: requestPermission,
@@ -232,7 +233,7 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 										<button
 											key={permission.value}
 											type="button"
-											onClick={() => setRequestPermission(permission.value as any)}
+											onClick={() => setRequestPermission(permission.value as string)}
 											className={`rounded-lg border-2 p-3 transition-all ${
 												requestPermission === permission.value
 													? "border-primary bg-primary/10"

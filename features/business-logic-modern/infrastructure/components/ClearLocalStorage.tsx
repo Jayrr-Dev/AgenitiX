@@ -56,6 +56,7 @@ const ClearLocalStorage: React.FC<ClearLocalStorageProps> = ({ className = "" })
 	return (
 		<div className={`${positionWrapper} ${className}`}>
 			<button
+				type="button"
 				onClick={handleClearLocalStorage}
 				className={`${styleButtonBase} ${styleButtonColour} ${styleButtonInteraction}`}
 				title="Clear all local storage data"

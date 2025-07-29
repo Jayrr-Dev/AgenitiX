@@ -15,14 +15,14 @@ export type AuthError = {
 	retryAfter?: number; // Minutes until user can try again
 };
 
-export type AuthResult<T = any> =
+export type AuthResult<T = unknown> =
 	| {
 			success: true;
 			data: T;
 	  }
 	| {
 			success: false;
-			error: AuthError;
+			error: string;
 	  };
 
 // Generate secure random token
@@ -366,7 +366,7 @@ export const updateProfile = mutation({
 		}
 
 		// Update user profile
-		const updateData: any = { updated_at: Date.now() };
+		const updateData: Record<string, unknown> = { updated_at: Date.now() };
 		if (args.name !== undefined) {
 			updateData.name = args.name;
 		}

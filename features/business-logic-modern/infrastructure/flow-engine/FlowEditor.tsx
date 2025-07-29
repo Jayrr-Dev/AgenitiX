@@ -8,11 +8,11 @@ import type {
 import { generateNodeId } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import React, { useCallback, useEffect, useRef } from "react";
-import { type FlowMetadata, FlowProvider } from "./contexts/FlowContext";
+import { type FlowMetadata, FlowProvider } from "./contexts/flow-context";
 
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/action-toolbar/ActionToolbar";
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
-import { UndoRedoProvider, useUndoRedo } from "../action-toolbar/history/UndoRedoContext";
+import { UndoRedoProvider, useUndoRedo } from "../action-toolbar/history/undo-redo-context";
 import UndoRedoManager from "../action-toolbar/history/UndoRedoManager";
 import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";

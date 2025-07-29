@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import {
 	AlertTriangle,
@@ -72,10 +73,10 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 
 	// Convex queries
 	const flowShare = useQuery(api.flows.getFlowShare, {
-		flow_id: flow.id as any,
+		flow_id: flow.id as Id<"flows">,
 	});
 	const accessRequests = useQuery(api.flows.getFlowAccessRequests, {
-		flow_id: flow.id as any,
+		flow_id: flow.id as Id<"flows">,
 	});
 
 	const handleShareFlow = async () => {
@@ -86,7 +87,7 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 
 		try {
 			const _result = await shareFlow({
-				flow_id: flow.id as any,
+				flow_id: flow.id as Id<"flows">,
 				shared_by_user_id: user.id,
 			});
 
@@ -110,7 +111,7 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 
 		try {
 			await requestFlowAccess({
-				flow_id: flow.id as any,
+				flow_id: flow.id as Id<"flows">,
 				requesting_user_id: user.id,
 				requesting_user_email: requestEmail,
 				permission_type: requestPermission,
@@ -133,7 +134,7 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 
 		try {
 			await respondToAccessRequest({
-				request_id: requestId as any,
+				request_id: requestId as Id<"flow_access_requests">,
 				status,
 				responded_by_user_id: user.id,
 				response_note: requestNote,
@@ -372,7 +373,9 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 												<button
 													key={permission.value}
 													type="button"
-													onClick={() => setRequestPermission(permission.value as any)}
+													onClick={() =>
+														setRequestPermission(permission.value as "view" | "edit" | "admin")
+													}
 													className={`rounded-lg border-2 p-3 transition-all ${
 														requestPermission === permission.value
 															? "border-primary bg-primary/10"

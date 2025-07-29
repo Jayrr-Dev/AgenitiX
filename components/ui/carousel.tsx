@@ -101,15 +101,14 @@ const Carousel = React.forwardRef<
 				scrollTo,
 			}}
 		>
-			<div
+			<section
 				ref={ref}
 				className={cn("relative", className)}
-				role="region"
 				aria-roledescription="carousel"
 				{...props}
 			>
 				{children}
-			</div>
+			</section>
 		</CarouselContext.Provider>
 	);
 });
@@ -215,11 +214,12 @@ const CarouselDots = ({ className }: { className?: string }) => {
 		<div className={cn("-translate-x-1/2 absolute bottom-4 left-1/2 z-10 flex gap-2", className)}>
 			{Array.from({ length: totalSlides }).map((_, index) => (
 				<button
-					key={index}
+					type="button"
+					key={`carousel-dot-${index}-${Date.now()}`}
 					onClick={() => scrollTo(index)}
 					className={cn(
-						"h-2 w-2 rounded-full bg-primary transition-all",
-						selectedIndex === index ? "scale-125 bg-primary" : "opacity-50"
+						"h-2 w-2 rounded-full transition-colors",
+						index === selectedIndex ? "bg-primary" : "bg-muted"
 					)}
 				/>
 			))}

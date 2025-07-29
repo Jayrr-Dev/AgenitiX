@@ -17,8 +17,8 @@ import { type Edge, type Node, useReactFlow } from "@xyflow/react";
 import { enableMapSet, produce } from "immer";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useFlowMetadataOptional } from "../../flow-engine/contexts/FlowMetadataContext";
-import { useRegisterUndoRedoManager } from "./UndoRedoContext";
+import { useRegisterUndoRedoManager } from "./undo-redo-context";
+import { useFlowMetadataOptional } from "../../flow-engine/contexts/flow-metadata-context";
 import {
 	clearPersistedGraph,
 	createChildNode,

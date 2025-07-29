@@ -9,7 +9,7 @@ import {
 	useScroll,
 	useTransform,
 } from "framer-motion";
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 
 /* ================================
    Main Scroll Container Component
@@ -62,7 +62,7 @@ export const ContainerScroll = ({
 					<InfiniteScrollContent
 						isInView={isInView}
 						sectionRef={sectionRef as React.RefObject<HTMLDivElement>}
-						speed="normal"
+						pauseOnHover={true}
 					>
 						{children}
 					</InfiniteScrollContent>
@@ -79,14 +79,12 @@ export const InfiniteScrollContent = ({
 	isInView,
 	sectionRef,
 	children,
-	speed = "fast",
 	pauseOnHover = true,
 	className = "",
 }: {
 	isInView: boolean;
 	sectionRef: React.RefObject<HTMLDivElement>;
 	children: React.ReactNode;
-	speed?: "fast" | "normal" | "slow";
 	pauseOnHover?: boolean;
 	className?: string;
 }) => {
@@ -95,10 +93,9 @@ export const InfiniteScrollContent = ({
 	const [animation, setAnimation] = useState<Animation | null>(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
 
-	// Convert speed to duration
-	const getDuration = () => {
-		return speed === "fast" ? 20000 : speed === "normal" ? 40000 : 80000;
-	};
+	const getDuration = useCallback(() => {
+		return 20000;
+	}, []);
 
 	// Start animation once in view
 	useEffect(() => {
@@ -107,13 +104,12 @@ export const InfiniteScrollContent = ({
 		}
 
 		const element = wrapperRef.current;
-		if (!element) return;
+		if (!element) {
+			return;
+		}
 
 		// Create keyframe animation
-		const keyframes = [
-			{ transform: "translateY(0%)" },
-			{ transform: "translateY(-50%)" },
-		];
+		const keyframes = [{ transform: "translateY(0%)" }, { transform: "translateY(-50%)" }];
 
 		const options = {
 			duration: getDuration(),
@@ -121,14 +117,15 @@ export const InfiniteScrollContent = ({
 			easing: "linear",
 		};
 
-		animation = element.animate(keyframes, options);
+		const newAnimation = element.animate(keyframes, options);
+		setAnimation(newAnimation);
 
 		return () => {
-			if (animation) {
-				animation.cancel();
+			if (newAnimation) {
+				newAnimation.cancel();
 			}
 		};
-	}, [isInView, getDuration]);
+	}, [isInView, animation, getDuration]);
 
 	// Pause/resume on hover
 	useEffect(() => {
@@ -180,14 +177,8 @@ export const Header = ({
    Card Wrapper Component
 ============================= */
 export const Card = ({
-	rotate,
-	scale,
-	translate,
 	children,
 }: {
-	rotate: MotionValue<number>;
-	scale: MotionValue<number>;
-	translate: MotionValue<number>;
 	children: React.ReactNode;
 }) => {
 	return (

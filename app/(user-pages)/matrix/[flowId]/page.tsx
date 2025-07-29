@@ -17,7 +17,7 @@ import { useAuthContext } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import FlowEditor from "@/features/business-logic-modern/infrastructure/flow-engine/FlowEditor";
-import { FlowMetadataProvider } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/FlowMetadataContext";
+import { FlowMetadataProvider } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
 import { useQuery } from "convex/react";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";

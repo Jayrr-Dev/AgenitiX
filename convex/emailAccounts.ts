@@ -6,13 +6,13 @@
  */
 
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { type QueryCtx, mutation, query } from "./_generated/server";
 
 // Types for email account operations
 export type EmailProviderType = "gmail" | "outlook" | "imap" | "smtp";
 export type ConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
 
-export type EmailAccountResult<T = any> =
+export type EmailAccountResult<T = unknown> =
 	| {
 			success: true;
 			data: T;
@@ -22,17 +22,42 @@ export type EmailAccountResult<T = any> =
 			error: {
 				code: string;
 				message: string;
-				details?: any;
+				details?: Record<string, unknown>;
 			};
 	  };
 
+interface EmailCredentials {
+	provider: EmailProviderType;
+	email: string;
+	username?: string;
+	displayName?: string;
+	password?: string;
+	accessToken?: string;
+	refreshToken?: string;
+	imapHost?: string;
+	imapPort?: number;
+	smtpHost?: string;
+	smtpPort?: number;
+	useSSL?: boolean;
+	useTLS?: boolean;
+}
+
+interface SecurityEvent {
+	type: string;
+	userId: string;
+	action: string;
+	timestamp: number;
+	resource?: string;
+	details?: Record<string, unknown>;
+}
+
 // Helper function to validate user session
-async function validateUserSession(ctx: any, tokenHash: string) {
+async function validateUserSession(ctx: QueryCtx, tokenHash: string) {
 	const session = await ctx.db
 		.query("auth_sessions")
-		.withIndex("by_token_hash", (q: any) => q.eq("token_hash", tokenHash))
-		.filter((q: any) => q.eq(q.field("is_active"), true))
-		.filter((q: any) => q.gt(q.field("expires_at"), Date.now()))
+		.withIndex("by_token_hash", (q) => q.eq("token_hash", tokenHash))
+		.filter((q) => q.eq(q.field("is_active"), true))
+		.filter((q) => q.gt(q.field("expires_at"), Date.now()))
 		.first();
 
 	if (!session) {
@@ -48,13 +73,13 @@ async function validateUserSession(ctx: any, tokenHash: string) {
 }
 
 // Simple encryption/decryption (in production, use proper encryption)
-function encryptCredentials(credentials: any): string {
+function encryptCredentials(credentials: EmailCredentials): string {
 	// TODO: Implement proper encryption in production
 	// For now, just JSON stringify (NOT SECURE - for development only)
 	return JSON.stringify(credentials);
 }
 
-function decryptCredentials(encryptedData: string): any {
+function decryptCredentials(encryptedData: string): EmailCredentials {
 	// TODO: Implement proper decryption in production
 	// For now, just JSON parse (NOT SECURE - for development only)
 	try {
@@ -71,7 +96,9 @@ function validateEmailFormat(email: string): boolean {
 	return emailRegex.test(email) && email.length <= 254;
 }
 
-function validateCredentials(credentials: any): { code: string; message: string } | null {
+function validateCredentials(
+	credentials: EmailCredentials
+): { code: string; message: string } | null {
 	if (!credentials.provider) {
 		return { code: "CONFIGURATION_INVALID", message: "Provider is required" };
 	}
@@ -162,7 +189,7 @@ function checkRateLimit(identifier: string): { allowed: boolean; retryAfter?: nu
 }
 
 // Audit logging
-function logSecurityEvent(_event: any): void {}
+function logSecurityEvent(_event: SecurityEvent): void {}
 
 // Store or update email account
 export const storeEmailAccount = mutation({
@@ -251,11 +278,12 @@ export const storeEmailAccount = mutation({
 
 				// Log security event
 				logSecurityEvent({
+					type: "EMAIL_ACCOUNT",
 					userId: user._id,
-					action: "UPDATE_EMAIL_ACCOUNT",
-					resource: `email_account:${args.account_id}`,
+					action: "UPDATE_ACCOUNT",
+					resource: `${args.provider}:${args.email}`,
 					details: { provider: args.provider, email: args.email },
-					timestamp: now,
+					timestamp: Date.now(),
 				});
 
 				return {
@@ -271,9 +299,9 @@ export const storeEmailAccount = mutation({
 			// Check for duplicate email accounts for this user
 			const existingAccount = await ctx.db
 				.query("email_accounts")
-				.withIndex("by_user_id", (q: any) => q.eq("user_id", user._id))
-				.filter((q: any) => q.eq(q.field("email"), args.email.toLowerCase().trim()))
-				.filter((q: any) => q.eq(q.field("provider"), args.provider))
+				.withIndex("by_user_id", (q) => q.eq("user_id", user._id))
+				.filter((q) => q.eq(q.field("email"), args.email.toLowerCase().trim()))
+				.filter((q) => q.eq(q.field("provider"), args.provider))
 				.first();
 
 			if (existingAccount) {
@@ -301,11 +329,12 @@ export const storeEmailAccount = mutation({
 
 			// Log security event
 			logSecurityEvent({
+				type: "EMAIL_ACCOUNT",
 				userId: user._id,
-				action: "CREATE_EMAIL_ACCOUNT",
-				resource: `email_account:${accountId}`,
+				action: "CREATE_ACCOUNT",
+				resource: `${args.provider}:${args.email}`,
 				details: { provider: args.provider, email: args.email },
-				timestamp: now,
+				timestamp: Date.now(),
 			});
 
 			return {
@@ -344,7 +373,7 @@ export const getEmailAccounts = query({
 			// Query user's email accounts
 			let query = ctx.db
 				.query("email_accounts")
-				.withIndex("by_user_id", (q: any) => q.eq("user_id", user._id));
+				.withIndex("by_user_id", (q) => q.eq("user_id", user._id));
 
 			// Filter by active status if requested
 			if (!args.include_inactive) {
@@ -552,7 +581,10 @@ export const deleteEmailAccount = mutation({
 
 // Helper function to simulate connection validation
 // TODO: Replace with actual provider-specific validation
-async function simulateConnectionValidation(provider: EmailProviderType, credentials: any) {
+async function simulateConnectionValidation(
+	provider: EmailProviderType,
+	credentials: EmailCredentials
+) {
 	// Simulate network delay
 	await new Promise((resolve) => setTimeout(resolve, 1000));
 
