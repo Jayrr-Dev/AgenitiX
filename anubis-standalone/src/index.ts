@@ -108,11 +108,11 @@ export class Anubis {
 	}
 
 	// VALIDATE PROOF OF WORK
-	validateProofOfWork(
+	async validateProofOfWork(
 		response: AnubisChallengeResponse,
 		difficulty?: number
-	): boolean {
-		return AnubisCrypto.validateProofOfWork(response, difficulty || this.config.difficulty);
+	): Promise<boolean> {
+		return await AnubisCrypto.validateProofOfWork(response, difficulty || this.config.difficulty);
 	}
 
 	// CREATE CHALLENGE
@@ -128,13 +128,13 @@ export class Anubis {
 	}
 
 	// VERIFY JWT TOKEN
-	verifyToken(token: string): AnubisJWTPayload | null {
-		return AnubisJWT.verify(token, this.config.jwtSecret);
+	async verifyToken(token: string): Promise<AnubisJWTPayload | null> {
+		return await AnubisJWT.verify(token, this.config.jwtSecret);
 	}
 
 	// SIGN JWT TOKEN
-	signToken(payload: AnubisJWTPayload): string {
-		return AnubisJWT.sign(payload, this.config.jwtSecret);
+	async signToken(payload: AnubisJWTPayload): Promise<string> {
+		return await AnubisJWT.sign(payload, this.config.jwtSecret);
 	}
 
 	// CHECK RATE LIMIT
