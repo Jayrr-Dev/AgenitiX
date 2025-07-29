@@ -46,7 +46,11 @@ function createErrorRedirect(error: string, description: string, provider = "out
 /**
  * Creates success redirect URL with auth data
  */
-function createSuccessRedirect(tokens: TokenResponse, connectionResult: ConnectionResult, state: string | null) {
+function createSuccessRedirect(
+	tokens: TokenResponse,
+	connectionResult: ConnectionResult,
+	state: string | null
+) {
 	const frontendUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 	const redirectUrl = new URL("/dashboard", frontendUrl);
 
@@ -62,7 +66,7 @@ function createSuccessRedirect(tokens: TokenResponse, connectionResult: Connecti
 
 	redirectUrl.searchParams.set("auth_success", "true");
 	redirectUrl.searchParams.set("auth_data", btoa(JSON.stringify(authData)));
-	
+
 	return NextResponse.redirect(redirectUrl);
 }
 

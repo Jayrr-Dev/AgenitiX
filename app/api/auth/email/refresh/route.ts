@@ -104,44 +104,6 @@ function buildRefreshSuccessResponse(
 }
 
 /**
- * Analyzes request volume patterns
- */
-function analyzeRequestVolume(history: Record<string, unknown>): number {
-	let riskScore = 0;
-
-	if (typeof history === "object" && "requestCount" in history) {
-		const requestCount = history.requestCount as number;
-		if (requestCount > 100) {
-			riskScore += 40; // Very high request volume
-		} else if (requestCount > 50) {
-			riskScore += 25;
-		} else if (requestCount > 20) {
-			riskScore += 15;
-		}
-	}
-
-	return riskScore;
-}
-
-/**
- * Analyzes user agent consistency patterns
- */
-function analyzePatternConsistency(history: Record<string, unknown>): number {
-	let riskScore = 0;
-
-	if (typeof history === "object" && "userAgentChanges" in history) {
-		const changes = history.userAgentChanges as number;
-		if (changes > 3) {
-			riskScore += 30; // Frequent user agent changes
-		} else if (changes > 1) {
-			riskScore += 15;
-		}
-	}
-
-	return riskScore;
-}
-
-/**
  * Validates the refreshed connection
  */
 async function validateRefreshedConnection(

@@ -30,6 +30,7 @@ interface ConnectionResult {
 	};
 	error?: {
 		message?: string;
+		code?: string;
 	};
 }
 
@@ -65,7 +66,11 @@ function getValidatedProvider(provider: EmailProviderType) {
 /**
  * Processes successful connection result
  */
-function buildSuccessResponse(provider: EmailProviderType, tokens: TokenResponse, connectionResult: ConnectionResult) {
+function buildSuccessResponse(
+	provider: EmailProviderType,
+	tokens: TokenResponse,
+	connectionResult: ConnectionResult
+) {
 	const authData = {
 		provider: provider as EmailProviderType,
 		email: connectionResult.accountInfo?.email || "",
@@ -81,6 +86,47 @@ function buildSuccessResponse(provider: EmailProviderType, tokens: TokenResponse
 		data: authData,
 		timestamp: new Date().toISOString(),
 	});
+}
+
+/**
+ * Handles OAuth2 processing errors with appropriate status codes
+ */
+function handleOAuth2ProcessingError(error: unknown) {
+	console.error("OAuth2 callback processing error:", error);
+
+	// Handle validation errors with proper status codes
+	if (error instanceof Error) {
+		if (error.message.includes("Unsupported provider")) {
+			return NextResponse.json({ error: error.message }, { status: 400 });
+		}
+		if (error.message.includes("does not support OAuth2")) {
+			return NextResponse.json({ error: error.message }, { status: 400 });
+		}
+	}
+
+	return NextResponse.json(
+		{
+			error: "OAuth2 callback processing failed",
+			details: error instanceof Error ? error.message : "Unknown error",
+		},
+		{ status: 500 }
+	);
+}
+
+/**
+ * Handles connection validation failure
+ */
+function handleConnectionValidationFailure(connectionResult: ConnectionResult) {
+	const errorData = connectionResult.error ? { ...connectionResult.error } : {};
+	console.error("Connection validation failed:", sanitizeAuthData(errorData));
+	return NextResponse.json(
+		{
+			error: "Connection validation failed",
+			details: connectionResult.error?.message || "Unknown validation error",
+			code: connectionResult.error?.code || "VALIDATION_FAILED",
+		},
+		{ status: 400 }
+	);
 }
 
 export async function POST(request: NextRequest) {
@@ -99,7 +145,7 @@ export async function POST(request: NextRequest) {
 
 		// Exchange code for tokens
 		const tokens = await providerInstance.exchangeCodeForTokens?.(code, redirectUri);
-		
+
 		if (!tokens) {
 			throw new Error("Failed to exchange code for tokens");
 		}
@@ -114,40 +160,12 @@ export async function POST(request: NextRequest) {
 		});
 
 		if (!connectionResult.success) {
-			const errorData = connectionResult.error ? { ...connectionResult.error } : {};
-			console.error("Connection validation failed:", sanitizeAuthData(errorData));
-			return NextResponse.json(
-				{
-					error: "Connection validation failed",
-					details: connectionResult.error?.message || "Unknown validation error",
-					code: connectionResult.error?.code || "VALIDATION_FAILED",
-				},
-				{ status: 400 }
-			);
+			return handleConnectionValidationFailure(connectionResult);
 		}
 
 		return buildSuccessResponse(provider as EmailProviderType, tokens, connectionResult);
 	} catch (error) {
-		console.error("OAuth2 callback processing error:", error);
-
-		// Handle validation errors with proper status codes
-		if (error instanceof Error) {
-			if (error.message.includes("Unsupported provider")) {
-				return NextResponse.json({ error: error.message }, { status: 400 });
-			}
-			if (error.message.includes("does not support OAuth2")) {
-				return NextResponse.json({ error: error.message }, { status: 400 });
-			}
-		}
-
-		return NextResponse.json(
-			{
-				error: "OAuth2 callback processing failed",
-				details: error instanceof Error ? error.message : "Unknown error",
-				timestamp: new Date().toISOString(),
-			},
-			{ status: 500 }
-		);
+		return handleOAuth2ProcessingError(error);
 	}
 }
 

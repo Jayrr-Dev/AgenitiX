@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConvexProvider, ConvexReactClient } from "convex/react";

@@ -72,6 +72,25 @@ const SORT_OPTIONS = {
 
 type SortOption = keyof typeof SORT_OPTIONS;
 
+/**
+ * Sorts flows based on the specified criteria
+ */
+const sortFlows = (flows: typeof publicFlows, sortBy: string) => {
+	return [...flows].sort((a, b) => {
+		if (sortBy === "popular") {
+			return (b.upvoteCount || 0) - (a.upvoteCount || 0);
+		}
+		if (sortBy === "name") {
+			return a.name.localeCompare(b.name);
+		}
+		if (sortBy === "created") {
+			return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+		}
+		// Default: recent
+		return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+	});
+};
+
 const ExplorePage = () => {
 	const { user, isLoading: authLoading } = useAuthContext();
 
@@ -210,47 +229,22 @@ const ExplorePage = () => {
 		return iconCategories[iconName] || "Other";
 	}, []);
 
-	// Memoized filtered and sorted flows
+	// Process and filter flows
 	const processedFlows = useMemo(() => {
-		if (!publicFlows) {
-			return [];
-		}
+		if (!publicFlows) return [];
 
-		let filtered = publicFlows;
+		// Apply filtering
+		let filtered = publicFlows.filter((flow) => {
+			const matchesSearch = 
+				flow.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+				flow.description.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+				getIconCategory(flow.icon).toLowerCase().includes(debouncedSearch.toLowerCase());
 
-		// Apply search filter
-		if (debouncedSearch) {
-			const searchLower = debouncedSearch.toLowerCase();
-			filtered = filtered.filter(
-				(flow) =>
-					flow.name.toLowerCase().includes(searchLower) ||
-					flow.description?.toLowerCase().includes(searchLower) ||
-					// Search by icon name/emoji
-					flow.icon
-						?.toLowerCase()
-						.includes(searchLower) ||
-					// Search by icon category (map icon names to categories)
-					(() => {
-						const category = getIconCategory(flow.icon);
-						return category ? category.toLowerCase().includes(searchLower) : false;
-					})()
-			);
-		}
+			return matchesSearch;
+		});
 
 		// Apply sorting
-		filtered.sort((a, b) => {
-			if (sortBy === "popular") {
-				return (b.upvoteCount || 0) - (a.upvoteCount || 0);
-			}
-			if (sortBy === "name") {
-				return a.name.localeCompare(b.name);
-			}
-			if (sortBy === "created") {
-				return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-			}
-			// Default: recent
-			return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-		});
+		filtered = sortFlows(filtered, sortBy);
 
 		return filtered;
 	}, [publicFlows, debouncedSearch, sortBy, getIconCategory]);
