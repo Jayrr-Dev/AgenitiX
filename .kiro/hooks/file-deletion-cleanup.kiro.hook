@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "File Deletion Cleanup",
+  "description": "When a file is deleted, automatically scan and clean up all relevant code and logic dependencies in other files including imports, references, and related code",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A file has been deleted. Please analyze the codebase and identify all files that reference the deleted file through imports, function calls, type references, or other dependencies. Then provide a comprehensive cleanup plan that includes:\n\n1. **Import Cleanup**: Remove all import statements that reference the deleted file\n2. **Type Reference Cleanup**: Remove or replace type references from the deleted file\n3. **Function Call Cleanup**: Remove or replace function calls to exports from the deleted file\n4. **Component Usage Cleanup**: Remove or replace component usage from the deleted file\n5. **Configuration Cleanup**: Update any configuration files that reference the deleted file\n6. **Documentation Cleanup**: Update documentation that references the deleted file\n7. **Test Cleanup**: Remove or update tests that reference the deleted file\n\nFor each affected file, provide:\n- The specific lines that need to be modified or removed\n- Suggested replacements if the functionality needs to be preserved\n- Any potential breaking changes that need to be addressed\n- Alternative implementations if the deleted functionality was critical\n\nFocus on maintaining code functionality while ensuring no broken references remain."
+  }
+}

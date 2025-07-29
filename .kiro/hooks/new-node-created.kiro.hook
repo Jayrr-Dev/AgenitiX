@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "New Node Created",
+  "description": "Automatically updates node controls, sidebar registry, and other dependent files when a new node file (*.node.tsx) is created",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.node.tsx"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A new node file has been created. Please analyze the node file and update the following dependent files:\n\n1. **Node Registry**: Update the node registry to include the new node type\n2. **Sidebar Controls**: Add the new node to the appropriate sidebar category (create/view/trigger/test/cycle)\n3. **Type Definitions**: Update any relevant type definitions or interfaces\n4. **Documentation**: Generate or update documentation for the new node\n5. **Export Files**: Update index files to export the new node\n\nPlease examine the node file structure, determine its category and functionality, then make the necessary updates to integrate it properly into the system. Ensure all imports, exports, and registrations are correctly configured."
+  }
+}

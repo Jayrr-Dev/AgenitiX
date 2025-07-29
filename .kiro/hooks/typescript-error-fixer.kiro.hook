@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "name": "TypeScript Error Checker & Fixer",
+  "description": "Automatically runs TypeScript type checking after each file save and attempts to fix any errors found",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.js",
+      "**/*.jsx"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A file has been saved. Please run TypeScript type checking to identify any errors, then analyze and fix all TypeScript errors found. Focus on:\n\n1. Type errors and mismatches\n2. Missing imports or exports\n3. Incorrect type annotations\n4. Interface/type definition issues\n5. Generic type problems\n6. Any other TypeScript compilation errors\n\nAfter identifying errors, provide fixes for each one. Make the necessary code changes to resolve all TypeScript errors while maintaining code functionality and following the project's TypeScript best practices."
+  }
+}

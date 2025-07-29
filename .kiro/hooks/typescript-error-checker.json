@@ -1,0 +1,24 @@
+{
+	"name": "TypeScript Error Checker & Fixer",
+	"description": "Automatically checks for TypeScript errors after each save and attempts to fix them",
+	"trigger": {
+		"type": "file_save",
+		"patterns": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
+	},
+	"actions": [
+		{
+			"type": "agent_execution",
+			"prompt": "A TypeScript file has been saved. Please:\n\n1. Run TypeScript compiler to check for errors in the saved file and related files\n2. If errors are found, analyze each error and provide specific fixes\n3. Apply the fixes automatically where possible\n4. For complex errors that require human judgment, provide detailed explanations and suggested solutions\n5. Run the TypeScript compiler again to verify fixes\n6. Report a summary of what was fixed\n\nFocus on:\n- Type errors and missing type annotations\n- Import/export issues\n- Interface and type definition problems\n- Generic type issues\n- Null/undefined safety issues\n\nUse these commands:\n- `npx tsc --noEmit` to check for errors without generating files\n- `npx tsc --noEmit --pretty` for better formatted error output\n- Focus on the specific file that was saved: {{file_path}}\n\nBe thorough but efficient - fix what can be automatically fixed and clearly explain what needs manual attention.",
+			"context": {
+				"include_file_content": true,
+				"include_related_files": true,
+				"max_related_files": 10
+			}
+		}
+	],
+	"settings": {
+		"enabled": true,
+		"debounce_ms": 1000,
+		"max_executions_per_minute": 10
+	}
+}

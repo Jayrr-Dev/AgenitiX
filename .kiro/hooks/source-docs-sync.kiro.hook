@@ -1,0 +1,30 @@
+{
+  "enabled": true,
+  "name": "Source to Docs Sync",
+  "description": "Listen to all source files in this TypeScript/Next.js repository and automatically update documentation in README or /docs folder when source code changes",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.js",
+      "**/*.jsx",
+      "**/package.json",
+      "**/tsconfig.json",
+      "**/next.config.ts",
+      "**/convex/**/*.ts",
+      "**/components/**/*.tsx",
+      "**/app/**/*.tsx",
+      "**/features/**/*.ts",
+      "**/hooks/**/*.ts",
+      "**/lib/**/*.ts",
+      "**/types/**/*.ts",
+      "**/utils/**/*.ts"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Source files have been modified in this TypeScript/Next.js repository. Please analyze the changes and update the documentation accordingly. If there is a /documentation folder, update relevant files there. Otherwise, update the README.md file. Focus on:\n\n1. API changes and new functions/components\n2. New features or capabilities added\n3. Changes to project structure or architecture\n4. Updated dependencies or configuration\n5. New hooks, utilities, or types that should be documented\n\nMake sure the documentation stays current with the codebase and provides clear examples for developers."
+  }
+}
