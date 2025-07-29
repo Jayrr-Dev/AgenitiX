@@ -1,3 +1,7 @@
+---
+inclusion: manual
+---
+
 # Convex Best Practices & Guidelines
 
 ## Overview

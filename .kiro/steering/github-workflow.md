@@ -1,3 +1,7 @@
+---
+inclusion: manual
+---
+
 # GitHub Best Practices & Team Workflow
 
 ## Quick Start Workflow

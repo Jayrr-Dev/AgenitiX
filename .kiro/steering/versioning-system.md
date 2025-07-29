@@ -1,3 +1,7 @@
+---
+inclusion: manual
+---
+
 # Versioning System & Semantic Release
 
 ## Overview

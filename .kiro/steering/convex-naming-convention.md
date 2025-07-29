@@ -1,3 +1,7 @@
+---
+inclusion: manual
+---
+
 # 📘 Table Naming Convention Guide
 
 Use this standard when creating new database tables. All table names must follow these conventions.

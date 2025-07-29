@@ -1,3 +1,7 @@
+---
+inclusion: manual
+---
+
 Clean Code Principles (Minimalist Core)
 
 0. Mantras
