@@ -1,15 +1,13 @@
 /**
- * NODE-LEVEL ERROR BOUNDARY - Isolates runtime errors to individual nodes
+ * NODE ERROR BOUNDARY - Isolates runtime errors to individual nodes
  *
- * • Catches any rendering/runtime error thrown by a single node component
- * • Prevents the entire React Flow canvas from unmounting when one node fails
+ * • Catches any rendering/runtime error thrown by a node component
+ * • Prevents the entire React Flow canvas from unmounting
  * • Logs the error via flowStore.logNodeError so it appears in inspector
- * • Displays a minimal fallback UI inside the failed node (red background + icon)
+ * • Displays a minimal fallback UI inside the node (red background + icon)
  * • Active only for its wrapped node; other nodes remain functional
- * • Allows users to continue working with other nodes while one is broken
  *
- * Usage: Wraps individual node components in the flow editor
- * Keywords: node-error-boundary, react, node-isolation, runtime-errors, flowStore
+ * Keywords: error-boundary, react, node-isolation, runtime-errors, flowStore
  */
 
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
@@ -18,8 +16,6 @@ import React from "react";
 interface NodeErrorBoundaryProps {
 	nodeId: string;
 	children: React.ReactNode;
-	onError?: (msg: string) => void;
-	onReset?: () => void;
 }
 
 interface NodeErrorBoundaryState {
@@ -27,7 +23,7 @@ interface NodeErrorBoundaryState {
 	message: string;
 }
 
-// Stable class component for node-level error handling
+// Stable class component
 class NodeErrorBoundaryClass extends React.Component<
 	{
 		nodeId: string;
@@ -70,24 +66,18 @@ class NodeErrorBoundaryClass extends React.Component<
 }
 
 // Functional wrapper to inject store callbacks once (stable refs)
-const NodeErrorBoundary: React.FC<NodeErrorBoundaryProps> = ({ nodeId, children, onError, onReset }) => {
+const NodeErrorBoundary: React.FC<NodeErrorBoundaryProps> = ({ nodeId, children }) => {
 	const { logNodeError, clearNodeErrors } = useFlowStore();
 
-	const handleError = React.useCallback(
-		(msg: string) => {
-			logNodeError(nodeId, msg, "error", "ERROR_BOUNDARY");
-			onError?.(msg);
-		},
-		[logNodeError, nodeId, onError]
+	const onError = React.useCallback(
+		(msg: string) => logNodeError(nodeId, msg, "error", "ERROR_BOUNDARY"),
+		[logNodeError, nodeId]
 	);
 
-	const handleReset = React.useCallback(() => {
-		clearNodeErrors(nodeId);
-		onReset?.();
-	}, [clearNodeErrors, nodeId, onReset]);
+	const onReset = React.useCallback(() => clearNodeErrors(nodeId), [clearNodeErrors, nodeId]);
 
 	return (
-		<NodeErrorBoundaryClass nodeId={nodeId} onError={handleError} onReset={handleReset}>
+		<NodeErrorBoundaryClass nodeId={nodeId} onError={onError} onReset={onReset}>
 			{children}
 		</NodeErrorBoundaryClass>
 	);
