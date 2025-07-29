@@ -18,6 +18,7 @@ import type { NodeSpec } from "../node-core/NodeSpec";
 const nodeSpecs: Record<string, NodeSpec> = {
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
+	aiAgent: aiAgentSpec,
 	storeInMemory: storeInMemorySpec,
 	emailAccount: emailAccountSpec,
 	emailReader: emailReaderSpec,

@@ -100,13 +100,13 @@ module.exports = (plop) => {
 				type: "list",
 				name: "domain",
 				message: "What is the domain of the node?",
-				choices: ["create", "view", "trigger", "test", "cycle", "store", "custom"],
+				choices: ["create", "view", "trigger", "test", "cycle", "store", "ai", "custom"],
 			},
 			{
 				type: "list",
 				name: "category",
 				message: "What is the functional category of the node?",
-				choices: ["CREATE", "VIEW", "TRIGGER", "TEST", "CYCLE", "STORE"],
+				choices: ["CREATE", "VIEW", "TRIGGER", "TEST", "CYCLE", "STORE", "AI"],
 			},
 			{
 				type: "list",
@@ -180,6 +180,8 @@ module.exports = (plop) => {
 						trigger: "triggering",
 						test: "testing",
 						cycle: "cycling",
+						store: "storage",
+						ai: "AI and machine learning",
 						custom: "custom operations",
 					};
 					const domainDesc = domainMap[answers.domain] || "operations";
@@ -503,7 +505,7 @@ module.exports = (plop) => {
 				message: "Which node would you like to delete?",
 				choices: () => {
 					const nodeBasePath = path.join(__dirname, "features/business-logic-modern/node-domain");
-					const domains = ["create", "view", "trigger", "test", "cycle", "custom"];
+					const domains = ["create", "view", "trigger", "test", "cycle", "store", "ai", "custom"];
 					let nodes = [];
 					domains.forEach((domain) => {
 						const domainPath = path.join(nodeBasePath, domain);
