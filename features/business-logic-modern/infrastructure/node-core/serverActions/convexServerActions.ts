@@ -92,14 +92,10 @@ export const createConvexQueryAction = (
 ) => {
 	const { nodeId } = ctx;
 
-	return useConvexQuery(
-		queryName,
-		params,
-		{
-			enabled: true,
-			staleTime: 2 * 60 * 1000, // 2 minutes
-		}
-	);
+	return useConvexQuery(queryName, params, {
+		enabled: true,
+		staleTime: 2 * 60 * 1000, // 2 minutes
+	});
 };
 
 /**

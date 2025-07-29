@@ -172,7 +172,11 @@ export function HeroCarousel() {
 										// IMAGE CAROUSEL
 										<img
 											src={slide.src}
-											alt={typeof slide.title === "string" ? slide.title : `Hero carousel slide ${index + 1}`}
+											alt={
+												typeof slide.title === "string"
+													? slide.title
+													: `Hero carousel slide ${index + 1}`
+											}
 											loading="lazy"
 											className="h-full w-full object-cover transition-transform duration-300"
 											style={{
