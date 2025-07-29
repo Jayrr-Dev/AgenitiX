@@ -6,8 +6,9 @@
  * • Page reload after clearing to reset application state
  * • Development-focused utility for testing and debugging
  * • Simple one-click solution for state reset during development
+ * • Preserves authentication session to maintain user login
  *
- * Keywords: debug, localStorage, clear-data, development, reset, utility
+ * Keywords: debug, localStorage, clear-data, development, reset, utility, session-preservation
  */
 
 "use client";
@@ -47,7 +48,20 @@ const ClearLocalStorage: React.FC<ClearLocalStorageProps> = ({ className = "" })
 	// HANDLERS
 	const handleClearLocalStorage = () => {
 		if (window.confirm("Are you sure you want to clear all local storage data?")) {
+			// Preserve important session data
+			const preservedData = {
+				authToken: localStorage.getItem("agenitix_auth_token"),
+				// Add other important keys here as needed
+			};
+			
+			// Clear all localStorage
 			localStorage.clear();
+			
+			// Restore preserved data
+			if (preservedData.authToken) {
+				localStorage.setItem("agenitix_auth_token", preservedData.authToken);
+			}
+			
 			window.location.reload();
 		}
 	};
