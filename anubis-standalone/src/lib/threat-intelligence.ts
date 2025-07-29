@@ -230,7 +230,7 @@ export namespace ThreatIntelligence {
 	/**
 	 * CHECK VIRUS TOTAL FOR IP REPUTATION
 	 */
-	export async function checkVirusTotal(ip: string): Promise<ThreatIntelResult | null> {
+	export function checkVirusTotal(_ip: string): ThreatIntelResult | null {
 		try {
 			// This would integrate with VirusTotal API in a real implementation
 			// For now, return null to indicate no external check performed
@@ -244,7 +244,7 @@ export namespace ThreatIntelligence {
 	/**
 	 * CHECK ABUSE IPDB FOR IP REPUTATION
 	 */
-	export async function checkAbuseIPDB(ip: string): Promise<ThreatIntelResult | null> {
+	export function checkAbuseIPDB(_ip: string): ThreatIntelResult | null {
 		try {
 			// This would integrate with AbuseIPDB API in a real implementation
 			// For now, return null to indicate no external check performed
@@ -258,7 +258,7 @@ export namespace ThreatIntelligence {
 	/**
 	 * CHECK THREAT CROWD FOR IP REPUTATION
 	 */
-	export async function checkThreatCrowd(ip: string): Promise<ThreatIntelResult | null> {
+	export function checkThreatCrowd(_ip: string): ThreatIntelResult | null {
 		try {
 			// This would integrate with ThreatCrowd API in a real implementation
 			// For now, return null to indicate no external check performed

@@ -108,10 +108,10 @@ export class Anubis {
 	}
 
 	// VALIDATE PROOF OF WORK
-	async validateProofOfWork(
+	validateProofOfWork(
 		response: AnubisChallengeResponse,
 		difficulty?: number
-	): Promise<boolean> {
+	): boolean {
 		return AnubisCrypto.validateProofOfWork(response, difficulty || this.config.difficulty);
 	}
 
@@ -128,12 +128,12 @@ export class Anubis {
 	}
 
 	// VERIFY JWT TOKEN
-	async verifyToken(token: string): Promise<AnubisJWTPayload | null> {
+	verifyToken(token: string): AnubisJWTPayload | null {
 		return AnubisJWT.verify(token, this.config.jwtSecret);
 	}
 
 	// SIGN JWT TOKEN
-	async signToken(payload: AnubisJWTPayload): Promise<string> {
+	signToken(payload: AnubisJWTPayload): string {
 		return AnubisJWT.sign(payload, this.config.jwtSecret);
 	}
 

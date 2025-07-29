@@ -52,7 +52,6 @@
   --core-dimensions-button-sm: px-2 py-1;
   --core-dimensions-button-md: px-3 py-2;
   --core-dimensions-button-lg: px-4 py-3;
-  --node-_comment: 🎯 SINGLE SOURCE OF TRUTH: Change 'global.border-width' to update ALL node borders at once;
   --node-global-border-width: 1px;
   --node-global-border-style: solid;
   --node-create-bg: hsla(140, 80%, 40%, 1);

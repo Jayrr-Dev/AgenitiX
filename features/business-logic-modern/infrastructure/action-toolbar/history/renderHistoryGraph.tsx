@@ -23,11 +23,6 @@ import {
 import React, { useCallback, useMemo } from "react";
 import type { HistoryNode } from "./historyGraph";
 
-interface NodeEvent {
-	target: HTMLElement;
-	button: number;
-}
-
 // LAYOUT CONSTANTS
 const LAYOUT_CONFIG = {
 	nodeWidth: 60, // wider to accommodate wrapped text
@@ -304,7 +299,7 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 			if (!item) {
 				continue;
 			}
-			const { id, depth, parentId, siblingIndex } = item;
+			const { id, depth, siblingIndex } = item;
 
 			if (processedNodes.has(id)) {
 				continue;
@@ -350,7 +345,7 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
 
 	// Memoize click handler to prevent unnecessary re-renders
 	const handleNodeClick = useCallback(
-		(event: React.MouseEvent, node: Node) => {
+		(_event: React.MouseEvent, node: Node) => {
 			// Handle selection
 			if (onNodeSelect) {
 				onNodeSelect(node.id);

@@ -137,7 +137,7 @@ export const UndoRedoProvider: React.FC<UndoRedoProviderProps> = ({ children }) 
 		return managerRef.current?.getFullGraph?.() || null;
 	}, []);
 
-	const unregisterManager = useCallback((managerId: string) => {
+	const unregisterManager = useCallback((_managerId: string) => {
 		// For now, just clear the manager reference
 		managerRef.current = null;
 	}, []);

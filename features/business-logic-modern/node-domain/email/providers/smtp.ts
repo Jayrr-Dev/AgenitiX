@@ -14,7 +14,7 @@ import { createEmailError } from "../utils";
 import { BaseEmailProvider } from "./base";
 
 // Common SMTP configurations for popular providers
-const COMMON_SMTP_CONFIGS = {
+const _COMMON_SMTP_CONFIGS = {
 	"gmail.com": { host: "smtp.gmail.com", port: 587, tls: true },
 	"outlook.com": { host: "smtp-mail.outlook.com", port: 587, tls: true },
 	"hotmail.com": { host: "smtp-mail.outlook.com", port: 587, tls: true },

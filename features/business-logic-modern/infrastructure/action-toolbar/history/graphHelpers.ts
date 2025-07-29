@@ -402,7 +402,7 @@ export const removeNodeAndChildren = (graph: HistoryGraph, nodeId: NodeId): bool
 	const collectDescendants = (id: NodeId) => {
 		nodesToRemove.add(id);
 		const node = graph.nodes[id];
-		if (node && node.childrenIds) {
+		if (node?.childrenIds) {
 			node.childrenIds.forEach(collectDescendants);
 		}
 	};
@@ -417,7 +417,7 @@ export const removeNodeAndChildren = (graph: HistoryGraph, nodeId: NodeId): bool
 	// Remove the node from its parent's children list
 	if (nodeToRemove.parentId) {
 		const parent = graph.nodes[nodeToRemove.parentId];
-		if (parent && parent.childrenIds) {
+		if (parent?.childrenIds) {
 			parent.childrenIds = parent.childrenIds.filter((id) => id !== nodeId);
 		}
 	}

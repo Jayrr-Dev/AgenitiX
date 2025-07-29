@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { globalNodeMemoryManager } from "./NodeMemory";
+import { globalNodeMemoryManager } from "./nodeMemory";
 
 // Helper functions for memory operations
 function getFromMemory<T>(key: string, ttl?: number): T | null {
@@ -94,7 +94,7 @@ export function useMemoryState<T>(
 	nodeId: string,
 	key: string,
 	initialValue: T,
-	ttl?: number
+	_ttl?: number
 ): [T, (value: T) => void, T | undefined] {
 	const memory = useNodeMemory(nodeId, () => initialValue);
 	const [state, setState] = useState<T>(() => {
@@ -128,7 +128,7 @@ export function useMemoryState<T>(
  */
 export function useMemoryComputed<T>(
 	nodeId: string,
-	key: string,
+	_key: string,
 	computeFn: () => T | Promise<T>,
 	dependencies: unknown[] = [],
 	ttl?: number

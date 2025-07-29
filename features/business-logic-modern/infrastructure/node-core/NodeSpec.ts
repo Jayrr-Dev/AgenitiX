@@ -4,7 +4,7 @@ import type {
 	EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import type { z } from "zod";
-import type { NodeMemoryConfig } from "./NodeMemory";
+import type { NodeMemoryConfig } from "./nodeMemory";
 
 /**
  * Feature flag configuration for node-level feature toggles

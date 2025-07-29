@@ -22,7 +22,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
 	const { undo, redo, getHistory, getFullGraph } = useUndoRedo();
 
 	const historyData = useMemo(() => getHistory(), [getHistory]);
-	const { canUndo, canRedo, branchOptions = [], currentNode } = historyData;
+	const { canUndo, canRedo, branchOptions = [] } = historyData;
 
 	// Get the full graph to access child nodes
 	const fullGraph = useMemo(() => getFullGraph(), [getFullGraph]);

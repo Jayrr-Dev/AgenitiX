@@ -69,7 +69,7 @@ export const useConvexMutation = <TData, TVariables extends Record<string, unkno
 	}
 ) => {
 	return useMutation({
-		mutationFn: async (variables: TVariables) => {
+		mutationFn: (variables: TVariables) => {
 			const result = executeConvexMutation<TData>(mutationName, variables);
 			return result;
 		},
@@ -90,7 +90,7 @@ export const createConvexQueryAction = (
 	queryName: string,
 	params?: Record<string, unknown>
 ) => {
-	const { nodeId } = ctx;
+	const { nodeId: _nodeId } = ctx;
 
 	return useConvexQuery(queryName, params, {
 		enabled: true,
@@ -102,7 +102,7 @@ export const createConvexQueryAction = (
  * Creates a Convex mutation action with proper error handling and state management
  */
 export const createConvexMutationAction = (ctx: ServerActionContext, mutationName: string) => {
-	const { nodeId, onStateUpdate, onError, onSuccess } = ctx;
+	const { nodeId: _nodeId, onStateUpdate, onError, onSuccess } = ctx;
 
 	return useConvexMutation(mutationName, {
 		onSuccess: (result) => {

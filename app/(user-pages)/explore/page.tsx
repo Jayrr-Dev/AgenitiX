@@ -263,7 +263,6 @@ const ExplorePage = () => {
 			const matchesSearch =
 				flow.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
 				flow.description?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-				false ||
 				getIconCategory(flow.icon)?.toLowerCase().includes(debouncedSearch.toLowerCase());
 
 			return matchesSearch;

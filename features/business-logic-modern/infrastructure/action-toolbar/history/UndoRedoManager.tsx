@@ -324,7 +324,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
 		// Ensure root node exists
 		if (!graph.nodes[graph.root]) {
-			console.warn(`⚠️ [UndoRedo] Root node missing in getGraph, creating default root`);
+			console.warn("⚠️ [UndoRedo] Root node missing in getGraph, creating default root");
 			const currentState = captureCurrentState();
 			graph.nodes[graph.root] = {
 				id: graph.root,
@@ -339,7 +339,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
 		// Ensure cursor points to valid node
 		if (!graph.nodes[graph.cursor]) {
-			console.warn(`⚠️ [UndoRedo] Cursor points to missing node in getGraph, resetting to root`);
+			console.warn("⚠️ [UndoRedo] Cursor points to missing node in getGraph, resetting to root");
 			graph.cursor = graph.root;
 		}
 
