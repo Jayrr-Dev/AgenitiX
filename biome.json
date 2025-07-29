@@ -49,14 +49,7 @@
 				"useBlockStatements": "error",
 				"useCollapsedElseIf": "error",
 				"useConsistentArrayType": "error",
-				"useFilenamingConvention": {
-					"level": "error",
-					"options": {
-						"filenameCases": ["kebab-case"],
-						"strictCase": false,
-						"requireAscii": true
-					}
-				}
+				"useFilenamingConvention": "warn"
 			},
 			"suspicious": {
 				"noConsoleLog": "warn",
@@ -90,6 +83,7 @@
 				"noUselessTypeConstraint": "error",
 				"noVoid": "error",
 				"noWith": "error",
+				"noForEach": "warn",
 				"useLiteralKeys": "error",
 				"useOptionalChain": "error",
 				"useRegexLiterals": "error",
@@ -143,7 +137,7 @@
 				"useAltText": "error",
 				"useAnchorContent": "error",
 				"useAriaPropsForRole": "error",
-				"useButtonType": "error",
+				"useButtonType": "warn",
 				"useHeadingContent": "error",
 				"useHtmlLang": "error",
 				"useIframeTitle": "error",

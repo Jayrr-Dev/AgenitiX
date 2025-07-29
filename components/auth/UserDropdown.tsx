@@ -45,7 +45,7 @@ export const UserDropdown = () => {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild={true}>
-				<Button variant="ghost" className="relative h-8 w-8 rounded-full">
+				<Button type="button" variant="ghost" className="relative h-8 w-8 rounded-full">
 					<Avatar className="h-8 w-8">
 						<AvatarImage src={user.avatar_url} alt={user.name} />
 						<AvatarFallback>{getInitials(user.name)}</AvatarFallback>

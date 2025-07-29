@@ -242,7 +242,7 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 						>
 							Cancel
 						</Button>
-						<Button onClick={handleEdit} disabled={isUpdating || !editName.trim()}>
+						<Button type="button" onClick={handleEdit} disabled={isUpdating || !editName.trim()}>
 							{isUpdating ? "Saving..." : "Save Changes"}
 						</Button>
 					</DialogFooter>

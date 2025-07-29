@@ -11,6 +11,29 @@ import { type NextRequest, NextResponse } from "next/server";
 import { buildErrorRedirect, mapOAuth2Error, sanitizeAuthData } from "../utils";
 
 /**
+ * OAuth2 token response interface
+ */
+interface TokenResponse {
+	accessToken: string;
+	refreshToken?: string;
+	expiresIn: number;
+}
+
+/**
+ * Connection validation result interface
+ */
+interface ConnectionResult {
+	success: boolean;
+	accountInfo?: {
+		email?: string;
+		displayName?: string;
+	};
+	error?: {
+		message?: string;
+	};
+}
+
+/**
  * Validates required OAuth2 parameters
  */
 function validateOAuthParams(provider: string, code: string, redirectUri: string) {
@@ -42,7 +65,7 @@ function getValidatedProvider(provider: EmailProviderType) {
 /**
  * Processes successful connection result
  */
-function buildSuccessResponse(provider: EmailProviderType, tokens: any, connectionResult: any) {
+function buildSuccessResponse(provider: EmailProviderType, tokens: TokenResponse, connectionResult: ConnectionResult) {
 	const authData = {
 		provider: provider as EmailProviderType,
 		email: connectionResult.accountInfo?.email || "",
@@ -76,6 +99,10 @@ export async function POST(request: NextRequest) {
 
 		// Exchange code for tokens
 		const tokens = await providerInstance.exchangeCodeForTokens?.(code, redirectUri);
+		
+		if (!tokens) {
+			throw new Error("Failed to exchange code for tokens");
+		}
 
 		// Validate the connection to get user info
 		const connectionResult = await providerInstance.validateConnection({

@@ -10,6 +10,29 @@ import type { NextRequest } from "next/server";
 import { buildErrorResponse, buildSuccessResponse, sanitizeAuthData } from "../utils";
 
 /**
+ * OAuth2 token response interface
+ */
+interface TokenResponse {
+	accessToken: string;
+	refreshToken?: string;
+	expiresIn: number;
+}
+
+/**
+ * Connection validation result interface
+ */
+interface ConnectionResult {
+	success: boolean;
+	accountInfo?: {
+		email?: string;
+		displayName?: string;
+	};
+	error?: {
+		message?: string;
+	};
+}
+
+/**
  * Validates refresh request parameters
  */
 function validateRefreshParams(provider: string, refreshToken: string) {
@@ -63,9 +86,9 @@ function handleOAuthError(error: Error) {
  */
 function buildRefreshSuccessResponse(
 	provider: string,
-	newTokens: any,
+	newTokens: TokenResponse,
 	originalRefreshToken: string,
-	connectionResult: any,
+	connectionResult: ConnectionResult,
 	accountId?: string
 ) {
 	const refreshData = {
@@ -81,15 +104,53 @@ function buildRefreshSuccessResponse(
 }
 
 /**
+ * Analyzes request volume patterns
+ */
+function analyzeRequestVolume(history: Record<string, unknown>): number {
+	let riskScore = 0;
+
+	if (typeof history === "object" && "requestCount" in history) {
+		const requestCount = history.requestCount as number;
+		if (requestCount > 100) {
+			riskScore += 40; // Very high request volume
+		} else if (requestCount > 50) {
+			riskScore += 25;
+		} else if (requestCount > 20) {
+			riskScore += 15;
+		}
+	}
+
+	return riskScore;
+}
+
+/**
+ * Analyzes user agent consistency patterns
+ */
+function analyzePatternConsistency(history: Record<string, unknown>): number {
+	let riskScore = 0;
+
+	if (typeof history === "object" && "userAgentChanges" in history) {
+		const changes = history.userAgentChanges as number;
+		if (changes > 3) {
+			riskScore += 30; // Frequent user agent changes
+		} else if (changes > 1) {
+			riskScore += 15;
+		}
+	}
+
+	return riskScore;
+}
+
+/**
  * Validates the refreshed connection
  */
 async function validateRefreshedConnection(
-	providerInstance: any,
+	providerInstance: ReturnType<typeof getProvider>,
 	provider: EmailProviderType,
-	newTokens: any,
+	newTokens: TokenResponse,
 	originalRefreshToken: string
 ) {
-	const connectionResult = await providerInstance.validateConnection({
+	const connectionResult = await providerInstance?.validateConnection({
 		provider: provider as EmailProviderType,
 		email: "", // Will be filled from profile
 		accessToken: newTokens.accessToken,
@@ -97,10 +158,10 @@ async function validateRefreshedConnection(
 		tokenExpiry: Date.now() + newTokens.expiresIn * 1000,
 	});
 
-	if (!connectionResult.success) {
-		const errorData = connectionResult.error ? { ...connectionResult.error } : {};
+	if (!connectionResult?.success) {
+		const errorData = connectionResult?.error ? { ...connectionResult.error } : {};
 		console.error("Token refresh validation failed:", sanitizeAuthData(errorData));
-		throw new Error(connectionResult.error?.message || "Unknown validation error");
+		throw new Error(connectionResult?.error?.message || "Unknown validation error");
 	}
 
 	return connectionResult;

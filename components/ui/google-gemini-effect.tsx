@@ -29,7 +29,7 @@ export const GoogleGeminiEffect = ({
         works!`}
 			</p>
 			<div className="-top-60 md:-top-40 absolute flex h-[890px] w-full items-center justify-center bg-red-transparent ">
-				<button className="z-30 mx-auto mt-8 w-fit rounded-full bg-white px-2 py-1 font-bold text-black text-xs md:mt-24 md:px-4 md:py-2 md:text-base ">
+				<button type="button" className="z-30 mx-auto mt-8 w-fit rounded-full bg-white px-2 py-1 font-bold text-black text-xs md:mt-24 md:px-4 md:py-2 md:text-base ">
 					ui.aceternity.com
 				</button>
 			</div>
