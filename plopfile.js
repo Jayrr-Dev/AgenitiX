@@ -332,7 +332,7 @@ module.exports = (plop) => {
 					path: "features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts",
 					pattern: /\/\/ Add new node imports here \(Plop can auto-inject these\)/g,
 					template:
-						"// Add new node imports here (Plop can auto-inject these)\nimport {{kind}} from '../../../node-domain/{{domain}}/{{kind}}.node';",
+						"import {{kind}} from '../../../node-domain/{{domain}}/{{kind}}.node';\n// Add new node imports here (Plop can auto-inject these)",
 				},
 
 				// 3. Update useDynamicNodeTypes.ts - export
@@ -340,7 +340,7 @@ module.exports = (plop) => {
 					type: "modify",
 					path: "features/business-logic-modern/infrastructure/flow-engine/hooks/useDynamicNodeTypes.ts",
 					pattern: /\/\/ Add new node types here/g,
-					template: "// Add new node types here\n    {{kind}},",
+					template: "{{kind}},\n			// Add new node types here",
 				},
 
 				// 4. Update nodespec-registry.ts - import
@@ -348,29 +348,71 @@ module.exports = (plop) => {
 					type: "modify",
 					path: "features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts",
 					pattern:
-						'import createText, { spec as createTextSpec } from "../../node-domain/create/createText.node";',
+						'import { spec as createTextSpec } from "../../node-domain/create/createText.node";',
 					template:
-						'import createText, { spec as createTextSpec } from "../../node-domain/create/createText.node";\nimport {{kind}}, { spec as {{kind}}Spec } from "../../node-domain/{{domain}}/{{kind}}.node";',
+						'import { spec as {{kind}}Spec } from "../../node-domain/{{domain}}/{{kind}}.node";\nimport { spec as createTextSpec } from "../../node-domain/create/createText.node";',
 				},
 
 				// 5. Update nodespec-registry.ts - registry entry
 				{
 					type: "modify",
 					path: "features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts",
-					pattern: "createText: createTextSpec,",
-					template: "createText: createTextSpec,\n\t{{kind}}: {{kind}}Spec,",
+					pattern: /\/\/ Add new node specs here \(auto-updated by Plop\)/g,
+					template: "{{kind}}: {{kind}}Spec,\n\t// Add new node specs here (auto-updated by Plop)",
 				},
 
 				// 6. Update node-domain/index.ts - export
 				{
 					type: "modify",
 					path: "features/business-logic-modern/node-domain/index.ts",
-					pattern: 'export { default as createText } from "./create/createText.node";',
+					pattern: /\/\/ Node exports will be added here automatically by Plop/g,
 					template:
-						'export { default as createText } from "./create/createText.node";\nexport { default as {{kind}} } from "./{{domain}}/{{kind}}.node";',
+						'export { default as {{kind}} } from "./{{domain}}/{{kind}}.node";\n// Node exports will be added here automatically by Plop',
 				},
 
-				// 7. Ensure theming tokens exist for the category (NEW)
+				// 7. Validate registry imports consistency
+				{
+					type: "custom",
+					description: "Validating nodespec-registry imports...",
+					action: () => {
+						const registryPath = "./features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts";
+						const fs = require("fs");
+						
+						if (!fs.existsSync(registryPath)) {
+							throw new Error(`Registry file not found: ${registryPath}`);
+						}
+
+						const content = fs.readFileSync(registryPath, "utf8");
+						
+						// Check that all imported specs are used in the nodeSpecs object
+						const importMatches = content.match(/import \{ spec as (\w+)Spec \}/g) || [];
+						const specNames = importMatches.map(match => {
+							const specMatch = match.match(/spec as (\w+)Spec/);
+							return specMatch ? specMatch[1] : null;
+						}).filter(Boolean);
+						
+						const usageMatches = content.match(/(\w+): (\w+)Spec,/g) || [];
+						const usedSpecs = usageMatches.map(match => {
+							const usageMatch = match.match(/(\w+): (\w+)Spec/);
+							return usageMatch ? usageMatch[2].replace('Spec', '') : null;
+						}).filter(Boolean);
+						
+						const missingInRegistry = specNames.filter(spec => !usedSpecs.includes(spec));
+						const unusedImports = usedSpecs.filter(spec => !specNames.includes(spec));
+						
+						if (missingInRegistry.length > 0) {
+							throw new Error(`Missing in nodeSpecs registry: ${missingInRegistry.join(', ')}`);
+						}
+						
+						if (unusedImports.length > 0) {
+							console.warn(`⚠️ Unused imports detected: ${unusedImports.join(', ')}`);
+						}
+						
+						return "✅ Registry validation passed";
+					}
+				},
+
+				// 8. Ensure theming tokens exist for the category (NEW)
 				(data) => {
 					const { category } = data;
 					const tokensPath = path.join(

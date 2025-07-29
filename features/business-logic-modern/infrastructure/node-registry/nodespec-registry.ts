@@ -5,6 +5,7 @@
  * No duplication, no manual maintenance - everything comes from NodeSpec.
  */
 
+import { spec as aiAgentSpec } from "../../node-domain/ai/aiAgent.node";
 import { spec as createTextSpec } from "../../node-domain/create/createText.node";
 import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
 import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
