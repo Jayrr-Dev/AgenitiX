@@ -1,6 +1,7 @@
 export { default as flowConditional } from "./flow/flowConditional.node";
 export { default as viewBoolean } from "./view/viewBoolean.node";
 export { default as triggerPulse } from "./trigger/triggerPulse.node";
+export { default as aiTools } from "./ai/aiTools.node";
 // Node exports will be added here automatically by Plop
 export { default as createText } from "./create/createText.node";
 export { default as aiAgent } from "./ai/aiAgent.node";

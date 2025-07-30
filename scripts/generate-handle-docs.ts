@@ -127,6 +127,15 @@ const HANDLE_TYPE_MAP: Record<string, HandleTypeInfo> = {
 		examples: ["Any value", "Mixed types", "Unknown data"],
 		validationRules: ["Accepts any type", "No validation", "Use with caution"],
 	},
+	t: {
+		code: "t",
+		label: "Tools",
+		description: "AI agent tool configurations and definitions",
+		color: "var(--core-handle-types-tools-color)",
+		icon: "🔧",
+		examples: ["{webSearch: enabled}", "{database: {query: true}}", "{email: {send: true}}"],
+		validationRules: ["Must be tool configuration object", "Tool-specific validation", "AI agent compatible"],
+	},
 };
 
 // ============================================================================

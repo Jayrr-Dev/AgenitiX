@@ -11,7 +11,7 @@
 import { Handle, type HandleProps, type IsValidConnection, useStore } from "@xyflow/react";
 import type React from "react";
 import { useCallback } from "react";
-import { LuBraces, LuBrackets, LuCheck, LuCircle, LuHash, LuType } from "react-icons/lu";
+import { LuBraces, LuBrackets, LuCheck, LuCircle, LuHash, LuWrench, LuType } from "react-icons/lu";
 import { VscJson } from "react-icons/vsc";
 import { toast } from "sonner";
 // Auto-generated at build time (can be empty in dev before first build)
@@ -100,6 +100,7 @@ const UNIFIED_TYPE_DISPLAY: Record<
 	array: { icon: LuBrackets, tokenKey: "array" },
 	any: { icon: LuCircle, tokenKey: "any" },
 	json: { icon: VscJson, tokenKey: "json" },
+	tools: { icon: LuWrench, tokenKey: "tools" },
 };
 
 /**
@@ -113,6 +114,7 @@ const ULTIMATE_TYPE_MAP: Record<string, { tokenKey: string; label: string }> = {
 	a: { tokenKey: "array", label: "array" },
 	x: { tokenKey: "any", label: "any" },
 	V: { tokenKey: "vibe", label: "Vibe" },
+	t: { tokenKey: "tools", label: "tools" },
 	// Full data type names for direct mapping
 	JSON: { tokenKey: "json", label: "json" },
 	String: { tokenKey: "string", label: "string" },
@@ -120,6 +122,7 @@ const ULTIMATE_TYPE_MAP: Record<string, { tokenKey: string; label: string }> = {
 	Number: { tokenKey: "number", label: "number" },
 	Array: { tokenKey: "array", label: "array" },
 	Object: { tokenKey: "object", label: "object" },
+	Tools: { tokenKey: "tools", label: "tools" },
 };
 
 /**
@@ -133,6 +136,7 @@ const TYPE_DESCRIPTIONS: Record<string, string> = {
 	a: "Array - Lists and array structures",
 	x: "Any - Accepts all data types",
 	V: "Vibe - Custom Vibe data type",
+	t: "Tools - AI agent tool configurations",
 	// Full data type names
 	String: "String - Text and string values",
 	Boolean: "Boolean - True/false values",
@@ -140,6 +144,7 @@ const TYPE_DESCRIPTIONS: Record<string, string> = {
 	JSON: "JSON - JavaScript objects and JSON data",
 	Array: "Array - Lists and array structures",
 	Object: "Object - JavaScript objects and data structures",
+	Tools: "Tools - AI agent tool configurations",
 };
 
 // ============================================================================

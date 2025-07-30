@@ -332,7 +332,6 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 						onChange={handleStoreChange}
 						placeholder="Enter your content here…"
 						className={` nowheel h-32 resize-none overflow-y-auto rounded-md bg-background p-2 text-xs focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
-						disabled={!isEnabled}
 					/>
 				</div>
 			) : (
@@ -342,7 +341,6 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 						onChange={handleStoreChange}
 						placeholder="..."
 						className={` nowheel m-4 h-8 translate-y-2 resize-none overflow-y-auto rounded-md p-1 text-center text-xs focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
-						disabled={!isEnabled}
 					/>
 				</div>
 			)}

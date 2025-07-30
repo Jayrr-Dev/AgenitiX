@@ -151,7 +151,7 @@ export const AiAgentDataSchema = z
 		customEndpoint: z.string().optional(),
 
 		// Agent Configuration
-		systemPrompt: z.string().default("You are a helpful assistant."),
+		systemPrompt: z.string().default("You are a helpful assistant. When you have tools available, ALWAYS use them to get information. Use the webSearch tool for ANY information requests, including facts, current events, news, Wikipedia articles, or general knowledge. Use the calculator tool for ANY mathematical calculations. Never say you don't have access to information if you have the webSearch tool available."),
 		maxSteps: z.number().default(10),
 		temperature: z.number().min(0).max(2).default(0.7),
 		maxTokens: z.number().optional(),
@@ -159,8 +159,16 @@ export const AiAgentDataSchema = z
 		// Input/Output State
 		inputs: z.string().nullable().default(null), // Standard inputs field for text input
 		triggerInputs: z.boolean().nullable().default(null), // Standard inputs field for trigger
+		toolsInput: z.string().nullable().default(null), // Tools configuration from aiTools node
 		userInput: z.string().nullable().default(null),
 		trigger: z.boolean().nullable().default(null), // Can be null when no trigger connected
+		
+		// Tools Configuration (parsed from toolsInput)
+		enabledTools: z.array(z.object({
+			type: z.string(),
+			name: z.string(),
+			config: z.record(z.any()),
+		})).default([]),
 		isActive: z.boolean().nullable().default(null), // Can be null during initialization
 		processingState: z
 			.enum([
@@ -360,6 +368,13 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
 				dataType: "Boolean",
 			},
 			{
+				id: "tools-input",
+				code: "t",
+				position: "bottom",
+				type: "target",
+				dataType: "Tools",
+			},
+			{
 				id: "output",
 				code: "s",
 				position: "right",
@@ -376,6 +391,7 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
 			systemPrompt: "You are a helpful assistant.",
 			inputs: null,
 			triggerInputs: null,
+			toolsInput: null,
 			userInput: null,
 			trigger: false,
 			processingState: PROCESSING_STATE.IDLE,
@@ -477,6 +493,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 		customApiKey,
 		customEndpoint,
 		triggerInputs,
+		toolsInput,
 		userInput,
 		trigger,
 		processingState,
@@ -587,6 +604,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 						temperature,
 						customApiKey,
 						customEndpoint,
+						enabledTools: (nodeData as AiAgentData).enabledTools,
 					},
 				});
 
@@ -623,6 +641,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 			updateNodeData,
 			createThreadAction,
 			processUserMessageAction,
+			(nodeData as AiAgentData).enabledTools,
 		]
 	);
 
@@ -674,6 +693,23 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 		// Derive boolean value from upstream node
 		const triggerValue = src.data?.outputs ?? src.data?.store ?? src.data?.isActive ?? false;
 		return Boolean(triggerValue);
+	}, [edges, nodes, id]);
+
+	/** Compute the latest tools configuration from connected tools-input handle */
+	const computeToolsInput = useCallback((): string | null => {
+		const toolsEdge = findEdgeByHandle(edges, id, "tools-input");
+		if (!toolsEdge) {
+			return null;
+		}
+
+		const src = nodes.find((n) => n.id === toolsEdge.source);
+		if (!src) {
+			return null;
+		}
+
+		// priority: toolsOutput ➜ outputs ➜ store ➜ whole data
+		const rawInput = src.data?.toolsOutput ?? src.data?.outputs ?? src.data?.store ?? src.data;
+		return typeof rawInput === "string" ? rawInput : String(rawInput ?? "");
 	}, [edges, nodes, id]);
 
 	/** Handle system prompt change (memoised for perf) */
@@ -1032,16 +1068,31 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 	useEffect(() => {
 		const textInputVal = computeTextInput();
 		const triggerVal = computeTrigger();
+		const toolsInputVal = computeToolsInput();
 
-		if (textInputVal !== userInput || triggerVal !== trigger) {
+		if (textInputVal !== userInput || triggerVal !== trigger || toolsInputVal !== toolsInput) {
+			// Parse tools configuration if available
+			let parsedTools: any[] = [];
+			if (toolsInputVal) {
+				try {
+					const toolsConfig = JSON.parse(toolsInputVal);
+					parsedTools = toolsConfig.enabledTools || [];
+				} catch (error) {
+					console.warn("Failed to parse tools configuration:", error);
+					parsedTools = [];
+				}
+			}
+
 			updateNodeData({
 				inputs: textInputVal,
 				triggerInputs: triggerVal,
+				toolsInput: toolsInputVal,
 				userInput: textInputVal,
 				trigger: triggerVal,
+				enabledTools: parsedTools,
 			});
 		}
-	}, [computeTextInput, computeTrigger, userInput, trigger, updateNodeData, edges, nodes]);
+	}, [computeTextInput, computeTrigger, computeToolsInput, userInput, trigger, toolsInput, updateNodeData, edges, nodes]);
 
 	/* 🔄 Make isEnabled dependent on triggerInputs (like Create Text with boolean input) */
 	useEffect(() => {

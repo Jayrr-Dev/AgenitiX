@@ -145,7 +145,7 @@ export const COMMON_LUCIDE_ICONS = {
 	CODE: "LuCode",
 	CODE_2: "LuCode2",
 	BUG: "LuBug",
-	TOOL: "LuTool",
+	TOOL: "LuWrench",
 	WRENCH: "LuWrench",
 	SETTINGS_2: "LuSettings2",
 	TERMINAL: "LuTerminal",
