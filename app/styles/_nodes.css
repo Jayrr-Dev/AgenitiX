@@ -7,166 +7,300 @@
 
    • Utility classes for applying node-specific backgrounds, borders,
      text colors, and sizes based on variables from _generated_tokens.css.
+   • Modern gradient backgrounds and enhanced shadow effects
+   • Interactive hover states with enhanced depth
 
-   Keywords: nodes, theme, tokens, utilities, react-flow
+   Keywords: nodes, theme, tokens, utilities, react-flow, modern-ui
    ===================================================================== */
 
 /* Node Category Utilities */
 @utility bg-node-create {
-	background-color: hsl(var(--node-create-bg));
+  background-color: hsl(var(--node-create-bg));
 } /* #f0f9ff */
+@utility bg-node-create-gradient {
+  background: var(--node-create-bg-gradient);
+} /* Modern gradient */
 @utility bg-node-create-hover {
-	background-color: hsl(var(--node-create-bg-hover));
+  background-color: hsl(var(--node-create-bg-hover));
 } /* #e0f2fe */
 @utility border-node-create {
-	border-color: hsl(var(--node-create-border));
+  border-color: hsl(var(--node-create-border));
 } /* #7dd3fc */
 @utility border-node-create-hover {
-	border-color: hsl(var(--node-create-border-hover));
+  border-color: hsl(var(--node-create-border-hover));
 } /* #38bdf8 */
 @utility text-node-create {
-	color: hsl(var(--node-create-text));
+  color: hsl(var(--node-create-text));
 } /* #0c4a6e */
 @utility text-node-create-secondary {
-	color: hsl(var(--node-create-text-secondary));
+  color: hsl(var(--node-create-text-secondary));
 } /* #075985 */
+@utility shadow-node-create {
+  box-shadow: var(--node-create-modern-shadow);
+}
+@utility shadow-node-create-hover {
+  box-shadow: var(--node-create-modern-shadow-hover);
+}
+@utility shadow-node-create-dark {
+  box-shadow: var(--node-create-modern-shadow-dark);
+}
+@utility shadow-node-create-hover-dark {
+  box-shadow: var(--node-create-modern-shadow-hover-dark);
+}
 
 @utility bg-node-view {
-	background-color: hsl(var(--node-view-bg));
+  background-color: hsl(var(--node-view-bg));
 } /* #f7f7f7 */
+@utility bg-node-view-gradient {
+  background: var(--node-view-bg-gradient);
+} /* Modern gradient */
 @utility bg-node-view-hover {
-	background-color: hsl(var(--node-view-bg-hover));
+  background-color: hsl(var(--node-view-bg-hover));
 } /* #f2f2f2 */
 @utility border-node-view {
-	border-color: hsl(var(--node-view-border));
+  border-color: hsl(var(--node-view-border));
 } /* #d9d9d9 */
 @utility border-node-view-hover {
-	border-color: hsl(var(--node-view-border-hover));
+  border-color: hsl(var(--node-view-border-hover));
 } /* #cccccc */
 @utility text-node-view {
-	color: hsl(var(--node-view-text));
+  color: hsl(var(--node-view-text));
 } /* #333333 */
 @utility text-node-view-secondary {
-	color: hsl(var(--node-view-text-secondary));
+  color: hsl(var(--node-view-text-secondary));
 } /* #4d4d4d */
+@utility shadow-node-view {
+  box-shadow: var(--node-view-modern-shadow);
+}
+@utility shadow-node-view-hover {
+  box-shadow: var(--node-view-modern-shadow-hover);
+}
+@utility shadow-node-view-dark {
+  box-shadow: var(--node-view-modern-shadow-dark);
+}
+@utility shadow-node-view-hover-dark {
+  box-shadow: var(--node-view-modern-shadow-hover-dark);
+}
 
 @utility bg-node-trigger {
-	background-color: hsl(var(--node-trigger-bg));
+  background-color: hsl(var(--node-trigger-bg));
 } /* #faf5ff */
+@utility bg-node-trigger-gradient {
+  background: var(--node-trigger-bg-gradient);
+} /* Modern gradient */
 @utility bg-node-trigger-hover {
-	background-color: hsl(var(--node-trigger-bg-hover));
+  background-color: hsl(var(--node-trigger-bg-hover));
 } /* #f3e8ff */
 @utility border-node-trigger {
-	border-color: hsl(var(--node-trigger-border));
+  border-color: hsl(var(--node-trigger-border));
 } /* #c4b5fd */
 @utility border-node-trigger-hover {
-	border-color: hsl(var(--node-trigger-border-hover));
+  border-color: hsl(var(--node-trigger-border-hover));
 } /* #a78bfa */
 @utility text-node-trigger {
-	color: hsl(var(--node-trigger-text));
+  color: hsl(var(--node-trigger-text));
 } /* #581c87 */
 @utility text-node-trigger-secondary {
-	color: hsl(var(--node-trigger-text-secondary));
+  color: hsl(var(--node-trigger-text-secondary));
 } /* #6b21a8 */
+@utility shadow-node-trigger {
+  box-shadow: var(--node-trigger-modern-shadow);
+}
+@utility shadow-node-trigger-hover {
+  box-shadow: var(--node-trigger-modern-shadow-hover);
+}
+@utility shadow-node-trigger-dark {
+  box-shadow: var(--node-trigger-modern-shadow-dark);
+}
+@utility shadow-node-trigger-hover-dark {
+  box-shadow: var(--node-trigger-modern-shadow-hover-dark);
+}
 
 @utility bg-node-test {
-	background-color: hsl(var(--node-test-bg));
+  background-color: hsl(var(--node-test-bg));
 } /* #fffbeb */
+@utility bg-node-test-gradient {
+  background: var(--node-test-bg-gradient);
+} /* Modern gradient */
 @utility bg-node-test-hover {
-	background-color: hsl(var(--node-test-bg-hover));
+  background-color: hsl(var(--node-test-bg-hover));
 } /* #fef3c7 */
 @utility border-node-test {
-	border-color: hsl(var(--node-test-border));
+  border-color: hsl(var(--node-test-border));
 } /* #fcd34d */
 @utility border-node-test-hover {
-	border-color: hsl(var(--node-test-border-hover));
+  border-color: hsl(var(--node-test-border-hover));
 } /* #f59e0b */
 @utility text-node-test {
-	color: hsl(var(--node-test-text));
+  color: hsl(var(--node-test-text));
 } /* #92400e */
 @utility text-node-test-secondary {
-	color: hsl(var(--node-test-text-secondary));
+  color: hsl(var(--node-test-text-secondary));
 } /* #a16207 */
+@utility shadow-node-test {
+  box-shadow: var(--node-test-modern-shadow);
+}
+@utility shadow-node-test-hover {
+  box-shadow: var(--node-test-modern-shadow-hover);
+}
+@utility shadow-node-test-dark {
+  box-shadow: var(--node-test-modern-shadow-dark);
+}
+@utility shadow-node-test-hover-dark {
+  box-shadow: var(--node-test-modern-shadow-hover-dark);
+}
 
 @utility bg-node-cycle {
-	background-color: hsl(var(--node-cycle-bg));
+  background-color: hsl(var(--node-cycle-bg));
 } /* #faf5ff */
+@utility bg-node-cycle-gradient {
+  background: var(--node-cycle-bg-gradient);
+} /* Modern gradient */
 @utility bg-node-cycle-hover {
-	background-color: hsl(var(--node-cycle-bg-hover));
+  background-color: hsl(var(--node-cycle-bg-hover));
 } /* #f3e8ff */
 @utility border-node-cycle {
-	border-color: hsl(var(--node-cycle-border));
+  border-color: hsl(var(--node-cycle-border));
 } /* #c4b5fd */
 @utility border-node-cycle-hover {
-	border-color: hsl(var(--node-cycle-border-hover));
+  border-color: hsl(var(--node-cycle-border-hover));
 } /* #a78bfa */
 @utility text-node-cycle {
-	color: hsl(var(--node-cycle-text));
+  color: hsl(var(--node-cycle-text));
 } /* #581c87 */
 @utility text-node-cycle-secondary {
-	color: hsl(var(--node-cycle-text-secondary));
+  color: hsl(var(--node-cycle-text-secondary));
 } /* #6b21a8 */
+@utility shadow-node-cycle {
+  box-shadow: var(--node-cycle-modern-shadow);
+}
+@utility shadow-node-cycle-hover {
+  box-shadow: var(--node-cycle-modern-shadow-hover);
+}
+@utility shadow-node-cycle-dark {
+  box-shadow: var(--node-cycle-modern-shadow-dark);
+}
+@utility shadow-node-cycle-hover-dark {
+  box-shadow: var(--node-cycle-modern-shadow-hover-dark);
+}
 
 @utility bg-node-email {
-	background-color: hsl(var(--node-email-bg));
+  background-color: hsl(var(--node-email-bg));
 } /* #e0f7fa */
+@utility bg-node-email-gradient {
+  background: var(--node-email-bg-gradient);
+} /* Modern gradient */
 @utility bg-node-email-hover {
-	background-color: hsl(var(--node-email-bg-hover));
+  background-color: hsl(var(--node-email-bg-hover));
 } /* #b2ebf2 */
 @utility border-node-email {
-	border-color: hsl(var(--node-email-border));
+  border-color: hsl(var(--node-email-border));
 } /* #4dd0e1 */
 @utility border-node-email-hover {
-	border-color: hsl(var(--node-email-border-hover));
+  border-color: hsl(var(--node-email-border-hover));
 } /* #26c6da */
 @utility text-node-email {
-	color: hsl(var(--node-email-text));
+  color: hsl(var(--node-email-text));
 } /* #006064 */
 @utility text-node-email-secondary {
-	color: hsl(var(--node-email-text-secondary));
+  color: hsl(var(--node-email-text-secondary));
 } /* #00838f */
+@utility shadow-node-email {
+  box-shadow: var(--node-email-modern-shadow);
+}
+@utility shadow-node-email-hover {
+  box-shadow: var(--node-email-modern-shadow-hover);
+}
+@utility shadow-node-email-dark {
+  box-shadow: var(--node-email-modern-shadow-dark);
+}
+@utility shadow-node-email-hover-dark {
+  box-shadow: var(--node-email-modern-shadow-hover-dark);
+}
 
 @utility bg-node-ai {
-	background-color: hsl(var(--node-ai-bg));
+  background-color: hsl(var(--node-ai-bg));
 } /* #f3f4f6 */
+@utility bg-node-ai-gradient {
+  background: var(--node-ai-bg-gradient);
+} /* Modern gradient */
 @utility bg-node-ai-hover {
-	background-color: hsl(var(--node-ai-bg-hover));
+  background-color: hsl(var(--node-ai-bg-hover));
 } /* #e5e7eb */
 @utility border-node-ai {
-	border-color: hsl(var(--node-ai-border));
+  border-color: hsl(var(--node-ai-border));
 } /* #9ca3af */
 @utility border-node-ai-hover {
-	border-color: hsl(var(--node-ai-border-hover));
+  border-color: hsl(var(--node-ai-border-hover));
 } /* #6b7280 */
 @utility text-node-ai {
-	color: hsl(var(--node-ai-text));
+  color: hsl(var(--node-ai-text));
 } /* #374151 */
 @utility text-node-ai-secondary {
-	color: hsl(var(--node-ai-text-secondary));
+  color: hsl(var(--node-ai-text-secondary));
 } /* #6b7280 */
+@utility shadow-node-ai {
+  box-shadow: var(--node-ai-modern-shadow);
+}
+@utility shadow-node-ai-hover {
+  box-shadow: var(--node-ai-modern-shadow-hover);
+}
+@utility shadow-node-ai-dark {
+  box-shadow: var(--node-ai-modern-shadow-dark);
+}
+@utility shadow-node-ai-hover-dark {
+  box-shadow: var(--node-ai-modern-shadow-hover-dark);
+}
+
+/* Modern UI Enhancement Utilities */
+@utility rounded-modern {
+  border-radius: var(--node-global-modern-radius);
+}
+@utility transition-modern {
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+@utility backdrop-glass {
+  backdrop-filter: blur(8px);
+}
+
+/* Modern Disabled State Utilities */
+@utility disabled-modern {
+  opacity: var(--node-global-disabled-opacity);
+  box-shadow: var(--node-global-disabled-shadow);
+  background: var(--node-global-disabled-gradient);
+  pointer-events: none;
+  cursor: not-allowed;
+}
+@utility disabled-glass-reduced {
+  backdrop-filter: blur(4px);
+}
+@utility disabled-interactive-none {
+  pointer-events: none;
+  user-select: none;
+}
 
 /* Node Sizing Utilities */
 @utility w-node-size-fe1h {
-	width: var(--node-size-fe1h-width);
+  width: var(--node-size-fe1h-width);
 } /* 240px */
 @utility h-node-size-fe1h {
-	height: var(--node-size-fe1h-height);
+  height: var(--node-size-fe1h-height);
 } /* 120px */
 @utility w-node-size-compact {
-	width: var(--node-size-compact-width);
+  width: var(--node-size-compact-width);
 } /* 180px */
 @utility h-node-size-compact {
-	height: var(--node-size-compact-height);
+  height: var(--node-size-compact-height);
 } /* 80px */
 @utility w-node-size-expanded {
-	width: var(--node-size-expanded-width);
+  width: var(--node-size-expanded-width);
 } /* 320px */
 @utility h-node-size-expanded {
-	height: var(--node-size-expanded-height);
+  height: var(--node-size-expanded-height);
 } /* 160px */
 @utility w-node-size-default {
-	width: var(--node-size-default-width);
+  width: var(--node-size-default-width);
 } /* 200px */
 @utility h-node-size-default {
-	height: var(--node-size-default-height);
+  height: var(--node-size-default-height);
 } /* 100px */
