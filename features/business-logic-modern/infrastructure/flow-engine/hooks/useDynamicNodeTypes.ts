@@ -7,6 +7,7 @@ import emailReader from "../../../node-domain/email/emailReader.node";
 import emailCreator from "../../../node-domain/email/emailCreator.node";
 // Import all available node components
 // This should be automatically updated when new nodes are created via Plop
+import flowConditional from '../../../node-domain/trigger/flowConditional.node';
 // Add new node imports here (Plop can auto-inject these)
 import aiAgent from '../../../node-domain/ai/aiAgent.node';
 import testNode from "../../../node-domain/test/testNode.node";
@@ -23,6 +24,7 @@ import viewText from "../../../node-domain/view/viewText.node";
 export function useDynamicNodeTypes() {
 	const nodeTypes = useMemo(
 		() => ({
+			flowConditional,
 			// Add new node types here
     aiAgent,
 			testNode,
