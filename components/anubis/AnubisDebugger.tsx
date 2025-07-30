@@ -56,6 +56,7 @@ export function AnubisDebugger() {
 	if (!isVisible) {
 		return (
 			<button
+				type="button"
 				onClick={toggleVisibility}
 				className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg border border-transparent bg-fill-border px-3 py-2 font-medium text-foreground text-sm shadow-lg backdrop-blur-lg transition-all duration-300 hover:animate-fill-transparency"
 				title="Show AgenitiX Debug Info"
@@ -75,6 +76,7 @@ export function AnubisDebugger() {
 						<h3 className="font-brand font-semibold text-foreground">AgenitiX Debug</h3>
 					</div>
 					<button
+						type="button"
 						onClick={toggleVisibility}
 						className="text-muted-foreground transition-colors hover:text-foreground"
 						title="Hide Debug Info"
@@ -151,6 +153,7 @@ export function AnubisDebugger() {
 					<div>
 						<h4 className="mb-2 font-semibold font-ui text-secondary">Actions</h4>
 						<button
+							type="button"
 							onClick={triggerTestChallenge}
 							className="w-full rounded-lg bg-secondary px-3 py-2 font-medium text-secondary-foreground text-sm transition-colors hover:bg-secondary/80"
 						>

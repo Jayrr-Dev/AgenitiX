@@ -12,17 +12,20 @@
 "use client";
 
 import React, { useCallback, useMemo } from "react";
-import { useUndoRedo } from "./UndoRedoContext";
+import { useUndoRedo } from "./undo-redo-context";
 
 interface BranchSelectorProps {
 	className?: string;
 }
 
 export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => {
-	const { undo, redo, getHistory } = useUndoRedo();
+	const { undo, redo, getHistory, getFullGraph } = useUndoRedo();
 
 	const historyData = useMemo(() => getHistory(), [getHistory]);
-	const { canUndo, canRedo, branchOptions = [], currentNode } = historyData;
+	const { canUndo, canRedo, branchOptions = [] } = historyData;
+
+	// Get the full graph to access child nodes
+	const fullGraph = useMemo(() => getFullGraph(), [getFullGraph]);
 
 	const handleUndo = useCallback(() => {
 		undo();
@@ -40,6 +43,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
 		return (
 			<div className={`flex gap-2 ${className || ""}`}>
 				<button
+					type="button"
 					onClick={handleUndo}
 					disabled={!canUndo}
 					className="rounded bg-[var(--infra-toolbar-bg)] px-3 py-1 text-sm hover:bg-[var(--infra-toolbar-bg-hover)] disabled:cursor-not-allowed disabled:opacity-50"
@@ -48,6 +52,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
 					↶ Undo
 				</button>
 				<button
+					type="button"
 					onClick={() => handleRedo()}
 					disabled={!canRedo}
 					className="rounded bg-[var(--infra-toolbar-bg)] px-3 py-1 text-sm hover:bg-[var(--infra-toolbar-bg-hover)] disabled:cursor-not-allowed disabled:opacity-50"
@@ -63,6 +68,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
 	return (
 		<div className={`flex items-center gap-2 ${className || ""}`}>
 			<button
+				type="button"
 				onClick={handleUndo}
 				disabled={!canUndo}
 				className="rounded bg-[var(--infra-toolbar-bg)] px-3 py-1 text-sm hover:bg-[var(--infra-toolbar-bg-hover)] disabled:cursor-not-allowed disabled:opacity-50"
@@ -74,12 +80,13 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({ className }) => 
 			<div className="flex gap-1">
 				<span className="px-2 py-1 text-gray-500 text-xs">Redo:</span>
 				{branchOptions.map((branchId, index) => {
-					// Get the branch node to show its label
-					const branchNode = currentNode?.children?.find((child: any) => child.id === branchId);
+					// Get the branch node from the full graph using childrenIds
+					const branchNode = fullGraph?.nodes?.[branchId];
 					const branchLabel = branchNode?.label || `Branch ${index + 1}`;
 
 					return (
 						<button
+							type="button"
 							key={branchId}
 							onClick={() => handleRedo(branchId)}
 							className="rounded border border-node-create-border bg-node-create px-2 py-1 text-node-create-text text-xs transition-colors hover:bg-node-create-hover"

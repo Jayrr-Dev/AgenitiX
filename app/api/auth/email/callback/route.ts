@@ -10,35 +10,145 @@ import type { EmailProviderType } from "@/features/business-logic-modern/node-do
 import { type NextRequest, NextResponse } from "next/server";
 import { buildErrorRedirect, mapOAuth2Error, sanitizeAuthData } from "../utils";
 
+/**
+ * OAuth2 token response interface
+ */
+interface TokenResponse {
+	accessToken: string;
+	refreshToken?: string;
+	expiresIn: number;
+}
+
+/**
+ * Connection validation result interface
+ */
+interface ConnectionResult {
+	success: boolean;
+	accountInfo?: {
+		email?: string;
+		displayName?: string;
+	};
+	error?: {
+		message?: string;
+		code?: string;
+	};
+}
+
+/**
+ * Validates required OAuth2 parameters
+ */
+function validateOAuthParams(provider: string, code: string, redirectUri: string) {
+	if (!(provider && code && redirectUri)) {
+		return NextResponse.json(
+			{ error: "Missing required parameters: provider, code, redirectUri" },
+			{ status: 400 }
+		);
+	}
+	return null;
+}
+
+/**
+ * Gets and validates provider instance
+ */
+function getValidatedProvider(provider: EmailProviderType) {
+	const providerInstance = getProvider(provider);
+	if (!providerInstance) {
+		throw new Error(`Unsupported provider: ${provider}`);
+	}
+
+	if (providerInstance.authType !== "oauth2" || !providerInstance.exchangeCodeForTokens) {
+		throw new Error(`Provider ${provider} does not support OAuth2`);
+	}
+
+	return providerInstance;
+}
+
+/**
+ * Processes successful connection result
+ */
+function buildSuccessResponse(
+	provider: EmailProviderType,
+	tokens: TokenResponse,
+	connectionResult: ConnectionResult
+) {
+	const authData = {
+		provider: provider as EmailProviderType,
+		email: connectionResult.accountInfo?.email || "",
+		displayName: connectionResult.accountInfo?.displayName || "",
+		accessToken: tokens.accessToken,
+		refreshToken: tokens.refreshToken,
+		tokenExpiry: Date.now() + tokens.expiresIn * 1000,
+		accountInfo: connectionResult.accountInfo,
+	};
+
+	return NextResponse.json({
+		success: true,
+		data: authData,
+		timestamp: new Date().toISOString(),
+	});
+}
+
+/**
+ * Handles OAuth2 processing errors with appropriate status codes
+ */
+function handleOAuth2ProcessingError(error: unknown) {
+	console.error("OAuth2 callback processing error:", error);
+
+	// Handle validation errors with proper status codes
+	if (error instanceof Error) {
+		if (error.message.includes("Unsupported provider")) {
+			return NextResponse.json({ error: error.message }, { status: 400 });
+		}
+		if (error.message.includes("does not support OAuth2")) {
+			return NextResponse.json({ error: error.message }, { status: 400 });
+		}
+	}
+
+	return NextResponse.json(
+		{
+			error: "OAuth2 callback processing failed",
+			details: error instanceof Error ? error.message : "Unknown error",
+		},
+		{ status: 500 }
+	);
+}
+
+/**
+ * Handles connection validation failure
+ */
+function handleConnectionValidationFailure(connectionResult: ConnectionResult) {
+	const errorData = connectionResult.error ? { ...connectionResult.error } : {};
+	console.error("Connection validation failed:", sanitizeAuthData(errorData));
+	return NextResponse.json(
+		{
+			error: "Connection validation failed",
+			details: connectionResult.error?.message || "Unknown validation error",
+			code: connectionResult.error?.code || "VALIDATION_FAILED",
+		},
+		{ status: 400 }
+	);
+}
+
 export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json();
-		const { provider, code, state, redirectUri } = body;
+		const { provider, code, redirectUri } = body;
 
 		// Validate required parameters
-		if (!(provider && code && redirectUri)) {
-			return NextResponse.json(
-				{ error: "Missing required parameters: provider, code, redirectUri" },
-				{ status: 400 }
-			);
+		const validationError = validateOAuthParams(provider, code, redirectUri);
+		if (validationError) {
+			return validationError;
 		}
 
-		// Get provider instance
-		const providerInstance = getProvider(provider as EmailProviderType);
-		if (!providerInstance) {
-			return NextResponse.json({ error: `Unsupported provider: ${provider}` }, { status: 400 });
-		}
-
-		// Validate that provider supports OAuth2
-		if (providerInstance.authType !== "oauth2" || !providerInstance.exchangeCodeForTokens) {
-			return NextResponse.json(
-				{ error: `Provider ${provider} does not support OAuth2` },
-				{ status: 400 }
-			);
-		}
+		// Get and validate provider
+		const providerInstance = getValidatedProvider(provider as EmailProviderType);
 
 		// Exchange code for tokens
-		const tokens = await providerInstance.exchangeCodeForTokens(code, redirectUri);
+		const tokens = await providerInstance.exchangeCodeForTokens?.(code, redirectUri);
+
+		if (!tokens) {
+			throw new Error("Failed to exchange code for tokens");
+		}
 
 		// Validate the connection to get user info
 		const connectionResult = await providerInstance.validateConnection({
@@ -50,49 +160,17 @@ export async function POST(request: NextRequest) {
 		});
 
 		if (!connectionResult.success) {
-			console.error("Connection validation failed:", sanitizeAuthData(connectionResult.error));
-			return NextResponse.json(
-				{
-					error: "Connection validation failed",
-					details: connectionResult.error?.message || "Unknown validation error",
-					code: connectionResult.error?.code || "VALIDATION_FAILED",
-				},
-				{ status: 400 }
-			);
+			return handleConnectionValidationFailure(connectionResult);
 		}
 
-		// Return success with account info and tokens
-		const authData = {
-			provider: provider as EmailProviderType,
-			email: connectionResult.accountInfo?.email || "",
-			displayName: connectionResult.accountInfo?.displayName || "",
-			accessToken: tokens.accessToken,
-			refreshToken: tokens.refreshToken,
-			tokenExpiry: Date.now() + tokens.expiresIn * 1000,
-			accountInfo: connectionResult.accountInfo,
-		};
-
-		return NextResponse.json({
-			success: true,
-			data: authData,
-			timestamp: new Date().toISOString(),
-		});
+		return buildSuccessResponse(provider as EmailProviderType, tokens, connectionResult);
 	} catch (error) {
-		console.error("OAuth2 callback processing error:", error);
-
-		return NextResponse.json(
-			{
-				error: "OAuth2 callback processing failed",
-				details: error instanceof Error ? error.message : "Unknown error",
-				timestamp: new Date().toISOString(),
-			},
-			{ status: 500 }
-		);
+		return handleOAuth2ProcessingError(error);
 	}
 }
 
 // Handle GET requests (direct callback from OAuth2 provider)
-export async function GET(request: NextRequest) {
+export function GET(request: NextRequest) {
 	try {
 		const { searchParams } = new URL(request.url);
 		const _code = searchParams.get("code");

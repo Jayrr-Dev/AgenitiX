@@ -12,10 +12,11 @@
 
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { useFlowMetadataOptional } from "../contexts/FlowMetadataContext";
+import { useFlowMetadataOptional } from "../contexts/flow-metadata-context";
 import { useFlowStore } from "../stores/flowStore";
 
 interface UseAutoSaveCanvasOptions {
@@ -75,7 +76,7 @@ export function useAutoSaveCanvas(options: UseAutoSaveCanvasOptions = {}): AutoS
 
 		try {
 			await saveFlowCanvas({
-				flow_id: flow.id as any,
+				flow_id: flow.id as Id<"flows">,
 				user_id: user.id,
 				nodes,
 				edges,

@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { IconBrandYoutubeFilled } from "@tabler/icons-react";
 import createGlobe from "cobe";
 import { motion } from "motion/react";
+import Image from "next/image";
 import type React from "react";
 import { useEffect, useRef } from "react";
 import type { typeFeatureBoxesBento } from "../types";
@@ -89,11 +90,9 @@ export const SkeletonOne = () => {
 				<div className="flex h-full w-full flex-1 flex-col space-y-2 ">
 					{/* TODO */}
 					<img
-						src="https://placehold.co/800x800/png"
-						alt="header"
-						width={800}
-						height={800}
-						className="aspect-square h-full w-full rounded-sm object-cover object-left-top"
+						src="/feat-hq.png"
+						alt="High quality features demonstration"
+						className="absolute inset-0 h-full w-full object-cover object-center"
 					/>
 				</div>
 			</div>
@@ -116,11 +115,14 @@ export const SkeletonThree = () => {
 					{/* TODO */}
 					<IconBrandYoutubeFilled className="absolute inset-0 z-10 m-auto h-20 w-20 text-red-500 " />
 					<img
-						src="https://assets.aceternity.com/fireship.jpg"
-						alt="header"
-						width={800}
-						height={800}
-						className="aspect-square h-full w-full rounded-sm object-cover object-center blur-none transition-all duration-200 group-hover/image:blur-md"
+						src="/logo-mark.png"
+						alt="Logo mark representing our brand"
+						className="w-8 h-8 mr-2"
+					/>
+					<img
+						src="/feat-hq.png"
+						alt="Advanced monitoring dashboard interface"
+						className="w-full h-full object-cover rounded-lg"
 					/>
 				</div>
 			</div>
@@ -130,11 +132,26 @@ export const SkeletonThree = () => {
 
 export const SkeletonTwo = () => {
 	const images = [
-		"https://images.unsplash.com/photo-1517322048670-4fba75cbbb62?q=80&w=3000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-		"https://images.unsplash.com/photo-1573790387438-4da905039392?q=80&w=3425&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-		"https://images.unsplash.com/photo-1555400038-63f5ba517a47?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-		"https://images.unsplash.com/photo-1554931670-4ebfabf6e7a9?q=80&w=3387&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-		"https://images.unsplash.com/photo-1546484475-7f7bd55792da?q=80&w=2581&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+		{
+			src: "https://images.unsplash.com/photo-1517322048670-4fba75cbbb62?q=80&w=3000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+			alt: "bali images",
+		},
+		{
+			src: "https://images.unsplash.com/photo-1573790387438-4da905039392?q=80&w=3425&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+			alt: "bali images",
+		},
+		{
+			src: "https://images.unsplash.com/photo-1555400038-63f5ba517a47?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+			alt: "bali images",
+		},
+		{
+			src: "https://images.unsplash.com/photo-1554931670-4ebfabf6e7a9?q=80&w=3387&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+			alt: "bali images",
+		},
+		{
+			src: "https://images.unsplash.com/photo-1546484475-7f7bd55792da?q=80&w=2581&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+			alt: "bali images",
+		},
 	];
 
 	const imageVariants = {
@@ -151,39 +168,25 @@ export const SkeletonTwo = () => {
 				{images.map((image, idx) => (
 					<motion.div
 						variants={imageVariants}
-						key={`images-first${idx}`}
+						key={`images-first-${image.src}-${idx}`}
 						style={{ rotate: getRotation(idx) }}
 						whileHover="whileHover"
-						whileTap="whileTap"
-						className="-mr-4 mt-4 shrink-0 overflow-hidden rounded-xl border border-neutral-100 bg-white p-1 dark:border-neutral-700 dark:bg-neutral-800"
+						className="relative h-32 w-32 overflow-hidden rounded-lg"
 					>
-						<img
-							src={image}
-							alt="bali images"
-							width="500"
-							height="500"
-							className="h-20 w-20 shrink-0 rounded-lg object-cover md:h-40 md:w-40"
-						/>
+						<Image src={image.src} alt={image.alt} fill={true} className="object-cover" />
 					</motion.div>
 				))}
 			</div>
 			<div className="flex flex-row">
 				{images.map((image, idx) => (
 					<motion.div
-						key={`images-second${idx}`}
-						style={{ rotate: getRotation(idx + 10) }} // ✅ different index offset
 						variants={imageVariants}
+						key={`images-second-${image.src}-${idx}`}
+						style={{ rotate: getRotation(idx + 10) }} // ✅ different index offset
 						whileHover="whileHover"
-						whileTap="whileTap"
-						className="-mr-4 mt-4 shrink-0 overflow-hidden rounded-xl border border-neutral-100 bg-white p-1 dark:border-neutral-700 dark:bg-neutral-800"
+						className="relative h-32 w-32 overflow-hidden rounded-lg"
 					>
-						<img
-							src={image}
-							alt="bali images"
-							width="500"
-							height="500"
-							className="h-20 w-20 shrink-0 rounded-lg object-cover md:h-40 md:w-40"
-						/>
+						<Image src={image.src} alt={image.alt} fill={true} className="object-cover" />
 					</motion.div>
 				))}
 			</div>

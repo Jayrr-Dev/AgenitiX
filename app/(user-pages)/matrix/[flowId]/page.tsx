@@ -17,7 +17,8 @@ import { useAuthContext } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import FlowEditor from "@/features/business-logic-modern/infrastructure/flow-engine/FlowEditor";
-import { FlowMetadataProvider } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/FlowMetadataContext";
+import { FlowMetadataProvider } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
+import type { Id } from "convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -43,7 +44,7 @@ export default function FlowPage({ params }: PageProps) {
 		api.flows.getFlowSecure,
 		flowId && user?.id
 			? {
-					flow_id: flowId as any,
+					flow_id: flowId as Id<"flows">,
 					user_id: user.id,
 				}
 			: "skip"

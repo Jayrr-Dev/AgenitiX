@@ -8,7 +8,13 @@ import {
 import { Menu } from "lucide-react";
 import Link from "next/link";
 
-export default function MobileNav() {
+/**
+ * main-mobile-nav.tsx - Mobile navigation component
+ *
+ * Dropdown menu navigation for mobile devices with hamburger menu trigger
+ */
+
+export default function MainMobileNav() {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild={true}>
@@ -29,7 +35,7 @@ export default function MobileNav() {
 			{/* If user is not logged in, show the navigation menu */}
 			<DropdownMenuContent align="end" className="w-[85vw] px-8 text-xl">
 				<DropdownMenuItem asChild={true}>
-					<Link href="/" className="flex w-full items-center" legacyBehavior={true}>
+					<Link href="/" className="flex w-full items-center">
 						{/* <Image src="/logo.png" alt="logo" width={24} height={24} className="h-5 w-auto mr-2" /> */}
 						<span className="font-medium">Home</span>
 					</Link>

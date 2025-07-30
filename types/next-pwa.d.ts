@@ -16,20 +16,36 @@ declare module "next-pwa" {
 					maxEntries?: number;
 					maxAgeSeconds?: number;
 				};
-				cacheKeyWillBeUsed?: any;
-				cacheWillUpdate?: any;
-				cacheResponseWillBeUsed?: any;
-				requestWillFetch?: any;
-				fetchDidFail?: any;
-				fetchDidSucceed?: any;
+				cacheKeyWillBeUsed?: (options: { request: Request; mode: string }) =>
+					| string
+					| Promise<string>;
+				cacheWillUpdate?: (options: { request: Request; response: Response }) =>
+					| boolean
+					| Promise<boolean>;
+				cacheResponseWillBeUsed?: (options: { request: Request; response: Response }) =>
+					| Response
+					| Promise<Response>;
+				requestWillFetch?: (options: { request: Request }) => Request | Promise<Request>;
+				fetchDidFail?: (options: {
+					originalRequest: Request;
+					error: Error;
+				}) => void | Promise<void>;
+				fetchDidSucceed?: (options: { request: Request; response: Response }) =>
+					| Response
+					| Promise<Response>;
 			};
 		}>;
 		buildExcludes?: Array<string | RegExp>;
 		exclude?: Array<string | RegExp>;
 		include?: Array<string | RegExp>;
-		manifestTransforms?: any[];
+		manifestTransforms?: Array<
+			(manifestEntries: Array<{ url: string; revision: string | null }>) => {
+				manifest: Array<{ url: string; revision: string | null }>;
+				warnings?: string[];
+			}
+		>;
 		modifyURLPrefix?: Record<string, string>;
-		additionalManifestEntries?: any[];
+		additionalManifestEntries?: Array<{ url: string; revision: string | null }>;
 		dontCacheBustURLsMatching?: RegExp;
 		navigateFallback?: string;
 		navigateFallbackDenylist?: RegExp[];

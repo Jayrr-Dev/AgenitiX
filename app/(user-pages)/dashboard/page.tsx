@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { CreateFlowModal } from "@/features/business-logic-modern/dashboard/components/CreateFlowModal";
 import { FlowActions } from "@/features/business-logic-modern/dashboard/components/FlowActions";
 import type { Flow } from "@/features/business-logic-modern/dashboard/types";
@@ -51,7 +52,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 // ICON MAPPING
@@ -73,7 +75,31 @@ const DashboardContent = () => {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [showPrivateOnly, setShowPrivateOnly] = useState(false);
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const { user, isAuthenticated, isLoading: authLoading } = useAuthContext();
+
+	// Handle search query from URL parameters
+	useEffect(() => {
+		const query = searchParams.get("q");
+		if (query) {
+			setSearchQuery(query);
+		}
+	}, [searchParams]);
+
+	// Listen for search events from navigation bar
+	useEffect(() => {
+		const handleNavigationSearch = (event: CustomEvent) => {
+			if (event.detail?.query) {
+				setSearchQuery(event.detail.query);
+			}
+		};
+
+		window.addEventListener("navigation-search", handleNavigationSearch as EventListener);
+
+		return () => {
+			window.removeEventListener("navigation-search", handleNavigationSearch as EventListener);
+		};
+	}, []);
 
 	// Convex hooks
 	const flows = useQuery(api.flows.getUserFlows, user?.id ? { user_id: user.id } : "skip");
@@ -93,10 +119,10 @@ const DashboardContent = () => {
 	// Authentication check
 	if (!(isAuthenticated && user)) {
 		return (
-			<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-				<div className="py-12 text-center">
-					<h2 className="mb-2 font-bold text-2xl text-foreground">Authentication Required</h2>
-					<p className="mb-4 text-muted-foreground">Please sign in to access your dashboard</p>
+			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+				<div className="text-center py-12">
+					<h2 className="text-2xl font-bold text-foreground mb-2">Authentication Required</h2>
+					<p className="text-muted-foreground mb-4">Please sign in to access your dashboard</p>
 					<DevAuthHelper onAuthenticate={() => window.location.reload()} />
 				</div>
 			</div>
@@ -106,10 +132,10 @@ const DashboardContent = () => {
 	// Error state
 	if (flows === null) {
 		return (
-			<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-				<div className="py-12 text-center">
-					<h2 className="mb-2 font-bold text-2xl text-destructive">Error Loading Flows</h2>
-					<p className="mb-4 text-muted-foreground">
+			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+				<div className="text-center py-12">
+					<h2 className="text-2xl font-bold text-destructive mb-2">Error Loading Flows</h2>
+					<p className="text-muted-foreground mb-4">
 						Unable to load your flows. Please try refreshing the page.
 					</p>
 					<Button onClick={() => window.location.reload()}>Refresh Page</Button>
@@ -168,7 +194,7 @@ const DashboardContent = () => {
 
 		try {
 			await updateFlow({
-				flow_id: flowId as any,
+				flow_id: flowId as Id<"flows">,
 				user_id: user.id,
 				is_private: !currentPrivacy,
 			});
@@ -190,7 +216,7 @@ const DashboardContent = () => {
 
 	const getIconComponent = (iconName: string) => {
 		const IconComponent = ICON_MAP[iconName as keyof typeof ICON_MAP] || Zap;
-		return <IconComponent className="h-5 w-5" />;
+		return <IconComponent className="w-5 h-5" />;
 	};
 
 	// Convert Convex flows to dashboard format
@@ -219,24 +245,24 @@ const DashboardContent = () => {
 
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-			<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 				{/* Enhanced Header */}
 				<div className="mb-8">
 					<div className="flex flex-col gap-6">
 						<div className="flex items-center justify-between">
 							<div>
-								<h1 className="mb-2 font-bold text-3xl text-foreground">My Flows</h1>
+								<h1 className="text-3xl font-bold text-foreground mb-2">My Flows</h1>
 								<p className="text-muted-foreground">Create and manage your automation workflows</p>
 							</div>
 							<div className="flex items-center gap-3">
 								<Link href="/explore">
 									<Button variant="outline" className="gap-2">
-										<Globe className="h-4 w-4" />
+										<Globe className="w-4 h-4" />
 										Explore
 									</Button>
 								</Link>
 								<Button onClick={() => setIsModalOpen(true)} className="gap-2">
-									<Plus className="h-4 w-4" />
+									<Plus className="w-4 h-4" />
 									New Flow
 								</Button>
 							</div>
@@ -244,10 +270,10 @@ const DashboardContent = () => {
 
 						{/* Search and Filter Controls */}
 						{allFlows.length > 0 && (
-							<div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-								<div className="flex max-w-md flex-1 items-center gap-4">
+							<div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+								<div className="flex items-center gap-4 flex-1 max-w-md">
 									<div className="relative flex-1">
-										<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 transform text-muted-foreground" />
+										<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
 										<Input
 											placeholder="Search flows..."
 											value={searchQuery}
@@ -261,23 +287,23 @@ const DashboardContent = () => {
 											onCheckedChange={setShowPrivateOnly}
 											className="data-[state=checked]:bg-orange-600"
 										/>
-										<span className="whitespace-nowrap text-muted-foreground text-sm">
+										<span className="text-sm text-muted-foreground whitespace-nowrap">
 											Private only
 										</span>
 									</div>
 								</div>
 
-								<div className="flex items-center gap-6 text-muted-foreground text-sm">
+								<div className="flex items-center gap-6 text-sm text-muted-foreground">
 									<span>
 										{dashboardFlows.length} of {allFlows.length} flows
 									</span>
 									<div className="flex items-center gap-4">
 										<span className="flex items-center gap-1">
-											<Eye className="h-3 w-3 text-green-600" />
+											<Eye className="w-3 h-3 text-green-600" />
 											{allFlows.filter((f) => !f.private).length} public
 										</span>
 										<span className="flex items-center gap-1">
-											<Lock className="h-3 w-3 text-orange-600" />
+											<Lock className="w-3 h-3 text-orange-600" />
 											{allFlows.filter((f) => f.private).length} private
 										</span>
 									</div>
@@ -289,23 +315,23 @@ const DashboardContent = () => {
 
 				{/* Enhanced Grid Layout */}
 				<div
-					className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+					className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
 					style={{ gridAutoRows: "1fr" }}
 				>
 					{/* Enhanced "New Flow" card */}
 					<Card
-						className="group aspect-square cursor-pointer border-2 border-muted-foreground/30 border-dashed bg-fill-border shadow-sm transition-all duration-300 hover:animate-fill-transparency hover:border-primary/60 hover:bg-primary/5 dark:shadow-white/5"
+						className="group cursor-pointer transition-all duration-300 border-dashed border-2 border-muted-foreground/30 hover:border-primary/60 hover:bg-primary/5 bg-fill-border hover:animate-fill-transparency aspect-square shadow-sm dark:shadow-white/5"
 						style={{
 							backgroundColor: "light-dark(#f5f5f5, var(--fill-border-color, #1a1a1a))",
 						}}
 						onClick={() => setIsModalOpen(true)}
 					>
 						<CardContent className="flex flex-col items-center justify-center py-16">
-							<div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 transition-colors group-hover:bg-primary/20">
-								<Plus className="h-8 w-8 text-primary" />
+							<div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+								<Plus className="w-8 h-8 text-primary" />
 							</div>
-							<h3 className="mb-2 font-semibold text-foreground text-lg">Create New Flow</h3>
-							<p className="text-center text-muted-foreground text-sm">
+							<h3 className="text-lg font-semibold text-foreground mb-2">Create New Flow</h3>
+							<p className="text-sm text-muted-foreground text-center">
 								Build a new automation workflow
 							</p>
 						</CardContent>
@@ -315,7 +341,7 @@ const DashboardContent = () => {
 					{dashboardFlows.map((flow) => (
 						<Card
 							key={flow.id}
-							className="group flex aspect-square flex-col border border-transparent bg-fill-border shadow-sm transition-all duration-300 hover:animate-fill-transparency dark:shadow-white/5"
+							className="group transition-all duration-300 border border-transparent bg-fill-border hover:animate-fill-transparency flex flex-col aspect-square shadow-sm dark:shadow-white/5"
 							style={{
 								backgroundColor: "light-dark(#f5f5f5, var(--fill-border-color, #1a1a1a))",
 							}}
@@ -323,9 +349,9 @@ const DashboardContent = () => {
 							<CardHeader className="pb-3">
 								{/* Header with Icon and Privacy Toggle */}
 								<div className="flex items-start justify-between">
-									<div className="flex items-center gap-3">
+									<div className="flex items-center gap-3 w-full max-w-[calc(100%-50px)]">
 										<div
-											className={`flex h-12 w-12 items-center justify-center rounded-xl transition-colors ${
+											className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
 												flow.private
 													? "bg-orange-100 text-orange-600"
 													: "bg-green-100 text-green-600"
@@ -333,15 +359,18 @@ const DashboardContent = () => {
 										>
 											{getIconComponent(flow.icon || "zap")}
 										</div>
-										<div className="min-w-0 flex-1">
-											<h3 className="truncate font-semibold text-foreground text-lg">
+										<div className="flex-1 min-w-0 overflow-hidden">
+											<h3
+												className="font-semibold text-lg truncate text-foreground"
+												title={flow.name}
+											>
 												{flow.name}
 											</h3>
 										</div>
 									</div>
 
 									{/* Privacy Toggle Switch */}
-									<div className="mt-2 flex flex-col items-center gap-0">
+									<div className="flex flex-col items-center gap-0 mt-2">
 										<Switch
 											checked={!flow.private}
 											onCheckedChange={() => handlePrivacyToggle(flow.id, flow.private)}
@@ -351,18 +380,18 @@ const DashboardContent = () => {
 													: "data-[state=checked]:bg-green-600"
 											}`}
 										/>
-										<span className="text-muted-foreground text-xs">
+										<span className="text-xs text-muted-foreground">
 											{flow.private ? "Private" : "Public"}
 										</span>
 									</div>
 								</div>
 							</CardHeader>
 
-							<CardContent className="flex flex-1 flex-col space-y-2">
+							<CardContent className="flex flex-col flex-1 space-y-2">
 								{/* Description - 6 lines */}
-								<div className="scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent h-24 overflow-y-auto overflow-x-hidden">
+								<div className="h-24 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
 									{flow.description ? (
-										<p className="whitespace-normal break-words text-muted-foreground text-sm leading-relaxed">
+										<p className="text-sm text-muted-foreground leading-relaxed break-words whitespace-normal">
 											{flow.description}
 										</p>
 									) : (
@@ -374,9 +403,9 @@ const DashboardContent = () => {
 								<div className="flex-1" />
 
 								{/* Updated timestamp - Above actions, left aligned, reduced spacing */}
-								<div className="mb-1 flex items-center gap-1">
-									<Calendar className="h-3 w-3 text-muted-foreground" />
-									<span className="text-muted-foreground text-xs">
+								<div className="flex items-center gap-1 mb-1">
+									<Calendar className="w-3 h-3 text-muted-foreground" />
+									<span className="text-xs text-muted-foreground">
 										Updated {formatDate(flow.updatedAt)}
 									</span>
 								</div>
@@ -393,7 +422,7 @@ const DashboardContent = () => {
 
 									<Link href={`/matrix/${flow.id}`}>
 										<Button size="sm" className="gap-2">
-											<ExternalLink className="h-3 w-3" />
+											<ExternalLink className="w-3 h-3" />
 											Open
 										</Button>
 									</Link>
@@ -406,27 +435,27 @@ const DashboardContent = () => {
 				{/* Empty States */}
 				{allFlows.length === 0 ? (
 					// No flows at all
-					<div className="py-16 text-center">
-						<div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-primary/10">
-							<Zap className="h-12 w-12 text-primary" />
+					<div className="text-center py-16">
+						<div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+							<Zap className="w-12 h-12 text-primary" />
 						</div>
-						<h3 className="mb-3 font-semibold text-2xl text-foreground">Ready to automate?</h3>
-						<p className="mx-auto mb-8 max-w-md text-muted-foreground">
+						<h3 className="text-2xl font-semibold text-foreground mb-3">Ready to automate?</h3>
+						<p className="text-muted-foreground mb-8 max-w-md mx-auto">
 							Create your first workflow to start automating tasks and streamlining your processes.
 						</p>
 						<Button onClick={() => setIsModalOpen(true)} size="lg" className="gap-2">
-							<Plus className="h-5 w-5" />
+							<Plus className="w-5 h-5" />
 							Create Your First Flow
 						</Button>
 					</div>
 				) : dashboardFlows.length === 0 ? (
 					// No flows match current filter/search
-					<div className="py-16 text-center">
-						<div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
-							<Search className="h-12 w-12 text-muted-foreground" />
+					<div className="text-center py-16">
+						<div className="w-24 h-24 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-6">
+							<Search className="w-12 h-12 text-muted-foreground" />
 						</div>
-						<h3 className="mb-3 font-semibold text-foreground text-xl">No flows found</h3>
-						<p className="mx-auto mb-6 max-w-md text-muted-foreground">
+						<h3 className="text-xl font-semibold text-foreground mb-3">No flows found</h3>
+						<p className="text-muted-foreground mb-6 max-w-md mx-auto">
 							{searchQuery
 								? `No flows match "${searchQuery}". Try adjusting your search terms.`
 								: "No private flows found. Try changing your filter settings."}

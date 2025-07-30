@@ -1,7 +1,6 @@
 import {
 	NavigationMenu,
 	NavigationMenuItem,
-	NavigationMenuLink,
 	NavigationMenuList,
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
@@ -15,13 +14,13 @@ export default function MainDesktopNav() {
 		<NavigationMenu>
 			<NavigationMenuList className="flex flex-row flex-wrap gap-4">
 				<NavigationMenuItem>
-					<Link href="/" legacyBehavior={true} passHref={true}>
-						<NavigationMenuLink className={navItemStyle}>Home</NavigationMenuLink>
+					<Link href="/" className={navItemStyle}>
+						Home
 					</Link>
 				</NavigationMenuItem>
 				<NavigationMenuItem>
-					<Link href="/dashboard" legacyBehavior={true} passHref={true}>
-						<NavigationMenuLink className={cn(navItemStyle)}>Dashboard</NavigationMenuLink>
+					<Link href="/dashboard" className={cn(navItemStyle)}>
+						Dashboard
 					</Link>
 				</NavigationMenuItem>
 			</NavigationMenuList>

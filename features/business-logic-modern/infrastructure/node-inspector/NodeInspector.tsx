@@ -122,6 +122,7 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 			<button
 				onClick={onToggle}
 				className="flex w-full items-center justify-between rounded-t-lg border-border/30 border-b bg-muted/30 px-3 py-0 transition-colors duration-200 hover:bg-muted/50"
+				type="button"
 			>
 				<h4 className="mb-1 font-medium text-muted-foreground text-xs">{title}</h4>
 				<ChevronDown
@@ -343,6 +344,7 @@ const NodeInspector = React.memo(function NodeInspector({
 				}`}
 			>
 				<button
+					type="button"
 					aria-label={DESIGN_CONFIG.content.aria.unlockInspector}
 					title={DESIGN_CONFIG.content.tooltips.unlockInspector}
 					onClick={() => setInspectorLocked(false)}
@@ -405,6 +407,7 @@ const NodeInspector = React.memo(function NodeInspector({
 					<div className={STYLING_CONTAINER_HEADER_RIGHT_SECTION}>
 						{/* Lock Button */}
 						<button
+							type="button"
 							onClick={() => setInspectorLocked(!inspectorLocked)}
 							className={STYLING_BUTTON_LOCK_SMALL}
 							title={
@@ -422,6 +425,7 @@ const NodeInspector = React.memo(function NodeInspector({
 
 						{/* View Mode Toggle Button */}
 						<button
+							type="button"
 							onClick={toggleInspectorViewMode}
 							className={STYLING_BUTTON_DUPLICATE}
 							title={`Switch to ${inspectorViewMode === "bottom" ? "side" : "bottom"} panel view`}
@@ -434,6 +438,7 @@ const NodeInspector = React.memo(function NodeInspector({
 						</button>
 
 						<button
+							type="button"
 							onClick={() => handleDuplicateNode(selectedNode.id)}
 							className={STYLING_BUTTON_DUPLICATE}
 							title={DESIGN_CONFIG.content.tooltips.duplicateNode}
@@ -442,6 +447,7 @@ const NodeInspector = React.memo(function NodeInspector({
 						</button>
 
 						<button
+							type="button"
 							onClick={() => handleDeleteNode(selectedNode.id)}
 							className={STYLING_BUTTON_DELETE}
 							title={DESIGN_CONFIG.content.tooltips.deleteNode}
@@ -578,10 +584,10 @@ const NodeInspector = React.memo(function NodeInspector({
 											TAGS
 										</span>
 										<div className="flex flex-wrap gap-1">
-											{nodeInfo.tags.map((tag, index) => (
+											{nodeInfo.tags.map((tag) => (
 												<span
-													key={index}
-													className="rounded bg-blue-100 px-2 py-0.5 text-blue-800 text-xs dark:bg-blue-900 dark:text-blue-200"
+													key={`tag-${tag}`}
+													className="rounded bg-muted px-2 py-1 text-muted-foreground text-xs"
 												>
 													{tag}
 												</span>
@@ -641,8 +647,21 @@ const NodeInspector = React.memo(function NodeInspector({
 										inputs: selectedNode.data?.inputs ?? null,
 										outputs: selectedNode.data?.outputs ?? null,
 										isActive: selectedNode.data?.isActive,
-										isEnabled: true,
+										isEnabled: selectedNode.data?.isEnabled ?? true,
 										isExpanded: selectedNode.data?.isExpanded,
+										// AI Agent specific fields
+										...(selectedNode.type === "aiAgent" && {
+											userInput: selectedNode.data?.userInput,
+											triggerInputs: selectedNode.data?.triggerInputs,
+											trigger: selectedNode.data?.trigger,
+											isProcessing: selectedNode.data?.isProcessing,
+											systemPrompt: selectedNode.data?.systemPrompt,
+											selectedProvider: selectedNode.data?.selectedProvider,
+											selectedModel: selectedNode.data?.selectedModel,
+											temperature: selectedNode.data?.temperature,
+											maxSteps: selectedNode.data?.maxSteps,
+											threadId: selectedNode.data?.threadId,
+										}),
 									}}
 									onUpdateData={(newData) => {
 										// Extract the system fields and update only the data portion
@@ -1031,6 +1050,7 @@ const NodeInspector = React.memo(function NodeInspector({
 	return (
 		<div className={STYLING_CONTAINER_EMPTY_STATE}>
 			<button
+				type="button"
 				aria-label={DESIGN_CONFIG.content.aria.lockInspector}
 				title={DESIGN_CONFIG.content.tooltips.lockInspectorDescription}
 				onClick={() => setInspectorLocked(true)}

@@ -1,8 +1,8 @@
 "use client";
 
-import { LogomarkLight } from "@/branding/logomark-svg";
+import { LogomarkSvg } from "@/branding/logomark-svg";
 import MainDesktopNav from "@/components/nav-bar/MainDesktopNav";
-import MainMobileNav from "@/components/nav-bar/MainMobileNav";
+import MainMobileNav from "@/components/nav-bar/main-mobile-nav";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { cn } from "@/lib/utils";
 import * as React from "react";
@@ -40,7 +40,7 @@ export default function MainNavBar() {
 						className="xdebug-green col-span-4 self-center justify-self-center border-transparent border-b bg-fill-border hover:animate-fill-transparency md:col-span-2"
 					>
 						<a href="/" className=" flex cursor-pointer flex-row items-center justify-center ">
-							<LogomarkLight
+							<LogomarkSvg
 								className={cn(
 									"pl-2 transition-all duration-300",
 									scrolled ? "origin-left scale-90" : ""

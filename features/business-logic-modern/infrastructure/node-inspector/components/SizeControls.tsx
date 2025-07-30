@@ -66,8 +66,11 @@ export const SizeControls: React.FC<SizeControlsProps> = ({ nodeData, updateNode
 	return (
 		<div className="space-y-4">
 			<div>
-				<label className="mb-2 block font-medium text-foreground text-sm">Collapsed Size</label>
+				<label htmlFor="collapsed-size" className="mb-2 block font-medium text-foreground text-sm">
+					Collapsed Size
+				</label>
 				<select
+					id="collapsed-size"
 					value={nodeData.collapsedSize || "C1W"}
 					onChange={(e) => handleCollapsedSizeChange(e.target.value)}
 					className="w-full rounded-md border border-border bg-background p-2 text-foreground text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-ring"
@@ -81,8 +84,11 @@ export const SizeControls: React.FC<SizeControlsProps> = ({ nodeData, updateNode
 			</div>
 
 			<div>
-				<label className="mb-2 block font-medium text-foreground text-sm">Expanded Size</label>
+				<label htmlFor="expanded-size" className="mb-2 block font-medium text-foreground text-sm">
+					Expanded Size
+				</label>
 				<select
+					id="expanded-size"
 					value={nodeData.expandedSize || "VE2"}
 					onChange={(e) => handleExpandedSizeChange(e.target.value)}
 					className="w-full rounded-md border border-border bg-background p-2 text-foreground text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-ring"

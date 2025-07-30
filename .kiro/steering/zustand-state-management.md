@@ -25,17 +25,6 @@ Following [TkDodo's Zustand best practices](https://tkdodo.eu/blog/working-with-
 
 ```typescript
 // lib/stores/bearStore.ts
-/**
- * BEAR STORE - Wildlife population management
- *
- * • Tracks bear and fish populations
- * • Provides population management actions
- * • Demonstrates atomic selector pattern
- * • Event-driven action modeling
- *
- * Keywords: zustand, state-management, population-tracking
- */
-
 import { create } from 'zustand';
 
 interface BearState {
@@ -78,17 +67,6 @@ export const useBearActions = () => useBearStore((state) => state.actions);
 
 ```typescript
 // lib/stores/nodeStore.ts
-/**
- * NODE STORE - Flow editor node state management
- *
- * • Manages selected nodes and editor state
- * • Provides node selection and manipulation actions
- * • Integrates with ReactFlow state management
- * • Demonstrates real-world AgenitiX patterns
- *
- * Keywords: nodes, flow-editor, selection, state-management
- */
-
 import { create } from 'zustand';
 import type { Node } from '@xyflow/react';
 import type { AgenNode } from '@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData';
@@ -152,17 +130,6 @@ export const useNodeActions = () => useNodeStore((state) => state.actions);
 
 ```typescript
 // lib/stores/themeStore.ts
-/**
- * THEME STORE - Application theming state
- *
- * • Manages dark/light mode preference
- * • Handles theme persistence
- * • Provides theme toggle actions
- * • Integrates with next-themes
- *
- * Keywords: theming, dark-mode, preferences, persistence
- */
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -218,17 +185,6 @@ export const useThemeActions = () => useThemeStore((state) => state.actions);
 
 ```typescript
 // hooks/useNodeSelection.ts
-/**
- * COMPOSED NODE SELECTION HOOK
- *
- * • Combines node store with flow state
- * • Provides unified selection interface
- * • Demonstrates store composition pattern
- * • Integrates with ReactFlow
- *
- * Keywords: composition, node-selection, custom-hooks
- */
-
 import { useCallback } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { useSelectedNodeId, useNodeActions } from '@/lib/stores/nodeStore';
@@ -269,17 +225,6 @@ export const useNodeSelection = () => {
 
 ```typescript
 // hooks/useUserPreferences.ts
-/**
- * USER PREFERENCES HOOK
- *
- * • Combines Zustand store with Convex server state
- * • Handles preference synchronization
- * • Demonstrates server/client state integration
- * • Provides unified preferences interface
- *
- * Keywords: preferences, convex, synchronization, server-state
- */
-
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useTheme, useThemeActions } from '@/lib/stores/themeStore';
@@ -351,54 +296,6 @@ const useMultipleValues = () =>
 const useBearsAndFish = () => ({
   bears: useBears(),
   fish: useFish(),
-});
-```
-
-## Testing Patterns
-
-### Store Testing
-
-```typescript
-// __tests__/stores/nodeStore.test.ts
-import { act, renderHook } from '@testing-library/react';
-import { 
-  useSelectedNodeId, 
-  useNodeActions,
-  useCopiedNodes 
-} from '@/lib/stores/nodeStore';
-
-describe('Node Store', () => {
-  beforeEach(() => {
-    // Reset store state before each test
-    const { result } = renderHook(() => useNodeActions());
-    act(() => {
-      result.current.resetSelection();
-    });
-  });
-  
-  it('should select a node', () => {
-    const { result: actionsResult } = renderHook(() => useNodeActions());
-    const { result: selectedResult } = renderHook(() => useSelectedNodeId());
-    
-    act(() => {
-      actionsResult.current.selectNode('node-1');
-    });
-    
-    expect(selectedResult.current).toBe('node-1');
-  });
-  
-  it('should copy nodes', () => {
-    const { result: actionsResult } = renderHook(() => useNodeActions());
-    const { result: copiedResult } = renderHook(() => useCopiedNodes());
-    
-    const mockNodes = [{ id: 'node-1', type: 'createText' }] as any[];
-    
-    act(() => {
-      actionsResult.current.copyNodes(mockNodes);
-    });
-    
-    expect(copiedResult.current).toEqual(mockNodes);
-  });
 });
 ```
 

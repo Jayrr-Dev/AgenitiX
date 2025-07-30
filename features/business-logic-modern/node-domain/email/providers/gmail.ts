@@ -134,23 +134,6 @@ async function validateGmailConnection(config: EmailAccountConfig): Promise<Conn
 	}
 }
 
-function getGmailOAuthUrl(redirectUri: string, state?: string): string {
-	const params: Record<string, string> = {
-		client_id: GMAIL_OAUTH_CONFIG.clientId,
-		redirect_uri: redirectUri,
-		response_type: "code",
-		scope: GMAIL_OAUTH_CONFIG.scope,
-		access_type: "offline",
-		prompt: "consent",
-	};
-
-	if (state) {
-		params.state = state;
-	}
-
-	return `${GMAIL_OAUTH_CONFIG.authUrl}?${new URLSearchParams(params).toString()}`;
-}
-
 async function exchangeGmailCodeForTokens(
 	code: string,
 	redirectUri: string
@@ -207,15 +190,24 @@ class GmailProvider extends BaseEmailProvider {
 		useSSL: true,
 	};
 
-	async validateConnection(config: EmailAccountConfig): Promise<ConnectionResult> {
+	validateConnection(config: EmailAccountConfig): Promise<ConnectionResult> {
 		return validateGmailConnection(config);
 	}
 
 	getOAuthUrl(redirectUri: string, state?: string): string {
-		return getGmailOAuthUrl(redirectUri, state);
+		const params = new URLSearchParams({
+			client_id: GMAIL_OAUTH_CONFIG.clientId,
+			redirect_uri: redirectUri,
+			response_type: "code",
+			scope: GMAIL_OAUTH_CONFIG.scope,
+			access_type: "offline",
+			prompt: "consent",
+			...(state && { state }),
+		});
+		return `${GMAIL_OAUTH_CONFIG.authUrl}?${params.toString()}`;
 	}
 
-	async exchangeCodeForTokens(code: string, redirectUri: string): Promise<OAuth2Tokens> {
+	exchangeCodeForTokens(code: string, redirectUri: string): Promise<OAuth2Tokens> {
 		return exchangeGmailCodeForTokens(code, redirectUri);
 	}
 

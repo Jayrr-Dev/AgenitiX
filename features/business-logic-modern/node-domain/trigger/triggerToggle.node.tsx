@@ -32,6 +32,7 @@ import {
 	EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
+import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -168,9 +169,9 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 		[updateNodeData]
 	);
 
-	/** Compute the latest boolean coming from the *first* upstream node. */
+	/** Compute the latest boolean coming from connected input handle. */
 	const computeInput = useCallback((): boolean | null => {
-		const incoming = edges.find((e) => e.target === id);
+		const incoming = findEdgeByHandle(edges, id, "input");
 		if (!incoming) {
 			return null;
 		}
@@ -273,14 +274,13 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 			) : (
 				<LabelNode nodeId={id} label={spec.displayName} />
 			)}
-
 			{/* ───────────────────────────────────────── UI ───────────────────────────────────────── */}
 			{isExpanded ? (
 				/* Expanded view */
 				<div className={CONTENT.expanded}>
 					<div className={CONTENT.body}>
 						<div className="flex flex-col items-center gap-0">
-							<div
+							<button
 								className={`${CONTENT.toggle} ${
 									isEnabled
 										? isToggled
@@ -289,10 +289,18 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 										: CONTENT.toggleDisabled
 								}`}
 								onClick={toggleState}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" || e.key === " ") {
+										e.preventDefault();
+										toggleState();
+									}
+								}}
+								disabled={!isEnabled}
+								type="button"
 								title={isEnabled ? "Click to toggle" : "Disabled"}
 							>
 								<div className={CONTENT.toggleText}>{isToggled ? "ON" : "OFF"}</div>
-							</div>
+							</button>
 							<div className="text-center">
 								<div className="mt-1 text-muted-foreground text-xs">
 									{isEnabled ? "Click to toggle" : "Toggle disabled"}
@@ -304,7 +312,7 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 			) : (
 				/* Collapsed view */
 				<div className={CONTENT.collapsed}>
-					<div
+					<button
 						className={`${CONTENT.toggle} ${
 							isEnabled
 								? isToggled
@@ -313,13 +321,20 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 								: CONTENT.toggleDisabled
 						}`}
 						onClick={toggleState}
+						onKeyDown={(e) => {
+							if (e.key === "Enter" || e.key === " ") {
+								e.preventDefault();
+								toggleState();
+							}
+						}}
+						disabled={!isEnabled}
+						type="button"
 						title={isEnabled ? "Click to toggle" : "Disabled"}
 					>
 						<div className={CONTENT.toggleText}>{isToggled ? "ON" : "OFF"}</div>
-					</div>
+					</button>
 				</div>
 			)}
-
 			<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
 		</>
 	);

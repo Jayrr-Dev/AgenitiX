@@ -1,4 +1,7 @@
-"use client";
+/**
+ * FEATURE BOXES ICONED - Marketing component showcasing features with icons
+ */
+
 import { cn } from "@/lib/utils";
 import {
 	IconAdjustmentsBolt,
@@ -10,6 +13,7 @@ import {
 	IconRouteAltLeft,
 	IconTerminal2,
 } from "@tabler/icons-react";
+import type React from "react";
 import type { typeFeatureBoxesIconed } from "../types";
 
 const iconMap: Record<typeFeatureBoxesIconed["icon"], React.ReactNode> = {

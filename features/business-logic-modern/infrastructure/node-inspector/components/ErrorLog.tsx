@@ -35,6 +35,7 @@ export const ErrorLog: React.FC<ErrorLogProps> = ({ errors, onClearErrors }) => 
 					</div>
 					{errors.length > 0 && onClearErrors && (
 						<button
+							type="button"
 							onClick={onClearErrors}
 							className={`px-2 py-1 text-error text-xs hover:bg-error-hover hover:text-error-secondary ${theme.borderRadius.button} ${theme.transition}`}
 						>

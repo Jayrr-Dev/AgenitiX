@@ -11,7 +11,8 @@
  * Keywords: feature-flags, node-evaluation, hypertune-integration, graceful-degradation
  */
 
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import type { FeatureFlagConfig } from "./NodeSpec";
 
 /**
@@ -89,29 +90,17 @@ export function useNodeFeatureFlag(featureFlag?: FeatureFlagConfig) {
  * @param featureFlag - Feature flag configuration
  * @returns Wrapped component with feature flag logic
  */
-export function withFeatureFlag(
-	Component: React.ComponentType<any>,
+export function withFeatureFlag<T extends Record<string, unknown>>(
+	Component: React.ComponentType<T>,
 	featureFlag?: FeatureFlagConfig
 ) {
-	return React.forwardRef((props: any, ref: any) => {
+	return function WrappedComponent(props: T) {
 		const flagState = useNodeFeatureFlag(featureFlag);
 
-		// If flag is loading, show loading state
-		if (flagState.isLoading) {
-			return (
-				<div className="flex items-center justify-center p-4 text-muted-foreground text-sm">
-					Loading feature...
-				</div>
-			);
-		}
-
-		// If flag is disabled and should hide, return null
-		if (!flagState.isEnabled && flagState.hideWhenDisabled) {
-			return null;
-		}
-
-		// If flag is disabled, show disabled message or alternative
 		if (!flagState.isEnabled) {
+			if (flagState.hideWhenDisabled) {
+				return null;
+			}
 			return (
 				<div className="flex items-center justify-center rounded-lg border border-muted-foreground/20 border-dashed p-4 text-muted-foreground text-sm">
 					{flagState.disabledMessage}
@@ -119,7 +108,6 @@ export function withFeatureFlag(
 			);
 		}
 
-		// Flag is enabled, render the component
-		return <Component {...props} ref={ref} />;
-	});
+		return <Component {...props} />;
+	};
 }

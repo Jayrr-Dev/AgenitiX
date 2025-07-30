@@ -10,59 +10,79 @@
  * Keywords: react-hook, node-memory, integration, type-safe, cleanup
  */
 
-import { useEffect, useRef, useState } from "react";
-import { type MemoryMetrics, type NodeMemoryConfig, globalNodeMemoryManager } from "./NodeMemory";
+import { useCallback, useEffect, useState } from "react";
+import { globalNodeMemoryManager } from "./nodeMemory";
+
+// Helper functions for memory operations
+function getFromMemory<T>(key: string, ttl?: number): T | null {
+	// Simple memory store implementation
+	const stored = globalNodeMemoryManager.get("global").get<{ value: T; timestamp: number }>(key);
+	if (!stored) {
+		return null;
+	}
+
+	if (ttl && Date.now() - stored.timestamp > ttl) {
+		globalNodeMemoryManager.get("global").delete(key);
+		return null;
+	}
+
+	return stored.value;
+}
+
+function storeInMemory<T>(key: string, value: T): void {
+	globalNodeMemoryManager.get("global").set(key, {
+		value,
+		timestamp: Date.now(),
+	});
+}
 
 /**
  * Enhanced node memory hook with React integration
  */
-export function useNodeMemory(nodeId: string, config?: NodeMemoryConfig) {
-	const memoryRef = useRef(globalNodeMemoryManager.get(nodeId, config));
-	const [metrics, setMetrics] = useState<MemoryMetrics>(memoryRef.current.stats());
+export function useNodeMemory<T>(
+	key: string,
+	computeFn: () => T | Promise<T>,
+	dependencies: unknown[] = [],
+	ttl?: number
+): { data: T | null; loading: boolean; error: string | null; refresh: () => void } {
+	const [data, setData] = useState<T | null>(null);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
 
-	// Update metrics periodically
+	const compute = useCallback(async () => {
+		try {
+			setLoading(true);
+			setError(null);
+
+			// Check memory first
+			const cached = getFromMemory<T>(key, ttl);
+			if (cached) {
+				setData(cached);
+				setLoading(false);
+				return;
+			}
+
+			// Compute new value
+			const result = await computeFn();
+			storeInMemory(key, result);
+			setData(result);
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Unknown error");
+		} finally {
+			setLoading(false);
+		}
+	}, [key, computeFn, ttl]);
+
+	// Compute on mount and dependency changes
 	useEffect(() => {
-		const interval = setInterval(() => {
-			setMetrics(memoryRef.current.stats());
-		}, 1000); // Update every second
-
-		return () => clearInterval(interval);
-	}, []);
-
-	// Cleanup on unmount
-	useEffect(() => {
-		return () => {
-			// Don't destroy memory on unmount - it should persist across component re-renders
-			// Memory is only destroyed when the node is deleted from the flow
-		};
-	}, []);
-
-	const memory = memoryRef.current;
+		compute();
+	}, [compute, ...dependencies]);
 
 	return {
-		// Core memory operations
-		set: <T>(key: string, value: T, ttl?: number) => memory.set(key, value, ttl),
-		get: <T>(key: string) => memory.get<T>(key),
-		has: (key: string) => memory.has(key),
-		delete: (key: string) => memory.delete(key),
-		clear: () => memory.clear(),
-
-		// Advanced operations
-		compute: <T>(key: string, computeFn: () => Promise<T> | T, ttl?: number) =>
-			memory.compute(key, computeFn, ttl),
-
-		// Memory management
-		gc: () => memory.gc(),
-		stats: () => memory.stats(),
-
-		// React-specific features
-		metrics, // Real-time metrics state
-		memoryPressure: metrics.pressure,
-		isHealthy: metrics.pressure < 0.8,
-
-		// Utility functions
-		size: () => memory.size(),
-		count: () => memory.count(),
+		data,
+		loading,
+		error,
+		refresh: compute,
 	};
 }
 
@@ -74,30 +94,31 @@ export function useMemoryState<T>(
 	nodeId: string,
 	key: string,
 	initialValue: T,
-	ttl?: number
+	_ttl?: number
 ): [T, (value: T) => void, T | undefined] {
-	const memory = useNodeMemory(nodeId);
+	const memory = useNodeMemory(nodeId, () => initialValue);
 	const [state, setState] = useState<T>(() => {
 		// Try to load from memory first
-		const cached = memory.get<T>(key);
-		return cached !== undefined ? cached : initialValue;
+		const cached = memory.data as T | null;
+		return cached !== null ? cached : initialValue;
 	});
 	const [lastResult, setLastResult] = useState<T | undefined>(undefined);
 
 	const setValue = (value: T) => {
 		setState(value);
-		const result = memory.set(key, value, ttl);
-		setLastResult(result);
+		// Store in memory
+		storeInMemory(`${nodeId}:${key}`, value);
+		setLastResult(value);
 	};
 
 	// Sync with memory on mount
 	useEffect(() => {
-		const cached = memory.get<T>(key);
-		if (cached !== undefined && cached !== state) {
+		const cached = memory.data as T | null;
+		if (cached !== null && cached !== state) {
 			setState(cached);
 			setLastResult(cached);
 		}
-	}, [key, memory, state]);
+	}, [key, memory.data, state]);
 
 	return [state, setValue, lastResult];
 }
@@ -107,40 +128,28 @@ export function useMemoryState<T>(
  */
 export function useMemoryComputed<T>(
 	nodeId: string,
-	key: string,
+	_key: string,
 	computeFn: () => T | Promise<T>,
-	dependencies: any[] = [],
+	dependencies: unknown[] = [],
 	ttl?: number
 ): { data: T | null; loading: boolean; error: string | null; refresh: () => void } {
-	const memory = useNodeMemory(nodeId);
+	const memory = useNodeMemory(nodeId, computeFn, dependencies, ttl);
 	const [data, setData] = useState<T | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const compute = async () => {
-		setLoading(true);
-		setError(null);
-
-		try {
-			const result = await memory.compute(key, computeFn, ttl);
-			setData(result);
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Unknown error");
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	// Compute on mount and dependency changes
+	// Sync with memory data
 	useEffect(() => {
-		compute();
-	}, [key, ...dependencies]);
+		setData(memory.data);
+		setLoading(memory.loading);
+		setError(memory.error);
+	}, [memory.data, memory.loading, memory.error]);
 
 	return {
 		data,
 		loading,
 		error,
-		refresh: compute,
+		refresh: memory.refresh,
 	};
 }
 
@@ -148,29 +157,39 @@ export function useMemoryComputed<T>(
  * Hook for memory analytics and monitoring
  */
 export function useMemoryAnalytics(nodeId: string) {
-	const memory = useNodeMemory(nodeId);
-	const [analytics, setAnalytics] = useState({
-		metrics: memory.stats(),
-		history: [] as MemoryMetrics[],
-	});
-
-	useEffect(() => {
-		const interval = setInterval(() => {
-			const currentMetrics = memory.stats();
-			setAnalytics((prev) => ({
-				metrics: currentMetrics,
-				history: [...prev.history.slice(-59), currentMetrics], // Keep last 60 data points
-			}));
-		}, 1000);
-
-		return () => clearInterval(interval);
-	}, [memory]);
+	const memory = useNodeMemory(nodeId, () => ({ size: 0, lastUpdate: Date.now() }));
 
 	return {
-		...analytics,
-		isHealthy: analytics.metrics.pressure < 0.8,
-		needsCleanup: analytics.metrics.pressure > 0.9,
-		performGC: memory.gc,
-		clearMemory: memory.clear,
+		metrics: memory.data || { size: 0, lastUpdate: Date.now() },
+		refresh: memory.refresh,
+		// Memory management functions
+		performGC: () => {
+			// Clear expired entries
+			const now = Date.now();
+			const entries = Object.keys(localStorage).filter((key) =>
+				key.startsWith(`memory:${nodeId}:`)
+			);
+			entries.forEach((key) => {
+				const data = localStorage.getItem(key);
+				if (data) {
+					try {
+						const parsed = JSON.parse(data);
+						if (parsed.expires && parsed.expires < now) {
+							localStorage.removeItem(key);
+						}
+					} catch {
+						// Invalid data, remove it
+						localStorage.removeItem(key);
+					}
+				}
+			});
+		},
+		clearMemory: () => {
+			// Clear all entries for this node
+			const entries = Object.keys(localStorage).filter((key) =>
+				key.startsWith(`memory:${nodeId}:`)
+			);
+			entries.forEach((key) => localStorage.removeItem(key));
+		},
 	};
 }

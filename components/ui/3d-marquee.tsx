@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
+import type React from "react";
 export const ThreeDMarquee = ({
 	images,
 	className,
@@ -35,11 +36,12 @@ export const ThreeDMarquee = ({
 							<motion.div
 								animate={{ y: colIndex % 2 === 0 ? 100 : -100 }}
 								transition={{
-									duration: colIndex % 2 === 0 ? 10 : 15,
+									duration: 20,
+									ease: "linear",
 									repeat: Number.POSITIVE_INFINITY,
 									repeatType: "reverse",
 								}}
-								key={`${colIndex}marquee`}
+								key={`col-${colIndex}-${subarray[0] || "empty"}`}
 								className="flex flex-col items-start gap-8"
 							>
 								<GridLineVertical className="-left-4" offset="80px" />
@@ -56,7 +58,7 @@ export const ThreeDMarquee = ({
 											}}
 											key={imageIndex + image}
 											src={image}
-											alt={`Image ${imageIndex + 1}`}
+											alt={`Gallery item ${imageIndex + 1}`}
 											className="aspect-[970/700] rounded-lg object-cover ring ring-gray-950/5 hover:shadow-2xl"
 											width={970}
 											height={700}

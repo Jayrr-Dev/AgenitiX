@@ -1,4 +1,4 @@
-import { ThreatIntelligence } from "@/lib/anubis/threat-intelligence";
+import { checkIPReputation, getCacheStats, refreshCache } from "@/lib/anubis/threat-intelligence";
 import { type NextRequest, NextResponse } from "next/server";
 
 // THREAT INTELLIGENCE STATUS AND MANAGEMENT API
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
 		// CHECK SPECIFIC IP
 		if (action === "check" && ip) {
-			const result = await ThreatIntelligence.checkIPReputation(ip);
+			const result = await checkIPReputation(ip);
 			return NextResponse.json({
 				ip,
 				...result,
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
 		// GET CACHE STATISTICS
 		if (action === "stats") {
-			const stats = ThreatIntelligence.getCacheStats();
+			const stats = getCacheStats();
 			return NextResponse.json({
 				cache: stats,
 				status: "operational",
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 		}
 
 		// DEFAULT: RETURN GENERAL STATUS
-		const stats = ThreatIntelligence.getCacheStats();
+		const stats = getCacheStats();
 		return NextResponse.json({
 			service: "AgenitiX Threat Intelligence",
 			status: "operational",
@@ -50,9 +50,9 @@ export async function POST(request: NextRequest) {
 		const { action } = await request.json().catch(() => ({ action: "refresh" }));
 
 		if (action === "refresh") {
-			await ThreatIntelligence.refreshCache();
+			await refreshCache();
 
-			const stats = ThreatIntelligence.getCacheStats();
+			const stats = getCacheStats();
 			return NextResponse.json({
 				message: "Cache refreshed successfully",
 				cache: stats,

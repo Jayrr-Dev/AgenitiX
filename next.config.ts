@@ -1,3 +1,14 @@
+/**
+ * Next.js Configuration with Turbopack
+ * 
+ * • Turbopack configuration for improved build performance
+ * • SVG asset handling with @svgr/webpack loader
+ * • Sentry integration for error tracking
+ * • PWA configuration for progressive web app features
+ * 
+ * Keywords: turbopack, nextjs-config, sentry, pwa, svg-handling
+ */
+
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 import withPWA from "next-pwa";
@@ -6,6 +17,13 @@ const nextConfig: NextConfig = {
 	/* config options here */
 	images: {
 		domains: ["placehold.co", "d63wj7axnd.ufs.sh", "86apvmagmm.ufs.sh", "images.unsplash.com"],
+	},
+	// TURBOPACK CONFIGURATION
+	turbopack: {
+		// SVG asset handling for Turbopack
+		rules: {
+			"*.svg": { loaders: ["@svgr/webpack"], as: "*.js" },
+		},
 	},
 };
 
@@ -34,8 +52,8 @@ export default withSentryConfig(configWithPWA, {
 	// For all available options, see:
 	// https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
-	// Upload a larger set of source maps for prettier stack traces (increases build time)
-	widenClientFileUpload: true,
+	// Disable source map widening to reduce cache size and improve build performance
+	widenClientFileUpload: false,
 
 	// Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
 	// This can increase your server load as well as your hosting bill.

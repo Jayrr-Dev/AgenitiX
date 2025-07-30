@@ -31,8 +31,8 @@ export class StateComparator {
 	 * Main comparison method with intelligent fallback strategies
 	 */
 	compare(
-		current: Record<string, any>,
-		incoming: Partial<Record<string, any>>
+		current: Record<string, unknown>,
+		incoming: Partial<Record<string, unknown>>
 	): StateComparisonResult {
 		const startTime = performance.now();
 		const result: StateComparisonResult = {
@@ -85,8 +85,8 @@ export class StateComparator {
 	 * Fast primitive value comparison
 	 */
 	private comparePrimitive(
-		current: Record<string, any>,
-		incoming: Partial<Record<string, any>>
+		current: Record<string, unknown>,
+		incoming: Partial<Record<string, unknown>>
 	): { hasChanges: boolean; changedKeys: string[] } {
 		const changedKeys: string[] = [];
 
@@ -116,8 +116,8 @@ export class StateComparator {
 	 * Deep object comparison with JSON serialization
 	 */
 	private compareDeep(
-		current: Record<string, any>,
-		incoming: Partial<Record<string, any>>
+		current: Record<string, unknown>,
+		incoming: Partial<Record<string, unknown>>
 	): { hasChanges: boolean; changedKeys: string[] } {
 		const changedKeys: string[] = [];
 
@@ -148,8 +148,8 @@ export class StateComparator {
 	 * Fallback comparison using reference equality
 	 */
 	private compareFallback(
-		current: Record<string, any>,
-		incoming: Partial<Record<string, any>>
+		current: Record<string, unknown>,
+		incoming: Partial<Record<string, unknown>>
 	): { hasChanges: boolean; changedKeys: string[] } {
 		const changedKeys: string[] = [];
 
@@ -168,7 +168,7 @@ export class StateComparator {
 	/**
 	 * Check if value is primitive type
 	 */
-	private isPrimitive(value: any): boolean {
+	private isPrimitive(value: unknown): boolean {
 		return (
 			value === null ||
 			value === undefined ||

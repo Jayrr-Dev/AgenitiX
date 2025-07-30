@@ -19,9 +19,9 @@ import type { NodeProps, Position } from "@xyflow/react";
 import { useTheme } from "next-themes";
 import React from "react";
 import NodeErrorBoundary from "./ErrorBoundary";
-import { globalNodeMemoryManager } from "./NodeMemory";
 import type { NodeSpec } from "./NodeSpec";
 import NodeTelemetry from "./NodeTelemetry";
+import { globalNodeMemoryManager } from "./nodeMemory";
 import { getNodePlugins } from "./plugins/nodePluginRegistry";
 import { runServerActions } from "./serverActions/serverActionRegistry";
 
@@ -235,7 +235,12 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 			<NodeScaffoldWrapper style={style} className={themeClasses} spec={spec}>
 				{/* Render registered node plugins */}
 				{getNodePlugins().map((Plugin, idx) => (
-					<Plugin key={idx} nodeId={props.id} nodeKind={spec.kind} data={props.data as any} />
+					<Plugin
+						key={`plugin-${props.id}-${idx}`}
+						nodeId={props.id}
+						nodeKind={spec.kind}
+						data={props.data as any}
+					/>
 				))}
 				{/* Telemetry event: node created */}
 				<NodeTelemetry nodeId={props.id} nodeKind={spec.kind} />
@@ -255,7 +260,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 								id={`${handle.id}__${handle.code ?? handle.dataType ?? "x"}`}
 								type={handle.type}
 								position={handle.position as Position}
-								dataType={handle.dataType}
+								dataType={handle.dataType || "any"}
 								code={(handle as any).code}
 								tsSymbol={(handle as any).tsSymbol}
 								nodeId={props.id}

@@ -1,3 +1,7 @@
+---
+inclusion: manual
+---
+
 useEffect — Best practices
 
 Default: You probably don’t need it. Effects are only for syncing with the outside world.

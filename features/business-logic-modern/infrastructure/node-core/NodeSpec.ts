@@ -4,7 +4,7 @@ import type {
 	EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import type { z } from "zod";
-import type { NodeMemoryConfig } from "./NodeMemory";
+import type { NodeMemoryConfig } from "./nodeMemory";
 
 /**
  * Feature flag configuration for node-level feature toggles
@@ -141,13 +141,13 @@ export interface NodeSpec {
 	/**
 	 * The default data properties for a new instance of this node.
 	 */
-	initialData: Record<string, any>;
+	initialData: Record<string, unknown>;
 
 	/**
 	 * NEW: Reference to the Zod schema for automatic control generation
 	 * This enables the system to introspect the schema and generate appropriate controls
 	 */
-	dataSchema?: z.ZodSchema<any>;
+	dataSchema?: z.ZodSchema<unknown>;
 
 	/**
 	 * NEW: Control configuration for the Node Inspector
@@ -245,6 +245,6 @@ export interface NodeSpec {
 		/** Whether to show received data in collapsed state */
 		showInCollapsed?: boolean;
 		/** Custom formatting function for received data */
-		formatData?: (data: any) => string;
+		formatData?: (data: unknown) => string;
 	};
 }

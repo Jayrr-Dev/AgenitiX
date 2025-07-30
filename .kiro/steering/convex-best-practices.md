@@ -1,3 +1,7 @@
+---
+inclusion: manual
+---
+
 # Convex Best Practices & Guidelines
 
 ## Overview
@@ -44,10 +48,6 @@ const userFlows = await ctx.db
   .query("flows")
   .withIndex("by_userId", q => q.eq("userId", userId))
   .collect();
-
-// ✅ Also good - filter in code for small datasets
-const allFlows = await ctx.db.query("flows").collect();
-const userFlows = allFlows.filter(flow => flow.userId === userId);
 ```
 
 ### 3. Only Use `.collect()` with Small Result Sets
@@ -66,13 +66,6 @@ const recentEmails = await ctx.db
   .withIndex("by_userId", q => q.eq("userId", userId))
   .order("desc")
   .paginate(paginationOptions);
-
-// ✅ Good - use limit for counts
-const emailCount = await ctx.db
-  .query("email_logs")
-  .withIndex("by_userId", q => q.eq("userId", userId))
-  .take(100);
-const displayCount = emailCount.length === 100 ? "99+" : emailCount.length.toString();
 ```
 
 ## Security Best Practices
@@ -218,70 +211,6 @@ export const logEmailSent = mutation({
     });
   }
 });
-
-export const getEmailAnalytics = query({
-  args: {
-    startDate: v.number(),
-    endDate: v.number(),
-  },
-  handler: async (ctx, { startDate, endDate }) => {
-    const user = await ctx.auth.getUserIdentity();
-    if (!user) throw new Error("Unauthorized");
-    
-    const emails = await ctx.db
-      .query("email_logs")
-      .withIndex("by_userId_sentAt", q => 
-        q.eq("userId", user.subject)
-         .gte("sentAt", startDate)
-         .lte("sentAt", endDate)
-      )
-      .collect();
-    
-    return {
-      total: emails.length,
-      sent: emails.filter(e => e.status === "sent").length,
-      failed: emails.filter(e => e.status === "failed").length,
-      pending: emails.filter(e => e.status === "pending").length,
-    };
-  }
-});
-```
-
-### 3. Node Registry Functions
-```typescript
-// nodeRegistry.ts - Node type management
-export const registerNodeType = mutation({
-  args: {
-    nodeType: v.string(),
-    category: v.union(
-      v.literal("create"),
-      v.literal("view"), 
-      v.literal("trigger"),
-      v.literal("test"),
-      v.literal("cycle")
-    ),
-    spec: v.any(),
-  },
-  handler: async (ctx, args) => {
-    // Only admin users can register node types
-    const user = await ctx.auth.getUserIdentity();
-    if (!user) throw new Error("Unauthorized");
-    
-    const isAdmin = await ctx.db
-      .query("auth_users")
-      .withIndex("by_subject", q => q.eq("subject", user.subject))
-      .filter(q => q.eq(q.field("role"), "admin"))
-      .first();
-    
-    if (!isAdmin) throw new Error("Admin access required");
-    
-    return await ctx.db.insert("node_types", {
-      ...args,
-      registeredBy: user.subject,
-      registeredAt: Date.now(),
-    });
-  }
-});
 ```
 
 ## Code Organization Patterns
@@ -324,27 +253,6 @@ export async function ensureFlowAccess(
   
   return { user, flow };
 }
-
-// flows.ts - Thin API wrappers
-import * as FlowModel from "./model/flows";
-
-export const updateFlow = mutation({
-  args: {
-    id: v.id("flows"),
-    update: v.object({
-      name: v.optional(v.string()),
-      description: v.optional(v.string()),
-    }),
-  },
-  handler: async (ctx, { id, update }) => {
-    const { flow } = await FlowModel.ensureFlowAccess(ctx, { flowId: id });
-    
-    return await ctx.db.patch(id, {
-      ...update,
-      updatedAt: Date.now(),
-    });
-  }
-});
 ```
 
 ### 2. Minimize `ctx.runQuery` and `ctx.runMutation` Usage
@@ -379,7 +287,6 @@ Remove indexes that are prefixes of other indexes.
 
 ```typescript
 // ❌ Bad - redundant indexes
-// schema.ts
 flows: defineTable({
   userId: v.string(),
   name: v.string(),
@@ -466,43 +373,6 @@ export const getFlow = query({
 });
 ```
 
-### 2. Sentry Integration for Error Tracking
-```typescript
-import * as Sentry from "@sentry/node";
-
-export const processEmailQueue = action({
-  args: { batchSize: v.optional(v.number()) },
-  handler: async (ctx, { batchSize = 10 }) => {
-    return Sentry.startSpan(
-      {
-        op: "convex.action",
-        name: "Process Email Queue",
-      },
-      async (span) => {
-        try {
-          span.setAttribute("batchSize", batchSize);
-          
-          const emails = await ctx.runQuery(internal.emails.getPendingEmails, { 
-            limit: batchSize 
-          });
-          
-          span.setAttribute("emailCount", emails.length);
-          
-          for (const email of emails) {
-            await processEmail(ctx, email);
-          }
-          
-          return { processed: emails.length };
-        } catch (error) {
-          Sentry.captureException(error);
-          throw error;
-        }
-      }
-    );
-  }
-});
-```
-
 ## Database Schema Best Practices
 
 ### 1. Follow AgenitiX Table Naming Convention
@@ -556,20 +426,6 @@ export default defineSchema({
   })
   .index("by_userId", ["userId"])
   .index("by_userId_status", ["userId", "status"]),
-
-  // Workflow execution domain
-  workflow_runs: defineTable({
-    flowId: v.id("flows"),
-    userId: v.string(),
-    status: v.union(v.literal("running"), v.literal("completed"), v.literal("failed")),
-    startedAt: v.number(),
-    completedAt: v.optional(v.number()),
-    error: v.optional(v.string()),
-    results: v.optional(v.any()),
-  })
-  .index("by_flowId", ["flowId"])
-  .index("by_userId", ["userId"])
-  .index("by_status", ["status"]),
 });
 ```
 
@@ -587,111 +443,6 @@ Design indexes based on your query patterns.
 .index("by_userId_sentAt", ["userId", "sentAt"])
 ```
 
-## Testing Convex Functions
-
-### 1. Test Helper Functions Separately
-```typescript
-// model/flows.test.ts
-import { test, expect } from "vitest";
-import { ConvexTestingHelper } from "convex/testing";
-import * as FlowModel from "./flows";
-
-test("getCurrentUser returns user for valid auth", async () => {
-  const t = new ConvexTestingHelper();
-  
-  // Mock authenticated user
-  t.withIdentity({ subject: "user123", email: "test@example.com" });
-  
-  const user = await FlowModel.getCurrentUser(t.ctx);
-  expect(user.subject).toBe("user123");
-});
-```
-
-### 2. Integration Tests for Public Functions
-```typescript
-// flows.test.ts
-import { test, expect } from "vitest";
-import { ConvexTestingHelper } from "convex/testing";
-import { api } from "./_generated/api";
-
-test("createFlow creates flow for authenticated user", async () => {
-  const t = new ConvexTestingHelper();
-  t.withIdentity({ subject: "user123" });
-  
-  const flowId = await t.mutation(api.flows.createFlow, {
-    name: "Test Flow",
-    description: "A test flow",
-    nodes: [],
-    edges: [],
-  });
-  
-  expect(flowId).toBeDefined();
-  
-  const flow = await t.query(api.flows.getFlow, { id: flowId });
-  expect(flow.name).toBe("Test Flow");
-  expect(flow.userId).toBe("user123");
-});
-```
-
-## Deployment & Environment Management
-
-### 1. Environment-Specific Configuration
-```typescript
-// config.ts - Environment-aware configuration
-export const config = {
-  isDevelopment: process.env.NODE_ENV === "development",
-  isProduction: process.env.NODE_ENV === "production",
-  
-  email: {
-    maxBatchSize: process.env.NODE_ENV === "production" ? 100 : 10,
-    retryAttempts: process.env.NODE_ENV === "production" ? 3 : 1,
-  },
-  
-  analytics: {
-    enableTracking: process.env.NODE_ENV === "production",
-  },
-};
-```
-
-### 2. Migration Patterns
-```typescript
-// migrations/001_add_email_templates.ts
-export const addEmailTemplates = internalMutation({
-  handler: async (ctx) => {
-    // Check if migration already ran
-    const migrationRecord = await ctx.db
-      .query("migrations")
-      .filter(q => q.eq(q.field("name"), "001_add_email_templates"))
-      .first();
-      
-    if (migrationRecord) {
-      console.log("Migration already applied");
-      return;
-    }
-    
-    // Run migration logic
-    const users = await ctx.db.query("auth_users").collect();
-    
-    for (const user of users) {
-      await ctx.db.insert("email_templates", {
-        userId: user.subject,
-        name: "Welcome Email",
-        subject: "Welcome to AgenitiX!",
-        body: "Welcome to our platform!",
-        variables: ["name"],
-        createdAt: Date.now(),
-      });
-    }
-    
-    // Record migration as completed
-    await ctx.db.insert("migrations", {
-      name: "001_add_email_templates",
-      appliedAt: Date.now(),
-    });
-  }
-});
-```
-
 ## Summary Checklist
 
 Before deploying Convex functions:
@@ -706,8 +457,6 @@ Before deploying Convex functions:
 - [ ] **Error handling** - Consistent error patterns with Sentry
 - [ ] **Table naming** - Follow `domain_resource` convention
 - [ ] **Index optimization** - Remove redundant indexes
-- [ ] **Testing** - Unit tests for helpers, integration tests for APIs
-- [ ] **Environment config** - Environment-aware settings
 
 ## Resources
 

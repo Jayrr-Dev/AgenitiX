@@ -9,7 +9,10 @@ import { Label } from "@/components/ui/label";
 import { ArrowRight, Building, Loader2, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import type React from "react";
+import { useState } from "react";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 export default function SignUpPage() {
 	const { signUp, isAuthenticated, isLoading: authLoading } = useAuthContext();
@@ -63,7 +66,17 @@ export default function SignUpPage() {
 
 			// Show success message with toast
 			setError(null);
-			const { toast } = await import("sonner");
+
+			// Log success in development
+			if (process.env.NODE_ENV === "development") {
+				console.log("\n🎉 ACCOUNT CREATION SUCCESSFUL:");
+				console.log(`👤 Name: ${formData.name.trim()}`);
+				console.log(`📧 Email: ${formData.email.trim()}`);
+				console.log(`✅ Status: ${result.message}`);
+				console.log("📋 Check the server console for the verification magic link URL");
+				console.log("");
+			}
+
 			toast.success("Account created!", {
 				description: result.message,
 				duration: 5000,
@@ -74,7 +87,6 @@ export default function SignUpPage() {
 			setError(errorMessage);
 
 			// Also show toast for better UX
-			const { toast } = await import("sonner");
 			toast.error("Sign up failed", {
 				description: errorMessage,
 				duration: 5000,

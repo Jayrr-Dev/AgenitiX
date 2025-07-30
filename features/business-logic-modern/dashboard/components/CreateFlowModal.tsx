@@ -1,13 +1,14 @@
 /**
- * CREATE FLOW MODAL - Modal for creating new automation workflows
+ * CREATE FLOW MODAL - Modal component for creating new automation flows
  *
- * • Form with name, description, icon, and privacy settings
- * • Real-time validation and error handling
- * • Secure user authentication integration
- * • Responsive design with modern UI components
- * • Full Convex database integration
+ * • Form validation with comprehensive error handling
+ * • Icon selection with categorized browsing
+ * • Privacy toggle for public/private flows
+ * • Real-time validation feedback
+ * • Responsive design with mobile optimization
+ * • Accessibility features with proper ARIA labels
  *
- * Keywords: modal, form, flow-creation, validation, authentication, responsive, convex
+ * Keywords: create-flow, modal, form-validation, icon-selection, privacy-toggle
  */
 
 "use client";
@@ -100,6 +101,7 @@ import {
 	// Tools & Utilities
 	Wrench,
 } from "lucide-react";
+import type React from "react";
 import { useState } from "react";
 import type { CreateFlowRequest } from "../types";
 
@@ -268,7 +270,7 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 	};
 
 	const handleInputChange = (field: keyof CreateFlowRequest, value: string | boolean) => {
-		setFormData((prev) => ({
+		setFormData((prev: CreateFlowRequest) => ({
 			...prev,
 			[field]: value,
 		}));

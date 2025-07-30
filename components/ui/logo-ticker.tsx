@@ -12,6 +12,7 @@ export interface Logo {
 	width: number;
 	height: number;
 	uploadedAt: string;
+	alt?: string;
 }
 
 interface LogoTickerProps {
@@ -27,7 +28,6 @@ export default function LogoTicker({
 	logos,
 	speed = 2,
 	fadeWidth = 64,
-	darkMode = true,
 	className = "",
 }: LogoTickerProps) {
 	const [start, setStart] = useState(false);
@@ -43,8 +43,8 @@ export default function LogoTicker({
 
 	/* 3 ▸ dynamic CSS variables */
 	const styleVars: CSSProperties = {
-		["--ticker-duration" as any]: `${strip.length * speed}s`,
-		["--fade-width" as any]: `${fadeWidth}px`,
+		["--ticker-duration" as keyof CSSProperties]: `${strip.length * speed}s`,
+		["--fade-width" as keyof CSSProperties]: `${fadeWidth}px`,
 	};
 
 	const maskStyle: CSSProperties = {
@@ -71,14 +71,16 @@ export default function LogoTicker({
 					}`}
 				>
 					{strip.map((logo, i) => (
-						<div key={i} className="flex items-center opacity-99 contrast-50 grayscale">
+						<div
+							key={`logo-${logo.url}-${i}`}
+							className="flex items-center opacity-99 contrast-50 grayscale"
+						>
 							<Image
 								src={logo.url}
-								alt={logo.name}
+								alt={logo.alt || logo.name || "Logo"}
 								width={logo.width}
 								height={logo.height}
-								priority={i < logos.length} /* first visible set eagerly */
-								className={`object-contain ${darkMode ? "brightness-100" : ""} ${className} `}
+								className="h-8 w-auto object-contain"
 							/>
 						</div>
 					))}

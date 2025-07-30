@@ -34,6 +34,7 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
+import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  In-Memory Storage System
@@ -54,11 +55,11 @@ class InMemoryStorage {
 		return InMemoryStorage.instance;
 	}
 
-	set(key: string, value: any): void {
+	set(key: string, value: unknown): void {
 		this.storage.set(key, value);
 	}
 
-	get(key: string): any {
+	get(key: string): unknown {
 		return this.storage.get(key);
 	}
 
@@ -276,7 +277,7 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 	// -------------------------------------------------------------------------
 
 	/** Convert value based on data type */
-	const convertValue = useCallback((val: string, type: string): any => {
+	const convertValue = useCallback((val: string, type: string): unknown => {
 		if (!val) {
 			return val;
 		}
@@ -300,7 +301,7 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 	}, []);
 
 	/** Format value for display */
-	const formatValue = useCallback((val: any): string => {
+	const formatValue = useCallback((val: unknown): string => {
 		if (val === null || val === undefined) {
 			return "";
 		}
@@ -321,7 +322,7 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 		}
 
 		try {
-			let result: any = "";
+			let result: unknown = "";
 			let status = "ready";
 
 			switch (operation) {
@@ -362,7 +363,7 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 				isActive: true,
 			});
 
-			lastOutputRef.current = result;
+			lastOutputRef.current = String(result);
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : "Unknown error";
 			updateNodeData({
@@ -432,7 +433,7 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 
 	/** Monitor inputs from connected nodes */
 	useEffect(() => {
-		const valueEdge = edges.find((e) => e.target === id && e.targetHandle === "value-input");
+		const valueEdge = findEdgeByHandle(edges, id, "value-input");
 
 		// Check value input
 		if (valueEdge) {

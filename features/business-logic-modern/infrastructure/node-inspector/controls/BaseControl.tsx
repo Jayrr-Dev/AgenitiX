@@ -196,8 +196,6 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 	status,
 	trueLabel = "TRUE",
 	falseLabel = "FALSE",
-	trueColor,
-	falseColor,
 	nodeType,
 }) => {
 	const _semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
@@ -252,6 +250,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
 
 	return (
 		<button
+			type="button"
 			onClick={handleClick}
 			disabled={disabled}
 			className={`${baseClasses} ${variantClasses} ${

@@ -16,26 +16,14 @@
 
 import { AlertTriangle, Clock, GitBranch, List as ListIcon, Trash2, X } from "lucide-react";
 import React, { Suspense, useCallback, useMemo, useState } from "react";
-import { useUndoRedo } from "./UndoRedoContext";
+import type { HistoryNode } from "./historyGraph";
+import { useUndoRedo } from "./undo-redo-context";
 // Lazy-load the heavy ReactFlow-powered graph renderer only when needed for significant memory & bundle savings
 const RenderHistoryGraph = React.lazy(() => import("./renderHistoryGraph"));
 
 // STYLING CONSTANTS
 const PANEL_STYLES = {
 	base: "bg-[var(--infra-history-bg)] border border-[var(--infra-history-border)] rounded-lg shadow-lg overflow-hidden max-w-full min-w-0",
-} as const;
-
-const _COLLAPSED_STYLES = {
-	button:
-		"w-full p-4 flex items-center justify-between hover:bg-[var(--infra-history-bg-hover)] transition-colors group",
-	icon: "w-4 h-4 text-[var(--infra-history-text)] group-hover:text-primary transition-colors",
-	title:
-		"text-sm font-semibold text-[var(--infra-history-text)] group-hover:text-primary transition-colors",
-	badge: "text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full",
-	branchContainer: "flex items-center gap-1 ml-1",
-	branchIcon: "w-3 h-3 text-amber-500",
-	branchText: "text-xs text-amber-600 dark:text-amber-400 font-medium",
-	chevron: "w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors",
 } as const;
 
 const HEADER_STYLES = {
@@ -224,18 +212,33 @@ const DeletionModal: React.FC<DeletionModalProps> = ({
 		}
 	};
 
+	const handleOverlayKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === "Enter" || e.key === " ") {
+			e.preventDefault();
+			if (e.target === e.currentTarget) {
+				onClose();
+			}
+		}
+	};
+
 	const handleConfirm = () => {
 		onConfirm();
 		onClose();
 	};
 
 	return (
-		<div className={MODAL_STYLES.overlay} onClick={handleOverlayClick}>
-			<div
+		<div
+			className={MODAL_STYLES.overlay}
+			onClick={handleOverlayClick}
+			onKeyDown={handleOverlayKeyDown}
+			role="presentation"
+			tabIndex={-1}
+		>
+			<dialog
 				className={MODAL_STYLES.container}
-				role="dialog"
 				aria-modal="true"
 				aria-labelledby="modal-title"
+				open={true}
 			>
 				{/* Header */}
 				<div className={MODAL_STYLES.header}>
@@ -243,7 +246,12 @@ const DeletionModal: React.FC<DeletionModalProps> = ({
 					<h2 id="modal-title" className={MODAL_STYLES.headerText}>
 						{isFullClear ? "Clear All History" : "Delete History Node"}
 					</h2>
-					<button onClick={onClose} className={MODAL_STYLES.closeButton} aria-label="Close dialog">
+					<button
+						onClick={onClose}
+						className={MODAL_STYLES.closeButton}
+						aria-label="Close dialog"
+						type="button"
+					>
 						<X className={MODAL_STYLES.closeIcon} />
 					</button>
 				</div>
@@ -286,14 +294,14 @@ const DeletionModal: React.FC<DeletionModalProps> = ({
 
 				{/* Footer */}
 				<div className={MODAL_STYLES.footer}>
-					<button onClick={onClose} className={MODAL_STYLES.cancelButton}>
+					<button onClick={onClose} className={MODAL_STYLES.cancelButton} type="button">
 						Cancel
 					</button>
-					<button onClick={handleConfirm} className={MODAL_STYLES.deleteButton}>
+					<button onClick={handleConfirm} className={MODAL_STYLES.deleteButton} type="button">
 						{isFullClear ? "Clear All History" : "Delete Node"}
 					</button>
 				</div>
-			</div>
+			</dialog>
 		</div>
 	);
 };
@@ -301,7 +309,6 @@ const DeletionModal: React.FC<DeletionModalProps> = ({
 const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 	const { undo, redo, clearHistory, removeSelectedNode, getHistory, getFullGraph } = useUndoRedo();
 
-	const [_selectedEntry, _setSelectedEntry] = useState<string | null>(null);
 	const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 	const [graphView, setGraphView] = useState(false);
 	const [deletionModalOpen, setDeletionModalOpen] = useState(false);
@@ -309,15 +316,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 	// GET HISTORY FROM CONTEXT - Updated for graph-based system
 	const historyData = getHistory();
 	const fullGraphData = getFullGraph();
-	const {
-		entries: historyEntries = [],
-		currentIndex,
-		canUndo,
-		canRedo,
-		branchOptions = [],
-		currentNode,
-		graphStats,
-	} = historyData;
+	const { branchOptions = [], graphStats } = historyData;
 
 	// Set selected node to current cursor when graph changes
 	React.useEffect(() => {
@@ -326,12 +325,6 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 		}
 	}, [fullGraphData?.cursor]);
 
-	// COMPUTED VALUES - Memoized for performance
-	const _visibleHistory = useMemo(() => {
-		// Show last 20 entries for performance
-		return historyEntries.slice(-20);
-	}, [historyEntries]);
-
 	// GET FULL LINEAR HISTORY (including future states) - Memoized
 	const fullLinearHistory = useMemo(() => {
 		if (!fullGraphData) {
@@ -339,12 +332,12 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 		}
 
 		// Build the current branch timeline: path to cursor + available futures
-		const currentPath: any[] = [];
+		const currentPath: HistoryNode[] = [];
 		let currentId: string | null = fullGraphData.cursor;
 
 		// Trace back to root to build the main timeline
 		while (currentId) {
-			const node: any = fullGraphData.nodes[currentId];
+			const node: HistoryNode | undefined = fullGraphData.nodes[currentId];
 			if (!node) {
 				break;
 			}
@@ -354,19 +347,19 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 
 		// Add future states (children of current cursor)
 		const addFutureStates = (nodeId: string) => {
-			const node: any = fullGraphData.nodes[nodeId];
+			const node: HistoryNode = fullGraphData.nodes[nodeId];
 			if (!node) {
 				return;
 			}
 
-			node.childrenIds.forEach((childId: string) => {
+			for (const childId of node.childrenIds || []) {
 				const childNode = fullGraphData.nodes[childId];
 				if (childNode) {
 					currentPath.push(childNode);
 					// Recursively add children (for deep future branches)
 					addFutureStates(childId);
 				}
-			});
+			}
 		};
 
 		// Add immediate future states from cursor
@@ -377,13 +370,41 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 		return currentPath;
 	}, [fullGraphData]);
 
-	// Memoize current index calculation
+	// Calculate current position in the timeline
 	const currentIndexInTimeline = useMemo(() => {
-		if (!fullGraphData) {
+		if (!fullGraphData || fullLinearHistory.length === 0) {
 			return -1;
 		}
-		return fullLinearHistory.findIndex((state) => state?.id === fullGraphData.cursor);
-	}, [fullLinearHistory, fullGraphData]);
+
+		// Find path from root to the selected target node
+		const pathToTarget: string[] = [];
+		let currentId: string | null = fullGraphData.cursor;
+
+		while (currentId) {
+			const node: HistoryNode | undefined = fullGraphData.nodes[currentId];
+			if (!node) {
+				break;
+			}
+			pathToTarget.unshift(currentId);
+			currentId = node.parentId;
+		}
+
+		// Build current path from root to cursor
+		const currentPath: string[] = [];
+		currentId = fullGraphData.cursor;
+
+		while (currentId) {
+			const node: HistoryNode | undefined = fullGraphData.nodes[currentId];
+			if (!node) {
+				break;
+			}
+			currentPath.unshift(currentId);
+			currentId = node.parentId;
+		}
+
+		// The cursor position in linear history equals the path length to cursor
+		return currentPath.length - 1;
+	}, [fullGraphData, fullLinearHistory]);
 
 	// Memoized callback functions
 	const jumpToHistoryState = useCallback(
@@ -403,7 +424,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 			let currentId: string | null = targetNodeId;
 
 			while (currentId) {
-				const node: any = fullGraphData.nodes[currentId];
+				const node: HistoryNode | undefined = fullGraphData.nodes[currentId];
 				if (!node) {
 					break;
 				}
@@ -416,7 +437,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 			let cursor: string | null = fullGraphData.cursor;
 
 			while (cursor) {
-				const node: any = fullGraphData.nodes[cursor];
+				const node: HistoryNode = fullGraphData.nodes[cursor];
 				if (!node) {
 					break;
 				}
@@ -469,7 +490,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 		return `${Math.floor(diff / 86400000)}d ago`;
 	}, []);
 
-	const getActionIcon = useCallback((metadata: any): React.ReactNode => {
+	const getActionIcon = useCallback((metadata: Record<string, unknown>): React.ReactNode => {
 		const actionType = metadata?.actionType || "unknown";
 		switch (actionType) {
 			case "node_add":
@@ -483,118 +504,260 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 			case "edge_add":
 				return "🔗";
 			case "edge_delete":
-				return "✂️";
-			case "bulk_update":
-				return "📝";
-			case "bulk_delete":
-				return "🗑️";
-			case "paste":
+				return "🔧";
+			case "node_duplicate":
 				return "📋";
-			case "duplicate":
-				return "📄";
+			case "bulk_operation":
+				return "🔥";
 			default:
-				return "⚡";
+				return "⚪";
 		}
 	}, []);
 
-	const getActionColor = useCallback((metadata: any): string => {
+	const getActionColor = useCallback((metadata: Record<string, unknown>): string => {
 		const actionType = metadata?.actionType || "unknown";
 		switch (actionType) {
 			case "node_add":
-				return "text-[var(--core-status-node-add-border)]";
+				return "text-green-600 dark:text-green-400";
 			case "node_delete":
-				return "text-[var(--core-status-node-delete-border)]";
+				return "text-red-600 dark:text-red-400";
 			case "node_update":
-				return "text-[var(--core-status-node-update-border)]";
+				return "text-blue-600 dark:text-blue-400";
 			case "node_move":
-				return "text-[var(--core-status-node-move-border)]";
+				return "text-purple-600 dark:text-purple-400";
 			case "edge_add":
-				return "text-[var(--core-status-edge-add-border)]";
+				return "text-emerald-600 dark:text-emerald-400";
 			case "edge_delete":
-				return "text-[var(--core-status-edge-delete-border)]";
-			case "bulk_update":
-				return "text-[var(--core-status-bulk-update-border)]";
-			case "bulk_delete":
-				return "text-[var(--core-status-bulk-delete-border)]";
-			case "paste":
-				return "text-[var(--core-status-paste-border)]";
-			case "duplicate":
-				return "text-[var(--core-status-duplicate-border)]";
+				return "text-orange-600 dark:text-orange-400";
+			case "node_duplicate":
+				return "text-cyan-600 dark:text-cyan-400";
+			case "bulk_operation":
+				return "text-amber-600 dark:text-amber-400";
 			default:
-				return "text-[var(--core-status-special-border)]";
+				return "text-gray-600 dark:text-gray-400";
 		}
 	}, []);
 
-	const getActionIndicatorStyle = useCallback((metadata: any) => {
-		const actionType = metadata?.actionType || "special";
-		switch (actionType) {
-			case "node_add":
-				return {
-					backgroundColor: "var(--core-status-node-add-bg)",
-					borderColor: "var(--core-status-node-add-border)",
-				};
-			case "node_delete":
-				return {
-					backgroundColor: "var(--core-status-node-delete-bg)",
-					borderColor: "var(--core-status-node-delete-border)",
-				};
-			case "node_update":
-				return {
-					backgroundColor: "var(--core-status-node-update-bg)",
-					borderColor: "var(--core-status-node-update-border)",
-				};
-			case "node_move":
-				return {
-					backgroundColor: "var(--core-status-node-move-bg)",
-					borderColor: "var(--core-status-node-move-border)",
-				};
-			case "edge_add":
-				return {
-					backgroundColor: "var(--core-status-edge-add-bg)",
-					borderColor: "var(--core-status-edge-add-border)",
-				};
-			case "edge_delete":
-				return {
-					backgroundColor: "var(--core-status-edge-delete-bg)",
-					borderColor: "var(--core-status-edge-delete-border)",
-				};
-			case "bulk_update":
-				return {
-					backgroundColor: "var(--core-status-bulk-update-bg)",
-					borderColor: "var(--core-status-bulk-update-border)",
-				};
-			case "bulk_delete":
-				return {
-					backgroundColor: "var(--core-status-bulk-delete-bg)",
-					borderColor: "var(--core-status-bulk-delete-border)",
-				};
-			case "paste":
-				return {
-					backgroundColor: "var(--core-status-paste-bg)",
-					borderColor: "var(--core-status-paste-border)",
-				};
-			case "duplicate":
-				return {
-					backgroundColor: "var(--core-status-duplicate-bg)",
-					borderColor: "var(--core-status-duplicate-border)",
-				};
-			default:
-				return {
-					backgroundColor: "var(--core-status-special-bg)",
-					borderColor: "var(--core-status-special-border)",
-				};
-		}
-	}, []);
+	const getActionIndicatorStyle = useCallback(
+		(metadata: Record<string, unknown>): React.CSSProperties => {
+			const actionType = metadata?.actionType || "unknown";
+			switch (actionType) {
+				case "node_add":
+					return { borderColor: "rgb(34 197 94)", backgroundColor: "rgba(34, 197, 94, 0.1)" };
+				case "node_delete":
+					return { borderColor: "rgb(239 68 68)", backgroundColor: "rgba(239, 68, 68, 0.1)" };
+				case "node_update":
+					return { borderColor: "rgb(59 130 246)", backgroundColor: "rgba(59, 130, 246, 0.1)" };
+				case "node_move":
+					return { borderColor: "rgb(147 51 234)", backgroundColor: "rgba(147, 51, 234, 0.1)" };
+				case "edge_add":
+					return { borderColor: "rgb(16 185 129)", backgroundColor: "rgba(16, 185, 129, 0.1)" };
+				case "edge_delete":
+					return { borderColor: "rgb(249 115 22)", backgroundColor: "rgba(249, 115, 22, 0.1)" };
+				case "node_duplicate":
+					return { borderColor: "rgb(6 182 212)", backgroundColor: "rgba(6, 182, 212, 0.1)" };
+				case "bulk_operation":
+					return { borderColor: "rgb(245 158 11)", backgroundColor: "rgba(245, 158, 11, 0.1)" };
+				default:
+					return { borderColor: "rgb(156 163 175)", backgroundColor: "rgba(156, 163, 175, 0.1)" };
+			}
+		},
+		[]
+	);
 
 	const handleJumpToState = useCallback(
-		(targetIndex: number) => {
-			const targetState = fullLinearHistory[targetIndex];
+		(index: number) => {
+			const targetState = fullLinearHistory[index];
 			if (targetState?.id) {
 				jumpToHistoryState(targetState.id);
 			}
 		},
 		[fullLinearHistory, jumpToHistoryState]
 	);
+
+	const handleNodeSelect = useCallback((nodeId: string) => {
+		setSelectedNodeId(nodeId);
+	}, []);
+
+	// Helper function to get state styling based on position
+	const getStateStyles = useCallback(
+		(index: number, isSelected: boolean) => {
+			const isCurrentState = index === currentIndexInTimeline;
+			const isFutureState = index > currentIndexInTimeline;
+
+			let itemStyle: string;
+			let indicatorStyle: string;
+			let badgeStyle: string;
+			let textStyle: string;
+
+			if (isCurrentState) {
+				itemStyle = HISTORY_ITEM_STYLES.current;
+				indicatorStyle = HISTORY_ITEM_INDICATOR_STYLES.current;
+				badgeStyle = HISTORY_ITEM_BADGE_STYLES.current;
+				textStyle = HISTORY_ITEM_TEXT_STYLES.current;
+			} else if (isFutureState) {
+				itemStyle = HISTORY_ITEM_STYLES.future;
+				indicatorStyle = HISTORY_ITEM_INDICATOR_STYLES.future;
+				badgeStyle = HISTORY_ITEM_BADGE_STYLES.future;
+				textStyle = HISTORY_ITEM_TEXT_STYLES.future;
+			} else {
+				itemStyle = HISTORY_ITEM_STYLES.default;
+				indicatorStyle = HISTORY_ITEM_INDICATOR_STYLES.default;
+				badgeStyle = HISTORY_ITEM_BADGE_STYLES.default;
+				textStyle = HISTORY_ITEM_TEXT_STYLES.default;
+			}
+
+			// Add selection styling
+			if (isSelected && !isCurrentState) {
+				itemStyle += " ring-2 ring-primary/50 bg-primary/5 dark:bg-primary/10";
+			}
+
+			return { itemStyle, indicatorStyle, badgeStyle, textStyle };
+		},
+		[currentIndexInTimeline]
+	);
+
+	// Helper function to create keyboard event handlers
+	const createKeyboardHandlers = useCallback(
+		(isClickable: boolean, index: number, _state: HistoryNode) => {
+			const handleKeyDown = (e: React.KeyboardEvent) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					if (isClickable) {
+						handleJumpToState(index);
+					}
+				}
+			};
+
+			return { handleKeyDown };
+		},
+		[handleJumpToState]
+	);
+
+	// Helper function to render a single history item
+	const renderHistoryItem = useCallback(
+		(state: HistoryNode, index: number) => {
+			const isCurrentState = index === currentIndexInTimeline;
+			const isFutureState = index > currentIndexInTimeline;
+			const isClickable = index !== currentIndexInTimeline;
+			const isSelected = selectedNodeId === state?.id;
+
+			if (!state) {
+				return null;
+			}
+
+			// Get action-specific styling
+			const actionIcon = getActionIcon(state.metadata || {});
+			const actionColor = getActionColor(state.metadata || {});
+			const actionIndicatorStyle = getActionIndicatorStyle(state.metadata || {});
+
+			// Get state-based styling
+			const { itemStyle, indicatorStyle, badgeStyle, textStyle } = getStateStyles(
+				index,
+				isSelected
+			);
+
+			// Create keyboard handlers
+			const { handleKeyDown } = createKeyboardHandlers(isClickable, index, state);
+
+			const stateLabel =
+				state.label ||
+				(typeof state.metadata?.action === "string" ? state.metadata.action : null) ||
+				"Initial State";
+
+			return (
+				<div
+					key={state.id || index}
+					onClick={isClickable ? () => handleJumpToState(index) : undefined}
+					onKeyDown={isClickable ? handleKeyDown : undefined}
+					onContextMenu={(e) => {
+						e.preventDefault();
+						if (state?.id) {
+							handleNodeSelect(state.id);
+						}
+					}}
+					role={isClickable ? "button" : "listitem"}
+					tabIndex={isClickable ? 0 : -1}
+					aria-label={
+						isClickable
+							? `Jump to history state: ${stateLabel}`
+							: `Current history state: ${stateLabel}`
+					}
+					className={`${HISTORY_ITEM_STYLES.base} ${itemStyle} ${
+						isClickable ? HISTORY_ITEM_STYLES.clickable : HISTORY_ITEM_STYLES.nonClickable
+					}`}
+				>
+					<div className={HISTORY_ITEM_STYLES.layout}>
+						<div className={HISTORY_ITEM_STYLES.leftSection}>
+							<div
+								className={`${HISTORY_ITEM_INDICATOR_STYLES.base} ${indicatorStyle}`}
+								style={actionIndicatorStyle}
+							/>
+							<span className={`${HISTORY_ITEM_BADGE_STYLES.base} ${badgeStyle}`}>
+								#{index + 1}
+							</span>
+							<div className="flex items-center gap-2">
+								<span className="text-sm">{actionIcon}</span>
+								<span className={`${HISTORY_ITEM_TEXT_STYLES.base} ${textStyle} ${actionColor}`}>
+									{stateLabel || "Unknown Action"}
+								</span>
+							</div>
+						</div>
+						<div className={HISTORY_ITEM_STYLES.rightSection}>
+							{state.createdAt && !isCurrentState && !isFutureState && (
+								<span className={HISTORY_ITEM_META_STYLES.timestamp}>
+									{formatTimestamp(state.createdAt)}
+								</span>
+							)}
+							{isCurrentState && (
+								<span className={HISTORY_ITEM_META_STYLES.currentBadge}>Current</span>
+							)}
+							{isFutureState && (
+								<span className="rounded-full bg-muted/30 px-1.5 py-0.5 text-muted-foreground/50 text-xs">
+									Future
+								</span>
+							)}
+							{state.childrenIds && state.childrenIds.length > 1 && (
+								<div className="flex items-center gap-1">
+									<GitBranch className="h-3 w-3 text-amber-500" />
+									<span className="font-medium text-amber-600 text-xs dark:text-amber-400">
+										{state.childrenIds.length}
+									</span>
+								</div>
+							)}
+						</div>
+					</div>
+				</div>
+			);
+		},
+		[
+			currentIndexInTimeline,
+			selectedNodeId,
+			getStateStyles,
+			createKeyboardHandlers,
+			handleJumpToState,
+			handleNodeSelect,
+			getActionIcon,
+			getActionColor,
+			getActionIndicatorStyle,
+			formatTimestamp,
+		]
+	);
+
+	// Render history list - simplified with extracted helper function
+	const renderHistoryList = useCallback(() => {
+		if (fullLinearHistory.length === 0) {
+			return (
+				<div className={EMPTY_STATE_STYLES.container}>
+					<Clock className={EMPTY_STATE_STYLES.icon} />
+					<p className={EMPTY_STATE_STYLES.title}>No history available</p>
+					<p className={EMPTY_STATE_STYLES.subtitle}>Actions will appear here as you work</p>
+				</div>
+			);
+		}
+
+		return fullLinearHistory.map(renderHistoryItem).slice(-20);
+	}, [fullLinearHistory, renderHistoryItem]);
 
 	const handleBranchRedo = useCallback(
 		(branchId: string) => {
@@ -617,13 +780,12 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 		}
 	}, [selectedNodeId, fullGraphData?.root, removeSelectedNode, clearHistory]);
 
-	const handleNodeSelect = useCallback((nodeId: string) => {
-		setSelectedNodeId(nodeId);
-	}, []);
-
 	const handleToggleGraphView = useCallback(() => {
-		setGraphView((prev) => !prev);
-	}, []);
+		setGraphView((prev) => {
+			const newView = !prev;
+			return newView;
+		});
+	}, [fullGraphData]);
 
 	const handleOpenDeletionModal = useCallback(() => {
 		setDeletionModalOpen(true);
@@ -669,6 +831,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 								onClick={handleToggleGraphView}
 								className={CONTROLS_STYLES.button}
 								title={graphView ? "Switch to list view" : "Switch to graph view"}
+								type="button"
 							>
 								{graphView ? (
 									<ListIcon className={CONTROLS_STYLES.icon} />
@@ -687,6 +850,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 										? "Remove selected node and its children"
 										: "Clear entire history"
 								}
+								type="button"
 							>
 								<Trash2 className={CONTROLS_STYLES.icon} />
 							</button>
@@ -729,111 +893,24 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 								<p className={EMPTY_STATE_STYLES.subtitle}>Actions will appear here as you work</p>
 							</div>
 						) : (
-							fullLinearHistory
-								.map((state, index) => {
-									const isCurrentState = index === currentIndexInTimeline;
-									const isFutureState = index > currentIndexInTimeline;
-									const isClickable = index !== currentIndexInTimeline;
-									const isSelected = selectedNodeId === state?.id;
+							<>
+								{renderHistoryList()}
 
-									if (!state) {
-										return null;
-									}
-
-									// Get action-specific styling
-									const actionIcon = getActionIcon(state.metadata);
-									const actionColor = getActionColor(state.metadata);
-									const actionIndicatorStyle = getActionIndicatorStyle(state.metadata);
-
-									// Determine styling based on state
-									let itemStyle;
-									let indicatorStyle;
-									let badgeStyle;
-									let textStyle;
-									if (isCurrentState) {
-										itemStyle = HISTORY_ITEM_STYLES.current;
-										indicatorStyle = HISTORY_ITEM_INDICATOR_STYLES.current;
-										badgeStyle = HISTORY_ITEM_BADGE_STYLES.current;
-										textStyle = HISTORY_ITEM_TEXT_STYLES.current;
-									} else if (isFutureState) {
-										itemStyle = HISTORY_ITEM_STYLES.future;
-										indicatorStyle = HISTORY_ITEM_INDICATOR_STYLES.future;
-										badgeStyle = HISTORY_ITEM_BADGE_STYLES.future;
-										textStyle = HISTORY_ITEM_TEXT_STYLES.future;
-									} else {
-										itemStyle = HISTORY_ITEM_STYLES.default;
-										indicatorStyle = HISTORY_ITEM_INDICATOR_STYLES.default;
-										badgeStyle = HISTORY_ITEM_BADGE_STYLES.default;
-										textStyle = HISTORY_ITEM_TEXT_STYLES.default;
-									}
-
-									// Add selection styling
-									if (isSelected && !isCurrentState) {
-										itemStyle += " ring-2 ring-primary/50 bg-primary/5 dark:bg-primary/10";
-									}
-
-									return (
-										<div
-											key={state.id || index}
-											onClick={isClickable ? () => handleJumpToState(index) : undefined}
-											onContextMenu={(e) => {
-												e.preventDefault();
-												if (state?.id) {
-													handleNodeSelect(state.id);
-												}
-											}}
-											className={`${HISTORY_ITEM_STYLES.base} ${itemStyle} ${
-												isClickable
-													? HISTORY_ITEM_STYLES.clickable
-													: HISTORY_ITEM_STYLES.nonClickable
-											}`}
-										>
-											<div className={HISTORY_ITEM_STYLES.layout}>
-												<div className={HISTORY_ITEM_STYLES.leftSection}>
-													<div
-														className={`${HISTORY_ITEM_INDICATOR_STYLES.base} ${indicatorStyle}`}
-														style={actionIndicatorStyle}
-													/>
-													<span className={`${HISTORY_ITEM_BADGE_STYLES.base} ${badgeStyle}`}>
-														#{index + 1}
-													</span>
-													<div className="flex items-center gap-2">
-														<span className="text-sm">{actionIcon}</span>
-														<span
-															className={`${HISTORY_ITEM_TEXT_STYLES.base} ${textStyle} ${actionColor}`}
-														>
-															{state.label || state.action || "Initial State"}
-														</span>
-													</div>
-												</div>
-												<div className={HISTORY_ITEM_STYLES.rightSection}>
-													{state.timestamp && (
-														<span className={HISTORY_ITEM_META_STYLES.timestamp}>
-															{formatTimestamp(state.timestamp)}
-														</span>
-													)}
-													{state.childrenIds && state.childrenIds.length > 1 && (
-														<div className="flex items-center gap-1">
-															<GitBranch className="h-3 w-3 text-amber-500" />
-															<span className="font-medium text-amber-600 text-xs dark:text-amber-400">
-																{state.childrenIds.length}
-															</span>
-														</div>
-													)}
-													{isCurrentState && (
-														<span className={HISTORY_ITEM_META_STYLES.currentBadge}>Current</span>
-													)}
-													{isFutureState && (
-														<span className="rounded-full bg-muted/30 px-1.5 py-0.5 text-muted-foreground/50 text-xs">
-															Future
-														</span>
-													)}
-												</div>
-											</div>
+								{/* Show branching info */}
+								{graphStats && graphStats.totalNodes <= 2 && (
+									<div className="mt-4 p-3 bg-muted/50 border border-border rounded-lg">
+										<div className="flex items-center gap-2 text-sm text-muted-foreground">
+											<GitBranch className="w-4 h-4" />
+											<span className="font-medium">No branching history yet</span>
 										</div>
-									);
-								})
-								.slice(-20)
+										<p className="text-xs text-muted-foreground mt-1">
+											To create branches: Make some actions, use{" "}
+											<kbd className="px-1 py-0.5 bg-background border rounded text-xs">Undo</kbd>{" "}
+											to go back, then make different actions.
+										</p>
+									</div>
+								)}
+							</>
 						)}
 					</div>
 				)}
@@ -853,6 +930,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 								onClick={() => handleBranchRedo(branchId)}
 								className={BRANCH_OPTIONS_STYLES.button}
 								title={`Redo to branch ${index + 1}`}
+								type="button"
 							>
 								Branch {index + 1}
 							</button>
@@ -894,9 +972,9 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 							}
 
 							let count = 0;
-							node.childrenIds.forEach((childId: string) => {
+							for (const childId of node.childrenIds || []) {
 								count += 1 + countDescendants(childId);
-							});
+							}
 							return count;
 						};
 

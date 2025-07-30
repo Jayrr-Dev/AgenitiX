@@ -59,7 +59,11 @@ export const createChildNode = (
 	};
 
 	// Add child to parent's children list
-	graph.nodes[parentId].childrenIds.push(id);
+	const parentNode = graph.nodes[parentId];
+	if (!parentNode.childrenIds) {
+		parentNode.childrenIds = [];
+	}
+	parentNode.childrenIds.push(id);
 	// Add node to graph
 	graph.nodes[id] = node;
 
@@ -106,7 +110,7 @@ export const getPathToCursor = (graph: HistoryGraph): HistoryNode[] => {
 
 // Get all leaf nodes (endpoints) in the graph
 export const getLeafNodes = (graph: HistoryGraph): HistoryNode[] => {
-	return Object.values(graph.nodes).filter((node) => node.childrenIds.length === 0);
+	return Object.values(graph.nodes).filter((node) => (node.childrenIds || []).length === 0);
 };
 
 // Persistence helpers
@@ -122,14 +126,131 @@ export const saveGraph = (graph: HistoryGraph, flowId?: string): void => {
 		return;
 	}
 	try {
-		const json = JSON.stringify(graph);
-		// Compress if payload > 1 MB (threshold chosen to avoid diminishing returns on small graphs)
-		const payload = json.length > 1_000_000 ? `lz:${compressToUTF16(json)}` : json;
+		// Optimize graph data before serialization to reduce size
+		const optimizedGraph = {
+			...graph,
+			nodes: Object.values(graph.nodes).map((node) => ({
+				...node,
+				// Remove unnecessary data for storage
+				before: {
+					...node.before,
+					// Remove large objects that don't need persistence
+					nodes: node.before.nodes.map((n) => ({
+						...n,
+						data: n.data
+							? {
+									...n.data,
+									// Remove large objects that don't need persistence
+									inputs: undefined,
+									outputs: undefined,
+									// Keep only essential data
+									label: n.data.label,
+									type: n.data.type,
+									isExpanded: n.data.isExpanded,
+								}
+							: n.data,
+					})),
+				},
+				after: {
+					...node.after,
+					// Remove large objects that don't need persistence
+					nodes: node.after.nodes.map((n) => ({
+						...n,
+						data: n.data
+							? {
+									...n.data,
+									// Remove large objects that don't need persistence
+									inputs: undefined,
+									outputs: undefined,
+									// Keep only essential data
+									label: n.data.label,
+									type: n.data.type,
+									isExpanded: n.data.isExpanded,
+								}
+							: n.data,
+					})),
+				},
+			})),
+		};
+
+		const json = JSON.stringify(optimizedGraph);
+		// Lower compression threshold to reduce large string serialization
+		const payload = json.length > 500_000 ? `lz:${compressToUTF16(json)}` : json;
 		const storageKey = getStorageKey(flowId);
 		window.localStorage.setItem(storageKey, payload);
 	} catch (error) {
 		console.error("[GraphHelpers] Failed to save graph to localStorage:", error);
 	}
+};
+
+// Validate and fix graph data structure after loading
+const validateAndFixGraphData = (graph: HistoryGraph): HistoryGraph => {
+	// Ensure graph has required top-level properties
+	if (!graph.root) {
+		graph.root = "root";
+	}
+	if (!graph.cursor) {
+		graph.cursor = graph.root;
+	}
+	if (!graph.nodes) {
+		graph.nodes = {};
+	}
+
+	// Ensure root node exists
+	if (!graph.nodes[graph.root]) {
+		console.warn(`⚠️ [GraphHelpers] Root node "${graph.root}" missing, creating default root`);
+		graph.nodes[graph.root] = {
+			id: graph.root,
+			parentId: null,
+			childrenIds: [],
+			label: "INITIAL",
+			before: { nodes: [], edges: [] },
+			after: { nodes: [], edges: [] },
+			createdAt: Date.now(),
+		};
+	}
+
+	// Ensure cursor points to a valid node
+	if (!graph.nodes[graph.cursor]) {
+		console.warn(
+			`⚠️ [GraphHelpers] Cursor "${graph.cursor}" points to missing node, resetting to root`
+		);
+		graph.cursor = graph.root;
+	}
+
+	// Ensure all nodes have required properties
+	for (const nodeId in graph.nodes) {
+		const node = graph.nodes[nodeId];
+
+		// Ensure childrenIds is always an array
+		if (!node.childrenIds) {
+			node.childrenIds = [];
+		}
+
+		// Ensure parentId is properly set (null for root, string for others)
+		if (node.parentId === undefined) {
+			node.parentId = nodeId === graph.root ? null : graph.root;
+		}
+
+		// Ensure required fields exist
+		if (!node.id) {
+			node.id = nodeId;
+		}
+		if (!node.label) {
+			node.label = "Unknown Action";
+		}
+		if (!node.before) {
+			node.before = { nodes: [], edges: [] };
+		}
+		if (!node.after) {
+			node.after = { nodes: [], edges: [] };
+		}
+		if (!node.createdAt) {
+			node.createdAt = Date.now();
+		}
+	}
+
+	return graph;
 };
 
 export const loadGraph = (flowId?: string): HistoryGraph | null => {
@@ -150,7 +271,10 @@ export const loadGraph = (flowId?: string): HistoryGraph | null => {
 			return null; // decompression failure
 		}
 
-		return JSON.parse(data);
+		const rawGraph = JSON.parse(data);
+
+		// Validate and fix the loaded graph data
+		return validateAndFixGraphData(rawGraph);
 	} catch (error) {
 		console.error("[GraphHelpers] Failed to load graph:", error);
 		return null;
@@ -171,16 +295,13 @@ export const clearPersistedGraph = (flowId?: string): void => {
 
 // Clear all flow histories (useful for cleanup)
 export const clearAllPersistedGraphs = (): void => {
-	if (typeof window === "undefined") {
-		return;
-	}
 	try {
 		const keys = Object.keys(window.localStorage);
-		keys.forEach((key) => {
+		for (const key of keys) {
 			if (key.startsWith(STORAGE_KEY_PREFIX)) {
 				window.localStorage.removeItem(key);
 			}
-		});
+		}
 	} catch (error) {
 		console.warn("[GraphHelpers] Failed to clear all persisted graphs:", error);
 	}
@@ -189,7 +310,9 @@ export const clearAllPersistedGraphs = (): void => {
 // Graph statistics for debugging/UI
 export const getGraphStats = (graph: HistoryGraph) => {
 	const totalNodes = Object.keys(graph.nodes).length;
-	const branches = Object.values(graph.nodes).filter((node) => node.childrenIds.length > 1).length;
+	const branches = Object.values(graph.nodes).filter(
+		(node) => (node.childrenIds || []).length > 1
+	).length;
 	const leafNodes = getLeafNodes(graph).length;
 	const maxDepth = getPathToCursor(graph).length - 1; // -1 to exclude root
 
@@ -223,7 +346,7 @@ export const pruneGraphToLimit = (graph: HistoryGraph, maxSize: number): void =>
 		}
 
 		// If the current root has no children we cannot prune further safely
-		if (currentRoot.childrenIds.length === 0) {
+		if (!currentRoot.childrenIds || currentRoot.childrenIds.length === 0) {
 			console.warn("[GraphHelpers] pruneGraphToLimit: reached leaf root – cannot prune further");
 			break;
 		}
@@ -238,12 +361,12 @@ export const pruneGraphToLimit = (graph: HistoryGraph, maxSize: number): void =>
 		}
 
 		// All siblings of the new root also become top-level nodes (parentId = null)
-		remainingChildren.forEach((childId) => {
+		for (const childId of remainingChildren) {
 			const childNode = graph.nodes[childId];
 			if (childNode) {
 				childNode.parentId = null;
 			}
-		});
+		}
 
 		// Remove the old root
 		delete graph.nodes[graph.root];
@@ -279,7 +402,7 @@ export const removeNodeAndChildren = (graph: HistoryGraph, nodeId: NodeId): bool
 	const collectDescendants = (id: NodeId) => {
 		nodesToRemove.add(id);
 		const node = graph.nodes[id];
-		if (node) {
+		if (node?.childrenIds) {
 			node.childrenIds.forEach(collectDescendants);
 		}
 	};
@@ -294,14 +417,14 @@ export const removeNodeAndChildren = (graph: HistoryGraph, nodeId: NodeId): bool
 	// Remove the node from its parent's children list
 	if (nodeToRemove.parentId) {
 		const parent = graph.nodes[nodeToRemove.parentId];
-		if (parent) {
+		if (parent?.childrenIds) {
 			parent.childrenIds = parent.childrenIds.filter((id) => id !== nodeId);
 		}
 	}
 
 	// Remove all collected nodes from the graph
-	nodesToRemove.forEach((id) => {
+	for (const id of nodesToRemove) {
 		delete graph.nodes[id];
-	});
+	}
 	return true;
 };

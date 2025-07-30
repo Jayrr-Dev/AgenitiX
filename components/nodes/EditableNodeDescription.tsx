@@ -79,15 +79,22 @@ const EditableNodeDescription: React.FC<EditableNodeDescriptionProps> = ({
 	};
 
 	return (
-		<p
+		<div
 			onClick={(e) => {
 				// Enter edit mode on double click but allow text selection inside editable span later
 				if (!editing && e.detail === 2) {
 					setEditing(true);
 				}
 			}}
+			onKeyDown={(e) => {
+				// Enter edit mode on Enter key press for accessibility
+				if (!editing && e.key === "Enter") {
+					setEditing(true);
+				}
+			}}
 			className={className}
 			style={{ cursor: editing ? "text" : "pointer" }}
+			aria-label="Double-click or press Enter to edit description"
 		>
 			<span
 				ref={spanRef}
@@ -99,7 +106,7 @@ const EditableNodeDescription: React.FC<EditableNodeDescriptionProps> = ({
 			>
 				{description}
 			</span>
-		</p>
+		</div>
 	);
 };
 

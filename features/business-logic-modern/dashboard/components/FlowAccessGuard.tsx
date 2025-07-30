@@ -1,13 +1,13 @@
 /**
- * FLOW ACCESS GUARD - Flow access control and authentication
+ * FLOW ACCESS GUARD - Authentication and authorization guard for flows
  *
- * • Check user permissions for flow access
- * • Handle token-based authentication for shared flows
- * • Request access for private flows
- * • Secure user authentication and authorization
- * • Integration with Convex database
+ * • Access control for private/public flows
+ * • User authentication verification
+ * • Request access functionality for private flows
+ * • Proper loading states and error handling
+ * • Responsive design with user-friendly messaging
  *
- * Keywords: flow-access, authentication, permissions, security, convex
+ * Keywords: access-guard, authentication, authorization, private-flows, access-request
  */
 
 "use client";
@@ -27,10 +27,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { AlertTriangle, Edit, Eye, Lock, Mail, Shield, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import type React from "react";
+import { useState } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 interface FlowAccessGuardProps {
@@ -53,12 +56,12 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 	const { user } = useAuthContext();
 
 	// Convex queries
-	const flow = useQuery(api.flows.getFlow, { flow_id: flowId as any });
+	const flow = useQuery(api.flows.getFlow, { flow_id: flowId as Id<"flows"> });
 	const accessCheck = useQuery(
 		api.flows.checkFlowAccess,
 		user?.id
 			? {
-					flow_id: flowId as any,
+					flow_id: flowId as Id<"flows">,
 					user_id: user.id,
 				}
 			: "skip"
@@ -88,7 +91,7 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 
 		try {
 			await requestFlowAccess({
-				flow_id: flowId as any,
+				flow_id: flowId as Id<"flows">,
 				requesting_user_id: user.id,
 				requesting_user_email: requestEmail,
 				permission_type: requestPermission,
@@ -186,12 +189,17 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 						<span className="text-muted-foreground text-sm">Only the owner can grant access</span>
 					</div>
 
-					<Button onClick={() => setShowRequestDialog(true)} className="w-full">
+					<Button onClick={() => setShowRequestDialog(true)} className="w-full" type="button">
 						<UserPlus className="mr-2 h-4 w-4" />
 						Request Access
 					</Button>
 
-					<Button variant="outline" onClick={() => router.push("/dashboard")} className="w-full">
+					<Button
+						variant="outline"
+						onClick={() => router.push("/dashboard")}
+						className="w-full"
+						type="button"
+					>
 						Back to Dashboard
 					</Button>
 				</CardContent>
@@ -230,7 +238,9 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 										<button
 											key={permission.value}
 											type="button"
-											onClick={() => setRequestPermission(permission.value as any)}
+											onClick={() =>
+												setRequestPermission(permission.value as "view" | "edit" | "admin")
+											}
 											className={`rounded-lg border-2 p-3 transition-all ${
 												requestPermission === permission.value
 													? "border-primary bg-primary/10"
@@ -262,10 +272,10 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 					</div>
 
 					<DialogFooter>
-						<Button variant="outline" onClick={() => setShowRequestDialog(false)}>
+						<Button variant="outline" onClick={() => setShowRequestDialog(false)} type="button">
 							Cancel
 						</Button>
-						<Button onClick={handleRequestAccess} disabled={!requestEmail.trim()}>
+						<Button onClick={handleRequestAccess} disabled={!requestEmail.trim()} type="button">
 							<Mail className="mr-2 h-4 w-4" />
 							Send Request
 						</Button>

@@ -26,7 +26,7 @@ interface FlowEditorLoadingProps {
 /**
  * Loading screen component with proper hydration handling
  */
-export function FlowEditorLoading({ mounted, hasHydrated }: FlowEditorLoadingProps) {
+export function FlowEditorLoading({ mounted }: FlowEditorLoadingProps) {
 	// LOADING MESSAGE LOGIC
 	const loadingMessage = mounted ? "Loading saved data..." : "Loading Flow Editor...";
 

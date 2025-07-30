@@ -30,10 +30,10 @@ const EditableNodeId: React.FC<EditableNodeIdProps> = ({ nodeId, onUpdateId, cla
 	const [error, setError] = useState<string | null>(null);
 	const spanRef = useRef<HTMLSpanElement>(null);
 
-	// Update local value when nodeId prop changes
+	// Clear error when nodeId changes
 	useEffect(() => {
 		setError(null);
-	}, [nodeId]);
+	}, []);
 
 	// Focus and select all text when entering edit mode
 	useEffect(() => {

@@ -54,49 +54,12 @@ export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
 						resolvedCategory = "TEST";
 					} else if (nodeCategory.startsWith("email")) {
 						resolvedCategory = "EMAIL";
-						resolvedCategory = "TEST";
 					} else if (nodeCategory.startsWith("flow")) {
 						resolvedCategory = "FLOW";
-						resolvedCategory = "TEST";
 					} else if (nodeCategory.startsWith("time")) {
 						resolvedCategory = "TIME";
-						resolvedCategory = "TEST";
 					} else if (nodeCategory.startsWith("ai")) {
 						resolvedCategory = "AI";
-						resolvedCategory = "TEST";
-					} else if (nodeCategory.startsWith("ai")) {
-						resolvedCategory = "AI";
-						resolvedCategory = "TEST";
-					} else if (nodeCategory.startsWith("ai")) {
-						resolvedCategory = "AI";
-						resolvedCategory = "TEST";
-					} else if (nodeCategory.startsWith("ai")) {
-						resolvedCategory = "AI";
-						resolvedCategory = "TEST";
-					} else if (nodeCategory.startsWith("ai")) {
-						resolvedCategory = "AI";
-						resolvedCategory = "TEST";
-					} else if (nodeCategory.startsWith("email")) {
-						resolvedCategory = "EMAIL";
-						resolvedCategory = "TEST";
-					} else if (nodeCategory.startsWith("email")) {
-						resolvedCategory = "EMAIL";
-						resolvedCategory = "TEST";
-					} else if (nodeCategory.startsWith("ai")) {
-						resolvedCategory = "AI";
-						resolvedCategory = "TEST";
-					} else if (nodeCategory.startsWith("ai")) {
-						resolvedCategory = "AI";
-						resolvedCategory = "TEST";
-					} else if (nodeCategory.startsWith("email")) {
-						resolvedCategory = "EMAIL";
-						resolvedCategory = "TEST";
-					} else if (nodeCategory.startsWith("ai")) {
-						resolvedCategory = "AI";
-						resolvedCategory = "TEST";
-					} else if (nodeCategory.startsWith("email")) {
-						resolvedCategory = "EMAIL";
-						resolvedCategory = "TEST";
 					} else if (nodeCategory.startsWith("store")) {
 						resolvedCategory = "STORE";
 					} else if (nodeCategory.startsWith("cycle")) {
@@ -123,64 +86,12 @@ export const ThemedMiniMap: React.FC<ThemedMiniMapProps> = ({
 						return "var(--node-store-bg)";
 					case "EMAIL":
 						return "var(--node-email-bg)";
-					case "EMAIL":
-						return "var(--node-email-bg-hover)";
 					case "AI":
 						return "var(--node-ai-bg)";
-					case "AI":
-						return "var(--node-ai-bg-hover)";
-					case "EMAIL":
-						return "var(--node-email-bg)";
-					case "EMAIL":
-						return "var(--node-email-bg-hover)";
-					case "AI":
-						return "var(--node-ai-bg)";
-					case "AI":
-						return "var(--node-ai-bg-hover)";
-					case "AI":
-						return "var(--node-ai-bg)";
-					case "AI":
-						return "var(--node-ai-bg-hover)";
-					case "EMAIL":
-						return "var(--node-email-bg)";
-					case "EMAIL":
-						return "var(--node-email-bg-hover)";
-					case "EMAIL":
-						return "var(--node-email-bg)";
-					case "EMAIL":
-						return "var(--node-email-bg-hover)";
-					case "AI":
-						return "var(--node-ai-bg)";
-					case "AI":
-						return "var(--node-ai-bg-hover)";
-					case "AI":
-						return "var(--node-ai-bg)";
-					case "AI":
-						return "var(--node-ai-bg-hover)";
-					case "AI":
-						return "var(--node-ai-bg)";
-					case "AI":
-						return "var(--node-ai-bg-hover)";
-					case "AI":
-						return "var(--node-ai-bg)";
-					case "AI":
-						return "var(--node-ai-bg-hover)";
-					case "AI":
-						return "var(--node-ai-bg)";
-					case "AI":
-						return "var(--node-ai-bg-hover)";
 					case "TIME":
 						return "var(--node-time-bg)";
-					case "TIME":
-						return "var(--node-time-bg-hover)";
 					case "FLOW":
 						return "var(--node-flow-bg)";
-					case "FLOW":
-						return "var(--node-flow-bg-hover)";
-					case "EMAIL":
-						return "var(--node-email-bg)";
-					case "EMAIL":
-						return "var(--node-email-bg-hover)";
 					default:
 						return "var(--node-view-bg)";
 				}

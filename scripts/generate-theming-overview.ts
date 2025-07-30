@@ -312,7 +312,7 @@ function generateHTML(sections: ThemingSection[], stats: ThemingStats): string {
 </html>`;
 }
 
-async function main() {
+function main() {
 	try {
 		const sections = scanThemingStructure();
 

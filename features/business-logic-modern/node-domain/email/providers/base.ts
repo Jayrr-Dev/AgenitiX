@@ -11,6 +11,7 @@ import type {
 	ConnectionResult,
 	EmailAccountConfig,
 	EmailError,
+	EmailErrorCode,
 	EmailProvider,
 	EmailProviderType,
 	OAuth2Tokens,
@@ -70,74 +71,51 @@ export abstract class BaseEmailProvider implements EmailProvider {
 		return null;
 	}
 
-	protected async handleConnectionError(error: any, context: string): Promise<ConnectionResult> {
+	protected handleConnectionError(error: any, context: string): Promise<ConnectionResult> {
 		console.error(`${this.name} ${context} error:`, error);
 
-		if (error instanceof Error) {
-			// Network errors
-			if (error.message.includes("fetch") || error.message.includes("network")) {
-				return {
-					success: false,
-					error: createEmailError(
-						"NETWORK_ERROR",
-						"Network connection failed. Please check your internet connection.",
-						{ originalError: error.message },
-						true
-					),
-				};
-			}
+		// Determine error type based on error message/code
+		let errorCode: EmailErrorCode = "PROVIDER_ERROR";
+		let message = "An unknown error occurred";
+		const details = error.message || String(error);
 
-			// Timeout errors
-			if (error.message.includes("timeout")) {
-				return {
-					success: false,
-					error: createEmailError(
-						"CONNECTION_TIMEOUT",
-						"Connection timed out. Please try again.",
-						{ originalError: error.message },
-						true
-					),
-				};
-			}
-
-			// Authentication errors
-			if (error.message.includes("401") || error.message.includes("unauthorized")) {
-				return {
-					success: false,
-					error: createEmailError(
-						"AUTHENTICATION_FAILED",
-						"Authentication failed. Please check your credentials.",
-						{ originalError: error.message },
-						true
-					),
-				};
-			}
-
-			// Rate limiting
-			if (error.message.includes("429") || error.message.includes("rate limit")) {
-				return {
-					success: false,
-					error: createEmailError(
-						"RATE_LIMIT_EXCEEDED",
-						"Rate limit exceeded. Please try again later.",
-						{ originalError: error.message },
-						true,
-						300 // 5 minutes
-					),
-				};
-			}
+		// Parse common error patterns
+		if (details.includes("ENOTFOUND") || details.includes("getaddrinfo")) {
+			errorCode = "NETWORK_ERROR";
+			message = "Network error: Unable to resolve server address";
+		} else if (details.includes("ECONNREFUSED") || details.includes("ECONNRESET")) {
+			errorCode = "CONNECTION_TIMEOUT";
+			message = "Connection refused by server";
+		} else if (details.includes("ETIMEDOUT") || details.includes("timeout")) {
+			errorCode = "CONNECTION_TIMEOUT";
+			message = "Connection timed out";
+		} else if (details.includes("authentication") || details.includes("login")) {
+			errorCode = "AUTHENTICATION_FAILED";
+			message = "Authentication failed";
+		} else if (
+			details.includes("certificate") ||
+			details.includes("SSL") ||
+			details.includes("TLS")
+		) {
+			errorCode = "PROVIDER_ERROR";
+			message = "SSL/TLS certificate error";
+		} else if (details.includes("Invalid host") || details.includes("Invalid port")) {
+			errorCode = "CONFIGURATION_INVALID";
+			message = "Invalid server settings";
 		}
 
-		// Generic error
-		return {
+		// Create detailed error response
+		const connectionResult: ConnectionResult = {
 			success: false,
-			error: createEmailError(
-				"PROVIDER_ERROR",
-				error instanceof Error ? error.message : "Unknown provider error",
-				{ originalError: error },
-				false
-			),
+			error: {
+				code: errorCode,
+				message,
+				details,
+				recoverable: true,
+			},
 		};
+
+		return Promise.resolve(connectionResult);
 	}
 
 	// Helper method for OAuth2 providers

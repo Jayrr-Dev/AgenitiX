@@ -199,49 +199,32 @@ function parseHSL(hslString, tokens = {}) {
  * Convert HSL to RGB
  */
 function hslToRgb(h, s, l) {
-	h /= 360;
-	s /= 100;
-	l /= 100;
+	const hNorm = h / 360;
+	const sNorm = s / 100;
+	const lNorm = l / 100;
 
-	const c = (1 - Math.abs(2 * l - 1)) * s;
-	const x = c * (1 - Math.abs(((h * 6) % 2) - 1));
-	const m = l - c / 2;
+	const c = (1 - Math.abs(2 * lNorm - 1)) * sNorm;
+	const x = c * (1 - Math.abs(((hNorm * 6) % 2) - 1));
+	const m = lNorm - c / 2;
 
-	let r = 0;
-	let g = 0;
-	let b = 0;
-
-	if (0 <= h && h < 1 / 6) {
-		r = c;
-		g = x;
-		b = 0;
-	} else if (1 / 6 <= h && h < 2 / 6) {
-		r = x;
-		g = c;
-		b = 0;
-	} else if (2 / 6 <= h && h < 3 / 6) {
-		r = 0;
-		g = c;
-		b = x;
-	} else if (3 / 6 <= h && h < 4 / 6) {
-		r = 0;
-		g = x;
-		b = c;
-	} else if (4 / 6 <= h && h < 5 / 6) {
-		r = x;
-		g = 0;
-		b = c;
-	} else if (5 / 6 <= h && h < 1) {
-		r = c;
-		g = 0;
-		b = x;
+	let r;
+	let g;
+	let b;
+	if (hNorm < 1 / 6) {
+		[r, g, b] = [c, x, 0];
+	} else if (hNorm < 2 / 6) {
+		[r, g, b] = [x, c, 0];
+	} else if (hNorm < 3 / 6) {
+		[r, g, b] = [0, c, x];
+	} else if (hNorm < 4 / 6) {
+		[r, g, b] = [0, x, c];
+	} else if (hNorm < 5 / 6) {
+		[r, g, b] = [x, 0, c];
+	} else {
+		[r, g, b] = [c, 0, x];
 	}
 
-	return {
-		r: Math.round((r + m) * 255),
-		g: Math.round((g + m) * 255),
-		b: Math.round((b + m) * 255),
-	};
+	return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
 }
 
 /**
@@ -249,10 +232,9 @@ function hslToRgb(h, s, l) {
  */
 function getRelativeLuminance(r, g, b) {
 	const [rs, gs, bs] = [r, g, b].map((c) => {
-		c /= 255;
-		return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+		const cNorm = c / 255;
+		return cNorm <= 0.03928 ? cNorm / 12.92 : ((cNorm + 0.055) / 1.055) ** 2.4;
 	});
-
 	return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 }
 
@@ -306,7 +288,11 @@ function extractTokensFromCSS() {
 		const importRegex = /@import\s+["']\.\/(.*?)['"];?/g;
 		let importMatch;
 		const importedContents = [];
-		while ((importMatch = importRegex.exec(cssContent)) !== null) {
+		while (true) {
+			importMatch = importRegex.exec(cssContent);
+			if (importMatch === null) {
+				break;
+			}
 			const relPath = importMatch[1];
 			const absImportPath = path.join(path.dirname(usedPath), relPath);
 			if (fs.existsSync(absImportPath)) {
@@ -320,11 +306,19 @@ function extractTokensFromCSS() {
 		const themeBlockRegex = /@theme\s*\{([\s\S]*?)\}/g;
 		let themeMatch;
 		const tokens = {};
-		while ((themeMatch = themeBlockRegex.exec(combinedCss)) !== null) {
+		while (true) {
+			themeMatch = themeBlockRegex.exec(combinedCss);
+			if (themeMatch === null) {
+				break;
+			}
 			const themeContent = themeMatch[1];
 			const tokenRegex = /--([a-zA-Z0-9-]+)\s*:\s*([^;]+);/g;
 			let match;
-			while ((match = tokenRegex.exec(themeContent)) !== null) {
+			while (true) {
+				match = tokenRegex.exec(themeContent);
+				if (match === null) {
+					break;
+				}
 				tokens[match[1]] = match[2].trim();
 			}
 		}
@@ -394,8 +388,7 @@ function validateTokenContrast(tokens, tokenName, requirement) {
 /**
  * Validate all token contrast requirements
  */
-async function validateContrast() {
-
+function validateContrast() {
 	const result = {
 		isValid: true,
 		errors: [],
@@ -445,11 +438,15 @@ async function validateContrast() {
 		}
 
 		if (result.errors.length > 0) {
-			result.errors.forEach((_error) => );
+			for (const _error of result.errors) {
+				// TODO: Log or handle errors
+			}
 		}
 
 		if (result.warnings.length > 0) {
-			result.warnings.forEach((_warning) => );
+			for (const _warning of result.warnings) {
+				// TODO: Log or handle warnings
+			}
 		}
 
 		if (result.isValid) {

@@ -19,6 +19,7 @@
 import {
 	Background,
 	type ColorMode,
+	type Connection,
 	ConnectionMode,
 	PanOnScrollMode,
 	Panel,
@@ -39,7 +40,7 @@ import {
 	nodeInspectorStyles,
 } from "@/features/business-logic-modern/infrastructure/theming/components";
 import { WorkflowManager } from "@/features/business-logic-modern/infrastructure/workflow-manager";
-import { NodeDisplayProvider } from "../contexts/NodeDisplayContext";
+import { NodeDisplayProvider } from "../contexts/node-display-context";
 
 // Node components are now loaded via useDynamicNodeTypes hook
 // No need for direct imports here
@@ -52,18 +53,25 @@ import { useDynamicNodeTypes } from "../hooks/useDynamicNodeTypes";
 // Debug tool for clearing local storage in dev mode
 import ClearLocalStorage from "@/features/business-logic-modern/infrastructure/components/ClearLocalStorage";
 
+interface NodeError {
+	message: string;
+	type?: string;
+	source?: string;
+	timestamp: number;
+}
+
 interface FlowCanvasProps {
 	nodes: AgenNode[];
 	edges: AgenEdge[];
 	selectedNode: AgenNode | null;
 	selectedEdge: AgenEdge | null;
 	selectedOutput: string | null;
-	nodeErrors: Record<string, any[]>;
+	nodeErrors: Record<string, NodeError[]>;
 	showHistoryPanel: boolean;
 	wrapperRef: React.RefObject<HTMLDivElement | null>;
 	updateNodeData: (id: string, patch: Record<string, unknown>) => void;
 	updateNodeId?: (oldId: string, newId: string) => void;
-	logNodeError: (nodeId: string, message: string, type?: any, source?: string) => void;
+	logNodeError: (nodeId: string, message: string, type?: string, source?: string) => void;
 	clearNodeErrors: (nodeId: string) => void;
 	onToggleHistory: () => void;
 	onDragOver: (e: React.DragEvent) => void;
@@ -76,13 +84,13 @@ interface FlowCanvasProps {
 	setInspectorLocked: (locked: boolean) => void;
 	reactFlowHandlers: {
 		onReconnectStart: () => void;
-		onReconnect: (oldEdge: any, newConn: any) => void;
-		onReconnectEnd: (event: any, edge: any) => void;
-		onConnect: (connection: any) => void;
-		onNodesChange: (changes: any[]) => void;
-		onEdgesChange: (changes: any[]) => void;
-		onSelectionChange: (selection: any) => void;
-		onInit: (instance: any) => void;
+		onReconnect: (oldEdge: AgenEdge, newConn: Connection) => void;
+		onReconnectEnd: (event: MouseEvent | TouchEvent, edge: AgenEdge) => void;
+		onConnect: (connection: Connection) => void;
+		onNodesChange: (changes: unknown[]) => void;
+		onEdgesChange: (changes: unknown[]) => void;
+		onSelectionChange: (selection: { nodes: AgenNode[]; edges: AgenEdge[] }) => void;
+		onInit: (instance: unknown) => void;
 	};
 }
 
@@ -143,23 +151,23 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 	edges,
 	selectedNode,
 	selectedEdge,
-	selectedOutput,
-	nodeErrors,
+	// selectedOutput,
+	// nodeErrors,
 	showHistoryPanel,
 	wrapperRef,
-	updateNodeData,
-	updateNodeId,
-	logNodeError,
-	clearNodeErrors,
-	onToggleHistory,
+	// updateNodeData,
+	// updateNodeId,
+	// logNodeError,
+	// clearNodeErrors,
+	// onToggleHistory,
 	onDragOver,
 	onDrop,
 	onDeleteNode,
-	onDuplicateNode,
+	// onDuplicateNode,
 	onDeleteEdge,
 	inspectorLocked,
 	inspectorViewMode,
-	setInspectorLocked,
+	// setInspectorLocked,
 	reactFlowHandlers,
 }) => {
 	const _componentName = "FlowCanvas";
@@ -427,13 +435,17 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 										? "Delete connection"
 										: "Delete"
 							}
+							type="button"
 						>
 							<svg
 								className={MOBILE_DELETE_BUTTON_STYLES.icon}
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
+								role="img"
+								aria-labelledby="delete-icon-title"
 							>
+								<title id="delete-icon-title">Delete Icon</title>
 								<path
 									strokeLinecap="round"
 									strokeLinejoin="round"

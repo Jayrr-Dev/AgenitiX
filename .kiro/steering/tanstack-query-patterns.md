@@ -7,7 +7,7 @@ fileMatchPattern: "**/queries/**/*", "**/hooks/use*Query.ts", "**/hooks/use*Muta
 
 ## Overview
 
-AgenitiX uses [TanStack Query](https://tanstack.com/query/latest) for server state management with a **scalable, maintainable architecture** that separates concerns and prevents common pitfalls. This approach ensures queries remain reusable, type-safe, and error-free across your application.
+AgenitiX uses [TanStack Query](https://tanstack.com/query/latest) for server state management with a **scalable, maintainable architecture** that separates concerns and prevents common pitfalls.
 
 ## Core Architecture Principles
 
@@ -65,17 +65,6 @@ src/
 
 ```typescript
 // types/flows.ts
-/**
- * FLOWS TYPES - Type definitions for flow-related data
- *
- * • Defines all flow-related interfaces
- * • Ensures type safety across the application
- * • Single source of truth for flow data structure
- * • Integrates with Convex-generated types
- *
- * Keywords: types, flows, typescript, data-structure
- */
-
 export interface Flow {
   _id: string;
   name: string;
@@ -87,21 +76,6 @@ export interface Flow {
   createdAt: number;
   updatedAt: number;
   userId: string;
-}
-
-export interface FlowNode {
-  id: string;
-  type: string;
-  position: { x: number; y: number };
-  data: Record<string, any>;
-}
-
-export interface FlowEdge {
-  id: string;
-  source: string;
-  target: string;
-  sourceHandle?: string;
-  targetHandle?: string;
 }
 
 export interface CreateFlowRequest {
@@ -127,17 +101,6 @@ export interface FlowFilters {
 
 ```typescript
 // constants/queryKeys.ts
-/**
- * QUERY KEYS CONSTANTS - Centralized query key management
- *
- * • Prevents typos in query keys
- * • Enables consistent invalidation
- * • Supports hierarchical key structure
- * • Type-safe query key generation
- *
- * Keywords: query-keys, constants, invalidation, type-safety
- */
-
 export const QUERY_KEYS = {
   // Flows
   FLOWS: ['flows'] as const,
@@ -166,17 +129,6 @@ export const createQueryKey = (base: readonly string[], ...params: (string | num
 
 ```typescript
 // services/flowsService.ts
-/**
- * FLOWS SERVICE - API service for flow operations
- *
- * • Centralized API logic for flows
- * • Type-safe request/response handling
- * • Integration with Convex mutations/queries
- * • Reusable across different hooks
- *
- * Keywords: api-service, flows, convex, type-safety
- */
-
 import { convex } from '@/lib/convex';
 import { api } from '@/convex/_generated/api';
 import type { 
@@ -219,19 +171,6 @@ export const flowsService = {
   deleteFlow: async (flowId: string): Promise<void> => {
     await convex.mutation(api.flows.deleteFlow, { flowId });
   },
-
-  // Duplicate flow
-  duplicateFlow: async (flowId: string, newName?: string): Promise<Flow> => {
-    return await convex.mutation(api.flows.duplicateFlow, { 
-      flowId, 
-      newName: newName || `Copy of Flow` 
-    });
-  },
-
-  // Get user flows
-  getUserFlows: async (userId: string): Promise<Flow[]> => {
-    return await convex.query(api.flows.getUserFlows, { userId });
-  },
 };
 
 export default flowsService;
@@ -241,17 +180,6 @@ export default flowsService;
 
 ```typescript
 // hooks/useFlowsQuery.ts
-/**
- * FLOWS QUERY HOOK - Reusable flows data fetching
- *
- * • Single source of truth for flows queries
- * • Type-safe data and error handling
- * • Consistent loading states across components
- * • Built-in caching and background updates
- *
- * Keywords: flows-query, reusable, type-safe, caching
- */
-
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS } from '@/constants/queryKeys';
 import { flowsService } from '@/services/flowsService';
@@ -301,16 +229,6 @@ export const useFlowQuery = (flowId: string) => {
   });
 };
 
-// User flows query
-export const useUserFlowsQuery = (userId: string) => {
-  return useQuery({
-    queryKey: QUERY_KEYS.USER_FLOWS(userId),
-    queryFn: () => flowsService.getUserFlows(userId),
-    enabled: !!userId,
-    staleTime: 3 * 60 * 1000, // 3 minutes
-  });
-};
-
 // Transform data with select
 export const useFlowsForSelect = (filters: FlowFilters = {}) => {
   return useQuery({
@@ -330,22 +248,10 @@ export const useFlowsForSelect = (filters: FlowFilters = {}) => {
 
 ```typescript
 // hooks/useFlowsMutation.ts
-/**
- * FLOWS MUTATION HOOKS - Flow modification operations
- *
- * • Centralized mutation logic for flows
- * • Optimistic updates with rollback
- * • Consistent error handling and notifications
- * • Automatic cache invalidation
- *
- * Keywords: mutations, flows, optimistic-updates, cache-invalidation
- */
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS } from '@/constants/queryKeys';
 import { flowsService } from '@/services/flowsService';
 import { toast } from 'sonner';
-import type { CreateFlowRequest, UpdateFlowRequest } from '@/types/flows';
 
 // Create flow mutation
 export const useCreateFlowMutation = () => {
@@ -451,49 +357,12 @@ export const useDeleteFlowMutation = () => {
     },
   });
 };
-
-// Duplicate flow mutation
-export const useDuplicateFlowMutation = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: ({ flowId, newName }: { flowId: string; newName?: string }) =>
-      flowsService.duplicateFlow(flowId, newName),
-    onSuccess: (duplicatedFlow) => {
-      // Invalidate flows list to show the duplicated flow
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.FLOWS });
-      
-      // Cache the new flow
-      queryClient.setQueryData(
-        QUERY_KEYS.FLOW_DETAIL(duplicatedFlow._id),
-        duplicatedFlow
-      );
-      
-      toast.success(`Flow "${duplicatedFlow.name}" duplicated successfully!`);
-    },
-    onError: (error: Error) => {
-      console.error('Duplicate flow error:', error);
-      toast.error('Failed to duplicate flow. Please try again.');
-    },
-  });
-};
 ```
 
 ### 6. Clean Component Usage
 
 ```typescript
 // components/FlowsList.tsx
-/**
- * FLOWS LIST COMPONENT - Clean, reusable flows display
- *
- * • Uses organized query hooks for data fetching
- * • Type-safe data handling
- * • Consistent loading and error states
- * • No duplicate query logic
- *
- * Keywords: flows-list, clean-components, reusable, type-safe
- */
-
 import React from 'react';
 import { useFlowsList } from '@/hooks/useFlowsQuery';
 import { useCreateFlowMutation, useDeleteFlowMutation } from '@/hooks/useFlowsMutation';
@@ -541,57 +410,6 @@ export const FlowsList: React.FC<FlowsListProps> = ({ filters = {} }) => {
         </div>
       ))}
     </div>
-  );
-};
-```
-
-### 7. Select Component Example
-
-```typescript
-// components/FlowsSelect.tsx
-/**
- * FLOWS SELECT COMPONENT - Reusable flow selection
- *
- * • Reuses the same data source as FlowsList
- * • Transformed data for select options
- * • Type-safe option handling
- * • No duplicate API calls
- *
- * Keywords: flows-select, reusable, type-safe, transformed-data
- */
-
-import React from 'react';
-import { useFlowsForSelect } from '@/hooks/useFlowsQuery';
-
-interface FlowsSelectProps {
-  onSelect: (flowId: string) => void;
-  value?: string;
-  placeholder?: string;
-}
-
-export const FlowsSelect: React.FC<FlowsSelectProps> = ({ 
-  onSelect, 
-  value, 
-  placeholder = "Select a flow..." 
-}) => {
-  // ✅ Reuses the same query hook with data transformation
-  const { data: flowOptions, isLoading, isError } = useFlowsForSelect();
-  
-  if (isLoading) return <div>Loading flows...</div>;
-  if (isError) return <div>Error loading flows</div>;
-  
-  return (
-    <select 
-      value={value || ''} 
-      onChange={(e) => onSelect(e.target.value)}
-    >
-      <option value="">{placeholder}</option>
-      {flowOptions?.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label} ({option.category})
-        </option>
-      ))}
-    </select>
   );
 };
 ```
@@ -676,4 +494,3 @@ const { data: flows, isLoading } = useFlowsQuery();
 - [TanStack Query Documentation](https://tanstack.com/query/latest)
 - [Scalable React Query Architecture](https://youtu.be/1cq3g7kh9hY)
 - [TypeScript Best Practices](https://www.typescriptlang.org/docs/)
-- [Clean Code Principles](https://clean-code-developer.com/)

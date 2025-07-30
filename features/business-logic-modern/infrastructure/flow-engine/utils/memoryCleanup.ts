@@ -195,26 +195,26 @@ export const cleanupNodeMemory = (nodeId: string): void => {
 	// Clean up event listeners
 	const nodeEventListeners = eventListeners.get(nodeId);
 	if (nodeEventListeners) {
-		nodeEventListeners.forEach(({ element, event, handler, options }) => {
+		for (const { element, event, handler, options } of nodeEventListeners) {
 			try {
 				element.removeEventListener(event, handler, options);
 			} catch (error) {
 				console.warn(`Failed to remove event listener for node ${nodeId}:`, error);
 			}
-		});
+		}
 		eventListeners.delete(nodeId);
 	}
 
 	// Clean up observers
 	const nodeObservers = observers.get(nodeId);
 	if (nodeObservers) {
-		nodeObservers.forEach(({ observer, type }) => {
+		for (const { observer, type } of nodeObservers) {
 			try {
 				observer.disconnect();
 			} catch (error) {
 				console.warn(`Failed to disconnect ${type} observer for node ${nodeId}:`, error);
 			}
-		});
+		}
 		observers.delete(nodeId);
 	}
 
@@ -225,7 +225,9 @@ export const cleanupNodeMemory = (nodeId: string): void => {
 			keysToDelete.push(key);
 		}
 	});
-	keysToDelete.forEach((key) => domElementRefs.delete(key));
+	for (const key of keysToDelete) {
+		domElementRefs.delete(key);
+	}
 };
 
 // ============================================================================
@@ -260,27 +262,27 @@ export const performCompleteMemoryCleanup = (): MemoryCleanupStats => {
 	);
 
 	// Clean up all event listeners
-	eventListeners.forEach((listeners, _nodeId) => {
-		listeners.forEach(({ element, event, handler, options }) => {
+	for (const [_nodeId, listeners] of eventListeners) {
+		for (const { element, event, handler, options } of listeners) {
 			try {
 				element.removeEventListener(event, handler, options);
 			} catch (error) {
 				console.warn("Failed to remove event listener during cleanup:", error);
 			}
-		});
-	});
+		}
+	}
 	eventListeners.clear();
 
 	// Clean up all observers
-	observers.forEach((observerList, _nodeId) => {
-		observerList.forEach(({ observer, type }) => {
+	for (const [_nodeId, observerList] of observers) {
+		for (const { observer, type } of observerList) {
 			try {
 				observer.disconnect();
 			} catch (error) {
 				console.warn(`Failed to disconnect ${type} observer during cleanup:`, error);
 			}
-		});
-	});
+		}
+	}
 	observers.clear();
 
 	// Clean up DOM element references
@@ -289,7 +291,7 @@ export const performCompleteMemoryCleanup = (): MemoryCleanupStats => {
 	// Force garbage collection if available (development only)
 	if (typeof window !== "undefined" && "gc" in window) {
 		try {
-			(window as any).gc();
+			(window as typeof window & { gc?: () => void }).gc?.();
 		} catch (_error) {
 			// Garbage collection not available, continue
 		}
@@ -325,7 +327,10 @@ export const performCompleteMemoryCleanup = (): MemoryCleanupStats => {
  */
 export const getMemoryUsage = (): number => {
 	if (typeof window !== "undefined" && "performance" in window && "memory" in performance) {
-		return (performance as any).memory.usedJSHeapSize || 0;
+		return (
+			(performance as typeof performance & { memory?: { usedJSHeapSize?: number } }).memory
+				?.usedJSHeapSize || 0
+		);
 	}
 	return 0;
 };

@@ -89,7 +89,10 @@ const DEFAULT_HANDLE_TYPE = "any";
  * Unified type display configuration using React Icons
  * Maps type names to React icon components and semantic token references
  */
-const UNIFIED_TYPE_DISPLAY: Record<string, { icon: React.ComponentType<any>; tokenKey: string }> = {
+const UNIFIED_TYPE_DISPLAY: Record<
+	string,
+	{ icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; tokenKey: string }
+> = {
 	string: { icon: LuType, tokenKey: "string" },
 	number: { icon: LuHash, tokenKey: "number" },
 	boolean: { icon: LuCheck, tokenKey: "boolean" },
@@ -188,14 +191,14 @@ function getPositionOffset(
 		case "right":
 			return {
 				...base,
-				top: `calc(50% + ${currentOffset}px)` as any,
+				top: `calc(50% + ${currentOffset}px)`,
 				transform: "translateY(-50%)",
 			};
 		case "top":
 		case "bottom":
 			return {
 				...base,
-				left: `calc(50% + ${currentOffset}px)` as any,
+				left: `calc(50% + ${currentOffset}px)`,
 				transform: "translateX(-50%)",
 			};
 		default:
@@ -226,7 +229,7 @@ function getTypeColor(tokenKey: string): string {
  * Get unified type display information (icon and color)
  */
 function getTypeDisplay(handleTypeName: string): {
-	icon: React.ComponentType<any>;
+	icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 	color: string;
 } {
 	const display = UNIFIED_TYPE_DISPLAY[handleTypeName.toLowerCase()] || UNIFIED_TYPE_DISPLAY.any;
@@ -344,7 +347,21 @@ export const useUltimateFlowConnectionPrevention = () => {
 	return { isValidConnection };
 };
 
-const UltimateTypesafeHandle: React.FC<any> = ({
+interface UltimateTypesafeHandleProps {
+	dataType: string;
+	position: "left" | "right" | "top" | "bottom";
+	style?: React.CSSProperties;
+	className?: string;
+	tsSymbol?: string;
+	code?: string;
+	nodeId?: string;
+	handleIndex?: number;
+	totalHandlesOnSide?: number;
+	type?: "source" | "target";
+	id?: string;
+}
+
+const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = ({
 	// eslint-disable-line @typescript-eslint/no-explicit-any
 	dataType,
 	tsSymbol,
@@ -385,7 +402,7 @@ const UltimateTypesafeHandle: React.FC<any> = ({
 			: getInjectableClasses("--core-handle-classes-target");
 
 	// Generate tooltip content
-	const tooltipContent = getTooltipContent(props.type, dataType, code, tsSymbol);
+	const tooltipContent = getTooltipContent(props.type || "target", dataType, code, tsSymbol);
 
 	const IconComponent = typeDisplay.icon;
 
@@ -414,7 +431,7 @@ const UltimateTypesafeHandle: React.FC<any> = ({
 			isConnectableStart={connectableStart}
 			isConnectableEnd={connectableEnd}
 		>
-			<IconComponent size={8} style={{ pointerEvents: "none" }} />
+			<IconComponent width={8} height={8} style={{ pointerEvents: "none" }} />
 		</Handle>
 	);
 };

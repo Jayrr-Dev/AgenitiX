@@ -1,21 +1,12 @@
 /**
- * WORKFLOW MANAGER - Header component for workflow editor
- *
- * • Provides workflow management controls and information
- * • Displays current workflow name and status
- * • Contains essential workflow actions (save, export, etc.)
- * • Positioned at top-center of the workflow editor
- * • Integrates with the existing flow store for state management
- *
- * Keywords: workflow-header, workflow-management, flow-controls, top-panel
+ * WORKFLOW MANAGER - High-level workflow orchestration component
  */
-
-"use client";
 
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Download, Globe, Lock, Play, Settings, Square } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useFlowMetadataOptional } from "../flow-engine/contexts/FlowMetadataContext";
+import type React from "react";
+import { useFlowMetadataOptional } from "../flow-engine/contexts/flow-metadata-context";
 import { useAutoSaveCanvas } from "../flow-engine/hooks/useAutoSaveCanvas";
 import { useLoadCanvas } from "../flow-engine/hooks/useLoadCanvas";
 import { useFlowStore } from "../flow-engine/stores/flowStore";
@@ -64,6 +55,7 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 					onClick={handleReturnToDashboard}
 					className={`${buttonClasses} mr-3 flex h-10 w-10 cursor-pointer items-center justify-center p-0`}
 					title="Return to Dashboard"
+					type="button"
 				>
 					<ArrowLeft className="h-6 w-6" />
 				</button>
@@ -155,6 +147,7 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 					className={`${buttonClasses} flex h-10 w-10 cursor-pointer items-center justify-center p-0`}
 					title="Export Workflow"
 					onClick={() => {}}
+					type="button"
 				>
 					<Download className="h-5 w-5" />
 				</button>
@@ -163,6 +156,7 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 					className={`${buttonClasses} flex h-10 w-10 cursor-pointer items-center justify-center p-0`}
 					title="Run Workflow"
 					onClick={() => {}}
+					type="button"
 				>
 					<Play className="h-5 w-5" />
 				</button>
@@ -171,6 +165,7 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 					className={`${buttonClasses} flex h-10 w-10 cursor-pointer items-center justify-center p-0`}
 					title="Stop Workflow"
 					onClick={() => {}}
+					type="button"
 				>
 					<Square className="h-5 w-5" />
 				</button>
@@ -187,6 +182,7 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 					className={`${buttonClasses} flex h-10 w-10 cursor-pointer items-center justify-center p-0`}
 					title="Workflow Settings"
 					onClick={() => {}}
+					type="button"
 				>
 					<Settings className="h-5 w-5" />
 				</button>

@@ -1,4 +1,6 @@
- 
+---
+inclusion: manual
+---
 
 Create a minimalist steering document for the follwoing null checks & error handling for agenitix app (React / TS / Next.js) 
 

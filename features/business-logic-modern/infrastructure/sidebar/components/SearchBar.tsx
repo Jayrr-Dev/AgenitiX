@@ -88,7 +88,7 @@ export function SearchBar({
 	};
 
 	// Use filtered nodes hook to get nodes that respect feature flags
-	const { nodes: filteredNodes, isLoading: nodesLoading } = useFilteredNodes();
+	const { nodes: filteredNodes } = useFilteredNodes();
 
 	// Create searchable stencils from filtered nodes
 	const allStencils = useMemo(() => {
@@ -375,7 +375,7 @@ export function SearchBar({
 					b: 14,
 				};
 
-				if (gridKeyMap.hasOwnProperty(currentKey)) {
+				if (Object.hasOwn(gridKeyMap, currentKey)) {
 					e.preventDefault();
 					e.stopPropagation(); // Prevent event from bubbling to SidebarTabs
 
@@ -432,6 +432,8 @@ export function SearchBar({
 						<button
 							onClick={handleClearSearch}
 							className={`-translate-y-1/2 absolute top-1/2 right-3 transform ${theme.text.muted} ${theme.background.hover} ${theme.transition}`}
+							type="button"
+							aria-label="Clear search"
 						>
 							<X className="h-4 w-4" />
 						</button>
@@ -441,6 +443,7 @@ export function SearchBar({
 					onClick={handleClose}
 					className={`p-2 ${theme.text.muted} ${theme.background.hover} ${theme.borderRadius.button} ${theme.transition}`}
 					title="Close search (Alt+C or Escape)"
+					type="button"
 				>
 					<X className="h-4 w-4" />
 				</button>

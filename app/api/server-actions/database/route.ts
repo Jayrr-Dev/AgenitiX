@@ -24,13 +24,13 @@ export async function POST(request: NextRequest) {
 
 		switch (operation.type) {
 			case "query":
-				result = await handleDatabaseQuery(operation);
+				result = handleDatabaseQuery(operation);
 				break;
 			case "mutation":
-				result = await handleDatabaseMutation(operation);
+				result = handleDatabaseMutation(operation);
 				break;
 			case "action":
-				result = await handleDatabaseAction(operation);
+				result = handleDatabaseAction(operation);
 				break;
 			default:
 				return NextResponse.json(
@@ -52,14 +52,14 @@ export async function POST(request: NextRequest) {
 	}
 }
 
-async function handleDatabaseQuery(operation: DatabaseOperation) {
+function handleDatabaseQuery(operation: DatabaseOperation) {
 	return { message: "Query executed", operation: operation.operation };
 }
 
-async function handleDatabaseMutation(operation: DatabaseOperation) {
+function handleDatabaseMutation(operation: DatabaseOperation) {
 	return { message: "Mutation executed", operation: operation.operation };
 }
 
-async function handleDatabaseAction(operation: DatabaseOperation) {
+function handleDatabaseAction(operation: DatabaseOperation) {
 	return { message: "Action executed", operation: operation.operation };
 }

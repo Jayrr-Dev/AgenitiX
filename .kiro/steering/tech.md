@@ -1,6 +1,10 @@
-# Technology Stack & Build System
+---
+inclusion: always
+---
 
-## Core Technologies
+# Core Technology Stack
+
+## Essential Technologies
 
 - **Framework**: Next.js 15.2.1 with App Router
 - **Runtime**: React 19.1.0 with TypeScript 5.7.2

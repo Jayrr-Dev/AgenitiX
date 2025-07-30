@@ -1,11 +1,22 @@
 // ANUBIS BROWSER CLIENT - FOR SCRIPT TAG INTEGRATION
 // This creates a client-side bot protection system that can be loaded via <script> tag
 
+export interface BrowserFingerprint {
+	userAgent: string;
+	language: string;
+	platform: string;
+	screenResolution: string;
+	timezone: string;
+	canvasFingerprint: string;
+	webglFingerprint: string;
+	[key: string]: unknown;
+}
+
 export interface AnubisBrowserConfig {
 	apiEndpoint: string; // Backend API endpoint
 	difficulty?: number; // Challenge difficulty
 	autoChallenge?: boolean; // Automatically start challenges
-	onChallenge?: (challenge: any) => void;
+	onChallenge?: (challenge: BrowserChallenge) => void;
 	onVerified?: (token: string) => void;
 	onBlocked?: (reason: string) => void;
 	debug?: boolean;
@@ -77,7 +88,9 @@ export class AnubisBrowser {
 	}
 
 	// REQUEST CHALLENGE FROM SERVER
-	private async requestChallenge(fingerprint: any): Promise<BrowserChallenge | null> {
+	private async requestChallenge(
+		fingerprint: BrowserFingerprint
+	): Promise<BrowserChallenge | null> {
 		try {
 			const response = await fetch(`${this.config.apiEndpoint}/challenge`, {
 				method: "POST",
@@ -252,25 +265,18 @@ export class AnubisBrowser {
 	}
 
 	// COLLECT BROWSER FINGERPRINT
-	private async collectFingerprint(): Promise<any> {
+	private collectFingerprint(): BrowserFingerprint {
 		const fingerprint = {
 			userAgent: navigator.userAgent,
 			language: navigator.language,
-			languages: navigator.languages,
 			platform: navigator.platform,
-			cookieEnabled: navigator.cookieEnabled,
-			doNotTrack: navigator.doNotTrack,
 			screenResolution: `${screen.width}x${screen.height}`,
-			colorDepth: screen.colorDepth,
 			timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-			timestamp: Date.now(),
-			// Canvas fingerprint (basic)
-			canvas: this.getCanvasFingerprint(),
-			// WebGL fingerprint (basic)
-			webgl: this.getWebGLFingerprint(),
+			canvasFingerprint: this.getCanvasFingerprint(),
+			webglFingerprint: this.getWebGLFingerprint(),
 		};
 
-		this.log("Browser fingerprint collected:", fingerprint);
+		this.log("Fingerprint collected:", fingerprint);
 		return fingerprint;
 	}
 
@@ -347,28 +353,30 @@ export class AnubisBrowser {
 	}
 
 	// LOGGING
-	private log(..._args: any[]): void {
+	private log(..._args: unknown[]): void {
 		if (this.config.debug) {
+			console.info("[Anubis]", ..._args);
 		}
 	}
 
 	// PUBLIC METHODS
-	public isProtected(): boolean {
+	isProtected(): boolean {
 		const token = this.getStoredToken();
 		return token ? this.isTokenValid(token) : false;
 	}
 
-	public async refresh(): Promise<void> {
+	async refresh(): Promise<void> {
 		localStorage.removeItem("anubis-token");
 		await this.start();
 	}
 
-	public stop(): void {
+	stop(): void {
 		if (this.worker) {
 			this.worker.terminate();
 			this.worker = null;
 		}
 		this.isWorking = false;
+		this.log("Anubis protection stopped");
 	}
 }
 

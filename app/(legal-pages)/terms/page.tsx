@@ -156,12 +156,12 @@ export default function TermsPage() {
 					information.
 				</p>
 				<div className="flex flex-col justify-center gap-4 sm:flex-row">
-					<Link href="/contact" legacyBehavior={true}>
+					<Link href="/contact">
 						<Button size="lg" className="bg-[#f6733c] hover:bg-[#e45f2d]">
 							Contact Us
 						</Button>
 					</Link>
-					<Link href="/privacy" legacyBehavior={true}>
+					<Link href="/privacy">
 						<Button
 							size="lg"
 							variant="outline"

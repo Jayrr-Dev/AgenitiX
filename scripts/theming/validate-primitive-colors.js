@@ -93,7 +93,11 @@ function findPrimitiveColors(filePath, content) {
 
 	for (const pattern of PRIMITIVE_COLOR_PATTERNS) {
 		let match;
-		while ((match = pattern.exec(content)) !== null) {
+		while (true) {
+			match = pattern.exec(content);
+			if (match === null) {
+				break;
+			}
 			const line = content.substring(0, match.index).split("\n").length;
 			const column = match.index - content.lastIndexOf("\n", match.index - 1);
 			const colorClass = match[0];

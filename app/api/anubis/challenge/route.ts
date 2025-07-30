@@ -1,5 +1,10 @@
 import { loadAnubisConfig } from "@/lib/anubis/config";
-import { AnubisCrypto, AnubisJWT } from "@/lib/anubis/crypto";
+import {
+	createChallenge,
+	generateFingerprint,
+	signJWT,
+	validateProofOfWork,
+} from "@/lib/anubis/crypto";
 import type { AnubisChallengeResponse } from "@/types/anubis";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -18,7 +23,7 @@ export function GET(request: NextRequest) {
 		};
 
 		// GENERATE CHALLENGE
-		const challenge = AnubisCrypto.createChallenge(requestMetadata, config.difficulty);
+		const challenge = createChallenge(requestMetadata, config.difficulty);
 
 		// RETURN CHALLENGE PAGE HTML
 		const challengePageHTML = generateChallengePageHTML(challenge, returnTo);
@@ -44,7 +49,7 @@ export async function POST(request: NextRequest) {
 		const body = (await request.json()) as AnubisChallengeResponse;
 
 		// VALIDATE PROOF OF WORK
-		const isValid = await AnubisCrypto.validateProofOfWork(body, config.difficulty);
+		const isValid = await validateProofOfWork(body, config.difficulty);
 
 		if (!isValid) {
 			return NextResponse.json({ error: "Invalid proof of work" }, { status: 400 });
@@ -58,7 +63,7 @@ export async function POST(request: NextRequest) {
 		};
 
 		// GENERATE JWT TOKEN
-		const fingerprint = AnubisCrypto.generateFingerprint(requestMetadata);
+		const fingerprint = generateFingerprint(requestMetadata);
 		const now = Math.floor(Date.now() / 1000);
 		const payload = {
 			fingerprint,
@@ -67,7 +72,7 @@ export async function POST(request: NextRequest) {
 			difficulty: config.difficulty,
 		};
 
-		const token = await AnubisJWT.sign(payload, config.jwtSecret);
+		const token = await signJWT(payload, config.jwtSecret);
 
 		// SET COOKIE AND RETURN SUCCESS
 		const response = NextResponse.json({ success: true });
@@ -107,7 +112,12 @@ function getClientIP(request: NextRequest): string {
 
 // GENERATE CHALLENGE PAGE HTML
 function generateChallengePageHTML(
-	challenge: { id: string; difficulty: number; timestamp: number; [key: string]: unknown },
+	challenge: {
+		challenge: string;
+		difficulty: number;
+		timestamp: number;
+		clientFingerprint: string;
+	},
 	returnTo: string
 ): string {
 	return `

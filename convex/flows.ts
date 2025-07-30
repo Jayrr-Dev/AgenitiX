@@ -15,6 +15,16 @@ import type { Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 
+interface UserDocument {
+	_id: Id<"auth_users">;
+	_creationTime: number;
+	name?: string;
+	email: string;
+	emailVerified?: number;
+	image?: string;
+	isAnonymous?: boolean;
+}
+
 // ============================================================================
 // QUERY FUNCTIONS
 // ============================================================================
@@ -183,8 +193,10 @@ async function checkFlowAccessInternal(
 			// Return highest permission level
 			const permissionLevels = { view: 1, edit: 2, admin: 3 };
 			const highestPermission = permissions.reduce((highest, perm) => {
-				const currentLevel = permissionLevels[perm.permission_type];
-				const highestLevel = permissionLevels[highest.permission_type];
+				const currentLevel =
+					permissionLevels[perm.permission_type as keyof typeof permissionLevels];
+				const highestLevel =
+					permissionLevels[highest.permission_type as keyof typeof permissionLevels];
 				return currentLevel > highestLevel ? perm : highest;
 			});
 			return { hasAccess: true, permission: highestPermission.permission_type };
@@ -695,7 +707,7 @@ export const getPublicFlowsWithUpvotes = query({
 		const limit = args.limit || 24;
 
 		// Get all public flows first
-		const publicFlows: any[] = await ctx.db
+		const publicFlows = await ctx.db
 			.query("flows")
 			.withIndex("by_is_private", (q) => q.eq("is_private", false))
 			.order("desc")
@@ -709,7 +721,7 @@ export const getPublicFlowsWithUpvotes = query({
 				// Get upvote count
 				const upvotes = await ctx.db
 					.query("flow_upvotes")
-					.withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id))
+					.withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id as Id<"flows">))
 					.collect();
 
 				// Check if current user has upvoted
@@ -718,14 +730,16 @@ export const getPublicFlowsWithUpvotes = query({
 					const userUpvote = await ctx.db
 						.query("flow_upvotes")
 						.withIndex("by_flow_and_user", (q) =>
-							q.eq("flow_id", flow._id).eq("user_id", args.user_id as Id<"auth_users">)
+							q
+								.eq("flow_id", flow._id as Id<"flows">)
+								.eq("user_id", args.user_id as Id<"auth_users">)
 						)
 						.first();
 					hasUpvoted = !!userUpvote;
 				}
 
 				// Get creator information
-				const creator = (await ctx.db.get(flow.user_id)) as any;
+				const creator = (await ctx.db.get(flow.user_id as Id<"auth_users">)) as UserDocument | null;
 
 				return {
 					...flow,
@@ -802,7 +816,7 @@ export const getPublicFlowsSimple = query({
 		// Add creator information
 		const flowsWithCreators = await Promise.all(
 			publicFlows.map(async (flow) => {
-				const creator = (await ctx.db.get(flow.user_id)) as any;
+				const creator = (await ctx.db.get(flow.user_id as Id<"auth_users">)) as UserDocument | null;
 				return {
 					...flow,
 					creator: creator?.name

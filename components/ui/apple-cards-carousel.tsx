@@ -1,9 +1,20 @@
+/**
+ * components/ui/apple-cards-carousel.tsx - Apple-style carousel with expandable cards
+ *
+ * • Horizontally scrolling carousel with smooth navigation controls
+ * • Interactive cards that expand into full-screen modal views
+ * • Blur-effect image loading with proper accessibility support
+ * • Motion animations for card interactions and transitions
+ * • Context-based card management and keyboard navigation
+ * • Responsive design with mobile and desktop optimizations
+ *
+ * Keywords: carousel, cards, modal, blur-images, motion, accessibility, responsive
+ */
 "use client";
 import { useOutsideClick } from "@/hooks/use-outside-click";
 import { cn } from "@/lib/utils";
 import { IconArrowNarrowLeft, IconArrowNarrowRight, IconX } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "motion/react";
-import type { ImageProps } from "next/image";
 import React, {
 	useEffect,
 	useRef,
@@ -107,19 +118,17 @@ export const Carousel = ({ items, initialScroll = 0 }: CarouselProps) => {
 							<motion.div
 								initial={{
 									opacity: 0,
-									y: 20,
+									scale: 0.8,
 								}}
 								animate={{
 									opacity: 1,
-									y: 0,
-									transition: {
-										duration: 0.5,
-										delay: 0.2 * index,
-										ease: "easeOut",
-										once: true,
-									},
+									scale: 1,
 								}}
-								key={`card${index}`}
+								transition={{
+									duration: 0.5,
+									delay: index * 0.1,
+								}}
+								key={`carousel-item-${index}-${Date.now()}`}
 								className="rounded-3xl last:pr-[5%] md:last:pr-[33%]"
 							>
 								{item}
@@ -129,6 +138,7 @@ export const Carousel = ({ items, initialScroll = 0 }: CarouselProps) => {
 				</div>
 				<div className="mr-10 flex justify-end gap-2">
 					<button
+						type="button"
 						className="relative z-40 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 disabled:opacity-50"
 						onClick={scrollLeft}
 						disabled={!canScrollLeft}
@@ -136,6 +146,7 @@ export const Carousel = ({ items, initialScroll = 0 }: CarouselProps) => {
 						<IconArrowNarrowLeft className="h-6 w-6 text-gray-500" />
 					</button>
 					<button
+						type="button"
 						className="relative z-40 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 disabled:opacity-50"
 						onClick={scrollRight}
 						disabled={!canScrollRight}
@@ -159,7 +170,7 @@ export const Card = ({
 }) => {
 	const [open, setOpen] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
-	const { onCardClose, currentIndex } = useContext(CarouselContext);
+	const { onCardClose } = useContext(CarouselContext);
 
 	useEffect(() => {
 		function onKeyDown(event: KeyboardEvent) {
@@ -209,6 +220,7 @@ export const Card = ({
 							className="relative z-[60] mx-auto my-10 h-fit max-w-5xl rounded-3xl bg-white p-4 font-sans md:p-10 dark:bg-neutral-900"
 						>
 							<button
+								type="button"
 								className="sticky top-4 right-0 ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-black dark:bg-white"
 								onClick={handleClose}
 							>
@@ -251,34 +263,39 @@ export const Card = ({
 						{card.title}
 					</motion.p>
 				</div>
-				<BlurImage
-					src={card.src}
-					alt={card.title}
-					fill={true}
-					className="absolute inset-0 z-10 object-cover"
-				/>
+				<BlurImage src={card.src} alt={card.title} className="absolute inset-0 z-10 object-cover" />
 			</motion.button>
 		</>
 	);
 };
 
-export const BlurImage = ({ height, width, src, className, alt, ...rest }: ImageProps) => {
+export const BlurImage = ({
+	height,
+	width,
+	src,
+	className,
+	alt,
+	...rest
+}: React.ImgHTMLAttributes<HTMLImageElement>) => {
 	const [isLoading, setLoading] = useState(true);
+
+	// Accessibility: Images must either have meaningful alt text OR be marked as decorative
+	// This ensures compliance with WCAG guidelines for screen readers
+	const isDecorative = !alt || alt.trim() === "";
+
 	return (
 		<img
+			height={height}
+			width={width}
+			src={src as string}
+			alt={alt || ""}
+			aria-hidden={isDecorative || undefined}
 			className={cn(
-				"h-full w-full transition duration-300",
-				isLoading ? "blur-sm" : "blur-0",
+				"duration-700 ease-in-out",
+				isLoading ? "scale-110 blur-2xl grayscale" : "scale-100 blur-0 grayscale-0",
 				className
 			)}
 			onLoad={() => setLoading(false)}
-			src={src as string}
-			width={width}
-			height={height}
-			loading="lazy"
-			decoding="async"
-			blurDataURL={typeof src === "string" ? src : undefined}
-			alt={alt ? alt : "Background of a beautiful view"}
 			{...rest}
 		/>
 	);

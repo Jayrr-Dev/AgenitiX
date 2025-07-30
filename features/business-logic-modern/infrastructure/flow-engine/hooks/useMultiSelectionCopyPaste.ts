@@ -52,11 +52,11 @@ export function useMultiSelectionCopyPaste() {
 
 		// Combine explicitly selected edges with edges between selected nodes
 		const allRelevantEdges = [...selectedEdges];
-		edgesBetweenSelectedNodes.forEach((edge) => {
+		for (const edge of edgesBetweenSelectedNodes) {
 			if (!allRelevantEdges.find((e) => e.id === edge.id)) {
 				allRelevantEdges.push(edge);
 			}
-		});
+		}
 
 		// Store in our copy buffer using the store's state
 		useFlowStore.setState((state) => ({

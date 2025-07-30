@@ -1,20 +1,16 @@
 "use client"; // Ensure this component is only run on the client
 
 import { useTheme } from "next-themes";
-import type React from "react";
 import { useEffect, useState } from "react";
 
 // Define props type
-interface LogomarkLightProps {
+interface LogomarkSvgProps {
 	className?: string;
+	width?: number | string;
+	height?: number | string;
 }
 
-/**
- * LogomarkLight Component
- * - Renders an SVG logo that adapts its color based on the current theme (light/dark)
- * - Prevents mismatches between SSR and client-side rendering
- */
-export const LogomarkLight: React.FC<LogomarkLightProps> = ({ className }) => {
+export function LogomarkSvg({ className, width = 50, height = 50 }: LogomarkSvgProps) {
 	const { theme, resolvedTheme } = useTheme(); // resolvedTheme is safer than theme
 	const [mounted, setMounted] = useState(false);
 
@@ -31,12 +27,16 @@ export const LogomarkLight: React.FC<LogomarkLightProps> = ({ className }) => {
 
 	return (
 		<svg
+			width={width}
+			height={height}
+			viewBox="0 0 200 200"
+			fill="none"
 			xmlns="http://www.w3.org/2000/svg"
-			viewBox="62.727 109.716 349.392 254.286"
-			width="50"
-			height="50"
 			className={className}
+			role="img"
+			aria-labelledby="logomark-title"
 		>
+			<title id="logomark-title">Company Logomark</title>
 			<path
 				style={{
 					stroke: fill,
@@ -49,4 +49,4 @@ export const LogomarkLight: React.FC<LogomarkLightProps> = ({ className }) => {
 			/>
 		</svg>
 	);
-};
+}

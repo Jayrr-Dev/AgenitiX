@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "name": "Biome Auto Fix",
+  "description": "",
+  "version": "1",
+  "when": {
+    "type": "userTriggered",
+    "patterns": [
+      "**/*.{ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "md}"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": ""
+  }
+}

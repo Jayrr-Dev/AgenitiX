@@ -1,6 +1,5 @@
 ---
-inclusion: fileMatch
-fileMatchPattern: "features/**/node-domain/**/*, components/nodes/**/*, features/**/node-*.tsx"
+inclusion: always
 ---
 
 # Node Development Standards
@@ -10,8 +9,6 @@ fileMatchPattern: "features/**/node-domain/**/*, components/nodes/**/*, features
 AgenitiX uses a **NodeSpec System** for type-safe node definitions with automatic scaffolding and validation. The system is **extensible** with domains and categories that can be expanded as needed.
 
 ### Current Node Domains (Extensible)
-
-The project currently has **9 active domains** with the ability to add more:
 
 ```typescript
 // Current Active Domains
@@ -30,8 +27,6 @@ type ActiveDomain =
 ```
 
 ### Current Node Categories (Extensible)
-
-Categories define functional behavior and visual theming:
 
 ```typescript
 // Current Active Categories from categories.ts
@@ -167,19 +162,7 @@ features/business-logic-modern/node-domain/[domain]/[nodeName].node.tsx
 
 ```typescript
 // features/business-logic-modern/node-domain/email/emailAccount.node.tsx
-/**
- * emailAccount NODE – Email account configuration and authentication
- *
- * • Handles OAuth2 and manual email account setup
- * • Provides secure credential management with Convex integration
- * • Supports Gmail, Outlook, IMAP, and SMTP providers
- * • Real-time connection validation and status updates
- * • Type-safe with comprehensive error handling
- *
- * Keywords: email-account, oauth2, authentication, providers
- */
-
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { memo } from "react";
 import { z } from "zod";
 import type { NodeProps } from "@xyflow/react";
 
@@ -190,9 +173,6 @@ import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/them
 import { COLLAPSED_SIZES, EXPANDED_SIZES } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { SafeSchemas, createSafeInitialData } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
 import { useNodeData } from "@/hooks/useNodeData";
-
-// Domain-specific imports
-import type { EmailAccountConfig, EmailProviderType } from "./types";
 
 // 1️⃣ Data Schema Definition
 export const EmailAccountDataSchema = z.object({
@@ -205,7 +185,6 @@ export const EmailAccountDataSchema = z.object({
   isConfigured: z.boolean().default(false),
   isConnected: z.boolean().default(false),
   connectionStatus: z.enum(["disconnected", "connecting", "connected", "error"]).default("disconnected"),
-  lastValidated: z.number().optional(),
   
   // UI State
   isEnabled: SafeSchemas.boolean(true),
@@ -293,8 +272,6 @@ function createDynamicSpec(data: EmailAccountData): NodeSpec {
 const EmailAccountNode: React.FC<NodeProps<EmailAccountData>> = memo(({ data }) => {
   const { nodeData, updateNodeData } = useNodeData<EmailAccountData>();
   
-  // Component logic here...
-  
   return (
     <div className="email-account-node">
       {/* Node content here */}
@@ -326,7 +303,6 @@ export const EXPANDED_SIZES = {
   // Fixed sizes
   FE0: { width: 60, height: 60 },     // Fixed - Tiny
   FE1: { width: 120, height: 120 },   // Fixed - Default
-  FE1H: { width: 120, height: 180 },  // Fixed - Tall
   FE2: { width: 180, height: 180 },   // Fixed - Large
   FE3: { width: 240, height: 240 },   // Fixed - Extra Large
   
@@ -359,19 +335,6 @@ const initialData = createSafeInitialData(schema, {
 });
 ```
 
-### Validation Integration
-```typescript
-import { 
-  createNodeValidator, 
-  reportValidationError, 
-  useNodeDataValidation 
-} from "@/features/business-logic-modern/infrastructure/node-core/validation";
-
-// In your component
-const { nodeData, updateNodeData } = useNodeData<YourNodeData>();
-const { isValid, errors } = useNodeDataValidation(YourDataSchema, nodeData);
-```
-
 ## Feature Flag Integration
 
 ```typescript
@@ -400,60 +363,6 @@ export { default as emailAccount } from "./emailAccount.node";
 export { default as emailReader } from "./emailReader.node"; 
 export * from "./types";
 export * from "./utils";
-```
-
-## Testing Patterns
-
-### Node Component Testing
-```typescript
-// emailAccount.test.tsx
-import { render, screen, fireEvent } from "@testing-library/react";
-import { ConvexTestProvider } from "convex/react";
-import EmailAccountNode from "./emailAccount.node";
-
-describe("EmailAccountNode", () => {
-  it("renders with default configuration", () => {
-    const defaultData = createSafeInitialData(EmailAccountDataSchema, {});
-    
-    render(
-      <ConvexTestProvider>
-        <EmailAccountNode data={defaultData} />
-      </ConvexTestProvider>
-    );
-    
-    expect(screen.getByText("Email Account")).toBeInTheDocument();
-  });
-  
-  it("handles provider selection", async () => {
-    // Test provider switching logic
-  });
-});
-```
-
-### Schema Testing
-```typescript
-// emailAccount.schema.test.ts
-import { EmailAccountDataSchema } from "./emailAccount.node";
-
-describe("EmailAccount Schema", () => {
-  it("validates correct data", () => {
-    const validData = {
-      provider: "gmail",
-      email: "test@example.com",
-      displayName: "Test User",
-    };
-    
-    expect(EmailAccountDataSchema.parse(validData)).toEqual(
-      expect.objectContaining(validData)
-    );
-  });
-  
-  it("provides safe defaults", () => {
-    const result = EmailAccountDataSchema.parse({});
-    expect(result.provider).toBe("gmail");
-    expect(result.isEnabled).toBe(true);
-  });
-});
 ```
 
 ## Domain Organization
@@ -490,6 +399,4 @@ features/business-logic-modern/node-domain/
 - **Size Definitions**: #[[file:features/business-logic-modern/infrastructure/theming/sizing.ts]]
 - **Node Generator**: #[[file:plopfile.js]]
 - **Schema Helpers**: #[[file:features/business-logic-modern/infrastructure/node-core/schema-helpers.ts]]
-- **Validation**: #[[file:features/business-logic-modern/infrastructure/node-core/validation.ts]]
 - **Example Nodes**: #[[file:features/business-logic-modern/node-domain/]]
-- **Node Data Types**: #[[file:features/business-logic-modern/infrastructure/flow-engine/types/nodeData.ts]]

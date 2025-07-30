@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { useDebounce } from "@/hooks";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -71,6 +72,48 @@ const SORT_OPTIONS = {
 
 type SortOption = keyof typeof SORT_OPTIONS;
 
+/**
+ * Flow interface for typing
+ */
+interface FlowType {
+	_id: Id<"flows">;
+	_creationTime: number;
+	name: string;
+	description?: string;
+	created_at: string;
+	updated_at: string;
+	upvoteCount: number;
+	hasUpvoted: boolean;
+	creator: {
+		id: Id<"auth_users">;
+		name: string;
+		email: string;
+	} | null;
+	user_id: Id<"auth_users">;
+	is_private: boolean;
+	icon?: string;
+	[key: string]: unknown; // Allow additional properties
+}
+
+/**
+ * Sorts flows based on the specified criteria
+ */
+const sortFlows = (flows: FlowType[], sortBy: string) => {
+	return [...flows].sort((a, b) => {
+		if (sortBy === "popular") {
+			return (b.upvoteCount || 0) - (a.upvoteCount || 0);
+		}
+		if (sortBy === "name") {
+			return a.name.localeCompare(b.name);
+		}
+		if (sortBy === "created") {
+			return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+		}
+		// Default: recent
+		return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+	});
+};
+
 const ExplorePage = () => {
 	const { user, isLoading: authLoading } = useAuthContext();
 
@@ -101,7 +144,7 @@ const ExplorePage = () => {
 
 	// All hooks must be called before any conditional returns
 	const handleUpvote = useCallback(
-		async (flowId: string) => {
+		async (flowId: Id<"flows">) => {
 			if (!user?.id) {
 				toast.error("Please sign in to upvote flows");
 				return;
@@ -109,7 +152,7 @@ const ExplorePage = () => {
 
 			try {
 				await toggleUpvote({
-					flow_id: flowId as any,
+					flow_id: flowId,
 					user_id: user.id,
 				});
 			} catch (error) {
@@ -141,7 +184,7 @@ const ExplorePage = () => {
 				description: "A test public flow for debugging",
 				icon: "zap",
 				is_private: false,
-				user_id: user.id as any,
+				user_id: user.id,
 			});
 			toast.success("Test public flow created!");
 		} catch (error) {
@@ -209,47 +252,24 @@ const ExplorePage = () => {
 		return iconCategories[iconName] || "Other";
 	}, []);
 
-	// Memoized filtered and sorted flows
+	// Process and filter flows
 	const processedFlows = useMemo(() => {
 		if (!publicFlows) {
 			return [];
 		}
 
-		let filtered = publicFlows;
+		// Apply filtering
+		let filtered = publicFlows.filter((flow) => {
+			const matchesSearch =
+				flow.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+				flow.description?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+				getIconCategory(flow.icon)?.toLowerCase().includes(debouncedSearch.toLowerCase());
 
-		// Apply search filter
-		if (debouncedSearch) {
-			const searchLower = debouncedSearch.toLowerCase();
-			filtered = filtered.filter(
-				(flow) =>
-					flow.name.toLowerCase().includes(searchLower) ||
-					flow.description?.toLowerCase().includes(searchLower) ||
-					// Search by icon name/emoji
-					flow.icon
-						?.toLowerCase()
-						.includes(searchLower) ||
-					// Search by icon category (map icon names to categories)
-					(() => {
-						const category = getIconCategory(flow.icon);
-						return category ? category.toLowerCase().includes(searchLower) : false;
-					})()
-			);
-		}
+			return matchesSearch;
+		});
 
 		// Apply sorting
-		filtered.sort((a, b) => {
-			if (sortBy === "popular") {
-				return (b.upvoteCount || 0) - (a.upvoteCount || 0);
-			}
-			if (sortBy === "name") {
-				return a.name.localeCompare(b.name);
-			}
-			if (sortBy === "created") {
-				return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-			}
-			// Default: recent
-			return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-		});
+		filtered = sortFlows(filtered, sortBy);
 
 		return filtered;
 	}, [publicFlows, debouncedSearch, sortBy, getIconCategory]);
@@ -272,7 +292,9 @@ const ExplorePage = () => {
 				<p className="mx-auto mb-8 max-w-md text-muted-foreground">
 					Unable to load public flows. Please try refreshing the page.
 				</p>
-				<Button onClick={() => window.location.reload()}>Refresh Page</Button>
+				<Button onClick={() => window.location.reload()} type="button">
+					Refresh Page
+				</Button>
 			</div>
 		);
 	}

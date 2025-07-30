@@ -2,37 +2,77 @@
 /**
  * NODE MEMORY SYSTEM (v2) — per‑node programmable cache with isolation
  *
- * – Size & entry caps, four eviction strategies, per‑key TTL
- * – Optional persistence via pluggable StorageAdapter (default: localStorage in browser)
- * – Accurate metrics & pressure index
- * – Environment‑agnostic (Node, browser, edge)
+ * – Size & entry caps, four eviction strategies, per‑key TTL
+ * – Optional persistence via pluggable StorageAdapter (default: localStorage in browser)
+ * – Accurate metrics & pressure index
+ * – Environment‑agnostic (Node, browser, edge)
  */
 
-// Browser-compatible EventEmitter implementation
-class EventEmitter {
-	private events: Record<string, Function[]> = {};
 
-	on(event: string, listener: Function) {
-		if (!this.events[event]) {
-			this.events[event] = [];
-		}
-		this.events[event].push(listener);
-	}
-
-	emit(event: string, ...args: any[]) {
-		if (this.events[event]) {
-			this.events[event].forEach(listener => listener(...args));
-		}
-	}
-
-	removeAllListeners() {
-		this.events = {};
-	}
-}
 import { z } from "zod";
 
 /* ------------------------------------------------------------------ */
-/* 1. Public config / types                                            */
+/* 0. Browser-compatible EventEmitter                                */
+/* ------------------------------------------------------------------ */
+
+class BrowserEventEmitter {
+	private listeners = new Map<string, Array<(...args: unknown[]) => void>>();
+
+	on(event: string, listener: (...args: unknown[]) => void): this {
+		if (!this.listeners.has(event)) {
+			this.listeners.set(event, []);
+		}
+		this.listeners.get(event)?.push(listener);
+		return this;
+	}
+
+	emit(event: string, ...args: unknown[]): boolean {
+		const eventListeners = this.listeners.get(event);
+		if (!eventListeners || eventListeners.length === 0) {
+			return false;
+		}
+
+		eventListeners.forEach((listener) => {
+			try {
+				listener(...args);
+			} catch (error) {
+				console.error(`Error in event listener for ${event}:`, error);
+			}
+		});
+
+		return true;
+	}
+
+	removeAllListeners(event?: string): this {
+		if (event) {
+			this.listeners.delete(event);
+		} else {
+			this.listeners.clear();
+		}
+		return this;
+	}
+
+	off(event: string, listener: (...args: unknown[]) => void): this {
+		const eventListeners = this.listeners.get(event);
+		if (!eventListeners) {
+			return this;
+		}
+
+		const index = eventListeners.indexOf(listener);
+		if (index > -1) {
+			eventListeners.splice(index, 1);
+		}
+
+		if (eventListeners.length === 0) {
+			this.listeners.delete(event);
+		}
+
+		return this;
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* 1. Public config / types                                            */
 /* ------------------------------------------------------------------ */
 
 export const NodeMemoryConfigSchema = z.object({
@@ -72,7 +112,7 @@ export interface MemoryMetrics {
 }
 
 /* ------------------------------------------------------------------ */
-/* 2. Pluggable storage adapter                                        */
+/* 2. Pluggable storage adapter                                        */
 /* ------------------------------------------------------------------ */
 
 export interface StorageAdapter {
@@ -83,33 +123,35 @@ export interface StorageAdapter {
 
 /** Default adapter – browser only (localStorage). No‑op in Node/Edge */
 export const LocalStorageAdapter: StorageAdapter = {
-	async load(id) {
+	load(id) {
 		if (typeof localStorage === "undefined") {
-			return null;
+			return Promise.resolve(null);
 		}
 		try {
-			return JSON.parse(localStorage.getItem(`node_mem_${id}`) ?? "null");
+			return Promise.resolve(JSON.parse(localStorage.getItem(`node_mem_${id}`) ?? "null"));
 		} catch {
-			return null;
+			return Promise.resolve(null);
 		}
 	},
-	async save(id, data) {
+	save(id, data) {
 		if (typeof localStorage !== "undefined") {
 			localStorage.setItem(`node_mem_${id}`, JSON.stringify(data));
 		}
+		return Promise.resolve();
 	},
-	async delete(id) {
+	delete(id) {
 		if (typeof localStorage !== "undefined") {
 			localStorage.removeItem(`node_mem_${id}`);
 		}
+		return Promise.resolve();
 	},
 };
 
 /* ------------------------------------------------------------------ */
-/* 3. Main class                                                       */
+/* 3. Main class                                                       */
 /* ------------------------------------------------------------------ */
 
-export class NodeMemoryManager extends EventEmitter {
+export class NodeMemoryManager extends BrowserEventEmitter {
 	private readonly cache = new Map<string, MemoryEntry>();
 	private readonly cfg: Required<NodeMemoryConfig>;
 	private readonly metrics: MemoryMetrics = {
@@ -298,7 +340,40 @@ export class NodeMemoryManager extends EventEmitter {
 	}
 
 	private serialize(v: unknown): string {
-		return this.cfg.serializer === "json" ? JSON.stringify(v) : JSON.stringify(v); // placeholder for msgpack
+		// Optimize serialization to reduce cache size
+		if (this.cfg.serializer === "json") {
+			// Remove circular references and large objects before serialization
+			const sanitized = this.sanitizeForSerialization(v);
+			return JSON.stringify(sanitized);
+		}
+		return JSON.stringify(v); // placeholder for msgpack
+	}
+
+	/**
+	 * Sanitize data for serialization to reduce size
+	 */
+	private sanitizeForSerialization(v: unknown): unknown {
+		if (v === null || v === undefined) {
+			return v;
+		}
+
+		if (typeof v === "object") {
+			if (Array.isArray(v)) {
+				return v.map((item) => this.sanitizeForSerialization(item));
+			}
+
+			const sanitized: Record<string, unknown> = {};
+			for (const [key, value] of Object.entries(v as Record<string, unknown>)) {
+				// Skip large objects that don't need persistence
+				if (key === "inputs" || key === "outputs" || key === "rawData") {
+					continue;
+				}
+				sanitized[key] = this.sanitizeForSerialization(value);
+			}
+			return sanitized;
+		}
+
+		return v;
 	}
 
 	private byteSize(str: string): number {
@@ -377,7 +452,7 @@ export class NodeMemoryManager extends EventEmitter {
 			return;
 		}
 		if (flush) {
-			return void this.persistNow();
+			return this.persistNow();
 		}
 
 		if (!this.persistQueued) {
@@ -396,7 +471,7 @@ export class NodeMemoryManager extends EventEmitter {
 }
 
 /* ------------------------------------------------------------------ */
-/* 4. Global manager (singleton)                                       */
+/* 4. Global manager (singleton)                                       */
 /* ------------------------------------------------------------------ */
 
 export class GlobalNodeMemoryManager {
@@ -407,7 +482,11 @@ export class GlobalNodeMemoryManager {
 		if (!this.map.has(nodeId)) {
 			this.map.set(nodeId, new NodeMemoryManager(nodeId, cfg, this.adapter));
 		}
-		return this.map.get(nodeId)!;
+		const manager = this.map.get(nodeId);
+		if (!manager) {
+			throw new Error(`Failed to create or retrieve NodeMemoryManager for ${nodeId}`);
+		}
+		return manager;
 	}
 
 	destroy(nodeId: string) {
@@ -439,7 +518,7 @@ export class GlobalNodeMemoryManager {
 export const globalNodeMemoryManager = new GlobalNodeMemoryManager();
 
 /* ------------------------------------------------------------------ */
-/* 5. React hook (unchanged API)                                       */
+/* 5. React hook (unchanged API)                                       */
 /* ------------------------------------------------------------------ */
 
 export const useNodeMemory = (

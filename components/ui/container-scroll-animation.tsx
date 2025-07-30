@@ -9,7 +9,7 @@ import {
 	useScroll,
 	useTransform,
 } from "framer-motion";
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 
 /* ================================
    Main Scroll Container Component
@@ -62,7 +62,7 @@ export const ContainerScroll = ({
 					<InfiniteScrollContent
 						isInView={isInView}
 						sectionRef={sectionRef as React.RefObject<HTMLDivElement>}
-						speed="normal"
+						pauseOnHover={true}
 					>
 						{children}
 					</InfiniteScrollContent>
@@ -79,14 +79,12 @@ export const InfiniteScrollContent = ({
 	isInView,
 	sectionRef,
 	children,
-	speed = "fast",
 	pauseOnHover = true,
 	className = "",
 }: {
 	isInView: boolean;
 	sectionRef: React.RefObject<HTMLDivElement>;
 	children: React.ReactNode;
-	speed?: "fast" | "normal" | "slow";
 	pauseOnHover?: boolean;
 	className?: string;
 }) => {
@@ -95,10 +93,9 @@ export const InfiniteScrollContent = ({
 	const [animation, setAnimation] = useState<Animation | null>(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
 
-	// Convert speed to duration
-	const getDuration = () => {
-		return speed === "fast" ? 20000 : speed === "normal" ? 40000 : 80000;
-	};
+	const getDuration = useCallback(() => {
+		return 20000;
+	}, []);
 
 	// Start animation once in view
 	useEffect(() => {
@@ -106,33 +103,29 @@ export const InfiniteScrollContent = ({
 			return;
 		}
 
-		const animateScroll = async () => {
-			// Wait until children are rendered
-			await new Promise((res) => setTimeout(res, 0));
+		const element = wrapperRef.current;
+		if (!element) {
+			return;
+		}
 
-			const scroller = scope.current?.querySelector(".scroller-inner") as HTMLElement;
-			if (!scroller) {
-				return;
-			}
+		// Create keyframe animation
+		const keyframes = [{ transform: "translateY(0%)" }, { transform: "translateY(-50%)" }];
 
-			// Duplicate content for infinite scroll
-			scroller.innerHTML += scroller.innerHTML;
-
-			// Manual animation using Web Animations API via useAnimate
-			const anim = scroller.animate(
-				[{ transform: "translateY(0%)" }, { transform: "translateY(-50%)" }],
-				{
-					duration: getDuration(),
-					iterations: Number.POSITIVE_INFINITY,
-					easing: "linear",
-				}
-			);
-
-			setAnimation(anim);
+		const options = {
+			duration: getDuration(),
+			iterations: Number.POSITIVE_INFINITY,
+			easing: "linear",
 		};
 
-		animateScroll();
-	}, [isInView, scope, animation]);
+		const newAnimation = element.animate(keyframes, options);
+		setAnimation(newAnimation);
+
+		return () => {
+			if (newAnimation) {
+				newAnimation.cancel();
+			}
+		};
+	}, [isInView, animation, getDuration]);
 
 	// Pause/resume on hover
 	useEffect(() => {
@@ -184,44 +177,29 @@ export const Header = ({
    Card Wrapper Component
 ============================= */
 export const Card = ({
-	rotate,
-	scale,
-	translate,
 	children,
+	rotate,
+	translate,
+	scale,
 }: {
-	rotate: MotionValue<number>;
-	scale: MotionValue<number>;
-	translate: MotionValue<number>;
 	children: React.ReactNode;
+	rotate?: MotionValue<number>;
+	translate?: MotionValue<number>;
+	scale?: MotionValue<number>;
 }) => {
 	return (
 		<motion.div
+			initial={{ opacity: 0, y: 20 }}
+			whileInView={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.5 }}
+			className="relative"
 			style={{
-				rotateX: rotate,
+				rotate,
+				translateY: translate,
 				scale,
-				boxShadow:
-					"0 0 #0000004d, 0 9px 20px #0000004a, 0 37px 37px #00000042, 0 84px 50px #00000026, 0 149px 60px #0000000a, 0 233px 65px #00000003",
 			}}
-			className="-mt-12 mx-auto h-[30rem] w-full max-w-5xl rounded-[30px] border-4 border-[#6C6C6C] bg-[#222222] p-2 shadow-2xl md:mt-0 md:h-[40rem] md:p-6"
 		>
-			<div className="h-full w-full overflow-hidden rounded-2xl bg-gray-100 md:p-4 dark:bg-zinc-900">
-				{children}
-			</div>
-		</motion.div>
-	);
-	return (
-		<motion.div
-			style={{
-				rotateX: rotate,
-				scale,
-				boxShadow:
-					"0 0 #0000004d, 0 9px 20px #0000004a, 0 37px 37px #00000042, 0 84px 50px #00000026, 0 149px 60px #0000000a, 0 233px 65px #00000003",
-			}}
-			className="-mt-12 mx-auto h-120 w-full max-w-5xl rounded-[30px] border-4 border-[#6C6C6C] bg-[#222222] p-2 shadow-2xl md:mt-0 md:h-160 md:p-6"
-		>
-			<div className="h-full w-full overflow-hidden rounded-2xl bg-gray-100 md:p-4 dark:bg-zinc-900">
-				{children}
-			</div>
+			{children}
 		</motion.div>
 	);
 };

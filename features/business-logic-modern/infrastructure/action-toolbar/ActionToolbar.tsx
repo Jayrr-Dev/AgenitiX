@@ -18,12 +18,18 @@ import { History, Maximize, Minimize, RotateCcw, RotateCw } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useComponentButtonClasses, useComponentClasses } from "../theming/components";
-import { useUndoRedo } from "./history/UndoRedoContext";
+import { useUndoRedo } from "./history/undo-redo-context";
 
 interface ActionToolbarProps {
 	showHistoryPanel: boolean;
 	onToggleHistory: () => void;
 	className?: string;
+}
+
+interface ExtendedWindow extends Window {
+	electronAPI?: unknown;
+	require?: unknown;
+	__TAURI__?: unknown;
 }
 
 const ActionToolbar: React.FC<ActionToolbarProps> = ({
@@ -50,11 +56,12 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 		const detectBrowserEnvironment = () => {
 			// Check if we're in a browser environment (not Electron/desktop app)
 			const isElectron =
-				(typeof window !== "undefined" && (window as any).electronAPI !== undefined) ||
-				typeof (window as any).require !== "undefined" ||
+				(typeof window !== "undefined" && (window as ExtendedWindow).electronAPI !== undefined) ||
+				typeof (window as ExtendedWindow).require !== "undefined" ||
 				(typeof process !== "undefined" && process.versions?.electron);
 
-			const isTauri = typeof window !== "undefined" && (window as any).__TAURI__ !== undefined;
+			const isTauri =
+				typeof window !== "undefined" && (window as ExtendedWindow).__TAURI__ !== undefined;
 
 			const isDesktopApp = isElectron || isTauri;
 
@@ -116,6 +123,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 	return (
 		<div className={containerClasses}>
 			<button
+				type="button"
 				onClick={() => undo()}
 				disabled={!canUndo}
 				className={buttonClasses}
@@ -125,6 +133,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 			</button>
 
 			<button
+				type="button"
 				onClick={() => redo()}
 				disabled={!canRedo}
 				className={buttonClasses}
@@ -136,6 +145,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 			<div className="mx-1 h-6 w-px bg-[var(--infra-toolbar-border)]" />
 
 			<button
+				type="button"
 				onClick={onToggleHistory}
 				className={showHistoryPanel ? activeButtonClasses : buttonClasses}
 				title="Toggle History Panel (Ctrl+H)"
@@ -156,6 +166,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 					</div>
 
 					<button
+						type="button"
 						onClick={toggleFullscreen}
 						className={isFullscreen ? activeButtonClasses : buttonClasses}
 						title={isFullscreen ? "Exit Fullscreen (F11)" : "Enter Fullscreen (F11)"}

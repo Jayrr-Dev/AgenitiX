@@ -124,9 +124,9 @@ export const ADAPTIVE_CONFIGS: Record<number, AdaptiveConfig> = {
 };
 
 // RISK CALCULATION ENGINE
-export class RiskEngine {
+export namespace RiskEngine {
 	// CALCULATE OVERALL RISK SCORE
-	static calculateRiskScore(factors: Partial<RiskFactors>): number {
+	export function calculateRiskScore(factors: Partial<RiskFactors>): number {
 		const weights: Record<keyof RiskFactors, number> = {
 			ipReputation: 0.2, // Reduced from 0.25
 			geolocation: 0.08, // Reduced from 0.10
@@ -141,18 +141,18 @@ export class RiskEngine {
 		let totalScore = 0;
 		let totalWeight = 0;
 
-		Object.entries(factors).forEach(([key, value]) => {
+		for (const [key, value] of Object.entries(factors)) {
 			if (value !== undefined && weights[key as keyof RiskFactors]) {
 				totalScore += value * weights[key as keyof RiskFactors];
 				totalWeight += weights[key as keyof RiskFactors];
 			}
-		});
+		}
 
 		return totalWeight > 0 ? Math.round(totalScore / totalWeight) : 0;
 	}
 
 	// DETERMINE RISK LEVEL FROM SCORE
-	static getRiskLevel(score: number): RiskLevel {
+	export function getRiskLevel(score: number): RiskLevel {
 		// GET THRESHOLDS FROM ENVIRONMENT VARIABLES OR USE DEFAULTS
 		const thresholds = {
 			moderate: Number.parseInt(process.env.ANUBIS_RISK_THRESHOLD_LOW || "20", 10),
@@ -177,38 +177,38 @@ export class RiskEngine {
 	}
 
 	// GET ADAPTIVE CONFIG FOR RISK LEVEL
-	static getAdaptiveConfig(riskLevel: number): AdaptiveConfig {
+	export function getAdaptiveConfig(riskLevel: number): AdaptiveConfig {
 		return ADAPTIVE_CONFIGS[riskLevel] || ADAPTIVE_CONFIGS[2];
 	}
 
 	// ANALYZE REQUEST AND RETURN RISK ASSESSMENT
-	static async analyzeRequest(request: {
+	export async function analyzeRequest(request: {
 		ip: string;
 		userAgent: string;
 		headers: Record<string, string>;
-		sessionHistory?: any;
+		sessionHistory?: Record<string, unknown>;
 		timestamp: number;
 	}): Promise<{ riskLevel: RiskLevel; config: AdaptiveConfig; factors: RiskFactors }> {
 		const factors: RiskFactors = {
-			ipReputation: await RiskEngine.checkIPReputation(request.ip),
-			geolocation: await RiskEngine.checkGeolocation(request.ip),
-			userAgent: RiskEngine.analyzeUserAgent(request.userAgent),
-			requestPattern: RiskEngine.analyzeRequestPattern(request),
-			timeOfDay: RiskEngine.analyzeTimeOfDay(request.timestamp),
-			sessionHistory: RiskEngine.analyzeSessionHistory(request.sessionHistory),
-			deviceFingerprint: RiskEngine.analyzeDeviceFingerprint(request.headers),
-			networkBehavior: await RiskEngine.analyzeNetworkBehavior(request.ip),
+			ipReputation: await checkIPReputation(request.ip),
+			geolocation: await checkGeolocation(request.ip),
+			userAgent: analyzeUserAgent(request.userAgent),
+			requestPattern: analyzeRequestPattern(request),
+			timeOfDay: analyzeTimeOfDay(request.timestamp),
+			sessionHistory: analyzeSessionHistory(request.sessionHistory),
+			deviceFingerprint: analyzeDeviceFingerprint(request.headers),
+			networkBehavior: analyzeNetworkBehavior(request.ip),
 		};
 
-		const score = RiskEngine.calculateRiskScore(factors);
-		const riskLevel = RiskEngine.getRiskLevel(score);
-		const config = RiskEngine.getAdaptiveConfig(riskLevel.level);
+		const score = calculateRiskScore(factors);
+		const riskLevel = getRiskLevel(score);
+		const config = getAdaptiveConfig(riskLevel.level);
 
 		return { riskLevel, config, factors };
 	}
 
 	// INDIVIDUAL RISK FACTOR ANALYZERS
-	private static async checkIPReputation(ip: string): Promise<number> {
+	async function checkIPReputation(ip: string): Promise<number> {
 		// LOCAL/PRIVATE IPS (SAFE)
 		if (
 			ip.startsWith("127.") ||
@@ -228,16 +228,16 @@ export class RiskEngine {
 			}
 
 			// NOT IN THREAT FEEDS - CHECK ADDITIONAL PATTERNS
-			return RiskEngine.checkAdditionalIPPatterns(ip);
+			return checkAdditionalIPPatterns(ip);
 		} catch (error) {
 			console.error(`❌ Error checking IP reputation for ${ip}:`, error);
 			// FALLBACK TO BASIC CHECKS
-			return RiskEngine.checkAdditionalIPPatterns(ip);
+			return checkAdditionalIPPatterns(ip);
 		}
 	}
 
 	// ADDITIONAL IP PATTERN CHECKS (FALLBACK)
-	private static checkAdditionalIPPatterns(ip: string): number {
+	function checkAdditionalIPPatterns(ip: string): number {
 		// TOR EXIT NODES PATTERNS (BACKUP CHECK)
 		const torPatterns = [
 			/^185\.220\./, // Common Tor range
@@ -285,7 +285,7 @@ export class RiskEngine {
 		return 15; // Low risk for unknown but clean IPs
 	}
 
-	private static async checkGeolocation(_ip: string): Promise<number> {
+	function checkGeolocation(_ip: string): number {
 		// High-risk countries/regions
 		const _highRiskCountries = new Set(["CN", "RU", "KP", "IR"]);
 
@@ -296,7 +296,7 @@ export class RiskEngine {
 		}
 	}
 
-	private static analyzeUserAgent(userAgent: string): number {
+	function analyzeUserAgent(userAgent: string): number {
 		if (!userAgent) {
 			return 95; // No user agent = very suspicious
 		}
@@ -311,232 +311,276 @@ export class RiskEngine {
 			/wget/i,
 			/python/i,
 			/java/i,
-			/requests/i,
+			/perl/i,
+			/ruby/i,
+			/node/i,
+			/go-http/i,
+			/httpclient/i,
+			/okhttp/i,
+			/axios/i,
+			/request/i,
 			/urllib/i,
-			/httpx/i,
-			/aiohttp/i,
-			/scrapy/i,
-			/beautifulsoup/i,
-			/mechanize/i,
-		];
-
-		// HEADLESS BROWSER AND AUTOMATION PATTERNS
-		const headlessPatterns = [
-			/headless/i,
+			/fetch/i,
 			/phantom/i,
+			/headless/i,
 			/selenium/i,
 			/webdriver/i,
-			/puppeteer/i,
-			/playwright/i,
-			/chromedriver/i,
-			/automated/i,
-			/test/i,
+			/automation/i,
 		];
+
+		if (botPatterns.some((pattern) => pattern.test(userAgent))) {
+			return 90; // Very high risk for known bot patterns
+		}
 
 		// SUSPICIOUS CHARACTERISTICS
-		const suspiciousPatterns = [
-			/^[a-zA-Z0-9\-\.\/\s]{1,20}$/, // Very short user agents
-			/^Mozilla\/[0-9]\.[0-9]$/, // Minimal Mozilla strings
-			/Windows NT [0-9]+\.[0-9]+\)$/, // Incomplete Windows strings
-		];
+		let suspicionScore = 0;
 
-		// LEGITIMATE BROWSER PATTERNS (lower risk)
-		const legitimateBrowsers = [
-			/Chrome\/[0-9]{2,3}\.[0-9]+\.[0-9]+\.[0-9]+.*Safari\/[0-9]+/,
-			/Firefox\/[0-9]{2,3}\.[0-9]+/,
-			/Safari\/[0-9]+.*Version\/[0-9]+/,
-			/Edge\/[0-9]+/,
-			/Opera\/[0-9]+/,
-		];
-
-		// CHECK FOR KNOWN BOTS (highest risk)
-		if (botPatterns.some((pattern) => pattern.test(userAgent))) {
-			return 98; // Very high risk for obvious bots
+		// Too short or too long
+		if (userAgent.length < 10 || userAgent.length > 500) {
+			suspicionScore += 40;
 		}
 
-		// CHECK FOR HEADLESS BROWSERS (high risk)
-		if (headlessPatterns.some((pattern) => pattern.test(userAgent))) {
-			return 85; // High risk for automation tools
+		// Missing common browser indicators
+		if (
+			!(
+				/Mozilla/i.test(userAgent) ||
+				/Chrome/i.test(userAgent) ||
+				/Firefox/i.test(userAgent) ||
+				/Safari/i.test(userAgent) ||
+				/Edge/i.test(userAgent)
+			)
+		) {
+			suspicionScore += 35;
 		}
 
-		// CHECK FOR SUSPICIOUS PATTERNS (moderate-high risk)
-		if (suspiciousPatterns.some((pattern) => pattern.test(userAgent))) {
-			return 70; // Moderate-high risk for suspicious patterns
+		// Suspicious patterns
+		if (/^[A-Z\s]+$/i.test(userAgent)) {
+			suspicionScore += 30; // All caps or very simple
 		}
 
-		// CHECK FOR LEGITIMATE BROWSERS (low risk)
-		if (legitimateBrowsers.some((pattern) => pattern.test(userAgent))) {
-			return 5; // Very low risk for real browsers
+		if (!(/\(/.test(userAgent) && /\)/.test(userAgent))) {
+			suspicionScore += 25; // Missing parentheses (common in real browsers)
 		}
 
-		// FALLBACK: Unknown user agent patterns
-		if (userAgent.length < 30) {
-			return 60; // Moderate risk for short user agents
+		// Check for version patterns
+		if (!/\d+\.\d+/.test(userAgent)) {
+			suspicionScore += 20; // No version numbers
 		}
-		return 25; // Default moderate risk for unknown patterns
+
+		return Math.min(suspicionScore, 95);
 	}
 
-	private static analyzeRequestPattern(request: any): number {
-		let riskScore = 0;
-		const headers = request.headers || {};
-
-		// CHECK FOR AUTOMATION INDICATORS IN HEADERS
-		const automationHeaders = [
-			"x-requested-with",
-			"x-automation",
-			"x-test",
-			"x-selenium",
-			"x-webdriver",
-		];
-
-		const hasAutomationHeaders = automationHeaders.some(
-			(header) => headers[header] || headers[header.toLowerCase()]
-		);
-
-		if (hasAutomationHeaders) {
-			riskScore += 40;
-		}
-
-		// CHECK FOR MISSING STANDARD BROWSER HEADERS
-		const expectedHeaders = ["accept", "accept-language", "accept-encoding"];
-		const missingHeaders = expectedHeaders.filter(
-			(header) => !(headers[header] || headers[header.toLowerCase()])
-		);
-
-		if (missingHeaders.length > 0) {
-			riskScore += missingHeaders.length * 15;
-		}
-
-		// CHECK FOR SUSPICIOUS HEADER VALUES
-		const acceptHeader = headers.accept || headers.Accept || "";
-		if (acceptHeader === "*/*" && !headers["accept-language"]) {
-			riskScore += 25;
-		}
-
-		// CHECK FOR UNUSUAL HEADER COMBINATIONS
-		const userAgent = headers["user-agent"] || headers["User-Agent"] || "";
-		const acceptLanguage = headers["accept-language"] || headers["Accept-Language"] || "";
-
-		// Chrome browser should have accept-language
-		if (userAgent.includes("Chrome") && !acceptLanguage) {
-			riskScore += 30;
-		}
-
-		// CHECK FOR RAPID SEQUENTIAL REQUESTS (if timestamp data available)
-		// This would require session tracking implementation
-		// const requestFrequency = analyzeRequestFrequency(request);
-		// if (requestFrequency > threshold) riskScore += 50;
-
-		// CHECK FOR SUSPICIOUS CONNECTION PATTERNS
-		const connection = headers.connection || headers.Connection || "";
-		if (connection.toLowerCase() === "close" && userAgent.includes("Mozilla")) {
-			riskScore += 20;
-		}
-
-		return Math.min(riskScore, 100); // Cap at 100
-	}
-
-	private static analyzeTimeOfDay(timestamp: number): number {
+	function analyzeTimeOfDay(timestamp: number): number {
 		const hour = new Date(timestamp).getHours();
-		// Higher risk during typical bot hours (2-6 AM)
-		if (hour >= 2 && hour <= 6) {
-			return 60; // Increased from 40
+
+		// High activity during typical bot hours (midnight to 6 AM)
+		if (hour >= 0 && hour < 6) {
+			return 25; // Increased from 15
 		}
-		return 20; // Increased from 10
+
+		// Business hours (9 AM to 5 PM) - lower risk
+		if (hour >= 9 && hour <= 17) {
+			return 5;
+		}
+
+		// Evening hours - moderate risk
+		return 10;
 	}
 
-	private static analyzeSessionHistory(history: any): number {
+	/**
+	 * Analyzes missing common headers
+	 */
+	function analyzeMissingHeaders(headers: Record<string, string>): number {
+		let riskScore = 0;
+
+		if (!headers.accept) {
+			riskScore += 15;
+		}
+		if (!headers["accept-language"]) {
+			riskScore += 10;
+		}
+		if (!headers["accept-encoding"]) {
+			riskScore += 10;
+		}
+
+		return riskScore;
+	}
+
+	/**
+	 * Analyzes suspicious header values
+	 */
+	function analyzeSuspiciousHeaders(headers: Record<string, string>): number {
+		let riskScore = 0;
+
+		if (headers.accept === "*/*") {
+			riskScore += 20; // Generic accept header
+		}
+
+		if (headers["accept-language"] === "en-US" && !headers["accept-language"].includes(",")) {
+			riskScore += 15; // Too simple language header
+		}
+
+		return riskScore;
+	}
+
+	/**
+	 * Analyzes user agent mismatches
+	 */
+	function analyzeUserAgentMismatch(userAgent: string, headers: Record<string, string>): number {
+		let riskScore = 0;
+
+		if (userAgent) {
+			// Chrome user agent without Chrome-specific headers
+			if (/Chrome/i.test(userAgent) && !headers["sec-ch-ua"]) {
+				riskScore += 25;
+			}
+
+			// Firefox without Firefox headers
+			if (/Firefox/i.test(userAgent) && headers["sec-ch-ua"]) {
+				riskScore += 20; // Firefox shouldn't have Chrome-specific headers
+			}
+		}
+
+		return riskScore;
+	}
+
+	/**
+	 * Analyzes automation and suspicious combinations
+	 */
+	function analyzeAutomationIndicators(headers: Record<string, string>): number {
+		let riskScore = 0;
+
+		// AUTOMATION INDICATORS
+		if (headers["x-requested-with"] === "XMLHttpRequest" && !headers.referer) {
+			riskScore += 15; // AJAX without referer
+		}
+
+		// SUSPICIOUS COMBINATIONS
+		if (!(headers.referer || headers.origin) && headers.accept !== "text/html") {
+			riskScore += 20; // API-like request without proper context
+		}
+
+		return riskScore;
+	}
+
+	function analyzeRequestPattern(request: {
+		headers: Record<string, string>;
+		userAgent: string;
+		ip: string;
+	}): number {
+		const headers = request.headers || {};
+		const userAgent = request.userAgent;
+
+		let riskScore = 0;
+		riskScore += analyzeMissingHeaders(headers);
+		riskScore += analyzeSuspiciousHeaders(headers);
+		riskScore += analyzeUserAgentMismatch(userAgent, headers);
+		riskScore += analyzeAutomationIndicators(headers);
+
+		return Math.min(riskScore, 95);
+	}
+
+	function analyzeDeviceFingerprint(headers: Record<string, string>): number {
+		let riskScore = 0;
+
+		// Missing device-specific headers
+		if (!headers["sec-ch-ua-platform"]) {
+			riskScore += 10;
+		}
+
+		if (!headers["sec-ch-ua-mobile"]) {
+			riskScore += 10;
+		}
+
+		// Generic or missing viewport
+		if (!(headers["viewport-width"] || headers["sec-ch-viewport-width"])) {
+			riskScore += 5;
+		}
+
+		return Math.min(riskScore, 50);
+	}
+
+	/**
+	 * Analyzes request volume patterns
+	 */
+	function analyzeRequestVolume(history: Record<string, unknown>): number {
+		let riskScore = 0;
+
+		if (typeof history === "object" && "requestCount" in history) {
+			const requestCount = history.requestCount as number;
+			if (requestCount > 100) {
+				riskScore += 40; // Very high request volume
+			} else if (requestCount > 50) {
+				riskScore += 25;
+			} else if (requestCount > 20) {
+				riskScore += 15;
+			}
+		}
+
+		return riskScore;
+	}
+
+	/**
+	 * Analyzes user agent consistency patterns
+	 */
+	function analyzePatternConsistency(history: Record<string, unknown>): number {
+		let riskScore = 0;
+
+		if (typeof history === "object" && "userAgentChanges" in history) {
+			const changes = history.userAgentChanges as number;
+			if (changes > 3) {
+				riskScore += 30; // Frequent user agent changes
+			} else if (changes > 1) {
+				riskScore += 15;
+			}
+		}
+
+		return riskScore;
+	}
+
+	function analyzeSessionHistory(history: Record<string, unknown> | undefined): number {
 		if (!history) {
 			return 15; // Increased from 10 - no history = slight risk
 		}
 
-		// ANALYZE PREVIOUS FAILURES, CHALLENGE ATTEMPTS, ETC.
-		const failures = history.failures || 0;
-		const challenges = history.challenges || 0;
-
-		// PROGRESSIVE RISK BASED ON FAILURE COUNT
-		if (failures >= 3) {
-			return 85; // High risk for repeated failures
-		}
-		if (failures >= 2) {
-			return 65; // Moderate-high risk
-		}
-		if (failures >= 1) {
-			return 45; // Moderate risk
-		}
-
-		// CHALLENGE COMPLETION RATE
-		if (challenges > 0) {
-			const successRate = ((challenges - failures) / challenges) * 100;
-			if (successRate < 50) {
-				return 70;
-			}
-		}
-
-		return 20; // Increased from 15 - default for clean history
-	}
-
-	private static analyzeDeviceFingerprint(headers: Record<string, string>): number {
 		let riskScore = 0;
+		riskScore += analyzeRequestVolume(history);
+		riskScore += analyzePatternConsistency(history);
 
-		// CHECK FOR MISSING BROWSER CAPABILITIES
-		const expectedBrowserHeaders = [
-			"accept",
-			"accept-encoding",
-			"accept-language",
-			"cache-control",
-			"upgrade-insecure-requests",
-		];
-
-		const missingBrowserHeaders = expectedBrowserHeaders.filter(
-			(header) => !(headers[header] || headers[header.toLowerCase()])
-		);
-
-		if (missingBrowserHeaders.length > 2) {
-			riskScore += 30;
-		}
-
-		// CHECK FOR SUSPICIOUS COMBINATIONS
-		const userAgent = headers["user-agent"] || headers["User-Agent"] || "";
-		const acceptEncoding = headers["accept-encoding"] || headers["Accept-Encoding"] || "";
-
-		// Real browsers typically support gzip
-		if (userAgent.includes("Mozilla") && !acceptEncoding.includes("gzip")) {
-			riskScore += 25;
-		}
-
-		return Math.min(riskScore, 100);
+		return Math.min(riskScore, 80);
 	}
 
-	private static async analyzeNetworkBehavior(_ip: string): Promise<number> {
+	function analyzeNetworkBehavior(_ip: string): number {
 		// IMPLEMENT PROXY/VPN/HOSTING DETECTION
 		// This could be enhanced with external services
 		return 25; // Increased from 20 - default moderate risk
 	}
 }
 
-// RISK MONITORING CLASS
-export class RiskMonitor {
-	private static riskHistory: Map<string, RiskLevel[]> = new Map();
+// RISK MONITORING NAMESPACE
+export namespace RiskMonitor {
+	const riskHistory: Map<string, RiskLevel[]> = new Map();
 
-	static trackRisk(identifier: string, riskLevel: RiskLevel) {
-		if (!RiskMonitor.riskHistory.has(identifier)) {
-			RiskMonitor.riskHistory.set(identifier, []);
+	export function trackRisk(identifier: string, riskLevel: RiskLevel) {
+		if (!riskHistory.has(identifier)) {
+			riskHistory.set(identifier, []);
 		}
 
-		const history = RiskMonitor.riskHistory.get(identifier)!;
-		history.push(riskLevel);
+		const history = riskHistory.get(identifier);
+		if (history) {
+			history.push(riskLevel);
 
-		// Keep only last 10 entries
-		if (history.length > 10) {
-			history.shift();
+			// Keep only last 10 entries
+			if (history.length > 10) {
+				history.shift();
+			}
+
+			// CHECK FOR RISK ESCALATION
+			checkRiskEscalation(identifier, history);
 		}
-
-		// CHECK FOR RISK ESCALATION
-		RiskMonitor.checkRiskEscalation(identifier, history);
 	}
 
-	private static checkRiskEscalation(identifier: string, history: RiskLevel[]) {
+	function checkRiskEscalation(identifier: string, history: RiskLevel[]) {
 		if (history.length >= 3) {
 			const recentLevels = history.slice(-3).map((r) => r.level);
 			const isEscalating = recentLevels.every(
@@ -549,8 +593,8 @@ export class RiskMonitor {
 		}
 	}
 
-	static getRiskTrend(identifier: string): "increasing" | "decreasing" | "stable" {
-		const history = RiskMonitor.riskHistory.get(identifier);
+	export function getRiskTrend(identifier: string): "increasing" | "decreasing" | "stable" {
+		const history = riskHistory.get(identifier);
 		if (!history || history.length < 2) {
 			return "stable";
 		}

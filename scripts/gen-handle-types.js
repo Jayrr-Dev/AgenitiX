@@ -1,4 +1,3 @@
-// biome-ignore lint/style/noVarRequires: This file uses require for dynamic imports
 const fs = require("node:fs");
 const path = require("node:path");
 const fg = require("fast-glob");
@@ -15,10 +14,13 @@ function extractSymbolsFromFile(filePath) {
 	const content = fs.readFileSync(filePath, "utf8");
 	const symbols = [];
 	const regex = /tsSymbol\s*:\s*["'`]([^"'`]+)["'`]/g;
-	let match;
-	while ((match = regex.exec(content)) !== null) {
+	let match = regex.exec(content);
+
+	while (match !== null) {
 		symbols.push(match[1]);
+		match = regex.exec(content);
 	}
+
 	return symbols;
 }
 

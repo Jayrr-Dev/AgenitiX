@@ -82,12 +82,14 @@ const AppleTextInput: React.FC<ControlRendererProps> = ({
 	hasError,
 	errorMessage,
 }) => {
+	const inputId = `input-${field.key}`;
 	return (
 		<div className="space-y-2">
-			<label className="block font-medium text-gray-900 text-sm dark:text-white">
+			<label htmlFor={inputId} className="block font-medium text-gray-900 text-sm dark:text-white">
 				{field.label}
 			</label>
 			<input
+				id={inputId}
 				type="text"
 				value={String(value || "")}
 				onChange={(e) => onChange(e.target.value)}
@@ -119,12 +121,17 @@ const AppleTextarea: React.FC<ControlRendererProps> = ({
 	hasError,
 	errorMessage,
 }) => {
+	const textareaId = `textarea-${field.key}`;
 	return (
 		<div className="space-y-2">
-			<label className="block font-medium text-gray-900 text-sm dark:text-white">
+			<label
+				htmlFor={textareaId}
+				className="block font-medium text-gray-900 text-sm dark:text-white"
+			>
 				{field.label}
 			</label>
 			<textarea
+				id={textareaId}
 				value={String(value || "")}
 				onChange={(e) => onChange(e.target.value)}
 				placeholder={field.placeholder}
@@ -156,6 +163,7 @@ const AppleNumberInput: React.FC<ControlRendererProps> = ({
 	hasError,
 	errorMessage,
 }) => {
+	const inputId = `number-${field.key}`;
 	const handleChange = useCallback(
 		(newValue: string) => {
 			const numValue = Number.parseFloat(newValue);
@@ -170,10 +178,11 @@ const AppleNumberInput: React.FC<ControlRendererProps> = ({
 
 	return (
 		<div className="space-y-2">
-			<label className="block font-medium text-gray-900 text-sm dark:text-white">
+			<label htmlFor={inputId} className="block font-medium text-gray-900 text-sm dark:text-white">
 				{field.label}
 			</label>
 			<input
+				id={inputId}
 				type="number"
 				value={String(value ?? "")}
 				onChange={(e) => handleChange(e.target.value)}
@@ -209,12 +218,16 @@ const AppleToggle: React.FC<ControlRendererProps> = ({
 	errorMessage,
 }) => {
 	const boolValue = Boolean(value);
+	const toggleId = `toggle-${field.key}`;
 
 	return (
 		<div className="space-y-2">
 			<div className="flex items-center justify-between">
-				<label className="font-medium text-gray-900 text-sm dark:text-white">{field.label}</label>
+				<label htmlFor={toggleId} className="font-medium text-gray-900 text-sm dark:text-white">
+					{field.label}
+				</label>
 				<button
+					id={toggleId}
 					onClick={() => onChange(!boolValue)}
 					className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 ${boolValue ? "bg-blue-600 shadow-sm" : "bg-gray-200 dark:bg-gray-700"}
           `}
@@ -247,13 +260,15 @@ const AppleSelect: React.FC<ControlRendererProps> = ({
 	errorMessage,
 }) => {
 	const options = field.validation?.options || [];
+	const selectId = `select-${field.key}`;
 
 	return (
 		<div className="space-y-2">
-			<label className="block font-medium text-gray-900 text-sm dark:text-white">
+			<label htmlFor={selectId} className="block font-medium text-gray-900 text-sm dark:text-white">
 				{field.label}
 			</label>
 			<select
+				id={selectId}
 				value={String(value || "")}
 				onChange={(e) => onChange(e.target.value)}
 				className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm transition-all duration-200 ease-out focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:bg-gray-800 ${
@@ -290,12 +305,14 @@ const AppleUrlInput: React.FC<ControlRendererProps> = ({
 	hasError,
 	errorMessage,
 }) => {
+	const inputId = `url-${field.key}`;
 	return (
 		<div className="space-y-2">
-			<label className="block font-medium text-gray-900 text-sm dark:text-white">
+			<label htmlFor={inputId} className="block font-medium text-gray-900 text-sm dark:text-white">
 				{field.label}
 			</label>
 			<input
+				id={inputId}
 				type="url"
 				value={String(value || "")}
 				onChange={(e) => onChange(e.target.value)}
@@ -327,12 +344,14 @@ const AppleEmailInput: React.FC<ControlRendererProps> = ({
 	hasError,
 	errorMessage,
 }) => {
+	const inputId = `email-${field.key}`;
 	return (
 		<div className="space-y-2">
-			<label className="block font-medium text-gray-900 text-sm dark:text-white">
+			<label htmlFor={inputId} className="block font-medium text-gray-900 text-sm dark:text-white">
 				{field.label}
 			</label>
 			<input
+				id={inputId}
 				type="email"
 				value={String(value || "")}
 				onChange={(e) => onChange(e.target.value)}
@@ -364,13 +383,18 @@ const AppleColorPicker: React.FC<ControlRendererProps> = ({
 	hasError,
 	errorMessage,
 }) => {
+	const colorPickerId = `color-picker-${field.key}`;
 	return (
 		<div className="space-y-2">
-			<label className="block font-medium text-gray-900 text-sm dark:text-white">
+			<label
+				htmlFor={colorPickerId}
+				className="block font-medium text-gray-900 text-sm dark:text-white"
+			>
 				{field.label}
 			</label>
 			<div className="flex items-center gap-3">
 				<input
+					id={colorPickerId}
 					type="color"
 					value={String(value || "#000000")}
 					onChange={(e) => onChange(e.target.value)}
@@ -409,12 +433,17 @@ const AppleDateInput: React.FC<ControlRendererProps> = ({
 	hasError,
 	errorMessage,
 }) => {
+	const dateInputId = `date-input-${field.key}`;
 	return (
 		<div className="space-y-2">
-			<label className="block font-medium text-gray-900 text-sm dark:text-white">
+			<label
+				htmlFor={dateInputId}
+				className="block font-medium text-gray-900 text-sm dark:text-white"
+			>
 				{field.label}
 			</label>
 			<input
+				id={dateInputId}
 				type="date"
 				value={String(value || "")}
 				onChange={(e) => onChange(e.target.value)}
@@ -446,6 +475,7 @@ const AppleJsonEditor: React.FC<ControlRendererProps> = ({
 	errorMessage,
 }) => {
 	const [jsonError, setJsonError] = useState<string | null>(null);
+	const jsonEditorId = `json-editor-${field.key}`;
 
 	const handleJsonChange = useCallback(
 		(newValue: string) => {
@@ -479,10 +509,14 @@ const AppleJsonEditor: React.FC<ControlRendererProps> = ({
 
 	return (
 		<div className="space-y-2">
-			<label className="block font-medium text-gray-900 text-sm dark:text-white">
+			<label
+				htmlFor={jsonEditorId}
+				className="block font-medium text-gray-900 text-sm dark:text-white"
+			>
 				{field.label}
 			</label>
 			<textarea
+				id={jsonEditorId}
 				value={displayValue}
 				onChange={(e) => handleJsonChange(e.target.value)}
 				placeholder={field.placeholder || '{"key": "value"}'}

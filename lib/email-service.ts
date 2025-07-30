@@ -116,6 +116,16 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 
 	// For development: Log to console
 	if (process.env.NODE_ENV === "development") {
+		// Log the magic link to console for development testing
+		console.log("\n🔗 MAGIC LINK FOR DEVELOPMENT:");
+		console.log("=".repeat(50));
+		console.log(`📧 Email: ${to}`);
+		console.log(`👤 Name: ${name}`);
+		console.log(`🔗 Magic Link: ${magicLinkUrl}`);
+		console.log(`📝 Type: ${type}`);
+		console.log("=".repeat(50));
+		console.log("💡 Copy the magic link above to test authentication\n");
+
 		// Return the magic link URL for the API response
 		return {
 			success: true,

@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { useInView } from "framer-motion";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export const InfiniteMovingCards = ({
 	items,
@@ -37,29 +37,27 @@ export const InfiniteMovingCards = ({
 
 	const [start, setStart] = useState(false);
 
+	const addAnimation = useCallback(() => {
+		if (!scrollerRef.current) {
+			return;
+		}
+
+		setStart(true);
+
+		// Apply direction and speed
+		const scrollerContent = scrollerRef.current;
+		if (scrollerContent) {
+			scrollerContent.style.transform = `translateX(-${scrollerContent.scrollWidth / 2}px)`;
+		}
+	}, []);
+
 	useEffect(() => {
 		if (isInView && !start) {
 			addAnimation();
 		}
-	}, [isInView]);
+	}, [isInView, start, addAnimation]);
 
-	const addAnimation = () => {
-		if (containerRef.current && scrollerRef.current) {
-			const scrollerContent = Array.from(scrollerRef.current.children);
-
-			// Duplicate items once
-			scrollerContent.forEach((item) => {
-				const duplicatedItem = item.cloneNode(true);
-				scrollerRef.current?.appendChild(duplicatedItem);
-			});
-
-			// Apply direction and speed
-			setAnimationProps();
-			setStart(true);
-		}
-	};
-
-	const setAnimationProps = () => {
+	const _setAnimationProps = () => {
 		if (!containerRef.current) {
 			return;
 		}

@@ -35,6 +35,7 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
+import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -215,9 +216,13 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 		}
 	}, [isActive, isEnabled, updateNodeData]);
 
-	/** Compute the latest text coming from the *first* upstream node. */
+	/** Compute the latest text coming from connected input handles. */
 	const computeInput = useCallback((): string | null => {
-		const incoming = edges.find((e) => e.target === id);
+		// Check json-input handle first, then input handle as fallback
+		const jsonInputEdge = findEdgeByHandle(edges, id, "json-input");
+		const inputEdge = findEdgeByHandle(edges, id, "input");
+		
+		const incoming = jsonInputEdge || inputEdge;
 		if (!incoming) {
 			return null;
 		}

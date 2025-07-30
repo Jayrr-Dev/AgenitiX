@@ -1,5 +1,7 @@
 import fs from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
+import { join } from "node:path";
 import { hasBreakingChange, parseCommitTitle } from "./auto-version";
 
 /**
@@ -65,7 +67,7 @@ class ConventionalCommitVersionDetector {
 
 			if (!bumpType) {
 				// Update cache even if no version bump needed
-				await this.updateLastProcessedCommit(newCommits[0].hash);
+				this.updateLastProcessedCommit(newCommits[0].hash);
 				return null;
 			}
 
@@ -340,7 +342,7 @@ class ConventionalCommitVersionDetector {
 	/**
 	 * Update last processed commit
 	 */
-	private async updateLastProcessedCommit(commitHash: string): Promise<void> {
+	private updateLastProcessedCommit(commitHash: string): void {
 		if (this.cache) {
 			this.cache.lastProcessedCommit = commitHash;
 			this.saveVersionCache();
@@ -396,33 +398,34 @@ export const VERSION = {
 	/**
 	 * Get current git information
 	 */
-	private async getGitInfo(): Promise<any> {
+	private getGitInfo(): any {
 		try {
-			const { execSync } = require("node:child_process");
+			const gitDirectory = join(process.cwd(), ".git");
+			if (!existsSync(gitDirectory)) {
+				console.warn("⚠️ Git directory not found");
+				return null;
+			}
 
-			const hash = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
-			const shortHash = hash.substring(0, 7);
-			const branch = execSync("git rev-parse --abbrev-ref HEAD", { encoding: "utf8" }).trim();
-			const author = execSync("git log -1 --format=%an", { encoding: "utf8" }).trim();
-			const date = execSync("git log -1 --format=%cd", { encoding: "utf8" }).trim();
+			// Try to get git info using git commands
+			try {
+				const { execSync } = require("node:child_process");
+				const branch = execSync("git rev-parse --abbrev-ref HEAD", { encoding: "utf8" }).trim();
+				const commit = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
+				const shortCommit = execSync("git rev-parse --short HEAD", { encoding: "utf8" }).trim();
 
-			return {
-				hash,
-				shortHash,
-				branch,
-				author,
-				date,
-				available: true,
-			};
-		} catch (_error) {
-			return {
-				hash: "unknown",
-				shortHash: "unknown",
-				branch: "unknown",
-				author: "unknown",
-				date: "unknown",
-				available: false,
-			};
+				return {
+					branch,
+					commit,
+					shortCommit,
+					isDirty: false, // Could implement this with git status check
+				};
+			} catch (execError) {
+				console.warn("⚠️ Could not execute git commands:", execError);
+				return null;
+			}
+		} catch (error) {
+			console.warn("⚠️ Could not read git information:", error);
+			return null;
 		}
 	}
 }

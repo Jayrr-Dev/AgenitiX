@@ -39,7 +39,10 @@ export function RiskDashboard() {
 				blockedRequests: prev.blockedRequests + Math.floor(Math.random() * 2),
 				optimisticSessions: prev.optimisticSessions + Math.floor(Math.random() * 5),
 				averageRiskScore: Math.floor(Math.random() * 100),
-				threatTrend: ["increasing", "decreasing", "stable"][Math.floor(Math.random() * 3)] as any,
+				threatTrend: ["increasing", "decreasing", "stable"][Math.floor(Math.random() * 3)] as
+					| "increasing"
+					| "decreasing"
+					| "stable",
 			}));
 		}, 5000);
 
@@ -66,6 +69,7 @@ export function RiskDashboard() {
 	if (!isVisible) {
 		return (
 			<button
+				type="button"
 				onClick={toggleDashboard}
 				className="fixed top-4 right-20 z-50 rounded-lg border border-border bg-background/90 p-2 shadow-lg backdrop-blur-sm transition-colors hover:bg-background/95"
 				title="Open Risk Dashboard"
@@ -87,6 +91,7 @@ export function RiskDashboard() {
 			<div className="flex items-center justify-between border-border border-b p-4">
 				<h3 className="font-semibold text-foreground">Adaptive Risk Dashboard</h3>
 				<button
+					type="button"
 					onClick={toggleDashboard}
 					className="text-muted-foreground transition-colors hover:text-foreground"
 				>
@@ -106,19 +111,19 @@ export function RiskDashboard() {
 
 				{/* RISK LEVEL SELECTOR */}
 				<div className="space-y-2">
-					<label className="text-muted-foreground text-xs">Simulate Risk Level:</label>
-					<div className="grid grid-cols-5 gap-1">
+					<div className="text-muted-foreground text-xs">Simulate Risk Level:</div>
+					<div className="grid grid-cols-5 gap-1" role="radiogroup" aria-label="Select risk level">
 						{Object.values(RISK_LEVELS).map((risk) => (
 							<button
+								type="button"
 								key={risk.level}
-								onClick={() => setCurrentRiskLevel(risk.level)}
-								className={`rounded p-2 font-medium text-xs transition-colors ${
+								className={`w-8 h-8 rounded text-xs font-bold transition-all duration-200 ${
 									currentRiskLevel === risk.level
-										? "bg-foreground text-background"
+										? "bg-primary text-primary-foreground shadow-lg"
 										: "bg-muted text-muted-foreground hover:bg-muted/80"
 								}`}
-								style={{
-									backgroundColor: currentRiskLevel === risk.level ? risk.color : undefined,
+								onClick={() => {
+									setCurrentRiskLevel(risk.level);
 								}}
 							>
 								L{risk.level}

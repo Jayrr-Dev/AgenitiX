@@ -1,3 +1,7 @@
+---
+inclusion: manual
+---
+
 Variable Management
 
 Mantra: const by default • smallest scope • no side‑effects at import • one source of truth.

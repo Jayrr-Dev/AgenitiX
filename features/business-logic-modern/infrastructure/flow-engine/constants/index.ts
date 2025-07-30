@@ -19,6 +19,10 @@ import type {
 	TypeMap,
 } from "../types/nodeData";
 
+interface ConfigWithDefault {
+	default?: unknown;
+}
+
 // ============================================================================
 // TYPE LEGEND & COLORS (unified with UltimateTypesafeHandle)
 // ============================================================================
@@ -69,7 +73,7 @@ export const NODE_TYPE_CONFIG = new Proxy({} as Record<string, NodeTypeConfig>, 
 			defaultData: Object.fromEntries(
 				Object.entries(metadata.data || {}).map(([key, config]) => [
 					key,
-					(config as any)?.default || null,
+					(config as ConfigWithDefault)?.default || null,
 				])
 			),
 			hasTargetPosition: false,
@@ -92,7 +96,7 @@ export const NODE_TYPE_CONFIG = new Proxy({} as Record<string, NodeTypeConfig>, 
  * @returns Node configuration object or undefined if not found
  */
 export const getNodeTypeConfig = (nodeType: string): NodeTypeConfig | undefined => {
-	return (NODE_TYPE_CONFIG as any)[nodeType];
+	return (NODE_TYPE_CONFIG as Record<string, NodeTypeConfig>)[nodeType];
 };
 
 // ============================================================================

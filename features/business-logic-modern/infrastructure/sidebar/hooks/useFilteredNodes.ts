@@ -1,13 +1,12 @@
 /**
- * FILTERED NODES HOOK - Feature flag filtering for sidebar nodes
+ * FILTERED NODES HOOK - Optimized with feature flag caching
  *
- * • Filters nodes based on feature flag evaluation
- * • Provides real-time updates when flags change
- * • Handles loading states during flag evaluation
- * • Graceful fallback when flags are unavailable
- * • Integrates with sidebar for dynamic node visibility
+ * • Filters nodes based on feature flags with performance optimizations
+ * • Caches flag results to prevent duplicate API calls
+ * • Supports batch evaluation for better performance
+ * • Graceful fallbacks for API failures
  *
- * Keywords: feature-flags, node-filtering, sidebar-integration, real-time-updates
+ * Keywords: feature-flags, node-filtering, performance, caching
  */
 
 import { useEffect, useState } from "react";
@@ -18,6 +17,55 @@ interface FilteredNodesState {
 	nodes: NodeSpecMetadata[];
 	isLoading: boolean;
 	error: string | null;
+}
+
+// Simple in-memory cache for feature flag results
+interface FlagCacheEntry {
+	enabled: boolean;
+	timestamp: number;
+}
+
+const FLAG_CACHE = new Map<string, FlagCacheEntry>();
+const CACHE_TTL = 30000; // 30 seconds cache
+
+/**
+ * Get feature flag value with caching to prevent duplicate API calls
+ */
+async function getCachedFlagValue(flagName: string): Promise<boolean> {
+	// Check cache first
+	const cached = FLAG_CACHE.get(flagName);
+	if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+		return cached.enabled;
+	}
+
+	// Cache miss - fetch from API
+	try {
+		const response = await fetch("/api/flags/evaluate", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ flagName }),
+		});
+
+		if (response.ok) {
+			const data = await response.json();
+			const enabled = data.enabled;
+
+			// Cache the result
+			FLAG_CACHE.set(flagName, {
+				enabled,
+				timestamp: Date.now(),
+			});
+
+			return enabled;
+		}
+	} catch (error) {
+		console.warn(`Failed to evaluate feature flag '${flagName}':`, error);
+	}
+
+	// Fallback to false for failed requests
+	return false;
 }
 
 /**
@@ -34,54 +82,74 @@ export function useFilteredNodes(): FilteredNodesState {
 	useEffect(() => {
 		const filterNodes = async () => {
 			try {
-				setState((prev) => ({ ...prev, isLoading: true, error: null }));
-
 				// Get all nodes first
 				const allNodes = getAllNodeMetadata();
+
+				// Quick synchronous check - if no nodes have feature flags, return immediately
+				const hasFeatureFlags = allNodes.some((node) => getNodeFeatureFlag(node.kind));
+
+				if (!hasFeatureFlags) {
+					// No feature flags - return all nodes immediately (synchronous)
+					setState({
+						nodes: allNodes,
+						isLoading: false,
+						error: null,
+					});
+					return;
+				}
+
+				// Feature flags exist - proceed with async evaluation
+				setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
 				const filteredNodes: NodeSpecMetadata[] = [];
 
 				// Check if we're on the client side
 				if (typeof window !== "undefined") {
-					// Client-side: use API endpoint for flag evaluation
+					// Collect unique flags to batch evaluate them
+					const uniqueFlags = new Set<string>();
+					const nodeFlags = new Map<
+						string,
+						{ flag: string; hideWhenDisabled: boolean; fallback?: boolean }
+					>();
+
+					// First pass: collect all unique flags
 					for (const node of allNodes) {
-						// Get the feature flag configuration for this node
 						const featureFlag = getNodeFeatureFlag(node.kind);
-
 						if (featureFlag) {
-							try {
-								const response = await fetch("/api/flags/evaluate", {
-									method: "POST",
-									headers: {
-										"Content-Type": "application/json",
-									},
-									body: JSON.stringify({ flagName: featureFlag.flag }),
-								});
+							uniqueFlags.add(featureFlag.flag);
+							nodeFlags.set(node.kind, featureFlag);
+						}
+					}
 
-								if (response.ok) {
-									const data = await response.json();
-									const isEnabled = data.enabled;
+					// If no feature flags exist, skip API calls and add all nodes immediately
+					if (uniqueFlags.size === 0) {
+						filteredNodes.push(...allNodes);
+					} else {
+						// Batch evaluate all unique flags
+						const flagResults = new Map<string, boolean>();
+						await Promise.all(
+							Array.from(uniqueFlags).map(async (flagName) => {
+								const isEnabled = await getCachedFlagValue(flagName);
+								flagResults.set(flagName, isEnabled);
+							})
+						);
 
-									// If flag is disabled and should hide, skip this node
-									if (!isEnabled && featureFlag.hideWhenDisabled) {
-										continue;
-									}
-								} else {
-									// If API fails, use fallback
-									const isEnabled = featureFlag.fallback ?? false;
-									if (!isEnabled && featureFlag.hideWhenDisabled) {
-										continue;
-									}
-								}
-							} catch (_err) {
-								// If flag evaluation fails, use fallback
-								const isEnabled = featureFlag.fallback ?? false;
+						// Second pass: filter nodes based on flag results
+						for (const node of allNodes) {
+							const featureFlag = nodeFlags.get(node.kind);
+
+							if (featureFlag) {
+								const isEnabled =
+									flagResults.get(featureFlag.flag) ?? featureFlag.fallback ?? false;
+
+								// If flag is disabled and should hide, skip this node
 								if (!isEnabled && featureFlag.hideWhenDisabled) {
 									continue;
 								}
 							}
-						}
 
-						filteredNodes.push(node);
+							filteredNodes.push(node);
+						}
 					}
 				} else {
 					// Server-side: include all nodes (feature flags will be evaluated at render time)

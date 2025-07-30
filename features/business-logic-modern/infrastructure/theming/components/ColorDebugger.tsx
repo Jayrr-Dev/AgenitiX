@@ -89,6 +89,7 @@ const ColorSwatch: React.FC<{
 
 	return (
 		<button
+			type="button"
 			onClick={handleCopy}
 			className="flex items-center gap-3 rounded-md border border-border bg-card p-2 text-left hover:ring-2 hover:ring-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/50"
 			title="Click to copy CSS variable"
@@ -126,13 +127,13 @@ const ComponentThemePreview: React.FC<{
 					{componentName.replace(/([A-Z])/g, " $1").trim()}
 				</h3>
 				<button
+					type="button"
 					onClick={handleDebugColors}
 					className="rounded bg-primary px-3 py-1 text-primary-foreground text-xs transition-colors hover:bg-primary/90"
 				>
 					Debug in Console
 				</button>
 			</div>
-
 			<div className="grid grid-cols-1 gap-2 text-xs">
 				<div>
 					<span className="font-medium text-muted-foreground">Primary BG:</span>
@@ -199,6 +200,7 @@ export const ColorDebugger: React.FC<ColorDebuggerProps> = ({
 						</h2>
 						<div className="flex rounded-md bg-muted p-1">
 							<button
+								type="button"
 								onClick={() => setActiveTab("colors")}
 								className={`rounded px-3 py-1 text-sm transition-colors ${
 									activeTab === "colors"
@@ -209,6 +211,7 @@ export const ColorDebugger: React.FC<ColorDebuggerProps> = ({
 								Color Reference
 							</button>
 							<button
+								type="button"
 								onClick={() => setActiveTab("components")}
 								className={`rounded px-3 py-1 text-sm transition-colors ${
 									activeTab === "components"
@@ -221,6 +224,7 @@ export const ColorDebugger: React.FC<ColorDebuggerProps> = ({
 						</div>
 					</div>
 					<button
+						type="button"
 						onClick={() => onVisibilityChange?.(false)}
 						className="text-muted-foreground transition-colors hover:text-foreground"
 					>
@@ -237,6 +241,7 @@ export const ColorDebugger: React.FC<ColorDebuggerProps> = ({
 								<span className="font-medium text-card-foreground text-sm">Theme:</span>
 								<div className="flex rounded-md bg-muted p-1">
 									<button
+										type="button"
 										onClick={() => setSelectedTheme("light")}
 										className={`rounded px-3 py-1 text-sm transition-colors ${
 											selectedTheme === "light"
@@ -247,6 +252,7 @@ export const ColorDebugger: React.FC<ColorDebuggerProps> = ({
 										🌞 Light
 									</button>
 									<button
+										type="button"
 										onClick={() => setSelectedTheme("dark")}
 										className={`rounded px-3 py-1 text-sm transition-colors ${
 											selectedTheme === "dark"
@@ -366,7 +372,9 @@ if (typeof window !== "undefined" && IS_DEVELOPMENT) {
 	(window as any).debugColors = (componentName?: string) => {
 		if (componentName) {
 			// Import and use the debug function
-			import("./colorDebugUtils").then(({ debugComponentColors }) => {});
+			import("./colorDebugUtils").then(({ debugComponentColors }) => {
+				debugComponentColors(componentName, "light");
+			});
 		} else {
 		}
 	};

@@ -1,0 +1,25 @@
+{
+  "enabled": true,
+  "name": "Code Quality Analyzer",
+  "description": "Monitors source code files for changes and analyzes the modified code for potential improvements including code smells, design patterns, maintainability issues, and best practices. Generates actionable suggestions for improving code quality while maintaining existing functionality.",
+  "version": "1",
+  "when": {
+    "type": "userTriggered",
+    "patterns": [
+      "**/*.{ts",
+      "tsx",
+      "js",
+      "jsx}",
+      "!node_modules/**",
+      "!.next/**",
+      "!dist/**",
+      "!build/**",
+      "!coverage/**",
+      "!.git/**"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Analyze the modified code files for potential improvements. Focus on:\n\n1. **Code Smells & Anti-patterns**: Identify long functions, complex conditionals, duplicated code, magic numbers, and other code smells\n2. **Design Patterns**: Suggest appropriate design patterns that could improve the code structure\n3. **Maintainability**: Look for opportunities to improve readability, modularity, and testability\n4. **Best Practices**: Check adherence to React, TypeScript, Next.js, and AgenitiX coding standards\n5. **Performance**: Identify potential performance optimizations (unnecessary re-renders, inefficient algorithms, etc.)\n6. **Security**: Spot potential security issues like input validation, XSS vulnerabilities, or data exposure\n7. **Type Safety**: Suggest improvements to TypeScript usage and type definitions\n8. **Architecture**: Evaluate if the code follows the project's architectural patterns (DDD, feature-based organization, etc.)\n\nFor each suggestion:\n- Explain WHY the change would be beneficial\n- Provide a concrete code example of the improvement\n- Indicate the priority level (High/Medium/Low)\n- Consider the existing functionality and ensure suggestions maintain it\n\nFocus on actionable, specific improvements rather than general advice. Consider the current tech stack: Next.js 15, React 19, TypeScript, Convex, Zustand, Tailwind CSS."
+  }
+}

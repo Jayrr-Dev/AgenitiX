@@ -48,7 +48,7 @@ export interface InspectorNodeInfo {
 			type: string;
 			label?: string;
 			placeholder?: string;
-			ui?: Record<string, any>;
+			ui?: Record<string, unknown>;
 		}>;
 	};
 	isValid: boolean;

@@ -136,16 +136,28 @@ const AdminContent = () => {
 				<div className="mt-8 rounded-lg border border-border bg-card p-6">
 					<h3 className="mb-4 font-semibold text-foreground text-lg">Test Actions</h3>
 					<div className="flex flex-wrap gap-3">
-						<button className="rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600">
+						<button
+							type="button"
+							className="rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
+						>
 							Refresh Page
 						</button>
-						<button className="rounded-lg bg-green-500 px-4 py-2 text-white transition-colors hover:bg-green-600">
+						<button
+							type="button"
+							className="rounded-lg bg-green-500 px-4 py-2 text-white transition-colors hover:bg-green-600"
+						>
 							Test API Call
 						</button>
-						<button className="rounded-lg bg-purple-500 px-4 py-2 text-white transition-colors hover:bg-purple-600">
+						<button
+							type="button"
+							className="rounded-lg bg-purple-500 px-4 py-2 text-white transition-colors hover:bg-purple-600"
+						>
 							Clear Session
 						</button>
-						<button className="rounded-lg bg-orange-500 px-4 py-2 text-white transition-colors hover:bg-orange-600">
+						<button
+							type="button"
+							className="rounded-lg bg-orange-500 px-4 py-2 text-white transition-colors hover:bg-orange-600"
+						>
 							Force Challenge
 						</button>
 					</div>

@@ -8,6 +8,7 @@ import emailCreator from "../../../node-domain/email/emailCreator.node";
 // Import all available node components
 // This should be automatically updated when new nodes are created via Plop
 // Add new node imports here (Plop can auto-inject these)
+import aiAgent from '../../../node-domain/ai/aiAgent.node';
 import testNode from "../../../node-domain/test/testNode.node";
 import triggerToggle from "../../../node-domain/trigger/triggerToggle.node";
 import viewText from "../../../node-domain/view/viewText.node";
@@ -23,6 +24,7 @@ export function useDynamicNodeTypes() {
 	const nodeTypes = useMemo(
 		() => ({
 			// Add new node types here
+    aiAgent,
 			testNode,
 			triggerToggle,
 			createText,

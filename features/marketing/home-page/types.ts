@@ -1,3 +1,9 @@
+/**
+ * MARKETING HOME PAGE TYPES - Type definitions for marketing home page components
+ */
+
+import type React from "react";
+
 export type typeFAQ = {
 	question: string;
 	answer: string;
@@ -62,8 +68,8 @@ export type typeMarqueeImages = {
 	uploadedAt: string;
 };
 
-export type typeSlides = {
-	type: "component" | "image" | "video";
+export type slide = {
+	type: "video" | "image" | "component";
 	src: "";
 	component: React.ReactNode;
 	heading: string;

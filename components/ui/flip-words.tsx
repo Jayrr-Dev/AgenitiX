@@ -67,25 +67,24 @@ export const FlipWords = ({
 				{/* edit suggested by Sajal: https://x.com/DewanganSajal */}
 				{currentWord.split(" ").map((word, wordIndex) => (
 					<motion.span
-						key={word + wordIndex}
+						key={`word-${word}-${wordIndex}-${Date.now()}`}
 						initial={{ opacity: 0, y: 10, filter: "blur(8px)" }}
 						animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
 						transition={{
-							delay: wordIndex * 0.3,
-							duration: 0.3,
+							duration: 0.5,
+							delay: wordIndex * 0.1,
 						}}
 						className="inline-block whitespace-nowrap"
 					>
 						{word.split("").map((letter, letterIndex) => (
 							<motion.span
-								key={word + letterIndex}
+								key={`letter-${word}-${letterIndex}-${Date.now()}`}
 								initial={{ opacity: 0, y: 10, filter: "blur(8px)" }}
 								animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
 								transition={{
-									delay: wordIndex * 0.3 + letterIndex * 0.05,
-									duration: 0.2,
+									duration: 0.5,
+									delay: wordIndex * 0.1 + letterIndex * 0.05,
 								}}
-								className="inline-block"
 							>
 								{letter}
 							</motion.span>

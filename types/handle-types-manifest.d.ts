@@ -1,4 +1,4 @@
 declare module "@/generated/handle-types.manifest.json" {
-	const value: Record<string, any>;
+	const value: Record<string, unknown>;
 	export default value;
 }

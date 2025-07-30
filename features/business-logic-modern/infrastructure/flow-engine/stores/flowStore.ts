@@ -24,6 +24,7 @@ import {
 	cleanupNodeTimers,
 	emergencyCleanupAllTimers,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/timerCleanup";
+import { getNodesWithRemovedInputs } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import {
 	type OnConnect,
 	type OnEdgesChange,
@@ -232,24 +233,40 @@ export const useFlowStore = create<FlowStore>()(
 				},
 				onEdgesChange: (changes) => {
 					set((state) => {
+						// Check for nodes that lost all input connections before applying changes
+						const nodesWithoutInputs = getNodesWithRemovedInputs(changes, state.edges);
+						
+						// Apply edge changes
 						state.edges = applyEdgeChanges(changes, state.edges) as AgenEdge[];
+						
+						// Auto-disable nodes that lost all input connections
+						for (const nodeId of nodesWithoutInputs) {
+							const node = state.nodes.find((n) => n.id === nodeId);
+							if (node && node.data?.isEnabled) {
+								node.data = { ...node.data, isEnabled: false };
+							}
+						}
 					});
 				},
 				onConnect: (connection) => {
 					set((state) => {
 						// Check for circular connections before adding the edge
 						if (
-							wouldCreateCircularConnection(state.edges, connection.source!, connection.target!)
+							connection.source &&
+							connection.target &&
+							wouldCreateCircularConnection(state.edges, connection.source, connection.target)
 						) {
 							console.warn("⚠️ Circular connection prevented:", connection);
 							// Log an error for the source node
-							state.nodeErrors[connection.source!] = state.nodeErrors[connection.source!] || [];
-							state.nodeErrors[connection.source!].push({
-								timestamp: Date.now(),
-								message: "Circular connection detected and prevented",
-								type: "warning",
-								source: "flow-engine",
-							});
+							if (connection.source) {
+								state.nodeErrors[connection.source] = state.nodeErrors[connection.source] || [];
+								state.nodeErrors[connection.source].push({
+									timestamp: Date.now(),
+									message: "Circular connection detected and prevented",
+									type: "warning",
+									source: "flow-engine",
+								});
+							}
 							return; // Don't add the edge
 						}
 

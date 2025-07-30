@@ -9,69 +9,115 @@
  */
 
 /**
- * Safely stringifies a value, handling circular references.
- * @param value - The value to stringify.
- * @param space - The indentation space for formatting.
+ * Safely stringify a value to JSON, handling circular references.
+ * @param value The value to stringify.
+ * @param space The space parameter for JSON.stringify.
  * @returns A JSON string.
  */
-export const safeStringify = (value: any, space = 2): string => {
+export const safeStringify = (value: unknown, space = 2): string => {
 	const cache = new Set();
 	return JSON.stringify(
 		value,
-		(_key, value) => {
-			if (typeof value === "object" && value !== null) {
-				if (cache.has(value)) {
-					// Circular reference found, discard key
-					return;
+		(_key, val) => {
+			if (typeof val === "object" && val !== null) {
+				if (cache.has(val)) {
+					return "[Circular]";
 				}
-				// Store value in our collection
-				cache.add(value);
+				cache.add(val);
 			}
-			return value;
+			return val;
 		},
 		space
 	);
 };
 
 /**
- * Extracts a primary "value" from a node's data object for display.
- * It intelligently checks for common properties that store output values.
- * @param data - The node's data object.
+ * Extracts a meaningful value from node data for display purposes.
+ *
+ * Priority: outputs > outputs.result > inputs.value > data itself (as stringified JSON)
+ *
+ * @param data The node data object.
  * @returns The extracted value, or the stringified object if no primary value is found.
  */
-export const extractNodeValue = (data: Record<string, any> | null | undefined): any => {
+export const extractNodeValue = (data: Record<string, unknown> | null | undefined): unknown => {
 	if (!data) {
 		return null;
 	}
 
-	// Prioritize specific, meaningful keys for output
-	if (data.output !== undefined) {
-		return data.output;
-	}
-	if (data.outputs !== undefined) {
+	// Check for outputs first (most common case)
+	if (data.outputs !== undefined && data.outputs !== null) {
 		return data.outputs;
 	}
-	if (data.value !== undefined) {
-		return data.value;
-	}
-	if (data.text !== undefined) {
-		return data.text;
-	}
-	if (data.result !== undefined) {
-		return data.result;
-	}
-	if (data.payload !== undefined) {
-		return data.payload;
+	
+	// Special handling for AI Agent when outputs is null - check processingResult
+	if (data.selectedProvider || data.systemPrompt) { // This indicates it's an AI Agent node
+		if (data.processingResult !== undefined && data.processingResult !== null) {
+			return data.processingResult;
+		}
+		
+		// If processing hasn't completed yet, return a placeholder instead of the full object
+		if (data.processingState === "processing") {
+			return "Processing...";
+		}
+		
+		if (data.processingState === "error" && data.processingError) {
+			return `Error: ${data.processingError}`;
+		}
+		
+		// If no result yet, return empty instead of the full object
+		return "No response yet";
 	}
 
-	// Fallback for objects with a single key
-	const keys = Object.keys(data);
-	if (keys.length === 1) {
-		return data[keys[0]];
+	// Check for outputs.result (nested case)
+	if (data.outputs && typeof data.outputs === "object" && data.outputs !== null) {
+		const outputs = data.outputs as Record<string, unknown>;
+		if ("result" in outputs) {
+			return outputs.result;
+		}
 	}
 
-	// If no primary value is found, return the whole data object for inspection
-	return data;
+	// Check for inputs.value
+	if (data.inputs && typeof data.inputs === "object" && data.inputs !== null) {
+		const inputs = data.inputs as Record<string, unknown>;
+		if ("value" in inputs) {
+			return inputs.value;
+		}
+	}
+
+	// For AI Agent, check processingResult as fallback if outputs is not available
+	if (data.processingResult !== undefined && data.processingResult !== null) {
+		if (typeof data.processingResult === "string") {
+			return data.processingResult;
+		}
+	}
+
+	// If outputs is an object but shouldn't be (data corruption), try to extract text
+	if (data.outputs && typeof data.outputs === "object" && data.outputs !== null) {
+		const outputObj = data.outputs as Record<string, unknown>;
+		
+		// Try to extract response text from malformed output object
+		if (typeof outputObj.response === "string") {
+			return outputObj.response;
+		}
+		if (typeof outputObj.text === "string") {
+			return outputObj.text;
+		}
+		if (typeof outputObj.content === "string") {
+			return outputObj.content;
+		}
+		
+		// If it contains the full AI response object, extract the response field
+		if (outputObj.threadId && outputObj.response) {
+			return outputObj.response;
+		}
+		
+		// Last resort: stringify the object but warn it shouldn't happen
+		console.warn("AI Agent outputs field contains object instead of string:", outputObj);
+		return JSON.stringify(outputObj);
+	}
+
+	// Fallback to stringified data
+	return safeStringify(data);
 };
 
 /**

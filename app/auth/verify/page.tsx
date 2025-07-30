@@ -71,8 +71,8 @@ export default function VerifyMagicLinkPage() {
 				console.error("Magic link verification failed:", err);
 
 				if (err instanceof Error) {
-					// Check for specific error codes
-					const errorCode = (err as any).code;
+					// Check for specific error codes with proper type checking
+					const errorCode = "code" in err && typeof err.code === "string" ? err.code : null;
 
 					switch (errorCode) {
 						case "EXPIRED_MAGIC_LINK":

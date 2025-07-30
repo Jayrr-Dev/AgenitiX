@@ -5,6 +5,7 @@
  * No duplication, no manual maintenance - everything comes from NodeSpec.
  */
 
+import { spec as aiAgentSpec } from "../../node-domain/ai/aiAgent.node";
 import { spec as createTextSpec } from "../../node-domain/create/createText.node";
 import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
 import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
@@ -19,6 +20,7 @@ import type { NodeSpec } from "../node-core/NodeSpec";
 const nodeSpecs: Record<string, NodeSpec> = {
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
+	aiAgent: aiAgentSpec,
 	storeInMemory: storeInMemorySpec,
 	emailAccount: emailAccountSpec,
 	emailReader: emailReaderSpec,
@@ -109,10 +111,16 @@ const nodeMetadataOverrides: Record<string, Partial<NodeSpecMetadata>> = {
  * @deprecated Use getAllNodeSpecMetadataWithFeatureFlags() for feature flag filtering
  */
 export function getAllNodeSpecMetadata(): NodeSpecMetadata[] {
-	return Object.keys(nodeSpecs).map((nodeType) => {
-		const metadata = getNodeMetadata(nodeType);
-		return metadata!; // We know it exists since we're iterating over nodeSpecs keys
-	});
+	return Object.keys(nodeSpecs)
+		.map((nodeType) => {
+			const metadata = getNodeMetadata(nodeType);
+			if (!metadata) {
+				console.warn(`No metadata found for node type: ${nodeType}`);
+				return null;
+			}
+			return metadata;
+		})
+		.filter((metadata): metadata is NodeSpecMetadata => metadata !== null);
 }
 
 /**

@@ -1,13 +1,15 @@
 /**
- * NODE TELEMETRY COMPONENT - Fires lifecycle events to TelemetryClient
+ * NODE TELEMETRY - Telemetry collection for node lifecycle events
  *
- * • Mounted automatically by withNodeScaffold for every node instance
- * • Currently sends only "node_created" event (once per mount)
- * • Future events (update, activation) can be added easily
+ * • Tracks node creation, execution, and performance metrics
+ * • Integrates with TelemetryClient for data collection
+ * • Lightweight component with minimal performance impact
+ * • Privacy-conscious data collection
  *
- * Keywords: telemetry, analytics, node-created, react, hooks
+ * Keywords: telemetry, analytics, node-lifecycle, performance-tracking
  */
 
+import type React from "react";
 import { useEffect } from "react";
 import { TelemetryClient } from "../telemetry/TelemetryClient";
 
@@ -23,8 +25,7 @@ const NodeTelemetry: React.FC<NodeTelemetryProps> = ({ nodeId, nodeKind }) => {
 			nodeKind,
 			timestamp: Date.now(),
 		});
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []); // fire only once per mount
+	}, [nodeId, nodeKind]); // Include dependencies for telemetry tracking
 
 	return null;
 };

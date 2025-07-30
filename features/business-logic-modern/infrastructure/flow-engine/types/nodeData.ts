@@ -24,8 +24,14 @@ export interface BaseNodeData {
 	/** Vibe Mode error injection properties */
 	isErrorState?: boolean;
 	errorType?: "warning" | "error" | "critical";
-	/** Allow additional properties for flexibility */
-	[key: string]: any;
+	/** Node expansion state for UI */
+	isExpanded?: boolean;
+	/** Node label for display */
+	label?: string;
+	/** Node description for documentation */
+	description?: string;
+	/** Additional properties for flexibility - use unknown for type safety */
+	[key: string]: unknown;
 }
 
 // ============================================================================
@@ -41,14 +47,16 @@ export interface CreateTextData extends BaseNodeData {
 // VIEW DOMAIN NODE DATA INTERFACES
 // ============================================================================
 
+export interface ViewOutputDisplayValue {
+	type: string;
+	content: unknown;
+	id: string;
+	timestamp?: number;
+}
+
 export interface ViewOutputData extends BaseNodeData {
 	label: string;
-	displayedValues: Array<{
-		type: string;
-		content: any;
-		id: string;
-		timestamp?: number;
-	}>;
+	displayedValues: ViewOutputDisplayValue[];
 	maxHistory?: number;
 	autoScroll?: boolean;
 	showTypeIcons?: boolean;
@@ -100,7 +108,7 @@ export interface TestErrorData extends BaseNodeData {
 	triggerMode: "always" | "trigger_on" | "trigger_off";
 	isGeneratingError: boolean;
 	text: string;
-	json: any;
+	json: Record<string, unknown>;
 }
 
 // ============================================================================

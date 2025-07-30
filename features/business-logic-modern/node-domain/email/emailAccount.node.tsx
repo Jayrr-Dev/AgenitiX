@@ -231,7 +231,7 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 		nodeData: EmailAccountData;
 		updateNodeData: (data: Partial<EmailAccountData>) => void;
 	};
-	const { user, token } = useAuthContext();
+	const { token } = useAuthContext();
 
 	// -------------------------------------------------------------------------
 	// 4.2  Derived state
@@ -439,6 +439,12 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 				});
 
 				if (result.success) {
+					const accountData = result.data as {
+						accountId: string;
+						email: string;
+						provider: string;
+						message: string;
+					};
 					updateNodeData({
 						email: authData.email,
 						displayName: authData.displayName || authData.email,
@@ -446,7 +452,7 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 						isConnected: true,
 						connectionStatus: "connected",
 						lastValidated: Date.now(),
-						accountId: result.data.accountId,
+						accountId: accountData.accountId,
 						lastError: "",
 					});
 
@@ -516,12 +522,18 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 			});
 
 			if (result.success) {
+				const accountData = result.data as {
+					accountId: string;
+					email: string;
+					provider: string;
+					message: string;
+				};
 				updateNodeData({
 					isConfigured: true,
 					isConnected: true,
 					connectionStatus: "connected",
 					lastValidated: Date.now(),
-					accountId: result.data.accountId,
+					accountId: accountData.accountId,
 					lastError: "",
 				});
 
@@ -672,8 +684,11 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 					<div className={CONTENT.body}>
 						{/* Provider Selection */}
 						<div>
-							<label className="mb-1 block text-gray-600 text-xs">Provider:</label>
+							<label htmlFor="provider-select" className="mb-1 block text-gray-600 text-xs">
+								Provider:
+							</label>
 							<select
+								id="provider-select"
 								value={provider}
 								onChange={handleProviderChange}
 								className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -689,8 +704,11 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 
 						{/* Email Address */}
 						<div>
-							<label className="mb-1 block text-gray-600 text-xs">Email:</label>
+							<label htmlFor="email-input" className="mb-1 block text-gray-600 text-xs">
+								Email:
+							</label>
 							<input
+								id="email-input"
 								type="email"
 								value={email}
 								onChange={handleEmailChange}
@@ -702,8 +720,11 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 
 						{/* Display Name */}
 						<div>
-							<label className="mb-1 block text-gray-600 text-xs">Display Name:</label>
+							<label htmlFor="display-name-input" className="mb-1 block text-gray-600 text-xs">
+								Display Name:
+							</label>
 							<input
+								id="display-name-input"
 								type="text"
 								value={displayName}
 								onChange={handleDisplayNameChange}
@@ -720,6 +741,7 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 									onClick={handleOAuth2Auth}
 									disabled={!isEnabled || isAuthenticating || !email}
 									className="w-full rounded bg-blue-500 p-2 text-white text-xs hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+									type="button"
 								>
 									{isAuthenticating ? "Authenticating..." : `Connect ${currentProvider?.name}`}
 								</button>
@@ -732,8 +754,11 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 								{provider === "imap" && (
 									<div className="grid grid-cols-2 gap-2">
 										<div>
-											<label className="mb-1 block text-gray-600 text-xs">IMAP Host:</label>
+											<label htmlFor="imap-host" className="mb-1 block text-gray-600 text-xs">
+												IMAP Host:
+											</label>
 											<input
+												id="imap-host"
 												type="text"
 												value={imapHost}
 												onChange={handleManualFieldChange("imapHost")}
@@ -743,8 +768,11 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 											/>
 										</div>
 										<div>
-											<label className="mb-1 block text-gray-600 text-xs">Port:</label>
+											<label htmlFor="imap-port" className="mb-1 block text-gray-600 text-xs">
+												Port:
+											</label>
 											<input
+												id="imap-port"
 												type="number"
 												value={imapPort}
 												onChange={handleManualFieldChange("imapPort")}
@@ -759,8 +787,11 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 								{provider === "smtp" && (
 									<div className="grid grid-cols-2 gap-2">
 										<div>
-											<label className="mb-1 block text-gray-600 text-xs">SMTP Host:</label>
+											<label htmlFor="smtp-host" className="mb-1 block text-gray-600 text-xs">
+												SMTP Host:
+											</label>
 											<input
+												id="smtp-host"
 												type="text"
 												value={smtpHost}
 												onChange={handleManualFieldChange("smtpHost")}
@@ -770,8 +801,11 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 											/>
 										</div>
 										<div>
-											<label className="mb-1 block text-gray-600 text-xs">Port:</label>
+											<label htmlFor="smtp-port" className="mb-1 block text-gray-600 text-xs">
+												Port:
+											</label>
 											<input
+												id="smtp-port"
 												type="number"
 												value={smtpPort}
 												onChange={handleManualFieldChange("smtpPort")}
@@ -785,8 +819,11 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 
 								<div className="grid grid-cols-2 gap-2">
 									<div>
-										<label className="mb-1 block text-gray-600 text-xs">Username:</label>
+										<label htmlFor="username" className="mb-1 block text-gray-600 text-xs">
+											Username:
+										</label>
 										<input
+											id="username"
 											type="text"
 											value={username}
 											onChange={handleManualFieldChange("username")}
@@ -796,8 +833,11 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 										/>
 									</div>
 									<div>
-										<label className="mb-1 block text-gray-600 text-xs">Password:</label>
+										<label htmlFor="password" className="mb-1 block text-gray-600 text-xs">
+											Password:
+										</label>
 										<input
+											id="password"
 											type="password"
 											value={password}
 											onChange={handleManualFieldChange("password")}
@@ -809,8 +849,9 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 								</div>
 
 								<div className="flex gap-4">
-									<label className="flex items-center text-xs">
+									<label htmlFor={`use-ssl-${provider}`} className="flex items-center text-xs">
 										<input
+											id={`use-ssl-${provider}`}
 											type="checkbox"
 											checked={provider === "imap" ? useSSL : useTLS}
 											onChange={handleManualFieldChange(provider === "imap" ? "useSSL" : "useTLS")}
@@ -825,6 +866,7 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 									onClick={handleManualSave}
 									disabled={!(isEnabled && email && username && password)}
 									className="w-full rounded bg-green-500 p-2 text-white text-xs hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50"
+									type="button"
 								>
 									Save Configuration
 								</button>
@@ -838,6 +880,7 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 									onClick={handleTestConnection}
 									disabled={!isEnabled || connectionStatus === "connecting"}
 									className="flex-1 rounded bg-blue-500 p-2 text-white text-xs hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+									type="button"
 								>
 									{connectionStatus === "connecting" ? "Testing..." : "Test Connection"}
 								</button>

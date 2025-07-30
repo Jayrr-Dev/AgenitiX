@@ -1,13 +1,13 @@
 /**
- * FLOW ACTIONS - Action buttons for flow management
+ * FLOW ACTIONS COMPONENT - Action buttons for individual flow cards
  *
  * • Delete flow with confirmation dialog
- * • Share flow with comprehensive access management
- * • Secure user authentication checks
- * • Responsive design with modern UI
- * • Full Convex database integration
+ * • Share flow with external users
+ * • Edit flow metadata (name, description)
+ * • Responsive dropdown menu for mobile
+ * • Proper error handling and user feedback
  *
- * Keywords: flow-actions, delete, share, confirmation, authentication, responsive, convex
+ * Keywords: flow-actions, delete-flow, share-flow, dropdown, responsive
  */
 
 "use client";
@@ -37,8 +37,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { Edit3, Share2, Trash2 } from "lucide-react";
+import type React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Flow } from "../types";
@@ -82,7 +84,7 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 		try {
 			// Use Convex to delete the flow
 			await deleteFlow({
-				flow_id: flow.id as any,
+				flow_id: flow.id as Id<"flows">,
 				user_id: user.id,
 			});
 
@@ -108,7 +110,7 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 		try {
 			// Use Convex to update the flow
 			await updateFlow({
-				flow_id: flow.id as any,
+				flow_id: flow.id as Id<"flows">,
 				user_id: user.id,
 				name: editName.trim(),
 				description: editDescription.trim() || undefined,
@@ -223,14 +225,9 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 							</div>
 							<Switch
 								id="privacy"
-								checked={!editIsPrivate}
-								onCheckedChange={(checked: boolean) => setEditIsPrivate(!checked)}
+								checked={editIsPrivate}
+								onCheckedChange={(checked) => setEditIsPrivate(checked)}
 								disabled={isUpdating}
-								className={`transition-all duration-200 ${
-									editIsPrivate
-										? "data-[state=unchecked]:bg-orange-500"
-										: "data-[state=checked]:bg-green-600"
-								}`}
 							/>
 						</div>
 					</div>
@@ -242,7 +239,7 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 						>
 							Cancel
 						</Button>
-						<Button onClick={handleEdit} disabled={isUpdating || !editName.trim()}>
+						<Button type="button" onClick={handleEdit} disabled={isUpdating || !editName.trim()}>
 							{isUpdating ? "Saving..." : "Save Changes"}
 						</Button>
 					</DialogFooter>
@@ -253,20 +250,18 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 			<AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Delete Flow</AlertDialogTitle>
+						<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
 						<AlertDialogDescription>
-							Are you sure you want to delete "{flow.name}"? This action cannot be undone and will
-							remove all associated data including shares and access requests.
+							This action cannot be undone. This will permanently delete your flow and remove its
+							data from our servers.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-						<AlertDialogAction
-							onClick={handleDelete}
-							disabled={isDeleting}
-							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-						>
-							{isDeleting ? "Deleting..." : "Delete"}
+						<AlertDialogCancel onClick={() => setShowDeleteDialog(false)} disabled={isDeleting}>
+							Cancel
+						</AlertDialogCancel>
+						<AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+							{isDeleting ? "Deleting..." : "Delete Flow"}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

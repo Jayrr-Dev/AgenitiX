@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 	fallback?: ReactNode;
 }
 
-export const ProtectedRoute = ({ children, fallback }: ProtectedRouteProps) => {
+export const ProtectedRoute = ({ children }: Pick<ProtectedRouteProps, "children">) => {
 	const { user, isLoading, isAuthenticated } = useAuthContext();
 	const router = useRouter();
 	const [mounted, setMounted] = useState(false);

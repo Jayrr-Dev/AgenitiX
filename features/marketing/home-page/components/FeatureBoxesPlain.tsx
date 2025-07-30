@@ -84,13 +84,16 @@ const GridPattern: React.FC<GridPatternProps> = ({ width, height, x, y, squares,
 
 			{squares && (
 				<svg x={x} y={y} className="overflow-visible">
+					<title>Feature background pattern</title>
 					{squares.map(([sx, sy], _idx) => (
 						<rect
 							key={`${sx}-${sy}`}
-							width={width + 1}
-							height={height + 1}
-							x={sx * width}
-							y={sy * height}
+							x={sx}
+							y={sy}
+							width={1}
+							height={1}
+							fill="currentColor"
+							className="text-neutral-400/20"
 						/>
 					))}
 				</svg>
@@ -99,13 +102,19 @@ const GridPattern: React.FC<GridPatternProps> = ({ width, height, x, y, squares,
 	);
 };
 
-/* 🧠 Deterministic Pattern Generator (hydration-safe) */
+/* 🎲 Generate deterministic pattern */
 function generateDeterministicPattern(seed: number): [number, number][] {
 	const pattern: [number, number][] = [];
-	for (let i = 0; i < 5; i++) {
-		const x = ((seed + i * 13) % 4) + 7; // 7-10
-		const y = ((seed + i * 17) % 6) + 1; // 1-6
+	const rng = (a: number, b: number) => {
+		const x = Math.sin(seed + a * 12.9898 + b * 78.233) * 43758.5453;
+		return x - Math.floor(x);
+	};
+
+	for (let i = 0; i < 20; i++) {
+		const x = Math.floor(rng(i, 0) * 20);
+		const y = Math.floor(rng(i, 1) * 20);
 		pattern.push([x, y]);
 	}
+
 	return pattern;
 }

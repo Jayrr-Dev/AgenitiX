@@ -62,20 +62,18 @@ const validateNodeData = createNodeValidator(ViewTextDataSchema, "ViewText");
 // -----------------------------------------------------------------------------
 
 const COMMON_OBJECT_PROPS = [
+	"response", // Prioritize response field for AI outputs
 	"text",
 	"output",
 	"value",
-	"data",
 	"content",
 	"message",
 	"result",
-	"response",
+	"data",
 	"body",
 	"payload",
 	"input",
 ] as const;
-
-type Primitive = string | number | boolean | bigint | symbol | null | undefined;
 
 function formatValue(value: unknown): string {
 	// ── Primitives ──────────────────────────────────────────────────────────────
@@ -265,15 +263,14 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 					return false;
 				}
 
-				// Get text from source node
+				// Get text from source node - ONLY from outputs
 				let nodeText = "";
-				if (n.data?.output !== undefined) {
+				if (n.data?.outputs !== undefined && n.data.outputs !== null) {
+					nodeText = formatValue(n.data.outputs);
+				} else if (n.data?.output !== undefined) {
 					nodeText = formatValue(n.data.output);
-				} else if (n.data?.store !== undefined) {
-					nodeText = formatValue(n.data.store);
-				} else {
-					nodeText = formatValue(n.data);
 				}
+				// Remove store and processingResult fallbacks - only use outputs
 
 				// Check if content is meaningful (not default values)
 				const isDefaultText =
@@ -285,14 +282,15 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 				return hasMeaningfulContent;
 			})
 			.map((n) => {
-				// Get the meaningful text
+				// Get the meaningful text - ONLY from outputs
+				if (n.data?.outputs !== undefined && n.data.outputs !== null) {
+					return formatValue(n.data.outputs);
+				}
 				if (n.data?.output !== undefined) {
 					return formatValue(n.data.output);
 				}
-				if (n.data?.store !== undefined) {
-					return formatValue(n.data.store);
-				}
-				return formatValue(n.data);
+				// Remove store and processingResult fallbacks - only use outputs
+				return "";
 			})
 			.filter((t) => t.trim().length > 0);
 
@@ -307,7 +305,6 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 
 			updateNodeData({
 				inputs: hasConnectedInputs ? joined || "No inputs" : "No inputs",
-				store: hasContent ? joined : "No inputs",
 				isActive: active,
 			});
 
@@ -343,17 +340,17 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 				<div className={CONTENT.expanded}>
 					<div className={CONTENT.body}>
 						<div className="whitespace-pre-line break-words text-center font-normal text-xs">
-							{validation.data.store || "No inputs"}
+							{validation.data.outputs || "No inputs"}
 						</div>
 					</div>
 				</div>
 			) : (
 				<div className={CONTENT.collapsed}>
-					{spec.receivedData?.showInCollapsed && validation.data.store !== "No inputs" ? (
+					{spec.receivedData?.showInCollapsed && validation.data.outputs !== "No inputs" ? (
 						<div
 							className={` nowheel h-[80px] w-[100px] overflow-y-auto text-center text-xs ${categoryStyles.primary}`}
 						>
-							{validation.data.store || "..."}
+							{validation.data.outputs || "..."}
 						</div>
 					) : (
 						<div className={`font-medium text-xs tracking-wide ${categoryStyles.primary}`}>...</div>

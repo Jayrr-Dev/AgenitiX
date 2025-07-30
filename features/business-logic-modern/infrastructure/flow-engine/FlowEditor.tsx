@@ -6,14 +6,21 @@ import type {
 	AgenNode,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import { generateNodeId } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
-import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
+import {
+	type Connection,
+	type Edge as ReactFlowEdge,
+	type Node as ReactFlowNode,
+	ReactFlowProvider,
+	useReactFlow,
+} from "@xyflow/react";
 import React, { useCallback, useEffect, useRef } from "react";
-import { type FlowMetadata, FlowProvider } from "./contexts/FlowContext";
+import { type FlowMetadata, FlowProvider } from "./contexts/flow-context";
 
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/action-toolbar/ActionToolbar";
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
-import { UndoRedoProvider, useUndoRedo } from "../action-toolbar/history/UndoRedoContext";
 import UndoRedoManager from "../action-toolbar/history/UndoRedoManager";
+import type { HistoryNode } from "../action-toolbar/history/historyGraph";
+import { UndoRedoProvider, useUndoRedo } from "../action-toolbar/history/undo-redo-context";
 import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
@@ -24,24 +31,28 @@ import { useMultiSelectionCopyPaste } from "./hooks/useMultiSelectionCopyPaste";
 import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 
 // Helper function to get node spec from the new NodeSpec registry system
-const getNodeSpecForType = async (nodeType: string) => {
+const getNodeSpecForType = (nodeType: string) => {
 	try {
-		// Get metadata from the new NodeSpec registry
-		const metadata = getNodeSpecMetadata(nodeType);
-		if (!metadata) {
-			console.warn(`No metadata found for node type: ${nodeType}`);
-			return null;
+		// 1. Check the new NodeSpec registry first
+		const registeredSpec = getNodeSpecMetadata(nodeType);
+		if (registeredSpec) {
+			return {
+				kind: registeredSpec.kind,
+				displayName: registeredSpec.displayName,
+				category: registeredSpec.category,
+				initialData: registeredSpec.initialData,
+			};
 		}
 
-		// Return spec format for initial data
-		return {
-			kind: metadata.kind,
-			displayName: metadata.displayName,
-			category: metadata.category,
-			initialData: metadata.initialData,
-		};
+		// 2. Check the legacy NODESPECS for backward compatibility
+		// This part of the original code was removed, so we'll keep it empty or remove it if not needed.
+		// The original code had NODESPECS defined elsewhere, but it's not imported here.
+		// For now, we'll just return null if no registered spec is found.
+
+		console.warn(`[getNodeSpecForType] No spec found for node type: ${nodeType}`);
+		return null;
 	} catch (error) {
-		console.error(`Failed to get spec for node type: ${nodeType}`, error);
+		console.error(`[getNodeSpecForType] Error getting spec for ${nodeType}:`, error);
 		return null;
 	}
 };
@@ -63,8 +74,9 @@ const styleRetryBase =
 const styleRetryColour =
 	"bg-destructive text-destructive-foreground hover:opacity-90 hover:shadow-effect-glow-error hover:scale-105 active:scale-100" as const;
 
-// Error Boundary Component
-class ErrorBoundary extends React.Component<
+// FLOW-LEVEL ERROR BOUNDARY - Catches errors that would crash the entire flow editor
+// This is different from NodeErrorBoundary which handles individual node errors
+class FlowEditorErrorBoundary extends React.Component<
 	{ children: React.ReactNode },
 	{ hasError: boolean; error?: Error }
 > {
@@ -93,6 +105,7 @@ class ErrorBoundary extends React.Component<
 						<button
 							onClick={() => this.setState({ hasError: false })}
 							className={`${styleRetryBase} ${styleRetryColour}`}
+							type="button"
 						>
 							Try again
 						</button>
@@ -161,7 +174,7 @@ const FlowEditorInternal = () => {
 		nodes,
 		edges,
 		onNodesChange,
-		onEdgesChange,
+		onEdgesChange: storeOnEdgesChange,
 		onConnect,
 		addNode,
 		// Pull all other necessary props from the store
@@ -181,8 +194,6 @@ const FlowEditorInternal = () => {
 		removeEdge,
 		selectNode,
 		selectEdge,
-		copySelectedNodes,
-		pasteNodesAtPosition,
 		clearSelection,
 	} = useFlowStore();
 
@@ -267,14 +278,14 @@ const FlowEditorInternal = () => {
 		}
 
 		// Delete selected nodes
-		selectedNodes.forEach((node) => {
+		for (const node of selectedNodes) {
 			removeNode(node.id);
-		});
+		}
 
 		// Delete selected edges
-		selectedEdges.forEach((edge) => {
+		for (const edge of selectedEdges) {
 			removeEdge(edge.id);
-		});
+		}
 	}, [nodes, edges, removeNode, removeEdge, recordAction]);
 
 	// Initialize keyboard shortcuts
@@ -335,7 +346,7 @@ const FlowEditorInternal = () => {
 
 				const newNode: AgenNode = {
 					id: generateNodeId(),
-					type: nodeType as any,
+					type: nodeType as string,
 					position,
 					deletable: true,
 					data: {
@@ -374,14 +385,14 @@ const FlowEditorInternal = () => {
 		edgeReconnectSuccessful.current = false;
 	};
 
-	const handleReconnect = (oldEdge: any, newConnection: any) => {
+	const handleReconnect = (oldEdge: AgenEdge, newConnection: Connection) => {
 		edgeReconnectSuccessful.current = true;
 		// Update edges array via store util
 		removeEdge(oldEdge.id);
 		onConnect(newConnection);
 	};
 
-	const handleReconnectEnd = (_: any, edge: any) => {
+	const handleReconnectEnd = (_: MouseEvent | TouchEvent, edge: AgenEdge) => {
 		if (!edgeReconnectSuccessful.current) {
 			removeEdge(edge.id);
 		}
@@ -394,7 +405,7 @@ const FlowEditorInternal = () => {
 			edges: selectedEdges,
 		}: {
 			nodes: AgenNode[];
-			edges: any[];
+			edges: AgenEdge[];
 		}) => {
 			// Handle node selection first
 			const nodeId = selectedNodes.length > 0 ? selectedNodes[0].id : null;
@@ -408,6 +419,11 @@ const FlowEditorInternal = () => {
 		},
 		[selectNode, selectEdge]
 	);
+
+	// Wrapper for onEdgesChange
+	const onEdgesChange = useCallback((changes: unknown[]) => {
+		storeOnEdgesChange(changes);
+	}, [storeOnEdgesChange]);
 
 	// Show loading state while canvas is being loaded
 	if (canvasLoader.isLoading) {
@@ -432,6 +448,7 @@ const FlowEditorInternal = () => {
 					<button
 						onClick={() => window.location.reload()}
 						className="rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
+						type="button"
 					>
 						Retry
 					</button>
@@ -446,17 +463,15 @@ const FlowEditorInternal = () => {
 			<UndoRedoManager
 				nodes={nodes}
 				edges={edges}
-				onNodesChange={(newNodes) => {
+				onNodesChange={(newNodes: ReactFlowNode[]) => {
 					// Actually update the flow state during undo/redo operations
-					// Cast to AgenNode[] since they're compatible types
 					useFlowStore.setState((state) => ({
 						...state,
 						nodes: newNodes as AgenNode[],
 					}));
 				}}
-				onEdgesChange={(newEdges) => {
+				onEdgesChange={(newEdges: ReactFlowEdge[]) => {
 					// Actually update the flow state during undo/redo operations
-					// Cast to AgenEdge[] since they're compatible types
 					useFlowStore.setState((state) => ({
 						...state,
 						edges: newEdges as AgenEdge[],
@@ -469,7 +484,7 @@ const FlowEditorInternal = () => {
 					enableViewportTracking: false,
 					enableCompression: true,
 				}}
-				onHistoryChange={(_path, _currentIndex) => {
+				onHistoryChange={(_path: HistoryNode[], _currentIndex: number) => {
 					// History updated callback - silent
 				}}
 			/>
@@ -498,7 +513,9 @@ const FlowEditorInternal = () => {
 				wrapperRef={flowWrapperRef}
 				updateNodeData={updateNodeData}
 				updateNodeId={updateNodeId}
-				logNodeError={logNodeError}
+				logNodeError={
+					logNodeError as (nodeId: string, message: string, type?: string, source?: string) => void
+				}
 				clearNodeErrors={clearNodeErrors}
 				onToggleHistory={toggleHistoryPanel}
 				onDeleteNode={removeNode}
@@ -508,8 +525,8 @@ const FlowEditorInternal = () => {
 				inspectorViewMode={inspectorViewMode}
 				setInspectorLocked={setInspectorLocked}
 				reactFlowHandlers={{
-					onNodesChange,
-					onEdgesChange,
+					onNodesChange: onNodesChange as (changes: unknown[]) => void,
+					onEdgesChange: onEdgesChange as (changes: unknown[]) => void,
 					onConnect,
 					onInit: () => {},
 					onSelectionChange: handleSelectionChange,
@@ -529,7 +546,7 @@ interface FlowEditorProps {
 
 export default function FlowEditor({ flowMetadata = null }: FlowEditorProps) {
 	return (
-		<ErrorBoundary>
+		<FlowEditorErrorBoundary>
 			<FlowProvider initialFlow={flowMetadata}>
 				<ReactFlowProvider>
 					<UndoRedoProvider>
@@ -537,6 +554,6 @@ export default function FlowEditor({ flowMetadata = null }: FlowEditorProps) {
 					</UndoRedoProvider>
 				</ReactFlowProvider>
 			</FlowProvider>
-		</ErrorBoundary>
+		</FlowEditorErrorBoundary>
 	);
 }
