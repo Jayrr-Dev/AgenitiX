@@ -12,8 +12,8 @@
 
 import TypeSafeHandle from "@/components/nodes/handles/TypeSafeHandle";
 import {
-	useCategoryThemeWithSpec,
-	useNodeStyleClasses,
+  useCategoryThemeWithSpec,
+  useNodeStyleClasses,
 } from "@/features/business-logic-modern/infrastructure/theming/stores/nodeStyleStore";
 import type { NodeProps, Position } from "@xyflow/react";
 import { useTheme } from "next-themes";
@@ -30,11 +30,13 @@ import { runServerActions } from "./serverActions/serverActionRegistry";
  * This allows us to inject Tailwind classes from tokens.json
  */
 const getInjectableClasses = (cssVar: string): string => {
-	if (typeof window === "undefined") {
-		return "";
-	}
-	const value = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim();
-	return value || "";
+  if (typeof window === "undefined") {
+    return "";
+  }
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(cssVar)
+    .trim();
+  return value || "";
 };
 
 /**
@@ -47,77 +49,118 @@ const getInjectableClasses = (cssVar: string): string => {
  * • Interactive states (hover, selection, activation, error)
  * • Handle positioning and rendering
  * • Design system token integration
+ * • Modern UI effects (gradients, enhanced shadows, transitions)
  */
 const NodeScaffoldWrapper = ({
-	children,
-	style,
-	className,
-	spec,
+  children,
+  style,
+  className,
+  spec,
+  isDisabled = false,
 }: {
-	children: React.ReactNode;
-	style: React.CSSProperties;
-	className?: string;
-	spec: NodeSpec;
+  children: React.ReactNode;
+  style: React.CSSProperties;
+  className?: string;
+  spec: NodeSpec;
+  isDisabled?: boolean;
 }) => {
-	// Get theme for dark mode detection
-	const { resolvedTheme } = useTheme();
-	const [mounted, setMounted] = React.useState(false);
+  // Get theme for dark mode detection
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
 
-	// Ensure client-side rendering to avoid hydration mismatch
-	React.useEffect(() => {
-		setMounted(true);
-	}, []);
+  // Ensure client-side rendering to avoid hydration mismatch
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
-	// Get injectable classes for core node styling
-	const wrapperClasses = getInjectableClasses("--core-coreNode-classes-wrapper");
-	const containerClasses = getInjectableClasses("--core-coreNode-classes-container");
-	const borderClasses = getInjectableClasses("--core-coreNode-classes-border");
+  // Get injectable classes for core node styling
+  const wrapperClasses = getInjectableClasses(
+    "--core-coreNode-classes-wrapper"
+  );
+  const containerClasses = getInjectableClasses(
+    "--core-coreNode-classes-container"
+  );
+  const borderClasses = getInjectableClasses("--core-coreNode-classes-border");
 
-	// Build complete structural styling
-	const structuralClasses = [
-		// Base structural classes
-		"relative rounded-lg transition-all duration-200",
-		// Injectable classes from tokens
-		wrapperClasses,
-		containerClasses,
-		borderClasses,
-		// Theme classes from parent (includes activation glow)
-		className,
-	]
-		.filter(Boolean)
-		.join(" ");
+  // Build complete structural styling with modern enhancements
+  const structuralClasses = [
+    // Base structural classes with modern border radius and transitions
+    "relative rounded-[12px] transition-all duration-300 ease-out",
+    // Injectable classes from tokens
+    wrapperClasses,
+    containerClasses,
+    borderClasses,
+    // Theme classes from parent (includes activation glow)
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-	// Get custom theming if available
-	const customTheming = spec.theming;
-	const isDarkMode = mounted && resolvedTheme === "dark";
+  // Get custom theming if available
+  const customTheming = spec.theming;
+  const isDarkMode = mounted && resolvedTheme === "dark";
+  const categoryLower = spec.category.toLowerCase();
 
-	// Complete style object with all structural properties
-	const completeStyle: React.CSSProperties = {
-		...style,
-		// Scaffold handles ALL border styling
-		borderWidth: `var(--node-${spec.category.toLowerCase()}-border-width)`,
-		borderStyle: "solid",
-		// Use custom theming if available and in dark mode, otherwise fall back to tokens
-		borderColor:
-			isDarkMode && customTheming?.borderDark
-				? customTheming.borderDark
-				: `var(--node-${spec.category.toLowerCase()}-border)`,
-		// Background from category tokens or custom theming
-		backgroundColor:
-			isDarkMode && customTheming?.bgDark
-				? customTheming.bgDark
-				: `var(--node-${spec.category.toLowerCase()}-bg)`,
-		// Ensure proper layering
-		position: "relative",
-		// Smooth transitions for all properties
-		transition: "all 200ms ease-in-out",
-	};
+  // Complete style object with all structural properties including modern effects
+  const completeStyle: React.CSSProperties = {
+    ...style,
+    // Scaffold handles ALL border styling
+    borderWidth: `var(--node-${categoryLower}-border-width)`,
+    borderStyle: "solid",
+    // Enhanced border radius for modern look
+    borderRadius: "var(--node-global-modern-radius)",
+    // Use custom theming if available and in dark mode, otherwise fall back to tokens
+    borderColor:
+      isDarkMode && customTheming?.borderDark
+        ? customTheming.borderDark
+        : `var(--node-${categoryLower}-border)`,
+    // Modern gradient backgrounds - the CSS variable automatically changes in dark mode
+    background: isDisabled
+      ? `var(--node-global-disabled-gradient), var(--node-${categoryLower}-bg-gradient)`
+      : `var(--node-${categoryLower}-bg-gradient)`,
+    // Enhanced shadows for depth - dark mode gets layered shadows with inset highlights
+    boxShadow: isDisabled
+      ? `var(--node-global-disabled-shadow), var(--node-${categoryLower}-modern-shadow)`
+      : `var(--node-${categoryLower}-modern-shadow)`,
+    // Ensure proper layering
+    position: "relative",
+    // Modern smooth transitions for all properties
+    transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1)",
+    // Add backdrop filter for glass effect (optional) - reduced when disabled
+    backdropFilter: isDisabled ? "blur(4px)" : "blur(8px)",
+    // Reduced opacity for disabled state
+    opacity: isDisabled ? "var(--node-global-disabled-opacity)" : "1",
+    // Prevent interaction when disabled
+    pointerEvents: isDisabled ? "none" : "auto",
+  };
 
-	return (
-		<div className={structuralClasses} style={completeStyle}>
-			{children}
-		</div>
-	);
+  return (
+    <div
+      className={structuralClasses}
+      style={completeStyle}
+      // Enhanced hover effects - only when not disabled, with dark mode support
+      onMouseEnter={
+        isDisabled
+          ? undefined
+          : (e) => {
+              const target = e.currentTarget;
+              target.style.boxShadow = `var(--node-${categoryLower}-modern-shadow-hover)`;
+              target.style.transform = "translateY(-2px) scale(1.01)";
+            }
+      }
+      onMouseLeave={
+        isDisabled
+          ? undefined
+          : (e) => {
+              const target = e.currentTarget;
+              target.style.boxShadow = `var(--node-${categoryLower}-modern-shadow)`;
+              target.style.transform = "translateY(0) scale(1)";
+            }
+      }
+    >
+      {children}
+    </div>
+  );
 };
 
 /**
@@ -129,159 +172,183 @@ const NodeScaffoldWrapper = ({
  * @param Component The node's raw React UI component.
  * @returns A complete, production-ready node component with theming integration.
  */
-export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>) {
-	// The returned component is what React Flow will render.
-	const WrappedComponent = (props: NodeProps) => {
-		// Extract React Flow state for theming
-		const isSelected = props.selected;
-		const isError = false; // TODO: Extract from node data or validation state
-		const isActive = (props.data as any)?.isActive;
+export function withNodeScaffold(
+  spec: NodeSpec,
+  Component: React.FC<NodeProps>
+) {
+  // The returned component is what React Flow will render.
+  const WrappedComponent = (props: NodeProps) => {
+    // Extract React Flow state for theming
+    const isSelected = props.selected;
+    const isError = false; // TODO: Extract from node data or validation state
+    const isActive = (props.data as any)?.isActive;
+    const isDisabled = (props.data as any)?.isEnabled === false;
 
-		// Get theming classes from the theming system
-		const nodeStyleClasses = useNodeStyleClasses(isSelected, isError, isActive);
-		const categoryTheme = useCategoryThemeWithSpec(spec.kind, spec);
+    // Get theming classes from the theming system
+    const nodeStyleClasses = useNodeStyleClasses(isSelected, isError, isActive);
+    const categoryTheme = useCategoryThemeWithSpec(spec.kind, spec);
 
-		// Build the complete className with theming
-		const themeClasses = React.useMemo(() => {
-			const baseClasses = [
-				nodeStyleClasses, // Includes hover, selection, error, and activation glow effects
-			];
+    // Build the complete className with theming
+    const themeClasses = React.useMemo(() => {
+      const baseClasses = [
+        nodeStyleClasses, // Includes hover, selection, error, and activation glow effects
+      ];
 
-			// Apply category-based theming if available
-			if (categoryTheme) {
-				baseClasses.push(
-					categoryTheme.background.light,
-					categoryTheme.background.dark,
-					categoryTheme.border.light,
-					categoryTheme.border.dark
-				);
-			}
+      // Apply category-based theming if available
+      if (categoryTheme) {
+        baseClasses.push(
+          categoryTheme.background.light,
+          categoryTheme.background.dark,
+          categoryTheme.border.light,
+          categoryTheme.border.dark
+        );
+      }
 
-			return baseClasses.join(" ");
-		}, [nodeStyleClasses, categoryTheme]);
+      return baseClasses.join(" ");
+    }, [nodeStyleClasses, categoryTheme]);
 
-		// Extract expanded state from component data or use collapsed as default
-		// Node components manage isExpanded through their data schema and useNodeData hook
-		const isExpanded = (props.data as any)?.isExpanded;
-		const currentSize = isExpanded ? spec.size.expanded : spec.size.collapsed;
+    // Extract expanded state from component data or use collapsed as default
+    // Node components manage isExpanded through their data schema and useNodeData hook
+    const isExpanded = (props.data as any)?.isExpanded;
+    const currentSize = isExpanded ? spec.size.expanded : spec.size.collapsed;
 
-		const sizeConfig = currentSize as any;
-		const style: React.CSSProperties = {
-			minWidth: typeof sizeConfig.width === "number" ? `${sizeConfig.width}px` : sizeConfig.width,
-			minHeight:
-				typeof sizeConfig.height === "number" ? `${sizeConfig.height}px` : sizeConfig.height,
-			width: typeof sizeConfig.width === "number" ? `${sizeConfig.width}px` : sizeConfig.width,
-			height:
-				sizeConfig.height === "auto"
-					? "auto"
-					: typeof sizeConfig.height === "number"
-						? `${sizeConfig.height}px`
-						: sizeConfig.height,
-		};
+    const sizeConfig = currentSize as any;
+    const style: React.CSSProperties = {
+      minWidth:
+        typeof sizeConfig.width === "number"
+          ? `${sizeConfig.width}px`
+          : sizeConfig.width,
+      minHeight:
+        typeof sizeConfig.height === "number"
+          ? `${sizeConfig.height}px`
+          : sizeConfig.height,
+      width:
+        typeof sizeConfig.width === "number"
+          ? `${sizeConfig.width}px`
+          : sizeConfig.width,
+      height:
+        sizeConfig.height === "auto"
+          ? "auto"
+          : typeof sizeConfig.height === "number"
+            ? `${sizeConfig.height}px`
+            : sizeConfig.height,
+    };
 
-		// Calculate handle positioning for multiple handles on same side
-		const handlesByPosition = React.useMemo(() => {
-			const grouped: Record<string, typeof spec.handles> = {};
-			const allHandles = spec.handles || [];
+    // Calculate handle positioning for multiple handles on same side
+    const handlesByPosition = React.useMemo(() => {
+      const grouped: Record<string, typeof spec.handles> = {};
+      const allHandles = spec.handles || [];
 
-			allHandles.forEach((handle) => {
-				const pos = handle.position;
-				if (!grouped[pos]) {
-					grouped[pos] = [];
-				}
-				grouped[pos].push(handle);
-			});
-			return grouped;
-		}, [spec.handles]);
+      allHandles.forEach((handle) => {
+        const pos = handle.position;
+        if (!grouped[pos]) {
+          grouped[pos] = [];
+        }
+        grouped[pos].push(handle);
+      });
+      return grouped;
+    }, [spec.handles]);
 
-		// Inner component to throw inside ErrorBoundary, not outside
-		const MaybeError: React.FC = () => {
-			if (process.env.NODE_ENV === "development" && (props.data as any)?.forceError) {
-				throw new Error(`🧨 Simulated runtime error from node ${props.id} (forceError flag)`);
-			}
-			return null;
-		};
+    // Inner component to throw inside ErrorBoundary, not outside
+    const MaybeError: React.FC = () => {
+      if (
+        process.env.NODE_ENV === "development" &&
+        (props.data as any)?.forceError
+      ) {
+        throw new Error(
+          `🧨 Simulated runtime error from node ${props.id} (forceError flag)`
+        );
+      }
+      return null;
+    };
 
-		// Initialize node memory if configured
-		React.useEffect(() => {
-			if (spec.memory) {
-				globalNodeMemoryManager.get(props.id, spec.memory);
-			}
-		}, [props.id]);
+    // Initialize node memory if configured
+    React.useEffect(() => {
+      if (spec.memory) {
+        globalNodeMemoryManager.get(props.id, spec.memory);
+      }
+    }, [props.id]);
 
-		// side-effect: run server actions once
-		React.useEffect(() => {
-			runServerActions({
-				nodeId: props.id,
-				nodeKind: spec.kind,
-				data: props.data as any,
-				onStateUpdate: (updates) => {
-					// Update node data with server action results
-					if (props.data && typeof props.data === "object") {
-						Object.assign(props.data, updates);
-					}
-				},
-				onError: (error) => {
-					console.error(`Server action error for node ${props.id}:`, error);
-					// Could trigger error UI state here
-				},
-				onSuccess: (_result) => {
-					// Could trigger success UI state here
-				},
-			});
-		}, []);
+    // side-effect: run server actions once
+    React.useEffect(() => {
+      runServerActions({
+        nodeId: props.id,
+        nodeKind: spec.kind,
+        data: props.data as any,
+        onStateUpdate: (updates) => {
+          // Update node data with server action results
+          if (props.data && typeof props.data === "object") {
+            Object.assign(props.data, updates);
+          }
+        },
+        onError: (error) => {
+          console.error(`Server action error for node ${props.id}:`, error);
+          // Could trigger error UI state here
+        },
+        onSuccess: (_result) => {
+          // Could trigger success UI state here
+        },
+      });
+    }, []);
 
-		return (
-			<NodeScaffoldWrapper style={style} className={themeClasses} spec={spec}>
-				{/* Render registered node plugins */}
-				{getNodePlugins().map((Plugin, idx) => (
-					<Plugin
-						key={`plugin-${props.id}-${idx}`}
-						nodeId={props.id}
-						nodeKind={spec.kind}
-						data={props.data as any}
-					/>
-				))}
-				{/* Telemetry event: node created */}
-				<NodeTelemetry nodeId={props.id} nodeKind={spec.kind} />
+    return (
+      <NodeScaffoldWrapper
+        style={style}
+        className={themeClasses}
+        spec={spec}
+        isDisabled={isDisabled}
+      >
+        {/* Render registered node plugins */}
+        {getNodePlugins().map((Plugin, idx) => (
+          <Plugin
+            key={`plugin-${props.id}-${idx}`}
+            nodeId={props.id}
+            nodeKind={spec.kind}
+            data={props.data as any}
+          />
+        ))}
+        {/* Telemetry event: node created */}
+        <NodeTelemetry nodeId={props.id} nodeKind={spec.kind} />
 
-				{/* Render handles defined in the spec with smart positioning */}
-				{(() => {
-					const allHandles = spec.handles || [];
+        {/* Render handles defined in the spec with smart positioning */}
+        {(() => {
+          const allHandles = spec.handles || [];
 
-					return allHandles.map((handle, _index) => {
-						const handlesOnSameSide = handlesByPosition[handle.position] || [];
-						const handleIndex = handlesOnSameSide.findIndex((h) => h.id === handle.id);
-						const totalHandlesOnSide = handlesOnSameSide.length;
+          return allHandles.map((handle, _index) => {
+            const handlesOnSameSide = handlesByPosition[handle.position] || [];
+            const handleIndex = handlesOnSameSide.findIndex(
+              (h) => h.id === handle.id
+            );
+            const totalHandlesOnSide = handlesOnSameSide.length;
 
-						return (
-							<TypeSafeHandle
-								key={handle.id}
-								id={`${handle.id}__${handle.code ?? handle.dataType ?? "x"}`}
-								type={handle.type}
-								position={handle.position as Position}
-								dataType={handle.dataType || "any"}
-								code={(handle as any).code}
-								tsSymbol={(handle as any).tsSymbol}
-								nodeId={props.id}
-								handleIndex={handleIndex}
-								totalHandlesOnSide={totalHandlesOnSide}
-							/>
-						);
-					});
-				})()}
+            return (
+              <TypeSafeHandle
+                key={handle.id}
+                id={`${handle.id}__${handle.code ?? handle.dataType ?? "x"}`}
+                type={handle.type}
+                position={handle.position as Position}
+                dataType={handle.dataType || "any"}
+                code={(handle as any).code}
+                tsSymbol={(handle as any).tsSymbol}
+                nodeId={props.id}
+                handleIndex={handleIndex}
+                totalHandlesOnSide={totalHandlesOnSide}
+              />
+            );
+          });
+        })()}
 
-				{/* Error boundary isolates runtime errors per node */}
-				<NodeErrorBoundary nodeId={props.id}>
-					<>
-						<MaybeError />
-						<Component {...props} />
-					</>
-				</NodeErrorBoundary>
-			</NodeScaffoldWrapper>
-		);
-	};
+        {/* Error boundary isolates runtime errors per node */}
+        <NodeErrorBoundary nodeId={props.id}>
+          <>
+            <MaybeError />
+            <Component {...props} />
+          </>
+        </NodeErrorBoundary>
+      </NodeScaffoldWrapper>
+    );
+  };
 
-	WrappedComponent.displayName = `withNodeScaffold(${spec.displayName})`;
-	return WrappedComponent;
+  WrappedComponent.displayName = `withNodeScaffold(${spec.displayName})`;
+  return WrappedComponent;
 }
