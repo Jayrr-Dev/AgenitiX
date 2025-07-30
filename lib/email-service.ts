@@ -25,7 +25,7 @@ export interface EmailResult {
  */
 export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<EmailResult> {
 	const { to, name, magicToken, type } = data;
-
+	console.log(`Sending ${type} email to ${to} with magic token ${magicToken}`);
 	// Generate magic link URL - always use localhost in development
 	const baseUrl =
 		process.env.NODE_ENV === "development"
