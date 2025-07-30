@@ -15,6 +15,7 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
 	SafeSchemas,
@@ -32,7 +33,6 @@ import {
 	EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -272,9 +272,9 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 				<div className="absolute inset-0 flex justify-center p-1 text-foreground/80 text-lg">
 					{/* {spec.icon && renderLucideIcon(spec.icon)} */}
 				</div>
-			        ) : (
-          <LabelNode nodeId={id} label={(nodeData as TriggerToggleData).label || spec.displayName} />
-        )}
+			) : (
+				<LabelNode nodeId={id} label={(nodeData as TriggerToggleData).label || spec.displayName} />
+			)}
 			{/* ───────────────────────────────────────── UI ───────────────────────────────────────── */}
 			{isExpanded ? (
 				/* Expanded view */

@@ -67,7 +67,7 @@ function getOutputFormattingPreferences(nodeType: string): {
 } {
 	const metadata = getNodeMetadata(nodeType as NodeType);
 	const specMetadata = getNodeSpecMetadata(nodeType as NodeType);
-	
+
 	if (!metadata) {
 		return {
 			hasCustomFormatting: false,
@@ -78,7 +78,7 @@ function getOutputFormattingPreferences(nodeType: string): {
 	// Get output type from node spec handles
 	let outputType: string | undefined;
 	if (specMetadata?.handles) {
-		const outputHandle = specMetadata.handles.find(handle => handle.type === "source");
+		const outputHandle = specMetadata.handles.find((handle) => handle.type === "source");
 		if (outputHandle) {
 			outputType = outputHandle.dataType || outputHandle.code;
 		}
@@ -228,73 +228,73 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
 			detectedType = "string";
 		}
 
-			// Use expected output type from node spec if available
-	if (expectedOutputType) {
-		// Map handle codes to display types
-		const typeMap: Record<string, string> = {
-			's': 'string',
-			'n': 'number', 
-			'b': 'boolean',
-			'j': 'json',
-			'a': 'array',
-			'x': 'any',
-			'V': 'vibe',
-			'o': 'object', // StoreInMemory output
-			't': 'trigger', // Trigger type
-			'v': 'value', // Value type
-			'String': 'string',
-			'Number': 'number',
-			'Boolean': 'boolean',
-			'JSON': 'json',
-			'Array': 'array',
-			'Object': 'object',
-		};
-		
-		detectedType = typeMap[expectedOutputType] || detectedType;
-	}
+		// Use expected output type from node spec if available
+		if (expectedOutputType) {
+			// Map handle codes to display types
+			const typeMap: Record<string, string> = {
+				s: "string",
+				n: "number",
+				b: "boolean",
+				j: "json",
+				a: "array",
+				x: "any",
+				V: "vibe",
+				o: "object", // StoreInMemory output
+				t: "trigger", // Trigger type
+				v: "value", // Value type
+				String: "string",
+				Number: "number",
+				Boolean: "boolean",
+				JSON: "json",
+				Array: "array",
+				Object: "object",
+			};
 
-			// Get node-specific styling
-	const nodeSpecificStyling = getNodeSpecificStyling(nodeType, outputPreferences, theme);
+			detectedType = typeMap[expectedOutputType] || detectedType;
+		}
 
-	// Node-specific output type handling
-	switch (nodeType) {
-		case "createText":
-			detectedType = "string";
-			break;
-		case "viewText":
-			detectedType = "string";
-			break;
-		case "triggerToggle":
-			detectedType = "boolean";
-			break;
-		case "aiAgent":
-			detectedType = "string";
-			break;
-		case "storeInMemory":
-			detectedType = "string";
-			break;
-	}
+		// Get node-specific styling
+		const nodeSpecificStyling = getNodeSpecificStyling(nodeType, outputPreferences, theme);
 
-	// Special handling for objects with text property (common in text nodes)
-	if (
-		detectedType === "object" &&
-		parsedValue &&
-		typeof parsedValue === "object" &&
-		parsedValue.text !== undefined
-	) {
-		return {
-			text: String(parsedValue.text),
-			color: nodeSpecificStyling.color || theme.text.primary,
-			type: "string",
-			icon: nodeSpecificStyling.icon || "STR",
-			fullText: String(parsedValue.text),
-			metadata: {
-				nodeDisplayName: outputPreferences.displayName,
-				nodeIcon: outputPreferences.customIcon,
-				nodeCategory: outputPreferences.category,
-			},
-		};
-	}
+		// Node-specific output type handling
+		switch (nodeType) {
+			case "createText":
+				detectedType = "string";
+				break;
+			case "viewText":
+				detectedType = "string";
+				break;
+			case "triggerToggle":
+				detectedType = "boolean";
+				break;
+			case "aiAgent":
+				detectedType = "string";
+				break;
+			case "storeInMemory":
+				detectedType = "string";
+				break;
+		}
+
+		// Special handling for objects with text property (common in text nodes)
+		if (
+			detectedType === "object" &&
+			parsedValue &&
+			typeof parsedValue === "object" &&
+			parsedValue.text !== undefined
+		) {
+			return {
+				text: String(parsedValue.text),
+				color: nodeSpecificStyling.color || theme.text.primary,
+				type: "string",
+				icon: nodeSpecificStyling.icon || "STR",
+				fullText: String(parsedValue.text),
+				metadata: {
+					nodeDisplayName: outputPreferences.displayName,
+					nodeIcon: outputPreferences.customIcon,
+					nodeCategory: outputPreferences.category,
+				},
+			};
+		}
 
 		// Format based on detected type
 		switch (detectedType) {

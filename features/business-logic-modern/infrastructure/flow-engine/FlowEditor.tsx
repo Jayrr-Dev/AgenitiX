@@ -421,9 +421,12 @@ const FlowEditorInternal = () => {
 	);
 
 	// Wrapper for onEdgesChange
-	const onEdgesChange = useCallback((changes: unknown[]) => {
-		storeOnEdgesChange(changes);
-	}, [storeOnEdgesChange]);
+	const onEdgesChange = useCallback(
+		(changes: unknown[]) => {
+			storeOnEdgesChange(changes);
+		},
+		[storeOnEdgesChange]
+	);
 
 	// Show loading state while canvas is being loaded
 	if (canvasLoader.isLoading) {

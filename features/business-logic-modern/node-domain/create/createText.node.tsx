@@ -16,6 +16,7 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
@@ -35,7 +36,6 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
-import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -222,7 +222,7 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 		// Check json-input handle first, then input handle as fallback
 		const jsonInputEdge = findEdgeByHandle(edges, id, "json-input");
 		const inputEdge = findEdgeByHandle(edges, id, "input");
-		
+
 		const incoming = jsonInputEdge || inputEdge;
 		if (!incoming) {
 			return null;
@@ -321,9 +321,9 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 				<div className="absolute inset-0 flex justify-center p-1 text-foreground/80 text-lg">
 					{spec.icon && renderLucideIcon(spec.icon, "", 16)}
 				</div>
-			        ) : (
-          <LabelNode nodeId={id} label={(nodeData as CreateTextData).label || spec.displayName} />
-        )}
+			) : (
+				<LabelNode nodeId={id} label={(nodeData as CreateTextData).label || spec.displayName} />
+			)}
 
 			{isExpanded ? (
 				<div className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}>

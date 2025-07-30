@@ -392,7 +392,7 @@ export interface ComposedEmail {
 	content: {
 		text: string;
 		html: string;
-		mode: 'text' | 'html' | 'rich';
+		mode: "text" | "html" | "rich";
 	};
 	attachments: EmailAttachment[];
 	template?: {
@@ -405,7 +405,7 @@ export interface ComposedEmail {
 		fontSize: number;
 		textColor: string;
 		backgroundColor: string;
-		alignment: 'left' | 'center' | 'right' | 'justify';
+		alignment: "left" | "center" | "right" | "justify";
 	};
 	metadata: {
 		createdAt: number;
@@ -425,7 +425,7 @@ export interface EmailTemplate {
 	};
 	variables: Array<{
 		name: string;
-		type: 'text' | 'number' | 'date' | 'boolean';
+		type: "text" | "number" | "date" | "boolean";
 		required: boolean;
 		defaultValue?: string;
 		description?: string;
@@ -448,5 +448,5 @@ export interface EmailAttachment {
 export interface EmailContent {
 	text: string;
 	html: string;
-	mode: 'text' | 'html' | 'rich';
+	mode: "text" | "html" | "rich";
 }

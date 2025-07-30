@@ -492,7 +492,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 	return (
 		<>
 			{/* Editable label */}
-			        <LabelNode nodeId={id} label={(nodeData as EmailReaderData).label || spec.displayName} />
+			<LabelNode nodeId={id} label={(nodeData as EmailReaderData).label || spec.displayName} />
 
 			{isExpanded ? (
 				<div className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}>

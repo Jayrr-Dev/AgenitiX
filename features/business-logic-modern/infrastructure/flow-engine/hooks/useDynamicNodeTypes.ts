@@ -1,18 +1,18 @@
 import { useMemo } from "react";
 
+// Add new node imports here (Plop can auto-inject these)
+import aiAgent from "../../../node-domain/ai/aiAgent.node";
 import createText from "../../../node-domain/create/createText.node";
 import storeInMemory from "../../../node-domain/create/storeInMemory.node";
 import emailAccount from "../../../node-domain/email/emailAccount.node";
-import emailReader from "../../../node-domain/email/emailReader.node";
 import emailCreator from "../../../node-domain/email/emailCreator.node";
+import emailReader from "../../../node-domain/email/emailReader.node";
+import testNode from "../../../node-domain/test/testNode.node";
 // Import all available node components
 // This should be automatically updated when new nodes are created via Plop
-import flowConditional from '../../../node-domain/trigger/flowConditional.node';
-import viewBoolean from '../../../node-domain/view/viewBoolean.node';
-// Add new node imports here (Plop can auto-inject these)
-import aiAgent from '../../../node-domain/ai/aiAgent.node';
-import testNode from "../../../node-domain/test/testNode.node";
+import flowConditional from "../../../node-domain/trigger/flowConditional.node";
 import triggerToggle from "../../../node-domain/trigger/triggerToggle.node";
+import viewBoolean from "../../../node-domain/view/viewBoolean.node";
 import viewText from "../../../node-domain/view/viewText.node";
 
 /**
@@ -28,7 +28,7 @@ export function useDynamicNodeTypes() {
 			flowConditional,
 			viewBoolean,
 			// Add new node types here
-    aiAgent,
+			aiAgent,
 			testNode,
 			triggerToggle,
 			createText,

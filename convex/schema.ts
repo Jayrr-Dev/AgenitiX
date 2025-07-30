@@ -189,11 +189,13 @@ export default defineSchema({
 		content: v.string(),
 		model: v.optional(v.string()),
 		provider: v.optional(v.string()),
-		usage: v.optional(v.object({
-			promptTokens: v.number(),
-			completionTokens: v.number(),
-			totalTokens: v.number(),
-		})),
+		usage: v.optional(
+			v.object({
+				promptTokens: v.number(),
+				completionTokens: v.number(),
+				totalTokens: v.number(),
+			})
+		),
 		created_at: v.number(),
 	})
 		.index("by_thread_id", ["thread_id"])

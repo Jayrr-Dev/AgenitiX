@@ -375,41 +375,46 @@ module.exports = (plop) => {
 					type: "custom",
 					description: "Validating nodespec-registry imports...",
 					action: () => {
-						const registryPath = "./features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts";
-						const fs = require("fs");
-						
+						const registryPath =
+							"./features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts";
+						const fs = require("node:fs");
+
 						if (!fs.existsSync(registryPath)) {
 							throw new Error(`Registry file not found: ${registryPath}`);
 						}
 
 						const content = fs.readFileSync(registryPath, "utf8");
-						
+
 						// Check that all imported specs are used in the nodeSpecs object
 						const importMatches = content.match(/import \{ spec as (\w+)Spec \}/g) || [];
-						const specNames = importMatches.map(match => {
-							const specMatch = match.match(/spec as (\w+)Spec/);
-							return specMatch ? specMatch[1] : null;
-						}).filter(Boolean);
-						
+						const specNames = importMatches
+							.map((match) => {
+								const specMatch = match.match(/spec as (\w+)Spec/);
+								return specMatch ? specMatch[1] : null;
+							})
+							.filter(Boolean);
+
 						const usageMatches = content.match(/(\w+): (\w+)Spec,/g) || [];
-						const usedSpecs = usageMatches.map(match => {
-							const usageMatch = match.match(/(\w+): (\w+)Spec/);
-							return usageMatch ? usageMatch[2].replace('Spec', '') : null;
-						}).filter(Boolean);
-						
-						const missingInRegistry = specNames.filter(spec => !usedSpecs.includes(spec));
-						const unusedImports = usedSpecs.filter(spec => !specNames.includes(spec));
-						
+						const usedSpecs = usageMatches
+							.map((match) => {
+								const usageMatch = match.match(/(\w+): (\w+)Spec/);
+								return usageMatch ? usageMatch[2].replace("Spec", "") : null;
+							})
+							.filter(Boolean);
+
+						const missingInRegistry = specNames.filter((spec) => !usedSpecs.includes(spec));
+						const unusedImports = usedSpecs.filter((spec) => !specNames.includes(spec));
+
 						if (missingInRegistry.length > 0) {
-							throw new Error(`Missing in nodeSpecs registry: ${missingInRegistry.join(', ')}`);
+							throw new Error(`Missing in nodeSpecs registry: ${missingInRegistry.join(", ")}`);
 						}
-						
+
 						if (unusedImports.length > 0) {
-							console.warn(`⚠️ Unused imports detected: ${unusedImports.join(', ')}`);
+							console.warn(`⚠️ Unused imports detected: ${unusedImports.join(", ")}`);
 						}
-						
+
 						return "✅ Registry validation passed";
-					}
+					},
 				},
 
 				// 8. Ensure theming tokens exist for the category (NEW)

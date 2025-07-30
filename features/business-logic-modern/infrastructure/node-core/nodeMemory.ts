@@ -8,7 +8,6 @@
  * – Environment‑agnostic (Node, browser, edge)
  */
 
-
 import { z } from "zod";
 
 /* ------------------------------------------------------------------ */
@@ -476,7 +475,7 @@ export class NodeMemoryManager extends BrowserEventEmitter {
 
 export class GlobalNodeMemoryManager {
 	private readonly map = new Map<string, NodeMemoryManager>();
-	constructor(private adapter: StorageAdapter = LocalStorageAdapter) { }
+	constructor(private adapter: StorageAdapter = LocalStorageAdapter) {}
 
 	get(nodeId: string, cfg?: NodeMemoryConfig) {
 		if (!this.map.has(nodeId)) {

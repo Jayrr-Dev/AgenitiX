@@ -56,7 +56,7 @@ export function getNodeOutput(
 		// For AI Agent, outputs should always be a string - if it's not, extract it
 		if (typeof extractedValue === "object" && extractedValue !== null) {
 			const obj = extractedValue as Record<string, unknown>;
-			
+
 			// Extract text from malformed output object
 			if (typeof obj.response === "string") {
 				return obj.response;
@@ -67,22 +67,22 @@ export function getNodeOutput(
 			if (typeof obj.content === "string") {
 				return obj.content;
 			}
-			
+
 			// Warn about data corruption and stringify as fallback
 			console.warn("AI Agent outputs contains object instead of string:", obj);
 			return JSON.stringify(extractedValue);
 		}
-		
+
 		// If extractedValue is already a string, return it
 		if (typeof extractedValue === "string") {
 			return extractedValue;
 		}
-		
+
 		// Fallback to processingResult if outputs is null/undefined
 		if (!extractedValue && node.data?.processingResult) {
 			return String(node.data.processingResult);
 		}
-		
+
 		return extractedValue;
 	}
 

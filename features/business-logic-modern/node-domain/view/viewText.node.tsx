@@ -333,9 +333,9 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 				<div className="absolute inset-0 flex justify-center p-1 text-foreground/80 text-lg">
 					{spec.icon && renderLucideIcon(spec.icon, "", 16)}
 				</div>
-			        ) : (
-          <LabelNode nodeId={id} label={(nodeData as ViewTextData).label || spec.displayName} />
-        )}
+			) : (
+				<LabelNode nodeId={id} label={(nodeData as ViewTextData).label || spec.displayName} />
+			)}
 
 			{isExpanded ? (
 				<div className={CONTENT.expanded}>

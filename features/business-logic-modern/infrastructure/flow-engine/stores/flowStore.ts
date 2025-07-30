@@ -19,12 +19,12 @@ import type {
 	AgenNode,
 	NodeError,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
+import { getNodesWithRemovedInputs } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import { performCompleteMemoryCleanup } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/memoryCleanup";
 import {
 	cleanupNodeTimers,
 	emergencyCleanupAllTimers,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/timerCleanup";
-import { getNodesWithRemovedInputs } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import {
 	type OnConnect,
 	type OnEdgesChange,
@@ -235,14 +235,14 @@ export const useFlowStore = create<FlowStore>()(
 					set((state) => {
 						// Check for nodes that lost all input connections before applying changes
 						const nodesWithoutInputs = getNodesWithRemovedInputs(changes, state.edges);
-						
+
 						// Apply edge changes
 						state.edges = applyEdgeChanges(changes, state.edges) as AgenEdge[];
-						
+
 						// Auto-disable nodes that lost all input connections
 						for (const nodeId of nodesWithoutInputs) {
 							const node = state.nodes.find((n) => n.id === nodeId);
-							if (node && node.data?.isEnabled) {
+							if (node?.data?.isEnabled) {
 								node.data = { ...node.data, isEnabled: false };
 							}
 						}

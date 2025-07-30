@@ -53,15 +53,15 @@ const ClearLocalStorage: React.FC<ClearLocalStorageProps> = ({ className = "" })
 				authToken: localStorage.getItem("agenitix_auth_token"),
 				// Add other important keys here as needed
 			};
-			
+
 			// Clear all localStorage
 			localStorage.clear();
-			
+
 			// Restore preserved data
 			if (preservedData.authToken) {
 				localStorage.setItem("agenitix_auth_token", preservedData.authToken);
 			}
-			
+
 			window.location.reload();
 		}
 	};

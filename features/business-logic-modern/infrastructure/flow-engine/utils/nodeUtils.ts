@@ -48,22 +48,23 @@ export const extractNodeValue = (data: Record<string, unknown> | null | undefine
 	if (data.outputs !== undefined && data.outputs !== null) {
 		return data.outputs;
 	}
-	
+
 	// Special handling for AI Agent when outputs is null - check processingResult
-	if (data.selectedProvider || data.systemPrompt) { // This indicates it's an AI Agent node
+	if (data.selectedProvider || data.systemPrompt) {
+		// This indicates it's an AI Agent node
 		if (data.processingResult !== undefined && data.processingResult !== null) {
 			return data.processingResult;
 		}
-		
+
 		// If processing hasn't completed yet, return a placeholder instead of the full object
 		if (data.processingState === "processing") {
 			return "Processing...";
 		}
-		
+
 		if (data.processingState === "error" && data.processingError) {
 			return `Error: ${data.processingError}`;
 		}
-		
+
 		// If no result yet, return empty instead of the full object
 		return "No response yet";
 	}
@@ -94,7 +95,7 @@ export const extractNodeValue = (data: Record<string, unknown> | null | undefine
 	// If outputs is an object but shouldn't be (data corruption), try to extract text
 	if (data.outputs && typeof data.outputs === "object" && data.outputs !== null) {
 		const outputObj = data.outputs as Record<string, unknown>;
-		
+
 		// Try to extract response text from malformed output object
 		if (typeof outputObj.response === "string") {
 			return outputObj.response;
@@ -105,12 +106,12 @@ export const extractNodeValue = (data: Record<string, unknown> | null | undefine
 		if (typeof outputObj.content === "string") {
 			return outputObj.content;
 		}
-		
+
 		// If it contains the full AI response object, extract the response field
 		if (outputObj.threadId && outputObj.response) {
 			return outputObj.response;
 		}
-		
+
 		// Last resort: stringify the object but warn it shouldn't happen
 		console.warn("AI Agent outputs field contains object instead of string:", outputObj);
 		return JSON.stringify(outputObj);
