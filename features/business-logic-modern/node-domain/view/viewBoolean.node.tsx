@@ -1,12 +1,12 @@
 /**
- * ViewBoolean NODE – Simple boolean visualization with pass-through
+ * ViewBoolean NODE – Minimalistic boolean visualization with pass-through
  *
- * • Takes a boolean input and displays it visually (true/false/null states)
- * • Passes the boolean value through as output unchanged
- * • Clean visual indicators for different boolean states
- * • Compact design with clear state representation
+ * • Simple icon-based boolean display (✓/✗/-)
+ * • Passes boolean value through unchanged
+ * • Clean, minimal visual indicators
+ * • Consistent with design system
  *
- * Keywords: view-boolean, boolean-display, pass-through, simple
+ * Keywords: view-boolean, minimalistic, boolean-display, pass-through
  */
 
 import type { NodeProps } from "@xyflow/react";
@@ -51,12 +51,19 @@ export const ViewBooleanDataSchema = z
 		isExpanded: SafeSchemas.boolean(false),
 
 		// Sizing
-		expandedSize: SafeSchemas.text("FE1"),
+		expandedSize: SafeSchemas.text("VE2"),
 		collapsedSize: SafeSchemas.text("C1"),
 
-		// Data flow
-		inputs: z.boolean().nullable().default(null),
+		// Data flow - support multiple connections
+		inputs: z.record(z.string(), z.boolean().nullable()).nullable().default(null),
 		outputs: z.boolean().nullable().default(null),
+
+		// Connection tracking
+		connectionStates: z.record(z.string(), z.object({
+			nodeId: z.string(),
+			value: z.boolean().nullable(),
+			handleId: z.string(),
+		})).nullable().default(null),
 
 		// Customization
 		label: z.string().optional(),
@@ -71,41 +78,18 @@ const validateNodeData = createNodeValidator(ViewBooleanDataSchema, "ViewBoolean
 // 2️⃣  Constants & Styles
 // -----------------------------------------------------------------------------
 
-const BOOLEAN_STATES = {
-	TRUE: {
-		icon: "LuCheck",
-		text: "TRUE",
-		color: "text-green-600 dark:text-green-400",
-		bgColor: "bg-green-50 dark:bg-green-900/20",
-		borderColor: "border-green-200 dark:border-green-800",
-	},
-	FALSE: {
-		icon: "LuX",
-		text: "FALSE",
-		color: "text-red-600 dark:text-red-400",
-		bgColor: "bg-red-50 dark:bg-red-900/20",
-		borderColor: "border-red-200 dark:border-red-800",
-	},
-	NULL: {
-		icon: "LuMinus",
-		text: "NULL",
-		color: "text-gray-500 dark:text-gray-400",
-		bgColor: "bg-gray-50 dark:bg-gray-900/20",
-		borderColor: "border-gray-200 dark:border-gray-700",
-	},
-	DISCONNECTED: {
-		icon: "LuUnplug",
-		text: "NO INPUT",
-		color: "text-gray-400 dark:text-gray-500",
-		bgColor: "bg-gray-25 dark:bg-gray-950/20",
-		borderColor: "border-dashed border-gray-300 dark:border-gray-600",
-	},
+const BOOLEAN_ICONS = {
+	TRUE: "LuCheck",
+	FALSE: "LuX", 
+	NULL: "LuMinus",
+	DISCONNECTED: "LuUnplug",
 } as const;
 
-const CONTENT = {
-	expanded: "p-3 w-full h-full flex flex-col items-center justify-center",
-	collapsed: "flex items-center justify-center w-full h-full",
-	disabled: "opacity-50 transition-opacity duration-200",
+const BOOLEAN_COLORS = {
+	TRUE: "text-green-600 dark:text-green-400",
+	FALSE: "text-red-600 dark:text-red-400",
+	NULL: "text-muted-foreground",
+	DISCONNECTED: "text-muted-foreground/50",
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -117,7 +101,7 @@ const CONTENT = {
  */
 function createDynamicSpec(data: ViewBooleanData): NodeSpec {
 	const expanded =
-		EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ?? EXPANDED_SIZES.FE1;
+		EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ?? EXPANDED_SIZES.VE2;
 	const collapsed =
 		COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ?? COLLAPSED_SIZES.C1;
 
@@ -150,6 +134,7 @@ function createDynamicSpec(data: ViewBooleanData): NodeSpec {
 			booleanValue: null,
 			inputs: null,
 			outputs: null,
+			connectionStates: null,
 		}),
 		dataSchema: ViewBooleanDataSchema,
 		controls: {
@@ -159,6 +144,7 @@ function createDynamicSpec(data: ViewBooleanData): NodeSpec {
 				"inputs",
 				"outputs",
 				"booleanValue",
+				"connectionStates",
 				"expandedSize",
 				"collapsedSize",
 			],
@@ -170,16 +156,16 @@ function createDynamicSpec(data: ViewBooleanData): NodeSpec {
 		icon: "LuToggleLeft",
 		author: "Agenitix Team",
 		description:
-			"Displays boolean values with clear true/false indicators and passes the value through",
+			"Displays multiple boolean connections in a table view when expanded",
 		feature: "base",
-		tags: ["view", "boolean", "display", "indicator"],
+		tags: ["view", "boolean", "display", "multiple", "table"],
 		theming: {},
 	};
 }
 
 /** Static spec for registry (uses default size keys) */
 export const spec: NodeSpec = createDynamicSpec({
-	expandedSize: "FE1",
+	expandedSize: "VE2",
 	collapsedSize: "C1",
 } as ViewBooleanData);
 
@@ -212,12 +198,18 @@ function convertToBoolean(value: unknown): boolean | null {
 }
 
 /**
- * Get the appropriate visual state for a boolean value
+ * Get icon and color for boolean value
  */
-function getBooleanState(value: boolean | null, hasConnection: boolean) {
-	if (!hasConnection) return BOOLEAN_STATES.DISCONNECTED;
-	if (value === null) return BOOLEAN_STATES.NULL;
-	return value ? BOOLEAN_STATES.TRUE : BOOLEAN_STATES.FALSE;
+function getBooleanDisplay(value: boolean | null, hasConnection: boolean) {
+	if (!hasConnection) {
+		return { icon: BOOLEAN_ICONS.DISCONNECTED, color: BOOLEAN_COLORS.DISCONNECTED };
+	}
+	if (value === null) {
+		return { icon: BOOLEAN_ICONS.NULL, color: BOOLEAN_COLORS.NULL };
+	}
+	return value 
+		? { icon: BOOLEAN_ICONS.TRUE, color: BOOLEAN_COLORS.TRUE }
+		: { icon: BOOLEAN_ICONS.FALSE, color: BOOLEAN_COLORS.FALSE };
 }
 
 // -----------------------------------------------------------------------------
@@ -233,7 +225,7 @@ const ViewBooleanNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }
 	// -------------------------------------------------------------------------
 	// 5.2  Derived state
 	// -------------------------------------------------------------------------
-	const { isExpanded, isEnabled, isActive, inputs, booleanValue } = nodeData as ViewBooleanData;
+	const { isExpanded, isEnabled, isActive, inputs, booleanValue, connectionStates } = nodeData as ViewBooleanData;
 
 	// Global React‑Flow store (nodes & edges) – triggers re‑render on change
 	const nodes = useStore((s) => s.nodes);
@@ -265,55 +257,92 @@ const ViewBooleanNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }
 	);
 
 	/**
-	 * Compute the latest boolean value from connected input handles.
+	 * Compute all boolean values from connected input handles and track connection states.
 	 */
-	const computeInput = useCallback((): boolean | null => {
-		const inputEdge = findEdgeByHandle(edges, id, "boolean-input");
-		if (!inputEdge) {
-			return null;
+	const computeConnectionStates = useCallback(() => {
+		// Find all edges connected to this node (target)
+		const connectedEdges = edges.filter(edge => edge.target === id);
+
+		if (connectedEdges.length === 0) {
+			return { connectionStates: null, primaryValue: null };
 		}
 
-		const src = nodes.find((n) => n.id === inputEdge.source);
-		if (!src) {
-			return null;
+		const connectionStates: Record<string, { nodeId: string; value: boolean | null; handleId: string }> = {};
+		const values: boolean[] = [];
+
+		for (const edge of connectedEdges) {
+			// Get the source node data
+			const sourceNode = nodes.find((n) => n.id === edge.source);
+			if (!sourceNode?.data) continue;
+
+			// More comprehensive value extraction
+			const sourceData = sourceNode.data as any;
+			let inputValue: unknown;
+			
+			// Try multiple common output fields
+			if (sourceData.outputs !== undefined && sourceData.outputs !== null) {
+				inputValue = sourceData.outputs;
+			} else if (sourceData.booleanValue !== undefined && sourceData.booleanValue !== null) {
+				inputValue = sourceData.booleanValue;
+			} else if (sourceData.store !== undefined && sourceData.store !== null) {
+				inputValue = sourceData.store;
+			} else if (sourceData.value !== undefined && sourceData.value !== null) {
+				inputValue = sourceData.value;
+			} else if (sourceData.isActive !== undefined) {
+				inputValue = sourceData.isActive;
+			} else if (sourceData.isEnabled !== undefined) {
+				inputValue = sourceData.isEnabled;
+			} else {
+				// Fallback to the whole data object
+				inputValue = sourceData;
+			}
+			
+			const booleanValue = convertToBoolean(inputValue);
+			
+			connectionStates[edge.id] = {
+				nodeId: edge.source,
+				value: booleanValue,
+				handleId: edge.sourceHandle || "output",
+			};
+
+			if (booleanValue !== null) {
+				values.push(booleanValue);
+			}
 		}
 
-		// Priority: outputs > booleanValue > store > whole data
-		const inputValue = src.data?.outputs ?? src.data?.booleanValue ?? src.data?.store ?? src.data;
-		return convertToBoolean(inputValue);
-	}, [edges, nodes, id]);
+		// For primary value, use logical OR of all connected boolean values
+		const primaryValue = values.length > 0 ? values.some(v => v === true) : null;
+
+		return { connectionStates, primaryValue };
+	}, [id, edges, nodes]);
 
 	// -------------------------------------------------------------------------
 	// 5.4  Effects
 	// -------------------------------------------------------------------------
 
-	/* 🔄 Whenever nodes/edges change, recompute inputs. */
+	/* 🔄 Whenever nodes/edges change, recompute connections. */
 	useEffect(() => {
-		const inputVal = computeInput();
-		if (inputVal !== inputs) {
-			updateNodeData({
-				inputs: inputVal,
-				booleanValue: inputVal
-			});
-		}
-	}, [computeInput, inputs, updateNodeData]);
+		const { connectionStates: newConnectionStates, primaryValue } = computeConnectionStates();
+		updateNodeData({
+			inputs: newConnectionStates ? Object.fromEntries(
+				Object.entries(newConnectionStates).map(([key, state]) => [key, state.value])
+			) : null,
+			booleanValue: primaryValue,
+			connectionStates: newConnectionStates
+		});
+	}, [nodes, edges, computeConnectionStates, updateNodeData]);
 
 	/* 🔄 Auto-manage isEnabled based on input connections */
 	useEffect(() => {
-		const hasConnection = inputs !== null;
-		// Only auto-control isEnabled when there are connections
-		if (hasConnection) {
-			// For boolean inputs, enabled if we have a valid boolean (including false)
-			const shouldEnable = inputs !== null;
-			if (shouldEnable !== isEnabled) {
-				updateNodeData({ isEnabled: shouldEnable });
-			}
+		const hasConnection = connectionStates !== null && Object.keys(connectionStates).length > 0;
+		if (hasConnection !== isEnabled) {
+			updateNodeData({ isEnabled: hasConnection });
 		}
-	}, [inputs, isEnabled, updateNodeData]);
+	}, [connectionStates, isEnabled, updateNodeData]);
 
 	/* 🔄 Update active state based on having valid input and being enabled */
 	useEffect(() => {
-		const hasValidInput = inputs !== null;
+		const hasValidInput = booleanValue !== null;
 
 		if (!isEnabled) {
 			// If disabled, always set isActive to false
@@ -326,7 +355,7 @@ const ViewBooleanNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }
 				updateNodeData({ isActive: hasValidInput });
 			}
 		}
-	}, [inputs, isEnabled, isActive, updateNodeData]);
+	}, [booleanValue, isEnabled, isActive, updateNodeData]);
 
 	/* 🔄 Propagate output when state changes */
 	useEffect(() => {
@@ -349,54 +378,95 @@ const ViewBooleanNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }
 	// -------------------------------------------------------------------------
 	// 5.6  Visual state computation
 	// -------------------------------------------------------------------------
-	const hasConnection = inputs !== null;
-	const currentState = getBooleanState(booleanValue as boolean | null, hasConnection);
+	const hasConnection = connectionStates !== null && Object.keys(connectionStates).length > 0;
+	const connectionCount = connectionStates ? Object.keys(connectionStates).length : 0;
+	const display = getBooleanDisplay(booleanValue as boolean | null, hasConnection);
+	
+	// For multiple connections, show different icon logic
+	const multiConnectionDisplay = useMemo(() => {
+		if (connectionCount <= 1) return null;
+		
+		// Count true/false values
+		const values = Object.values(connectionStates || {}).map(state => state.value);
+		const trueCount = values.filter(v => v === true).length;
+		const falseCount = values.filter(v => v === false).length;
+		
+		return { trueCount, falseCount, total: connectionCount };
+	}, [connectionStates, connectionCount]);
 
 	// -------------------------------------------------------------------------
 	// 5.7  Render
 	// -------------------------------------------------------------------------
 	return (
 		<>
-			{/* Editable label or icon */}
-			{!isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60 ? (
-				<div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
-					{renderLucideIcon(currentState.icon, currentState.color, 16)}
-				</div>
-			) : (
+			{/* Simple label - only show when expanded */}
+			{isExpanded && (
 				<LabelNode nodeId={id} label={(nodeData as ViewBooleanData).label || spec.displayName} />
 			)}
 
-			{isExpanded ? (
-				<div className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}>
-					<div className={`
-						flex flex-col items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all duration-200
-						${currentState.bgColor} ${currentState.borderColor}
-					`}>
-						<div className={`text-2xl ${currentState.color}`}>
-							{renderLucideIcon(currentState.icon, "", 24)}
+			{/* Content area with minimal styling */}
+			<div className={`flex items-center justify-center w-full h-full ${isEnabled ? "" : "opacity-50"}`}>
+				{isExpanded ? (
+					<div className="flex flex-col items-center justify-center gap-2 p-2 w-full">
+						{/* Primary state icon */}
+						<div className={`text-xl ${display.color}`}>
+							{renderLucideIcon(display.icon, "", 20)}
 						</div>
-						<div className={`text-sm font-medium ${currentState.color}`}>
-							{currentState.text}
-						</div>
-						{booleanValue !== null && (
-							<div className="text-xs text-gray-500 dark:text-gray-400">
-								Value: {String(booleanValue)}
+						
+						{/* Connection table */}
+						{hasConnection ? (
+							<div className="w-full max-w-sm">
+								<div className="text-xs font-medium text-muted-foreground mb-1">Connections</div>
+								<div className="border rounded-md">
+									<div className="grid grid-cols-2 gap-1 p-2 text-xs font-medium bg-muted/50">
+										<div>Node ID</div>
+										<div>State</div>
+									</div>
+									{Object.entries(connectionStates || {}).map(([edgeId, state]) => {
+										const stateDisplay = getBooleanDisplay(state.value, true);
+										return (
+											<div key={edgeId} className="grid grid-cols-2 gap-1 p-2 text-xs border-t">
+												<div className="truncate font-mono">{state.nodeId.slice(-8)}</div>
+												<div className={`flex items-center gap-1 ${stateDisplay.color}`}>
+													{renderLucideIcon(stateDisplay.icon, "", 12)}
+													<span>{state.value === null ? "null" : String(state.value)}</span>
+												</div>
+											</div>
+										);
+									})}
+								</div>
+							</div>
+						) : (
+							<div className="text-xs text-muted-foreground">No connections</div>
+						)}
+					</div>
+				) : (
+					<div className="flex flex-col items-center justify-center w-full h-full">
+						{connectionCount <= 1 ? (
+							// Single connection: show normal icon
+							<div className={`${display.color}`}>
+								{renderLucideIcon(display.icon, "", 16)}
+							</div>
+						) : (
+							// Multiple connections: show count + icons aligned
+							<div className="flex flex-col items-center gap-0.5">
+								{multiConnectionDisplay && multiConnectionDisplay.trueCount > 0 && (
+									<div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+										<span className="text-xs font-mono w-3 text-right">{multiConnectionDisplay.trueCount}</span>
+										{renderLucideIcon("LuCheck", "", 12)}
+									</div>
+								)}
+								{multiConnectionDisplay && multiConnectionDisplay.falseCount > 0 && (
+									<div className="flex items-center gap-1 text-red-600 dark:text-red-400">
+										<span className="text-xs font-mono w-3 text-right">{multiConnectionDisplay.falseCount}</span>
+										{renderLucideIcon("LuX", "", 12)}
+									</div>
+								)}
 							</div>
 						)}
 					</div>
-				</div>
-			) : (
-				<div className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}>
-					<div className={`
-						flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-200
-						${currentState.bgColor} ${currentState.borderColor}
-					`}>
-						<div className={`${currentState.color}`}>
-							{renderLucideIcon(currentState.icon, "", 16)}
-						</div>
-					</div>
-				</div>
-			)}
+				)}
+			</div>
 
 			<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
 		</>
