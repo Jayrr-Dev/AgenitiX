@@ -16,6 +16,7 @@ import {
 	useNodeStyleClasses,
 } from "@/features/business-logic-modern/infrastructure/theming/stores/nodeStyleStore";
 import type { NodeProps, Position } from "@xyflow/react";
+import { useUpdateNodeInternals } from "@xyflow/react";
 import { useTheme } from "next-themes";
 import React from "react";
 import NodeErrorBoundary from "./ErrorBoundary";
@@ -169,6 +170,26 @@ const NodeScaffoldWrapper = ({
 export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>) {
 	// The returned component is what React Flow will render.
 	const WrappedComponent = (props: NodeProps) => {
+		// Get ReactFlow's updateNodeInternals hook 
+		const updateNodeInternals = useUpdateNodeInternals();
+		
+		// Force re-render when handle overrides change by creating a unique key
+		const handleOverrides = (props.data as any)?.handleOverrides;
+		
+		const handleKey = React.useMemo(() => {
+			return handleOverrides ? JSON.stringify(handleOverrides) : 'default';
+		}, [handleOverrides]);
+
+		// Update ReactFlow's internal handle positions when overrides change
+		React.useEffect(() => {
+			// Always update when handleOverrides changes (including when it becomes empty or undefined)
+			// This ensures handles revert to original positions when overrides are removed
+			updateNodeInternals(props.id);
+			console.log(`🔄 Updated node internals for ${props.id} due to handle position changes:`, {
+				overrideCount: handleOverrides?.length || 0,
+				overrides: handleOverrides || "no overrides"
+			});
+		}, [handleOverrides, props.id, updateNodeInternals]);
 		// Extract React Flow state for theming
 		const isSelected = props.selected;
 		const isError = false; // TODO: Extract from node data or validation state
@@ -217,20 +238,33 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 						: sizeConfig.height,
 		};
 
-		// Calculate handle positioning for multiple handles on same side
+		// Calculate handle positioning for multiple handles on same side with dynamic overrides
 		const handlesByPosition = React.useMemo(() => {
 			const grouped: Record<string, typeof spec.handles> = {};
 			const allHandles = spec.handles || [];
+			const handleOverrides = (props.data as any)?.handleOverrides as Array<{
+				handleId: string;
+				position: "top" | "bottom" | "left" | "right";
+			}> | undefined;
+
+			// Create map for quick override lookup
+			const overrideMap = new Map<string, string>();
+			if (handleOverrides) {
+				handleOverrides.forEach(override => {
+					overrideMap.set(override.handleId, override.position);
+				});
+			}
 
 			allHandles.forEach((handle) => {
-				const pos = handle.position;
+				// Use override position if available, otherwise use default
+				const pos = overrideMap.get(handle.id) || handle.position;
 				if (!grouped[pos]) {
 					grouped[pos] = [];
 				}
 				grouped[pos].push(handle);
 			});
 			return grouped;
-		}, [spec.handles]);
+		}, [spec.handles, props.data]);
 
 		// Inner component to throw inside ErrorBoundary, not outside
 		const MaybeError: React.FC = () => {
@@ -288,21 +322,35 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 				{/* Telemetry event: node created */}
 				<NodeTelemetry nodeId={props.id} nodeKind={spec.kind} />
 
-				{/* Render handles defined in the spec with smart positioning */}
+				{/* Render handles defined in the spec with smart positioning and dynamic overrides */}
 				{(() => {
 					const allHandles = spec.handles || [];
+					const handleOverrides = (props.data as any)?.handleOverrides as Array<{
+						handleId: string;
+						position: "top" | "bottom" | "left" | "right";
+					}> | undefined;
+
+					// Create override map for quick lookup
+					const overrideMap = new Map<string, string>();
+					if (handleOverrides) {
+						handleOverrides.forEach(override => {
+							overrideMap.set(override.handleId, override.position);
+						});
+					}
 
 					return allHandles.map((handle, _index) => {
-						const handlesOnSameSide = handlesByPosition[handle.position] || [];
+						// Use override position if available, otherwise use default
+						const actualPosition = overrideMap.get(handle.id) || handle.position;
+						const handlesOnSameSide = handlesByPosition[actualPosition] || [];
 						const handleIndex = handlesOnSameSide.findIndex((h) => h.id === handle.id);
 						const totalHandlesOnSide = handlesOnSameSide.length;
 
 						return (
 							<TypeSafeHandle
-								key={handle.id}
+								key={`${handle.id}-${handleKey}-${actualPosition}`}
 								id={`${handle.id}__${handle.code ?? handle.dataType ?? "x"}`}
 								type={handle.type}
-								position={handle.position as Position}
+								position={actualPosition as Position}
 								dataType={handle.dataType || "any"}
 								code={(handle as any).code}
 								tsSymbol={(handle as any).tsSymbol}

@@ -30,6 +30,11 @@ export interface BaseNodeData {
 	label?: string;
 	/** Node description for documentation */
 	description?: string;
+	/** Handle position overrides for custom positioning */
+	handleOverrides?: Array<{
+		handleId: string;
+		position: "top" | "bottom" | "left" | "right";
+	}>;
 	/** Additional properties for flexibility - use unknown for type safety */
 	[key: string]: unknown;
 }

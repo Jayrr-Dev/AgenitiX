@@ -97,7 +97,7 @@ export interface NodeSpecMetadata {
 // Default metadata for nodes (can be overridden)
 const defaultNodeMetadata = {
 	description: "Node description",
-	icon: "🔧",
+	icon: "Wrench",
 	ui: {
 		defaultCollapsed: false,
 		folder: "general",

@@ -206,7 +206,7 @@ const initialState: FlowState = {
 	selectedEdgeId: null,
 	showHistoryPanel: false,
 	inspectorLocked: false,
-	inspectorViewMode: "bottom",
+	inspectorViewMode: "side",
 	nodeErrors: {},
 	copiedNodes: [],
 	copiedEdges: [],
@@ -325,10 +325,18 @@ export const useFlowStore = create<FlowStore>()(
 
 							// Only update if there are actual changes
 							if (hasChanges) {
+								// Update node data
 								node.data = newData;
 
-								// Add debug logging for production issues (non-blocking)
-								if (process.env.NODE_ENV === "production") {
+								// Special logging for handle position changes
+								if (data.handleOverrides !== undefined) {
+									console.log(`🔄 Handle positions updated for node ${nodeId}:`, {
+										handleOverrides: data.handleOverrides,
+									});
+								}
+
+								// Add debug logging for development
+								if (process.env.NODE_ENV === "development") {
 									console.debug(`Node ${nodeId} data updated:`, Object.keys(data));
 								}
 							}

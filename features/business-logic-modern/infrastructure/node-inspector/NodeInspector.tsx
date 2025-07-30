@@ -35,6 +35,7 @@ import { NodeInspectorAdapter } from "./adapters/NodeInspectorAdapter";
 import { EdgeInspector } from "./components/EdgeInspector";
 import { EditableJsonEditor } from "./components/EditableJsonEditor";
 import { ErrorLog } from "./components/ErrorLog";
+import { HandlePositionEditor } from "./components/HandlePositionEditor";
 import { NodeControls } from "./components/NodeControls";
 import { NodeOutput } from "./components/NodeOutput";
 import { SizeControls } from "./components/SizeControls";
@@ -752,6 +753,17 @@ const NodeInspector = React.memo(function NodeInspector({
 													: ""}
 											</span>
 										</div>
+									</div>
+								)}
+
+								{/* Handle Position Editor */}
+								{nodeInfo.handles && nodeInfo.handles.length > 0 && (
+									<div className="mb-4 rounded border border-border/30 bg-muted/10 p-3">
+										<HandlePositionEditor
+											node={selectedNode}
+											handles={nodeInfo.handles}
+											updateNodeData={updateNodeData}
+										/>
 									</div>
 								)}
 
