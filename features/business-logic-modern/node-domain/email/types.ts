@@ -375,3 +375,78 @@ export interface RateLimitError extends Error {
 }
 
 export type WebhookCallback = (messages: RawEmailMessage[]) => void;
+// Email Creator Types
+export interface EmailValidationResult {
+	isValid: boolean;
+	errors: string[];
+	warnings: string[];
+}
+
+export interface ComposedEmail {
+	recipients: {
+		to: string[];
+		cc: string[];
+		bcc: string[];
+	};
+	subject: string;
+	content: {
+		text: string;
+		html: string;
+		mode: 'text' | 'html' | 'rich';
+	};
+	attachments: EmailAttachment[];
+	template?: {
+		id: string;
+		name: string;
+		variables: Record<string, string>;
+	};
+	formatting: {
+		font: string;
+		fontSize: number;
+		textColor: string;
+		backgroundColor: string;
+		alignment: 'left' | 'center' | 'right' | 'justify';
+	};
+	metadata: {
+		createdAt: number;
+		updatedAt: number;
+		isValid: boolean;
+	};
+}
+
+export interface EmailTemplate {
+	id: string;
+	name: string;
+	description?: string;
+	subject: string;
+	content: {
+		text: string;
+		html: string;
+	};
+	variables: Array<{
+		name: string;
+		type: 'text' | 'number' | 'date' | 'boolean';
+		required: boolean;
+		defaultValue?: string;
+		description?: string;
+	}>;
+	category: string;
+	tags: string[];
+	createdAt: number;
+	updatedAt: number;
+}
+
+export interface EmailAttachment {
+	id: string;
+	name: string;
+	size: number;
+	type: string;
+	content?: string; // base64 for small files
+	url?: string; // for large files
+}
+
+export interface EmailContent {
+	text: string;
+	html: string;
+	mode: 'text' | 'html' | 'rich';
+}

@@ -10,6 +10,7 @@ import { spec as createTextSpec } from "../../node-domain/create/createText.node
 import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
 import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
 import { spec as emailReaderSpec } from "../../node-domain/email/emailReader.node";
+import { spec as emailCreatorSpec } from "../../node-domain/email/emailCreator.node";
 import { spec as testNodeSpec } from "../../node-domain/test/testNode.node";
 import { spec as triggerToggleSpec } from "../../node-domain/trigger/triggerToggle.node";
 import { spec as viewTextSpec } from "../../node-domain/view/viewText.node";
@@ -23,6 +24,7 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	storeInMemory: storeInMemorySpec,
 	emailAccount: emailAccountSpec,
 	emailReader: emailReaderSpec,
+	emailCreator: emailCreatorSpec,
 	testNode: testNodeSpec,
 	triggerToggle: triggerToggleSpec,
 	viewText: viewTextSpec,
