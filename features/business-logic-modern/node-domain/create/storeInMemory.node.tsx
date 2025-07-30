@@ -34,6 +34,7 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
+import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  In-Memory Storage System
@@ -432,7 +433,7 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 
 	/** Monitor inputs from connected nodes */
 	useEffect(() => {
-		const valueEdge = edges.find((e) => e.target === id && e.targetHandle === "value-input");
+		const valueEdge = findEdgeByHandle(edges, id, "value-input");
 
 		// Check value input
 		if (valueEdge) {

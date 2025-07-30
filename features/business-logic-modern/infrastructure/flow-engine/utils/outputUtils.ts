@@ -45,6 +45,28 @@ export function getNodeOutput(
 		return null;
 	}
 
+	// Handle special case where outputs is an object with text property (common in text nodes)
+	if (typeof extractedValue === "object" && extractedValue !== null && "text" in extractedValue) {
+		const textObj = extractedValue as { text: unknown };
+		return formatValue(textObj.text);
+	}
+
+	// Handle AI Agent specific case where isProcessing contains the output
+	if (node.type === "aiAgent") {
+		// For AI Agent, prioritize isProcessing over outputs
+		const isProcessing = node.data?.isProcessing;
+		if (isProcessing !== undefined && isProcessing !== null) {
+			if (typeof isProcessing === "string") {
+				return isProcessing;
+			}
+			if (isProcessing instanceof Error) {
+				return `Error: ${isProcessing.message}`;
+			}
+		}
+		// Fallback to extracted value
+		return extractedValue;
+	}
+
 	return formatValue(extractedValue);
 }
 

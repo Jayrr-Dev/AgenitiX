@@ -148,7 +148,7 @@ export function createNodeValidator<T>(schema: z.ZodSchema<T>, nodeType: string)
 				};
 
 				// Downgrade to a warning so we do not trigger the Next.js error overlay while still surfacing the issue in the console
-				console.warn(`${nodeType} node data validation failed:`, errorContext);
+				// console.warn(`${nodeType} node data validation failed:`, errorContext);
 
 				// Report to error tracking service
 				if (errorTrackingService) {
@@ -159,14 +159,14 @@ export function createNodeValidator<T>(schema: z.ZodSchema<T>, nodeType: string)
 				}
 
 				// Log specific validation issues for debugging
-				error.issues.forEach((issue) => {
-					console.warn(`${nodeType} validation: ${issue.path.join(".")} - ${issue.message}`);
-				});
+				// error.issues.forEach((issue) => {
+				// 	console.warn(`${nodeType} validation: ${issue.path.join(".")} - ${issue.message}`);
+				// });
 
 				// Attempt to parse with defaults as fallback
 				try {
 					const fallbackData = schema.parse({});
-					console.info(`Using default values for ${nodeType} node`);
+					// console.info(`Using default values for ${nodeType} node`);
 
 					return {
 						success: false,
@@ -384,7 +384,7 @@ export function reportValidationError(
 	};
 
 	// Using console.warn prevents Next.js from treating the message as an application-level error
-	console.warn("Node validation error report:", errorReport);
+	// console.warn("Node validation error report:", errorReport);
 
 	// Report to enterprise error tracking service
 	if (errorTrackingService) {

@@ -647,8 +647,21 @@ const NodeInspector = React.memo(function NodeInspector({
 										inputs: selectedNode.data?.inputs ?? null,
 										outputs: selectedNode.data?.outputs ?? null,
 										isActive: selectedNode.data?.isActive,
-										isEnabled: true,
+										isEnabled: selectedNode.data?.isEnabled ?? true,
 										isExpanded: selectedNode.data?.isExpanded,
+										// AI Agent specific fields
+										...(selectedNode.type === "aiAgent" && {
+											userInput: selectedNode.data?.userInput,
+											triggerInputs: selectedNode.data?.triggerInputs,
+											trigger: selectedNode.data?.trigger,
+											isProcessing: selectedNode.data?.isProcessing,
+											systemPrompt: selectedNode.data?.systemPrompt,
+											selectedProvider: selectedNode.data?.selectedProvider,
+											selectedModel: selectedNode.data?.selectedModel,
+											temperature: selectedNode.data?.temperature,
+											maxSteps: selectedNode.data?.maxSteps,
+											threadId: selectedNode.data?.threadId,
+										}),
 									}}
 									onUpdateData={(newData) => {
 										// Extract the system fields and update only the data portion

@@ -174,7 +174,7 @@ const FlowEditorInternal = () => {
 		nodes,
 		edges,
 		onNodesChange,
-		onEdgesChange,
+		onEdgesChange: storeOnEdgesChange,
 		onConnect,
 		addNode,
 		// Pull all other necessary props from the store
@@ -419,6 +419,11 @@ const FlowEditorInternal = () => {
 		},
 		[selectNode, selectEdge]
 	);
+
+	// Wrapper for onEdgesChange
+	const onEdgesChange = useCallback((changes: unknown[]) => {
+		storeOnEdgesChange(changes);
+	}, [storeOnEdgesChange]);
 
 	// Show loading state while canvas is being loaded
 	if (canvasLoader.isLoading) {

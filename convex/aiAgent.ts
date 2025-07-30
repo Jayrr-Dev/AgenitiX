@@ -1,10 +1,10 @@
 // convex/aiAgent.ts
 import { v } from "convex/values";
 import { action } from "./_generated/server";
-// Note: Uncomment imports below after installing @convex-dev/agent
-// import { Agent } from "@convex-dev/agent";
-// import { openai } from "@ai-sdk/openai";
-// import { components } from "./_generated/api";
+import { Agent } from "@convex-dev/agent";
+import { openai } from "@ai-sdk/openai";
+import { anthropic } from "@ai-sdk/anthropic";
+import { components } from "./_generated/api";
 
 /**
  * Configuration interface for AI Agent
@@ -21,13 +21,37 @@ export interface AiAgentConfig {
 
 /**
  * Create AI Agent with configuration
- * Note: This will be implemented after installing @convex-dev/agent
  */
 export const createAiAgent = (config: AiAgentConfig) => {
-  // TODO: Implement after installing @convex-dev/agent
-  /*
+  let chatModel;
+
+  switch (config.selectedProvider) {
+    case "openai":
+      chatModel = openai.chat(config.selectedModel || "gpt-4o-mini", {
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+      break;
+    case "anthropic":
+      chatModel = anthropic.chat(config.selectedModel || "claude-3-5-sonnet-20241022", {
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      });
+      break;
+    case "custom":
+      if (!config.customApiKey || !config.customEndpoint) {
+        throw new Error("Custom API key and endpoint are required for custom provider");
+      }
+      // For custom providers, we'll use OpenAI format as default
+      chatModel = openai.chat(config.selectedModel || "gpt-4o-mini", {
+        apiKey: config.customApiKey,
+        baseURL: config.customEndpoint,
+      });
+      break;
+    default:
+      throw new Error(`Unsupported provider: ${config.selectedProvider}`);
+  }
+
   return new Agent(components.agent, {
-    chat: openai.chat(config.selectedModel || "gpt-4o-mini"),
+    chat: chatModel,
     instructions: config.systemPrompt || "You are a helpful assistant.",
     maxSteps: config.maxSteps || 1,
     maxRetries: 3,
@@ -36,8 +60,6 @@ export const createAiAgent = (config: AiAgentConfig) => {
       console.log("Token usage:", usage);
     },
   });
-  */
-  throw new Error("@convex-dev/agent package not installed yet");
 };
 
 /**
@@ -60,82 +82,50 @@ export const processUserMessage = action({
   },
   handler: async (ctx, args) => {
     try {
-      // TODO: Implement after installing @convex-dev/agent
-      /*
       const agent = createAiAgent(args.agentConfig);
-      
+
       let threadId = args.threadId;
       if (!threadId) {
         const { _id } = await ctx.runMutation(
           components.agent.threads.createThread,
-          { 
+          {
             userId: "workflow-user", // Or get from context
             title: "AI Agent Conversation",
           }
         );
         threadId = _id;
       }
-      
+
       const { thread } = await agent.continueThread(ctx, { threadId });
+
+      // Prepare the prompt with JSON context if provided
+      let fullPrompt = args.userInput;
+      if (args.jsonInput) {
+        fullPrompt += `\n\nAdditional Context (JSON): ${JSON.stringify(args.jsonInput, null, 2)}`;
+      }
+
       const result = await thread.generateText({
-        prompt: args.userInput,
+        prompt: fullPrompt,
       });
-      
+
       return {
         threadId,
         response: result.text,
         usage: result.usage,
       };
-      */
-      
-      // Mock implementation for now
-      await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
-      
-      // Simulate different error scenarios
-      if (args.userInput.toLowerCase().includes('error')) {
-        throw new Error('AI processing failed');
-      }
-      if (args.userInput.toLowerCase().includes('timeout')) {
-        throw new Error('Request timeout');
-      }
-      if (args.userInput.toLowerCase().includes('rate limit')) {
-        throw new Error('Rate limit exceeded');
-      }
-      
-      // Generate mock response based on provider
-      let mockResponse = "";
-      switch (args.agentConfig.selectedProvider) {
-        case "openai":
-          mockResponse = `OpenAI ${args.agentConfig.selectedModel} Response: `;
-          break;
-        case "anthropic":
-          mockResponse = `Anthropic ${args.agentConfig.selectedModel} Response: `;
-          break;
-        case "custom":
-          mockResponse = `Custom AI Response: `;
-          break;
-      }
-      
-      mockResponse += `Based on your system prompt "${args.agentConfig.systemPrompt.substring(0, 50)}..." I processed your input: "${args.userInput.substring(0, 100)}..."`;
-      
-      if (args.jsonInput) {
-        mockResponse += ` I also received JSON context: ${JSON.stringify(args.jsonInput).substring(0, 50)}...`;
-      }
-      
-      mockResponse += ` [Temperature: ${args.agentConfig.temperature}, Max Steps: ${args.agentConfig.maxSteps}]`;
-      
-      return {
-        threadId: args.threadId || `thread_${Date.now()}`,
-        response: mockResponse,
-        usage: {
-          promptTokens: Math.floor(args.userInput.length / 4),
-          completionTokens: Math.floor(mockResponse.length / 4),
-          totalTokens: Math.floor((args.userInput.length + mockResponse.length) / 4),
-        },
-      };
     } catch (error) {
       // Log error for debugging
       console.error("AI Agent processing error:", error);
+
+      // Re-throw with more user-friendly message if needed
+      if (error.message?.includes("API key")) {
+        throw new Error("Invalid API key. Please check your configuration.");
+      } else if (error.message?.includes("rate limit")) {
+        throw new Error("Rate limit exceeded. Please try again in a moment.");
+      } else if (error.message?.includes("quota")) {
+        throw new Error("API quota exceeded. Please check your billing.");
+      }
+
       throw error;
     }
   },
@@ -151,22 +141,15 @@ export const createThread = action({
     summary: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // TODO: Implement after installing @convex-dev/agent
-    /*
     const { _id } = await ctx.runMutation(
       components.agent.threads.createThread,
-      { 
+      {
         userId: args.userId || "workflow-user",
         title: args.title || "AI Agent Conversation",
         summary: args.summary,
       }
     );
     return { threadId: _id };
-    */
-    
-    // Mock implementation
-    const threadId = `thread_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    return { threadId };
   },
 });
 
@@ -179,32 +162,13 @@ export const getThreadMessages = action({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // TODO: Implement after installing @convex-dev/agent
-    /*
     const messages = await ctx.runQuery(
       components.agent.messages.list,
-      { 
+      {
         threadId: args.threadId,
         limit: args.limit || 50,
       }
     );
     return messages;
-    */
-    
-    // Mock implementation
-    return [
-      {
-        id: `msg_${Date.now()}`,
-        role: "user" as const,
-        content: "Hello, AI agent!",
-        createdAt: Date.now() - 60000,
-      },
-      {
-        id: `msg_${Date.now() + 1}`,
-        role: "assistant" as const,
-        content: "Hello! How can I help you today?",
-        createdAt: Date.now(),
-      },
-    ];
   },
 });

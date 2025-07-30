@@ -32,6 +32,7 @@ import {
 	EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
+import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -168,9 +169,9 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 		[updateNodeData]
 	);
 
-	/** Compute the latest boolean coming from the *first* upstream node. */
+	/** Compute the latest boolean coming from connected input handle. */
 	const computeInput = useCallback((): boolean | null => {
-		const incoming = edges.find((e) => e.target === id);
+		const incoming = findEdgeByHandle(edges, id, "input");
 		if (!incoming) {
 			return null;
 		}

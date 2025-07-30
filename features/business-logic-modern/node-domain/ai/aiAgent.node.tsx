@@ -11,30 +11,22 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import React, {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  ChangeEvent,
-} from "react";
+import { type ChangeEvent, memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { api } from "@/convex/_generated/api";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
-import {
-  createSafeInitialData,
-} from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+import { createSafeInitialData } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
 import {
   createNodeValidator,
   reportValidationError,
   useNodeDataValidation,
 } from "@/features/business-logic-modern/infrastructure/node-core/validation";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
-import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
   COLLAPSED_SIZES,
@@ -42,12 +34,25 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
-// TODO: Uncomment after setting up Convex client
-// import { useAction } from "convex/react";
-// import { api } from "@/convex/_generated/api";
+import { useAction } from "convex/react";
+import { findEdgeByHandle, extractNodeValue } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 
 // -----------------------------------------------------------------------------
-// 1️⃣  Data schema & validation
+// 1️⃣  Constants
+// -----------------------------------------------------------------------------
+
+/** Processing state constants for better type safety and maintainability */
+const PROCESSING_STATE = {
+  IDLE: "idle",
+  PROCESSING: "processing", 
+  SUCCESS: "success",
+  ERROR: "error",
+} as const;
+
+type ProcessingState = typeof PROCESSING_STATE[keyof typeof PROCESSING_STATE];
+
+// -----------------------------------------------------------------------------
+// 2️⃣  Data schema & validation
 // -----------------------------------------------------------------------------
 
 export const AiAgentDataSchema = z
@@ -65,10 +70,14 @@ export const AiAgentDataSchema = z
     maxTokens: z.number().optional(),
 
     // Input/Output State
+    inputs: z.string().nullable().default(null), // Standard inputs field for text input
+    triggerInputs: z.boolean().nullable().default(null), // Standard inputs field for trigger
     userInput: z.string().nullable().default(null),
-    jsonInput: z.any().nullable().default(null),
-    isActive: z.boolean().default(false),
-    isProcessing: z.any().nullable().default(null), // Promise<string> | null
+    trigger: z.boolean().nullable().default(null), // Can be null when no trigger connected
+    isActive: z.boolean().nullable().default(null), // Can be null during initialization
+    processingState: z.enum([PROCESSING_STATE.IDLE, PROCESSING_STATE.PROCESSING, PROCESSING_STATE.SUCCESS, PROCESSING_STATE.ERROR]).default(PROCESSING_STATE.IDLE),
+    processingResult: z.string().nullable().default(null), // Store processing result
+    processingError: z.string().nullable().default(null), // Store error message if any
 
     // Thread Management
     threadId: z.string().nullable().default(null),
@@ -86,13 +95,10 @@ export const AiAgentDataSchema = z
 
 export type AiAgentData = z.infer<typeof AiAgentDataSchema>;
 
-const validateNodeData = createNodeValidator(
-  AiAgentDataSchema,
-  "AiAgent",
-);
+const validateNodeData = createNodeValidator(AiAgentDataSchema, "AiAgent");
 
 // -----------------------------------------------------------------------------
-// 2️⃣  Constants
+// 3️⃣  UI Constants  
 // -----------------------------------------------------------------------------
 
 const CATEGORY_TEXT = {
@@ -118,11 +124,9 @@ const CONTENT = {
  */
 function createDynamicSpec(data: AiAgentData): NodeSpec {
   const expanded =
-    EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
-    EXPANDED_SIZES.FE3;
+    EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ?? EXPANDED_SIZES.FE3;
   const collapsed =
-    COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
-    COLLAPSED_SIZES.C2;
+    COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ?? COLLAPSED_SIZES.C2;
 
   return {
     kind: "aiAgent",
@@ -132,18 +136,18 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
     size: { expanded, collapsed },
     handles: [
       {
-        id: "json-input",
-        code: "j",
-        position: "top",
-        type: "target",
-        dataType: "JSON",
-      },
-      {
         id: "text-input",
         code: "s",
-        position: "left",
+        position: "top",
         type: "target",
         dataType: "String",
+      },
+      {
+        id: "trigger",
+        code: "b",
+        position: "left",
+        type: "target",
+        dataType: "Boolean",
       },
       {
         id: "output",
@@ -160,9 +164,11 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
       selectedProvider: "openai",
       selectedModel: "gpt-4o-mini",
       systemPrompt: "You are a helpful assistant.",
+      inputs: null,
+      triggerInputs: null,
       userInput: null,
-      jsonInput: null,
-      isProcessing: null,
+      trigger: false,
+      processingState: PROCESSING_STATE.IDLE,
       threadId: null,
       outputs: null,
     }),
@@ -171,9 +177,11 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
       autoGenerate: true,
       excludeFields: [
         "isActive",
+        "inputs",
+        "triggerInputs",
         "userInput",
-        "jsonInput",
-        "isProcessing",
+        "trigger",
+        "processingState",
         "threadId",
         "outputs",
         "expandedSize",
@@ -181,7 +189,16 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
       ],
       customFields: [
         { key: "isEnabled", type: "boolean", label: "Enable" },
-        { key: "selectedProvider", type: "select", label: "AI Provider" },
+        {
+          key: "selectedProvider",
+          type: "select",
+          label: "AI Provider",
+          options: [
+            { value: "openai", label: "OpenAI" },
+            { value: "anthropic", label: "Anthropic" },
+            { value: "custom", label: "Custom" },
+          ],
+        },
         { key: "selectedModel", type: "text", label: "Model" },
         {
           key: "systemPrompt",
@@ -192,8 +209,21 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
         },
         { key: "customApiKey", type: "text", label: "API Key (BYOK)" },
         { key: "customEndpoint", type: "text", label: "Custom Endpoint" },
-        { key: "temperature", type: "number", label: "Temperature" },
-        { key: "maxSteps", type: "number", label: "Max Steps" },
+        {
+          key: "temperature",
+          type: "number",
+          label: "Temperature",
+          min: 0,
+          max: 2,
+          step: 0.1,
+        },
+        {
+          key: "maxSteps",
+          type: "number",
+          label: "Max Steps",
+          min: 1,
+          max: 10,
+        },
         { key: "isExpanded", type: "boolean", label: "Expand" },
       ],
     },
@@ -222,8 +252,7 @@ export const spec: NodeSpec = createDynamicSpec({
 // 4️⃣  React component – data propagation & rendering
 // -----------------------------------------------------------------------------
 
-const AiAgentNode = memo(
-  ({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
+const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
     // -------------------------------------------------------------------------
     // 4.1  Sync with React‑Flow store
     // -------------------------------------------------------------------------
@@ -232,23 +261,27 @@ const AiAgentNode = memo(
     // -------------------------------------------------------------------------
     // 4.2  Derived state
     // -------------------------------------------------------------------------
-    const {
-      isExpanded,
-      isEnabled,
-      isActive,
-      selectedProvider,
-      selectedModel,
-      systemPrompt,
-      maxSteps,
-      temperature,
-      customApiKey,
-      customEndpoint,
-      userInput,
-      jsonInput,
-      isProcessing,
-      threadId,
-      outputs
-    } = nodeData as AiAgentData;
+  const {
+    isExpanded,
+    isEnabled,
+    isActive,
+    selectedProvider,
+    selectedModel,
+    systemPrompt,
+    maxSteps,
+    temperature,
+    customApiKey,
+    customEndpoint,
+    inputs,
+    triggerInputs,
+    userInput,
+    trigger,
+    processingState,
+    processingResult,
+    processingError,
+    threadId,
+    outputs,
+  } = nodeData as AiAgentData;
 
     // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
     const nodes = useStore((s) => s.nodes);
@@ -273,9 +306,9 @@ const AiAgentNode = memo(
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
 
-    /** Propagate output ONLY when node is active AND enabled */
+    /** Propagate output ONLY when node is active AND enabled (mirrors Create-Text behaviour) */
     const propagate = useCallback(
-      (value: string) => {
+      (value: string | null) => {
         const shouldSend = isActive && isEnabled;
         const out = shouldSend ? value : null;
         if (out !== lastOutputRef.current) {
@@ -283,7 +316,7 @@ const AiAgentNode = memo(
           updateNodeData({ outputs: out });
         }
       },
-      [isActive, isEnabled, updateNodeData],
+      [isActive, isEnabled, updateNodeData]
     );
 
     /** Clear JSON‑ish fields when inactive or disabled */
@@ -299,11 +332,12 @@ const AiAgentNode = memo(
       }
     }, [isActive, isEnabled, updateNodeData]);
 
-    // TODO: Uncomment after setting up Convex client
-    // const processUserMessageAction = useAction(api.aiAgent.processUserMessage);
+  const processUserMessageAction = useAction(api.aiAgent.processUserMessage);
+  const createThreadAction = useAction(api.aiAgent.createThread);
 
-    /** Process with AI using Convex action */
-    const processWithAI = useCallback(async (input: string, currentThreadId?: string): Promise<string> => {
+  /** Process with AI using Convex action */
+  const processWithAI = useCallback(
+    async (input: string, currentThreadId?: string): Promise<string> => {
       try {
         // Use provided thread ID or get/create one
         let activeThreadId = currentThreadId;
@@ -316,187 +350,219 @@ const AiAgentNode = memo(
             updateNodeData({ threadId: activeThreadId });
           }
         }
-        
-        // TODO: Replace with actual Convex action call
-        // const result = await processUserMessageAction({
-        //   threadId: activeThreadId,
-        //   userInput: input,
-        //   jsonInput: jsonInput,
-        //   agentConfig: {
-        //     selectedProvider,
-        //     selectedModel,
-        //     systemPrompt,
-        //     maxSteps,
-        //     temperature,
-        //     customApiKey,
-        //     customEndpoint,
-        //   },
-        // });
-        // return result.response;
-        
-        // Mock implementation for now - simulates the Convex action
-        await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
-        
-        // Simulate different error scenarios
-        if (input.toLowerCase().includes('error')) {
-          throw new Error('AI processing failed');
+
+        // Use real Convex action
+        const result = await processUserMessageAction({
+          threadId: activeThreadId,
+          userInput: input,
+          jsonInput: null, // No longer using JSON input
+          agentConfig: {
+            selectedProvider,
+            selectedModel,
+            systemPrompt,
+            maxSteps,
+            temperature,
+            customApiKey,
+            customEndpoint,
+          },
+        });
+
+        // Update thread ID if it was created
+        if (result.threadId !== activeThreadId) {
+          updateNodeData({ threadId: result.threadId });
         }
-        if (input.toLowerCase().includes('timeout')) {
-          throw new Error('Request timeout');
-        }
-        if (input.toLowerCase().includes('rate limit')) {
-          throw new Error('Rate limit exceeded');
-        }
-        
-        // Generate mock response based on provider
-        let mockResponse = "";
-        switch (selectedProvider) {
-          case "openai":
-            mockResponse = `OpenAI ${selectedModel} Response: `;
-            break;
-          case "anthropic":
-            mockResponse = `Anthropic ${selectedModel} Response: `;
-            break;
-          case "custom":
-            mockResponse = `Custom AI Response: `;
-            break;
-        }
-        
-        mockResponse += `[Thread: ${activeThreadId.substring(0, 12)}...] Based on your system prompt "${systemPrompt.substring(0, 50)}..." I processed your input: "${input.substring(0, 100)}..."`;
-        
-        if (jsonInput) {
-          mockResponse += ` I also received JSON context: ${JSON.stringify(jsonInput).substring(0, 50)}...`;
-        }
-        
-        mockResponse += ` [Temperature: ${temperature}, Max Steps: ${maxSteps}]`;
-        
-        return mockResponse;
+
+        return result.response;
       } catch (error) {
         console.error("AI processing error:", error);
         throw error;
       }
-    }, [systemPrompt, jsonInput, selectedProvider, selectedModel, maxSteps, temperature, threadId, updateNodeData]);
+    },
+    [systemPrompt, selectedProvider, selectedModel, maxSteps, temperature, threadId, updateNodeData]
+  );
 
-    /** Compute the latest text input from connected text-input handle */
-    const computeTextInput = useCallback((): string | null => {
-      const textEdge = edges.find((e) => e.target === id && e.targetHandle === "text-input");
-      if (!textEdge) return null;
 
-      const src = nodes.find((n) => n.id === textEdge.source);
+
+  /** Compute the latest text input from connected text-input handle */
+  const computeTextInput = useCallback((): string | null => {
+    const textEdge = findEdgeByHandle(edges, id, "text-input");
+    if (!textEdge) return null;
+
+    const src = nodes.find((n) => n.id === textEdge.source);
       if (!src) return null;
 
       // priority: outputs ➜ store ➜ whole data
-      const inputValue = src.data?.outputs ?? src.data?.store ?? src.data;
-      return typeof inputValue === 'string' ? inputValue : String(inputValue || '');
+    const rawInput = src.data?.outputs ?? src.data?.store ?? src.data;
+
+    // If upstream node outputs an object with a `text` field (e.g. Create-Text),
+    // extract that for a cleaner prompt.
+    if (typeof rawInput === "object" && rawInput !== null && "text" in rawInput) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return String((rawInput as any).text ?? "");
+    }
+
+    return typeof rawInput === "string" ? rawInput : String(rawInput ?? "");
+  }, [edges, nodes, id]);
+
+  /**
+   * Compute the latest trigger boolean from the connected handle.
+   *
+   * Returns null when no trigger is connected, allowing the node to distinguish
+   * between "no trigger wired" vs "trigger is false".
+   */
+
+  const computeTrigger = useCallback((): boolean | null => {
+    const triggerEdge = findEdgeByHandle(edges, id, "trigger");
+
+    // No trigger connected ➜ return null (no trigger wired)
+    if (!triggerEdge) return null;
+
+    const src = nodes.find((n) => n.id === triggerEdge.source);
+    if (!src) return false;
+
+    // Derive boolean value from upstream node
+    const triggerValue = src.data?.outputs ?? src.data?.store ?? src.data?.isActive ?? false;
+    return Boolean(triggerValue);
     }, [edges, nodes, id]);
 
-    /** Compute the latest JSON input from connected json-input handle */
-    const computeJsonInput = useCallback((): any => {
-      const jsonEdge = edges.find((e) => e.target === id && e.targetHandle === "json-input");
-      if (!jsonEdge) return null;
-
-      const src = nodes.find((n) => n.id === jsonEdge.source);
-      if (!src) return null;
-
-      // Return the raw data for JSON input
-      return src.data?.outputs ?? src.data?.data ?? src.data;
-    }, [edges, nodes, id]);
-
-    /** Handle system prompt change (memoised for perf) */
-    const handleSystemPromptChange = useCallback(
+  /** Handle system prompt change (memoised for perf) */
+  const handleSystemPromptChange = useCallback(
       (e: ChangeEvent<HTMLTextAreaElement>) => {
-        updateNodeData({ systemPrompt: e.target.value });
-      },
-      [updateNodeData],
-    );
+      console.log("System prompt changed:", e.target.value);
+      updateNodeData({ systemPrompt: e.target.value });
+    },
+    [updateNodeData]
+  );
 
-    /** Get AI provider icon for collapsed mode */
-    const getProviderIcon = useCallback(() => {
-      switch (selectedProvider) {
-        case "openai": return "🤖";
-        case "anthropic": return "🧠";
-        case "custom": return "⚙️";
-        default: return "🤖";
-      }
-    }, [selectedProvider]);
+  /** Handle provider selection change */
+  const handleProviderChange = useCallback(
+    (e: ChangeEvent<HTMLSelectElement>) => {
+      console.log("Provider changed:", e.target.value);
+      updateNodeData({ selectedProvider: e.target.value as "openai" | "anthropic" | "custom" });
+    },
+    [updateNodeData]
+  );
 
+  /** Get AI provider icon for collapsed mode with processing animation */
+  const getProviderIcon = useCallback(() => {
+    // Show spinning wheel when processing
+    if (processingState === PROCESSING_STATE.PROCESSING) {
+      return (
+        <div className="animate-spin duration-1000">
+          🔄
+        </div>
+      );
+    }
+    
+    // Show error icon when error state
+    if (processingState === PROCESSING_STATE.ERROR) {
+      return "❌";
+    }
+    
+    // Show success icon when completed
+    if (processingState === PROCESSING_STATE.SUCCESS) {
+      return "✅";
+    }
+    
+    // Default provider icons
+    switch (selectedProvider) {
+      case "openai":
+        return "🤖";
+      case "anthropic":
+        return "🧠";
+      case "custom":
+        return "⚙️";
+      default:
+        return "🤖";
+    }
+  }, [selectedProvider, processingState]);
 
+  /** Reset thread to start fresh conversation */
+  const resetThread = useCallback(() => {
+    updateNodeData({
+      threadId: null,
+      processingState: PROCESSING_STATE.IDLE,
+      processingResult: null,
+      processingError: null,
+      outputs: null,
+    });
+  }, [updateNodeData]);
 
-    /** Reset thread to start fresh conversation */
-    const resetThread = useCallback(() => {
-      updateNodeData({ 
-        threadId: null,
-        isProcessing: null,
-        outputs: null 
-      });
-    }, [updateNodeData]);
+  /** Validate AI agent configuration */
+  const validateConfiguration = useCallback(() => {
+    const errors: string[] = [];
 
-    /** Validate AI agent configuration */
-    const validateConfiguration = useCallback(() => {
-      const errors: string[] = [];
-      
-      // Validate system prompt
-      if (!systemPrompt || systemPrompt.trim().length === 0) {
-        errors.push("System prompt is required");
-      } else if (systemPrompt.length > 2000) {
-        errors.push("System prompt is too long (max 2000 characters)");
+    // Validate system prompt
+    if (!systemPrompt || systemPrompt.trim().length === 0) {
+      errors.push("System prompt is required");
+    } else if (systemPrompt.length > 2000) {
+      errors.push("System prompt is too long (max 2000 characters)");
+    }
+
+    // Validate model selection
+    if (!selectedModel || selectedModel.trim().length === 0) {
+      errors.push("Model selection is required");
+    }
+
+    // Validate temperature
+    if (temperature < 0 || temperature > 2) {
+      errors.push("Temperature must be between 0 and 2");
+    }
+
+    // Validate max steps
+    if (maxSteps < 1 || maxSteps > 10) {
+      errors.push("Max steps must be between 1 and 10");
+    }
+
+    // Validate custom provider settings
+    if (selectedProvider === "custom") {
+      if (!customApiKey || customApiKey.trim().length === 0) {
+        errors.push("API key is required for custom provider");
       }
-      
-      // Validate model selection
-      if (!selectedModel || selectedModel.trim().length === 0) {
-        errors.push("Model selection is required");
-      }
-      
-      // Validate temperature
-      if (temperature < 0 || temperature > 2) {
-        errors.push("Temperature must be between 0 and 2");
-      }
-      
-      // Validate max steps
-      if (maxSteps < 1 || maxSteps > 10) {
-        errors.push("Max steps must be between 1 and 10");
-      }
-      
-      // Validate custom provider settings
-      if (selectedProvider === "custom") {
-        if (!customApiKey || customApiKey.trim().length === 0) {
-          errors.push("API key is required for custom provider");
+      if (!customEndpoint || customEndpoint.trim().length === 0) {
+        errors.push("Custom endpoint is required for custom provider");
+      } else {
+        // Validate URL format
+        try {
+          new URL(customEndpoint);
+        } catch {
+          errors.push("Custom endpoint must be a valid URL");
         }
-        if (!customEndpoint || customEndpoint.trim().length === 0) {
-          errors.push("Custom endpoint is required for custom provider");
-        } else {
-          // Validate URL format
-          try {
-            new URL(customEndpoint);
-          } catch {
-            errors.push("Custom endpoint must be a valid URL");
-          }
-        }
       }
-      
-      return errors;
-    }, [systemPrompt, selectedModel, temperature, maxSteps, selectedProvider, customApiKey, customEndpoint]);
+    }
 
-    /** Get configuration status */
-    const getConfigurationStatus = useCallback(() => {
-      const errors = validateConfiguration();
-      return {
-        isValid: errors.length === 0,
-        errors,
-        warnings: [] as string[], // Could add warnings for non-critical issues
-      };
-    }, [validateConfiguration]);
+    return errors;
+  }, [
+    systemPrompt,
+    selectedModel,
+    temperature,
+    maxSteps,
+    selectedProvider,
+    customApiKey,
+    customEndpoint,
+  ]);
 
-    /** Enhanced error handling with retry logic */
-    const handleProcessingError = useCallback(async (error: any, retryCount: number = 0): Promise<string> => {
+  /** Get configuration status */
+  const getConfigurationStatus = useCallback(() => {
+    const errors = validateConfiguration();
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings: [] as string[], // Could add warnings for non-critical issues
+    };
+  }, [validateConfiguration]);
+
+  /** Enhanced error handling with retry logic */
+  const handleProcessingError = useCallback(
+    async (error: any, retryCount = 0): Promise<string> => {
       const maxRetries = 3;
       const baseDelay = 1000; // 1 second
-      
+
       // Classify error type
       let errorType = "unknown";
       let shouldRetry = false;
       let retryDelay = 0;
-      
+
       if (error.message?.includes("rate limit")) {
         errorType = "rate_limit";
         shouldRetry = retryCount < maxRetries;
@@ -516,15 +582,15 @@ const AiAgentNode = memo(
         errorType = "model_error";
         shouldRetry = false; // Don't retry model errors
       }
-      
+
       // Log error for debugging
       console.error(`AI Agent Error (${errorType}, attempt ${retryCount + 1}):`, error);
-      
+
       // If we should retry and haven't exceeded max retries
       if (shouldRetry && retryCount < maxRetries) {
         // Wait before retrying
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
-        
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+
         // Retry the processing
         try {
           return await processWithAI(userInput || "", threadId || undefined);
@@ -532,7 +598,7 @@ const AiAgentNode = memo(
           return await handleProcessingError(retryError, retryCount + 1);
         }
       }
-      
+
       // Generate user-friendly error message
       let userMessage = "";
       switch (errorType) {
@@ -554,9 +620,11 @@ const AiAgentNode = memo(
         default:
           userMessage = `Processing failed: ${error.message}`;
       }
-      
+
       throw new Error(userMessage);
-    }, [userInput, threadId, processWithAI]);
+    },
+    [userInput, threadId, processWithAI]
+    );
 
     // -------------------------------------------------------------------------
     // 4.5  Effects
@@ -564,130 +632,133 @@ const AiAgentNode = memo(
 
     /* 🔄 Whenever nodes/edges change, recompute inputs. */
     useEffect(() => {
-      const textInputVal = computeTextInput();
-      const jsonInputVal = computeJsonInput();
+    const textInputVal = computeTextInput();
+    const triggerVal = computeTrigger();
 
-      if (textInputVal !== userInput || jsonInputVal !== jsonInput) {
-        updateNodeData({
-          userInput: textInputVal,
-          jsonInput: jsonInputVal
-        });
-      }
-    }, [computeTextInput, computeJsonInput, userInput, jsonInput, updateNodeData]);
+    if (textInputVal !== userInput || triggerVal !== trigger) {
+      updateNodeData({
+        inputs: textInputVal,
+        triggerInputs: triggerVal,
+        userInput: textInputVal,
+        trigger: triggerVal,
+      });
+    }
+  }, [computeTextInput, computeTrigger, userInput, trigger, updateNodeData, edges, nodes]);
 
-    /* 🔄 Make isEnabled dependent on input value only when there are connections. */
+    /* 🔄 Make isEnabled dependent on triggerInputs (like Create Text with boolean input) */
     useEffect(() => {
-      // Only auto-control isEnabled when there are text connections (userInput !== null)
-      // When userInput is null (no connections), let user manually control isEnabled
-      if (userInput !== null) {
-        const nextEnabled = userInput && userInput.trim().length > 0;
+    // When triggerInputs is not null (has a connection), mirror the toggle state
+    if (triggerInputs !== null) {
+      const nextEnabled = Boolean(triggerInputs);
         if (nextEnabled !== isEnabled) {
           updateNodeData({ isEnabled: nextEnabled });
         }
       }
-    }, [userInput, isEnabled, updateNodeData]);
+    // When triggerInputs is null (no connection), keep current isEnabled state
+  }, [triggerInputs, isEnabled, updateNodeData]);
 
-    // Monitor system prompt and user input to update active state
+  // Monitor isEnabled and update active state (exactly like Create Text)
     useEffect(() => {
+    if (isEnabled) {
+      // When enabled, check if we have valid configuration
       const hasValidPrompt = systemPrompt && systemPrompt.trim().length > 0;
       const hasValidInput = userInput && userInput.trim().length > 0;
       const configStatus = getConfigurationStatus();
-      const shouldBeActive = hasValidPrompt && hasValidInput && configStatus.isValid;
 
-      // If disabled, always set isActive to false
-      if (!isEnabled) {
-        if (isActive) updateNodeData({ isActive: false });
-      } else {
-        if (isActive !== shouldBeActive) {
-          updateNodeData({ isActive: shouldBeActive });
-        }
-      }
-    }, [systemPrompt, userInput, isEnabled, isActive, updateNodeData, getConfigurationStatus]);
+      // Node is active when enabled AND has valid config AND has inputs
+      const nextActive = hasValidPrompt && hasValidInput && configStatus.isValid;
 
-    // Handle AI processing when node becomes active
-    useEffect(() => {
-      let abortController: AbortController | null = null;
-      
-      if (isActive && isEnabled && userInput && systemPrompt && isProcessing === null) {
-        // Create abort controller for cancellation
-        abortController = new AbortController();
-        
-        // Start AI processing
-        const processingPromise = processWithAI(userInput);
-        updateNodeData({ isProcessing: processingPromise });
-
-        processingPromise
-          .then((response) => {
-            // Check if processing was cancelled
-            if (!abortController?.signal.aborted) {
-              // Processing completed successfully
-              updateNodeData({
-                isProcessing: response,
-                isActive: false // Turn off after processing
-              });
-            }
-          })
-          .catch(async (error) => {
-            // Check if processing was cancelled
-            if (!abortController?.signal.aborted) {
-              try {
-                // Try enhanced error handling with retry logic
-                const retryResult = await handleProcessingError(error);
-                updateNodeData({
-                  isProcessing: retryResult,
-                  isActive: false
-                });
-              } catch (finalError) {
-                // All retries failed
-                updateNodeData({
-                  isProcessing: finalError,
-                  isActive: false
-                });
-              }
-            }
-          });
-      }
-      
-      // Cleanup function to cancel processing if component unmounts or isActive changes
-      return () => {
-        if (abortController && !abortController.signal.aborted) {
-          abortController.abort();
-        }
-      };
-    }, [isActive, isEnabled, userInput, systemPrompt, isProcessing, processWithAI, updateNodeData, handleProcessingError]);
-
-    // Handle processing cancellation when isActive becomes false
-    useEffect(() => {
-      if (!isActive && isProcessing instanceof Promise) {
-        // Cancel ongoing processing
-        updateNodeData({ 
-          isProcessing: new Error("Processing cancelled"),
-          isActive: false 
+      if (isActive !== nextActive) {
+        updateNodeData({
+          isActive: nextActive,
+          isProcessing: nextActive ? null : nodeData.isProcessing, // reset when going active
         });
       }
-    }, [isActive, isProcessing, updateNodeData]);
+    } else if (isActive) {
+      // When disabled, turn off active state
+      updateNodeData({ isActive: false });
+    }
+  }, [systemPrompt, userInput, isEnabled, isActive, updateNodeData, getConfigurationStatus]);
 
-    // Sync outputs with processing state
+  // Handle AI processing when node becomes active
+  useEffect(() => {
+    if (isActive && isEnabled && userInput && systemPrompt && processingState === PROCESSING_STATE.IDLE) {
+      // Start AI processing
+      updateNodeData({ 
+        processingState: PROCESSING_STATE.PROCESSING,
+        processingResult: null,
+        processingError: null 
+      });
+
+      processWithAI(userInput)
+        .then((response) => {
+          // Processing completed successfully
+          updateNodeData({
+            processingState: PROCESSING_STATE.SUCCESS,
+            processingResult: response,
+            processingError: null,
+            isActive: false, // Turn off after processing
+          });
+          // Ensure the final response is propagated to outputs
+          propagate(response);
+        })
+        .catch(async (error) => {
+          try {
+            // Try enhanced error handling with retry logic
+            const retryResult = await handleProcessingError(error);
+            updateNodeData({
+              processingState: typeof retryResult === "string" ? PROCESSING_STATE.SUCCESS : PROCESSING_STATE.ERROR,
+              processingResult: typeof retryResult === "string" ? retryResult : null,
+              processingError: typeof retryResult === "string" ? null : String(retryResult),
+              isActive: false,
+            });
+            // Propagate error result
+            propagate(typeof retryResult === "string" ? retryResult : `Error: ${String(retryResult)}`);
+          } catch (finalError) {
+            // All retries failed
+            updateNodeData({
+              processingState: PROCESSING_STATE.ERROR,
+              processingResult: null,
+              processingError: String(finalError),
+              isActive: false,
+            });
+            // Propagate final error
+            propagate(`Error: ${String(finalError)}`);
+          }
+        });
+    }
+  }, [isActive, isEnabled, userInput, systemPrompt, processingState, processWithAI, updateNodeData, handleProcessingError]);
+
+  // Handle processing cancellation when isActive becomes false
+  useEffect(() => {
+    if (!isActive && processingState === PROCESSING_STATE.PROCESSING) {
+      // Cancel ongoing processing
+      updateNodeData({
+        processingState: PROCESSING_STATE.ERROR,
+        processingError: "Processing cancelled",
+        isActive: false,
+      });
+    }
+  }, [isActive, processingState, updateNodeData]);
+
+  // Sync outputs with processing state
     useEffect(() => {
-      let outputValue: string | null = null;
+    let outputValue: string | null = null;
 
-      if (isProcessing === null) {
-        // No processing
-        outputValue = null;
-      } else if (isProcessing instanceof Promise) {
-        // Processing in progress
-        outputValue = null;
-      } else if (typeof isProcessing === 'string') {
-        // Processing completed successfully
-        outputValue = isProcessing;
-      } else if (isProcessing instanceof Error) {
-        // Processing failed
-        outputValue = `Error: ${isProcessing.message}`;
-      }
+    if (processingState === PROCESSING_STATE.PROCESSING) {
+      // Processing in progress
+      outputValue = null;
+    } else if (processingState === PROCESSING_STATE.SUCCESS && processingResult) {
+      // Processing completed successfully
+      outputValue = processingResult;
+    } else if (processingState === PROCESSING_STATE.ERROR && processingError) {
+      // Processing failed
+      outputValue = `Error: ${processingError}`;
+    }
 
-      propagate(outputValue || "");
+    propagate(outputValue || "");
       blockJsonWhenInactive();
-    }, [isProcessing, propagate, blockJsonWhenInactive]);
+  }, [processingState, processingResult, processingError, propagate, blockJsonWhenInactive]);
 
     // -------------------------------------------------------------------------
     // 4.6  Validation
@@ -700,17 +771,12 @@ const AiAgentNode = memo(
       });
     }
 
-    useNodeDataValidation(
-      AiAgentDataSchema,
-      "AiAgent",
-      validation.data,
-      id,
-    );
+  useNodeDataValidation(AiAgentDataSchema, "AiAgent", validation.data, id);
 
     // -------------------------------------------------------------------------
     // 4.7  Feature flag conditional rendering
     // -------------------------------------------------------------------------
-
+    
     // If flag is loading, show loading state
     if (flagState.isLoading) {
       return (
@@ -740,9 +806,7 @@ const AiAgentNode = memo(
     return (
       <>
         {/* Editable label or icon */}
-        {!isExpanded &&
-          spec.size.collapsed.width === 60 &&
-          spec.size.collapsed.height === 60 ? (
+      {!isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60 ? (
           <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
@@ -750,132 +814,201 @@ const AiAgentNode = memo(
           <LabelNode nodeId={id} label={spec.displayName} />
         )}
 
-        {!isExpanded ? (
-          <div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ''}`}>
-            <div className="text-2xl">
-              {getProviderIcon()}
-            </div>
-            {isProcessing instanceof Promise && (
-              <div className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-            )}
-            {isProcessing instanceof Error && (
-              <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-            )}
-          </div>
-        ) : (
-          <div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ''}`}>
-            <div className="space-y-3">
-              {/* AI Provider Selection */}
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">AI Provider</label>
-                <div className="flex items-center gap-2 mt-1">
+      {isExpanded ? (
+        <div className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}>
+          <div className="space-y-3">
+            {/* AI Provider Selection */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">AI Provider</label>
+              <div className="space-y-2 mt-1">
+                <div className="flex items-center gap-2">
                   <span className="text-lg">{getProviderIcon()}</span>
-                  <span className="text-xs">{selectedProvider} - {selectedModel}</span>
+                  <select
+                    value={selectedProvider}
+                    onChange={handleProviderChange}
+                    className="text-xs bg-background border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    disabled={!isEnabled}
+                  >
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                    <option value="custom">Custom</option>
+                  </select>
                   {(() => {
                     const configStatus = getConfigurationStatus();
-                    return !configStatus.isValid ? (
+                    return configStatus.isValid ? (
+                      <span className="text-xs text-green-500">✓</span>
+                    ) : (
                       <span className="text-xs text-red-500" title={configStatus.errors.join(", ")}>
                         ⚠️
                       </span>
-                    ) : (
-                      <span className="text-xs text-green-500">✓</span>
                     );
                   })()}
                 </div>
-              </div>
-
-              {/* System Prompt */}
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">System Prompt</label>
-                <textarea
-                  value={systemPrompt}
-                  onChange={handleSystemPromptChange}
-                  placeholder="You are a helpful assistant..."
-                  className={`resize-none nowheel bg-background border rounded-md p-2 text-xs h-20 w-full overflow-y-auto focus:outline-none focus:ring-1 focus:ring-blue-500 ${categoryStyles.primary}`}
+                <input
+                  type="text"
+                  value={selectedModel}
+                  onChange={(e) => updateNodeData({ selectedModel: e.target.value })}
+                  placeholder="Model name (e.g., gpt-4o-mini)"
+                  className="text-xs bg-background border rounded px-2 py-1 w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
                   disabled={!isEnabled}
                 />
               </div>
+            </div>
 
-              {/* Status Display */}
+            {/* System Prompt */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">System Prompt</label>
+            <textarea
+                value={systemPrompt}
+                onChange={handleSystemPromptChange}
+                placeholder="You are a helpful assistant..."
+                className={`resize-none nowheel bg-background border rounded-md p-2 text-xs h-20 w-full overflow-y-auto focus:outline-none focus:ring-1 focus:ring-blue-500 ${categoryStyles.primary}`}
+                disabled={!isEnabled}
+              />
+            </div>
+
+            {/* BYOK Section for Custom Provider */}
+            {selectedProvider === "custom" && (
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Status</label>
-                <div className="text-xs mt-1">
-                  {isProcessing === null && "Ready"}
-                  {isProcessing instanceof Promise && (
-                    <span className="text-blue-500 flex items-center gap-1">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                      Processing...
-                    </span>
-                  )}
-                  {typeof isProcessing === 'string' && (
-                    <span className="text-green-500">✓ Complete</span>
-                  )}
-                  {isProcessing instanceof Error && (
-                    <div className="space-y-1">
-                      <span className="text-red-500">✗ Error: {isProcessing.message}</span>
-                      <button
-                        onClick={() => updateNodeData({ isProcessing: null, isActive: true })}
-                        className="text-xs text-blue-500 hover:text-blue-700 underline block"
-                        disabled={!isEnabled}
-                      >
-                        Retry
-                      </button>
-                    </div>
-                  )}
+                <label className="text-xs font-medium text-muted-foreground">
+                  Custom Configuration
+                </label>
+                <div className="space-y-2 mt-1">
+                  <input
+                    type="password"
+                    value={customApiKey || ""}
+                    onChange={(e) => updateNodeData({ customApiKey: e.target.value })}
+                    placeholder="API Key"
+                    className="text-xs bg-background border rounded px-2 py-1 w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    disabled={!isEnabled}
+                  />
+                  <input
+                    type="text"
+                    value={customEndpoint || ""}
+                    onChange={(e) => updateNodeData({ customEndpoint: e.target.value })}
+                    placeholder="Custom Endpoint URL"
+                    className="text-xs bg-background border rounded px-2 py-1 w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    disabled={!isEnabled}
+                  />
                 </div>
               </div>
+            )}
 
-              {/* Thread Management */}
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">Conversation</label>
-                <div className="flex items-center justify-between mt-1">
-                  <div className="text-xs text-muted-foreground">
-                    {threadId ? `Thread: ${threadId.substring(0, 12)}...` : "No active thread"}
-                  </div>
-                  {threadId && (
+            {/* Advanced Settings */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Advanced Settings</label>
+              <div className="space-y-2 mt-1">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-muted-foreground w-20">Temperature:</label>
+                  <input
+                    type="number"
+                    value={temperature}
+                    onChange={(e) =>
+                      updateNodeData({ temperature: Number.parseFloat(e.target.value) || 0 })
+                    }
+                    min="0"
+                    max="2"
+                    step="0.1"
+                    className="text-xs bg-background border rounded px-2 py-1 w-16 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              disabled={!isEnabled}
+            />
+          </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-muted-foreground w-20">Max Steps:</label>
+                  <input
+                    type="number"
+                    value={maxSteps}
+                    onChange={(e) =>
+                      updateNodeData({ maxSteps: Number.parseInt(e.target.value) || 1 })
+                    }
+                    min="1"
+                    max="10"
+                    className="text-xs bg-background border rounded px-2 py-1 w-16 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              disabled={!isEnabled}
+            />
+                </div>
+              </div>
+            </div>
+
+            {/* Status Display */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Status</label>
+              <div className="text-xs mt-1">
+                {processingState === PROCESSING_STATE.IDLE && "Ready"}
+                {processingState === PROCESSING_STATE.PROCESSING && (
+                  <span className="text-blue-500 flex items-center gap-1">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    Processing...
+                  </span>
+                )}
+                {processingState === PROCESSING_STATE.SUCCESS && (
+                  <span className="text-green-500">✓ Complete</span>
+                )}
+                {processingState === PROCESSING_STATE.ERROR && (
+                  <div className="space-y-1">
+                    <span className="text-red-500">✗ Error: {processingError}</span>
                     <button
-                      onClick={resetThread}
-                      className="text-xs text-red-500 hover:text-red-700 underline"
+                      onClick={() => updateNodeData({ processingState: PROCESSING_STATE.IDLE, processingError: null, isActive: true })}
+                      className="text-xs text-blue-500 hover:text-blue-700 underline block"
                       disabled={!isEnabled}
                     >
-                      Reset
+                      Retry
                     </button>
-                  )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Thread Management */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Conversation</label>
+              <div className="flex items-center justify-between mt-1">
+                <div className="text-xs text-muted-foreground">
+                  {threadId ? `Thread: ${threadId.substring(0, 12)}...` : "No active thread"}
+                </div>
+                {threadId && (
+                  <button
+                    onClick={resetThread}
+                    className="text-xs text-red-500 hover:text-red-700 underline"
+                    disabled={!isEnabled}
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Input Preview */}
+            {userInput && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Input</label>
+                <div className="text-xs mt-1 p-2 bg-muted rounded text-muted-foreground max-h-16 overflow-y-auto">
+                  {userInput.length > 100 ? `${userInput.substring(0, 100)}...` : userInput}
                 </div>
               </div>
+            )}
 
-              {/* Input Preview */}
-              {userInput && (
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">Input</label>
-                  <div className="text-xs mt-1 p-2 bg-muted rounded text-muted-foreground max-h-16 overflow-y-auto">
-                    {userInput.length > 100 ? `${userInput.substring(0, 100)}...` : userInput}
-                  </div>
+            {/* Output Preview */}
+            {outputs && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Output</label>
+                <div className="text-xs mt-1 p-2 bg-muted rounded text-muted-foreground max-h-16 overflow-y-auto">
+                  {outputs.length > 100 ? `${outputs.substring(0, 100)}...` : outputs}
                 </div>
-              )}
-
-              {/* Output Preview */}
-              {outputs && (
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">Output</label>
-                  <div className="text-xs mt-1 p-2 bg-muted rounded text-muted-foreground max-h-16 overflow-y-auto">
-                    {outputs.length > 100 ? `${outputs.substring(0, 100)}...` : outputs}
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
+        </div>
+      ) : (
+        <div className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}>
+          <div className="text-2xl">{getProviderIcon()}</div>
+        </div>
         )}
 
-        <ExpandCollapseButton
-          showUI={isExpanded}
-          onToggle={toggleExpand}
-          size="sm"
-        />
+      <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
       </>
     );
-  },
-);
+});
 
 // -----------------------------------------------------------------------------
 // 5️⃣  High‑order wrapper – inject scaffold with dynamic spec
@@ -895,19 +1028,13 @@ const AiAgentNodeWithDynamicSpec = (props: NodeProps) => {
   // Recompute spec only when the size keys change
   const dynamicSpec = useMemo(
     () => createDynamicSpec(nodeData as AiAgentData),
-    [
-      (nodeData as AiAgentData).expandedSize,
-      (nodeData as AiAgentData).collapsedSize,
-    ],
+    [(nodeData as AiAgentData).expandedSize, (nodeData as AiAgentData).collapsedSize]
   );
 
   // Memoise the scaffolded component to keep focus
   const ScaffoldedNode = useMemo(
-    () =>
-      withNodeScaffold(dynamicSpec, (p) => (
-        <AiAgentNode {...p} spec={dynamicSpec} />
-      )),
-    [dynamicSpec],
+    () => withNodeScaffold(dynamicSpec, (p) => <AiAgentNode {...p} spec={dynamicSpec} />),
+    [dynamicSpec]
   );
 
   return <ScaffoldedNode {...props} />;

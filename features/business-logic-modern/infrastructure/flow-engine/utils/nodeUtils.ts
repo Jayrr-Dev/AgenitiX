@@ -34,7 +34,7 @@ export const safeStringify = (value: unknown, space = 2): string => {
 /**
  * Extracts a meaningful value from node data for display purposes.
  *
- * Priority: outputs.result > inputs.value > data itself (as stringified JSON)
+ * Priority: outputs > outputs.result > inputs.value > data itself (as stringified JSON)
  *
  * @param data The node data object.
  * @returns The extracted value, or the stringified object if no primary value is found.
@@ -44,7 +44,12 @@ export const extractNodeValue = (data: Record<string, unknown> | null | undefine
 		return null;
 	}
 
-	// Check for outputs.result first
+	// Check for outputs first (most common case)
+	if (data.outputs !== undefined && data.outputs !== null) {
+		return data.outputs;
+	}
+
+	// Check for outputs.result (nested case)
 	if (data.outputs && typeof data.outputs === "object" && data.outputs !== null) {
 		const outputs = data.outputs as Record<string, unknown>;
 		if ("result" in outputs) {
@@ -57,6 +62,32 @@ export const extractNodeValue = (data: Record<string, unknown> | null | undefine
 		const inputs = data.inputs as Record<string, unknown>;
 		if ("value" in inputs) {
 			return inputs.value;
+		}
+	}
+
+	// Check for isProcessing (AI Agent specific)
+	if (data.isProcessing !== undefined && data.isProcessing !== null) {
+		// If isProcessing is a string, return it directly
+		if (typeof data.isProcessing === "string") {
+			return data.isProcessing;
+		}
+		// If isProcessing is an Error, return the error message
+		if (data.isProcessing instanceof Error) {
+			return `Error: ${data.isProcessing.message}`;
+		}
+	}
+
+	// Special handling for AI Agent - if outputs is an object, try to extract the actual response
+	if (data.outputs && typeof data.outputs === "object" && data.outputs !== null) {
+		// Check if this looks like AI Agent data (has AI-specific fields)
+		if ("selectedProvider" in data.outputs || "systemPrompt" in data.outputs) {
+			// This is likely the entire node data object, not the actual output
+			// Try to get the actual response from isProcessing
+			if (data.isProcessing && typeof data.isProcessing === "string") {
+				return data.isProcessing;
+			}
+			// If no isProcessing, return a placeholder
+			return "No AI response available";
 		}
 	}
 

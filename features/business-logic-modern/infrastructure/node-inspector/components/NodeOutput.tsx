@@ -18,7 +18,7 @@ import { useCallback, useMemo } from "react";
 
 // MODERN REGISTRY INTEGRATION - Import proper types and registry
 import type { NodeType } from "../../flow-engine/types/nodeData";
-import { getNodeMetadata } from "../../node-registry/nodespec-registry";
+import { getNodeMetadata, getNodeSpecMetadata } from "../../node-registry/nodespec-registry";
 import type { NodeMetadata } from "../../node-registry/types";
 import { useComponentTheme } from "../../theming/components";
 
@@ -54,7 +54,7 @@ interface FormattedOutput {
 
 /**
  * GET OUTPUT FORMATTING PREFERENCES
- * Retrieves output formatting preferences from registry metadata
+ * Retrieves output formatting preferences from registry metadata and node spec
  */
 function getOutputFormattingPreferences(nodeType: string): {
 	hasCustomFormatting: boolean;
@@ -62,9 +62,12 @@ function getOutputFormattingPreferences(nodeType: string): {
 	customIcon?: string;
 	displayName?: string;
 	category?: string;
+	outputType?: string;
 	metadata: NodeMetadata | null;
 } {
 	const metadata = getNodeMetadata(nodeType as NodeType);
+	const specMetadata = getNodeSpecMetadata(nodeType as NodeType);
+	
 	if (!metadata) {
 		return {
 			hasCustomFormatting: false,
@@ -72,11 +75,21 @@ function getOutputFormattingPreferences(nodeType: string): {
 		};
 	}
 
+	// Get output type from node spec handles
+	let outputType: string | undefined;
+	if (specMetadata?.handles) {
+		const outputHandle = specMetadata.handles.find(handle => handle.type === "source");
+		if (outputHandle) {
+			outputType = outputHandle.dataType || outputHandle.code;
+		}
+	}
+
 	return {
 		hasCustomFormatting: true,
 		customIcon: metadata.icon,
 		displayName: metadata.displayName,
 		category: metadata.category,
+		outputType,
 		metadata,
 	};
 }
@@ -184,7 +197,7 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
 		}
 	}, []);
 
-	// ENHANCED OUTPUT FORMATTING - Registry-aware with theme
+	// ENHANCED OUTPUT FORMATTING - Registry-aware with theme and node spec
 	const formatOutput = useMemo((): FormattedOutput => {
 		if (output === null || output === undefined) {
 			return {
@@ -200,9 +213,12 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
 			};
 		}
 
+		// Use node spec output type if available, otherwise detect from value
+		const expectedOutputType = outputPreferences.outputType;
+		let detectedType = "string";
+
 		// Try to parse and detect data type
 		let parsedValue: any = output;
-		let detectedType = "string";
 
 		try {
 			parsedValue = JSON.parse(output);
@@ -212,29 +228,73 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
 			detectedType = "string";
 		}
 
-		// Get node-specific styling
-		const nodeSpecificStyling = getNodeSpecificStyling(nodeType, outputPreferences, theme);
+			// Use expected output type from node spec if available
+	if (expectedOutputType) {
+		// Map handle codes to display types
+		const typeMap: Record<string, string> = {
+			's': 'string',
+			'n': 'number', 
+			'b': 'boolean',
+			'j': 'json',
+			'a': 'array',
+			'x': 'any',
+			'V': 'vibe',
+			'o': 'object', // StoreInMemory output
+			't': 'trigger', // Trigger type
+			'v': 'value', // Value type
+			'String': 'string',
+			'Number': 'number',
+			'Boolean': 'boolean',
+			'JSON': 'json',
+			'Array': 'array',
+			'Object': 'object',
+		};
+		
+		detectedType = typeMap[expectedOutputType] || detectedType;
+	}
 
-		// Special handling for objects with text property (common in text nodes)
-		if (
-			detectedType === "object" &&
-			parsedValue &&
-			typeof parsedValue === "object" &&
-			parsedValue.text !== undefined
-		) {
-			return {
-				text: String(parsedValue.text),
-				color: nodeSpecificStyling.color || theme.text.primary,
-				type: "string",
-				icon: nodeSpecificStyling.icon || "STR",
-				fullText: String(parsedValue.text),
-				metadata: {
-					nodeDisplayName: outputPreferences.displayName,
-					nodeIcon: outputPreferences.customIcon,
-					nodeCategory: outputPreferences.category,
-				},
-			};
-		}
+			// Get node-specific styling
+	const nodeSpecificStyling = getNodeSpecificStyling(nodeType, outputPreferences, theme);
+
+	// Node-specific output type handling
+	switch (nodeType) {
+		case "createText":
+			detectedType = "string";
+			break;
+		case "viewText":
+			detectedType = "string";
+			break;
+		case "triggerToggle":
+			detectedType = "boolean";
+			break;
+		case "aiAgent":
+			detectedType = "string";
+			break;
+		case "storeInMemory":
+			detectedType = "string";
+			break;
+	}
+
+	// Special handling for objects with text property (common in text nodes)
+	if (
+		detectedType === "object" &&
+		parsedValue &&
+		typeof parsedValue === "object" &&
+		parsedValue.text !== undefined
+	) {
+		return {
+			text: String(parsedValue.text),
+			color: nodeSpecificStyling.color || theme.text.primary,
+			type: "string",
+			icon: nodeSpecificStyling.icon || "STR",
+			fullText: String(parsedValue.text),
+			metadata: {
+				nodeDisplayName: outputPreferences.displayName,
+				nodeIcon: outputPreferences.customIcon,
+				nodeCategory: outputPreferences.category,
+			},
+		};
+	}
 
 		// Format based on detected type
 		switch (detectedType) {
@@ -290,6 +350,45 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
 						nodeCategory: outputPreferences.category,
 					},
 				};
+			case "json":
+				return {
+					text: JSON.stringify(parsedValue, null, 2),
+					color: nodeSpecificStyling.color || theme.text.primary,
+					type: "json",
+					icon: nodeSpecificStyling.icon || "JSON",
+					fullText: JSON.stringify(parsedValue, null, 2),
+					metadata: {
+						nodeDisplayName: outputPreferences.displayName,
+						nodeIcon: outputPreferences.customIcon,
+						nodeCategory: outputPreferences.category,
+					},
+				};
+			case "trigger":
+				return {
+					text: String(parsedValue),
+					color: nodeSpecificStyling.color || theme.text.primary,
+					type: "trigger",
+					icon: nodeSpecificStyling.icon || "TRIG",
+					fullText: String(parsedValue),
+					metadata: {
+						nodeDisplayName: outputPreferences.displayName,
+						nodeIcon: outputPreferences.customIcon,
+						nodeCategory: outputPreferences.category,
+					},
+				};
+			case "value":
+				return {
+					text: String(parsedValue),
+					color: nodeSpecificStyling.color || theme.text.primary,
+					type: "value",
+					icon: nodeSpecificStyling.icon || "VAL",
+					fullText: String(parsedValue),
+					metadata: {
+						nodeDisplayName: outputPreferences.displayName,
+						nodeIcon: outputPreferences.customIcon,
+						nodeCategory: outputPreferences.category,
+					},
+				};
 			default:
 				return {
 					text: String(output),
@@ -314,6 +413,11 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
 					<span className="font-semibold text-foreground text-sm uppercase tracking-wide">
 						{formatOutput.type}
 					</span>
+					{outputPreferences.outputType && outputPreferences.outputType !== formatOutput.type && (
+						<span className="font-medium text-muted-foreground text-xs">
+							(expected: {outputPreferences.outputType})
+						</span>
+					)}
 					{formatOutput.metadata?.nodeDisplayName && (
 						<span className="font-medium text-muted-foreground text-xs">
 							from {formatOutput.metadata.nodeDisplayName}
