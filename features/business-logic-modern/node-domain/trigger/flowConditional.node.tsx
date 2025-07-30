@@ -65,6 +65,7 @@ export const FlowConditionalDataSchema = z
     lastRoute: z.enum(["true", "false", "none"]).default("none"), // last active route
     expandedSize: SafeSchemas.text("FE1"),
     collapsedSize: SafeSchemas.text("C1"),
+    label: z.string().optional(), // User-editable node label
   })
   .passthrough();
 
@@ -484,7 +485,7 @@ export const FlowConditionalNode = memo(
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (
-          <LabelNode nodeId={id} label={spec.displayName} />
+          <LabelNode nodeId={id} label={(nodeData as FlowConditionalData).label || spec.displayName} />
         )}
 
         {!isExpanded ? (

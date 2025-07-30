@@ -106,6 +106,7 @@ export const EmailReaderDataSchema = z
 		messages: z.array(z.any()).default([]), // EmailMessage[]
 		messageCount: z.number().default(0),
 		statusOutput: SafeSchemas.boolean(false),
+		label: z.string().optional(), // User-editable node label
 	})
 	.passthrough();
 
@@ -491,7 +492,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 	return (
 		<>
 			{/* Editable label */}
-			<LabelNode nodeId={id} label={spec.displayName} />
+			        <LabelNode nodeId={id} label={(nodeData as EmailReaderData).label || spec.displayName} />
 
 			{isExpanded ? (
 				<div className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}>

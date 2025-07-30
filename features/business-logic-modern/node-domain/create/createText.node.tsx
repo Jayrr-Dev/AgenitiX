@@ -51,6 +51,7 @@ export const CreateTextDataSchema = z
 		outputs: SafeSchemas.optionalText(),
 		expandedSize: SafeSchemas.text("VE2"),
 		collapsedSize: SafeSchemas.text("C1W"),
+		label: z.string().optional(), // User-editable node label
 	})
 	.passthrough();
 
@@ -320,9 +321,9 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 				<div className="absolute inset-0 flex justify-center p-1 text-foreground/80 text-lg">
 					{spec.icon && renderLucideIcon(spec.icon, "", 16)}
 				</div>
-			) : (
-				<LabelNode nodeId={id} label={spec.displayName} />
-			)}
+			        ) : (
+          <LabelNode nodeId={id} label={(nodeData as CreateTextData).label || spec.displayName} />
+        )}
 
 			{isExpanded ? (
 				<div className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}>

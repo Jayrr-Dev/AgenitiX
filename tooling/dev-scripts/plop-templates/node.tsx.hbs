@@ -61,6 +61,7 @@ export const {{pascalCase kind}}DataSchema = z
     outputs: SafeSchemas.optionalText(),
     expandedSize: SafeSchemas.text("{{expandedSize}}"),
     collapsedSize: SafeSchemas.text("{{collapsedSize}}"),
+    label: z.string().optional(), // User-editable node label
   })
   .passthrough();
 
@@ -389,7 +390,7 @@ const {{pascalCase kind}}Node = memo(
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (
-          <LabelNode nodeId={id} label={spec.displayName} />
+          <LabelNode nodeId={id} label={(nodeData as {{pascalCase kind}}Data).label || spec.displayName} />
         )}
 
         {!isExpanded ? (

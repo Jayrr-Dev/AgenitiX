@@ -52,6 +52,7 @@ export const TestNodeDataSchema = z
 		outputs: SafeSchemas.optionalText(),
 		expandedSize: SafeSchemas.text("FE0"),
 		collapsedSize: SafeSchemas.text("C1"),
+		label: z.string().optional(), // User-editable node label
 	})
 	.passthrough();
 
@@ -355,9 +356,9 @@ const TestNodeNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 				<div className="absolute inset-0 flex justify-center p-1 text-foreground/80 text-lg">
 					{spec.icon && renderLucideIcon(spec.icon, "", 16)}
 				</div>
-			) : (
-				<LabelNode nodeId={id} label={spec.displayName} />
-			)}
+			        ) : (
+          <LabelNode nodeId={id} label={(nodeData as TestNodeData).label || spec.displayName} />
+        )}
 
 			{isExpanded ? (
 				<div className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}>

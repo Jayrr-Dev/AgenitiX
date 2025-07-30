@@ -177,6 +177,7 @@ export const AiAgentDataSchema = z
     isExpanded: z.boolean().default(false),
     expandedSize: z.string().default("VE2"),
     collapsedSize: z.string().default("C2"),
+    label: z.string().optional(), // User-editable node label
 
     // Output (depends on store to prevent recursion)
     outputs: z.string().nullable().default(null),
@@ -1321,7 +1322,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (
-          <LabelNode nodeId={id} label={spec.displayName} />
+          <LabelNode nodeId={id} label={(nodeData as AiAgentData).label || spec.displayName} />
         )}
 
       {isExpanded ? (

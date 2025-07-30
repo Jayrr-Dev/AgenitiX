@@ -48,6 +48,7 @@ export const TriggerToggleDataSchema = z
 		outputs: z.boolean().default(false), // last emitted output
 		expandedSize: SafeSchemas.text("FE1"),
 		collapsedSize: SafeSchemas.text("C1"),
+		label: z.string().optional(), // User-editable node label
 	})
 	.passthrough();
 
@@ -271,9 +272,9 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 				<div className="absolute inset-0 flex justify-center p-1 text-foreground/80 text-lg">
 					{/* {spec.icon && renderLucideIcon(spec.icon)} */}
 				</div>
-			) : (
-				<LabelNode nodeId={id} label={spec.displayName} />
-			)}
+			        ) : (
+          <LabelNode nodeId={id} label={(nodeData as TriggerToggleData).label || spec.displayName} />
+        )}
 			{/* ───────────────────────────────────────── UI ───────────────────────────────────────── */}
 			{isExpanded ? (
 				/* Expanded view */

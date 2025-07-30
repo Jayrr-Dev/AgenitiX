@@ -112,6 +112,7 @@ export const StoreInMemoryDataSchema = z
     // Storage status
     storageStatus: SafeSchemas.text("ready"), // ready, stored, retrieved, deleted, cleared
     lastOperation: SafeSchemas.text(""),
+    label: z.string().optional(), // User-editable node label
   })
   .passthrough();
 
@@ -545,7 +546,7 @@ const StoreInMemoryNode = memo(
     return (
       <>
         {/* Editable label or icon */}
-        <LabelNode nodeId={id} label={spec.displayName} />
+        <LabelNode nodeId={id} label={(nodeData as StoreInMemoryData).label || spec.displayName} />
 
         {isExpanded ? (
           <div
