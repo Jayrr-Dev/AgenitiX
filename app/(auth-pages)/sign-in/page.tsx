@@ -49,6 +49,7 @@ export default function SignInPage() {
 
 			return () => clearTimeout(timer);
 		}
+		return undefined;
 	}, [isRateLimited, retryAfter]);
 
 	// Don't render if not mounted or authenticated (will redirect)

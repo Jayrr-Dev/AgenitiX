@@ -446,12 +446,13 @@ export class NodeMemoryManager extends BrowserEventEmitter {
 
 	/* ---------- persistence (debounced) ---------- */
 
-	private queuePersist(flush = false) {
+	private queuePersist(flush = false): void {
 		if (!this.cfg.persistent) {
 			return;
 		}
 		if (flush) {
-			return this.persistNow();
+			this.persistNow();
+			return;
 		}
 
 		if (!this.persistQueued) {

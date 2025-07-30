@@ -19,6 +19,7 @@ export default function CookieConsent() {
 
 			return () => clearTimeout(timer);
 		}
+		return undefined;
 	}, []);
 
 	const acceptCookies = () => {

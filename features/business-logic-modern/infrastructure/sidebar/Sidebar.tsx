@@ -129,6 +129,7 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
 				const interval = setInterval(updateStats, 30000); // Update every 30s
 				return () => clearInterval(interval);
 			}
+			return undefined;
 		}, [enableDebug]);
 
 		// MOUSE TRACKING - Update mouse position for accurate node placement
