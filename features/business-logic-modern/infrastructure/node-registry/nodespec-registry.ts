@@ -7,6 +7,7 @@
 
 import { spec as aiAgentSpec } from "../../node-domain/ai/aiAgent.node";
 import { spec as flowConditionalSpec } from "../../node-domain/trigger/flowConditional.node";
+import { spec as viewBooleanSpec } from "../../node-domain/view/viewBoolean.node";
 import { spec as createTextSpec } from "../../node-domain/create/createText.node";
 import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
 import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
@@ -20,6 +21,7 @@ import type { NodeSpec } from "../node-core/NodeSpec";
 // Collect all specs in one place
 const nodeSpecs: Record<string, NodeSpec> = {
 	flowConditional: flowConditionalSpec,
+	viewBoolean: viewBooleanSpec,
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
 	aiAgent: aiAgentSpec,
