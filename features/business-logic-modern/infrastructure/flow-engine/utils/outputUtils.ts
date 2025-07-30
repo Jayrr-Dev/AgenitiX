@@ -51,19 +51,38 @@ export function getNodeOutput(
 		return formatValue(textObj.text);
 	}
 
-	// Handle AI Agent specific case where isProcessing contains the output
+	// Handle AI Agent specific case
 	if (node.type === "aiAgent") {
-		// For AI Agent, prioritize isProcessing over outputs
-		const isProcessing = node.data?.isProcessing;
-		if (isProcessing !== undefined && isProcessing !== null) {
-			if (typeof isProcessing === "string") {
-				return isProcessing;
+		// For AI Agent, outputs should always be a string - if it's not, extract it
+		if (typeof extractedValue === "object" && extractedValue !== null) {
+			const obj = extractedValue as Record<string, unknown>;
+			
+			// Extract text from malformed output object
+			if (typeof obj.response === "string") {
+				return obj.response;
 			}
-			if (isProcessing instanceof Error) {
-				return `Error: ${isProcessing.message}`;
+			if (typeof obj.text === "string") {
+				return obj.text;
 			}
+			if (typeof obj.content === "string") {
+				return obj.content;
+			}
+			
+			// Warn about data corruption and stringify as fallback
+			console.warn("AI Agent outputs contains object instead of string:", obj);
+			return JSON.stringify(extractedValue);
 		}
-		// Fallback to extracted value
+		
+		// If extractedValue is already a string, return it
+		if (typeof extractedValue === "string") {
+			return extractedValue;
+		}
+		
+		// Fallback to processingResult if outputs is null/undefined
+		if (!extractedValue && node.data?.processingResult) {
+			return String(node.data.processingResult);
+		}
+		
 		return extractedValue;
 	}
 
