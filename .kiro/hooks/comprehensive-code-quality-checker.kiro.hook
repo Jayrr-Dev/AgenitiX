@@ -4,10 +4,15 @@
   "description": "Unified code quality hook that combines Biome linting/fixing, TypeScript error checking/fixing, and security analysis into one comprehensive check after file saves",
   "version": "1.1.0",
   "author": "AgenitiX Team",
-  "tags": ["code-quality", "linting", "security", "typescript"],
+  "tags": [
+    "code-quality",
+    "linting",
+    "security",
+    "typescript"
+  ],
   "estimatedExecutionTime": "30-60 seconds",
   "when": {
-    "type": "fileEdited",
+    "type": "userTriggered",
     "debounceMs": 2000,
     "patterns": [
       "**/*.{ts,tsx,js,jsx}",

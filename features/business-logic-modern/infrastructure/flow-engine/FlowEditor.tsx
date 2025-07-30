@@ -8,8 +8,8 @@ import type {
 import { generateNodeId } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
 import {
 	type Connection,
-	type Edge as ReactFlowEdge,
 	type EdgeChange,
+	type Edge as ReactFlowEdge,
 	type Node as ReactFlowNode,
 	ReactFlowProvider,
 	useReactFlow,

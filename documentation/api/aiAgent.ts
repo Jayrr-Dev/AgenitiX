@@ -68,7 +68,7 @@ export const aiAgentSpec = {
 };
 
 // Node Component
-export const aiAgentNode = ({ data, id }: NodeProps) => {
+export const aiAgentNode = (_props: NodeProps) => {
 	// Your node component implementation
 	return React.createElement("div", null, "Node content goes here");
 };

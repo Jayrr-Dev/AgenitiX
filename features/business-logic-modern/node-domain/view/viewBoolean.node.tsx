@@ -1,19 +1,16 @@
 /**
- * ViewBoolean NODE – Content‑focused, schema‑driven, type‑safe
+ * ViewBoolean NODE – Simple boolean visualization with pass-through
  *
- * • Shows only internal layout; the scaffold provides borders, sizing, theming, and interactivity.
- * • Zod schema auto‑generates type‑checked Inspector controls.
- * • Dynamic sizing (expandedSize / collapsedSize) drives the spec.
- * • Output propagation is gated by `isActive` *and* `isEnabled` to prevent runaway loops.
- * • Uses findEdgeByHandle utility for robust React Flow edge handling.
- * • Auto-disables when all input connections are removed (handled by flow store).
- * • Code is fully commented and follows current React + TypeScript best practices.
+ * • Takes a boolean input and displays it visually (true/false/null states)
+ * • Passes the boolean value through as output unchanged
+ * • Clean visual indicators for different boolean states
+ * • Compact design with clear state representation
  *
- * Keywords: view-boolean, schema-driven, type‑safe, clean‑architecture
+ * Keywords: view-boolean, boolean-display, pass-through, simple
  */
 
 import type { NodeProps } from "@xyflow/react";
-import { type ChangeEvent, memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
@@ -25,7 +22,6 @@ import {
 	SafeSchemas,
 	createSafeInitialData,
 } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
-import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
 import {
 	createNodeValidator,
 	reportValidationError,
@@ -46,15 +42,24 @@ import { useStore } from "@xyflow/react";
 
 export const ViewBooleanDataSchema = z
 	.object({
-		store: SafeSchemas.text("Default text"),
+		// Core boolean state
+		booleanValue: z.boolean().nullable().default(null),
+
+		// UI State
 		isEnabled: SafeSchemas.boolean(true),
 		isActive: SafeSchemas.boolean(false),
 		isExpanded: SafeSchemas.boolean(false),
-		inputs: SafeSchemas.optionalText().nullable().default(null),
-		outputs: SafeSchemas.optionalText(),
+
+		// Sizing
 		expandedSize: SafeSchemas.text("FE1"),
 		collapsedSize: SafeSchemas.text("C1"),
-		label: z.string().optional(), // User-editable node label
+
+		// Data flow
+		inputs: z.boolean().nullable().default(null),
+		outputs: z.boolean().nullable().default(null),
+
+		// Customization
+		label: z.string().optional(),
 	})
 	.passthrough();
 
@@ -63,21 +68,44 @@ export type ViewBooleanData = z.infer<typeof ViewBooleanDataSchema>;
 const validateNodeData = createNodeValidator(ViewBooleanDataSchema, "ViewBoolean");
 
 // -----------------------------------------------------------------------------
-// 2️⃣  Constants
+// 2️⃣  Constants & Styles
 // -----------------------------------------------------------------------------
 
-const CATEGORY_TEXT = {
-	VIEW: {
-		primary: "text-[--node--v-i-e-w-text]",
+const BOOLEAN_STATES = {
+	TRUE: {
+		icon: "LuCheck",
+		text: "TRUE",
+		color: "text-green-600 dark:text-green-400",
+		bgColor: "bg-green-50 dark:bg-green-900/20",
+		borderColor: "border-green-200 dark:border-green-800",
+	},
+	FALSE: {
+		icon: "LuX",
+		text: "FALSE",
+		color: "text-red-600 dark:text-red-400",
+		bgColor: "bg-red-50 dark:bg-red-900/20",
+		borderColor: "border-red-200 dark:border-red-800",
+	},
+	NULL: {
+		icon: "LuMinus",
+		text: "NULL",
+		color: "text-gray-500 dark:text-gray-400",
+		bgColor: "bg-gray-50 dark:bg-gray-900/20",
+		borderColor: "border-gray-200 dark:border-gray-700",
+	},
+	DISCONNECTED: {
+		icon: "LuUnplug",
+		text: "NO INPUT",
+		color: "text-gray-400 dark:text-gray-500",
+		bgColor: "bg-gray-25 dark:bg-gray-950/20",
+		borderColor: "border-dashed border-gray-300 dark:border-gray-600",
 	},
 } as const;
 
 const CONTENT = {
-	expanded: "p-4 w-full h-full flex flex-col",
+	expanded: "p-3 w-full h-full flex flex-col items-center justify-center",
 	collapsed: "flex items-center justify-center w-full h-full",
-	header: "flex items-center justify-between mb-3",
-	body: "flex-1 flex items-center justify-center",
-	disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+	disabled: "opacity-50 transition-opacity duration-200",
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -95,30 +123,23 @@ function createDynamicSpec(data: ViewBooleanData): NodeSpec {
 
 	return {
 		kind: "viewBoolean",
-		displayName: "ViewBoolean",
-		label: "ViewBoolean",
+		displayName: "View Boolean",
+		label: "View Boolean",
 		category: CATEGORIES.VIEW,
 		size: { expanded, collapsed },
 		handles: [
 			{
-				id: "json-input",
-				code: "j",
-				position: "top",
-				type: "target",
-				dataType: "JSON",
-			},
-			{
-				id: "output",
-				code: "s",
-				position: "right",
-				type: "source",
-				dataType: "String",
-			},
-			{
-				id: "input",
+				id: "boolean-input",
 				code: "b",
 				position: "left",
 				type: "target",
+				dataType: "Boolean",
+			},
+			{
+				id: "boolean-output",
+				code: "b",
+				position: "right",
+				type: "source",
 				dataType: "Boolean",
 			},
 		],
@@ -126,37 +147,32 @@ function createDynamicSpec(data: ViewBooleanData): NodeSpec {
 		version: 1,
 		runtime: { execute: "viewBoolean_execute_v1" },
 		initialData: createSafeInitialData(ViewBooleanDataSchema, {
-			store: "Default text",
+			booleanValue: null,
 			inputs: null,
-			outputs: "",
+			outputs: null,
 		}),
 		dataSchema: ViewBooleanDataSchema,
 		controls: {
 			autoGenerate: true,
-			excludeFields: ["isActive", "inputs", "outputs", "expandedSize", "collapsedSize"],
+			excludeFields: [
+				"isActive",
+				"inputs",
+				"outputs",
+				"booleanValue",
+				"expandedSize",
+				"collapsedSize",
+			],
 			customFields: [
 				{ key: "isEnabled", type: "boolean", label: "Enable" },
-				{
-					key: "store",
-					type: "textarea",
-					label: "Store",
-					placeholder: "Enter your content here…",
-					ui: { rows: 4 },
-				},
 				{ key: "isExpanded", type: "boolean", label: "Expand" },
 			],
 		},
-		icon: "LuDatabase",
+		icon: "LuToggleLeft",
 		author: "Agenitix Team",
-		description: "ViewBoolean node for display",
+		description:
+			"Displays boolean values with clear true/false indicators and passes the value through",
 		feature: "base",
-		tags: ["view", "viewBoolean"],
-		featureFlag: {
-			flag: "test",
-			fallback: true,
-			disabledMessage: "This viewBoolean node is currently disabled",
-			hideWhenDisabled: false,
-		},
+		tags: ["view", "boolean", "display", "indicator"],
 		theming: {},
 	};
 }
@@ -168,36 +184,66 @@ export const spec: NodeSpec = createDynamicSpec({
 } as ViewBooleanData);
 
 // -----------------------------------------------------------------------------
-// 4️⃣  React component – data propagation & rendering
+// 4️⃣  Helper functions
+// -----------------------------------------------------------------------------
+
+/**
+ * Convert any value to boolean with proper type coercion
+ */
+function convertToBoolean(value: unknown): boolean | null {
+	if (value === null || value === undefined) return null;
+	if (typeof value === 'boolean') return value;
+
+	// String conversion
+	if (typeof value === 'string') {
+		const lower = value.toLowerCase().trim();
+		if (lower === 'true' || lower === '1') return true;
+		if (lower === 'false' || lower === '0') return false;
+		if (lower === '') return null;
+	}
+
+	// Number conversion
+	if (typeof value === 'number') {
+		return value !== 0;
+	}
+
+	// Default truthy/falsy conversion
+	return Boolean(value);
+}
+
+/**
+ * Get the appropriate visual state for a boolean value
+ */
+function getBooleanState(value: boolean | null, hasConnection: boolean) {
+	if (!hasConnection) return BOOLEAN_STATES.DISCONNECTED;
+	if (value === null) return BOOLEAN_STATES.NULL;
+	return value ? BOOLEAN_STATES.TRUE : BOOLEAN_STATES.FALSE;
+}
+
+// -----------------------------------------------------------------------------
+// 5️⃣  React component – data propagation & rendering
 // -----------------------------------------------------------------------------
 
 const ViewBooleanNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
 	// -------------------------------------------------------------------------
-	// 4.1  Sync with React‑Flow store
+	// 5.1  Sync with React‑Flow store
 	// -------------------------------------------------------------------------
 	const { nodeData, updateNodeData } = useNodeData(id, data);
 
 	// -------------------------------------------------------------------------
-	// 4.2  Derived state
+	// 5.2  Derived state
 	// -------------------------------------------------------------------------
-	const { isExpanded, isEnabled, isActive, store } = nodeData as ViewBooleanData;
+	const { isExpanded, isEnabled, isActive, inputs, booleanValue } = nodeData as ViewBooleanData;
 
-	// 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
+	// Global React‑Flow store (nodes & edges) – triggers re‑render on change
 	const nodes = useStore((s) => s.nodes);
 	const edges = useStore((s) => s.edges);
 
-	// keep last emitted output to avoid redundant writes
-	const lastOutputRef = useRef<string | null>(null);
-
-	const categoryStyles = CATEGORY_TEXT.VIEW;
+	// Keep last emitted output to avoid redundant writes
+	const lastOutputRef = useRef<boolean | null>(null);
 
 	// -------------------------------------------------------------------------
-	// 4.3  Feature flag evaluation (after all hooks)
-	// -------------------------------------------------------------------------
-	const flagState = useNodeFeatureFlag(spec.featureFlag);
-
-	// -------------------------------------------------------------------------
-	// 4.4  Callbacks
+	// 5.3  Callbacks
 	// -------------------------------------------------------------------------
 
 	/** Toggle between collapsed / expanded */
@@ -205,9 +251,9 @@ const ViewBooleanNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }
 		updateNodeData({ isExpanded: !isExpanded });
 	}, [isExpanded, updateNodeData]);
 
-	/** Propagate output ONLY when node is active AND enabled */
+	/** Propagate boolean output ONLY when node is active AND enabled */
 	const propagate = useCallback(
-		(value: string) => {
+		(value: boolean | null) => {
 			const shouldSend = isActive && isEnabled;
 			const out = shouldSend ? value : null;
 			if (out !== lastOutputRef.current) {
@@ -218,105 +264,77 @@ const ViewBooleanNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }
 		[isActive, isEnabled, updateNodeData]
 	);
 
-	/** Clear JSON‑ish fields when inactive or disabled */
-	const blockJsonWhenInactive = useCallback(() => {
-		if (!(isActive && isEnabled)) {
-			updateNodeData({
-				json: null,
-				data: null,
-				payload: null,
-				result: null,
-				response: null,
-			});
-		}
-	}, [isActive, isEnabled, updateNodeData]);
-
 	/**
-	 * Compute the latest text coming from connected input handles.
-	 *
-	 * Uses findEdgeByHandle utility to properly handle React Flow's handle naming
-	 * conventions (handles get type suffixes like "json-input__j", "input__b").
-	 *
-	 * Priority: json-input > input (modify based on your node's specific handles)
+	 * Compute the latest boolean value from connected input handles.
 	 */
-	const computeInput = useCallback((): string | null => {
-		// Check json-input handle first, then input handle as fallback
-		const jsonInputEdge = findEdgeByHandle(edges, id, "json-input");
-		const inputEdge = findEdgeByHandle(edges, id, "input");
-
-		const incoming = jsonInputEdge || inputEdge;
-		if (!incoming) {
+	const computeInput = useCallback((): boolean | null => {
+		const inputEdge = findEdgeByHandle(edges, id, "boolean-input");
+		if (!inputEdge) {
 			return null;
 		}
 
-		const src = nodes.find((n) => n.id === incoming.source);
+		const src = nodes.find((n) => n.id === inputEdge.source);
 		if (!src) {
 			return null;
 		}
 
-		// priority: outputs ➜ store ➜ whole data
-		const inputValue = src.data?.outputs ?? src.data?.store ?? src.data;
-		return typeof inputValue === "string" ? inputValue : String(inputValue || "");
+		// Priority: outputs > booleanValue > store > whole data
+		const inputValue = src.data?.outputs ?? src.data?.booleanValue ?? src.data?.store ?? src.data;
+		return convertToBoolean(inputValue);
 	}, [edges, nodes, id]);
 
-	/** Handle textarea change (memoised for perf) */
-	const handleStoreChange = useCallback(
-		(e: ChangeEvent<HTMLTextAreaElement>) => {
-			updateNodeData({ store: e.target.value });
-		},
-		[updateNodeData]
-	);
-
 	// -------------------------------------------------------------------------
-	// 4.5  Effects
+	// 5.4  Effects
 	// -------------------------------------------------------------------------
 
 	/* 🔄 Whenever nodes/edges change, recompute inputs. */
 	useEffect(() => {
 		const inputVal = computeInput();
-		if (inputVal !== (nodeData as ViewBooleanData).inputs) {
-			updateNodeData({ inputs: inputVal });
+		if (inputVal !== inputs) {
+			updateNodeData({
+				inputs: inputVal,
+				booleanValue: inputVal
+			});
 		}
-	}, [computeInput, nodeData, updateNodeData]);
+	}, [computeInput, inputs, updateNodeData]);
 
-	/* 🔄 Make isEnabled dependent on input value only when there are connections. */
+	/* 🔄 Auto-manage isEnabled based on input connections */
 	useEffect(() => {
-		const hasInput = (nodeData as ViewBooleanData).inputs;
-		// Only auto-control isEnabled when there are connections (inputs !== null)
-		// When inputs is null (no connections), let user manually control isEnabled
-		if (hasInput !== null) {
-			const nextEnabled = hasInput && hasInput.trim().length > 0;
-			if (nextEnabled !== isEnabled) {
-				updateNodeData({ isEnabled: nextEnabled });
+		const hasConnection = inputs !== null;
+		// Only auto-control isEnabled when there are connections
+		if (hasConnection) {
+			// For boolean inputs, enabled if we have a valid boolean (including false)
+			const shouldEnable = inputs !== null;
+			if (shouldEnable !== isEnabled) {
+				updateNodeData({ isEnabled: shouldEnable });
 			}
 		}
-	}, [nodeData, isEnabled, updateNodeData]);
+	}, [inputs, isEnabled, updateNodeData]);
 
-	// Monitor store content and update active state
+	/* 🔄 Update active state based on having valid input and being enabled */
 	useEffect(() => {
-		const currentStore = store ?? "";
-		const hasValidStore = currentStore.trim().length > 0 && currentStore !== "Default text";
+		const hasValidInput = inputs !== null;
 
-		// If disabled, always set isActive to false
-		if (isEnabled) {
-			if (isActive !== hasValidStore) {
-				updateNodeData({ isActive: hasValidStore });
+		if (!isEnabled) {
+			// If disabled, always set isActive to false
+			if (isActive) {
+				updateNodeData({ isActive: false });
 			}
-		} else if (isActive) {
-			updateNodeData({ isActive: false });
+		} else {
+			// If enabled, active when we have valid input
+			if (isActive !== hasValidInput) {
+				updateNodeData({ isActive: hasValidInput });
+			}
 		}
-	}, [store, isEnabled, isActive, updateNodeData]);
+	}, [inputs, isEnabled, isActive, updateNodeData]);
 
-	// Sync outputs with active and enabled state
+	/* 🔄 Propagate output when state changes */
 	useEffect(() => {
-		const currentStore = store ?? "";
-		const actualContent = currentStore === "Default text" ? "" : currentStore;
-		propagate(actualContent);
-		blockJsonWhenInactive();
-	}, [isActive, isEnabled, store, propagate, blockJsonWhenInactive]);
+		propagate(booleanValue as boolean | null);
+	}, [isActive, isEnabled, booleanValue, propagate]);
 
 	// -------------------------------------------------------------------------
-	// 4.6  Validation
+	// 5.5  Validation
 	// -------------------------------------------------------------------------
 	const validation = validateNodeData(nodeData);
 	if (!validation.success) {
@@ -329,41 +347,20 @@ const ViewBooleanNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }
 	useNodeDataValidation(ViewBooleanDataSchema, "ViewBoolean", validation.data, id);
 
 	// -------------------------------------------------------------------------
-	// 4.7  Feature flag conditional rendering
+	// 5.6  Visual state computation
 	// -------------------------------------------------------------------------
-
-	// If flag is loading, show loading state
-	if (flagState.isLoading) {
-		return (
-			<div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
-				Loading viewBoolean feature...
-			</div>
-		);
-	}
-
-	// If flag is disabled and should hide, return null
-	if (!flagState.isEnabled && flagState.hideWhenDisabled) {
-		return null;
-	}
-
-	// If flag is disabled, show disabled message
-	if (!flagState.isEnabled) {
-		return (
-			<div className="flex items-center justify-center p-4 text-sm text-muted-foreground border border-dashed border-muted-foreground/20 rounded-lg">
-				{flagState.disabledMessage}
-			</div>
-		);
-	}
+	const hasConnection = inputs !== null;
+	const currentState = getBooleanState(booleanValue as boolean | null, hasConnection);
 
 	// -------------------------------------------------------------------------
-	// 4.8  Render
+	// 5.7  Render
 	// -------------------------------------------------------------------------
 	return (
 		<>
 			{/* Editable label or icon */}
 			{!isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60 ? (
 				<div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
-					{spec.icon && renderLucideIcon(spec.icon, "", 16)}
+					{renderLucideIcon(currentState.icon, currentState.color, 16)}
 				</div>
 			) : (
 				<LabelNode nodeId={id} label={(nodeData as ViewBooleanData).label || spec.displayName} />
@@ -371,23 +368,33 @@ const ViewBooleanNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }
 
 			{isExpanded ? (
 				<div className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}>
-					<textarea
-						value={validation.data.store === "Default text" ? "" : (validation.data.store ?? "")}
-						onChange={handleStoreChange}
-						placeholder="Enter your content here…"
-						className={` resize-none nowheel bg-background rounded-md p-2 text-xs h-32 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
-						disabled={!isEnabled}
-					/>
+					<div className={`
+						flex flex-col items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all duration-200
+						${currentState.bgColor} ${currentState.borderColor}
+					`}>
+						<div className={`text-2xl ${currentState.color}`}>
+							{renderLucideIcon(currentState.icon, "", 24)}
+						</div>
+						<div className={`text-sm font-medium ${currentState.color}`}>
+							{currentState.text}
+						</div>
+						{booleanValue !== null && (
+							<div className="text-xs text-gray-500 dark:text-gray-400">
+								Value: {String(booleanValue)}
+							</div>
+						)}
+					</div>
 				</div>
 			) : (
 				<div className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}>
-					<textarea
-						value={validation.data.store === "Default text" ? "" : (validation.data.store ?? "")}
-						onChange={handleStoreChange}
-						placeholder="..."
-						className={` resize-none text-center nowheel rounded-md h-8 m-4 translate-y-2 text-xs p-1 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
-						disabled={!isEnabled}
-					/>
+					<div className={`
+						flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-200
+						${currentState.bgColor} ${currentState.borderColor}
+					`}>
+						<div className={`${currentState.color}`}>
+							{renderLucideIcon(currentState.icon, "", 16)}
+						</div>
+					</div>
 				</div>
 			)}
 
@@ -397,17 +404,9 @@ const ViewBooleanNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }
 });
 
 // -----------------------------------------------------------------------------
-// 5️⃣  High‑order wrapper – inject scaffold with dynamic spec
+// 6️⃣  High‑order wrapper – inject scaffold with dynamic spec
 // -----------------------------------------------------------------------------
 
-/**
- * ⚠️ THIS is the piece that fixes the focus‑loss issue.
- *
- * `withNodeScaffold` returns a *component function*.  Re‑creating that function
- * on every keystroke causes React to unmount / remount the subtree (and your
- * textarea loses focus).  We memoise the scaffolded component so its identity
- * stays stable across renders unless the *spec itself* really changes.
- */
 const ViewBooleanNodeWithDynamicSpec = (props: NodeProps) => {
 	const { nodeData } = useNodeData(props.id, props.data);
 
@@ -417,7 +416,7 @@ const ViewBooleanNodeWithDynamicSpec = (props: NodeProps) => {
 		[(nodeData as ViewBooleanData).expandedSize, (nodeData as ViewBooleanData).collapsedSize]
 	);
 
-	// Memoise the scaffolded component to keep focus
+	// Memoize the scaffolded component for stable identity
 	const ScaffoldedNode = useMemo(
 		() => withNodeScaffold(dynamicSpec, (p) => <ViewBooleanNode {...p} spec={dynamicSpec} />),
 		[dynamicSpec]

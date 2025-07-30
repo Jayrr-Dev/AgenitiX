@@ -122,8 +122,6 @@ const _AI_MODELS = {
 	],
 } as const;
 
-type ProcessingState = (typeof PROCESSING_STATE)[keyof typeof PROCESSING_STATE];
-
 /** Get default model for a provider */
 const getDefaultModel = (provider: "openai" | "anthropic" | "google" | "custom"): string => {
 	switch (provider) {
@@ -478,15 +476,12 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 		temperature,
 		customApiKey,
 		customEndpoint,
-		inputs,
 		triggerInputs,
 		userInput,
 		trigger,
 		processingState,
-		processingResult,
 		processingError,
 		threadId,
-		agentName,
 		outputs,
 		store,
 	} = nodeData as AiAgentData;
@@ -1312,10 +1307,19 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 				<div
 					className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
 					onClick={() => setShowHistoryModal(false)}
+					onKeyDown={(e) => {
+						if (e.key === "Escape") {
+							setShowHistoryModal(false);
+						}
+					}}
+					tabIndex={0}
+					role="button"
+					aria-label="Close modal"
 				>
 					<div
 						className="bg-background rounded-lg shadow-xl w-96 max-w-[90vw] max-h-[80vh] overflow-hidden"
 						onClick={(e) => e.stopPropagation()}
+						onKeyDown={(e) => e.stopPropagation()}
 					>
 						{/* Modal Header */}
 						<div className="flex items-center justify-between p-4 border-b border-border">
@@ -1324,6 +1328,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 								<h3 className="font-medium text-sm">Conversation History</h3>
 							</div>
 							<button
+								type="button"
 								onClick={() => setShowHistoryModal(false)}
 								className="text-muted-foreground hover:text-foreground text-sm"
 							>
@@ -1340,7 +1345,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 							) : (
 								threadMessages.map((message, index) => (
 									<div
-										key={index}
+										key={`${message.role}-${index}-${message.timestamp || Date.now()}`}
 										className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
 									>
 										<div
@@ -1461,10 +1466,14 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 
 						{/* System Prompt - Compact */}
 						<div>
-							<label className="text-xs font-medium text-muted-foreground mb-0.5 block">
+							<label
+								htmlFor="ai-system-prompt"
+								className="text-xs font-medium text-muted-foreground mb-0.5 block"
+							>
 								System Prompt
 							</label>
 							<textarea
+								id="ai-system-prompt"
 								value={systemPrompt}
 								onChange={handleSystemPromptChange}
 								placeholder="You are a helpful assistant..."
@@ -1476,10 +1485,15 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 						{/* Settings Row - Compact horizontal layout */}
 						<div className="flex items-center gap-2" style={{ fontSize: "10px" }}>
 							<div className="flex items-center gap-1">
-								<label className="text-muted-foreground" style={{ fontSize: "10px" }}>
+								<label
+									htmlFor="ai-temperature"
+									className="text-muted-foreground"
+									style={{ fontSize: "10px" }}
+								>
 									Temp:
 								</label>
 								<input
+									id="ai-temperature"
 									type="text"
 									value={temperature}
 									onChange={(e) => {
@@ -1499,10 +1513,15 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 								/>
 							</div>
 							<div className="flex items-center gap-1">
-								<label className="text-muted-foreground" style={{ fontSize: "10px" }}>
+								<label
+									htmlFor="ai-max-steps"
+									className="text-muted-foreground"
+									style={{ fontSize: "10px" }}
+								>
 									Steps:
 								</label>
 								<input
+									id="ai-max-steps"
 									type="text"
 									value={maxSteps}
 									onChange={(e) => {
@@ -1564,6 +1583,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 							<div className="flex items-center gap-2">
 								{processingState === PROCESSING_STATE.ERROR && (
 									<button
+										type="button"
 										onClick={() =>
 											updateNodeData({
 												processingState: PROCESSING_STATE.IDLE,
@@ -1580,6 +1600,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 								{threadId && (
 									<>
 										<button
+											type="button"
 											onClick={viewThreadHistory}
 											className="text-blue-500 hover:text-blue-700 underline text-xs"
 											disabled={!isEnabled}
@@ -1587,6 +1608,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 											History
 										</button>
 										<button
+											type="button"
 											onClick={resetThread}
 											className="text-red-500 hover:text-red-700 underline text-xs"
 											disabled={!isEnabled}

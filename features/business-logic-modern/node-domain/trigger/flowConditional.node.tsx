@@ -252,28 +252,24 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 							lastRoute: "true",
 						});
 					}
-				} else {
+				} else if (value !== lastFalseOutputRef.current) {
 					// Route to false output
-					if (value !== lastFalseOutputRef.current) {
-						lastFalseOutputRef.current = value;
-						updateNodeData({
-							trueOutput: null,
-							falseOutput: value,
-							lastRoute: "false",
-						});
-					}
-				}
-			} else {
-				// When inactive or disabled, clear both outputs
-				if (lastTrueOutputRef.current !== null || lastFalseOutputRef.current !== null) {
-					lastTrueOutputRef.current = null;
-					lastFalseOutputRef.current = null;
+					lastFalseOutputRef.current = value;
 					updateNodeData({
 						trueOutput: null,
-						falseOutput: null,
-						lastRoute: "none",
+						falseOutput: value,
+						lastRoute: "false",
 					});
 				}
+			} else if (lastTrueOutputRef.current !== null || lastFalseOutputRef.current !== null) {
+				// When inactive or disabled, clear both outputs
+				lastTrueOutputRef.current = null;
+				lastFalseOutputRef.current = null;
+				updateNodeData({
+					trueOutput: null,
+					falseOutput: null,
+					lastRoute: "none",
+				});
 			}
 		},
 		[isActive, isEnabled, updateNodeData]
@@ -495,6 +491,14 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 				<div
 					className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled} ${wasClicked ? "scale-95 transition-transform" : ""}`}
 					onClick={handleNodeClick}
+					onKeyDown={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							handleNodeClick(e as any);
+						}
+					}}
+					tabIndex={0}
+					role="button"
+					aria-label="Toggle flow conditional"
 					ref={nodeRef}
 				>
 					<div className={CONTENT.header}>
@@ -510,6 +514,7 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 						<div className="flex flex-col items-center justify-center w-full h-full">
 							<div className="text-sm mb-2">Current Condition:</div>
 							<button
+								type="button"
 								onClick={handleConditionToggle}
 								className={`px-4 py-2 rounded-md ${condition ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}
 							>
@@ -539,6 +544,14 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 				<div
 					className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled} ${wasClicked ? "scale-95 transition-transform" : ""}`}
 					onClick={handleNodeClick}
+					onKeyDown={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							handleNodeClick(e as any);
+						}
+					}}
+					tabIndex={0}
+					role="button"
+					aria-label="Toggle flow conditional"
 					ref={nodeRef}
 				>
 					<div className={CONTENT.route}>
@@ -546,6 +559,14 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 						<div
 							className={`text-center ${lastRoute === "true" ? CONTENT.trueRoute : lastRoute === "false" ? CONTENT.falseRoute : CONTENT.noRoute}`}
 							onClick={handleConditionToggle}
+							onKeyDown={(e) => {
+								if (e.key === "Enter" || e.key === " ") {
+									handleConditionToggle();
+								}
+							}}
+							tabIndex={0}
+							role="button"
+							aria-label="Toggle condition"
 						>
 							{lastRoute === "true" ? "T" : lastRoute === "false" ? "F" : "?"}
 						</div>

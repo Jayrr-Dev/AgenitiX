@@ -152,8 +152,14 @@ export const processUserMessage = action({
 			console.log("Managing thread:", threadId);
 
 			// Check if we have a valid Convex thread ID to continue, otherwise create new
-			let thread: { threadId: string; generateText: (options: { prompt: string; temperature: number }) => Promise<{ text: string; usage: AiUsage }> };
-			
+			let thread: {
+				threadId: string;
+				generateText: (options: { prompt: string; temperature: number }) => Promise<{
+					text: string;
+					usage: AiUsage;
+				}>;
+			};
+
 			if (threadId && threadId.length > 10 && !threadId.includes("_")) {
 				try {
 					// Try to continue existing thread with valid Convex document ID
@@ -271,7 +277,10 @@ export const validateConfiguration = action({
 						: "gemini-1.5-flash-8b");
 
 			// Test with environment API key (same for both custom and env keys in Convex)
-			let chatModel;
+			let chatModel:
+				| ReturnType<typeof openai.chat>
+				| ReturnType<typeof anthropic.chat>
+				| ReturnType<typeof google.chat>;
 			if (args.provider === "openai") {
 				chatModel = openai.chat(testModel);
 			} else if (args.provider === "anthropic") {

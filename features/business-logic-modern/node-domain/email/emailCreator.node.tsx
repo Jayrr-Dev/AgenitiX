@@ -380,14 +380,8 @@ const EmailCreatorNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 		content,
 		template,
 		attachments,
-		formatting,
 		validation,
-		isEnabled,
-		expandedSize,
-		collapsedSize,
-		emailOutput,
-		validationOutput,
-		errorOutput,
+		isEnabled = true,
 	} = nodeData as EmailCreatorData;
 
 	// -------------------------------------------------------------------------
@@ -507,8 +501,11 @@ const EmailCreatorNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 					<div className={CONTENT.body}>
 						{/* Recipients Section */}
 						<div>
-							<label className="text-xs text-gray-600 mb-1 block">To (comma-separated):</label>
+							<label htmlFor="email-to" className="text-xs text-gray-600 mb-1 block">
+								To (comma-separated):
+							</label>
 							<textarea
+								id="email-to"
 								value={recipients.to.join(", ")}
 								onChange={handleRecipientsChange("to")}
 								placeholder="recipient@example.com, another@example.com"
@@ -520,8 +517,11 @@ const EmailCreatorNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 
 						{/* CC Recipients */}
 						<div>
-							<label className="text-xs text-gray-600 mb-1 block">CC (optional):</label>
+							<label htmlFor="email-cc" className="text-xs text-gray-600 mb-1 block">
+								CC (optional):
+							</label>
 							<textarea
+								id="email-cc"
 								value={recipients.cc.join(", ")}
 								onChange={handleRecipientsChange("cc")}
 								placeholder="cc@example.com"
@@ -533,8 +533,11 @@ const EmailCreatorNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 
 						{/* Subject */}
 						<div>
-							<label className="text-xs text-gray-600 mb-1 block">Subject:</label>
+							<label htmlFor="email-subject" className="text-xs text-gray-600 mb-1 block">
+								Subject:
+							</label>
 							<input
+								id="email-subject"
 								type="text"
 								value={subject}
 								onChange={handleSubjectChange}
@@ -546,8 +549,11 @@ const EmailCreatorNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 
 						{/* Rich Text Editor */}
 						<div>
-							<label className="text-xs text-gray-600 mb-2 block">Message Content:</label>
+							<label htmlFor="email-content" className="text-xs text-gray-600 mb-2 block">
+								Message Content:
+							</label>
 							<RichTextEditor
+								id="email-content"
 								value={content}
 								onChange={(newContent) => {
 									updateNodeData({
