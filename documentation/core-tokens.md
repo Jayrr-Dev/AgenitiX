@@ -165,6 +165,24 @@
 | node.email.classes.content |  |
 | node.email.classes.icon |  |
 | node.email.classes.text |  |
+| node.ai.bg | hsla(262, 83%, 85%, 1) |
+| node.ai.border | hsla(262, 83%, 40%, 1) |
+| node.ai.border-hover | hsla(262, 83%, 30%, 1) |
+| node.ai.border-width | 0 |
+| node.ai.text | hsla(0, 0%, 15%, 1) |
+| node.ai.text-secondary | hsla(0, 0%, 25%, 1) |
+| node.ai.bg-hover | hsla(262, 83%, 80%, 1) |
+| node.ai.bg-dark | hsla(262, 83%, 25%, 1) |
+| node.ai.border-dark | hsla(262, 83%, 60%, 1) |
+| node.ai.border-hover-dark | hsla(262, 83%, 70%, 1) |
+| node.ai.text-dark | hsla(0, 0%, 85%, 1) |
+| node.ai.text-secondary-dark | hsla(0, 0%, 75%, 1) |
+| node.ai.bg-hover-dark | hsla(262, 83%, 35%, 1) |
+| node.ai.classes.container |  |
+| node.ai.classes.header |  |
+| node.ai.classes.content |  |
+| node.ai.classes.icon |  |
+| node.ai.classes.text |  |
 | coreNode.border | hsla(0, 0%, 85%, 1) |
 | coreNode.border-hover | hsla(0, 0%, 75%, 1) |
 | coreNode.border-width |  |
