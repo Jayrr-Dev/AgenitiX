@@ -79,11 +79,11 @@ export function getNodeOutput(
 		}
 
 		// Fallback to processingResult if outputs is null/undefined
-		if (!extractedValue && node.data?.processingResult) {
+		if (!extractedValue && node.data && "processingResult" in node.data) {
 			return String(node.data.processingResult);
 		}
 
-		return extractedValue;
+		return String(extractedValue || "");
 	}
 
 	return formatValue(extractedValue);

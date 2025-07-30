@@ -39,7 +39,7 @@ interface AiAgentConfig {
 	customEndpoint?: string;
 }
 
-const getChatModel = (cfg: AiAgentConfig, _ctx?: any) => {
+const getChatModel = (cfg: AiAgentConfig, _ctx?: unknown) => {
 	switch (cfg.selectedProvider) {
 		case "openai":
 			// Use custom API key if provided
@@ -98,7 +98,7 @@ const retryWithExponentialBackoff = async <T>(
 /*  3. agent factory                                                          */
 /* -------------------------------------------------------------------------- */
 
-const createAiAgent = (cfg: AiAgentConfig, ctx?: any) => {
+const createAiAgent = (cfg: AiAgentConfig, ctx?: unknown) => {
 	try {
 		const chatModel = getChatModel(cfg, ctx);
 		return new Agent(components.agent, {
@@ -107,9 +107,10 @@ const createAiAgent = (cfg: AiAgentConfig, ctx?: any) => {
 			instructions: cfg.systemPrompt,
 			maxSteps: cfg.maxSteps,
 		});
-	} catch (error: any) {
+	} catch (error: unknown) {
 		console.error("Failed to create AI agent:", error);
-		throw new Error(`Failed to create AI agent: ${error?.message || error}`);
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		throw new Error(`Failed to create AI agent: ${errorMessage}`);
 	}
 };
 
@@ -150,8 +151,9 @@ export const processUserMessage = action({
 
 			console.log("Managing thread:", threadId);
 
-			let thread;
 			// Check if we have a valid Convex thread ID to continue, otherwise create new
+			let thread: { threadId: string; generateText: (options: { prompt: string; temperature: number }) => Promise<{ text: string; usage: AiUsage }> };
+			
 			if (threadId && threadId.length > 10 && !threadId.includes("_")) {
 				try {
 					// Try to continue existing thread with valid Convex document ID
@@ -192,10 +194,10 @@ export const processUserMessage = action({
 				text: res.text,
 				usage: res.usage as AiUsage,
 			};
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Detailed AI processing error:", error);
 
-			const errorMessage = error?.message || String(error);
+			const errorMessage = error instanceof Error ? error.message : String(error);
 
 			// Provide more specific error messages
 			if (errorMessage.includes("API key")) {
@@ -237,9 +239,10 @@ export const createThread = action({
 				title: args.title || "AI Agent Conversation",
 			});
 			return { threadId };
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Failed to create thread:", error);
-			throw new Error(`Failed to create thread: ${error?.message || error}`);
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			throw new Error(`Failed to create thread: ${errorMessage}`);
 		}
 	},
 });
@@ -300,12 +303,13 @@ export const validateConfiguration = action({
 				testResponse: result.text.substring(0, 50),
 				model: testModel,
 			};
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Configuration validation failed:", error);
+			const errorMessage = error instanceof Error ? error.message : String(error);
 
 			return {
 				success: false,
-				error: error?.message || String(error),
+				error: errorMessage,
 				provider: args.provider,
 				details: `Failed to validate ${args.provider} configuration. Check API keys and model availability.`,
 			};

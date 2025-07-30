@@ -9,6 +9,7 @@ import { generateNodeId } from "@/features/business-logic-modern/infrastructure/
 import {
 	type Connection,
 	type Edge as ReactFlowEdge,
+	type EdgeChange,
 	type Node as ReactFlowNode,
 	ReactFlowProvider,
 	useReactFlow,
@@ -422,7 +423,7 @@ const FlowEditorInternal = () => {
 
 	// Wrapper for onEdgesChange
 	const onEdgesChange = useCallback(
-		(changes: unknown[]) => {
+		(changes: EdgeChange[]) => {
 			storeOnEdgesChange(changes);
 		},
 		[storeOnEdgesChange]

@@ -273,6 +273,9 @@ export const NodeOutput: React.FC<NodeOutputProps> = ({ output, nodeType }) => {
 			case "storeInMemory":
 				detectedType = "string";
 				break;
+			default:
+				// For any other node types, let the type detection logic handle it
+				break;
 		}
 
 		// Special handling for objects with text property (common in text nodes)

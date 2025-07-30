@@ -126,6 +126,62 @@ export interface CyclePulseData extends BaseNodeData {
 }
 
 // ============================================================================
+// AI AGENT DATA TYPES
+// ============================================================================
+
+export interface AiAgentData extends BaseNodeData {
+	userInput: string;
+	triggerInputs: string;
+	trigger: string;
+	isProcessing: boolean;
+	systemPrompt: string;
+	selectedProvider: "openai" | "anthropic" | "google" | "custom";
+	selectedModel: string;
+	temperature: number;
+	maxSteps: number;
+	threadId: string;
+	processingResult: string;
+	store: string;
+	isEnabled: boolean;
+	isActive: boolean;
+	isExpanded: boolean;
+	inputs: string;
+	outputs: string;
+}
+
+// ============================================================================
+// TRIGGER TOGGLE DATA TYPES
+// ============================================================================
+
+export interface TriggerToggleData extends BaseNodeData {
+	store: boolean;
+	isEnabled: boolean;
+	isActive: boolean;
+	isExpanded: boolean;
+	inputs: boolean;
+	outputs: boolean;
+	expandedSize: string;
+	collapsedSize: string;
+	label?: string;
+}
+
+// ============================================================================
+// STORE IN MEMORY DATA TYPES
+// ============================================================================
+
+export interface StoreInMemoryData extends BaseNodeData {
+	key: string;
+	value: string;
+	operation: "set" | "get" | "delete" | "clear";
+	dataType: "string" | "number" | "boolean" | "json";
+	isEnabled: boolean;
+	isActive: boolean;
+	isExpanded: boolean;
+	inputs: string;
+	outputs: string;
+}
+
+// ============================================================================
 // MODERN NODE UNION TYPES
 // ============================================================================
 
@@ -135,7 +191,11 @@ export type AgenNode =
 	| Node<ViewOutputData, "viewOutput">
 	| Node<TriggerOnToggleData, "triggerOnToggle">
 	| Node<TestErrorData, "testError">
-	| Node<ViewTextData, "viewText">;
+	| Node<ViewTextData, "viewText">
+	// New Node Types
+	| Node<AiAgentData, "aiAgent">
+	| Node<TriggerToggleData, "triggerToggle">
+	| Node<StoreInMemoryData, "storeInMemory">;
 
 export type AgenEdge = Edge & {
 	sourceHandle?: string | null;
