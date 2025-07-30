@@ -6,13 +6,14 @@
  */
 
 import { spec as aiAgentSpec } from "../../node-domain/ai/aiAgent.node";
+import { spec as triggerPulseSpec } from "../../node-domain/trigger/triggerPulse.node";
 import { spec as createTextSpec } from "../../node-domain/create/createText.node";
 import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
 import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
 import { spec as emailCreatorSpec } from "../../node-domain/email/emailCreator.node";
 import { spec as emailReaderSpec } from "../../node-domain/email/emailReader.node";
 import { spec as testNodeSpec } from "../../node-domain/test/testNode.node";
-import { spec as flowConditionalSpec } from "../../node-domain/trigger/flowConditional.node";
+import { spec as flowConditionalSpec } from "../../node-domain/flow/flowConditional.node";
 import { spec as triggerToggleSpec } from "../../node-domain/trigger/triggerToggle.node";
 import { spec as viewBooleanSpec } from "../../node-domain/view/viewBoolean.node";
 import { spec as viewTextSpec } from "../../node-domain/view/viewText.node";
@@ -22,6 +23,7 @@ import type { NodeSpec } from "../node-core/NodeSpec";
 const nodeSpecs: Record<string, NodeSpec> = {
 	flowConditional: flowConditionalSpec,
 	viewBoolean: viewBooleanSpec,
+	triggerPulse: triggerPulseSpec,
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
 	aiAgent: aiAgentSpec,

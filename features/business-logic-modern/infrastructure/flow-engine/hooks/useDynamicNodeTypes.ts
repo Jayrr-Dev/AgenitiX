@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import triggerPulse from '../../../node-domain/trigger/triggerPulse.node';
 // Add new node imports here (Plop can auto-inject these)
 import aiAgent from "../../../node-domain/ai/aiAgent.node";
 import createText from "../../../node-domain/create/createText.node";
@@ -10,7 +11,7 @@ import emailReader from "../../../node-domain/email/emailReader.node";
 import testNode from "../../../node-domain/test/testNode.node";
 // Import all available node components
 // This should be automatically updated when new nodes are created via Plop
-import flowConditional from "../../../node-domain/trigger/flowConditional.node";
+import flowConditional from "../../../node-domain/flow/flowConditional.node";
 import triggerToggle from "../../../node-domain/trigger/triggerToggle.node";
 import viewBoolean from "../../../node-domain/view/viewBoolean.node";
 import viewText from "../../../node-domain/view/viewText.node";
@@ -27,6 +28,7 @@ export function useDynamicNodeTypes() {
 		() => ({
 			flowConditional,
 			viewBoolean,
+			triggerPulse,
 			// Add new node types here
 			aiAgent,
 			testNode,
