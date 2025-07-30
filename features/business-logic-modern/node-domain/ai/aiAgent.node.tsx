@@ -658,6 +658,27 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
     [updateNodeData]
   );
 
+  /** Get the provider for a given model */
+  const getProviderForModel = useCallback((model: string): "openai" | "anthropic" | "google" | "custom" => {
+    // Google Gemini models
+    if (model.startsWith("gemini-")) {
+      return "google";
+    }
+    
+    // OpenAI models
+    if (model.startsWith("gpt-") || model.startsWith("o1-")) {
+      return "openai";
+    }
+    
+    // Anthropic models
+    if (model.startsWith("claude-")) {
+      return "anthropic";
+    }
+    
+    // Default to current provider if unknown
+    return selectedProvider;
+  }, [selectedProvider]);
+
   /** Handle provider selection change */
   const handleProviderChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
@@ -670,6 +691,26 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
       });
     },
     [updateNodeData]
+  );
+
+  /** Handle model selection change with automatic provider switching */
+  const handleModelChange = useCallback(
+    (e: ChangeEvent<HTMLSelectElement>) => {
+      const newModel = e.target.value;
+      const requiredProvider = getProviderForModel(newModel);
+      
+      // Only update provider if it's different from current
+      if (requiredProvider !== selectedProvider) {
+        console.log("Auto-switching provider:", selectedProvider, "→", requiredProvider, "for model:", newModel);
+        updateNodeData({ 
+          selectedProvider: requiredProvider,
+          selectedModel: newModel
+        });
+      } else {
+        updateNodeData({ selectedModel: newModel });
+      }
+    },
+    [selectedProvider, updateNodeData, getProviderForModel]
   );
 
   /** Get AI provider icon for collapsed mode with processing animation */
@@ -1323,7 +1364,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
             {/* Model Selection - Compact */}
             <select
               value={selectedModel}
-              onChange={(e) => updateNodeData({ selectedModel: e.target.value })}
+              onChange={handleModelChange}
               className="text-xs bg-background border rounded px-1 py-0.5 w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
               disabled={!isEnabled}
             >
