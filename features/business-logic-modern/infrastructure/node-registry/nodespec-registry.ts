@@ -13,6 +13,7 @@ import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemor
 import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
 import { spec as emailCreatorSpec } from "../../node-domain/email/emailCreator.node";
 import { spec as emailReaderSpec } from "../../node-domain/email/emailReader.node";
+import { spec as emailSenderSpec } from "../../node-domain/email/emailSender.node";
 import { spec as testNodeSpec } from "../../node-domain/test/testNode.node";
 import { spec as flowConditionalSpec } from "../../node-domain/flow/flowConditional.node";
 import { spec as triggerToggleSpec } from "../../node-domain/trigger/triggerToggle.node";
