@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Building, Loader2, User } from "lucide-react";
+import { ArrowRight, Building, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
+import { Loading } from "@/components/Loading";
 import { useState } from "react";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -36,9 +37,11 @@ export default function SignUpPage() {
 	// Don't render if authenticated (will redirect)
 	if (authLoading) {
 		return (
-			<div className="flex min-h-screen items-center justify-center">
-				<Loader2 className="h-8 w-8 animate-spin" />
-			</div>
+			<Loading 
+				className="min-h-screen"
+				size="w-8 h-8" 
+				showText={false}
+			/>
 		);
 	}
 
@@ -231,7 +234,7 @@ export default function SignUpPage() {
 								<Button type="submit" className="h-11 w-full" disabled={isLoading || !isFormValid}>
 									{isLoading ? (
 										<>
-											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+											<Loading showText={false} size="w-4 h-4" className="mr-2 p-0" />
 											Creating account...
 										</>
 									) : (

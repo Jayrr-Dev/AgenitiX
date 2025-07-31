@@ -11,6 +11,7 @@
  */
 
 import { Edit3, Save, X } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
 import { JsonHighlighter } from "../utils/JsonHighlighter";
@@ -127,16 +128,15 @@ export const EditableJsonEditor: React.FC<EditableJsonEditorProps> = ({
 
 				{/* JSON Editor */}
 				<div className="relative">
-					<textarea
+					<Textarea
 						value={jsonValue}
 						onChange={(e) => handleJsonChange(e.target.value)}
 						onKeyDown={handleKeyDown}
-						className={`h-64 w-full resize-none rounded-md border bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:bg-gray-800 ${
+						className={`h-64 w-full resize-none px-3 py-2 font-mono text-sm ${
 							jsonError
 								? "border-red-300 bg-red-50/50 dark:border-red-600 dark:bg-red-900/10"
 								: "border-gray-300 dark:border-gray-600"
-						}
-            `}
+						}`}
 						placeholder="Enter valid JSON..."
 						spellCheck={false}
 					/>

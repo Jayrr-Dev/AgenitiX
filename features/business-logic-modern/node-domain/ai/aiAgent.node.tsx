@@ -18,6 +18,8 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { Textarea } from "@/components/ui/textarea";
+import { Loading } from "@/components/Loading";
 import { api } from "@/convex/_generated/api";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
@@ -501,6 +503,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 		threadId,
 		outputs,
 		store,
+		collapsedSize,
 	} = nodeData as AiAgentData;
 
 	// 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
@@ -866,7 +869,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 	const getProviderIcon = useCallback(() => {
 		// Show spinning wheel when processing
 		if (processingState === PROCESSING_STATE.PROCESSING) {
-			return <div className="animate-spin duration-1000">🔄</div>;
+			return <Loading showText={false} size="w-5 h-5" className="p-0" />;
 		}
 
 		// Show error icon when error state
@@ -1402,10 +1405,16 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 
 	// If flag is loading, show loading state
 	if (flagState.isLoading) {
+		// For small collapsed sizes (C1, C1W), hide text and center better
+		const isSmallNode = !isExpanded && (collapsedSize === "C1" || collapsedSize === "C1W");
+		
 		return (
-			<div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
-				Loading aiAgent feature...
-			</div>
+			<Loading 
+				className={isSmallNode ? "flex items-center justify-center w-full h-full" : "p-4"} 
+				size={isSmallNode ? "w-6 h-6" : "w-8 h-8"} 
+				text={isSmallNode ? undefined : "Loading..."}
+				showText={!isSmallNode}
+			/>
 		);
 	}
 
@@ -1543,12 +1552,12 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 							>
 								System Prompt
 							</label>
-							<textarea
+							<Textarea
 								id="ai-system-prompt"
 								value={systemPrompt}
 								onChange={handleSystemPromptChange}
 								placeholder="You are a helpful assistant..."
-								className={`resize-none nowheel bg-background border rounded p-1.5 text-xs h-12 w-full overflow-y-auto focus:outline-none focus:ring-1 focus:ring-blue-500 ${categoryStyles.primary}`}
+								className={`resize-none nowheel bg-background p-1.5 text-xs h-12 w-full overflow-y-auto ${categoryStyles.primary}`}
 								disabled={!isEnabled}
 							/>
 						</div>

@@ -15,6 +15,7 @@
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Loading } from "@/components/Loading";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Dialog,
@@ -133,12 +134,12 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 
 	if (isLoading) {
 		return (
-			<div className="flex min-h-screen items-center justify-center">
-				<div className="text-center">
-					<div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-primary border-b-2" />
-					<p className="text-muted-foreground">Checking access...</p>
-				</div>
-			</div>
+			<Loading 
+				className="min-h-screen"
+				size="w-8 h-8" 
+				text="Checking access..."
+				textSize="text-base"
+			/>
 		);
 	}
 

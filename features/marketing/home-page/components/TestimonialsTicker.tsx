@@ -1,9 +1,10 @@
 import { testimonials } from "@/features/marketing/home-page/data";
 import dynamic from "next/dynamic";
+import { Loading } from "@/components/Loading";
 const InfiniteMovingCards = dynamic(
 	() => import("@/components/ui/infinite-moving-cards").then((mod) => mod.InfiniteMovingCards),
 	{
-		loading: () => <div>Loading...</div>,
+		loading: () => <Loading showText={false} size="w-6 h-6" className="p-4" />,
 	}
 );
 

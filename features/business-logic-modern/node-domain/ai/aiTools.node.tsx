@@ -23,6 +23,7 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { Loading } from "@/components/Loading";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
@@ -171,7 +172,7 @@ function createDynamicSpec(data: AiToolsData): NodeSpec {
 /** Static spec for registry (uses default size keys) */
 export const spec: NodeSpec = createDynamicSpec({
   expandedSize: "VE2",
-  collapsedSize: "C2",
+  collapsedSize: "C1W",
 } as AiToolsData);
 
 // -----------------------------------------------------------------------------
@@ -194,6 +195,7 @@ const AiToolsNode = memo(
       isActive,
       calculator,
       webSearch,
+      collapsedSize,
     } = nodeData as AiToolsData;
 
     // keep last emitted output to avoid redundant writes
@@ -295,10 +297,16 @@ const AiToolsNode = memo(
 
     // If flag is loading, show loading state
     if (flagState.isLoading) {
+      // For small collapsed sizes (C1, C1W), hide text and center better
+      const isSmallNode = !isExpanded && (collapsedSize === "C1" || collapsedSize === "C1W");
+      
       return (
-        <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
-          Loading AI Tools feature...
-        </div>
+        <Loading 
+          className={isSmallNode ? "flex items-center justify-center w-full h-full" : "p-4"} 
+          size={isSmallNode ? "w-6 h-6" : "w-8 h-8"} 
+          text={isSmallNode ? undefined : "Loading..."}
+          showText={!isSmallNode}
+        />
       );
     }
 
@@ -321,14 +329,16 @@ const AiToolsNode = memo(
     // -------------------------------------------------------------------------
     return (
       <>
-        {/* Editable label or icon */}
-        {!isExpanded &&
-          spec.size.collapsed.width === 60 &&
-          spec.size.collapsed.height === 60 ? (
-          <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
-            {spec.icon && renderLucideIcon(spec.icon, "", 16)}
-          </div>
+        {/* Editable label or icon - hide labels when collapsed */}
+        {!isExpanded ? (
+          // Show icon only when collapsed (no label)
+          collapsedSize === "C1" ? (
+            <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+              {spec.icon && renderLucideIcon(spec.icon, "", 16)}
+            </div>
+          ) : null // No label or icon for C1W collapsed state
         ) : (
+          // Show full label when expanded
           <LabelNode nodeId={id} label={(nodeData as AiToolsData).label || spec.displayName} />
         )}
 

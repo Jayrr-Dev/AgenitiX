@@ -19,6 +19,7 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { Loading } from "@/components/Loading";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
@@ -210,7 +211,7 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 	// -------------------------------------------------------------------------
 	// 4.2  Derived state
 	// -------------------------------------------------------------------------
-	const { isExpanded, isEnabled, isActive, condition, lastRoute } = nodeData as FlowConditionalData;
+	const { isExpanded, isEnabled, isActive, condition, lastRoute, collapsedSize } = nodeData as FlowConditionalData;
 
 	// 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
 	const nodes = useStore((s) => s.nodes);
@@ -449,10 +450,16 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 
 	// If flag is loading, show loading state
 	if (flagState.isLoading) {
+		// For small collapsed sizes (C1, C1W), hide text and center better
+		const isSmallNode = !isExpanded && (collapsedSize === "C1" || collapsedSize === "C1W");
+		
 		return (
-			<div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
-				Loading flowConditional feature...
-			</div>
+			<Loading 
+				className={isSmallNode ? "flex items-center justify-center w-full h-full" : "p-4"} 
+				size={isSmallNode ? "w-6 h-6" : "w-8 h-8"} 
+				text={isSmallNode ? undefined : "Loading..."}
+				showText={!isSmallNode}
+			/>
 		);
 	}
 

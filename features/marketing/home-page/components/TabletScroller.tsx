@@ -1,9 +1,10 @@
 import dynamic from "next/dynamic";
+import { Loading } from "@/components/Loading";
 //add loading
 const ContainerScroll = dynamic(
 	() => import("@/components/ui/container-scroll-animation").then((mod) => mod.ContainerScroll),
 	{
-		loading: () => <div>Loading...</div>,
+		loading: () => <Loading showText={false} size="w-6 h-6" className="p-4" />,
 	}
 );
 import Image from "next/image";

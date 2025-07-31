@@ -16,6 +16,8 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { Textarea } from "@/components/ui/textarea";
+import { Loading } from "@/components/Loading";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
@@ -178,7 +180,7 @@ const TestNodeNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 	// -------------------------------------------------------------------------
 	// 4.2  Derived state
 	// -------------------------------------------------------------------------
-	const { isExpanded, isEnabled, isActive, store } = nodeData as TestNodeData;
+	const { isExpanded, isEnabled, isActive, store, collapsedSize } = nodeData as TestNodeData;
 
 	// 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
 	const nodes = useStore((s) => s.nodes);
@@ -325,10 +327,16 @@ const TestNodeNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 
 	// If flag is loading, show loading state
 	if (flagState.isLoading) {
+		// For small collapsed sizes (C1, C1W), hide text and center better
+		const isSmallNode = !isExpanded && (collapsedSize === "C1" || collapsedSize === "C1W");
+		
 		return (
-			<div className="flex items-center justify-center p-4 text-muted-foreground text-sm">
-				Loading testNode feature...
-			</div>
+			<Loading 
+				className={isSmallNode ? "flex items-center justify-center w-full h-full" : "p-4"} 
+				size={isSmallNode ? "w-6 h-6" : "w-8 h-8"} 
+				text={isSmallNode ? undefined : "Loading..."}
+				showText={!isSmallNode}
+			/>
 		);
 	}
 
@@ -362,21 +370,21 @@ const TestNodeNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 
 			{isExpanded ? (
 				<div className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}>
-					<textarea
+					<Textarea
 						value={validation.data.store === "Default text" ? "" : (validation.data.store ?? "")}
 						onChange={handleStoreChange}
 						placeholder="Enter your content here…"
-						className={` nowheel h-32 resize-none overflow-y-auto rounded-md bg-background p-2 text-xs focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
+						className={`nowheel h-32 resize-none overflow-y-auto bg-background p-2 text-xs ${categoryStyles.primary}`}
 						disabled={!isEnabled}
 					/>
 				</div>
 			) : (
 				<div className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}>
-					<textarea
+					<Textarea
 						value={validation.data.store === "Default text" ? "" : (validation.data.store ?? "")}
 						onChange={handleStoreChange}
 						placeholder="..."
-						className={` nowheel m-4 h-8 translate-y-2 resize-none overflow-y-auto rounded-md p-1 text-center text-xs focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
+						className={`nowheel m-4 h-8 resize-none overflow-y-auto p-1 text-center text-xs ${categoryStyles.primary}`}
 						disabled={!isEnabled}
 					/>
 				</div>

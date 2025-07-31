@@ -4,6 +4,7 @@
 export const dynamic = "force-dynamic";
 
 import { useAuthContext } from "@/components/auth/AuthProvider";
+import { Loading } from "@/components/Loading";
 import FeatureBoxesPlain from "@/features/marketing/home-page/components/FeatureBoxesPlain";
 import Hero from "@/features/marketing/home-page/components/HeroSection";
 import { Revealer } from "@/features/marketing/home-page/components/HoverRevealer";
@@ -52,10 +53,7 @@ export default function Home() {
 		return (
 			<main className="grid grid-cols-12">
 				<div className="col-span-12 flex min-h-screen items-center justify-center">
-					<div className="text-center">
-						<div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-blue-600 border-b-2" />
-						<p className="text-gray-600">Loading...</p>
-					</div>
+					<Loading size="w-8 h-8" text="Loading..." />
 				</div>
 			</main>
 		);
@@ -66,10 +64,7 @@ export default function Home() {
 		return (
 			<main className="grid grid-cols-12">
 				<div className="col-span-12 flex min-h-screen items-center justify-center">
-					<div className="text-center">
-						<div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-blue-600 border-b-2" />
-						<p className="text-gray-600">Redirecting...</p>
-					</div>
+					<Loading size="w-8 h-8" text="Redirecting..." />
 				</div>
 			</main>
 		);
