@@ -525,24 +525,6 @@ export const validateEmailConnection = mutation({
         updated_at: now,
       });
 
-			return {
-				success: false,
-				error: isValid.error || {
-					code: "VALIDATION_FAILED",
-					message: "Connection validation failed",
-				},
-			};
-		} catch (error) {
-			console.error("Validate email connection error:", error);
-			return {
-				success: false,
-				error: {
-					code: "INTERNAL_ERROR",
-					message: error instanceof Error ? error.message : "Connection validation failed",
-				},
-			};
-		}
-	},
       return {
         success: false,
         error: isValid.error || {
@@ -747,13 +729,14 @@ export const sendEmail = mutation({
       if (sendResult.success) {
         // Log successful send
         logSecurityEvent({
+          type: "EMAIL_SEND",
           userId: user._id,
           action: "SEND_EMAIL",
           resource: `email_account:${args.account_id}`,
           details: {
             provider: account.provider,
             recipientCount: args.recipients.to.length,
-            messageId: sendResult.messageId,
+            messageId: (sendResult as any).messageId,
           },
           timestamp: Date.now(),
         });

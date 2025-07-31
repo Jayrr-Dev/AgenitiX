@@ -15,10 +15,13 @@
 import type { NodeProps } from "@xyflow/react";
 import { type ChangeEvent, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
+import { MdRefresh } from "react-icons/md";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import { Textarea } from "@/components/ui/textarea";
+import { ButtonToggle } from "@/components/ui/button-toggle";
+import { ButtonIconed } from "@/components/ui/button-iconed";
 import { Loading } from "@/components/Loading";
 import { api } from "@/convex/_generated/api";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
@@ -501,6 +504,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 		customEndpoint,
 		triggerInputs,
 		toolsInput,
+			inputs,
 		userInput,
 		trigger,
 		processingState,
@@ -907,7 +911,6 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 		updateNodeData({
 			threadId: null,
 			agentName: null,
-			processingState: PROCESSING_STATE.IDLE,
 			processingResult: null,
 			processingError: null,
 			outputs: null,
@@ -1166,14 +1169,14 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 				}
 			}
 
-			updateNodeData({
-				inputs: textInputVal,
-				triggerInputs: triggerVal,
-				toolsInput: toolsInputVal,
-				userInput: textInputVal,
-				trigger: triggerVal,
-				enabledTools: parsedTools,
-			});
+									// Sync upstream handles; keep manual userInput independent
+						updateNodeData({
+							inputs: textInputVal,
+							triggerInputs: triggerVal,
+							toolsInput: toolsInputVal,
+							trigger: triggerVal,
+							enabledTools: parsedTools,
+						});
 		}
 	}, [computeTextInput, computeTrigger, computeToolsInput, userInput, trigger, toolsInput, updateNodeData, edges, nodes]);
 
@@ -1194,7 +1197,9 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 		if (isEnabled) {
 			// When enabled, check if we have valid configuration
 			const hasValidPrompt = systemPrompt && systemPrompt.trim().length > 0;
-			const hasValidInput = userInput && userInput.trim().length > 0;
+			const hasValidInput =
+			(userInput && userInput.trim().length > 0) ||
+			(inputs && typeof inputs === "string" && inputs.trim().length > 0);
 			const configStatus = getConfigurationStatus();
 
 			// Node is active when enabled AND has valid config AND has inputs
@@ -1214,15 +1219,16 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 
 	// Handle AI processing when node becomes active OR when enabled is toggled on
 	useEffect(() => {
-		const shouldProcess =
+		const combinedInput = userInput && userInput.trim().length > 0 ? userInput : inputs;
+			const shouldProcess =
 			isEnabled &&
-			userInput &&
+			combinedInput &&
 			systemPrompt &&
 			processingState === PROCESSING_STATE.IDLE &&
 			isActive; // Only process when explicitly active
 
 		if (shouldProcess) {
-			console.log("Starting AI processing with input:", userInput);
+			console.log("Starting AI processing with input:", combinedInput);
 
 			// Start AI processing
 			updateNodeData({
@@ -1231,7 +1237,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 				processingError: null,
 			});
 
-			processWithAI(userInput)
+			processWithAI(combinedInput)
 				.then((result) => {
 					console.log("AI processing completed successfully:", result);
 
@@ -1452,7 +1458,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 		{showHistoryModal && (
 			<div 
 				className="absolute left-full top-0 ml-4 bg-background border border-border rounded-lg shadow-xl w-80 max-h-96 flex flex-col z-50"
-				style={{ minHeight: '300px' }}
+				style={{ minHeight: '240px' }}
 			>
 				{/* Panel Header */}
 				<div className="flex items-center justify-between p-3 border-b border-border">
@@ -1677,48 +1683,102 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 								)}
 								{threadId && (
 									<>
-										<button
-											type="button"
-											onClick={viewThreadHistory}
-											className="px-2 py-0.5 bg-blue-500 hover:bg-blue-600 text-white text-[10px] rounded border border-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-											disabled={!isEnabled}
-										>
-											History
-										</button>
-										<button
-											type="button"
+								<ButtonToggle
+									isActive={showHistoryModal}
+									initialText="History"
+									activeText="Close"
+									variant="default"
+									size="xs"
+									width="sm"
+									onToggle={(isActive) => {
+										if (isActive) {
+											viewThreadHistory();
+										} else {
+											setShowHistoryModal(false);
+										}
+									}}
+									disabled={!isEnabled}
+								/>
+										<ButtonIconed
+											icon={MdRefresh}
+											text="Reset"
+											variant="destructive"
+											size="xs"
 											onClick={resetThread}
-											className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white text-[10px] rounded border border-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 											disabled={!isEnabled}
-										>
-											Reset
-										</button>
+										/>
 									</>
 								)}
 							</div>
 						</div>
 
-						{/* Input/Output Preview - Only show if exists and compact */}
-						{(userInput || outputs) && (
-							<div className="space-y-0.5">
-								{userInput && (
-									<div className="text-xs">
-										<span className="text-muted-foreground">In: </span>
-										<span className="font-mono">
-											{userInput.length > 50 ? `${userInput.substring(0, 50)}...` : userInput}
-										</span>
-									</div>
-								)}
-								{outputs && (
-									<div className="text-xs">
-										<span className="text-muted-foreground">Out: </span>
-										<span className="font-mono">
-											{outputs.length > 50 ? `${outputs.substring(0, 50)}...` : outputs}
-										</span>
-									</div>
-								)}
+						{/* Chat Interface */}
+						<div className="space-y-2">
+							{/* Message Input */}
+							<div className="relative">
+								<input
+									type="text"
+									value={userInput || ""}
+									onChange={(e) => {
+										console.log("Input change:", e.target.value);
+										updateNodeData({ userInput: e.target.value });
+									}}
+									placeholder={!isActive ? "Node Inactive - Type to prepare message" : "Type your message..."}
+									className="w-full pr-8 pl-2 py-1.5 text-xs bg-background border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+									disabled={false}
+									readOnly={false}
+									onKeyDown={(e) => {
+										if (e.key === 'Enter' && !e.shiftKey) {
+											e.preventDefault();
+											if (userInput?.trim() && isEnabled && processingState !== PROCESSING_STATE.PROCESSING) {
+												updateNodeData({
+													isActive: true,
+													processingState: PROCESSING_STATE.IDLE
+												});
+											}
+										}
+									}}
+								/>
+								<button
+									type="button"
+									onClick={() => {
+										if (userInput?.trim() && isEnabled && processingState !== PROCESSING_STATE.PROCESSING) {
+											updateNodeData({
+												isActive: true,
+												processingState: PROCESSING_STATE.IDLE
+											});
+										}
+									}}
+									disabled={!userInput?.trim() || processingState === PROCESSING_STATE.PROCESSING}
+									className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-blue-500 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+									title="Send message"
+								>
+									<svg
+										width="12"
+										height="12"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									>
+										<path d="M22 2L11 13" />
+										<path d="M22 2L15 22L11 13L2 9L22 2Z" />
+									</svg>
+								</button>
 							</div>
-						)}
+							
+							{/* AI Response Preview */}
+							{outputs && (
+								<div className="text-xs bg-gray-50 dark:bg-gray-800 rounded p-2">
+									<span className="text-muted-foreground block mb-1">AI Response:</span>
+									<span className="font-mono text-foreground">
+										{outputs.length > 100 ? `${outputs.substring(0, 100)}...` : outputs}
+									</span>
+								</div>
+							)}
+						</div>
 
 						{/* Error Details - Only if error */}
 						{processingState === PROCESSING_STATE.ERROR && processingError && (

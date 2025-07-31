@@ -228,7 +228,11 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 		const style: React.CSSProperties = {
 			minWidth: typeof sizeConfig.width === "number" ? `${sizeConfig.width}px` : sizeConfig.width,
 			minHeight:
-				typeof sizeConfig.height === "number" ? `${sizeConfig.height}px` : sizeConfig.height,
+				typeof sizeConfig.minHeight === "number" 
+					? `${sizeConfig.minHeight}px` 
+					: typeof sizeConfig.height === "number" 
+						? `${sizeConfig.height}px` 
+						: sizeConfig.height,
 			width: typeof sizeConfig.width === "number" ? `${sizeConfig.width}px` : sizeConfig.width,
 			height:
 				sizeConfig.height === "auto"

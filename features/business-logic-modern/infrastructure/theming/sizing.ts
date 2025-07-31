@@ -48,8 +48,8 @@ export const EXPANDED_SIZES = {
 	FE2: { width: 180, height: 180 },
 	FE3: { width: 240, height: 240 },
 	// Variable sizes
-	VE0: { width: 60, height: "auto" },
-	VE1: { width: 120, height: "auto" },
-	VE2: { width: 180, height: "auto" },
-	VE3: { width: 240, height: "auto" },
+	VE0: { width: 60, minHeight: 60 },
+	VE1: { width: 120, minHeight: 120 },
+	VE2: { width: 180, minHeight: 180 },
+	VE3: { width: 240, minHeight: 240 },
 } as const;

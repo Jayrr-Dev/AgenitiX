@@ -352,7 +352,7 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 			value={store === "Default text" ? "" : (store ?? "")}
 			onChange={handleStoreChange}
 			placeholder="..."
-			className={`nowheel m-4 h-8 min-h-8 resize-none overflow-y-auto bg-background p-1 text-left text-xs align-top ${categoryStyles.primary}`}
+			className={`nowheel m-4 h-8 min-h-8 resize-none overflow-y-auto bg-background p-1 text-center text-xs align-top ${categoryStyles.primary}`}
 			disabled={!isEnabled}
 			style={{ verticalAlign: 'top' }}
 		/>

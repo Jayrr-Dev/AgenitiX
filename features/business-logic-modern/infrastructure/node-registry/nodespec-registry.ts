@@ -8,6 +8,8 @@
 import { spec as aiAgentSpec } from "../../node-domain/ai/aiAgent.node";
 import { spec as triggerPulseSpec } from "../../node-domain/trigger/triggerPulse.node";
 import { spec as aiToolsSpec } from "../../node-domain/ai/aiTools.node";
+import { spec as storeLocalSpec } from "../../node-domain/store/storeLocal.node";
+import { spec as aiManagerSpec } from "../../node-domain/ai/aiManager.node";
 import { spec as createTextSpec } from "../../node-domain/create/createText.node";
 import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
 import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
@@ -30,6 +32,8 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	viewBoolean: viewBooleanSpec,
 	triggerPulse: triggerPulseSpec,
 	aiTools: aiToolsSpec,
+	storeLocal: storeLocalSpec,
+	aiManager: aiManagerSpec,
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
 	aiAgent: aiAgentSpec,

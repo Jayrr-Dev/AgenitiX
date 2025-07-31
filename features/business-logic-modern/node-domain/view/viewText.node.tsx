@@ -349,7 +349,11 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 				<div className={CONTENT.collapsed}>
 					{spec.receivedData?.showInCollapsed && validation.data.outputs !== "No inputs" ? (
 						<div
-							className={` nowheel h-[80px] w-[100px] overflow-y-auto text-center text-xs ${categoryStyles.primary}`}
+							className={` nowheel overflow-y-auto text-center text-xs ${categoryStyles.primary}`}
+							style={{
+								width: `${spec.size.collapsed.width - 20}px`,
+								height: `${spec.size.collapsed.height - 20}px`,
+							}}
 						>
 							{validation.data.outputs || "..."}
 						</div>
