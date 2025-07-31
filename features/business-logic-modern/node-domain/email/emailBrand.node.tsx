@@ -208,7 +208,7 @@ const BRAND_TYPES = [
 	{ value: "personal", label: "Personal" },
 	{ value: "product", label: "Product" },
 	{ value: "campaign", label: "Campaign" },
-] as const;
+] as { value: string; label: string }[];
 
 const FONT_FAMILIES = [
 	{ value: "Arial, sans-serif", label: "Arial" },
@@ -217,13 +217,13 @@ const FONT_FAMILIES = [
 	{ value: "Times New Roman, serif", label: "Times New Roman" },
 	{ value: "Verdana, sans-serif", label: "Verdana" },
 	{ value: "Trebuchet MS, sans-serif", label: "Trebuchet MS" },
-] as const;
+] as { value: string; label: string }[];
 
 const LOGO_POSITIONS = [
 	{ value: "header", label: "Header" },
 	{ value: "footer", label: "Footer" },
 	{ value: "signature", label: "Signature" },
-] as const;
+] as { value: string; label: string }[];
 
 // -----------------------------------------------------------------------------
 // 3️⃣  Dynamic spec factory (pure)
@@ -645,11 +645,10 @@ const EmailBrandNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 		<div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}>
 			{/* Header */}
 			<div className={CONTENT.header}>
-				<LabelNode
-					label="Email Brand"
-					className={`text-sm font-semibold ${categoryStyles.primary}`}
-				/>
-				<ExpandCollapseButton isExpanded={isExpanded} onClick={toggleExpand} />
+				<div className={`text-sm font-semibold ${categoryStyles.primary}`}>
+					Email Brand
+				</div>
+				<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} />
 			</div>
 
 			{/* Body */}

@@ -41,7 +41,7 @@ import { NodeOutput } from "./components/NodeOutput";
 import { SizeControls } from "./components/SizeControls";
 // Import card components with explicit naming
 import NodeInformation from "./components/cards/NodeInformation";
-import NodeDescriptionCard from "./components/cards/NodeDescription";
+
 import NodeDataCard from "./components/cards/NodeData";
 import NodeSizeCard from "./components/cards/NodeSize";
 import NodeOutputCard from "./components/cards/NodeOutput";
@@ -565,19 +565,7 @@ const NodeInspector = React.memo(function NodeInspector({
 							</AccordionSection>
 						)}
 
-						{/* Node Description Card */}
-						{nodeInfo.description && cardVisibility.description && (
-							<AccordionSection
-								title="Description"
-								isOpen={accordionState.description}
-								onToggle={() => toggleAccordion("description")}
-							>
-								<NodeDescriptionCard
-									selectedNode={selectedNode}
-									nodeInfo={nodeInfo}
-								/>
-							</AccordionSection>
-						)}
+
 
 						{/* Node Data Card */}
 						{cardVisibility.nodeData && (

@@ -92,6 +92,20 @@ export const NodeInformation: React.FC<NodeInfoProps> = ({
 							</div>
 						</td>
 					</tr>
+					{nodeInfo.description && (
+						<tr className="flex items-start">
+							<td className="w-1/3 py-2 pr-2">
+								<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
+									DESCRIPTION
+								</span>
+							</td>
+							<td className="w-2/3 py-2">
+								<span className="font-mono text-muted-foreground text-sm leading-relaxed">
+									{(selectedNode.data as any)?.description ?? nodeInfo.description}
+								</span>
+							</td>
+						</tr>
+					)}
 					{nodeInfo.author && (
 						<tr className="flex items-center">
 							<td className="w-1/3 py-2 pr-2">

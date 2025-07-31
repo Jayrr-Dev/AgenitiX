@@ -74,7 +74,7 @@ const CONTENT = {
 	header: "flex items-center justify-between mb-3",
 	body: "flex-1 flex items-center justify-center",
 	toggle:
-		"relative w-12 h-12 rounded-full border-2 cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95",
+		"relative w-12 h-12 rounded-full border-2 cursor-pointer transition-all duration-200",
 	toggleOn: "bg-green-500 border-green-600  shadow-green-500/50",
 	toggleOff: "bg-red-500 border-red-600  shadow-red-500/50",
 	toggleDisabled: "bg-gray-400 border-gray-500 cursor-not-allowed opacity-50",

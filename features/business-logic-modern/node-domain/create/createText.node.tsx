@@ -354,7 +354,7 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 			onChange={handleStoreChange}
 			variant="barebones"
 			placeholder="Enter your content here…"
-			className={`nowheel h-32 min-h-32 resize-none overflow-y-auto  p-2 text-xs align-top ${categoryStyles.primary}`}
+			className={`nowheel h-32 min-h-32 resize-none overflow-y-auto  mt-2 p-2 text-xs align-top ${categoryStyles.primary}`}
 			disabled={!isEnabled}
 			style={{ verticalAlign: 'top' }}
 		/>

@@ -57,7 +57,6 @@ const SETTING_ITEMS: Array<{
 	description: string;
 }> = [
 	{ key: "nodeInfo", label: "Node Information", description: "Basic node metadata and ID" },
-	{ key: "description", label: "Description", description: "Node description text" },
 	{ key: "nodeData", label: "Node Data", description: "JSON data editor" },
 	{ key: "output", label: "Output", description: "Node output values" },
 	{ key: "controls", label: "Controls", description: "Interactive node controls" },
@@ -121,7 +120,7 @@ export const InspectorSettingsDropdown: React.FC<InspectorSettingsDropdownProps>
 					{SETTING_ITEMS.map(({ key, label }) => (
 						<DropdownMenuItem
 							key={key}
-							className="flex items-center justify-between py-2 px-2 cursor-default"
+							className="flex items-center justify-between py-2 px-2 cursor-default focus:bg-muted/50 hover:bg-muted/50 border-none outline-none"
 							onClick={(e) => {
 								e.preventDefault();
 								onToggleSetting(key);

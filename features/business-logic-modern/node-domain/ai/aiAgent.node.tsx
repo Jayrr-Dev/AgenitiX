@@ -1726,7 +1726,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 										console.log("Input change:", e.target.value);
 										updateNodeData({ userInput: e.target.value });
 									}}
-									placeholder={!isActive ? "Node Inactive - Type to prepare message" : "Type your message..."}
+									placeholder={!isActive ? "Inactive" : "Message"}
 									className="w-full pr-8 pl-2 py-1.5 text-xs bg-background border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
 									disabled={false}
 									readOnly={false}
@@ -1840,8 +1840,12 @@ const AiAgentNodeWithDynamicSpec = memo((props: NodeProps) => {
 
 	return <ScaffoldedNode {...props} />;
 }, (prevProps, nextProps) => {
-	// Only re-render if node ID or data reference changes
-	return prevProps.id === nextProps.id && prevProps.data === nextProps.data;
+	// Re-render when essential props change, including selection state for proper glow effects
+	return (
+		prevProps.id === nextProps.id && 
+		prevProps.data === nextProps.data && 
+		prevProps.selected === nextProps.selected
+	);
 });
 
 export default AiAgentNodeWithDynamicSpec;

@@ -26,7 +26,6 @@ const STORAGE_KEY_BASE = "agenitix-node-inspector-settings";
 
 export interface InspectorSettings {
 	nodeInfo: boolean;
-	description: boolean;
 	nodeData: boolean;
 	output: boolean;
 	controls: boolean;
@@ -42,14 +41,13 @@ export interface InspectorSettings {
 
 const DEFAULT_SETTINGS: InspectorSettings = {
 	nodeInfo: true,
-	description: true,
-	nodeData: true,
-	output: true,
-	controls: true,
-	handles: true,
-	connections: true,
-	errors: true,
-	size: true,
+	nodeData: false,
+	output: false,
+	controls: false,
+	handles: false,
+	connections: false,
+	errors: false,
+	size: false,
 };
 
 // ============================================================================

@@ -81,11 +81,13 @@ const NodeScaffoldWrapper = ({
 	const structuralClasses = [
 		// Base structural classes with modern border radius and transitions
 		"relative rounded-[12px] transition-all duration-300 ease-out",
+		// Base shadow effect that won't conflict with glow effects
+		!isDisabled && "shadow-lg",
 		// Injectable classes from tokens
 		wrapperClasses,
 		containerClasses,
 		borderClasses,
-		// Theme classes from parent (includes activation glow)
+		// Theme classes from parent (includes selection, hover, activation glow effects)
 		className,
 	]
 		.filter(Boolean)
@@ -114,10 +116,8 @@ const NodeScaffoldWrapper = ({
 			? `var(--node-global-disabled-gradient), var(--node-${categoryLower}-bg-gradient)`
 			: `var(--node-${categoryLower}-bg-gradient)`,
 		// Enhanced shadows for depth - dark mode gets layered shadows with inset highlights
-		// Use CSS custom property to allow selection glow classes to override
-		boxShadow: isDisabled
-			? `var(--node-global-disabled-shadow), var(--node-${categoryLower}-modern-shadow)`
-			: `var(--node-${categoryLower}-modern-shadow)`,
+		// Note: boxShadow intentionally removed to allow CSS classes (selection glow) to take precedence
+		// Shadow effects are now handled entirely through CSS custom properties and classes
 		// Ensure proper layering
 		position: "relative",
 		// Modern smooth transitions for all properties
@@ -138,12 +138,12 @@ const NodeScaffoldWrapper = ({
 			className={structuralClasses}
 			style={completeStyle}
 			// Enhanced hover effects - only when not disabled and feature flag is enabled
+			// Note: boxShadow effects removed to prevent conflicts with selection glow
 			onMouseEnter={
 				isDisabled || !ENABLE_HOVER_LIFT
 					? undefined
 					: (e) => {
 							const target = e.currentTarget;
-							target.style.boxShadow = `var(--node-${categoryLower}-modern-shadow-hover)`;
 							target.style.transform = "translateY(-2px) scale(1.01)";
 						}
 			}
@@ -152,7 +152,6 @@ const NodeScaffoldWrapper = ({
 					? undefined
 					: (e) => {
 							const target = e.currentTarget;
-							target.style.boxShadow = `var(--node-${categoryLower}-modern-shadow)`;
 							target.style.transform = "translateY(0) scale(1)";
 						}
 			}

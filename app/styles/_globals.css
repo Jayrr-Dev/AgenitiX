@@ -28,18 +28,10 @@
 }
 
 /* Thinner Focus Ring Styles */
-input:focus,
+
 textarea:focus,
-select:focus,
-button:focus,
-[contenteditable]:focus,
-.focus\:ring-2:focus {
-	/* Thinner focus ring, basically less prominent white border */
-	outline: 1px solid rgba(255, 255, 255, 0.6) !important;
-	outline-offset: 1px !important;
-	/* Override Tailwind's focus ring */
-	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4) !important;
-}
+
+
 
 /* Specific focus styles for common form elements */
 input[type="text"]:focus,
@@ -48,13 +40,13 @@ input[type="password"]:focus,
 input[type="number"]:focus,
 textarea:focus {
 	/* Even thinner for text inputs, basically subtle focus indication */
-	outline: 1px solid rgba(255, 255, 255, 0.5) !important;
+	outline: 0.5px solid rgba(255, 255, 255, 0.5) !important;
 	outline-offset: 0px !important;
 	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3) !important;
 }
 
 /* Override Tailwind focus ring utilities */
-.focus\:ring-1:focus {
+/* .focus\:ring-1:focus {
 	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4) !important;
 }
 
@@ -64,7 +56,8 @@ textarea:focus {
 
 .focus\:ring-3:focus {
 	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4) !important;
-}
+} */
+
 
 
 /* 1 · Custom-property registration (only animating vars) ------------ */

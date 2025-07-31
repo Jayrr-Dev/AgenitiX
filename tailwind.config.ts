@@ -72,6 +72,7 @@ export default {
 				ui: ["var(--font-ui)"],
 				brand: ["var(--font-brand)"],
 			},
+		
 			keyframes: {
 				"accordion-down": {
 					from: { height: "0" },
