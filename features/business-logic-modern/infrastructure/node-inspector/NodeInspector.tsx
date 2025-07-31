@@ -39,6 +39,16 @@ import { HandlePositionEditor } from "./components/HandlePositionEditor";
 import { NodeControls } from "./components/NodeControls";
 import { NodeOutput } from "./components/NodeOutput";
 import { SizeControls } from "./components/SizeControls";
+// Import card components with explicit naming
+import NodeInformation from "./components/cards/NodeInformation";
+import NodeDescriptionCard from "./components/cards/NodeDescription";
+import NodeDataCard from "./components/cards/NodeData";
+import NodeSizeCard from "./components/cards/NodeSize";
+import NodeOutputCard from "./components/cards/NodeOutput";
+import NodeControlsCard from "./components/cards/NodeControls";
+import NodeHandlesCard from "./components/cards/NodeHandles";
+import NodeConnectionsCard from "./components/cards/NodeConnections";
+import { useInspectorState } from "./hooks/useInspectorState";
 
 // =====================================================================
 // STYLING CONSTANTS - Thin, minimalistic design with original colors
@@ -518,103 +528,12 @@ const NodeInspector = React.memo(function NodeInspector({
 							isOpen={accordionState.nodeInfo}
 							onToggle={() => toggleAccordion("nodeInfo")}
 						>
-							<div className="space-y-2">
-								<div className="flex items-center gap-2">
-									<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-										TYPE
-									</span>
-									<span className={STYLING_TEXT_NODE_METADATA}>{selectedNode.type}</span>
-								</div>
-								<div className="flex items-center gap-2">
-									<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-										LABEL
-									</span>
-									<div className="flex items-center gap-1">
-										<input
-											type="text"
-											value={
-												(selectedNode.data as any)?.label || nodeInfo.label || nodeInfo.displayName
-											}
-											onChange={(e) => {
-												updateNodeData(selectedNode.id, {
-													...selectedNode.data,
-													label: e.target.value,
-												});
-											}}
-											onClick={(e) => {
-												(e.target as HTMLInputElement).select();
-											}}
-											className="rounded border-none bg-transparent px-1 font-mono text-muted-foreground text-sm outline-none focus:ring-1 focus:ring-blue-500"
-											placeholder={nodeInfo.displayName}
-										/>
-										<Edit3 className="h-3 w-3 text-muted-foreground/60" />
-									</div>
-								</div>
-								<div className="flex items-center gap-2">
-									<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-										ID
-									</span>
-									<div className="flex items-center gap-1">
-										<EditableNodeId
-											nodeId={selectedNode.id}
-											onUpdateId={handleUpdateNodeId}
-											className="font-mono text-muted-foreground text-sm"
-										/>
-										<Edit3 className="h-3 w-3 text-muted-foreground/60" />
-									</div>
-								</div>
-								{nodeInfo.author && (
-									<div className="flex items-center gap-2">
-										<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-											AUTHOR
-										</span>
-										<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.author}</span>
-									</div>
-								)}
-								{nodeInfo.feature && (
-									<div className="flex items-center gap-2">
-										<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-											FEATURE
-										</span>
-										<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.feature}</span>
-									</div>
-								)}
-								{nodeInfo.tags && nodeInfo.tags.length > 0 && (
-									<div className="flex items-center gap-2">
-										<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-											TAGS
-										</span>
-										<div className="flex flex-wrap gap-1">
-											{nodeInfo.tags.map((tag) => (
-												<span
-													key={`tag-${tag}`}
-													className="rounded bg-muted px-2 py-1 text-muted-foreground text-xs"
-												>
-													{tag}
-												</span>
-											))}
-										</div>
-									</div>
-								)}
-								{nodeInfo.version && (
-									<div className="flex items-center gap-2">
-										<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-											VERSION
-										</span>
-										<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.version}</span>
-									</div>
-								)}
-								{nodeInfo.runtime?.execute && (
-									<div className="flex items-center gap-2">
-										<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-											RUNTIME
-										</span>
-										<span className="font-mono text-muted-foreground text-sm">
-											{nodeInfo.runtime.execute}
-										</span>
-									</div>
-								)}
-							</div>
+							<NodeInformation
+								selectedNode={selectedNode}
+								nodeInfo={nodeInfo}
+								updateNodeData={updateNodeData}
+								onUpdateNodeId={handleUpdateNodeId}
+							/>
 						</AccordionSection>
 
 						{/* Node Description Card */}
@@ -624,11 +543,9 @@ const NodeInspector = React.memo(function NodeInspector({
 								isOpen={accordionState.description}
 								onToggle={() => toggleAccordion("description")}
 							>
-								<EditableNodeDescription
-									nodeId={selectedNode.id}
-									description={(selectedNode.data as any)?.description ?? nodeInfo.description}
-									defaultDescription={nodeInfo.description}
-									className={STYLING_TEXT_NODE_DESCRIPTION}
+								<NodeDescriptionCard
+									selectedNode={selectedNode}
+									nodeInfo={nodeInfo}
 								/>
 							</AccordionSection>
 						)}
@@ -639,41 +556,11 @@ const NodeInspector = React.memo(function NodeInspector({
 							isOpen={accordionState.nodeData}
 							onToggle={() => toggleAccordion("nodeData")}
 						>
-							<div className="-mx-1 overflow-hidden rounded-md border border-border/30 bg-muted/20">
-								<EditableJsonEditor
-									data={{
-										id: selectedNode.id,
-										category: nodeCategory,
-										store: selectedNode.data?.store ?? "",
-										inputs: selectedNode.data?.inputs ?? null,
-										outputs: selectedNode.data?.outputs ?? null,
-										isActive: selectedNode.data?.isActive,
-										isEnabled: selectedNode.data?.isEnabled ?? true,
-										isExpanded: selectedNode.data?.isExpanded,
-										// AI Agent specific fields
-										...(selectedNode.type === "aiAgent" &&
-											selectedNode.data &&
-											"userInput" in selectedNode.data && {
-												userInput: selectedNode.data.userInput,
-												triggerInputs: selectedNode.data.triggerInputs,
-												trigger: selectedNode.data.trigger,
-												isProcessing: selectedNode.data.isProcessing,
-												systemPrompt: selectedNode.data.systemPrompt,
-												selectedProvider: selectedNode.data.selectedProvider,
-												selectedModel: selectedNode.data.selectedModel,
-												temperature: selectedNode.data.temperature,
-												maxSteps: selectedNode.data.maxSteps,
-												threadId: selectedNode.data.threadId,
-											}),
-									}}
-									onUpdateData={(newData) => {
-										// Extract the system fields and update only the data portion
-										const { id, category, ...nodeData } = newData;
-										handleUpdateNodeData(selectedNode.id, nodeData);
-									}}
-									className={STYLING_JSON_HIGHLIGHTER}
-								/>
-							</div>
+							<NodeDataCard
+								selectedNode={selectedNode}
+								nodeInfo={nodeInfo}
+								updateNodeData={handleUpdateNodeData}
+							/>
 						</AccordionSection>
 
 						{/* Size Controls for nodes with size fields */}
@@ -683,12 +570,7 @@ const NodeInspector = React.memo(function NodeInspector({
 								isOpen={accordionState.size}
 								onToggle={() => toggleAccordion("size")}
 							>
-								<SizeControls
-									nodeData={selectedNode.data as any}
-									updateNodeData={(patch: Record<string, any>) =>
-										updateNodeData(selectedNode.id, patch)
-									}
-								/>
+								<NodeSizeCard selectedNode={selectedNode} updateNodeData={updateNodeData} />
 							</AccordionSection>
 						)}
 					</div>
@@ -706,7 +588,7 @@ const NodeInspector = React.memo(function NodeInspector({
 									isOpen={accordionState.output}
 									onToggle={() => toggleAccordion("output")}
 								>
-									<NodeOutput output={output} nodeType={selectedNode.type as NodeType} />
+									<NodeOutputCard output={output} nodeType={selectedNode.type as NodeType} />
 								</AccordionSection>
 							)}
 
@@ -716,8 +598,8 @@ const NodeInspector = React.memo(function NodeInspector({
 									isOpen={accordionState.controls}
 									onToggle={() => toggleAccordion("controls")}
 								>
-									<NodeControls
-										node={selectedNode}
+									<NodeControlsCard
+										selectedNode={selectedNode}
 										updateNodeData={updateNodeData}
 										onLogError={logNodeError as any}
 									/>
@@ -730,199 +612,12 @@ const NodeInspector = React.memo(function NodeInspector({
 								isOpen={accordionState.handles}
 								onToggle={() => toggleAccordion("handles")}
 							>
-								{/* Handles Summary */}
-								{nodeInfo.handles && nodeInfo.handles.length > 0 && (
-									<div className="mb-3 rounded border border-border/30 bg-muted/30 p-2">
-										<div className="flex items-center justify-between text-xs">
-											<span className="font-medium text-foreground">
-												{nodeInfo.handles.length} handle{nodeInfo.handles.length !== 1 ? "s" : ""}
-											</span>
-											<span className="text-muted-foreground">
-												{
-													edges.filter(
-														(edge) =>
-															edge.source === selectedNode.id || edge.target === selectedNode.id
-													).length
-												}{" "}
-												total connection
-												{edges.filter(
-													(edge) =>
-														edge.source === selectedNode.id || edge.target === selectedNode.id
-												).length !== 1
-													? "s"
-													: ""}
-											</span>
-										</div>
-									</div>
-								)}
-
-								{/* Handle Position Editor */}
-								{nodeInfo.handles && nodeInfo.handles.length > 0 && (
-									<div className="mb-4 rounded border border-border/30 bg-muted/10 p-3">
-										<HandlePositionEditor
-											node={selectedNode}
-											handles={nodeInfo.handles}
-											updateNodeData={updateNodeData}
-										/>
-									</div>
-								)}
-
-								<div className="space-y-2">
-									{nodeInfo.handles?.map((handle, _index) => {
-										// Find connections for this handle - improved logic with suffix handling
-										const handleConnections = edges.filter((edge) => {
-											// Check if this edge involves the selected node
-											const isSource = edge.source === selectedNode.id;
-											const isTarget = edge.target === selectedNode.id;
-
-											if (!(isSource || isTarget)) {
-												return false;
-											}
-
-											// For source connections (output handles), check sourceHandle
-											if (isSource) {
-												// Check exact match first
-												if (edge.sourceHandle === handle.id) {
-													return true;
-												}
-												// Check with __s suffix
-												if (edge.sourceHandle === `${handle.id}__s`) {
-													return true;
-												}
-												// Check if handle starts with the base ID
-												if (edge.sourceHandle?.startsWith(handle.id)) {
-													return true;
-												}
-											}
-
-											// For target connections (input handles), check targetHandle
-											if (isTarget) {
-												// Check exact match first
-												if (edge.targetHandle === handle.id) {
-													return true;
-												}
-												// Check with __s suffix
-												if (edge.targetHandle === `${handle.id}__s`) {
-													return true;
-												}
-												// Check if handle starts with the base ID
-												if (edge.targetHandle?.startsWith(handle.id)) {
-													return true;
-												}
-											}
-
-											// Fallback: if no specific handle is specified, check handle type
-											if (isSource && handle.type === "source" && !edge.sourceHandle) {
-												return true;
-											}
-
-											if (isTarget && handle.type === "target" && !edge.targetHandle) {
-												return true;
-											}
-
-											return false;
-										});
-
-										// Get connected node information
-										const connectedNodes = handleConnections
-											.map((edge) => {
-												const connectedNodeId =
-													edge.source === selectedNode.id ? edge.target : edge.source;
-												const connectedNode = nodes.find((n) => n.id === connectedNodeId);
-												return {
-													edge,
-													node: connectedNode,
-													isIncoming: edge.target === selectedNode.id,
-												};
-											})
-											.filter((conn) => conn.node);
-
-										return (
-											<div
-												key={handle.id}
-												className="rounded border border-border/50 bg-muted/20 p-3"
-											>
-												<div className="mb-2 flex items-center justify-between">
-													<div className="flex items-center gap-2">
-														<span
-															className={`h-3 w-3 rounded-full ${
-																handle.type === "source" ? "bg-green-500" : "bg-blue-500"
-															}`}
-															title={handle.type}
-														/>
-														<div>
-															<span className="font-medium text-foreground text-xs">
-																{handle.dataType || "Any"} (
-																{handle.type === "source" ? "Output" : "Input"})
-															</span>
-															{handle.position && (
-																<span className="ml-1 text-muted-foreground text-xs">
-																	[{handle.position}]
-																</span>
-															)}
-														</div>
-													</div>
-													<div className="flex items-center gap-1">
-														<span
-															className={`rounded-full px-2 py-1 text-xs ${
-																handleConnections.length > 0
-																	? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-																	: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-															}`}
-														>
-															{handleConnections.length} connection
-															{handleConnections.length !== 1 ? "s" : ""}
-														</span>
-													</div>
-												</div>
-
-												{/* Connected Nodes List */}
-												{connectedNodes.length > 0 && (
-													<div className="space-y-1">
-														{connectedNodes.map((connection, _connIndex) => (
-															<div
-																key={connection.edge.id}
-																className={`rounded border p-2 text-xs ${
-																	connection.isIncoming
-																		? "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20"
-																		: "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20"
-																}`}
-															>
-																<div className="flex items-center justify-between">
-																	<span
-																		className={`font-medium ${
-																			connection.isIncoming
-																				? "text-blue-700 dark:text-blue-300"
-																				: "text-green-700 dark:text-green-300"
-																		}`}
-																	>
-																		{connection.isIncoming ? "←" : "→"}{" "}
-																		{connection.node?.type || "Unknown"}
-																	</span>
-																	<span className="text-muted-foreground">
-																		{connection.node?.id}
-																	</span>
-																</div>
-															</div>
-														))}
-													</div>
-												)}
-
-												{/* No Connections Message */}
-												{handleConnections.length === 0 && (
-													<div className="py-1 text-center text-muted-foreground/60 text-xs">
-														No connections
-													</div>
-												)}
-											</div>
-										);
-									})}
-									{(!nodeInfo.handles || nodeInfo.handles.length === 0) && (
-										<div className="py-2 text-center text-muted-foreground/60 text-xs">
-											No handles defined for this node
-										</div>
-									)}
-								</div>
+								<NodeHandlesCard
+									selectedNode={selectedNode}
+									nodeInfo={nodeInfo}
+									edges={edges}
+									updateNodeData={updateNodeData}
+								/>
 							</AccordionSection>
 
 							{/* Connections Card */}
@@ -931,96 +626,11 @@ const NodeInspector = React.memo(function NodeInspector({
 								isOpen={accordionState.connections}
 								onToggle={() => toggleAccordion("connections")}
 							>
-								<div className="space-y-3">
-									{/* Incoming Connections */}
-									{connections.incoming.length > 0 && (
-										<div>
-											<div className="mb-2 flex items-center gap-2">
-												<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-													INCOMING
-												</span>
-												<span className="text-muted-foreground text-xs">
-													({connections.incoming.length})
-												</span>
-											</div>
-											<div className="space-y-2">
-												{connections.incoming.map((connection, _index) => (
-													<div
-														key={connection.edge.id}
-														className="rounded border border-border/50 bg-muted/20 p-2"
-													>
-														<div className="mb-1 flex items-center justify-between">
-															<div className="flex items-center gap-2">
-																<span className="rounded bg-blue-100 px-1.5 py-0.5 font-medium text-muted-foreground text-xs dark:bg-blue-900/30">
-																	FROM
-																</span>
-																<span className="font-medium text-foreground text-xs">
-																	{connection.sourceNode?.type || "Unknown"}
-																</span>
-															</div>
-															<span className="font-mono text-muted-foreground text-xs">
-																{connection.edge.source}
-															</span>
-														</div>
-														{connection.sourceOutput && (
-															<div className="rounded border border-border/30 bg-background p-1.5 text-muted-foreground text-xs">
-																{connection.sourceOutput}
-															</div>
-														)}
-													</div>
-												))}
-											</div>
-										</div>
-									)}
-
-									{/* Outgoing Connections */}
-									{connections.outgoing.length > 0 && (
-										<div>
-											<div className="mb-2 flex items-center gap-2">
-												<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-													OUTGOING
-												</span>
-												<span className="text-muted-foreground text-xs">
-													({connections.outgoing.length})
-												</span>
-											</div>
-											<div className="space-y-2">
-												{connections.outgoing.map((connection, _index) => (
-													<div
-														key={connection.edge.id}
-														className="rounded border border-border/50 bg-muted/20 p-2"
-													>
-														<div className="mb-1 flex items-center justify-between">
-															<div className="flex items-center gap-2">
-																<span className="rounded bg-green-100 px-1.5 py-0.5 font-medium text-muted-foreground text-xs dark:bg-green-900/30">
-																	TO
-																</span>
-																<span className="font-medium text-foreground text-xs">
-																	{connection.targetNode?.type || "Unknown"}
-																</span>
-															</div>
-															<span className="font-mono text-muted-foreground text-xs">
-																{connection.edge.target}
-															</span>
-														</div>
-														{connection.targetInput && (
-															<div className="rounded border border-border/30 bg-background p-1.5 text-muted-foreground text-xs">
-																{connection.targetInput}
-															</div>
-														)}
-													</div>
-												))}
-											</div>
-										</div>
-									)}
-
-									{/* No Connections */}
-									{connections.incoming.length === 0 && connections.outgoing.length === 0 && (
-										<div className="py-4 text-center text-muted-foreground/60 text-xs">
-											No connections
-										</div>
-									)}
-								</div>
+								<NodeConnectionsCard
+									selectedNode={selectedNode}
+									nodes={nodes}
+									edges={edges}
+								/>
 							</AccordionSection>
 						</div>
 					)}

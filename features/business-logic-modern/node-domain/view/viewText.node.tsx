@@ -340,7 +340,7 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 			{isExpanded ? (
 				<div className={CONTENT.expanded}>
 					<div className={CONTENT.body}>
-						<div className="whitespace-pre-line break-words text-center font-normal text-xs">
+						<div className="whitespace-pre-line break-words text-center font-normal text-xs mt-2">
 							{validation.data.outputs || "No inputs"}
 						</div>
 					</div>
@@ -349,7 +349,7 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 				<div className={CONTENT.collapsed}>
 					{spec.receivedData?.showInCollapsed && validation.data.outputs !== "No inputs" ? (
 						<div
-							className={` nowheel overflow-y-auto text-center text-xs ${categoryStyles.primary}`}
+							className={` nowheel overflow-y-auto text-center text-xs mt-6 ${categoryStyles.primary}`}
 							style={{
 								width: `${spec.size.collapsed.width - 20}px`,
 								height: `${spec.size.collapsed.height - 20}px`,

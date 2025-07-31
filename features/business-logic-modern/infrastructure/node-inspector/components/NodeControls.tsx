@@ -14,8 +14,8 @@
 
 import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import type React from "react";
-import { NodeInspectorAdapter } from "../adapters/NodeInspectorAdapter";
-import { EnhancedNodeControls } from "./EnhancedNodeControls";
+import { NodeInspectorAdapter } from "@/features/business-logic-modern/infrastructure/node-inspector/adapters/NodeInspectorAdapter";
+import { EnhancedNodeControls } from "@/features/business-logic-modern/infrastructure/node-inspector/components/EnhancedNodeControls";
 
 interface NodeControlsProps {
 	node: AgenNode;
