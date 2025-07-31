@@ -46,7 +46,7 @@ const DEFAULT_SETTINGS: InspectorSettings = {
 	controls: false,
 	handles: false,
 	connections: false,
-	errors: false,
+	errors: true,
 	size: false,
 };
 
