@@ -1,7 +1,5 @@
 import { useMemo } from "react";
 
-import { useMemo } from "react";
-
 import triggerPulse from '../../../node-domain/trigger/triggerPulse.node';
 import aiTools from '../../../node-domain/ai/aiTools.node';
 // Add new node imports here (Plop can auto-inject these)
@@ -12,6 +10,9 @@ import emailAccount from "../../../node-domain/email/emailAccount.node";
 import emailCreator from "../../../node-domain/email/emailCreator.node";
 import emailReader from "../../../node-domain/email/emailReader.node";
 import emailSender from "../../../node-domain/email/emailSender.node";
+import emailReplier from "../../../node-domain/email/emailReplier.node";
+import emailTemplate from "../../../node-domain/email/emailTemplate.node";
+import emailBrand from "../../../node-domain/email/emailBrand.node";
 import testNode from "../../../node-domain/test/testNode.node";
 // Import all available node components
 // This should be automatically updated when new nodes are created via Plop
@@ -44,6 +45,9 @@ export function useDynamicNodeTypes() {
 			emailReader,
 			emailCreator,
 			emailSender,
+			emailReplier,
+			emailTemplate,
+			emailBrand,
 			viewText,
 		}),
 		[]

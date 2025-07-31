@@ -24,3 +24,6 @@ export { default as emailAccount, spec as emailAccountSpec } from "./emailAccoun
 export { default as emailReader, spec as emailReaderSpec } from "./emailReader.node";
 export { default as emailCreator, spec as emailCreatorSpec } from "./emailCreator.node";
 export { default as emailSender, spec as emailSenderSpec } from "./emailSender.node";
+export { default as emailReplier, spec as emailReplierSpec } from "./emailReplier.node";
+export { default as emailTemplate, spec as emailTemplateSpec } from "./emailTemplate.node";
+export { default as emailBrand, spec as emailBrandSpec } from "./emailBrand.node";

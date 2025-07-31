@@ -993,3 +993,478 @@ async function simulateConnectionValidation(
 		},
 	};
 }
+// ============================================================================
+// EMAIL REPLIER FUNCTIONS
+// ============================================================================
+
+// Generate email reply using AI or templates
+export const generateEmailReply = mutation({
+	args: {
+		token_hash: v.string(),
+		account_id: v.id("email_accounts"),
+		original_email: v.object({
+			id: v.string(),
+			from: v.string(),
+			to: v.array(v.string()),
+			cc: v.optional(v.array(v.string())),
+			subject: v.string(),
+			content: v.string(),
+			date: v.number(),
+		}),
+		reply_strategy: v.union(
+			v.literal("auto"),
+			v.literal("template"),
+			v.literal("ai-generated"),
+			v.literal("hybrid")
+		),
+		template_id: v.optional(v.string()),
+		custom_template: v.optional(v.string()),
+		ai_config: v.optional(
+			v.object({
+				model: v.string(),
+				prompt: v.string(),
+				max_tokens: v.number(),
+				temperature: v.number(),
+			})
+		),
+		reply_settings: v.object({
+			reply_to_all: v.boolean(),
+			include_original: v.boolean(),
+			add_signature: v.boolean(),
+			signature: v.optional(v.string()),
+		}),
+	},
+	handler: async (
+		ctx,
+		args
+	): Promise<
+		EmailAccountResult<{
+			reply_content: string;
+			reply_subject: string;
+			recipients: {
+				to: string[];
+				cc: string[];
+			};
+			metadata: {
+				strategy: string;
+				confidence: number;
+				processing_time: number;
+				tokens_used?: number;
+			};
+		}>
+	> => {
+		try {
+			// Validate user session
+			const { user } = await validateUserSession(ctx, args.token_hash);
+
+			// Validate email account access
+			const account = await ctx.db.get(args.account_id);
+			if (!account || account.user_id !== user._id || !account.is_active) {
+				return {
+					success: false,
+					error: {
+						code: "NOT_FOUND",
+						message: "Email account not found or access denied",
+					},
+				};
+			}
+
+			const startTime = Date.now();
+
+			// Generate reply based on strategy
+			let replyContent = "";
+			let confidence = 0.8;
+			let tokensUsed: number | undefined;
+
+			switch (args.reply_strategy) {
+				case "template":
+					const templateResult = await generateTemplateReply(
+						args.custom_template || "Thank you for your email. I will get back to you soon.",
+						args.original_email,
+						args.reply_settings
+					);
+					replyContent = templateResult.content;
+					confidence = templateResult.confidence;
+					break;
+
+				case "ai-generated":
+					if (!args.ai_config) {
+						return {
+							success: false,
+							error: {
+								code: "CONFIGURATION_INVALID",
+								message: "AI configuration is required for AI-generated replies",
+							},
+						};
+					}
+					const aiResult = await generateAIReply(
+						args.original_email,
+						args.ai_config,
+						args.reply_settings
+					);
+					replyContent = aiResult.content;
+					confidence = aiResult.confidence;
+					tokensUsed = aiResult.tokensUsed;
+					break;
+
+				case "hybrid":
+					// Combine template and AI
+					const hybridResult = await generateHybridReply(
+						args.original_email,
+						args.custom_template,
+						args.ai_config,
+						args.reply_settings
+					);
+					replyContent = hybridResult.content;
+					confidence = hybridResult.confidence;
+					tokensUsed = hybridResult.tokensUsed;
+					break;
+
+				case "auto":
+				default:
+					// Simple auto-reply
+					replyContent = generateAutoReply(args.original_email, args.reply_settings);
+					confidence = 0.6;
+					break;
+			}
+
+			// Generate reply subject
+			const replySubject = generateReplySubject(args.original_email.subject);
+
+			// Determine recipients
+			const recipients = generateReplyRecipients(
+				args.original_email,
+				args.reply_settings.reply_to_all
+			);
+
+			// Log the reply generation
+			await ctx.db.insert("email_reply_logs", {
+				user_id: user._id,
+				account_id: args.account_id,
+				original_email_id: args.original_email.id,
+				reply_strategy: args.reply_strategy,
+				reply_content: replyContent,
+				reply_subject: replySubject,
+				recipients: recipients,
+				confidence: confidence,
+				processing_time: Date.now() - startTime,
+				tokens_used: tokensUsed,
+				status: "generated",
+				created_at: Date.now(),
+			});
+
+			return {
+				success: true,
+				data: {
+					reply_content: replyContent,
+					reply_subject: replySubject,
+					recipients: recipients,
+					metadata: {
+						strategy: args.reply_strategy,
+						confidence: confidence,
+						processing_time: Date.now() - startTime,
+						tokens_used: tokensUsed,
+					},
+				},
+			};
+		} catch (error) {
+			console.error("Generate email reply error:", error);
+			return {
+				success: false,
+				error: {
+					code: "INTERNAL_ERROR",
+					message: error instanceof Error ? error.message : "Failed to generate email reply",
+				},
+			};
+		}
+	},
+});
+
+// Get email reply templates
+export const getEmailReplyTemplates = query({
+	args: {
+		token_hash: v.string(),
+		category: v.optional(v.string()),
+	},
+	handler: async (
+		ctx,
+		args
+	): Promise<
+		EmailAccountResult<
+			Array<{
+				id: string;
+				name: string;
+				category: string;
+				subject_template: string;
+				content_template: string;
+				variables: string[];
+				description?: string;
+			}>
+		>
+	> => {
+		try {
+			// Validate user session
+			const { user } = await validateUserSession(ctx, args.token_hash);
+
+			// Get user's reply templates
+			let templatesQuery = ctx.db
+				.query("email_reply_templates")
+				.withIndex("by_user_id", (q) => q.eq("user_id", user._id))
+				.filter((q) => q.eq(q.field("is_active"), true));
+
+			if (args.category) {
+				templatesQuery = templatesQuery.filter((q) => q.eq(q.field("category"), args.category));
+			}
+
+			const templates = await templatesQuery.collect();
+
+			return {
+				success: true,
+				data: templates.map((template) => ({
+					id: template._id,
+					name: template.name,
+					category: template.category,
+					subject_template: template.subject_template,
+					content_template: template.content_template,
+					variables: template.variables,
+					description: template.description,
+				})),
+			};
+		} catch (error) {
+			console.error("Get email reply templates error:", error);
+			return {
+				success: false,
+				error: {
+					code: "INTERNAL_ERROR",
+					message: error instanceof Error ? error.message : "Failed to get reply templates",
+				},
+			};
+		}
+	},
+});
+
+// Store email reply template
+export const storeEmailReplyTemplate = mutation({
+	args: {
+		token_hash: v.string(),
+		template: v.object({
+			name: v.string(),
+			category: v.string(),
+			subject_template: v.string(),
+			content_template: v.string(),
+			variables: v.array(v.string()),
+			description: v.optional(v.string()),
+		}),
+	},
+	handler: async (ctx, args): Promise<EmailAccountResult<{ template_id: string }>> => {
+		try {
+			// Validate user session
+			const { user } = await validateUserSession(ctx, args.token_hash);
+
+			// Validate template data
+			if (!args.template.name.trim()) {
+				return {
+					success: false,
+					error: {
+						code: "VALIDATION_ERROR",
+						message: "Template name is required",
+					},
+				};
+			}
+
+			if (!args.template.content_template.trim()) {
+				return {
+					success: false,
+					error: {
+						code: "VALIDATION_ERROR",
+						message: "Template content is required",
+					},
+				};
+			}
+
+			// Check for duplicate template names
+			const existingTemplate = await ctx.db
+				.query("email_reply_templates")
+				.withIndex("by_user_id", (q) => q.eq("user_id", user._id))
+				.filter((q) => q.eq(q.field("name"), args.template.name))
+				.filter((q) => q.eq(q.field("is_active"), true))
+				.first();
+
+			if (existingTemplate) {
+				return {
+					success: false,
+					error: {
+						code: "DUPLICATE_ERROR",
+						message: "A template with this name already exists",
+					},
+				};
+			}
+
+			// Store the template
+			const templateId = await ctx.db.insert("email_reply_templates", {
+				user_id: user._id,
+				name: args.template.name,
+				category: args.template.category,
+				subject_template: args.template.subject_template,
+				content_template: args.template.content_template,
+				variables: args.template.variables,
+				description: args.template.description,
+				is_active: true,
+				created_at: Date.now(),
+				updated_at: Date.now(),
+			});
+
+			return {
+				success: true,
+				data: {
+					template_id: templateId,
+				},
+			};
+		} catch (error) {
+			console.error("Store email reply template error:", error);
+			return {
+				success: false,
+				error: {
+					code: "INTERNAL_ERROR",
+					message: error instanceof Error ? error.message : "Failed to store reply template",
+				},
+			};
+		}
+	},
+});
+
+// ============================================================================
+// HELPER FUNCTIONS FOR EMAIL REPLY GENERATION
+// ============================================================================
+
+async function generateTemplateReply(
+	template: string,
+	originalEmail: any,
+	settings: any
+): Promise<{ content: string; confidence: number }> {
+	let content = template;
+
+	// Replace common variables
+	content = content.replace(/\{sender_name\}/g, extractSenderName(originalEmail.from));
+	content = content.replace(/\{original_subject\}/g, originalEmail.subject);
+	content = content.replace(/\{date\}/g, new Date().toLocaleDateString());
+
+	// Add signature if requested
+	if (settings.add_signature && settings.signature) {
+		content += `\n\n${settings.signature}`;
+	}
+
+	// Include original email if requested
+	if (settings.include_original) {
+		content += `\n\n--- Original Message ---\n${originalEmail.content}`;
+	}
+
+	return {
+		content: content,
+		confidence: 0.8,
+	};
+}
+
+async function generateAIReply(
+	originalEmail: any,
+	aiConfig: any,
+	settings: any
+): Promise<{ content: string; confidence: number; tokensUsed: number }> {
+	// TODO: Implement actual AI integration (OpenAI, Claude, etc.)
+	// For now, return a simulated AI response
+
+	const aiPrompt = `${aiConfig.prompt}\n\nOriginal email:\nFrom: ${originalEmail.from}\nSubject: ${originalEmail.subject}\nContent: ${originalEmail.content}`;
+
+	// Simulate AI processing
+	await new Promise((resolve) => setTimeout(resolve, 2000));
+
+	let aiResponse = `Thank you for your email regarding "${originalEmail.subject}". I appreciate you reaching out and will review your message carefully. I'll get back to you with a detailed response soon.`;
+
+	// Add signature if requested
+	if (settings.add_signature && settings.signature) {
+		aiResponse += `\n\n${settings.signature}`;
+	}
+
+	// Include original email if requested
+	if (settings.include_original) {
+		aiResponse += `\n\n--- Original Message ---\n${originalEmail.content}`;
+	}
+
+	return {
+		content: aiResponse,
+		confidence: 0.9,
+		tokensUsed: Math.floor(Math.random() * 200) + 100, // Simulated token usage
+	};
+}
+
+async function generateHybridReply(
+	originalEmail: any,
+	template: string | undefined,
+	aiConfig: any,
+	settings: any
+): Promise<{ content: string; confidence: number; tokensUsed: number }> {
+	// Start with template if provided
+	const baseContent = template || "Thank you for your email.";
+
+	// Enhance with AI
+	const aiResult = await generateAIReply(originalEmail, aiConfig, settings);
+
+	// Combine template and AI response
+	const hybridContent = `${baseContent}\n\n${aiResult.content}`;
+
+	return {
+		content: hybridContent,
+		confidence: 0.85,
+		tokensUsed: aiResult.tokensUsed,
+	};
+}
+
+function generateAutoReply(originalEmail: any, settings: any): string {
+	let content = `Thank you for your email. This is an automated response to confirm that I have received your message regarding "${originalEmail.subject}". I will review it and get back to you as soon as possible.`;
+
+	// Add signature if requested
+	if (settings.add_signature && settings.signature) {
+		content += `\n\n${settings.signature}`;
+	}
+
+	return content;
+}
+
+function generateReplySubject(originalSubject: string): string {
+	// Remove existing Re: prefixes and add our own
+	const cleanSubject = originalSubject.replace(/^(Re:\s*)+/i, "");
+	return `Re: ${cleanSubject}`;
+}
+
+function generateReplyRecipients(
+	originalEmail: any,
+	replyToAll: boolean
+): { to: string[]; cc: string[] } {
+	const recipients = {
+		to: [originalEmail.from],
+		cc: [] as string[],
+	};
+
+	if (replyToAll) {
+		// Add original CC recipients, excluding ourselves
+		if (originalEmail.cc) {
+			recipients.cc = originalEmail.cc.filter(
+				(email: string) => email !== originalEmail.from && !recipients.to.includes(email)
+			);
+		}
+	}
+
+	return recipients;
+}
+
+function extractSenderName(fromEmail: string): string {
+	// Extract name from "Name <email@domain.com>" format
+	const match = fromEmail.match(/^(.+?)\s*<.+>$/);
+	if (match) {
+		return match[1].trim().replace(/^["']|["']$/g, "");
+	}
+
+	// If no name found, use email username
+	const emailMatch = fromEmail.match(/^([^@]+)@/);
+	return emailMatch ? emailMatch[1] : "there";
+}

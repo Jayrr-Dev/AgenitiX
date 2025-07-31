@@ -554,7 +554,6 @@ const EmailCreatorNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 								Message Content:
 							</label>
 							<RichTextEditor
-								id="email-content"
 								value={content}
 								onChange={(newContent) => {
 									updateNodeData({
