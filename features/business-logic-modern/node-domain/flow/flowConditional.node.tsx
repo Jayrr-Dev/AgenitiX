@@ -53,8 +53,8 @@ export const FlowConditionalDataSchema = z
 		isExpanded: SafeSchemas.boolean(false), // inspector open?
 		dataInput: z.any().nullable().default(null), // incoming data to route
 		conditionInput: z.boolean().nullable().default(null), // condition input
-		trueOutput: z.any().nullable().default(null), // data sent to true path
-		falseOutput: z.any().nullable().default(null), // data sent to false path
+		firstOutput: z.boolean().nullable().default(null), // true value sent to first output
+		secondOutput: z.boolean().nullable().default(null), // false value sent to second output
 		lastRoute: z.enum(["true", "false", "none"]).default("none"), // last active route
 		expandedSize: SafeSchemas.text("FE1"),
 		collapsedSize: SafeSchemas.text("C1"),
@@ -114,31 +114,31 @@ function createDynamicSpec(data: FlowConditionalData): NodeSpec {
 		handles: [
 			{
 				id: "dataInput",
-				code: "b",
+				code: "b", 
 				position: "left",
 				type: "target",
-				dataType: "any",
+				dataType: "Boolean",
 			},
 			{
 				id: "conditionInput",
 				code: "b",
 				position: "top",
 				type: "target",
-				dataType: "boolean",
+				dataType: "Boolean",
 			},
 			{
-				id: "trueOutput",
-				code: "b",
+				id: "firstOutput",
+				code: "b", 
 				position: "right",
 				type: "source",
-				dataType: "any",
+				dataType: "Boolean",
 			},
 			{
-				id: "falseOutput",
-				code: "b",
+				id: "secondOutput",
+				code: "b", 
 				position: "bottom",
 				type: "source",
-				dataType: "any",
+				dataType: "Boolean",
 			},
 		],
 		inspector: { key: "FlowConditionalInspector" },
@@ -148,8 +148,8 @@ function createDynamicSpec(data: FlowConditionalData): NodeSpec {
 			condition: false,
 			dataInput: null,
 			conditionInput: null,
-			trueOutput: null,
-			falseOutput: null,
+			firstOutput: null,
+			secondOutput: null,
 			lastRoute: "none",
 		}),
 		dataSchema: FlowConditionalDataSchema,
@@ -159,8 +159,8 @@ function createDynamicSpec(data: FlowConditionalData): NodeSpec {
 				"isActive",
 				"dataInput",
 				"conditionInput",
-				"trueOutput",
-				"falseOutput",
+				"firstOutput",
+				"secondOutput",
 				"lastRoute",
 				"expandedSize",
 				"collapsedSize",
@@ -172,7 +172,7 @@ function createDynamicSpec(data: FlowConditionalData): NodeSpec {
 			],
 		},
 		icon: "LuRefreshCw",
-		author: "Hoang Nguyen",
+		author: "Agenitix Team",
 		description: "Decision-based routing node that directs data flow based on a boolean condition",
 		feature: "base",
 		tags: ["trigger", "flowConditional"],
@@ -207,6 +207,36 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 	// -------------------------------------------------------------------------
 	const { nodeData, updateNodeData } = useNodeData(id, data);
 
+	// Initialize missing fields if needed
+	useEffect(() => {
+		const updates: Partial<FlowConditionalData> = {};
+		let needsUpdate = false;
+
+		// Check if required fields are missing
+		if (nodeData.condition === undefined) {
+			updates.condition = false;
+			needsUpdate = true;
+		}
+		if (nodeData.firstOutput === undefined) {
+			updates.firstOutput = null;
+			needsUpdate = true;
+		}
+		if (nodeData.secondOutput === undefined) {
+			updates.secondOutput = null;
+			needsUpdate = true;
+		}
+		if (nodeData.lastRoute === undefined) {
+			updates.lastRoute = "none";
+			needsUpdate = true;
+		}
+
+		// Only update if needed
+		if (needsUpdate) {
+			console.log('Initializing missing FlowConditional fields:', updates);
+			updateNodeData(updates);
+		}
+	}, [nodeData, updateNodeData]);
+
 	// -------------------------------------------------------------------------
 	// 4.2  Derived state
 	// -------------------------------------------------------------------------
@@ -239,35 +269,62 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 	/** Propagate outputs based on condition ONLY when node is active AND enabled */
 	const propagate = useCallback(
 		(value: any, currentCondition: boolean) => {
+			// Log the propagation attempt
+			console.log('FlowConditional propagate called:', {
+				value,
+				currentCondition,
+				isActive,
+				isEnabled,
+				lastTrueRef: lastTrueOutputRef.current,
+				lastFalseRef: lastFalseOutputRef.current
+			});
+			
+			// When disabled, always output null regardless of condition
+			// When enabled, output based on the condition
 			const shouldSend = isActive && isEnabled;
 
 			if (shouldSend) {
 				if (currentCondition) {
-					// Route to true output
+					// Route to first output (true branch)
 					if (value !== lastTrueOutputRef.current) {
 						lastTrueOutputRef.current = value;
+						lastFalseOutputRef.current = null;
+						
+						// Use the actual value (could be false) for the output
+						const outputValue = value === false ? false : true;
+						
+						console.log('Updating firstOutput with:', outputValue);
 						updateNodeData({
-							trueOutput: value,
-							falseOutput: null,
+							firstOutput: outputValue,
+							secondOutput: null,
 							lastRoute: "true",
 						});
 					}
-				} else if (value !== lastFalseOutputRef.current) {
-					// Route to false output
-					lastFalseOutputRef.current = value;
-					updateNodeData({
-						trueOutput: null,
-						falseOutput: value,
-						lastRoute: "false",
-					});
+				} else {
+					// Route to second output (false branch)
+					if (value !== lastFalseOutputRef.current) {
+						lastTrueOutputRef.current = null;
+						lastFalseOutputRef.current = value;
+						
+						// Use the actual value (could be false) for the output
+						const outputValue = value === false ? false : false;
+						
+						console.log('Updating secondOutput with:', outputValue);
+						updateNodeData({
+							firstOutput: null,
+							secondOutput: outputValue,
+							lastRoute: "false",
+						});
+					}
 				}
 			} else if (lastTrueOutputRef.current !== null || lastFalseOutputRef.current !== null) {
 				// When inactive or disabled, clear both outputs
 				lastTrueOutputRef.current = null;
 				lastFalseOutputRef.current = null;
+				console.log('Clearing outputs - inactive or disabled');
 				updateNodeData({
-					trueOutput: null,
-					falseOutput: null,
+					firstOutput: null,
+					secondOutput: null,
 					lastRoute: "none",
 				});
 			}
@@ -330,12 +387,35 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 
 	/** Handle condition toggle */
 	const handleConditionToggle = useCallback(() => {
-		updateNodeData({ condition: !condition });
+		// Update condition and immediately route data based on new condition
+		const newCondition = !condition;
+		const currentData = (nodeData as FlowConditionalData).dataInput;
+		const hasExternalCondition = (nodeData as FlowConditionalData).conditionInput !== null;
+		
+		// Log for debugging
+		console.log(`FlowConditional toggle: ${condition} -> ${newCondition}`);
+		console.log(`Current data to route:`, currentData);
+		console.log(`Has external condition:`, hasExternalCondition);
+		
+		// Always update internal condition state
+		const updateData: Partial<FlowConditionalData> = {
+			condition: newCondition,
+		};
+		
+		// Only update outputs if we're not externally controlled
+		if (!hasExternalCondition) {
+			updateData.firstOutput = newCondition ? true : null;
+			updateData.secondOutput = newCondition ? null : false;
+			updateData.lastRoute = newCondition ? "true" : "false";
+		}
+		
+		// Update node data
+		updateNodeData(updateData);
 
 		// Visual feedback for click
 		setWasClicked(true);
 		setTimeout(() => setWasClicked(false), 300);
-	}, [condition, updateNodeData]);
+	}, [condition, nodeData, updateNodeData]);
 
 	/** Handle node click to toggle condition */
 	const handleNodeClick = useCallback(
@@ -370,15 +450,154 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 	useEffect(() => {
 		const dataInputVal = computeDataInput();
 		if (dataInputVal !== (nodeData as FlowConditionalData).dataInput) {
-			updateNodeData({ dataInput: dataInputVal });
+			console.log(`FlowConditional data input changed:`, {
+				previous: (nodeData as FlowConditionalData).dataInput,
+				new: dataInputVal
+			});
+			// Update data input only - routing will be handled by separate effect
+			updateNodeData({
+				dataInput: dataInputVal,
+			});
+			
+			// Force recomputation of outputs based on new input
+			const effectiveCondition = (nodeData as FlowConditionalData).conditionInput !== null
+				? (nodeData as FlowConditionalData).conditionInput
+				: (nodeData as FlowConditionalData).condition;
+				
+			// Only update outputs if node is active and enabled
+			if ((nodeData as FlowConditionalData).isActive && (nodeData as FlowConditionalData).isEnabled) {
+				console.log('Recomputing outputs after data input change:', {
+					effectiveCondition,
+					newDataInput: dataInputVal
+				});
+				
+				// Update outputs based on condition and input data
+				// When input is false, ensure output is updated to false
+				const updates = {
+					firstOutput: effectiveCondition ? (dataInputVal === false ? false : true) : null,
+					secondOutput: effectiveCondition ? null : (dataInputVal === false ? false : false),
+					lastRoute: effectiveCondition ? "true" : "false",
+				};
+				
+				console.log('Output updates for input:', {
+					dataInputVal,
+					effectiveCondition,
+					updates
+				});
+				
+				updateNodeData(updates);
+			}
 		}
 	}, [computeDataInput, nodeData, updateNodeData]);
+
+	/* 🔄 On every relevant change, propagate value (similar to triggerToggle). */
+	useEffect(() => {
+		// Get the current data input value
+		const dataInputVal = (nodeData as FlowConditionalData).dataInput;
+		
+		// Determine the effective condition (external or internal)
+		const effectiveCondition = (nodeData as FlowConditionalData).conditionInput !== null
+			? (nodeData as FlowConditionalData).conditionInput
+			: (nodeData as FlowConditionalData).condition;
+		
+		// When disabled, always output null regardless of condition
+		// When enabled, output based on the condition and data input
+		const outputValue = isEnabled ? dataInputVal : null;
+		
+		console.log('FlowConditional propagating value:', {
+			dataInputVal,
+			effectiveCondition,
+			isEnabled,
+			isActive,
+			outputValue
+		});
+		
+		// Use the propagate function to update outputs
+		// Handle null values by defaulting to false for the condition
+		propagate(outputValue, effectiveCondition ?? false);
+	}, [nodeData, isEnabled, isActive, propagate]);
+	
+	/* 🔄 Route data based on condition changes. */
+	useEffect(() => {
+		// Only route data when node is active and enabled
+		if (!isActive || !isEnabled) {
+			console.log(`FlowConditional inactive/disabled, clearing outputs`);
+			updateNodeData({
+				firstOutput: null,
+				secondOutput: null,
+				lastRoute: "none",
+			});
+			return;
+		}
+
+		// Get effective condition (external input takes precedence over internal state)
+		const effectiveCondition =
+			(nodeData as FlowConditionalData).conditionInput !== null
+				? (nodeData as FlowConditionalData).conditionInput
+				: condition;
+
+		// Get current data to route
+		const currentData = (nodeData as FlowConditionalData).dataInput;
+
+		// Log for debugging
+		console.log(`FlowConditional routing (BEFORE update):`, {
+			effectiveCondition,
+			currentData,
+			currentFirstOutput: (nodeData as FlowConditionalData).firstOutput,
+			currentSecondOutput: (nodeData as FlowConditionalData).secondOutput,
+			currentLastRoute: (nodeData as FlowConditionalData).lastRoute,
+			newFirstOutput: effectiveCondition ? true : null,
+			newSecondOutput: effectiveCondition ? null : false,
+			newLastRoute: effectiveCondition ? "true" : "false",
+		});
+
+		// Route boolean values based on condition and current data
+		const updates = {
+			firstOutput: effectiveCondition ? (currentData === false ? false : true) : null,
+			secondOutput: effectiveCondition ? null : (currentData === false ? false : false),
+			lastRoute: effectiveCondition ? "true" : "false",
+		};
+		
+		// Log what we're about to update
+		console.log(`FlowConditional updating with:`, {
+			effectiveCondition,
+			currentData,
+			updates
+		});
+		
+		// Apply the updates
+		updateNodeData(updates);
+		
+		// Use setTimeout to log after the React state update cycle
+		setTimeout(() => {
+			console.log(`FlowConditional after update:`, {
+				effectiveCondition,
+				currentData,
+				firstOutput: (nodeData as FlowConditionalData).firstOutput,
+				secondOutput: (nodeData as FlowConditionalData).secondOutput,
+				lastRoute: (nodeData as FlowConditionalData).lastRoute,
+				timeStamp: new Date().toISOString()
+			});
+		}, 0);
+		
+	}, [condition, nodeData, isActive, isEnabled, updateNodeData]);
 
 	/* 🔄 Whenever nodes/edges change, recompute condition input. */
 	useEffect(() => {
 		const conditionInputVal = computeConditionInput();
 		if (conditionInputVal !== (nodeData as FlowConditionalData).conditionInput) {
-			updateNodeData({ conditionInput: conditionInputVal });
+			// Get current data to route
+			const dataToRoute = (nodeData as FlowConditionalData).dataInput;
+
+			console.log(`FlowConditional condition input changed:`, conditionInputVal);
+			
+			// Update condition input and immediately route boolean values based on new condition
+			updateNodeData({
+				conditionInput: conditionInputVal,
+				firstOutput: conditionInputVal ? true : null,
+				secondOutput: conditionInputVal ? null : false,
+				lastRoute: conditionInputVal ? "true" : "false",
+			});
 		}
 	}, [computeConditionInput, nodeData, updateNodeData]);
 
@@ -417,17 +636,45 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 		// Get the data to route
 		const dataToRoute = (nodeData as FlowConditionalData).dataInput;
 
-		// Route the data based on condition
-		propagate(dataToRoute, currentCondition);
-		clearOutputsWhenInactive();
+		if (isActive && isEnabled) {
+			// Update refs for comparison in other effects
+			console.log('Updating FlowConditional refs:', {
+				currentCondition,
+				dataToRoute,
+				previousTrueRef: lastTrueOutputRef.current,
+				previousFalseRef: lastFalseOutputRef.current
+			});
+			
+			if (currentCondition) {
+				lastTrueOutputRef.current = true;
+				lastFalseOutputRef.current = null;
+			} else {
+				lastTrueOutputRef.current = null;
+				lastFalseOutputRef.current = false;
+			}
+
+			// Always update to ensure reactivity - output true/false values
+			updateNodeData({
+				firstOutput: currentCondition ? true : null,
+				secondOutput: currentCondition ? null : false,
+				lastRoute: currentCondition ? "true" : "false",
+			});
+		} else {
+			lastTrueOutputRef.current = null;
+			lastFalseOutputRef.current = null;
+			updateNodeData({
+				firstOutput: null,
+				secondOutput: null,
+				lastRoute: "none",
+			});
+		}
 	}, [
 		isActive,
 		isEnabled,
 		condition,
 		(nodeData as FlowConditionalData).dataInput,
 		(nodeData as FlowConditionalData).conditionInput,
-		propagate,
-		clearOutputsWhenInactive,
+		updateNodeData,
 	]);
 
 	// -------------------------------------------------------------------------
@@ -517,8 +764,9 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 								type="button"
 								onClick={handleConditionToggle}
 								className={`px-4 py-2 rounded-md ${condition ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}
+								title={`Condition is currently ${condition ? "TRUE" : "FALSE"}`}
 							>
-								{condition ? "TRUE" : "FALSE"}
+								{condition ? "ON" : "OFF"}
 							</button>
 
 							<div className="mt-4 text-sm">Active Route:</div>
@@ -555,7 +803,7 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 					ref={nodeRef}
 				>
 					<div className={CONTENT.route}>
-						{/* Condition indicator */}
+						{/* Condition indicator - removed T/F labels */}
 						<div
 							className={`text-center ${lastRoute === "true" ? CONTENT.trueRoute : lastRoute === "false" ? CONTENT.falseRoute : CONTENT.noRoute}`}
 							onClick={handleConditionToggle}
@@ -568,7 +816,7 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 							role="button"
 							aria-label="Toggle condition"
 						>
-							{lastRoute === "true" ? "T" : lastRoute === "false" ? "F" : "?"}
+							{/* Empty div - no text label */}
 						</div>
 
 						{/* Right arrow (true path) */}
