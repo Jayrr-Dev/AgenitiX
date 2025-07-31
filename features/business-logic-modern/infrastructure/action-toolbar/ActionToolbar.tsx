@@ -7,18 +7,20 @@
  * • Theme switcher for light/dark/system mode selection
  * • Environment detection for desktop vs browser features
  * • Now uses centralized component theming system
+ * • Delete and duplicate node buttons (only enabled when node selected)
  *
- * Keywords: toolbar, undo-redo, history, fullscreen, shortcuts, theming, theme-switcher
+ * Keywords: toolbar, undo-redo, history, fullscreen, shortcuts, theming, theme-switcher, node-actions
  */
 
 "use client";
 
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { History, Maximize, Minimize, RotateCcw, RotateCw } from "lucide-react";
+import { History, Maximize, Minimize, RotateCcw, RotateCw, Copy, Trash2 } from "lucide-react";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useComponentButtonClasses, useComponentClasses } from "../theming/components";
 import { useUndoRedo } from "./history/undo-redo-context";
+import { useFlowStore } from "../flow-engine/stores/flowStore";
 
 interface ActionToolbarProps {
 	showHistoryPanel: boolean;
@@ -42,6 +44,15 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 	const [isFullscreen, setIsFullscreen] = useState(false);
 	const [isBrowserEnvironment, setIsBrowserEnvironment] = useState(false);
 
+	// Flow store for node operations
+	const {
+		nodes,
+		selectedNodeId,
+		removeNode,
+		addNode,
+		selectNode,
+	} = useFlowStore();
+
 	// Get themed classes
 	const containerClasses = useComponentClasses(
 		"actionToolbar",
@@ -50,6 +61,39 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 	);
 	const buttonClasses = useComponentButtonClasses("actionToolbar", "ghost", "sm");
 	const activeButtonClasses = useComponentButtonClasses("actionToolbar", "primary", "sm");
+
+	// Node action handlers
+	const handleDeleteNode = useCallback(() => {
+		if (selectedNodeId) {
+			removeNode(selectedNodeId);
+		}
+	}, [selectedNodeId, removeNode]);
+
+	const handleDuplicateNode = useCallback(() => {
+		if (!selectedNodeId) return;
+
+		const nodeToDuplicate = nodes.find((n) => n.id === selectedNodeId);
+		if (!nodeToDuplicate) return;
+
+		// Create a new node with a unique ID and offset position
+		const newId = `${selectedNodeId}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+		const newNode = {
+			...nodeToDuplicate,
+			id: newId,
+			position: {
+				x: nodeToDuplicate.position.x + 40,
+				y: nodeToDuplicate.position.y + 40,
+			},
+			selected: false,
+			data: { ...nodeToDuplicate.data },
+		};
+
+		// Add the new node using the Zustand store
+		addNode(newNode);
+
+		// Select the new duplicated node
+		selectNode(newId);
+	}, [selectedNodeId, nodes, addNode, selectNode]);
 
 	// Detect if running in browser vs desktop/Electron app
 	useEffect(() => {
@@ -152,6 +196,31 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 			>
 				<History className="h-4 w-4" />
 			</button>
+
+			{/* NODE ACTION BUTTONS - Only enabled when node is selected */}
+			{selectedNodeId && (
+				<>
+					<div className="mx-1 h-6 w-px bg-[var(--infra-toolbar-border)]" />
+
+					<button
+						type="button"
+						onClick={handleDuplicateNode}
+						className={buttonClasses}
+						title="Duplicate Node"
+					>
+						<Copy className="h-4 w-4" />
+					</button>
+
+					<button
+						type="button"
+						onClick={handleDeleteNode}
+						className={buttonClasses}
+						title="Delete Node"
+					>
+						<Trash2 className="h-4 w-4" />
+					</button>
+				</>
+			)}
 
 			{/* FULLSCREEN BUTTON - Only show in browser environments */}
 			{isBrowserEnvironment && (

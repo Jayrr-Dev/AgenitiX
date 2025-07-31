@@ -19,7 +19,7 @@ import {
 	useNodeErrors,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import { getNodeOutput } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/outputUtils";
-import { ChevronDown, Copy, Edit3, PanelLeftClose, PanelLeftOpen, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, Edit3, PanelLeftClose, PanelLeftOpen, Settings, Trash2 } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
 import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
 
@@ -49,6 +49,8 @@ import NodeControlsCard from "./components/cards/NodeControls";
 import NodeHandlesCard from "./components/cards/NodeHandles";
 import NodeConnectionsCard from "./components/cards/NodeConnections";
 import { useInspectorState } from "./hooks/useInspectorState";
+import { useInspectorSettings } from "./hooks/useInspectorSettings";
+import { InspectorSettingsDropdown } from "./components/InspectorSettingsDropdown";
 
 // =====================================================================
 // STYLING CONSTANTS - Thin, minimalistic design with original colors
@@ -180,6 +182,16 @@ const NodeInspector = React.memo(function NodeInspector({
 		addNode,
 		selectNode,
 	} = useFlowStore();
+
+	// Settings management with persistence, basically card visibility controls
+	const { 
+		settings: cardVisibility, 
+		toggleSetting, 
+		resetToDefaults,
+		isLoaded: settingsLoaded 
+	} = useInspectorSettings();
+
+	// Settings management with persistence, basically card visibility controls
 
 	// Accordion state management
 	const [accordionState, setAccordionState] = useState({
@@ -416,6 +428,21 @@ const NodeInspector = React.memo(function NodeInspector({
 
 					{/* Right Header Section: Action Buttons */}
 					<div className={STYLING_CONTAINER_HEADER_RIGHT_SECTION}>
+						{/* Settings Button */}
+						<InspectorSettingsDropdown
+							settings={cardVisibility}
+							onToggleSetting={toggleSetting}
+							onResetToDefaults={resetToDefaults}
+						>
+							<button
+								type="button"
+								className={STYLING_BUTTON_LOCK_SMALL}
+								title="Inspector card visibility settings"
+							>
+								<Settings className={STYLING_ICON_ACTION_SMALL} />
+							</button>
+						</InspectorSettingsDropdown>
+
 						{/* Lock Button */}
 						<button
 							type="button"
@@ -523,21 +550,23 @@ const NodeInspector = React.memo(function NodeInspector({
 						}`}
 					>
 						{/* Node Metadata Card */}
-						<AccordionSection
-							title="Node Information"
-							isOpen={accordionState.nodeInfo}
-							onToggle={() => toggleAccordion("nodeInfo")}
-						>
-							<NodeInformation
-								selectedNode={selectedNode}
-								nodeInfo={nodeInfo}
-								updateNodeData={updateNodeData}
-								onUpdateNodeId={handleUpdateNodeId}
-							/>
-						</AccordionSection>
+						{cardVisibility.nodeInfo && (
+							<AccordionSection
+								title="Node Information"
+								isOpen={accordionState.nodeInfo}
+								onToggle={() => toggleAccordion("nodeInfo")}
+							>
+								<NodeInformation
+									selectedNode={selectedNode}
+									nodeInfo={nodeInfo}
+									updateNodeData={updateNodeData}
+									onUpdateNodeId={handleUpdateNodeId}
+								/>
+							</AccordionSection>
+						)}
 
 						{/* Node Description Card */}
-						{nodeInfo.description && (
+						{nodeInfo.description && cardVisibility.description && (
 							<AccordionSection
 								title="Description"
 								isOpen={accordionState.description}
@@ -551,20 +580,22 @@ const NodeInspector = React.memo(function NodeInspector({
 						)}
 
 						{/* Node Data Card */}
-						<AccordionSection
-							title="Node Data"
-							isOpen={accordionState.nodeData}
-							onToggle={() => toggleAccordion("nodeData")}
-						>
-							<NodeDataCard
-								selectedNode={selectedNode}
-								nodeInfo={nodeInfo}
-								updateNodeData={handleUpdateNodeData}
-							/>
-						</AccordionSection>
+						{cardVisibility.nodeData && (
+							<AccordionSection
+								title="Node Data"
+								isOpen={accordionState.nodeData}
+								onToggle={() => toggleAccordion("nodeData")}
+							>
+								<NodeDataCard
+									selectedNode={selectedNode}
+									nodeInfo={nodeInfo}
+									updateNodeData={handleUpdateNodeData}
+								/>
+							</AccordionSection>
+						)}
 
 						{/* Size Controls for nodes with size fields */}
-						{selectedNode.data && (selectedNode.data as any).expandedSize !== undefined && (
+						{selectedNode.data && (selectedNode.data as any).expandedSize !== undefined && cardVisibility.size && (
 							<AccordionSection
 								title="Size"
 								isOpen={accordionState.size}
@@ -582,7 +613,7 @@ const NodeInspector = React.memo(function NodeInspector({
 								viewMode === "side" ? "w-full space-y-4" : STYLING_CONTAINER_COLUMN_RIGHT
 							}`}
 						>
-							{(nodeConfig?.hasOutput || viewMode === "side") && (
+							{(nodeConfig?.hasOutput || viewMode === "side") && cardVisibility.output && (
 								<AccordionSection
 									title="Output"
 									isOpen={accordionState.output}
@@ -592,7 +623,7 @@ const NodeInspector = React.memo(function NodeInspector({
 								</AccordionSection>
 							)}
 
-							{(nodeInfo.hasControls || viewMode === "side") && (
+							{(nodeInfo.hasControls || viewMode === "side") && cardVisibility.controls && (
 								<AccordionSection
 									title="Controls"
 									isOpen={accordionState.controls}
@@ -607,36 +638,40 @@ const NodeInspector = React.memo(function NodeInspector({
 							)}
 
 							{/* Handles Card */}
-							<AccordionSection
-								title="Handles"
-								isOpen={accordionState.handles}
-								onToggle={() => toggleAccordion("handles")}
-							>
-								<NodeHandlesCard
-									selectedNode={selectedNode}
-									nodeInfo={nodeInfo}
-									edges={edges}
-									updateNodeData={updateNodeData}
-								/>
-							</AccordionSection>
+							{cardVisibility.handles && (
+								<AccordionSection
+									title="Handles"
+									isOpen={accordionState.handles}
+									onToggle={() => toggleAccordion("handles")}
+								>
+									<NodeHandlesCard
+										selectedNode={selectedNode}
+										nodeInfo={nodeInfo}
+										edges={edges}
+										updateNodeData={updateNodeData}
+									/>
+								</AccordionSection>
+							)}
 
 							{/* Connections Card */}
-							<AccordionSection
-								title="Connections"
-								isOpen={accordionState.connections}
-								onToggle={() => toggleAccordion("connections")}
-							>
-								<NodeConnectionsCard
-									selectedNode={selectedNode}
-									nodes={nodes}
-									edges={edges}
-								/>
-							</AccordionSection>
+							{cardVisibility.connections && (
+								<AccordionSection
+									title="Connections"
+									isOpen={accordionState.connections}
+									onToggle={() => toggleAccordion("connections")}
+								>
+									<NodeConnectionsCard
+										selectedNode={selectedNode}
+										nodes={nodes}
+										edges={edges}
+									/>
+								</AccordionSection>
+							)}
 						</div>
 					)}
 
 					{/* COLUMN 3: ERROR LOG (only show when there are errors) */}
-					{errors.length > 0 && (
+					{errors.length > 0 && cardVisibility.errors && (
 						<div
 							className={`${
 								viewMode === "side" ? "w-full space-y-4" : STYLING_CONTAINER_COLUMN_ERROR

@@ -135,7 +135,7 @@ const ButtonIconed = React.forwardRef<HTMLButtonElement, ButtonIconedProps>(
 		const responsivePadding = shouldHideText 
 			? "" 
 			: size === "xs" 
-				? "sm:px-3" 
+				? "sm:px-0" 
 				: size === "sm" 
 					? "sm:px-4" 
 					: size === "lg" 

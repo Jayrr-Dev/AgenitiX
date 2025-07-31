@@ -1704,6 +1704,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 											text="Reset"
 											variant="destructive"
 											size="xs"
+										
 											onClick={resetThread}
 											disabled={!isEnabled}
 										/>

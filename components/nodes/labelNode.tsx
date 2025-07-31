@@ -32,15 +32,9 @@ const LabelNode: React.FC<LabelNodeProps> = ({ nodeId, label, onEdit }) => {
 	const spanRef = useRef<HTMLSpanElement>(null);
 	const { setNodes } = useReactFlow();
 	const { resolvedTheme } = useTheme();
-	const [mounted, setMounted] = useState(false);
-
-	// Ensure client-side rendering to avoid hydration mismatch
-	useEffect(() => {
-		setMounted(true);
-	}, []);
 
 	// Get theme-aware label color
-	const isDarkMode = mounted && resolvedTheme === "dark";
+	const isDarkMode = resolvedTheme === "dark";
 	const labelColor = isDarkMode ? "var(--core-label-color)" : "var(--core-label-color)";
 
 	// Focus and select all text when entering edit mode
