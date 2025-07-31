@@ -9,6 +9,7 @@ import emailCreator from "../../../node-domain/email/emailCreator.node";
 import emailReader from "../../../node-domain/email/emailReader.node";
 import emailReplier from "../../../node-domain/email/emailReplier.node";
 import emailTemplate from "../../../node-domain/email/emailTemplate.node";
+import emailBrand from "../../../node-domain/email/emailBrand.node";
 // Import all available node components
 // This should be automatically updated when new nodes are created via Plop
 import flowConditional from "../../../node-domain/flow/flowConditional.node";
@@ -42,6 +43,7 @@ export function useDynamicNodeTypes() {
 			emailCreator,
 			emailReplier,
 			emailTemplate,
+			emailBrand,
 			viewText,
 		}),
 		[]
