@@ -333,7 +333,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 				label: "INITIAL",
 				before: currentState,
 				after: currentState,
-				createdAt: Date.now(),
+				createdAt: performance.now(),
 			};
 		}
 
@@ -391,6 +391,10 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 				return;
 			}
 
+			if (_areStatesEqual(cursorNode.after, nextState)) {
+				return;
+			}
+
 			const newNodeId = createChildNode(
 				graph,
 				graph.cursor,
@@ -430,7 +434,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 		saveGraph(newGraph, flowId);
 
 		lastCapturedStateRef.current = currentState;
-		lastActionTimestampRef.current = Date.now();
+		lastActionTimestampRef.current = performance.now();
 
 		const path = getPathToCursor(newGraph);
 		onHistoryChange?.(path, path.length - 1);
@@ -617,7 +621,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 					label: "INITIAL",
 					before: currentState,
 					after: currentState,
-					createdAt: Date.now(),
+					createdAt: performance.now(),
 				};
 				graph.nodes[graph.root] = rootNode;
 			}
@@ -682,7 +686,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 					label: "INITIAL",
 					before: currentState,
 					after: currentState,
-					createdAt: Date.now(),
+					createdAt: performance.now(),
 				};
 				graph.nodes[graph.root] = rootNode;
 			}
@@ -714,7 +718,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 		}
 
 		const currentState = captureCurrentState();
-		const timeSinceLastAction = Date.now() - lastActionTimestampRef.current;
+		const timeSinceLastAction = performance.now() - lastActionTimestampRef.current;
 
 		// Initialize if this is the first state
 		if (!lastCapturedStateRef.current) {
@@ -746,7 +750,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 			} else {
 				pendingPositionActionRef.current = {
 					movedNodes: new Set(nodePositionChanges.map((n) => n.id)),
-					startTime: Date.now(),
+					startTime: performance.now(),
 				};
 			}
 

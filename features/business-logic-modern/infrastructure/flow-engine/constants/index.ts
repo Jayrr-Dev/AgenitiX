@@ -116,7 +116,7 @@ export const INITIAL_EDGES: AgenEdge[] = [
 // ============================================================================
 
 export const KEYBOARD_SHORTCUTS = {
-	DELETE: ["Delete", "Backspace"],
+	DELETE: ["Delete"],
 	DUPLICATE: "d",
 	COPY: "c",
 	PASTE: "v",

@@ -513,6 +513,82 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 
 	const categoryStyles = CATEGORY_TEXT.AI;
 
+	// Memoized message processing - moved to top level to follow Rules of Hooks
+	const processedMessages = useMemo(() => {
+		// Only process if we have messages
+		if (threadMessages.length === 0) {
+			return null;
+		}
+
+		return threadMessages
+			.sort((a, b) => a._creationTime - b._creationTime)
+			.map((message, index) => {
+				// Determine if this is a user message or AI message
+				const isUserMessage = message.message?.role === "user" || 
+									message.message?.role === "human" ||
+									message.role === "user" ||
+									message.role === "human";
+				
+				// Extract content once and memoize
+				const messageContent = message.message?.content;
+				let displayContent = 'No content available';
+				
+				if (typeof messageContent === 'string') {
+					displayContent = messageContent;
+				} else if (typeof messageContent === 'object' && messageContent) {
+					if (typeof messageContent.text === 'string') {
+						displayContent = messageContent.text;
+					} else if (Array.isArray(messageContent) && messageContent.length > 0) {
+						displayContent = messageContent.map((item: any) => 
+							typeof item === 'string' ? item : item?.text || JSON.stringify(item)
+						).join(' ');
+					} else {
+						displayContent = JSON.stringify(messageContent);
+					}
+				} else {
+					displayContent = message.text || message.message?.text || 'No content available';
+				}
+				
+				return (
+					<div
+						key={`${message._id || `${isUserMessage ? "user" : "ai"}-${index}`}`}
+						className={`flex flex-col ${isUserMessage ? "items-start" : "items-end"}`}
+					>
+						{/* Message Label */}
+						<div className={`text-xs text-muted-foreground mb-1 px-2 ${
+							isUserMessage ? "text-left" : "text-right"
+						}`}>
+							{isUserMessage ? "You" : "AI"}
+						</div>
+						{/* Message Bubble */}
+						<div
+							className={`max-w-[85%] rounded-2xl px-3 py-1.5 text-[10px] ${
+								isUserMessage
+									? "bg-blue-500 text-white"
+									: "bg-gray-600 text-white"
+							}`}
+						>
+							<div className="whitespace-pre-wrap break-words">
+								{displayContent}
+							</div>
+							{message.timestamp && (
+								<div
+									className={`text-xs mt-1 opacity-70 ${
+										isUserMessage ? "text-blue-100" : "text-gray-300"
+									}`}
+								>
+									{new Date(message.timestamp).toLocaleTimeString([], {
+										hour: "2-digit",
+										minute: "2-digit",
+									})}
+								</div>
+							)}
+						</div>
+					</div>
+				);
+			});
+	}, [threadMessages]);
+
 	// -------------------------------------------------------------------------
 	// 4.3  Feature flag evaluation (after all hooks)
 	// -------------------------------------------------------------------------
@@ -831,18 +907,17 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 		});
 	}, [updateNodeData]);
 
-	/** View thread history */
+	/** View thread history - memoized to prevent unnecessary calls */
 	const viewThreadHistory = useCallback(async () => {
-		if (!threadId) {
-			return;
-		}
+		if (!threadId) return;
 
 		try {
-			const messages = await getThreadMessagesAction({
+			const result = await getThreadMessagesAction({
 				threadId,
 				limit: 50,
 			});
-			setThreadMessages(messages || []);
+			const messages = result?.page || result || [];
+			setThreadMessages(Array.isArray(messages) ? messages : []);
 			setShowHistoryModal(true);
 		} catch (error) {
 			console.error("Failed to get thread history:", error);
@@ -1353,89 +1428,39 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 	// -------------------------------------------------------------------------
 	return (
 		<>
-			{/* iMessage-style History Modal */}
-			{showHistoryModal && (
-				<div
-					className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-					onClick={() => setShowHistoryModal(false)}
-					onKeyDown={(e) => {
-						if (e.key === "Escape") {
-							setShowHistoryModal(false);
-						}
-					}}
-					tabIndex={0}
-					role="button"
-					aria-label="Close modal"
-				>
-					<div
-						className="bg-background rounded-lg shadow-xl w-96 max-w-[90vw] max-h-[80vh] overflow-hidden"
-						onClick={(e) => e.stopPropagation()}
-						onKeyDown={(e) => e.stopPropagation()}
-					>
-						{/* Modal Header */}
-						<div className="flex items-center justify-between p-4 border-b border-border">
-							<div className="flex items-center gap-2">
-								<span className="text-sm">{getProviderIcon()}</span>
-								<h3 className="font-medium text-sm">Conversation History</h3>
-							</div>
-							<button
-								type="button"
-								onClick={() => setShowHistoryModal(false)}
-								className="text-muted-foreground hover:text-foreground text-sm"
-							>
-								✕
-							</button>
-						</div>
-
-						{/* Chat Messages */}
-						<div className="p-4 overflow-y-auto max-h-96 space-y-3">
-							{threadMessages.length === 0 ? (
-								<div className="text-center text-muted-foreground text-sm py-8">
-									No messages in this conversation yet.
-								</div>
-							) : (
-								threadMessages.map((message, index) => (
-									<div
-										key={`${message.role}-${index}-${message.timestamp || Date.now()}`}
-										className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-									>
-										<div
-											className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${
-												message.role === "user"
-													? "bg-blue-500 text-white ml-8" // User messages (right, blue)
-													: "bg-muted text-foreground mr-8" // AI messages (left, gray)
-											}`}
-										>
-											<div className="whitespace-pre-wrap break-words">
-												{message.text || message.content || "No content"}
-											</div>
-											{message.timestamp && (
-												<div
-													className={`text-xs mt-1 opacity-70 ${
-														message.role === "user" ? "text-blue-100" : "text-muted-foreground"
-													}`}
-												>
-													{new Date(message.timestamp).toLocaleTimeString([], {
-														hour: "2-digit",
-														minute: "2-digit",
-													})}
-												</div>
-											)}
-										</div>
-									</div>
-								))
-							)}
-						</div>
-
-						{/* Modal Footer */}
-						<div className="p-4 border-t border-border bg-muted/30">
-							<div className="text-xs text-muted-foreground text-center">
-								Thread: {threadId?.substring(0, 12)}... • {threadMessages.length} messages
-							</div>
-						</div>
+					{/* History Side Panel */}
+		{showHistoryModal && (
+			<div 
+				className="absolute left-full top-0 ml-4 bg-background border border-border rounded-lg shadow-xl w-80 max-h-96 flex flex-col z-50"
+				style={{ minHeight: '300px' }}
+			>
+				{/* Panel Header */}
+				<div className="flex items-center justify-between p-3 border-b border-border">
+					<div className="flex items-center gap-2">
+						<span className="text-sm">{getProviderIcon()}</span>
+						<h3 className="font-medium text-sm">History</h3>
 					</div>
+					<button
+						type="button"
+						onClick={() => setShowHistoryModal(false)}
+						className="text-muted-foreground hover:text-foreground text-sm"
+					>
+						✕
+					</button>
 				</div>
-			)}
+
+				{/* Chat Messages */}
+				<div className="p-3 overflow-y-auto flex-1 space-y-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent nowheel">
+					{threadMessages.length === 0 ? (
+						<div className="text-center text-muted-foreground text-sm py-8">
+							No messages yet.
+						</div>
+					) : (
+						processedMessages
+					)}
+				</div>
+			</div>
+		)}
 			{/* Editable label or icon */}
 			{!isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60 ? (
 				<div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
@@ -1462,12 +1487,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 											</span>
 										);
 									})()}
-									{processingState === PROCESSING_STATE.PROCESSING && (
-										<div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
-									)}
-									{processingState === PROCESSING_STATE.ERROR && (
-										<span className="text-xs text-red-500">✗</span>
-									)}
+								
 								</div>
 								<select
 									value={selectedProvider}
@@ -1617,20 +1637,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 
 						{/* Status & Actions - Compact Row */}
 						<div className="flex items-center justify-between text-xs">
-							<div className="flex items-center gap-2">
-								{processingState === PROCESSING_STATE.IDLE && (
-									<span className="text-muted-foreground text-xs">Ready</span>
-								)}
-								{processingState === PROCESSING_STATE.PROCESSING && (
-									<span className="text-blue-500 text-xs">Processing...</span>
-								)}
-								{processingState === PROCESSING_STATE.SUCCESS && (
-									<span className="text-green-500 text-xs">Complete</span>
-								)}
-								{processingState === PROCESSING_STATE.ERROR && (
-									<span className="text-red-500 text-xs">Error</span>
-								)}
-							</div>
+							
 							<div className="flex items-center gap-2">
 								{processingState === PROCESSING_STATE.ERROR && (
 									<button
@@ -1653,7 +1660,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 										<button
 											type="button"
 											onClick={viewThreadHistory}
-											className="text-blue-500 hover:text-blue-700 underline text-xs"
+											className="px-2 py-0.5 bg-blue-500 hover:bg-blue-600 text-white text-[10px] rounded border border-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 											disabled={!isEnabled}
 										>
 											History
@@ -1661,7 +1668,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 										<button
 											type="button"
 											onClick={resetThread}
-											className="text-red-500 hover:text-red-700 underline text-xs"
+											className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white text-[10px] rounded border border-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 											disabled={!isEnabled}
 										>
 											Reset
@@ -1712,6 +1719,13 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 			<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
 		</>
 	);
+}, (prevProps, nextProps) => {
+	// Custom memo comparison - only re-render if essential props change
+	return (
+		prevProps.id === nextProps.id &&
+		prevProps.data === nextProps.data &&
+		prevProps.spec?.displayName === nextProps.spec?.displayName
+	);
 });
 
 // -----------------------------------------------------------------------------
@@ -1726,7 +1740,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
  * textarea loses focus).  We memoise the scaffolded component so its identity
  * stays stable across renders unless the *spec itself* really changes.
  */
-const AiAgentNodeWithDynamicSpec = (props: NodeProps) => {
+const AiAgentNodeWithDynamicSpec = memo((props: NodeProps) => {
 	const { nodeData } = useNodeData(props.id, props.data);
 
 	// Recompute spec only when the size keys change
@@ -1742,6 +1756,9 @@ const AiAgentNodeWithDynamicSpec = (props: NodeProps) => {
 	);
 
 	return <ScaffoldedNode {...props} />;
-};
+}, (prevProps, nextProps) => {
+	// Only re-render if node ID or data reference changes
+	return prevProps.id === nextProps.id && prevProps.data === nextProps.data;
+});
 
 export default AiAgentNodeWithDynamicSpec;

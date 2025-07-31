@@ -132,13 +132,21 @@ export function SearchBar({
 	// KEYBOARD EVENT HANDLING - Enter to exit, QWERTY shortcuts for results
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
+				// Detect if the user is actively typing inside an input, textarea, or contenteditable element.
+				const activeElement = document.activeElement as HTMLElement | null;
+				const isTypingInAnyInput =
+					activeElement &&
+					(activeElement.tagName === "INPUT" ||
+						activeElement.tagName === "TEXTAREA" ||
+						activeElement.getAttribute("contenteditable") === "true" ||
+						(activeElement as HTMLElement).contentEditable === "true");
 			// Only handle events when search is visible
 			if (!isVisible) {
 				return;
 			}
 
 			// PREVENT KEY REPEAT SPAM - Block browser key repeat events (EXCEPT Alt+Q for fast deletion)
-			if (e.repeat) {
+			if (e.repeat && !isTypingInAnyInput) {
 				const nodeCreationKeys = [
 					"q",
 					"w",
@@ -182,7 +190,7 @@ export function SearchBar({
 			const isAltQBackspace = e.altKey && currentKey === "q";
 
 			if (
-				!isAltQBackspace &&
+				!isTypingInAnyInput && !isAltQBackspace &&
 				lastKeyPress &&
 				lastKeyPress.key === currentKey &&
 				currentTime - lastKeyPress.timestamp < KEY_REPEAT_COOLDOWN
@@ -192,7 +200,7 @@ export function SearchBar({
 			}
 
 			// Only update throttling timestamp for non-Alt+Q keys
-			if (!isAltQBackspace) {
+			if (!isAltQBackspace && !isTypingInAnyInput) {
 				lastKeyPressRef.current = { key: currentKey, timestamp: currentTime };
 			}
 
@@ -215,14 +223,7 @@ export function SearchBar({
 			// Check if user is typing in the input field
 			const isTypingInInput = document.activeElement === inputRef.current;
 
-			// Also check if user is typing in ANY input field (text nodes, etc.)
-			const activeElement = document.activeElement;
-			const isTypingInAnyInput =
-				activeElement &&
-				(activeElement.tagName === "INPUT" ||
-					activeElement.tagName === "TEXTAREA" ||
-					activeElement.getAttribute("contenteditable") === "true" ||
-					(activeElement as HTMLElement).contentEditable === "true");
+			
 
 			if (isTypingInInput) {
 				// ENTER KEY - Exit search and return focus to main area

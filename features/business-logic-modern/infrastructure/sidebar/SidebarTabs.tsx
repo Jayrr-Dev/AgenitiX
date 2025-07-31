@@ -134,8 +134,16 @@ export function SidebarTabs({
 	// IMPROVED KEYBOARD SHORTCUTS
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
+				// Detect if the user is typing inside an input, textarea or contenteditable element.
+				const activeElement = document.activeElement as HTMLElement | null;
+				const isTypingInAnyInput =
+					activeElement &&
+					(activeElement.tagName === "INPUT" ||
+						activeElement.tagName === "TEXTAREA" ||
+						activeElement.getAttribute("contenteditable") === "true" ||
+						(activeElement as HTMLElement).contentEditable === "true");
 			// PREVENT BROWSER KEY REPEAT for node creation keys (except Alt+Q)
-			if (e.repeat) {
+			if (e.repeat && !isTypingInAnyInput) {
 				const nodeCreationKeys = [
 					"q",
 					"w",
@@ -172,18 +180,13 @@ export function SidebarTabs({
 			const currentKey = e.key.toLowerCase();
 			const isAltQBackspace = e.altKey && currentKey === "q";
 
-			if (!isAltQBackspace && isKeyThrottled(currentKey)) {
+			if (!isTypingInAnyInput && !isAltQBackspace && isKeyThrottled(currentKey)) {
 				e.preventDefault();
 				return;
 			}
 
 			// Check if user is typing in an input field
-			const activeElement = document.activeElement;
-			const isTyping =
-				activeElement &&
-				(activeElement.tagName === "INPUT" ||
-					activeElement.tagName === "TEXTAREA" ||
-					activeElement.getAttribute("contenteditable") === "true");
+			const isTyping = isTypingInAnyInput;
 
 			// If typing, only allow system shortcuts
 			if (isTyping && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
