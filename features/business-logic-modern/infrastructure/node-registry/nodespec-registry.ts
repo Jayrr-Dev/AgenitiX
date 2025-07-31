@@ -12,6 +12,7 @@ import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.n
 import { spec as emailCreatorSpec } from "../../node-domain/email/emailCreator.node";
 import { spec as emailReaderSpec } from "../../node-domain/email/emailReader.node";
 import { spec as emailReplierSpec } from "../../node-domain/email/emailReplier.node";
+import { spec as emailTemplateSpec } from "../../node-domain/email/emailTemplate.node";
 import { spec as flowConditionalSpec } from "../../node-domain/flow/flowConditional.node";
 import { spec as testNodeSpec } from "../../node-domain/test/testNode.node";
 import { spec as triggerPulseSpec } from "../../node-domain/trigger/triggerPulse.node";
@@ -33,6 +34,7 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	emailReader: emailReaderSpec,
 	emailCreator: emailCreatorSpec,
 	emailReplier: emailReplierSpec,
+	emailTemplate: emailTemplateSpec,
 	testNode: testNodeSpec,
 	triggerToggle: triggerToggleSpec,
 	viewText: viewTextSpec,
