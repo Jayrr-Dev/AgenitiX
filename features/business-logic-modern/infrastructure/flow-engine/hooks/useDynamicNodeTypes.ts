@@ -9,6 +9,7 @@ import storeInMemory from "../../../node-domain/create/storeInMemory.node";
 import emailAccount from "../../../node-domain/email/emailAccount.node";
 import emailCreator from "../../../node-domain/email/emailCreator.node";
 import emailReader from "../../../node-domain/email/emailReader.node";
+import emailSender from "../../../node-domain/email/emailSender.node";
 import testNode from "../../../node-domain/test/testNode.node";
 // Import all available node components
 // This should be automatically updated when new nodes are created via Plop
@@ -40,6 +41,7 @@ export function useDynamicNodeTypes() {
 			emailAccount,
 			emailReader,
 			emailCreator,
+			emailSender,
 			viewText,
 		}),
 		[]

@@ -33,6 +33,7 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	emailAccount: emailAccountSpec,
 	emailReader: emailReaderSpec,
 	emailCreator: emailCreatorSpec,
+	emailSender: emailSenderSpec,
 	testNode: testNodeSpec,
 	triggerToggle: triggerToggleSpec,
 	viewText: viewTextSpec,

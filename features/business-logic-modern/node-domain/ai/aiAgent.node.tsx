@@ -272,6 +272,11 @@ const extractCleanText = (value: unknown): string => {
 			if (typeof obj[field] === "string" && obj[field].trim()) {
 				let fieldText = obj[field].trim();
 
+				// Check for empty/null response specifically
+				if (field === "response" && (fieldText === "" || fieldText === "null" || fieldText === "undefined")) {
+					return "Error: No response received from AI. Please try again.";
+				}
+
 				// Handle meta-description in object fields too
 				if (fieldText.includes("Response:") && fieldText.includes("Based on your system")) {
 					const responseMatch = fieldText.match(/Response:\s*(.+?)(?:\s*\[|$)/);
@@ -1367,8 +1372,14 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 			// Processing completed successfully - extract clean text from store JSON
 			try {
 				const storeObj = JSON.parse(store);
-				// Try to get the response field first, then fallback to extractCleanText
-				outputValue = storeObj.response || extractCleanText(storeObj) || extractCleanText(store);
+				
+				// Check for null/empty response specifically
+				if (storeObj.response === "" || storeObj.response === null || storeObj.response === undefined) {
+					outputValue = "Error: No response received from AI. Please try again.";
+				} else {
+					// Try to get the response field first, then fallback to extractCleanText
+					outputValue = storeObj.response || extractCleanText(storeObj) || extractCleanText(store);
+				}
 			} catch {
 				// Fallback if store is not valid JSON
 				outputValue = extractCleanText(store);

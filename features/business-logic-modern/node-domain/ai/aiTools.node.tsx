@@ -101,12 +101,29 @@ const CONTENT = {
 // -----------------------------------------------------------------------------
 
 function createDynamicSpec(data: AiToolsData): NodeSpec {
+  // Calculate number of enabled tools
+  const enabledToolsCount = [data.calculator, data.webSearch].filter(Boolean).length;
+  
+  // Dynamic collapsed size based on tool count
+  let dynamicCollapsedSize: keyof typeof COLLAPSED_SIZES;
+  if (enabledToolsCount === 0) {
+    dynamicCollapsedSize = "C1"; // Default size when no tools
+  } else if (enabledToolsCount === 1) {
+    dynamicCollapsedSize = "C1"; // Compact for single tool
+  } else if (enabledToolsCount === 2) {
+    dynamicCollapsedSize = "C1W"; // Wide for two tools
+  } else if (enabledToolsCount >= 3) {
+    dynamicCollapsedSize = "C2"; // Large for 3+ tools
+  } else {
+    dynamicCollapsedSize = "C1"; // Fallback
+  }
+
   const expanded =
     EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
     EXPANDED_SIZES.VE2;
   const collapsed =
-    COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
-    COLLAPSED_SIZES.C2;
+    COLLAPSED_SIZES[dynamicCollapsedSize] ??
+    COLLAPSED_SIZES.C1;
 
   return {
     kind: "aiTools",
@@ -297,8 +314,8 @@ const AiToolsNode = memo(
 
     // If flag is loading, show loading state
     if (flagState.isLoading) {
-      // For small collapsed sizes (C1, C1W), hide text and center better
-      const isSmallNode = !isExpanded && (collapsedSize === "C1" || collapsedSize === "C1W");
+      // For small collapsed sizes (C1), hide text and center better
+      const isSmallNode = !isExpanded && spec.size.collapsed.width === 60;
       
       return (
         <Loading 
@@ -331,12 +348,8 @@ const AiToolsNode = memo(
       <>
         {/* Editable label or icon - hide labels when collapsed */}
         {!isExpanded ? (
-          // Show icon only when collapsed (no label)
-          collapsedSize === "C1" ? (
-            <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
-              {spec.icon && renderLucideIcon(spec.icon, "", 16)}
-            </div>
-          ) : null // No label or icon for C1W collapsed state
+          // No icon or label when collapsed - show only tool icons
+          null
         ) : (
           // Show full label when expanded
           <LabelNode nodeId={id} label={(nodeData as AiToolsData).label || spec.displayName} />
@@ -428,12 +441,13 @@ const AiToolsNode = memo(
 const AiToolsNodeWithDynamicSpec = (props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, props.data);
 
-  // Recompute spec only when the size keys change
+  // Recompute spec when tool selections change (for dynamic sizing)
   const dynamicSpec = useMemo(
     () => createDynamicSpec(nodeData as AiToolsData),
     [
       (nodeData as AiToolsData).expandedSize,
-      (nodeData as AiToolsData).collapsedSize,
+      (nodeData as AiToolsData).calculator,
+      (nodeData as AiToolsData).webSearch,
     ],
   );
 
