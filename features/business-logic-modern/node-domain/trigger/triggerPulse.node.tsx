@@ -45,14 +45,14 @@ import { useNodeData } from "@/hooks/useNodeData";
 
 export const TriggerPulseDataSchema = z
   .object({
-    store: z.boolean().default(false), // current pulse state (true during pulse)
-    pulseDuration: z.number().min(1).max(60000).default(1000), // pulse duration in ms (1ms to 60s)
+    store: z.boolean().default(true), // current pulse state (true during pulse)
+    pulseDuration: z.number().min(1).max(60000).default(400), // pulse duration in ms (1ms to 60s)
     isEnabled: SafeSchemas.boolean(true), // is pulse button interactive?
     isActive: SafeSchemas.boolean(false), // reflects store when enabled
     isExpanded: SafeSchemas.boolean(false), // inspector open?
-    isInverted: SafeSchemas.boolean(false), // inverts pulse behavior (true→false→true instead of false→true→false)
+    isInverted: SafeSchemas.boolean(true), // inverts pulse behavior (true→false→true instead of false→true→false)
     inputs: z.boolean().nullable().default(null), // last received input
-    outputs: z.boolean().default(false), // last emitted output
+    outputs: z.boolean().default(true), // last emitted output
     expandedSize: SafeSchemas.text("FE1"),
     collapsedSize: SafeSchemas.text("C1"),
     label: z.string().optional(), // User-editable node label
@@ -72,13 +72,17 @@ const validateNodeData = createNodeValidator(
 
 
 
+// Feature flag to control pulse button hover effects
+const ENABLE_PULSE_HOVER = false; // Set to true to enable hover effects
+
 const CONTENT = {
   expanded: "p-0 w-full h-full flex flex-col",
   collapsed: "flex items-center justify-center w-full h-full",
   header: "flex items-center justify-between mb-3",
   body: "flex-1 flex items-center justify-center",
-  pulse:
-    "relative w-12 h-12 rounded-full border-2 cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95",
+  pulse: ENABLE_PULSE_HOVER
+    ? "relative w-12 h-12 rounded-full border-2 cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
+    : "relative w-12 h-12 rounded-full border-2 cursor-pointer transition-all duration-200",
   pulsePulsing: "bg-green-500 border-green-600",
   pulseIdle: "bg-red-500 border-red-600",
   pulseDisabled: "bg-gray-400 border-gray-500 cursor-not-allowed opacity-50",
@@ -116,10 +120,11 @@ function createDynamicSpec(data: TriggerPulseData): NodeSpec {
     version: 1,
     runtime: { execute: "triggerPulse_execute_v1" },
     initialData: createSafeInitialData(TriggerPulseDataSchema, {
-      store: false,
-      pulseDuration: 1000,
+      store: true, // Set initial store to true for inverted logic
+      pulseDuration: 400,
       inputs: null,
-      outputs: false,
+      outputs: true, // Set initial output to true for inverted logic
+      isInverted: true, // Default to inverted logic
     }),
     dataSchema: TriggerPulseDataSchema,
     controls: {
@@ -221,6 +226,8 @@ const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
     }
   }, [store, isEnabled, isActive, updateNodeData]);
 
+
+
   /* 🔄 Make isEnabled dependent on input value only when there are connections. */
   useEffect(() => {
     const hasInput = (nodeData as TriggerPulseData).inputs;
@@ -233,6 +240,18 @@ const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
       }
     }
   }, [nodeData, isEnabled, updateNodeData]);
+
+  /* 🔄 Handle invert state change - reset to idle state */
+  useEffect(() => {
+    // When invert state changes, reset to the appropriate idle state
+    // Only do this if we're not currently in a pulse (no active timeout)
+    if (!pulseTimeoutRef.current) {
+      const expectedIdleState = isInverted;
+      if (store !== expectedIdleState) {
+        updateNodeData({ store: expectedIdleState });
+      }
+    }
+  }, [isInverted, store, updateNodeData]);
 
   /* 🔄 On every relevant change, propagate value. */
   useEffect(() => {

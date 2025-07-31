@@ -130,13 +130,16 @@ const NodeScaffoldWrapper = ({
 		pointerEvents: isDisabled ? "none" : "auto",
 	};
 
+	// Feature flag to control hover lift effect
+	const ENABLE_HOVER_LIFT = false; // Set to true to enable lift effect
+
 	return (
 		<div
 			className={structuralClasses}
 			style={completeStyle}
-			// Enhanced hover effects - only when not disabled, with dark mode support
+			// Enhanced hover effects - only when not disabled and feature flag is enabled
 			onMouseEnter={
-				isDisabled
+				isDisabled || !ENABLE_HOVER_LIFT
 					? undefined
 					: (e) => {
 							const target = e.currentTarget;
@@ -145,7 +148,7 @@ const NodeScaffoldWrapper = ({
 						}
 			}
 			onMouseLeave={
-				isDisabled
+				isDisabled || !ENABLE_HOVER_LIFT
 					? undefined
 					: (e) => {
 							const target = e.currentTarget;

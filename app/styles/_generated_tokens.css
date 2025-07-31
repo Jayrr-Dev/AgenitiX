@@ -64,10 +64,10 @@
   --node-global-modern-radius: 12px;
   --node-global-modern-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   --node-global-modern-glow: 0 0 24px rgba(255, 255, 255, 0.08);
-  --node-global-disabled-opacity: 0.6;
+  --node-global-disabled-opacity: 0.90;
   --node-global-disabled-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
   --node-global-disabled-gradient: linear-gradient(135deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.02) 100%);
-  --node-global-dark-border-glow: 0 0 8px rgba(255, 255, 255, 0.3);
+  --node-global-dark-border-glow: 0 0 4px rgba(255, 255, 255, 0.3);
   --node-create-bg: hsla(140, 80%, 40%, 1);
   --node-create-bg-gradient: linear-gradient(135deg, hsla(140, 80%, 45%, 1) 0%, hsla(140, 85%, 35%, 1) 100%);
   --node-create-border: hsla(140, 100%, 20%, 1);
