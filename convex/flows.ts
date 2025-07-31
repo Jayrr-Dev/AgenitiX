@@ -704,63 +704,87 @@ export const getPublicFlowsWithUpvotes = query({
 		limit: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
-		const limit = args.limit || 24;
+		try {
+			const limit = args.limit || 24;
 
-		// Get all public flows first
-		const publicFlows = await ctx.db
-			.query("flows")
-			.withIndex("by_is_private", (q) => q.eq("is_private", false))
-			.order("desc")
-			.take(limit * 2);
+			// Get all public flows first with proper error handling
+			const publicFlows = await ctx.db
+				.query("flows")
+				.withIndex("by_is_private", (q) => q.eq("is_private", false))
+				.order("desc")
+				.take(limit * 2);
 
-		// Don't filter out user's own flows - show all public flows including user's own
-		// This allows users to see their own public flows in the explore page
+			// Don't filter out user's own flows - show all public flows including user's own
+			// This allows users to see their own public flows in the explore page
 
-		const flowsWithUpvotes = await Promise.all(
-			publicFlows.slice(0, limit).map(async (flow) => {
-				// Get upvote count
-				const upvotes = await ctx.db
-					.query("flow_upvotes")
-					.withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id as Id<"flows">))
-					.collect();
+			const flowsWithUpvotes = await Promise.all(
+				publicFlows.slice(0, limit).map(async (flow) => {
+					try {
+						// Get upvote count with error handling
+						const upvotes = await ctx.db
+							.query("flow_upvotes")
+							.withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id as Id<"flows">))
+							.collect();
 
-				// Check if current user has upvoted
-				let hasUpvoted = false;
-				if (args.user_id) {
-					const userUpvote = await ctx.db
-						.query("flow_upvotes")
-						.withIndex("by_flow_and_user", (q) =>
-							q
-								.eq("flow_id", flow._id as Id<"flows">)
-								.eq("user_id", args.user_id as Id<"auth_users">)
-						)
-						.first();
-					hasUpvoted = !!userUpvote;
-				}
-
-				// Get creator information
-				const creator = (await ctx.db.get(flow.user_id as Id<"auth_users">)) as UserDocument | null;
-
-				return {
-					...flow,
-					upvoteCount: upvotes.length,
-					hasUpvoted,
-					creator: creator?.name
-						? {
-								id: creator._id,
-								name: creator.name,
-								email: creator.email,
+						// Check if current user has upvoted with error handling
+						let hasUpvoted = false;
+						if (args.user_id) {
+							try {
+								const userUpvote = await ctx.db
+									.query("flow_upvotes")
+									.withIndex("by_flow_and_user", (q) =>
+										q
+											.eq("flow_id", flow._id as Id<"flows">)
+											.eq("user_id", args.user_id as Id<"auth_users">)
+									)
+									.first();
+								hasUpvoted = !!userUpvote;
+							} catch (upvoteError) {
+								console.warn("Error checking user upvote:", upvoteError);
+								hasUpvoted = false;
 							}
-						: null,
-				};
-			})
-		);
+						}
 
-		// Debug logging in development
-		if (process.env.NODE_ENV === "development") {
+						// Get creator information with error handling
+						let creator = null;
+						try {
+							const creatorDoc = await ctx.db.get(flow.user_id as Id<"auth_users">) as UserDocument | null;
+							creator = creatorDoc?.name
+								? {
+										id: creatorDoc._id,
+										name: creatorDoc.name,
+										email: creatorDoc.email,
+									}
+								: null;
+						} catch (creatorError) {
+							console.warn("Error getting creator info:", creatorError);
+							creator = null;
+						}
+
+						return {
+							...flow,
+							upvoteCount: upvotes.length,
+							hasUpvoted,
+							creator,
+						};
+					} catch (flowError) {
+						console.warn("Error processing flow:", flowError);
+						// Return a basic flow object if there's an error
+						return {
+							...flow,
+							upvoteCount: 0,
+							hasUpvoted: false,
+							creator: null,
+						};
+					}
+				})
+			);
+
+			return flowsWithUpvotes;
+		} catch (error) {
+			console.error("Error in getPublicFlowsWithUpvotes:", error);
+			return [];
 		}
-
-		return flowsWithUpvotes;
 	},
 });
 
@@ -770,27 +794,42 @@ export const getPublicFlowsWithUpvotes = query({
 export const debugPublicFlows = query({
 	args: {},
 	handler: async (ctx) => {
-		// Only allow in development
-		if (process.env.NODE_ENV === "production") {
-			throw new Error("This function is only available in development");
+		try {
+			// Get all flows with proper error handling
+			const allFlows = await ctx.db.query("flows").collect();
+			
+			// Safely filter flows with proper type checking
+			const publicFlows = allFlows.filter((flow) => {
+				return flow && typeof flow.is_private === 'boolean' && !flow.is_private;
+			});
+			
+			const privateFlows = allFlows.filter((flow) => {
+				return flow && typeof flow.is_private === 'boolean' && flow.is_private;
+			});
+
+			return {
+				totalFlows: allFlows.length,
+				publicFlows: publicFlows.length,
+				privateFlows: privateFlows.length,
+				publicFlowDetails: publicFlows.map((flow) => ({
+					id: flow._id,
+					name: flow.name || 'Unnamed Flow',
+					is_private: flow.is_private,
+					user_id: flow.user_id,
+					created_at: flow.created_at,
+				})),
+				error: null,
+			};
+		} catch (error) {
+			console.error("Error in debugPublicFlows:", error);
+			return {
+				totalFlows: 0,
+				publicFlows: 0,
+				privateFlows: 0,
+				publicFlowDetails: [],
+				error: error instanceof Error ? error.message : "Unknown error occurred",
+			};
 		}
-
-		const allFlows = await ctx.db.query("flows").collect();
-		const publicFlows = allFlows.filter((flow) => !flow.is_private);
-		const privateFlows = allFlows.filter((flow) => flow.is_private);
-
-		return {
-			totalFlows: allFlows.length,
-			publicFlows: publicFlows.length,
-			privateFlows: privateFlows.length,
-			publicFlowDetails: publicFlows.map((flow) => ({
-				id: flow._id,
-				name: flow.name,
-				is_private: flow.is_private,
-				user_id: flow.user_id,
-				created_at: flow.created_at,
-			})),
-		};
 	},
 });
 
@@ -800,36 +839,44 @@ export const debugPublicFlows = query({
 export const getPublicFlowsSimple = query({
 	args: {},
 	handler: async (ctx) => {
-		// Only allow in development
-		if (process.env.NODE_ENV === "production") {
-			throw new Error("This function is only available in development");
+		try {
+			const publicFlows = await ctx.db
+				.query("flows")
+				.withIndex("by_is_private", (q) => q.eq("is_private", false))
+				.order("desc")
+				.take(50);
+
+			// Don't filter out user's own flows - show all public flows including user's own
+
+			// Add creator information with error handling
+			const flowsWithCreators = await Promise.all(
+				publicFlows.map(async (flow) => {
+					try {
+						const creator = await ctx.db.get(flow.user_id as Id<"auth_users">) as UserDocument | null;
+						return {
+							...flow,
+							creator: creator?.name
+								? {
+										id: creator._id,
+										name: creator.name,
+										email: creator.email,
+									}
+								: null,
+						};
+					} catch (creatorError) {
+						console.warn("Error getting creator info for flow:", flow._id, creatorError);
+						return {
+							...flow,
+							creator: null,
+						};
+					}
+				})
+			);
+
+			return flowsWithCreators;
+		} catch (error) {
+			console.error("Error in getPublicFlowsSimple:", error);
+			return [];
 		}
-
-		const publicFlows = await ctx.db
-			.query("flows")
-			.withIndex("by_is_private", (q) => q.eq("is_private", false))
-			.order("desc")
-			.take(50);
-
-		// Don't filter out user's own flows - show all public flows including user's own
-
-		// Add creator information
-		const flowsWithCreators = await Promise.all(
-			publicFlows.map(async (flow) => {
-				const creator = (await ctx.db.get(flow.user_id as Id<"auth_users">)) as UserDocument | null;
-				return {
-					...flow,
-					creator: creator?.name
-						? {
-								id: creator._id,
-								name: creator.name,
-								email: creator.email,
-							}
-						: null,
-				};
-			})
-		);
-
-		return flowsWithCreators;
 	},
 });

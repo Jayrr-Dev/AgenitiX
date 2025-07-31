@@ -99,19 +99,28 @@ interface FlowType {
  * Sorts flows based on the specified criteria
  */
 const sortFlows = (flows: FlowType[], sortBy: string) => {
-	return [...flows].sort((a, b) => {
-		if (sortBy === "popular") {
-			return (b.upvoteCount || 0) - (a.upvoteCount || 0);
-		}
-		if (sortBy === "name") {
-			return a.name.localeCompare(b.name);
-		}
-		if (sortBy === "created") {
-			return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-		}
-		// Default: recent
-		return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-	});
+	try {
+		return [...flows].sort((a, b) => {
+			if (sortBy === "popular") {
+				return (b.upvoteCount || 0) - (a.upvoteCount || 0);
+			}
+			if (sortBy === "name") {
+				return (a.name || "").localeCompare(b.name || "");
+			}
+			if (sortBy === "created") {
+				const dateA = new Date(a.created_at || 0).getTime();
+				const dateB = new Date(b.created_at || 0).getTime();
+				return dateB - dateA;
+			}
+			// Default: recent
+			const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+			const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+			return dateB - dateA;
+		});
+	} catch (error) {
+		console.warn("Error sorting flows:", error);
+		return flows;
+	}
 };
 
 const ExplorePage = () => {
@@ -129,12 +138,6 @@ const ExplorePage = () => {
 		user_id: user?.id,
 		limit: ITEMS_PER_PAGE * 3, // Fetch more for client-side filtering
 	});
-
-	// Debug query to check all flows
-	const debugInfo = useQuery(api.flows.debugPublicFlows, {});
-
-	// Test simple query
-	const simpleFlows = useQuery(api.flows.getPublicFlowsSimple, {});
 
 	// Upvote mutation
 	const toggleUpvote = useMutation(api.flows.toggleFlowUpvote);
@@ -199,79 +202,97 @@ const ExplorePage = () => {
 			return null;
 		}
 
-		const iconCategories: Record<string, string> = {
-			// Popular icons
-			zap: "Popular",
-			bot: "Popular",
-			activity: "Popular",
-			code: "Popular",
+		try {
+			const iconCategories: Record<string, string> = {
+				// Popular icons
+				zap: "Popular",
+				bot: "Popular",
+				activity: "Popular",
+				code: "Popular",
 
-			// Business icons
-			briefcase: "Business",
-			trending: "Business",
-			barChart: "Business",
-			pieChart: "Business",
+				// Business icons
+				briefcase: "Business",
+				trending: "Business",
+				barChart: "Business",
+				pieChart: "Business",
 
-			// Social icons
-			users: "Social",
-			user: "Social",
-			heart: "Social",
-			messageSquare: "Social",
+				// Social icons
+				users: "Social",
+				user: "Social",
+				heart: "Social",
+				messageSquare: "Social",
 
-			// Data icons
-			database: "Data",
-			server: "Data",
-			hardDrive: "Data",
-			cloud: "Data",
+				// Data icons
+				database: "Data",
+				server: "Data",
+				hardDrive: "Data",
+				cloud: "Data",
 
-			// Tech icons
-			cpu: "Tech",
-			smartphone: "Tech",
-			monitor: "Tech",
-			terminal: "Tech",
+				// Tech icons
+				cpu: "Tech",
+				smartphone: "Tech",
+				monitor: "Tech",
+				terminal: "Tech",
 
-			// Tools icons
-			settings: "Tools",
-			wrench: "Tools",
-			tool: "Tools",
-			hammer: "Tools",
+				// Tools icons
+				settings: "Tools",
+				wrench: "Tools",
+				tool: "Tools",
+				hammer: "Tools",
 
-			// Media icons
-			image: "Media",
-			video: "Media",
-			music: "Media",
-			file: "Media",
+				// Media icons
+				image: "Media",
+				video: "Media",
+				music: "Media",
+				file: "Media",
 
-			// Navigate icons
-			globe: "Navigate",
-			map: "Navigate",
-			compass: "Navigate",
-			flag: "Navigate",
-		};
+				// Navigate icons
+				globe: "Navigate",
+				map: "Navigate",
+				compass: "Navigate",
+				flag: "Navigate",
+			};
 
-		return iconCategories[iconName] || "Other";
+			return iconCategories[iconName] || "Other";
+		} catch (error) {
+			return "Other";
+		}
 	}, []);
 
 	// Process and filter flows
 	const processedFlows = useMemo(() => {
-		if (!publicFlows) {
+		if (!publicFlows || publicFlows === null) {
 			return [];
 		}
 
-		// Apply filtering
-		let filtered = publicFlows.filter((flow) => {
-			const matchesSearch =
-				flow.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-				flow.description?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-				getIconCategory(flow.icon)?.toLowerCase().includes(debouncedSearch.toLowerCase());
+		try {
+			// Apply filtering
+			let filtered = publicFlows.filter((flow) => {
+				if (!flow || !flow.name) {
+					return false;
+				}
 
-			return matchesSearch;
-		});
+				const searchLower = debouncedSearch.toLowerCase();
+				const nameLower = (flow.name || "").toLowerCase();
+				const descriptionLower = (flow.description || "").toLowerCase();
+				const categoryLower = (getIconCategory(flow.icon) || "").toLowerCase();
 
-		// Apply sorting
-		filtered = sortFlows(filtered, sortBy);
+				const matchesSearch =
+					nameLower.includes(searchLower) ||
+					descriptionLower.includes(searchLower) ||
+					categoryLower.includes(searchLower);
 
-		return filtered;
+				return matchesSearch;
+			});
+
+			// Apply sorting
+			filtered = sortFlows(filtered, sortBy);
+
+			return filtered;
+		} catch (error) {
+			console.warn("Error processing flows:", error);
+			return [];
+		}
 	}, [publicFlows, debouncedSearch, sortBy, getIconCategory]);
 
 	const totalFlows = processedFlows.length;
@@ -281,8 +302,8 @@ const ExplorePage = () => {
 		return <Loading />;
 	}
 
-	// Error state
-	if (publicFlows === null) {
+	// Error state - handle both null and empty array cases
+	if (publicFlows === null || (Array.isArray(publicFlows) && publicFlows.length === 0 && !authLoading)) {
 		return (
 			<div className="py-16 text-center">
 				<div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
@@ -300,16 +321,28 @@ const ExplorePage = () => {
 	}
 
 	const getIconComponent = (iconName: string) => {
-		const IconComponent = ICON_MAP[iconName as keyof typeof ICON_MAP] || Zap;
-		return <IconComponent className="h-5 w-5" />;
+		try {
+			const IconComponent = ICON_MAP[iconName as keyof typeof ICON_MAP] || Zap;
+			return <IconComponent className="h-5 w-5" />;
+		} catch (error) {
+			return <Zap className="h-5 w-5" />;
+		}
 	};
 
 	const formatDate = (dateString: string) => {
-		return new Date(dateString).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
-		});
+		try {
+			const date = new Date(dateString);
+			if (isNaN(date.getTime())) {
+				return "Unknown date";
+			}
+			return date.toLocaleDateString("en-US", {
+				year: "numeric",
+				month: "short",
+				day: "numeric",
+			});
+		} catch (error) {
+			return "Unknown date";
+		}
 	};
 
 	return (
@@ -325,14 +358,7 @@ const ExplorePage = () => {
 									Discover {totalFlows.toLocaleString()}+ public automation workflows from the
 									community
 								</p>
-								{/* Debug info */}
-								{debugInfo && (
-									<div className="mt-2 text-muted-foreground text-xs">
-										Debug: {debugInfo.totalFlows} total, {debugInfo.publicFlows} public,{" "}
-										{debugInfo.privateFlows} private
-										{simpleFlows && ` | Simple query: ${simpleFlows.length} flows`}
-									</div>
-								)}
+								{/* Removed debug info as per edit hint */}
 							</div>
 							<div className="flex items-center gap-2">
 								<Link href="/dashboard">
@@ -388,14 +414,20 @@ const ExplorePage = () => {
 					className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
 					style={{ gridAutoRows: "1fr" }}
 				>
-					{processedFlows.map((flow) => (
-						<Card
-							key={flow._id}
-							className="group flex aspect-square flex-col border border-transparent bg-fill-border shadow-sm transition-all duration-300 hover:animate-fill-transparency dark:shadow-white/5"
-							style={{
-								backgroundColor: "light-dark(#f5f5f5, var(--fill-border-color, #1a1a1a))",
-							}}
-						>
+					{processedFlows.map((flow) => {
+						// Safety check for flow data
+						if (!flow || !flow._id) {
+							return null;
+						}
+						
+						return (
+							<Card
+								key={flow._id}
+								className="group flex aspect-square flex-col border border-transparent bg-fill-border shadow-sm transition-all duration-300 hover:animate-fill-transparency dark:shadow-white/5"
+								style={{
+									backgroundColor: "light-dark(#f5f5f5, var(--fill-border-color, #1a1a1a))",
+								}}
+							>
 							<CardHeader className="pb-3">
 								{/* Header with Icon and Creator */}
 								<div className="flex items-start justify-between">
@@ -405,7 +437,7 @@ const ExplorePage = () => {
 										</div>
 										<div className="min-w-0 flex-1">
 											<h3 className="whitespace-normal break-words font-semibold text-foreground text-lg">
-												{flow.name}
+												{flow.name || "Unnamed Flow"}
 											</h3>
 											{flow.creator ? (
 												<p className="mt-1 text-muted-foreground text-sm">
@@ -441,7 +473,7 @@ const ExplorePage = () => {
 									<div className="flex items-center gap-1">
 										<Calendar className="h-3 w-3 text-muted-foreground" />
 										<span className="text-muted-foreground text-xs">
-											Updated {formatDate(flow.updated_at)}
+											Updated {formatDate(flow.updated_at || flow.created_at || new Date().toISOString())}
 										</span>
 									</div>
 									<div className="flex items-center gap-1">
@@ -485,11 +517,12 @@ const ExplorePage = () => {
 								</div>
 							</CardContent>
 						</Card>
-					))}
+					);
+				})}
 				</div>
 
 				{/* Enhanced Empty States */}
-				{publicFlows && publicFlows.length === 0 ? (
+				{publicFlows && Array.isArray(publicFlows) && publicFlows.length === 0 ? (
 					<div className="py-16 text-center">
 						<div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
 							<Globe className="h-12 w-12 text-muted-foreground" />
