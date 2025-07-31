@@ -413,7 +413,7 @@ export function SearchBar({
 		>
 			{/* Search Header */}
 			<div
-				className={`flex items-center gap-2 px-7 pt-3 ${theme.border.default} flex-shrink-0 border-b`}
+				className={`flex items-center gap-2 px-7 pt-3 ${theme.border.default} flex-shrink-0 `}
 			>
 				<div className="relative flex-1">
 					<Search
@@ -474,7 +474,7 @@ export function SearchBar({
 				)}
 
 				{filteredStencils.length > 0 ? (
-					<div className="flex-1 border-l-[1px] px-6 outline-none">
+					<div className="flex-1  px-6 outline-none">
 						<StencilGrid
 							stencils={filteredStencils}
 							setStencils={() => {}} // Read-only for search results

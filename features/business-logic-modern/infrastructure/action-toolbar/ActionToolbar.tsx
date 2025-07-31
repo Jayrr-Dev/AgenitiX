@@ -166,6 +166,31 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 
 	return (
 		<div className={containerClasses}>
+			{/* NODE ACTION BUTTONS - Moved to far left, only enabled when node is selected */}
+			{selectedNodeId && (
+				<>
+					<button
+						type="button"
+						onClick={handleDuplicateNode}
+						className={buttonClasses}
+						title="Duplicate Node"
+					>
+						<Copy className="h-4 w-4" />
+					</button>
+
+					<button
+						type="button"
+						onClick={handleDeleteNode}
+						className={buttonClasses}
+						title="Delete Node"
+					>
+						<Trash2 className="h-4 w-4" />
+					</button>
+
+					<div className="mx-1 h-6 w-px bg-[var(--infra-toolbar-border)]" />
+				</>
+			)}
+
 			<button
 				type="button"
 				onClick={() => undo()}
@@ -196,31 +221,6 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 			>
 				<History className="h-4 w-4" />
 			</button>
-
-			{/* NODE ACTION BUTTONS - Only enabled when node is selected */}
-			{selectedNodeId && (
-				<>
-					<div className="mx-1 h-6 w-px bg-[var(--infra-toolbar-border)]" />
-
-					<button
-						type="button"
-						onClick={handleDuplicateNode}
-						className={buttonClasses}
-						title="Duplicate Node"
-					>
-						<Copy className="h-4 w-4" />
-					</button>
-
-					<button
-						type="button"
-						onClick={handleDeleteNode}
-						className={buttonClasses}
-						title="Delete Node"
-					>
-						<Trash2 className="h-4 w-4" />
-					</button>
-				</>
-			)}
 
 			{/* FULLSCREEN BUTTON - Only show in browser environments */}
 			{isBrowserEnvironment && (

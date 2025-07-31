@@ -192,9 +192,9 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className="max-h-[80vh] max-w-2xl border-modal bg-modal p-0">
+			<DialogContent className="max-h-[80vh]  max-w-2xl p-0">
 				{/* Header */}
-				<div className="flex items-center gap-3 border-modal border-b p-4">
+				<div className="flex items-center  gap-3  p-4">
 					<Search className="h-5 w-5 text-modal-secondary" />
 					<Input
 						placeholder="Search for nodes..."

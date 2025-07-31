@@ -99,13 +99,6 @@ function createDynamicSpec(data: CreateTextData): NodeSpec {
 		size: { expanded, collapsed },
 		handles: [
 			{
-				id: "json-input",
-				code: "j",
-				position: "top",
-				type: "target",
-				dataType: "JSON",
-			},
-			{
 				id: "output",
 				code: "s",
 				position: "right",

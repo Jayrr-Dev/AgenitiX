@@ -35,6 +35,13 @@ export interface InspectorSettings {
 	size: boolean;
 }
 
+// Card order type for drag-and-drop functionality
+export type CardType = keyof InspectorSettings;
+
+export interface InspectorSettingsWithOrder extends InspectorSettings {
+	cardOrder: CardType[];
+}
+
 // ============================================================================
 // DEFAULT SETTINGS
 // ============================================================================
@@ -50,6 +57,23 @@ const DEFAULT_SETTINGS: InspectorSettings = {
 	size: false,
 };
 
+// Default card order, basically the initial layout sequence
+const DEFAULT_CARD_ORDER: CardType[] = [
+	'nodeInfo',
+	'nodeData',
+	'output',
+	'controls',
+	'handles',
+	'connections',
+	'size',
+	'errors'
+];
+
+const DEFAULT_SETTINGS_WITH_ORDER: InspectorSettingsWithOrder = {
+	...DEFAULT_SETTINGS,
+	cardOrder: DEFAULT_CARD_ORDER,
+};
+
 // ============================================================================
 // STORAGE UTILITIES
 // ============================================================================
@@ -57,9 +81,9 @@ const DEFAULT_SETTINGS: InspectorSettings = {
 /**
  * Safely loads settings from localStorage with fallback, basically loads user preferences from browser storage
  */
-const loadSettingsFromStorage = (userId?: string): InspectorSettings => {
+const loadSettingsFromStorage = (userId?: string): InspectorSettingsWithOrder => {
 	if (typeof window === "undefined") {
-		return DEFAULT_SETTINGS;
+		return DEFAULT_SETTINGS_WITH_ORDER;
 	}
 
 	// Generate user-specific storage key, basically create unique key per user
@@ -70,26 +94,40 @@ const loadSettingsFromStorage = (userId?: string): InspectorSettings => {
 	try {
 		const stored = localStorage.getItem(storageKey);
 		if (!stored) {
-			return DEFAULT_SETTINGS;
+			return DEFAULT_SETTINGS_WITH_ORDER;
 		}
 
-		const parsed = JSON.parse(stored) as Partial<InspectorSettings>;
+		const parsed = JSON.parse(stored) as Partial<InspectorSettingsWithOrder>;
 		
 		// Merge with defaults to ensure all properties exist, basically fill in missing settings
-		return {
-			...DEFAULT_SETTINGS,
+		const merged: InspectorSettingsWithOrder = {
+			...DEFAULT_SETTINGS_WITH_ORDER,
 			...parsed,
 		};
+
+		// Ensure card order includes all possible cards, basically validate and fix order array
+		const validCardOrder = DEFAULT_CARD_ORDER.filter(cardType => 
+			merged.cardOrder?.includes(cardType)
+		);
+		
+		// Add any missing cards to the end, basically append new cards that weren't in saved order
+		const missingCards = DEFAULT_CARD_ORDER.filter(cardType => 
+			!merged.cardOrder?.includes(cardType)
+		);
+		
+		merged.cardOrder = [...validCardOrder, ...missingCards];
+		
+		return merged;
 	} catch (error) {
 		console.warn("Failed to load inspector settings from localStorage:", error);
-		return DEFAULT_SETTINGS;
+		return DEFAULT_SETTINGS_WITH_ORDER;
 	}
 };
 
 /**
  * Safely saves settings to localStorage, basically persists user preferences to browser storage
  */
-const saveSettingsToStorage = (settings: InspectorSettings, userId?: string): void => {
+const saveSettingsToStorage = (settings: InspectorSettingsWithOrder, userId?: string): void => {
 	if (typeof window === "undefined") {
 		return;
 	}
@@ -111,14 +149,14 @@ const saveSettingsToStorage = (settings: InspectorSettings, userId?: string): vo
 // ============================================================================
 
 /**
- * Hook for managing persistent inspector card visibility settings
+ * Hook for managing persistent inspector card visibility settings and order
  */
 export function useInspectorSettings() {
 	// Get authenticated user for user-specific settings, basically access current user
 	const { user } = useAuthContext();
 	
 	// Initialize with defaults for SSR safety, basically start with safe values
-	const [settings, setSettings] = useState<InspectorSettings>(DEFAULT_SETTINGS);
+	const [settings, setSettings] = useState<InspectorSettingsWithOrder>(DEFAULT_SETTINGS_WITH_ORDER);
 	const [isLoaded, setIsLoaded] = useState(false);
 
 	// Hydrate from localStorage after component mounts, basically load saved settings on first render
@@ -143,20 +181,47 @@ export function useInspectorSettings() {
 		}));
 	};
 
-	// Reset to defaults function, basically restore original visibility settings
+	// Update card order function, basically rearrange cards in inspector
+	const updateCardOrder = (newOrder: CardType[]): void => {
+		setSettings(prev => ({
+			...prev,
+			cardOrder: newOrder,
+		}));
+	};
+
+	// Reset to defaults function, basically restore original visibility settings and order
 	const resetToDefaults = (): void => {
-		setSettings(DEFAULT_SETTINGS);
+		setSettings(DEFAULT_SETTINGS_WITH_ORDER);
 	};
 
 	// Check if all settings are enabled, basically determine if all cards are visible
-	const allEnabled = Object.values(settings).every(Boolean);
+	const allEnabled = Object.values({
+		nodeInfo: settings.nodeInfo,
+		nodeData: settings.nodeData,
+		output: settings.output,
+		controls: settings.controls,
+		handles: settings.handles,
+		connections: settings.connections,
+		errors: settings.errors,
+		size: settings.size,
+	}).every(Boolean);
 
 	// Check if any settings are disabled, basically determine if any cards are hidden
-	const anyDisabled = Object.values(settings).some(value => !value);
+	const anyDisabled = Object.values({
+		nodeInfo: settings.nodeInfo,
+		nodeData: settings.nodeData,
+		output: settings.output,
+		controls: settings.controls,
+		handles: settings.handles,
+		connections: settings.connections,
+		errors: settings.errors,
+		size: settings.size,
+	}).some(value => !value);
 
 	return {
 		settings,
 		toggleSetting,
+		updateCardOrder,
 		resetToDefaults,
 		isLoaded,
 		allEnabled,

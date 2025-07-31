@@ -149,7 +149,6 @@ function createDynamicSpec(data: ViewTextData): NodeSpec {
 		category: CATEGORIES.VIEW,
 		size: { expanded, collapsed },
 		handles: [
-			{ id: "json-input", code: "j", position: "top", type: "target", dataType: "JSON" },
 			{ id: "output", code: "s", position: "right", type: "source", dataType: "String" },
 			{ id: "input", code: "s", position: "left", type: "target", dataType: "String" },
 		],

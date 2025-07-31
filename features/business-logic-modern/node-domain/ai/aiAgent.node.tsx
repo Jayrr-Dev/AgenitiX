@@ -358,8 +358,8 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
 
 	return {
 		kind: "aiAgent",
-		displayName: "AI Agent",
-		label: "AI Agent",
+		displayName: "Ai Agent",
+		label: "Ai Agent",
 		category: CATEGORIES.AI,
 		size: { expanded, collapsed },
 		handles: [
@@ -457,7 +457,7 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
 		},
 		icon: "LuBot",
 		author: "Agenitix Team",
-		description: "AiAgent node for AI and machine learning",
+		description: "AiAgent node for Ai and machine learning",
 		feature: "ai",
 		tags: ["ai", "aiAgent"],
 		featureFlag: {
@@ -676,7 +676,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 					// Update node data with the new thread ID for persistence
 					updateNodeData({
 						threadId: activeThreadId,
-						agentName: `AI Agent (${selectedProvider})`,
+						agentName: `Ai Agent (${selectedProvider})`,
 					});
 				}
 
@@ -1007,7 +1007,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 		}
 	}, [selectedProvider, selectedModel, customApiKey, validateConfigurationAction, updateNodeData]);
 
-	/** Validate AI agent configuration */
+	/** Validate Ai agent configuration */
 	const validateConfiguration = useCallback(() => {
 		const errors: string[] = [];
 
@@ -1103,7 +1103,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 			}
 
 			// Log error for debugging
-			console.error(`AI Agent Error (${errorType}, attempt ${retryCount + 1}):`, error);
+			console.error(`Ai Agent Error (${errorType}, attempt ${retryCount + 1}):`, error);
 
 			// If we should retry and haven't exceeded max retries
 			if (shouldRetry && retryCount < maxRetries) {
@@ -1340,13 +1340,13 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 	useEffect(() => {
 		if (isEnabled && userInput && systemPrompt && processingState === PROCESSING_STATE.IDLE) {
 			// Only activate if we have all required inputs and are in idle state
-			console.log("Activating AI Agent for processing");
+			console.log("Activating Ai Agent for processing");
 			updateNodeData({
 				isActive: true, // Activate to trigger processing
 			});
 		} else if (!isEnabled) {
 			// Clear outputs when disabled
-			console.log("Disabling AI Agent");
+			console.log("Disabling Ai Agent");
 			updateNodeData({
 				outputs: null,
 				isActive: false,

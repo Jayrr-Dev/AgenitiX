@@ -1,9 +1,9 @@
 /**
- * AiTools NODE – Tool configuration for AI agents
+ * AiTools NODE – Tool configuration for Ai agents
  *
- * • Provides tool selection and configuration for AI agents
+ * • Provides tool selection and configuration for Ai agents
  * • Schema-driven with checkboxes for tool selection
- * • Outputs Tools data type for aiAgent consumption
+ * • Outputs Tools data type for Ai agent consumption
  * • Dynamic sizing and validation
  * • Auto-disables when no tools are selected
  *
@@ -127,8 +127,8 @@ function createDynamicSpec(data: AiToolsData): NodeSpec {
 
   return {
     kind: "aiTools",
-    displayName: "AI Tools",
-    label: "AI Tools",
+    displayName: "Ai Tools",
+    label: "Ai Tools",
     category: CATEGORIES.AI,
     size: { expanded, collapsed },
     handles: [
@@ -173,7 +173,7 @@ function createDynamicSpec(data: AiToolsData): NodeSpec {
     },
     icon: "LuWrench",
     author: "Agenitix Team",
-    description: "Configure available tools for AI agents",
+    description: "Configure available tools for Ai agents",
     feature: "ai",
     tags: ["ai", "tools", "configuration"],
     featureFlag: {

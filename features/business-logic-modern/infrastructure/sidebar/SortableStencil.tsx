@@ -19,6 +19,7 @@ import type React from "react";
 import { useCallback, useRef } from "react";
 
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
+import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 import type { HoveredStencil } from "./StencilInfoPanel";
 import type { NodeStencil } from "./types";
 
@@ -32,6 +33,37 @@ function formatNodeLabel(label: string): string {
 		.replace(/([A-Z])/g, " $1") // Add space before capital letters
 		.replace(/^./, (str) => str.toUpperCase()) // Capitalize first letter
 		.trim(); // Remove leading/trailing spaces
+}
+
+/**
+ * Get category-based fallback icon for stencils
+ * Provides appropriate icons when stencil.icon is not available
+ */
+function getCategoryFallbackIcon(category?: string): string {
+	switch (category?.toLowerCase()) {
+		case "create":
+			return "LuPlus";
+		case "view":
+			return "LuEye";
+		case "trigger":
+			return "LuZap";
+		case "test":
+			return "LuTestTube";
+		case "cycle":
+			return "LuRefreshCw";
+		case "store":
+			return "LuDatabase";
+		case "ai":
+			return "LuBot";
+		case "time":
+			return "LuClock";
+		case "flow":
+			return "LuGitBranch";
+		case "email":
+			return "LuMail";
+		default:
+			return "LuCircle";
+	}
 }
 
 interface SortableStencilProps {
@@ -295,7 +327,19 @@ export const SortableStencil: React.FC<SortableStencilProps> = ({
 				onDragStart={(e) => onNativeDragStart(e, stencil.nodeType)}
 				className="flex h-full w-full flex-col items-center justify-center text-center font-medium text-xs"
 			>
-				{renderLucideIcon(stencil.icon, "", 24)}
+				{(() => {
+					// Enhanced icon rendering with category-based fallback
+					const registryIcon = getNodeSpecMetadata(stencil.nodeType)?.icon;
+					const finalIconName = stencil.icon || registryIcon || getCategoryFallbackIcon(stencil.category);
+					const iconElement = renderLucideIcon(finalIconName, "", 24);
+					
+					// Debug logging in development
+					if (process.env.NODE_ENV === "development" && !stencil.icon) {
+						console.warn(`⚠️ No icon found for stencil: ${stencil.label} (${stencil.nodeType}), using fallback: ${finalIconName}`);
+					}
+					
+					return iconElement;
+				})()}
 				<div className="mt-1 text-[10px] text-[var(--infra-sidebar-text-secondary)] leading-tight">
 					{formatNodeLabel(stencil.label)}
 				</div>

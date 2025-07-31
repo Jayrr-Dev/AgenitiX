@@ -19,9 +19,32 @@ import {
 	useNodeErrors,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import { getNodeOutput } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/outputUtils";
-import { ChevronDown, Copy, Edit3, PanelLeftClose, PanelLeftOpen, Settings, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, Edit3, GripVertical, PanelLeftClose, PanelLeftOpen, Settings, Trash2 } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
 import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
+
+// DnD Kit imports for drag and drop functionality, basically sortable card reordering
+import {
+	DndContext,
+	DragEndEvent,
+	DragOverlay,
+	DragStartEvent,
+	MouseSensor,
+	TouchSensor,
+	closestCenter,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
+import {
+	SortableContext,
+	arrayMove,
+	verticalListSortingStrategy,
+	rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import {
+	useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import EditableNodeDescription from "@/components/nodes/EditableNodeDescription";
 import EditableNodeLabel from "@/components/nodes/EditableNodeLabel";
@@ -49,7 +72,7 @@ import NodeControlsCard from "./components/cards/NodeControls";
 import NodeHandlesCard from "./components/cards/NodeHandles";
 import NodeConnectionsCard from "./components/cards/NodeConnections";
 import { useInspectorState } from "./hooks/useInspectorState";
-import { useInspectorSettings } from "./hooks/useInspectorSettings";
+import { useInspectorSettings, type CardType } from "./hooks/useInspectorSettings";
 import { InspectorSettingsDropdown } from "./components/InspectorSettingsDropdown";
 
 // =====================================================================
@@ -144,13 +167,273 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 			</button>
 			<div
 				className={`overflow-hidden transition-all duration-300 ease-in-out ${
-					isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+					isOpen ? "max-h-none opacity-100" : "max-h-0 opacity-0"
 				}`}
 			>
-				<div className="max-h-[550px] overflow-y-auto rounded-b-lg bg-card p-3">{children}</div>
+				<div className="overflow-y-auto rounded-b-lg bg-card p-3">{children}</div>
 			</div>
 		</div>
 	);
+};
+
+// =====================================================================
+// SORTABLE ACCORDION COMPONENT
+// =====================================================================
+
+interface SortableAccordionSectionProps extends AccordionSectionProps {
+	id: CardType;
+	isDragging?: boolean;
+}
+
+const SortableAccordionSection: React.FC<SortableAccordionSectionProps> = ({
+	id,
+	title,
+	isOpen,
+	onToggle,
+	children,
+	isDragging = false,
+}) => {
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging: isSortableDragging,
+	} = useSortable({ id });
+
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+		opacity: isSortableDragging ? 0.5 : 1,
+	};
+
+	return (
+		<div ref={setNodeRef} style={style} className={`${STYLING_CARD_SECTION} ${isDragging ? 'shadow-lg' : ''}`}>
+			<div className="flex w-full items-center rounded-t-lg border-border/30 border-b bg-muted/30">
+				{/* Drag Handle */}
+				<div
+					{...attributes}
+					{...listeners}
+					className="flex items-center justify-center px-2 py-2 cursor-grab active:cursor-grabbing hover:bg-muted/50 transition-colors duration-200"
+					title="Drag to reorder"
+				>
+					<GripVertical className="h-3 w-3 text-muted-foreground/60" />
+				</div>
+				
+				{/* Accordion Toggle Button */}
+				<button
+					onClick={onToggle}
+					className="flex flex-1 items-center justify-between px-3 py-0 transition-colors duration-200 hover:bg-muted/50"
+					type="button"
+				>
+					<h4 className="mb-1 font-medium text-muted-foreground text-xs">{title}</h4>
+					<ChevronDown
+						className={`h-3 w-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+					/>
+				</button>
+			</div>
+			<div
+				className={`overflow-hidden transition-all duration-300 ease-in-out ${
+					isOpen ? "max-h-none opacity-100" : "max-h-0 opacity-0"
+				}`}
+			>
+				<div className="overflow-y-auto rounded-b-lg bg-card p-3">{children}</div>
+			</div>
+		</div>
+	);
+};
+
+// =====================================================================
+// CARD RENDERING HELPERS
+// =====================================================================
+
+interface CardRenderProps {
+	selectedNode: any;
+	nodeInfo: any;
+	nodeConfig: any;
+	output: any;
+	connections: any;
+	errors: any[];
+	cardVisibility: any;
+	accordionState: any;
+	toggleAccordion: (section: any) => void;
+	updateNodeData: any;
+	handleUpdateNodeId: any;
+	handleUpdateNodeData: any;
+	logNodeError: any;
+	handleClearErrors: any;
+	nodes: any[];
+	edges: any[];
+	viewMode: "bottom" | "side";
+	hasRightColumn: boolean;
+}
+
+/**
+ * Renders a single card based on its type, basically creates the appropriate card component
+ */
+const renderCard = (cardType: CardType, props: CardRenderProps): React.ReactNode | null => {
+	const {
+		selectedNode,
+		nodeInfo,
+		nodeConfig,
+		output,
+		connections,
+		errors,
+		cardVisibility,
+		accordionState,
+		toggleAccordion,
+		updateNodeData,
+		handleUpdateNodeId,
+		handleUpdateNodeData,
+		logNodeError,
+		handleClearErrors,
+		nodes,
+		edges,
+		viewMode,
+		hasRightColumn,
+	} = props;
+
+	// Check if card should be visible, basically filter out hidden cards
+	if (!cardVisibility[cardType]) {
+		return null;
+	}
+
+	// Special conditions for certain cards, basically handle conditional rendering
+	switch (cardType) {
+		case 'nodeInfo':
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Node Information"
+					isOpen={accordionState.nodeInfo}
+					onToggle={() => toggleAccordion("nodeInfo")}
+				>
+					<NodeInformation
+						selectedNode={selectedNode}
+						nodeInfo={nodeInfo}
+						updateNodeData={updateNodeData}
+						onUpdateNodeId={handleUpdateNodeId}
+					/>
+				</SortableAccordionSection>
+			);
+
+		case 'nodeData':
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Node Data"
+					isOpen={accordionState.nodeData}
+					onToggle={() => toggleAccordion("nodeData")}
+				>
+					<NodeDataCard
+						selectedNode={selectedNode}
+						nodeInfo={nodeInfo}
+						updateNodeData={handleUpdateNodeData}
+					/>
+				</SortableAccordionSection>
+			);
+
+		case 'output':
+			if (!(nodeConfig?.hasOutput || viewMode === "side")) return null;
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Output"
+					isOpen={accordionState.output}
+					onToggle={() => toggleAccordion("output")}
+				>
+					<NodeOutputCard output={output} nodeType={selectedNode.type} />
+				</SortableAccordionSection>
+			);
+
+		case 'controls':
+			if (!(nodeInfo.hasControls || viewMode === "side")) return null;
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Controls"
+					isOpen={accordionState.controls}
+					onToggle={() => toggleAccordion("controls")}
+				>
+					<NodeControlsCard
+						selectedNode={selectedNode}
+						updateNodeData={updateNodeData}
+						onLogError={logNodeError}
+					/>
+				</SortableAccordionSection>
+			);
+
+		case 'handles':
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Handles"
+					isOpen={accordionState.handles}
+					onToggle={() => toggleAccordion("handles")}
+				>
+					<NodeHandlesCard
+						selectedNode={selectedNode}
+						nodeInfo={nodeInfo}
+						edges={edges}
+						updateNodeData={updateNodeData}
+					/>
+				</SortableAccordionSection>
+			);
+
+		case 'connections':
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Connections"
+					isOpen={accordionState.connections}
+					onToggle={() => toggleAccordion("connections")}
+				>
+					<NodeConnectionsCard
+						selectedNode={selectedNode}
+						nodes={nodes}
+						edges={edges}
+					/>
+				</SortableAccordionSection>
+			);
+
+		case 'size':
+			if (!(selectedNode.data && (selectedNode.data as any).expandedSize !== undefined)) return null;
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Size"
+					isOpen={accordionState.size}
+					onToggle={() => toggleAccordion("size")}
+				>
+					<NodeSizeCard selectedNode={selectedNode} updateNodeData={updateNodeData} />
+				</SortableAccordionSection>
+			);
+
+		case 'errors':
+			if (errors.length === 0) return null;
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Error Log"
+					isOpen={accordionState.errors}
+					onToggle={() => toggleAccordion("errors")}
+				>
+					<ErrorLog errors={errors} onClearErrors={handleClearErrors} />
+				</SortableAccordionSection>
+			);
+
+		default:
+			return null;
+	}
 };
 
 // =====================================================================
@@ -185,13 +468,43 @@ const NodeInspector = React.memo(function NodeInspector({
 
 	// Settings management with persistence, basically card visibility controls
 	const { 
-		settings: cardVisibility, 
+		settings: cardVisibilityWithOrder, 
 		toggleSetting, 
+		updateCardOrder,
 		resetToDefaults,
 		isLoaded: settingsLoaded 
 	} = useInspectorSettings();
 
-	// Settings management with persistence, basically card visibility controls
+	// Extract card visibility and order, basically separate visibility state from ordering
+	const cardVisibility = {
+		nodeInfo: cardVisibilityWithOrder.nodeInfo,
+		nodeData: cardVisibilityWithOrder.nodeData,
+		output: cardVisibilityWithOrder.output,
+		controls: cardVisibilityWithOrder.controls,
+		handles: cardVisibilityWithOrder.handles,
+		connections: cardVisibilityWithOrder.connections,
+		errors: cardVisibilityWithOrder.errors,
+		size: cardVisibilityWithOrder.size,
+	};
+	const cardOrder = cardVisibilityWithOrder.cardOrder;
+
+	// Drag and drop state management, basically track active drag item
+	const [activeId, setActiveId] = useState<CardType | null>(null);
+
+	// DnD sensors configuration, basically define how drag interactions work
+	const sensors = useSensors(
+		useSensor(MouseSensor, {
+			activationConstraint: {
+				distance: 8, // Require 8px movement before drag starts, basically prevent accidental drags
+			},
+		}),
+		useSensor(TouchSensor, {
+			activationConstraint: {
+				delay: 250,
+				tolerance: 8,
+			},
+		})
+	);
 
 	// Accordion state management
 	const [accordionState, setAccordionState] = useState({
@@ -211,6 +524,27 @@ const NodeInspector = React.memo(function NodeInspector({
 			...prev,
 			[section]: !prev[section],
 		}));
+	};
+
+	// Drag and drop event handlers, basically manage card reordering
+	const handleDragStart = (event: DragStartEvent) => {
+		setActiveId(event.active.id as CardType);
+	};
+
+	const handleDragEnd = (event: DragEndEvent) => {
+		const { active, over } = event;
+		
+		if (over && active.id !== over.id) {
+			const oldIndex = cardOrder.indexOf(active.id as CardType);
+			const newIndex = cardOrder.indexOf(over.id as CardType);
+			
+			if (oldIndex !== -1 && newIndex !== -1) {
+				const newOrder = arrayMove(cardOrder, oldIndex, newIndex);
+				updateCardOrder(newOrder);
+			}
+		}
+		
+		setActiveId(null);
 	};
 
 	// Get theme for node inspector
@@ -535,145 +869,100 @@ const NodeInspector = React.memo(function NodeInspector({
 					</div>
 				</div>
 
-				{/* SCROLLABLE CONTENT: NODE DATA + OUTPUT + CONTROLS + ERRORS */}
+				{/* SCROLLABLE CONTENT: SORTABLE CARDS */}
 				<div
 					className={`${
 						viewMode === "side"
 							? "flex flex-1 flex-col gap-4 overflow-auto p-4"
-							: STYLING_CONTAINER_CONTENT_SCROLLABLE
+							: "flex flex-1 flex-col gap-2 p-3 overflow-auto"
 					}`}
 				>
-					{/* COLUMN 1: NODE DESCRIPTION + NODE DATA */}
-					<div
-						className={`${
-							viewMode === "side" ? "w-full space-y-4" : STYLING_CONTAINER_COLUMN_LEFT
-						}`}
+					<DndContext
+						sensors={sensors}
+						collisionDetection={closestCenter}
+						onDragStart={handleDragStart}
+						onDragEnd={handleDragEnd}
 					>
-						{/* Node Metadata Card */}
-						{cardVisibility.nodeInfo && (
-							<AccordionSection
-								title="Node Information"
-								isOpen={accordionState.nodeInfo}
-								onToggle={() => toggleAccordion("nodeInfo")}
-							>
-								<NodeInformation
-									selectedNode={selectedNode}
-									nodeInfo={nodeInfo}
-									updateNodeData={updateNodeData}
-									onUpdateNodeId={handleUpdateNodeId}
-								/>
-							</AccordionSection>
-						)}
-
-
-
-						{/* Node Data Card */}
-						{cardVisibility.nodeData && (
-							<AccordionSection
-								title="Node Data"
-								isOpen={accordionState.nodeData}
-								onToggle={() => toggleAccordion("nodeData")}
-							>
-								<NodeDataCard
-									selectedNode={selectedNode}
-									nodeInfo={nodeInfo}
-									updateNodeData={handleUpdateNodeData}
-								/>
-							</AccordionSection>
-						)}
-
-						{/* Size Controls for nodes with size fields */}
-						{selectedNode.data && (selectedNode.data as any).expandedSize !== undefined && cardVisibility.size && (
-							<AccordionSection
-								title="Size"
-								isOpen={accordionState.size}
-								onToggle={() => toggleAccordion("size")}
-							>
-								<NodeSizeCard selectedNode={selectedNode} updateNodeData={updateNodeData} />
-							</AccordionSection>
-						)}
-					</div>
-
-					{/* COLUMN 2: OUTPUT + CONTROLS */}
-					{(hasRightColumn || viewMode === "side") && (
-						<div
-							className={`${
-								viewMode === "side" ? "w-full space-y-4" : STYLING_CONTAINER_COLUMN_RIGHT
-							}`}
-						>
-							{(nodeConfig?.hasOutput || viewMode === "side") && cardVisibility.output && (
-								<AccordionSection
-									title="Output"
-									isOpen={accordionState.output}
-									onToggle={() => toggleAccordion("output")}
-								>
-									<NodeOutputCard output={output} nodeType={selectedNode.type as NodeType} />
-								</AccordionSection>
+						<SortableContext items={cardOrder} strategy={rectSortingStrategy}>
+							{viewMode === "side" ? (
+								// Single column layout for side mode
+								<div className="flex flex-col gap-2">
+									{cardOrder.map((cardType) => {
+										const cardProps: CardRenderProps = {
+											selectedNode,
+											nodeInfo,
+											nodeConfig,
+											output,
+											connections,
+											errors,
+											cardVisibility,
+											accordionState,
+											toggleAccordion,
+											updateNodeData,
+											handleUpdateNodeId,
+											handleUpdateNodeData,
+											logNodeError: logNodeError as any,
+											handleClearErrors,
+											nodes,
+											edges,
+											viewMode,
+											hasRightColumn,
+										};
+										
+										return renderCard(cardType, cardProps);
+									})}
+								</div>
+							) : (
+								// Masonry-style grid layout for bottom mode with 2 columns
+								<div className="columns-2 gap-2 space-y-2">
+									{cardOrder.map((cardType) => {
+										const cardProps: CardRenderProps = {
+											selectedNode,
+											nodeInfo,
+											nodeConfig,
+											output,
+											connections,
+											errors,
+											cardVisibility,
+											accordionState,
+											toggleAccordion,
+											updateNodeData,
+											handleUpdateNodeId,
+											handleUpdateNodeData,
+											logNodeError: logNodeError as any,
+											handleClearErrors,
+											nodes,
+											edges,
+											viewMode,
+											hasRightColumn,
+										};
+										
+										return renderCard(cardType, cardProps);
+									})}
+								</div>
 							)}
-
-							{(nodeInfo.hasControls || viewMode === "side") && cardVisibility.controls && (
-								<AccordionSection
-									title="Controls"
-									isOpen={accordionState.controls}
-									onToggle={() => toggleAccordion("controls")}
-								>
-									<NodeControlsCard
-										selectedNode={selectedNode}
-										updateNodeData={updateNodeData}
-										onLogError={logNodeError as any}
-									/>
-								</AccordionSection>
-							)}
-
-							{/* Handles Card */}
-							{cardVisibility.handles && (
-								<AccordionSection
-									title="Handles"
-									isOpen={accordionState.handles}
-									onToggle={() => toggleAccordion("handles")}
-								>
-									<NodeHandlesCard
-										selectedNode={selectedNode}
-										nodeInfo={nodeInfo}
-										edges={edges}
-										updateNodeData={updateNodeData}
-									/>
-								</AccordionSection>
-							)}
-
-							{/* Connections Card */}
-							{cardVisibility.connections && (
-								<AccordionSection
-									title="Connections"
-									isOpen={accordionState.connections}
-									onToggle={() => toggleAccordion("connections")}
-								>
-									<NodeConnectionsCard
-										selectedNode={selectedNode}
-										nodes={nodes}
-										edges={edges}
-									/>
-								</AccordionSection>
-							)}
-						</div>
-					)}
-
-					{/* COLUMN 3: ERROR LOG (only show when there are errors) */}
-					{errors.length > 0 && cardVisibility.errors && (
-						<div
-							className={`${
-								viewMode === "side" ? "w-full space-y-4" : STYLING_CONTAINER_COLUMN_ERROR
-							}`}
-						>
-							<AccordionSection
-								title="Error Log"
-								isOpen={accordionState.errors}
-								onToggle={() => toggleAccordion("errors")}
-							>
-								<ErrorLog errors={errors} onClearErrors={handleClearErrors} />
-							</AccordionSection>
-						</div>
-					)}
+						</SortableContext>
+						
+						<DragOverlay>
+							{activeId ? (
+								<div className="bg-card border border-border rounded-lg shadow-lg opacity-80">
+									<div className="flex w-full items-center rounded-t-lg border-border/30 border-b bg-muted/30 p-3">
+										<GripVertical className="h-3 w-3 text-muted-foreground/60 mr-2" />
+										<h4 className="font-medium text-muted-foreground text-xs">
+											{activeId === 'nodeInfo' ? 'Node Information' :
+											 activeId === 'nodeData' ? 'Node Data' :
+											 activeId === 'output' ? 'Output' :
+											 activeId === 'controls' ? 'Controls' :
+											 activeId === 'handles' ? 'Handles' :
+											 activeId === 'connections' ? 'Connections' :
+											 activeId === 'size' ? 'Size' :
+											 activeId === 'errors' ? 'Error Log' : activeId}
+										</h4>
+									</div>
+								</div>
+							) : null}
+						</DragOverlay>
+					</DndContext>
 				</div>
 			</div>
 		);

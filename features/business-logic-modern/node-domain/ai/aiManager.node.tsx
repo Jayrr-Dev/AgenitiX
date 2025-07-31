@@ -166,7 +166,7 @@ function createDynamicSpec(data: AiManagerData): NodeSpec {
     },
     icon: "LuBot",
     author: "Agenitix Team",
-    description: "AiManager node for AI and machine learning",
+    description: "AiManager node for Ai and machine learning",
     feature: "agents",
     tags: ["ai", "aiManager"],
     featureFlag: {

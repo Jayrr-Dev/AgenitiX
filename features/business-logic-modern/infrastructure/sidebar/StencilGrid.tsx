@@ -73,7 +73,7 @@ export function StencilGrid({
 	return (
 		<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
 			<SortableContext items={ids} strategy={rectSortingStrategy}>
-				<div className="flex flex-wrap justify-evenly gap-2 sm:mx-auto sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center">
+				<div className="flex flex-wrap justify-evenly gap-1 sm:mx-auto sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center">
 					{stencils.map((stencil, index) => (
 						<SortableStencil
 							key={stencil.id}
