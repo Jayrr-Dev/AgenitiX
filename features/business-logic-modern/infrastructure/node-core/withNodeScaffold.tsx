@@ -114,6 +114,7 @@ const NodeScaffoldWrapper = ({
 			? `var(--node-global-disabled-gradient), var(--node-${categoryLower}-bg-gradient)`
 			: `var(--node-${categoryLower}-bg-gradient)`,
 		// Enhanced shadows for depth - dark mode gets layered shadows with inset highlights
+		// Use CSS custom property to allow selection glow classes to override
 		boxShadow: isDisabled
 			? `var(--node-global-disabled-shadow), var(--node-${categoryLower}-modern-shadow)`
 			: `var(--node-${categoryLower}-modern-shadow)`,

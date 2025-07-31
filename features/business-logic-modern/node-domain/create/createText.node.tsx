@@ -332,31 +332,35 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 	// -------------------------------------------------------------------------
 	
 	// Memoized textarea components to prevent re-renders
-	const ExpandedTextarea = useMemo(() => (
-		<Textarea
-			key={`expanded-${id}`}
-			ref={expandedTextareaRef}
-			value={store === "Default text" ? "" : (store ?? "")}
-			onChange={handleStoreChange}
-			placeholder="Enter your content here…"
-			className={`nowheel h-32 min-h-32 resize-none overflow-y-auto bg-background p-2 text-xs align-top ${categoryStyles.primary}`}
-			disabled={!isEnabled}
-			style={{ verticalAlign: 'top' }}
-		/>
-	), [id, store, handleStoreChange, isEnabled, categoryStyles.primary]);
-
 	const CollapsedTextarea = useMemo(() => (
 		<Textarea
 			key={`collapsed-${id}`}
 			ref={collapsedTextareaRef}
 			value={store === "Default text" ? "" : (store ?? "")}
 			onChange={handleStoreChange}
+			variant="barebones"
 			placeholder="..."
-			className={`nowheel m-4 h-8 min-h-8 resize-none overflow-y-auto bg-background p-1 text-center text-xs align-top ${categoryStyles.primary}`}
+			className={`nowheel m-4 h-6 min-h-8 resize-none overflow-y-auto  mt-8 text-center text-xs align-top ${categoryStyles.primary}`}
 			disabled={!isEnabled}
 			style={{ verticalAlign: 'top' }}
 		/>
 	), [id, store, handleStoreChange, isEnabled, categoryStyles.primary]);
+
+	const ExpandedTextarea = useMemo(() => (
+		<Textarea
+			key={`expanded-${id}`}
+			ref={expandedTextareaRef}
+			value={store === "Default text" ? "" : (store ?? "")}
+			onChange={handleStoreChange}
+			variant="barebones"
+			placeholder="Enter your content here…"
+			className={`nowheel h-32 min-h-32 resize-none overflow-y-auto  p-2 text-xs align-top ${categoryStyles.primary}`}
+			disabled={!isEnabled}
+			style={{ verticalAlign: 'top' }}
+		/>
+	), [id, store, handleStoreChange, isEnabled, categoryStyles.primary]);
+
+	
 
 	return (
 		<>

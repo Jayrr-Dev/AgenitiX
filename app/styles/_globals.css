@@ -379,7 +379,7 @@
 
 /* Effect Utilities */
 @utility shadow-effect-glow-selection {
-	box-shadow: var(--effect-glow-selection);
+	box-shadow: var(--effect-glow-selection) !important;
 }
 @utility shadow-effect-glow-hover {
 	box-shadow: var(--effect-glow-hover);

@@ -26,8 +26,8 @@ import { toast } from "sonner";
  * Handle visual configuration
  */
 const HANDLE_SIZE_PX = 10;
-const HANDLE_POSITION_OFFSET = 7.5; // pixels to move handles further out from nodes
-const HANDLE_SPACING = 7.5; // pixels between multiple handles on the same side
+const HANDLE_POSITION_OFFSET = 10; // pixels to move handles further out from nodes
+const HANDLE_SPACING = 16; // pixels between multiple handles on the same side
 
 /**
  * Utility to get CSS custom property value from the DOM
@@ -185,26 +185,31 @@ function getPositionOffset(
 	}
 
 	// Calculate spacing for multiple handles - center them properly
+	// Calculate the total spacing between the handles, basically the total width of the handles
 	const totalSpacing = (totalHandlesOnSide - 1) * HANDLE_SPACING;
-	const startOffset = -totalSpacing / 2;
+	// Calculate the start offset to center the handles basically the middle of the handles
+	const startOffset = -totalSpacing / 2 ;
+	// Calculate the current offset based on the handle index and spacing, basically the position of the handle relative to the start offset
 	const currentOffset = startOffset + handleIndex * HANDLE_SPACING;
 
 	// Add perpendicular offset for multiple handles
 	// Use transform to center handles properly relative to their own size
 	switch (position) {
-		case "left":
+		case "left": 
+			
 		case "right":
 			return {
 				...base,
 				top: `calc(50% + ${currentOffset}px)`,
-				transform: "translateY(-50%)",
+	
+				
 			};
 		case "top":
 		case "bottom":
 			return {
 				...base,
 				left: `calc(50% + ${currentOffset}px)`,
-				transform: "translateX(-50%)",
+				
 			};
 		default:
 			return base;
