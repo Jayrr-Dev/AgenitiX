@@ -1664,7 +1664,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 						{/* Status & Actions - Compact Row */}
 						<div className="flex items-center justify-between text-xs">
 							
-							<div className="flex items-center gap-2">
+							<div className="flex items-center gap-1">
 								{processingState === PROCESSING_STATE.ERROR && (
 									<button
 										type="button"
@@ -1683,28 +1683,30 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 								)}
 								{threadId && (
 									<>
-								<ButtonToggle
-									isActive={showHistoryModal}
-									initialText="History"
-									activeText="Close"
-									variant="default"
-									size="xs"
-									width="sm"
-									onToggle={(isActive) => {
-										if (isActive) {
-											viewThreadHistory();
-										} else {
-											setShowHistoryModal(false);
-										}
-									}}
-									disabled={!isEnabled}
-								/>
+										<ButtonToggle
+											isActive={showHistoryModal}
+											initialText="Chat"
+											activeText="Close"
+											className="bg-green-500 text-black"
+											variant="outline"
+											size="xs"
+											width="xs"
+											onToggle={(isActive) => {
+												if (isActive) {
+													viewThreadHistory();
+												} else {
+													setShowHistoryModal(false);
+												}
+											}}
+											disabled={!isEnabled}
+										/>
 										<ButtonIconed
 											icon={MdRefresh}
 											text="Reset"
-											variant="destructive"
+											variant="outline"
+											className="bg-red-500 text-black"
 											size="xs"
-										
+											width="xs"
 											onClick={resetThread}
 											disabled={!isEnabled}
 										/>
