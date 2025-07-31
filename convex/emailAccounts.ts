@@ -524,10 +524,6 @@ export const validateEmailConnection = mutation({
 			};
 		}
 	},
-        error: {
-          code: "INTERNAL_ERROR",
-          message: error instanceof Error ? error.message : "Connection validation failed",
-
 });
 
 // Delete email account
