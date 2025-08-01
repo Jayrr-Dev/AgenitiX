@@ -12,8 +12,17 @@
  */
 
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FeatureFlagConfig } from "./NodeSpec";
+
+// Global cache for feature flag results to prevent duplicate API calls, basically avoid spamming the API
+interface FlagCacheEntry {
+	enabled: boolean;
+	timestamp: number;
+}
+
+const GLOBAL_FLAG_CACHE = new Map<string, FlagCacheEntry>();
+const CACHE_TTL = 30000; // 30 seconds cache to prevent API spam
 
 /**
  * Hook for evaluating feature flags in node components
@@ -37,6 +46,14 @@ export function useNodeFeatureFlag(featureFlag?: FeatureFlagConfig) {
 				setIsLoading(true);
 				setError(null);
 
+				// Check cache first to prevent API spam, basically avoid duplicate requests
+				const cached = GLOBAL_FLAG_CACHE.get(featureFlag.flag!);
+				if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+					setIsEnabled(cached.enabled);
+					setIsLoading(false);
+					return;
+				}
+
 				// Check if we're on the client side
 				if (typeof window !== "undefined") {
 					// Client-side: use API endpoint
@@ -59,11 +76,24 @@ export function useNodeFeatureFlag(featureFlag?: FeatureFlagConfig) {
 						console.warn("Feature flag warning:", data.warning);
 					}
 					
+					// Cache the result to prevent future API spam, basically store for other nodes
+					GLOBAL_FLAG_CACHE.set(featureFlag.flag!, {
+						enabled: data.enabled,
+						timestamp: Date.now(),
+					});
+					
 					setIsEnabled(data.enabled);
 				} else {
 					// Server-side: import and evaluate flag directly
 					const { testFlag } = await import("@/flag");
 					const flagValue = await testFlag();
+					
+					// Cache server-side results too, basically prevent duplicate evaluations
+					GLOBAL_FLAG_CACHE.set(featureFlag.flag!, {
+						enabled: flagValue,
+						timestamp: Date.now(),
+					});
+					
 					setIsEnabled(flagValue);
 				}
 			} catch (err) {
@@ -78,7 +108,7 @@ export function useNodeFeatureFlag(featureFlag?: FeatureFlagConfig) {
 		};
 
 		evaluateFlag();
-	}, [featureFlag]);
+	}, [featureFlag?.flag, featureFlag?.fallback]); // Only depend on specific properties to prevent infinite loops, basically stable dependencies
 
 	return {
 		isEnabled,
