@@ -15,6 +15,11 @@ import emailSender from "../../../node-domain/email/emailSender.node";
 import emailReplier from "../../../node-domain/email/emailReplier.node";
 import emailTemplate from "../../../node-domain/email/emailTemplate.node";
 import emailBrand from "../../../node-domain/email/emailBrand.node";
+import emailUpdater from "../../../node-domain/email/emailUpdater.node";
+import emailList from "../../../node-domain/email/emailList.node";
+import emailData from "../../../node-domain/email/emailData.node";
+import emailBulk from "../../../node-domain/email/emailBulk.node";
+import emailAnalytics from "../../../node-domain/email/emailAnalytics.node";
 import testNode from "../../../node-domain/test/testNode.node";
 // Import all available node components
 // This should be automatically updated when new nodes are created via Plop
@@ -52,6 +57,11 @@ export function useDynamicNodeTypes() {
 			emailReplier,
 			emailTemplate,
 			emailBrand,
+			emailUpdater,
+			emailList,
+			emailData,
+			emailBulk,
+			emailAnalytics,
 			viewText,
 		}),
 		[]
