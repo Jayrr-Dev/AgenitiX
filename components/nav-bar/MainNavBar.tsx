@@ -37,7 +37,7 @@ export default function MainNavBar() {
 				>
 					<div
 						id="logo"
-						className="xdebug-green col-span-4 self-center justify-self-center border-transparent border-b bg-fill-border hover:animate-fill-transparency md:col-span-2 ml-18"
+						className="xdebug-green col-span-4 self-center justify-self-center border-transparent border-b bg-fill-border hover:animate-fill-transparency md:col-span-2 ml-6 sm:ml-16 md:ml-32"
 					>
 						<a href="/" className=" flex cursor-pointer flex-row items-center justify-center  ">
 							<LogomarkSvg
