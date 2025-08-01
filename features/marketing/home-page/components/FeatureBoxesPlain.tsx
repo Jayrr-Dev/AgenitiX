@@ -105,15 +105,26 @@ const GridPattern: React.FC<GridPatternProps> = ({ width, height, x, y, squares,
 /* 🎲 Generate deterministic pattern */
 function generateDeterministicPattern(seed: number): [number, number][] {
 	const pattern: [number, number][] = [];
+	const usedCoordinates = new Set<string>();
 	const rng = (a: number, b: number) => {
 		const x = Math.sin(seed + a * 12.9898 + b * 78.233) * 43758.5453;
 		return x - Math.floor(x);
 	};
 
-	for (let i = 0; i < 20; i++) {
-		const x = Math.floor(rng(i, 0) * 20);
-		const y = Math.floor(rng(i, 1) * 20);
-		pattern.push([x, y]);
+	// Try to generate 20 unique coordinates
+	let attempts = 0;
+	let i = 0;
+	while (i < 20 && attempts < 100) { // Limit attempts to prevent infinite loop
+		const x = Math.floor(rng(attempts, 0) * 20);
+		const y = Math.floor(rng(attempts, 1) * 20);
+		const coordKey = `${x}-${y}`;
+		
+		if (!usedCoordinates.has(coordKey)) {
+			usedCoordinates.add(coordKey);
+			pattern.push([x, y]);
+			i++;
+		}
+		attempts++;
 	}
 
 	return pattern;
