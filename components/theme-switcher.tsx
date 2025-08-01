@@ -61,9 +61,9 @@ const ThemeSwitcher = () => {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button type="button" variant="ghost" size="sm">
+				<button type="button" className="p-1.5 ml-0.5 rounded-full">
 					{currentThemeIcon}
-				</Button>
+				</button>
 			</DropdownMenuTrigger>
 
 			<DropdownMenuContent>

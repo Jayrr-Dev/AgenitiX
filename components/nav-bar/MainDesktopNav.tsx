@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 const navItemStyle =
-	"bg-green border-b-1 rounded-lg p-2 border-transparent bg-fill-border hover:animate-fill-transparency font-thin text-xl";
+	"bg-green border-b-1 rounded-none p-2 border-transparent bg-fill-border hover:animate-fill-transparency font-thin text-xl";
 
 export default function MainDesktopNav() {
 	return (

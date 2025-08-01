@@ -73,7 +73,7 @@ export default function MainNavBar() {
 
 					<div
 						id="theme-switcher"
-						className="xdebug-blue col-span-2 flex items-center justify-center"
+						className="xdebug-blue col-span-2 self-center justify-self-center rounded-full border border-transparent bg-fill-border hover:animate-fill-transparency"
 					>
 						<ThemeSwitcher />
 					</div>
