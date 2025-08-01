@@ -51,14 +51,17 @@ import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructur
 export const StoreLocalDataSchema = z
   .object({
     // Core functionality
-    mode: z.enum(["store", "delete"]).default("store"),
+    mode: z.enum(["store", "delete", "get"]).default("store"),
     inputData: z.record(z.unknown()).nullable().default(null),
     triggerInput: z.boolean().default(false),
     lastTriggerState: z.boolean().default(false),
     
+    // Internal store for retrieved data (formatted JSON string for inspector)
+    store: z.string().default(""),
+    
     // Status and feedback
     isProcessing: z.boolean().default(false),
-    lastOperation: z.enum(["none", "store", "delete"]).default("none"),
+    lastOperation: z.enum(["none", "store", "delete", "get"]).default("none"),
     lastOperationSuccess: z.boolean().default(false),
     lastOperationTime: z.number().optional(),
     operationMessage: z.string().default(""),
@@ -72,7 +75,7 @@ export const StoreLocalDataSchema = z
     label: z.string().optional(),
     
     // Outputs
-    statusOutput: z.boolean().default(false),
+    outputs: z.record(z.unknown()).nullable().default(null),
   })
   .passthrough();
 
@@ -98,6 +101,14 @@ interface LocalStorageDeleteResult {
   success: boolean;
   message: string;
   keysDeleted: string[];
+  keysNotFound: string[];
+}
+
+interface LocalStorageGetResult {
+  success: boolean;
+  message: string;
+  data: Record<string, unknown>;
+  keysFound: string[];
   keysNotFound: string[];
 }
 
@@ -210,9 +221,65 @@ const createLocalStorageOperations = () => {
     return result;
   };
 
+  const getKeys = (keys: string[]): LocalStorageGetResult => {
+    const result: LocalStorageGetResult = {
+      success: true,
+      message: "",
+      data: {},
+      keysFound: [],
+      keysNotFound: [],
+    };
+
+    if (!isAvailable()) {
+      result.success = false;
+      result.message = "localStorage is not available";
+      return result;
+    }
+
+    if (!keys || keys.length === 0) {
+      result.success = false;
+      result.message = "No keys provided to get";
+      return result;
+    }
+
+    for (const key of keys) {
+      try {
+        const value = localStorage.getItem(key);
+        if (value !== null) {
+          // Try to parse the stored value
+          try {
+            // First try to parse as JSON
+            const parsedValue = JSON.parse(value);
+            result.data[key] = parsedValue;
+          } catch {
+            // If JSON parsing fails, store as string
+            result.data[key] = value;
+          }
+          result.keysFound.push(key);
+        } else {
+          result.keysNotFound.push(key);
+        }
+      } catch (error) {
+        result.success = false;
+        result.message = `Error getting key "${key}": ${error}`;
+        break;
+      }
+    }
+
+    if (result.success) {
+      result.message = `Retrieved ${result.keysFound.length} items`;
+      if (result.keysNotFound.length > 0) {
+        result.message += `, ${result.keysNotFound.length} keys not found`;
+      }
+    }
+
+    return result;
+  };
+
   return {
     store,
     delete: deleteKeys,
+    get: getKeys,
     isAvailable,
   };
 };
@@ -222,7 +289,7 @@ const createLocalStorageOperations = () => {
 // -----------------------------------------------------------------------------
 
 interface ModeToggleButtonProps {
-  mode: "store" | "delete";
+  mode: "store" | "delete" | "get";
   onToggle: () => void;
   disabled?: boolean;
   isProcessing?: boolean;
@@ -237,15 +304,35 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({
   const baseClasses = "px-3 py-2 rounded-md font-medium text-sm transition-all duration-200 border-2 min-w-[80px] h-[36px] flex items-center justify-center";
   const storeClasses = "bg-blue-500 text-white border-blue-600 hover:bg-blue-600";
   const deleteClasses = "bg-red-500 text-white border-red-600 hover:bg-red-600";
+  const getClasses = "bg-green-500 text-white border-green-600 hover:bg-green-600";
   const disabledClasses = "opacity-50 cursor-not-allowed";
   const processingClasses = "animate-pulse";
 
+  const getModeClasses = () => {
+    switch (mode) {
+      case "store": return storeClasses;
+      case "delete": return deleteClasses;
+      case "get": return getClasses;
+      default: return storeClasses;
+    }
+  };
+
   const classes = [
     baseClasses,
-    mode === "store" ? storeClasses : deleteClasses,
+    getModeClasses(),
     disabled && disabledClasses,
     isProcessing && processingClasses,
   ].filter(Boolean).join(" ");
+
+  const getModeText = () => {
+    if (isProcessing) return "...";
+    switch (mode) {
+      case "store": return "Store";
+      case "delete": return "Delete";
+      case "get": return "Get";
+      default: return "Store";
+    }
+  };
 
   return (
     <button
@@ -253,13 +340,13 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({
       disabled={disabled || isProcessing}
       className={classes}
     >
-      {isProcessing ? "..." : mode === "store" ? "Store" : "Delete"}
+      {getModeText()}
     </button>
   );
 };
 
 interface StatusDisplayProps {
-  lastOperation: "none" | "store" | "delete";
+  lastOperation: "none" | "store" | "delete" | "get";
   lastOperationSuccess: boolean;
   operationMessage: string;
   lastOperationTime?: number;
@@ -322,7 +409,7 @@ const StatusDisplay: React.FC<StatusDisplayProps> = ({
 
 interface DataPreviewProps {
   data: Record<string, unknown> | null;
-  mode: "store" | "delete";
+  mode: "store" | "delete" | "get";
   maxItems?: number;
 }
 
@@ -331,6 +418,27 @@ const DataPreview: React.FC<DataPreviewProps> = ({
   mode, 
   maxItems = 5 
 }) => {
+  // Helper function to get current localStorage value
+  const getCurrentLocalStorageValue = (key: string): string => {
+    try {
+      const value = localStorage.getItem(key);
+      if (value === null) return "null";
+      
+      // Try to parse as JSON first
+      try {
+        const parsed = JSON.parse(value);
+        return typeof parsed === "object" 
+          ? JSON.stringify(parsed).slice(0, 30) + "..."
+          : String(parsed);
+      } catch {
+        // If not JSON, return as string
+        return value.length > 30 ? value.slice(0, 30) + "..." : value;
+      }
+    } catch {
+      return "error";
+    }
+  };
+
   if (!data || Object.keys(data).length === 0) {
     return (
       <div className="text-xs text-gray-500 italic">
@@ -342,10 +450,19 @@ const DataPreview: React.FC<DataPreviewProps> = ({
   const entries = Object.entries(data).slice(0, maxItems);
   const hasMore = Object.keys(data).length > maxItems;
 
+  const getPreviewTitle = () => {
+    switch (mode) {
+      case "store": return "Will store:";
+      case "delete": return "Will delete keys:";
+      case "get": return "Current values:";
+      default: return "Data:";
+    }
+  };
+
   return (
     <div className="text-xs space-y-1">
       <div className="font-medium text-gray-700">
-        {mode === "store" ? "Will store:" : "Will delete keys:"}
+        {getPreviewTitle()}
       </div>
       {entries.map(([key, value]) => (
         <div key={key} className="flex items-start gap-2">
@@ -358,6 +475,11 @@ const DataPreview: React.FC<DataPreviewProps> = ({
               }
             </span>
           )}
+          {mode === "get" && (
+            <span className="text-gray-600 truncate">
+              {getCurrentLocalStorageValue(key)}
+            </span>
+          )}
         </div>
       ))}
       {hasMore && (
@@ -365,6 +487,53 @@ const DataPreview: React.FC<DataPreviewProps> = ({
           ...and {Object.keys(data).length - maxItems} more
         </div>
       )}
+    </div>
+  );
+};
+
+interface RetrievedDataDisplayProps {
+  data: Record<string, unknown> | null;
+  maxItems?: number;
+}
+
+const RetrievedDataDisplay: React.FC<RetrievedDataDisplayProps> = ({ 
+  data, 
+  maxItems = 5 
+}) => {
+  if (!data || Object.keys(data).length === 0) {
+    return (
+      <div className="text-xs text-gray-500 italic">
+        No data retrieved
+      </div>
+    );
+  }
+
+  const entries = Object.entries(data).slice(0, maxItems);
+  const hasMore = Object.keys(data).length > maxItems;
+
+  return (
+    <div className="text-xs space-y-1">
+      <div className="font-medium text-green-700">
+        Retrieved values:
+      </div>
+      <div className="bg-green-50 dark:bg-green-900/20 rounded-md p-2 space-y-1">
+        {entries.map(([key, value]) => (
+          <div key={key} className="flex items-start gap-2">
+            <span className="font-mono text-green-600 font-semibold">{key}:</span>
+            <span className="text-gray-700 dark:text-gray-300 break-all">
+              {typeof value === "object" 
+                ? JSON.stringify(value, null, 2)
+                : String(value)
+              }
+            </span>
+          </div>
+        ))}
+        {hasMore && (
+          <div className="text-gray-500 italic">
+            ...and {Object.keys(data).length - maxItems} more
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -424,11 +593,11 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
         dataType: "Boolean",
       },
       {
-        id: "status-output",
-        code: "b",
+        id: "output",
+        code: "j",
         position: "right",
         type: "source",
-        dataType: "Boolean",
+        dataType: "JSON",
       },
     ],
     inspector: { key: "StoreLocalInspector" },
@@ -439,11 +608,12 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
       inputData: null,
       triggerInput: false,
       lastTriggerState: false,
+      store: "",
       isProcessing: false,
       lastOperation: "none",
       lastOperationSuccess: false,
       operationMessage: "",
-      statusOutput: false,
+      outputs: null,
     }),
     dataSchema: StoreLocalDataSchema,
     controls: {
@@ -453,26 +623,34 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
         "inputData",
         "triggerInput",
         "lastTriggerState",
+        "store",
         "isProcessing",
         "lastOperation",
         "lastOperationSuccess",
         "lastOperationTime",
         "operationMessage",
-        "statusOutput",
+        "outputs",
         "expandedSize",
         "collapsedSize",
       ],
       customFields: [
         { key: "isEnabled", type: "boolean", label: "Enable" },
         { key: "mode", type: "select", label: "Mode" },
+        { 
+          key: "store", 
+          type: "textarea", 
+          label: "Retrieved Data", 
+          placeholder: "Retrieved localStorage data will appear here...",
+          ui: { rows: 6, readOnly: true },
+        },
         { key: "isExpanded", type: "boolean", label: "Expand" },
       ],
     },
     icon: "LuDatabase",
     author: "Agenitix Team",
-    description: "Enhanced localStorage management with store/delete modes and pulse triggering",
+    description: "Enhanced localStorage management with store/delete/get modes and pulse triggering",
     feature: "storage",
-    tags: ["store", "localStorage", "delete", "pulse", "trigger"],
+    tags: ["store", "localStorage", "delete", "get", "pulse", "trigger"],
     featureFlag: {
       flag: "store_local_enhanced",
       fallback: true,
@@ -511,12 +689,13 @@ const StoreLocalNode = memo(
       inputData,
       triggerInput,
       lastTriggerState,
+      store,
       isProcessing,
       lastOperation,
       lastOperationSuccess,
       lastOperationTime,
       operationMessage,
-      statusOutput,
+      outputs,
     } = nodeData as StoreLocalData;
 
     // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
@@ -540,9 +719,22 @@ const StoreLocalNode = memo(
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
 
-    /** Toggle between store and delete modes */
+    /** Toggle between store, delete, and get modes */
     const toggleMode = useCallback(() => {
-      const newMode = mode === "store" ? "delete" : "store";
+      let newMode: "store" | "delete" | "get";
+      switch (mode) {
+        case "store":
+          newMode = "delete";
+          break;
+        case "delete":
+          newMode = "get";
+          break;
+        case "get":
+          newMode = "store";
+          break;
+        default:
+          newMode = "store";
+      }
       updateNodeData({ mode: newMode });
     }, [mode, updateNodeData]);
 
@@ -604,9 +796,10 @@ const StoreLocalNode = memo(
             lastOperationSuccess: result.success,
             lastOperationTime: Date.now(),
             operationMessage: result.message,
-            statusOutput: result.success,
+            store: "", // Clear store for store operations
+            outputs: null, // Clear outputs for store operations
           });
-        } else {
+        } else if (mode === "delete") {
           const keys = Object.keys(inputData);
           const result = localStorageOps.delete(keys);
           updateNodeData({
@@ -615,7 +808,23 @@ const StoreLocalNode = memo(
             lastOperationSuccess: result.success,
             lastOperationTime: Date.now(),
             operationMessage: result.message,
-            statusOutput: result.success,
+            store: "", // Clear store for delete operations
+            outputs: null, // Clear outputs for delete operations
+          });
+        } else if (mode === "get") {
+          const keys = Object.keys(inputData);
+          const result = localStorageOps.get(keys);
+          const retrievedData = result.success ? result.data : null;
+          // Format store data as JSON string for inspector display
+          const storeDisplay = retrievedData ? JSON.stringify(retrievedData, null, 2) : "";
+          updateNodeData({
+            isProcessing: false,
+            lastOperation: "get",
+            lastOperationSuccess: result.success,
+            lastOperationTime: Date.now(),
+            operationMessage: result.message,
+            store: storeDisplay, // Store formatted JSON string for inspector
+            outputs: retrievedData, // Output raw data for connections
           });
         }
       } catch (error) {
@@ -625,7 +834,8 @@ const StoreLocalNode = memo(
           lastOperationSuccess: false,
           lastOperationTime: Date.now(),
           operationMessage: error instanceof Error ? error.message : "Unknown error",
-          statusOutput: false,
+          store: "",
+          outputs: null,
         });
       }
     }, [inputData, isProcessing, mode, localStorageOps, updateNodeData]);
@@ -779,6 +989,8 @@ const StoreLocalNode = memo(
                 mode={mode}
                 maxItems={5}
               />
+              
+
               
               <StatusDisplay
                 lastOperation={lastOperation}
