@@ -12,12 +12,12 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import { type ChangeEvent, memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
+import Editor from "@monaco-editor/react";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
-import { Textarea } from "@/components/ui/textarea";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
@@ -181,9 +181,19 @@ const CreateObjectNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
 
   // Refs for performance
   const lastOutputRef = useRef<string | null>(null);
-  const collapsedTextareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const expandedTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const editorRef = useRef<any>(null);
+
+  // JSON validity check
+  const isJsonValid = useMemo(() => {
+    if (!store || store.trim() === "") return true; // Empty is considered valid
+    try {
+      JSON.parse(store);
+      return true;
+    } catch {
+      return false;
+    }
+  }, [store]);
 
   // Optimized callbacks
   const toggleExpand = useCallback(() => {
@@ -191,22 +201,28 @@ const CreateObjectNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
   }, [isExpanded, updateNodeData]);
 
   // Debounced JSON parsing for better performance
-  const parseJsonSafely = useCallback((value: string) => {
+  const parseJsonSafely = useCallback((value: string, showToast = false) => {
     try {
       const parsed = JSON.parse(value);
-      showSuccess("Valid JSON", "Object parsed successfully");
+      if (showToast) {
+        showSuccess("Valid JSON", "Object parsed successfully");
+      }
       return parsed;
     } catch (error) {
-      showError("Invalid JSON", error instanceof Error ? error.message : "Failed to parse JSON");
+      if (showToast) {
+        showError("Invalid JSON", error instanceof Error ? error.message : "Failed to parse JSON");
+      }
       return value;
     }
   }, [showSuccess, showError]);
+
+
 
   const propagate = useCallback(
     (value: string) => {
       if (!(isActive && isEnabled)) return;
 
-      const parsed = parseJsonSafely(value);
+      const parsed = parseJsonSafely(value, false); // Don't show toast immediately, basically silent parsing
       const serialized = JSON.stringify(parsed);
 
       if (serialized !== JSON.stringify(lastOutputRef.current)) {
@@ -244,10 +260,10 @@ const CreateObjectNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
     return typeof inputValue === "string" ? inputValue : JSON.stringify(inputValue || {});
   }, [edges, nodes, id]);
 
-  // Debounced store change handler
-  const handleStoreChange = useCallback(
-    (e: ChangeEvent<HTMLTextAreaElement>) => {
-      const value = e.target.value;
+  // Monaco Editor change handler
+  const handleEditorChange = useCallback(
+    (value: string | undefined) => {
+      const newValue = value || "";
 
       // Clear existing timeout
       if (debounceTimeoutRef.current) {
@@ -255,15 +271,81 @@ const CreateObjectNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
       }
 
       // Immediate UI update
-      updateNodeData({ store: value });
+      updateNodeData({ store: newValue });
 
       // Debounced validation and propagation
       debounceTimeoutRef.current = setTimeout(() => {
-        propagate(value === "{}" ? "{}" : value);
+        propagate(newValue === "{}" ? "{}" : newValue);
       }, DEBOUNCE_DELAY);
     },
     [updateNodeData, propagate]
   );
+
+  // Monaco Editor blur handler
+  const handleEditorBlur = useCallback(() => {
+    // Get the current value directly from the editor to avoid stale state
+    const currentValue = editorRef.current?.getValue() || store;
+    // Show validation toast when editor loses focus, basically feedback on blur
+    parseJsonSafely(currentValue, true);
+  }, [parseJsonSafely, store]);
+
+  // Monaco Editor mount handler
+  const handleEditorDidMount = useCallback((editor: any, monaco: any) => {
+    editorRef.current = editor;
+    
+    // Configure JSON validation and formatting
+    monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+      validate: true,
+      allowComments: false,
+      schemas: [],
+      enableSchemaRequest: false,
+    });
+
+    // Add blur event listener for toast validation
+    editor.onDidBlurEditorText(() => {
+      handleEditorBlur();
+    });
+
+    // Fix tooltip positioning and styling
+    setTimeout(() => {
+      const editorElement = editor.getDomNode();
+      if (editorElement) {
+        // Ensure the editor container has proper positioning context
+        editorElement.style.position = 'relative';
+        editorElement.style.zIndex = '9999';
+        
+        // Add custom CSS for tooltip styling
+        const style = document.createElement('style');
+        style.textContent = `
+          .monaco-hover {
+            position: fixed !important;
+            font-size: 10px !important;
+            line-height: 1.3 !important;
+          }
+          .monaco-hover .hover-contents {
+            font-size: 10px !important;
+            padding: 4px 6px !important;
+          }
+          .monaco-hover .monaco-editor-hover {
+            font-size: 10px !important;
+            max-width: 300px !important;
+          }
+          .monaco-hover .hover-row {
+            font-size: 10px !important;
+          }
+        `;
+        document.head.appendChild(style);
+        
+        // Find and adjust existing tooltip containers
+        const tooltipContainers = document.querySelectorAll('.monaco-hover');
+        tooltipContainers.forEach(container => {
+          const htmlContainer = container as HTMLElement;
+          htmlContainer.style.position = 'fixed';
+          htmlContainer.style.fontSize = '10px';
+        });
+      }
+    }, 100);
+  }, [handleEditorBlur]);
 
   // Optimized effects with proper dependencies
   useEffect(() => {
@@ -333,6 +415,15 @@ const CreateObjectNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
 
   useNodeDataValidation(CreateObjectDataSchema, "CreateObject", validation.data, id);
 
+  // Cleanup timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Memoized styles and values
   const categoryStyles = useMemo(() => CATEGORY_TEXT.CREATE, []);
   const displayValue = useMemo(() => store === "{}" ? "" : (store ?? ""), [store]);
@@ -351,32 +442,78 @@ const CreateObjectNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
     }
   }, [store]);
 
-  // Highly optimized textarea components
-  const CollapsedTextarea = useMemo(() => (
-    <Textarea
-      ref={collapsedTextareaRef}
-      value={displayValue}
-      onChange={handleStoreChange}
-      variant="barebones"
-      placeholder="..."
-      className={`nowheel m-4 h-6 min-h-8 resize-none overflow-y-auto mt-8 text-center text-xs align-top font-mono ${categoryStyles.primary}`}
-      disabled={!isEnabled}
-      style={{ verticalAlign: 'top' }}
-    />
-  ), [displayValue, handleStoreChange, isEnabled, categoryStyles.primary]);
+  // Validation status and parameter count display for collapsed view
+  const CollapsedEditor = useMemo(() => (
+    <div className="flex flex-col items-center justify-center w-full h-full text-center">
+    
+      {/* Parameter Count */}
+      <div className="text-[10px] text-gray-700 dark:text-gray-300 pt-2">
+        Params : {objectKeyCount}
+      </div>
+        {/* Validation Status */}
+        <div className={`text-[10px] font-medium ${isJsonValid ? 'text-green-600' : 'text-red-600'}`}>
+        {isJsonValid ? 'Valid' : 'Invalid'}
+      </div>
+      
+    </div>
+  ), [isJsonValid, objectKeyCount]);
 
-  const ExpandedTextarea = useMemo(() => (
-    <Textarea
-      ref={expandedTextareaRef}
-      value={displayValue}
-      onChange={handleStoreChange}
-      variant="barebones"
-      placeholder="Enter your JSON object here…"
-      className={`nowheel h-32 min-h-32 resize-none overflow-y-auto mt-2 p-2 text-xs align-top font-mono ${categoryStyles.primary}`}
-      disabled={!isEnabled}
-      style={{ verticalAlign: 'top' }}
-    />
-  ), [displayValue, handleStoreChange, isEnabled, categoryStyles.primary]);
+  // Optimized Monaco Editor for expanded view
+  const ExpandedEditor = useMemo(() => (
+    <div
+      className={`nowheel h-32 min-h-48 mt-2 text-xs ${categoryStyles.primary}`}
+      style={{ 
+        verticalAlign: 'top',
+        ...((!isJsonValid) && {
+          border: '1px solid #ef4444',
+          boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.2)'
+        })
+      }}
+    >
+      <Editor
+        className="nodrag"
+        height="190px"
+        language="json"
+        value={displayValue}
+        onChange={handleEditorChange}
+        onMount={handleEditorDidMount}
+        options={{
+          minimap: { enabled: false },
+          scrollBeyondLastLine: false,
+          wordWrap: 'on',
+          lineNumbers: 'off',
+          glyphMargin: false,
+          folding: false,
+          lineDecorationsWidth: 0,
+          lineNumbersMinChars: 0,
+          scrollbar: { 
+            vertical: 'auto', 
+            horizontal: 'auto',
+            verticalScrollbarSize: 0,
+            horizontalScrollbarSize: 8,
+            verticalSliderSize: 8,
+            horizontalSliderSize: 8
+          },
+          fontSize: 10,
+          fontFamily: 'monospace',
+          readOnly: !isEnabled,
+          placeholder: "Enter your JSON object here…",
+          formatOnPaste: true,
+          formatOnType: true,
+          automaticLayout: true,
+          hover: {
+            enabled: true,
+            delay: 300,
+            sticky: true,
+            above: false,
+          },
+          quickSuggestions: false,
+          parameterHints: { enabled: false },
+        }}
+        theme="vs-dark"
+      />
+    </div>
+  ), [displayValue, handleEditorChange, handleEditorDidMount, isEnabled, isJsonValid, categoryStyles.primary]);
 
   // Memoized render components
   const IconOrLabel = useMemo(() => {
@@ -401,7 +538,7 @@ const CreateObjectNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
       {IconOrLabel}
 
       <div className={contentClassName}>
-        {isExpanded ? ExpandedTextarea : CollapsedTextarea}
+        {isExpanded ? ExpandedEditor : CollapsedEditor}
       </div>
 
       <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />

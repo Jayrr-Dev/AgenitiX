@@ -145,7 +145,7 @@ const Toast: React.FC<{
       className={`
         absolute top-0 -translate-y-6 left-0 flex items-center rounded-md border shadow-md
         ${style.bg} ${style.border} ${style.text}
-        ${nodeWidth < 150 ? 'gap-2 px-2 py-1.5' : 'gap-2 px-3 py-2'}
+        ${nodeWidth < 150 ? 'gap-2 px-2 py-1.5' : 'gap-2 px-3 py-2 -translate-y-8'}
         ${!isTop ? 'pointer-events-none' : ''}
       `}
       style={{
