@@ -20,6 +20,7 @@ import React, {
 } from "react";
 import { z } from "zod";
 
+import { Button } from "@/components/ui/button";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
@@ -43,9 +44,73 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
+import { 
+  useComponentButtonClasses, 
+  useDesignSystemToken 
+} from "@/features/business-logic-modern/infrastructure/theming/components/componentThemeStore";
+
 
 // -----------------------------------------------------------------------------
-// 1️⃣  Enhanced data schema & validation
+// 1️⃣  TOP-LEVEL CONSTANTS & STYLING
+// -----------------------------------------------------------------------------
+
+// Design system constants for better maintainability
+const MODE_CONFIG = {
+  STORE: {
+    label: "Store",
+    variant: "primary" as const,
+    shadcnVariant: "default" as const,
+  },
+  DELETE: {
+    label: "Delete", 
+    variant: "secondary" as const, // Design system doesn't support destructive
+    shadcnVariant: "destructive" as const,
+  },
+  GET: {
+    label: "Get",
+    variant: "secondary" as const, 
+    shadcnVariant: "secondary" as const,
+  },
+} as const;
+
+const STATUS_CONFIG = {
+  PROCESSING: {
+    icon: "⏳",
+    color: "text-yellow-600",
+    text: "Processing...",
+  },
+  NONE: {
+    icon: "⚪",
+    color: "text-gray-500", 
+    text: "Ready",
+  },
+  SUCCESS: {
+    icon: "✅",
+    color: "text-green-600",
+  },
+  ERROR: {
+    icon: "❌", 
+    color: "text-red-600",
+  },
+} as const;
+
+const UI_CONSTANTS = {
+  MAX_PREVIEW_ITEMS: 5,
+  PROCESSING_ANIMATION: "animate-pulse",
+  DISABLED_OPACITY: "opacity-50",
+  DISABLED_CURSOR: "cursor-not-allowed",
+} as const;
+
+const CONTENT_CLASSES = {
+  expanded: "w-full h-full flex flex-col",
+  collapsed: "flex items-center justify-center w-full h-full", 
+  header: "flex items-center justify-between mb-3",
+  body: "flex-1 flex items-center justify-center",
+  disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+} as const;
+
+// -----------------------------------------------------------------------------
+// 2️⃣  Enhanced data schema & validation
 // -----------------------------------------------------------------------------
 
 export const StoreLocalDataSchema = z
@@ -301,47 +366,35 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({
   disabled = false,
   isProcessing = false,
 }) => {
-  const baseClasses = "px-3 py-2 rounded-md font-medium text-sm transition-all duration-200 border-2 min-w-[80px] h-[36px] flex items-center justify-center";
-  const storeClasses = "bg-blue-500 text-white border-blue-600 hover:bg-blue-600";
-  const deleteClasses = "bg-red-500 text-white border-red-600 hover:bg-red-600";
-  const getClasses = "bg-green-500 text-white border-green-600 hover:bg-green-600";
-  const disabledClasses = "opacity-50 cursor-not-allowed";
-  const processingClasses = "animate-pulse";
-
-  const getModeClasses = () => {
+  const getModeConfig = () => {
     switch (mode) {
-      case "store": return storeClasses;
-      case "delete": return deleteClasses;
-      case "get": return getClasses;
-      default: return storeClasses;
+      case "store": return MODE_CONFIG.STORE;
+      case "delete": return MODE_CONFIG.DELETE;
+      case "get": return MODE_CONFIG.GET;
+      default: return MODE_CONFIG.STORE;
     }
   };
 
-  const classes = [
-    baseClasses,
-    getModeClasses(),
-    disabled && disabledClasses,
-    isProcessing && processingClasses,
-  ].filter(Boolean).join(" ");
+  const config = getModeConfig();
+  const isProcessingText = isProcessing ? "..." : config.label;
 
-  const getModeText = () => {
-    if (isProcessing) return "...";
-    switch (mode) {
-      case "store": return "Store";
-      case "delete": return "Delete";
-      case "get": return "Get";
-      default: return "Store";
-    }
-  };
-
+  // Use store-specific button styling
+  const buttonClasses = useComponentButtonClasses('nodeInspector', config.variant, 'sm');
+  
   return (
-    <button
+    <Button
       onClick={onToggle}
       disabled={disabled || isProcessing}
-      className={classes}
+      variant={config.shadcnVariant}
+      size="sm"
+      className={`
+        ${buttonClasses}
+        ${isProcessing ? UI_CONSTANTS.PROCESSING_ANIMATION : ""}
+        ${disabled ? `${UI_CONSTANTS.DISABLED_OPACITY} ${UI_CONSTANTS.DISABLED_CURSOR}` : ""}
+      `}
     >
-      {getModeText()}
-    </button>
+      {isProcessingText}
+    </Button>
   );
 };
 
@@ -362,26 +415,26 @@ const StatusDisplay: React.FC<StatusDisplayProps> = ({
 }) => {
   const getStatusColor = () => {
     if (isProcessing) {
-      return "text-yellow-600";
+      return STATUS_CONFIG.PROCESSING.color;
     }
     if (lastOperation === "none") {
-      return "text-gray-500";
+      return STATUS_CONFIG.NONE.color;
     }
-    return lastOperationSuccess ? "text-green-600" : "text-red-600";
+    return lastOperationSuccess ? STATUS_CONFIG.SUCCESS.color : STATUS_CONFIG.ERROR.color;
   };
 
   const getStatusIcon = () => {
     if (isProcessing) {
-      return "⏳";
+      return STATUS_CONFIG.PROCESSING.icon;
     }
     if (lastOperation === "none") {
-      return "⚪";
+      return STATUS_CONFIG.NONE.icon;
     }
-    return lastOperationSuccess ? "✅" : "❌";
+    return lastOperationSuccess ? STATUS_CONFIG.SUCCESS.icon : STATUS_CONFIG.ERROR.icon;
   };
 
   return (
-    <div className={`text-xs ${getStatusColor()}`}>
+    <div className={`text-xs ${getStatusColor()} text-node-store-secondary`}>
       <div className="flex items-center gap-1">
         <span>{getStatusIcon()}</span>
         <span>
@@ -394,12 +447,12 @@ const StatusDisplay: React.FC<StatusDisplayProps> = ({
         </span>
       </div>
       {operationMessage && (
-        <div className="mt-1 text-xs opacity-75">
+        <div className="mt-1 text-xs opacity-75 text-node-store-secondary">
           {operationMessage}
         </div>
       )}
       {lastOperationTime && (
-        <div className="mt-1 text-xs opacity-50">
+        <div className="mt-1 text-xs opacity-50 text-node-store-secondary">
           {new Date(lastOperationTime).toLocaleTimeString()}
         </div>
       )}
@@ -416,7 +469,7 @@ interface DataPreviewProps {
 const DataPreview: React.FC<DataPreviewProps> = ({ 
   data, 
   mode, 
-  maxItems = 5 
+  maxItems = UI_CONSTANTS.MAX_PREVIEW_ITEMS 
 }) => {
   // Helper function to get current localStorage value
   const getCurrentLocalStorageValue = (key: string): string => {
@@ -498,7 +551,7 @@ interface RetrievedDataDisplayProps {
 
 const RetrievedDataDisplay: React.FC<RetrievedDataDisplayProps> = ({ 
   data, 
-  maxItems = 5 
+  maxItems = UI_CONSTANTS.MAX_PREVIEW_ITEMS 
 }) => {
   if (!data || Object.keys(data).length === 0) {
     return (
@@ -641,7 +694,7 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
           type: "textarea", 
           label: "Retrieved Data", 
           placeholder: "Retrieved localStorage data will appear here...",
-          ui: { rows: 6, readOnly: true },
+          ui: { rows: 6 },
         },
         { key: "isExpanded", type: "boolean", label: "Expand" },
       ],
@@ -677,6 +730,13 @@ const StoreLocalNode = memo(
     // 4.1  Sync with React‑Flow store
     // -------------------------------------------------------------------------
     const { nodeData, updateNodeData } = useNodeData(id, data);
+    
+    // Use design system tokens for spacing and other values
+    const containerPadding = useDesignSystemToken("spacing.md", "p-3");
+    const borderRadius = useDesignSystemToken("effects.rounded.md", "rounded-md");
+    const textSize = useDesignSystemToken("typography.sizes.sm", "text-sm");
+    
+
 
     // -------------------------------------------------------------------------
     // 4.2  Derived state
@@ -954,7 +1014,15 @@ const StoreLocalNode = memo(
         )}
 
         {!isExpanded ? (
-          <div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ''}`}>
+          <div 
+            className={`
+              ${CONTENT_CLASSES.collapsed} 
+              bg-node-store
+              border-node-store
+              text-node-store
+              ${!isEnabled ? CONTENT_CLASSES.disabled : ''}
+            `}
+          >
             <div className="flex flex-col items-center justify-center gap-2 p-2">
               <ModeToggleButton
                 mode={mode}
@@ -972,10 +1040,21 @@ const StoreLocalNode = memo(
             </div>
           </div>
         ) : (
-          <div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ''}`}>
+          <div 
+            className={`
+              ${CONTENT_CLASSES.expanded} 
+              ${containerPadding} 
+              bg-node-store
+              border-node-store
+              text-node-store
+              ${!isEnabled ? CONTENT_CLASSES.disabled : ''}
+            `}
+          >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium">LocalStorage Manager</h3>
+                <h3 className={`${textSize} font-medium text-node-store`}>
+                  LocalStorage Manager
+                </h3>
                 <ModeToggleButton
                   mode={mode}
                   onToggle={toggleMode}
@@ -987,10 +1066,8 @@ const StoreLocalNode = memo(
               <DataPreview
                 data={inputData}
                 mode={mode}
-                maxItems={5}
+                maxItems={UI_CONSTANTS.MAX_PREVIEW_ITEMS}
               />
-              
-
               
               <StatusDisplay
                 lastOperation={lastOperation}
