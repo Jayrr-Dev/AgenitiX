@@ -29,7 +29,7 @@ export function LogomarkSvg({ className, width = 50, height = 50 }: LogomarkSvgP
 		<svg
 			width={width}
 			height={height}
-			viewBox="0 0 200 200"
+			viewBox="0 0 450 450"
 			fill="none"
 			xmlns="http://www.w3.org/2000/svg"
 			className={className}

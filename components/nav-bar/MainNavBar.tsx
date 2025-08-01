@@ -52,7 +52,7 @@ export default function MainNavBar() {
 									scrolled ? "origin-left scale-90" : ""
 								)}
 							>
-								<span className="logoText ml-4 block whitespace-nowrap font-bold text-2xl sm:hidden sm:whitespace-normal lg:block lg:text-xl">
+								<span className="logoText ml-4 block whitespace-nowrap font-bold text-3xl sm:hidden sm:whitespace-normal lg:block lg:text-2xl">
 									AgenitiX
 								</span>
 							</div>
@@ -73,7 +73,7 @@ export default function MainNavBar() {
 
 					<div
 						id="theme-switcher"
-						className="xdebug-blue col-span-2 self-center justify-self-center rounded-full border border-transparent bg-fill-border hover:animate-fill-transparency"
+						className="xdebug-blue col-span-2 flex items-center justify-center"
 					>
 						<ThemeSwitcher />
 					</div>
