@@ -336,6 +336,20 @@ const CreateObjectNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
   // Memoized styles and values
   const categoryStyles = useMemo(() => CATEGORY_TEXT.CREATE, []);
   const displayValue = useMemo(() => store === "{}" ? "" : (store ?? ""), [store]);
+  
+  // Count keys in the JSON object for collapsed mode display
+  const objectKeyCount = useMemo(() => {
+    try {
+      if (!store || store === "{}") return 0;
+      const parsed = JSON.parse(store);
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+        return Object.keys(parsed).length;
+      }
+      return 0;
+    } catch {
+      return 0;
+    }
+  }, [store]);
 
   // Highly optimized textarea components
   const CollapsedTextarea = useMemo(() => (
