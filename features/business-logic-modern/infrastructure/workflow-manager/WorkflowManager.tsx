@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Download, Globe, Lock, Play, Settings, Square } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
+import { useCallback, useMemo, memo } from "react";
 import { useFlowMetadataOptional } from "../flow-engine/contexts/flow-metadata-context";
 import { useAutoSaveCanvas } from "../flow-engine/hooks/useAutoSaveCanvas";
 import { useLoadCanvas } from "../flow-engine/hooks/useLoadCanvas";
@@ -16,7 +17,7 @@ interface WorkflowManagerProps {
 	className?: string;
 }
 
-const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => {
+const WorkflowManagerComponent: React.FC<WorkflowManagerProps> = ({ className = "" }) => {
 	const { nodes, edges } = useFlowStore();
 	const { flow } = useFlowMetadataOptional() || { flow: null };
 	const router = useRouter();
@@ -29,23 +30,88 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 	});
 	const _loadCanvas = useLoadCanvas();
 
-	// Get themed classes
-	const containerClasses = useComponentClasses(
+	// Get themed classes - these hooks return stable values based on theme
+	const rawContainerClasses = useComponentClasses(
 		"workflowManager",
 		"default",
-		`flex items-center justify-between gap-4 p-3 rounded-lg shadow-sm border ${className}`
+		"flex items-center justify-between gap-4 p-3 rounded-lg shadow-sm border"
 	);
+	
 	const buttonClasses = useComponentButtonClasses("workflowManager", "ghost", "sm");
 	const _primaryButtonClasses = useComponentButtonClasses("workflowManager", "primary", "sm");
 
-	// Calculate workflow stats
-	const nodeCount = nodes.length;
-	const edgeCount = edges.length;
-	const isWorkflowEmpty = nodeCount === 0;
+	// Memoize only the final container classes that include the className prop
+	const containerClasses = useMemo(
+		() => `${rawContainerClasses} ${className}`,
+		[rawContainerClasses, className]
+	);
 
-	const handleReturnToDashboard = () => {
+	// Calculate workflow stats - memoized to prevent recalculation
+	const workflowStats = useMemo(() => ({
+		nodeCount: nodes.length,
+		edgeCount: edges.length,
+		isWorkflowEmpty: nodes.length === 0,
+	}), [nodes.length, edges.length]);
+
+	// Memoized event handlers to prevent re-creation
+	const handleReturnToDashboard = useCallback(() => {
 		router.push("/dashboard");
-	};
+	}, [router]);
+
+	const handleExportWorkflow = useCallback(() => {
+		// Implementation for export
+	}, []);
+
+	const handleRunWorkflow = useCallback(() => {
+		// Implementation for run
+	}, []);
+
+	const handleStopWorkflow = useCallback(() => {
+		// Implementation for stop
+	}, []);
+
+	const handleWorkflowSettings = useCallback(() => {
+		// Implementation for settings
+	}, []);
+
+	// Memoized auto-save tooltip text to prevent string concatenation on every render
+	const autoSaveTooltip = useMemo(() => {
+		if (autoSave.isSaving) {
+			return "Saving changes...";
+		}
+		if (autoSave.isEnabled && autoSave.lastSaved) {
+			return `Last saved at ${autoSave.lastSaved.toLocaleTimeString()}`;
+		}
+		return autoSave.isEnabled ? "Auto-save enabled" : "Auto-save disabled";
+	}, [autoSave.isSaving, autoSave.isEnabled, autoSave.lastSaved]);
+
+	// Memoized flow badge variant and classes
+	const flowBadgeProps = useMemo(() => {
+		if (!flow) return null;
+		
+		const isPrivate = flow.is_private;
+		return {
+			variant: isPrivate ? "secondary" : "default",
+			className: `flex scale-90 items-center gap-1 text-xs ${
+				isPrivate
+					? "border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100"
+					: "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
+			}`,
+			icon: isPrivate ? Lock : Globe,
+			label: isPrivate ? "Private" : "Public",
+		};
+	}, [flow?.is_private]);
+
+	// Memoized permission badge
+	const permissionBadge = useMemo(() => {
+		if (!flow || flow.isOwner) return null;
+		
+		const permissionLabel = 
+			flow.userPermission === "view" ? "View Only" :
+			flow.userPermission === "edit" ? "Can Edit" : "Admin";
+			
+		return permissionLabel;
+	}, [flow?.isOwner, flow?.userPermission]);
 
 	return (
 		<div className={containerClasses}>
@@ -69,15 +135,7 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 						{flow?.canEdit && (
 							<div
 								className="-left-4 -translate-y-1/2 absolute top-1/2 flex cursor-help items-center"
-								title={
-									autoSave.isSaving
-										? "Saving changes..."
-										: autoSave.isEnabled && autoSave.lastSaved
-											? `Last saved at ${autoSave.lastSaved.toLocaleTimeString()}`
-											: autoSave.isEnabled
-												? "Auto-save enabled"
-												: "Auto-save disabled"
-								}
+								title={autoSaveTooltip}
 							>
 								{autoSave.isSaving ? (
 									<div className="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-500 shadow-[0_0_4px_rgba(59,130,246,0.6)]" />
@@ -89,43 +147,27 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 							</div>
 						)}
 
-						{flow && (
+						{flowBadgeProps && (
 							<Badge
-								variant={flow.is_private ? "secondary" : "default"}
-								className={`flex scale-90 items-center gap-1 text-xs ${
-									flow.is_private
-										? "border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100"
-										: "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
-								}`}
+								variant={flowBadgeProps.variant as any}
+								className={flowBadgeProps.className}
 							>
-								{flow.is_private ? (
-									<>
-										<Lock className="h-3 w-3" />
-										Private
-									</>
-								) : (
-									<>
-										<Globe className="h-3 w-3" />
-										Public
-									</>
-								)}
+								<flowBadgeProps.icon className="h-3 w-3" />
+								{flowBadgeProps.label}
 							</Badge>
 						)}
-						{flow && !flow.isOwner && (
+						
+						{permissionBadge && (
 							<Badge variant="outline" className="text-xs">
-								{flow.userPermission === "view"
-									? "View Only"
-									: flow.userPermission === "edit"
-										? "Can Edit"
-										: "Admin"}
+								{permissionBadge}
 							</Badge>
 						)}
 					</div>
 					<div className="flex items-center gap-2 text-muted-foreground text-xs">
-						<span>{nodeCount} nodes</span>
+						<span>{workflowStats.nodeCount} nodes</span>
 						<span>•</span>
-						<span>{edgeCount} connections</span>
-						{isWorkflowEmpty && (
+						<span>{workflowStats.edgeCount} connections</span>
+						{workflowStats.isWorkflowEmpty && (
 							<>
 								<span>•</span>
 								<span className="text-orange-500">Empty workflow</span>
@@ -146,7 +188,7 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 				<button
 					className={`${buttonClasses} flex h-10 w-10 cursor-pointer items-center justify-center p-0`}
 					title="Export Workflow"
-					onClick={() => {}}
+					onClick={handleExportWorkflow}
 					type="button"
 				>
 					<Download className="h-5 w-5" />
@@ -155,7 +197,7 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 				<button
 					className={`${buttonClasses} flex h-10 w-10 cursor-pointer items-center justify-center p-0`}
 					title="Run Workflow"
-					onClick={() => {}}
+					onClick={handleRunWorkflow}
 					type="button"
 				>
 					<Play className="h-5 w-5" />
@@ -164,7 +206,7 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 				<button
 					className={`${buttonClasses} flex h-10 w-10 cursor-pointer items-center justify-center p-0`}
 					title="Stop Workflow"
-					onClick={() => {}}
+					onClick={handleStopWorkflow}
 					type="button"
 				>
 					<Square className="h-5 w-5" />
@@ -181,7 +223,7 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 				<button
 					className={`${buttonClasses} flex h-10 w-10 cursor-pointer items-center justify-center p-0`}
 					title="Workflow Settings"
-					onClick={() => {}}
+					onClick={handleWorkflowSettings}
 					type="button"
 				>
 					<Settings className="h-5 w-5" />
@@ -190,5 +232,13 @@ const WorkflowManager: React.FC<WorkflowManagerProps> = ({ className = "" }) => 
 		</div>
 	);
 };
+
+// Memoized export to prevent unnecessary re-renders
+const WorkflowManager = memo(WorkflowManagerComponent, (prevProps, nextProps) => {
+	// Only re-render if className changes
+	return prevProps.className === nextProps.className;
+});
+
+WorkflowManager.displayName = "WorkflowManager";
 
 export default WorkflowManager;
