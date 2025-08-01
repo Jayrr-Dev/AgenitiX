@@ -153,7 +153,7 @@ function createDynamicSpec(data: ViewBooleanData): NodeSpec {
 				{ key: "isExpanded", type: "boolean", label: "Expand" },
 			],
 		},
-		icon: "LuToggleLeft",
+		    icon: "LuCheckSquare",
 		author: "Agenitix Team",
 		description:
 			"Displays multiple boolean connections in a table view when expanded",

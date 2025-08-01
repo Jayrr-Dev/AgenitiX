@@ -265,7 +265,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
 				{ key: "isExpanded", type: "boolean", label: "Expand" },
 			],
 		},
-		icon: "LuMailOpen",
+		    icon: "LuMail",
 		author: "Agenitix Team",
 		description:
 			"Read and process emails from configured email accounts with filtering and real-time monitoring",

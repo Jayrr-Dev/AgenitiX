@@ -68,7 +68,7 @@ function createDynamicSpec(data: TestToastData): NodeSpec {
         { key: "isExpanded", type: "boolean", label: "Expand" },
       ],
     },
-    icon: "MessageSquare",
+    icon: "LuMessageSquare",
     author: "Agenitix Team",
     description: "Test node for demonstrating toast notifications",
     feature: "test",

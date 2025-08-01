@@ -640,7 +640,7 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
         { key: "isExpanded", type: "boolean", label: "Expand" },
       ],
     },
-    icon: "Database",
+    icon: "LuDatabase",
     author: "Agenitix Team",
     description: "Enhanced localStorage management with store/delete/get modes and pulse triggering",
     feature: "storage",

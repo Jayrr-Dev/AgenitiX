@@ -16,7 +16,7 @@
  * showToast({ type: 'error', message: 'Connection failed' });
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Check, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 import { COLLAPSED_SIZES, EXPANDED_SIZES } from '@/features/business-logic-modern/infrastructure/theming/sizing';
@@ -153,50 +153,60 @@ const Toast: React.FC<{
   );
 };
 
-// Helper function to get node width from standardized sizes
-const getNodeWidthFromSizing = (nodeId: string): number => {
-  // Try to get the node element to determine its current state
-  const nodeElement = document.querySelector(`[data-id="${nodeId}"]`);
-  if (!nodeElement) return 180; // Default to VE2 width
+// Fixed toast widths based on standardized sizing (normal sizing)
+const TOAST_WIDTHS = {
+  // Collapsed sizes (normal sizing)
+  C1: 60,    // 60px
+  C1W: 120,  // 120px
+  C2: 120,   // 120px
+  C3: 180,   // 180px
   
-  // Get expansion state from data attribute
-  const isExpanded = nodeElement.getAttribute('data-expanded') === 'true';
-  
-  // Get the current size key from data attributes
-  const currentSizeKey = nodeElement.getAttribute('data-current-size') ||
-                        (isExpanded 
-                          ? nodeElement.getAttribute('data-expanded-size') 
-                          : nodeElement.getAttribute('data-collapsed-size'));
-  
-  if (currentSizeKey) {
-    if (isExpanded) {
-      const expandedSize = EXPANDED_SIZES[currentSizeKey as keyof typeof EXPANDED_SIZES];
-      if (expandedSize) return expandedSize.width;
-    } else {
-      const collapsedSize = COLLAPSED_SIZES[currentSizeKey as keyof typeof COLLAPSED_SIZES];
-      if (collapsedSize) return collapsedSize.width;
-    }
+  // Expanded sizes (normal sizing)
+  FE0: 60,   // 60px
+  FE1: 120,  // 120px
+  FE1H: 120, // 120px
+  FE2: 180,  // 180px
+  FE3: 240,  // 240px
+  VE0: 60,   // 60px
+  VE1: 120,  // 120px
+  VE2: 180,  // 180px
+  VE3: 240,  // 240px
+} as const;
+
+// Helper function to get toast width from size key (for backwards compatibility)
+const getToastWidthFromSizeKey = (sizeKey: string): number => {
+  if (sizeKey && sizeKey in TOAST_WIDTHS) {
+    return TOAST_WIDTHS[sizeKey as keyof typeof TOAST_WIDTHS];
   }
-  
-  // Fallback to measuring the actual DOM element
-  const rect = nodeElement.getBoundingClientRect();
-  if (rect.width > 0) return Math.round(rect.width);
-  
-  // Final fallback based on common patterns
-  return isExpanded ? 180 : 120; // VE2 : C2 default
+  return TOAST_WIDTHS.VE2; // Default fallback
 };
 
 // Main toast container component
 export const NodeToastContainer: React.FC<{
   nodeId: string;
-}> = ({ nodeId }) => {
+  isExpanded?: boolean;
+  expandedSize?: string;
+  collapsedSize?: string;
+}> = ({ nodeId, isExpanded = false, expandedSize = 'VE2', collapsedSize = 'C2' }) => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [nodeWidth, setNodeWidth] = useState<number>(() => getNodeWidthFromSizing(nodeId));
+  
+  // Calculate width based on props (React way)
+  const nodeWidth = useMemo(() => {
+    const currentSizeKey = isExpanded ? expandedSize : collapsedSize;
+    
+    if (currentSizeKey && currentSizeKey in TOAST_WIDTHS) {
+      return TOAST_WIDTHS[currentSizeKey as keyof typeof TOAST_WIDTHS];
+    }
+    
+    // Fallback
+    return isExpanded ? TOAST_WIDTHS.VE2 : TOAST_WIDTHS.C2;
+  }, [isExpanded, expandedSize, collapsedSize]);
+  
   const DEBUG_WIDTH = process.env.NODE_ENV === 'development' && false; // Set to true to debug width matching
 
   // Add toast to queue
   const addToast = useCallback((config: ToastConfig) => {
-    const id = `${nodeId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = `${nodeId}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     const duration = config.duration ?? DEFAULT_DURATIONS[config.type];
     
     const newToast: ToastMessage = {
@@ -223,53 +233,17 @@ export const NodeToastContainer: React.FC<{
     setToasts([]);
   }, []);
 
-  // Get node width using sizing system and DOM measurement
+  // Debug logging
   useEffect(() => {
-    const updateNodeWidth = () => {
-      const newWidth = getNodeWidthFromSizing(nodeId);
-      
-      if (DEBUG_WIDTH) {
-        console.log(`Toast width update for node ${nodeId}:`, {
-          newWidth,
-          previousWidth: nodeWidth
-        });
-      }
-      
-      if (newWidth !== nodeWidth) {
-        setNodeWidth(newWidth);
-      }
-    };
-
-    // Initial width calculation
-    updateNodeWidth();
-
-    // Update width when node changes (expansion/collapse, size changes)
-    const mutationObserver = new MutationObserver(updateNodeWidth);
-    
-    // Observe the node element if found
-    const nodeElement = document.querySelector(`[data-id="${nodeId}"]`);
-    if (nodeElement) {
-      mutationObserver.observe(nodeElement, { 
-        attributes: true, 
-        attributeFilter: ['data-expanded', 'data-size', 'data-expanded-size', 'data-collapsed-size', 'class', 'style'],
-        childList: true,
-        subtree: true
+    if (DEBUG_WIDTH) {
+      console.log(`[Toast Debug] NodeToastContainer props for ${nodeId}:`, {
+        isExpanded,
+        expandedSize,
+        collapsedSize,
+        calculatedWidth: nodeWidth
       });
     }
-
-    // Also observe for React Flow updates
-    const flowContainer = document.querySelector('.react-flow');
-    if (flowContainer) {
-      mutationObserver.observe(flowContainer, {
-        childList: true,
-        subtree: true
-      });
-    }
-
-    return () => {
-      mutationObserver.disconnect();
-    };
-  }, [nodeId, nodeWidth, DEBUG_WIDTH]);
+  }, [nodeId, isExpanded, expandedSize, collapsedSize, nodeWidth, DEBUG_WIDTH]);
 
   // Expose toast functions via custom event system
   useEffect(() => {

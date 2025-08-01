@@ -185,7 +185,7 @@ const ExplorePage = () => {
 			await createFlow({
 				name: `Test Public Flow ${Date.now()}`,
 				description: "A test public flow for debugging",
-				icon: "zap",
+				icon: "LuZap",
 				is_private: false,
 				user_id: user.id,
 			});
@@ -205,7 +205,7 @@ const ExplorePage = () => {
 		try {
 			const iconCategories: Record<string, string> = {
 				// Popular icons
-				zap: "Popular",
+				LuZap: "Popular",
 				bot: "Popular",
 				activity: "Popular",
 				code: "Popular",

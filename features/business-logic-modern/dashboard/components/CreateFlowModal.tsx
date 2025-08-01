@@ -232,7 +232,7 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 	const [formData, setFormData] = useState<CreateFlowRequest>({
 		name: "",
 		description: "",
-		icon: "zap",
+		icon: "LuZap",
 		private: true,
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -258,7 +258,7 @@ export const CreateFlowModal: React.FC<CreateFlowModalProps> = ({
 			setFormData({
 				name: "",
 				description: "",
-				icon: "zap",
+				icon: "LuZap",
 				private: true,
 			});
 		} catch (err) {

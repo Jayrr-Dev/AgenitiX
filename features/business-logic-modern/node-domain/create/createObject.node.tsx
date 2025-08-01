@@ -136,7 +136,7 @@ const createDynamicSpec = (() => {
           { key: "isExpanded", type: "boolean", label: "Expand" },
         ],
       },
-      icon: "Braces",
+      icon: "LuBraces",
       author: "Agenitix Team",
       description: "Creates JSON objects with customizable structure and validation",
       feature: "base",

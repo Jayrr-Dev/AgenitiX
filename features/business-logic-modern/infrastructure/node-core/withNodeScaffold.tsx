@@ -337,11 +337,16 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 				isDisabled={isDisabled}
 				nodeId={props.id}
 				isExpanded={isExpanded}
-				expandedSize={(props.data as any)?.expandedSize}
-				collapsedSize={(props.data as any)?.collapsedSize}
+				expandedSize={(props.data as any)?.expandedSize || 'VE2'}
+				collapsedSize={(props.data as any)?.collapsedSize || 'C2'}
 			>
 				{/* Node Toast System - positioned above the node */}
-				<NodeToastContainer nodeId={props.id} />
+				<NodeToastContainer 
+					nodeId={props.id}
+					isExpanded={isExpanded}
+					expandedSize={(props.data as any)?.expandedSize || 'VE2'}
+					collapsedSize={(props.data as any)?.collapsedSize || 'C2'}
+				/>
 				
 				{/* Render registered node plugins */}
 				{getNodePlugins().map((Plugin, idx) => (
