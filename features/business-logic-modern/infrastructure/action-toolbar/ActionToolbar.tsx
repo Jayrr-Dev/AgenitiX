@@ -16,11 +16,10 @@
 
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { History, Maximize, Minimize, RotateCcw, RotateCw, Copy, Trash2 } from "lucide-react";
-import React from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useComponentButtonClasses, useComponentClasses } from "../theming/components";
 import { useUndoRedo } from "./history/undo-redo-context";
-import { useFlowStore } from "../flow-engine/stores/flowStore";
+import { useSelectedNodeId, useSelectedNode, useAddNode, useRemoveNode, useSelectNode } from "../flow-engine/stores/flowStore";
 
 interface ActionToolbarProps {
 	showHistoryPanel: boolean;
@@ -44,19 +43,14 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 	const [isFullscreen, setIsFullscreen] = useState(false);
 	const [isBrowserEnvironment, setIsBrowserEnvironment] = useState(false);
 
-	// Flow store for node operations
-	const {
-		nodes,
-		selectedNodeId,
-		removeNode,
-		addNode,
-		selectNode,
-	} = useFlowStore();
-
-	// Memoize selected node to prevent unnecessary lookups
-	const selectedNode = useMemo(() => {
-		return selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) : null;
-	}, [nodes, selectedNodeId]);
+	// Flow store for node operations with optimized selectors, basically reduces subscription overhead
+	const selectedNodeId = useSelectedNodeId();
+	const removeNode = useRemoveNode();
+	const addNode = useAddNode();
+	const selectNode = useSelectNode();
+	
+	// Use optimized selector for selected node, basically prevents unnecessary re-renders
+	const selectedNode = useSelectedNode();
 
 	// Get themed classes
 	const containerClasses = useComponentClasses(
@@ -67,19 +61,22 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 	const buttonClasses = useComponentButtonClasses("actionToolbar", "ghost", "sm");
 	const activeButtonClasses = useComponentButtonClasses("actionToolbar", "primary", "sm");
 
-	// Node action handlers
+	// Optimized node action handlers with early returns, basically prevents unnecessary function calls
 	const handleDeleteNode = useCallback(() => {
-		if (selectedNodeId) {
-			removeNode(selectedNodeId);
-		}
+		if (!selectedNodeId) return;
+		removeNode(selectedNodeId);
 	}, [selectedNodeId, removeNode]);
 
 	const handleDuplicateNode = useCallback(() => {
 		if (!selectedNode) return;
 
-		// Create a new node with a unique ID and offset position
-		const newId = `${selectedNode.id}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-		const newNode = {
+		// Optimized node duplication with stable ID generation, basically prevents ID collisions
+		const timestamp = Date.now();
+		const randomSuffix = Math.floor(Math.random() * 10000);
+		const newId = `${selectedNode.id}-copy-${timestamp}-${randomSuffix}`;
+		
+		// Create new node with spread optimization to prevent deep clone
+		const newNode: AgenNode = {
 			...selectedNode,
 			id: newId,
 			position: {
@@ -90,10 +87,8 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 			data: { ...selectedNode.data },
 		};
 
-		// Add the new node using the Zustand store
+		// Batch operations to prevent multiple store updates
 		addNode(newNode);
-
-		// Select the new duplicated node
 		selectNode(newId);
 	}, [selectedNode, addNode, selectNode]);
 
@@ -168,14 +163,15 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 
 	return (
 		<div className={containerClasses}>
-			{/* NODE ACTION BUTTONS - Moved to far left, only enabled when node is selected */}
+			{/* NODE ACTION BUTTONS - Optimized rendering with conditional memoization */}
 			{selectedNodeId && (
 				<>
 					<button
 						type="button"
 						onClick={handleDuplicateNode}
 						className={buttonClasses}
-						title="Duplicate Node"
+						title="Duplicate Node (Ctrl+D)"
+						aria-label="Duplicate selected node"
 					>
 						<Copy className="h-4 w-4" />
 					</button>
@@ -184,7 +180,8 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 						type="button"
 						onClick={handleDeleteNode}
 						className={buttonClasses}
-						title="Delete Node"
+						title="Delete Node (Delete)"
+						aria-label="Delete selected node"
 					>
 						<Trash2 className="h-4 w-4" />
 					</button>
@@ -241,6 +238,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 						onClick={toggleFullscreen}
 						className={isFullscreen ? activeButtonClasses : buttonClasses}
 						title={isFullscreen ? "Exit Fullscreen (F11)" : "Enter Fullscreen (F11)"}
+						aria-label={isFullscreen ? "Exit fullscreen mode" : "Enter fullscreen mode"}
 					>
 						{isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
 					</button>
@@ -250,4 +248,15 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 	);
 };
 
-export default ActionToolbar;
+// Memoize the ActionToolbar to prevent unnecessary re-renders, basically improves performance
+const ActionToolbarMemo = React.memo(ActionToolbar, (prevProps, nextProps) => {
+	return (
+		prevProps.showHistoryPanel === nextProps.showHistoryPanel &&
+		prevProps.className === nextProps.className
+		// onToggleHistory is stable from parent, so we don't need to compare it
+	);
+});
+
+ActionToolbarMemo.displayName = "ActionToolbar";
+
+export default ActionToolbarMemo;

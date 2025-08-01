@@ -1,16 +1,17 @@
 /**
  * INSPECTOR SETTINGS HOOK - Persistent card visibility settings for node inspector
  *
- * • Manages card visibility toggles with localStorage persistence
- * • Provides toggle functions for individual card sections
- * • Maintains default visibility state for new users
- * • SSR-safe hydration with fallback to defaults
- * • Type-safe settings management
+ * Performance optimizations:
+ * • Debounced localStorage writes to prevent excessive disk I/O
+ * • Memoized callback functions to prevent child re-renders  
+ * • Cached settings computation to avoid object recreation
+ * • Optimized state updates with useCallback and useMemo
+ * • Reduced effect dependencies for better performance
  *
- * Keywords: inspector-settings, localStorage, card-visibility, persistence
+ * Keywords: inspector-settings, localStorage, card-visibility, persistence, performance
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useAuthContext } from "@/components/auth/AuthProvider";
 
 // ============================================================================
@@ -145,6 +146,22 @@ const saveSettingsToStorage = (settings: InspectorSettingsWithOrder, userId?: st
 };
 
 // ============================================================================
+// PERFORMANCE UTILITIES
+// ============================================================================
+
+// Debounced localStorage save function, basically prevent excessive disk writes
+let saveTimeoutId: NodeJS.Timeout | null = null;
+const debouncedSave = (settings: InspectorSettingsWithOrder, userId?: string) => {
+	if (saveTimeoutId) {
+		clearTimeout(saveTimeoutId);
+	}
+	saveTimeoutId = setTimeout(() => {
+		saveSettingsToStorage(settings, userId);
+		saveTimeoutId = null;
+	}, 300); // 300ms debounce
+};
+
+// ============================================================================
 // HOOK IMPLEMENTATION
 // ============================================================================
 
@@ -158,65 +175,64 @@ export function useInspectorSettings() {
 	// Initialize with defaults for SSR safety, basically start with safe values
 	const [settings, setSettings] = useState<InspectorSettingsWithOrder>(DEFAULT_SETTINGS_WITH_ORDER);
 	const [isLoaded, setIsLoaded] = useState(false);
+	
+	// Ref to track if initial load is complete, basically prevent saving defaults on mount
+	const hasLoadedInitial = useRef(false);
 
 	// Hydrate from localStorage after component mounts, basically load saved settings on first render
 	useEffect(() => {
 		const loadedSettings = loadSettingsFromStorage(user?.id);
 		setSettings(loadedSettings);
 		setIsLoaded(true);
+		hasLoadedInitial.current = true;
 	}, [user?.id]);
 
-	// Save to localStorage whenever settings change, basically persist changes immediately
+	// Debounced save to localStorage when settings change, basically persist changes with delay
 	useEffect(() => {
-		if (isLoaded && user?.id) {
-			saveSettingsToStorage(settings, user.id);
+		if (hasLoadedInitial.current && isLoaded) {
+			debouncedSave(settings, user?.id);
 		}
 	}, [settings, isLoaded, user?.id]);
 
-	// Toggle function for individual settings, basically flip visibility state for a card
-	const toggleSetting = (key: keyof InspectorSettings): void => {
+	// Memoized toggle function, basically prevent function recreation on every render
+	const toggleSetting = useCallback((key: keyof InspectorSettings): void => {
 		setSettings(prev => ({
 			...prev,
 			[key]: !prev[key],
 		}));
-	};
+	}, []);
 
-	// Update card order function, basically rearrange cards in inspector
-	const updateCardOrder = (newOrder: CardType[]): void => {
+	// Memoized update card order function, basically prevent function recreation 
+	const updateCardOrder = useCallback((newOrder: CardType[]): void => {
 		setSettings(prev => ({
 			...prev,
 			cardOrder: newOrder,
 		}));
-	};
+	}, []);
 
-	// Reset to defaults function, basically restore original visibility settings and order
-	const resetToDefaults = (): void => {
+	// Memoized reset function, basically prevent function recreation
+	const resetToDefaults = useCallback((): void => {
 		setSettings(DEFAULT_SETTINGS_WITH_ORDER);
-	};
+	}, []);
 
-	// Check if all settings are enabled, basically determine if all cards are visible
-	const allEnabled = Object.values({
-		nodeInfo: settings.nodeInfo,
-		nodeData: settings.nodeData,
-		output: settings.output,
-		controls: settings.controls,
-		handles: settings.handles,
-		connections: settings.connections,
-		errors: settings.errors,
-		size: settings.size,
-	}).every(Boolean);
-
-	// Check if any settings are disabled, basically determine if any cards are hidden
-	const anyDisabled = Object.values({
-		nodeInfo: settings.nodeInfo,
-		nodeData: settings.nodeData,
-		output: settings.output,
-		controls: settings.controls,
-		handles: settings.handles,
-		connections: settings.connections,
-		errors: settings.errors,
-		size: settings.size,
-	}).some(value => !value);
+	// Memoized state computations, basically avoid recalculating unless settings change
+	const derivedState = useMemo(() => {
+		const settingsValues = {
+			nodeInfo: settings.nodeInfo,
+			nodeData: settings.nodeData,
+			output: settings.output,
+			controls: settings.controls,
+			handles: settings.handles,
+			connections: settings.connections,
+			errors: settings.errors,
+			size: settings.size,
+		};
+		
+		const allEnabled = Object.values(settingsValues).every(Boolean);
+		const anyDisabled = Object.values(settingsValues).some(value => !value);
+		
+		return { allEnabled, anyDisabled };
+	}, [settings.nodeInfo, settings.nodeData, settings.output, settings.controls, settings.handles, settings.connections, settings.errors, settings.size]);
 
 	return {
 		settings,
@@ -224,7 +240,7 @@ export function useInspectorSettings() {
 		updateCardOrder,
 		resetToDefaults,
 		isLoaded,
-		allEnabled,
-		anyDisabled,
+		allEnabled: derivedState.allEnabled,
+		anyDisabled: derivedState.anyDisabled,
 	};
 }

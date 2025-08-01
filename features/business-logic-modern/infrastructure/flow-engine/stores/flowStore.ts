@@ -774,12 +774,13 @@ export const useFlowStore = create<FlowStore>()(
 );
 
 // ============================================================================
-// SELECTORS (for performance optimization)
+// OPTIMIZED SELECTORS (for performance optimization)
 // ============================================================================
 
 // Stable empty array to avoid creating new arrays on every render
 const EMPTY_ARRAY: never[] = [];
 
+// Optimized selected node selector, basically prevents unnecessary re-renders
 export const useSelectedNode = () => {
 	return useFlowStore((state) => {
 		const selectedNodeId = state.selectedNodeId;
@@ -807,14 +808,22 @@ export const useNodeErrors = (nodeId: string | null) => {
 	});
 };
 
+// Optimized selected node ID selector for components that only need the ID, basically reduces subscription overhead
+export const useSelectedNodeId = () => {
+	return useFlowStore((state) => state.selectedNodeId);
+};
+
+// Optimized node operations selectors with stable references, basically prevents getSnapshot caching issues
+export const useAddNode = () => useFlowStore((state) => state.addNode);
+export const useRemoveNode = () => useFlowStore((state) => state.removeNode);
+export const useSelectNode = () => useFlowStore((state) => state.selectNode);
+export const useUpdateNodeData = () => useFlowStore((state) => state.updateNodeData);
+
 // ============================================================================
 // COMPUTED VALUES
 // ============================================================================
 
-export const useFlowStats = () => {
-	return useFlowStore((state) => ({
-		nodeCount: state.nodes.length,
-		edgeCount: state.edges.length,
-		errorCount: Object.values(state.nodeErrors || {}).flat().length,
-	}));
-};
+// Individual stable selectors to prevent getSnapshot caching issues, basically avoids object creation
+export const useNodeCount = () => useFlowStore((state) => state.nodes.length);
+export const useEdgeCount = () => useFlowStore((state) => state.edges.length);
+export const useErrorCount = () => useFlowStore((state) => Object.values(state.nodeErrors || {}).flat().length);

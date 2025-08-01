@@ -51,10 +51,11 @@ interface InspectorSettingsDropdownProps {
 // ============================================================================
 
 // Configuration for each setting item, basically display information for toggles
-const SETTING_ITEMS: Array<{
-	key: keyof InspectorSettings;
-	label: string;
-	description: string;
+// Moved outside component for performance - prevents array recreation
+const SETTING_ITEMS: ReadonlyArray<{
+	readonly key: keyof InspectorSettings;
+	readonly label: string;
+	readonly description: string;
 }> = [
 	{ key: "nodeInfo", label: "Node Information", description: "Basic node metadata and ID" },
 	{ key: "nodeData", label: "Node Data", description: "JSON data editor" },
@@ -64,7 +65,7 @@ const SETTING_ITEMS: Array<{
 	{ key: "connections", label: "Connections", description: "Connected nodes and edges" },
 	{ key: "size", label: "Size", description: "Node size controls" },
 	{ key: "errors", label: "Errors", description: "Error logs and diagnostics" },
-];
+] as const;
 
 // ============================================================================
 // CUSTOM SWITCH COMPONENT
@@ -76,7 +77,7 @@ interface CustomSwitchProps {
 	disabled?: boolean;
 }
 
-const CustomSwitch: React.FC<CustomSwitchProps> = ({ checked, onChange, disabled = false }) => {
+const CustomSwitch: React.FC<CustomSwitchProps> = memo(({ checked, onChange, disabled = false }) => {
 	return (
 		<Switch
 			checked={checked}
@@ -85,7 +86,7 @@ const CustomSwitch: React.FC<CustomSwitchProps> = ({ checked, onChange, disabled
 			className={CUSTOM_SWITCH_STYLES}
 		/>
 	);
-};
+});
 
 // ============================================================================
 // MAIN COMPONENT
@@ -141,12 +142,25 @@ const InspectorSettingsDropdownComponent: React.FC<InspectorSettingsDropdownProp
 	);
 };
 
-// Memoized export to prevent expensive Radix UI re-creation
+// Optimized memo with deep comparison for settings object, basically prevent re-renders on identical settings
 export const InspectorSettingsDropdown = memo(InspectorSettingsDropdownComponent, (prev, next) => {
-	// Only re-render if settings or callbacks change
-	return (
-		prev.settings === next.settings &&
+	// Compare settings object deeply since it's reconstructed on each render
+	const settingsEqual = (
+		prev.settings.nodeInfo === next.settings.nodeInfo &&
+		prev.settings.nodeData === next.settings.nodeData &&
+		prev.settings.output === next.settings.output &&
+		prev.settings.controls === next.settings.controls &&
+		prev.settings.handles === next.settings.handles &&
+		prev.settings.connections === next.settings.connections &&
+		prev.settings.errors === next.settings.errors &&
+		prev.settings.size === next.settings.size
+	);
+	
+	// Compare callback references (should be stable with useCallback)
+	const callbacksEqual = (
 		prev.onToggleSetting === next.onToggleSetting &&
 		prev.onResetToDefaults === next.onResetToDefaults
 	);
+	
+	return settingsEqual && callbacksEqual;
 });

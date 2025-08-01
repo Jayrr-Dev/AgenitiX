@@ -688,7 +688,7 @@ const NodeInspectorContent = memo<NodeInspectorContentProps>(({
 		isLoaded: settingsLoaded 
 	} = useInspectorSettings();
 
-	// Extract card visibility and order, basically separate visibility state from ordering
+	// Optimized card visibility extraction with selective dependency tracking, basically avoid recreating object unless individual properties change
 	const cardVisibility = useMemo(() => ({
 		nodeInfo: cardVisibilityWithOrder.nodeInfo,
 		nodeData: cardVisibilityWithOrder.nodeData,
@@ -698,7 +698,16 @@ const NodeInspectorContent = memo<NodeInspectorContentProps>(({
 		connections: cardVisibilityWithOrder.connections,
 		errors: cardVisibilityWithOrder.errors,
 		size: cardVisibilityWithOrder.size,
-	}), [cardVisibilityWithOrder]);
+	}), [
+		cardVisibilityWithOrder.nodeInfo,
+		cardVisibilityWithOrder.nodeData,
+		cardVisibilityWithOrder.output,
+		cardVisibilityWithOrder.controls,
+		cardVisibilityWithOrder.handles,
+		cardVisibilityWithOrder.connections,
+		cardVisibilityWithOrder.errors,
+		cardVisibilityWithOrder.size,
+	]);
 	
 	const cardOrder = cardVisibilityWithOrder.cardOrder;
 
@@ -777,50 +786,52 @@ const NodeInspectorContent = memo<NodeInspectorContentProps>(({
 	// Always call useNodeErrors to avoid conditional hook usage
 	const errors = useNodeErrors(selectedNode?.id || null);
 
-	// Get output for selected node
+	// Optimized output computation with reduced dependency scope, basically only recalculate when relevant data changes
+	const selectedNodeId = selectedNode?.id;
 	const output = useMemo(() => {
-		if (!selectedNode) {
+		if (!selectedNodeId) {
 			return null;
 		}
 		// Get the most up-to-date node data by finding it again
-		const currentNode = nodes.find((n) => n.id === selectedNode.id);
+		const currentNode = nodes.find((n) => n.id === selectedNodeId);
 		if (!currentNode) {
 			return null;
 		}
 		const result = getNodeOutput(currentNode, nodes, edges);
 		return result;
-	}, [selectedNode?.id, nodes, edges]);
+	}, [selectedNodeId, nodes, edges]);
 
-	// Get connections for selected node
+	// Optimized connections computation with early returns, basically minimize expensive operations when node unchanged
 	const connections = useMemo(() => {
-		if (!selectedNode) {
+		if (!selectedNodeId) {
 			return { incoming: [], outgoing: [] };
 		}
 
-		const incoming = edges
-			.filter((edge) => edge.target === selectedNode.id)
-			.map((edge) => {
+		// Use more efficient filtering approach
+		const incoming = [];
+		const outgoing = [];
+		
+		// Single pass through edges, basically avoid double iteration
+		for (const edge of edges) {
+			if (edge.target === selectedNodeId) {
 				const sourceNode = nodes.find((n) => n.id === edge.source);
-				return {
+				incoming.push({
 					edge,
 					sourceNode,
 					sourceOutput: sourceNode ? getNodeOutput(sourceNode, nodes, edges) : null,
-				};
-			});
-
-		const outgoing = edges
-			.filter((edge) => edge.source === selectedNode.id)
-			.map((edge) => {
+				});
+			} else if (edge.source === selectedNodeId) {
 				const targetNode = nodes.find((n) => n.id === edge.target);
-				return {
+				outgoing.push({
 					edge,
 					targetNode,
 					targetInput: targetNode ? getNodeOutput(targetNode, nodes, edges) : null,
-				};
-			});
+				});
+			}
+		}
 
 		return { incoming, outgoing };
-	}, [selectedNode, nodes, edges]);
+	}, [selectedNodeId, nodes, edges]);
 
 	const nodeInfo = useMemo(() => {
 		if (!selectedNode) {
