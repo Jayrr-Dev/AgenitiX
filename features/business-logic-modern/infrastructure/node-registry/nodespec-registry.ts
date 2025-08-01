@@ -247,11 +247,11 @@ export function getNodeMetadata(nodeType: string): NodeSpecMetadata | null {
 		size: {
 			expanded: {
 				width: spec.size.expanded.width,
-				height: spec.size.expanded.height,
+				height: (spec.size.expanded as any).height ?? (spec.size.expanded as any).minHeight ?? 60,
 			},
 			collapsed: {
 				width: spec.size.collapsed.width,
-				height: spec.size.collapsed.height,
+				height: (spec.size.collapsed as any).height ?? (spec.size.collapsed as any).minHeight ?? 60,
 			},
 		},
 		handles: spec.handles,

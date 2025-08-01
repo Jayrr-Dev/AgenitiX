@@ -131,7 +131,7 @@ function createDynamicSpec(data: CreateTextData): NodeSpec {
 					key: "store",
 					type: "textarea",
 					label: "Store",
-					placeholder: "Enter your content here…",
+					placeholder: "Enter Text",
 					ui: { rows: 4 },
 				},
 				{ key: "isExpanded", type: "boolean", label: "Expand" },

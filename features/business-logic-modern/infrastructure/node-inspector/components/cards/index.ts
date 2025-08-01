@@ -10,7 +10,6 @@
 
 // Node Information Cards
 export { default as NodeInformation } from "./NodeInformation";
-export { default as NodeDescription } from "./NodeDescription";
 export { default as NodeData } from "./NodeData";
 
 // Node Configuration Cards

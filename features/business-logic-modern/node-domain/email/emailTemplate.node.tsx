@@ -139,7 +139,7 @@ const TEMPLATE_CATEGORIES = [
 	{ value: "support", label: "Support" },
 	{ value: "newsletter", label: "Newsletter" },
 	{ value: "custom", label: "Custom" },
-] as const;
+];
 
 const VARIABLE_TYPES = [
 	{ value: "text", label: "Text" },
@@ -494,11 +494,11 @@ const EmailTemplateNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) =>
 		<div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}>
 			{/* Header */}
 			<div className={CONTENT.header}>
-				<LabelNode
-					label="Email Template"
-					className={`text-sm font-semibold ${categoryStyles.primary}`}
-				/>
-				<ExpandCollapseButton isExpanded={isExpanded} onClick={toggleExpand} />
+												<LabelNode
+									nodeId={id}
+									label="Email Template"
+								/>
+												<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} />
 			</div>
 
 			{/* Body */}

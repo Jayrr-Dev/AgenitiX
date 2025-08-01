@@ -38,7 +38,9 @@ const initializePopularIcons = () => {
 		'LuFileText', 'LuDatabase', 'LuMail', 'LuUser', 'LuSettings', 'LuPlus', 'LuMinus',
 		'LuEdit', 'LuTrash', 'LuSearch', 'LuCheck', 'LuX', 'LuCircle', 'LuSquare',
 		'LuTriangle', 'LuStar', 'LuHome', 'LuFolder', 'LuFile', 'LuDownload', 'LuUpload',
-		'LuRefreshCw', 'LuAlertCircle', 'LuInfo', 'LuCode', 'LuWrench', 'LuHeart'
+		'LuRefreshCw', 'LuAlertCircle', 'LuInfo', 'LuCode', 'LuWrench', 'LuHeart',
+		// Handle type icons - frequently used in TypeSafeHandle components
+		'LuType', 'LuHash', 'LuBraces', 'LuBrackets'
 	];
 	
 	popularIconNames.forEach(iconName => {

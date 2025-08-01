@@ -6,16 +6,78 @@
  * • Automatic validation and prevention of incompatible connections.
  * • User-friendly toast notifications for connection errors.
  * • Decoupled and reusable for any React Flow project.
- * • Uses React Icons for perfect centering and consistency.
+ * • Uses optimized cached React Icons for perfect centering and consistency.
+ * • Performance optimized with memoized icon components and caching.
  */
 import { Handle, type HandleProps, type IsValidConnection, useStore } from "@xyflow/react";
-import React, { useCallback } from "react";
+import React, { useCallback, memo, useMemo } from "react";
+import type { IconType } from "react-icons";
 import { LuBraces, LuBrackets, LuCheck, LuCircle, LuHash, LuWrench, LuType } from "react-icons/lu";
 import { VscJson } from "react-icons/vsc";
 import { toast } from "sonner";
 // Auto-generated at build time (can be empty in dev before first build)
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore – file is generated post-install / build
+
+// ============================================================================
+// HANDLE ICON OPTIMIZATION SYSTEM
+// ============================================================================
+
+/**
+ * Handle icon component cache for memoized components, basically prevent recreation of handle icon components
+ */
+const HANDLE_ICON_CACHE = new Map<string, React.ComponentType<{ width?: number; height?: number; style?: React.CSSProperties }>>();
+
+/**
+ * Handle icon lookup cache for faster icon resolution, basically O(1) lookups for handle icons
+ */
+const HANDLE_ICON_LOOKUP_CACHE = new Map<string, IconType>();
+
+/**
+ * Initialize handle icons cache with all handle type icons, basically pre-create components for handle icons
+ */
+const initializeHandleIcons = () => {
+	const handleIconComponents = {
+		string: LuType,
+		number: LuHash,
+		boolean: LuCheck,
+		object: LuBraces,
+		array: LuBrackets,
+		any: LuCircle,
+		json: VscJson,
+		tools: LuWrench,
+	};
+
+	Object.entries(handleIconComponents).forEach(([typeName, IconComponent]) => {
+		// Cache the raw icon component
+		HANDLE_ICON_LOOKUP_CACHE.set(typeName, IconComponent);
+		
+		// Create and cache memoized component for handles
+		const MemoizedHandleIcon = memo<{ width?: number; height?: number; style?: React.CSSProperties }>(({ width = 8, height = 8, style }) => 
+			React.createElement(IconComponent, { width, height, style })
+		);
+		MemoizedHandleIcon.displayName = `HandleIcon_${typeName}`;
+		HANDLE_ICON_CACHE.set(typeName, MemoizedHandleIcon);
+	});
+};
+
+// Initialize handle icons on module load
+initializeHandleIcons();
+
+/**
+ * Gets a cached handle icon component with memoization, basically prevent component recreation for handles
+ */
+const getCachedHandleIcon = (typeName: string): React.ComponentType<{ width?: number; height?: number; style?: React.CSSProperties }> | null => {
+	// Check handle icon cache first
+	const cachedIcon = HANDLE_ICON_CACHE.get(typeName.toLowerCase());
+	if (cachedIcon) {
+		return cachedIcon;
+	}
+	
+	// Fallback to 'any' type icon if specific type not found
+	const fallbackIcon = HANDLE_ICON_CACHE.get('any');
+	return fallbackIcon || null;
+};
 
 // ============================================================================
 // CONFIGURATION CONSTANTS - Easy to maintain and adjust
@@ -85,21 +147,21 @@ const DEFAULT_HANDLE_TYPE = "any";
 // const ajv = new Ajv({ allErrors: false, strict: false });
 
 /**
- * Unified type display configuration using React Icons
- * Maps type names to React icon components and semantic token references
+ * Unified type display configuration using optimized cached React Icons
+ * Maps type names to cached icon components and semantic token references
  */
 const UNIFIED_TYPE_DISPLAY: Record<
 	string,
-	{ icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; tokenKey: string }
+	{ iconKey: string; tokenKey: string }
 > = {
-	string: { icon: LuType, tokenKey: "string" },
-	number: { icon: LuHash, tokenKey: "number" },
-	boolean: { icon: LuCheck, tokenKey: "boolean" },
-	object: { icon: LuBraces, tokenKey: "object" },
-	array: { icon: LuBrackets, tokenKey: "array" },
-	any: { icon: LuCircle, tokenKey: "any" },
-	json: { icon: VscJson, tokenKey: "json" },
-	tools: { icon: LuWrench, tokenKey: "tools" },
+	string: { iconKey: "string", tokenKey: "string" },
+	number: { iconKey: "number", tokenKey: "number" },
+	boolean: { iconKey: "boolean", tokenKey: "boolean" },
+	object: { iconKey: "object", tokenKey: "object" },
+	array: { iconKey: "array", tokenKey: "array" },
+	any: { iconKey: "any", tokenKey: "any" },
+	json: { iconKey: "json", tokenKey: "json" },
+	tools: { iconKey: "tools", tokenKey: "tools" },
 };
 
 /**
@@ -235,15 +297,15 @@ function getTypeColor(tokenKey: string): string {
 }
 
 /**
- * Get unified type display information (icon and color)
+ * Get unified type display information (cached icon component and color)
  */
 function getTypeDisplay(handleTypeName: string): {
-	icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+	iconComponent: React.ComponentType<{ width?: number; height?: number; style?: React.CSSProperties }> | null;
 	color: string;
 } {
 	const display = UNIFIED_TYPE_DISPLAY[handleTypeName.toLowerCase()] || UNIFIED_TYPE_DISPLAY.any;
 	return {
-		icon: display.icon,
+		iconComponent: getCachedHandleIcon(display.iconKey),
 		color: getTypeColor(display.tokenKey),
 	};
 }
@@ -370,7 +432,7 @@ interface UltimateTypesafeHandleProps {
 	id?: string;
 }
 
-const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = ({
+const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
 	// eslint-disable-line @typescript-eslint/no-explicit-any
 	dataType,
 	tsSymbol,
@@ -380,9 +442,11 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = ({
 	totalHandlesOnSide = 1,
 	...props
 }) => {
-	// Get handle type name using utility function
-	const handleTypeName = getHandleTypeName(tsSymbol, dataType, code);
-	const typeDisplay = getTypeDisplay(handleTypeName);
+	// Memoize handle type name calculation, basically prevent recalculation on re-renders
+	const handleTypeName = useMemo(() => getHandleTypeName(tsSymbol, dataType, code), [tsSymbol, dataType, code]);
+	
+	// Memoize type display calculation, basically prevent recalculation of icon and color
+	const typeDisplay = useMemo(() => getTypeDisplay(handleTypeName), [handleTypeName]);
 
 	const { isValidConnection } = useUltimateFlowConnectionPrevention();
 
@@ -403,51 +467,68 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = ({
 	const connectableStart = isSource; // only sources can start connections
 	const connectableEnd = !isSource; // only targets can end connections
 
-	// Get background color using utility function
-	const backgroundColor = getHandleBackgroundColor(isConnected, isSource);
+	// Memoize background color calculation, basically prevent recalculation based on connection state
+	const backgroundColor = useMemo(() => getHandleBackgroundColor(isConnected, isSource), [isConnected, isSource]);
 
-	// Get injectable classes based on handle state
-	const baseClasses = getInjectableClasses("--core-handle-classes-base");
-	const stateClasses = isConnected
-		? getInjectableClasses("--core-handle-classes-connected")
-		: isSource
-			? getInjectableClasses("--core-handle-classes-source")
-			: getInjectableClasses("--core-handle-classes-target");
+	// Memoize injectable classes based on handle state, basically prevent CSS class recalculation
+	const { baseClasses, stateClasses } = useMemo(() => ({
+		baseClasses: getInjectableClasses("--core-handle-classes-base"),
+		stateClasses: isConnected
+			? getInjectableClasses("--core-handle-classes-connected")
+			: isSource
+				? getInjectableClasses("--core-handle-classes-source")
+				: getInjectableClasses("--core-handle-classes-target")
+	}), [isConnected, isSource]);
 
-	// Generate tooltip content
-	const tooltipContent = getTooltipContent(props.type || "target", dataType, code, tsSymbol);
+	// Memoize tooltip content generation, basically prevent string recalculation on re-renders  
+	const tooltipContent = useMemo(() => getTooltipContent(props.type || "target", dataType, code, tsSymbol), [props.type, dataType, code, tsSymbol]);
 
-	const IconComponent = typeDisplay.icon;
+	// Memoize the icon component to prevent re-creation on re-renders, basically stable icon reference
+	const MemoizedIconComponent = useMemo(() => typeDisplay.iconComponent, [typeDisplay.iconComponent]);
+
+	// Memoize position offset calculation, basically prevent recalculation of positioning
+	const positionOffset = useMemo(() => 
+		getPositionOffset(props.position, handleIndex, totalHandlesOnSide), 
+		[props.position, handleIndex, totalHandlesOnSide]
+	);
+
+	// Memoize complete handle styles, basically prevent style object recreation
+	const handleStyles = useMemo(() => ({
+		width: HANDLE_SIZE_PX,
+		height: HANDLE_SIZE_PX,
+		borderWidth: UNIFIED_HANDLE_STYLES.border.width,
+		boxShadow: `${UNIFIED_HANDLE_STYLES.border.shadow} ${typeDisplay.color}`,
+		borderColor: typeDisplay.color,
+		color: typeDisplay.color,
+		backgroundColor,
+		pointerEvents: "all" as const, // Ensure pointer events work for both input and output handles
+		display: "flex" as const,
+		alignItems: "center" as const,
+		justifyContent: "center" as const,
+		lineHeight: "1",
+		...positionOffset, // Apply smart positioning
+		...props.style,
+	}), [typeDisplay.color, backgroundColor, positionOffset, props.style]);
 
 	return (
 		<Handle
 			{...(props as HandleProps)}
 			className={`${UNIFIED_HANDLE_STYLES.base} ${baseClasses} ${stateClasses}`}
 			title={tooltipContent} // Native browser tooltip
-			style={{
-				width: HANDLE_SIZE_PX,
-				height: HANDLE_SIZE_PX,
-				borderWidth: UNIFIED_HANDLE_STYLES.border.width,
-				boxShadow: `${UNIFIED_HANDLE_STYLES.border.shadow} ${typeDisplay.color}`,
-				borderColor: typeDisplay.color,
-				color: typeDisplay.color,
-				backgroundColor,
-				pointerEvents: "all", // Ensure pointer events work for both input and output handles
-				display: "flex",
-				alignItems: "center",
-				justifyContent: "center",
-				lineHeight: "1",
-				...getPositionOffset(props.position, handleIndex, totalHandlesOnSide), // Apply smart positioning
-				...props.style,
-			}}
+			style={handleStyles}
 			isValidConnection={isValidConnection}
 			isConnectableStart={connectableStart}
 			isConnectableEnd={connectableEnd}
 		>
-			<IconComponent width={8} height={8} style={{ pointerEvents: "none" }} />
+			{MemoizedIconComponent && (
+				<MemoizedIconComponent width={8} height={8} style={{ pointerEvents: "none" }} />
+			)}
 		</Handle>
 	);
-};
+});
+
+// Set display name for better debugging and dev tools
+UltimateTypesafeHandle.displayName = 'UltimateTypesafeHandle';
 
 const TypeSafeHandle = UltimateTypesafeHandle;
 export default TypeSafeHandle;

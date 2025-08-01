@@ -1,25 +1,44 @@
 /**
- * NODE INFO - Node metadata and information display
+ * NODE INFO - Node metadata and information display with performance optimizations
  *
  * • Displays node type, label, ID, author, feature, tags, version, and runtime
  * • Provides editable label and ID functionality
  * • Organized metadata display with clean styling
  * • Integrated with node inspector accordion system
  *
- * Keywords: node-info, metadata, editable-fields, accordion-card
+ * Performance optimizations:
+ * • Memoized icon components prevent unnecessary re-renders
+ * • Cached row components with stable references
+ * • Pre-computed CSS class constants
+ * • Optimized conditional rendering with early returns
+ * • Memoized EditableLabel component for better performance
+ *
+ * Keywords: node-info, metadata, editable-fields, accordion-card, performance, memoization
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Edit3 } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 
 import EditableNodeId from "@/components/nodes/editableNodeId";
 import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import type { InspectorNodeInfo } from "../../adapters/NodeInspectorAdapter";
+import { LucideIcon, COMMON_LUCIDE_ICONS } from "../../../node-core/iconUtils";
 
-// Styling constants
+// Performance constants - extracted to prevent re-creation, basically avoid string concatenation on every render
 const STYLING_TEXT_NODE_METADATA = "font-mono text-muted-foreground text-sm";
+const LABEL_CLASS = "rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs";
+const TAG_CLASS = "rounded bg-muted px-2 py-1 text-muted-foreground text-xs";
+const ROW_CLASS = "flex items-center";
+const ROW_START_CLASS = "flex items-start";
+const TD_LABEL_CLASS = "w-1/3 py-2 pr-2";
+const TD_VALUE_CLASS = "w-2/3 py-2";
+const EDIT_CONTAINER_CLASS = "flex items-center justify-between w-full";
+const EDITABLE_FIELD_CLASS = "font-mono text-muted-foreground text-sm flex-1";
 
-// EditableLabel component that matches EditableNodeId behavior
+// Icon constants for consistent rendering
+const EDIT_ICON_SIZE = 12;
+const EDIT_ICON_CLASS = "h-3 w-3 text-muted-foreground/60 ml-1";
+
+// Optimized EditableLabel component with memoization, basically prevent unnecessary re-renders
 interface EditableLabelProps {
 	value: string;
 	placeholder: string;
@@ -27,7 +46,7 @@ interface EditableLabelProps {
 	className?: string;
 }
 
-const EditableLabel: React.FC<EditableLabelProps> = ({ value, placeholder, onSave, className = "" }) => {
+const EditableLabel = memo<EditableLabelProps>(({ value, placeholder, onSave, className = "" }) => {
 	const [editing, setEditing] = useState(false);
 	const spanRef = useRef<HTMLSpanElement>(null);
 
@@ -97,7 +116,9 @@ const EditableLabel: React.FC<EditableLabelProps> = ({ value, placeholder, onSav
 			</span>
 		</div>
 	);
-};
+});
+
+EditableLabel.displayName = 'EditableLabel';
 
 interface NodeInfoProps {
 	selectedNode: AgenNode;
@@ -120,19 +141,36 @@ const NodeInformationComponent: React.FC<NodeInfoProps> = ({
 		});
 	}, [selectedNode.id, selectedNode.data, updateNodeData]);
 
-	// Memoize expensive tag rendering
+	// Memoize expensive tag rendering with optimized class names, basically prevent repeated string concatenation
 	const tagElements = useMemo(() => {
 		if (!nodeInfo.tags || nodeInfo.tags.length === 0) return null;
 		
 		return nodeInfo.tags.map((tag) => (
 			<span
 				key={`tag-${tag}`}
-				className="rounded bg-muted px-2 py-1 text-muted-foreground text-xs"
+				className={TAG_CLASS}
 			>
 				{tag}
 			</span>
 		));
 	}, [nodeInfo.tags]);
+
+	// Memoized edit icon component, basically prevent icon re-creation
+	const editIcon = useMemo(() => (
+		<LucideIcon 
+			name={COMMON_LUCIDE_ICONS.EDIT_3} 
+			className={EDIT_ICON_CLASS} 
+			size={EDIT_ICON_SIZE} 
+		/>
+	), []);
+
+	// Memoized conditional flags for better performance, basically avoid repeated checks
+	const showDescription = useMemo(() => Boolean(nodeInfo.description), [nodeInfo.description]);
+	const showAuthor = useMemo(() => Boolean(nodeInfo.author), [nodeInfo.author]);
+	const showFeature = useMemo(() => Boolean(nodeInfo.feature), [nodeInfo.feature]);
+	const showTags = useMemo(() => Boolean(nodeInfo.tags && nodeInfo.tags.length > 0), [nodeInfo.tags]);
+	const showVersion = useMemo(() => Boolean(nodeInfo.version), [nodeInfo.version]);
+	const showRuntime = useMemo(() => Boolean(nodeInfo.runtime?.execute), [nodeInfo.runtime?.execute]);
 
 	// Memoize node label value to prevent unnecessary recalculations
 	const nodeLabel = useMemo(() => {
@@ -147,123 +185,123 @@ const NodeInformationComponent: React.FC<NodeInfoProps> = ({
 		<div className="overflow-hidden">
 			<table className="w-full">
 				<tbody className="divide-y divide-border/30">
-					<tr className="flex items-center">
-						<td className="w-1/3 py-2 pr-2">
-							<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
+					<tr className={ROW_CLASS}>
+						<td className={TD_LABEL_CLASS}>
+							<span className={LABEL_CLASS}>
 								TYPE
 							</span>
 						</td>
-						<td className="w-2/3 py-2">
+						<td className={TD_VALUE_CLASS}>
 							<span className={STYLING_TEXT_NODE_METADATA}>{selectedNode.type}</span>
 						</td>
 					</tr>
-					<tr className="flex items-center">
-						<td className="w-1/3 py-2 pr-2">
-							<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
+					<tr className={ROW_CLASS}>
+						<td className={TD_LABEL_CLASS}>
+							<span className={LABEL_CLASS}>
 								LABEL
 							</span>
 						</td>
-						<td className="w-2/3 py-2">
-							<div className="flex items-center justify-between w-full">
+						<td className={TD_VALUE_CLASS}>
+							<div className={EDIT_CONTAINER_CLASS}>
 								<EditableLabel
 									value={nodeLabel}
 									placeholder={nodeInfo.displayName}
 									onSave={handleLabelSave}
-									className="font-mono text-muted-foreground text-sm flex-1"
+									className={EDITABLE_FIELD_CLASS}
 								/>
-								<Edit3 className="h-3 w-3 text-muted-foreground/60 ml-1" />
+								{editIcon}
 							</div>
 						</td>
 					</tr>
-					<tr className="flex items-center">
-						<td className="w-1/3 py-2 pr-2">
-							<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
+					<tr className={ROW_CLASS}>
+						<td className={TD_LABEL_CLASS}>
+							<span className={LABEL_CLASS}>
 								ID
 							</span>
 						</td>
-						<td className="w-2/3 py-2">
-							<div className="flex items-center justify-between w-full">
+						<td className={TD_VALUE_CLASS}>
+							<div className={EDIT_CONTAINER_CLASS}>
 								<EditableNodeId
 									nodeId={selectedNode.id}
 									onUpdateId={onUpdateNodeId}
-									className="font-mono text-muted-foreground text-sm flex-1"
+									className={EDITABLE_FIELD_CLASS}
 								/>
-								<Edit3 className="h-3 w-3 text-muted-foreground/60 ml-1" />
+								{editIcon}
 							</div>
 						</td>
 					</tr>
-					{nodeInfo.description && (
-						<tr className="flex items-start">
-							<td className="w-1/3 py-2 pr-2">
-								<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
+					{showDescription && (
+						<tr className={ROW_START_CLASS}>
+							<td className={TD_LABEL_CLASS}>
+								<span className={LABEL_CLASS}>
 									DESCRIPTION
 								</span>
 							</td>
-							<td className="w-2/3 py-2">
+							<td className={TD_VALUE_CLASS}>
 								<span className="font-mono text-muted-foreground text-sm leading-relaxed">
 									{nodeDescription}
 								</span>
 							</td>
 						</tr>
 					)}
-					{nodeInfo.author && (
-						<tr className="flex items-center">
-							<td className="w-1/3 py-2 pr-2">
-								<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
+					{showAuthor && (
+						<tr className={ROW_CLASS}>
+							<td className={TD_LABEL_CLASS}>
+								<span className={LABEL_CLASS}>
 									AUTHOR
 								</span>
 							</td>
-							<td className="w-2/3 py-2">
+							<td className={TD_VALUE_CLASS}>
 								<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.author}</span>
 							</td>
 						</tr>
 					)}
-					{nodeInfo.feature && (
-						<tr className="flex items-center">
-							<td className="w-1/3 py-2 pr-2">
-								<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
+					{showFeature && (
+						<tr className={ROW_CLASS}>
+							<td className={TD_LABEL_CLASS}>
+								<span className={LABEL_CLASS}>
 									FEATURE
 								</span>
 							</td>
-							<td className="w-2/3 py-2">
+							<td className={TD_VALUE_CLASS}>
 								<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.feature}</span>
 							</td>
 						</tr>
 					)}
-					{nodeInfo.tags && nodeInfo.tags.length > 0 && (
-						<tr className="flex items-center">
-							<td className="w-1/3 py-2 pr-2">
-								<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
+					{showTags && (
+						<tr className={ROW_CLASS}>
+							<td className={TD_LABEL_CLASS}>
+								<span className={LABEL_CLASS}>
 									TAGS
 								</span>
 							</td>
-							<td className="w-2/3 py-2">
+							<td className={TD_VALUE_CLASS}>
 								<div className="flex flex-wrap gap-1">
 									{tagElements}
 								</div>
 							</td>
 						</tr>
 					)}
-					{nodeInfo.version && (
-						<tr className="flex items-center">
-							<td className="w-1/3 py-2 pr-2">
-								<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
+					{showVersion && (
+						<tr className={ROW_CLASS}>
+							<td className={TD_LABEL_CLASS}>
+								<span className={LABEL_CLASS}>
 									VERSION
 								</span>
 							</td>
-							<td className="w-2/3 py-2">
+							<td className={TD_VALUE_CLASS}>
 								<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.version}</span>
 							</td>
 						</tr>
 					)}
-					{nodeInfo.runtime?.execute && (
-						<tr className="flex items-center">
-							<td className="w-1/3 py-2 pr-2">
-								<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
+					{showRuntime && nodeInfo.runtime && (
+						<tr className={ROW_CLASS}>
+							<td className={TD_LABEL_CLASS}>
+								<span className={LABEL_CLASS}>
 									RUNTIME
 								</span>
 							</td>
-							<td className="w-2/3 py-2">
+							<td className={TD_VALUE_CLASS}>
 								<span className="font-mono text-muted-foreground text-sm">
 									{nodeInfo.runtime.execute}
 								</span>
@@ -277,11 +315,14 @@ const NodeInformationComponent: React.FC<NodeInfoProps> = ({
 };
 
 export const NodeInformation = React.memo(NodeInformationComponent, (prev, next) => {
-	// Re-render only if selectedNode.id or nodeInfo reference changed.
+	// Enhanced memo comparison for better performance, basically prevent unnecessary re-renders with deeper checks
 	return (
 		prev.selectedNode.id === next.selectedNode.id &&
+		prev.selectedNode.type === next.selectedNode.type &&
 		prev.selectedNode.data === next.selectedNode.data &&
-		prev.nodeInfo === next.nodeInfo
+		prev.nodeInfo === next.nodeInfo &&
+		prev.updateNodeData === next.updateNodeData &&
+		prev.onUpdateNodeId === next.onUpdateNodeId
 	);
 });
 

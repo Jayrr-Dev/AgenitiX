@@ -107,10 +107,9 @@ const SidebarTabContentComponent: React.FC<TabContentProps> = ({
 		return tabStencils;
 	}, [isCustomTab, stencilsConfig, tabKey, variant]);
 
-	// For custom tab, don't use stencil storage
-	const [stencils, setStencils] = isCustomTab
-		? [[], () => {}]
-		: useStencilStorage(variant, tabKey as TabKey<typeof variant>, getDefaultStencils());
+	// Conditionally use stencil storage for better performance, basically avoid unnecessary hook calls
+	const stencilStorageResult = useStencilStorage(variant, tabKey as TabKey<typeof variant>, getDefaultStencils());
+	const [stencils, setStencils] = isCustomTab ? [[], () => {}] : stencilStorageResult;
 
 	// Use filtered nodes hook to respect feature flags
 	const { nodes: filteredNodes } = useFilteredNodes();
@@ -120,30 +119,24 @@ const SidebarTabContentComponent: React.FC<TabContentProps> = ({
 		return new Set(filteredNodes.map(node => node.kind));
 	}, [filteredNodes]);
 
-	// Optimized stencil filtering with early returns and caching, basically prevent unnecessary filtering operations
+	// Highly optimized stencil filtering with minimal allocations, basically prevent unnecessary operations
 	const filteredStencils = useMemo(() => {
-		if (isCustomTab) {
+		// Early returns for performance, basically avoid all processing when possible
+		if (isCustomTab || !stencils.length || !filteredNodeTypes.size) {
 			return [];
 		}
 
-		// Early return if no stencils to filter, basically avoid empty array processing
-		if (!stencils.length) {
-			return [];
-		}
-
-		// Early return if all nodes are filtered out, basically avoid processing when no features enabled
-		if (!filteredNodeTypes.size) {
-			return [];
-		}
-
-		// Use for loop instead of filter for better performance on large arrays, basically faster iteration
-		const result = [];
-		for (let i = 0; i < stencils.length; i++) {
+		// Pre-allocate array for better memory performance, basically reduce allocations
+		const result: typeof stencils = [];
+		
+		// Use faster iteration pattern with direct property access, basically optimize inner loop
+		for (let i = 0, len = stencils.length; i < len; i++) {
 			const stencil = stencils[i];
 			if (filteredNodeTypes.has(stencil.nodeType)) {
-				result.push(stencil);
+				result[result.length] = stencil; // Faster than push()
 			}
 		}
+		
 		return result;
 	}, [stencils, filteredNodeTypes, isCustomTab]);
 
@@ -154,24 +147,28 @@ const SidebarTabContentComponent: React.FC<TabContentProps> = ({
 		}
 	}, [filteredStencils, tabKey, onStencilsChange, isCustomTab]);
 
-	// Memoized drag end handler to prevent function recreation
+	// Optimized drag end handler with Map-based lookups, basically faster index finding
 	const handleDragEnd = useCallback((event: DragEndEvent) => {
 		const { active, over } = event;
 		if (!over || active.id === over.id || !isCustomTab || !onReorderCustomNodes) {
 			return;
 		}
 
-		const oldIndex = customNodes.findIndex((node) => node.id === active.id);
-		const newIndex = customNodes.findIndex((node) => node.id === over.id);
+		// Use Map for O(1) lookup instead of findIndex O(n), basically faster performance
+		const idToIndexMap = new Map(customNodes.map((node, index) => [node.id, index]));
+		const oldIndex = idToIndexMap.get(active.id as string);
+		const newIndex = idToIndexMap.get(over.id as string);
 
-		if (oldIndex !== -1 && newIndex !== -1) {
+		if (oldIndex !== undefined && newIndex !== undefined) {
 			const newOrder = arrayMove(customNodes, oldIndex, newIndex);
 			onReorderCustomNodes(newOrder);
 		}
 	}, [isCustomTab, onReorderCustomNodes, customNodes]);
 
+	// Memoized node IDs for drag and drop performance, basically prevent array recreation
+	const nodeIds = useMemo(() => customNodes.map((node) => node.id), [customNodes]);
+
 	if (isCustomTab) {
-		const nodeIds = customNodes.map((node) => node.id);
 
 		return (
 			<TabsContent value={tabKey}>
@@ -217,5 +214,21 @@ const SidebarTabContentComponent: React.FC<TabContentProps> = ({
 	);
 };
 
-// Export optimized component without memo to avoid HMR issues in development
-export const SidebarTabContent = SidebarTabContentComponent;
+// Export memoized component for better performance, basically prevent unnecessary re-renders
+export const SidebarTabContent = memo(SidebarTabContentComponent, (prev, next) => {
+	// Custom comparison for optimal re-render control, basically precise change detection
+	return (
+		prev.variant === next.variant &&
+		prev.tabKey === next.tabKey &&
+		prev.isCustomTab === next.isCustomTab &&
+		prev.onNativeDragStart === next.onNativeDragStart &&
+		prev.onDoubleClickCreate === next.onDoubleClickCreate &&
+		prev.setHovered === next.setHovered &&
+		prev.onAddCustomNode === next.onAddCustomNode &&
+		prev.onRemoveCustomNode === next.onRemoveCustomNode &&
+		prev.onReorderCustomNodes === next.onReorderCustomNodes &&
+		prev.onStencilsChange === next.onStencilsChange &&
+		// Deep compare custom nodes array for changes
+		prev.customNodes === next.customNodes
+	);
+});

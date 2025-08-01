@@ -6,12 +6,23 @@ import {
 	DropdownMenuContent,
 	DropdownMenuRadioGroup,
 	DropdownMenuRadioItem,
-	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Laptop, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+
+// Top-level constants for better performance, basically prevent recreation on every render
+const ICON_SIZE = 16;
+const ICON_CLASSES = "text-muted-foreground";
+const MENU_ITEM_CLASSES = "flex gap-2";
+
+// Pre-computed theme options for stable references, basically avoid object recreation
+const THEME_OPTIONS = [
+	{ value: "light", label: "Light", Icon: Sun },
+	{ value: "dark", label: "Dark", Icon: Moon },
+	{ value: "system", label: "System", Icon: Laptop },
+] as const;
 
 const ThemeSwitcher = () => {
 	const [mounted, setMounted] = useState(false);
@@ -22,43 +33,59 @@ const ThemeSwitcher = () => {
 		setMounted(true);
 	}, []);
 
+	// Memoized theme change handler, basically prevent function recreation
+	const handleThemeChange = useCallback((newTheme: string) => {
+		setTheme(newTheme);
+	}, [setTheme]);
+
+	// Memoized current theme icon, basically prevent icon component recreation
+	const currentThemeIcon = useMemo(() => {
+		if (!mounted) return null;
+		
+		const themeOption = THEME_OPTIONS.find(option => option.value === theme);
+		if (!themeOption) return <Laptop key="system" size={ICON_SIZE} className={ICON_CLASSES} />;
+		
+		const { Icon, value } = themeOption;
+		return <Icon key={value} size={ICON_SIZE} className={ICON_CLASSES} />;
+	}, [mounted, theme]);
+
+	// Early return for SSR, basically avoid hydration issues
 	if (!mounted) {
-		return null;
+		return (
+			<Button type="button" variant="ghost" size="sm" disabled>
+				<Laptop size={ICON_SIZE} className={ICON_CLASSES} />
+			</Button>
+		);
 	}
 
-	const ICON_SIZE = 16;
-
 	return (
-		<>
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild={true}>
-					<Button type="button" variant="ghost" size={"sm"}>
-						{theme === "light" ? (
-							<Sun key="light" size={ICON_SIZE} className={"text-muted-foreground"} />
-						) : theme === "dark" ? (
-							<Moon key="dark" size={ICON_SIZE} className={"text-muted-foreground"} />
-						) : (
-							<Laptop key="system" size={ICON_SIZE} className={"text-muted-foreground"} />
-						)}
-					</Button>
-				</DropdownMenuTrigger>
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button type="button" variant="ghost" size="sm">
+					{currentThemeIcon}
+				</Button>
+			</DropdownMenuTrigger>
 
-				<DropdownMenuContent>
-					<DropdownMenuRadioGroup value={theme} onValueChange={(e) => setTheme(e)}>
-						<DropdownMenuRadioItem className="flex gap-2" value="light">
-							<Sun size={ICON_SIZE} className="text-muted-foreground" /> <span>Light</span>
+			<DropdownMenuContent>
+				<DropdownMenuRadioGroup value={theme} onValueChange={handleThemeChange}>
+					{THEME_OPTIONS.map(({ value, label, Icon }) => (
+						<DropdownMenuRadioItem 
+							key={value}
+							className={MENU_ITEM_CLASSES} 
+							value={value}
+						>
+							<Icon size={ICON_SIZE} className={ICON_CLASSES} />
+							<span>{label}</span>
 						</DropdownMenuRadioItem>
-						<DropdownMenuRadioItem className="flex gap-2" value="dark">
-							<Moon size={ICON_SIZE} className="text-muted-foreground" /> <span>Dark</span>
-						</DropdownMenuRadioItem>
-						<DropdownMenuRadioItem className="flex gap-2" value="system">
-							<Laptop size={ICON_SIZE} className="text-muted-foreground" /> <span>System</span>
-						</DropdownMenuRadioItem>
-					</DropdownMenuRadioGroup>
-				</DropdownMenuContent>
-			</DropdownMenu>
-		</>
+					))}
+				</DropdownMenuRadioGroup>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 };
 
-export { ThemeSwitcher };
+// Memoize the ThemeSwitcher to prevent unnecessary re-renders, basically improves performance
+const ThemeSwitcherMemo = React.memo(ThemeSwitcher);
+ThemeSwitcherMemo.displayName = "ThemeSwitcher";
+
+export { ThemeSwitcherMemo as ThemeSwitcher };

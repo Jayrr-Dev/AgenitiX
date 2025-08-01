@@ -14,6 +14,17 @@ import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET(_request: NextRequest) {
 	try {
+		// Check if Hypertune token is available
+		if (!process.env.NEXT_PUBLIC_HYPERTUNE_TOKEN) {
+			console.warn("NEXT_PUBLIC_HYPERTUNE_TOKEN not found, using fallback values");
+			return NextResponse.json({
+				success: true,
+				isEnabled: true, // Default to enabled when token is missing
+				warning: "Hypertune token not configured, using fallback values",
+				timestamp: new Date().toISOString(),
+			});
+		}
+
 		// Get the flag value server-side
 		const isEnabled = await installAppFlag();
 

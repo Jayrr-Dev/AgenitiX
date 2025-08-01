@@ -1,19 +1,25 @@
 /**
  * VARIANT SELECTOR - Floating component for switching between sidebar variants
  *
- * • Floating variant buttons with icons positioned absolutely
+ * • Floating variant buttons with optimized Lucide icons positioned absolutely
  * • Temporary text display showing variant names on hover/switch
  * • Keyboard shortcut support (Alt+1-5) with visual feedback
  * • Hover effects with variant name preview
  * • Responsive design with mobile considerations
  * • Integration with semantic token system for consistent theming
  *
- * Keywords: variant-selector, floating-buttons, keyboard-shortcuts, semantic-tokens, responsive
+ * Performance optimizations:
+ * • Memoized icon components prevent unnecessary re-renders
+ * • Cached Lucide icons with O(1) lookups via iconUtils
+ * • Pre-computed icon props to avoid object recreation
+ * • Stable icon references for consistent performance
+ *
+ * Keywords: variant-selector, floating-buttons, keyboard-shortcuts, semantic-tokens, responsive, performance, memoization
  */
 
 import type React from "react";
-import { useEffect, useState } from "react";
-import { FaBolt, FaBox, FaLink, FaRobot, FaVideo } from "react-icons/fa";
+import { useEffect, useState, memo, useMemo } from "react";
+import { LucideIcon, COMMON_LUCIDE_ICONS } from "../node-core/iconUtils";
 import { type SidebarVariant, VARIANT_NAMES } from "./types";
 
 // ============================================================================
@@ -25,6 +31,21 @@ const SIDEBAR_VARIANTS: SidebarVariant[] = ["A", "B", "C", "D", "E"];
 
 /** Duration to show variant name text after switching (in milliseconds) */
 const VARIANT_TEXT_DISPLAY_DURATION = 1500;
+
+/** Icon size for variant selector buttons, basically consistent sizing */
+const ICON_SIZE = 16;
+
+/** Icon class name for consistent styling, basically shared CSS properties */
+const ICON_CLASS_NAME = "w-4 h-4";
+
+/** Optimized icon mapping for variant selector, basically using Lucide icons for better performance */
+const VARIANT_ICONS = {
+	A: COMMON_LUCIDE_ICONS.ZAP, // Main - Lightning bolt for speed/main functionality
+	B: COMMON_LUCIDE_ICONS.VIDEO, // Media - Video for media content
+	C: COMMON_LUCIDE_ICONS.LINK, // Integration - Link for connections/integrations
+	D: COMMON_LUCIDE_ICONS.SETTINGS, // Automation - Settings gear for automation
+	E: COMMON_LUCIDE_ICONS.PACKAGE, // Misc - Package for miscellaneous items
+} as const;
 
 // ============================================================================
 // TYPES
@@ -48,27 +69,34 @@ interface VariantSelectorProps {
 // ============================================================================
 
 /**
- * Renders the appropriate icon for each sidebar variant
+ * Optimized memoized icon component for variant selector, basically prevent re-creation of icon components
+ */
+const VariantIcon = memo<{ variant: SidebarVariant }>(({ variant }) => {
+	const iconName = VARIANT_ICONS[variant];
+	
+	// Use useMemo to prevent re-creation of props object on every render
+	const iconProps = useMemo(() => ({
+		name: iconName,
+		className: ICON_CLASS_NAME,
+		size: ICON_SIZE,
+	}), [iconName]);
+	
+	return <LucideIcon {...iconProps} />;
+});
+
+VariantIcon.displayName = 'VariantIcon';
+
+/**
+ * Renders the appropriate optimized icon for each sidebar variant, basically using cached Lucide icons
  * @param {SidebarVariant} variant - The variant to get icon for
- * @returns {React.ReactElement | null} The icon component or null
+ * @returns {React.ReactElement | null} The optimized icon component or null
  */
 const renderVariantIcon = (variant: SidebarVariant): React.ReactElement | null => {
-	const ICON_CLASS_NAME = "w-4 h-4";
-
-	switch (variant) {
-		case "A":
-			return <FaBolt className={ICON_CLASS_NAME} />; // Main
-		case "B":
-			return <FaVideo className={ICON_CLASS_NAME} />; // Media
-		case "C":
-			return <FaLink className={ICON_CLASS_NAME} />; // Integration
-		case "D":
-			return <FaRobot className={ICON_CLASS_NAME} />; // Automation
-		case "E":
-			return <FaBox className={ICON_CLASS_NAME} />; // Misc
-		default:
-			return null;
+	if (!VARIANT_ICONS[variant]) {
+		return null;
 	}
+
+	return <VariantIcon variant={variant} />;
 };
 
 /**
