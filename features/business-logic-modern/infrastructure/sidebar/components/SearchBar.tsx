@@ -13,6 +13,7 @@
 import { Search, X } from "lucide-react";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { StencilGrid } from "../StencilGrid";
 import type { HoveredStencil } from "../StencilInfoPanel";
 import { useFilteredNodes } from "../hooks/useFilteredNodes";
@@ -458,18 +459,52 @@ export function SearchBar({
 							{filteredStencils.length} result
 							{filteredStencils.length !== 1 ? "s" : ""} for "{searchQuery}"
 						</div>
-						{filteredStencils.length > 0 && !isInputFocused && (
-							<div className={`text-xs ${theme.text.primary} mt-1`}>
-								💡 Press Q, W, E, R, T, A, S, D, F, G, Z, X, C, V, B to create nodes • Press 6 to
-								return to input
-							</div>
-						)}
-						{isInputFocused && (
-							<div className={`text-xs ${theme.text.muted} mt-1`}>
-								💡 Alt+Q = backspace • Alt+Shift+Q = delete word • Alt+Ctrl+Q = delete to start •
-								Alt+W = enter
-							</div>
-						)}
+						
+						{/* Tooltip Panel for Keyboard Shortcuts */}
+						<AnimatePresence mode="wait" initial={false}>
+							{filteredStencils.length > 0 && !isInputFocused && (
+								<motion.div
+									key="keyboard-shortcuts"
+									initial={{ opacity: 0, y: 0 }}
+									animate={{ opacity: 0.95, y: 0 }}
+									exit={{ opacity: 0, y: 0 }}
+									transition={{ duration: 0.3, ease: "easeOut" }}
+									className="-translate-y-full absolute top-0 right-[50%] mb-2 h-auto w-[450px] translate-x-1/2 rounded-lg border border-[var(--infra-sidebar-border)] bg-[var(--infra-sidebar-bg)] px-3 py-2 text-[var(--infra-sidebar-text)] text-xs leading-snug shadow-lg"
+								>
+									<div className="space-y-2">
+										<div className="flex items-center justify-between">
+											<div className="font-medium text-[var(--infra-sidebar-text)]">Keyboard Shortcuts</div>
+										</div>
+										<div className="text-[var(--infra-sidebar-text-secondary)]">
+											Press Q, W, E, R, T, A, S, D, F, G, Z, X, C, V, B to create nodes • Press 6 to return to input
+										</div>
+									</div>
+								</motion.div>
+							)}
+						</AnimatePresence>
+						
+						{/* Tooltip Panel for Input Shortcuts */}
+						<AnimatePresence mode="wait" initial={false}>
+							{isInputFocused && (
+								<motion.div
+									key="input-shortcuts"
+									initial={{ opacity: 0, y: 0 }}
+									animate={{ opacity: 0.95, y: 0 }}
+									exit={{ opacity: 0, y: 0 }}
+									transition={{ duration: 0.3, ease: "easeOut" }}
+									className="-translate-y-full absolute top-0 right-[50%] mb-2 h-auto w-[450px] translate-x-1/2 rounded-lg border border-[var(--infra-sidebar-border)] bg-[var(--infra-sidebar-bg)] px-3 py-2 text-[var(--infra-sidebar-text)] text-xs leading-snug shadow-lg"
+								>
+									<div className="space-y-2">
+										<div className="flex items-center justify-between">
+											<div className="font-medium text-[var(--infra-sidebar-text)]">Input Shortcuts</div>
+										</div>
+										<div className="text-[var(--infra-sidebar-text-secondary)]">
+											Alt+Q = backspace • Alt+Shift+Q = delete word • Alt+Ctrl+Q = delete to start • Alt+W = enter
+										</div>
+									</div>
+								</motion.div>
+							)}
+						</AnimatePresence>
 					</div>
 				)}
 

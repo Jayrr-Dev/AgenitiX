@@ -25,6 +25,13 @@ const nextConfig: NextConfig = {
 			"*.svg": { loaders: ["@svgr/webpack"], as: "*.js" },
 		},
 	},
+	// SOURCE MAP CONFIGURATION FOR DEVELOPMENT
+	...(process.env.NODE_ENV === 'development' && {
+		webpack: (config) => {
+			config.devtool = 'source-map';
+			return config;
+		},
+	}),
 };
 
 // MINIMAL PWA CONFIGURATION

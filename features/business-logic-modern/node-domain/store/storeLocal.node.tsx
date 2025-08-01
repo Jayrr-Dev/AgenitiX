@@ -1,15 +1,14 @@
 /**
- * StoreLocal NODE – Content‑focused, schema‑driven, type‑safe
+ * StoreLocal NODE – Enhanced localStorage management with store/delete modes
  *
- * • Shows only internal layout; the scaffold provides borders, sizing, theming, and interactivity.
- * • Zod schema auto‑generates type‑checked Inspector controls.
- * • Dynamic sizing (expandedSize / collapsedSize) drives the spec.
- * • Output propagation is gated by `isActive` *and* `isEnabled` to prevent runaway loops.
- * • Uses findEdgeByHandle utility for robust React Flow edge handling.
- * • Auto-disables when all input connections are removed (handled by flow store).
- * • Code is fully commented and follows current React + TypeScript best practices.
+ * • Provides visual interface for storing and deleting data in browser localStorage
+ * • Supports complex objects with proper serialization and type safety
+ * • Features pulse-triggered operations and mode switching (Store/Delete)
+ * • Includes comprehensive error handling and visual feedback
+ * • Uses findEdgeByHandle utility for robust React Flow edge handling
+ * • Code follows current React + TypeScript best practices with full Zod validation
  *
- * Keywords: store-local, schema-driven, type‑safe, clean‑architecture
+ * Keywords: localStorage, store-delete-modes, pulse-triggered, type-safe
  */
 
 import type { NodeProps } from "@xyflow/react";
@@ -18,8 +17,6 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
-  ChangeEvent,
 } from "react";
 import { z } from "zod";
 
@@ -44,24 +41,38 @@ import {
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { useReactFlow, useStore } from "@xyflow/react";
+import { useStore } from "@xyflow/react";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 
 // -----------------------------------------------------------------------------
-// 1️⃣  Data schema & validation
+// 1️⃣  Enhanced data schema & validation
 // -----------------------------------------------------------------------------
 
 export const StoreLocalDataSchema = z
   .object({
-    store: SafeSchemas.text("Default text"),
+    // Core functionality
+    mode: z.enum(["store", "delete"]).default("store"),
+    inputData: z.record(z.unknown()).nullable().default(null),
+    triggerInput: z.boolean().default(false),
+    lastTriggerState: z.boolean().default(false),
+    
+    // Status and feedback
+    isProcessing: z.boolean().default(false),
+    lastOperation: z.enum(["none", "store", "delete"]).default("none"),
+    lastOperationSuccess: z.boolean().default(false),
+    lastOperationTime: z.number().optional(),
+    operationMessage: z.string().default(""),
+    
+    // UI state (existing)
     isEnabled: SafeSchemas.boolean(true),
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
-    inputs: SafeSchemas.optionalText().nullable().default(null),
-    outputs: SafeSchemas.optionalText(),
-    expandedSize: SafeSchemas.text("FE1"),
-    collapsedSize: SafeSchemas.text("C1"),
-    label: z.string().optional(), // User-editable node label
+    expandedSize: SafeSchemas.text("VE2"),
+    collapsedSize: SafeSchemas.text("C2"),
+    label: z.string().optional(),
+    
+    // Outputs
+    statusOutput: z.boolean().default(false),
   })
   .passthrough();
 
@@ -73,7 +84,293 @@ const validateNodeData = createNodeValidator(
 );
 
 // -----------------------------------------------------------------------------
-// 2️⃣  Constants
+// 2️⃣  LocalStorage Operations Utility
+// -----------------------------------------------------------------------------
+
+interface LocalStorageOperationResult {
+  success: boolean;
+  message: string;
+  keysProcessed: string[];
+  errors: Array<{ key: string; error: string }>;
+}
+
+interface LocalStorageDeleteResult {
+  success: boolean;
+  message: string;
+  keysDeleted: string[];
+  keysNotFound: string[];
+}
+
+const createLocalStorageOperations = () => {
+  const isAvailable = (): boolean => {
+    try {
+      const test = '__localStorage_test__';
+      localStorage.setItem(test, 'test');
+      localStorage.removeItem(test);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const store = (data: Record<string, unknown>): LocalStorageOperationResult => {
+    const result: LocalStorageOperationResult = {
+      success: true,
+      message: "",
+      keysProcessed: [],
+      errors: [],
+    };
+
+    if (!isAvailable()) {
+      result.success = false;
+      result.message = "localStorage is not available";
+      return result;
+    }
+
+    if (!data || Object.keys(data).length === 0) {
+      result.success = false;
+      result.message = "No data provided to store";
+      return result;
+    }
+
+    for (const [key, value] of Object.entries(data)) {
+      try {
+        let serializedValue: string;
+        
+        if (typeof value === "string") {
+          serializedValue = JSON.stringify(value);
+        } else if (typeof value === "number" || typeof value === "boolean") {
+          serializedValue = String(value);
+        } else if (value === null || value === undefined) {
+          serializedValue = String(value);
+        } else {
+          serializedValue = JSON.stringify(value);
+        }
+
+        localStorage.setItem(key, serializedValue);
+        result.keysProcessed.push(key);
+      } catch (error) {
+        result.errors.push({
+          key,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+        result.success = false;
+      }
+    }
+
+    result.message = result.success 
+      ? `Successfully stored ${result.keysProcessed.length} items`
+      : `Stored ${result.keysProcessed.length} items with ${result.errors.length} errors`;
+
+    return result;
+  };
+
+  const deleteKeys = (keys: string[]): LocalStorageDeleteResult => {
+    const result: LocalStorageDeleteResult = {
+      success: true,
+      message: "",
+      keysDeleted: [],
+      keysNotFound: [],
+    };
+
+    if (!isAvailable()) {
+      result.success = false;
+      result.message = "localStorage is not available";
+      return result;
+    }
+
+    if (!keys || keys.length === 0) {
+      result.success = false;
+      result.message = "No keys provided to delete";
+      return result;
+    }
+
+    for (const key of keys) {
+      try {
+        if (localStorage.getItem(key) !== null) {
+          localStorage.removeItem(key);
+          result.keysDeleted.push(key);
+        } else {
+          result.keysNotFound.push(key);
+        }
+      } catch (error) {
+        result.success = false;
+        result.message = `Error deleting key "${key}": ${error}`;
+        break;
+      }
+    }
+
+    if (result.success) {
+      result.message = `Deleted ${result.keysDeleted.length} items`;
+      if (result.keysNotFound.length > 0) {
+        result.message += `, ${result.keysNotFound.length} keys not found`;
+      }
+    }
+
+    return result;
+  };
+
+  return {
+    store,
+    delete: deleteKeys,
+    isAvailable,
+  };
+};
+
+// -----------------------------------------------------------------------------
+// 2️⃣  UI Components
+// -----------------------------------------------------------------------------
+
+interface ModeToggleButtonProps {
+  mode: "store" | "delete";
+  onToggle: () => void;
+  disabled?: boolean;
+  isProcessing?: boolean;
+}
+
+const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({
+  mode,
+  onToggle,
+  disabled = false,
+  isProcessing = false,
+}) => {
+  const baseClasses = "px-3 py-2 rounded-md font-medium text-sm transition-all duration-200 border-2 min-w-[80px] h-[36px] flex items-center justify-center";
+  const storeClasses = "bg-blue-500 text-white border-blue-600 hover:bg-blue-600";
+  const deleteClasses = "bg-red-500 text-white border-red-600 hover:bg-red-600";
+  const disabledClasses = "opacity-50 cursor-not-allowed";
+  const processingClasses = "animate-pulse";
+
+  const classes = [
+    baseClasses,
+    mode === "store" ? storeClasses : deleteClasses,
+    disabled && disabledClasses,
+    isProcessing && processingClasses,
+  ].filter(Boolean).join(" ");
+
+  return (
+    <button
+      onClick={onToggle}
+      disabled={disabled || isProcessing}
+      className={classes}
+    >
+      {isProcessing ? "..." : mode === "store" ? "Store" : "Delete"}
+    </button>
+  );
+};
+
+interface StatusDisplayProps {
+  lastOperation: "none" | "store" | "delete";
+  lastOperationSuccess: boolean;
+  operationMessage: string;
+  lastOperationTime?: number;
+  isProcessing: boolean;
+}
+
+const StatusDisplay: React.FC<StatusDisplayProps> = ({
+  lastOperation,
+  lastOperationSuccess,
+  operationMessage,
+  lastOperationTime,
+  isProcessing,
+}) => {
+  const getStatusColor = () => {
+    if (isProcessing) {
+      return "text-yellow-600";
+    }
+    if (lastOperation === "none") {
+      return "text-gray-500";
+    }
+    return lastOperationSuccess ? "text-green-600" : "text-red-600";
+  };
+
+  const getStatusIcon = () => {
+    if (isProcessing) {
+      return "⏳";
+    }
+    if (lastOperation === "none") {
+      return "⚪";
+    }
+    return lastOperationSuccess ? "✅" : "❌";
+  };
+
+  return (
+    <div className={`text-xs ${getStatusColor()}`}>
+      <div className="flex items-center gap-1">
+        <span>{getStatusIcon()}</span>
+        <span>
+          {isProcessing 
+            ? "Processing..." 
+            : lastOperation === "none" 
+              ? "Ready" 
+              : `${lastOperation} ${lastOperationSuccess ? "success" : "failed"}`
+          }
+        </span>
+      </div>
+      {operationMessage && (
+        <div className="mt-1 text-xs opacity-75">
+          {operationMessage}
+        </div>
+      )}
+      {lastOperationTime && (
+        <div className="mt-1 text-xs opacity-50">
+          {new Date(lastOperationTime).toLocaleTimeString()}
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface DataPreviewProps {
+  data: Record<string, unknown> | null;
+  mode: "store" | "delete";
+  maxItems?: number;
+}
+
+const DataPreview: React.FC<DataPreviewProps> = ({ 
+  data, 
+  mode, 
+  maxItems = 5 
+}) => {
+  if (!data || Object.keys(data).length === 0) {
+    return (
+      <div className="text-xs text-gray-500 italic">
+        No data to {mode}
+      </div>
+    );
+  }
+
+  const entries = Object.entries(data).slice(0, maxItems);
+  const hasMore = Object.keys(data).length > maxItems;
+
+  return (
+    <div className="text-xs space-y-1">
+      <div className="font-medium text-gray-700">
+        {mode === "store" ? "Will store:" : "Will delete keys:"}
+      </div>
+      {entries.map(([key, value]) => (
+        <div key={key} className="flex items-start gap-2">
+          <span className="font-mono text-blue-600">{key}:</span>
+          {mode === "store" && (
+            <span className="text-gray-600 truncate">
+              {typeof value === "object" 
+                ? `${JSON.stringify(value).slice(0, 30)}...`
+                : String(value).slice(0, 30)
+              }
+            </span>
+          )}
+        </div>
+      ))}
+      {hasMore && (
+        <div className="text-gray-500 italic">
+          ...and {Object.keys(data).length - maxItems} more
+        </div>
+      )}
+    </div>
+  );
+};
+
+// -----------------------------------------------------------------------------
+// 3️⃣  Constants
 // -----------------------------------------------------------------------------
 
 const CATEGORY_TEXT = {
@@ -100,10 +397,10 @@ const CONTENT = {
 function createDynamicSpec(data: StoreLocalData): NodeSpec {
   const expanded =
     EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
-    EXPANDED_SIZES.FE1;
+    EXPANDED_SIZES.VE2;
   const collapsed =
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
-    COLLAPSED_SIZES.C1;
+    COLLAPSED_SIZES.C2;
 
   return {
     kind: "storeLocal",
@@ -113,24 +410,24 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
     size: { expanded, collapsed },
     handles: [
       {
-        id: "json-input",
+        id: "data-input",
         code: "j",
         position: "top",
         type: "target",
         dataType: "JSON",
       },
       {
-        id: "output",
-        code: "s",
-        position: "right",
-        type: "source",
-        dataType: "String",
-      },
-      {
-        id: "input",
+        id: "trigger-input",
         code: "b",
         position: "left",
         type: "target",
+        dataType: "Boolean",
+      },
+      {
+        id: "status-output",
+        code: "b",
+        position: "right",
+        type: "source",
         dataType: "Boolean",
       },
     ],
@@ -138,41 +435,48 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
     version: 1,
     runtime: { execute: "storeLocal_execute_v1" },
     initialData: createSafeInitialData(StoreLocalDataSchema, {
-      store: "Default text",
-      inputs: null,
-      outputs: "",
+      mode: "store",
+      inputData: null,
+      triggerInput: false,
+      lastTriggerState: false,
+      isProcessing: false,
+      lastOperation: "none",
+      lastOperationSuccess: false,
+      operationMessage: "",
+      statusOutput: false,
     }),
     dataSchema: StoreLocalDataSchema,
     controls: {
       autoGenerate: true,
       excludeFields: [
         "isActive",
-        "inputs",
-        "outputs",
+        "inputData",
+        "triggerInput",
+        "lastTriggerState",
+        "isProcessing",
+        "lastOperation",
+        "lastOperationSuccess",
+        "lastOperationTime",
+        "operationMessage",
+        "statusOutput",
         "expandedSize",
         "collapsedSize",
       ],
       customFields: [
         { key: "isEnabled", type: "boolean", label: "Enable" },
-        {
-          key: "store",
-          type: "textarea",
-          label: "Store",
-          placeholder: "Enter your content here…",
-          ui: { rows: 4 },
-        },
+        { key: "mode", type: "select", label: "Mode" },
         { key: "isExpanded", type: "boolean", label: "Expand" },
       ],
     },
     icon: "LuDatabase",
     author: "Agenitix Team",
-    description: "StoreLocal node for storage",
-    feature: "database",
-    tags: ["store", "storeLocal"],
+    description: "Enhanced localStorage management with store/delete modes and pulse triggering",
+    feature: "storage",
+    tags: ["store", "localStorage", "delete", "pulse", "trigger"],
     featureFlag: {
-      flag: "test",
+      flag: "store_local_enhanced",
       fallback: true,
-      disabledMessage: "This storeLocal node is currently disabled",
+      disabledMessage: "Enhanced StoreLocal node is currently disabled",
       hideWhenDisabled: false,
     },
     theming: {},
@@ -181,8 +485,8 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
 
 /** Static spec for registry (uses default size keys) */
 export const spec: NodeSpec = createDynamicSpec({
-  expandedSize: "FE1",
-  collapsedSize: "C1",
+  expandedSize: "VE2",
+  collapsedSize: "C2",
 } as StoreLocalData);
 
 // -----------------------------------------------------------------------------
@@ -199,17 +503,28 @@ const StoreLocalNode = memo(
     // -------------------------------------------------------------------------
     // 4.2  Derived state
     // -------------------------------------------------------------------------
-    const { isExpanded, isEnabled, isActive, store } =
-      nodeData as StoreLocalData;
+    const {
+      isExpanded,
+      isEnabled,
+      isActive,
+      mode,
+      inputData,
+      triggerInput,
+      lastTriggerState,
+      isProcessing,
+      lastOperation,
+      lastOperationSuccess,
+      lastOperationTime,
+      operationMessage,
+      statusOutput,
+    } = nodeData as StoreLocalData;
 
     // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
     const nodes = useStore((s) => s.nodes);
     const edges = useStore((s) => s.edges);
 
-    // keep last emitted output to avoid redundant writes
-    const lastOutputRef = useRef<string | null>(null);
-
-    const categoryStyles = CATEGORY_TEXT.STORE;
+    // localStorage operations utility
+    const localStorageOps = useMemo(() => createLocalStorageOperations(), []);
 
     // -------------------------------------------------------------------------
     // 4.3  Feature flag evaluation (after all hooks)
@@ -225,63 +540,95 @@ const StoreLocalNode = memo(
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
 
-    /** Propagate output ONLY when node is active AND enabled */
-    const propagate = useCallback(
-      (value: string) => {
-        const shouldSend = isActive && isEnabled;
-        const out = shouldSend ? value : null;
-        if (out !== lastOutputRef.current) {
-          lastOutputRef.current = out;
-          updateNodeData({ outputs: out });
-        }
-      },
-      [isActive, isEnabled, updateNodeData],
-    );
-
-    /** Clear JSON‑ish fields when inactive or disabled */
-    const blockJsonWhenInactive = useCallback(() => {
-      if (!isActive || !isEnabled) {
-        updateNodeData({
-          json: null,
-          data: null,
-          payload: null,
-          result: null,
-          response: null,
-        });
-      }
-    }, [isActive, isEnabled, updateNodeData]);
+    /** Toggle between store and delete modes */
+    const toggleMode = useCallback(() => {
+      const newMode = mode === "store" ? "delete" : "store";
+      updateNodeData({ mode: newMode });
+    }, [mode, updateNodeData]);
 
     /** 
-     * Compute the latest text coming from connected input handles.
-     * 
-     * Uses findEdgeByHandle utility to properly handle React Flow's handle naming
-     * conventions (handles get type suffixes like "json-input__j", "input__b").
-     * 
-     * Priority: json-input > input (modify based on your node's specific handles)
+     * Compute the latest data coming from connected input handles.
      */
-    const computeInput = useCallback((): string | null => {
-      // Check json-input handle first, then input handle as fallback
-      const jsonInputEdge = findEdgeByHandle(edges, id, "json-input");
-      const inputEdge = findEdgeByHandle(edges, id, "input");
+    const computeInputs = useCallback(() => {
+      // Get data input
+      const dataInputEdge = findEdgeByHandle(edges, id, "data-input");
+      let dataInput = null;
       
-      const incoming = jsonInputEdge || inputEdge;
-      if (!incoming) return null;
+      if (dataInputEdge) {
+        const src = nodes.find((n) => n.id === dataInputEdge.source);
+        if (src) {
+          const rawData = src.data?.outputs ?? src.data?.data ?? src.data;
+          try {
+            // Try to parse as JSON if it's a string
+            if (typeof rawData === 'string') {
+              dataInput = JSON.parse(rawData);
+            } else if (typeof rawData === 'object' && rawData !== null) {
+              dataInput = rawData;
+            }
+          } catch {
+            // If parsing fails, treat as null
+            dataInput = null;
+          }
+        }
+      }
 
-      const src = nodes.find((n) => n.id === incoming.source);
-      if (!src) return null;
+      // Get trigger input
+      const triggerInputEdge = findEdgeByHandle(edges, id, "trigger-input");
+      let triggerValue = false;
+      
+      if (triggerInputEdge) {
+        const src = nodes.find((n) => n.id === triggerInputEdge.source);
+        if (src) {
+          const rawTrigger = src.data?.outputs ?? src.data?.data ?? src.data;
+          triggerValue = Boolean(rawTrigger);
+        }
+      }
 
-      // priority: outputs ➜ store ➜ whole data
-      const inputValue = src.data?.outputs ?? src.data?.store ?? src.data;
-      return typeof inputValue === 'string' ? inputValue : String(inputValue || '');
+      return { dataInput, triggerValue };
     }, [edges, nodes, id]);
 
-    /** Handle textarea change (memoised for perf) */
-    const handleStoreChange = useCallback(
-      (e: ChangeEvent<HTMLTextAreaElement>) => {
-        updateNodeData({ store: e.target.value });
-      },
-      [updateNodeData],
-    );
+    /** Execute localStorage operation based on mode */
+    const executeOperation = useCallback(() => {
+      if (!inputData || isProcessing) {
+        return;
+      }
+
+      updateNodeData({ isProcessing: true });
+
+      try {
+        if (mode === "store") {
+          const result = localStorageOps.store(inputData);
+          updateNodeData({
+            isProcessing: false,
+            lastOperation: "store",
+            lastOperationSuccess: result.success,
+            lastOperationTime: Date.now(),
+            operationMessage: result.message,
+            statusOutput: result.success,
+          });
+        } else {
+          const keys = Object.keys(inputData);
+          const result = localStorageOps.delete(keys);
+          updateNodeData({
+            isProcessing: false,
+            lastOperation: "delete",
+            lastOperationSuccess: result.success,
+            lastOperationTime: Date.now(),
+            operationMessage: result.message,
+            statusOutput: result.success,
+          });
+        }
+      } catch (error) {
+        updateNodeData({
+          isProcessing: false,
+          lastOperation: mode,
+          lastOperationSuccess: false,
+          lastOperationTime: Date.now(),
+          operationMessage: error instanceof Error ? error.message : "Unknown error",
+          statusOutput: false,
+        });
+      }
+    }, [inputData, isProcessing, mode, localStorageOps, updateNodeData]);
 
     // -------------------------------------------------------------------------
     // 4.5  Effects
@@ -289,48 +636,51 @@ const StoreLocalNode = memo(
 
     /* 🔄 Whenever nodes/edges change, recompute inputs. */
     useEffect(() => {
-      const inputVal = computeInput();
-      if (inputVal !== (nodeData as StoreLocalData).inputs) {
-        updateNodeData({ inputs: inputVal });
+      const { dataInput, triggerValue } = computeInputs();
+      
+      const updates: Partial<StoreLocalData> = {};
+      
+      if (JSON.stringify(dataInput) !== JSON.stringify(inputData)) {
+        updates.inputData = dataInput;
       }
-    }, [computeInput, nodeData, updateNodeData]);
+      
+      if (triggerValue !== triggerInput) {
+        updates.triggerInput = triggerValue;
+      }
 
-    /* 🔄 Make isEnabled dependent on input value only when there are connections. */
+      if (Object.keys(updates).length > 0) {
+        updateNodeData(updates);
+      }
+    }, [computeInputs, inputData, triggerInput, updateNodeData]);
+
+    /* 🔄 Detect pulse (rising edge) and trigger operations */
     useEffect(() => {
-      const hasInput = (nodeData as StoreLocalData).inputs;
-      // Only auto-control isEnabled when there are connections (inputs !== null)
-      // When inputs is null (no connections), let user manually control isEnabled
-      if (hasInput !== null) {
-        const nextEnabled = hasInput && hasInput.trim().length > 0;
-        if (nextEnabled !== isEnabled) {
-          updateNodeData({ isEnabled: nextEnabled });
+      const isPulse = triggerInput && !lastTriggerState;
+      
+      if (isPulse && isEnabled && inputData) {
+        executeOperation();
+      }
+      
+      // Update last trigger state
+      if (triggerInput !== lastTriggerState) {
+        updateNodeData({ lastTriggerState: triggerInput });
+      }
+    }, [triggerInput, lastTriggerState, isEnabled, inputData, executeOperation, updateNodeData]);
+
+    /* 🔄 Update active state based on input data */
+    useEffect(() => {
+      const hasValidData = inputData && Object.keys(inputData).length > 0;
+      
+      if (isEnabled) {
+        if (isActive !== hasValidData) {
+          updateNodeData({ isActive: Boolean(hasValidData) });
         }
-      }
-    }, [nodeData, isEnabled, updateNodeData]);
-
-    // Monitor store content and update active state
-    useEffect(() => {
-      const currentStore = store ?? "";
-      const hasValidStore =
-        currentStore.trim().length > 0 && currentStore !== "Default text";
-
-      // If disabled, always set isActive to false
-      if (!isEnabled) {
-        if (isActive) updateNodeData({ isActive: false });
       } else {
-        if (isActive !== hasValidStore) {
-          updateNodeData({ isActive: hasValidStore });
+        if (isActive) {
+          updateNodeData({ isActive: false });
         }
       }
-    }, [store, isEnabled, isActive, updateNodeData]);
-
-    // Sync outputs with active and enabled state
-    useEffect(() => {
-      const currentStore = store ?? "";
-      const actualContent = currentStore === "Default text" ? "" : currentStore;
-      propagate(actualContent);
-      blockJsonWhenInactive();
-    }, [isActive, isEnabled, store, propagate, blockJsonWhenInactive]);
+    }, [inputData, isEnabled, isActive, updateNodeData]);
 
     // -------------------------------------------------------------------------
     // 4.6  Validation
@@ -395,31 +745,49 @@ const StoreLocalNode = memo(
 
         {!isExpanded ? (
           <div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ''}`}>
-            <textarea
-              value={
-                validation.data.store === "Default text"
-                  ? ""
-                  : validation.data.store ?? ""
-              }
-              onChange={handleStoreChange}
-              placeholder="..."
-              className={` resize-none text-center nowheel rounded-md h-8 m-4 translate-y-2 text-xs p-1 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
-              disabled={!isEnabled}
-            />
+            <div className="flex flex-col items-center justify-center gap-2 p-2">
+              <ModeToggleButton
+                mode={mode}
+                onToggle={toggleMode}
+                disabled={!isEnabled}
+                isProcessing={isProcessing}
+              />
+              <StatusDisplay
+                lastOperation={lastOperation}
+                lastOperationSuccess={lastOperationSuccess}
+                operationMessage={operationMessage}
+                lastOperationTime={lastOperationTime}
+                isProcessing={isProcessing}
+              />
+            </div>
           </div>
         ) : (
           <div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ''}`}>
-            <textarea
-              value={
-                validation.data.store === "Default text"
-                  ? ""
-                  : validation.data.store ?? ""
-              }
-              onChange={handleStoreChange}
-              placeholder="Enter your content here…"
-              className={` resize-none nowheel bg-background rounded-md p-2 text-xs h-32 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
-              disabled={!isEnabled}
-            />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">LocalStorage Manager</h3>
+                <ModeToggleButton
+                  mode={mode}
+                  onToggle={toggleMode}
+                  disabled={!isEnabled}
+                  isProcessing={isProcessing}
+                />
+              </div>
+              
+              <DataPreview
+                data={inputData}
+                mode={mode}
+                maxItems={5}
+              />
+              
+              <StatusDisplay
+                lastOperation={lastOperation}
+                lastOperationSuccess={lastOperationSuccess}
+                operationMessage={operationMessage}
+                lastOperationTime={lastOperationTime}
+                isProcessing={isProcessing}
+              />
+            </div>
           </div>
         )}
 

@@ -743,7 +743,7 @@ const NodeInspector = React.memo(function NodeInspector({
 						<div className={STYLING_CONTAINER_HEADER_ICON_TEXT}>
 							{nodeInfo.icon && (
 								<span className={STYLING_TEXT_NODE_ICON}>
-									{renderLucideIcon(nodeInfo.icon, "", 20)}
+									{renderLucideIcon(nodeInfo.icon, "", 20) }
 								</span>
 							)}
 							<div>
