@@ -616,7 +616,7 @@ const NodeInspectorShell: React.FC<NodeInspectorProps> = ({
 					onClick={() => setInspectorLocked(false)}
 					className={STYLING_BUTTON_UNLOCK_LARGE}
 				>
-					<FaLock className={STYLING_ICON_STATE_LARGE} />
+					{React.createElement(FaLock as React.ComponentType<any>, { className: STYLING_ICON_STATE_LARGE })}
 				</button>
 			</div>
 		);
@@ -627,7 +627,7 @@ const NodeInspectorShell: React.FC<NodeInspectorProps> = ({
 		return (
 			<div className="flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card shadow-lg">
 				<div className="text-muted-foreground">
-					<FaSearch className="h-4 w-4" />
+					{React.createElement(FaSearch as React.ComponentType<any>, { className: "h-4 w-4" })}
 				</div>
 			</div>
 		);
@@ -976,9 +976,9 @@ const NodeInspectorContent = memo<NodeInspectorContentProps>(({
 							}
 						>
 							{inspectorLocked ? (
-								<FaLock className={STYLING_ICON_ACTION_SMALL} />
+								React.createElement(FaLock as React.ComponentType<any>, { className: STYLING_ICON_ACTION_SMALL })
 							) : (
-								<FaLockOpen className={STYLING_ICON_ACTION_SMALL} />
+								React.createElement(FaLockOpen as React.ComponentType<any>, { className: STYLING_ICON_ACTION_SMALL })
 							)}
 						</button>
 
@@ -1179,7 +1179,7 @@ const NodeInspectorContent = memo<NodeInspectorContentProps>(({
 				onClick={() => setInspectorLocked(true)}
 				className={STYLING_BUTTON_MAGNIFYING_GLASS}
 			>
-				<FaSearch className={STYLING_ICON_STATE_LARGE} />
+				{React.createElement(FaSearch as React.ComponentType<any>, { className: STYLING_ICON_STATE_LARGE })}
 			</button>
 		</div>
 	);

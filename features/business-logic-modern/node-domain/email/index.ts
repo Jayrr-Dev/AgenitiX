@@ -5,7 +5,7 @@
  */
 
 // Types
-export type * from "./types";
+export * from "./types";
 
 // Providers
 export * from "./providers";

@@ -141,7 +141,7 @@ export const SafeSchemas = {
 	 * Enum field with safe defaults
 	 */
 	enum: <T extends [string, ...string[]]>(values: T, defaultValue: T[number]) =>
-		z.enum(values).default(defaultValue),
+		z.enum(values).default(defaultValue as any),
 
 	/**
 	 * JSON field with safe defaults

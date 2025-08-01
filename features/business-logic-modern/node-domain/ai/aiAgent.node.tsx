@@ -272,8 +272,9 @@ const extractCleanText = (value: unknown): string => {
 		const textFields = ["response", "text", "content", "message", "data", "result"];
 
 		for (const field of textFields) {
-			if (typeof obj[field] === "string" && obj[field].trim()) {
-				let fieldText = obj[field].trim();
+			const fieldValue = obj[field];
+			if (typeof fieldValue === "string" && fieldValue.trim()) {
+				let fieldText = fieldValue.trim();
 
 				// Check for empty/null response specifically
 				if (field === "response" && (fieldText === "" || fieldText === "null" || fieldText === "undefined")) {
@@ -1701,7 +1702,7 @@ const AiAgentNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =>
 											disabled={!isEnabled}
 										/>
 										<ButtonIconed
-											icon={MdRefresh}
+											icon={MdRefresh as React.ComponentType<any>}
 											text="Reset"
 											variant="outline"
 											className="bg-red-500 text-black"

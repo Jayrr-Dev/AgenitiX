@@ -46,9 +46,9 @@ const initializePopularIcons = () => {
 	popularIconNames.forEach(iconName => {
 		const IconComponent = (LuIcons as Record<string, IconType>)[iconName];
 		if (IconComponent) {
-			const MemoizedIcon = memo<{ className?: string; size?: number }>(({ className = "", size = 16 }) => 
-				React.createElement(IconComponent, { className, size })
-			);
+					const MemoizedIcon = memo<{ className?: string; size?: number }>(({ className = "", size = 16 }) => 
+			React.createElement(IconComponent as React.ComponentType<any>, { className, size })
+		);
 			MemoizedIcon.displayName = `Icon_${iconName}`;
 			POPULAR_ICONS_CACHE.set(iconName, MemoizedIcon);
 			ICON_LOOKUP_CACHE.set(iconName, IconComponent);
@@ -94,7 +94,7 @@ const getCachedIconComponent = (iconName: string): React.ComponentType<{ classNa
 	
 	// Create memoized component
 	const MemoizedIcon = memo<{ className?: string; size?: number }>(({ className = "", size = 16 }) => 
-		React.createElement(IconComponent!, { className, size })
+		React.createElement(IconComponent! as React.ComponentType<any>, { className, size })
 	);
 	MemoizedIcon.displayName = `Icon_${iconName}`;
 	

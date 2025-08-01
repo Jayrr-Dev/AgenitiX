@@ -54,7 +54,7 @@ const initializeHandleIcons = () => {
 		
 		// Create and cache memoized component for handles
 		const MemoizedHandleIcon = memo<{ width?: number; height?: number; style?: React.CSSProperties }>(({ width = 8, height = 8, style }) => 
-			React.createElement(IconComponent, { width, height, style })
+			React.createElement(IconComponent as React.ComponentType<any>, { width, height, style })
 		);
 		MemoizedHandleIcon.displayName = `HandleIcon_${typeName}`;
 		HANDLE_ICON_CACHE.set(typeName, MemoizedHandleIcon);
