@@ -33,6 +33,8 @@
 		"db:restore": "npx convex import",
 		"dev:setup-data": "node scripts/setup-dev-data.js",
 		"test:convex": "npx convex run --prod testFunctions",
+		"test": "vitest",
+		"test:ui": "vitest --ui",
 		"prod:deploy": "npx convex deploy --prod",
 		"prod:logs": "npx convex logs --prod",
 		"start": "next start",
@@ -180,6 +182,7 @@
 		"tailwindcss-animate": "^1.0.7",
 		"ts-json-schema-generator": "^2.4.0",
 		"ts-node": "^10.9.2",
-		"typescript": "5.7.2"
+		"typescript": "5.7.2",
+		"vitest": "^3.2.4"
 	}
 }
