@@ -42,6 +42,7 @@ import {
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
+import { useNodeToast } from "@/hooks/useNodeToast";
 import { useStore } from "@xyflow/react";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import { 
@@ -398,67 +399,7 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({
   );
 };
 
-interface StatusDisplayProps {
-  lastOperation: "none" | "store" | "delete" | "get";
-  lastOperationSuccess: boolean;
-  operationMessage: string;
-  lastOperationTime?: number;
-  isProcessing: boolean;
-}
 
-const StatusDisplay: React.FC<StatusDisplayProps> = ({
-  lastOperation,
-  lastOperationSuccess,
-  operationMessage,
-  lastOperationTime,
-  isProcessing,
-}) => {
-  const getStatusColor = () => {
-    if (isProcessing) {
-      return STATUS_CONFIG.PROCESSING.color;
-    }
-    if (lastOperation === "none") {
-      return STATUS_CONFIG.NONE.color;
-    }
-    return lastOperationSuccess ? STATUS_CONFIG.SUCCESS.color : STATUS_CONFIG.ERROR.color;
-  };
-
-  const getStatusIcon = () => {
-    if (isProcessing) {
-      return STATUS_CONFIG.PROCESSING.icon;
-    }
-    if (lastOperation === "none") {
-      return STATUS_CONFIG.NONE.icon;
-    }
-    return lastOperationSuccess ? STATUS_CONFIG.SUCCESS.icon : STATUS_CONFIG.ERROR.icon;
-  };
-
-  return (
-    <div className={`text-xs ${getStatusColor()} text-node-store-secondary`}>
-      <div className="flex items-center gap-1">
-        <span>{getStatusIcon()}</span>
-        <span>
-          {isProcessing 
-            ? "Processing..." 
-            : lastOperation === "none" 
-              ? "Ready" 
-              : `${lastOperation} ${lastOperationSuccess ? "success" : "failed"}`
-          }
-        </span>
-      </div>
-      {operationMessage && (
-        <div className="mt-1 text-xs opacity-75 text-node-store-secondary">
-          {operationMessage}
-        </div>
-      )}
-      {lastOperationTime && (
-        <div className="mt-1 text-xs opacity-50 text-node-store-secondary">
-          {new Date(lastOperationTime).toLocaleTimeString()}
-        </div>
-      )}
-    </div>
-  );
-};
 
 interface DataPreviewProps {
   data: Record<string, unknown> | null;
@@ -699,7 +640,7 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
         { key: "isExpanded", type: "boolean", label: "Expand" },
       ],
     },
-    icon: "LuDatabase",
+    icon: "Database",
     author: "Agenitix Team",
     description: "Enhanced localStorage management with store/delete/get modes and pulse triggering",
     feature: "storage",
@@ -730,6 +671,7 @@ const StoreLocalNode = memo(
     // 4.1  Sync with React‑Flow store
     // -------------------------------------------------------------------------
     const { nodeData, updateNodeData } = useNodeData(id, data);
+    const { showSuccess, showError, showWarning, showInfo } = useNodeToast(id);
     
     // Use design system tokens for spacing and other values
     const containerPadding = useDesignSystemToken("spacing.md", "p-3");
@@ -765,6 +707,13 @@ const StoreLocalNode = memo(
     // localStorage operations utility
     const localStorageOps = useMemo(() => createLocalStorageOperations(), []);
 
+    // Check localStorage availability on mount
+    useEffect(() => {
+      if (!localStorageOps.isAvailable()) {
+        showError("localStorage unavailable");
+      }
+    }, [localStorageOps, showError]);
+
     // -------------------------------------------------------------------------
     // 4.3  Feature flag evaluation (after all hooks)
     // -------------------------------------------------------------------------
@@ -782,6 +731,7 @@ const StoreLocalNode = memo(
     /** Toggle between store, delete, and get modes */
     const toggleMode = useCallback(() => {
       let newMode: "store" | "delete" | "get";
+      
       switch (mode) {
         case "store":
           newMode = "delete";
@@ -795,6 +745,7 @@ const StoreLocalNode = memo(
         default:
           newMode = "store";
       }
+      
       updateNodeData({ mode: newMode });
     }, [mode, updateNodeData]);
 
@@ -859,6 +810,12 @@ const StoreLocalNode = memo(
             store: "", // Clear store for store operations
             outputs: null, // Clear outputs for store operations
           });
+
+          if (result.success) {
+            showSuccess("Store success", `Stored ${result.keysProcessed.length} items`);
+          } else {
+            showError("Store failed", result.message);
+          }
         } else if (mode === "delete") {
           const keys = Object.keys(inputData);
           const result = localStorageOps.delete(keys);
@@ -871,6 +828,12 @@ const StoreLocalNode = memo(
             store: "", // Clear store for delete operations
             outputs: null, // Clear outputs for delete operations
           });
+
+          if (result.success) {
+            showSuccess("Delete success", `Deleted ${result.keysDeleted.length} items`);
+          } else {
+            showError("Delete failed", result.message);
+          }
         } else if (mode === "get") {
           const keys = Object.keys(inputData);
           const result = localStorageOps.get(keys);
@@ -886,19 +849,27 @@ const StoreLocalNode = memo(
             store: storeDisplay, // Store formatted JSON string for inspector
             outputs: retrievedData, // Output raw data for connections
           });
+
+          if (result.success) {
+            showSuccess("Get success", `Retrieved ${result.keysFound.length} items`);
+          } else {
+            showError("Get failed", result.message);
+          }
         }
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
         updateNodeData({
           isProcessing: false,
           lastOperation: mode,
           lastOperationSuccess: false,
           lastOperationTime: Date.now(),
-          operationMessage: error instanceof Error ? error.message : "Unknown error",
+          operationMessage: errorMessage,
           store: "",
           outputs: null,
         });
+        showError(`${mode} failed`, errorMessage);
       }
-    }, [inputData, isProcessing, mode, localStorageOps, updateNodeData]);
+    }, [inputData, isProcessing, mode, localStorageOps, updateNodeData, showSuccess, showError]);
 
     // -------------------------------------------------------------------------
     // 4.5  Effects
@@ -1030,13 +1001,6 @@ const StoreLocalNode = memo(
                 disabled={!isEnabled}
                 isProcessing={isProcessing}
               />
-              <StatusDisplay
-                lastOperation={lastOperation}
-                lastOperationSuccess={lastOperationSuccess}
-                operationMessage={operationMessage}
-                lastOperationTime={lastOperationTime}
-                isProcessing={isProcessing}
-              />
             </div>
           </div>
         ) : (
@@ -1067,14 +1031,6 @@ const StoreLocalNode = memo(
                 data={inputData}
                 mode={mode}
                 maxItems={UI_CONSTANTS.MAX_PREVIEW_ITEMS}
-              />
-              
-              <StatusDisplay
-                lastOperation={lastOperation}
-                lastOperationSuccess={lastOperationSuccess}
-                operationMessage={operationMessage}
-                lastOperationTime={lastOperationTime}
-                isProcessing={isProcessing}
               />
             </div>
           </div>

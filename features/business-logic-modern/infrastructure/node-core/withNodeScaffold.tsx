@@ -22,6 +22,7 @@ import React from "react";
 import NodeErrorBoundary from "./ErrorBoundary";
 import type { NodeSpec } from "./NodeSpec";
 import NodeTelemetry from "./NodeTelemetry";
+import { NodeToastContainer } from "./NodeToast";
 import { globalNodeMemoryManager } from "./nodeMemory";
 import { getNodePlugins } from "./plugins/nodePluginRegistry";
 import { runServerActions } from "./serverActions/serverActionRegistry";
@@ -56,12 +57,20 @@ const NodeScaffoldWrapper = ({
 	className,
 	spec,
 	isDisabled = false,
+	nodeId,
+	isExpanded,
+	expandedSize,
+	collapsedSize,
 }: {
 	children: React.ReactNode;
 	style: React.CSSProperties;
 	className?: string;
 	spec: NodeSpec;
 	isDisabled?: boolean;
+	nodeId?: string;
+	isExpanded?: boolean;
+	expandedSize?: string;
+	collapsedSize?: string;
 }) => {
 	// Get theme for dark mode detection
 	const { resolvedTheme } = useTheme();
@@ -137,6 +146,10 @@ const NodeScaffoldWrapper = ({
 		<div
 			className={structuralClasses}
 			style={completeStyle}
+			data-expanded={isExpanded}
+			data-expanded-size={expandedSize}
+			data-collapsed-size={collapsedSize}
+			data-current-size={isExpanded ? expandedSize : collapsedSize}
 			// Enhanced hover effects - only when not disabled and feature flag is enabled
 			// Note: boxShadow effects removed to prevent conflicts with selection glow
 			onMouseEnter={
@@ -322,7 +335,14 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 				className={themeClasses}
 				spec={spec}
 				isDisabled={isDisabled}
+				nodeId={props.id}
+				isExpanded={isExpanded}
+				expandedSize={(props.data as any)?.expandedSize}
+				collapsedSize={(props.data as any)?.collapsedSize}
 			>
+				{/* Node Toast System - positioned above the node */}
+				<NodeToastContainer nodeId={props.id} />
+				
 				{/* Render registered node plugins */}
 				{getNodePlugins().map((Plugin, idx) => (
 					<Plugin

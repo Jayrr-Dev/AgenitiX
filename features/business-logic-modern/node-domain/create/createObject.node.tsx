@@ -37,6 +37,7 @@ import {
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
+import { useNodeToast } from "@/hooks/useNodeToast";
 import { useStore } from "@xyflow/react";
 
 // Schema & Types
@@ -135,7 +136,7 @@ const createDynamicSpec = (() => {
           { key: "isExpanded", type: "boolean", label: "Expand" },
         ],
       },
-      icon: "LuBraces",
+      icon: "Braces",
       author: "Agenitix Team",
       description: "Creates JSON objects with customizable structure and validation",
       feature: "base",
@@ -161,6 +162,7 @@ export const spec: NodeSpec = createDynamicSpec({
 const CreateObjectNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
   // State management
   const { nodeData, updateNodeData } = useNodeData(id, data);
+  const { showSuccess, showError, showWarning, showInfo } = useNodeToast(id);
 
   // Optimized state extraction - only re-compute when nodeData changes
   const { isExpanded, isEnabled, isActive, store } = useMemo(() => {
@@ -191,11 +193,14 @@ const CreateObjectNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
   // Debounced JSON parsing for better performance
   const parseJsonSafely = useCallback((value: string) => {
     try {
-      return JSON.parse(value);
-    } catch {
+      const parsed = JSON.parse(value);
+      showSuccess("Valid JSON", "Object parsed successfully");
+      return parsed;
+    } catch (error) {
+      showError("Invalid JSON", error instanceof Error ? error.message : "Failed to parse JSON");
       return value;
     }
-  }, []);
+  }, [showSuccess, showError]);
 
   const propagate = useCallback(
     (value: string) => {
@@ -277,9 +282,14 @@ const CreateObjectNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
       const nextEnabled = Boolean(currentInputs?.trim());
       if (nextEnabled !== isEnabled) {
         updateNodeData({ isEnabled: nextEnabled });
+        if (nextEnabled) {
+          showInfo("Node enabled", "Input connection detected");
+        } else {
+          showWarning("Node disabled", "No input connection");
+        }
       }
     }
-  }, [nodeData, isEnabled, updateNodeData]);
+  }, [nodeData, isEnabled, updateNodeData, showInfo, showWarning]);
 
   useEffect(() => {
     const currentStore = store ?? "";
