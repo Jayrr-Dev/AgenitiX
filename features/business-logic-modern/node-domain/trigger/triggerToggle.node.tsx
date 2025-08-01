@@ -149,8 +149,15 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 	const { isExpanded, isEnabled, isActive, store } = nodeData as TriggerToggleData;
 
 	// 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
-	const nodes = useStore((s) => s.nodes);
 	const edges = useStore((s) => s.edges);
+	const connectedNodes = useStore(
+		useCallback((s) => {
+			// Only get nodes connected to this toggle, basically upstream inputs only
+			const inputEdge = edges.find(e => e.target === id && e.targetHandle === "input");
+			if (!inputEdge) return [];
+			return s.nodes.filter(n => n.id === inputEdge.source);
+		}, [edges, id])
+	);
 
 	// keep last emitted output to avoid redundant writes
 	const lastOutputRef = useRef<boolean | null>(null);
@@ -177,7 +184,7 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 			return null;
 		}
 
-		const src = nodes.find((n) => n.id === incoming.source);
+		const src = connectedNodes.find((n) => n.id === incoming.source);
 		if (!src) {
 			return null;
 		}
@@ -186,7 +193,7 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 			// priority: outputs ➜ store ➜ whole data
 			src.data?.outputs ?? src.data?.store ?? src.data
 		);
-	}, [edges, nodes, id]);
+	}, [edges, connectedNodes, id]);
 
 	// -----------------------------------------------------------------------
 	// 4.4  Effects
@@ -345,20 +352,25 @@ const TriggerToggleNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 // 5️⃣  Focus‑preserving scaffold wrapper
 // -----------------------------------------------------------------------------
 
-const TriggerToggleNodeWithDynamicSpec = (props: NodeProps) => {
+// Cache scaffolded components by size configuration to avoid recreation
+const scaffoldCache = new Map<string, React.ComponentType<NodeProps>>();
+
+const TriggerToggleNodeWithDynamicSpec = memo((props: NodeProps) => {
 	const { nodeData } = useNodeData(props.id, props.data);
+	const typedData = nodeData as TriggerToggleData;
 
-	const dynamicSpec = useMemo(
-		() => createDynamicSpec(nodeData as TriggerToggleData),
-		[(nodeData as TriggerToggleData).expandedSize, (nodeData as TriggerToggleData).collapsedSize]
-	);
-
-	const ScaffoldedNode = useMemo(
-		() => withNodeScaffold(dynamicSpec, (p) => <TriggerToggleNode {...p} spec={dynamicSpec} />),
-		[dynamicSpec]
-	);
+	// Create cache key from size configuration
+	const cacheKey = `${typedData.expandedSize}-${typedData.collapsedSize}`;
+	
+	// Get or create scaffolded component from cache
+	let ScaffoldedNode = scaffoldCache.get(cacheKey);
+	if (!ScaffoldedNode) {
+		const dynamicSpec = createDynamicSpec(typedData);
+		ScaffoldedNode = withNodeScaffold(dynamicSpec, (p) => <TriggerToggleNode {...p} spec={dynamicSpec} />);
+		scaffoldCache.set(cacheKey, ScaffoldedNode);
+	}
 
 	return <ScaffoldedNode {...props} />;
-};
+});
 
 export default TriggerToggleNodeWithDynamicSpec;

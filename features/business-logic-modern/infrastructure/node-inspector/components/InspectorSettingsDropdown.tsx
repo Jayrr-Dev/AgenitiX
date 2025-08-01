@@ -13,7 +13,7 @@
 "use client";
 
 import { RotateCcw } from "lucide-react";
-import React from "react";
+import React, { memo } from "react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -91,7 +91,7 @@ const CustomSwitch: React.FC<CustomSwitchProps> = ({ checked, onChange, disabled
 // MAIN COMPONENT
 // ============================================================================
 
-export const InspectorSettingsDropdown: React.FC<InspectorSettingsDropdownProps> = ({
+const InspectorSettingsDropdownComponent: React.FC<InspectorSettingsDropdownProps> = ({
 	settings,
 	onToggleSetting,
 	onResetToDefaults,
@@ -140,3 +140,13 @@ export const InspectorSettingsDropdown: React.FC<InspectorSettingsDropdownProps>
 		</DropdownMenu>
 	);
 };
+
+// Memoized export to prevent expensive Radix UI re-creation
+export const InspectorSettingsDropdown = memo(InspectorSettingsDropdownComponent, (prev, next) => {
+	// Only re-render if settings or callbacks change
+	return (
+		prev.settings === next.settings &&
+		prev.onToggleSetting === next.onToggleSetting &&
+		prev.onResetToDefaults === next.onResetToDefaults
+	);
+});

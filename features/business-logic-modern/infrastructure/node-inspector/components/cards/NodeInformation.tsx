@@ -9,7 +9,7 @@
  * Keywords: node-info, metadata, editable-fields, accordion-card
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Edit3 } from "lucide-react";
 
 import EditableNodeId from "@/components/nodes/editableNodeId";
@@ -106,12 +106,43 @@ interface NodeInfoProps {
 	onUpdateNodeId: (oldId: string, newId: string) => boolean;
 }
 
-export const NodeInformation: React.FC<NodeInfoProps> = ({
+const NodeInformationComponent: React.FC<NodeInfoProps> = ({
 	selectedNode,
 	nodeInfo,
 	updateNodeData,
 	onUpdateNodeId,
 }) => {
+	// Memoize callbacks to prevent child re-renders
+	const handleLabelSave = useCallback((newLabel: string) => {
+		updateNodeData(selectedNode.id, {
+			...selectedNode.data,
+			label: newLabel,
+		});
+	}, [selectedNode.id, selectedNode.data, updateNodeData]);
+
+	// Memoize expensive tag rendering
+	const tagElements = useMemo(() => {
+		if (!nodeInfo.tags || nodeInfo.tags.length === 0) return null;
+		
+		return nodeInfo.tags.map((tag) => (
+			<span
+				key={`tag-${tag}`}
+				className="rounded bg-muted px-2 py-1 text-muted-foreground text-xs"
+			>
+				{tag}
+			</span>
+		));
+	}, [nodeInfo.tags]);
+
+	// Memoize node label value to prevent unnecessary recalculations
+	const nodeLabel = useMemo(() => {
+		return (selectedNode.data as any)?.label || nodeInfo.label || nodeInfo.displayName || "";
+	}, [selectedNode.data, nodeInfo.label, nodeInfo.displayName]);
+
+	// Memoize node description
+	const nodeDescription = useMemo(() => {
+		return (selectedNode.data as any)?.description ?? nodeInfo.description;
+	}, [selectedNode.data, nodeInfo.description]);
 	return (
 		<div className="overflow-hidden">
 			<table className="w-full">
@@ -135,14 +166,9 @@ export const NodeInformation: React.FC<NodeInfoProps> = ({
 						<td className="w-2/3 py-2">
 							<div className="flex items-center justify-between w-full">
 								<EditableLabel
-									value={(selectedNode.data as any)?.label || nodeInfo.label || nodeInfo.displayName || ""}
+									value={nodeLabel}
 									placeholder={nodeInfo.displayName}
-									onSave={(newLabel) => {
-										updateNodeData(selectedNode.id, {
-											...selectedNode.data,
-											label: newLabel,
-										});
-									}}
+									onSave={handleLabelSave}
 									className="font-mono text-muted-foreground text-sm flex-1"
 								/>
 								<Edit3 className="h-3 w-3 text-muted-foreground/60 ml-1" />
@@ -175,7 +201,7 @@ export const NodeInformation: React.FC<NodeInfoProps> = ({
 							</td>
 							<td className="w-2/3 py-2">
 								<span className="font-mono text-muted-foreground text-sm leading-relaxed">
-									{(selectedNode.data as any)?.description ?? nodeInfo.description}
+									{nodeDescription}
 								</span>
 							</td>
 						</tr>
@@ -213,14 +239,7 @@ export const NodeInformation: React.FC<NodeInfoProps> = ({
 							</td>
 							<td className="w-2/3 py-2">
 								<div className="flex flex-wrap gap-1">
-									{nodeInfo.tags.map((tag) => (
-										<span
-											key={`tag-${tag}`}
-											className="rounded bg-muted px-2 py-1 text-muted-foreground text-xs"
-										>
-											{tag}
-										</span>
-									))}
+									{tagElements}
 								</div>
 							</td>
 						</tr>
@@ -256,5 +275,14 @@ export const NodeInformation: React.FC<NodeInfoProps> = ({
 		</div>
 	);
 };
+
+export const NodeInformation = React.memo(NodeInformationComponent, (prev, next) => {
+	// Re-render only if selectedNode.id or nodeInfo reference changed.
+	return (
+		prev.selectedNode.id === next.selectedNode.id &&
+		prev.selectedNode.data === next.selectedNode.data &&
+		prev.nodeInfo === next.nodeInfo
+	);
+});
 
 export default NodeInformation;

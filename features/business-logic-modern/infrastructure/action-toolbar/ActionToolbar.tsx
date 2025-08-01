@@ -16,8 +16,8 @@
 
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { History, Maximize, Minimize, RotateCcw, RotateCw, Copy, Trash2 } from "lucide-react";
-import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import React from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useComponentButtonClasses, useComponentClasses } from "../theming/components";
 import { useUndoRedo } from "./history/undo-redo-context";
 import { useFlowStore } from "../flow-engine/stores/flowStore";
@@ -53,6 +53,11 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 		selectNode,
 	} = useFlowStore();
 
+	// Memoize selected node to prevent unnecessary lookups
+	const selectedNode = useMemo(() => {
+		return selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) : null;
+	}, [nodes, selectedNodeId]);
+
 	// Get themed classes
 	const containerClasses = useComponentClasses(
 		"actionToolbar",
@@ -70,22 +75,19 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 	}, [selectedNodeId, removeNode]);
 
 	const handleDuplicateNode = useCallback(() => {
-		if (!selectedNodeId) return;
-
-		const nodeToDuplicate = nodes.find((n) => n.id === selectedNodeId);
-		if (!nodeToDuplicate) return;
+		if (!selectedNode) return;
 
 		// Create a new node with a unique ID and offset position
-		const newId = `${selectedNodeId}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+		const newId = `${selectedNode.id}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 		const newNode = {
-			...nodeToDuplicate,
+			...selectedNode,
 			id: newId,
 			position: {
-				x: nodeToDuplicate.position.x + 40,
-				y: nodeToDuplicate.position.y + 40,
+				x: selectedNode.position.x + 40,
+				y: selectedNode.position.y + 40,
 			},
 			selected: false,
-			data: { ...nodeToDuplicate.data },
+			data: { ...selectedNode.data },
 		};
 
 		// Add the new node using the Zustand store
@@ -93,7 +95,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 
 		// Select the new duplicated node
 		selectNode(newId);
-	}, [selectedNodeId, nodes, addNode, selectNode]);
+	}, [selectedNode, addNode, selectNode]);
 
 	// Detect if running in browser vs desktop/Electron app
 	useEffect(() => {

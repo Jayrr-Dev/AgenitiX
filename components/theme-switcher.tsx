@@ -9,25 +9,13 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-	ColorDebugger,
-	useColorDebugger,
-} from "@/features/business-logic-modern/infrastructure/theming/components/ColorDebugger";
-import { Laptop, Moon, Palette, Sun } from "lucide-react";
+import { Laptop, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
-/** Check if we're in development mode */
-const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
 
 const ThemeSwitcher = () => {
 	const [mounted, setMounted] = useState(false);
 	const { theme, setTheme } = useTheme();
-	const colorDebugger = useColorDebugger();
 
 	// useEffect only runs on the client, so now we can safely show the UI
 	useEffect(() => {
@@ -67,33 +55,8 @@ const ThemeSwitcher = () => {
 							<Laptop size={ICON_SIZE} className="text-muted-foreground" /> <span>System</span>
 						</DropdownMenuRadioItem>
 					</DropdownMenuRadioGroup>
-
-					{/* Only show Color Debugger in development */}
-					{IS_DEVELOPMENT && (
-						<>
-							<DropdownMenuSeparator />
-
-							<Button
-								variant="ghost"
-								size="sm"
-								className="h-8 w-full justify-start gap-2 px-2 py-1.5"
-								onClick={colorDebugger.show}
-							>
-								<Palette size={ICON_SIZE} className="text-muted-foreground" />
-								<span>Color Debugger</span>
-							</Button>
-						</>
-					)}
 				</DropdownMenuContent>
 			</DropdownMenu>
-
-			{/* Color Debugger Modal - Only render in development */}
-			{IS_DEVELOPMENT && (
-				<ColorDebugger
-					isVisible={colorDebugger.isVisible}
-					onVisibilityChange={colorDebugger.setIsVisible}
-				/>
-			)}
 		</>
 	);
 };

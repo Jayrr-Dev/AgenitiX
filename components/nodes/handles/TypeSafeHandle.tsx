@@ -9,8 +9,7 @@
  * • Uses React Icons for perfect centering and consistency.
  */
 import { Handle, type HandleProps, type IsValidConnection, useStore } from "@xyflow/react";
-import type React from "react";
-import { useCallback } from "react";
+import React, { useCallback } from "react";
 import { LuBraces, LuBrackets, LuCheck, LuCircle, LuHash, LuWrench, LuType } from "react-icons/lu";
 import { VscJson } from "react-icons/vsc";
 import { toast } from "sonner";
@@ -387,14 +386,18 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = ({
 
 	const { isValidConnection } = useUltimateFlowConnectionPrevention();
 
-	// Check if this handle is connected by looking at edges
-	const edges = useStore((state) => state.edges);
-	const isConnected = edges.some((edge) => {
-		if (props.type === "source") {
-			return edge.source === nodeId && edge.sourceHandle === props.id;
-		}
-		return edge.target === nodeId && edge.targetHandle === props.id;
-	});
+	  // Check if this handle is connected by looking at edges but subscribe only to relevant boolean
+  const isConnected = useStore(
+    React.useCallback(
+      (state) =>
+        state.edges.some((edge) =>
+          props.type === "source"
+            ? edge.source === nodeId && edge.sourceHandle === props.id
+            : edge.target === nodeId && edge.targetHandle === props.id
+        ),
+      [nodeId, props.id, props.type]
+    )
+  );
 
 	const isSource = props.type === "source";
 	const connectableStart = isSource; // only sources can start connections

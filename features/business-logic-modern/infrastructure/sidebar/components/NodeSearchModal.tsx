@@ -17,9 +17,10 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import type { NodeType } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
+import { useDeferredValue } from "react";
 import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 import { Search, X } from "lucide-react";
-import type React from "react";
+import React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFilteredNodes } from "../hooks/useFilteredNodes";
 
@@ -41,6 +42,8 @@ interface SearchResult {
 	score: number;
 }
 
+
+
 export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 	isOpen,
 	onClose,
@@ -51,11 +54,16 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedIndex, setSelectedIndex] = useState(0);
 
+	// Defer heavy search calculations to avoid blocking keystroke rendering
+	const MAX_RESULTS = 50; // Reduced for better performance
+	const deferredQuery = useDeferredValue(searchQuery);
+
 	// Use filtered nodes hook to respect feature flags
 	const { nodes: filteredNodes } = useFilteredNodes();
 
-	// Fuzzy search implementation
+	// Only compute search results when modal is open to save performance
 	const searchResults = useMemo(() => {
+		if (!isOpen) return []; // Early exit when modal is closed
 		// Use filtered nodes instead of availableNodes to respect feature flags
 		const nodesToSearch =
 			filteredNodes.length > 0
@@ -67,9 +75,10 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 						})
 						.filter(Boolean);
 
-		if (!searchQuery.trim()) {
-			// Show all filtered nodes when no search query
+		if (!deferredQuery.trim()) {
+			// Show only first 25 nodes when no search query to reduce initial render cost
 			return nodesToSearch
+				.slice(0, 25) // Limit initial results
 				.map((node) => {
 					if (!node) {
 						return null;
@@ -87,33 +96,33 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 				.sort((a, b) => a.displayName.localeCompare(b.displayName));
 		}
 
-		const query = searchQuery.toLowerCase();
+		const query = deferredQuery.toLowerCase();
 		const results: SearchResult[] = [];
 
-		nodesToSearch.forEach((node) => {
-			if (!node) {
-				return;
-			}
+		// Limit search scope to prevent lag with large node registries
+		const searchLimit = Math.min(nodesToSearch.length, 100);
+		
+		for (let i = 0; i < searchLimit; i++) {
+			const node = nodesToSearch[i];
+			if (!node) continue;
 
 			const displayName = node.displayName;
 			const category = node.category || "other";
 			const description = node.description || "";
 
-			// Simple fuzzy matching
+			// Optimized fuzzy matching - avoid repeated toLowerCase calls
 			let score = 0;
-			const searchText = `${displayName} ${category} ${description}`.toLowerCase();
+			const displayLower = displayName.toLowerCase();
+			const categoryLower = category.toLowerCase();
 
-			if (displayName.toLowerCase().includes(query)) {
+			if (displayLower.includes(query)) {
 				score += 10;
 			}
-			if (category.toLowerCase().includes(query)) {
+			if (categoryLower.includes(query)) {
 				score += 5;
 			}
 			if (description.toLowerCase().includes(query)) {
 				score += 3;
-			}
-			if (searchText.includes(query)) {
-				score += 1;
 			}
 
 			if (score > 0) {
@@ -125,11 +134,14 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 					icon: node.icon,
 					score,
 				});
+				
+				// Early exit if we have enough results
+				if (results.length >= MAX_RESULTS) break;
 			}
-		});
+		}
 
 		return results.sort((a, b) => b.score - a.score);
-	}, [searchQuery, filteredNodes, availableNodes]);
+	}, [isOpen, deferredQuery, filteredNodes, availableNodes]);
 
 	// Reset selection when results change
 	useEffect(() => {
@@ -169,7 +181,7 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 		[searchResults, selectedIndex, onSelectNode, onClose]
 	);
 
-	// Handle node selection
+	// Handle node selection - memoized to prevent re-renders
 	const handleSelectNode = useCallback(
 		(nodeType: NodeType, displayName: string) => {
 			if (onSelectNode) {
@@ -221,10 +233,10 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 						</div>
 					) : (
 						<div className="max-h-96 overflow-y-auto">
-							{searchResults.map((result, index) => (
+							{searchResults.slice(0, MAX_RESULTS).map((result, index) => (
 								<button
-									type="button"
 									key={result.nodeType}
+									type="button"
 									onClick={() => handleSelectNode(result.nodeType, result.displayName)}
 									className={`w-full border-modal border-b p-3 text-left transition-colors hover:bg-search-hover ${
 										index === selectedIndex ? "bg-search-highlight" : ""
@@ -245,7 +257,7 @@ export const NodeSearchModal: React.FC<NodeSearchModalProps> = ({
 												</div>
 											)}
 										</div>
-										{searchQuery && (
+										{deferredQuery && (
 											<div className="rounded bg-info px-2 py-1 text-info text-xs">
 												{result.score}
 											</div>

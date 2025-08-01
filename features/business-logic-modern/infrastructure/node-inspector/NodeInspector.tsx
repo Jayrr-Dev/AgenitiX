@@ -20,7 +20,7 @@ import {
 } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import { getNodeOutput } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/outputUtils";
 import { ChevronDown, Copy, Edit3, GripVertical, PanelLeftClose, PanelLeftOpen, Settings, Trash2 } from "lucide-react";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState, memo } from "react";
 import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
 
 // DnD Kit imports for drag and drop functionality, basically sortable card reordering
@@ -437,16 +437,17 @@ const renderCard = (cardType: CardType, props: CardRenderProps): React.ReactNode
 };
 
 // =====================================================================
-// COMPONENT IMPLEMENTATION
+// OPTIMIZED SHELL COMPONENT - Handles store subscriptions only
 // =====================================================================
 
 interface NodeInspectorProps {
 	viewMode?: "bottom" | "side";
 }
 
-const NodeInspector = React.memo(function NodeInspector({
+// Shell component that handles store subscriptions and passes plain data
+const NodeInspectorShell: React.FC<NodeInspectorProps> = ({
 	viewMode = "bottom",
-}: NodeInspectorProps) {
+}) => {
 	const {
 		nodes,
 		edges,
@@ -550,9 +551,218 @@ const NodeInspector = React.memo(function NodeInspector({
 	// Get theme for node inspector
 	const _theme = useComponentTheme("nodeInspector");
 
-	// Get selected items
-	const selectedNode = selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) || null : null;
-	const selectedEdge = selectedEdgeId ? edges.find((e) => e.id === selectedEdgeId) || null : null;
+	// Get selected items - memoized to prevent unnecessary recalculations
+	const selectedNode = useMemo(() => {
+		return selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) || null : null;
+	}, [selectedNodeId, nodes]);
+	
+	const selectedEdge = useMemo(() => {
+		return selectedEdgeId ? edges.find((e) => e.id === selectedEdgeId) || null : null;
+	}, [selectedEdgeId, edges]);
+
+	// Pass stable props to the content component to avoid re-renders - MUST be before early returns to avoid conditional hooks
+	const shellProps = useMemo(() => ({
+		selectedNode,
+		selectedEdge,
+		nodes,
+		edges,
+		viewMode,
+		inspectorLocked,
+		inspectorViewMode,
+		setInspectorLocked,
+		toggleInspectorViewMode,
+		updateNodeData,
+		updateNodeId,
+		logNodeError,
+		clearNodeErrors,
+		removeNode,
+		removeEdge,
+		addNode,
+		selectNode,
+	}), [
+		selectedNode,
+		selectedEdge,
+		nodes,
+		edges,
+		viewMode,
+		inspectorLocked,
+		inspectorViewMode,
+		setInspectorLocked,
+		toggleInspectorViewMode,
+		updateNodeData,
+		updateNodeId,
+		logNodeError,
+		clearNodeErrors,
+		removeNode,
+		removeEdge,
+		addNode,
+		selectNode,
+	]);
+
+	// Early return for locked state
+	if (inspectorLocked) {
+		return (
+			<div
+				className={`${
+					viewMode === "side"
+						? "flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card shadow-lg"
+						: STYLING_CONTAINER_LOCKED
+				}`}
+			>
+				<button
+					type="button"
+					aria-label={DESIGN_CONFIG.content.aria.unlockInspector}
+					title={DESIGN_CONFIG.content.tooltips.unlockInspector}
+					onClick={() => setInspectorLocked(false)}
+					className={STYLING_BUTTON_UNLOCK_LARGE}
+				>
+					<FaLock className={STYLING_ICON_STATE_LARGE} />
+				</button>
+			</div>
+		);
+	}
+
+	// Early return for no node selected in side mode
+	if (!selectedNode && viewMode === "side") {
+		return (
+			<div className="flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card shadow-lg">
+				<div className="text-muted-foreground">
+					<FaSearch className="h-4 w-4" />
+				</div>
+			</div>
+		);
+	}
+
+	return <NodeInspectorContent {...shellProps} />;
+};
+
+// =====================================================================
+// MEMOIZED CONTENT COMPONENT - Pure presentation layer
+// =====================================================================
+
+interface NodeInspectorContentProps {
+	selectedNode: any;
+	selectedEdge: any;
+	nodes: any[];
+	edges: any[];
+	viewMode: "bottom" | "side";
+	inspectorLocked: boolean;
+	inspectorViewMode: "bottom" | "side";
+	setInspectorLocked: (locked: boolean) => void;
+	toggleInspectorViewMode: () => void;
+	updateNodeData: any;
+	updateNodeId: any;
+	logNodeError: any;
+	clearNodeErrors: any;
+	removeNode: any;
+	removeEdge: any;
+	addNode: any;
+	selectNode: any;
+}
+
+const NodeInspectorContent = memo<NodeInspectorContentProps>(({
+	selectedNode,
+	selectedEdge,
+	nodes,
+	edges,
+	viewMode,
+	inspectorLocked,
+	inspectorViewMode,
+	setInspectorLocked,
+	toggleInspectorViewMode,
+	updateNodeData,
+	updateNodeId,
+	logNodeError,
+	clearNodeErrors,
+	removeNode,
+	removeEdge,
+	addNode,
+	selectNode,
+}) => {
+	// Settings management with persistence, basically card visibility controls
+	const { 
+		settings: cardVisibilityWithOrder, 
+		toggleSetting, 
+		updateCardOrder,
+		resetToDefaults,
+		isLoaded: settingsLoaded 
+	} = useInspectorSettings();
+
+	// Extract card visibility and order, basically separate visibility state from ordering
+	const cardVisibility = useMemo(() => ({
+		nodeInfo: cardVisibilityWithOrder.nodeInfo,
+		nodeData: cardVisibilityWithOrder.nodeData,
+		output: cardVisibilityWithOrder.output,
+		controls: cardVisibilityWithOrder.controls,
+		handles: cardVisibilityWithOrder.handles,
+		connections: cardVisibilityWithOrder.connections,
+		errors: cardVisibilityWithOrder.errors,
+		size: cardVisibilityWithOrder.size,
+	}), [cardVisibilityWithOrder]);
+	
+	const cardOrder = cardVisibilityWithOrder.cardOrder;
+
+	// Drag and drop state management, basically track active drag item
+	const [activeId, setActiveId] = useState<CardType | null>(null);
+
+	// DnD sensors configuration, basically define how drag interactions work
+	const sensors = useSensors(
+		useSensor(MouseSensor, {
+			activationConstraint: {
+				distance: 8, // Require 8px movement before drag starts, basically prevent accidental drags
+			},
+		}),
+		useSensor(TouchSensor, {
+			activationConstraint: {
+				delay: 250,
+				tolerance: 8,
+			},
+		})
+	);
+
+	// Accordion state management - moved to component level to avoid context re-creation
+	const [accordionState, setAccordionState] = useState({
+		nodeInfo: true,
+		description: true,
+		handles: true,
+		nodeData: true,
+		output: true,
+		controls: true,
+		connections: true,
+		errors: true,
+		size: true,
+	});
+
+	const toggleAccordion = useCallback((section: keyof typeof accordionState) => {
+		setAccordionState((prev) => ({
+			...prev,
+			[section]: !prev[section],
+		}));
+	}, []);
+
+	// Drag and drop event handlers, basically manage card reordering
+	const handleDragStart = useCallback((event: DragStartEvent) => {
+		setActiveId(event.active.id as CardType);
+	}, []);
+
+	const handleDragEnd = useCallback((event: DragEndEvent) => {
+		const { active, over } = event;
+		
+		if (over && active.id !== over.id) {
+			const oldIndex = cardOrder.indexOf(active.id as CardType);
+			const newIndex = cardOrder.indexOf(over.id as CardType);
+			
+			if (oldIndex !== -1 && newIndex !== -1) {
+				const newOrder = arrayMove(cardOrder, oldIndex, newIndex);
+				updateCardOrder(newOrder);
+			}
+		}
+		
+		setActiveId(null);
+	}, [cardOrder, updateCardOrder]);
+
+	// Get theme for node inspector
+	const _theme = useComponentTheme("nodeInspector");
 
 	// Get node category for display
 	const nodeCategory = useMemo(() => {
@@ -565,7 +775,7 @@ const NodeInspector = React.memo(function NodeInspector({
 	}, [selectedNode]);
 
 	// Always call useNodeErrors to avoid conditional hook usage
-	const errors = useNodeErrors(selectedNodeId);
+	const errors = useNodeErrors(selectedNode?.id || null);
 
 	// Get output for selected node
 	const output = useMemo(() => {
@@ -677,10 +887,10 @@ const NodeInspector = React.memo(function NodeInspector({
 	);
 
 	const handleClearErrors = useCallback(() => {
-		if (selectedNodeId) {
-			clearNodeErrors(selectedNodeId);
+		if (selectedNode?.id) {
+			clearNodeErrors(selectedNode.id);
 		}
-	}, [selectedNodeId, clearNodeErrors]);
+	}, [selectedNode?.id, clearNodeErrors]);
 
 	// Handle node data updates
 	const handleUpdateNodeData = useCallback(
@@ -690,44 +900,10 @@ const NodeInspector = React.memo(function NodeInspector({
 		[updateNodeData]
 	);
 
-	// Early return for locked state
-	if (inspectorLocked) {
-		return (
-			<div
-				className={`${
-					viewMode === "side"
-						? "flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card shadow-lg"
-						: STYLING_CONTAINER_LOCKED
-				}`}
-			>
-				<button
-					type="button"
-					aria-label={DESIGN_CONFIG.content.aria.unlockInspector}
-					title={DESIGN_CONFIG.content.tooltips.unlockInspector}
-					onClick={() => setInspectorLocked(false)}
-					className={STYLING_BUTTON_UNLOCK_LARGE}
-				>
-					<FaLock className={STYLING_ICON_STATE_LARGE} />
-				</button>
-			</div>
-		);
-	}
-
-	// Early return for no node selected in side mode
-	if (!selectedNode && viewMode === "side") {
-		return (
-			<div className="flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card shadow-lg">
-				<div className="text-muted-foreground">
-					<FaSearch className="h-4 w-4" />
-				</div>
-			</div>
-		);
-	}
-
 	// Show node inspector if node is selected (prioritize nodes over edges)
 	if (selectedNode && nodeInfo) {
 		// Get node type config for hasOutput information
-		const nodeConfig = selectedNode.type ? NODE_TYPE_CONFIG[selectedNode.type] : undefined;
+		const nodeConfig = selectedNode.type ? NODE_TYPE_CONFIG[selectedNode.type as NodeType] : undefined;
 		// Check if node has right column content (output or controls)
 		const hasRightColumn = nodeConfig?.hasOutput || nodeInfo.hasControls;
 
@@ -996,8 +1172,28 @@ const NodeInspector = React.memo(function NodeInspector({
 			</button>
 		</div>
 	);
+}, (prevProps, nextProps) => {
+	// Custom comparison for memo optimization
+	return (
+		prevProps.selectedNode?.id === nextProps.selectedNode?.id &&
+		prevProps.selectedNode?.data === nextProps.selectedNode?.data &&
+		prevProps.selectedEdge?.id === nextProps.selectedEdge?.id &&
+		prevProps.viewMode === nextProps.viewMode &&
+		prevProps.inspectorLocked === nextProps.inspectorLocked &&
+		prevProps.inspectorViewMode === nextProps.inspectorViewMode
+	);
+});
+
+// =====================================================================
+// MAIN EXPORTED COMPONENT
+// =====================================================================
+
+const NodeInspector = memo<NodeInspectorProps>((props) => {
+	return <NodeInspectorShell {...props} />;
 });
 
 NodeInspector.displayName = "NodeInspector";
+NodeInspectorContent.displayName = "NodeInspectorContent";
+NodeInspectorShell.displayName = "NodeInspectorShell";
 
 export default NodeInspector;

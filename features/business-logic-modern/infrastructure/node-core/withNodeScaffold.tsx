@@ -180,7 +180,9 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 		const handleOverrides = (props.data as any)?.handleOverrides;
 		
 		const handleKey = React.useMemo(() => {
-			return handleOverrides ? JSON.stringify(handleOverrides) : 'default';
+			// Avoid JSON.stringify on every render - just use array length and first item
+			if (!handleOverrides || !Array.isArray(handleOverrides)) return 'default';
+			return `${handleOverrides.length}-${handleOverrides[0]?.handleId || 'none'}`;
 		}, [handleOverrides]);
 
 		// Update ReactFlow's internal handle positions when overrides change
@@ -203,13 +205,13 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 		const nodeStyleClasses = useNodeStyleClasses(isSelected, isError, isActive);
 		const categoryTheme = useCategoryThemeWithSpec(spec.kind, spec);
 
-		// Build the complete className with theming
+		// Build the complete className with theming, basically combining all style classes
 		const themeClasses = React.useMemo(() => {
 			const baseClasses = [
 				nodeStyleClasses, // Includes hover, selection, error, and activation glow effects
 			];
 
-			// Apply category-based theming if available
+			// Apply category-based theming if available, basically the visual category styling
 			if (categoryTheme) {
 				baseClasses.push(
 					categoryTheme.background.light,
@@ -249,21 +251,17 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 		const handlesByPosition = React.useMemo(() => {
 			const grouped: Record<string, typeof spec.handles> = {};
 			const allHandles = spec.handles || [];
-			const handleOverrides = (props.data as any)?.handleOverrides as Array<{
-				handleId: string;
-				position: "top" | "bottom" | "left" | "right";
-			}> | undefined;
 
-			// Create map for quick override lookup
+			// Create map for quick override lookup, basically a fast position finder
 			const overrideMap = new Map<string, string>();
 			if (handleOverrides) {
-				handleOverrides.forEach(override => {
+				handleOverrides.forEach((override: { handleId: string; position: string }) => {
 					overrideMap.set(override.handleId, override.position);
 				});
 			}
 
 			allHandles.forEach((handle) => {
-				// Use override position if available, otherwise use default
+				// Use override position if available, otherwise use default, basically the actual position to use
 				const pos = overrideMap.get(handle.id) || handle.position;
 				if (!grouped[pos]) {
 					grouped[pos] = [];
@@ -271,7 +269,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 				grouped[pos].push(handle);
 			});
 			return grouped;
-		}, [spec.handles, props.data]);
+		}, [spec.handles, handleOverrides]); // Only depend on handleOverrides, not entire props.data
 
 		// Inner component to throw inside ErrorBoundary, not outside
 		const MaybeError: React.FC = () => {
@@ -283,9 +281,17 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 
 		// Initialize node memory if configured
 		React.useEffect(() => {
+			let hasMemory = false;
 			if (spec.memory) {
 				globalNodeMemoryManager.get(props.id, spec.memory);
+				hasMemory = true;
 			}
+
+			return () => {
+				if (hasMemory) {
+					globalNodeMemoryManager.destroy(props.id);
+				}
+			};
 		}, [props.id]);
 
 		// side-effect: run server actions once
