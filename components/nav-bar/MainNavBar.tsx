@@ -27,7 +27,7 @@ export default function MainNavBar() {
 		<header
 			className={cn(
 				"sticky top-0 z-50 w-full border-b bg-fill-border opacity-95 backdrop-blur-lg transition-all duration-300 supports-backdrop-filter:bg-background/60",
-				scrolled ? "h-16" : "h-16 md:h-24"
+				scrolled ? "h-16" : "h-16 md:h-16"
 			)}
 		>
 			<nav id="main-nav" className="xdebug-red h-full w-full ">
@@ -37,22 +37,22 @@ export default function MainNavBar() {
 				>
 					<div
 						id="logo"
-						className="xdebug-green col-span-4 self-center justify-self-center border-transparent border-b bg-fill-border hover:animate-fill-transparency md:col-span-2"
+						className="xdebug-green col-span-4 self-center justify-self-center border-transparent border-b bg-fill-border hover:animate-fill-transparency md:col-span-2 ml-18"
 					>
-						<a href="/" className=" flex cursor-pointer flex-row items-center justify-center ">
+						<a href="/" className=" flex cursor-pointer flex-row items-center justify-center  ">
 							<LogomarkSvg
 								className={cn(
 									"pl-2 transition-all duration-300",
-									scrolled ? "origin-left scale-90" : ""
+									scrolled ? "origin-left" : ""
 								)}
 							/>
 							<div
 								className={cn(
 									"flex flex-col transition-all duration-300",
-									scrolled ? "origin-left scale-90" : ""
+									scrolled ? "origin-left" : ""
 								)}
 							>
-								<span className="logoText ml-4 block whitespace-nowrap font-bold text-3xl sm:hidden sm:whitespace-normal lg:block lg:text-2xl">
+								<span className="logoText ml-4 block whitespace-nowrap font-bold text-xl sm:text-3xl sm:hidden sm:whitespace-normal lg:block lg:text-2xl">
 									AgenitiX
 								</span>
 							</div>
