@@ -19,6 +19,11 @@ import { spec as emailSenderSpec } from "../../node-domain/email/emailSender.nod
 import { spec as emailReplierSpec } from "../../node-domain/email/emailReplier.node";
 import { spec as emailTemplateSpec } from "../../node-domain/email/emailTemplate.node";
 import { spec as emailBrandSpec } from "../../node-domain/email/emailBrand.node";
+import { spec as emailUpdaterSpec } from "../../node-domain/email/emailUpdater.node";
+import { spec as emailListSpec } from "../../node-domain/email/emailList.node";
+import { spec as emailDataSpec } from "../../node-domain/email/emailData.node";
+import { spec as emailBulkSpec } from "../../node-domain/email/emailBulk.node";
+import { spec as emailAnalyticsSpec } from "../../node-domain/email/emailAnalytics.node";
 import { spec as flowConditionalSpec } from "../../node-domain/flow/flowConditional.node";
 import { spec as testNodeSpec } from "../../node-domain/test/testNode.node";
 import { spec as triggerToggleSpec } from "../../node-domain/trigger/triggerToggle.node";
@@ -45,6 +50,11 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	emailReplier: emailReplierSpec,
 	emailTemplate: emailTemplateSpec,
 	emailBrand: emailBrandSpec,
+	emailUpdater: emailUpdaterSpec,
+	emailList: emailListSpec,
+	emailData: emailDataSpec,
+	emailBulk: emailBulkSpec,
+	emailAnalytics: emailAnalyticsSpec,
 	testNode: testNodeSpec,
 	triggerToggle: triggerToggleSpec,
 	viewText: viewTextSpec,
