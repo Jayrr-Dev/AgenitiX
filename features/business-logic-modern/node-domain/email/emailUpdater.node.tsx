@@ -12,7 +12,7 @@
 
 import type { NodeProps } from "@xyflow/react";
 
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
@@ -34,7 +34,6 @@ import {
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { useStore } from "@xyflow/react";
 
 import { toast } from "sonner";
 
@@ -133,15 +132,8 @@ const validateNodeData = createNodeValidator(
 );
 
 // -----------------------------------------------------------------------------
-// 2️⃣  Constants
+// 2️⃣  Constants & Components
 // -----------------------------------------------------------------------------
-
-// Category text styles for future use
-// const CATEGORY_TEXT = {
-//   EMAIL: {
-//     primary: "text-[--node-email-text]",
-//   },
-// } as const;
 
 const CONTENT = {
   expanded: "p-4 w-full h-full flex flex-col",
@@ -152,25 +144,171 @@ const CONTENT = {
     "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
 
-// Available folders and labels for future use
-// const AVAILABLE_FOLDERS = [
-//   "INBOX",
-//   "Sent",
-//   "Drafts",
-//   "Trash",
-//   "Spam",
-//   "Archive",
-//   "Important",
-// ] as const;
+/** Reusable operation checkbox component, basically reduces repetitive JSX */
+const OperationCheckbox = memo(
+  ({
+    label,
+    checked,
+    onChange,
+    disabled,
+  }: {
+    label: string;
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+    disabled?: boolean;
+  }) => (
+    <label className="flex items-center space-x-2 text-xs">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        disabled={disabled}
+        className="rounded"
+      />
+      <span>{label}</span>
+    </label>
+  )
+);
 
-// const AVAILABLE_LABELS = [
-//   "Work",
-//   "Personal",
-//   "Important",
-//   "Follow-up",
-//   "Project",
-//   "Client",
-// ] as const;
+OperationCheckbox.displayName = "OperationCheckbox";
+
+/** Memoized operations section to prevent re-renders, basically optimize checkbox groups */
+const OperationsSection = memo(
+  ({
+    operations,
+    isEnabled,
+    toggleOperation,
+  }: {
+    operations: EmailUpdaterData["operations"];
+    isEnabled: boolean;
+    toggleOperation: (
+      operation: keyof EmailUpdaterData["operations"],
+      value: boolean
+    ) => void;
+  }) => (
+    <div className="mb-3">
+      <div className="text-xs text-gray-600 dark:text-gray-300 mb-2">
+        Update Operations:
+      </div>
+
+      {/* Read/Unread */}
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        <OperationCheckbox
+          label="Mark as Read"
+          checked={operations.markAsRead}
+          onChange={(checked) => toggleOperation("markAsRead", checked)}
+          disabled={!isEnabled}
+        />
+        <OperationCheckbox
+          label="Mark as Unread"
+          checked={operations.markAsUnread}
+          onChange={(checked) => toggleOperation("markAsUnread", checked)}
+          disabled={!isEnabled}
+        />
+      </div>
+
+      {/* Important/Not Important */}
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        <OperationCheckbox
+          label="Mark Important"
+          checked={operations.markAsImportant}
+          onChange={(checked) => toggleOperation("markAsImportant", checked)}
+          disabled={!isEnabled}
+        />
+        <OperationCheckbox
+          label="Not Important"
+          checked={operations.markAsNotImportant}
+          onChange={(checked) => toggleOperation("markAsNotImportant", checked)}
+          disabled={!isEnabled}
+        />
+      </div>
+
+      {/* Archive/Trash/Restore */}
+      <div className="grid grid-cols-3 gap-2 mb-2">
+        <OperationCheckbox
+          label="Archive"
+          checked={operations.archive}
+          onChange={(checked) => toggleOperation("archive", checked)}
+          disabled={!isEnabled}
+        />
+        <OperationCheckbox
+          label="Trash"
+          checked={operations.trash}
+          onChange={(checked) => toggleOperation("trash", checked)}
+          disabled={!isEnabled}
+        />
+        <OperationCheckbox
+          label="Restore"
+          checked={operations.restore}
+          onChange={(checked) => toggleOperation("restore", checked)}
+          disabled={!isEnabled}
+        />
+      </div>
+    </div>
+  )
+);
+
+OperationsSection.displayName = "OperationsSection";
+
+/** Memoized status display to prevent re-renders, basically optimize status indicators */
+const StatusDisplay = memo(
+  ({
+    status,
+    progress,
+    error,
+  }: {
+    status: EmailUpdaterData["status"];
+    progress: EmailUpdaterData["progress"];
+    error: string;
+  }) => {
+    if (status === "processing") {
+      return (
+        <div className="mb-2">
+          <div className="text-xs text-gray-600 dark:text-gray-300">
+            Processing: {progress.processed} of {progress.total}
+          </div>
+          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full mt-1">
+            <div
+              className="h-full bg-blue-500 rounded-full transition-all duration-300"
+              style={{
+                width: `${(progress.processed / progress.total) * 100}%`,
+              }}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    if (status === "success") {
+      return (
+        <div className="text-xs text-green-600 dark:text-green-400 mb-2">
+          Successfully updated {progress.succeeded} emails
+        </div>
+      );
+    }
+
+    if (status === "error") {
+      return (
+        <div className="text-xs text-red-600 dark:text-red-400 mb-2">
+          {error || "Failed to update emails"}
+        </div>
+      );
+    }
+
+    if (status === "partial") {
+      return (
+        <div className="text-xs text-yellow-600 dark:text-yellow-400 mb-2">
+          Updated {progress.succeeded} emails, failed to update{" "}
+          {progress.failed} emails
+        </div>
+      );
+    }
+
+    return null;
+  }
+);
+
+StatusDisplay.displayName = "StatusDisplay";
 
 // -----------------------------------------------------------------------------
 // 3️⃣  Dynamic spec factory (pure)
@@ -295,7 +433,7 @@ function createDynamicSpec(data: EmailUpdaterData): NodeSpec {
         { key: "isExpanded", type: "boolean", label: "Expand" },
       ],
     },
-    icon: "LuEdit",
+    icon: "LuPencil",
     author: "Agenitix Team",
     description: "Update email properties and metadata in batch operations",
     feature: "email",
@@ -334,12 +472,18 @@ const EmailUpdaterNode = memo(({ id }: NodeProps & { spec: NodeSpec }) => {
     isActive,
   } = nodeData as EmailUpdaterData;
 
-  // Global React‑Flow store (nodes & edges) – triggers re‑render on change
-  const _nodes = useStore((s) => s.nodes);
-  const _edges = useStore((s) => s.edges);
-
-  // Keep last emitted output to avoid redundant writes
-  const _lastOutputRef = useRef<string | null>(null);
+  // Memoize operation validation check, basically avoid recalculating on every render
+  const hasValidOperations = useMemo(() => {
+    return Object.values(operations).some((value) => {
+      if (Array.isArray(value)) {
+        return value.length > 0;
+      }
+      if (typeof value === "string") {
+        return !!value;
+      }
+      return !!value;
+    });
+  }, [operations]);
 
   // -------------------------------------------------------------------------
   // 4.3  Callbacks
@@ -350,9 +494,14 @@ const EmailUpdaterNode = memo(({ id }: NodeProps & { spec: NodeSpec }) => {
     updateNodeData({ isExpanded: !isExpanded });
   }, [isExpanded, updateNodeData]);
 
-  /** Toggle operation */
+  /** Toggle operation - optimized to reduce object recreation, basically prevent new objects on every call */
   const toggleOperation = useCallback(
     (operation: keyof typeof operations, value: boolean) => {
+      // Only update if value actually changed to prevent unnecessary re-renders
+      if (operations[operation] === value) {
+        return;
+      }
+
       updateNodeData({
         operations: {
           ...operations,
@@ -370,18 +519,7 @@ const EmailUpdaterNode = memo(({ id }: NodeProps & { spec: NodeSpec }) => {
       return;
     }
 
-    // Validate operations
-    const hasOperation = Object.values(operations).some((value) => {
-      if (Array.isArray(value)) {
-        return value.length > 0;
-      }
-      if (typeof value === "string") {
-        return !!value;
-      }
-      return !!value;
-    });
-
-    if (!hasOperation) {
+    if (!hasValidOperations) {
       toast.error("At least one update operation must be selected");
       return;
     }
@@ -474,7 +612,13 @@ const EmailUpdaterNode = memo(({ id }: NodeProps & { spec: NodeSpec }) => {
 
     // Start processing
     processBatch();
-  }, [emailIds, operations, batchSize, processingDelay, updateNodeData]);
+  }, [
+    emailIds,
+    hasValidOperations,
+    batchSize,
+    processingDelay,
+    updateNodeData,
+  ]);
 
   // -------------------------------------------------------------------------
   // 4.4  Effects
@@ -559,142 +703,15 @@ const EmailUpdaterNode = memo(({ id }: NodeProps & { spec: NodeSpec }) => {
         </div>
 
         {/* Update Operations */}
-        <div className="mb-3">
-          <div className="text-xs text-gray-600 dark:text-gray-300 mb-2">
-            Update Operations:
-          </div>
-
-          {/* Read/Unread */}
-          <div className="grid grid-cols-2 gap-2 mb-2">
-            <label className="flex items-center space-x-2 text-xs">
-              <input
-                type="checkbox"
-                checked={operations.markAsRead}
-                onChange={(e) =>
-                  toggleOperation("markAsRead", e.target.checked)
-                }
-                disabled={!isEnabled}
-                className="rounded"
-              />
-              <span>Mark as Read</span>
-            </label>
-
-            <label className="flex items-center space-x-2 text-xs">
-              <input
-                type="checkbox"
-                checked={operations.markAsUnread}
-                onChange={(e) =>
-                  toggleOperation("markAsUnread", e.target.checked)
-                }
-                disabled={!isEnabled}
-                className="rounded"
-              />
-              <span>Mark as Unread</span>
-            </label>
-          </div>
-
-          {/* Important/Not Important */}
-          <div className="grid grid-cols-2 gap-2 mb-2">
-            <label className="flex items-center space-x-2 text-xs">
-              <input
-                type="checkbox"
-                checked={operations.markAsImportant}
-                onChange={(e) =>
-                  toggleOperation("markAsImportant", e.target.checked)
-                }
-                disabled={!isEnabled}
-                className="rounded"
-              />
-              <span>Mark Important</span>
-            </label>
-
-            <label className="flex items-center space-x-2 text-xs">
-              <input
-                type="checkbox"
-                checked={operations.markAsNotImportant}
-                onChange={(e) =>
-                  toggleOperation("markAsNotImportant", e.target.checked)
-                }
-                disabled={!isEnabled}
-                className="rounded"
-              />
-              <span>Not Important</span>
-            </label>
-          </div>
-
-          {/* Archive/Trash/Restore */}
-          <div className="grid grid-cols-3 gap-2 mb-2">
-            <label className="flex items-center space-x-2 text-xs">
-              <input
-                type="checkbox"
-                checked={operations.archive}
-                onChange={(e) => toggleOperation("archive", e.target.checked)}
-                disabled={!isEnabled}
-                className="rounded"
-              />
-              <span>Archive</span>
-            </label>
-
-            <label className="flex items-center space-x-2 text-xs">
-              <input
-                type="checkbox"
-                checked={operations.trash}
-                onChange={(e) => toggleOperation("trash", e.target.checked)}
-                disabled={!isEnabled}
-                className="rounded"
-              />
-              <span>Trash</span>
-            </label>
-
-            <label className="flex items-center space-x-2 text-xs">
-              <input
-                type="checkbox"
-                checked={operations.restore}
-                onChange={(e) => toggleOperation("restore", e.target.checked)}
-                disabled={!isEnabled}
-                className="rounded"
-              />
-              <span>Restore</span>
-            </label>
-          </div>
-        </div>
+        <OperationsSection
+          operations={operations}
+          isEnabled={isEnabled}
+          toggleOperation={toggleOperation}
+        />
 
         {/* Status and Execute */}
         <div className="mt-auto">
-          {status === "processing" && (
-            <div className="mb-2">
-              <div className="text-xs text-gray-600 dark:text-gray-300">
-                Processing: {progress.processed} of {progress.total}
-              </div>
-              <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full mt-1">
-                <div
-                  className="h-full bg-blue-500 rounded-full transition-all duration-300"
-                  style={{
-                    width: `${(progress.processed / progress.total) * 100}%`,
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {status === "success" && (
-            <div className="text-xs text-green-600 dark:text-green-400 mb-2">
-              Successfully updated {progress.succeeded} emails
-            </div>
-          )}
-
-          {status === "error" && (
-            <div className="text-xs text-red-600 dark:text-red-400 mb-2">
-              {error || "Failed to update emails"}
-            </div>
-          )}
-
-          {status === "partial" && (
-            <div className="text-xs text-yellow-600 dark:text-yellow-400 mb-2">
-              Updated {progress.succeeded} emails, failed to update{" "}
-              {progress.failed} emails
-            </div>
-          )}
+          <StatusDisplay status={status} progress={progress} error={error} />
 
           <button
             type="button"
@@ -734,16 +751,14 @@ EmailUpdaterNode.displayName = "EmailUpdaterNode";
 
 const EmailUpdaterNodeWithDynamicSpec = (props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, {});
+  const typedNodeData = nodeData as EmailUpdaterData;
 
   const dynamicSpec = useMemo(
-    () => createDynamicSpec(nodeData as EmailUpdaterData),
-    [
-      (nodeData as EmailUpdaterData).expandedSize,
-      (nodeData as EmailUpdaterData).collapsedSize,
-    ]
+    () => createDynamicSpec(typedNodeData),
+    [typedNodeData.expandedSize, typedNodeData.collapsedSize]
   );
 
-  // Memoise the scaffolded component to keep focus
+  // Memoise the scaffolded component to keep focus, basically prevent unnecessary re-renders
   const ScaffoldedNode = useMemo(
     () =>
       withNodeScaffold(dynamicSpec, (p) => (

@@ -2,17 +2,17 @@
 
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import type {
-	AgenEdge,
-	AgenNode,
+  AgenEdge,
+  AgenNode,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import { generateNodeId } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
 import {
-	type Connection,
-	type EdgeChange,
-	type Edge as ReactFlowEdge,
-	type Node as ReactFlowNode,
-	ReactFlowProvider,
-	useReactFlow,
+  type Connection,
+  type EdgeChange,
+  type Edge as ReactFlowEdge,
+  type Node as ReactFlowNode,
+  ReactFlowProvider,
+  useReactFlow,
 } from "@xyflow/react";
 import React, { useCallback, useEffect, useRef } from "react";
 import { type FlowMetadata, FlowProvider } from "./contexts/flow-context";
@@ -21,7 +21,10 @@ import ActionToolbar from "@/features/business-logic-modern/infrastructure/actio
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
 import UndoRedoManager from "../action-toolbar/history/UndoRedoManager";
 import type { HistoryNode } from "../action-toolbar/history/historyGraph";
-import { UndoRedoProvider, useUndoRedo } from "../action-toolbar/history/undo-redo-context";
+import {
+  UndoRedoProvider,
+  useUndoRedo,
+} from "../action-toolbar/history/undo-redo-context";
 import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
@@ -32,29 +35,34 @@ import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastruc
 
 // Helper function to get node spec from the new NodeSpec registry system
 const getNodeSpecForType = (nodeType: string) => {
-	try {
-		// 1. Check the new NodeSpec registry first
-		const registeredSpec = getNodeSpecMetadata(nodeType);
-		if (registeredSpec) {
-			return {
-				kind: registeredSpec.kind,
-				displayName: registeredSpec.displayName,
-				category: registeredSpec.category,
-				initialData: registeredSpec.initialData,
-			};
-		}
+  try {
+    // 1. Check the new NodeSpec registry first
+    const registeredSpec = getNodeSpecMetadata(nodeType);
+    if (registeredSpec) {
+      return {
+        kind: registeredSpec.kind,
+        displayName: registeredSpec.displayName,
+        category: registeredSpec.category,
+        initialData: registeredSpec.initialData,
+      };
+    }
 
-		// 2. Check the legacy NODESPECS for backward compatibility
-		// This part of the original code was removed, so we'll keep it empty or remove it if not needed.
-		// The original code had NODESPECS defined elsewhere, but it's not imported here.
-		// For now, we'll just return null if no registered spec is found.
+    // 2. Check the legacy NODESPECS for backward compatibility
+    // This part of the original code was removed, so we'll keep it empty or remove it if not needed.
+    // The original code had NODESPECS defined elsewhere, but it's not imported here.
+    // For now, we'll just return null if no registered spec is found.
 
-		console.warn(`[getNodeSpecForType] No spec found for node type: ${nodeType}`);
-		return null;
-	} catch (error) {
-		console.error(`[getNodeSpecForType] Error getting spec for ${nodeType}:`, error);
-		return null;
-	}
+    console.warn(
+      `[getNodeSpecForType] No spec found for node type: ${nodeType}`
+    );
+    return null;
+  } catch (error) {
+    console.error(
+      `[getNodeSpecForType] Error getting spec for ${nodeType}:`,
+      error
+    );
+    return null;
+  }
 };
 
 /* -------------------------------------------------------------------------- */
@@ -63,59 +71,59 @@ const getNodeSpecForType = (nodeType: string) => {
 
 // Error view layout & colours
 const wrapErrorScreen =
-	"h-screen w-screen flex items-center justify-center bg-error dark:bg-error-hover" as const;
+  "h-screen w-screen flex items-center justify-center bg-error dark:bg-error-hover" as const;
 
 const styleErrorTitle = "text-2xl font-bold text-error mb-4" as const;
 const styleErrorSubtitle = "text-error-secondary mb-4" as const;
 
 // Retry button
 const styleRetryBase =
-	"px-4 py-2 rounded shadow-lg transition-transform transition-colors duration-200 text-sm font-medium" as const;
+  "px-4 py-2 rounded shadow-lg transition-transform transition-colors duration-200 text-sm font-medium" as const;
 const styleRetryColour =
-	"bg-destructive text-destructive-foreground hover:opacity-90 hover:shadow-effect-glow-error hover:scale-105 active:scale-100" as const;
+  "bg-destructive text-destructive-foreground hover:opacity-90 hover:shadow-effect-glow-error hover:scale-105 active:scale-100" as const;
 
 // FLOW-LEVEL ERROR BOUNDARY - Catches errors that would crash the entire flow editor
 // This is different from NodeErrorBoundary which handles individual node errors
 class FlowEditorErrorBoundary extends React.Component<
-	{ children: React.ReactNode },
-	{ hasError: boolean; error?: Error }
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
 > {
-	constructor(props: { children: React.ReactNode }) {
-		super(props);
-		this.state = { hasError: false };
-	}
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
-	static getDerivedStateFromError(error: Error) {
-		return { hasError: true, error };
-	}
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
 
-	componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-		console.error("FlowEditor Error:", error, errorInfo);
-	}
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("FlowEditor Error:", error, errorInfo);
+  }
 
-	render() {
-		if (this.state.hasError) {
-			return (
-				<div className={wrapErrorScreen}>
-					<div className="p-8 text-center">
-						<h1 className={styleErrorTitle}>Something went wrong</h1>
-						<p className={styleErrorSubtitle}>
-							{this.state.error?.message || "Unknown error occurred"}
-						</p>
-						<button
-							onClick={() => this.setState({ hasError: false })}
-							className={`${styleRetryBase} ${styleRetryColour}`}
-							type="button"
-						>
-							Try again
-						</button>
-					</div>
-				</div>
-			);
-		}
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className={wrapErrorScreen}>
+          <div className="p-8 text-center">
+            <h1 className={styleErrorTitle}>Something went wrong</h1>
+            <p className={styleErrorSubtitle}>
+              {this.state.error?.message || "Unknown error occurred"}
+            </p>
+            <button
+              onClick={() => this.setState({ hasError: false })}
+              className={`${styleRetryBase} ${styleRetryColour}`}
+              type="button"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      );
+    }
 
-		return this.props.children;
-	}
+    return this.props.children;
+  }
 }
 
 /**
@@ -153,379 +161,387 @@ class FlowEditorErrorBoundary extends React.Component<
  * • Platform-specific modifier keys (Cmd on Mac, Ctrl on Windows/Linux)
  */
 const FlowEditorInternal = () => {
-	const flowWrapperRef = useRef<HTMLDivElement>(null);
-	const { screenToFlowPosition } = useReactFlow();
+  const flowWrapperRef = useRef<HTMLDivElement>(null);
+  const { screenToFlowPosition } = useReactFlow();
 
-	// Canvas loading is now handled at page level to prevent double loading screens
+  // Canvas loading is now handled at page level to prevent double loading screens
 
-	// Initialize theme system on mount
-	useEffect(() => {
-		try {
-			// Enable category theming directly using the store
-			const store = useNodeStyleStore.getState();
-			store.enableCategoryTheming();
-		} catch (error) {
-			console.error("❌ Theme initialization failed:", error);
-		}
-	}, []);
+  // Initialize theme system on mount
+  useEffect(() => {
+    try {
+      // Enable category theming directly using the store
+      const store = useNodeStyleStore.getState();
+      store.enableCategoryTheming();
+    } catch (error) {
+      console.error("❌ Theme initialization failed:", error);
+    }
+  }, []);
 
-	const {
-		nodes,
-		edges,
-		onNodesChange,
-		onEdgesChange: storeOnEdgesChange,
-		onConnect,
-		addNode,
-		// Pull all other necessary props from the store
-		selectedNodeId,
-		selectedEdgeId,
-		nodeErrors,
-		showHistoryPanel,
-		inspectorLocked,
-		inspectorViewMode,
-		updateNodeData,
-		updateNodeId,
-		logNodeError,
-		clearNodeErrors,
-		toggleHistoryPanel,
-		setInspectorLocked,
-		removeNode,
-		removeEdge,
-		selectNode,
-		selectEdge,
-		clearSelection,
-	} = useFlowStore();
+  const {
+    nodes,
+    edges,
+    onNodesChange,
+    onEdgesChange: storeOnEdgesChange,
+    onConnect,
+    addNode,
+    // Pull all other necessary props from the store
+    selectedNodeId,
+    selectedEdgeId,
+    nodeErrors,
+    showHistoryPanel,
+    inspectorLocked,
+    inspectorViewMode,
+    updateNodeData,
+    updateNodeId,
+    logNodeError,
+    clearNodeErrors,
+    toggleHistoryPanel,
+    setInspectorLocked,
+    removeNode,
+    removeEdge,
+    selectNode,
+    selectEdge,
+    clearSelection,
+  } = useFlowStore();
 
-	// ============================================================================
-	// COPY/PASTE FUNCTIONALITY WITH MOUSE TRACKING
-	// ============================================================================
+  // ============================================================================
+  // COPY/PASTE FUNCTIONALITY WITH MOUSE TRACKING
+  // ============================================================================
 
-	const { copySelectedElements, pasteElements, installMouseTracking } =
-		useMultiSelectionCopyPaste();
+  const { copySelectedElements, pasteElements, installMouseTracking } =
+    useMultiSelectionCopyPaste();
 
-	// Track mouse position for smart paste positioning
-	useEffect(() => {
-		return installMouseTracking();
-	}, [installMouseTracking]);
+  // Track mouse position for smart paste positioning
+  useEffect(() => {
+    return installMouseTracking();
+  }, [installMouseTracking]);
 
-	// ============================================================================
-	// UNDO/REDO INTEGRATION
-	// ============================================================================
+  // ============================================================================
+  // UNDO/REDO INTEGRATION
+  // ============================================================================
 
-	const { undo, redo, recordAction } = useUndoRedo();
+  const { undo, redo, recordAction } = useUndoRedo();
 
-	const handleUndo = useCallback(() => {
-		const _success = undo();
-	}, [undo]);
+  const handleUndo = useCallback(() => {
+    const _success = undo();
+  }, [undo]);
 
-	const handleRedo = useCallback(() => {
-		const _success = redo();
-	}, [redo]);
+  const handleRedo = useCallback(() => {
+    const _success = redo();
+  }, [redo]);
 
-	// ============================================================================
-	// KEYBOARD SHORTCUTS INTEGRATION
-	// ============================================================================
+  // ============================================================================
+  // KEYBOARD SHORTCUTS INTEGRATION
+  // ============================================================================
 
-	const handleSelectAllNodes = useCallback(() => {
-		// Select all nodes in the canvas
-		const updatedNodes = nodes.map((node) => ({ ...node, selected: true }));
-		useFlowStore.setState((state) => ({ ...state, nodes: updatedNodes }));
-	}, [nodes]);
+  const handleSelectAllNodes = useCallback(() => {
+    // Select all nodes in the canvas
+    const updatedNodes = nodes.map((node) => ({ ...node, selected: true }));
+    useFlowStore.setState((state) => ({ ...state, nodes: updatedNodes }));
+  }, [nodes]);
 
-	const handleClearSelection = useCallback(() => {
-		clearSelection();
-	}, [clearSelection]);
+  const handleClearSelection = useCallback(() => {
+    clearSelection();
+  }, [clearSelection]);
 
-	const handleCopy = useCallback(() => {
-		copySelectedElements();
-	}, [copySelectedElements]);
+  const handleCopy = useCallback(() => {
+    copySelectedElements();
+  }, [copySelectedElements]);
 
-	const handlePaste = useCallback(() => {
-		const { copiedNodes } = useFlowStore.getState();
-		pasteElements();
+  const handlePaste = useCallback(() => {
+    const { copiedNodes } = useFlowStore.getState();
+    pasteElements();
 
-		// Record paste action for undo/redo
-		if (copiedNodes.length > 0) {
-			recordAction("paste", {
-				nodeCount: copiedNodes.length,
-				nodeTypes: copiedNodes.map((n) => n.type),
-			});
-		}
-	}, [pasteElements, recordAction]);
+    // Record paste action for undo/redo
+    if (copiedNodes.length > 0) {
+      recordAction("paste", {
+        nodeCount: copiedNodes.length,
+        nodeTypes: copiedNodes.map((n) => n.type),
+      });
+    }
+  }, [pasteElements, recordAction]);
 
-	const handleMultiDelete = useCallback(() => {
-		// Find selected nodes and edges
-		const selectedNodes = nodes.filter((node) => node.selected);
-		const selectedEdges = edges.filter((edge) => edge.selected);
+  const handleMultiDelete = useCallback(() => {
+    // Find selected nodes and edges
+    const selectedNodes = nodes.filter((node) => node.selected);
+    const selectedEdges = edges.filter((edge) => edge.selected);
 
-		if (selectedNodes.length === 0 && selectedEdges.length === 0) {
-			return;
-		}
+    if (selectedNodes.length === 0 && selectedEdges.length === 0) {
+      return;
+    }
 
-		// Record the delete action for undo/redo
-		if (selectedNodes.length > 0) {
-			recordAction("node_delete", {
-				nodeCount: selectedNodes.length,
-				nodeIds: selectedNodes.map((n) => n.id),
-			});
-		}
-		if (selectedEdges.length > 0) {
-			recordAction("edge_delete", {
-				edgeCount: selectedEdges.length,
-				edgeIds: selectedEdges.map((e) => e.id),
-			});
-		}
+    // Record the delete action for undo/redo
+    if (selectedNodes.length > 0) {
+      recordAction("node_delete", {
+        nodeCount: selectedNodes.length,
+        nodeIds: selectedNodes.map((n) => n.id),
+      });
+    }
+    if (selectedEdges.length > 0) {
+      recordAction("edge_delete", {
+        edgeCount: selectedEdges.length,
+        edgeIds: selectedEdges.map((e) => e.id),
+      });
+    }
 
-		// Delete selected nodes
-		for (const node of selectedNodes) {
-			removeNode(node.id);
-		}
+    // Delete selected nodes
+    for (const node of selectedNodes) {
+      removeNode(node.id);
+    }
 
-		// Delete selected edges
-		for (const edge of selectedEdges) {
-			removeEdge(edge.id);
-		}
-	}, [nodes, edges, removeNode, removeEdge, recordAction]);
+    // Delete selected edges
+    for (const edge of selectedEdges) {
+      removeEdge(edge.id);
+    }
+  }, [nodes, edges, removeNode, removeEdge, recordAction]);
 
-	// Initialize keyboard shortcuts
-	useKeyboardShortcuts({
-		onCopy: handleCopy,
-		onPaste: handlePaste,
-		onUndo: handleUndo,
-		onRedo: handleRedo,
-		onToggleHistory: toggleHistoryPanel,
-		onSelectAll: handleSelectAllNodes,
-		onClearSelection: handleClearSelection,
-		onDelete: handleMultiDelete,
-		onToggleVibeMode: () => {
-			// Vibe mode toggle - not implemented yet
-		},
-		onToggleInspectorLock: () => {
-			setInspectorLocked(!inspectorLocked);
-		},
-		onDuplicateNode: () => {
-			// Node duplication - not implemented yet
-		},
-		onToggleSidebar: () => {
-			// Sidebar toggle - not implemented yet
-		},
-	});
+  // Initialize keyboard shortcuts
+  useKeyboardShortcuts({
+    onCopy: handleCopy,
+    onPaste: handlePaste,
+    onUndo: handleUndo,
+    onRedo: handleRedo,
+    onToggleHistory: toggleHistoryPanel,
+    onSelectAll: handleSelectAllNodes,
+    onClearSelection: handleClearSelection,
+    onDelete: handleMultiDelete,
+    onToggleVibeMode: () => {
+      // Vibe mode toggle - not implemented yet
+    },
+    onToggleInspectorLock: () => {
+      setInspectorLocked(!inspectorLocked);
+    },
+    onDuplicateNode: () => {
+      // Node duplication - not implemented yet
+    },
+    onToggleSidebar: () => {
+      // Sidebar toggle - not implemented yet
+    },
+  });
 
-	const onDragOver = useCallback((event: React.DragEvent) => {
-		event.preventDefault();
-		event.dataTransfer.dropEffect = "move";
-	}, []);
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
 
-	const onDrop = useCallback(
-		async (event: React.DragEvent) => {
-			event.preventDefault();
+  const onDrop = useCallback(
+    async (event: React.DragEvent) => {
+      event.preventDefault();
 
-			const nodeType = event.dataTransfer.getData("application/reactflow");
-			if (!nodeType) {
-				console.warn("No node type found in drag data");
-				return;
-			}
+      const nodeType = event.dataTransfer.getData("application/reactflow");
+      if (!nodeType) {
+        console.warn("No node type found in drag data");
+        return;
+      }
 
-			// Calculate position from drop event coordinates
-			const position = screenToFlowPosition({
-				x: event.clientX,
-				y: event.clientY,
-			});
+      // Calculate position from drop event coordinates
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
 
-			try {
-				// Get node spec from the new NodeSpec system
-				const spec = await getNodeSpecForType(nodeType);
-				if (!spec) {
-					console.error(`Invalid node type dropped: ${nodeType}`);
-					return;
-				}
+      try {
+        // Get node spec from the new NodeSpec system
+        const spec = await getNodeSpecForType(nodeType);
+        if (!spec) {
+          console.error(`Invalid node type dropped: ${nodeType}`);
+          return;
+        }
 
-				// Initialize node data with defaults from spec
-				const defaultData = spec.initialData || {};
+        // Initialize node data with defaults from spec
+        const defaultData = spec.initialData || {};
 
-				const newNode: AgenNode = {
-					id: generateNodeId(),
-					type: nodeType as string,
-					position,
-					deletable: true,
-					data: {
-						...defaultData,
-						isActive: false, // Default state
-					},
-				} as AgenNode;
+        const newNode: AgenNode = {
+          id: generateNodeId(),
+          type: nodeType as string,
+          position,
+          deletable: true,
+          data: {
+            ...defaultData,
+            isActive: false, // Default state
+          },
+        } as AgenNode;
 
-				addNode(newNode);
+        addNode(newNode);
 
-				// Record node creation for undo/redo
-				recordAction("node_add", {
-					nodeType: nodeType,
-					nodeId: newNode.id,
-					position: position,
-				});
-			} catch (error) {
-				console.error("❌ Failed to create node from drop:", error);
-			}
-		},
-		[screenToFlowPosition, addNode, recordAction]
-	);
+        // Record node creation for undo/redo
+        recordAction("node_add", {
+          nodeType: nodeType,
+          nodeId: newNode.id,
+          position: position,
+        });
+      } catch (error) {
+        console.error("❌ Failed to create node from drop:", error);
+      }
+    },
+    [screenToFlowPosition, addNode, recordAction]
+  );
 
-	const selectedNode = React.useMemo(
-		() => nodes.find((n) => n.id === selectedNodeId) || null,
-		[nodes, selectedNodeId]
-	);
-	const selectedEdge = React.useMemo(
-		() => edges.find((e) => e.id === selectedEdgeId) || null,
-		[edges, selectedEdgeId]
-	);
+  const selectedNode = React.useMemo(
+    () => nodes.find((n) => n.id === selectedNodeId) || null,
+    [nodes, selectedNodeId]
+  );
+  const selectedEdge = React.useMemo(
+    () => edges.find((e) => e.id === selectedEdgeId) || null,
+    [edges, selectedEdgeId]
+  );
 
-	const edgeReconnectSuccessful = React.useRef(true);
+  const edgeReconnectSuccessful = React.useRef(true);
 
-	const handleReconnectStart = () => {
-		edgeReconnectSuccessful.current = false;
-	};
+  const handleReconnectStart = () => {
+    edgeReconnectSuccessful.current = false;
+  };
 
-	const handleReconnect = (oldEdge: AgenEdge, newConnection: Connection) => {
-		edgeReconnectSuccessful.current = true;
-		// Update edges array via store util
-		removeEdge(oldEdge.id);
-		onConnect(newConnection);
-	};
+  const handleReconnect = (oldEdge: AgenEdge, newConnection: Connection) => {
+    edgeReconnectSuccessful.current = true;
+    // Update edges array via store util
+    removeEdge(oldEdge.id);
+    onConnect(newConnection);
+  };
 
-	const handleReconnectEnd = (_: MouseEvent | TouchEvent, edge: AgenEdge) => {
-		if (!edgeReconnectSuccessful.current) {
-			removeEdge(edge.id);
-		}
-		edgeReconnectSuccessful.current = true;
-	};
+  const handleReconnectEnd = (_: MouseEvent | TouchEvent, edge: AgenEdge) => {
+    if (!edgeReconnectSuccessful.current) {
+      removeEdge(edge.id);
+    }
+    edgeReconnectSuccessful.current = true;
+  };
 
-	const handleSelectionChange = useCallback(
-		({
-			nodes: selectedNodes,
-			edges: selectedEdges,
-		}: {
-			nodes: AgenNode[];
-			edges: AgenEdge[];
-		}) => {
-			// Handle node selection first
-			const nodeId = selectedNodes.length > 0 ? selectedNodes[0].id : null;
-			selectNode(nodeId);
+  const handleSelectionChange = useCallback(
+    ({
+      nodes: selectedNodes,
+      edges: selectedEdges,
+    }: {
+      nodes: AgenNode[];
+      edges: AgenEdge[];
+    }) => {
+      // Handle node selection first
+      const nodeId = selectedNodes.length > 0 ? selectedNodes[0].id : null;
+      selectNode(nodeId);
 
-			// Only handle edge selection if NO nodes are selected
-			if (selectedNodes.length === 0) {
-				const edgeId = selectedEdges.length > 0 ? selectedEdges[0].id : null;
-				selectEdge(edgeId);
-			}
-		},
-		[selectNode, selectEdge]
-	);
+      // Only handle edge selection if NO nodes are selected
+      if (selectedNodes.length === 0) {
+        const edgeId = selectedEdges.length > 0 ? selectedEdges[0].id : null;
+        selectEdge(edgeId);
+      }
+    },
+    [selectNode, selectEdge]
+  );
 
-	// Wrapper for onEdgesChange
-	const onEdgesChange = useCallback(
-		(changes: EdgeChange[]) => {
-			storeOnEdgesChange(changes);
-		},
-		[storeOnEdgesChange]
-	);
+  // Wrapper for onEdgesChange
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      storeOnEdgesChange(changes);
+    },
+    [storeOnEdgesChange]
+  );
 
-	// Canvas loading and error handling moved to page level to prevent double loading screens
+  // Canvas loading and error handling moved to page level to prevent double loading screens
 
-	return (
-		<div className="h-screen w-screen" style={{ height: "100vh", width: "100vw" }}>
-			{/* Undo/Redo Manager - tracks all node/edge changes */}
-			<UndoRedoManager
-				nodes={nodes}
-				edges={edges}
-				onNodesChange={(newNodes: ReactFlowNode[]) => {
-					// Actually update the flow state during undo/redo operations
-					useFlowStore.setState((state) => ({
-						...state,
-						nodes: newNodes as AgenNode[],
-					}));
-				}}
-				onEdgesChange={(newEdges: ReactFlowEdge[]) => {
-					// Actually update the flow state during undo/redo operations
-					useFlowStore.setState((state) => ({
-						...state,
-						edges: newEdges as AgenEdge[],
-					}));
-				}}
-				config={{
-					maxHistorySize: 100,
-					positionDebounceMs: 300,
-					actionSeparatorMs: 1000,
-					enableViewportTracking: false,
-					enableCompression: true,
-				}}
-				onHistoryChange={(_path: HistoryNode[], _currentIndex: number) => {
-					// History updated callback - silent
-				}}
-			/>
+  return (
+    <div
+      className="h-screen w-screen"
+      style={{ height: "100vh", width: "100vw" }}
+    >
+      {/* Undo/Redo Manager - tracks all node/edge changes */}
+      <UndoRedoManager
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={(newNodes: ReactFlowNode[]) => {
+          // Actually update the flow state during undo/redo operations
+          useFlowStore.setState((state) => ({
+            ...state,
+            nodes: newNodes as AgenNode[],
+          }));
+        }}
+        onEdgesChange={(newEdges: ReactFlowEdge[]) => {
+          // Actually update the flow state during undo/redo operations
+          useFlowStore.setState((state) => ({
+            ...state,
+            edges: newEdges as AgenEdge[],
+          }));
+        }}
+        config={{
+          maxHistorySize: 100,
+          positionDebounceMs: 300,
+          actionSeparatorMs: 1000,
+          enableViewportTracking: false,
+          enableCompression: true,
+        }}
+        onHistoryChange={(_path: HistoryNode[], _currentIndex: number) => {
+          // History updated callback - silent
+        }}
+      />
 
-			{/* Action Toolbar */}
-			<ActionToolbar
-				showHistoryPanel={showHistoryPanel}
-				onToggleHistory={toggleHistoryPanel}
-				className={`fixed z-50 ${
-					inspectorViewMode === "side"
-						? "-translate-x-1/2 bottom-4 left-1/2 transform"
-						: "top-4 right-4"
-				}`}
-			/>
+      {/* Action Toolbar */}
+      <ActionToolbar
+        showHistoryPanel={showHistoryPanel}
+        onToggleHistory={toggleHistoryPanel}
+        className={`fixed z-50 ${
+          inspectorViewMode === "side"
+            ? "-translate-x-1/2 bottom-4 left-1/2 transform"
+            : "top-4 right-4"
+        }`}
+      />
 
-			<FlowCanvas
-				nodes={nodes}
-				edges={edges}
-				onDragOver={onDragOver}
-				onDrop={onDrop}
-				selectedNode={selectedNode}
-				selectedEdge={selectedEdge}
-				selectedOutput={null}
-				nodeErrors={nodeErrors}
-				showHistoryPanel={showHistoryPanel}
-				wrapperRef={flowWrapperRef}
-				updateNodeData={updateNodeData}
-				updateNodeId={updateNodeId}
-				logNodeError={
-					logNodeError as (nodeId: string, message: string, type?: string, source?: string) => void
-				}
-				clearNodeErrors={clearNodeErrors}
-				onToggleHistory={toggleHistoryPanel}
-				onDeleteNode={removeNode}
-				onDuplicateNode={() => {}}
-				onDeleteEdge={removeEdge}
-				inspectorLocked={inspectorLocked}
-				inspectorViewMode={inspectorViewMode}
-				setInspectorLocked={setInspectorLocked}
-				reactFlowHandlers={{
-					onNodesChange: onNodesChange as (changes: unknown[]) => void,
-					onEdgesChange: onEdgesChange as (changes: unknown[]) => void,
-					onConnect,
-					onInit: () => {},
-					onSelectionChange: handleSelectionChange,
-					onReconnect: handleReconnect,
-					onReconnectStart: handleReconnectStart,
-					onReconnectEnd: handleReconnectEnd,
-				}}
-			/>
-			<Sidebar className="z-50" enableDebug={true} />
-		</div>
-	);
+      <FlowCanvas
+        nodes={nodes}
+        edges={edges}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        selectedNode={selectedNode}
+        selectedEdge={selectedEdge}
+        selectedOutput={null}
+        nodeErrors={nodeErrors}
+        showHistoryPanel={showHistoryPanel}
+        wrapperRef={flowWrapperRef}
+        updateNodeData={updateNodeData}
+        updateNodeId={updateNodeId}
+        logNodeError={
+          logNodeError as (
+            nodeId: string,
+            message: string,
+            type?: string,
+            source?: string
+          ) => void
+        }
+        clearNodeErrors={clearNodeErrors}
+        onToggleHistory={toggleHistoryPanel}
+        onDeleteNode={removeNode}
+        onDuplicateNode={() => {}}
+        onDeleteEdge={removeEdge}
+        inspectorLocked={inspectorLocked}
+        inspectorViewMode={inspectorViewMode}
+        setInspectorLocked={setInspectorLocked}
+        reactFlowHandlers={{
+          onNodesChange: onNodesChange as (changes: unknown[]) => void,
+          onEdgesChange: onEdgesChange as (changes: unknown[]) => void,
+          onConnect,
+          onInit: () => {},
+          onSelectionChange: handleSelectionChange,
+          onReconnect: handleReconnect,
+          onReconnectStart: handleReconnectStart,
+          onReconnectEnd: handleReconnectEnd,
+        }}
+      />
+      <Sidebar className="z-50" enableDebug={true} />
+    </div>
+  );
 };
 
 interface FlowEditorProps {
-	flowMetadata?: FlowMetadata | null;
+  flowMetadata?: FlowMetadata | null;
 }
 
 export default function FlowEditor({ flowMetadata = null }: FlowEditorProps) {
-	return (
-		<FlowEditorErrorBoundary>
-			<FlowProvider initialFlow={flowMetadata}>
-				<ReactFlowProvider>
-					<UndoRedoProvider>
-						<FlowEditorInternal />
-					</UndoRedoProvider>
-				</ReactFlowProvider>
-			</FlowProvider>
-		</FlowEditorErrorBoundary>
-	);
+  return (
+    <FlowEditorErrorBoundary>
+      <FlowProvider initialFlow={flowMetadata}>
+        <ReactFlowProvider>
+          <UndoRedoProvider>
+            <FlowEditorInternal />
+          </UndoRedoProvider>
+        </ReactFlowProvider>
+      </FlowProvider>
+    </FlowEditorErrorBoundary>
+  );
 }

@@ -277,6 +277,11 @@ export type NodeTypeConfigMap = Record<NodeType, NodeTypeConfig>;
 // DOMAIN CATEGORIES
 // ============================================================================
 
+/**
+ * Domain categories for node organization
+ * Note: Output handles should default to "right" position for better flow visualization
+ * Secondary outputs (status, error, etc.) can use "bottom" position as needed
+ */
 export type DomainCategory =
   | "create"
   | "view"
