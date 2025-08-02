@@ -35,6 +35,7 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
+import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -279,14 +280,31 @@ const ViewBooleanNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }
 			const sourceData = sourceNode.data as any;
 			let inputValue: unknown;
 			
-			// MAP-ONLY SYSTEM: All outputs are Maps for consistency
+			// CLEAN MAP SYSTEM: Automatic handle ID normalization with error handling
 			if (sourceData.outputs instanceof Map) {
-				if (edge.sourceHandle) {
-					// Use specific handle from Map
-					inputValue = sourceData.outputs.get(edge.sourceHandle);
-				} else {
-					// No specific handle - get first value from Map (fallback)
-					inputValue = sourceData.outputs.values().next().value;
+				try {
+					if (edge.sourceHandle) {
+						const normalizedId = normalizeHandleId(edge.sourceHandle);
+						inputValue = sourceData.outputs.get(normalizedId);
+						
+						// Debug logging for development
+						if (process.env.NODE_ENV === 'development' && inputValue === undefined) {
+							console.warn(`ViewBoolean ${id}: No value found for handle "${edge.sourceHandle}" -> "${normalizedId}"`, {
+								availableKeys: Array.from(sourceData.outputs.keys()),
+								sourceNode: edge.source
+							});
+						}
+					} else {
+						// Fallback: get first value
+						const firstValue = sourceData.outputs.values().next();
+						inputValue = firstValue.done ? null : firstValue.value;
+					}
+				} catch (error) {
+					console.error(`ViewBoolean ${id}: Error processing Map outputs`, error, {
+						sourceHandle: edge.sourceHandle,
+						mapSize: sourceData.outputs.size
+					});
+					inputValue = null; // Safe fallback
 				}
 			} else if (sourceData.booleanValue !== undefined && sourceData.booleanValue !== null) {
 				inputValue = sourceData.booleanValue;

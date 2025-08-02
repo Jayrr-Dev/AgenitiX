@@ -685,21 +685,52 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 		routeData
 	]);
 
-	/* 🔄 Smart outputs field - single value or Map based on handle count */
+	/* 🔄 Smart outputs field with robust error handling */
 	useEffect(() => {
-		// Intelligent outputs field: single value for 1 handle, Map for multiple
-		const outputsValue = generateOutputsField(spec, nodeData as any);
-		
-		if (outputsValue !== lastGeneralOutputRef.current) {
-			lastGeneralOutputRef.current = outputsValue;
-			updateNodeData({ 
-				outputs: outputsValue // Single field handles both cases
+		try {
+			// Generate Map-based outputs with error handling
+			const outputsValue = generateOutputsField(spec, nodeData as any);
+			
+			// Validate the result
+			if (!(outputsValue instanceof Map)) {
+				console.error(`FlowConditional ${id}: generateOutputsField did not return a Map`, outputsValue);
+				return;
+			}
+			
+			// Only update if changed (deep comparison for Maps)
+			const currentOutputs = lastGeneralOutputRef.current;
+			let hasChanged = true;
+			
+			if (currentOutputs instanceof Map && outputsValue instanceof Map) {
+				// Compare Map contents
+				hasChanged = currentOutputs.size !== outputsValue.size ||
+					!Array.from(outputsValue.entries()).every(([key, value]) => 
+						currentOutputs.get(key) === value
+					);
+			}
+			
+			if (hasChanged) {
+				lastGeneralOutputRef.current = outputsValue;
+				updateNodeData({ outputs: outputsValue });
+			}
+			
+		} catch (error) {
+			console.error(`FlowConditional ${id}: Error generating outputs`, error, {
+				spec: spec?.kind,
+				nodeDataKeys: Object.keys(nodeData || {})
 			});
+			
+			// Fallback: set empty Map to prevent crashes
+			if (lastGeneralOutputRef.current !== null) {
+				lastGeneralOutputRef.current = new Map();
+				updateNodeData({ outputs: new Map() });
+			}
 		}
 	}, [
 		spec.handles,
 		nodeData,
-		updateNodeData
+		updateNodeData,
+		id
 	]);
 
 	// -------------------------------------------------------------------------
