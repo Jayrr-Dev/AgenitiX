@@ -23,7 +23,7 @@ export const COLLAPSED_SIZES = {
  * - FE0: 60x60 (tiny expanded)
  * - FE1: 120x120 (default expanded)
  * - FE1H: 120x180 (tall expanded)
- * - FEH1: 180x300 (fixed expanded high 1)
+ * - FV2: 180x180-360 (flexible vertical 2)
  * - FE2: 180x180 (large expanded)
  * - FE3: 240x240 (extra large expanded)
  * - VE0: 60x'auto' (tiny, variable height)
@@ -46,7 +46,7 @@ export const EXPANDED_SIZES = {
 	FE0: { width: 60, height: 60 },
 	FE1: { width: 120, height: 120 },
 	FE1H: { width: 120, height: 180 },
-	FEH1: { width: 180, height: 300 },
+	FV2: { width: 180, minHeight: 180, maxHeight: 360 },
 	FE2: { width: 180, height: 180 },
 	FE3: { width: 240, height: 240 },
 	// Variable sizes

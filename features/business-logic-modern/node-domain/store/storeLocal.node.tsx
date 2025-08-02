@@ -192,7 +192,7 @@ export const StoreLocalDataSchema = z
     isEnabled: SafeSchemas.boolean(true),
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
-    expandedSize: SafeSchemas.text("FEH1"),
+    expandedSize: SafeSchemas.text("FV2"),
     collapsedSize: SafeSchemas.text("C2"),
     label: z.string().optional(),
     
@@ -625,17 +625,17 @@ const DataPreview: React.FC<DataPreviewProps> = ({
   const config = getModeConfig();
 
   return (
-    <div className={`text-xs space-y-2 p-2 rounded-md ${config.colors.container}`}>
+    <div className={`text-xs space-y-2 w-full ${config.colors.container}`}>
    
       
-      {/* Table-like grid layout */}
-      <div className={`border rounded-md overflow-hidden ${config.colors.tableBorder}`}>
+      {/* Table-like grid layout - full width */}
+      <div className={`border rounded-md overflow-hidden w-full ${config.colors.tableBorder}`}>
         {/* Header row */}
-        <div className={`grid grid-cols-2 border-b ${config.colors.tableHeader}`}>
-          <div className={`px-2 py-1 font-semibold border-r ${config.colors.headerText} ${config.colors.rowBorder}`}>
+        <div className={`grid grid-cols-2 border-b w-full ${config.colors.tableHeader}`}>
+          <div className={`px-2 py-1 font-semibold border-r ${config.colors.headerText} ${config.colors.rowBorder} min-w-0`}>
             Key
           </div>
-          <div className={`px-2 py-1 font-semibold ${config.colors.headerText}`}>
+          <div className={`px-2 py-1 font-semibold ${config.colors.headerText} min-w-0`}>
             Value
           </div>
         </div>
@@ -644,14 +644,14 @@ const DataPreview: React.FC<DataPreviewProps> = ({
         {entries.map(([key, value], index) => (
           <div 
             key={key} 
-            className={`grid grid-cols-2 ${
+            className={`grid grid-cols-2 w-full ${
               index !== entries.length - 1 ? `border-b ${config.colors.rowBorder}` : ''
             }`}
           >
-            <div className={`px-2 py-1 font-mono border-r text-[8px] truncate font-semibold ${config.colors.keyText} ${config.colors.rowBorder}`}>
+            <div className={`px-2 py-1 font-mono border-r text-[8px] truncate font-semibold ${config.colors.keyText} ${config.colors.rowBorder} min-w-0`}>
               {key}
             </div>
-            <div className={`px-2 py-1 text-[8px] truncate font-medium ${config.colors.valueText}`}>
+            <div className={`px-2 py-1 text-[8px] truncate font-medium ${config.colors.valueText} min-w-0`}>
               {mode === "store" && (
                 typeof value === "object" 
                   ? `${JSON.stringify(value).slice(0, 30)}...`
@@ -749,7 +749,7 @@ const CONTENT = {
 function createDynamicSpec(data: StoreLocalData): NodeSpec {
   const expanded =
     EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
-    EXPANDED_SIZES.FEH1;
+    EXPANDED_SIZES.FV2;
   const collapsed =
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
@@ -846,7 +846,7 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
 
 /** Static spec for registry (uses default size keys) */
 export const spec: NodeSpec = createDynamicSpec({
-  expandedSize: "FEH1",
+  expandedSize: "FV2",
   collapsedSize: "C2",
 } as StoreLocalData);
 
@@ -1292,7 +1292,7 @@ const StoreLocalNode = memo(
            
             
             {/* Scrollable content section */}
-            <div className={`flex-1 flex flex-col items-start justify-start overflow-y-auto ${containerPadding} pt-0 nowheel`}>
+            <div className={`flex-1 flex flex-col items-stretch justify-start overflow-y-auto ${containerPadding} pt-0 nowheel w-full`}>
               <DataPreview
                 data={inputData}
                 mode={mode}
