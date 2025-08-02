@@ -172,8 +172,8 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 						type="button"
 						onClick={handleDuplicateNode}
 						className={buttonClasses}
-						title="Duplicate Node (Ctrl+D)"
-						aria-label="Duplicate selected node"
+						title="Duplicate (Ctrl+D)"
+						aria-label="Duplicate node"
 					>
 						<Copy className={BUTTON_ICON_SIZE} />
 					</button>
@@ -182,8 +182,8 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 						type="button"
 						onClick={handleDeleteNode}
 						className={buttonClasses}
-						title="Delete Node (Delete)"
-						aria-label="Delete selected node"
+						title="Delete (Delete)"
+						aria-label="Delete node"
 					>
 						<Trash2 className={BUTTON_ICON_SIZE} />
 					</button>
@@ -218,7 +218,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 				type="button"
 				onClick={onToggleHistory}
 				className={showHistoryPanel ? activeButtonClasses : buttonClasses}
-				title="Toggle History Panel (Ctrl+H)"
+				title="History (Ctrl+H)"
 			>
 				<History className={BUTTON_ICON_SIZE} />
 			</button>
@@ -236,8 +236,8 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 						type="button"
 						onClick={toggleFullscreen}
 						className={isFullscreen ? activeButtonClasses : buttonClasses}
-						title={isFullscreen ? "Exit Fullscreen (F11)" : "Enter Fullscreen (F11)"}
-						aria-label={isFullscreen ? "Exit fullscreen mode" : "Enter fullscreen mode"}
+						title={isFullscreen ? "Exit (F11)" : "Fullscreen (F11)"}
+						aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
 					>
 						{isFullscreen ? <Minimize className={BUTTON_ICON_SIZE} /> : <Maximize className={BUTTON_ICON_SIZE} />}
 					</button>

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import triggerPulse from '../../../node-domain/trigger/triggerPulse.node';
+import timeScheduler from '../../../node-domain/trigger/timeScheduler.node';
 import aiTools from '../../../node-domain/ai/aiTools.node';
 import storeLocal from '../../../node-domain/store/storeLocal.node';
 import aiManager from '../../../node-domain/ai/aiManager.node';
@@ -17,7 +18,13 @@ import emailSender from "../../../node-domain/email/emailSender.node";
 import emailReplier from "../../../node-domain/email/emailReplier.node";
 import emailTemplate from "../../../node-domain/email/emailTemplate.node";
 import emailBrand from "../../../node-domain/email/emailBrand.node";
+import emailAnalytics from "../../../node-domain/email/emailAnalytics.node";
+import emailBulk from "../../../node-domain/email/emailBulk.node";
+import emailData from "../../../node-domain/email/emailData.node";
+import emailList from "../../../node-domain/email/emailList.node";
+import emailUpdater from "../../../node-domain/email/emailUpdater.node";
 import testNode from "../../../node-domain/test/testNode.node";
+import testToast from "../../../node-domain/test/testToast.node";
 // Import all available node components
 // This should be automatically updated when new nodes are created via Plop
 import flowConditional from "../../../node-domain/flow/flowConditional.node";
@@ -38,6 +45,7 @@ export function useDynamicNodeTypes() {
 			flowConditional,
 			viewBoolean,
 			triggerPulse,
+			timeScheduler,
 			aiTools,
 			storeLocal,
 			aiManager,
@@ -46,6 +54,7 @@ export function useDynamicNodeTypes() {
 			// Add new node types here
 			aiAgent,
 			testNode,
+			testToast,
 			triggerToggle,
 			createText,
 			storeInMemory,
@@ -56,6 +65,11 @@ export function useDynamicNodeTypes() {
 			emailReplier,
 			emailTemplate,
 			emailBrand,
+			emailAnalytics,
+			emailBulk,
+			emailData,
+			emailList,
+			emailUpdater,
 			viewText,
 		}),
 		[]

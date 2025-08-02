@@ -395,6 +395,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 								nodeId={props.id}
 								handleIndex={handleIndex}
 								totalHandlesOnSide={totalHandlesOnSide}
+								customTooltip={handle.tooltip}
 							/>
 						);
 					});

@@ -299,7 +299,7 @@ export function SidebarTabs({
 						type="button"
 						onClick={() => setIsSearchVisible(true)}
 						className={SEARCH_BUTTON_STYLES}
-						title="Search all nodes (6)"
+						title="Search (6)"
 					>
 						<Search className="h-4 w-4 text-[var(--infra-sidebar-text)]" />
 					</button>

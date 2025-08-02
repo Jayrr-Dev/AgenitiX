@@ -1021,7 +1021,7 @@ const NodeInspectorContent = memo<NodeInspectorContentProps>(({
 										console.error(`🔴 Simulated console error from node ${selectedNode.id}`);
 									}}
 									className={STYLING_BUTTON_DUPLICATE}
-									title="Simulate console.error()"
+									title="Console error"
 								>
 									CE
 								</button>
@@ -1046,7 +1046,7 @@ const NodeInspectorContent = memo<NodeInspectorContentProps>(({
 										});
 									}}
 									className={STYLING_BUTTON_DUPLICATE}
-									title="Simulate runtime error (throws)"
+									title="Runtime error"
 								>
 									RE
 								</button>

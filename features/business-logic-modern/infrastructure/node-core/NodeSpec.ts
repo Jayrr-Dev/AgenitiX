@@ -90,6 +90,8 @@ export interface NodeHandleSpec {
 	code?: string;
 	position: "top" | "bottom" | "left" | "right";
 	type: "source" | "target";
+	/** Optional custom tooltip text to append to default tooltip */
+	tooltip?: string;
 }
 
 /**

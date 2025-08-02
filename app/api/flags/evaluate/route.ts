@@ -14,6 +14,19 @@ import { testFlag } from "@/flag";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
+	// ENDPOINT DISABLED - Feature flag evaluation temporarily disabled
+	// To re-enable, restore the original implementation below
+	
+	return NextResponse.json(
+		{
+			error: "Feature flag evaluation endpoint is currently disabled",
+			enabled: false,
+			disabled: true,
+		},
+		{ status: 503 } // Service Unavailable
+	);
+
+	/* ORIGINAL IMPLEMENTATION - COMMENTED OUT
 	try {
 		const { flagName } = await request.json();
 
@@ -52,4 +65,5 @@ export async function POST(request: NextRequest) {
 			{ status: 500 }
 		);
 	}
+	*/
 }

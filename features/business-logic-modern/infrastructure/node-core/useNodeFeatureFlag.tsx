@@ -24,6 +24,9 @@ interface FlagCacheEntry {
 const GLOBAL_FLAG_CACHE = new Map<string, FlagCacheEntry>();
 const CACHE_TTL = 30000; // 30 seconds cache to prevent API spam
 
+// Global flag to completely disable all API requests to /api/flags/evaluate
+let API_DISABLED = true; // API disabled globally
+
 /**
  * Hook for evaluating feature flags in node components
  * @param featureFlag - Feature flag configuration from NodeSpec
@@ -56,6 +59,13 @@ export function useNodeFeatureFlag(featureFlag?: FeatureFlagConfig) {
 
 				// Check if we're on the client side
 				if (typeof window !== "undefined") {
+					// Check if API is globally disabled, basically stop all requests
+					if (API_DISABLED) {
+						const fallbackValue = featureFlag.fallback ?? false;
+						setIsEnabled(fallbackValue);
+						return;
+					}
+
 					// Client-side: use API endpoint
 					const response = await fetch("/api/flags/evaluate", {
 						method: "POST",
@@ -64,6 +74,19 @@ export function useNodeFeatureFlag(featureFlag?: FeatureFlagConfig) {
 						},
 						body: JSON.stringify({ flagName: featureFlag.flag }),
 					});
+
+					// Handle disabled endpoint (503 Service Unavailable)
+					if (response.status === 503) {
+						// API is disabled globally, use fallback value and prevent ALL future requests
+						API_DISABLED = true;
+						const fallbackValue = featureFlag.fallback ?? false;
+						GLOBAL_FLAG_CACHE.set(featureFlag.flag!, {
+							enabled: fallbackValue,
+							timestamp: Date.now(),
+						});
+						setIsEnabled(fallbackValue);
+						return; // Exit early to prevent further processing
+					}
 
 					if (!response.ok) {
 						throw new Error(`HTTP error! status: ${response.status}`);

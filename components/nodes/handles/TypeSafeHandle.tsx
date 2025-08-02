@@ -15,6 +15,7 @@ import type { IconType } from "react-icons";
 import { LuBraces, LuBrackets, LuCheck, LuCircle, LuHash, LuWrench, LuType, LuMail, LuFileText, LuSend } from "react-icons/lu";
 import { VscJson } from "react-icons/vsc";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 // Auto-generated at build time (can be empty in dev before first build)
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore – file is generated post-install / build
@@ -180,26 +181,26 @@ const UNIFIED_TYPE_DISPLAY: Record<
  * Ultimate type map - maps short codes to type information using semantic tokens
  */
 const ULTIMATE_TYPE_MAP: Record<string, { tokenKey: string; label: string }> = {
-	s: { tokenKey: "string", label: "string" },
-	n: { tokenKey: "number", label: "number" },
-	b: { tokenKey: "boolean", label: "boolean" },
-	j: { tokenKey: "json", label: "json" },
-	a: { tokenKey: "array", label: "array" },
-	x: { tokenKey: "any", label: "any" },
+	s: { tokenKey: "string", label: "Text" },
+	n: { tokenKey: "number", label: "Number" },
+	b: { tokenKey: "boolean", label: "On|Off" },
+	j: { tokenKey: "json", label: "JSON" },
+	a: { tokenKey: "array", label: "List" },
+	x: { tokenKey: "any", label: "Any" },
 	V: { tokenKey: "vibe", label: "Vibe" },
-	t: { tokenKey: "tools", label: "tools" },
+	t: { tokenKey: "tools", label: "Tools" },
 	// Full data type names for direct mapping
-	JSON: { tokenKey: "json", label: "json" },
-	String: { tokenKey: "string", label: "string" },
-	Boolean: { tokenKey: "boolean", label: "boolean" },
-	Number: { tokenKey: "number", label: "number" },
-	Array: { tokenKey: "array", label: "array" },
-	Object: { tokenKey: "object", label: "object" },
-	Tools: { tokenKey: "tools", label: "tools" },
+	JSON: { tokenKey: "json", label: "JSON" },
+	String: { tokenKey: "string", label: "Text" },
+	Boolean: { tokenKey: "boolean", label: "On|Off" },
+	Number: { tokenKey: "number", label: "Number" },
+	Array: { tokenKey: "array", label: "List" },
+	Object: { tokenKey: "object", label: "Object" },
+	Tools: { tokenKey: "tools", label: "Tools" },
 	// Email-specific data types
-	emailAccount: { tokenKey: "email", label: "emailAccount" },
-	emailTemplate: { tokenKey: "email", label: "emailTemplate" },
-	composedEmail: { tokenKey: "email", label: "composedEmail" },
+	emailAccount: { tokenKey: "email", label: "Email" },
+	emailTemplate: { tokenKey: "email", label: "Template" },
+	composedEmail: { tokenKey: "email", label: "Email" },
 };
 
 /**
@@ -338,7 +339,30 @@ function getHandleTypeName(tsSymbol?: string, dataType?: string, code?: string):
 		return tsSymbol.split(".").pop() || DEFAULT_HANDLE_TYPE;
 	}
 	const typeCode = parseUnionTypes(dataType || code)[0];
-	return ULTIMATE_TYPE_MAP[typeCode]?.label || DEFAULT_HANDLE_TYPE;
+	return ULTIMATE_TYPE_MAP[typeCode]?.tokenKey || DEFAULT_HANDLE_TYPE;
+}
+
+/**
+ * Convert technical type code to technical label for error messages
+ */
+function getHumanReadableType(typeCode: string): string {
+	const mapping = ULTIMATE_TYPE_MAP[typeCode];
+	if (mapping) {
+		// Use more technical terms for error messages
+		switch (mapping.tokenKey) {
+			case "string": return "String";
+			case "number": return "Number";
+			case "boolean": return "Boolean";
+			case "json": return "JSON";
+			case "array": return "Array";
+			case "object": return "Object";
+			case "any": return "Any";
+			case "tools": return "Tools";
+			case "email": return "Email";
+			default: return mapping.label;
+		}
+	}
+	return typeCode;
 }
 
 /**
@@ -350,12 +374,12 @@ function getTooltipContent(
 	code?: string,
 	tsSymbol?: string
 ): string {
-	const direction = handleType === "target" ? "Input" : "Output";
+	const direction = handleType === "target" ? "IN" : "OUT";
 
 	// Handle TypeScript symbols
 	if (tsSymbol) {
 		const symbolName = tsSymbol.split(".").pop() || "Unknown";
-		return `${direction}: ${symbolName} (TypeScript type)`;
+		return `${direction}<br/>${symbolName}`;
 	}
 
 	// Get the primary type code
@@ -364,13 +388,7 @@ function getTooltipContent(
 	// Check if it's a full data type name (like "String", "Boolean", etc.)
 	const fullTypeMapping = ULTIMATE_TYPE_MAP[typeCode];
 	if (fullTypeMapping) {
-		return `${direction}: ${fullTypeMapping.label} - ${TYPE_DESCRIPTIONS[typeCode] || TYPE_DESCRIPTIONS[fullTypeMapping.tokenKey] || "Data type"}`;
-	}
-
-	const typeDescription = TYPE_DESCRIPTIONS[typeCode];
-
-	if (!typeDescription) {
-		return `${direction}: Unknown type (${typeCode || "undefined"})`;
+		return `${direction}<br/>${fullTypeMapping.label}`;
 	}
 
 	// Handle union types (multiple types separated by |)
@@ -379,16 +397,21 @@ function getTooltipContent(
 		const descriptions = allTypes
 			.map((type) => {
 				const fullMapping = ULTIMATE_TYPE_MAP[type];
-				return fullMapping ? fullMapping.label : TYPE_DESCRIPTIONS[type];
+				return fullMapping ? fullMapping.label : type;
 			})
 			.filter(Boolean);
 
 		if (descriptions.length > 1) {
-			return `${direction}: ${descriptions.join(" OR ")}`;
+			return `${direction}<br/>${descriptions.join("|")}`;
 		}
 	}
 
-	return `${direction}: ${typeDescription}`;
+	// Fallback for unknown types
+	if (!typeCode) {
+		return `${direction}<br/>Unknown`;
+	}
+
+	return `${direction}<br/>${typeCode}`;
 }
 
 function isTypeCompatible(sourceType: string, targetType: string): boolean {
@@ -423,10 +446,12 @@ export const useUltimateFlowConnectionPrevention = () => {
 			const key = `${sourceDataType}->${targetDataType}`;
 			const now = Date.now();
 			if (!toastThrottle[key] || now - toastThrottle[key] > TOAST_DEBOUNCE_MS) {
+				const sourceLabel = getHumanReadableType(sourceDataType);
+				const targetLabel = getHumanReadableType(targetDataType);
 				toast.error(TOAST_ERROR_TITLE, {
-					description: TOAST_ERROR_DESCRIPTION_TEMPLATE.replace("{source}", sourceDataType).replace(
+					description: TOAST_ERROR_DESCRIPTION_TEMPLATE.replace("{source}", sourceLabel).replace(
 						"{target}",
-						targetDataType
+						targetLabel
 					),
 					duration: TOAST_DURATION,
 				});
@@ -450,6 +475,8 @@ interface UltimateTypesafeHandleProps {
 	totalHandlesOnSide?: number;
 	type?: "source" | "target";
 	id?: string;
+	/** Optional custom tooltip text to append to default tooltip */
+	customTooltip?: string;
 }
 
 const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
@@ -460,6 +487,7 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
 	nodeId,
 	handleIndex = 0,
 	totalHandlesOnSide = 1,
+	customTooltip,
 	...props
 }) => {
 	// Memoize handle type name calculation, basically prevent recalculation on re-renders
@@ -501,7 +529,11 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
 	}), [isConnected, isSource]);
 
 	// Memoize tooltip content generation, basically prevent string recalculation on re-renders  
-	const tooltipContent = useMemo(() => getTooltipContent(props.type || "target", dataType, code, tsSymbol), [props.type, dataType, code, tsSymbol]);
+	const tooltipContent = useMemo(() => {
+		const defaultTooltip = getTooltipContent(props.type || "target", dataType, code, tsSymbol);
+		// If custom tooltip is provided, replace the default tooltip
+		return customTooltip || defaultTooltip;
+	}, [props.type, dataType, code, tsSymbol, customTooltip]);
 
 	// Memoize the icon component to prevent re-creation on re-renders, basically stable icon reference
 	const MemoizedIconComponent = useMemo(() => typeDisplay.iconComponent, [typeDisplay.iconComponent]);
@@ -531,19 +563,25 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
 	}), [typeDisplay.color, backgroundColor, positionOffset, props.style]);
 
 	return (
-		<Handle
-			{...(props as HandleProps)}
-			className={`${UNIFIED_HANDLE_STYLES.base} ${baseClasses} ${stateClasses}`}
-			title={tooltipContent} // Native browser tooltip
-			style={handleStyles}
-			isValidConnection={isValidConnection}
-			isConnectableStart={connectableStart}
-			isConnectableEnd={connectableEnd}
-		>
-			{MemoizedIconComponent && (
-				<MemoizedIconComponent width={8} height={8} style={{ pointerEvents: "none" }} />
-			)}
-		</Handle>
+		<Tooltip delayDuration={0}>
+			<TooltipTrigger asChild>
+				<Handle
+					{...(props as HandleProps)}
+					className={`${UNIFIED_HANDLE_STYLES.base} ${baseClasses} ${stateClasses}`}
+					style={handleStyles}
+					isValidConnection={isValidConnection}
+					isConnectableStart={connectableStart}
+					isConnectableEnd={connectableEnd}
+				>
+					{MemoizedIconComponent && (
+						<MemoizedIconComponent width={8} height={8} style={{ pointerEvents: "none" }} />
+					)}
+				</Handle>
+			</TooltipTrigger>
+			<TooltipContent side="top" className="max-w-xs">
+				<div dangerouslySetInnerHTML={{ __html: tooltipContent }} />
+			</TooltipContent>
+		</Tooltip>
 	);
 });
 
@@ -554,3 +592,4 @@ const TypeSafeHandle = UltimateTypesafeHandle;
 export default TypeSafeHandle;
 
 export { isTypeCompatible, parseUnionTypes, ULTIMATE_TYPE_MAP };
+

@@ -7,6 +7,7 @@
 
 import { spec as aiAgentSpec } from "../../node-domain/ai/aiAgent.node";
 import { spec as triggerPulseSpec } from "../../node-domain/trigger/triggerPulse.node";
+import { spec as timeSchedulerSpec } from "../../node-domain/trigger/timeScheduler.node";
 import { spec as aiToolsSpec } from "../../node-domain/ai/aiTools.node";
 import { spec as storeLocalSpec } from "../../node-domain/store/storeLocal.node";
 import { spec as aiManagerSpec } from "../../node-domain/ai/aiManager.node";
@@ -21,8 +22,14 @@ import { spec as emailSenderSpec } from "../../node-domain/email/emailSender.nod
 import { spec as emailReplierSpec } from "../../node-domain/email/emailReplier.node";
 import { spec as emailTemplateSpec } from "../../node-domain/email/emailTemplate.node";
 import { spec as emailBrandSpec } from "../../node-domain/email/emailBrand.node";
+import { spec as emailAnalyticsSpec } from "../../node-domain/email/emailAnalytics.node";
+import { spec as emailBulkSpec } from "../../node-domain/email/emailBulk.node";
+import { spec as emailDataSpec } from "../../node-domain/email/emailData.node";
+import { spec as emailListSpec } from "../../node-domain/email/emailList.node";
+import { spec as emailUpdaterSpec } from "../../node-domain/email/emailUpdater.node";
 import { spec as flowConditionalSpec } from "../../node-domain/flow/flowConditional.node";
 import { spec as testNodeSpec } from "../../node-domain/test/testNode.node";
+import { spec as testToastSpec } from "../../node-domain/test/testToast.node";
 import { spec as triggerToggleSpec } from "../../node-domain/trigger/triggerToggle.node";
 import { spec as viewBooleanSpec } from "../../node-domain/view/viewBoolean.node";
 import { spec as viewTextSpec } from "../../node-domain/view/viewText.node";
@@ -33,6 +40,7 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	flowConditional: flowConditionalSpec,
 	viewBoolean: viewBooleanSpec,
 	triggerPulse: triggerPulseSpec,
+	timeScheduler: timeSchedulerSpec,
 	aiTools: aiToolsSpec,
 	storeLocal: storeLocalSpec,
 	aiManager: aiManagerSpec,
@@ -49,7 +57,13 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	emailReplier: emailReplierSpec,
 	emailTemplate: emailTemplateSpec,
 	emailBrand: emailBrandSpec,
+	emailAnalytics: emailAnalyticsSpec,
+	emailBulk: emailBulkSpec,
+	emailData: emailDataSpec,
+	emailList: emailListSpec,
+	emailUpdater: emailUpdaterSpec,
 	testNode: testNodeSpec,
+	testToast: testToastSpec,
 	triggerToggle: triggerToggleSpec,
 	viewText: viewTextSpec,
 };
@@ -95,6 +109,7 @@ export interface NodeSpecMetadata {
 		code?: string;
 		tsSymbol?: string;
 		position: "left" | "right" | "top" | "bottom";
+		tooltip?: string;
 	}>;
 	initialData: Record<string, any>;
 	/** Legacy alias for initialData (enables gradual migration) */

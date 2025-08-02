@@ -1,5 +1,5 @@
 /**
- * StoreLocal NODE – Enhanced localStorage management with store/delete/get modes
+ * StoreLocal NODE – SECURE localStorage management with store/delete/get modes
  *
  * • Provides visual interface for storing and deleting data in browser localStorage
  * • Supports complex objects with proper serialization and type safety
@@ -8,8 +8,10 @@
  * • Includes comprehensive error handling and visual feedback
  * • Uses findEdgeByHandle utility for robust React Flow edge handling
  * • Code follows current React + TypeScript best practices with full Zod validation
+ * • SECURITY: Protected keys blacklist, input sanitization, rate limiting, audit logging
+ * • ABUSE PROTECTION: Size limits, key validation, data expiration, security warnings
  *
- * Keywords: localStorage, store-delete-get-modes, boolean-trigger-only, type-safe
+ * Keywords: localStorage, store-delete-get-modes, boolean-trigger-only, type-safe, security-hardened
  */
 
 import type { NodeProps } from "@xyflow/react";
@@ -167,6 +169,259 @@ const CONTENT_CLASSES = {
 } as const;
 
 // -----------------------------------------------------------------------------
+// 🔒 SECURITY CONFIGURATION
+// -----------------------------------------------------------------------------
+
+// Protected keys that cannot be accessed, basically sensitive authentication data
+const PROTECTED_KEYS = [
+  'agenitix_auth_token',
+  'session_token',
+  'access_token',
+  'refresh_token',
+  'api_key',
+  'secret',
+  'password',
+  'jwt',
+  'bearer',
+  'auth',
+  'clerk',
+  'supabase',
+  'firebase',
+  '__session',
+] as const;
+
+// Security limits to prevent abuse
+const SECURITY_LIMITS = {
+  MAX_KEY_LENGTH: 256,
+  MAX_VALUE_SIZE: 1024 * 100, // 100KB per value
+  MAX_TOTAL_KEYS: 50, // Maximum keys per operation
+  MAX_OPERATIONS_PER_MINUTE: 30,
+  KEY_EXPIRY_HOURS: 24, // Auto-expire data after 24 hours
+} as const;
+
+// XSS and injection patterns to block, basically malicious script patterns
+const MALICIOUS_PATTERNS = [
+  /<script[^>]*>/i,
+  /javascript:/i,
+  /vbscript:/i,
+  /on\w+\s*=/i,
+  /eval\s*\(/i,
+  /function\s*\(/i,
+  /\${.*}/,
+  /<%.*%>/,
+  /{{.*}}/,
+] as const;
+
+// Rate limiting storage per node instance
+const nodeRateLimits = new Map<string, { count: number; resetTime: number }>();
+
+// Audit log for security monitoring
+interface SecurityAuditEntry {
+  timestamp: number;
+  nodeId: string;
+  operation: 'store' | 'delete' | 'get';
+  keys: string[];
+  success: boolean;
+  securityIssue?: string;
+  blockedReason?: string;
+}
+
+const securityAuditLog: SecurityAuditEntry[] = [];
+
+// Security validation functions
+const SecurityValidation = {
+  isProtectedKey: (key: string): boolean => {
+    const keyLower = key.toLowerCase();
+    return PROTECTED_KEYS.some(protectedKey => 
+      keyLower.includes(protectedKey.toLowerCase())
+    );
+  },
+
+  containsMaliciousPattern: (value: string): boolean => {
+    if (typeof value !== 'string') return false;
+    return MALICIOUS_PATTERNS.some(pattern => pattern.test(value));
+  },
+
+  validateKeyFormat: (key: string): { valid: boolean; reason?: string } => {
+    if (!key || typeof key !== 'string') {
+      return { valid: false, reason: 'Key must be a non-empty string' };
+    }
+    if (key.length > SECURITY_LIMITS.MAX_KEY_LENGTH) {
+      return { valid: false, reason: `Key length exceeds ${SECURITY_LIMITS.MAX_KEY_LENGTH} characters` };
+    }
+    if (key.trim() !== key) {
+      return { valid: false, reason: 'Key cannot have leading/trailing whitespace' };
+    }
+    if (!/^[a-zA-Z0-9_.-]+$/.test(key)) {
+      return { valid: false, reason: 'Key contains invalid characters (only alphanumeric, underscore, dot, dash allowed)' };
+    }
+    return { valid: true };
+  },
+
+  validateValueSize: (value: unknown): { valid: boolean; reason?: string } => {
+    const serialized = JSON.stringify(value);
+    if (serialized.length > SECURITY_LIMITS.MAX_VALUE_SIZE) {
+      return { valid: false, reason: `Value size exceeds ${SECURITY_LIMITS.MAX_VALUE_SIZE} bytes` };
+    }
+    return { valid: true };
+  },
+
+  checkRateLimit: (nodeId: string): { allowed: boolean; reason?: string } => {
+    const now = Date.now();
+    const resetTime = now + 60000; // 1 minute
+    
+    const current = nodeRateLimits.get(nodeId);
+    if (!current || now > current.resetTime) {
+      nodeRateLimits.set(nodeId, { count: 1, resetTime });
+      return { allowed: true };
+    }
+    
+    if (current.count >= SECURITY_LIMITS.MAX_OPERATIONS_PER_MINUTE) {
+      return { allowed: false, reason: `Rate limit exceeded (${SECURITY_LIMITS.MAX_OPERATIONS_PER_MINUTE}/min)` };
+    }
+    
+    current.count++;
+    return { allowed: true };
+  },
+
+  addToAuditLog: (entry: SecurityAuditEntry): void => {
+    securityAuditLog.push(entry);
+    // Keep only last 1000 entries to prevent memory bloat
+    if (securityAuditLog.length > 1000) {
+      securityAuditLog.splice(0, securityAuditLog.length - 1000);
+    }
+    
+    // Log security issues to console for monitoring
+    if (entry.securityIssue || entry.blockedReason) {
+      console.warn('🔒 LocalStorage Security Alert:', {
+        nodeId: entry.nodeId,
+        operation: entry.operation,
+        keys: entry.keys,
+        issue: entry.securityIssue || entry.blockedReason,
+        timestamp: new Date(entry.timestamp).toISOString()
+      });
+    }
+  },
+
+  // Add expiry metadata to stored values
+  addExpiryMetadata: (value: unknown): { data: unknown; __agenitix_expiry: number } => {
+    return {
+      data: value,
+      __agenitix_expiry: Date.now() + (SECURITY_LIMITS.KEY_EXPIRY_HOURS * 60 * 60 * 1000)
+    };
+  },
+
+  // Check if stored value has expired
+  isExpired: (storedValue: unknown): boolean => {
+    if (typeof storedValue === 'object' && storedValue !== null && '__agenitix_expiry' in storedValue) {
+      const expiry = (storedValue as any).__agenitix_expiry;
+      return typeof expiry === 'number' && Date.now() > expiry;
+    }
+    return false;
+  },
+
+  // Extract data from stored value, removing expiry metadata
+  extractData: (storedValue: unknown): unknown => {
+    if (typeof storedValue === 'object' && storedValue !== null && 'data' in storedValue && '__agenitix_expiry' in storedValue) {
+      return (storedValue as any).data;
+    }
+    return storedValue;
+  },
+};
+
+// Security warning types
+type SecurityWarningType = 'protected_key' | 'malicious_content' | 'rate_limit' | 'size_limit' | 'expired_data';
+
+interface SecurityWarning {
+  type: SecurityWarningType;
+  message: string;
+  keys?: string[];
+  suggestion?: string;
+}
+
+// Global security utilities for monitoring and emergency cleanup
+const SecurityUtils = {
+  // Get recent security audit log (last 50 entries)
+  getRecentAuditLog: (): SecurityAuditEntry[] => {
+    return securityAuditLog.slice(-50).reverse();
+  },
+  
+  // Emergency cleanup - removes all localStorage data for this node except protected keys
+  emergencyCleanup: (nodeId: string): { removed: number; protectedKeys: string[] } => {
+    const keys = Object.keys(localStorage);
+    let removed = 0;
+    const protectedKeys: string[] = [];
+    
+    keys.forEach(key => {
+      if (SecurityValidation.isProtectedKey(key)) {
+        protectedKeys.push(key);
+      } else {
+        try {
+          const value = localStorage.getItem(key);
+          if (value) {
+            const parsed = JSON.parse(value);
+            // Only remove items stored by this system (have metadata)
+            if (typeof parsed === 'object' && parsed !== null && '__agenitix_expiry' in parsed) {
+              localStorage.removeItem(key);
+              removed++;
+            }
+          }
+        } catch {
+          // Skip non-JSON values
+        }
+      }
+    });
+    
+    SecurityValidation.addToAuditLog({
+      timestamp: Date.now(),
+      nodeId,
+      operation: 'store', // Using store as emergency cleanup type
+      keys: [`EMERGENCY_CLEANUP_${removed}_items`],
+      success: true,
+      securityIssue: 'Emergency cleanup performed',
+    });
+    
+    return { removed, protectedKeys };
+  },
+  
+  // Get security status summary
+  getSecurityStatus: (): {
+    totalAuditEntries: number;
+    recentSecurityIssues: number;
+    protectedKeysInStorage: number;
+    rateLimitedNodes: number;
+  } => {
+    const now = Date.now();
+    const oneHourAgo = now - (60 * 60 * 1000);
+    
+    const recentSecurityIssues = securityAuditLog.filter(
+      entry => entry.timestamp > oneHourAgo && (entry.securityIssue || entry.blockedReason)
+    ).length;
+    
+    const protectedKeysInStorage = Object.keys(localStorage).filter(
+      key => SecurityValidation.isProtectedKey(key)
+    ).length;
+    
+    const rateLimitedNodes = Array.from(nodeRateLimits.entries()).filter(
+      ([, limit]) => now < limit.resetTime && limit.count >= SECURITY_LIMITS.MAX_OPERATIONS_PER_MINUTE
+    ).length;
+    
+    return {
+      totalAuditEntries: securityAuditLog.length,
+      recentSecurityIssues,
+      protectedKeysInStorage,
+      rateLimitedNodes,
+    };
+  },
+};
+
+// Make security utilities available globally in development
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  (window as any).AgenitixSecurityUtils = SecurityUtils;
+  console.log('🔒 Security utils available at window.AgenitixSecurityUtils');
+}
+
+// -----------------------------------------------------------------------------
 // 2️⃣  Enhanced data schema & validation
 // -----------------------------------------------------------------------------
 
@@ -224,6 +479,7 @@ interface LocalStorageDeleteResult {
   message: string;
   keysDeleted: string[];
   keysNotFound: string[];
+  warnings: SecurityWarning[];
 }
 
 interface LocalStorageGetResult {
@@ -232,9 +488,11 @@ interface LocalStorageGetResult {
   data: Record<string, unknown>;
   keysFound: string[];
   keysNotFound: string[];
+  warnings: SecurityWarning[];
+  expiredKeys: string[];
 }
 
-const createLocalStorageOperations = () => {
+const createLocalStorageOperations = (nodeId: string) => {
   const isAvailable = (): boolean => {
     try {
       const test = '__localStorage_test__';
@@ -246,13 +504,31 @@ const createLocalStorageOperations = () => {
     }
   };
 
-  const store = (data: Record<string, unknown>): LocalStorageOperationResult => {
-    const result: LocalStorageOperationResult = {
+  // Security-enhanced store operation with comprehensive validation
+  const store = (data: Record<string, unknown>): LocalStorageOperationResult & { warnings: SecurityWarning[] } => {
+    const result: LocalStorageOperationResult & { warnings: SecurityWarning[] } = {
       success: true,
       message: "",
       keysProcessed: [],
       errors: [],
+      warnings: [],
     };
+
+    // Rate limiting check
+    const rateLimitCheck = SecurityValidation.checkRateLimit(nodeId);
+    if (!rateLimitCheck.allowed) {
+      SecurityValidation.addToAuditLog({
+        timestamp: Date.now(),
+        nodeId,
+        operation: 'store',
+        keys: Object.keys(data),
+        success: false,
+        blockedReason: rateLimitCheck.reason,
+      });
+      result.success = false;
+      result.message = rateLimitCheck.reason || "Rate limit exceeded";
+      return result;
+    }
 
     if (!isAvailable()) {
       result.success = false;
@@ -266,8 +542,95 @@ const createLocalStorageOperations = () => {
       return result;
     }
 
+    // Check maximum keys limit
+    const keys = Object.keys(data);
+    if (keys.length > SECURITY_LIMITS.MAX_TOTAL_KEYS) {
+      result.success = false;
+      result.message = `Too many keys (${keys.length}). Maximum allowed: ${SECURITY_LIMITS.MAX_TOTAL_KEYS}`;
+      return result;
+    }
+
     for (const [key, value] of Object.entries(data)) {
       try {
+        // Security validation for each key-value pair
+        
+        // 1. Check if key is protected
+        if (SecurityValidation.isProtectedKey(key)) {
+          const warning: SecurityWarning = {
+            type: 'protected_key',
+            message: `Blocked access to protected key: ${key}`,
+            keys: [key],
+            suggestion: 'Use non-sensitive key names for localStorage operations'
+          };
+          result.warnings.push(warning);
+          result.errors.push({
+            key,
+            error: 'Access to protected/sensitive keys is forbidden',
+          });
+          SecurityValidation.addToAuditLog({
+            timestamp: Date.now(),
+            nodeId,
+            operation: 'store',
+            keys: [key],
+            success: false,
+            securityIssue: 'Protected key access attempt',
+          });
+          continue;
+        }
+
+        // 2. Validate key format
+        const keyValidation = SecurityValidation.validateKeyFormat(key);
+        if (!keyValidation.valid) {
+          result.errors.push({
+            key,
+            error: keyValidation.reason || 'Invalid key format',
+          });
+          continue;
+        }
+
+        // 3. Check for malicious content in value
+        const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+        if (SecurityValidation.containsMaliciousPattern(valueStr)) {
+          const warning: SecurityWarning = {
+            type: 'malicious_content',
+            message: `Blocked potentially malicious content in value for key: ${key}`,
+            keys: [key],
+            suggestion: 'Remove script tags, JavaScript protocols, or template literals from your data'
+          };
+          result.warnings.push(warning);
+          result.errors.push({
+            key,
+            error: 'Value contains potentially malicious content',
+          });
+          SecurityValidation.addToAuditLog({
+            timestamp: Date.now(),
+            nodeId,
+            operation: 'store',
+            keys: [key],
+            success: false,
+            securityIssue: 'Malicious content detected',
+          });
+          continue;
+        }
+
+        // 4. Validate value size
+        const sizeValidation = SecurityValidation.validateValueSize(value);
+        if (!sizeValidation.valid) {
+          const warning: SecurityWarning = {
+            type: 'size_limit',
+            message: `Value too large for key: ${key}`,
+            keys: [key],
+            suggestion: `Reduce data size to under ${SECURITY_LIMITS.MAX_VALUE_SIZE} bytes`
+          };
+          result.warnings.push(warning);
+          result.errors.push({
+            key,
+            error: sizeValidation.reason || 'Value too large',
+          });
+          continue;
+        }
+
+        // 5. Serialize with security enhancements
         let serializedValue: string;
         
         if (typeof value === "string") {
@@ -280,8 +643,16 @@ const createLocalStorageOperations = () => {
           serializedValue = JSON.stringify(value);
         }
 
-        localStorage.setItem(key, serializedValue);
+        // 6. Add expiry metadata and store
+        const valueWithMetadata = SecurityValidation.addExpiryMetadata({
+          originalValue: value,
+          storedAt: Date.now(),
+          nodeId,
+        });
+        
+        localStorage.setItem(key, JSON.stringify(valueWithMetadata));
         result.keysProcessed.push(key);
+        
       } catch (error) {
         result.errors.push({
           key,
@@ -291,20 +662,59 @@ const createLocalStorageOperations = () => {
       }
     }
 
-    result.message = result.success 
+    // Update success status based on results
+    result.success = result.errors.length === 0;
+
+    // Generate comprehensive result message
+    let message = result.success 
       ? `Successfully stored ${result.keysProcessed.length} items`
       : `Stored ${result.keysProcessed.length} items with ${result.errors.length} errors`;
+    
+    if (result.warnings.length > 0) {
+      message += `. Security warnings: ${result.warnings.length}`;
+    }
+    
+    result.message = message;
+
+    // Log successful operations
+    if (result.keysProcessed.length > 0) {
+      SecurityValidation.addToAuditLog({
+        timestamp: Date.now(),
+        nodeId,
+        operation: 'store',
+        keys: result.keysProcessed,
+        success: result.success,
+      });
+    }
 
     return result;
   };
 
+  // Security-enhanced delete operation with protected key validation
   const deleteKeys = (keys: string[]): LocalStorageDeleteResult => {
     const result: LocalStorageDeleteResult = {
       success: true,
       message: "",
       keysDeleted: [],
       keysNotFound: [],
+      warnings: [],
     };
+
+    // Rate limiting check
+    const rateLimitCheck = SecurityValidation.checkRateLimit(nodeId);
+    if (!rateLimitCheck.allowed) {
+      SecurityValidation.addToAuditLog({
+        timestamp: Date.now(),
+        nodeId,
+        operation: 'delete',
+        keys,
+        success: false,
+        blockedReason: rateLimitCheck.reason,
+      });
+      result.success = false;
+      result.message = rateLimitCheck.reason || "Rate limit exceeded";
+      return result;
+    }
 
     if (!isAvailable()) {
       result.success = false;
@@ -318,8 +728,45 @@ const createLocalStorageOperations = () => {
       return result;
     }
 
+    // Check maximum keys limit
+    if (keys.length > SECURITY_LIMITS.MAX_TOTAL_KEYS) {
+      result.success = false;
+      result.message = `Too many keys (${keys.length}). Maximum allowed: ${SECURITY_LIMITS.MAX_TOTAL_KEYS}`;
+      return result;
+    }
+
     for (const key of keys) {
       try {
+        // Security validation for each key
+        
+        // 1. Check if key is protected
+        if (SecurityValidation.isProtectedKey(key)) {
+          const warning: SecurityWarning = {
+            type: 'protected_key',
+            message: `Blocked deletion of protected key: ${key}`,
+            keys: [key],
+            suggestion: 'Protected keys cannot be deleted for security reasons'
+          };
+          result.warnings.push(warning);
+          SecurityValidation.addToAuditLog({
+            timestamp: Date.now(),
+            nodeId,
+            operation: 'delete',
+            keys: [key],
+            success: false,
+            securityIssue: 'Protected key deletion attempt',
+          });
+          continue;
+        }
+
+        // 2. Validate key format
+        const keyValidation = SecurityValidation.validateKeyFormat(key);
+        if (!keyValidation.valid) {
+          result.keysNotFound.push(key); // Treat invalid keys as not found
+          continue;
+        }
+
+        // 3. Attempt deletion
         if (localStorage.getItem(key) !== null) {
           localStorage.removeItem(key);
           result.keysDeleted.push(key);
@@ -338,11 +785,26 @@ const createLocalStorageOperations = () => {
       if (result.keysNotFound.length > 0) {
         result.message += `, ${result.keysNotFound.length} keys not found`;
       }
+      if (result.warnings.length > 0) {
+        result.message += `. Security warnings: ${result.warnings.length}`;
+      }
+    }
+
+    // Log successful operations
+    if (result.keysDeleted.length > 0) {
+      SecurityValidation.addToAuditLog({
+        timestamp: Date.now(),
+        nodeId,
+        operation: 'delete',
+        keys: result.keysDeleted,
+        success: result.success,
+      });
     }
 
     return result;
   };
 
+  // Security-enhanced get operation with expiry checks and validation
   const getKeys = (keys: string[]): LocalStorageGetResult => {
     const result: LocalStorageGetResult = {
       success: true,
@@ -350,7 +812,25 @@ const createLocalStorageOperations = () => {
       data: {},
       keysFound: [],
       keysNotFound: [],
+      warnings: [],
+      expiredKeys: [],
     };
+
+    // Rate limiting check
+    const rateLimitCheck = SecurityValidation.checkRateLimit(nodeId);
+    if (!rateLimitCheck.allowed) {
+      SecurityValidation.addToAuditLog({
+        timestamp: Date.now(),
+        nodeId,
+        operation: 'get',
+        keys,
+        success: false,
+        blockedReason: rateLimitCheck.reason,
+      });
+      result.success = false;
+      result.message = rateLimitCheck.reason || "Rate limit exceeded";
+      return result;
+    }
 
     if (!isAvailable()) {
       result.success = false;
@@ -364,17 +844,74 @@ const createLocalStorageOperations = () => {
       return result;
     }
 
+    // Check maximum keys limit
+    if (keys.length > SECURITY_LIMITS.MAX_TOTAL_KEYS) {
+      result.success = false;
+      result.message = `Too many keys (${keys.length}). Maximum allowed: ${SECURITY_LIMITS.MAX_TOTAL_KEYS}`;
+      return result;
+    }
+
     for (const key of keys) {
       try {
+        // Security validation for each key
+        
+        // 1. Check if key is protected
+        if (SecurityValidation.isProtectedKey(key)) {
+          const warning: SecurityWarning = {
+            type: 'protected_key',
+            message: `Blocked access to protected key: ${key}`,
+            keys: [key],
+            suggestion: 'Protected keys cannot be accessed for security reasons'
+          };
+          result.warnings.push(warning);
+          SecurityValidation.addToAuditLog({
+            timestamp: Date.now(),
+            nodeId,
+            operation: 'get',
+            keys: [key],
+            success: false,
+            securityIssue: 'Protected key access attempt',
+          });
+          continue;
+        }
+
+        // 2. Validate key format
+        const keyValidation = SecurityValidation.validateKeyFormat(key);
+        if (!keyValidation.valid) {
+          result.keysNotFound.push(key); // Treat invalid keys as not found
+          continue;
+        }
+
+        // 3. Attempt retrieval
         const value = localStorage.getItem(key);
         if (value !== null) {
           // Try to parse the stored value
           try {
             // First try to parse as JSON
             const parsedValue = JSON.parse(value);
-            result.data[key] = parsedValue;
+            
+            // Check if data has expired
+            if (SecurityValidation.isExpired(parsedValue)) {
+              const warning: SecurityWarning = {
+                type: 'expired_data',
+                message: `Data for key '${key}' has expired`,
+                keys: [key],
+                suggestion: 'Data is automatically removed after 24 hours for security'
+              };
+              result.warnings.push(warning);
+              result.expiredKeys.push(key);
+              
+              // Auto-cleanup expired data
+              localStorage.removeItem(key);
+              result.keysNotFound.push(key);
+              continue;
+            }
+            
+            // Extract actual data from metadata wrapper
+            const extractedData = SecurityValidation.extractData(parsedValue);
+            result.data[key] = extractedData;
           } catch {
-            // If JSON parsing fails, store as string
+            // If JSON parsing fails, store as string (legacy data)
             result.data[key] = value;
           }
           result.keysFound.push(key);
@@ -393,6 +930,23 @@ const createLocalStorageOperations = () => {
       if (result.keysNotFound.length > 0) {
         result.message += `, ${result.keysNotFound.length} keys not found`;
       }
+      if (result.expiredKeys.length > 0) {
+        result.message += `, ${result.expiredKeys.length} expired and removed`;
+      }
+      if (result.warnings.length > 0) {
+        result.message += `. Security warnings: ${result.warnings.length}`;
+      }
+    }
+
+    // Log successful operations
+    if (result.keysFound.length > 0) {
+      SecurityValidation.addToAuditLog({
+        timestamp: Date.now(),
+        nodeId,
+        operation: 'get',
+        keys: result.keysFound,
+        success: result.success,
+      });
     }
 
     return result;
@@ -601,8 +1155,25 @@ const DataPreview: React.FC<DataPreviewProps> = ({
     );
   }
 
-  const entries = maxItems === Infinity ? Object.entries(data) : Object.entries(data).slice(0, maxItems);
-  const hasMore = maxItems !== Infinity && Object.keys(data).length > maxItems;
+  // Filter out protected keys and mask sensitive data for display
+  const filteredData = Object.fromEntries(
+    Object.entries(data).map(([key, value]) => {
+      if (SecurityValidation.isProtectedKey(key)) {
+        // Mask protected keys in the UI
+        return [
+          `🔒 ${key.slice(0, 8)}***`, 
+          "*** PROTECTED ***"
+        ];
+      }
+      return [key, value];
+    })
+  );
+
+  const entries = maxItems === Infinity ? Object.entries(filteredData) : Object.entries(filteredData).slice(0, maxItems);
+  const hasMore = maxItems !== Infinity && Object.keys(filteredData).length > maxItems;
+  
+  // Count protected keys for security warning
+  const protectedKeysCount = Object.keys(data).filter(key => SecurityValidation.isProtectedKey(key)).length;
 
   const getPreviewTitle = () => {
     switch (mode) {
@@ -626,7 +1197,7 @@ const DataPreview: React.FC<DataPreviewProps> = ({
 
   return (
     <div className={`text-xs space-y-2 w-full ${config.colors.container}`}>
-   
+
       
       {/* Table-like grid layout - full width */}
       <div className={`border rounded-md overflow-hidden w-full ${config.colors.tableBorder}`}>
@@ -767,6 +1338,7 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
         position: "top",
         type: "target",
         dataType: "JSON",
+        tooltip: "Data to store in localStorage. Can be any JSON-serializable object.",
       },
       {
         id: "trigger-input",
@@ -774,6 +1346,7 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
         position: "left",
         type: "target",
         dataType: "Boolean",
+        tooltip: "Trigger the operation when this input becomes true. Prevents auto-execution.",
       },
       {
         id: "output",
@@ -781,6 +1354,7 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "JSON",
+        tooltip: "Outputs the result of the operation. Contains stored data, status, or retrieved data.",
       },
     ],
     inspector: { key: "StoreLocalInspector" },
@@ -893,20 +1467,84 @@ const StoreLocalNode = memo(
     const nodes = useStore((s) => s.nodes);
     const edges = useStore((s) => s.edges);
 
-    // localStorage operations utility
-    const localStorageOps = useMemo(() => createLocalStorageOperations(), []);
+    // Security-enhanced localStorage operations utility
+    const localStorageOps = useMemo(() => createLocalStorageOperations(id), [id]);
+    
+
 
     // Track connection initialization to prevent auto-triggering
     const connectionInitTimeRef = useRef<number | null>(null);
     const hasEverHadTriggerConnectionRef = useRef<boolean>(false);
     const CONNECTION_DEBOUNCE_MS = 500; // 500ms debounce to prevent auto-trigger on connection
 
-    // Check localStorage availability on mount
+    // Check localStorage availability and setup security monitoring on mount
     useEffect(() => {
       if (!localStorageOps.isAvailable()) {
-        showError("localStorage unavailable");
+        showError("localStorage unavailable", "Browser localStorage is not available or disabled");
       }
     }, [localStorageOps, showError]);
+    
+
+
+    // Periodic cleanup of expired data (runs every 5 minutes)
+    useEffect(() => {
+      const cleanupExpiredData = () => {
+        const keys = Object.keys(localStorage);
+        let cleanedCount = 0;
+        
+        keys.forEach(key => {
+          try {
+            const value = localStorage.getItem(key);
+            if (value) {
+              const parsed = JSON.parse(value);
+              if (SecurityValidation.isExpired(parsed)) {
+                localStorage.removeItem(key);
+                cleanedCount++;
+              }
+            }
+          } catch {
+            // Skip non-JSON values (legacy data)
+          }
+        });
+        
+        if (cleanedCount > 0) {
+          console.log(`🧹 Auto-cleanup: Removed ${cleanedCount} expired localStorage items`);
+          SecurityValidation.addToAuditLog({
+            timestamp: Date.now(),
+            nodeId: id,
+            operation: 'get', // Using get as cleanup type
+            keys: [`AUTO_CLEANUP_${cleanedCount}_expired_items`],
+            success: true,
+          });
+        }
+      };
+      
+      // Run cleanup immediately and then every 5 minutes
+      cleanupExpiredData();
+      const cleanupInterval = setInterval(cleanupExpiredData, 5 * 60 * 1000);
+      
+      return () => clearInterval(cleanupInterval);
+    }, [id]);
+    
+    // Emergency cleanup function accessible via double-click when expanded
+    const handleEmergencyCleanup = useCallback(() => {
+      if (!isExpanded) return;
+      
+      const confirmed = window.confirm(
+        '🔒 EMERGENCY CLEANUP\n\n' +
+        'This will remove ALL localStorage data created by Agenitix nodes.\n' +
+        'Protected authentication data will be preserved.\n\n' +
+        'Are you sure you want to continue?'
+      );
+      
+      if (confirmed) {
+        const result = SecurityUtils.emergencyCleanup(id);
+        showSuccess(
+          '🧹 Emergency Cleanup Complete',
+          `Removed ${result.removed} items. Protected ${result.protectedKeys.length} sensitive keys.`
+        );
+      }
+    }, [isExpanded, id, showSuccess]);
 
     // -------------------------------------------------------------------------
     // 4.3  Feature flag evaluation (after all hooks)
@@ -995,6 +1633,28 @@ const StoreLocalNode = memo(
       try {
         if (mode === "store") {
           const result = localStorageOps.store(inputData);
+          
+          // Handle security warnings via toast only
+          if (result.warnings && result.warnings.length > 0) {
+            // Show specific warning based on type
+            const protectedKeyWarning = result.warnings.find(w => w.type === 'protected_key');
+            const maliciousWarning = result.warnings.find(w => w.type === 'malicious_content');
+            const rateLimitWarning = result.warnings.find(w => w.type === 'rate_limit');
+            const sizeLimitWarning = result.warnings.find(w => w.type === 'size_limit');
+            
+            if (protectedKeyWarning) {
+              showError("🔒 Protected Key Blocked", `Cannot access protected keys: ${protectedKeyWarning.keys?.join(', ')}`);
+            } else if (maliciousWarning) {
+              showError("🚫 Malicious Content Detected", `Blocked potentially harmful content in keys: ${maliciousWarning.keys?.join(', ')}`);
+            } else if (rateLimitWarning) {
+              showError("⏱️ Rate Limit Exceeded", "Too many operations. Please wait before trying again.");
+            } else if (sizeLimitWarning) {
+              showError("📏 Size Limit Exceeded", `Data too large for keys: ${sizeLimitWarning.keys?.join(', ')}`);
+            } else {
+              showError("⚠️ Security Warning", result.warnings[0].message);
+            }
+          }
+          
           updateNodeData({
             isProcessing: false,
             lastOperation: "store",
@@ -1005,14 +1665,32 @@ const StoreLocalNode = memo(
             outputs: null, // Clear outputs for store operations
           });
 
-          if (result.success) {
+          // Only show success if no security warnings
+          if (result.success && (!result.warnings || result.warnings.length === 0)) {
             showSuccess("Store success", `Stored ${result.keysProcessed.length} items`);
-          } else {
+          } else if (!result.success && (!result.warnings || result.warnings.length === 0)) {
+            // Only show error if not a security warning (already shown above)
             showError("Store failed", result.message);
           }
         } else if (mode === "delete") {
           const keys = Object.keys(inputData);
           const result = localStorageOps.delete(keys);
+          
+          // Handle security warnings via toast only
+          if (result.warnings && result.warnings.length > 0) {
+            // Show specific warning based on type
+            const protectedKeyWarning = result.warnings.find(w => w.type === 'protected_key');
+            const rateLimitWarning = result.warnings.find(w => w.type === 'rate_limit');
+            
+            if (protectedKeyWarning) {
+              showError("🔒 Protected Key Blocked", `Cannot delete protected keys: ${protectedKeyWarning.keys?.join(', ')}`);
+            } else if (rateLimitWarning) {
+              showError("⏱️ Rate Limit Exceeded", "Too many operations. Please wait before trying again.");
+            } else {
+              showError("⚠️ Security Warning", result.warnings[0].message);
+            }
+          }
+          
           updateNodeData({
             isProcessing: false,
             lastOperation: "delete",
@@ -1023,14 +1701,35 @@ const StoreLocalNode = memo(
             outputs: null, // Clear outputs for delete operations
           });
 
-          if (result.success) {
+          // Only show success if no security warnings
+          if (result.success && (!result.warnings || result.warnings.length === 0)) {
             showSuccess("Delete success", `Deleted ${result.keysDeleted.length} items`);
-          } else {
+          } else if (!result.success && (!result.warnings || result.warnings.length === 0)) {
+            // Only show error if not a security warning (already shown above)
             showError("Delete failed", result.message);
           }
         } else if (mode === "get") {
           const keys = Object.keys(inputData);
           const result = localStorageOps.get(keys);
+          
+          // Handle security warnings via toast only
+          if (result.warnings && result.warnings.length > 0) {
+            // Show specific warning based on type
+            const protectedKeyWarning = result.warnings.find(w => w.type === 'protected_key');
+            const expiredWarning = result.warnings.find(w => w.type === 'expired_data');
+            const rateLimitWarning = result.warnings.find(w => w.type === 'rate_limit');
+            
+            if (protectedKeyWarning) {
+              showError("🔒 Protected Key Blocked", `Cannot access protected keys: ${protectedKeyWarning.keys?.join(', ')}`);
+            } else if (expiredWarning) {
+              showError("⏰ Data Expired", `Expired data removed for keys: ${expiredWarning.keys?.join(', ')}`);
+            } else if (rateLimitWarning) {
+              showError("⏱️ Rate Limit Exceeded", "Too many operations. Please wait before trying again.");
+            } else {
+              showError("⚠️ Security Warning", result.warnings[0].message);
+            }
+          }
+          
           const retrievedData = result.success ? result.data : null;
           // Format store data as JSON string for inspector display
           const storeDisplay = retrievedData ? JSON.stringify(retrievedData, null, 2) : "";
@@ -1044,9 +1743,15 @@ const StoreLocalNode = memo(
             outputs: retrievedData, // Output raw data for connections
           });
 
-          if (result.success) {
-            showSuccess("Get success", `Retrieved ${result.keysFound.length} items`);
-          } else {
+          // Only show success if no security warnings
+          if (result.success && (!result.warnings || result.warnings.length === 0)) {
+            let successMessage = `Retrieved ${result.keysFound.length} items`;
+            if (result.expiredKeys && result.expiredKeys.length > 0) {
+              successMessage += ` (${result.expiredKeys.length} expired items removed)`;
+            }
+            showSuccess("Get success", successMessage);
+          } else if (!result.success && (!result.warnings || result.warnings.length === 0)) {
+            // Only show error if not a security warning (already shown above)
             showError("Get failed", result.message);
           }
         }
@@ -1272,6 +1977,7 @@ const StoreLocalNode = memo(
               text-node-store
               ${!isEnabled ? CONTENT_CLASSES.disabled : ''}
             `}
+
           >
             {/* Fixed header section */}
             <div className={`${containerPadding} flex-shrink-0 mt-1`}>
@@ -1298,6 +2004,8 @@ const StoreLocalNode = memo(
                 mode={mode}
                 maxItems={Infinity}
               />
+              
+
             </div>
           </div>
         )}
@@ -1307,6 +2015,8 @@ const StoreLocalNode = memo(
           onToggle={toggleExpand}
           size="sm"
         />
+
+
       </>
     );
   },

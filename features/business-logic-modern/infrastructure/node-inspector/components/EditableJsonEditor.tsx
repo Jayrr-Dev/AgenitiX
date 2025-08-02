@@ -118,7 +118,7 @@ export const EditableJsonEditor: React.FC<EditableJsonEditorProps> = ({
 							type="button"
 							onClick={cancelEditing}
 							className="flex items-center gap-1 rounded border border-gray-300 bg-gray-100 px-2 py-1 text-gray-700 text-xs transition-colors hover:bg-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-							title="Cancel (Escape)"
+							title="Cancel (Esc)"
 						>
 							<X className="h-3 w-3" />
 							Cancel

@@ -279,9 +279,15 @@ const ViewBooleanNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }
 			const sourceData = sourceNode.data as any;
 			let inputValue: unknown;
 			
-			// Try multiple common output fields
-			if (sourceData.outputs !== undefined && sourceData.outputs !== null) {
-				inputValue = sourceData.outputs;
+			// MAP-ONLY SYSTEM: All outputs are Maps for consistency
+			if (sourceData.outputs instanceof Map) {
+				if (edge.sourceHandle) {
+					// Use specific handle from Map
+					inputValue = sourceData.outputs.get(edge.sourceHandle);
+				} else {
+					// No specific handle - get first value from Map (fallback)
+					inputValue = sourceData.outputs.values().next().value;
+				}
 			} else if (sourceData.booleanValue !== undefined && sourceData.booleanValue !== null) {
 				inputValue = sourceData.booleanValue;
 			} else if (sourceData.store !== undefined && sourceData.store !== null) {

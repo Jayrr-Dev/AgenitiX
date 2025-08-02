@@ -444,7 +444,7 @@ export function SearchBar({
 				<button
 					onClick={handleClose}
 					className={`p-2 ${theme.text.muted} ${theme.background.hover} ${theme.borderRadius.button} ${theme.transition}`}
-					title="Close search (Alt+C or Escape)"
+					title="Close (Alt+C)"
 					type="button"
 				>
 					<X className="h-4 w-4" />

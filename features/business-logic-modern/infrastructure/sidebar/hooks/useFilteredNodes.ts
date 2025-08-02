@@ -19,10 +19,18 @@ interface FilteredNodesState {
 	error: string | null;
 }
 
+// Global flag to prevent API requests when endpoint is disabled
+let SIDEBAR_API_DISABLED = true; // API disabled globally
+
 /**
  * Get feature flag value - now uses the global cache from useNodeFeatureFlag to prevent conflicts, basically shared caching
  */
 async function getCachedFlagValue(flagName: string): Promise<boolean> {
+	// Check if API is globally disabled, basically stop all requests
+	if (SIDEBAR_API_DISABLED) {
+		return false; // Always return false when API is disabled
+	}
+
 	// Use a simple direct API call since the global cache in useNodeFeatureFlag will handle caching
 	try {
 		const response = await fetch("/api/flags/evaluate", {
@@ -32,6 +40,13 @@ async function getCachedFlagValue(flagName: string): Promise<boolean> {
 			},
 			body: JSON.stringify({ flagName }),
 		});
+
+		// Handle disabled endpoint (503 Service Unavailable), basically stop making requests
+		if (response.status === 503) {
+			SIDEBAR_API_DISABLED = true; // Disable all future requests globally
+			console.info(`Feature flag API is disabled for '${flagName}', using fallback value`);
+			return false; // Use safe fallback when API is disabled
+		}
 
 		if (response.ok) {
 			const data = await response.json();

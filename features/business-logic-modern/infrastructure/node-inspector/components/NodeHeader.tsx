@@ -126,7 +126,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 					{icon && (
 						<span
 							className="text-lg"
-							title={`${displayName} • Category: ${category}${tags && tags.length > 0 ? ` • Tags: ${tags.join(", ")}` : ""}`}
+							title={`${displayName} • ${category}${tags && tags.length > 0 ? ` • ${tags.join(", ")}` : ""}`}
 						>
 							{renderLucideIcon(icon, "", 20)}
 						</span>
@@ -174,7 +174,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 							type="button"
 							onClick={() => onDuplicateNode(nodeId)}
 							className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-							title="Duplicate Node (Alt+D)"
+							title="Duplicate (Alt+D)"
 						>
 							<svg
 								className="h-4 w-4"
@@ -199,7 +199,7 @@ export const NodeHeader: React.FC<NodeHeaderProps> = ({
 							type="button"
 							onClick={() => onDeleteNode(nodeId)}
 							className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
-							title="Delete Node (Delete)"
+							title="Delete (Delete)"
 						>
 							<svg
 								className="h-4 w-4"

@@ -383,7 +383,7 @@ const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
                 }}
                 disabled={!isEnabled}
                 type="button"
-                title={isEnabled ? (isInverted ? "Click to pulse (inverted)" : "Click to pulse") : "Disabled"}
+                title={isEnabled ? (isInverted ? "Pulse (inverted)" : "Pulse") : "Disabled"}
               >
                 <div className={`${CONTENT.pulseText} ${getFontSize(buttonText)}`}>{buttonText}</div>
               </button>
@@ -433,7 +433,7 @@ const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
             }}
             disabled={!isEnabled}
             type="button"
-            title={isEnabled ? (isInverted ? "Click to pulse (inverted)" : "Click to pulse") : "Disabled"}
+            title={isEnabled ? (isInverted ? "Pulse (inverted)" : "Pulse") : "Disabled"}
           >
             <div className={`${CONTENT.pulseText} ${getFontSize(buttonText)}`}>{buttonText}</div>
           </button>
