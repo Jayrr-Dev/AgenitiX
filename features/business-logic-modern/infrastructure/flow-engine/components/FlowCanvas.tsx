@@ -345,7 +345,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 				selectionMode={SelectionMode.Partial}
 				selectionKeyCode={selectionKeys.selectionKeyCode}
 				multiSelectionKeyCode={selectionKeys.multiSelectionKeyCode}
-				deleteKeyCode={["Delete", "Backspace"]}
+				deleteKeyCode={["Delete"]}
 				// Interaction Settings
 				snapToGrid={true}
 				snapGrid={SNAP_GRID}

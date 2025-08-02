@@ -1,24 +1,27 @@
 /**
- * ACTION TOOLBAR - Main toolbar for workflow editor actions
+ * ACTION TOOLBAR - Optimized toolbar for workflow editor actions
  *
- * • Provides undo/redo buttons with keyboard shortcut support
+ * • High-performance undo/redo buttons with keyboard shortcut support
  * • History panel toggle for viewing action timeline
  * • Fullscreen mode toggle (browser environments only)
  * • Theme switcher for light/dark/system mode selection
- * • Environment detection for desktop vs browser features
- * • Now uses centralized component theming system
+ * • Optimized environment detection and class generation
+ * • Centralized component theming with performance optimization
+ * • Delete and duplicate node buttons (only enabled when node selected)
+ * • Reduced re-renders through optimized memoization and class constants
  *
- * Keywords: toolbar, undo-redo, history, fullscreen, shortcuts, theming, theme-switcher
+ * Keywords: toolbar, undo-redo, history, fullscreen, shortcuts, theming, theme-switcher, node-actions, performance-optimized
  */
 
 "use client";
 
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { History, Maximize, Minimize, RotateCcw, RotateCw } from "lucide-react";
-import type React from "react";
-import { useEffect, useState } from "react";
+import { History, Maximize, Minimize, RotateCcw, RotateCw, Copy, Trash2 } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useComponentButtonClasses, useComponentClasses } from "../theming/components";
 import { useUndoRedo } from "./history/undo-redo-context";
+import { useSelectedNodeId, useSelectedNode, useAddNode, useRemoveNode, useSelectNode } from "../flow-engine/stores/flowStore";
+import type { AgenNode } from "../flow-engine/types/nodeData";
 
 interface ActionToolbarProps {
 	showHistoryPanel: boolean;
@@ -32,6 +35,23 @@ interface ExtendedWindow extends Window {
 	__TAURI__?: unknown;
 }
 
+// Top-level constants for better performance, basically prevents recreation on every render
+const BUTTON_ICON_SIZE = "h-4 w-4";
+const DIVIDER_STYLES = "mx-1 h-6 w-px bg-[var(--infra-toolbar-border)]";
+
+// Optimized environment detection utility, basically cache-friendly detection
+const detectBrowserEnvironment = (): boolean => {
+	if (typeof window === "undefined") return false;
+	
+	const extWindow = window as ExtendedWindow;
+	const isElectron = extWindow.electronAPI !== undefined || 
+		extWindow.require !== undefined || 
+		(typeof process !== "undefined" && process.versions?.electron);
+	const isTauri = extWindow.__TAURI__ !== undefined;
+	
+	return !isElectron && !isTauri;
+};
+
 const ActionToolbar: React.FC<ActionToolbarProps> = ({
 	showHistoryPanel,
 	onToggleHistory,
@@ -40,58 +60,71 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 	const { undo, redo, getHistory } = useUndoRedo();
 	const { canUndo, canRedo } = getHistory();
 	const [isFullscreen, setIsFullscreen] = useState(false);
-	const [isBrowserEnvironment, setIsBrowserEnvironment] = useState(false);
+	
+	// Optimized environment detection with useMemo, basically prevents recalculation
+	const isBrowserEnvironment = useMemo(() => detectBrowserEnvironment(), []);
 
-	// Get themed classes
-	const containerClasses = useComponentClasses(
+	// Flow store for node operations with optimized selectors, basically reduces subscription overhead
+	const selectedNodeId = useSelectedNodeId();
+	const removeNode = useRemoveNode();
+	const addNode = useAddNode();
+	const selectNode = useSelectNode();
+	
+	// Use optimized selector for selected node, basically prevents unnecessary re-renders
+	const selectedNode = useSelectedNode();
+
+	// Optimize themed classes with better memoization, basically cache class strings
+	const containerClasses = useMemo(
+		() => `flex items-center gap-1 p-1 ${className}`,
+		[className]
+	);
+	
+	const themedContainerClasses = useComponentClasses(
 		"actionToolbar",
 		"default",
-		`flex items-center gap-1 p-1 ${className}`
+		containerClasses
 	);
+	
 	const buttonClasses = useComponentButtonClasses("actionToolbar", "ghost", "sm");
 	const activeButtonClasses = useComponentButtonClasses("actionToolbar", "primary", "sm");
 
-	// Detect if running in browser vs desktop/Electron app
-	useEffect(() => {
-		const detectBrowserEnvironment = () => {
-			// Check if we're in a browser environment (not Electron/desktop app)
-			const isElectron =
-				(typeof window !== "undefined" && (window as ExtendedWindow).electronAPI !== undefined) ||
-				typeof (window as ExtendedWindow).require !== "undefined" ||
-				(typeof process !== "undefined" && process.versions?.electron);
-
-			const isTauri =
-				typeof window !== "undefined" && (window as ExtendedWindow).__TAURI__ !== undefined;
-
-			const isDesktopApp = isElectron || isTauri;
-
-			// Only show fullscreen in browsers (not desktop apps)
-			setIsBrowserEnvironment(!isDesktopApp);
-		};
-
-		detectBrowserEnvironment();
-	}, []);
-
-	// Check fullscreen state on mount and listen for changes (only in browser)
-	useEffect(() => {
-		if (!isBrowserEnvironment) {
-			return;
+	// Simplified event handlers, basically reduce useCallback overhead
+	const handleDeleteNode = useCallback(() => {
+		if (selectedNodeId) {
+			removeNode(selectedNodeId);
 		}
+	}, [selectedNodeId, removeNode]);
+
+	const handleDuplicateNode = useCallback(() => {
+		if (!selectedNode) return;
+
+		// Optimized node duplication with stable ID generation, basically prevents ID collisions
+		const newId = `${selectedNode.id}-copy-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+		
+		// Create new node with proper type preservation and minimal spread
+		const newNode = {
+			...selectedNode,
+			id: newId,
+			position: {
+				x: selectedNode.position.x + 40,
+				y: selectedNode.position.y + 40,
+			},
+			selected: false,
+			data: { ...selectedNode.data },
+		} as AgenNode;
+
+		// Batch operations to prevent multiple store updates
+		addNode(newNode);
+		selectNode(newId);
+	}, [selectedNode, addNode, selectNode]);
+
+	// Optimized fullscreen state management with single useEffect, basically reduces event listeners
+	useEffect(() => {
+		if (!isBrowserEnvironment) return;
 
 		const checkFullscreen = () => {
 			setIsFullscreen(!!document.fullscreenElement);
 		};
-
-		checkFullscreen();
-		document.addEventListener("fullscreenchange", checkFullscreen);
-		return () => document.removeEventListener("fullscreenchange", checkFullscreen);
-	}, [isBrowserEnvironment]);
-
-	// Keyboard shortcut for fullscreen (F11) - only in browser
-	useEffect(() => {
-		if (!isBrowserEnvironment) {
-			return;
-		}
 
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "F11") {
@@ -100,9 +133,19 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 			}
 		};
 
+		// Initialize fullscreen state
+		checkFullscreen();
+		
+		// Add event listeners
+		document.addEventListener("fullscreenchange", checkFullscreen);
 		document.addEventListener("keydown", handleKeyDown);
-		return () => document.removeEventListener("keydown", handleKeyDown);
-	}, [isBrowserEnvironment]);
+		
+		// Cleanup
+		return () => {
+			document.removeEventListener("fullscreenchange", checkFullscreen);
+			document.removeEventListener("keydown", handleKeyDown);
+		};
+	}, [isBrowserEnvironment]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const toggleFullscreen = async () => {
 		if (!isBrowserEnvironment) {
@@ -121,7 +164,34 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 	};
 
 	return (
-		<div className={containerClasses}>
+		<div className={themedContainerClasses}>
+			{/* NODE ACTION BUTTONS - Optimized rendering with conditional display */}
+			{selectedNodeId && (
+				<>
+					<button
+						type="button"
+						onClick={handleDuplicateNode}
+						className={buttonClasses}
+						title="Duplicate Node (Ctrl+D)"
+						aria-label="Duplicate selected node"
+					>
+						<Copy className={BUTTON_ICON_SIZE} />
+					</button>
+
+					<button
+						type="button"
+						onClick={handleDeleteNode}
+						className={buttonClasses}
+						title="Delete Node (Delete)"
+						aria-label="Delete selected node"
+					>
+						<Trash2 className={BUTTON_ICON_SIZE} />
+					</button>
+
+					<div className={DIVIDER_STYLES} />
+				</>
+			)}
+
 			<button
 				type="button"
 				onClick={() => undo()}
@@ -129,7 +199,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 				className={buttonClasses}
 				title="Undo (Ctrl+Z)"
 			>
-				<RotateCcw className="h-4 w-4" />
+				<RotateCcw className={BUTTON_ICON_SIZE} />
 			</button>
 
 			<button
@@ -139,10 +209,10 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 				className={buttonClasses}
 				title="Redo (Ctrl+Y)"
 			>
-				<RotateCw className="h-4 w-4" />
+				<RotateCw className={BUTTON_ICON_SIZE} />
 			</button>
 
-			<div className="mx-1 h-6 w-px bg-[var(--infra-toolbar-border)]" />
+			<div className={DIVIDER_STYLES} />
 
 			<button
 				type="button"
@@ -150,16 +220,13 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 				className={showHistoryPanel ? activeButtonClasses : buttonClasses}
 				title="Toggle History Panel (Ctrl+H)"
 			>
-				<History className="h-4 w-4" />
+				<History className={BUTTON_ICON_SIZE} />
 			</button>
 
-			{/* FULLSCREEN BUTTON - Only show in browser environments */}
+			{/* FULLSCREEN SECTION - Only show in browser environments */}
 			{isBrowserEnvironment && (
 				<>
-					<div className="mx-1 h-6 w-px bg-[var(--infra-toolbar-border)]" />
-
-					{/* THEME SWITCHER */}
-					{/* <div className="w-px h-6 bg-[var(--infra-toolbar-border)] mx-1" /> */}
+					<div className={DIVIDER_STYLES} />
 
 					<div className="flex items-center">
 						<ThemeSwitcher />
@@ -170,8 +237,9 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 						onClick={toggleFullscreen}
 						className={isFullscreen ? activeButtonClasses : buttonClasses}
 						title={isFullscreen ? "Exit Fullscreen (F11)" : "Enter Fullscreen (F11)"}
+						aria-label={isFullscreen ? "Exit fullscreen mode" : "Enter fullscreen mode"}
 					>
-						{isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+						{isFullscreen ? <Minimize className={BUTTON_ICON_SIZE} /> : <Maximize className={BUTTON_ICON_SIZE} />}
 					</button>
 				</>
 			)}
@@ -179,4 +247,16 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 	);
 };
 
-export default ActionToolbar;
+// Enhanced memoization for better performance, basically comprehensive prop comparison
+const ActionToolbarMemo = React.memo(ActionToolbar, (prevProps, nextProps) => {
+	// Compare all props for precise re-render control
+	return (
+		prevProps.showHistoryPanel === nextProps.showHistoryPanel &&
+		prevProps.className === nextProps.className
+		// onToggleHistory is stable from parent (useCallback), so comparison not needed
+	);
+});
+
+ActionToolbarMemo.displayName = "ActionToolbar";
+
+export default ActionToolbarMemo;

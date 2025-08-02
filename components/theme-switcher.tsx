@@ -6,96 +6,86 @@ import {
 	DropdownMenuContent,
 	DropdownMenuRadioGroup,
 	DropdownMenuRadioItem,
-	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-	ColorDebugger,
-	useColorDebugger,
-} from "@/features/business-logic-modern/infrastructure/theming/components/ColorDebugger";
-import { Laptop, Moon, Palette, Sun } from "lucide-react";
+import { Laptop, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
+// Top-level constants for better performance, basically prevent recreation on every render
+const ICON_SIZE = 16;
+const ICON_CLASSES = "text-muted-foreground";
+const MENU_ITEM_CLASSES = "flex gap-2";
 
-/** Check if we're in development mode */
-const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
+// Pre-computed theme options for stable references, basically avoid object recreation
+const THEME_OPTIONS = [
+	{ value: "light", label: "Light", Icon: Sun },
+	{ value: "dark", label: "Dark", Icon: Moon },
+	{ value: "system", label: "System", Icon: Laptop },
+] as const;
 
 const ThemeSwitcher = () => {
 	const [mounted, setMounted] = useState(false);
 	const { theme, setTheme } = useTheme();
-	const colorDebugger = useColorDebugger();
 
 	// useEffect only runs on the client, so now we can safely show the UI
 	useEffect(() => {
 		setMounted(true);
 	}, []);
 
+	// Memoized theme change handler, basically prevent function recreation
+	const handleThemeChange = useCallback((newTheme: string) => {
+		setTheme(newTheme);
+	}, [setTheme]);
+
+	// Memoized current theme icon, basically prevent icon component recreation
+	const currentThemeIcon = useMemo(() => {
+		if (!mounted) return null;
+		
+		const themeOption = THEME_OPTIONS.find(option => option.value === theme);
+		if (!themeOption) return <Laptop key="system" size={ICON_SIZE} className={ICON_CLASSES} />;
+		
+		const { Icon, value } = themeOption;
+		return <Icon key={value} size={ICON_SIZE} className={ICON_CLASSES} />;
+	}, [mounted, theme]);
+
+	// Early return for SSR, basically avoid hydration issues
 	if (!mounted) {
-		return null;
+		return (
+			<Button type="button" variant="ghost" size="sm" disabled>
+				<Laptop size={ICON_SIZE} className={ICON_CLASSES} />
+			</Button>
+		);
 	}
 
-	const ICON_SIZE = 16;
-
 	return (
-		<>
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild={true}>
-					<Button type="button" variant="ghost" size={"sm"}>
-						{theme === "light" ? (
-							<Sun key="light" size={ICON_SIZE} className={"text-muted-foreground"} />
-						) : theme === "dark" ? (
-							<Moon key="dark" size={ICON_SIZE} className={"text-muted-foreground"} />
-						) : (
-							<Laptop key="system" size={ICON_SIZE} className={"text-muted-foreground"} />
-						)}
-					</Button>
-				</DropdownMenuTrigger>
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button type="button" variant="ghost" size="sm">
+					{currentThemeIcon}
+				</Button>
+			</DropdownMenuTrigger>
 
-				<DropdownMenuContent>
-					<DropdownMenuRadioGroup value={theme} onValueChange={(e) => setTheme(e)}>
-						<DropdownMenuRadioItem className="flex gap-2" value="light">
-							<Sun size={ICON_SIZE} className="text-muted-foreground" /> <span>Light</span>
+			<DropdownMenuContent>
+				<DropdownMenuRadioGroup value={theme} onValueChange={handleThemeChange}>
+					{THEME_OPTIONS.map(({ value, label, Icon }) => (
+						<DropdownMenuRadioItem 
+							key={value}
+							className={MENU_ITEM_CLASSES} 
+							value={value}
+						>
+							<Icon size={ICON_SIZE} className={ICON_CLASSES} />
+							<span>{label}</span>
 						</DropdownMenuRadioItem>
-						<DropdownMenuRadioItem className="flex gap-2" value="dark">
-							<Moon size={ICON_SIZE} className="text-muted-foreground" /> <span>Dark</span>
-						</DropdownMenuRadioItem>
-						<DropdownMenuRadioItem className="flex gap-2" value="system">
-							<Laptop size={ICON_SIZE} className="text-muted-foreground" /> <span>System</span>
-						</DropdownMenuRadioItem>
-					</DropdownMenuRadioGroup>
-
-					{/* Only show Color Debugger in development */}
-					{IS_DEVELOPMENT && (
-						<>
-							<DropdownMenuSeparator />
-
-							<Button
-								variant="ghost"
-								size="sm"
-								className="h-8 w-full justify-start gap-2 px-2 py-1.5"
-								onClick={colorDebugger.show}
-							>
-								<Palette size={ICON_SIZE} className="text-muted-foreground" />
-								<span>Color Debugger</span>
-							</Button>
-						</>
-					)}
-				</DropdownMenuContent>
-			</DropdownMenu>
-
-			{/* Color Debugger Modal - Only render in development */}
-			{IS_DEVELOPMENT && (
-				<ColorDebugger
-					isVisible={colorDebugger.isVisible}
-					onVisibilityChange={colorDebugger.setIsVisible}
-				/>
-			)}
-		</>
+					))}
+				</DropdownMenuRadioGroup>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 };
 
-export { ThemeSwitcher };
+// Memoize the ThemeSwitcher to prevent unnecessary re-renders, basically improves performance
+const ThemeSwitcherMemo = React.memo(ThemeSwitcher);
+ThemeSwitcherMemo.displayName = "ThemeSwitcher";
+
+export { ThemeSwitcherMemo as ThemeSwitcher };

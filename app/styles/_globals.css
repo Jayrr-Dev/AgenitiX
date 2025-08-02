@@ -1,22 +1,64 @@
+
 /* AUTO: import generated tokens */
+
+
+
 @import "./_generated_tokens.css";
 
-/* =====================================================================
-   _GLOBALS.CSS — FOUNDATIONS & GLOBAL UTILITIES
-   =====================================================================
-   This file establishes the foundational theme for the entire application,
-   including marketing pages and the core app. It defines a shared set
-   of design tokens, animations, and utilities that are globally available.
 
-   • Custom properties for animating conic gradients
-   • Core theme tokens (colors, fonts, radii) via @theme
-   • Light theme overrides for all color tokens
-   • Keyframe animations for scrolling and glow effects
-   • Global utility classes for colors, effects, and layouts
-   • Base styles applied to the body and all elements
 
-   Keywords: globals, foundations, theme, tokens, utilities, animations
-   ===================================================================== */
+.react-flow__renderer {
+	/* Improve text rendering at all zoom levels, basically sharper text */
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	/* Force hardware acceleration for better scaling, basically smoother zoom */
+	transform: translateZ(0);
+	will-change: transform;
+	/* Improve crisp edges for geometric shapes, basically sharper borders */
+
+}
+
+.react-flow__node {
+	/* Prevent blur during scaling transformations, basically maintain sharpness */
+	backface-visibility: hidden;
+	transform-style: preserve-3d;
+	/* Ensure pixel-perfect rendering, basically avoid sub-pixel blurriness */
+	transform: translate3d(0, 0, 0);
+}
+
+/* Thinner Focus Ring Styles */
+
+textarea:focus,
+
+
+
+/* Specific focus styles for common form elements */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+	/* Even thinner for text inputs, basically subtle focus indication */
+	outline: 0.5px solid rgba(255, 255, 255, 0.5) !important;
+	outline-offset: 0px !important;
+	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Override Tailwind focus ring utilities */
+/* .focus\:ring-1:focus {
+	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4) !important;
+}
+
+.focus\:ring-2:focus {
+	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4) !important;
+}
+
+.focus\:ring-3:focus {
+	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4) !important;
+} */
+
+
 
 /* 1 · Custom-property registration (only animating vars) ------------ */
 @property --fill-transparency-left {
@@ -379,7 +421,7 @@
 
 /* Effect Utilities */
 @utility shadow-effect-glow-selection {
-	box-shadow: var(--effect-glow-selection);
+	box-shadow: var(--effect-glow-selection) !important;
 }
 @utility shadow-effect-glow-hover {
 	box-shadow: var(--effect-glow-hover);

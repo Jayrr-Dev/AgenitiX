@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import FlowEditor from "@/features/business-logic-modern/infrastructure/flow-engine/FlowEditor";
 import { FlowMetadataProvider } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
+import { useLoadCanvas } from "@/features/business-logic-modern/infrastructure/flow-engine/hooks/useLoadCanvas";
 import type { Id } from "convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { AlertCircle, ArrowLeft } from "lucide-react";
@@ -53,9 +54,12 @@ export default function FlowPage({ params }: PageProps) {
 	// Loading states
 	if (authLoading || flow === undefined) {
 		return (
-			<div className="flex h-screen w-screen items-center justify-center bg-background">
-				<Loading />
-			</div>
+			<Loading 
+				className="min-h-screen bg-background"
+				size="w-12 h-12" 
+				text="Loading flow..."
+				textSize="text-base"
+			/>
 		);
 	}
 
@@ -118,8 +122,44 @@ export default function FlowPage({ params }: PageProps) {
 					userPermission: flow.userPermission as "view" | "edit" | "admin" | undefined,
 				}}
 			>
-				<FlowEditor />
+				<FlowEditorWithCanvasLoading />
 			</FlowMetadataProvider>
 		</div>
 	);
+}
+
+/**
+ * Component that handles canvas loading state to prevent double loading screens
+ */
+function FlowEditorWithCanvasLoading() {
+	const canvasLoader = useLoadCanvas();
+
+	// Show single unified loading while canvas loads
+	if (canvasLoader.isLoading) {
+		return (
+			<Loading 
+				className="min-h-screen bg-background"
+				size="w-12 h-12" 
+				text="Loading editor..."
+				textSize="text-base"
+			/>
+		);
+	}
+
+	// Show canvas loading error if it failed
+	if (canvasLoader.error) {
+		return (
+			<div className="flex h-screen w-screen items-center justify-center bg-background">
+				<div className="mx-auto max-w-md px-4 text-center">
+					<AlertCircle className="mx-auto mb-4 h-16 w-16 text-destructive" />
+					<h2 className="mb-2 font-bold text-2xl text-foreground">Loading Error</h2>
+					<p className="mb-6 text-muted-foreground">{canvasLoader.error}</p>
+					<Button onClick={() => window.location.reload()}>Retry</Button>
+				</div>
+			</div>
+		);
+	}
+
+	// Canvas loaded successfully, render the editor
+	return <FlowEditor />;
 }

@@ -36,6 +36,7 @@ const identify: Identify<Context> = dedupe(() => {
 
 /**
  * Hypertune adapter for type-safe feature flag management
+ * Falls back to default values when token is not available
  */
 const hypertuneAdapter = createHypertuneAdapter<RootFlagValues, Context>({
 	createSource,

@@ -89,7 +89,7 @@ export const ExpandCollapseButton: React.FC<ExpandCollapseButtonProps> = ({
 		>
 			{(() => {
 				const IconComponent = showUI ? TOGGLE_ICONS.EXPANDED : TOGGLE_ICONS.COLLAPSED;
-				return <IconComponent size={8} style={{ pointerEvents: "none" }} />;
+				return React.createElement(IconComponent as React.ComponentType<any>, { size: 8, style: { pointerEvents: "none" } });
 			})()}
 		</button>
 	);

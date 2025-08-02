@@ -408,14 +408,9 @@ const ViewBooleanNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }
 			<div className={`flex items-center justify-center w-full h-full ${isEnabled ? "" : "opacity-50"}`}>
 				{isExpanded ? (
 					<div className="flex flex-col items-center justify-center gap-2 p-2 w-full">
-						{/* Primary state icon */}
-						<div className={`text-xl ${display.color}`}>
-							{renderLucideIcon(display.icon, "", 20)}
-						</div>
-						
 						{/* Connection table */}
 						{hasConnection ? (
-							<div className="w-full max-w-sm">
+							<div className="w-full max-w-sm mt-4">
 								<div className="text-xs font-medium text-muted-foreground mb-1">Connections</div>
 								<div className="border rounded-md">
 									<div className="grid grid-cols-2 gap-1 p-2 text-xs font-medium bg-muted/50">

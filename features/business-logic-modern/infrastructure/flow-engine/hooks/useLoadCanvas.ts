@@ -52,13 +52,20 @@ export function useLoadCanvas(): UseLoadCanvasResult {
 		}
 
 		try {
+			// Clear localStorage persistence to prevent conflicts
+			localStorage.removeItem('flow-editor-storage');
+			
 			// Load nodes and edges into the flow store
 			if (canvasData.nodes && Array.isArray(canvasData.nodes)) {
 				setNodes(canvasData.nodes);
+			} else {
+				setNodes([]);
 			}
 
 			if (canvasData.edges && Array.isArray(canvasData.edges)) {
 				setEdges(canvasData.edges);
+			} else {
+				setEdges([]);
 			}
 
 			setHasLoaded(true);
@@ -74,7 +81,9 @@ export function useLoadCanvas(): UseLoadCanvasResult {
 	useEffect(() => {
 		setHasLoaded(false);
 		setError(null);
-	}, []);
+		// Clear localStorage when switching flows to prevent data contamination
+		localStorage.removeItem('flow-editor-storage');
+	}, [flow?.id]);
 
 	return {
 		isLoading: canvasData === undefined && !hasLoaded && !error,

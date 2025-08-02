@@ -1,7 +1,8 @@
 "use client";
 
-import { Loader2, Wifi, WifiOff } from "lucide-react";
+import { Wifi, WifiOff } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Loading } from "@/components/Loading";
 
 // Extend ServiceWorkerRegistration to include sync
 interface ServiceWorkerRegistrationWithSync extends ServiceWorkerRegistration {
@@ -82,7 +83,7 @@ export default function PWAStatus() {
 			>
 				{isSyncing ? (
 					<>
-						<Loader2 className="h-4 w-4 animate-spin" />
+						<Loading showText={false} size="w-4 h-4" className="p-0" />
 						<span>Syncing...</span>
 					</>
 				) : isOnline ? (

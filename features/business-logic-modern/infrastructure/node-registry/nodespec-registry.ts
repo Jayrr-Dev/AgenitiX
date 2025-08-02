@@ -8,13 +8,24 @@
 import { spec as aiAgentSpec } from "../../node-domain/ai/aiAgent.node";
 import { spec as triggerPulseSpec } from "../../node-domain/trigger/triggerPulse.node";
 import { spec as aiToolsSpec } from "../../node-domain/ai/aiTools.node";
+import { spec as storeLocalSpec } from "../../node-domain/store/storeLocal.node";
+import { spec as aiManagerSpec } from "../../node-domain/ai/aiManager.node";
 import { spec as createTextSpec } from "../../node-domain/create/createText.node";
 import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
 import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
 import { spec as emailCreatorSpec } from "../../node-domain/email/emailCreator.node";
 import { spec as emailReaderSpec } from "../../node-domain/email/emailReader.node";
-import { spec as testNodeSpec } from "../../node-domain/test/testNode.node";
+import { spec as emailSenderSpec } from "../../node-domain/email/emailSender.node";
+import { spec as emailReplierSpec } from "../../node-domain/email/emailReplier.node";
+import { spec as emailTemplateSpec } from "../../node-domain/email/emailTemplate.node";
+import { spec as emailBrandSpec } from "../../node-domain/email/emailBrand.node";
+import { spec as emailUpdaterSpec } from "../../node-domain/email/emailUpdater.node";
+import { spec as emailListSpec } from "../../node-domain/email/emailList.node";
+import { spec as emailDataSpec } from "../../node-domain/email/emailData.node";
+import { spec as emailBulkSpec } from "../../node-domain/email/emailBulk.node";
+import { spec as emailAnalyticsSpec } from "../../node-domain/email/emailAnalytics.node";
 import { spec as flowConditionalSpec } from "../../node-domain/flow/flowConditional.node";
+import { spec as testNodeSpec } from "../../node-domain/test/testNode.node";
 import { spec as triggerToggleSpec } from "../../node-domain/trigger/triggerToggle.node";
 import { spec as viewBooleanSpec } from "../../node-domain/view/viewBoolean.node";
 import { spec as viewTextSpec } from "../../node-domain/view/viewText.node";
@@ -26,6 +37,8 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	viewBoolean: viewBooleanSpec,
 	triggerPulse: triggerPulseSpec,
 	aiTools: aiToolsSpec,
+	storeLocal: storeLocalSpec,
+	aiManager: aiManagerSpec,
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
 	aiAgent: aiAgentSpec,
@@ -33,6 +46,15 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	emailAccount: emailAccountSpec,
 	emailReader: emailReaderSpec,
 	emailCreator: emailCreatorSpec,
+	emailSender: emailSenderSpec,
+	emailReplier: emailReplierSpec,
+	emailTemplate: emailTemplateSpec,
+	emailBrand: emailBrandSpec,
+	emailUpdater: emailUpdaterSpec,
+	emailList: emailListSpec,
+	emailData: emailDataSpec,
+	emailBulk: emailBulkSpec,
+	emailAnalytics: emailAnalyticsSpec,
 	testNode: testNodeSpec,
 	triggerToggle: triggerToggleSpec,
 	viewText: viewTextSpec,
@@ -235,11 +257,11 @@ export function getNodeMetadata(nodeType: string): NodeSpecMetadata | null {
 		size: {
 			expanded: {
 				width: spec.size.expanded.width,
-				height: spec.size.expanded.height,
+				height: (spec.size.expanded as any).height ?? (spec.size.expanded as any).minHeight ?? 60,
 			},
 			collapsed: {
 				width: spec.size.collapsed.width,
-				height: spec.size.collapsed.height,
+				height: (spec.size.collapsed as any).height ?? (spec.size.collapsed as any).minHeight ?? 60,
 			},
 		},
 		handles: spec.handles,

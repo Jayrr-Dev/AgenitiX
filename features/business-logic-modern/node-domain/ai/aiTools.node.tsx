@@ -1,9 +1,9 @@
 /**
- * AiTools NODE – Tool configuration for AI agents
+ * AiTools NODE – Tool configuration for Ai agents
  *
- * • Provides tool selection and configuration for AI agents
+ * • Provides tool selection and configuration for Ai agents
  * • Schema-driven with checkboxes for tool selection
- * • Outputs Tools data type for aiAgent consumption
+ * • Outputs Tools data type for Ai agent consumption
  * • Dynamic sizing and validation
  * • Auto-disables when no tools are selected
  *
@@ -23,6 +23,7 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { Loading } from "@/components/Loading";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
@@ -100,17 +101,34 @@ const CONTENT = {
 // -----------------------------------------------------------------------------
 
 function createDynamicSpec(data: AiToolsData): NodeSpec {
+  // Calculate number of enabled tools
+  const enabledToolsCount = [data.calculator, data.webSearch].filter(Boolean).length;
+  
+  // Dynamic collapsed size based on tool count
+  let dynamicCollapsedSize: keyof typeof COLLAPSED_SIZES;
+  if (enabledToolsCount === 0) {
+    dynamicCollapsedSize = "C1"; // Default size when no tools
+  } else if (enabledToolsCount === 1) {
+    dynamicCollapsedSize = "C1"; // Compact for single tool
+  } else if (enabledToolsCount === 2) {
+    dynamicCollapsedSize = "C1W"; // Wide for two tools
+  } else if (enabledToolsCount >= 3) {
+    dynamicCollapsedSize = "C2"; // Large for 3+ tools
+  } else {
+    dynamicCollapsedSize = "C1"; // Fallback
+  }
+
   const expanded =
     EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
     EXPANDED_SIZES.VE2;
   const collapsed =
-    COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
-    COLLAPSED_SIZES.C2;
+    COLLAPSED_SIZES[dynamicCollapsedSize] ??
+    COLLAPSED_SIZES.C1;
 
   return {
     kind: "aiTools",
-    displayName: "AI Tools",
-    label: "AI Tools",
+    displayName: "Ai Tools",
+    label: "Ai Tools",
     category: CATEGORIES.AI,
     size: { expanded, collapsed },
     handles: [
@@ -155,7 +173,7 @@ function createDynamicSpec(data: AiToolsData): NodeSpec {
     },
     icon: "LuWrench",
     author: "Agenitix Team",
-    description: "Configure available tools for AI agents",
+    description: "Configure available tools for Ai agents",
     feature: "ai",
     tags: ["ai", "tools", "configuration"],
     featureFlag: {
@@ -171,7 +189,7 @@ function createDynamicSpec(data: AiToolsData): NodeSpec {
 /** Static spec for registry (uses default size keys) */
 export const spec: NodeSpec = createDynamicSpec({
   expandedSize: "VE2",
-  collapsedSize: "C2",
+  collapsedSize: "C1W",
 } as AiToolsData);
 
 // -----------------------------------------------------------------------------
@@ -194,6 +212,7 @@ const AiToolsNode = memo(
       isActive,
       calculator,
       webSearch,
+      collapsedSize,
     } = nodeData as AiToolsData;
 
     // keep last emitted output to avoid redundant writes
@@ -295,10 +314,16 @@ const AiToolsNode = memo(
 
     // If flag is loading, show loading state
     if (flagState.isLoading) {
+      // For small collapsed sizes (C1), hide text and center better
+      const isSmallNode = !isExpanded && spec.size.collapsed.width === 60;
+      
       return (
-        <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
-          Loading AI Tools feature...
-        </div>
+        <Loading 
+          className={isSmallNode ? "flex items-center justify-center w-full h-full" : "p-4"} 
+          size={isSmallNode ? "w-6 h-6" : "w-8 h-8"} 
+          text={isSmallNode ? undefined : "Loading..."}
+          showText={!isSmallNode}
+        />
       );
     }
 
@@ -321,14 +346,12 @@ const AiToolsNode = memo(
     // -------------------------------------------------------------------------
     return (
       <>
-        {/* Editable label or icon */}
-        {!isExpanded &&
-          spec.size.collapsed.width === 60 &&
-          spec.size.collapsed.height === 60 ? (
-          <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
-            {spec.icon && renderLucideIcon(spec.icon, "", 16)}
-          </div>
+        {/* Editable label or icon - hide labels when collapsed */}
+        {!isExpanded ? (
+          // No icon or label when collapsed - show only tool icons
+          null
         ) : (
+          // Show full label when expanded
           <LabelNode nodeId={id} label={(nodeData as AiToolsData).label || spec.displayName} />
         )}
 
@@ -418,12 +441,13 @@ const AiToolsNode = memo(
 const AiToolsNodeWithDynamicSpec = (props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, props.data);
 
-  // Recompute spec only when the size keys change
+  // Recompute spec when tool selections change (for dynamic sizing)
   const dynamicSpec = useMemo(
     () => createDynamicSpec(nodeData as AiToolsData),
     [
       (nodeData as AiToolsData).expandedSize,
-      (nodeData as AiToolsData).collapsedSize,
+      (nodeData as AiToolsData).calculator,
+      (nodeData as AiToolsData).webSearch,
     ],
   );
 

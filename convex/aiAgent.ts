@@ -241,84 +241,220 @@ const safeCalculate = (expression: string): number => {
 };
 
 /**
- * Perform web search using DuckDuckGo (free, no API key required)
+ * Perform web search using Tavily API with DuckDuckGo and Wikipedia fallbacks
  */
 const performWebSearch = async (query: string, options: { maxResults?: number; includeAnswer?: boolean } = {}): Promise<string> => {
 	const maxResults = options.maxResults || 5;
 	const includeAnswer = options.includeAnswer !== false;
+	
+	// Get API key from environment variables
+	const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 
 	try {
-		console.log(`Searching DuckDuckGo for: "${query}"`);
-		const searchUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
+		console.log(`Searching for: "${query}"`);
 		
-		const response = await fetch(searchUrl);
-		if (!response.ok) {
-			throw new Error(`DuckDuckGo API error: ${response.status}`);
+		// Strategy 1: Try Tavily Search API first (most reliable)
+		if (TAVILY_API_KEY) {
+			try {
+				console.log('Attempting Tavily search...');
+				const tavilyResponse = await fetch('https://api.tavily.com/search', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${TAVILY_API_KEY}`
+				},
+				body: JSON.stringify({
+					query: query,
+					search_depth: "advanced",
+					include_answer: includeAnswer,
+					include_raw_content: false,
+					max_results: maxResults,
+					include_domains: [],
+					exclude_domains: []
+				})
+			});
+
+			if (tavilyResponse.ok) {
+				const tavilyData = await tavilyResponse.json();
+				console.log('Tavily search completed successfully');
+				
+				let result = `Search Results for "${query}":\n\n`;
+				let hasResults = false;
+
+				// Add Tavily's answer if available
+				if (includeAnswer && tavilyData.answer) {
+					result += `Answer: ${tavilyData.answer}\n\n`;
+					hasResults = true;
+				}
+
+				// Process Tavily search results
+				if (tavilyData.results && Array.isArray(tavilyData.results) && tavilyData.results.length > 0) {
+					result += `Found ${tavilyData.results.length} results:\n\n`;
+					tavilyData.results.forEach((item: any, index: number) => {
+						result += `${index + 1}. **${item.title}**\n`;
+						result += `   ${item.content}\n`;
+						result += `   URL: ${item.url}\n`;
+						if (item.score) {
+							result += `   Relevance: ${Math.round(item.score * 100)}%\n`;
+						}
+						result += `\n`;
+					});
+					hasResults = true;
+				}
+
+				if (hasResults) {
+					result += `\n*Search powered by Tavily*`;
+					console.log('Returning Tavily search results');
+					return result;
+				}
+			} else {
+				console.log(`Tavily API error: ${tavilyResponse.status}, falling back to DuckDuckGo`);
+			}
+		} catch (tavilyError) {
+			console.log('Tavily search failed, falling back to DuckDuckGo:', tavilyError);
+		}
+		} else {
+			console.log('Tavily API key not found in environment variables, skipping to DuckDuckGo');
 		}
 		
-		const data = await response.json();
-		console.log('DuckDuckGo search completed successfully');
-		console.log('DuckDuckGo raw response:', JSON.stringify(data, null, 2));
-		
-		let result = `Search Results for "${query}":\n\n`;
-		
-		// Add quick answer if available
-		if (includeAnswer && (data.Answer || data.AbstractText)) {
-			const answer = data.Answer || data.AbstractText;
-			result += `Quick Answer: ${answer}\n\n`;
-		}
-		
-		// Extract search results from RelatedTopics
-		const results: Array<{ title: string; url: string; snippet: string }> = [];
-		
-		if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
-			data.RelatedTopics.slice(0, maxResults).forEach((topic: any) => {
-				if (topic.Text && topic.FirstURL) {
-					results.push({
-						title: topic.Text.split(' - ')[0] || topic.Text.substring(0, 60),
-						url: topic.FirstURL,
-						snippet: topic.Text
+		// Strategy 2: Fallback to DuckDuckGo Instant Answer API
+		try {
+			console.log('Attempting DuckDuckGo search...');
+			const duckGoUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
+			
+			const duckGoResponse = await fetch(duckGoUrl);
+			if (duckGoResponse.ok) {
+				const duckGoData = await duckGoResponse.json();
+				console.log('DuckDuckGo search completed');
+				
+				let result = `Search Results for "${query}":\n\n`;
+				let hasResults = false;
+				
+				// Check for instant answers or abstracts
+				if (includeAnswer && (duckGoData.Answer || duckGoData.AbstractText)) {
+					const answer = duckGoData.Answer || duckGoData.AbstractText;
+					result += `Quick Answer: ${answer}\n\n`;
+					hasResults = true;
+				}
+				
+				// Extract results from RelatedTopics
+				const relatedResults: Array<{ title: string; url: string; snippet: string }> = [];
+				
+				if (duckGoData.RelatedTopics && Array.isArray(duckGoData.RelatedTopics)) {
+					duckGoData.RelatedTopics.slice(0, maxResults).forEach((topic: any) => {
+						if (topic.Text && topic.FirstURL) {
+							relatedResults.push({
+								title: topic.Text.split(' - ')[0] || topic.Text.substring(0, 60),
+								url: topic.FirstURL,
+								snippet: topic.Text
+							});
+						}
 					});
 				}
-			});
-		}
-		
-		// Format results for AI consumption
-		if (results.length > 0) {
-			result += `Found ${results.length} results:\n\n`;
-			results.forEach((item, index) => {
-				result += `${index + 1}. **${item.title}**\n`;
-				result += `   ${item.snippet}\n`;
-				result += `   URL: ${item.url}\n\n`;
-			});
-		} else {
-			result += `No specific results found for "${query}". `;
-			
-			// Provide helpful guidance based on query type
-			if (query.toLowerCase().includes('price') || query.toLowerCase().includes('stock')) {
-				result += 'For current prices, try financial websites like Yahoo Finance or CoinMarketCap.\n';
-			} else if (query.toLowerCase().includes('weather')) {
-				result += 'For current weather, try Weather.com or AccuWeather.\n';
-			} else if (query.toLowerCase().includes('news') || query.toLowerCase().includes('latest')) {
-				result += 'For latest news, try BBC, Reuters, or AP News.\n';
-			} else {
-				result += 'Try rephrasing your search query or checking official websites.\n';
+				
+				if (relatedResults.length > 0) {
+					result += `Found ${relatedResults.length} related topics:\n\n`;
+					relatedResults.forEach((item, index) => {
+						result += `${index + 1}. **${item.title}**\n`;
+						result += `   ${item.snippet}\n`;
+						result += `   URL: ${item.url}\n\n`;
+					});
+					hasResults = true;
+				}
+
+				if (hasResults) {
+					result += `\n*Search powered by DuckDuckGo*`;
+					console.log('Returning DuckDuckGo search results');
+					return result;
+				}
 			}
+		} catch (duckGoError) {
+			console.log('DuckDuckGo search failed, trying Wikipedia:', duckGoError);
 		}
 		
-		result += `\n*Powered by DuckDuckGo*`;
-		console.log('Returning search result:', result);
+		// Strategy 3: Fallback to Wikipedia API for factual/informational queries
+		try {
+			console.log('Attempting Wikipedia search...');
+			
+			// Determine if this is a good candidate for Wikipedia
+			const isFactualQuery = query.toLowerCase().match(/(what is|who is|when was|where is|how does|definition|meaning|history|bitcoin|cryptocurrency|climate|science|technology|medicine|geography|biography)/);
+			
+			if (isFactualQuery) {
+				// Extract main topic from query for Wikipedia search
+				const searchTerm = query
+					.replace(/what is|who is|when was|where is|how does|definition of|meaning of|history of/gi, '')
+					.trim()
+					.split(' ')[0]; // Take first significant word
+				
+				const wikiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTerm)}`;
+				const wikiResponse = await fetch(wikiUrl);
+				
+				if (wikiResponse.ok) {
+					const wikiData = await wikiResponse.json();
+					let result = `Search Results for "${query}":\n\n`;
+					result += `Wikipedia Summary:\n`;
+					result += `**${wikiData.title}**\n`;
+					result += `${wikiData.extract}\n\n`;
+					
+					if (wikiData.content_urls && wikiData.content_urls.desktop) {
+						result += `Full article: ${wikiData.content_urls.desktop.page}\n\n`;
+					}
+					
+					// Add specific guidance based on query type
+					if (query.toLowerCase().includes('price') || query.toLowerCase().includes('bitcoin') || query.toLowerCase().includes('stock')) {
+						result += `For current pricing information:\n`;
+						result += `• CoinMarketCap: https://coinmarketcap.com\n`;
+						result += `• Yahoo Finance: https://finance.yahoo.com\n`;
+						result += `• Google Finance: https://www.google.com/finance\n\n`;
+					}
+					
+					result += `\n*Search powered by Wikipedia*`;
+					console.log('Returning Wikipedia search results');
+					return result;
+				}
+			}
+		} catch (wikiError) {
+			console.log('Wikipedia search failed:', wikiError);
+		}
+		
+		// Strategy 4: If all searches fail, provide helpful guidance
+		console.log('All search strategies failed, providing guidance');
+		let result = `Unable to find specific results for "${query}" at this time.\n\n`;
+		
+		// Provide helpful guidance based on query type
+		if (query.toLowerCase().includes('price') || query.toLowerCase().includes('stock') || query.toLowerCase().includes('bitcoin')) {
+			result += `For current prices and financial data, try:\n`;
+			result += `• Yahoo Finance: https://finance.yahoo.com\n`;
+			result += `• CoinMarketCap: https://coinmarketcap.com (for cryptocurrencies)\n`;
+			result += `• Google Finance: https://www.google.com/finance\n`;
+		} else if (query.toLowerCase().includes('weather')) {
+			result += `For current weather, try:\n`;
+			result += `• Weather.com: https://weather.com\n`;
+			result += `• AccuWeather: https://www.accuweather.com\n`;
+		} else if (query.toLowerCase().includes('news') || query.toLowerCase().includes('latest')) {
+			result += `For latest news, try:\n`;
+			result += `• BBC: https://www.bbc.com/news\n`;
+			result += `• Reuters: https://www.reuters.com\n`;
+			result += `• AP News: https://apnews.com\n`;
+		} else {
+			result += `For immediate access to information, try:\n`;
+			result += `• Google: https://www.google.com/search?q=${encodeURIComponent(query)}\n`;
+			result += `• DuckDuckGo: https://duckduckgo.com/?q=${encodeURIComponent(query)}\n`;
+			result += `• Bing: https://www.bing.com/search?q=${encodeURIComponent(query)}\n`;
+		}
+		
+		result += `\n*Search attempt made using multiple sources*`;
 		return result;
 		
 	} catch (error) {
-		console.error('DuckDuckGo search failed:', error);
+		console.error('All web search strategies failed:', error);
 		
 		return `Unable to perform web search for "${query}" at this time.\n\n` +
 			   `Reason: ${error}\n\n` +
-			   `Suggestions:\n` +
-			   `• Check your internet connection\n` +
-			   `• Try rephrasing your search query\n` +
-			   `• Search manually on DuckDuckGo.com`;
+			   `For immediate access to information, try:\n` +
+			   `• Google: https://www.google.com/search?q=${encodeURIComponent(query)}\n` +
+			   `• DuckDuckGo: https://duckduckgo.com/?q=${encodeURIComponent(query)}\n` +
+			   `• Bing: https://www.bing.com/search?q=${encodeURIComponent(query)}`;
 	}
 };
 
@@ -547,7 +683,14 @@ export const createThread = action({
 export const getThreadMessages = action({
 	args: { threadId: v.string(), limit: v.optional(v.number()) },
 	handler: async (ctx, { threadId, limit = 50 }) =>
-		ctx.runAction(components.agent.messages.searchMessages, { threadId, limit }),
+		ctx.runQuery(components.agent.messages.listMessagesByThreadId, { 
+			threadId, 
+			order: "desc", // Most recent first
+			paginationOpts: { 
+				cursor: null, // Start from beginning
+				numItems: limit 
+			}
+		}),
 });
 
 // Add a validation action to check if API keys are working

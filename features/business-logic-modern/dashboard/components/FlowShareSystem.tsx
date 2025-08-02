@@ -16,6 +16,7 @@
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Loading } from "@/components/Loading";
 import {
 	Dialog,
 	DialogContent,
@@ -38,7 +39,6 @@ import {
 	Copy,
 	Edit,
 	Eye,
-	Loader2,
 	Mail,
 	Share2,
 	Shield,
@@ -290,10 +290,12 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 					{/* Requests Tab */}
 					<TabsContent value="requests" className="space-y-4">
 						{accessRequests === undefined ? (
-							<div className="flex items-center justify-center py-8">
-								<Loader2 className="h-6 w-6 animate-spin" />
-								<span className="ml-2 text-muted-foreground">Loading requests...</span>
-							</div>
+							<Loading 
+								className="py-8"
+								size="w-6 h-6" 
+								text="Loading requests..."
+								textSize="text-sm"
+							/>
 						) : accessRequests && accessRequests.length > 0 ? (
 							<div className="space-y-3">
 								{accessRequests.map((request) => (

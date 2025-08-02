@@ -14,6 +14,7 @@
 
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
 import { LinkDialog } from "./LinkDialog";
 
 // Types
@@ -373,7 +374,7 @@ export function RichTextEditor({
 
 		if (value.mode === "html") {
 			return (
-				<textarea
+				<Textarea
 					value={value.html}
 					onChange={(e) =>
 						onChange({
@@ -383,7 +384,7 @@ export function RichTextEditor({
 						})
 					}
 					placeholder="Enter HTML content..."
-					className="w-full h-32 p-3 border border-gray-300 rounded text-sm font-mono resize-none"
+					className="w-full h-32 p-3 text-sm font-mono resize-none"
 					disabled={disabled}
 				/>
 			);
@@ -391,7 +392,7 @@ export function RichTextEditor({
 
 		// Text mode
 		return (
-			<textarea
+			<Textarea
 				value={value.text}
 				onChange={(e) =>
 					onChange({
@@ -401,7 +402,7 @@ export function RichTextEditor({
 					})
 				}
 				placeholder={placeholder}
-				className="w-full h-32 p-3 border border-gray-300 rounded text-sm resize-none"
+				className="w-full h-32 p-3 text-sm resize-none"
 				disabled={disabled}
 			/>
 		);

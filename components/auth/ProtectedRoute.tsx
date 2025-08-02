@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
+import { Loading } from "@/components/Loading";
 import { useAuthContext } from "./AuthProvider";
 
 interface ProtectedRouteProps {
@@ -29,24 +30,24 @@ export const ProtectedRoute = ({ children }: Pick<ProtectedRouteProps, "children
 	// Show loading state while checking auth or not mounted yet
 	if (!mounted || isLoading) {
 		return (
-			<div className="flex min-h-screen items-center justify-center bg-gray-50">
-				<div className="text-center">
-					<div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-blue-600 border-b-2" />
-					<p className="text-gray-600">Loading...</p>
-				</div>
-			</div>
+			<Loading 
+				className="min-h-screen bg-background"
+				size="w-12 h-12" 
+				text="Loading..."
+				textSize="text-base"
+			/>
 		);
 	}
 
 	// Show loading while redirecting if not authenticated
 	if (!(isAuthenticated && user)) {
 		return (
-			<div className="flex min-h-screen items-center justify-center bg-gray-50">
-				<div className="text-center">
-					<div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-blue-600 border-b-2" />
-					<p className="text-gray-600">Redirecting to sign in...</p>
-				</div>
-			</div>
+			<Loading 
+				className="min-h-screen bg-background"
+				size="w-12 h-12" 
+				text="Redirecting to sign in..."
+				textSize="text-base"
+			/>
 		);
 	}
 

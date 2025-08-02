@@ -1,11 +1,14 @@
 import { DndContext, type DragEndEvent, closestCenter } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import type React from "react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, memo } from "react";
 import { SortableStencil } from "./SortableStencil";
 import type { HoveredStencil } from "./StencilInfoPanel";
 import { useDragSensors } from "./hooks/useDragSensors";
 import type { NodeStencil } from "./types";
+
+// Pre-defined grid styles for performance, basically prevent className recreation
+const GRID_STYLES = "flex flex-wrap justify-evenly gap-1 sm:mx-auto sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center";
 
 interface StencilGridProps {
 	stencils: NodeStencil[];
@@ -18,7 +21,17 @@ interface StencilGridProps {
 	getKeyboardShortcut?: (index: number) => string;
 }
 
-export function StencilGrid({
+// Pre-computed keyboard shortcut mapping for better performance, basically avoid object recreation
+const GRID_KEYBOARD_MAP: Record<number, string> = {
+	// Row 1: qwert (positions 0-4)
+	0: "Q", 1: "W", 2: "E", 3: "R", 4: "T",
+	// Row 2: asdfg (positions 5-9)
+	5: "A", 6: "S", 7: "D", 8: "F", 9: "G",
+	// Row 3: zxcvb (positions 10-14)
+	10: "Z", 11: "X", 12: "C", 13: "V", 14: "B",
+} as const;
+
+const StencilGridComponent = ({
 	stencils,
 	setStencils,
 	onNativeDragStart,
@@ -27,35 +40,18 @@ export function StencilGrid({
 	onRemoveStencil,
 	showRemoveButtons = false,
 	getKeyboardShortcut,
-}: StencilGridProps) {
+}: StencilGridProps) => {
 	const sensors = useDragSensors();
+	
+	// Optimized IDs computation with stable reference, basically prevent array recreation when stencils unchanged
 	const ids = useMemo(() => stencils.map((s) => s.id), [stencils]);
 
-	// KEYBOARD SHORTCUT MAPPING - QWERTY grid positions to keys
+	// Memoized fallback keyboard shortcut function, basically prevent function recreation
 	const fallbackKeyboardShortcut = useCallback((index: number): string => {
-		const gridKeyMap: Record<number, string> = {
-			// Row 1: qwert (positions 0-4)
-			0: "Q",
-			1: "W",
-			2: "E",
-			3: "R",
-			4: "T",
-			// Row 2: asdfg (positions 5-9)
-			5: "A",
-			6: "S",
-			7: "D",
-			8: "F",
-			9: "G",
-			// Row 3: zxcvb (positions 10-14)
-			10: "Z",
-			11: "X",
-			12: "C",
-			13: "V",
-			14: "B",
-		};
-		return gridKeyMap[index] || "";
+		return GRID_KEYBOARD_MAP[index] || "";
 	}, []);
 
+	// Optimized drag end handler with better memoization, basically prevent handler recreation
 	const handleDragEnd = useCallback(
 		(e: DragEndEvent) => {
 			const { active, over } = e;
@@ -63,31 +59,57 @@ export function StencilGrid({
 				return;
 			}
 
-			const oldIdx = stencils.findIndex((s) => s.id === active.id);
-			const newIdx = stencils.findIndex((s) => s.id === over.id);
-			setStencils(arrayMove(stencils, oldIdx, newIdx));
+			// Use Map for O(1) lookup instead of findIndex O(n), basically faster position finding
+			const idToIndexMap = new Map(stencils.map((s, i) => [s.id, i]));
+			const oldIdx = idToIndexMap.get(active.id as string);
+			const newIdx = idToIndexMap.get(over.id as string);
+			
+			if (oldIdx !== undefined && newIdx !== undefined) {
+				setStencils(arrayMove(stencils, oldIdx, newIdx));
+			}
 		},
 		[stencils, setStencils]
+	);
+
+	// Memoized stencil elements to prevent unnecessary re-renders, basically stable component references
+	const stencilElements = useMemo(() => 
+		stencils.map((stencil, index) => (
+			<SortableStencil
+				key={stencil.id}
+				stencil={stencil}
+				onNativeDragStart={onNativeDragStart}
+				onDoubleClickCreate={onDoubleClickCreate}
+				setHovered={setHovered}
+				onRemove={onRemoveStencil}
+				showRemoveButton={showRemoveButtons}
+				keyboardShortcut={getKeyboardShortcut?.(index) || fallbackKeyboardShortcut(index)}
+			/>
+		)),
+		[stencils, onNativeDragStart, onDoubleClickCreate, setHovered, onRemoveStencil, showRemoveButtons, getKeyboardShortcut, fallbackKeyboardShortcut]
 	);
 
 	return (
 		<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
 			<SortableContext items={ids} strategy={rectSortingStrategy}>
-				<div className="flex flex-wrap justify-evenly gap-2 sm:mx-auto sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center">
-					{stencils.map((stencil, index) => (
-						<SortableStencil
-							key={stencil.id}
-							stencil={stencil}
-							onNativeDragStart={onNativeDragStart}
-							onDoubleClickCreate={onDoubleClickCreate}
-							setHovered={setHovered}
-							onRemove={onRemoveStencil}
-							showRemoveButton={showRemoveButtons}
-							keyboardShortcut={getKeyboardShortcut?.(index) || fallbackKeyboardShortcut(index)}
-						/>
-					))}
+				<div className={GRID_STYLES}>
+					{stencilElements}
 				</div>
 			</SortableContext>
 		</DndContext>
 	);
-}
+};
+
+// Export memoized component with custom comparison for better performance
+export const StencilGrid = memo(StencilGridComponent, (prev, next) => {
+	// Only re-render if stencils array or key props change, basically prevent unnecessary re-renders
+	return (
+		prev.stencils === next.stencils &&
+		prev.setStencils === next.setStencils &&
+		prev.onNativeDragStart === next.onNativeDragStart &&
+		prev.onDoubleClickCreate === next.onDoubleClickCreate &&
+		prev.setHovered === next.setHovered &&
+		prev.onRemoveStencil === next.onRemoveStencil &&
+		prev.showRemoveButtons === next.showRemoveButtons &&
+		prev.getKeyboardShortcut === next.getKeyboardShortcut
+	);
+});

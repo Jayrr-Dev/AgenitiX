@@ -5,7 +5,7 @@
  */
 
 // Types
-export type * from "./types";
+export * from "./types";
 
 // Providers
 export * from "./providers";
@@ -23,3 +23,12 @@ export { smtpProvider } from "./providers/smtp";
 export { default as emailAccount, spec as emailAccountSpec } from "./emailAccount.node";
 export { default as emailReader, spec as emailReaderSpec } from "./emailReader.node";
 export { default as emailCreator, spec as emailCreatorSpec } from "./emailCreator.node";
+export { default as emailSender, spec as emailSenderSpec } from "./emailSender.node";
+export { default as emailReplier, spec as emailReplierSpec } from "./emailReplier.node";
+export { default as emailTemplate, spec as emailTemplateSpec } from "./emailTemplate.node";
+export { default as emailBrand, spec as emailBrandSpec } from "./emailBrand.node";
+export { default as emailUpdater, spec as emailUpdaterSpec } from "./emailUpdater.node";
+export { default as emailList, spec as emailListSpec } from "./emailList.node";
+export { default as emailData, spec as emailDataSpec } from "./emailData.node";
+export { default as emailBulk, spec as emailBulkSpec } from "./emailBulk.node";
+export { default as emailAnalytics, spec as emailAnalyticsSpec } from "./emailAnalytics.node";

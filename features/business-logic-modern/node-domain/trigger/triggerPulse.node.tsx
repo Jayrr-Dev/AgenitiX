@@ -1,12 +1,14 @@
 /**
- * TriggerPulse NODE – Boolean pulse button with configurable duration
+ * TriggerPulse NODE – Boolean pulse button with configurable duration and invert option
  *
+ * ✔ Green = TRUE, Red = FALSE - simple color coding
  * ✔ Sends a TRUE signal for a configurable duration when clicked, then reverts to FALSE.
+ * ✔ Optional invert mode: sends FALSE for duration, then reverts to TRUE (true→false→true).
  * ✔ Configurable pulse duration in milliseconds (expanded view).
- * ✔ Circular button design similar to TriggerToggle but with pulse behavior.
+ * ✔ Minimalistic design with simple checkbox for invert option.
  * ✔ Fully type‑safe (Zod) + focus‑preserving scaffold memoisation.
  *
- * Keywords: pulse‑button, boolean‑pulse, timed‑signal, trigger‑control
+ * Keywords: pulse‑button, boolean‑pulse, timed‑signal, trigger‑control, invert‑pulse
  */
 
 import type { NodeProps } from "@xyflow/react";
@@ -43,13 +45,14 @@ import { useNodeData } from "@/hooks/useNodeData";
 
 export const TriggerPulseDataSchema = z
   .object({
-    store: z.boolean().default(false), // current pulse state (true during pulse)
-    pulseDuration: z.number().min(1).max(60000).default(1000), // pulse duration in ms (1ms to 60s)
+    store: z.boolean().default(true), // current pulse state (true during pulse)
+    pulseDuration: z.number().min(1).max(60000).default(400), // pulse duration in ms (1ms to 60s)
     isEnabled: SafeSchemas.boolean(true), // is pulse button interactive?
     isActive: SafeSchemas.boolean(false), // reflects store when enabled
     isExpanded: SafeSchemas.boolean(false), // inspector open?
+    isInverted: SafeSchemas.boolean(true), // inverts pulse behavior (true→false→true instead of false→true→false)
     inputs: z.boolean().nullable().default(null), // last received input
-    outputs: z.boolean().default(false), // last emitted output
+    outputs: z.boolean().default(true), // last emitted output
     expandedSize: SafeSchemas.text("FE1"),
     collapsedSize: SafeSchemas.text("C1"),
     label: z.string().optional(), // User-editable node label
@@ -69,20 +72,27 @@ const validateNodeData = createNodeValidator(
 
 
 
+// Feature flag to control pulse button hover effects
+const ENABLE_PULSE_HOVER = false; // Set to true to enable hover effects
+
 const CONTENT = {
-  expanded: "p-4 w-full h-full flex flex-col",
+  expanded: "p-0 w-full h-full flex flex-col",
   collapsed: "flex items-center justify-center w-full h-full",
   header: "flex items-center justify-between mb-3",
   body: "flex-1 flex items-center justify-center",
-  pulse:
-    "relative w-12 h-12 rounded-full border-2 cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95",
-  pulsePulsing: "bg-blue-500 border-blue-600 shadow-lg shadow-blue-500/50 animate-pulse",
-  pulseIdle: "bg-gray-500 border-gray-600 shadow-gray-500/50",
+  pulse: ENABLE_PULSE_HOVER
+    ? "relative w-12 h-12 rounded-full border-2 cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
+    : "relative w-12 h-12 rounded-full border-2 cursor-pointer transition-all duration-200",
+  pulsePulsing: "bg-green-500 border-green-600",
+  pulseIdle: "bg-red-500 border-red-600",
   pulseDisabled: "bg-gray-400 border-gray-500 cursor-not-allowed opacity-50",
-  pulseText: "absolute inset-0 flex items-center justify-center text-white font-bold text-xs",
+  pulseText: "absolute inset-0 flex items-center justify-center text-white font-bold px-1 text-center leading-tight break-words hyphens-auto",
   durationInput: "w-16 px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-blue-500",
   durationContainer: "flex items-center gap-1",
   durationLabel: "text-xs text-muted-foreground",
+  invertContainer: "flex items-center gap-1 mt-1",
+  invertCheckbox: "w-3 h-3",
+  invertLabel: "text-xs text-muted-foreground",
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -110,10 +120,11 @@ function createDynamicSpec(data: TriggerPulseData): NodeSpec {
     version: 1,
     runtime: { execute: "triggerPulse_execute_v1" },
     initialData: createSafeInitialData(TriggerPulseDataSchema, {
-      store: false,
-      pulseDuration: 1000,
+      store: true, // Set initial store to true for inverted logic
+      pulseDuration: 400,
       inputs: null,
-      outputs: false,
+      outputs: true, // Set initial output to true for inverted logic
+      isInverted: true, // Default to inverted logic
     }),
     dataSchema: TriggerPulseDataSchema,
     controls: {
@@ -151,7 +162,7 @@ const toBool = (v: unknown): boolean => v === true || v === "true" || v === "1";
 const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
   // 4.1  Local node‑data helpers
   const { nodeData, updateNodeData } = useNodeData(id, data);
-  const { isExpanded, isEnabled, isActive, store, pulseDuration } = nodeData as TriggerPulseData;
+  const { isExpanded, isEnabled, isActive, store, pulseDuration, isInverted, label } = nodeData as TriggerPulseData;
 
   // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
   const nodes = useStore((s) => s.nodes);
@@ -215,6 +226,8 @@ const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
     }
   }, [store, isEnabled, isActive, updateNodeData]);
 
+
+
   /* 🔄 Make isEnabled dependent on input value only when there are connections. */
   useEffect(() => {
     const hasInput = (nodeData as TriggerPulseData).inputs;
@@ -227,6 +240,18 @@ const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
       }
     }
   }, [nodeData, isEnabled, updateNodeData]);
+
+  /* 🔄 Handle invert state change - reset to idle state */
+  useEffect(() => {
+    // When invert state changes, reset to the appropriate idle state
+    // Only do this if we're not currently in a pulse (no active timeout)
+    if (!pulseTimeoutRef.current) {
+      const expectedIdleState = isInverted;
+      if (store !== expectedIdleState) {
+        updateNodeData({ store: expectedIdleState });
+      }
+    }
+  }, [isInverted, store, updateNodeData]);
 
   /* 🔄 On every relevant change, propagate value. */
   useEffect(() => {
@@ -263,15 +288,26 @@ const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
       clearTimeout(pulseTimeoutRef.current);
     }
 
-    // Set pulse to true
-    updateNodeData({ store: true });
-
-    // Set timeout to revert to false
-    pulseTimeoutRef.current = setTimeout(() => {
+    if (isInverted) {
+      // Inverted behavior: true → false → true
       updateNodeData({ store: false });
-      pulseTimeoutRef.current = null;
-    }, pulseDuration);
-  }, [isEnabled, pulseDuration, updateNodeData]);
+      
+      // Set timeout to revert to true
+      pulseTimeoutRef.current = setTimeout(() => {
+        updateNodeData({ store: true });
+        pulseTimeoutRef.current = null;
+      }, pulseDuration);
+    } else {
+      // Normal behavior: false → true → false
+      updateNodeData({ store: true });
+      
+      // Set timeout to revert to false
+      pulseTimeoutRef.current = setTimeout(() => {
+        updateNodeData({ store: false });
+        pulseTimeoutRef.current = null;
+      }, pulseDuration);
+    }
+  }, [isEnabled, pulseDuration, isInverted, updateNodeData]);
 
   /** Handle pulse duration input change (numbers only). */
   const handleDurationChange = useCallback(
@@ -281,6 +317,14 @@ const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
       if (!isNaN(numValue) && numValue >= 1 && numValue <= 60000) {
         updateNodeData({ pulseDuration: numValue });
       }
+    },
+    [updateNodeData]
+  );
+
+  /** Handle invert checkbox change. */
+  const handleInvertChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      updateNodeData({ isInverted: e.target.checked });
     },
     [updateNodeData]
   );
@@ -303,6 +347,16 @@ const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
   // -----------------------------------------------------------------------
 
   const isPulsing = toBool(store);
+  const buttonText = label?.trim() ? label.trim().toUpperCase() : "PULSE";
+  
+  // Dynamic font size based on text length to fit in circle
+  const getFontSize = (text: string) => {
+    if (text.length <= 4) return "text-xs"; // 12px
+    if (text.length <= 6) return "text-[9px]"; // 9px 
+    if (text.length <= 8) return "text-[8px]"; // 8px
+    if (text.length <= 10) return "text-[7px]"; // 7px
+    return "text-[6px]"; // 6px for very long text
+  };
 
   return (
     <>
@@ -312,7 +366,7 @@ const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
         /* Expanded view */
         <div className={CONTENT.expanded}>
           <div className={CONTENT.body}>
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col items-center gap-2">
               <button
                 className={`${CONTENT.pulse} ${isEnabled
                   ? isPulsing
@@ -329,9 +383,9 @@ const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
                 }}
                 disabled={!isEnabled}
                 type="button"
-                title={isEnabled ? "Click to pulse" : "Disabled"}
+                title={isEnabled ? (isInverted ? "Click to pulse (inverted)" : "Click to pulse") : "Disabled"}
               >
-                <div className={CONTENT.pulseText}>PULSE</div>
+                <div className={`${CONTENT.pulseText} ${getFontSize(buttonText)}`}>{buttonText}</div>
               </button>
               <div className={CONTENT.durationContainer}>
                 <input
@@ -343,6 +397,19 @@ const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
                   disabled={!isEnabled}
                 />
                 <span className={CONTENT.durationLabel}>ms</span>
+              </div>
+              <div className={CONTENT.invertContainer}>
+                <input
+                  type="checkbox"
+                  checked={isInverted}
+                  onChange={handleInvertChange}
+                  className={CONTENT.invertCheckbox}
+                  disabled={!isEnabled}
+                  id={`invert-${id}`}
+                />
+                <label htmlFor={`invert-${id}`} className={CONTENT.invertLabel}>
+                  Invert
+                </label>
               </div>
             </div>
           </div>
@@ -366,9 +433,9 @@ const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
             }}
             disabled={!isEnabled}
             type="button"
-            title={isEnabled ? "Click to pulse" : "Disabled"}
+            title={isEnabled ? (isInverted ? "Click to pulse (inverted)" : "Click to pulse") : "Disabled"}
           >
-            <div className={CONTENT.pulseText}>PULSE</div>
+            <div className={`${CONTENT.pulseText} ${getFontSize(buttonText)}`}>{buttonText}</div>
           </button>
         </div>
       )}

@@ -194,7 +194,7 @@ export const HandlePositionEditor: React.FC<HandlePositionEditorProps> = ({
 									value={currentPosition}
 									onValueChange={(value) => handlePositionChange(handle.id, value)}
 								>
-									<SelectTrigger className="w-24 h-7 text-xs">
+									<SelectTrigger className="w-32 h-7 text-xs">
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
@@ -245,7 +245,7 @@ export const HandlePositionEditor: React.FC<HandlePositionEditorProps> = ({
 									value={currentPosition}
 									onValueChange={(value) => handlePositionChange(handle.id, value)}
 								>
-									<SelectTrigger className="w-24 h-7 text-xs">
+									<SelectTrigger className="w-32 h-7 text-xs">
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>

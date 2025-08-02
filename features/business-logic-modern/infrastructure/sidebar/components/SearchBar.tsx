@@ -13,6 +13,7 @@
 import { Search, X } from "lucide-react";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { StencilGrid } from "../StencilGrid";
 import type { HoveredStencil } from "../StencilInfoPanel";
 import { useFilteredNodes } from "../hooks/useFilteredNodes";
@@ -132,13 +133,21 @@ export function SearchBar({
 	// KEYBOARD EVENT HANDLING - Enter to exit, QWERTY shortcuts for results
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
+				// Detect if the user is actively typing inside an input, textarea, or contenteditable element.
+				const activeElement = document.activeElement as HTMLElement | null;
+				const isTypingInAnyInput =
+					activeElement &&
+					(activeElement.tagName === "INPUT" ||
+						activeElement.tagName === "TEXTAREA" ||
+						activeElement.getAttribute("contenteditable") === "true" ||
+						(activeElement as HTMLElement).contentEditable === "true");
 			// Only handle events when search is visible
 			if (!isVisible) {
 				return;
 			}
 
 			// PREVENT KEY REPEAT SPAM - Block browser key repeat events (EXCEPT Alt+Q for fast deletion)
-			if (e.repeat) {
+			if (e.repeat && !isTypingInAnyInput) {
 				const nodeCreationKeys = [
 					"q",
 					"w",
@@ -182,7 +191,7 @@ export function SearchBar({
 			const isAltQBackspace = e.altKey && currentKey === "q";
 
 			if (
-				!isAltQBackspace &&
+				!isTypingInAnyInput && !isAltQBackspace &&
 				lastKeyPress &&
 				lastKeyPress.key === currentKey &&
 				currentTime - lastKeyPress.timestamp < KEY_REPEAT_COOLDOWN
@@ -192,7 +201,7 @@ export function SearchBar({
 			}
 
 			// Only update throttling timestamp for non-Alt+Q keys
-			if (!isAltQBackspace) {
+			if (!isAltQBackspace && !isTypingInAnyInput) {
 				lastKeyPressRef.current = { key: currentKey, timestamp: currentTime };
 			}
 
@@ -215,14 +224,7 @@ export function SearchBar({
 			// Check if user is typing in the input field
 			const isTypingInInput = document.activeElement === inputRef.current;
 
-			// Also check if user is typing in ANY input field (text nodes, etc.)
-			const activeElement = document.activeElement;
-			const isTypingInAnyInput =
-				activeElement &&
-				(activeElement.tagName === "INPUT" ||
-					activeElement.tagName === "TEXTAREA" ||
-					activeElement.getAttribute("contenteditable") === "true" ||
-					(activeElement as HTMLElement).contentEditable === "true");
+			
 
 			if (isTypingInInput) {
 				// ENTER KEY - Exit search and return focus to main area
@@ -412,7 +414,7 @@ export function SearchBar({
 		>
 			{/* Search Header */}
 			<div
-				className={`flex items-center gap-2 px-7 pt-3 ${theme.border.default} flex-shrink-0 border-b`}
+				className={`flex items-center gap-2 px-7 pt-3 ${theme.border.default} flex-shrink-0 `}
 			>
 				<div className="relative flex-1">
 					<Search
@@ -457,23 +459,57 @@ export function SearchBar({
 							{filteredStencils.length} result
 							{filteredStencils.length !== 1 ? "s" : ""} for "{searchQuery}"
 						</div>
-						{filteredStencils.length > 0 && !isInputFocused && (
-							<div className={`text-xs ${theme.text.primary} mt-1`}>
-								💡 Press Q, W, E, R, T, A, S, D, F, G, Z, X, C, V, B to create nodes • Press 6 to
-								return to input
-							</div>
-						)}
-						{isInputFocused && (
-							<div className={`text-xs ${theme.text.muted} mt-1`}>
-								💡 Alt+Q = backspace • Alt+Shift+Q = delete word • Alt+Ctrl+Q = delete to start •
-								Alt+W = enter
-							</div>
-						)}
+						
+						{/* Tooltip Panel for Keyboard Shortcuts */}
+						<AnimatePresence mode="wait" initial={false}>
+							{filteredStencils.length > 0 && !isInputFocused && (
+								<motion.div
+									key="keyboard-shortcuts"
+									initial={{ opacity: 0, y: 0 }}
+									animate={{ opacity: 0.95, y: 0 }}
+									exit={{ opacity: 0, y: 0 }}
+									transition={{ duration: 0.3, ease: "easeOut" }}
+									className="-translate-y-full absolute top-0 right-[50%] mb-2 h-auto w-[450px] translate-x-1/2 rounded-lg border border-[var(--infra-sidebar-border)] bg-[var(--infra-sidebar-bg)] px-3 py-2 text-[var(--infra-sidebar-text)] text-xs leading-snug shadow-lg"
+								>
+									<div className="space-y-2">
+										<div className="flex items-center justify-between">
+											<div className="font-medium text-[var(--infra-sidebar-text)]">Keyboard Shortcuts</div>
+										</div>
+										<div className="text-[var(--infra-sidebar-text-secondary)]">
+											Press Q, W, E, R, T, A, S, D, F, G, Z, X, C, V, B to create nodes • Press 6 to return to input
+										</div>
+									</div>
+								</motion.div>
+							)}
+						</AnimatePresence>
+						
+						{/* Tooltip Panel for Input Shortcuts */}
+						<AnimatePresence mode="wait" initial={false}>
+							{isInputFocused && (
+								<motion.div
+									key="input-shortcuts"
+									initial={{ opacity: 0, y: 0 }}
+									animate={{ opacity: 0.95, y: 0 }}
+									exit={{ opacity: 0, y: 0 }}
+									transition={{ duration: 0.3, ease: "easeOut" }}
+									className="-translate-y-full absolute top-0 right-[50%] mb-2 h-auto w-[450px] translate-x-1/2 rounded-lg border border-[var(--infra-sidebar-border)] bg-[var(--infra-sidebar-bg)] px-3 py-2 text-[var(--infra-sidebar-text)] text-xs leading-snug shadow-lg"
+								>
+									<div className="space-y-2">
+										<div className="flex items-center justify-between">
+											<div className="font-medium text-[var(--infra-sidebar-text)]">Input Shortcuts</div>
+										</div>
+										<div className="text-[var(--infra-sidebar-text-secondary)]">
+											Alt+Q = backspace • Alt+Shift+Q = delete word • Alt+Ctrl+Q = delete to start • Alt+W = enter
+										</div>
+									</div>
+								</motion.div>
+							)}
+						</AnimatePresence>
 					</div>
 				)}
 
 				{filteredStencils.length > 0 ? (
-					<div className="flex-1 border-l-[1px] px-6 outline-none">
+					<div className="flex-1  px-6 outline-none">
 						<StencilGrid
 							stencils={filteredStencils}
 							setStencils={() => {}} // Read-only for search results

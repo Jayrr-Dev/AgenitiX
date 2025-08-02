@@ -149,7 +149,6 @@ function createDynamicSpec(data: ViewTextData): NodeSpec {
 		category: CATEGORIES.VIEW,
 		size: { expanded, collapsed },
 		handles: [
-			{ id: "json-input", code: "j", position: "top", type: "target", dataType: "JSON" },
 			{ id: "output", code: "s", position: "right", type: "source", dataType: "String" },
 			{ id: "input", code: "s", position: "left", type: "target", dataType: "String" },
 		],
@@ -340,7 +339,7 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 			{isExpanded ? (
 				<div className={CONTENT.expanded}>
 					<div className={CONTENT.body}>
-						<div className="whitespace-pre-line break-words text-center font-normal text-xs">
+						<div className="whitespace-pre-line break-words text-center font-normal text-xs mt-2">
 							{validation.data.outputs || "No inputs"}
 						</div>
 					</div>
@@ -349,7 +348,11 @@ const ViewTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) =
 				<div className={CONTENT.collapsed}>
 					{spec.receivedData?.showInCollapsed && validation.data.outputs !== "No inputs" ? (
 						<div
-							className={` nowheel h-[80px] w-[100px] overflow-y-auto text-center text-xs ${categoryStyles.primary}`}
+							className={` nowheel overflow-y-auto text-center text-xs mt-6 ${categoryStyles.primary}`}
+							style={{
+								width: `${spec.size.collapsed.width - 20}px`,
+								height: `${spec.size.collapsed.height - 20}px`,
+							}}
 						>
 							{validation.data.outputs || "..."}
 						</div>

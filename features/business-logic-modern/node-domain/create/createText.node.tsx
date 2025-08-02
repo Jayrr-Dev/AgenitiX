@@ -16,6 +16,7 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { Textarea } from "@/components/ui/textarea";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
@@ -98,13 +99,6 @@ function createDynamicSpec(data: CreateTextData): NodeSpec {
 		size: { expanded, collapsed },
 		handles: [
 			{
-				id: "json-input",
-				code: "j",
-				position: "top",
-				type: "target",
-				dataType: "JSON",
-			},
-			{
 				id: "output",
 				code: "s",
 				position: "right",
@@ -137,7 +131,7 @@ function createDynamicSpec(data: CreateTextData): NodeSpec {
 					key: "store",
 					type: "textarea",
 					label: "Store",
-					placeholder: "Enter your content here…",
+					placeholder: "Enter Text",
 					ui: { rows: 4 },
 				},
 				{ key: "isExpanded", type: "boolean", label: "Expand" },
@@ -169,9 +163,17 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 	const { nodeData, updateNodeData } = useNodeData(id, data);
 
 	// -------------------------------------------------------------------------
-	// 4.2  Derived state
+	// 4.2  Derived state - memoized to prevent re-renders
 	// -------------------------------------------------------------------------
-	const { isExpanded, isEnabled, isActive, store } = nodeData as CreateTextData;
+	const { isExpanded, isEnabled, isActive, store } = useMemo(() => {
+		const data = nodeData as CreateTextData;
+		return {
+			isExpanded: data.isExpanded,
+			isEnabled: data.isEnabled,
+			isActive: data.isActive,
+			store: data.store,
+		};
+	}, [nodeData]);
 
 	const categoryStyles = CATEGORY_TEXT.CREATE;
 
@@ -181,6 +183,11 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 
 	// keep last emitted output to avoid redundant writes
 	const lastOutputRef = useRef<string | null>(null);
+
+	// Ref for collapsed textarea to keep scroll at top
+	const collapsedTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+	// Ref for expanded textarea to keep scroll stable
+	const expandedTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
 	// -------------------------------------------------------------------------
 	// 4.4  Callbacks
@@ -298,6 +305,8 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 		blockJsonWhenInactive();
 	}, [isActive, isEnabled, store, propagate, blockJsonWhenInactive]);
 
+
+
 	// -------------------------------------------------------------------------
 	// 4.6  Validation
 	// -------------------------------------------------------------------------
@@ -314,6 +323,38 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 	// -------------------------------------------------------------------------
 	// 4.7  Render
 	// -------------------------------------------------------------------------
+	
+	// Memoized textarea components to prevent re-renders
+	const CollapsedTextarea = useMemo(() => (
+		<Textarea
+			key={`collapsed-${id}`}
+			ref={collapsedTextareaRef}
+			value={store === "Default text" ? "" : (store ?? "")}
+			onChange={handleStoreChange}
+			variant="barebones"
+			placeholder="..."
+			className={`nowheel m-4 h-6 min-h-8 resize-none overflow-y-auto  mt-8 text-center text-xs align-top ${categoryStyles.primary}`}
+			disabled={!isEnabled}
+			style={{ verticalAlign: 'top' }}
+		/>
+	), [id, store, handleStoreChange, isEnabled, categoryStyles.primary]);
+
+	const ExpandedTextarea = useMemo(() => (
+		<Textarea
+			key={`expanded-${id}`}
+			ref={expandedTextareaRef}
+			value={store === "Default text" ? "" : (store ?? "")}
+			onChange={handleStoreChange}
+			variant="barebones"
+			placeholder="Enter your content here…"
+			className={`nowheel h-32 min-h-32 resize-none overflow-y-auto  mt-2 p-2 text-xs align-top ${categoryStyles.primary}`}
+			disabled={!isEnabled}
+			style={{ verticalAlign: 'top' }}
+		/>
+	), [id, store, handleStoreChange, isEnabled, categoryStyles.primary]);
+
+	
+
 	return (
 		<>
 			{/* Editable label or icon */}
@@ -327,21 +368,11 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 
 			{isExpanded ? (
 				<div className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}>
-					<textarea
-						value={store === "Default text" ? "" : (store ?? "")}
-						onChange={handleStoreChange}
-						placeholder="Enter your content here…"
-						className={` nowheel h-32 resize-none overflow-y-auto rounded-md bg-background p-2 text-xs focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
-					/>
+					{ExpandedTextarea}
 				</div>
 			) : (
 				<div className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}>
-					<textarea
-						value={store === "Default text" ? "" : (store ?? "")}
-						onChange={handleStoreChange}
-						placeholder="..."
-						className={` nowheel m-4 h-8 translate-y-2 resize-none overflow-y-auto rounded-md p-1 text-center text-xs focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
-					/>
+					{CollapsedTextarea}
 				</div>
 			)}
 
@@ -365,10 +396,19 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 const CreateTextNodeWithDynamicSpec = (props: NodeProps) => {
 	const { nodeData } = useNodeData(props.id, props.data);
 
-	// Recompute spec only when the size keys change
-	const dynamicSpec = useMemo(
-		() => createDynamicSpec(nodeData as CreateTextData),
+	// Extract only size keys to keep spec stable while typing
+	const sizeKeys = useMemo(
+		() => ({
+			expandedSize: (nodeData as CreateTextData).expandedSize,
+			collapsedSize: (nodeData as CreateTextData).collapsedSize,
+		}),
 		[(nodeData as CreateTextData).expandedSize, (nodeData as CreateTextData).collapsedSize]
+	);
+
+	// Recompute spec only when size keys change (NOT when store/outputs change)
+	const dynamicSpec = useMemo(
+		() => createDynamicSpec({ ...sizeKeys, store: "Default text" } as CreateTextData),
+		[sizeKeys]
 	);
 
 	// Memoise the scaffolded component to keep focus

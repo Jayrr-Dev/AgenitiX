@@ -14,6 +14,7 @@
 
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
 import type { AgenNode } from "../../flow-engine/types/nodeData";
 import { type ControlField, NodeInspectorService } from "../services/NodeInspectorService";
 
@@ -130,18 +131,17 @@ const AppleTextarea: React.FC<ControlRendererProps> = ({
 			>
 				{field.label}
 			</label>
-			<textarea
+			<Textarea
 				id={textareaId}
 				value={String(value || "")}
 				onChange={(e) => onChange(e.target.value)}
 				placeholder={field.placeholder}
 				rows={field.ui?.rows || 3}
-				className={`w-full resize-none rounded-lg border bg-white px-3 py-2.5 text-sm transition-all duration-200 ease-out placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:bg-gray-800 dark:placeholder:text-gray-500 ${
+				className={`w-full resize-none px-3 py-2.5 text-sm ${
 					hasError
 						? "border-red-300 bg-red-50/50 dark:border-red-600 dark:bg-red-900/10"
 						: "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
-				}
-        `}
+				}`}
 			/>
 			{hasError && errorMessage && (
 				<p className="flex items-center gap-1 text-red-600 text-xs dark:text-red-400">
@@ -515,18 +515,17 @@ const AppleJsonEditor: React.FC<ControlRendererProps> = ({
 			>
 				{field.label}
 			</label>
-			<textarea
+			<Textarea
 				id={jsonEditorId}
 				value={displayValue}
 				onChange={(e) => handleJsonChange(e.target.value)}
 				placeholder={field.placeholder || '{"key": "value"}'}
 				rows={field.ui?.rows || 4}
-				className={`w-full resize-none rounded-lg border bg-white px-3 py-2.5 font-mono text-sm transition-all duration-200 ease-out placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:bg-gray-800 dark:placeholder:text-gray-500 ${
+				className={`w-full resize-none px-3 py-2.5 font-mono text-sm ${
 					hasError || jsonError
 						? "border-red-300 bg-red-50/50 dark:border-red-600 dark:bg-red-900/10"
 						: "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
-				}
-        `}
+				}`}
 			/>
 			{(hasError || jsonError) && (
 				<p className="flex items-center gap-1 text-red-600 text-xs dark:text-red-400">

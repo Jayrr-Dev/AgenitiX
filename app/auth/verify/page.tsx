@@ -3,7 +3,8 @@
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Loader2, Mail, XCircle } from "lucide-react";
+import { Loading } from "@/components/Loading";
+import { CheckCircle, Mail, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -113,13 +114,13 @@ export default function VerifyMagicLinkPage() {
 
 	const getStatusContent = () => {
 		switch (status) {
-			case "loading":
-				return {
-					icon: <Loader2 className="h-12 w-12 animate-spin text-blue-600" />,
-					title: "Verifying your account...",
-					description: "Please wait while we verify your magic link.",
-					showRetry: false,
-				};
+					case "loading":
+			return {
+				icon: <Loading showText={false} size="w-12 h-12" className="p-0" variant="border" />,
+				title: "Verifying your account...",
+				description: "Please wait while we verify your magic link.",
+				showRetry: false,
+			};
 
 			case "success":
 				return {

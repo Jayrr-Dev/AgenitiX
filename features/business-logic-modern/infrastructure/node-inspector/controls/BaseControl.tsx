@@ -12,6 +12,7 @@
 
 import type React from "react";
 import { useMemo } from "react";
+import { Textarea } from "@/components/ui/textarea";
 import type { NodeType } from "../../flow-engine/types/nodeData";
 import { getNodeMetadata } from "../../node-registry/nodespec-registry";
 
@@ -331,15 +332,13 @@ export const EnhancedTextarea: React.FC<EnhancedTextareaProps> = ({
 	const semanticClasses = useMemo(() => getSemanticClasses(nodeType), [nodeType]);
 
 	return (
-		<textarea
+		<Textarea
 			value={value}
 			onChange={(e) => onChange(e.target.value)}
 			placeholder={placeholder}
 			disabled={disabled}
 			rows={rows}
-			className={`resize-none rounded border bg-control-input px-2 py-1.5 text-control-input text-xs dark:bg-control-input-dark ${semanticClasses.border} placeholder-control-placeholder focus:border-control-input-focus focus:outline-none focus:ring-2 focus:ring-control-input-focus ${disabled ? "cursor-not-allowed opacity-50" : ""}
-        ${className}
-      `}
+			className={`resize-none px-2 py-1.5 text-xs ${semanticClasses.border} ${disabled ? "cursor-not-allowed opacity-50" : ""} ${className}`}
 		/>
 	);
 };

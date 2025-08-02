@@ -84,7 +84,8 @@ export const hasSpecificInputConnections = (
 export const getNodesWithRemovedInputs = (changes: EdgeChange[], edges: Edge[]): string[] => {
 	const removedEdges = changes
 		.filter((change) => change.type === "remove")
-		.map((change) => change.id);
+		.map((change) => (change as any).id)
+		.filter((id): id is string => id !== undefined);
 
 	if (removedEdges.length === 0) {
 		return [];

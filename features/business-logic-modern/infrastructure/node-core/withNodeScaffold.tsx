@@ -81,11 +81,13 @@ const NodeScaffoldWrapper = ({
 	const structuralClasses = [
 		// Base structural classes with modern border radius and transitions
 		"relative rounded-[12px] transition-all duration-300 ease-out",
+		// Base shadow effect that won't conflict with glow effects
+		!isDisabled && "shadow-lg",
 		// Injectable classes from tokens
 		wrapperClasses,
 		containerClasses,
 		borderClasses,
-		// Theme classes from parent (includes activation glow)
+		// Theme classes from parent (includes selection, hover, activation glow effects)
 		className,
 	]
 		.filter(Boolean)
@@ -114,9 +116,8 @@ const NodeScaffoldWrapper = ({
 			? `var(--node-global-disabled-gradient), var(--node-${categoryLower}-bg-gradient)`
 			: `var(--node-${categoryLower}-bg-gradient)`,
 		// Enhanced shadows for depth - dark mode gets layered shadows with inset highlights
-		boxShadow: isDisabled
-			? `var(--node-global-disabled-shadow), var(--node-${categoryLower}-modern-shadow)`
-			: `var(--node-${categoryLower}-modern-shadow)`,
+		// Note: boxShadow intentionally removed to allow CSS classes (selection glow) to take precedence
+		// Shadow effects are now handled entirely through CSS custom properties and classes
 		// Ensure proper layering
 		position: "relative",
 		// Modern smooth transitions for all properties
@@ -129,26 +130,28 @@ const NodeScaffoldWrapper = ({
 		pointerEvents: isDisabled ? "none" : "auto",
 	};
 
+	// Feature flag to control hover lift effect
+	const ENABLE_HOVER_LIFT = false; // Set to true to enable lift effect
+
 	return (
 		<div
 			className={structuralClasses}
 			style={completeStyle}
-			// Enhanced hover effects - only when not disabled, with dark mode support
+			// Enhanced hover effects - only when not disabled and feature flag is enabled
+			// Note: boxShadow effects removed to prevent conflicts with selection glow
 			onMouseEnter={
-				isDisabled
+				isDisabled || !ENABLE_HOVER_LIFT
 					? undefined
 					: (e) => {
 							const target = e.currentTarget;
-							target.style.boxShadow = `var(--node-${categoryLower}-modern-shadow-hover)`;
 							target.style.transform = "translateY(-2px) scale(1.01)";
 						}
 			}
 			onMouseLeave={
-				isDisabled
+				isDisabled || !ENABLE_HOVER_LIFT
 					? undefined
 					: (e) => {
 							const target = e.currentTarget;
-							target.style.boxShadow = `var(--node-${categoryLower}-modern-shadow)`;
 							target.style.transform = "translateY(0) scale(1)";
 						}
 			}
@@ -177,7 +180,9 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 		const handleOverrides = (props.data as any)?.handleOverrides;
 		
 		const handleKey = React.useMemo(() => {
-			return handleOverrides ? JSON.stringify(handleOverrides) : 'default';
+			// Avoid JSON.stringify on every render - just use array length and first item
+			if (!handleOverrides || !Array.isArray(handleOverrides)) return 'default';
+			return `${handleOverrides.length}-${handleOverrides[0]?.handleId || 'none'}`;
 		}, [handleOverrides]);
 
 		// Update ReactFlow's internal handle positions when overrides change
@@ -200,13 +205,13 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 		const nodeStyleClasses = useNodeStyleClasses(isSelected, isError, isActive);
 		const categoryTheme = useCategoryThemeWithSpec(spec.kind, spec);
 
-		// Build the complete className with theming
+		// Build the complete className with theming, basically combining all style classes
 		const themeClasses = React.useMemo(() => {
 			const baseClasses = [
 				nodeStyleClasses, // Includes hover, selection, error, and activation glow effects
 			];
 
-			// Apply category-based theming if available
+			// Apply category-based theming if available, basically the visual category styling
 			if (categoryTheme) {
 				baseClasses.push(
 					categoryTheme.background.light,
@@ -228,7 +233,11 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 		const style: React.CSSProperties = {
 			minWidth: typeof sizeConfig.width === "number" ? `${sizeConfig.width}px` : sizeConfig.width,
 			minHeight:
-				typeof sizeConfig.height === "number" ? `${sizeConfig.height}px` : sizeConfig.height,
+				typeof sizeConfig.minHeight === "number" 
+					? `${sizeConfig.minHeight}px` 
+					: typeof sizeConfig.height === "number" 
+						? `${sizeConfig.height}px` 
+						: sizeConfig.height,
 			width: typeof sizeConfig.width === "number" ? `${sizeConfig.width}px` : sizeConfig.width,
 			height:
 				sizeConfig.height === "auto"
@@ -242,21 +251,17 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 		const handlesByPosition = React.useMemo(() => {
 			const grouped: Record<string, typeof spec.handles> = {};
 			const allHandles = spec.handles || [];
-			const handleOverrides = (props.data as any)?.handleOverrides as Array<{
-				handleId: string;
-				position: "top" | "bottom" | "left" | "right";
-			}> | undefined;
 
-			// Create map for quick override lookup
+			// Create map for quick override lookup, basically a fast position finder
 			const overrideMap = new Map<string, string>();
 			if (handleOverrides) {
-				handleOverrides.forEach(override => {
+				handleOverrides.forEach((override: { handleId: string; position: string }) => {
 					overrideMap.set(override.handleId, override.position);
 				});
 			}
 
 			allHandles.forEach((handle) => {
-				// Use override position if available, otherwise use default
+				// Use override position if available, otherwise use default, basically the actual position to use
 				const pos = overrideMap.get(handle.id) || handle.position;
 				if (!grouped[pos]) {
 					grouped[pos] = [];
@@ -264,7 +269,7 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 				grouped[pos].push(handle);
 			});
 			return grouped;
-		}, [spec.handles, props.data]);
+		}, [spec.handles, handleOverrides]); // Only depend on handleOverrides, not entire props.data
 
 		// Inner component to throw inside ErrorBoundary, not outside
 		const MaybeError: React.FC = () => {
@@ -276,9 +281,17 @@ export function withNodeScaffold(spec: NodeSpec, Component: React.FC<NodeProps>)
 
 		// Initialize node memory if configured
 		React.useEffect(() => {
+			let hasMemory = false;
 			if (spec.memory) {
 				globalNodeMemoryManager.get(props.id, spec.memory);
+				hasMemory = true;
 			}
+
+			return () => {
+				if (hasMemory) {
+					globalNodeMemoryManager.destroy(props.id);
+				}
+			};
 		}, [props.id]);
 
 		// side-effect: run server actions once

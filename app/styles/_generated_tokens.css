@@ -64,10 +64,10 @@
   --node-global-modern-radius: 12px;
   --node-global-modern-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   --node-global-modern-glow: 0 0 24px rgba(255, 255, 255, 0.08);
-  --node-global-disabled-opacity: 0.6;
-  --node-global-disabled-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  --node-global-disabled-opacity: 0.90;
+  --node-global-disabled-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
   --node-global-disabled-gradient: linear-gradient(135deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.02) 100%);
-  --node-global-dark-border-glow: 0 0 8px rgba(255, 255, 255, 0.3);
+  --node-global-dark-border-glow: 0 0 4px rgba(255, 255, 255, 0.3);
   --node-create-bg: hsla(140, 80%, 40%, 1);
   --node-create-bg-gradient: linear-gradient(135deg, hsla(140, 80%, 45%, 1) 0%, hsla(140, 85%, 35%, 1) 100%);
   --node-create-border: hsla(140, 100%, 20%, 1);
@@ -102,7 +102,7 @@
   --node-trigger-bg-gradient: linear-gradient(135deg, hsla(45, 75%, 88%, 1) 0%, hsla(45, 70%, 78%, 1) 100%);
   --node-trigger-border: hsla(45, 72%, 40%, 1);
   --node-trigger-border-hover: hsla(45, 72%, 30%, 1);
-  --node-trigger-border-width: 0;
+  --node-trigger-border-width: 2px;
   --node-trigger-text: hsla(0, 0%, 15%, 1);
   --node-trigger-text-secondary: hsla(0, 0%, 25%, 1);
   --node-trigger-bg-hover: hsla(45, 72%, 80%, 1);
@@ -117,7 +117,7 @@
   --node-test-bg-gradient: linear-gradient(135deg, hsla(0, 75%, 88%, 1) 0%, hsla(0, 70%, 78%, 1) 100%);
   --node-test-border: hsla(0, 72%, 40%, 1);
   --node-test-border-hover: hsla(0, 72%, 30%, 1);
-  --node-test-border-width: 0;
+  --node-test-border-width: 2px;
   --node-test-text: hsla(0, 0%, 15%, 1);
   --node-test-text-secondary: hsla(0, 0%, 25%, 1);
   --node-test-bg-hover: hsla(0, 72%, 80%, 1);
@@ -132,7 +132,7 @@
   --node-cycle-bg-gradient: linear-gradient(135deg, hsla(280, 75%, 88%, 1) 0%, hsla(280, 70%, 78%, 1) 100%);
   --node-cycle-border: hsla(280, 72%, 40%, 1);
   --node-cycle-border-hover: hsla(280, 72%, 30%, 1);
-  --node-cycle-border-width: 0;
+  --node-cycle-border-width: 2px;
   --node-cycle-text: hsla(0, 0%, 15%, 1);
   --node-cycle-text-secondary: hsla(0, 0%, 25%, 1);
   --node-cycle-bg-hover: hsla(280, 72%, 80%, 1);
@@ -147,7 +147,7 @@
   --node-email-bg-gradient: linear-gradient(135deg, hsla(195, 75%, 88%, 1) 0%, hsla(195, 70%, 78%, 1) 100%);
   --node-email-border: hsla(195, 72%, 40%, 1);
   --node-email-border-hover: hsla(195, 72%, 30%, 1);
-  --node-email-border-width: 0;
+  --node-email-border-width: 2px;
   --node-email-text: hsla(0, 0%, 15%, 1);
   --node-email-text-secondary: hsla(0, 0%, 25%, 1);
   --node-email-bg-hover: hsla(195, 72%, 80%, 1);

@@ -2,6 +2,8 @@ export { default as flowConditional } from "./flow/flowConditional.node";
 export { default as viewBoolean } from "./view/viewBoolean.node";
 export { default as triggerPulse } from "./trigger/triggerPulse.node";
 export { default as aiTools } from "./ai/aiTools.node";
+export { default as storeLocal } from "./store/storeLocal.node";
+export { default as aiManager } from "./ai/aiManager.node";
 // Node exports will be added here automatically by Plop
 export { default as createText } from "./create/createText.node";
 export { default as aiAgent } from "./ai/aiAgent.node";
@@ -9,6 +11,8 @@ export { default as storeInMemory } from "./create/storeInMemory.node";
 export { default as emailAccount } from "./email/emailAccount.node";
 export { default as emailReader } from "./email/emailReader.node";
 export { default as emailCreator } from "./email/emailCreator.node";
+export { default as emailSender } from "./email/emailSender.node";
+export { default as emailReplier } from "./email/emailReplier.node";
 export { default as testNode } from "./test/testNode.node";
 export { default as triggerToggle } from "./trigger/triggerToggle.node";
 export { default as viewText } from "./view/viewText.node";

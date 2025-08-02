@@ -25,7 +25,6 @@ import { UndoRedoProvider, useUndoRedo } from "../action-toolbar/history/undo-re
 import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
-import { useLoadCanvas } from "./hooks/useLoadCanvas";
 import { useMultiSelectionCopyPaste } from "./hooks/useMultiSelectionCopyPaste";
 
 // Import the new NodeSpec registry
@@ -157,8 +156,7 @@ const FlowEditorInternal = () => {
 	const flowWrapperRef = useRef<HTMLDivElement>(null);
 	const { screenToFlowPosition } = useReactFlow();
 
-	// Load canvas state from Convex
-	const canvasLoader = useLoadCanvas();
+	// Canvas loading is now handled at page level to prevent double loading screens
 
 	// Initialize theme system on mount
 	useEffect(() => {
@@ -429,37 +427,7 @@ const FlowEditorInternal = () => {
 		[storeOnEdgesChange]
 	);
 
-	// Show loading state while canvas is being loaded
-	if (canvasLoader.isLoading) {
-		return (
-			<div className="flex h-screen w-screen items-center justify-center bg-background">
-				<div className="text-center">
-					<div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-primary border-b-2" />
-					<p className="text-muted-foreground">Loading canvas...</p>
-				</div>
-			</div>
-		);
-	}
-
-	// Show error state if canvas loading failed
-	if (canvasLoader.error) {
-		return (
-			<div className="flex h-screen w-screen items-center justify-center bg-background">
-				<div className="mx-auto max-w-md px-4 text-center">
-					<div className="mb-4 text-4xl text-destructive">⚠️</div>
-					<h2 className="mb-2 font-bold text-foreground text-xl">Failed to Load Canvas</h2>
-					<p className="mb-4 text-muted-foreground">{canvasLoader.error}</p>
-					<button
-						onClick={() => window.location.reload()}
-						className="rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
-						type="button"
-					>
-						Retry
-					</button>
-				</div>
-			</div>
-		);
-	}
+	// Canvas loading and error handling moved to page level to prevent double loading screens
 
 	return (
 		<div className="h-screen w-screen" style={{ height: "100vh", width: "100vw" }}>

@@ -53,6 +53,12 @@ export function useNodeFeatureFlag(featureFlag?: FeatureFlagConfig) {
 					}
 
 					const data = await response.json();
+					
+					// Handle warning messages from API
+					if (data.warning) {
+						console.warn("Feature flag warning:", data.warning);
+					}
+					
 					setIsEnabled(data.enabled);
 				} else {
 					// Server-side: import and evaluate flag directly

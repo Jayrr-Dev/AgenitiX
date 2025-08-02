@@ -1,20 +1,110 @@
 /**
- * ICON UTILITIES - Lucide Icons from react-icons/lu
+ * ICON UTILITIES - Optimized Lucide Icons from react-icons/lu
  *
- * • Provides dynamic icon rendering for NodeSpec.icon field
- * • Supports all Lucide icons from react-icons/lu
- * • Fallback handling for missing icons
- * • Consistent sizing and styling
+ * Performance optimizations:
+ * • Memoized icon component cache to prevent React.createElement calls
+ * • Pre-rendered component cache for frequently used icons
+ * • Cached icon lookups with Map for O(1) performance
+ * • Stable component references to prevent re-renders
+ * • Early returns and validation for better performance
  *
- * Keywords: icon-rendering, lucide, react-icons, dynamic-icons, fallback
+ * Keywords: icon-rendering, lucide, react-icons, dynamic-icons, fallback, performance, memoization
  */
 
-import React from "react";
+import React, { memo, useMemo } from "react";
 import type { IconType } from "react-icons";
 import * as LuIcons from "react-icons/lu";
 
+// ============================================================================
+// PERFORMANCE CACHES
+// ============================================================================
+
+// Icon component cache for memoized components, basically prevent recreation of same icon components
+const ICON_COMPONENT_CACHE = new Map<string, React.ComponentType<{ className?: string; size?: number }>>();
+
+// Icon lookup cache for faster icon resolution, basically O(1) lookups instead of object property access
+const ICON_LOOKUP_CACHE = new Map<string, IconType>();
+
+// Popular icons cache - pre-rendered components for most frequently used icons
+const POPULAR_ICONS_CACHE = new Map<string, React.ComponentType<{ className?: string; size?: number }>>();
+
+// ============================================================================
+// POPULAR ICONS INITIALIZATION
+// ============================================================================
+
+// Initialize popular icons cache, basically pre-create components for most used icons
+const initializePopularIcons = () => {
+	const popularIconNames = [
+		'LuFileText', 'LuDatabase', 'LuMail', 'LuUser', 'LuSettings', 'LuPlus', 'LuMinus',
+		'LuEdit', 'LuTrash', 'LuSearch', 'LuCheck', 'LuX', 'LuCircle', 'LuSquare',
+		'LuTriangle', 'LuStar', 'LuHome', 'LuFolder', 'LuFile', 'LuDownload', 'LuUpload',
+		'LuRefreshCw', 'LuAlertCircle', 'LuInfo', 'LuCode', 'LuWrench', 'LuHeart',
+		// Handle type icons - frequently used in TypeSafeHandle components
+		'LuType', 'LuHash', 'LuBraces', 'LuBrackets'
+	];
+	
+	popularIconNames.forEach(iconName => {
+		const IconComponent = (LuIcons as Record<string, IconType>)[iconName];
+		if (IconComponent) {
+					const MemoizedIcon = memo<{ className?: string; size?: number }>(({ className = "", size = 16 }) => 
+			React.createElement(IconComponent as React.ComponentType<any>, { className, size })
+		);
+			MemoizedIcon.displayName = `Icon_${iconName}`;
+			POPULAR_ICONS_CACHE.set(iconName, MemoizedIcon);
+			ICON_LOOKUP_CACHE.set(iconName, IconComponent);
+		}
+	});
+};
+
+// Initialize on module load
+initializePopularIcons();
+
+// ============================================================================
+// OPTIMIZED ICON UTILITIES
+// ============================================================================
+
 /**
- * Renders a Lucide icon based on the icon name from NodeSpec
+ * Gets a cached icon component with memoization, basically prevent component recreation
+ */
+const getCachedIconComponent = (iconName: string): React.ComponentType<{ className?: string; size?: number }> | null => {
+	// Check popular icons cache first
+	const popularIcon = POPULAR_ICONS_CACHE.get(iconName);
+	if (popularIcon) {
+		return popularIcon;
+	}
+	
+	// Check general component cache
+	let cachedComponent = ICON_COMPONENT_CACHE.get(iconName);
+	if (cachedComponent) {
+		return cachedComponent;
+	}
+	
+	// Get icon from lookup cache or LuIcons
+	let IconComponent = ICON_LOOKUP_CACHE.get(iconName);
+	if (!IconComponent) {
+		IconComponent = (LuIcons as Record<string, IconType>)[iconName];
+		if (IconComponent) {
+			ICON_LOOKUP_CACHE.set(iconName, IconComponent);
+		}
+	}
+	
+	if (!IconComponent) {
+		return null;
+	}
+	
+	// Create memoized component
+	const MemoizedIcon = memo<{ className?: string; size?: number }>(({ className = "", size = 16 }) => 
+		React.createElement(IconComponent! as React.ComponentType<any>, { className, size })
+	);
+	MemoizedIcon.displayName = `Icon_${iconName}`;
+	
+	// Cache the component
+	ICON_COMPONENT_CACHE.set(iconName, MemoizedIcon);
+	return MemoizedIcon;
+};
+
+/**
+ * Optimized Lucide icon renderer with caching and memoization
  * @param iconName - The icon name (e.g., "LuFileText")
  * @param className - Optional CSS classes for styling
  * @param size - Icon size (default: 16)
@@ -29,18 +119,43 @@ export function renderLucideIcon(
 		return null;
 	}
 
-	// Check if the icon exists in the LuIcons object
-	const IconComponent = (LuIcons as Record<string, IconType>)[iconName];
-
-	if (!IconComponent) {
+	// Get cached component
+	const CachedIconComponent = getCachedIconComponent(iconName);
+	
+	if (!CachedIconComponent) {
 		console.warn(`⚠️ Icon "${iconName}" not found in react-icons/lu. Using fallback.`);
-		// Return a fallback icon (LuCircle)
-		const FallbackIcon = LuIcons.LuCircle;
-		return React.createElement(FallbackIcon, { className, size });
+		// Return cached fallback icon
+		const FallbackComponent = getCachedIconComponent('LuCircle');
+		return FallbackComponent ? React.createElement(FallbackComponent, { className, size }) : null;
 	}
 
-	return React.createElement(IconComponent, { className, size });
+	return React.createElement(CachedIconComponent, { className, size });
 }
+
+/**
+ * High-performance React icon component with built-in memoization
+ * Use this instead of renderLucideIcon for even better performance
+ */
+export interface LucideIconProps {
+	name: string;
+	className?: string;
+	size?: number;
+}
+
+export const LucideIcon = memo<LucideIconProps>(({ name, className = "", size = 16 }) => {
+	// Use useMemo to cache the component lookup, basically prevent re-lookup on re-renders
+	const IconComponent = useMemo(() => getCachedIconComponent(name), [name]);
+	
+	if (!IconComponent) {
+		console.warn(`⚠️ Icon "${name}" not found in react-icons/lu. Using fallback.`);
+		const FallbackComponent = getCachedIconComponent('LuCircle');
+		return FallbackComponent ? React.createElement(FallbackComponent, { className, size }) : null;
+	}
+	
+	return React.createElement(IconComponent, { className, size });
+});
+
+LucideIcon.displayName = 'LucideIcon';
 
 /**
  * Validates if an icon name exists in the Lucide icon set

@@ -19,9 +19,32 @@ import {
 	useNodeErrors,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import { getNodeOutput } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/outputUtils";
-import { ChevronDown, Copy, Edit3, PanelLeftClose, PanelLeftOpen, Trash2 } from "lucide-react";
-import React, { useCallback, useMemo, useState } from "react";
+import { ChevronDown, Copy, Edit3, GripVertical, PanelLeftClose, PanelLeftOpen, Settings, Trash2 } from "lucide-react";
+import React, { useCallback, useMemo, useState, memo } from "react";
 import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
+
+// DnD Kit imports for drag and drop functionality, basically sortable card reordering
+import {
+	DndContext,
+	DragEndEvent,
+	DragOverlay,
+	DragStartEvent,
+	MouseSensor,
+	TouchSensor,
+	closestCenter,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
+import {
+	SortableContext,
+	arrayMove,
+	verticalListSortingStrategy,
+	rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import {
+	useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import EditableNodeDescription from "@/components/nodes/EditableNodeDescription";
 import EditableNodeLabel from "@/components/nodes/EditableNodeLabel";
@@ -39,6 +62,18 @@ import { HandlePositionEditor } from "./components/HandlePositionEditor";
 import { NodeControls } from "./components/NodeControls";
 import { NodeOutput } from "./components/NodeOutput";
 import { SizeControls } from "./components/SizeControls";
+// Import card components with explicit naming
+import NodeInformation from "./components/cards/NodeInformation";
+
+import NodeDataCard from "./components/cards/NodeData";
+import NodeSizeCard from "./components/cards/NodeSize";
+import NodeOutputCard from "./components/cards/NodeOutput";
+import NodeControlsCard from "./components/cards/NodeControls";
+import NodeHandlesCard from "./components/cards/NodeHandles";
+import NodeConnectionsCard from "./components/cards/NodeConnections";
+import { useInspectorState } from "./hooks/useInspectorState";
+import { useInspectorSettings, type CardType } from "./hooks/useInspectorSettings";
+import { InspectorSettingsDropdown } from "./components/InspectorSettingsDropdown";
 
 // =====================================================================
 // STYLING CONSTANTS - Thin, minimalistic design with original colors
@@ -132,26 +167,287 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 			</button>
 			<div
 				className={`overflow-hidden transition-all duration-300 ease-in-out ${
-					isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+					isOpen ? "max-h-none opacity-100" : "max-h-0 opacity-0"
 				}`}
 			>
-				<div className="max-h-[550px] overflow-y-auto rounded-b-lg bg-card p-3">{children}</div>
+				<div className="overflow-y-auto rounded-b-lg bg-card p-3">{children}</div>
 			</div>
 		</div>
 	);
 };
 
 // =====================================================================
-// COMPONENT IMPLEMENTATION
+// SORTABLE ACCORDION COMPONENT
+// =====================================================================
+
+interface SortableAccordionSectionProps extends AccordionSectionProps {
+	id: CardType;
+	isDragging?: boolean;
+}
+
+const SortableAccordionSection: React.FC<SortableAccordionSectionProps> = ({
+	id,
+	title,
+	isOpen,
+	onToggle,
+	children,
+	isDragging = false,
+}) => {
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging: isSortableDragging,
+	} = useSortable({ id });
+
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+		opacity: isSortableDragging ? 0.5 : 1,
+	};
+
+	return (
+		<div ref={setNodeRef} style={style} className={`${STYLING_CARD_SECTION} ${isDragging ? 'shadow-lg' : ''}`}>
+			<div className="flex w-full items-center rounded-t-lg border-border/30 border-b bg-muted/30">
+				{/* Drag Handle */}
+				<div
+					{...attributes}
+					{...listeners}
+					className="flex items-center justify-center px-2 py-2 cursor-grab active:cursor-grabbing hover:bg-muted/50 transition-colors duration-200"
+					title="Drag to reorder"
+				>
+					<GripVertical className="h-3 w-3 text-muted-foreground/60" />
+				</div>
+				
+				{/* Accordion Toggle Button */}
+				<button
+					onClick={onToggle}
+					className="flex flex-1 items-center justify-between px-3 py-0 transition-colors duration-200 hover:bg-muted/50"
+					type="button"
+				>
+					<h4 className="mb-1 font-medium text-muted-foreground text-xs">{title}</h4>
+					<ChevronDown
+						className={`h-3 w-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+					/>
+				</button>
+			</div>
+			<div
+				className={`overflow-hidden transition-all duration-300 ease-in-out ${
+					isOpen ? "max-h-none opacity-100" : "max-h-0 opacity-0"
+				}`}
+			>
+				<div className="overflow-y-auto rounded-b-lg bg-card p-3">{children}</div>
+			</div>
+		</div>
+	);
+};
+
+// =====================================================================
+// CARD RENDERING HELPERS
+// =====================================================================
+
+interface CardRenderProps {
+	selectedNode: any;
+	nodeInfo: any;
+	nodeConfig: any;
+	output: any;
+	connections: any;
+	errors: any[];
+	cardVisibility: any;
+	accordionState: any;
+	toggleAccordion: (section: any) => void;
+	updateNodeData: any;
+	handleUpdateNodeId: any;
+	handleUpdateNodeData: any;
+	logNodeError: any;
+	handleClearErrors: any;
+	nodes: any[];
+	edges: any[];
+	viewMode: "bottom" | "side";
+	hasRightColumn: boolean;
+}
+
+/**
+ * Renders a single card based on its type, basically creates the appropriate card component
+ */
+const renderCard = (cardType: CardType, props: CardRenderProps): React.ReactNode | null => {
+	const {
+		selectedNode,
+		nodeInfo,
+		nodeConfig,
+		output,
+		connections,
+		errors,
+		cardVisibility,
+		accordionState,
+		toggleAccordion,
+		updateNodeData,
+		handleUpdateNodeId,
+		handleUpdateNodeData,
+		logNodeError,
+		handleClearErrors,
+		nodes,
+		edges,
+		viewMode,
+		hasRightColumn,
+	} = props;
+
+	// Check if card should be visible, basically filter out hidden cards
+	if (!cardVisibility[cardType]) {
+		return null;
+	}
+
+	// Special conditions for certain cards, basically handle conditional rendering
+	switch (cardType) {
+		case 'nodeInfo':
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Node Information"
+					isOpen={accordionState.nodeInfo}
+					onToggle={() => toggleAccordion("nodeInfo")}
+				>
+					<NodeInformation
+						selectedNode={selectedNode}
+						nodeInfo={nodeInfo}
+						updateNodeData={updateNodeData}
+						onUpdateNodeId={handleUpdateNodeId}
+					/>
+				</SortableAccordionSection>
+			);
+
+		case 'nodeData':
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Node Data"
+					isOpen={accordionState.nodeData}
+					onToggle={() => toggleAccordion("nodeData")}
+				>
+					<NodeDataCard
+						selectedNode={selectedNode}
+						nodeInfo={nodeInfo}
+						updateNodeData={handleUpdateNodeData}
+					/>
+				</SortableAccordionSection>
+			);
+
+		case 'output':
+			if (!(nodeConfig?.hasOutput || viewMode === "side")) return null;
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Output"
+					isOpen={accordionState.output}
+					onToggle={() => toggleAccordion("output")}
+				>
+					<NodeOutputCard output={output} nodeType={selectedNode.type} />
+				</SortableAccordionSection>
+			);
+
+		case 'controls':
+			if (!(nodeInfo.hasControls || viewMode === "side")) return null;
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Controls"
+					isOpen={accordionState.controls}
+					onToggle={() => toggleAccordion("controls")}
+				>
+					<NodeControlsCard
+						selectedNode={selectedNode}
+						updateNodeData={updateNodeData}
+						onLogError={logNodeError}
+					/>
+				</SortableAccordionSection>
+			);
+
+		case 'handles':
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Handles"
+					isOpen={accordionState.handles}
+					onToggle={() => toggleAccordion("handles")}
+				>
+					<NodeHandlesCard
+						selectedNode={selectedNode}
+						nodeInfo={nodeInfo}
+						edges={edges}
+						updateNodeData={updateNodeData}
+					/>
+				</SortableAccordionSection>
+			);
+
+		case 'connections':
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Connections"
+					isOpen={accordionState.connections}
+					onToggle={() => toggleAccordion("connections")}
+				>
+					<NodeConnectionsCard
+						selectedNode={selectedNode}
+						nodes={nodes}
+						edges={edges}
+					/>
+				</SortableAccordionSection>
+			);
+
+		case 'size':
+			if (!(selectedNode.data && (selectedNode.data as any).expandedSize !== undefined)) return null;
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Size"
+					isOpen={accordionState.size}
+					onToggle={() => toggleAccordion("size")}
+				>
+					<NodeSizeCard selectedNode={selectedNode} updateNodeData={updateNodeData} />
+				</SortableAccordionSection>
+			);
+
+		case 'errors':
+			if (errors.length === 0) return null;
+			return (
+				<SortableAccordionSection
+					key={cardType}
+					id={cardType}
+					title="Error Log"
+					isOpen={accordionState.errors}
+					onToggle={() => toggleAccordion("errors")}
+				>
+					<ErrorLog errors={errors} onClearErrors={handleClearErrors} />
+				</SortableAccordionSection>
+			);
+
+		default:
+			return null;
+	}
+};
+
+// =====================================================================
+// OPTIMIZED SHELL COMPONENT - Handles store subscriptions only
 // =====================================================================
 
 interface NodeInspectorProps {
 	viewMode?: "bottom" | "side";
 }
 
-const NodeInspector = React.memo(function NodeInspector({
+// Shell component that handles store subscriptions and passes plain data
+const NodeInspectorShell: React.FC<NodeInspectorProps> = ({
 	viewMode = "bottom",
-}: NodeInspectorProps) {
+}) => {
 	const {
 		nodes,
 		edges,
@@ -170,6 +466,46 @@ const NodeInspector = React.memo(function NodeInspector({
 		addNode,
 		selectNode,
 	} = useFlowStore();
+
+	// Settings management with persistence, basically card visibility controls
+	const { 
+		settings: cardVisibilityWithOrder, 
+		toggleSetting, 
+		updateCardOrder,
+		resetToDefaults,
+		isLoaded: settingsLoaded 
+	} = useInspectorSettings();
+
+	// Extract card visibility and order, basically separate visibility state from ordering
+	const cardVisibility = {
+		nodeInfo: cardVisibilityWithOrder.nodeInfo,
+		nodeData: cardVisibilityWithOrder.nodeData,
+		output: cardVisibilityWithOrder.output,
+		controls: cardVisibilityWithOrder.controls,
+		handles: cardVisibilityWithOrder.handles,
+		connections: cardVisibilityWithOrder.connections,
+		errors: cardVisibilityWithOrder.errors,
+		size: cardVisibilityWithOrder.size,
+	};
+	const cardOrder = cardVisibilityWithOrder.cardOrder;
+
+	// Drag and drop state management, basically track active drag item
+	const [activeId, setActiveId] = useState<CardType | null>(null);
+
+	// DnD sensors configuration, basically define how drag interactions work
+	const sensors = useSensors(
+		useSensor(MouseSensor, {
+			activationConstraint: {
+				distance: 8, // Require 8px movement before drag starts, basically prevent accidental drags
+			},
+		}),
+		useSensor(TouchSensor, {
+			activationConstraint: {
+				delay: 250,
+				tolerance: 8,
+			},
+		})
+	);
 
 	// Accordion state management
 	const [accordionState, setAccordionState] = useState({
@@ -191,12 +527,251 @@ const NodeInspector = React.memo(function NodeInspector({
 		}));
 	};
 
+	// Drag and drop event handlers, basically manage card reordering
+	const handleDragStart = (event: DragStartEvent) => {
+		setActiveId(event.active.id as CardType);
+	};
+
+	const handleDragEnd = (event: DragEndEvent) => {
+		const { active, over } = event;
+		
+		if (over && active.id !== over.id) {
+			const oldIndex = cardOrder.indexOf(active.id as CardType);
+			const newIndex = cardOrder.indexOf(over.id as CardType);
+			
+			if (oldIndex !== -1 && newIndex !== -1) {
+				const newOrder = arrayMove(cardOrder, oldIndex, newIndex);
+				updateCardOrder(newOrder);
+			}
+		}
+		
+		setActiveId(null);
+	};
+
 	// Get theme for node inspector
 	const _theme = useComponentTheme("nodeInspector");
 
-	// Get selected items
-	const selectedNode = selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) || null : null;
-	const selectedEdge = selectedEdgeId ? edges.find((e) => e.id === selectedEdgeId) || null : null;
+	// Get selected items - memoized to prevent unnecessary recalculations
+	const selectedNode = useMemo(() => {
+		return selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) || null : null;
+	}, [selectedNodeId, nodes]);
+	
+	const selectedEdge = useMemo(() => {
+		return selectedEdgeId ? edges.find((e) => e.id === selectedEdgeId) || null : null;
+	}, [selectedEdgeId, edges]);
+
+	// Pass stable props to the content component to avoid re-renders - MUST be before early returns to avoid conditional hooks
+	const shellProps = useMemo(() => ({
+		selectedNode,
+		selectedEdge,
+		nodes,
+		edges,
+		viewMode,
+		inspectorLocked,
+		inspectorViewMode,
+		setInspectorLocked,
+		toggleInspectorViewMode,
+		updateNodeData,
+		updateNodeId,
+		logNodeError,
+		clearNodeErrors,
+		removeNode,
+		removeEdge,
+		addNode,
+		selectNode,
+	}), [
+		selectedNode,
+		selectedEdge,
+		nodes,
+		edges,
+		viewMode,
+		inspectorLocked,
+		inspectorViewMode,
+		setInspectorLocked,
+		toggleInspectorViewMode,
+		updateNodeData,
+		updateNodeId,
+		logNodeError,
+		clearNodeErrors,
+		removeNode,
+		removeEdge,
+		addNode,
+		selectNode,
+	]);
+
+	// Early return for locked state
+	if (inspectorLocked) {
+		return (
+			<div
+				className={`${
+					viewMode === "side"
+						? "flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card shadow-lg"
+						: STYLING_CONTAINER_LOCKED
+				}`}
+			>
+				<button
+					type="button"
+					aria-label={DESIGN_CONFIG.content.aria.unlockInspector}
+					title={DESIGN_CONFIG.content.tooltips.unlockInspector}
+					onClick={() => setInspectorLocked(false)}
+					className={STYLING_BUTTON_UNLOCK_LARGE}
+				>
+					{React.createElement(FaLock as React.ComponentType<any>, { className: STYLING_ICON_STATE_LARGE })}
+				</button>
+			</div>
+		);
+	}
+
+	// Early return for no node selected in side mode
+	if (!selectedNode && viewMode === "side") {
+		return (
+			<div className="flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card shadow-lg">
+				<div className="text-muted-foreground">
+					{React.createElement(FaSearch as React.ComponentType<any>, { className: "h-4 w-4" })}
+				</div>
+			</div>
+		);
+	}
+
+	return <NodeInspectorContent {...shellProps} />;
+};
+
+// =====================================================================
+// MEMOIZED CONTENT COMPONENT - Pure presentation layer
+// =====================================================================
+
+interface NodeInspectorContentProps {
+	selectedNode: any;
+	selectedEdge: any;
+	nodes: any[];
+	edges: any[];
+	viewMode: "bottom" | "side";
+	inspectorLocked: boolean;
+	inspectorViewMode: "bottom" | "side";
+	setInspectorLocked: (locked: boolean) => void;
+	toggleInspectorViewMode: () => void;
+	updateNodeData: any;
+	updateNodeId: any;
+	logNodeError: any;
+	clearNodeErrors: any;
+	removeNode: any;
+	removeEdge: any;
+	addNode: any;
+	selectNode: any;
+}
+
+const NodeInspectorContent = memo<NodeInspectorContentProps>(({
+	selectedNode,
+	selectedEdge,
+	nodes,
+	edges,
+	viewMode,
+	inspectorLocked,
+	inspectorViewMode,
+	setInspectorLocked,
+	toggleInspectorViewMode,
+	updateNodeData,
+	updateNodeId,
+	logNodeError,
+	clearNodeErrors,
+	removeNode,
+	removeEdge,
+	addNode,
+	selectNode,
+}) => {
+	// Settings management with persistence, basically card visibility controls
+	const { 
+		settings: cardVisibilityWithOrder, 
+		toggleSetting, 
+		updateCardOrder,
+		resetToDefaults,
+		isLoaded: settingsLoaded 
+	} = useInspectorSettings();
+
+	// Optimized card visibility extraction with selective dependency tracking, basically avoid recreating object unless individual properties change
+	const cardVisibility = useMemo(() => ({
+		nodeInfo: cardVisibilityWithOrder.nodeInfo,
+		nodeData: cardVisibilityWithOrder.nodeData,
+		output: cardVisibilityWithOrder.output,
+		controls: cardVisibilityWithOrder.controls,
+		handles: cardVisibilityWithOrder.handles,
+		connections: cardVisibilityWithOrder.connections,
+		errors: cardVisibilityWithOrder.errors,
+		size: cardVisibilityWithOrder.size,
+	}), [
+		cardVisibilityWithOrder.nodeInfo,
+		cardVisibilityWithOrder.nodeData,
+		cardVisibilityWithOrder.output,
+		cardVisibilityWithOrder.controls,
+		cardVisibilityWithOrder.handles,
+		cardVisibilityWithOrder.connections,
+		cardVisibilityWithOrder.errors,
+		cardVisibilityWithOrder.size,
+	]);
+	
+	const cardOrder = cardVisibilityWithOrder.cardOrder;
+
+	// Drag and drop state management, basically track active drag item
+	const [activeId, setActiveId] = useState<CardType | null>(null);
+
+	// DnD sensors configuration, basically define how drag interactions work
+	const sensors = useSensors(
+		useSensor(MouseSensor, {
+			activationConstraint: {
+				distance: 8, // Require 8px movement before drag starts, basically prevent accidental drags
+			},
+		}),
+		useSensor(TouchSensor, {
+			activationConstraint: {
+				delay: 250,
+				tolerance: 8,
+			},
+		})
+	);
+
+	// Accordion state management - moved to component level to avoid context re-creation
+	const [accordionState, setAccordionState] = useState({
+		nodeInfo: true,
+		description: true,
+		handles: true,
+		nodeData: true,
+		output: true,
+		controls: true,
+		connections: true,
+		errors: true,
+		size: true,
+	});
+
+	const toggleAccordion = useCallback((section: keyof typeof accordionState) => {
+		setAccordionState((prev) => ({
+			...prev,
+			[section]: !prev[section],
+		}));
+	}, []);
+
+	// Drag and drop event handlers, basically manage card reordering
+	const handleDragStart = useCallback((event: DragStartEvent) => {
+		setActiveId(event.active.id as CardType);
+	}, []);
+
+	const handleDragEnd = useCallback((event: DragEndEvent) => {
+		const { active, over } = event;
+		
+		if (over && active.id !== over.id) {
+			const oldIndex = cardOrder.indexOf(active.id as CardType);
+			const newIndex = cardOrder.indexOf(over.id as CardType);
+			
+			if (oldIndex !== -1 && newIndex !== -1) {
+				const newOrder = arrayMove(cardOrder, oldIndex, newIndex);
+				updateCardOrder(newOrder);
+			}
+		}
+		
+		setActiveId(null);
+	}, [cardOrder, updateCardOrder]);
+
+	// Get theme for node inspector
+	const _theme = useComponentTheme("nodeInspector");
 
 	// Get node category for display
 	const nodeCategory = useMemo(() => {
@@ -209,52 +784,54 @@ const NodeInspector = React.memo(function NodeInspector({
 	}, [selectedNode]);
 
 	// Always call useNodeErrors to avoid conditional hook usage
-	const errors = useNodeErrors(selectedNodeId);
+	const errors = useNodeErrors(selectedNode?.id || null);
 
-	// Get output for selected node
+	// Optimized output computation with reduced dependency scope, basically only recalculate when relevant data changes
+	const selectedNodeId = selectedNode?.id;
 	const output = useMemo(() => {
-		if (!selectedNode) {
+		if (!selectedNodeId) {
 			return null;
 		}
 		// Get the most up-to-date node data by finding it again
-		const currentNode = nodes.find((n) => n.id === selectedNode.id);
+		const currentNode = nodes.find((n) => n.id === selectedNodeId);
 		if (!currentNode) {
 			return null;
 		}
 		const result = getNodeOutput(currentNode, nodes, edges);
 		return result;
-	}, [selectedNode?.id, nodes, edges]);
+	}, [selectedNodeId, nodes, edges]);
 
-	// Get connections for selected node
+	// Optimized connections computation with early returns, basically minimize expensive operations when node unchanged
 	const connections = useMemo(() => {
-		if (!selectedNode) {
+		if (!selectedNodeId) {
 			return { incoming: [], outgoing: [] };
 		}
 
-		const incoming = edges
-			.filter((edge) => edge.target === selectedNode.id)
-			.map((edge) => {
+		// Use more efficient filtering approach
+		const incoming = [];
+		const outgoing = [];
+		
+		// Single pass through edges, basically avoid double iteration
+		for (const edge of edges) {
+			if (edge.target === selectedNodeId) {
 				const sourceNode = nodes.find((n) => n.id === edge.source);
-				return {
+				incoming.push({
 					edge,
 					sourceNode,
 					sourceOutput: sourceNode ? getNodeOutput(sourceNode, nodes, edges) : null,
-				};
-			});
-
-		const outgoing = edges
-			.filter((edge) => edge.source === selectedNode.id)
-			.map((edge) => {
+				});
+			} else if (edge.source === selectedNodeId) {
 				const targetNode = nodes.find((n) => n.id === edge.target);
-				return {
+				outgoing.push({
 					edge,
 					targetNode,
 					targetInput: targetNode ? getNodeOutput(targetNode, nodes, edges) : null,
-				};
-			});
+				});
+			}
+		}
 
 		return { incoming, outgoing };
-	}, [selectedNode, nodes, edges]);
+	}, [selectedNodeId, nodes, edges]);
 
 	const nodeInfo = useMemo(() => {
 		if (!selectedNode) {
@@ -321,10 +898,10 @@ const NodeInspector = React.memo(function NodeInspector({
 	);
 
 	const handleClearErrors = useCallback(() => {
-		if (selectedNodeId) {
-			clearNodeErrors(selectedNodeId);
+		if (selectedNode?.id) {
+			clearNodeErrors(selectedNode.id);
 		}
-	}, [selectedNodeId, clearNodeErrors]);
+	}, [selectedNode?.id, clearNodeErrors]);
 
 	// Handle node data updates
 	const handleUpdateNodeData = useCallback(
@@ -334,44 +911,10 @@ const NodeInspector = React.memo(function NodeInspector({
 		[updateNodeData]
 	);
 
-	// Early return for locked state
-	if (inspectorLocked) {
-		return (
-			<div
-				className={`${
-					viewMode === "side"
-						? "flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card shadow-lg"
-						: STYLING_CONTAINER_LOCKED
-				}`}
-			>
-				<button
-					type="button"
-					aria-label={DESIGN_CONFIG.content.aria.unlockInspector}
-					title={DESIGN_CONFIG.content.tooltips.unlockInspector}
-					onClick={() => setInspectorLocked(false)}
-					className={STYLING_BUTTON_UNLOCK_LARGE}
-				>
-					<FaLock className={STYLING_ICON_STATE_LARGE} />
-				</button>
-			</div>
-		);
-	}
-
-	// Early return for no node selected in side mode
-	if (!selectedNode && viewMode === "side") {
-		return (
-			<div className="flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card shadow-lg">
-				<div className="text-muted-foreground">
-					<FaSearch className="h-4 w-4" />
-				</div>
-			</div>
-		);
-	}
-
 	// Show node inspector if node is selected (prioritize nodes over edges)
 	if (selectedNode && nodeInfo) {
 		// Get node type config for hasOutput information
-		const nodeConfig = selectedNode.type ? NODE_TYPE_CONFIG[selectedNode.type] : undefined;
+		const nodeConfig = selectedNode.type ? NODE_TYPE_CONFIG[selectedNode.type as NodeType] : undefined;
 		// Check if node has right column content (output or controls)
 		const hasRightColumn = nodeConfig?.hasOutput || nodeInfo.hasControls;
 
@@ -387,7 +930,7 @@ const NodeInspector = React.memo(function NodeInspector({
 						<div className={STYLING_CONTAINER_HEADER_ICON_TEXT}>
 							{nodeInfo.icon && (
 								<span className={STYLING_TEXT_NODE_ICON}>
-									{renderLucideIcon(nodeInfo.icon, "", 20)}
+									{renderLucideIcon(nodeInfo.icon, "", 20) }
 								</span>
 							)}
 							<div>
@@ -406,6 +949,21 @@ const NodeInspector = React.memo(function NodeInspector({
 
 					{/* Right Header Section: Action Buttons */}
 					<div className={STYLING_CONTAINER_HEADER_RIGHT_SECTION}>
+						{/* Settings Button */}
+						<InspectorSettingsDropdown
+							settings={cardVisibility}
+							onToggleSetting={toggleSetting}
+							onResetToDefaults={resetToDefaults}
+						>
+							<button
+								type="button"
+								className={STYLING_BUTTON_LOCK_SMALL}
+								title="Inspector card visibility settings"
+							>
+								<Settings className={STYLING_ICON_ACTION_SMALL} />
+							</button>
+						</InspectorSettingsDropdown>
+
 						{/* Lock Button */}
 						<button
 							type="button"
@@ -418,9 +976,9 @@ const NodeInspector = React.memo(function NodeInspector({
 							}
 						>
 							{inspectorLocked ? (
-								<FaLock className={STYLING_ICON_ACTION_SMALL} />
+								React.createElement(FaLock as React.ComponentType<any>, { className: STYLING_ICON_ACTION_SMALL })
 							) : (
-								<FaLockOpen className={STYLING_ICON_ACTION_SMALL} />
+								React.createElement(FaLockOpen as React.ComponentType<any>, { className: STYLING_ICON_ACTION_SMALL })
 							)}
 						</button>
 
@@ -498,549 +1056,100 @@ const NodeInspector = React.memo(function NodeInspector({
 					</div>
 				</div>
 
-				{/* SCROLLABLE CONTENT: NODE DATA + OUTPUT + CONTROLS + ERRORS */}
+				{/* SCROLLABLE CONTENT: SORTABLE CARDS */}
 				<div
 					className={`${
 						viewMode === "side"
 							? "flex flex-1 flex-col gap-4 overflow-auto p-4"
-							: STYLING_CONTAINER_CONTENT_SCROLLABLE
+							: "flex flex-1 flex-col gap-2 p-3 overflow-auto"
 					}`}
 				>
-					{/* COLUMN 1: NODE DESCRIPTION + NODE DATA */}
-					<div
-						className={`${
-							viewMode === "side" ? "w-full space-y-4" : STYLING_CONTAINER_COLUMN_LEFT
-						}`}
+					<DndContext
+						sensors={sensors}
+						collisionDetection={closestCenter}
+						onDragStart={handleDragStart}
+						onDragEnd={handleDragEnd}
 					>
-						{/* Node Metadata Card */}
-						<AccordionSection
-							title="Node Information"
-							isOpen={accordionState.nodeInfo}
-							onToggle={() => toggleAccordion("nodeInfo")}
-						>
-							<div className="space-y-2">
-								<div className="flex items-center gap-2">
-									<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-										TYPE
-									</span>
-									<span className={STYLING_TEXT_NODE_METADATA}>{selectedNode.type}</span>
-								</div>
-								<div className="flex items-center gap-2">
-									<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-										LABEL
-									</span>
-									<div className="flex items-center gap-1">
-										<input
-											type="text"
-											value={
-												(selectedNode.data as any)?.label || nodeInfo.label || nodeInfo.displayName
-											}
-											onChange={(e) => {
-												updateNodeData(selectedNode.id, {
-													...selectedNode.data,
-													label: e.target.value,
-												});
-											}}
-											onClick={(e) => {
-												(e.target as HTMLInputElement).select();
-											}}
-											className="rounded border-none bg-transparent px-1 font-mono text-muted-foreground text-sm outline-none focus:ring-1 focus:ring-blue-500"
-											placeholder={nodeInfo.displayName}
-										/>
-										<Edit3 className="h-3 w-3 text-muted-foreground/60" />
-									</div>
-								</div>
-								<div className="flex items-center gap-2">
-									<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-										ID
-									</span>
-									<div className="flex items-center gap-1">
-										<EditableNodeId
-											nodeId={selectedNode.id}
-											onUpdateId={handleUpdateNodeId}
-											className="font-mono text-muted-foreground text-sm"
-										/>
-										<Edit3 className="h-3 w-3 text-muted-foreground/60" />
-									</div>
-								</div>
-								{nodeInfo.author && (
-									<div className="flex items-center gap-2">
-										<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-											AUTHOR
-										</span>
-										<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.author}</span>
-									</div>
-								)}
-								{nodeInfo.feature && (
-									<div className="flex items-center gap-2">
-										<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-											FEATURE
-										</span>
-										<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.feature}</span>
-									</div>
-								)}
-								{nodeInfo.tags && nodeInfo.tags.length > 0 && (
-									<div className="flex items-center gap-2">
-										<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-											TAGS
-										</span>
-										<div className="flex flex-wrap gap-1">
-											{nodeInfo.tags.map((tag) => (
-												<span
-													key={`tag-${tag}`}
-													className="rounded bg-muted px-2 py-1 text-muted-foreground text-xs"
-												>
-													{tag}
-												</span>
-											))}
-										</div>
-									</div>
-								)}
-								{nodeInfo.version && (
-									<div className="flex items-center gap-2">
-										<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-											VERSION
-										</span>
-										<span className={STYLING_TEXT_NODE_METADATA}>{nodeInfo.version}</span>
-									</div>
-								)}
-								{nodeInfo.runtime?.execute && (
-									<div className="flex items-center gap-2">
-										<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-											RUNTIME
-										</span>
-										<span className="font-mono text-muted-foreground text-sm">
-											{nodeInfo.runtime.execute}
-										</span>
-									</div>
-								)}
-							</div>
-						</AccordionSection>
-
-						{/* Node Description Card */}
-						{nodeInfo.description && (
-							<AccordionSection
-								title="Description"
-								isOpen={accordionState.description}
-								onToggle={() => toggleAccordion("description")}
-							>
-								<EditableNodeDescription
-									nodeId={selectedNode.id}
-									description={(selectedNode.data as any)?.description ?? nodeInfo.description}
-									defaultDescription={nodeInfo.description}
-									className={STYLING_TEXT_NODE_DESCRIPTION}
-								/>
-							</AccordionSection>
-						)}
-
-						{/* Node Data Card */}
-						<AccordionSection
-							title="Node Data"
-							isOpen={accordionState.nodeData}
-							onToggle={() => toggleAccordion("nodeData")}
-						>
-							<div className="-mx-1 overflow-hidden rounded-md border border-border/30 bg-muted/20">
-								<EditableJsonEditor
-									data={{
-										id: selectedNode.id,
-										category: nodeCategory,
-										store: selectedNode.data?.store ?? "",
-										inputs: selectedNode.data?.inputs ?? null,
-										outputs: selectedNode.data?.outputs ?? null,
-										isActive: selectedNode.data?.isActive,
-										isEnabled: selectedNode.data?.isEnabled ?? true,
-										isExpanded: selectedNode.data?.isExpanded,
-										// AI Agent specific fields
-										...(selectedNode.type === "aiAgent" &&
-											selectedNode.data &&
-											"userInput" in selectedNode.data && {
-												userInput: selectedNode.data.userInput,
-												triggerInputs: selectedNode.data.triggerInputs,
-												trigger: selectedNode.data.trigger,
-												isProcessing: selectedNode.data.isProcessing,
-												systemPrompt: selectedNode.data.systemPrompt,
-												selectedProvider: selectedNode.data.selectedProvider,
-												selectedModel: selectedNode.data.selectedModel,
-												temperature: selectedNode.data.temperature,
-												maxSteps: selectedNode.data.maxSteps,
-												threadId: selectedNode.data.threadId,
-											}),
-									}}
-									onUpdateData={(newData) => {
-										// Extract the system fields and update only the data portion
-										const { id, category, ...nodeData } = newData;
-										handleUpdateNodeData(selectedNode.id, nodeData);
-									}}
-									className={STYLING_JSON_HIGHLIGHTER}
-								/>
-							</div>
-						</AccordionSection>
-
-						{/* Size Controls for nodes with size fields */}
-						{selectedNode.data && (selectedNode.data as any).expandedSize !== undefined && (
-							<AccordionSection
-								title="Size"
-								isOpen={accordionState.size}
-								onToggle={() => toggleAccordion("size")}
-							>
-								<SizeControls
-									nodeData={selectedNode.data as any}
-									updateNodeData={(patch: Record<string, any>) =>
-										updateNodeData(selectedNode.id, patch)
-									}
-								/>
-							</AccordionSection>
-						)}
-					</div>
-
-					{/* COLUMN 2: OUTPUT + CONTROLS */}
-					{(hasRightColumn || viewMode === "side") && (
-						<div
-							className={`${
-								viewMode === "side" ? "w-full space-y-4" : STYLING_CONTAINER_COLUMN_RIGHT
-							}`}
-						>
-							{(nodeConfig?.hasOutput || viewMode === "side") && (
-								<AccordionSection
-									title="Output"
-									isOpen={accordionState.output}
-									onToggle={() => toggleAccordion("output")}
-								>
-									<NodeOutput output={output} nodeType={selectedNode.type as NodeType} />
-								</AccordionSection>
-							)}
-
-							{(nodeInfo.hasControls || viewMode === "side") && (
-								<AccordionSection
-									title="Controls"
-									isOpen={accordionState.controls}
-									onToggle={() => toggleAccordion("controls")}
-								>
-									<NodeControls
-										node={selectedNode}
-										updateNodeData={updateNodeData}
-										onLogError={logNodeError as any}
-									/>
-								</AccordionSection>
-							)}
-
-							{/* Handles Card */}
-							<AccordionSection
-								title="Handles"
-								isOpen={accordionState.handles}
-								onToggle={() => toggleAccordion("handles")}
-							>
-								{/* Handles Summary */}
-								{nodeInfo.handles && nodeInfo.handles.length > 0 && (
-									<div className="mb-3 rounded border border-border/30 bg-muted/30 p-2">
-										<div className="flex items-center justify-between text-xs">
-											<span className="font-medium text-foreground">
-												{nodeInfo.handles.length} handle{nodeInfo.handles.length !== 1 ? "s" : ""}
-											</span>
-											<span className="text-muted-foreground">
-												{
-													edges.filter(
-														(edge) =>
-															edge.source === selectedNode.id || edge.target === selectedNode.id
-													).length
-												}{" "}
-												total connection
-												{edges.filter(
-													(edge) =>
-														edge.source === selectedNode.id || edge.target === selectedNode.id
-												).length !== 1
-													? "s"
-													: ""}
-											</span>
-										</div>
-									</div>
-								)}
-
-								{/* Handle Position Editor */}
-								{nodeInfo.handles && nodeInfo.handles.length > 0 && (
-									<div className="mb-4 rounded border border-border/30 bg-muted/10 p-3">
-										<HandlePositionEditor
-											node={selectedNode}
-											handles={nodeInfo.handles}
-											updateNodeData={updateNodeData}
-										/>
-									</div>
-								)}
-
-								<div className="space-y-2">
-									{nodeInfo.handles?.map((handle, _index) => {
-										// Find connections for this handle - improved logic with suffix handling
-										const handleConnections = edges.filter((edge) => {
-											// Check if this edge involves the selected node
-											const isSource = edge.source === selectedNode.id;
-											const isTarget = edge.target === selectedNode.id;
-
-											if (!(isSource || isTarget)) {
-												return false;
-											}
-
-											// For source connections (output handles), check sourceHandle
-											if (isSource) {
-												// Check exact match first
-												if (edge.sourceHandle === handle.id) {
-													return true;
-												}
-												// Check with __s suffix
-												if (edge.sourceHandle === `${handle.id}__s`) {
-													return true;
-												}
-												// Check if handle starts with the base ID
-												if (edge.sourceHandle?.startsWith(handle.id)) {
-													return true;
-												}
-											}
-
-											// For target connections (input handles), check targetHandle
-											if (isTarget) {
-												// Check exact match first
-												if (edge.targetHandle === handle.id) {
-													return true;
-												}
-												// Check with __s suffix
-												if (edge.targetHandle === `${handle.id}__s`) {
-													return true;
-												}
-												// Check if handle starts with the base ID
-												if (edge.targetHandle?.startsWith(handle.id)) {
-													return true;
-												}
-											}
-
-											// Fallback: if no specific handle is specified, check handle type
-											if (isSource && handle.type === "source" && !edge.sourceHandle) {
-												return true;
-											}
-
-											if (isTarget && handle.type === "target" && !edge.targetHandle) {
-												return true;
-											}
-
-											return false;
-										});
-
-										// Get connected node information
-										const connectedNodes = handleConnections
-											.map((edge) => {
-												const connectedNodeId =
-													edge.source === selectedNode.id ? edge.target : edge.source;
-												const connectedNode = nodes.find((n) => n.id === connectedNodeId);
-												return {
-													edge,
-													node: connectedNode,
-													isIncoming: edge.target === selectedNode.id,
-												};
-											})
-											.filter((conn) => conn.node);
-
-										return (
-											<div
-												key={handle.id}
-												className="rounded border border-border/50 bg-muted/20 p-3"
-											>
-												<div className="mb-2 flex items-center justify-between">
-													<div className="flex items-center gap-2">
-														<span
-															className={`h-3 w-3 rounded-full ${
-																handle.type === "source" ? "bg-green-500" : "bg-blue-500"
-															}`}
-															title={handle.type}
-														/>
-														<div>
-															<span className="font-medium text-foreground text-xs">
-																{handle.dataType || "Any"} (
-																{handle.type === "source" ? "Output" : "Input"})
-															</span>
-															{handle.position && (
-																<span className="ml-1 text-muted-foreground text-xs">
-																	[{handle.position}]
-																</span>
-															)}
-														</div>
-													</div>
-													<div className="flex items-center gap-1">
-														<span
-															className={`rounded-full px-2 py-1 text-xs ${
-																handleConnections.length > 0
-																	? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-																	: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-															}`}
-														>
-															{handleConnections.length} connection
-															{handleConnections.length !== 1 ? "s" : ""}
-														</span>
-													</div>
-												</div>
-
-												{/* Connected Nodes List */}
-												{connectedNodes.length > 0 && (
-													<div className="space-y-1">
-														{connectedNodes.map((connection, _connIndex) => (
-															<div
-																key={connection.edge.id}
-																className={`rounded border p-2 text-xs ${
-																	connection.isIncoming
-																		? "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20"
-																		: "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20"
-																}`}
-															>
-																<div className="flex items-center justify-between">
-																	<span
-																		className={`font-medium ${
-																			connection.isIncoming
-																				? "text-blue-700 dark:text-blue-300"
-																				: "text-green-700 dark:text-green-300"
-																		}`}
-																	>
-																		{connection.isIncoming ? "←" : "→"}{" "}
-																		{connection.node?.type || "Unknown"}
-																	</span>
-																	<span className="text-muted-foreground">
-																		{connection.node?.id}
-																	</span>
-																</div>
-															</div>
-														))}
-													</div>
-												)}
-
-												{/* No Connections Message */}
-												{handleConnections.length === 0 && (
-													<div className="py-1 text-center text-muted-foreground/60 text-xs">
-														No connections
-													</div>
-												)}
-											</div>
-										);
+						<SortableContext items={cardOrder} strategy={rectSortingStrategy}>
+							{viewMode === "side" ? (
+								// Single column layout for side mode
+								<div className="flex flex-col gap-2">
+									{cardOrder.map((cardType) => {
+										const cardProps: CardRenderProps = {
+											selectedNode,
+											nodeInfo,
+											nodeConfig,
+											output,
+											connections,
+											errors,
+											cardVisibility,
+											accordionState,
+											toggleAccordion,
+											updateNodeData,
+											handleUpdateNodeId,
+											handleUpdateNodeData,
+											logNodeError: logNodeError as any,
+											handleClearErrors,
+											nodes,
+											edges,
+											viewMode,
+											hasRightColumn,
+										};
+										
+										return renderCard(cardType, cardProps);
 									})}
-									{(!nodeInfo.handles || nodeInfo.handles.length === 0) && (
-										<div className="py-2 text-center text-muted-foreground/60 text-xs">
-											No handles defined for this node
-										</div>
-									)}
 								</div>
-							</AccordionSection>
-
-							{/* Connections Card */}
-							<AccordionSection
-								title="Connections"
-								isOpen={accordionState.connections}
-								onToggle={() => toggleAccordion("connections")}
-							>
-								<div className="space-y-3">
-									{/* Incoming Connections */}
-									{connections.incoming.length > 0 && (
-										<div>
-											<div className="mb-2 flex items-center gap-2">
-												<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-													INCOMING
-												</span>
-												<span className="text-muted-foreground text-xs">
-													({connections.incoming.length})
-												</span>
-											</div>
-											<div className="space-y-2">
-												{connections.incoming.map((connection, _index) => (
-													<div
-														key={connection.edge.id}
-														className="rounded border border-border/50 bg-muted/20 p-2"
-													>
-														<div className="mb-1 flex items-center justify-between">
-															<div className="flex items-center gap-2">
-																<span className="rounded bg-blue-100 px-1.5 py-0.5 font-medium text-muted-foreground text-xs dark:bg-blue-900/30">
-																	FROM
-																</span>
-																<span className="font-medium text-foreground text-xs">
-																	{connection.sourceNode?.type || "Unknown"}
-																</span>
-															</div>
-															<span className="font-mono text-muted-foreground text-xs">
-																{connection.edge.source}
-															</span>
-														</div>
-														{connection.sourceOutput && (
-															<div className="rounded border border-border/30 bg-background p-1.5 text-muted-foreground text-xs">
-																{connection.sourceOutput}
-															</div>
-														)}
-													</div>
-												))}
-											</div>
-										</div>
-									)}
-
-									{/* Outgoing Connections */}
-									{connections.outgoing.length > 0 && (
-										<div>
-											<div className="mb-2 flex items-center gap-2">
-												<span className="rounded bg-muted/50 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-													OUTGOING
-												</span>
-												<span className="text-muted-foreground text-xs">
-													({connections.outgoing.length})
-												</span>
-											</div>
-											<div className="space-y-2">
-												{connections.outgoing.map((connection, _index) => (
-													<div
-														key={connection.edge.id}
-														className="rounded border border-border/50 bg-muted/20 p-2"
-													>
-														<div className="mb-1 flex items-center justify-between">
-															<div className="flex items-center gap-2">
-																<span className="rounded bg-green-100 px-1.5 py-0.5 font-medium text-muted-foreground text-xs dark:bg-green-900/30">
-																	TO
-																</span>
-																<span className="font-medium text-foreground text-xs">
-																	{connection.targetNode?.type || "Unknown"}
-																</span>
-															</div>
-															<span className="font-mono text-muted-foreground text-xs">
-																{connection.edge.target}
-															</span>
-														</div>
-														{connection.targetInput && (
-															<div className="rounded border border-border/30 bg-background p-1.5 text-muted-foreground text-xs">
-																{connection.targetInput}
-															</div>
-														)}
-													</div>
-												))}
-											</div>
-										</div>
-									)}
-
-									{/* No Connections */}
-									{connections.incoming.length === 0 && connections.outgoing.length === 0 && (
-										<div className="py-4 text-center text-muted-foreground/60 text-xs">
-											No connections
-										</div>
-									)}
+							) : (
+								// Masonry-style grid layout for bottom mode with 2 columns
+								<div className="columns-2 gap-2 space-y-2">
+									{cardOrder.map((cardType) => {
+										const cardProps: CardRenderProps = {
+											selectedNode,
+											nodeInfo,
+											nodeConfig,
+											output,
+											connections,
+											errors,
+											cardVisibility,
+											accordionState,
+											toggleAccordion,
+											updateNodeData,
+											handleUpdateNodeId,
+											handleUpdateNodeData,
+											logNodeError: logNodeError as any,
+											handleClearErrors,
+											nodes,
+											edges,
+											viewMode,
+											hasRightColumn,
+										};
+										
+										return renderCard(cardType, cardProps);
+									})}
 								</div>
-							</AccordionSection>
-						</div>
-					)}
-
-					{/* COLUMN 3: ERROR LOG (only show when there are errors) */}
-					{errors.length > 0 && (
-						<div
-							className={`${
-								viewMode === "side" ? "w-full space-y-4" : STYLING_CONTAINER_COLUMN_ERROR
-							}`}
-						>
-							<AccordionSection
-								title="Error Log"
-								isOpen={accordionState.errors}
-								onToggle={() => toggleAccordion("errors")}
-							>
-								<ErrorLog errors={errors} onClearErrors={handleClearErrors} />
-							</AccordionSection>
-						</div>
-					)}
+							)}
+						</SortableContext>
+						
+						<DragOverlay>
+							{activeId ? (
+								<div className="bg-card border border-border rounded-lg shadow-lg opacity-80">
+									<div className="flex w-full items-center rounded-t-lg border-border/30 border-b bg-muted/30 p-3">
+										<GripVertical className="h-3 w-3 text-muted-foreground/60 mr-2" />
+										<h4 className="font-medium text-muted-foreground text-xs">
+											{activeId === 'nodeInfo' ? 'Node Information' :
+											 activeId === 'nodeData' ? 'Node Data' :
+											 activeId === 'output' ? 'Output' :
+											 activeId === 'controls' ? 'Controls' :
+											 activeId === 'handles' ? 'Handles' :
+											 activeId === 'connections' ? 'Connections' :
+											 activeId === 'size' ? 'Size' :
+											 activeId === 'errors' ? 'Error Log' : activeId}
+										</h4>
+									</div>
+								</div>
+							) : null}
+						</DragOverlay>
+					</DndContext>
 				</div>
 			</div>
 		);
@@ -1070,12 +1179,32 @@ const NodeInspector = React.memo(function NodeInspector({
 				onClick={() => setInspectorLocked(true)}
 				className={STYLING_BUTTON_MAGNIFYING_GLASS}
 			>
-				<FaSearch className={STYLING_ICON_STATE_LARGE} />
+				{React.createElement(FaSearch as React.ComponentType<any>, { className: STYLING_ICON_STATE_LARGE })}
 			</button>
 		</div>
 	);
+}, (prevProps, nextProps) => {
+	// Custom comparison for memo optimization
+	return (
+		prevProps.selectedNode?.id === nextProps.selectedNode?.id &&
+		prevProps.selectedNode?.data === nextProps.selectedNode?.data &&
+		prevProps.selectedEdge?.id === nextProps.selectedEdge?.id &&
+		prevProps.viewMode === nextProps.viewMode &&
+		prevProps.inspectorLocked === nextProps.inspectorLocked &&
+		prevProps.inspectorViewMode === nextProps.inspectorViewMode
+	);
+});
+
+// =====================================================================
+// MAIN EXPORTED COMPONENT
+// =====================================================================
+
+const NodeInspector = memo<NodeInspectorProps>((props) => {
+	return <NodeInspectorShell {...props} />;
 });
 
 NodeInspector.displayName = "NodeInspector";
+NodeInspectorContent.displayName = "NodeInspectorContent";
+NodeInspectorShell.displayName = "NodeInspectorShell";
 
 export default NodeInspector;

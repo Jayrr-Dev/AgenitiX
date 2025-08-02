@@ -118,6 +118,56 @@ export default defineSchema({
 		.index("by_to_email", ["to_email"])
 		.index("by_created_at", ["created_at"]),
 
+	// Email Reply Domain
+	email_reply_templates: defineTable({
+		user_id: v.id("auth_users"),
+		name: v.string(),
+		category: v.string(),
+		subject_template: v.string(),
+		content_template: v.string(),
+		variables: v.array(v.string()), // Template variables like {sender_name}
+		description: v.optional(v.string()),
+		is_active: v.boolean(),
+		created_at: v.number(),
+		updated_at: v.number(),
+	})
+		.index("by_user_id", ["user_id"])
+		.index("by_category", ["category"])
+		.index("by_is_active", ["is_active"])
+		.index("by_user_and_category", ["user_id", "category"]),
+
+	email_reply_logs: defineTable({
+		user_id: v.id("auth_users"),
+		account_id: v.id("email_accounts"),
+		original_email_id: v.string(), // ID from email provider
+		reply_strategy: v.union(
+			v.literal("auto"),
+			v.literal("template"),
+			v.literal("ai-generated"),
+			v.literal("hybrid")
+		),
+		reply_content: v.string(),
+		reply_subject: v.string(),
+		recipients: v.object({
+			to: v.array(v.string()),
+			cc: v.array(v.string()),
+		}),
+		confidence: v.number(), // AI confidence score 0-1
+		processing_time: v.number(), // milliseconds
+		tokens_used: v.optional(v.number()), // AI tokens consumed
+		template_id: v.optional(v.string()),
+		ai_model: v.optional(v.string()),
+		status: v.union(v.literal("generated"), v.literal("sent"), v.literal("failed")),
+		error_message: v.optional(v.string()),
+		created_at: v.number(),
+	})
+		.index("by_user_id", ["user_id"])
+		.index("by_account_id", ["account_id"])
+		.index("by_reply_strategy", ["reply_strategy"])
+		.index("by_status", ["status"])
+		.index("by_created_at", ["created_at"])
+		.index("by_user_and_strategy", ["user_id", "reply_strategy"]),
+
 	// Workflow Domain
 	workflow_runs: defineTable({
 		user_id: v.id("auth_users"),

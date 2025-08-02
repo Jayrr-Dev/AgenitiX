@@ -31,7 +31,7 @@ export const createRootGraph = (initialState: FlowState): HistoryGraph => {
 				label: "INITIAL",
 				before: initialState,
 				after: initialState,
-				createdAt: Date.now(),
+				createdAt: performance.now(),
 			},
 		},
 	};
@@ -54,7 +54,7 @@ export const createChildNode = (
 		label,
 		before,
 		after,
-		createdAt: Date.now(),
+		createdAt: performance.now(),
 		metadata,
 	};
 
@@ -129,48 +129,53 @@ export const saveGraph = (graph: HistoryGraph, flowId?: string): void => {
 		// Optimize graph data before serialization to reduce size
 		const optimizedGraph = {
 			...graph,
-			nodes: Object.values(graph.nodes).map((node) => ({
-				...node,
-				// Remove unnecessary data for storage
-				before: {
-					...node.before,
-					// Remove large objects that don't need persistence
-					nodes: node.before.nodes.map((n) => ({
-						...n,
-						data: n.data
-							? {
-									...n.data,
-									// Remove large objects that don't need persistence
-									inputs: undefined,
-									outputs: undefined,
-									// Keep only essential data
-									label: n.data.label,
-									type: n.data.type,
-									isExpanded: n.data.isExpanded,
-								}
-							: n.data,
-					})),
-				},
-				after: {
-					...node.after,
-					// Remove large objects that don't need persistence
-					nodes: node.after.nodes.map((n) => ({
-						...n,
-						data: n.data
-							? {
-									...n.data,
-									// Remove large objects that don't need persistence
-									inputs: undefined,
-									outputs: undefined,
-									// Keep only essential data
-									label: n.data.label,
-									type: n.data.type,
-									isExpanded: n.data.isExpanded,
-								}
-							: n.data,
-					})),
-				},
-			})),
+			nodes: Object.fromEntries(
+				Object.values(graph.nodes).map((node) => [
+					node.id,
+					{
+						...node,
+						// Remove unnecessary data for storage
+						before: {
+							...node.before,
+							// Remove large objects that don't need persistence
+							nodes: node.before.nodes.map((n) => ({
+								...n,
+								data: n.data
+									? {
+											...n.data,
+											// Remove large objects that don't need persistence
+											inputs: undefined,
+											outputs: undefined,
+											// Keep only essential data
+											label: n.data.label,
+											type: n.data.type,
+											isExpanded: n.data.isExpanded,
+										}
+									: n.data,
+							})),
+						},
+						after: {
+							...node.after,
+							// Remove large objects that don't need persistence
+							nodes: node.after.nodes.map((n) => ({
+								...n,
+								data: n.data
+									? {
+											...n.data,
+											// Remove large objects that don't need persistence
+											inputs: undefined,
+											outputs: undefined,
+											// Keep only essential data
+											label: n.data.label,
+											type: n.data.type,
+											isExpanded: n.data.isExpanded,
+										}
+									: n.data,
+							})),
+						},
+					},
+				])
+			),
 		};
 
 		const json = JSON.stringify(optimizedGraph);
@@ -196,6 +201,11 @@ const validateAndFixGraphData = (graph: HistoryGraph): HistoryGraph => {
 		graph.nodes = {};
 	}
 
+	// If nodes were persisted as an array, convert to record mapping
+	if (Array.isArray(graph.nodes)) {
+		graph.nodes = Object.fromEntries(graph.nodes.map((n: any) => [n.id, n]));
+	}
+
 	// Ensure root node exists
 	if (!graph.nodes[graph.root]) {
 		console.warn(`⚠️ [GraphHelpers] Root node "${graph.root}" missing, creating default root`);
@@ -206,7 +216,7 @@ const validateAndFixGraphData = (graph: HistoryGraph): HistoryGraph => {
 			label: "INITIAL",
 			before: { nodes: [], edges: [] },
 			after: { nodes: [], edges: [] },
-			createdAt: Date.now(),
+			createdAt: performance.now(),
 		};
 	}
 
@@ -246,7 +256,7 @@ const validateAndFixGraphData = (graph: HistoryGraph): HistoryGraph => {
 			node.after = { nodes: [], edges: [] };
 		}
 		if (!node.createdAt) {
-			node.createdAt = Date.now();
+			node.createdAt = performance.now();
 		}
 	}
 

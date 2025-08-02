@@ -6,11 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatAuthError, getAuthErrorType, getRetryInfo } from "@/lib/auth-utils";
-import { AlertCircle, ArrowRight, Loader2, Mail } from "lucide-react";
+import { AlertCircle, ArrowRight, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { Loading } from "@/components/Loading";
 import { toast } from "sonner";
 
 export default function SignInPage() {
@@ -55,24 +56,22 @@ export default function SignInPage() {
 	// Don't render if not mounted or authenticated (will redirect)
 	if (!mounted || authLoading) {
 		return (
-			<div className="flex min-h-screen">
-				<div className="flex flex-1 items-center justify-center">
-					<Loader2 className="h-8 w-8 animate-spin" />
-				</div>
-			</div>
+			<Loading 
+				className="min-h-screen"
+				size="w-8 h-8" 
+				showText={false}
+			/>
 		);
 	}
 
 	if (isAuthenticated) {
 		return (
-			<div className="flex min-h-screen">
-				<div className="flex flex-1 items-center justify-center">
-					<div className="text-center">
-						<Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin" />
-						<p className="text-gray-600">Redirecting to dashboard...</p>
-					</div>
-				</div>
-			</div>
+			<Loading 
+				className="min-h-screen"
+				size="w-8 h-8" 
+				text="Redirecting to dashboard..."
+				textSize="text-base"
+			/>
 		);
 	}
 
@@ -308,7 +307,7 @@ export default function SignInPage() {
 								<Button type="submit" className="h-11 w-full" disabled={isLoading || !email.trim()}>
 									{isLoading ? (
 										<>
-											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+											<Loading showText={false} size="w-4 h-4" className="mr-2 p-0" />
 											Signing in...
 										</>
 									) : (

@@ -19,6 +19,7 @@ import { z } from "zod";
 // UI Components
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { Textarea } from "@/components/ui/textarea";
 
 // Node Infrastructure
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
@@ -504,12 +505,12 @@ const EmailCreatorNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 							<label htmlFor="email-to" className="text-xs text-gray-600 mb-1 block">
 								To (comma-separated):
 							</label>
-							<textarea
+							<Textarea
 								id="email-to"
 								value={recipients.to.join(", ")}
 								onChange={handleRecipientsChange("to")}
 								placeholder="recipient@example.com, another@example.com"
-								className="w-full text-xs p-2 border rounded resize-none"
+								className="w-full text-xs p-2 resize-none"
 								rows={2}
 								disabled={!isEnabled}
 							/>
@@ -520,12 +521,12 @@ const EmailCreatorNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 							<label htmlFor="email-cc" className="text-xs text-gray-600 mb-1 block">
 								CC (optional):
 							</label>
-							<textarea
+							<Textarea
 								id="email-cc"
 								value={recipients.cc.join(", ")}
 								onChange={handleRecipientsChange("cc")}
 								placeholder="cc@example.com"
-								className="w-full text-xs p-2 border rounded resize-none"
+								className="w-full text-xs p-2 resize-none"
 								rows={1}
 								disabled={!isEnabled}
 							/>
@@ -553,7 +554,6 @@ const EmailCreatorNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 								Message Content:
 							</label>
 							<RichTextEditor
-								id="email-content"
 								value={content}
 								onChange={(newContent) => {
 									updateNodeData({

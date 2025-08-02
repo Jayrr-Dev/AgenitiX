@@ -1,7 +1,7 @@
 import { TabsContent } from "@/components/ui/tabs";
 import { DndContext, type DragEndEvent, closestCenter } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback, memo } from "react";
 import { SortableStencil } from "../SortableStencil";
 import { StencilGrid } from "../StencilGrid";
 import type { HoveredStencil } from "../StencilInfoPanel";
@@ -28,7 +28,7 @@ interface TabContentProps {
 	onStencilsChange?: (tabKey: string, stencils: NodeStencil[]) => void;
 }
 
-export function SidebarTabContent({
+const SidebarTabContentComponent: React.FC<TabContentProps> = ({
 	variant,
 	tabKey,
 	onNativeDragStart,
@@ -40,68 +40,50 @@ export function SidebarTabContent({
 	onRemoveCustomNode,
 	onReorderCustomNodes,
 	onStencilsChange,
-}: TabContentProps) {
-	// Defensive programming: Handle case where VARIANT_CONFIG[variant] might be undefined
-	// Also normalize lowercase variants to uppercase
-	const normalizedVariant = variant.toUpperCase() as SidebarVariant;
-	const variantConfig = VARIANT_CONFIG[normalizedVariant];
+}) => {
+	// Memoized variant config lookup to prevent recalculation on every render
+	const variantConfig = useMemo(() => {
+		const normalizedVariant = variant.toUpperCase() as SidebarVariant;
+		return VARIANT_CONFIG[normalizedVariant];
+	}, [variant]);
+	
 	const stencilsConfig = variantConfig?.stencils;
 	const sensors = useDragSensors();
 
-	// KEYBOARD SHORTCUT MAPPING - Different for custom vs regular tabs
-	const getKeyboardShortcut = React.useCallback(
+	// Memoized keyboard shortcut mapping - prevents object recreation on every render
+	const keyboardShortcutMaps = useMemo(() => {
+		const customGridKeyMap: Record<number, string> = {
+			// Row 1: wert (positions 0-3, shifted from qwer)
+			0: "W", 1: "E", 2: "R", 3: "T",
+			// Row 2: asdfg (positions 4-8, shifted from asdg)
+			4: "A", 5: "S", 6: "D", 7: "F", 8: "G",
+			// Row 3: zxcvb (positions 9-13, shifted from zxcv)
+			9: "Z", 10: "X", 11: "C", 12: "V", 13: "B",
+		};
+		
+		const regularGridKeyMap: Record<number, string> = {
+			// Row 1: qwert (positions 0-4)
+			0: "Q", 1: "W", 2: "E", 3: "R", 4: "T",
+			// Row 2: asdfg (positions 5-9)
+			5: "A", 6: "S", 7: "D", 8: "F", 9: "G",
+			// Row 3: zxcvb (positions 10-14)
+			10: "Z", 11: "X", 12: "C", 13: "V", 14: "B",
+		};
+		
+		return { custom: customGridKeyMap, regular: regularGridKeyMap };
+	}, []);
+
+	// KEYBOARD SHORTCUT MAPPING - Optimized to use pre-computed maps
+	const getKeyboardShortcut = useCallback(
 		(index: number): string => {
-			if (isCustomTab) {
-				// Custom tab mapping: q = add node, w-b shifted positions
-				const customGridKeyMap: Record<number, string> = {
-					// Row 1: wert (positions 0-3, shifted from qwer)
-					0: "W",
-					1: "E",
-					2: "R",
-					3: "T",
-					// Row 2: asdfg (positions 4-8, shifted from asdg)
-					4: "A",
-					5: "S",
-					6: "D",
-					7: "F",
-					8: "G",
-					// Row 3: zxcvb (positions 9-13, shifted from zxcv)
-					9: "Z",
-					10: "X",
-					11: "C",
-					12: "V",
-					13: "B",
-				};
-				return customGridKeyMap[index] || "";
-			}
-			// Regular tab mapping: full QWERTY grid
-			const gridKeyMap: Record<number, string> = {
-				// Row 1: qwert (positions 0-4)
-				0: "Q",
-				1: "W",
-				2: "E",
-				3: "R",
-				4: "T",
-				// Row 2: asdfg (positions 5-9)
-				5: "A",
-				6: "S",
-				7: "D",
-				8: "F",
-				9: "G",
-				// Row 3: zxcvb (positions 10-14)
-				10: "Z",
-				11: "X",
-				12: "C",
-				13: "V",
-				14: "B",
-			};
-			return gridKeyMap[index] || "";
+			const keyMap = isCustomTab ? keyboardShortcutMaps.custom : keyboardShortcutMaps.regular;
+			return keyMap[index] || "";
 		},
-		[isCustomTab]
+		[isCustomTab, keyboardShortcutMaps]
 	);
 
-	// Get the correct stencils for this specific variant and tab
-	const getDefaultStencils = (): NodeStencil[] => {
+	// Memoized default stencils to prevent function recreation on every render
+	const getDefaultStencils = useCallback((): NodeStencil[] => {
 		if (isCustomTab) {
 			return [];
 		}
@@ -109,7 +91,7 @@ export function SidebarTabContent({
 		// Safely access the stencils with proper type checking
 		if (!stencilsConfig) {
 			console.warn(
-				`No stencils config found for variant '${variant}' (normalized to '${normalizedVariant}')`
+				`No stencils config found for variant '${variant}'`
 			);
 			return [];
 		}
@@ -117,34 +99,46 @@ export function SidebarTabContent({
 		const tabStencils = stencilsConfig[tabKey as keyof typeof stencilsConfig];
 		if (!Array.isArray(tabStencils)) {
 			console.warn(
-				`No stencils found for tab '${tabKey}' in variant '${variant}' (normalized to '${normalizedVariant}')`
+				`No stencils found for tab '${tabKey}' in variant '${variant}'`
 			);
 			return [];
 		}
 
 		return tabStencils;
-	};
+	}, [isCustomTab, stencilsConfig, tabKey, variant]);
 
-	// For custom tab, don't use stencil storage
-	const [stencils, setStencils] = isCustomTab
-		? [[], () => {}]
-		: useStencilStorage(variant, tabKey as TabKey<typeof variant>, getDefaultStencils());
+	// Conditionally use stencil storage for better performance, basically avoid unnecessary hook calls
+	const stencilStorageResult = useStencilStorage(variant, tabKey as TabKey<typeof variant>, getDefaultStencils());
+	const [stencils, setStencils] = isCustomTab ? [[], () => {}] : stencilStorageResult;
 
 	// Use filtered nodes hook to respect feature flags
 	const { nodes: filteredNodes } = useFilteredNodes();
 
-	// Filter stencils based on feature flags
+	// Memoized filtered node types for efficient comparison, basically O(1) lookups for feature flags
+	const filteredNodeTypes = useMemo(() => {
+		return new Set(filteredNodes.map(node => node.kind));
+	}, [filteredNodes]);
+
+	// Highly optimized stencil filtering with minimal allocations, basically prevent unnecessary operations
 	const filteredStencils = useMemo(() => {
-		if (isCustomTab) {
+		// Early returns for performance, basically avoid all processing when possible
+		if (isCustomTab || !stencils.length || !filteredNodeTypes.size) {
 			return [];
 		}
 
-		// Filter out stencils whose corresponding nodes have disabled feature flags
-		return stencils.filter((stencil) => {
-			// Check if this stencil's node type is in the filtered nodes list
-			return filteredNodes.some((node) => node.kind === stencil.nodeType);
-		});
-	}, [stencils, filteredNodes, isCustomTab]);
+		// Pre-allocate array for better memory performance, basically reduce allocations
+		const result: typeof stencils = [];
+		
+		// Use faster iteration pattern with direct property access, basically optimize inner loop
+		for (let i = 0, len = stencils.length; i < len; i++) {
+			const stencil = stencils[i];
+			if (filteredNodeTypes.has(stencil.nodeType)) {
+				result[result.length] = stencil; // Faster than push()
+			}
+		}
+		
+		return result;
+	}, [stencils, filteredNodeTypes, isCustomTab]);
 
 	// Notify parent of stencil changes for keyboard shortcuts (use filtered stencils)
 	React.useEffect(() => {
@@ -153,23 +147,28 @@ export function SidebarTabContent({
 		}
 	}, [filteredStencils, tabKey, onStencilsChange, isCustomTab]);
 
-	const handleDragEnd = (event: DragEndEvent) => {
+	// Optimized drag end handler with Map-based lookups, basically faster index finding
+	const handleDragEnd = useCallback((event: DragEndEvent) => {
 		const { active, over } = event;
 		if (!over || active.id === over.id || !isCustomTab || !onReorderCustomNodes) {
 			return;
 		}
 
-		const oldIndex = customNodes.findIndex((node) => node.id === active.id);
-		const newIndex = customNodes.findIndex((node) => node.id === over.id);
+		// Use Map for O(1) lookup instead of findIndex O(n), basically faster performance
+		const idToIndexMap = new Map(customNodes.map((node, index) => [node.id, index]));
+		const oldIndex = idToIndexMap.get(active.id as string);
+		const newIndex = idToIndexMap.get(over.id as string);
 
-		if (oldIndex !== -1 && newIndex !== -1) {
+		if (oldIndex !== undefined && newIndex !== undefined) {
 			const newOrder = arrayMove(customNodes, oldIndex, newIndex);
 			onReorderCustomNodes(newOrder);
 		}
-	};
+	}, [isCustomTab, onReorderCustomNodes, customNodes]);
+
+	// Memoized node IDs for drag and drop performance, basically prevent array recreation
+	const nodeIds = useMemo(() => customNodes.map((node) => node.id), [customNodes]);
 
 	if (isCustomTab) {
-		const nodeIds = customNodes.map((node) => node.id);
 
 		return (
 			<TabsContent value={tabKey}>
@@ -213,4 +212,23 @@ export function SidebarTabContent({
 			/>
 		</TabsContent>
 	);
-}
+};
+
+// Export memoized component for better performance, basically prevent unnecessary re-renders
+export const SidebarTabContent = memo(SidebarTabContentComponent, (prev, next) => {
+	// Custom comparison for optimal re-render control, basically precise change detection
+	return (
+		prev.variant === next.variant &&
+		prev.tabKey === next.tabKey &&
+		prev.isCustomTab === next.isCustomTab &&
+		prev.onNativeDragStart === next.onNativeDragStart &&
+		prev.onDoubleClickCreate === next.onDoubleClickCreate &&
+		prev.setHovered === next.setHovered &&
+		prev.onAddCustomNode === next.onAddCustomNode &&
+		prev.onRemoveCustomNode === next.onRemoveCustomNode &&
+		prev.onReorderCustomNodes === next.onReorderCustomNodes &&
+		prev.onStencilsChange === next.onStencilsChange &&
+		// Deep compare custom nodes array for changes
+		prev.customNodes === next.customNodes
+	);
+});

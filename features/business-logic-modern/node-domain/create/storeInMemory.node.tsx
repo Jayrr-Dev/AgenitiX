@@ -16,6 +16,7 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { Textarea } from "@/components/ui/textarea";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
@@ -588,12 +589,12 @@ const StoreInMemoryNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec
 									<label htmlFor="storage-value" className="mb-1 block text-gray-600 text-xs">
 										Value:
 									</label>
-									<textarea
+									<Textarea
 										id="storage-value"
 										value={value}
 										onChange={handleValueChange}
 										placeholder="Enter value to store..."
-										className={`w-full resize-none rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 ${categoryStyles.primary}`}
+										className={`w-full resize-none p-2 text-xs ${categoryStyles.primary}`}
 										rows={3}
 										disabled={!isEnabled}
 									/>

@@ -704,11 +704,6 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ className = "" }) => {
 							</div>
 						</div>
 						<div className={HISTORY_ITEM_STYLES.rightSection}>
-							{state.createdAt && !isCurrentState && !isFutureState && (
-								<span className={HISTORY_ITEM_META_STYLES.timestamp}>
-									{formatTimestamp(state.createdAt)}
-								</span>
-							)}
 							{isCurrentState && (
 								<span className={HISTORY_ITEM_META_STYLES.currentBadge}>Current</span>
 							)}

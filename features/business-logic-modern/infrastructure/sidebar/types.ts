@@ -41,7 +41,7 @@ export const TAB_CONFIG_B: readonly TabConfig[] = [
 	{ key: "EMAIL", label: "Email" },
 	{ key: "FLOW", label: "Flow" },
 	{ key: "TIME", label: "Time" },
-	{ key: "AI", label: "Ai" },
+	{ key: "AI", label: "AI Agents" },
 ];
 
 export const TAB_CONFIG_C: readonly TabConfig[] = [{ key: "ALL", label: "All Nodes" }];
