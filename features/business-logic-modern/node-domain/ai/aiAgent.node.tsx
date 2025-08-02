@@ -34,6 +34,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import { createSafeInitialData } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
 import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
@@ -229,8 +230,8 @@ export const AiAgentDataSchema = z
     collapsedSize: z.string().default("C2"),
     label: z.string().optional(), // User-editable node label
 
-    // Output (depends on store to prevent recursion)
-    output: z.string().nullable().default(null),
+    // Output - unified handle-based output system
+    output: z.record(z.string(), z.any()).optional(), // handle-based output object for Convex compatibility
     store: z.string().nullable().default(null), // Store full Convex Agents response as JSON string
   })
   .passthrough();
@@ -465,7 +466,7 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
       trigger: false,
       processingState: PROCESSING_STATE.IDLE,
       threadId: null,
-      output: null,
+      output: {}, // handle-based output object
       store: null,
     }),
     dataSchema: AiAgentDataSchema,
@@ -580,7 +581,7 @@ const AiAgentNode = memo(
     const edges = useStore((s) => s.edges);
 
     // keep last emitted output to avoid redundant writes
-    const lastOutputRef = useRef<string | null>(null);
+    const lastGeneralOutputRef = useRef<any>(null);
     const lastStoreRef = useRef<string | null>(null);
 
     const categoryStyles = CATEGORY_TEXT.AI;
@@ -1559,6 +1560,86 @@ const AiAgentNode = memo(
       processingError,
       propagate,
       blockJsonWhenInactive,
+    ]);
+
+    /* 🔄 Handle-based output field generation for multi-handle compatibility */
+    useEffect(() => {
+      try {
+        // Create a data object with proper handle field mapping, basically map AI response to output handle
+        let outputValue = "";
+
+        if (processingState === PROCESSING_STATE.SUCCESS && store) {
+          // Extract clean text from the AI response
+          outputValue = extractCleanText(store);
+        } else if (
+          processingState === PROCESSING_STATE.ERROR &&
+          processingError
+        ) {
+          outputValue = `❌ AI Error: ${processingError}`;
+        } else if (processingState === PROCESSING_STATE.PROCESSING) {
+          outputValue = "🤖 AI thinking...";
+        } else {
+          outputValue =
+            processingState === PROCESSING_STATE.IDLE ? "🤖 AI ready" : "";
+        }
+
+        const mappedData = {
+          ...nodeData,
+          output: outputValue, // Map AI response to main output handle
+        };
+
+        // Generate Map-based output with error handling
+        const outputObject = generateoutputField(spec, mappedData as any);
+
+        // Validate the result
+        if (!(outputObject instanceof Map)) {
+          console.error(
+            `AiAgent ${id}: generateoutputField did not return a Map`,
+            outputObject
+          );
+          return;
+        }
+
+        // Convert Map to plain object for Convex compatibility, basically serialize for storage
+        const serializedOutput = Object.fromEntries(outputObject.entries());
+
+        // Only update if changed
+        const currentOutput = lastGeneralOutputRef.current;
+        let hasChanged = true;
+
+        if (currentOutput instanceof Map && outputObject instanceof Map) {
+          // Compare Map contents
+          hasChanged =
+            currentOutput.size !== outputObject.size ||
+            !Array.from(outputObject.entries()).every(
+              ([key, value]) => currentOutput.get(key) === value
+            );
+        }
+
+        if (hasChanged) {
+          lastGeneralOutputRef.current = outputObject;
+          updateNodeData({ output: serializedOutput });
+        }
+      } catch (error) {
+        console.error(`AiAgent ${id}: Error generating output`, error, {
+          spec: spec?.kind,
+          nodeDataKeys: Object.keys(nodeData || {}),
+        });
+
+        // Fallback: set empty object to prevent crashes, basically empty state for storage
+        if (lastGeneralOutputRef.current !== null) {
+          lastGeneralOutputRef.current = new Map();
+          updateNodeData({ output: {} });
+        }
+      }
+    }, [
+      spec.handles,
+      nodeData,
+      processingState,
+      store,
+      processingError,
+      updateNodeData,
+      id,
     ]);
 
     // -------------------------------------------------------------------------

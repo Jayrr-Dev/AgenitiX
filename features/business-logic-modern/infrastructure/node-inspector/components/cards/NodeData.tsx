@@ -18,7 +18,6 @@ import type {
   AgenNode,
   NodeType,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
-import type { InspectorNodeInfo } from "@/features/business-logic-modern/infrastructure/node-inspector/adapters/NodeInspectorAdapter";
 import { NODE_INSPECTOR_TOKENS } from "@/features/business-logic-modern/infrastructure/theming/components/nodeInspector";
 import { NodeInspectorAdapter } from "../../adapters/NodeInspectorAdapter";
 
@@ -27,13 +26,11 @@ const STYLING_JSON_CONTAINER = `${NODE_INSPECTOR_TOKENS.dimensions.fullWidth} ${
 
 interface NodeDataProps {
   selectedNode: AgenNode;
-  nodeInfo: InspectorNodeInfo;
   updateNodeData: (nodeId: string, newData: any) => void;
 }
 
 export const NodeData: React.FC<NodeDataProps> = ({
   selectedNode,
-  nodeInfo,
   updateNodeData,
 }) => {
   // Get node category for display
@@ -55,7 +52,7 @@ export const NodeData: React.FC<NodeDataProps> = ({
       category: nodeCategory,
       store: selectedNode.data?.store ?? "",
       inputs: selectedNode.data?.inputs ?? null,
-      output: selectedNode.data?.output ?? null,
+      outputs: selectedNode.data?.output ?? null, // Use outputs for consistency, basically plural form for output data
       isActive: selectedNode.data?.isActive,
       isEnabled: selectedNode.data?.isEnabled ?? true,
       isExpanded: selectedNode.data?.isExpanded,
@@ -119,7 +116,7 @@ export const NodeData: React.FC<NodeDataProps> = ({
           <ReactJson
             src={nodeData}
             name={false} // Hide root name
-            theme="monokai" // Use monokai theme for better contrast on dark background
+            theme="monokai" // Use twilight theme for better contrast on dark background
             style={{
               backgroundColor: "transparent",
               fontSize: "12px",
@@ -137,7 +134,6 @@ export const NodeData: React.FC<NodeDataProps> = ({
             onDelete={handleJsonUpdate.onDelete}
             validationMessage="Validation Error"
             quotesOnKeys={true} // Show quotes on keys
-            displayArrayKey={true} // Show array indices
             sortKeys={false} // Don't sort keys to maintain order
           />
         </div>

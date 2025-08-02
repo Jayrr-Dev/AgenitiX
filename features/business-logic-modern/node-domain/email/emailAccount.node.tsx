@@ -25,6 +25,7 @@ import { z } from "zod";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
@@ -93,9 +94,8 @@ export const EmailAccountDataSchema = z
     expandedSize: SafeSchemas.text("VE2"),
     collapsedSize: SafeSchemas.text("C2"),
 
-    // output
-    accountOutput: SafeSchemas.optionalText(),
-    statusOutput: SafeSchemas.boolean(false),
+    // output - unified handle-based output system
+    output: z.record(z.string(), z.any()).optional(), // handle-based output object for Convex compatibility
     label: z.string().optional(), // User-editable node label
   })
   .passthrough();
@@ -177,16 +177,14 @@ function createDynamicSpec(data: EmailAccountData): NodeSpec {
       isConfigured: false,
       isConnected: false,
       connectionStatus: "disconnected",
-      accountOutput: "",
-      statusOutput: false,
+      output: {}, // handle-based output object
     }),
     dataSchema: EmailAccountDataSchema,
     controls: {
       autoGenerate: true,
       excludeFields: [
         "isActive",
-        "accountOutput",
-        "statusOutput",
+        "output",
         "expandedSize",
         "collapsedSize",
         "connectionStatus",
@@ -283,7 +281,7 @@ const EmailAccountNode = memo(
     const _edges = useStore((s) => s.edges);
 
     // Keep last emitted output to avoid redundant writes
-    const _lastOutputRef = useRef<string | null>(null);
+    const lastGeneralOutputRef = useRef<any>(null);
 
     // -------------------------------------------------------------------------
     // 4.3  Convex integration
@@ -692,9 +690,10 @@ const EmailAccountNode = memo(
       }
     }, [handleAuthSuccess, handleAuthError, isConnected]);
 
-    /** Update output when connection state changes */
+    /* 🔄 Handle-based output field generation for multi-handle compatibility */
     useEffect(() => {
-      if (isEnabled && isConnected) {
+      try {
+        // Create a data object with proper handle field mapping, basically map account config to output handles
         const accountConfig = {
           provider,
           email,
@@ -703,27 +702,78 @@ const EmailAccountNode = memo(
           lastValidated,
         };
 
-        updateNodeData({
-          accountOutput: JSON.stringify(accountConfig),
-          statusOutput: true,
-          isActive: true,
+        const mappedData = {
+          ...nodeData,
+          accountOutput:
+            isEnabled && isConnected ? JSON.stringify(accountConfig) : "", // Map account config to account-output handle
+          statusOutput: isEnabled && isConnected, // Map connection status to status-output handle
+          output:
+            isEnabled && isConnected
+              ? `✅ ${provider.toUpperCase()} account connected: ${email}`
+              : lastError
+                ? `❌ Connection failed: ${lastError}`
+                : `🔌 ${provider.toUpperCase()} account ready`, // Map status to main output handle
+        };
+
+        // Generate Map-based output with error handling
+        const outputValue = generateoutputField(spec, mappedData as any);
+
+        // Validate the result
+        if (!(outputValue instanceof Map)) {
+          console.error(
+            `EmailAccount ${id}: generateoutputField did not return a Map`,
+            outputValue
+          );
+          return;
+        }
+
+        // Convert Map to plain object for Convex compatibility, basically serialize for storage
+        const outputObject = Object.fromEntries(outputValue.entries());
+
+        // Only update if changed
+        const currentoutput = lastGeneralOutputRef.current;
+        let hasChanged = true;
+
+        if (currentoutput instanceof Map && outputValue instanceof Map) {
+          // Compare Map contents
+          hasChanged =
+            currentoutput.size !== outputValue.size ||
+            !Array.from(outputValue.entries()).every(
+              ([key, value]) => currentoutput.get(key) === value
+            );
+        }
+
+        if (hasChanged) {
+          lastGeneralOutputRef.current = outputValue;
+          updateNodeData({
+            output: outputObject,
+            isActive: isEnabled && isConnected,
+          });
+        }
+      } catch (error) {
+        console.error(`EmailAccount ${id}: Error generating output`, error, {
+          spec: spec?.kind,
+          nodeDataKeys: Object.keys(nodeData || {}),
         });
-      } else {
-        updateNodeData({
-          accountOutput: "",
-          statusOutput: false,
-          isActive: false,
-        });
+
+        // Fallback: set empty object to prevent crashes, basically empty state for storage
+        if (lastGeneralOutputRef.current !== null) {
+          lastGeneralOutputRef.current = new Map();
+          updateNodeData({ output: {} });
+        }
       }
     }, [
+      spec.handles,
+      nodeData,
       isEnabled,
       isConnected,
       provider,
       email,
       displayName,
-      nodeData.accountId,
+      lastError,
       lastValidated,
       updateNodeData,
+      id,
     ]);
 
     // -------------------------------------------------------------------------

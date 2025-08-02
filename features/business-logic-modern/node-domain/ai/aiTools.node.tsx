@@ -25,6 +25,7 @@ import { Loading } from "@/components/Loading";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
@@ -69,7 +70,7 @@ export const AiToolsDataSchema = z
     collapsedSize: SafeSchemas.text("C2"),
 
     // output
-    toolsOutput: z.string().default(""),
+    output: z.record(z.string(), z.any()).optional(), // handle-based output object for Convex compatibility
 
     // Optional label
     label: z.string().optional(),
@@ -149,17 +150,12 @@ function createDynamicSpec(data: AiToolsData): NodeSpec {
     initialData: createSafeInitialData(AiToolsDataSchema, {
       calculator: false,
       webSearch: false,
-      toolsOutput: "",
+      output: {}, // handle-based output object
     }),
     dataSchema: AiToolsDataSchema,
     controls: {
       autoGenerate: true,
-      excludeFields: [
-        "isActive",
-        "toolsOutput",
-        "expandedSize",
-        "collapsedSize",
-      ],
+      excludeFields: ["isActive", "output", "expandedSize", "collapsedSize"],
       customFields: [
         { key: "isEnabled", type: "boolean", label: "Enable" },
         { key: "calculator", type: "boolean", label: "Calculator" },
@@ -219,7 +215,7 @@ const AiToolsNode = memo(
     } = nodeData as AiToolsData;
 
     // keep last emitted output to avoid redundant writes
-    const lastOutputRef = useRef<string | null>(null);
+    const lastGeneralOutputRef = useRef<any>(null);
 
     const categoryStyles = CATEGORY_TEXT.AI;
 
@@ -241,19 +237,6 @@ const AiToolsNode = memo(
     const generateToolsConfigData = useCallback(() => {
       return generateToolsConfig({ calculator, webSearch });
     }, [calculator, webSearch]);
-
-    /** Propagate output ONLY when node is active AND enabled */
-    const propagate = useCallback(
-      (value: string) => {
-        const shouldSend = isActive && isEnabled;
-        const out = shouldSend ? value : "";
-        if (out !== lastOutputRef.current) {
-          lastOutputRef.current = out;
-          updateNodeData({ toolsOutput: out });
-        }
-      },
-      [isActive, isEnabled, updateNodeData]
-    );
 
     /** Handle tool checkbox changes */
     const handleToolToggle = useCallback(
@@ -285,17 +268,69 @@ const AiToolsNode = memo(
       } else if (isActive) updateNodeData({ isActive: false });
     }, [calculator, webSearch, isEnabled, isActive, updateNodeData]);
 
-    // Sync output with active and enabled state
+    /* 🔄 Handle-based output field generation for multi-handle compatibility */
     useEffect(() => {
-      const toolsConfig = generateToolsConfigData();
-      propagate(toolsConfig);
+      try {
+        // Create a data object with proper handle field mapping, basically map tools config to output handle
+        const toolsConfig = generateToolsConfig({ calculator, webSearch });
+        const mappedData = {
+          ...nodeData,
+          output: isActive && isEnabled ? toolsConfig : "", // Map tools config to output handle
+        };
+
+        // Generate Map-based output with error handling
+        const outputValue = generateoutputField(spec, mappedData as any);
+
+        // Validate the result
+        if (!(outputValue instanceof Map)) {
+          console.error(
+            `AiTools ${id}: generateoutputField did not return a Map`,
+            outputValue
+          );
+          return;
+        }
+
+        // Convert Map to plain object for Convex compatibility, basically serialize for storage
+        const outputObject = Object.fromEntries(outputValue.entries());
+
+        // Only update if changed
+        const currentoutput = lastGeneralOutputRef.current;
+        let hasChanged = true;
+
+        if (currentoutput instanceof Map && outputValue instanceof Map) {
+          // Compare Map contents
+          hasChanged =
+            currentoutput.size !== outputValue.size ||
+            !Array.from(outputValue.entries()).every(
+              ([key, value]) => currentoutput.get(key) === value
+            );
+        }
+
+        if (hasChanged) {
+          lastGeneralOutputRef.current = outputValue;
+          updateNodeData({ output: outputObject });
+        }
+      } catch (error) {
+        console.error(`AiTools ${id}: Error generating output`, error, {
+          spec: spec?.kind,
+          nodeDataKeys: Object.keys(nodeData || {}),
+        });
+
+        // Fallback: set empty object to prevent crashes, basically empty state for storage
+        if (lastGeneralOutputRef.current !== null) {
+          lastGeneralOutputRef.current = new Map();
+          updateNodeData({ output: {} });
+        }
+      }
     }, [
+      spec.handles,
+      nodeData,
       calculator,
       webSearch,
       isActive,
       isEnabled,
-      generateToolsConfigData,
-      propagate,
+      updateNodeData,
+      id,
     ]);
 
     // -------------------------------------------------------------------------

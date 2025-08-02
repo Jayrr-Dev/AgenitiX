@@ -308,8 +308,14 @@ const TriggerPulseNode = memo(
     /* 🔄 Handle-based output field generation for multi-handle compatibility */
     useEffect(() => {
       try {
+        // Map store value to output handle for generateHandleoutput function, basically provide store as output value
+        const mappedData = {
+          ...nodeData,
+          output: nodeData.store, // Map store field to output handle
+        };
+
         // Generate Map-based output with error handling
-        const outputValue = generateoutputField(spec, nodeData as any);
+        const outputValue = generateoutputField(spec, mappedData as any);
 
         // Validate the result
         if (!(outputValue instanceof Map)) {

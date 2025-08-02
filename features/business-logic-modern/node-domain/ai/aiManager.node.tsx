@@ -27,6 +27,10 @@ import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import {
+  generateoutputField,
+  normalizeHandleId,
+} from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
@@ -58,7 +62,7 @@ export const AiManagerDataSchema = z
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
     inputs: SafeSchemas.optionalText().nullable().default(null),
-    output: SafeSchemas.optionalText(),
+    output: z.record(z.string(), z.any()).optional(), // handle-based output object for Convex compatibility
     expandedSize: SafeSchemas.text("VE2"),
     collapsedSize: SafeSchemas.text("C1"),
     label: z.string().optional(), // User-editable node label
@@ -138,7 +142,7 @@ function createDynamicSpec(data: AiManagerData): NodeSpec {
     initialData: createSafeInitialData(AiManagerDataSchema, {
       store: "Default text",
       inputs: null,
-      output: "",
+      output: {}, // handle-based output object
     }),
     dataSchema: AiManagerDataSchema,
     controls: {
@@ -205,7 +209,7 @@ const AiManagerNode = memo(
     const edges = useStore((s) => s.edges);
 
     // keep last emitted output to avoid redundant writes
-    const lastOutputRef = useRef<string | null>(null);
+    const lastGeneralOutputRef = useRef<any>(null);
 
     const categoryStyles = CATEGORY_TEXT.AI;
 
@@ -223,22 +227,9 @@ const AiManagerNode = memo(
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
 
-    /** Propagate output ONLY when node is active AND enabled */
-    const propagate = useCallback(
-      (value: string) => {
-        const shouldSend = isActive && isEnabled;
-        const out = shouldSend ? value : null;
-        if (out !== lastOutputRef.current) {
-          lastOutputRef.current = out;
-          updateNodeData({ output: out });
-        }
-      },
-      [isActive, isEnabled, updateNodeData]
-    );
-
     /** Clear JSON‑ish fields when inactive or disabled */
     const blockJsonWhenInactive = useCallback(() => {
-      if (!isActive || !isEnabled) {
+      if (!(isActive && isEnabled)) {
         updateNodeData({
           json: null,
           data: null,
@@ -268,8 +259,33 @@ const AiManagerNode = memo(
       const src = nodes.find((n) => n.id === incoming.source);
       if (!src) return null;
 
-      // priority: output ➜ store ➜ whole data
-      const inputValue = src.data?.output ?? src.data?.store ?? src.data;
+      // Unified input reading system - prioritize handle-based output, basically single source for input data
+      const sourceData = src.data;
+      let inputValue: any;
+
+      // 1. Handle-based output (unified system)
+      if (sourceData?.output && typeof sourceData.output === "object") {
+        // Try to get value from handle-based output
+        const handleId = incoming.sourceHandle
+          ? normalizeHandleId(incoming.sourceHandle)
+          : "output";
+        const output = sourceData.output as Record<string, any>;
+        if (output[handleId] !== undefined) {
+          inputValue = output[handleId];
+        } else {
+          // Fallback: get first available output value
+          const firstOutput = Object.values(output)[0];
+          if (firstOutput !== undefined) {
+            inputValue = firstOutput;
+          }
+        }
+      }
+
+      // 2. Legacy value fallbacks for compatibility
+      if (inputValue === undefined) {
+        inputValue = sourceData?.store ?? sourceData;
+      }
+
       return typeof inputValue === "string"
         ? inputValue
         : String(inputValue || "");
@@ -294,6 +310,61 @@ const AiManagerNode = memo(
         updateNodeData({ inputs: inputVal });
       }
     }, [computeInput, nodeData, updateNodeData]);
+
+    /* 🔄 Handle-based output field generation for multi-handle compatibility */
+    useEffect(() => {
+      try {
+        // Create a data object with proper handle field mapping, basically map store to output handle
+        const mappedData = {
+          ...nodeData,
+          output: nodeData.store, // Map store field to output handle
+        };
+
+        // Generate Map-based output with error handling
+        const outputValue = generateoutputField(spec, mappedData as any);
+
+        // Validate the result
+        if (!(outputValue instanceof Map)) {
+          console.error(
+            `AiManager ${id}: generateoutputField did not return a Map`,
+            outputValue
+          );
+          return;
+        }
+
+        // Convert Map to plain object for Convex compatibility, basically serialize for storage
+        const outputObject = Object.fromEntries(outputValue.entries());
+
+        // Only update if changed
+        const currentoutput = lastGeneralOutputRef.current;
+        let hasChanged = true;
+
+        if (currentoutput instanceof Map && outputValue instanceof Map) {
+          // Compare Map contents
+          hasChanged =
+            currentoutput.size !== outputValue.size ||
+            !Array.from(outputValue.entries()).every(
+              ([key, value]) => currentoutput.get(key) === value
+            );
+        }
+
+        if (hasChanged) {
+          lastGeneralOutputRef.current = outputValue;
+          updateNodeData({ output: outputObject });
+        }
+      } catch (error) {
+        console.error(`AiManager ${id}: Error generating output`, error, {
+          spec: spec?.kind,
+          nodeDataKeys: Object.keys(nodeData || {}),
+        });
+
+        // Fallback: set empty object to prevent crashes, basically empty state for storage
+        if (lastGeneralOutputRef.current !== null) {
+          lastGeneralOutputRef.current = new Map();
+          updateNodeData({ output: {} });
+        }
+      }
+    }, [spec.handles, nodeData, updateNodeData, id]);
 
     /* 🔄 Make isEnabled dependent on input value only when there are connections. */
     useEffect(() => {
@@ -322,13 +393,10 @@ const AiManagerNode = memo(
       } else if (isActive) updateNodeData({ isActive: false });
     }, [store, isEnabled, isActive, updateNodeData]);
 
-    // Sync output with active and enabled state
+    // Sync JSON fields with active and enabled state
     useEffect(() => {
-      const currentStore = store ?? "";
-      const actualContent = currentStore === "Default text" ? "" : currentStore;
-      propagate(actualContent);
       blockJsonWhenInactive();
-    }, [isActive, isEnabled, store, propagate, blockJsonWhenInactive]);
+    }, [isActive, isEnabled, blockJsonWhenInactive]);
 
     // -------------------------------------------------------------------------
     // 4.6  Validation

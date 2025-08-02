@@ -20,6 +20,10 @@ import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import {
+  generateoutputField,
+  normalizeHandleId,
+} from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
@@ -43,12 +47,12 @@ import { useStore } from "@xyflow/react";
 // Schema & Types
 export const CreateObjectDataSchema = z
   .object({
-    store: z.string().default("{}"),
+    store: z.string().default("{\n\n}"),
     isEnabled: SafeSchemas.boolean(true),
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
     inputs: SafeSchemas.optionalText().nullable().default(null),
-    output: SafeSchemas.optionalText(),
+    output: z.record(z.string(), z.any()).optional(), // handle-based output object for Convex compatibility
     expandedSize: SafeSchemas.text("VE2"),
     collapsedSize: SafeSchemas.text("C1W"),
     label: z.string().optional(),
@@ -124,9 +128,9 @@ const createDynamicSpec = (() => {
       version: 1,
       runtime: { execute: "createObject_execute_v1" },
       initialData: createSafeInitialData(CreateObjectDataSchema, {
-        store: "{}",
+        store: "{\n\n}",
         inputs: null,
-        output: "",
+        output: {}, // handle-based output object
       }),
       dataSchema: CreateObjectDataSchema,
       controls: {
@@ -196,7 +200,7 @@ const CreateObjectNode = memo(
     const edges = useStore(useCallback((s) => s.edges, []));
 
     // Refs for performance
-    const lastOutputRef = useRef<string | null>(null);
+    const lastGeneralOutputRef = useRef<any>(null);
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const editorRef = useRef<any>(null);
 
@@ -238,21 +242,6 @@ const CreateObjectNode = memo(
       [showSuccess, showError]
     );
 
-    const propagate = useCallback(
-      (value: string) => {
-        if (!(isActive && isEnabled)) return;
-
-        const parsed = parseJsonSafely(value, false); // Don't show toast immediately, basically silent parsing
-        const serialized = JSON.stringify(parsed);
-
-        if (serialized !== JSON.stringify(lastOutputRef.current)) {
-          lastOutputRef.current = parsed;
-          updateNodeData({ output: parsed });
-        }
-      },
-      [isActive, isEnabled, updateNodeData, parseJsonSafely]
-    );
-
     const blockJsonWhenInactive = useCallback(() => {
       if (!(isActive && isEnabled)) {
         updateNodeData({
@@ -276,7 +265,33 @@ const CreateObjectNode = memo(
       const src = nodes.find((n) => n.id === incoming.source);
       if (!src) return null;
 
-      const inputValue = src.data?.output ?? src.data?.store ?? src.data;
+      // Unified input reading system - prioritize handle-based output, basically single source for input data
+      const sourceData = src.data;
+      let inputValue: any;
+
+      // 1. Handle-based output (unified system)
+      if (sourceData?.output && typeof sourceData.output === "object") {
+        // Try to get value from handle-based output
+        const handleId = incoming.sourceHandle
+          ? normalizeHandleId(incoming.sourceHandle)
+          : "output";
+        const output = sourceData.output as Record<string, any>;
+        if (output[handleId] !== undefined) {
+          inputValue = output[handleId];
+        } else {
+          // Fallback: get first available output value
+          const firstOutput = Object.values(output)[0];
+          if (firstOutput !== undefined) {
+            inputValue = firstOutput;
+          }
+        }
+      }
+
+      // 2. Legacy value fallbacks for compatibility
+      if (inputValue === undefined) {
+        inputValue = sourceData?.store ?? sourceData;
+      }
+
       return typeof inputValue === "string"
         ? inputValue
         : JSON.stringify(inputValue || {});
@@ -295,12 +310,12 @@ const CreateObjectNode = memo(
         // Immediate UI update
         updateNodeData({ store: newValue });
 
-        // Debounced validation and propagation
+        // Debounced validation
         debounceTimeoutRef.current = setTimeout(() => {
-          propagate(newValue === "{}" ? "{}" : newValue);
+          // Validation handled by parseJsonSafely
         }, DEBOUNCE_DELAY);
       },
-      [updateNodeData, propagate]
+      [updateNodeData]
     );
 
     // Monaco Editor blur handler
@@ -383,6 +398,61 @@ const CreateObjectNode = memo(
       }
     }, [computeInput, nodeData, updateNodeData]);
 
+    /* 🔄 Handle-based output field generation for multi-handle compatibility */
+    useEffect(() => {
+      try {
+        // Create a data object with proper handle field mapping, basically map store to output handle
+        const mappedData = {
+          ...nodeData,
+          output: nodeData.store, // Map store field to output handle
+        };
+
+        // Generate Map-based output with error handling
+        const outputValue = generateoutputField(spec, mappedData as any);
+
+        // Validate the result
+        if (!(outputValue instanceof Map)) {
+          console.error(
+            `CreateObject ${id}: generateoutputField did not return a Map`,
+            outputValue
+          );
+          return;
+        }
+
+        // Convert Map to plain object for Convex compatibility, basically serialize for storage
+        const outputObject = Object.fromEntries(outputValue.entries());
+
+        // Only update if changed
+        const currentoutput = lastGeneralOutputRef.current;
+        let hasChanged = true;
+
+        if (currentoutput instanceof Map && outputValue instanceof Map) {
+          // Compare Map contents
+          hasChanged =
+            currentoutput.size !== outputValue.size ||
+            !Array.from(outputValue.entries()).every(
+              ([key, value]) => currentoutput.get(key) === value
+            );
+        }
+
+        if (hasChanged) {
+          lastGeneralOutputRef.current = outputValue;
+          updateNodeData({ output: outputObject });
+        }
+      } catch (error) {
+        console.error(`CreateObject ${id}: Error generating output`, error, {
+          spec: spec?.kind,
+          nodeDataKeys: Object.keys(nodeData || {}),
+        });
+
+        // Fallback: set empty object to prevent crashes, basically empty state for storage
+        if (lastGeneralOutputRef.current !== null) {
+          lastGeneralOutputRef.current = new Map();
+          updateNodeData({ output: {} });
+        }
+      }
+    }, [spec.handles, nodeData, updateNodeData, id]);
+
     useEffect(() => {
       const currentInputs = (nodeData as CreateObjectData).inputs;
 
@@ -402,7 +472,9 @@ const CreateObjectNode = memo(
     useEffect(() => {
       const currentStore = store ?? "";
       const hasValidStore =
-        currentStore.trim().length > 0 && currentStore !== "{}";
+        currentStore.trim().length > 0 &&
+        currentStore !== "{}" &&
+        currentStore !== "{\n\n}";
       const shouldBeActive = isEnabled && hasValidStore;
 
       if (isActive !== shouldBeActive) {
@@ -412,14 +484,9 @@ const CreateObjectNode = memo(
 
     useEffect(() => {
       const currentStore = store ?? "";
-      const actualContent = currentStore === "{}" ? "{}" : currentStore;
-
-      if (isActive && isEnabled) {
-        propagate(actualContent);
-      } else {
-        blockJsonWhenInactive();
-      }
-    }, [isActive, isEnabled, store, propagate, blockJsonWhenInactive]);
+      // Handle output generation is now done in the unified effect
+      blockJsonWhenInactive();
+    }, [isActive, isEnabled, blockJsonWhenInactive]);
 
     // Cleanup debounce timeout on unmount
     useEffect(() => {
@@ -458,15 +525,12 @@ const CreateObjectNode = memo(
 
     // Memoized styles and values
     const categoryStyles = useMemo(() => CATEGORY_TEXT.CREATE, []);
-    const displayValue = useMemo(
-      () => (store === "{}" ? "" : (store ?? "")),
-      [store]
-    );
+    const displayValue = useMemo(() => store ?? "{\n\n}", [store]);
 
     // Count keys in the JSON object for collapsed mode display
     const objectKeyCount = useMemo(() => {
       try {
-        if (!store || store === "{}") return 0;
+        if (!store || store === "{}" || store === "{\n\n}") return 0;
         const parsed = JSON.parse(store);
         if (
           typeof parsed === "object" &&
@@ -633,7 +697,8 @@ const CreateObjectNodeWithDynamicSpec = memo((props: NodeProps) => {
 
   // Cached spec generation
   const dynamicSpec = useMemo(
-    () => createDynamicSpec({ ...sizeKeys, store: "{}" } as CreateObjectData),
+    () =>
+      createDynamicSpec({ ...sizeKeys, store: "{\n\n}" } as CreateObjectData),
     [sizeKeys]
   );
 

@@ -27,6 +27,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
+  generateoutputField,
+  normalizeHandleId,
+} from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
+import {
   SafeSchemas,
   createSafeInitialData,
 } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
@@ -106,8 +110,7 @@ export const StoreInMemoryDataSchema = z
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
     inputs: SafeSchemas.optionalText().nullable().default(null),
-    output: SafeSchemas.optionalText(),
-    output: SafeSchemas.optionalText(), // For compatibility with viewText
+    output: z.record(z.string(), z.any()).optional(), // handle-based output object for Convex compatibility
     expandedSize: SafeSchemas.text("VE1"),
     collapsedSize: SafeSchemas.text("C1W"),
     // Storage status
@@ -198,8 +201,7 @@ function createDynamicSpec(data: StoreInMemoryData): NodeSpec {
       operation: "set",
       dataType: "string",
       inputs: null,
-      output: "",
-      output: "",
+      output: {}, // handle-based output object
       storageStatus: "ready",
       lastOperation: "",
     }),
@@ -209,7 +211,6 @@ function createDynamicSpec(data: StoreInMemoryData): NodeSpec {
       excludeFields: [
         "isActive",
         "inputs",
-        "output",
         "output",
         "expandedSize",
         "collapsedSize",
@@ -292,7 +293,8 @@ const StoreInMemoryNode = memo(
     const edges = useStore((s) => s.edges);
 
     // Keep last emitted output to avoid redundant writes
-    const lastOutputRef = useRef<string | null>(null);
+    const lastGeneralOutputRef = useRef<any>(null);
+    const lastResultRef = useRef<any>(null);
 
     // -------------------------------------------------------------------------
     // 5.3  Helper functions
@@ -378,20 +380,16 @@ const StoreInMemoryNode = memo(
         }
 
         updateNodeData({
-          output: result,
-          output: result, // For compatibility with viewText
           storageStatus: status,
           lastOperation: `${operation}:${key}`,
           isActive: true,
         });
 
-        lastOutputRef.current = String(result);
+        lastResultRef.current = result;
       } catch (error) {
         const errorMsg =
           error instanceof Error ? error.message : "Unknown error";
         updateNodeData({
-          output: `Error: ${errorMsg}`,
-          output: `Error: ${errorMsg}`, // For compatibility with viewText
           storageStatus: "error",
           lastOperation: `${operation}:${key} (failed)`,
           isActive: false,
@@ -454,7 +452,7 @@ const StoreInMemoryNode = memo(
     // 5.6  Effects
     // -------------------------------------------------------------------------
 
-    /** Monitor inputs from connected nodes */
+    /** Monitor inputs from connected nodes using unified input reading system */
     useEffect(() => {
       const valueEdge = findEdgeByHandle(edges, id, "value-input");
 
@@ -462,11 +460,33 @@ const StoreInMemoryNode = memo(
       if (valueEdge) {
         const valueNode = nodes.find((n) => n.id === valueEdge.source);
         if (valueNode) {
-          const inputValue =
-            valueNode.data?.output ??
-            valueNode.data?.text ??
-            valueNode.data?.store ??
-            "";
+          // Unified input reading system - prioritize handle-based output, basically single source for input data
+          const sourceData = valueNode.data;
+          let inputValue: any;
+
+          // 1. Handle-based output (unified system)
+          if (sourceData?.output && typeof sourceData.output === "object") {
+            // Try to get value from handle-based output
+            const handleId = valueEdge.sourceHandle
+              ? normalizeHandleId(valueEdge.sourceHandle)
+              : "output";
+            const output = sourceData.output as Record<string, any>;
+            if (output[handleId] !== undefined) {
+              inputValue = output[handleId];
+            } else {
+              // Fallback: get first available output value
+              const firstOutput = Object.values(output)[0];
+              if (firstOutput !== undefined) {
+                inputValue = firstOutput;
+              }
+            }
+          }
+
+          // 2. Legacy value fallbacks for compatibility
+          if (inputValue === undefined) {
+            inputValue = sourceData?.text ?? sourceData?.store ?? sourceData;
+          }
+
           const newValue = String(inputValue || "");
           if (newValue !== value && newValue) {
             updateNodeData({ value: newValue });
@@ -481,6 +501,62 @@ const StoreInMemoryNode = memo(
         executeOperation();
       }
     }, [key, isEnabled, executeOperation]);
+
+    /* 🔄 Handle-based output field generation for multi-handle compatibility */
+    useEffect(() => {
+      try {
+        // Create a data object with proper handle field mapping, basically map result to output handles
+        const mappedData = {
+          ...nodeData,
+          output: lastResultRef.current || "", // Map result to output handle
+          statusOutput: storageStatus, // Map status to status-output handle
+        };
+
+        // Generate Map-based output with error handling
+        const outputValue = generateoutputField(spec, mappedData as any);
+
+        // Validate the result
+        if (!(outputValue instanceof Map)) {
+          console.error(
+            `StoreInMemory ${id}: generateoutputField did not return a Map`,
+            outputValue
+          );
+          return;
+        }
+
+        // Convert Map to plain object for Convex compatibility, basically serialize for storage
+        const outputObject = Object.fromEntries(outputValue.entries());
+
+        // Only update if changed
+        const currentoutput = lastGeneralOutputRef.current;
+        let hasChanged = true;
+
+        if (currentoutput instanceof Map && outputValue instanceof Map) {
+          // Compare Map contents
+          hasChanged =
+            currentoutput.size !== outputValue.size ||
+            !Array.from(outputValue.entries()).every(
+              ([key, value]) => currentoutput.get(key) === value
+            );
+        }
+
+        if (hasChanged) {
+          lastGeneralOutputRef.current = outputValue;
+          updateNodeData({ output: outputObject });
+        }
+      } catch (error) {
+        console.error(`StoreInMemory ${id}: Error generating output`, error, {
+          spec: spec?.kind,
+          nodeDataKeys: Object.keys(nodeData || {}),
+        });
+
+        // Fallback: set empty object to prevent crashes, basically empty state for storage
+        if (lastGeneralOutputRef.current !== null) {
+          lastGeneralOutputRef.current = new Map();
+          updateNodeData({ output: {} });
+        }
+      }
+    }, [spec.handles, nodeData, storageStatus, updateNodeData, id]);
 
     // -------------------------------------------------------------------------
     // 5.7  Validation

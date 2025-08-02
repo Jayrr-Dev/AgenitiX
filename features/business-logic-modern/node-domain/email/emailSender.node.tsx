@@ -25,6 +25,7 @@ import { z } from "zod";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
@@ -137,11 +138,8 @@ export const EmailSenderDataSchema = z
     expandedSize: SafeSchemas.text("VE3"),
     collapsedSize: SafeSchemas.text("C2"),
 
-    // output
-    successOutput: SafeSchemas.boolean(false),
-    messageIdOutput: SafeSchemas.optionalText(),
-    errorOutput: SafeSchemas.optionalText(),
-    output: SafeSchemas.optionalText(), // Formatted output for viewText nodes
+    // output - unified handle-based output system
+    output: z.record(z.string(), z.any()).optional(), // handle-based output object for Convex compatibility
   })
   .passthrough();
 
@@ -272,18 +270,14 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
       sentCount: 0,
       failedCount: 0,
       lastError: "",
-      successOutput: false,
-      messageIdOutput: "",
-      errorOutput: "",
+      output: {}, // handle-based output object
     }),
     dataSchema: EmailSenderDataSchema,
     controls: {
       autoGenerate: true,
       excludeFields: [
         "isActive",
-        "successOutput",
-        "messageIdOutput",
-        "errorOutput",
+        "output",
         "expandedSize",
         "collapsedSize",
         "sendingStatus",
@@ -395,7 +389,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   const edges = useStore((s) => s.edges);
 
   // Keep last emitted output to avoid redundant writes
-  const lastOutputRef = useRef<string | null>(null);
+  const lastGeneralOutputRef = useRef<any>(null);
 
   // -------------------------------------------------------------------------
   // 4.3  Convex integration
@@ -815,6 +809,81 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       });
     }
   }, [isEnabled, sendingStatus, updateNodeData]);
+
+  /* 🔄 Handle-based output field generation for multi-handle compatibility */
+  useEffect(() => {
+    try {
+      // Create a data object with proper handle field mapping, basically map email results to output handles
+      const mappedData = {
+        ...nodeData,
+        successOutput: sendingStatus === "sent", // Map success state to success-output handle
+        messageIdOutput: lastSent
+          ? `Message sent at ${new Date(lastSent).toLocaleString()}`
+          : "", // Map message info to message-id-output handle
+        errorOutput: lastError || "", // Map error to error-output handle
+        output:
+          sendingStatus === "sent"
+            ? "✅ Email sent successfully"
+            : sendingStatus === "error"
+              ? `❌ ${lastError}`
+              : sendingStatus === "sending"
+                ? "📧 Sending..."
+                : "📧 Ready to send", // Map status to main output handle
+      };
+
+      // Generate Map-based output with error handling
+      const outputValue = generateoutputField(spec, mappedData as any);
+
+      // Validate the result
+      if (!(outputValue instanceof Map)) {
+        console.error(
+          `EmailSender ${id}: generateoutputField did not return a Map`,
+          outputValue
+        );
+        return;
+      }
+
+      // Convert Map to plain object for Convex compatibility, basically serialize for storage
+      const outputObject = Object.fromEntries(outputValue.entries());
+
+      // Only update if changed
+      const currentoutput = lastGeneralOutputRef.current;
+      let hasChanged = true;
+
+      if (currentoutput instanceof Map && outputValue instanceof Map) {
+        // Compare Map contents
+        hasChanged =
+          currentoutput.size !== outputValue.size ||
+          !Array.from(outputValue.entries()).every(
+            ([key, value]) => currentoutput.get(key) === value
+          );
+      }
+
+      if (hasChanged) {
+        lastGeneralOutputRef.current = outputValue;
+        updateNodeData({ output: outputObject });
+      }
+    } catch (error) {
+      console.error(`EmailSender ${id}: Error generating output`, error, {
+        spec: spec?.kind,
+        nodeDataKeys: Object.keys(nodeData || {}),
+      });
+
+      // Fallback: set empty object to prevent crashes, basically empty state for storage
+      if (lastGeneralOutputRef.current !== null) {
+        lastGeneralOutputRef.current = new Map();
+        updateNodeData({ output: {} });
+      }
+    }
+  }, [
+    spec.handles,
+    nodeData,
+    sendingStatus,
+    lastSent,
+    lastError,
+    updateNodeData,
+    id,
+  ]);
 
   // -------------------------------------------------------------------------
   // 4.7  Validation

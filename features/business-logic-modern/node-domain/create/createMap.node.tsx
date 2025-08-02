@@ -1,32 +1,29 @@
 /**
- * CreateMap NODE – Content‑focused, schema‑driven, type‑safe
+ * CreateMap NODE – Key‑value table interface for dictionary creation
  *
- * • Shows only internal layout; the scaffold provides borders, sizing, theming, and interactivity.
- * • Zod schema auto‑generates type‑checked Inspector controls.
- * • Dynamic sizing (expandedSize / collapsedSize) drives the spec.
- * • Output propagation is gated by `isActive` *and* `isEnabled` to prevent runaway loops.
- * • Uses findEdgeByHandle utility for robust React Flow edge handling.
- * • Auto-disables when all input connections are removed (handled by flow store).
- * • Code is fully commented and follows current React + TypeScript best practices.
+ * • Shows a simple key-value table interface for creating dictionaries/objects
+ * • Outputs a plain object (not Map) for Convex compatibility
+ * • Dynamic sizing (expandedSize / collapsedSize) drives the spec
+ * • Output propagation is gated by `isActive` *and* `isEnabled` to prevent runaway loops
+ * • Uses findEdgeByHandle utility for robust React Flow edge handling
+ * • Auto-disables when all input connections are removed (handled by flow store)
+ * • Code is fully commented and follows current React + TypeScript best practices
  *
- * Keywords: create-map, schema-driven, type‑safe, clean‑architecture
+ * Keywords: create-map, key-value-table, dictionary, type‑safe, clean‑architecture
  */
 
 import type { NodeProps } from "@xyflow/react";
-import {
-  type ChangeEvent,
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import {
+  generateoutputField,
+  normalizeHandleId,
+} from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
@@ -45,6 +42,7 @@ import {
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
+// import { useNodeToast } from "@/hooks/useNodeToast";
 import { useStore } from "@xyflow/react";
 
 // -----------------------------------------------------------------------------
@@ -53,13 +51,13 @@ import { useStore } from "@xyflow/react";
 
 export const CreateMapDataSchema = z
   .object({
-    store: SafeSchemas.text("Default text"),
+    store: SafeSchemas.text(""), // Will store JSON string of key-value pairs
     isEnabled: SafeSchemas.boolean(true),
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
     inputs: SafeSchemas.optionalText().nullable().default(null),
-    output: SafeSchemas.optionalText(),
-    expandedSize: SafeSchemas.text("FE1"),
+    output: z.record(z.string(), z.any()).optional(), // handle-based output object for Convex compatibility
+    expandedSize: SafeSchemas.text("FE2"),
     collapsedSize: SafeSchemas.text("C1W"),
     label: z.string().optional(), // User-editable node label
   })
@@ -73,11 +71,12 @@ const validateNodeData = createNodeValidator(CreateMapDataSchema, "CreateMap");
 // 2️⃣  Constants
 // -----------------------------------------------------------------------------
 
-const CATEGORY_TEXT = {
-  CREATE: {
-    primary: "text-[--node--c-r-e-a-t-e-text]",
-  },
-} as const;
+// Category text styles (unused but kept for consistency)
+// const CATEGORY_TEXT = {
+//   CREATE: {
+//     primary: "text-[--node--c-r-e-a-t-e-text]",
+//   },
+// } as const;
 
 const CONTENT = {
   expanded: "p-4 w-full h-full flex flex-col",
@@ -87,6 +86,12 @@ const CONTENT = {
   disabled:
     "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
+
+// Key-value pair interface
+interface KeyValuePair {
+  key: string;
+  value: string;
+}
 
 // -----------------------------------------------------------------------------
 // 3️⃣  Dynamic spec factory (pure)
@@ -98,7 +103,7 @@ const CONTENT = {
 function createDynamicSpec(data: CreateMapData): NodeSpec {
   const expanded =
     EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
-    EXPANDED_SIZES.FE1;
+    EXPANDED_SIZES.FE2;
   const collapsed =
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C1W;
@@ -136,9 +141,9 @@ function createDynamicSpec(data: CreateMapData): NodeSpec {
     version: 1,
     runtime: { execute: "createMap_execute_v1" },
     initialData: createSafeInitialData(CreateMapDataSchema, {
-      store: "Default text",
+      store: "{}",
       inputs: null,
-      output: "",
+      output: {}, // handle-based output object
     }),
     dataSchema: CreateMapDataSchema,
     controls: {
@@ -179,7 +184,7 @@ function createDynamicSpec(data: CreateMapData): NodeSpec {
 
 /** Static spec for registry (uses default size keys) */
 export const spec: NodeSpec = createDynamicSpec({
-  expandedSize: "FE1",
+  expandedSize: "FE2",
   collapsedSize: "C1W",
 } as CreateMapData);
 
@@ -193,6 +198,8 @@ const CreateMapNode = memo(
     // 4.1  Sync with React‑Flow store
     // -------------------------------------------------------------------------
     const { nodeData, updateNodeData } = useNodeData(id, data);
+    // Toast notifications available if needed
+    // const { showInfo } = useNodeToast(id);
 
     // -------------------------------------------------------------------------
     // 4.2  Derived state
@@ -205,9 +212,15 @@ const CreateMapNode = memo(
     const edges = useStore((s) => s.edges);
 
     // keep last emitted output to avoid redundant writes
-    const lastOutputRef = useRef<string | null>(null);
+    const lastGeneralOutputRef = useRef<any>(null);
 
-    const categoryStyles = CATEGORY_TEXT.CREATE;
+    // Category styles for future use
+    // const categoryStyles = CATEGORY_TEXT.CREATE;
+
+    // Local state for key-value pairs
+    const [keyValuePairs, setKeyValuePairs] = useState<KeyValuePair[]>([
+      { key: "", value: "" },
+    ]);
 
     // -------------------------------------------------------------------------
     // 4.3  Feature flag evaluation (after all hooks)
@@ -223,22 +236,9 @@ const CreateMapNode = memo(
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
 
-    /** Propagate output ONLY when node is active AND enabled */
-    const propagate = useCallback(
-      (value: string) => {
-        const shouldSend = isActive && isEnabled;
-        const out = shouldSend ? value : null;
-        if (out !== lastOutputRef.current) {
-          lastOutputRef.current = out;
-          updateNodeData({ output: out });
-        }
-      },
-      [isActive, isEnabled, updateNodeData]
-    );
-
     /** Clear JSON‑ish fields when inactive or disabled */
     const blockJsonWhenInactive = useCallback(() => {
-      if (!isActive || !isEnabled) {
+      if (!(isActive && isEnabled)) {
         updateNodeData({
           json: null,
           data: null,
@@ -268,24 +268,153 @@ const CreateMapNode = memo(
       const src = nodes.find((n) => n.id === incoming.source);
       if (!src) return null;
 
-      // priority: output ➜ store ➜ whole data
-      const inputValue = src.data?.output ?? src.data?.store ?? src.data;
+      // Unified input reading system - prioritize handle-based output, basically single source for input data
+      const sourceData = src.data;
+      let inputValue: any;
+
+      // 1. Handle-based output (unified system)
+      if (sourceData?.output && typeof sourceData.output === "object") {
+        // Try to get value from handle-based output
+        const handleId = incoming.sourceHandle
+          ? normalizeHandleId(incoming.sourceHandle)
+          : "output";
+        const output = sourceData.output as Record<string, any>;
+        if (output[handleId] !== undefined) {
+          inputValue = output[handleId];
+        } else {
+          // Fallback: get first available output value
+          const firstOutput = Object.values(output)[0];
+          if (firstOutput !== undefined) {
+            inputValue = firstOutput;
+          }
+        }
+      }
+
+      // 2. Legacy value fallbacks for compatibility
+      if (inputValue === undefined) {
+        inputValue = sourceData?.store ?? sourceData;
+      }
+
       return typeof inputValue === "string"
         ? inputValue
         : String(inputValue || "");
     }, [edges, nodes, id]);
 
-    /** Handle textarea change (memoised for perf) */
-    const handleStoreChange = useCallback(
-      (e: ChangeEvent<HTMLTextAreaElement>) => {
-        updateNodeData({ store: e.target.value });
+    // Convert key-value pairs to object
+    const convertPairsToObject = useCallback((pairs: KeyValuePair[]) => {
+      const obj: Record<string, string> = {};
+      pairs.forEach(({ key, value }) => {
+        if (key.trim()) {
+          obj[key.trim()] = value;
+        }
+      });
+      return obj;
+    }, []);
+
+    // Convert object to key-value pairs
+    const convertObjectToPairs = useCallback((obj: Record<string, any>) => {
+      const pairs: KeyValuePair[] = [];
+      Object.entries(obj).forEach(([key, value]) => {
+        pairs.push({ key, value: String(value) });
+      });
+      if (pairs.length === 0) {
+        pairs.push({ key: "", value: "" });
+      }
+      return pairs;
+    }, []);
+
+    // Handle key-value pair changes
+    const handlePairChange = useCallback(
+      (index: number, field: "key" | "value", value: string) => {
+        const newPairs = [...keyValuePairs];
+        newPairs[index][field] = value;
+        setKeyValuePairs(newPairs);
+
+        // Convert to object and update store
+        const obj = convertPairsToObject(newPairs);
+        updateNodeData({ store: JSON.stringify(obj) });
       },
-      [updateNodeData]
+      [keyValuePairs, convertPairsToObject, updateNodeData]
+    );
+
+    // Add new key-value pair
+    const addPair = useCallback(() => {
+      setKeyValuePairs([...keyValuePairs, { key: "", value: "" }]);
+    }, [keyValuePairs]);
+
+    // Remove key-value pair
+    const removePair = useCallback(
+      (index: number) => {
+        if (keyValuePairs.length > 1) {
+          const newPairs = keyValuePairs.filter((_, i) => i !== index);
+          setKeyValuePairs(newPairs);
+
+          // Convert to object and update store
+          const obj = convertPairsToObject(newPairs);
+          updateNodeData({ store: JSON.stringify(obj) });
+        }
+      },
+      [keyValuePairs, convertPairsToObject, updateNodeData]
     );
 
     // -------------------------------------------------------------------------
     // 4.5  Effects
     // -------------------------------------------------------------------------
+
+    /* 🔄 Handle-based output field generation for multi-handle compatibility */
+    useEffect(() => {
+      try {
+        // Create a data object with proper handle field mapping, basically map store to output handle
+        const mappedData = {
+          ...nodeData,
+          output: nodeData.store, // Map store field to output handle
+        };
+
+        // Generate Map-based output with error handling
+        const outputValue = generateoutputField(spec, mappedData as any);
+
+        // Validate the result
+        if (!(outputValue instanceof Map)) {
+          console.error(
+            `CreateMap ${id}: generateoutputField did not return a Map`,
+            outputValue
+          );
+          return;
+        }
+
+        // Convert Map to plain object for Convex compatibility, basically serialize for storage
+        const outputObject = Object.fromEntries(outputValue.entries());
+
+        // Only update if changed
+        const currentoutput = lastGeneralOutputRef.current;
+        let hasChanged = true;
+
+        if (currentoutput instanceof Map && outputValue instanceof Map) {
+          // Compare Map contents
+          hasChanged =
+            currentoutput.size !== outputValue.size ||
+            !Array.from(outputValue.entries()).every(
+              ([key, value]) => currentoutput.get(key) === value
+            );
+        }
+
+        if (hasChanged) {
+          lastGeneralOutputRef.current = outputValue;
+          updateNodeData({ output: outputObject });
+        }
+      } catch (error) {
+        console.error(`CreateMap ${id}: Error generating output`, error, {
+          spec: spec?.kind,
+          nodeDataKeys: Object.keys(nodeData || {}),
+        });
+
+        // Fallback: set empty object to prevent crashes, basically empty state for storage
+        if (lastGeneralOutputRef.current !== null) {
+          lastGeneralOutputRef.current = new Map();
+          updateNodeData({ output: {} });
+        }
+      }
+    }, [spec.handles, nodeData, updateNodeData, id]);
 
     /* 🔄 Whenever nodes/edges change, recompute inputs. */
     useEffect(() => {
@@ -312,23 +441,81 @@ const CreateMapNode = memo(
     useEffect(() => {
       const currentStore = store ?? "";
       const hasValidStore =
-        currentStore.trim().length > 0 && currentStore !== "Default text";
+        currentStore.trim().length > 0 &&
+        currentStore !== "{}" &&
+        currentStore !== "Default text";
 
       // If disabled, always set isActive to false
       if (isEnabled) {
         if (isActive !== hasValidStore) {
           updateNodeData({ isActive: hasValidStore });
         }
-      } else if (isActive) updateNodeData({ isActive: false });
+      } else if (isActive) {
+        updateNodeData({ isActive: false });
+      }
     }, [store, isEnabled, isActive, updateNodeData]);
 
-    // Sync output with active and enabled state
+    // Sync JSON fields with active and enabled state
     useEffect(() => {
-      const currentStore = store ?? "";
-      const actualContent = currentStore === "Default text" ? "" : currentStore;
-      propagate(actualContent);
       blockJsonWhenInactive();
-    }, [isActive, isEnabled, store, propagate, blockJsonWhenInactive]);
+    }, [isActive, isEnabled, blockJsonWhenInactive]);
+
+    // Initialize key-value pairs from store
+    useEffect(() => {
+      try {
+        if (
+          store &&
+          store !== "{}" &&
+          store !== "" &&
+          store !== "Default text"
+        ) {
+          // Try to parse as JSON first
+          try {
+            const obj = JSON.parse(store);
+            if (typeof obj === "object" && obj !== null) {
+              const pairs = convertObjectToPairs(obj);
+              setKeyValuePairs(pairs);
+              return;
+            }
+          } catch {
+            // If JSON parsing fails, treat as legacy text data
+            console.warn(
+              "Store contains non-JSON data, treating as legacy:",
+              store
+            );
+
+            // Convert legacy text to a simple key-value pair
+            if (typeof store === "string" && store.trim()) {
+              setKeyValuePairs([{ key: "text", value: store }]);
+              // Also update the store to proper JSON format
+              updateNodeData({ store: JSON.stringify({ text: store }) });
+              return;
+            }
+          }
+        }
+
+        // Default fallback
+        setKeyValuePairs([{ key: "", value: "" }]);
+      } catch (error) {
+        console.error("Error processing store data:", error);
+        setKeyValuePairs([{ key: "", value: "" }]);
+        // Reset store to empty object on error
+        updateNodeData({ store: "{}" });
+      }
+    }, [store, convertObjectToPairs, updateNodeData]);
+
+    // Auto-expand when user has meaningful content or multiple pairs
+    useEffect(() => {
+      const hasContent = keyValuePairs.some(
+        (pair) => pair.key.trim() || pair.value.trim()
+      );
+      const hasMultiplePairs = keyValuePairs.length > 1;
+
+      // Auto-expand if there's content or multiple pairs and currently collapsed
+      if ((hasContent || hasMultiplePairs) && !isExpanded) {
+        updateNodeData({ isExpanded: true });
+      }
+    }, [keyValuePairs, isExpanded, updateNodeData]);
 
     // -------------------------------------------------------------------------
     // 4.6  Validation
@@ -398,33 +585,80 @@ const CreateMapNode = memo(
           <div
             className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
           >
-            <textarea
-              value={
-                validation.data.store === "Default text"
-                  ? ""
-                  : (validation.data.store ?? "")
-              }
-              onChange={handleStoreChange}
-              placeholder="Enter your content here…"
-              className={` resize-none nowheel bg-background rounded-md p-2 text-xs h-32 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
-              disabled={!isEnabled}
-            />
+            {/* Key-Value Table */}
+            <div className="space-y-1">
+              {/* Table Header */}
+              <div className="grid grid-cols-[1fr_1fr_16px] gap-1 text-[10px] font-medium text-muted-foreground border-b border-border pb-1">
+                <div className="truncate">Key</div>
+                <div className="truncate">Value</div>
+                <div />
+              </div>
+
+              {/* Table Body with scrollable area */}
+              <div className="max-h-24 overflow-y-auto space-y-0.5">
+                {keyValuePairs.map((pair, pairIndex) => (
+                  <div
+                    key={`pair-${pairIndex}-${pair.key || "empty"}`}
+                    className="grid grid-cols-[1fr_1fr_16px] gap-1 items-center"
+                  >
+                    <input
+                      type="text"
+                      value={pair.key}
+                      onChange={(e) =>
+                        handlePairChange(pairIndex, "key", e.target.value)
+                      }
+                      placeholder="key"
+                      className="text-[10px] px-1 py-0.5 bg-background border border-border rounded text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring w-full min-w-0"
+                      disabled={!isEnabled}
+                    />
+                    <input
+                      type="text"
+                      value={pair.value}
+                      onChange={(e) =>
+                        handlePairChange(pairIndex, "value", e.target.value)
+                      }
+                      placeholder="value"
+                      className="text-[10px] px-1 py-0.5 bg-background border border-border rounded text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring w-full min-w-0"
+                      disabled={!isEnabled}
+                    />
+                    {keyValuePairs.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => removePair(pairIndex)}
+                        className="text-[10px] w-4 h-4 text-red-500 hover:text-red-700 disabled:opacity-50 flex items-center justify-center"
+                        disabled={!isEnabled}
+                        title="Remove row"
+                      >
+                        ×
+                      </button>
+                    ) : (
+                      <div className="w-4 h-4" />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Add Button */}
+              <button
+                type="button"
+                onClick={addPair}
+                className="text-[10px] px-1 py-0.5 text-blue-500 hover:text-blue-700 disabled:opacity-50 w-full text-left"
+                disabled={!isEnabled}
+              >
+                + Add Row
+              </button>
+            </div>
           </div>
         ) : (
           <div
             className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
           >
-            <textarea
-              value={
-                validation.data.store === "Default text"
-                  ? ""
-                  : (validation.data.store ?? "")
-              }
-              onChange={handleStoreChange}
-              placeholder="..."
-              className={` resize-none text-center nowheel rounded-md h-8 m-4 translate-y-2 text-xs p-1 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
-              disabled={!isEnabled}
-            />
+            {/* Show key count in collapsed mode */}
+            <div className="text-center text-[10px] text-muted-foreground">
+              <div>
+                Keys: {Object.keys(convertPairsToObject(keyValuePairs)).length}
+              </div>
+            </div>
           </div>
         )}
 
