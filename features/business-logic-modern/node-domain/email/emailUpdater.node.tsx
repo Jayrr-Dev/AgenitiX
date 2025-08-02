@@ -11,6 +11,7 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
+
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
@@ -35,7 +36,6 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
 
 // -----------------------------------------------------------------------------
@@ -136,11 +136,12 @@ const validateNodeData = createNodeValidator(
 // 2️⃣  Constants
 // -----------------------------------------------------------------------------
 
-const CATEGORY_TEXT = {
-  EMAIL: {
-    primary: "text-[--node-email-text]",
-  },
-} as const;
+// Category text styles for future use
+// const CATEGORY_TEXT = {
+//   EMAIL: {
+//     primary: "text-[--node-email-text]",
+//   },
+// } as const;
 
 const CONTENT = {
   expanded: "p-4 w-full h-full flex flex-col",
@@ -151,24 +152,25 @@ const CONTENT = {
     "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
 
-const AVAILABLE_FOLDERS = [
-  "INBOX",
-  "Sent",
-  "Drafts",
-  "Trash",
-  "Spam",
-  "Archive",
-  "Important",
-] as const;
+// Available folders and labels for future use
+// const AVAILABLE_FOLDERS = [
+//   "INBOX",
+//   "Sent",
+//   "Drafts",
+//   "Trash",
+//   "Spam",
+//   "Archive",
+//   "Important",
+// ] as const;
 
-const AVAILABLE_LABELS = [
-  "Work",
-  "Personal",
-  "Important",
-  "Follow-up",
-  "Project",
-  "Client",
-] as const;
+// const AVAILABLE_LABELS = [
+//   "Work",
+//   "Personal",
+//   "Important",
+//   "Follow-up",
+//   "Project",
+//   "Client",
+// ] as const;
 
 // -----------------------------------------------------------------------------
 // 3️⃣  Dynamic spec factory (pure)
@@ -312,419 +314,417 @@ export const spec: NodeSpec = createDynamicSpec({
 // 4️⃣  React component – data propagation & rendering
 // -----------------------------------------------------------------------------
 
-const EmailUpdaterNode = memo(
-  ({ id, spec }: NodeProps & { spec: NodeSpec }) => {
-    // -------------------------------------------------------------------------
-    const { nodeData, updateNodeData } = useNodeData(id, {});
-    const { token } = useAuthContext();
+const EmailUpdaterNode = memo(({ id }: NodeProps & { spec: NodeSpec }) => {
+  // -------------------------------------------------------------------------
+  const { nodeData, updateNodeData } = useNodeData(id, {});
 
-    // -------------------------------------------------------------------------
-    // STATE MANAGEMENT (grouped for clarity)
-    // -------------------------------------------------------------------------
-    const {
-      isExpanded,
-      isEnabled,
-      emailIds,
-      operations,
-      status,
-      progress,
-      error,
-      batchSize,
-      processingDelay,
-      isActive,
-    } = nodeData as EmailUpdaterData;
+  // -------------------------------------------------------------------------
+  // STATE MANAGEMENT (grouped for clarity)
+  // -------------------------------------------------------------------------
+  const {
+    isExpanded,
+    isEnabled,
+    emailIds,
+    operations,
+    status,
+    progress,
+    error,
+    batchSize,
+    processingDelay,
+    isActive,
+  } = nodeData as EmailUpdaterData;
 
-    const categoryStyles = CATEGORY_TEXT.EMAIL;
+  // Global React‑Flow store (nodes & edges) – triggers re‑render on change
+  const _nodes = useStore((s) => s.nodes);
+  const _edges = useStore((s) => s.edges);
 
-    // Global React‑Flow store (nodes & edges) – triggers re‑render on change
-    const _nodes = useStore((s) => s.nodes);
-    const _edges = useStore((s) => s.edges);
+  // Keep last emitted output to avoid redundant writes
+  const _lastOutputRef = useRef<string | null>(null);
 
-    // Keep last emitted output to avoid redundant writes
-    const _lastOutputRef = useRef<string | null>(null);
+  // -------------------------------------------------------------------------
+  // 4.3  Callbacks
+  // -------------------------------------------------------------------------
 
-    // -------------------------------------------------------------------------
-    // 4.3  Callbacks
-    // -------------------------------------------------------------------------
+  /** Toggle between collapsed / expanded */
+  const toggleExpand = useCallback(() => {
+    updateNodeData({ isExpanded: !isExpanded });
+  }, [isExpanded, updateNodeData]);
 
-    /** Toggle between collapsed / expanded */
-    const toggleExpand = useCallback(() => {
-      updateNodeData({ isExpanded: !isExpanded });
-    }, [isExpanded, updateNodeData]);
-
-    /** Toggle operation */
-    const toggleOperation = useCallback(
-      (operation: keyof typeof operations, value: boolean) => {
-        updateNodeData({
-          operations: {
-            ...operations,
-            [operation]: value,
-          },
-        });
-      },
-      [operations, updateNodeData]
-    );
-
-    /** Execute update operation */
-    const executeUpdate = useCallback(() => {
-      if (emailIds.length === 0) {
-        toast.error("No emails selected for update");
-        return;
-      }
-
-      // Validate operations
-      const hasOperation = Object.values(operations).some((value) => {
-        if (Array.isArray(value)) return value.length > 0;
-        if (typeof value === "string") return !!value;
-        return !!value;
-      });
-
-      if (!hasOperation) {
-        toast.error("At least one update operation must be selected");
-        return;
-      }
-
-      // Set status to processing
+  /** Toggle operation */
+  const toggleOperation = useCallback(
+    (operation: keyof typeof operations, value: boolean) => {
       updateNodeData({
-        status: "processing",
-        progress: {
-          total: emailIds.length,
-          processed: 0,
-          succeeded: 0,
-          failed: 0,
+        operations: {
+          ...operations,
+          [operation]: value,
         },
-        error: "",
-        errors: [],
       });
+    },
+    [operations, updateNodeData]
+  );
 
-      // Simulate processing
-      let processed = 0;
-      let succeeded = 0;
-      let failed = 0;
-      const errors: { emailId: string; error: string }[] = [];
+  /** Execute update operation */
+  const executeUpdate = useCallback(() => {
+    if (emailIds.length === 0) {
+      toast.error("No emails selected for update");
+      return;
+    }
 
-      const processBatch = () => {
-        const batch = emailIds.slice(processed, processed + batchSize);
-        if (batch.length === 0) {
-          // All done
-          const success = failed === 0;
-          updateNodeData({
-            status: success
-              ? "success"
-              : failed === emailIds.length
-                ? "error"
-                : "partial",
-            progress: {
-              total: emailIds.length,
-              processed: emailIds.length,
-              succeeded,
-              failed,
-            },
-            error: success ? "" : `Failed to update ${failed} emails`,
-            errors,
-            updatedEmailIds:
-              succeeded > 0
-                ? emailIds.filter((id) => !errors.some((e) => e.emailId === id))
-                : [],
-            successOutput: success,
-            errorOutput: success ? "" : `Failed to update ${failed} emails`,
-            isActive: true,
-          });
+    // Validate operations
+    const hasOperation = Object.values(operations).some((value) => {
+      if (Array.isArray(value)) {
+        return value.length > 0;
+      }
+      if (typeof value === "string") {
+        return !!value;
+      }
+      return !!value;
+    });
 
-          if (success) {
-            toast.success(`Successfully updated ${succeeded} emails`);
-          } else {
-            toast.error(`Failed to update ${failed} emails`);
-          }
-          return;
-        }
+    if (!hasOperation) {
+      toast.error("At least one update operation must be selected");
+      return;
+    }
 
-        // Process this batch
-        batch.forEach((emailId) => {
-          // Simulate success/failure (95% success rate)
-          const isSuccess = Math.random() > 0.05;
-          if (isSuccess) {
-            succeeded++;
-          } else {
-            failed++;
-            errors.push({
-              emailId,
-              error: "Failed to update email",
-            });
-          }
-        });
+    // Set status to processing
+    updateNodeData({
+      status: "processing",
+      progress: {
+        total: emailIds.length,
+        processed: 0,
+        succeeded: 0,
+        failed: 0,
+      },
+      error: "",
+      errors: [],
+    });
 
-        processed += batch.length;
+    // Simulate processing
+    let processed = 0;
+    let succeeded = 0;
+    let failed = 0;
+    const errors: { emailId: string; error: string }[] = [];
 
-        // Update progress
+    const processBatch = () => {
+      const batch = emailIds.slice(processed, processed + batchSize);
+      if (batch.length === 0) {
+        // All done
+        const success = failed === 0;
         updateNodeData({
+          status: success
+            ? "success"
+            : failed === emailIds.length
+              ? "error"
+              : "partial",
           progress: {
             total: emailIds.length,
-            processed,
+            processed: emailIds.length,
             succeeded,
             failed,
           },
-        });
-
-        // Process next batch
-        setTimeout(processBatch, processingDelay);
-      };
-
-      // Start processing
-      processBatch();
-    }, [emailIds, operations, batchSize, processingDelay, updateNodeData]);
-
-    // -------------------------------------------------------------------------
-    // 4.4  Effects
-    // -------------------------------------------------------------------------
-
-    /** Update output when data changes */
-    useEffect(() => {
-      if (isEnabled && emailIds.length > 0) {
-        updateNodeData({
+          error: success ? "" : `Failed to update ${failed} emails`,
+          errors,
+          updatedEmailIds:
+            succeeded > 0
+              ? emailIds.filter((id) => !errors.some((e) => e.emailId === id))
+              : [],
+          successOutput: success,
+          errorOutput: success ? "" : `Failed to update ${failed} emails`,
           isActive: true,
         });
-      } else {
-        updateNodeData({
-          isActive: false,
-        });
-      }
-    }, [isEnabled, emailIds, updateNodeData]);
 
-    // -------------------------------------------------------------------------
-    // 4.5  Validation
-    // -------------------------------------------------------------------------
-    const validation = validateNodeData(nodeData);
-    if (!validation.success) {
-      reportValidationError("EmailUpdater", id, validation.errors, {
-        originalData: validation.originalData,
-        component: "EmailUpdaterNode",
+        if (success) {
+          toast.success(`Successfully updated ${succeeded} emails`);
+        } else {
+          toast.error(`Failed to update ${failed} emails`);
+        }
+        return;
+      }
+
+      // Process this batch
+      batch.forEach((emailId) => {
+        // Simulate success/failure (95% success rate)
+        const isSuccess = Math.random() > 0.05;
+        if (isSuccess) {
+          succeeded++;
+        } else {
+          failed++;
+          errors.push({
+            emailId,
+            error: "Failed to update email",
+          });
+        }
+      });
+
+      processed += batch.length;
+
+      // Update progress
+      updateNodeData({
+        progress: {
+          total: emailIds.length,
+          processed,
+          succeeded,
+          failed,
+        },
+      });
+
+      // Process next batch
+      setTimeout(processBatch, processingDelay);
+    };
+
+    // Start processing
+    processBatch();
+  }, [emailIds, operations, batchSize, processingDelay, updateNodeData]);
+
+  // -------------------------------------------------------------------------
+  // 4.4  Effects
+  // -------------------------------------------------------------------------
+
+  /** Update output when data changes */
+  useEffect(() => {
+    if (isEnabled && emailIds.length > 0) {
+      updateNodeData({
+        isActive: true,
+      });
+    } else {
+      updateNodeData({
+        isActive: false,
       });
     }
+  }, [isEnabled, emailIds, updateNodeData]);
 
-    useNodeDataValidation(
-      EmailUpdaterDataSchema,
-      "EmailUpdater",
-      validation.data,
-      id
-    );
+  // -------------------------------------------------------------------------
+  // 4.5  Validation
+  // -------------------------------------------------------------------------
+  const validation = validateNodeData(nodeData);
+  if (!validation.success) {
+    reportValidationError("EmailUpdater", id, validation.errors, {
+      originalData: validation.originalData,
+      component: "EmailUpdaterNode",
+    });
+  }
 
-    // -------------------------------------------------------------------------
-    // 4.6  Render
-    // -------------------------------------------------------------------------
+  useNodeDataValidation(
+    EmailUpdaterDataSchema,
+    "EmailUpdater",
+    validation.data,
+    id
+  );
 
-    if (!isExpanded) {
-      return (
-        <div className={CONTENT.collapsed}>
-          <div className="flex flex-col items-center gap-1">
-            <div className="text-xs font-medium text-gray-600 dark:text-gray-300">
-              Updater
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              {emailIds.length > 0 ? `${emailIds.length} emails` : "No emails"}
-            </div>
-            {status === "processing" && (
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-            )}
-            {isActive && status === "success" && (
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            )}
-          </div>
-        </div>
-      );
-    }
+  // -------------------------------------------------------------------------
+  // 4.6  Render
+  // -------------------------------------------------------------------------
 
+  if (!isExpanded) {
     return (
-      <div
-        className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
-      >
-        {/* Header */}
-        <div className={CONTENT.header}>
-          <LabelNode nodeId={id} label="Email Updater" />
-          <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} />
-        </div>
-
-        {/* Body */}
-        <div className={CONTENT.body}>
-          {/* Email Count */}
-          <div className="mb-3">
-            <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">
-              Selected Emails:
-            </div>
-            <div className="text-sm font-medium">
-              {emailIds.length > 0
-                ? `${emailIds.length} emails selected`
-                : "No emails selected"}
-            </div>
+      <div className={CONTENT.collapsed}>
+        <div className="flex flex-col items-center gap-1">
+          <div className="text-xs font-medium text-gray-600 dark:text-gray-300">
+            Updater
           </div>
-
-          {/* Update Operations */}
-          <div className="mb-3">
-            <div className="text-xs text-gray-600 dark:text-gray-300 mb-2">
-              Update Operations:
-            </div>
-
-            {/* Read/Unread */}
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              <label className="flex items-center space-x-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={operations.markAsRead}
-                  onChange={(e) =>
-                    toggleOperation("markAsRead", e.target.checked)
-                  }
-                  disabled={!isEnabled}
-                  className="rounded"
-                />
-                <span>Mark as Read</span>
-              </label>
-
-              <label className="flex items-center space-x-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={operations.markAsUnread}
-                  onChange={(e) =>
-                    toggleOperation("markAsUnread", e.target.checked)
-                  }
-                  disabled={!isEnabled}
-                  className="rounded"
-                />
-                <span>Mark as Unread</span>
-              </label>
-            </div>
-
-            {/* Important/Not Important */}
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              <label className="flex items-center space-x-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={operations.markAsImportant}
-                  onChange={(e) =>
-                    toggleOperation("markAsImportant", e.target.checked)
-                  }
-                  disabled={!isEnabled}
-                  className="rounded"
-                />
-                <span>Mark Important</span>
-              </label>
-
-              <label className="flex items-center space-x-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={operations.markAsNotImportant}
-                  onChange={(e) =>
-                    toggleOperation("markAsNotImportant", e.target.checked)
-                  }
-                  disabled={!isEnabled}
-                  className="rounded"
-                />
-                <span>Not Important</span>
-              </label>
-            </div>
-
-            {/* Archive/Trash/Restore */}
-            <div className="grid grid-cols-3 gap-2 mb-2">
-              <label className="flex items-center space-x-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={operations.archive}
-                  onChange={(e) => toggleOperation("archive", e.target.checked)}
-                  disabled={!isEnabled}
-                  className="rounded"
-                />
-                <span>Archive</span>
-              </label>
-
-              <label className="flex items-center space-x-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={operations.trash}
-                  onChange={(e) => toggleOperation("trash", e.target.checked)}
-                  disabled={!isEnabled}
-                  className="rounded"
-                />
-                <span>Trash</span>
-              </label>
-
-              <label className="flex items-center space-x-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={operations.restore}
-                  onChange={(e) => toggleOperation("restore", e.target.checked)}
-                  disabled={!isEnabled}
-                  className="rounded"
-                />
-                <span>Restore</span>
-              </label>
-            </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {emailIds.length > 0 ? `${emailIds.length} emails` : "No emails"}
           </div>
-
-          {/* Status and Execute */}
-          <div className="mt-auto">
-            {status === "processing" && (
-              <div className="mb-2">
-                <div className="text-xs text-gray-600 dark:text-gray-300">
-                  Processing: {progress.processed} of {progress.total}
-                </div>
-                <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full mt-1">
-                  <div
-                    className="h-full bg-blue-500 rounded-full transition-all duration-300"
-                    style={{
-                      width: `${(progress.processed / progress.total) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {status === "success" && (
-              <div className="text-xs text-green-600 dark:text-green-400 mb-2">
-                Successfully updated {progress.succeeded} emails
-              </div>
-            )}
-
-            {status === "error" && (
-              <div className="text-xs text-red-600 dark:text-red-400 mb-2">
-                {error || "Failed to update emails"}
-              </div>
-            )}
-
-            {status === "partial" && (
-              <div className="text-xs text-yellow-600 dark:text-yellow-400 mb-2">
-                Updated {progress.succeeded} emails, failed to update{" "}
-                {progress.failed} emails
-              </div>
-            )}
-
-            <button
-              onClick={executeUpdate}
-              disabled={
-                !isEnabled || status === "processing" || emailIds.length === 0
-              }
-              className="w-full px-3 py-2 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {status === "processing" ? "Processing..." : "Update Emails"}
-            </button>
-          </div>
-
-          {/* Status */}
-          {error && (
-            <div className="text-xs text-red-500 dark:text-red-400 p-1 bg-red-50 dark:bg-red-900/20 rounded mt-2">
-              {error}
-            </div>
+          {status === "processing" && (
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
           )}
-
-          {isActive && (
-            <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1 mt-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              Updater active
-            </div>
+          {isActive && status === "success" && (
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
           )}
         </div>
       </div>
     );
   }
-);
+
+  return (
+    <div className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}>
+      {/* Header */}
+      <div className={CONTENT.header}>
+        <LabelNode nodeId={id} label="Email Updater" />
+        <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} />
+      </div>
+
+      {/* Body */}
+      <div className={CONTENT.body}>
+        {/* Email Count */}
+        <div className="mb-3">
+          <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">
+            Selected Emails:
+          </div>
+          <div className="text-sm font-medium">
+            {emailIds.length > 0
+              ? `${emailIds.length} emails selected`
+              : "No emails selected"}
+          </div>
+        </div>
+
+        {/* Update Operations */}
+        <div className="mb-3">
+          <div className="text-xs text-gray-600 dark:text-gray-300 mb-2">
+            Update Operations:
+          </div>
+
+          {/* Read/Unread */}
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <label className="flex items-center space-x-2 text-xs">
+              <input
+                type="checkbox"
+                checked={operations.markAsRead}
+                onChange={(e) =>
+                  toggleOperation("markAsRead", e.target.checked)
+                }
+                disabled={!isEnabled}
+                className="rounded"
+              />
+              <span>Mark as Read</span>
+            </label>
+
+            <label className="flex items-center space-x-2 text-xs">
+              <input
+                type="checkbox"
+                checked={operations.markAsUnread}
+                onChange={(e) =>
+                  toggleOperation("markAsUnread", e.target.checked)
+                }
+                disabled={!isEnabled}
+                className="rounded"
+              />
+              <span>Mark as Unread</span>
+            </label>
+          </div>
+
+          {/* Important/Not Important */}
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <label className="flex items-center space-x-2 text-xs">
+              <input
+                type="checkbox"
+                checked={operations.markAsImportant}
+                onChange={(e) =>
+                  toggleOperation("markAsImportant", e.target.checked)
+                }
+                disabled={!isEnabled}
+                className="rounded"
+              />
+              <span>Mark Important</span>
+            </label>
+
+            <label className="flex items-center space-x-2 text-xs">
+              <input
+                type="checkbox"
+                checked={operations.markAsNotImportant}
+                onChange={(e) =>
+                  toggleOperation("markAsNotImportant", e.target.checked)
+                }
+                disabled={!isEnabled}
+                className="rounded"
+              />
+              <span>Not Important</span>
+            </label>
+          </div>
+
+          {/* Archive/Trash/Restore */}
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            <label className="flex items-center space-x-2 text-xs">
+              <input
+                type="checkbox"
+                checked={operations.archive}
+                onChange={(e) => toggleOperation("archive", e.target.checked)}
+                disabled={!isEnabled}
+                className="rounded"
+              />
+              <span>Archive</span>
+            </label>
+
+            <label className="flex items-center space-x-2 text-xs">
+              <input
+                type="checkbox"
+                checked={operations.trash}
+                onChange={(e) => toggleOperation("trash", e.target.checked)}
+                disabled={!isEnabled}
+                className="rounded"
+              />
+              <span>Trash</span>
+            </label>
+
+            <label className="flex items-center space-x-2 text-xs">
+              <input
+                type="checkbox"
+                checked={operations.restore}
+                onChange={(e) => toggleOperation("restore", e.target.checked)}
+                disabled={!isEnabled}
+                className="rounded"
+              />
+              <span>Restore</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Status and Execute */}
+        <div className="mt-auto">
+          {status === "processing" && (
+            <div className="mb-2">
+              <div className="text-xs text-gray-600 dark:text-gray-300">
+                Processing: {progress.processed} of {progress.total}
+              </div>
+              <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full mt-1">
+                <div
+                  className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${(progress.processed / progress.total) * 100}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {status === "success" && (
+            <div className="text-xs text-green-600 dark:text-green-400 mb-2">
+              Successfully updated {progress.succeeded} emails
+            </div>
+          )}
+
+          {status === "error" && (
+            <div className="text-xs text-red-600 dark:text-red-400 mb-2">
+              {error || "Failed to update emails"}
+            </div>
+          )}
+
+          {status === "partial" && (
+            <div className="text-xs text-yellow-600 dark:text-yellow-400 mb-2">
+              Updated {progress.succeeded} emails, failed to update{" "}
+              {progress.failed} emails
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={executeUpdate}
+            disabled={
+              !isEnabled || status === "processing" || emailIds.length === 0
+            }
+            className="w-full px-3 py-2 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {status === "processing" ? "Processing..." : "Update Emails"}
+          </button>
+        </div>
+
+        {/* Status */}
+        {error && (
+          <div className="text-xs text-red-500 dark:text-red-400 p-1 bg-red-50 dark:bg-red-900/20 rounded mt-2">
+            {error}
+          </div>
+        )}
+
+        {isActive && (
+          <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1 mt-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            Updater active
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
 
 EmailUpdaterNode.displayName = "EmailUpdaterNode";
 
