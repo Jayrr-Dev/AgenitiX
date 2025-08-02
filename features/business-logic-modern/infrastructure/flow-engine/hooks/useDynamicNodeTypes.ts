@@ -4,6 +4,7 @@ import triggerPulse from '../../../node-domain/trigger/triggerPulse.node';
 import aiTools from '../../../node-domain/ai/aiTools.node';
 import storeLocal from '../../../node-domain/store/storeLocal.node';
 import aiManager from '../../../node-domain/ai/aiManager.node';
+import timeScheduler from '../../../node-domain/trigger/timeScheduler.node';
 // Add new node imports here (Plop can auto-inject these)
 import aiAgent from "../../../node-domain/ai/aiAgent.node";
 import createText from "../../../node-domain/create/createText.node";
@@ -44,6 +45,7 @@ export function useDynamicNodeTypes() {
 			aiTools,
 			storeLocal,
 			aiManager,
+			timeScheduler,
 			// Add new node types here
 			aiAgent,
 			testNode,

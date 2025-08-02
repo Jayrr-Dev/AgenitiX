@@ -4,6 +4,7 @@ export { default as triggerPulse } from "./trigger/triggerPulse.node";
 export { default as aiTools } from "./ai/aiTools.node";
 export { default as storeLocal } from "./store/storeLocal.node";
 export { default as aiManager } from "./ai/aiManager.node";
+export { default as timeScheduler } from "./trigger/timeScheduler.node";
 // Node exports will be added here automatically by Plop
 export { default as createText } from "./create/createText.node";
 export { default as aiAgent } from "./ai/aiAgent.node";
