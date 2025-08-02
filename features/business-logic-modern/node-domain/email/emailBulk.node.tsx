@@ -395,9 +395,9 @@ const EmailBulkNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 					if (random > 0.95) {
 						// 5% failure rate
 						failed++;
-						updateNodeData(prev => ({
+						updateNodeData((prev: EmailBulkData) => ({
 							...prev,
-							errors: [...(prev as EmailBulkData).errors, {
+							errors: [...prev.errors, {
 								email: recipient.email,
 								error: "Failed to send email",
 								timestamp: new Date().toISOString(),
@@ -414,10 +414,10 @@ const EmailBulkNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 					sent++;
 					
 					// Update progress
-					updateNodeData(prev => ({
+					updateNodeData((prev: EmailBulkData) => ({
 						...prev,
 						progress: {
-							...(prev as EmailBulkData).progress,
+							...prev.progress,
 							sent,
 							delivered,
 							bounced,
@@ -537,10 +537,10 @@ const EmailBulkNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 			{/* Header */}
 			<div className={CONTENT.header}>
 				<LabelNode
+					nodeId={id}
 					label="Email Bulk"
-					className={`text-sm font-semibold ${categoryStyles.primary}`}
 				/>
-				<ExpandCollapseButton isExpanded={isExpanded} onClick={toggleExpand} />
+				<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} />
 			</div>
 
 			{/* Body */}

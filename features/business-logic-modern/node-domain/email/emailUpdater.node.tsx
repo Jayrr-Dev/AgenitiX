@@ -502,10 +502,10 @@ const EmailUpdaterNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 			{/* Header */}
 			<div className={CONTENT.header}>
 				<LabelNode
+					nodeId={id}
 					label="Email Updater"
-					className={`text-sm font-semibold ${categoryStyles.primary}`}
 				/>
-				<ExpandCollapseButton isExpanded={isExpanded} onClick={toggleExpand} />
+				<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} />
 			</div>
 
 			{/* Body */}

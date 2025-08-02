@@ -373,7 +373,7 @@ const extractKeywords = (text: string): string[] => {
 		"you", "your", "yours", "yourself", "yourselves"
 	]);
 	
-	const words = text.toLowerCase()
+	const words = (text || "").toLowerCase()
 		.replace(/[^\w\s]/g, '')
 		.split(/\s+/)
 		.filter(word => word.length > 3 && !stopwords.has(word));
@@ -437,7 +437,7 @@ const analyzeSentiment = (text: string): { score: number; label: string } => {
 		"issue", "mistake", "error", "fail", "failed", "worst", "worse"
 	]);
 	
-	const words = text.toLowerCase().split(/\W+/);
+	const words = (text || "").toLowerCase().split(/\W+/);
 	let positiveCount = 0;
 	let negativeCount = 0;
 	
@@ -1118,10 +1118,10 @@ const EmailDataNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 			{/* Header */}
 			<div className={CONTENT.header}>
 				<LabelNode
+					nodeId={id}
 					label="Email Data"
-					className={`text-sm font-semibold ${categoryStyles.primary}`}
 				/>
-				<ExpandCollapseButton isExpanded={isExpanded} onClick={toggleExpand} />
+				<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} />
 			</div>
 
 			{/* Body */}

@@ -7,7 +7,7 @@
 
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
+import { useAction } from "convex/react";
 
 // Types for email sending
 export interface EmailRecipients {
@@ -149,17 +149,36 @@ export class EmailSendingService {
         };
       }
 
-      // Call Convex mutation
+      // Call Convex action
       const result = await sendEmailMutation({
-        token_hash: tokenHash,
-        account_id: request.accountId,
-        recipients: request.recipients,
+        accountId: request.accountId,
+        to: request.recipients.to,
+        cc: request.recipients.cc,
+        bcc: request.recipients.bcc,
         subject: request.subject,
-        content: request.content,
-        attachments: request.attachments,
+        textContent: request.content.text,
+        htmlContent: request.content.html,
+        attachments: request.attachments?.map(att => ({
+          id: att.filename,
+          filename: att.filename,
+          mimeType: att.contentType,
+          size: att.size,
+        })),
       });
 
-      return result;
+      return {
+        success: result.success,
+        data: result.success ? {
+          messageId: result.messageId,
+          recipients: request.recipients,
+          deliveryStatus: "sent",
+          message: "Email sent successfully",
+        } : undefined,
+        error: result.success ? undefined : {
+          code: "SEND_ERROR",
+          message: "Failed to send email",
+        },
+      };
     } catch (error) {
       console.error("Email sending service error:", error);
       return {
@@ -249,11 +268,11 @@ export class EmailSendingService {
 
 // Hook for using email sending service
 export function useEmailSending() {
-  const sendEmailMutation = useMutation(api.emailAccounts.sendEmail);
+  const sendEmailAction = useAction(api.emailAccounts.sendEmail);
   const emailService = EmailSendingService.getInstance();
 
   const sendEmail = async (request: SendEmailRequest, tokenHash: string): Promise<SendEmailResult> => {
-    return emailService.sendEmail(request, tokenHash, sendEmailMutation);
+    return emailService.sendEmail(request, tokenHash, sendEmailAction);
   };
 
   return {
