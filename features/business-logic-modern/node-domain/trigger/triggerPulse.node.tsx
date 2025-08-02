@@ -13,14 +13,23 @@
 
 import type { NodeProps } from "@xyflow/react";
 import { useStore } from "@xyflow/react";
-import { memo, useCallback, useEffect, useMemo, useRef, ChangeEvent } from "react";
+import {
+  type ChangeEvent,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
-import LabelNode from "@/components/nodes/labelNode";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
+import {
+  generateOutputsField,
+  normalizeHandleId,
+} from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
@@ -52,7 +61,7 @@ export const TriggerPulseDataSchema = z
     isExpanded: SafeSchemas.boolean(false), // inspector open?
     isInverted: SafeSchemas.boolean(false), // inverts pulse behavior (true→false→true instead of false→true→false)
     inputs: z.boolean().nullable().default(null), // last received input
-    outputs: z.boolean().default(false), // last emitted output
+    outputs: z.record(z.string(), z.boolean()).optional(), // handle-based outputs object for Convex compatibility
     expandedSize: SafeSchemas.text("FE1"),
     collapsedSize: SafeSchemas.text("C1"),
     label: z.string().optional(), // User-editable node label
@@ -63,14 +72,12 @@ export type TriggerPulseData = z.infer<typeof TriggerPulseDataSchema>;
 
 const validateNodeData = createNodeValidator(
   TriggerPulseDataSchema,
-  "TriggerPulse",
+  "TriggerPulse"
 );
 
 // -----------------------------------------------------------------------------
 // 2️⃣  Constants
 // -----------------------------------------------------------------------------
-
-
 
 // Feature flag to control pulse button hover effects
 const ENABLE_PULSE_HOVER = false; // Set to true to enable hover effects
@@ -86,8 +93,10 @@ const CONTENT = {
   pulsePulsing: "bg-green-500 border-green-600",
   pulseIdle: "bg-red-500 border-red-600",
   pulseDisabled: "bg-gray-400 border-gray-500 cursor-not-allowed opacity-50",
-  pulseText: "absolute inset-0 flex items-center justify-center text-white font-bold px-1 text-center leading-tight break-words hyphens-auto",
-  durationInput: "w-16 px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-blue-500",
+  pulseText:
+    "absolute inset-0 flex items-center justify-center text-white font-bold px-1 text-center leading-tight break-words hyphens-auto",
+  durationInput:
+    "w-16 px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-blue-500",
   durationContainer: "flex items-center gap-1",
   durationLabel: "text-xs text-muted-foreground",
   invertContainer: "flex items-center gap-1 mt-1",
@@ -102,9 +111,11 @@ const CONTENT = {
 /** Builds a NodeSpec whose size keys can change at runtime. */
 function createDynamicSpec(data: TriggerPulseData): NodeSpec {
   const expanded =
-    EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ?? EXPANDED_SIZES.FE1;
+    EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
+    EXPANDED_SIZES.FE1;
   const collapsed =
-    COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ?? COLLAPSED_SIZES.C1;
+    COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
+    COLLAPSED_SIZES.C1;
 
   return {
     kind: "triggerPulse",
@@ -113,8 +124,20 @@ function createDynamicSpec(data: TriggerPulseData): NodeSpec {
     category: CATEGORIES.TRIGGER,
     size: { expanded, collapsed },
     handles: [
-      { id: "input", code: "b", position: "left", type: "target", dataType: "Boolean" },
-      { id: "output", code: "b", position: "right", type: "source", dataType: "Boolean" },
+      {
+        id: "input",
+        code: "b",
+        position: "left",
+        type: "target",
+        dataType: "Boolean",
+      },
+      {
+        id: "output",
+        code: "b",
+        position: "right",
+        type: "source",
+        dataType: "Boolean",
+      },
     ],
     inspector: { key: "TriggerPulseInspector" },
     version: 1,
@@ -123,13 +146,19 @@ function createDynamicSpec(data: TriggerPulseData): NodeSpec {
       store: false, // Set initial store to false for normal logic
       pulseDuration: 400,
       inputs: null,
-      outputs: false, // Set initial output to false for normal logic
+      outputs: {}, // Handle-based outputs object
       isInverted: false, // Default to normal logic (false→true→false)
     }),
     dataSchema: TriggerPulseDataSchema,
     controls: {
       autoGenerate: true,
-      excludeFields: ["isActive", "inputs", "outputs", "expandedSize", "collapsedSize"],
+      excludeFields: [
+        "isActive",
+        "inputs",
+        "outputs",
+        "expandedSize",
+        "collapsedSize",
+      ],
       customFields: [
         { key: "isEnabled", type: "boolean", label: "Enable" },
         { key: "pulseDuration", type: "number", label: "Pulse Duration (ms)" },
@@ -138,7 +167,8 @@ function createDynamicSpec(data: TriggerPulseData): NodeSpec {
     },
     icon: "LuZap",
     author: "Agenitix Team",
-    description: "Boolean pulse button that sends TRUE for a configurable duration",
+    description:
+      "Boolean pulse button that sends TRUE for a configurable duration",
     feature: "base",
     tags: ["pulse", "boolean", "trigger", "timer"],
     theming: {},
@@ -159,290 +189,389 @@ export const spec: NodeSpec = createDynamicSpec({
 const toBool = (v: unknown): boolean => v === true || v === "true" || v === "1";
 
 /** Main node UI & behaviour. */
-const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
-  // 4.1  Local node‑data helpers
-  const { nodeData, updateNodeData } = useNodeData(id, data);
-  const { isExpanded, isEnabled, isActive, store, pulseDuration, isInverted, label } = nodeData as TriggerPulseData;
+const TriggerPulseNode = memo(
+  ({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
+    // 4.1  Local node‑data helpers
+    const { nodeData, updateNodeData } = useNodeData(id, data);
+    const {
+      isExpanded,
+      isEnabled,
+      isActive,
+      store,
+      pulseDuration,
+      isInverted,
+      label,
+    } = nodeData as TriggerPulseData;
 
-  // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
-  const nodes = useStore((s) => s.nodes);
-  const edges = useStore((s) => s.edges);
+    // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
+    const nodes = useStore((s) => s.nodes);
+    const edges = useStore((s) => s.edges);
 
-  // keep last emitted output to avoid redundant writes
-  const lastOutputRef = useRef<boolean | null>(null);
-  // timer ref for pulse timeout
-  const pulseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    // keep last emitted outputs to avoid redundant writes
+    const lastGeneralOutputRef = useRef<any>(null);
+    // timer ref for pulse timeout
+    const pulseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // -----------------------------------------------------------------------
-  // 4.3  Helpers
-  // -----------------------------------------------------------------------
+    // -----------------------------------------------------------------------
+    // 4.3  Helpers
+    // -----------------------------------------------------------------------
 
-  /** Propagate current boolean to our `outputs` field. */
-  const propagate = useCallback(
-    (value: boolean) => {
-      if (value !== lastOutputRef.current) {
-        lastOutputRef.current = value;
-        updateNodeData({ outputs: value });
+    /** Compute the latest boolean coming from connected input handle. */
+    const computeInput = useCallback((): boolean | null => {
+      const incoming = findEdgeByHandle(edges, id, "input");
+      if (!incoming) {
+        return null;
       }
-    },
-    [updateNodeData]
-  );
 
-  /** Compute the latest boolean coming from connected input handle. */
-  const computeInput = useCallback((): boolean | null => {
-    const incoming = findEdgeByHandle(edges, id, "input");
-    if (!incoming) {
-      return null;
-    }
-
-    const src = nodes.find((n) => n.id === incoming.source);
-    if (!src) {
-      return null;
-    }
-
-    return toBool(
-      // priority: outputs ➜ store ➜ whole data
-      src.data?.outputs ?? src.data?.store ?? src.data
-    );
-  }, [edges, nodes, id]);
-
-  // -----------------------------------------------------------------------
-  // 4.4  Effects
-  // -----------------------------------------------------------------------
-
-  /* 🔄 Whenever nodes/edges change, recompute inputs. */
-  useEffect(() => {
-    const inputVal = computeInput();
-    if (inputVal !== (nodeData as TriggerPulseData).inputs) {
-      updateNodeData({ inputs: inputVal });
-    }
-  }, [computeInput, nodeData, updateNodeData]);
-
-  /* 🔄 Keep isActive in sync with store / isEnabled. */
-  useEffect(() => {
-    const nextActive = isEnabled && toBool(store);
-    if (nextActive !== isActive) {
-      updateNodeData({ isActive: nextActive });
-    }
-  }, [store, isEnabled, isActive, updateNodeData]);
-
-
-
-  /* 🔄 Make isEnabled dependent on input value only when there are connections. */
-  useEffect(() => {
-    const hasInput = (nodeData as TriggerPulseData).inputs;
-    // Only auto-control isEnabled when there are connections (inputs !== null)
-    // When inputs is null (no connections), let user manually control isEnabled
-    if (hasInput !== null) {
-      const nextEnabled = toBool(hasInput);
-      if (nextEnabled !== isEnabled) {
-        updateNodeData({ isEnabled: nextEnabled });
+      const src = nodes.find((n) => n.id === incoming.source);
+      if (!src) {
+        return null;
       }
-    }
-  }, [nodeData, isEnabled, updateNodeData]);
 
-  /* 🔄 Handle invert state change - reset to idle state */
-  useEffect(() => {
-    // When invert state changes, reset to the appropriate idle state
-    // Only do this if we're not currently in a pulse (no active timeout)
-    if (!pulseTimeoutRef.current) {
-      const expectedIdleState = isInverted ? true : false; // Inverted idle = true, normal idle = false
-      if (store !== expectedIdleState) {
-        updateNodeData({ store: expectedIdleState });
+      // Handle-based input reading with unified priority system, basically single source for input data
+      const sourceData = src.data;
+
+      // 1. Handle-based outputs (unified system)
+      if (sourceData?.outputs && typeof sourceData.outputs === "object") {
+        // Try to get value from handle-based outputs
+        const handleId = incoming.sourceHandle
+          ? normalizeHandleId(incoming.sourceHandle)
+          : "output";
+        if (
+          (sourceData.outputs as Record<string, unknown>)[handleId] !==
+          undefined
+        ) {
+          return toBool(
+            (sourceData.outputs as Record<string, unknown>)[handleId]
+          );
+        }
+        // Fallback: get first available output value
+        const firstOutput = Object.values(sourceData.outputs)[0];
+        if (firstOutput !== undefined) {
+          return toBool(firstOutput);
+        }
       }
-    }
-  }, [isInverted, store, updateNodeData]);
 
-  /* 🔄 On every relevant change, propagate value. */
-  useEffect(() => {
-    // When disabled, always output false regardless of store value
-    // When enabled, output the actual store value
-    const outputValue = isEnabled ? toBool(store) : false;
-    propagate(outputValue);
-  }, [store, isEnabled, propagate]);
+      // 2. Legacy fallbacks for compatibility
+      if (sourceData?.store !== undefined && sourceData.store !== null) {
+        return toBool(sourceData.store);
+      }
 
-  // Clean up timeout on unmount
-  useEffect(() => {
-    return () => {
+      // 3. Final fallback
+      return toBool(sourceData);
+    }, [edges, nodes, id]);
+
+    // -----------------------------------------------------------------------
+    // 4.4  Effects
+    // -----------------------------------------------------------------------
+
+    /* 🔄 Whenever nodes/edges change, recompute inputs. */
+    useEffect(() => {
+      const inputVal = computeInput();
+      if (inputVal !== (nodeData as TriggerPulseData).inputs) {
+        updateNodeData({ inputs: inputVal });
+      }
+    }, [computeInput, nodeData, updateNodeData]);
+
+    /* 🔄 Keep isActive in sync with store / isEnabled. */
+    useEffect(() => {
+      const nextActive = isEnabled && toBool(store);
+      if (nextActive !== isActive) {
+        updateNodeData({ isActive: nextActive });
+      }
+    }, [store, isEnabled, isActive, updateNodeData]);
+
+    /* 🔄 Make isEnabled dependent on input value only when there are connections. */
+    useEffect(() => {
+      const hasInput = (nodeData as TriggerPulseData).inputs;
+      // Only auto-control isEnabled when there are connections (inputs !== null)
+      // When inputs is null (no connections), let user manually control isEnabled
+      if (hasInput !== null) {
+        const nextEnabled = toBool(hasInput);
+        if (nextEnabled !== isEnabled) {
+          updateNodeData({ isEnabled: nextEnabled });
+        }
+      }
+    }, [nodeData, isEnabled, updateNodeData]);
+
+    /* 🔄 Handle invert state change - reset to idle state */
+    useEffect(() => {
+      // When invert state changes, reset to the appropriate idle state
+      // Only do this if we're not currently in a pulse (no active timeout)
+      if (!pulseTimeoutRef.current) {
+        const expectedIdleState = isInverted ? true : false; // Inverted idle = true, normal idle = false
+        if (store !== expectedIdleState) {
+          updateNodeData({ store: expectedIdleState });
+        }
+      }
+    }, [isInverted, store, updateNodeData]);
+
+    /* 🔄 Handle-based outputs field generation for multi-handle compatibility */
+    useEffect(() => {
+      try {
+        // Generate Map-based outputs with error handling
+        const outputsValue = generateOutputsField(spec, nodeData as any);
+
+        // Validate the result
+        if (!(outputsValue instanceof Map)) {
+          console.error(
+            `TriggerPulse ${id}: generateOutputsField did not return a Map`,
+            outputsValue
+          );
+          return;
+        }
+
+        // Convert Map to plain object for Convex compatibility, basically serialize for storage
+        const outputsObject = Object.fromEntries(outputsValue.entries());
+
+        // Only update if changed
+        const currentOutputs = lastGeneralOutputRef.current;
+        let hasChanged = true;
+
+        if (currentOutputs instanceof Map && outputsValue instanceof Map) {
+          // Compare Map contents
+          hasChanged =
+            currentOutputs.size !== outputsValue.size ||
+            !Array.from(outputsValue.entries()).every(
+              ([key, value]) => currentOutputs.get(key) === value
+            );
+        }
+
+        if (hasChanged) {
+          lastGeneralOutputRef.current = outputsValue;
+          updateNodeData({ outputs: outputsObject });
+        }
+      } catch (error) {
+        console.error(`TriggerPulse ${id}: Error generating outputs`, error, {
+          spec: spec?.kind,
+          nodeDataKeys: Object.keys(nodeData || {}),
+        });
+
+        // Fallback: set empty object to prevent crashes, basically empty state for storage
+        if (lastGeneralOutputRef.current !== null) {
+          lastGeneralOutputRef.current = new Map();
+          updateNodeData({ outputs: {} });
+        }
+      }
+    }, [spec.handles, nodeData, updateNodeData, id]);
+
+    // Clean up timeout on unmount
+    useEffect(() => {
+      return () => {
+        if (pulseTimeoutRef.current) {
+          clearTimeout(pulseTimeoutRef.current);
+        }
+      };
+    }, []);
+
+    // -----------------------------------------------------------------------
+    // 4.5  Event handlers
+    // -----------------------------------------------------------------------
+
+    /** Toggle expand / collapse UI. */
+    const toggleExpand = useCallback(() => {
+      updateNodeData({ isExpanded: !isExpanded });
+    }, [isExpanded, updateNodeData]);
+
+    /** Trigger pulse (only when enabled). */
+    const triggerPulse = useCallback(() => {
+      if (!isEnabled) return;
+
+      // Clear any existing timeout
       if (pulseTimeoutRef.current) {
         clearTimeout(pulseTimeoutRef.current);
       }
-    };
-  }, []);
 
-  // -----------------------------------------------------------------------
-  // 4.5  Event handlers
-  // -----------------------------------------------------------------------
-
-  /** Toggle expand / collapse UI. */
-  const toggleExpand = useCallback(() => {
-    updateNodeData({ isExpanded: !isExpanded });
-  }, [isExpanded, updateNodeData]);
-
-  /** Trigger pulse (only when enabled). */
-  const triggerPulse = useCallback(() => {
-    if (!isEnabled) return;
-
-    // Clear any existing timeout
-    if (pulseTimeoutRef.current) {
-      clearTimeout(pulseTimeoutRef.current);
-    }
-
-    if (isInverted) {
-      // Inverted behavior: true → false → true
-      updateNodeData({ store: false });
-      
-      // Set timeout to revert to true
-      pulseTimeoutRef.current = setTimeout(() => {
-        updateNodeData({ store: true });
-        pulseTimeoutRef.current = null;
-      }, pulseDuration);
-    } else {
-      // Normal behavior: false → true → false
-      updateNodeData({ store: true });
-      
-      // Set timeout to revert to false
-      pulseTimeoutRef.current = setTimeout(() => {
+      if (isInverted) {
+        // Inverted behavior: true → false → true
         updateNodeData({ store: false });
-        pulseTimeoutRef.current = null;
-      }, pulseDuration);
-    }
-  }, [isEnabled, pulseDuration, isInverted, updateNodeData]);
 
-  /** Handle pulse duration input change (numbers only). */
-  const handleDurationChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value.replace(/[^0-9]/g, ''); // Only allow numbers
-      const numValue = parseInt(value, 10);
-      if (!isNaN(numValue) && numValue >= 1 && numValue <= 60000) {
-        updateNodeData({ pulseDuration: numValue });
+        // Set timeout to revert to true
+        pulseTimeoutRef.current = setTimeout(() => {
+          updateNodeData({ store: true });
+          pulseTimeoutRef.current = null;
+        }, pulseDuration);
+      } else {
+        // Normal behavior: false → true → false
+        updateNodeData({ store: true });
+
+        // Set timeout to revert to false
+        pulseTimeoutRef.current = setTimeout(() => {
+          updateNodeData({ store: false });
+          pulseTimeoutRef.current = null;
+        }, pulseDuration);
       }
-    },
-    [updateNodeData]
-  );
+    }, [isEnabled, pulseDuration, isInverted, updateNodeData]);
 
-  /** Handle invert checkbox change. */
-  const handleInvertChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      updateNodeData({ isInverted: e.target.checked });
-    },
-    [updateNodeData]
-  );
+    /** Handle pulse duration input change (numbers only). */
+    const handleDurationChange = useCallback(
+      (e: ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.replace(/[^0-9]/g, ""); // Only allow numbers
+        const numValue = Number.parseInt(value, 10);
+        if (!Number.isNaN(numValue) && numValue >= 1 && numValue <= 60000) {
+          updateNodeData({ pulseDuration: numValue });
+        }
+      },
+      [updateNodeData]
+    );
 
-  // -----------------------------------------------------------------------
-  // 4.6  Validation
-  // -----------------------------------------------------------------------
+    /** Handle invert checkbox change. */
+    const handleInvertChange = useCallback(
+      (e: ChangeEvent<HTMLInputElement>) => {
+        updateNodeData({ isInverted: e.target.checked });
+      },
+      [updateNodeData]
+    );
 
-  const validation = validateNodeData(nodeData);
-  if (!validation.success) {
-    reportValidationError("TriggerPulse", id, validation.errors, {
-      originalData: validation.originalData,
-      component: "TriggerPulseNode",
-    });
-  }
-  useNodeDataValidation(TriggerPulseDataSchema, "TriggerPulse", validation.data, id);
+    // -----------------------------------------------------------------------
+    // 4.6  Validation
+    // -----------------------------------------------------------------------
 
-  // -----------------------------------------------------------------------
-  // 4.7  Render
-  // -----------------------------------------------------------------------
+    const validation = validateNodeData(nodeData);
+    if (!validation.success) {
+      reportValidationError("TriggerPulse", id, validation.errors, {
+        originalData: validation.originalData,
+        component: "TriggerPulseNode",
+      });
+    }
+    useNodeDataValidation(
+      TriggerPulseDataSchema,
+      "TriggerPulse",
+      validation.data,
+      id
+    );
 
-  const isPulsing = toBool(store);
-  const buttonText = label?.trim() ? label.trim().toUpperCase() : "PULSE";
-  
-  // Dynamic font size based on text length to fit in circle
-  const getFontSize = (text: string) => {
-    if (text.length <= 4) return "text-xs"; // 12px
-    if (text.length <= 6) return "text-[9px]"; // 9px 
-    if (text.length <= 8) return "text-[8px]"; // 8px
-    if (text.length <= 10) return "text-[7px]"; // 7px
-    return "text-[6px]"; // 6px for very long text
-  };
+    // -----------------------------------------------------------------------
+    // 4.7  Render
+    // -----------------------------------------------------------------------
 
-  return (
-    <>
-      {/* No label or icon on top */}
-      {/* ───────────────────────────────────────── UI ───────────────────────────────────────── */}
-      {isExpanded ? (
-        /* Expanded view */
-        <div className={CONTENT.expanded}>
-          <div className={CONTENT.body}>
-            <div className="flex flex-col items-center gap-2">
-              <button
-                className={`${CONTENT.pulse} ${isEnabled
+    const isPulsing = toBool(store);
+    const buttonText = label?.trim() ? label.trim().toUpperCase() : "PULSE";
+
+    // Dynamic font size based on text length to fit in circle
+    const getFontSize = (text: string) => {
+      if (text.length <= 4) return "text-xs"; // 12px
+      if (text.length <= 6) return "text-[9px]"; // 9px
+      if (text.length <= 8) return "text-[8px]"; // 8px
+      if (text.length <= 10) return "text-[7px]"; // 7px
+      return "text-[6px]"; // 6px for very long text
+    };
+
+    return (
+      <>
+        {/* No label or icon on top */}
+        {/* ───────────────────────────────────────── UI ───────────────────────────────────────── */}
+        {isExpanded ? (
+          /* Expanded view */
+          <div className={CONTENT.expanded}>
+            <div className={CONTENT.body}>
+              <div className="flex flex-col items-center gap-2">
+                <button
+                  className={`${CONTENT.pulse} ${
+                    isEnabled
+                      ? isPulsing
+                        ? CONTENT.pulsePulsing
+                        : CONTENT.pulseIdle
+                      : CONTENT.pulseDisabled
+                  }`}
+                  onClick={triggerPulse}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      triggerPulse();
+                    }
+                  }}
+                  disabled={!isEnabled}
+                  type="button"
+                  title={
+                    isEnabled
+                      ? isInverted
+                        ? "Pulse (inverted)"
+                        : "Pulse"
+                      : "Disabled"
+                  }
+                >
+                  <div
+                    className={`${CONTENT.pulseText} ${getFontSize(buttonText)}`}
+                  >
+                    {buttonText}
+                  </div>
+                </button>
+                <div className={CONTENT.durationContainer}>
+                  <input
+                    type="text"
+                    value={pulseDuration}
+                    onChange={handleDurationChange}
+                    className={CONTENT.durationInput}
+                    placeholder="1000"
+                    disabled={!isEnabled}
+                  />
+                  <span className={CONTENT.durationLabel}>ms</span>
+                </div>
+                <div className={CONTENT.invertContainer}>
+                  <input
+                    type="checkbox"
+                    checked={isInverted}
+                    onChange={handleInvertChange}
+                    className={CONTENT.invertCheckbox}
+                    disabled={!isEnabled}
+                    id={`invert-${id}`}
+                  />
+                  <label
+                    htmlFor={`invert-${id}`}
+                    className={CONTENT.invertLabel}
+                  >
+                    Invert
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Collapsed view */
+          <div className={CONTENT.collapsed}>
+            <button
+              className={`${CONTENT.pulse} ${
+                isEnabled
                   ? isPulsing
                     ? CONTENT.pulsePulsing
                     : CONTENT.pulseIdle
                   : CONTENT.pulseDisabled
-                  }`}
-                onClick={triggerPulse}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    triggerPulse();
-                  }
-                }}
-                disabled={!isEnabled}
-                type="button"
-                title={isEnabled ? (isInverted ? "Pulse (inverted)" : "Pulse") : "Disabled"}
-              >
-                <div className={`${CONTENT.pulseText} ${getFontSize(buttonText)}`}>{buttonText}</div>
-              </button>
-              <div className={CONTENT.durationContainer}>
-                <input
-                  type="text"
-                  value={pulseDuration}
-                  onChange={handleDurationChange}
-                  className={CONTENT.durationInput}
-                  placeholder="1000"
-                  disabled={!isEnabled}
-                />
-                <span className={CONTENT.durationLabel}>ms</span>
-              </div>
-              <div className={CONTENT.invertContainer}>
-                <input
-                  type="checkbox"
-                  checked={isInverted}
-                  onChange={handleInvertChange}
-                  className={CONTENT.invertCheckbox}
-                  disabled={!isEnabled}
-                  id={`invert-${id}`}
-                />
-                <label htmlFor={`invert-${id}`} className={CONTENT.invertLabel}>
-                  Invert
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* Collapsed view */
-        <div className={CONTENT.collapsed}>
-          <button
-            className={`${CONTENT.pulse} ${isEnabled
-              ? isPulsing
-                ? CONTENT.pulsePulsing
-                : CONTENT.pulseIdle
-              : CONTENT.pulseDisabled
               }`}
-            onClick={triggerPulse}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                triggerPulse();
+              onClick={triggerPulse}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  triggerPulse();
+                }
+              }}
+              disabled={!isEnabled}
+              type="button"
+              title={
+                isEnabled
+                  ? isInverted
+                    ? "Pulse (inverted)"
+                    : "Pulse"
+                  : "Disabled"
               }
-            }}
-            disabled={!isEnabled}
-            type="button"
-            title={isEnabled ? (isInverted ? "Pulse (inverted)" : "Pulse") : "Disabled"}
-          >
-            <div className={`${CONTENT.pulseText} ${getFontSize(buttonText)}`}>{buttonText}</div>
-          </button>
-        </div>
-      )}
-      <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
-    </>
-  );
-});
+            >
+              <div
+                className={`${CONTENT.pulseText} ${getFontSize(buttonText)}`}
+              >
+                {buttonText}
+              </div>
+            </button>
+          </div>
+        )}
+        <ExpandCollapseButton
+          showUI={isExpanded}
+          onToggle={toggleExpand}
+          size="sm"
+        />
+      </>
+    );
+  }
+);
 
 // -----------------------------------------------------------------------------
 // 5️⃣  High‑order wrapper – inject scaffold with dynamic spec
@@ -465,7 +594,7 @@ const TriggerPulseNodeWithDynamicSpec = (props: NodeProps) => {
     [
       (nodeData as TriggerPulseData).expandedSize,
       (nodeData as TriggerPulseData).collapsedSize,
-    ],
+    ]
   );
 
   // Memoise the scaffolded component to keep focus
@@ -474,7 +603,7 @@ const TriggerPulseNodeWithDynamicSpec = (props: NodeProps) => {
       withNodeScaffold(dynamicSpec, (p) => (
         <TriggerPulseNode {...p} spec={dynamicSpec} />
       )),
-    [dynamicSpec],
+    [dynamicSpec]
   );
 
   return <ScaffoldedNode {...props} />;
