@@ -548,6 +548,153 @@ const extractKeywords = (text: string): string[] => {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10)
     .map(([word]) => word);
+  // In a real implementation, this would use NLP techniques
+  // Here we'll just extract words that appear frequently and aren't stopwords
+  const stopwords = new Set([
+    "a",
+    "about",
+    "above",
+    "after",
+    "again",
+    "against",
+    "all",
+    "am",
+    "an",
+    "and",
+    "any",
+    "are",
+    "as",
+    "at",
+    "be",
+    "because",
+    "been",
+    "before",
+    "being",
+    "below",
+    "between",
+    "both",
+    "but",
+    "by",
+    "can",
+    "did",
+    "do",
+    "does",
+    "doing",
+    "don",
+    "down",
+    "during",
+    "each",
+    "few",
+    "for",
+    "from",
+    "further",
+    "had",
+    "has",
+    "have",
+    "having",
+    "he",
+    "her",
+    "here",
+    "hers",
+    "herself",
+    "him",
+    "himself",
+    "his",
+    "how",
+    "i",
+    "if",
+    "in",
+    "into",
+    "is",
+    "it",
+    "its",
+    "itself",
+    "just",
+    "me",
+    "more",
+    "most",
+    "my",
+    "myself",
+    "no",
+    "nor",
+    "not",
+    "now",
+    "of",
+    "off",
+    "on",
+    "once",
+    "only",
+    "or",
+    "other",
+    "our",
+    "ours",
+    "ourselves",
+    "out",
+    "over",
+    "own",
+    "same",
+    "she",
+    "should",
+    "so",
+    "some",
+    "such",
+    "than",
+    "that",
+    "the",
+    "their",
+    "theirs",
+    "them",
+    "themselves",
+    "then",
+    "there",
+    "these",
+    "they",
+    "this",
+    "those",
+    "through",
+    "to",
+    "too",
+    "under",
+    "until",
+    "up",
+    "very",
+    "was",
+    "we",
+    "were",
+    "what",
+    "when",
+    "where",
+    "which",
+    "while",
+    "who",
+    "whom",
+    "why",
+    "will",
+    "with",
+    "you",
+    "your",
+    "yours",
+    "yourself",
+    "yourselves",
+  ]);
+
+  const words = (text || "")
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "")
+    .split(/\s+/)
+    .filter((word) => word.length > 3 && !stopwords.has(word));
+
+  // Count word frequency
+  const wordCount: Record<string, number> = {};
+  words.forEach((word) => {
+    wordCount[word] = (wordCount[word] || 0) + 1;
+  });
+
+  // Get top keywords
+  return Object.entries(wordCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([word]) => word);
 };
 
 /** Extract named entities from text */
@@ -640,6 +787,79 @@ const analyzeSentiment = (text: string): { score: number; label: string } => {
   ]);
 
   const words = text.toLowerCase().split(/\W+/);
+  let positiveCount = 0;
+  let negativeCount = 0;
+
+  words.forEach((word) => {
+    if (positiveWords.has(word)) positiveCount++;
+    if (negativeWords.has(word)) negativeCount++;
+  });
+
+  const totalWords = words.length;
+  const score =
+    totalWords > 0
+      ? (positiveCount - negativeCount) /
+        Math.max(1, positiveCount + negativeCount)
+      : 0;
+
+  const label = "neutral";
+  if (score > 0.25) label = "positive";
+  if (score < -0.25) label = "negative";
+
+  return { score, label };
+  // In a real implementation, this would use NLP or AI services
+  // Here we'll just do a simple word-based approach
+  const positiveWords = new Set([
+    "good",
+    "great",
+    "excellent",
+    "amazing",
+    "wonderful",
+    "fantastic",
+    "terrific",
+    "happy",
+    "pleased",
+    "delighted",
+    "satisfied",
+    "joy",
+    "love",
+    "like",
+    "appreciate",
+    "thank",
+    "thanks",
+    "grateful",
+    "positive",
+    "perfect",
+    "best",
+    "better",
+  ]);
+
+  const negativeWords = new Set([
+    "bad",
+    "terrible",
+    "horrible",
+    "awful",
+    "poor",
+    "disappointing",
+    "frustrating",
+    "sad",
+    "unhappy",
+    "angry",
+    "upset",
+    "hate",
+    "dislike",
+    "sorry",
+    "problem",
+    "issue",
+    "mistake",
+    "error",
+    "fail",
+    "failed",
+    "worst",
+    "worse",
+  ]);
+
+  const words = (text || "").toLowerCase().split(/\W+/);
   let positiveCount = 0;
   let negativeCount = 0;
 

@@ -11,6 +11,7 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
+import { Handle, Position } from "@xyflow/react";
 import { type ChangeEvent, memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
@@ -39,7 +40,7 @@ import type { EmailAccountConfig, EmailProviderType } from "./types";
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
 // Convex integration
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useAction } from "convex/react";
 import { toast } from "sonner";
 
 // -----------------------------------------------------------------------------
@@ -272,10 +273,10 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 	// -------------------------------------------------------------------------
 	// 4.3  Convex integration
 	// -------------------------------------------------------------------------
-	const storeEmailAccount = useMutation(api.emailAccounts.storeEmailAccount);
-	const validateConnection = useMutation(api.emailAccounts.validateEmailConnection);
+	const storeEmailAccount = useMutation(api.emailAccounts.upsertEmailAccount);
+	const validateConnection = useAction(api.emailAccounts.testEmailConnection);
 	const _emailAccounts = useQuery(
-		api.emailAccounts.getEmailAccounts,
+		api.emailAccounts.getEmailAccountsByUserEmail,
 		token ? { token_hash: token } : "skip"
 	);
 
@@ -359,7 +360,10 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 		[updateNodeData]
 	);
 
-	/** Handle OAuth2 authentication */
+	/** 
+	 * Handle OAuth2 authentication flow
+	 * Opens popup window for OAuth2 authorization and handles the response
+	 */
 	const handleOAuth2Auth = useCallback(async () => {
 		if (!(currentProvider && isOAuth2Provider)) {
 			return;
@@ -371,7 +375,7 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 			// Get OAuth2 URL from API
 			const redirectUri = `${window.location.origin}/api/auth/email/${provider}/callback`;
 			const response = await fetch(
-				`/api/auth/email/${provider}?redirect_uri=${encodeURIComponent(redirectUri)}`
+				`/api/auth/email/${provider}?redirect_uri=${encodeURIComponent(redirectUri)}&session_token=${encodeURIComponent(token || '')}`
 			);
 
 			if (!response.ok) {
@@ -387,19 +391,35 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 				"width=500,height=600,scrollbars=yes,resizable=yes"
 			);
 
-			// Listen for popup completion
+			// Listen for messages from the popup
+			const handleMessage = (event: MessageEvent) => {
+				// Verify origin for security
+				if (event.origin !== window.location.origin) {
+					return;
+				}
+
+				if (event.data.type === 'OAUTH_SUCCESS') {
+					handleAuthSuccess(event.data.authData);
+					popup?.close();
+					window.removeEventListener('message', handleMessage);
+					updateNodeData({ isAuthenticating: false });
+				} else if (event.data.type === 'OAUTH_ERROR') {
+					handleAuthError(event.data.error);
+					popup?.close();
+					window.removeEventListener('message', handleMessage);
+					updateNodeData({ isAuthenticating: false });
+				}
+			};
+
+			window.addEventListener('message', handleMessage);
+
+			// Fallback: Check if popup was closed manually
 			const checkClosed = setInterval(() => {
 				if (popup?.closed) {
 					clearInterval(checkClosed);
+					window.removeEventListener('message', handleMessage);
 					updateNodeData({ isAuthenticating: false });
 
-					// Check URL parameters for auth result
-					const urlParams = new URLSearchParams(window.location.search);
-					if (urlParams.get("auth_success")) {
-						handleAuthSuccess(urlParams.get("auth_data"));
-					} else if (urlParams.get("auth_error")) {
-						handleAuthError(urlParams.get("auth_error_description") || "Authentication failed");
-					}
 				}
 			}, 1000);
 		} catch (error) {
@@ -414,7 +434,10 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 		}
 	}, [currentProvider, isOAuth2Provider, provider, updateNodeData]);
 
-	/** Handle authentication success */
+	/** 
+	 * Process successful OAuth2 authentication
+	 * Decodes auth data and stores account in Convex
+	 */
 	const handleAuthSuccess = useCallback(
 		async (authDataEncoded: string | null) => {
 			if (!(authDataEncoded && token)) {
@@ -425,27 +448,17 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 				const authData = JSON.parse(atob(authDataEncoded));
 
 				// Store account in Convex
-				const result = await storeEmailAccount({
-					token_hash: token,
+				const accountId = await storeEmailAccount({
 					provider: authData.provider,
 					email: authData.email,
-					display_name: authData.displayName,
-					credentials: {
-						provider: authData.provider,
-						email: authData.email,
-						accessToken: authData.accessToken,
-						refreshToken: authData.refreshToken,
-						tokenExpiry: authData.tokenExpiry,
-					},
+					displayName: authData.displayName,
+					accessToken: authData.accessToken,
+					refreshToken: authData.refreshToken,
+					tokenExpiry: authData.tokenExpiry,
+					sessionToken: authData.sessionToken || token, // Pass session token
 				});
 
-				if (result.success) {
-					const accountData = result.data as {
-						accountId: string;
-						email: string;
-						provider: string;
-						message: string;
-					};
+				if (accountId) {
 					updateNodeData({
 						email: authData.email,
 						displayName: authData.displayName || authData.email,
@@ -453,7 +466,7 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 						isConnected: true,
 						connectionStatus: "connected",
 						lastValidated: Date.now(),
-						accountId: accountData.accountId,
+						accountId: accountId,
 						lastError: "",
 					});
 
@@ -461,10 +474,9 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 						description: `Successfully connected ${authData.email}`,
 					});
 				} else {
-					throw new Error(result.error.message);
+					throw new Error("Failed to store account");
 				}
 			} catch (error) {
-				console.error("Auth success handling error:", error);
 				updateNodeData({
 					lastError: error instanceof Error ? error.message : "Failed to save account",
 				});
@@ -514,27 +526,33 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 			};
 
 			// Store account in Convex
-			const result = await storeEmailAccount({
-				token_hash: token,
+			const accountId = await storeEmailAccount({
 				provider,
 				email,
-				display_name: displayName,
-				credentials,
+				displayName,
+				imapConfig: {
+					host: imapHost,
+					port: imapPort,
+					secure: useSSL,
+					username,
+					password,
+				},
+				smtpConfig: {
+					host: smtpHost,
+					port: smtpPort,
+					secure: useSSL,
+					username,
+					password,
+				},
 			});
 
-			if (result.success) {
-				const accountData = result.data as {
-					accountId: string;
-					email: string;
-					provider: string;
-					message: string;
-				};
+			if (accountId) {
 				updateNodeData({
 					isConfigured: true,
 					isConnected: true,
 					connectionStatus: "connected",
 					lastValidated: Date.now(),
-					accountId: accountData.accountId,
+					accountId: accountId,
 					lastError: "",
 				});
 
@@ -542,7 +560,7 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 					description: `Successfully configured ${email}`,
 				});
 			} else {
-				throw new Error(result.error.message);
+				throw new Error("Failed to store account");
 			}
 		} catch (error) {
 			console.error("Manual save error:", error);
@@ -582,8 +600,7 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 			updateNodeData({ connectionStatus: "connecting", lastError: "" });
 
 			const result = await validateConnection({
-				token_hash: token,
-				account_id: nodeData.accountId as any,
+				accountId: nodeData.accountId as any,
 			});
 
 			if (result.success) {
@@ -599,7 +616,6 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 				throw new Error(result.error.message);
 			}
 		} catch (error) {
-			console.error("Connection test error:", error);
 			updateNodeData({
 				connectionStatus: "error",
 				isConnected: false,
@@ -614,6 +630,36 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 	// -------------------------------------------------------------------------
 	// 4.6  Effects
 	// -------------------------------------------------------------------------
+
+	/** Check URL parameters for auth result on component mount */
+	useEffect(() => {
+		console.log("🔄 EmailAccount useEffect running for node:", id);
+		const urlParams = new URLSearchParams(window.location.search);
+		console.log("🔍 Checking URL params:", {
+			hasAuthSuccess: !!urlParams.get("auth_success"),
+			hasAuthData: !!urlParams.get("auth_data"),
+			isConnected,
+			currentUrl: window.location.href,
+			nodeId: id
+		});
+		
+		if (urlParams.get("auth_success") && !isConnected) {
+			const authData = urlParams.get("auth_data");
+			if (authData) {
+				console.log("✅ Processing auth success from URL params");
+				console.log("📦 Auth data:", authData.substring(0, 50) + "...");
+				handleAuthSuccess(authData);
+				// Clean up URL parameters
+				window.history.replaceState({}, document.title, window.location.pathname);
+			}
+		} else if (urlParams.get("auth_error")) {
+			const errorDesc = urlParams.get("auth_error_description") || "Authentication failed";
+			console.log("❌ Processing auth error:", errorDesc);
+			handleAuthError(errorDesc);
+			// Clean up URL parameters
+			window.history.replaceState({}, document.title, window.location.pathname);
+		}
+	}, [handleAuthSuccess, handleAuthError, isConnected]);
 
 	/** Update outputs when connection state changes */
 	useEffect(() => {
@@ -667,6 +713,19 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 	// -------------------------------------------------------------------------
 	return (
 		<>
+			{/* Output handle for connecting to other email nodes */}
+			<Handle
+				type="source"
+				position={Position.Right}
+				id="account-output"
+				style={{
+					background: '#555',
+					width: 8,
+					height: 8,
+					top: 20,
+				}}
+			/>
+			
 			{/* Editable label */}
 			<LabelNode nodeId={id} label={(nodeData as EmailAccountData).label || spec.displayName} />
 
@@ -746,6 +805,7 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 								>
 									{isAuthenticating ? "Authenticating..." : `Connect ${currentProvider?.name}`}
 								</button>
+
 							</div>
 						)}
 

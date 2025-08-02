@@ -365,7 +365,7 @@ const EmailReplierNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 			return [];
 		}
 
-		return emailTemplates.data.map((template) => ({
+		return emailTemplates.data.map((template: any) => ({
 			value: template.id,
 			label: template.name,
 			category: template.category,
@@ -399,7 +399,7 @@ const EmailReplierNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 	const handleTemplateChange = useCallback(
 		(e: ChangeEvent<HTMLSelectElement>) => {
 			const templateId = e.target.value;
-			const template = availableTemplates.find(t => t.value === templateId);
+			const template = availableTemplates.find((t: any) => t.value === templateId);
 			updateNodeData({ 
 				selectedTemplate: templateId,
 				customTemplate: template?.content || customTemplate,
@@ -607,7 +607,7 @@ const EmailReplierNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 										disabled={!isEnabled || isProcessing}
 									>
 										<option value="">Select template...</option>
-										{availableTemplates.map((template) => (
+										{availableTemplates.map((template: any) => (
 											<option key={template.value} value={template.value}>
 												{template.label} ({template.category})
 											</option>

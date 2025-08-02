@@ -201,7 +201,7 @@ export interface EmailMessage {
 	snippet: string;
 
 	// Metadata
-	date: Date;
+	date: number; // Timestamp instead of Date object for Convex compatibility
 	isRead: boolean;
 	isImportant?: boolean;
 	labels?: string[];
@@ -212,7 +212,7 @@ export interface EmailMessage {
 
 	// Processing State
 	isProcessed: boolean;
-	processedAt?: Date;
+	processedAt?: number; // Timestamp instead of Date object
 	processingErrors?: string[];
 }
 
@@ -249,8 +249,8 @@ export interface MessageFilters {
 	};
 
 	dateRange?: {
-		from?: Date;
-		to?: Date;
+		from?: number; // Timestamp instead of Date object
+		to?: number; // Timestamp instead of Date object
 		relative?: "last24h" | "lastWeek" | "lastMonth" | "all";
 	};
 
@@ -347,7 +347,7 @@ export interface ProviderConnection {
 	provider: EmailProviderType;
 	credentials: EmailAccountConfig;
 	isConnected: boolean;
-	lastActivity: Date;
+	lastActivity: number; // Timestamp instead of Date object
 }
 
 export interface RetrievalOptions {

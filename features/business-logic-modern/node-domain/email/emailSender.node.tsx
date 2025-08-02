@@ -11,6 +11,7 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
+import { useReactFlow, Handle, Position } from "@xyflow/react";
 import React, {
     memo,
     useCallback,
@@ -53,7 +54,7 @@ import { EmailAccountService } from "./services/emailAccountService";
 import { useEmailSending } from "./services/emailSendingService";
 
 // Convex integration
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
@@ -139,6 +140,7 @@ export const EmailSenderDataSchema = z
         successOutput: SafeSchemas.boolean(false),
         messageIdOutput: SafeSchemas.optionalText(),
         errorOutput: SafeSchemas.optionalText(),
+        outputs: SafeSchemas.optionalText(), // Formatted output for viewText nodes
     })
     .passthrough();
 
@@ -225,6 +227,13 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
                 id: "error-output",
                 code: "e",
                 position: "bottom",
+                type: "source",
+                dataType: "String",
+            },
+            {
+                id: "outputs",
+                code: "o",
+                position: "right",
                 type: "source",
                 dataType: "String",
             },
@@ -392,20 +401,69 @@ const EmailSenderNode = memo(
         // 4.3  Convex integration
         // -------------------------------------------------------------------------
         const emailAccounts = useQuery(
-            api.emailAccounts.getEmailAccounts,
-            token ? { token_hash: token } : "skip"
+            api.emailAccounts.getEmailAccountsByUserEmail,
+            // Use hybrid auth: prefer token_hash, fallback to userEmail
+            token ? { token_hash: token } : user?.email ? { userEmail: user.email } : "skip"
         );
 
-        // Email sending service
-        const { sendEmail, getErrorMessage } = useEmailSending();
+        // Email sending action
+        const sendEmailAction = useAction(api.emailAccounts.sendEmail);
+
+        // Global React‑Flow store (nodes & edges) – triggers re‑render on change
+        const _nodes = useStore((s) => s.nodes);
+        const _edges = useStore((s) => s.edges);
 
         // -------------------------------------------------------------------------
-        // 4.4  Available accounts for selection
+        // 4.4  Get connected email account nodes
+        // -------------------------------------------------------------------------
+        const { getNodes, getEdges } = useReactFlow();
+        
+        const connectedAccountIds = useMemo(() => {
+            const edges = _edges.filter((e) => e.target === id && e.targetHandle === 'account-input__a');
+            
+
+            
+            const connectedAccountNodes = edges
+                .map((e) => _nodes.find((n) => n.id === e.source))
+                .filter(Boolean)
+                .filter((n) => n?.type === 'emailAccount' && n?.data?.isConnected && n?.data?.accountId);
+            
+            const accountIds = connectedAccountNodes
+                .filter((node): node is NonNullable<typeof node> => node != null)
+                .map(node => node.data.accountId);
+            
+
+            return accountIds;
+        }, [_nodes, _edges, id]);
+
+        // -------------------------------------------------------------------------
+        // 4.5  Available accounts (filtered by connected nodes)
         // -------------------------------------------------------------------------
         const availableAccounts = useMemo(() => {
-            if (!emailAccounts) return [];
-            return EmailAccountService.transformAccountsToOptions(emailAccounts);
-        }, [emailAccounts]);
+            if (!(emailAccounts && Array.isArray(emailAccounts))) {
+                return [];
+            }
+
+            // Only show accounts from connected nodes (no fallback to all accounts)
+            if (connectedAccountIds.length === 0) {
+                return []; // No connections = no available accounts
+            }
+
+            // Filter accounts to only show connected ones
+            const filteredAccounts = emailAccounts.filter((account) => 
+                connectedAccountIds.includes(account._id)
+            );
+
+            return filteredAccounts.map((account) => ({
+                value: account._id,
+                label: `${account.display_name} (${account.email})`,
+                provider: account.provider,
+                email: account.email,
+                isActive: account.is_active,
+                isConnected: account.is_active && account.connection_status === 'connected',
+                lastValidated: account.last_validated,
+            }));
+        }, [emailAccounts, connectedAccountIds]);
 
         // Get current selected account
         const selectedAccount = useMemo(() => {
@@ -487,20 +545,16 @@ const EmailSenderNode = memo(
         const handleRecipientsChange = useCallback(
             (field: 'to' | 'cc' | 'bcc') => (e: ChangeEvent<HTMLTextAreaElement>) => {
                 const recipientString = e.target.value;
-                const { valid, invalid } = EmailAccountService.parseRecipients(recipientString);
                 
-                // Update recipients with validated emails
+                // Just update the raw text, validate only on send
+                const emails = recipientString.split(',').map(email => email.trim()).filter(email => email.length > 0);
+                
                 updateNodeData({
                     recipients: {
                         ...recipients,
-                        [field]: valid,
+                        [field]: emails,
                     }
                 });
-
-                // Show validation feedback for invalid emails
-                if (invalid.length > 0) {
-                    toast.error(`Invalid email addresses: ${invalid.join(', ')}`);
-                }
             },
             [recipients, updateNodeData],
         );
@@ -545,13 +599,36 @@ const EmailSenderNode = memo(
 
         /** Handle send email action */
         const handleSendEmail = useCallback(async () => {
-            if (!accountId || !token) {
+            console.log('🔍 handleSendEmail debug:', {
+                accountId,
+                tokenExists: !!token,
+                tokenValue: token ? 'present' : 'missing',
+                userExists: !!user,
+                userEmail: user?.email
+            });
+
+            if (!accountId) {
                 toast.error("Please select an email account first");
+                return;
+            }
+
+            if (!token) {
+                toast.error("Authentication token not available. Please refresh and try again.");
                 return;
             }
 
             if (recipients.to.length === 0) {
                 toast.error("Please add at least one recipient");
+                return;
+            }
+
+            // Validate email addresses
+            const allEmails = [...recipients.to, ...recipients.cc, ...recipients.bcc];
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const invalidEmails = allEmails.filter(email => email && !emailRegex.test(email));
+            
+            if (invalidEmails.length > 0) {
+                toast.error(`Invalid email addresses: ${invalidEmails.join(', ')}`);
                 return;
             }
 
@@ -572,39 +649,66 @@ const EmailSenderNode = memo(
                 });
 
                 // Send email via Convex backend
-                const result = await sendEmail(
-                    {
-                        accountId: accountId as any,
-                        recipients: {
-                            to: recipients.to,
-                            cc: recipients.cc.length > 0 ? recipients.cc : undefined,
-                            bcc: recipients.bcc.length > 0 ? recipients.bcc : undefined,
-                        },
-                        subject: subject,
-                        content: {
-                            text: content.text,
-                            html: content.html || undefined,
-                        },
-                        // TODO: Add attachments support in future tasks
-                        attachments: undefined,
-                    },
-                    token
-                );
+                const emailPayload = {
+                    token_hash: token, // Pass authentication token
+                    accountId: accountId as any,
+                    to: recipients.to,
+                    cc: recipients.cc.length > 0 ? recipients.cc : undefined,
+                    bcc: recipients.bcc.length > 0 ? recipients.bcc : undefined,
+                    subject: subject,
+                    textContent: content.text,
+                    htmlContent: content.html || undefined,
+                };
 
-                if (result.success && result.data) {
+
+
+                const result = await sendEmailAction(emailPayload);
+
+                if (result.success) {
+                    // Create formatted output similar to EmailReader
+                    const formattedOutput = {
+                        "Email Sent Successfully": {
+                            "Message ID": result.messageId || "N/A",
+                            "Subject": subject,
+                            "To": recipients.to.join(", "),
+                            "CC": recipients.cc.length > 0 ? recipients.cc.join(", ") : "None",
+                            "BCC": recipients.bcc.length > 0 ? recipients.bcc.join(", ") : "None",
+                            "Sent At": new Date().toLocaleString(),
+                            "Content Type": content.useHtml ? "HTML" : "Plain Text",
+                            "Content Preview": (content.text || content.html).substring(0, 100) + ((content.text || content.html).length > 100 ? "..." : ""),
+                            "Account Used": selectedAccount?.email || "Unknown",
+                            "Status": "✅ Delivered"
+                        }
+                    };
+
                     updateNodeData({
                         sendingStatus: "sent",
                         sentCount: sentCount + recipients.to.length,
                         lastSent: Date.now(),
                         successOutput: true,
-                        messageIdOutput: result.data.messageId,
+                        messageIdOutput: result.messageId,
                         errorOutput: "",
+                        outputs: JSON.stringify(formattedOutput, null, 2), // Formatted for viewText
                     });
 
                     toast.success(`Email sent successfully to ${recipients.to.length} recipient(s)`);
                 } else {
-                    const errorMessage = result.error ? getErrorMessage(result.error) : "Failed to send email";
+                    const errorMessage = "Failed to send email";
                     
+                    // Create formatted error output
+                    const errorOutput = {
+                        "Email Send Failed": {
+                            "Subject": subject,
+                            "To": recipients.to.join(", "),
+                            "CC": recipients.cc.length > 0 ? recipients.cc.join(", ") : "None",
+                            "BCC": recipients.bcc.length > 0 ? recipients.bcc.join(", ") : "None",
+                            "Failed At": new Date().toLocaleString(),
+                            "Account Used": selectedAccount?.email || "Unknown",
+                            "Error": errorMessage,
+                            "Status": "❌ Failed"
+                        }
+                    };
+
                     updateNodeData({
                         sendingStatus: "error",
                         failedCount: failedCount + recipients.to.length,
@@ -612,6 +716,7 @@ const EmailSenderNode = memo(
                         successOutput: false,
                         messageIdOutput: "",
                         errorOutput: errorMessage,
+                        outputs: JSON.stringify(errorOutput, null, 2),
                     });
 
                     toast.error("Failed to send email", {
@@ -622,19 +727,34 @@ const EmailSenderNode = memo(
                 console.error('Email sending error:', error);
                 const errorMessage = error instanceof Error ? error.message : 'Failed to send email';
                 
+                // Create formatted error output for exceptions
+                const exceptionOutput = {
+                    "Email Send Exception": {
+                        "Subject": subject,
+                        "To": recipients.to.join(", "),
+                        "CC": recipients.cc.length > 0 ? recipients.cc.join(", ") : "None",
+                        "BCC": recipients.bcc.length > 0 ? recipients.bcc.join(", ") : "None",
+                        "Failed At": new Date().toLocaleString(),
+                        "Account Used": selectedAccount?.email || "Unknown",
+                        "Exception": errorMessage,
+                        "Status": "⚠️ Exception"
+                    }
+                };
+
                 updateNodeData({
                     sendingStatus: "error",
                     lastError: errorMessage,
                     failedCount: failedCount + recipients.to.length,
                     successOutput: false,
                     errorOutput: errorMessage,
+                    outputs: JSON.stringify(exceptionOutput, null, 2),
                 });
-                
+
                 toast.error('Failed to send email', {
                     description: errorMessage,
                 });
             }
-        }, [accountId, token, recipients, subject, content, sentCount, failedCount, updateNodeData, sendEmail, getErrorMessage]);
+        }, [accountId, token, recipients, subject, content, sentCount, failedCount, updateNodeData, sendEmailAction]);
 
         // -------------------------------------------------------------------------
         // 4.6  Effects
@@ -676,6 +796,19 @@ const EmailSenderNode = memo(
         // -------------------------------------------------------------------------
         return (
             <>
+                {/* Input handle for email account connection */}
+                <Handle
+                    type="target"
+                    position={Position.Left}
+                    id="account-input"
+                    style={{
+                        background: '#555',
+                        width: 8,
+                        height: 8,
+                        top: 20,
+                    }}
+                />
+                
                 {/* Editable label */}
                 <LabelNode nodeId={id} label={spec?.displayName || "Email Sender"} />
 
@@ -706,9 +839,8 @@ const EmailSenderNode = memo(
                                 <select
                                     value={accountId}
                                     onChange={handleAccountChange}
-                                    className={`w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                                        accountErrors.length > 0 ? 'border-red-500' : ''
-                                    }`}
+                                    className={`w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${accountErrors.length > 0 ? 'border-red-500' : ''
+                                        }`}
                                     disabled={!isEnabled || sendingStatus === 'sending'}
                                 >
                                     <option value="">Select email account...</option>
@@ -722,7 +854,7 @@ const EmailSenderNode = memo(
                                         </option>
                                     ))}
                                 </select>
-                                
+
                                 {/* Account Status Display */}
                                 {selectedAccount && (
                                     <div className="mt-1 flex items-center justify-between">
@@ -748,7 +880,7 @@ const EmailSenderNode = memo(
                                         </button>
                                     </div>
                                 )}
-                                
+
                                 {/* Account Errors */}
                                 {accountErrors.length > 0 && (
                                     <div className="mt-1">
@@ -759,7 +891,7 @@ const EmailSenderNode = memo(
                                         ))}
                                     </div>
                                 )}
-                                
+
                                 {/* No Accounts Available */}
                                 {availableAccounts.length === 0 && (
                                     <div className="mt-1 text-xs text-yellow-600">
