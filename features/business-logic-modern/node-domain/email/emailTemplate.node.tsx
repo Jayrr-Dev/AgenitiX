@@ -331,7 +331,7 @@ const EmailTemplateNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) =>
 			return [];
 		}
 
-		return emailTemplates.data.map((template) => ({
+		return emailTemplates.data.map((template: any) => ({
 			value: template.id,
 			label: template.name,
 			category: template.category,

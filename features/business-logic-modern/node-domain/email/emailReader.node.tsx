@@ -33,13 +33,14 @@ import {
 	EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { useStore } from "@xyflow/react";
+import { useStore, useReactFlow, Handle, Position } from "@xyflow/react";
 
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
 // Convex integration
 import { useQuery } from "convex/react";
 import { toast } from "sonner";
+import type { EmailMessage } from "./types";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -105,6 +106,8 @@ export const EmailReaderDataSchema = z
 		// Outputs
 		messages: z.array(z.any()).default([]), // EmailMessage[]
 		messageCount: z.number().default(0),
+		emailsOutput: z.string().default(""), // JSON string of emails for output
+		outputs: z.string().default(""), // For compatibility with viewText node
 		statusOutput: SafeSchemas.boolean(false),
 		label: z.string().optional(), // User-editable node label
 	})
@@ -214,6 +217,8 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
 			retryCount: 0,
 			messages: [],
 			messageCount: 0,
+			emailsOutput: "",
+			outputs: "",
 			statusOutput: false,
 		}),
 		dataSchema: EmailReaderDataSchema,
@@ -223,6 +228,8 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
 				"isActive",
 				"messages",
 				"messageCount",
+				"emailsOutput",
+				"outputs",
 				"statusOutput",
 				"expandedSize",
 				"collapsedSize",
@@ -288,7 +295,6 @@ export const spec: NodeSpec = createDynamicSpec({
 const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 	// -------------------------------------------------------------------------
 	const { nodeData, updateNodeData } = useNodeData(id, {});
-	const { token } = useAuthContext();
 
 	// -------------------------------------------------------------------------
 	// STATE MANAGEMENT (grouped for clarity)
@@ -315,6 +321,8 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 		retryCount,
 	} = nodeData as EmailReaderData;
 
+	console.log('🚀 EmailReader render:', { id, accountId, isConnected });
+
 	const categoryStyles = CATEGORY_TEXT.EMAIL;
 
 	// Global React‑Flow store (nodes & edges) – triggers re‑render on change
@@ -327,27 +335,105 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 	// -------------------------------------------------------------------------
 	// 4.3  Convex integration
 	// -------------------------------------------------------------------------
+	const { user, token } = useAuthContext();
 	const emailAccounts = useQuery(
-		api.emailAccounts.getEmailAccounts,
-		token ? { token_hash: token } : "skip"
+		api.emailAccounts.getEmailAccountsByUserEmail,
+		// Use hybrid auth: prefer token_hash, fallback to userEmail
+		token ? { token_hash: token } : user?.email ? { userEmail: user.email } : "skip"
 	);
 
 	// -------------------------------------------------------------------------
-	// 4.4  Available accounts for selection
+	// 4.4  Get connected email account nodes
+	// -------------------------------------------------------------------------
+	const { getNodes, getEdges } = useReactFlow();
+	
+	console.log('🔍 About to check connections for node:', id);
+	
+	const connectedAccountIds = useMemo(() => {
+		const edges = _edges.filter((e) => e.target === id && e.targetHandle === 'account-input__a');
+		
+		console.log('🔍 EmailReader Debug - ALL EDGES:');
+		_edges.forEach((edge, i) => {
+			console.log(`Edge ${i}:`, {
+				source: edge.source,
+				target: edge.target,
+				targetHandle: edge.targetHandle,
+				sourceHandle: edge.sourceHandle,
+				matchesThisNode: edge.target === id
+			});
+		});
+		console.log('🔍 Looking for targetHandle: "account-input"');
+		console.log('🔍 This node ID:', id);
+		
+		const connectedAccountNodes = edges
+			.map((e) => {
+				const sourceNode = _nodes.find((n) => n.id === e.source);
+				console.log('🔍 Source node found:', sourceNode?.id, sourceNode?.type, sourceNode?.data);
+				return sourceNode;
+			})
+			.filter(Boolean)
+			.filter((n) => {
+				const isValid = n?.type === 'emailAccount' && n?.data?.isConnected && n?.data?.accountId;
+				console.log('🔍 Node validation:', {
+					nodeId: n?.id,
+					type: n?.type,
+					isConnected: n?.data?.isConnected,
+					accountId: n?.data?.accountId,
+					isValid
+				});
+				return isValid;
+			});
+		
+		const accountIds = connectedAccountNodes.map(node => node.data.accountId);
+		console.log('🔍 Connected account IDs:', accountIds);
+		return accountIds;
+	}, [_nodes, _edges, id]);
+
+	// -------------------------------------------------------------------------
+	// 4.5  Available accounts (filtered by connected nodes)
 	// -------------------------------------------------------------------------
 	const availableAccounts = useMemo(() => {
+		console.log('📊 EmailReader availableAccounts debug:', {
+			emailAccountsCount: emailAccounts?.length || 0,
+			connectedAccountIds,
+			emailAccounts: emailAccounts?.map(acc => ({ id: acc._id, email: acc.email, displayName: acc.display_name }))
+		});
+		
 		if (!(emailAccounts && Array.isArray(emailAccounts))) {
+			console.log('📊 No email accounts available');
 			return [];
 		}
 
-		return emailAccounts.map((account) => ({
-			value: account.id,
-			label: `${account.email} (${account.provider})`,
-			provider: account.provider,
-			email: account.email,
-			isActive: account.isActive,
-		}));
-	}, [emailAccounts]);
+		// Only show accounts from connected nodes (no fallback to all accounts)
+		if (connectedAccountIds.length === 0) {
+			console.log('📊 No connected account IDs');
+			return []; // No connections = no available accounts
+		}
+
+		// Filter to show only accounts from connected nodes
+		const filteredAccounts = emailAccounts.filter(account => {
+			const isIncluded = connectedAccountIds.includes(account._id);
+			console.log('📊 Account filter:', {
+				accountId: account._id,
+				email: account.email,
+				isIncluded,
+				connectedIds: connectedAccountIds
+			});
+			return isIncluded;
+		});
+		
+		console.log('📊 Filtered accounts:', filteredAccounts.length);
+		
+		return filteredAccounts.map((account) => ({
+				value: account._id,
+				label: `${account.display_name} (${account.email})`,
+				provider: account.provider,
+				email: account.email,
+				isActive: account.is_active,
+				isConnected: account.is_active && account.connection_status === 'connected',
+				lastValidated: account.last_validated,
+			}));
+	}, [emailAccounts, connectedAccountIds]);
 
 	// -------------------------------------------------------------------------
 	// 4.5  Callbacks
@@ -424,23 +510,67 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 				retryCount: 0,
 			});
 
-			// TODO: Implement actual message reading logic
-			// This will be implemented in subsequent tasks
+			// Get the selected account details
+			const account = emailAccounts?.find(acc => acc._id === accountId);
+			if (!account) {
+				throw new Error("Account not found");
+			}
 
-			// Simulate reading messages for now
-			setTimeout(() => {
-				updateNodeData({
-					connectionStatus: "idle",
-					isConnected: true,
-					lastSync: Date.now(),
-					processedCount: processedCount + batchSize,
-					messageCount: batchSize,
-					messages: [], // Will contain actual messages
-					statusOutput: true,
-				});
+			// Parse credentials
+			let credentials;
+			try {
+				credentials = JSON.parse(account.encrypted_credentials || '{}');
+			} catch {
+				throw new Error("Invalid account credentials");
+			}
 
-				toast.success(`Read ${batchSize} messages successfully`);
-			}, 2000);
+			// Import the appropriate provider
+			let provider;
+			switch (account.provider) {
+				case 'gmail':
+					const { gmailProvider } = await import('./providers/gmail');
+					provider = gmailProvider;
+					break;
+				default:
+					throw new Error(`Provider ${account.provider} not supported yet`);
+			}
+
+			// Read emails using the provider
+			const emails = await provider.readEmails({
+				accessToken: credentials.accessToken,
+				folder: 'INBOX', // Default folder
+				limit: batchSize,
+			});
+
+			console.log("📧 Emails fetched:", emails);
+
+			// Format emails for better readability
+			const formattedEmails = emails.map((email, index) => ({
+				[`Email ${index + 1}`]: {
+					From: `${email.from.name || email.from.email} <${email.from.email}>`,
+					Subject: email.subject,
+					Date: new Date(email.date).toLocaleString(),
+					Preview: email.snippet.substring(0, 100) + (email.snippet.length > 100 ? '...' : ''),
+					IsRead: email.isRead ? 'Yes' : 'No',
+					HasAttachments: email.hasAttachments ? `Yes (${email.attachments.length})` : 'No',
+					Content: email.textContent.substring(0, 200) + (email.textContent.length > 200 ? '...' : ''),
+				}
+			}));
+
+			updateNodeData({
+				connectionStatus: "connected",
+				isConnected: true,
+				isActive: true, // Activar el nodo para que propague datos
+				lastSync: Date.now(),
+				processedCount: processedCount + emails.length,
+				messageCount: emails.length,
+				messages: emails,
+				emailsOutput: JSON.stringify(emails), // Raw data
+				outputs: JSON.stringify(formattedEmails, null, 2), // Formatted for viewText
+				statusOutput: true,
+			});
+
+			toast.success(`Read ${emails.length} messages successfully`);
 		} catch (error) {
 			console.error("Message reading error:", error);
 			updateNodeData({
@@ -452,7 +582,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 				description: error instanceof Error ? error.message : "Unknown error",
 			});
 		}
-	}, [accountId, token, batchSize, processedCount, retryCount, updateNodeData]);
+	}, [accountId, token, batchSize, processedCount, retryCount, updateNodeData, emailAccounts]);
 
 	// -------------------------------------------------------------------------
 	// 4.6  Effects
@@ -491,6 +621,19 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 	// -------------------------------------------------------------------------
 	return (
 		<>
+			{/* Input handle for email account connection */}
+			<Handle
+				type="target"
+				position={Position.Left}
+				id="account-input"
+				style={{
+					background: '#555',
+					width: 8,
+					height: 8,
+					top: 20,
+				}}
+			/>
+			
 			{/* Editable label */}
 			<LabelNode nodeId={id} label={(nodeData as EmailReaderData).label || spec.displayName} />
 
