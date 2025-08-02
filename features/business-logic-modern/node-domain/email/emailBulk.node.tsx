@@ -133,7 +133,7 @@ export const EmailBulkDataSchema = z
     expandedSize: SafeSchemas.text("VE3"),
     collapsedSize: SafeSchemas.text("C2"),
 
-    // Outputs
+    // output
     campaignId: z.string().default(""),
     successOutput: z.boolean().default(false),
     errorOutput: z.string().default(""),
@@ -523,7 +523,7 @@ const EmailBulkNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // 4.4  Effects
   // -------------------------------------------------------------------------
 
-  /** Update outputs when campaign data changes */
+  /** Update output when campaign data changes */
   useEffect(() => {
     if (isEnabled && campaignName && recipients.length > 0) {
       updateNodeData({

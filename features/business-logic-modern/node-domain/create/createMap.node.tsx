@@ -13,39 +13,39 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import React, {
+import {
+  type ChangeEvent,
   memo,
   useCallback,
   useEffect,
   useMemo,
   useRef,
-  ChangeEvent,
 } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
 } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
 import {
   createNodeValidator,
   reportValidationError,
   useNodeDataValidation,
 } from "@/features/business-logic-modern/infrastructure/node-core/validation";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
-import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
   COLLAPSED_SIZES,
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { useReactFlow, useStore } from "@xyflow/react";
-import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
+import { useStore } from "@xyflow/react";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -58,7 +58,7 @@ export const CreateMapDataSchema = z
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
     inputs: SafeSchemas.optionalText().nullable().default(null),
-    outputs: SafeSchemas.optionalText(),
+    output: SafeSchemas.optionalText(),
     expandedSize: SafeSchemas.text("FE1"),
     collapsedSize: SafeSchemas.text("C1W"),
     label: z.string().optional(), // User-editable node label
@@ -67,10 +67,7 @@ export const CreateMapDataSchema = z
 
 export type CreateMapData = z.infer<typeof CreateMapDataSchema>;
 
-const validateNodeData = createNodeValidator(
-  CreateMapDataSchema,
-  "CreateMap",
-);
+const validateNodeData = createNodeValidator(CreateMapDataSchema, "CreateMap");
 
 // -----------------------------------------------------------------------------
 // 2️⃣  Constants
@@ -87,7 +84,8 @@ const CONTENT = {
   collapsed: "flex items-center justify-center w-full h-full",
   header: "flex items-center justify-between mb-3",
   body: "flex-1 flex items-center justify-center",
-  disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+  disabled:
+    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -140,7 +138,7 @@ function createDynamicSpec(data: CreateMapData): NodeSpec {
     initialData: createSafeInitialData(CreateMapDataSchema, {
       store: "Default text",
       inputs: null,
-      outputs: "",
+      output: "",
     }),
     dataSchema: CreateMapDataSchema,
     controls: {
@@ -148,7 +146,7 @@ function createDynamicSpec(data: CreateMapData): NodeSpec {
       excludeFields: [
         "isActive",
         "inputs",
-        "outputs",
+        "output",
         "expandedSize",
         "collapsedSize",
       ],
@@ -232,10 +230,10 @@ const CreateMapNode = memo(
         const out = shouldSend ? value : null;
         if (out !== lastOutputRef.current) {
           lastOutputRef.current = out;
-          updateNodeData({ outputs: out });
+          updateNodeData({ output: out });
         }
       },
-      [isActive, isEnabled, updateNodeData],
+      [isActive, isEnabled, updateNodeData]
     );
 
     /** Clear JSON‑ish fields when inactive or disabled */
@@ -251,28 +249,30 @@ const CreateMapNode = memo(
       }
     }, [isActive, isEnabled, updateNodeData]);
 
-    /** 
+    /**
      * Compute the latest text coming from connected input handles.
-     * 
+     *
      * Uses findEdgeByHandle utility to properly handle React Flow's handle naming
      * conventions (handles get type suffixes like "json-input__j", "input__b").
-     * 
+     *
      * Priority: json-input > input (modify based on your node's specific handles)
      */
     const computeInput = useCallback((): string | null => {
       // Check json-input handle first, then input handle as fallback
       const jsonInputEdge = findEdgeByHandle(edges, id, "json-input");
       const inputEdge = findEdgeByHandle(edges, id, "input");
-      
+
       const incoming = jsonInputEdge || inputEdge;
       if (!incoming) return null;
 
       const src = nodes.find((n) => n.id === incoming.source);
       if (!src) return null;
 
-      // priority: outputs ➜ store ➜ whole data
-      const inputValue = src.data?.outputs ?? src.data?.store ?? src.data;
-      return typeof inputValue === 'string' ? inputValue : String(inputValue || '');
+      // priority: output ➜ store ➜ whole data
+      const inputValue = src.data?.output ?? src.data?.store ?? src.data;
+      return typeof inputValue === "string"
+        ? inputValue
+        : String(inputValue || "");
     }, [edges, nodes, id]);
 
     /** Handle textarea change (memoised for perf) */
@@ -280,7 +280,7 @@ const CreateMapNode = memo(
       (e: ChangeEvent<HTMLTextAreaElement>) => {
         updateNodeData({ store: e.target.value });
       },
-      [updateNodeData],
+      [updateNodeData]
     );
 
     // -------------------------------------------------------------------------
@@ -315,16 +315,14 @@ const CreateMapNode = memo(
         currentStore.trim().length > 0 && currentStore !== "Default text";
 
       // If disabled, always set isActive to false
-      if (!isEnabled) {
-        if (isActive) updateNodeData({ isActive: false });
-      } else {
+      if (isEnabled) {
         if (isActive !== hasValidStore) {
           updateNodeData({ isActive: hasValidStore });
         }
-      }
+      } else if (isActive) updateNodeData({ isActive: false });
     }, [store, isEnabled, isActive, updateNodeData]);
 
-    // Sync outputs with active and enabled state
+    // Sync output with active and enabled state
     useEffect(() => {
       const currentStore = store ?? "";
       const actualContent = currentStore === "Default text" ? "" : currentStore;
@@ -347,13 +345,13 @@ const CreateMapNode = memo(
       CreateMapDataSchema,
       "CreateMap",
       validation.data,
-      id,
+      id
     );
 
     // -------------------------------------------------------------------------
     // 4.7  Feature flag conditional rendering
     // -------------------------------------------------------------------------
-    
+
     // If flag is loading, show loading state
     if (flagState.isLoading) {
       return (
@@ -390,34 +388,41 @@ const CreateMapNode = memo(
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (
-          <LabelNode nodeId={id} label={(nodeData as CreateMapData).label || spec.displayName} />
+          <LabelNode
+            nodeId={id}
+            label={(nodeData as CreateMapData).label || spec.displayName}
+          />
         )}
 
-        {!isExpanded ? (
-          <div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ''}`}>
+        {isExpanded ? (
+          <div
+            className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
+          >
             <textarea
               value={
                 validation.data.store === "Default text"
                   ? ""
-                  : validation.data.store ?? ""
-              }
-              onChange={handleStoreChange}
-              placeholder="..."
-              className={` resize-none text-center nowheel rounded-md h-8 m-4 translate-y-2 text-xs p-1 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
-              disabled={!isEnabled}
-            />
-          </div>
-        ) : (
-          <div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ''}`}>
-            <textarea
-              value={
-                validation.data.store === "Default text"
-                  ? ""
-                  : validation.data.store ?? ""
+                  : (validation.data.store ?? "")
               }
               onChange={handleStoreChange}
               placeholder="Enter your content here…"
               className={` resize-none nowheel bg-background rounded-md p-2 text-xs h-32 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
+              disabled={!isEnabled}
+            />
+          </div>
+        ) : (
+          <div
+            className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
+          >
+            <textarea
+              value={
+                validation.data.store === "Default text"
+                  ? ""
+                  : (validation.data.store ?? "")
+              }
+              onChange={handleStoreChange}
+              placeholder="..."
+              className={` resize-none text-center nowheel rounded-md h-8 m-4 translate-y-2 text-xs p-1 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
               disabled={!isEnabled}
             />
           </div>
@@ -430,7 +435,7 @@ const CreateMapNode = memo(
         />
       </>
     );
-  },
+  }
 );
 
 // -----------------------------------------------------------------------------
@@ -454,7 +459,7 @@ const CreateMapNodeWithDynamicSpec = (props: NodeProps) => {
     [
       (nodeData as CreateMapData).expandedSize,
       (nodeData as CreateMapData).collapsedSize,
-    ],
+    ]
   );
 
   // Memoise the scaffolded component to keep focus
@@ -463,7 +468,7 @@ const CreateMapNodeWithDynamicSpec = (props: NodeProps) => {
       withNodeScaffold(dynamicSpec, (p) => (
         <CreateMapNode {...p} spec={dynamicSpec} />
       )),
-    [dynamicSpec],
+    [dynamicSpec]
   );
 
   return <ScaffoldedNode {...props} />;

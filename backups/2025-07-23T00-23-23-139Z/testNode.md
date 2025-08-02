@@ -2,9 +2,9 @@
 
 ## Overview
 
-**Node Type**: `testNode`  
-**Domain**: test  
-**Category**: TEST  
+**Node Type**: `testNode`
+**Domain**: test
+**Category**: TEST
 **Display Name**: testNode
 **Icon**: FileText
 **Author**: Agenitix Team
@@ -15,11 +15,13 @@ The testNode node provides functionality for test operations in the TEST categor
 ## Node Specification
 
 ### Size Configuration
+
 - **Expanded Size**: 120×120px (Default expanded)
 - **Collapsed Size**: 60×60px (Standard collapsed)
 - **Dimensions**: 120×120 (expanded) / 60×60 (collapsed)
 
 ### Version Information
+
 - **Schema Version**: 1
 - **Runtime Version**: testNode_execute_v1
 
@@ -28,22 +30,18 @@ The testNode node provides functionality for test operations in the TEST categor
 - **Memory Enabled**: ❌ No
 - **Memory System**: Not configured
 
-
 ### Controls Configuration
 
 - **Auto-Generate Controls**: ✅ Yes
 - **Excluded Fields**: isActive, receivedData
 - **Custom Fields**: None
 
-
 ### Data Schema
-
-
-
 
 ## Theming & Design System
 
 ### Design Tokens
+
 - **Background**: `var(--node-test-bg)`
 - **Border**: `var(--node-test-border)`
 - **Text**: `var(--node-node-text)`
@@ -53,17 +51,20 @@ The testNode node provides functionality for test operations in the TEST categor
 - **Error**: `var(--node-test-error)`
 
 ### Responsive Design
+
 - **Mobile Optimized**: ❌ No
 - **Tablet Optimized**: ❌ No
 - **Desktop Optimized**: ❌ No
 
 ### Accessibility Features
+
 - **Keyboard Support**: ❌ No
 - **Screen Reader Support**: ❌ No
 - **Focus Management**: ✅ Yes
 - **ARIA Labels**: None
 
 ### Visual States
+
 - **Hover State**: ❌ Not Supported
 - **Selected State**: ❌ Not Supported
 - **Active State**: ✅ Supported
@@ -73,12 +74,14 @@ The testNode node provides functionality for test operations in the TEST categor
 ## Infrastructure Integration
 
 ### Sidebar Integration
+
 - **Status**: ✅ Integrated
 - **Category**: TEST
 - **Folder**: test
 - **Order**: 1
 
 ### Inspector Integration
+
 - **Status**: ✅ Integrated
 - **Inspector Key**: `testNodeInspector`
 - **Has Controls**: ✅ Yes
@@ -87,10 +90,12 @@ The testNode node provides functionality for test operations in the TEST categor
 ## Node Interface
 
 ### Inputs
+
 - **json-input** (JSON) - Input data in JSON format [top]
 - **activate** (boolean) - Activation signal [left]
 
-### Outputs
+### output
+
 - **output** (string) - Processed output data [right]
 
 ## Usage Examples
@@ -101,22 +106,20 @@ Create a basic instance of the node
 
 ```typescript
 const node = {
-  id: 'testNode-1',
-  type: 'testNode',
+  id: "testNode-1",
+  type: "testNode",
   data: {
     // Your node data here
-  }
+  },
 };
 ```
 
-
 ## Related Nodes
-
-
 
 ## Technical Details
 
 ### NodeSpec Configuration
+
 ```typescript
 const spec: NodeSpec = {
   kind: "testNode",
@@ -124,16 +127,17 @@ const spec: NodeSpec = {
   category: "TEST",
   size: {
     expanded: { width: 120, height: 120 },
-    collapsed: { width: 60, height: 60 }
+    collapsed: { width: 60, height: 60 },
   },
   version: 1,
   runtime: { execute: "testNode_execute_v1" },
-  
+
   // ... additional configuration
 };
 ```
 
 ### Data Schema
+
 ```typescript
 const testNodeDataSchema = z.object({
   // Schema definition
@@ -142,17 +146,18 @@ const testNodeDataSchema = z.object({
 
 ## Integration Status
 
-| Component | Status | Details |
-|-----------|--------|---------|
-| **Sidebar** | ✅ Integrated | Available in TEST category |
-| **Inspector** | ✅ Integrated | Has dynamic controls |
-| **Registry** | ✅ Registered | Node is registered in the NodeSpec registry |
-| **Flow Engine** | ✅ Available | Node can be used in React Flow |
-| **Memory System** | ❌ Not configured | No memory configuration |
+| Component         | Status            | Details                                     |
+| ----------------- | ----------------- | ------------------------------------------- |
+| **Sidebar**       | ✅ Integrated     | Available in TEST category                  |
+| **Inspector**     | ✅ Integrated     | Has dynamic controls                        |
+| **Registry**      | ✅ Registered     | Node is registered in the NodeSpec registry |
+| **Flow Engine**   | ✅ Available      | Node can be used in React Flow              |
+| **Memory System** | ❌ Not configured | No memory configuration                     |
 
 ## Development Notes
 
 This node follows the modern NodeSpec architecture and integrates with:
+
 - **Sidebar System**: Available for drag-and-drop creation
 - **Inspector System**: Has dynamic controls in Node Inspector
 - **Theming System**: Uses category-based theming (TEST)

@@ -549,13 +549,13 @@ const EmailReplierNode = memo(
           description: error instanceof Error ? error.message : "Unknown error",
         });
       }
-    }, [token, replyStrategy, processedCount, retryCount, updateNodeData]);
+    }, [token, replyStrategy, processedCount, retryCount]); // CIRCULAR REFERENCE FIX: Removed updateNodeData from dependencies
 
     // -------------------------------------------------------------------------
     // 4.6  Effects
     // -------------------------------------------------------------------------
 
-    /** Update outputs when reply state changes */
+    /** Update output when reply state changes */
     useEffect(() => {
       if (isEnabled && generatedReply) {
         updateNodeData({
@@ -566,25 +566,31 @@ const EmailReplierNode = memo(
           isActive: false,
         });
       }
-    }, [isEnabled, generatedReply, updateNodeData]);
+    }, [isEnabled, generatedReply]); // CIRCULAR REFERENCE FIX: Removed updateNodeData from dependencies
 
     // -------------------------------------------------------------------------
     // 4.7  Validation
     // -------------------------------------------------------------------------
-    const validation = validateNodeData(nodeData);
-    if (!validation.success) {
-      reportValidationError("EmailReplier", id, validation.errors, {
-        originalData: validation.originalData,
-        component: "EmailReplierNode",
-      });
-    }
+    // CIRCULAR REFERENCE FIX: Safe validation with error handling
+    try {
+      const validation = validateNodeData(nodeData);
+      if (!validation.success) {
+        reportValidationError("EmailReplier", id, validation.errors, {
+          originalData: validation.originalData,
+          component: "EmailReplierNode",
+        });
+      }
 
-    useNodeDataValidation(
-      EmailReplierDataSchema,
-      "EmailReplier",
-      validation.data,
-      id
-    );
+      useNodeDataValidation(
+        EmailReplierDataSchema,
+        "EmailReplier",
+        validation.data,
+        id
+      );
+    } catch (error) {
+      console.error("Validation error in EmailReplier:", error);
+      // Continue rendering even if validation fails
+    }
 
     // -------------------------------------------------------------------------
     // 4.8  Render

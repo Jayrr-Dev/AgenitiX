@@ -87,7 +87,7 @@ export const EmailListDataSchema = z
     expandedSize: SafeSchemas.text("VE3"),
     collapsedSize: SafeSchemas.text("C2"),
 
-    // Outputs
+    // output
     listOutput: z.array(z.string()).default([]),
     validatedOutput: z.boolean().default(false),
     errorOutput: z.string().default(""),
@@ -429,7 +429,7 @@ const EmailListNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // 4.4  Effects
   // -------------------------------------------------------------------------
 
-  /** Update outputs when emails change */
+  /** Update output when emails change */
   useEffect(() => {
     if (isEnabled && emails.length > 0) {
       updateNodeData({

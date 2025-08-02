@@ -2,14 +2,12 @@
 
 - [x] 1. Set up Convex AI Agent infrastructure
 
-
   - Install and configure @convex-dev/agent package in the project
   - Add agent component to convex.config.ts
   - Create basic Convex schema tables for agent threads and messages
   - _Requirements: 5.1, 6.1_
 
 - [x] 2. Create core AI Agent node structure
-
 
   - Generate aiAgent.node.tsx using the node generator (pnpm new:node)
   - Define AiAgentDataSchema with all required fields (provider, model, systemPrompt, etc.)
@@ -35,7 +33,6 @@
 
 - [x] 5. Build expanded mode UI with configuration options
 
-
   - Create AI provider selection dropdown (OpenAI, Anthropic, Custom)
   - Add model selection dropdown that updates based on selected provider
   - Implement system prompt textarea with placeholder and character count
@@ -44,7 +41,6 @@
   - _Requirements: 5.1, 5.2, 8.5_
 
 - [x] 6. Create Convex server actions for AI processing
-
 
   - Write processUserMessage action that integrates with @convex-dev/agent
   - Implement createAiAgent helper function with configurable parameters
@@ -55,10 +51,9 @@
 
 - [x] 7. Implement AI processing workflow
 
-
   - Connect node activation to Convex AI agent processing
   - Set isProcessing to pending Promise when processing starts
-  - Handle successful responses by resolving Promise and updating outputs
+  - Handle successful responses by resolving Promise and updating output
   - Handle errors by rejecting Promise with appropriate error messages
   - Ensure processing only occurs when isActive is true
   - _Requirements: 2.1, 2.2, 3.2, 3.3, 4.1, 4.2_
@@ -73,15 +68,13 @@
 
 - [x] 9. Implement output propagation logic
 
-
   - Output AI response text when Promise is fulfilled
   - Output error messages when Promise is rejected
   - Output null when processing is pending or node is inactive
-  - Ensure outputs propagate to connected downstream nodes
+  - Ensure output propagate to connected downstream nodes
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
 - [x] 10. Add conversation thread management
-
 
   - Create new conversation thread on first activation
   - Continue existing thread for subsequent interactions
@@ -91,7 +84,6 @@
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
 - [x] 11. Implement comprehensive error handling
-
 
   - Add error type classification (network, auth, rate limit, model, validation)
   - Implement retry logic with exponential backoff for retryable errors
@@ -120,8 +112,6 @@
 
 - [x] 14. Add configuration validation and testing
 
-
-
   - Validate AI provider and model selections
   - Test API key functionality and connection status
   - Validate system prompt length and content
@@ -130,6 +120,7 @@
   - _Requirements: 5.4, 5.5_
 
 - [ ] 15. Write comprehensive unit tests
+
   - Test input processing and state management
   - Test Promise state transitions (null → pending → fulfilled/rejected)
   - Test output propagation under different conditions
@@ -138,6 +129,7 @@
   - _Requirements: All requirements through automated testing_
 
 - [ ] 16. Write integration tests with Convex
+
   - Test Convex AI agent integration and thread management
   - Test different AI providers and models
   - Test error scenarios and recovery mechanisms
@@ -146,6 +138,7 @@
   - _Requirements: 6.1, 6.2, 7.1, 7.2_
 
 - [ ] 17. Add documentation and examples
+
   - Document node usage and configuration options
   - Create example workflows showing AI agent integration
   - Document BYOK setup and security considerations

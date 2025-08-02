@@ -93,7 +93,7 @@ export const EmailAccountDataSchema = z
     expandedSize: SafeSchemas.text("VE2"),
     collapsedSize: SafeSchemas.text("C2"),
 
-    // Outputs
+    // output
     accountOutput: SafeSchemas.optionalText(),
     statusOutput: SafeSchemas.boolean(false),
     label: z.string().optional(), // User-editable node label
@@ -692,7 +692,7 @@ const EmailAccountNode = memo(
       }
     }, [handleAuthSuccess, handleAuthError, isConnected]);
 
-    /** Update outputs when connection state changes */
+    /** Update output when connection state changes */
     useEffect(() => {
       if (isEnabled && isConnected) {
         const accountConfig = {

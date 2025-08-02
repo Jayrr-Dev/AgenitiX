@@ -39,7 +39,7 @@ interface EmailSenderData {
   // Account Configuration
   accountId: string;
   provider: EmailProviderType;
-  
+
   // Message Composition
   recipients: {
     to: string[];
@@ -54,40 +54,40 @@ interface EmailSenderData {
     templateId?: string;
     variables?: Record<string, any>;
   };
-  
+
   // Attachments
   attachments: EmailAttachment[];
   maxAttachmentSize: number;
-  
+
   // Sending Options
-  sendMode: 'immediate' | 'batch' | 'scheduled';
+  sendMode: "immediate" | "batch" | "scheduled";
   batchSize: number;
   delayBetweenSends: number; // milliseconds
   scheduledTime?: Date;
-  
+
   // Delivery Tracking
   trackDelivery: boolean;
   trackReads: boolean;
   trackClicks: boolean;
-  
+
   // Error Handling
   retryAttempts: number;
   retryDelay: number;
   continueOnError: boolean;
-  
+
   // State
   isEnabled: boolean;
   isActive: boolean;
   isExpanded: boolean;
-  sendingStatus: 'idle' | 'composing' | 'sending' | 'sent' | 'error';
-  
+  sendingStatus: "idle" | "composing" | "sending" | "sent" | "error";
+
   // Results
   sentCount: number;
   failedCount: number;
   lastSent: number;
   deliveryResults: DeliveryResult[];
-  
-  // Outputs
+
+  // output
   successOutput: boolean;
   messageIdOutput?: string;
   errorOutput?: string;
@@ -101,13 +101,16 @@ interface MessageComposer {
   // Composition
   composeMessage(data: EmailSenderData): Promise<ComposedMessage>;
   validateRecipients(recipients: string[]): ValidationResult;
-  processTemplate(templateId: string, variables: Record<string, any>): Promise<string>;
-  
+  processTemplate(
+    templateId: string,
+    variables: Record<string, any>
+  ): Promise<string>;
+
   // Content Processing
   processHtmlContent(html: string): string;
   processTextContent(text: string): string;
   replaceVariables(content: string, variables: Record<string, any>): string;
-  
+
   // Validation
   validateMessage(message: ComposedMessage): ValidationResult;
   validateAttachments(attachments: EmailAttachment[]): ValidationResult;
@@ -119,15 +122,21 @@ interface MessageComposer {
 ```typescript
 interface DeliveryManager {
   // Single Message
-  sendMessage(message: ComposedMessage, account: EmailAccount): Promise<DeliveryResult>;
-  
+  sendMessage(
+    message: ComposedMessage,
+    account: EmailAccount
+  ): Promise<DeliveryResult>;
+
   // Batch Sending
-  sendBatch(messages: ComposedMessage[], options: BatchOptions): Promise<BatchResult>;
-  
+  sendBatch(
+    messages: ComposedMessage[],
+    options: BatchOptions
+  ): Promise<BatchResult>;
+
   // Status Tracking
   trackDelivery(messageId: string): Promise<DeliveryStatus>;
   getDeliveryStatus(messageId: string): Promise<DeliveryStatus>;
-  
+
   // Retry Logic
   retryFailedMessage(messageId: string): Promise<DeliveryResult>;
   scheduleRetry(messageId: string, delay: number): void;
@@ -140,14 +149,23 @@ interface DeliveryManager {
 interface TemplateEngine {
   // Template Processing
   loadTemplate(templateId: string): Promise<EmailTemplate>;
-  processTemplate(template: EmailTemplate, variables: Record<string, any>): ProcessedTemplate;
-  
+  processTemplate(
+    template: EmailTemplate,
+    variables: Record<string, any>
+  ): ProcessedTemplate;
+
   // Variable Handling
   extractVariables(content: string): string[];
-  validateVariables(variables: Record<string, any>, required: string[]): ValidationResult;
-  
+  validateVariables(
+    variables: Record<string, any>,
+    required: string[]
+  ): ValidationResult;
+
   // Preview
-  generatePreview(template: EmailTemplate, variables: Record<string, any>): string;
+  generatePreview(
+    template: EmailTemplate,
+    variables: Record<string, any>
+  ): string;
 }
 ```
 
@@ -159,28 +177,28 @@ interface TemplateEngine {
 interface ComposedMessage {
   id: string;
   accountId: string;
-  
+
   // Recipients
   to: EmailAddress[];
   cc?: EmailAddress[];
   bcc?: EmailAddress[];
-  
+
   // Content
   subject: string;
   textContent: string;
   htmlContent?: string;
-  
+
   // Attachments
   attachments: ProcessedAttachment[];
-  
+
   // Metadata
-  priority: 'low' | 'normal' | 'high';
+  priority: "low" | "normal" | "high";
   headers?: Record<string, string>;
-  
+
   // Tracking
   trackingEnabled: boolean;
   trackingId?: string;
-  
+
   // Scheduling
   sendAt?: Date;
   timezone?: string;
@@ -192,23 +210,23 @@ interface ComposedMessage {
 ```typescript
 interface DeliveryResult {
   messageId: string;
-  status: 'sent' | 'failed' | 'pending' | 'bounced';
-  
+  status: "sent" | "failed" | "pending" | "bounced";
+
   // Timestamps
   sentAt?: Date;
   deliveredAt?: Date;
-  
+
   // Provider Response
   providerMessageId?: string;
   providerResponse?: any;
-  
+
   // Error Information
   error?: {
     code: string;
     message: string;
     retryable: boolean;
   };
-  
+
   // Tracking Data
   tracking?: {
     opened?: Date;
@@ -226,16 +244,16 @@ interface EmailTemplate {
   id: string;
   name: string;
   description?: string;
-  
+
   // Content
   subject: string;
   textContent: string;
   htmlContent?: string;
-  
+
   // Variables
   variables: TemplateVariable[];
   requiredVariables: string[];
-  
+
   // Metadata
   category?: string;
   tags?: string[];
@@ -245,7 +263,7 @@ interface EmailTemplate {
 
 interface TemplateVariable {
   name: string;
-  type: 'string' | 'number' | 'date' | 'boolean';
+  type: "string" | "number" | "date" | "boolean";
   description?: string;
   defaultValue?: any;
   required: boolean;
@@ -260,15 +278,15 @@ interface ProcessedAttachment {
   filename: string;
   mimeType: string;
   size: number;
-  
+
   // Content
   content: Buffer | string;
-  encoding: 'base64' | 'binary';
-  
+  encoding: "base64" | "binary";
+
   // Metadata
   contentId?: string;
   isInline: boolean;
-  
+
   // Validation
   isValid: boolean;
   validationErrors?: string[];
@@ -281,15 +299,15 @@ interface ProcessedAttachment {
 
 ```typescript
 enum EmailSenderErrorType {
-  ACCOUNT_NOT_FOUND = 'account_not_found',
-  AUTHENTICATION_FAILED = 'authentication_failed',
-  INVALID_RECIPIENTS = 'invalid_recipients',
-  MESSAGE_TOO_LARGE = 'message_too_large',
-  ATTACHMENT_ERROR = 'attachment_error',
-  TEMPLATE_ERROR = 'template_error',
-  RATE_LIMIT_EXCEEDED = 'rate_limit_exceeded',
-  DELIVERY_FAILED = 'delivery_failed',
-  NETWORK_ERROR = 'network_error'
+  ACCOUNT_NOT_FOUND = "account_not_found",
+  AUTHENTICATION_FAILED = "authentication_failed",
+  INVALID_RECIPIENTS = "invalid_recipients",
+  MESSAGE_TOO_LARGE = "message_too_large",
+  ATTACHMENT_ERROR = "attachment_error",
+  TEMPLATE_ERROR = "template_error",
+  RATE_LIMIT_EXCEEDED = "rate_limit_exceeded",
+  DELIVERY_FAILED = "delivery_failed",
+  NETWORK_ERROR = "network_error",
 }
 
 interface EmailSenderError {
@@ -331,14 +349,14 @@ interface EmailSenderError {
 
 ```typescript
 const mockEmailMessage: ComposedMessage = {
-  id: 'msg_123',
-  accountId: 'acc_456',
-  to: [{ email: 'recipient@example.com', name: 'Test Recipient' }],
-  subject: 'Test Email Subject',
-  textContent: 'This is a test email content',
+  id: "msg_123",
+  accountId: "acc_456",
+  to: [{ email: "recipient@example.com", name: "Test Recipient" }],
+  subject: "Test Email Subject",
+  textContent: "This is a test email content",
   attachments: [],
   trackingEnabled: true,
-  priority: 'normal'
+  priority: "normal",
 };
 ```
 
@@ -379,24 +397,28 @@ const mockEmailMessage: ComposedMessage = {
 ## Implementation Phases
 
 ### Phase 1: Core Infrastructure (Week 1)
+
 - [ ] Basic emailSender node structure
 - [ ] Message composition interface
 - [ ] Account integration
 - [ ] Simple text email sending
 
 ### Phase 2: Advanced Features (Week 2)
+
 - [ ] HTML email support
 - [ ] Template integration
 - [ ] Attachment handling
 - [ ] Delivery tracking
 
 ### Phase 3: Batch and Scheduling (Week 3)
+
 - [ ] Batch sending capabilities
 - [ ] Rate limiting and retry logic
 - [ ] Scheduled sending
 - [ ] Performance optimizations
 
 ### Phase 4: Polish and Testing (Week 4)
+
 - [ ] Error handling improvements
 - [ ] Comprehensive testing
 - [ ] Documentation
@@ -405,6 +427,7 @@ const mockEmailMessage: ComposedMessage = {
 ## Dependencies
 
 ### External Dependencies
+
 - Gmail API SDK
 - Microsoft Graph SDK
 - SMTP client library
@@ -412,6 +435,7 @@ const mockEmailMessage: ComposedMessage = {
 - Template processing libraries
 
 ### Internal Dependencies
+
 - emailAccount node (authentication)
 - Convex database (message logging)
 - Node core infrastructure
@@ -420,11 +444,13 @@ const mockEmailMessage: ComposedMessage = {
 ## Migration and Compatibility
 
 ### Backward Compatibility
+
 - Maintain compatibility with existing emailAccount nodes
 - Support existing workflow patterns
 - Graceful degradation for unsupported features
 
 ### Future Extensibility
+
 - Plugin architecture for new email providers
 - Extensible template system
 - Configurable delivery options

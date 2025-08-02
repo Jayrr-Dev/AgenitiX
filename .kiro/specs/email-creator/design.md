@@ -31,14 +31,14 @@ interface EmailCreatorData {
     bcc: string[];
   };
   subject: string;
-  
+
   // Content
   content: {
     text: string;
     html: string;
-    mode: 'text' | 'html' | 'rich';
+    mode: "text" | "html" | "rich";
   };
-  
+
   // Template Integration
   template: {
     id?: string;
@@ -46,7 +46,7 @@ interface EmailCreatorData {
     variables: Record<string, string>;
     useTemplate: boolean;
   };
-  
+
   // Attachments
   attachments: Array<{
     id: string;
@@ -56,29 +56,29 @@ interface EmailCreatorData {
     content?: string; // base64 for small files
     url?: string; // for large files
   }>;
-  
+
   // Formatting Options
   formatting: {
     font: string;
     fontSize: number;
     textColor: string;
     backgroundColor: string;
-    alignment: 'left' | 'center' | 'right' | 'justify';
+    alignment: "left" | "center" | "right" | "justify";
   };
-  
+
   // Validation & Preview
   validation: {
     isValid: boolean;
     errors: string[];
     warnings: string[];
   };
-  
+
   // Node State
   isEnabled: boolean;
   expandedSize: string;
   collapsedSize: string;
-  
-  // Outputs
+
+  // output
   emailOutput?: ComposedEmail;
   validationOutput?: boolean;
   errorOutput?: string;
@@ -90,22 +90,22 @@ interface EmailCreatorData {
 ```typescript
 interface RichTextEditorProps {
   content: string;
-  mode: 'text' | 'html' | 'rich';
+  mode: "text" | "html" | "rich";
   onChange: (content: string) => void;
-  onModeChange: (mode: 'text' | 'html' | 'rich') => void;
+  onModeChange: (mode: "text" | "html" | "rich") => void;
   variables: Variable[];
   onVariableInsert: (variable: Variable) => void;
 }
 
 // Editor Features
 const EDITOR_FEATURES = {
-  formatting: ['bold', 'italic', 'underline', 'strikethrough'],
-  alignment: ['left', 'center', 'right', 'justify'],
-  lists: ['ordered', 'unordered'],
-  links: ['insert', 'edit', 'remove'],
-  images: ['insert', 'resize', 'alt-text'],
-  tables: ['insert', 'edit', 'format'],
-  variables: ['insert', 'preview', 'validate'],
+  formatting: ["bold", "italic", "underline", "strikethrough"],
+  alignment: ["left", "center", "right", "justify"],
+  lists: ["ordered", "unordered"],
+  links: ["insert", "edit", "remove"],
+  images: ["insert", "resize", "alt-text"],
+  tables: ["insert", "edit", "format"],
+  variables: ["insert", "preview", "validate"],
 };
 ```
 
@@ -123,7 +123,7 @@ interface EmailTemplate {
   };
   variables: Array<{
     name: string;
-    type: 'text' | 'number' | 'date' | 'boolean';
+    type: "text" | "number" | "date" | "boolean";
     required: boolean;
     defaultValue?: string;
     description?: string;
@@ -150,18 +150,18 @@ const processTemplate = (
 ```typescript
 interface Variable {
   name: string;
-  type: 'text' | 'number' | 'date' | 'boolean' | 'object';
+  type: "text" | "number" | "date" | "boolean" | "object";
   value: any;
-  source: 'workflow' | 'user' | 'system';
+  source: "workflow" | "user" | "system";
   description?: string;
 }
 
 // Variable Syntax
 const VARIABLE_SYNTAX = {
-  simple: '{{variableName}}',
-  formatted: '{{variableName|format}}',
-  conditional: '{{#if condition}}content{{/if}}',
-  loop: '{{#each items}}{{name}}{{/each}}',
+  simple: "{{variableName}}",
+  formatted: "{{variableName|format}}",
+  conditional: "{{#if condition}}content{{/if}}",
+  loop: "{{#each items}}{{name}}{{/each}}",
 };
 
 // Variable Resolution
@@ -183,7 +183,7 @@ interface AttachmentManager {
   maxFileSize: number; // 25MB default
   allowedTypes: string[];
   maxAttachments: number;
-  
+
   validateFile(file: File): ValidationResult;
   uploadFile(file: File): Promise<AttachmentResult>;
   removeAttachment(id: string): void;
@@ -225,13 +225,13 @@ const VALIDATION_RULES = {
   },
   content: {
     maxSize: 1024 * 1024, // 1MB
-    allowedHtmlTags: ['p', 'div', 'span', 'a', 'img', 'table', 'tr', 'td'],
+    allowedHtmlTags: ["p", "div", "span", "a", "img", "table", "tr", "td"],
     sanitizeHtml: true,
   },
   attachments: {
     maxSize: 25 * 1024 * 1024, // 25MB
     maxCount: 10,
-    allowedTypes: ['.pdf', '.doc', '.docx', '.jpg', '.png', '.gif'],
+    allowedTypes: [".pdf", ".doc", ".docx", ".jpg", ".png", ".gif"],
   },
 };
 ```
@@ -254,7 +254,7 @@ const EmailComposer: React.FC<EmailComposerProps> = ({
         onChange={(recipients) => updateData({ recipients })}
         validation={data.validation}
       />
-      
+
       {/* Subject Line */}
       <SubjectInput
         subject={data.subject}
@@ -262,14 +262,14 @@ const EmailComposer: React.FC<EmailComposerProps> = ({
         variables={availableVariables}
         onVariableInsert={handleVariableInsert}
       />
-      
+
       {/* Template Selector */}
       <TemplateSelector
         selectedTemplate={data.template}
         onTemplateSelect={handleTemplateSelect}
         onVariableChange={handleTemplateVariableChange}
       />
-      
+
       {/* Rich Text Editor */}
       <RichTextEditor
         content={data.content}
@@ -277,7 +277,7 @@ const EmailComposer: React.FC<EmailComposerProps> = ({
         variables={availableVariables}
         onVariableInsert={handleVariableInsert}
       />
-      
+
       {/* Attachment Manager */}
       <AttachmentManager
         attachments={data.attachments}
@@ -285,7 +285,7 @@ const EmailComposer: React.FC<EmailComposerProps> = ({
         onAttachmentRemove={handleAttachmentRemove}
         maxSize={25 * 1024 * 1024}
       />
-      
+
       {/* Preview & Validation */}
       <EmailPreview
         email={composedEmail}
@@ -312,26 +312,26 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     <div className="rich-text-editor">
       {/* Mode Selector */}
       <div className="editor-modes">
-        <button 
+        <button
           className={mode === 'rich' ? 'active' : ''}
           onClick={() => onModeChange('rich')}
         >
           Rich Text
         </button>
-        <button 
+        <button
           className={mode === 'html' ? 'active' : ''}
           onClick={() => onModeChange('html')}
         >
           HTML
         </button>
-        <button 
+        <button
           className={mode === 'text' ? 'active' : ''}
           onClick={() => onModeChange('text')}
         >
           Plain Text
         </button>
       </div>
-      
+
       {/* Formatting Toolbar */}
       {mode === 'rich' && (
         <FormattingToolbar
@@ -340,7 +340,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           variables={variables}
         />
       )}
-      
+
       {/* Editor Content */}
       <div className="editor-content">
         {mode === 'rich' && (
@@ -378,7 +378,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 }) => {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   return (
     <div className="template-selector">
       <div className="template-header">
@@ -387,7 +387,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           Create New Template
         </button>
       </div>
-      
+
       <select
         value={selectedTemplate.id || ''}
         onChange={handleTemplateChange}
@@ -400,7 +400,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           </option>
         ))}
       </select>
-      
+
       {selectedTemplate.id && (
         <TemplateVariables
           template={selectedTemplate}
@@ -436,10 +436,10 @@ interface EmailCreatorOutput {
 
 // Output Handle
 const OUTPUT_HANDLE = {
-  id: 'emailOutput',
-  type: 'source',
-  dataType: 'composedEmail',
-  position: 'right',
+  id: "emailOutput",
+  type: "source",
+  dataType: "composedEmail",
+  position: "right",
 };
 ```
 
@@ -448,10 +448,10 @@ const OUTPUT_HANDLE = {
 ```typescript
 // Input Handle for Account Information
 const ACCOUNT_INPUT_HANDLE = {
-  id: 'accountInput',
-  type: 'target',
-  dataType: 'emailAccount',
-  position: 'left',
+  id: "accountInput",
+  type: "target",
+  dataType: "emailAccount",
+  position: "left",
 };
 
 // Use account info for sender details
@@ -470,7 +470,7 @@ const useAccountInfo = (accountData: EmailAccountData) => {
 // Variable Context Integration
 const useWorkflowVariables = () => {
   const { workflowData } = useWorkflowContext();
-  
+
   return useMemo(() => {
     return extractVariables(workflowData);
   }, [workflowData]);
@@ -479,7 +479,7 @@ const useWorkflowVariables = () => {
 // Variable Extraction
 const extractVariables = (data: any): Variable[] => {
   // Extract variables from workflow context
-  // Include node outputs, user inputs, system variables
+  // Include node output, user inputs, system variables
   // Format for template system
 };
 ```
@@ -556,18 +556,21 @@ const secureVariableResolution = (
 ## Testing Strategy
 
 ### Unit Tests
+
 - Template processing and variable resolution
 - Content validation and sanitization
 - Attachment handling and validation
 - Rich text editor functionality
 
 ### Integration Tests
+
 - Node-to-node data flow
 - Template system integration
 - File upload and processing
 - Email composition workflow
 
 ### E2E Tests
+
 - Complete email creation workflow
 - Template selection and customization
 - Attachment management

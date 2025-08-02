@@ -190,7 +190,7 @@ export const EmailAnalyticsDataSchema = z
     expandedSize: SafeSchemas.text("VE3"),
     collapsedSize: SafeSchemas.text("C2"),
 
-    // Outputs
+    // output
     reportData: z.record(z.unknown()).optional(),
     exportedReport: z.string().default(""),
     errorOutput: z.string().default(""),
@@ -673,7 +673,7 @@ const EmailAnalyticsNode = memo(
     // 4.4  Effects
     // -------------------------------------------------------------------------
 
-    /** Update outputs when analytics data changes */
+    /** Update output when analytics data changes */
     useEffect(() => {
       if (isEnabled && campaignIds.length > 0) {
         updateNodeData({

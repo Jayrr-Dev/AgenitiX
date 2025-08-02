@@ -15,33 +15,30 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import React, {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react";
+import type React from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
-import { Button } from "@/components/ui/button";
+import { Loading } from "@/components/Loading";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
-import { Loading } from "@/components/Loading";
+import { Button } from "@/components/ui/button";
+import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
 } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
 import {
   createNodeValidator,
   reportValidationError,
   useNodeDataValidation,
 } from "@/features/business-logic-modern/infrastructure/node-core/validation";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
-import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
+import { useDesignSystemToken } from "@/features/business-logic-modern/infrastructure/theming/components/componentThemeStore";
 import {
   COLLAPSED_SIZES,
   EXPANDED_SIZES,
@@ -49,12 +46,6 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { useNodeToast } from "@/hooks/useNodeToast";
 import { useStore } from "@xyflow/react";
-import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
-import { 
-  useComponentButtonClasses, 
-  useDesignSystemToken 
-} from "@/features/business-logic-modern/infrastructure/theming/components/componentThemeStore";
-
 
 // -----------------------------------------------------------------------------
 // 1️⃣  TOP-LEVEL CONSTANTS & STYLING
@@ -68,13 +59,15 @@ const MODE_CONFIG = {
     shadcnVariant: "default" as const,
     colors: {
       // Button styling
-      button: "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 hover:border-blue-700",
+      button:
+        "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 hover:border-blue-700",
       modeLabel: "text-blue-100",
       // Grid styling
       container: "bg-blue-50 dark:bg-blue-900/10",
       title: "text-blue-700 dark:text-blue-300",
       tableBorder: "border-blue-200 dark:border-blue-700",
-      tableHeader: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700",
+      tableHeader:
+        "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700",
       headerText: "text-blue-700 dark:text-blue-300",
       keyText: "text-blue-700 dark:text-blue-300",
       valueText: "text-blue-700 dark:text-blue-300",
@@ -82,22 +75,24 @@ const MODE_CONFIG = {
       // Counter styling
       counterContainer: "text-blue-700 dark:text-blue-300 font-semibold",
       counterBg: "bg-blue-200 dark:bg-blue-900/30",
-      counterLabel: "text-blue-600 dark:text-blue-200 font-medium"
-    }
+      counterLabel: "text-blue-600 dark:text-blue-200 font-medium",
+    },
   },
   DELETE: {
-    label: "Delete", 
+    label: "Delete",
     variant: "secondary" as const,
     shadcnVariant: "destructive" as const,
     colors: {
       // Button styling
-      button: "bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700",
+      button:
+        "bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700",
       modeLabel: "text-red-100",
       // Grid styling
       container: "bg-red-50 dark:bg-red-900/10",
       title: "text-red-700 dark:text-red-300",
       tableBorder: "border-red-200 dark:border-red-700",
-      tableHeader: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700",
+      tableHeader:
+        "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700",
       headerText: "text-red-700 dark:text-red-300",
       keyText: "text-red-700 dark:text-red-300",
       valueText: "text-red-700 dark:text-red-300",
@@ -105,22 +100,24 @@ const MODE_CONFIG = {
       // Counter styling
       counterContainer: "text-red-700 dark:text-red-300 font-semibold",
       counterBg: "bg-red-200 dark:bg-red-900/30",
-      counterLabel: "text-red-600 dark:text-red-200 font-medium"
-    }
+      counterLabel: "text-red-600 dark:text-red-200 font-medium",
+    },
   },
   GET: {
     label: "Get",
-    variant: "secondary" as const, 
+    variant: "secondary" as const,
     shadcnVariant: "secondary" as const,
     colors: {
       // Button styling
-      button: "bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700",
+      button:
+        "bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700",
       modeLabel: "text-green-100",
       // Grid styling
       container: "bg-green-50 dark:bg-green-900/10",
       title: "text-green-700 dark:text-green-300",
       tableBorder: "border-green-200 dark:border-green-700",
-      tableHeader: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700",
+      tableHeader:
+        "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700",
       headerText: "text-green-700 dark:text-green-300",
       keyText: "text-green-700 dark:text-green-300",
       valueText: "text-green-700 dark:text-green-300",
@@ -128,8 +125,8 @@ const MODE_CONFIG = {
       // Counter styling
       counterContainer: "text-green-700 dark:text-green-300 font-semibold",
       counterBg: "bg-green-200 dark:bg-green-900/30",
-      counterLabel: "text-green-600 dark:text-green-200 font-medium"
-    }
+      counterLabel: "text-green-600 dark:text-green-200 font-medium",
+    },
   },
 } as const;
 
@@ -141,7 +138,7 @@ const STATUS_CONFIG = {
   },
   NONE: {
     icon: "⚪",
-    color: "text-gray-500", 
+    color: "text-gray-500",
     text: "Ready",
   },
   SUCCESS: {
@@ -149,7 +146,7 @@ const STATUS_CONFIG = {
     color: "text-green-600",
   },
   ERROR: {
-    icon: "❌", 
+    icon: "❌",
     color: "text-red-600",
   },
 } as const;
@@ -162,10 +159,11 @@ const UI_CONSTANTS = {
 
 const CONTENT_CLASSES = {
   expanded: "w-full h-full flex flex-col overflow-hidden",
-  collapsed: "flex items-center justify-center w-full h-full", 
+  collapsed: "flex items-center justify-center w-full h-full",
   header: "flex items-center justify-between mb-3",
   body: "flex-1 flex items-center justify-center overflow-y-auto",
-  disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+  disabled:
+    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -174,20 +172,20 @@ const CONTENT_CLASSES = {
 
 // Protected keys that cannot be accessed, basically sensitive authentication data
 const PROTECTED_KEYS = [
-  'agenitix_auth_token',
-  'session_token',
-  'access_token',
-  'refresh_token',
-  'api_key',
-  'secret',
-  'password',
-  'jwt',
-  'bearer',
-  'auth',
-  'clerk',
-  'supabase',
-  'firebase',
-  '__session',
+  "agenitix_auth_token",
+  "session_token",
+  "access_token",
+  "refresh_token",
+  "api_key",
+  "secret",
+  "password",
+  "jwt",
+  "bearer",
+  "auth",
+  "clerk",
+  "supabase",
+  "firebase",
+  "__session",
 ] as const;
 
 // Security limits to prevent abuse
@@ -219,7 +217,7 @@ const nodeRateLimits = new Map<string, { count: number; resetTime: number }>();
 interface SecurityAuditEntry {
   timestamp: number;
   nodeId: string;
-  operation: 'store' | 'delete' | 'get';
+  operation: "store" | "delete" | "get";
   keys: string[];
   success: boolean;
   securityIssue?: string;
@@ -232,28 +230,38 @@ const securityAuditLog: SecurityAuditEntry[] = [];
 const SecurityValidation = {
   isProtectedKey: (key: string): boolean => {
     const keyLower = key.toLowerCase();
-    return PROTECTED_KEYS.some(protectedKey => 
+    return PROTECTED_KEYS.some((protectedKey) =>
       keyLower.includes(protectedKey.toLowerCase())
     );
   },
 
   containsMaliciousPattern: (value: string): boolean => {
-    if (typeof value !== 'string') return false;
-    return MALICIOUS_PATTERNS.some(pattern => pattern.test(value));
+    if (typeof value !== "string") return false;
+    return MALICIOUS_PATTERNS.some((pattern) => pattern.test(value));
   },
 
   validateKeyFormat: (key: string): { valid: boolean; reason?: string } => {
-    if (!key || typeof key !== 'string') {
-      return { valid: false, reason: 'Key must be a non-empty string' };
+    if (!key || typeof key !== "string") {
+      return { valid: false, reason: "Key must be a non-empty string" };
     }
     if (key.length > SECURITY_LIMITS.MAX_KEY_LENGTH) {
-      return { valid: false, reason: `Key length exceeds ${SECURITY_LIMITS.MAX_KEY_LENGTH} characters` };
+      return {
+        valid: false,
+        reason: `Key length exceeds ${SECURITY_LIMITS.MAX_KEY_LENGTH} characters`,
+      };
     }
     if (key.trim() !== key) {
-      return { valid: false, reason: 'Key cannot have leading/trailing whitespace' };
+      return {
+        valid: false,
+        reason: "Key cannot have leading/trailing whitespace",
+      };
     }
     if (!/^[a-zA-Z0-9_.-]+$/.test(key)) {
-      return { valid: false, reason: 'Key contains invalid characters (only alphanumeric, underscore, dot, dash allowed)' };
+      return {
+        valid: false,
+        reason:
+          "Key contains invalid characters (only alphanumeric, underscore, dot, dash allowed)",
+      };
     }
     return { valid: true };
   },
@@ -261,7 +269,10 @@ const SecurityValidation = {
   validateValueSize: (value: unknown): { valid: boolean; reason?: string } => {
     const serialized = JSON.stringify(value);
     if (serialized.length > SECURITY_LIMITS.MAX_VALUE_SIZE) {
-      return { valid: false, reason: `Value size exceeds ${SECURITY_LIMITS.MAX_VALUE_SIZE} bytes` };
+      return {
+        valid: false,
+        reason: `Value size exceeds ${SECURITY_LIMITS.MAX_VALUE_SIZE} bytes`,
+      };
     }
     return { valid: true };
   },
@@ -269,17 +280,20 @@ const SecurityValidation = {
   checkRateLimit: (nodeId: string): { allowed: boolean; reason?: string } => {
     const now = Date.now();
     const resetTime = now + 60000; // 1 minute
-    
+
     const current = nodeRateLimits.get(nodeId);
     if (!current || now > current.resetTime) {
       nodeRateLimits.set(nodeId, { count: 1, resetTime });
       return { allowed: true };
     }
-    
+
     if (current.count >= SECURITY_LIMITS.MAX_OPERATIONS_PER_MINUTE) {
-      return { allowed: false, reason: `Rate limit exceeded (${SECURITY_LIMITS.MAX_OPERATIONS_PER_MINUTE}/min)` };
+      return {
+        allowed: false,
+        reason: `Rate limit exceeded (${SECURITY_LIMITS.MAX_OPERATIONS_PER_MINUTE}/min)`,
+      };
     }
-    
+
     current.count++;
     return { allowed: true };
   },
@@ -290,39 +304,51 @@ const SecurityValidation = {
     if (securityAuditLog.length > 1000) {
       securityAuditLog.splice(0, securityAuditLog.length - 1000);
     }
-    
+
     // Log security issues to console for monitoring
     if (entry.securityIssue || entry.blockedReason) {
-      console.warn('🔒 LocalStorage Security Alert:', {
+      console.warn("🔒 LocalStorage Security Alert:", {
         nodeId: entry.nodeId,
         operation: entry.operation,
         keys: entry.keys,
         issue: entry.securityIssue || entry.blockedReason,
-        timestamp: new Date(entry.timestamp).toISOString()
+        timestamp: new Date(entry.timestamp).toISOString(),
       });
     }
   },
 
   // Add expiry metadata to stored values
-  addExpiryMetadata: (value: unknown): { data: unknown; __agenitix_expiry: number } => {
+  addExpiryMetadata: (
+    value: unknown
+  ): { data: unknown; __agenitix_expiry: number } => {
     return {
       data: value,
-      __agenitix_expiry: Date.now() + (SECURITY_LIMITS.KEY_EXPIRY_HOURS * 60 * 60 * 1000)
+      __agenitix_expiry:
+        Date.now() + SECURITY_LIMITS.KEY_EXPIRY_HOURS * 60 * 60 * 1000,
     };
   },
 
   // Check if stored value has expired
   isExpired: (storedValue: unknown): boolean => {
-    if (typeof storedValue === 'object' && storedValue !== null && '__agenitix_expiry' in storedValue) {
+    if (
+      typeof storedValue === "object" &&
+      storedValue !== null &&
+      "__agenitix_expiry" in storedValue
+    ) {
       const expiry = (storedValue as any).__agenitix_expiry;
-      return typeof expiry === 'number' && Date.now() > expiry;
+      return typeof expiry === "number" && Date.now() > expiry;
     }
     return false;
   },
 
   // Extract data from stored value, removing expiry metadata
   extractData: (storedValue: unknown): unknown => {
-    if (typeof storedValue === 'object' && storedValue !== null && 'data' in storedValue && '__agenitix_expiry' in storedValue) {
+    if (
+      typeof storedValue === "object" &&
+      storedValue !== null &&
+      "data" in storedValue &&
+      "__agenitix_expiry" in storedValue
+    ) {
       return (storedValue as any).data;
     }
     return storedValue;
@@ -330,7 +356,12 @@ const SecurityValidation = {
 };
 
 // Security warning types
-type SecurityWarningType = 'protected_key' | 'malicious_content' | 'rate_limit' | 'size_limit' | 'expired_data';
+type SecurityWarningType =
+  | "protected_key"
+  | "malicious_content"
+  | "rate_limit"
+  | "size_limit"
+  | "expired_data";
 
 interface SecurityWarning {
   type: SecurityWarningType;
@@ -345,14 +376,16 @@ const SecurityUtils = {
   getRecentAuditLog: (): SecurityAuditEntry[] => {
     return securityAuditLog.slice(-50).reverse();
   },
-  
+
   // Emergency cleanup - removes all localStorage data for this node except protected keys
-  emergencyCleanup: (nodeId: string): { removed: number; protectedKeys: string[] } => {
+  emergencyCleanup: (
+    nodeId: string
+  ): { removed: number; protectedKeys: string[] } => {
     const keys = Object.keys(localStorage);
     let removed = 0;
     const protectedKeys: string[] = [];
-    
-    keys.forEach(key => {
+
+    keys.forEach((key) => {
       if (SecurityValidation.isProtectedKey(key)) {
         protectedKeys.push(key);
       } else {
@@ -361,7 +394,11 @@ const SecurityUtils = {
           if (value) {
             const parsed = JSON.parse(value);
             // Only remove items stored by this system (have metadata)
-            if (typeof parsed === 'object' && parsed !== null && '__agenitix_expiry' in parsed) {
+            if (
+              typeof parsed === "object" &&
+              parsed !== null &&
+              "__agenitix_expiry" in parsed
+            ) {
               localStorage.removeItem(key);
               removed++;
             }
@@ -371,19 +408,19 @@ const SecurityUtils = {
         }
       }
     });
-    
+
     SecurityValidation.addToAuditLog({
       timestamp: Date.now(),
       nodeId,
-      operation: 'store', // Using store as emergency cleanup type
+      operation: "store", // Using store as emergency cleanup type
       keys: [`EMERGENCY_CLEANUP_${removed}_items`],
       success: true,
-      securityIssue: 'Emergency cleanup performed',
+      securityIssue: "Emergency cleanup performed",
     });
-    
+
     return { removed, protectedKeys };
   },
-  
+
   // Get security status summary
   getSecurityStatus: (): {
     totalAuditEntries: number;
@@ -392,20 +429,24 @@ const SecurityUtils = {
     rateLimitedNodes: number;
   } => {
     const now = Date.now();
-    const oneHourAgo = now - (60 * 60 * 1000);
-    
+    const oneHourAgo = now - 60 * 60 * 1000;
+
     const recentSecurityIssues = securityAuditLog.filter(
-      entry => entry.timestamp > oneHourAgo && (entry.securityIssue || entry.blockedReason)
+      (entry) =>
+        entry.timestamp > oneHourAgo &&
+        (entry.securityIssue || entry.blockedReason)
     ).length;
-    
-    const protectedKeysInStorage = Object.keys(localStorage).filter(
-      key => SecurityValidation.isProtectedKey(key)
+
+    const protectedKeysInStorage = Object.keys(localStorage).filter((key) =>
+      SecurityValidation.isProtectedKey(key)
     ).length;
-    
+
     const rateLimitedNodes = Array.from(nodeRateLimits.entries()).filter(
-      ([, limit]) => now < limit.resetTime && limit.count >= SECURITY_LIMITS.MAX_OPERATIONS_PER_MINUTE
+      ([, limit]) =>
+        now < limit.resetTime &&
+        limit.count >= SECURITY_LIMITS.MAX_OPERATIONS_PER_MINUTE
     ).length;
-    
+
     return {
       totalAuditEntries: securityAuditLog.length,
       recentSecurityIssues,
@@ -416,9 +457,9 @@ const SecurityUtils = {
 };
 
 // Make security utilities available globally in development
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
   (window as any).AgenitixSecurityUtils = SecurityUtils;
-  console.log('🔒 Security utils available at window.AgenitixSecurityUtils');
+  console.log("🔒 Security utils available at window.AgenitixSecurityUtils");
 }
 
 // -----------------------------------------------------------------------------
@@ -432,17 +473,17 @@ export const StoreLocalDataSchema = z
     inputData: z.record(z.unknown()).nullable().default(null),
     triggerInput: z.boolean().default(false),
     lastTriggerState: z.boolean().default(false),
-    
+
     // Internal store for retrieved data (formatted JSON string for inspector)
     store: z.string().default(""),
-    
+
     // Status and feedback
     isProcessing: z.boolean().default(false),
     lastOperation: z.enum(["none", "store", "delete", "get"]).default("none"),
     lastOperationSuccess: z.boolean().default(false),
     lastOperationTime: z.number().optional(),
     operationMessage: z.string().default(""),
-    
+
     // UI state (existing)
     isEnabled: SafeSchemas.boolean(true),
     isActive: SafeSchemas.boolean(false),
@@ -450,9 +491,9 @@ export const StoreLocalDataSchema = z
     expandedSize: SafeSchemas.text("FV2"),
     collapsedSize: SafeSchemas.text("C2"),
     label: z.string().optional(),
-    
-    // Outputs
-    outputs: z.record(z.unknown()).nullable().default(null),
+
+    // output
+    output: z.record(z.unknown()).nullable().default(null),
   })
   .passthrough();
 
@@ -460,7 +501,7 @@ export type StoreLocalData = z.infer<typeof StoreLocalDataSchema>;
 
 const validateNodeData = createNodeValidator(
   StoreLocalDataSchema,
-  "StoreLocal",
+  "StoreLocal"
 );
 
 // -----------------------------------------------------------------------------
@@ -495,8 +536,8 @@ interface LocalStorageGetResult {
 const createLocalStorageOperations = (nodeId: string) => {
   const isAvailable = (): boolean => {
     try {
-      const test = '__localStorage_test__';
-      localStorage.setItem(test, 'test');
+      const test = "__localStorage_test__";
+      localStorage.setItem(test, "test");
       localStorage.removeItem(test);
       return true;
     } catch {
@@ -505,8 +546,12 @@ const createLocalStorageOperations = (nodeId: string) => {
   };
 
   // Security-enhanced store operation with comprehensive validation
-  const store = (data: Record<string, unknown>): LocalStorageOperationResult & { warnings: SecurityWarning[] } => {
-    const result: LocalStorageOperationResult & { warnings: SecurityWarning[] } = {
+  const store = (
+    data: Record<string, unknown>
+  ): LocalStorageOperationResult & { warnings: SecurityWarning[] } => {
+    const result: LocalStorageOperationResult & {
+      warnings: SecurityWarning[];
+    } = {
       success: true,
       message: "",
       keysProcessed: [],
@@ -520,7 +565,7 @@ const createLocalStorageOperations = (nodeId: string) => {
       SecurityValidation.addToAuditLog({
         timestamp: Date.now(),
         nodeId,
-        operation: 'store',
+        operation: "store",
         keys: Object.keys(data),
         success: false,
         blockedReason: rateLimitCheck.reason,
@@ -553,27 +598,28 @@ const createLocalStorageOperations = (nodeId: string) => {
     for (const [key, value] of Object.entries(data)) {
       try {
         // Security validation for each key-value pair
-        
+
         // 1. Check if key is protected
         if (SecurityValidation.isProtectedKey(key)) {
           const warning: SecurityWarning = {
-            type: 'protected_key',
+            type: "protected_key",
             message: `Blocked access to protected key: ${key}`,
             keys: [key],
-            suggestion: 'Use non-sensitive key names for localStorage operations'
+            suggestion:
+              "Use non-sensitive key names for localStorage operations",
           };
           result.warnings.push(warning);
           result.errors.push({
             key,
-            error: 'Access to protected/sensitive keys is forbidden',
+            error: "Access to protected/sensitive keys is forbidden",
           });
           SecurityValidation.addToAuditLog({
             timestamp: Date.now(),
             nodeId,
-            operation: 'store',
+            operation: "store",
             keys: [key],
             success: false,
-            securityIssue: 'Protected key access attempt',
+            securityIssue: "Protected key access attempt",
           });
           continue;
         }
@@ -583,32 +629,34 @@ const createLocalStorageOperations = (nodeId: string) => {
         if (!keyValidation.valid) {
           result.errors.push({
             key,
-            error: keyValidation.reason || 'Invalid key format',
+            error: keyValidation.reason || "Invalid key format",
           });
           continue;
         }
 
         // 3. Check for malicious content in value
-        const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+        const valueStr =
+          typeof value === "string" ? value : JSON.stringify(value);
         if (SecurityValidation.containsMaliciousPattern(valueStr)) {
           const warning: SecurityWarning = {
-            type: 'malicious_content',
+            type: "malicious_content",
             message: `Blocked potentially malicious content in value for key: ${key}`,
             keys: [key],
-            suggestion: 'Remove script tags, JavaScript protocols, or template literals from your data'
+            suggestion:
+              "Remove script tags, JavaScript protocols, or template literals from your data",
           };
           result.warnings.push(warning);
           result.errors.push({
             key,
-            error: 'Value contains potentially malicious content',
+            error: "Value contains potentially malicious content",
           });
           SecurityValidation.addToAuditLog({
             timestamp: Date.now(),
             nodeId,
-            operation: 'store',
+            operation: "store",
             keys: [key],
             success: false,
-            securityIssue: 'Malicious content detected',
+            securityIssue: "Malicious content detected",
           });
           continue;
         }
@@ -617,22 +665,22 @@ const createLocalStorageOperations = (nodeId: string) => {
         const sizeValidation = SecurityValidation.validateValueSize(value);
         if (!sizeValidation.valid) {
           const warning: SecurityWarning = {
-            type: 'size_limit',
+            type: "size_limit",
             message: `Value too large for key: ${key}`,
             keys: [key],
-            suggestion: `Reduce data size to under ${SECURITY_LIMITS.MAX_VALUE_SIZE} bytes`
+            suggestion: `Reduce data size to under ${SECURITY_LIMITS.MAX_VALUE_SIZE} bytes`,
           };
           result.warnings.push(warning);
           result.errors.push({
             key,
-            error: sizeValidation.reason || 'Value too large',
+            error: sizeValidation.reason || "Value too large",
           });
           continue;
         }
 
         // 5. Serialize with security enhancements
         let serializedValue: string;
-        
+
         if (typeof value === "string") {
           serializedValue = JSON.stringify(value);
         } else if (typeof value === "number" || typeof value === "boolean") {
@@ -649,10 +697,9 @@ const createLocalStorageOperations = (nodeId: string) => {
           storedAt: Date.now(),
           nodeId,
         });
-        
+
         localStorage.setItem(key, JSON.stringify(valueWithMetadata));
         result.keysProcessed.push(key);
-        
       } catch (error) {
         result.errors.push({
           key,
@@ -666,14 +713,14 @@ const createLocalStorageOperations = (nodeId: string) => {
     result.success = result.errors.length === 0;
 
     // Generate comprehensive result message
-    let message = result.success 
+    let message = result.success
       ? `Successfully stored ${result.keysProcessed.length} items`
       : `Stored ${result.keysProcessed.length} items with ${result.errors.length} errors`;
-    
+
     if (result.warnings.length > 0) {
       message += `. Security warnings: ${result.warnings.length}`;
     }
-    
+
     result.message = message;
 
     // Log successful operations
@@ -681,7 +728,7 @@ const createLocalStorageOperations = (nodeId: string) => {
       SecurityValidation.addToAuditLog({
         timestamp: Date.now(),
         nodeId,
-        operation: 'store',
+        operation: "store",
         keys: result.keysProcessed,
         success: result.success,
       });
@@ -706,7 +753,7 @@ const createLocalStorageOperations = (nodeId: string) => {
       SecurityValidation.addToAuditLog({
         timestamp: Date.now(),
         nodeId,
-        operation: 'delete',
+        operation: "delete",
         keys,
         success: false,
         blockedReason: rateLimitCheck.reason,
@@ -738,23 +785,23 @@ const createLocalStorageOperations = (nodeId: string) => {
     for (const key of keys) {
       try {
         // Security validation for each key
-        
+
         // 1. Check if key is protected
         if (SecurityValidation.isProtectedKey(key)) {
           const warning: SecurityWarning = {
-            type: 'protected_key',
+            type: "protected_key",
             message: `Blocked deletion of protected key: ${key}`,
             keys: [key],
-            suggestion: 'Protected keys cannot be deleted for security reasons'
+            suggestion: "Protected keys cannot be deleted for security reasons",
           };
           result.warnings.push(warning);
           SecurityValidation.addToAuditLog({
             timestamp: Date.now(),
             nodeId,
-            operation: 'delete',
+            operation: "delete",
             keys: [key],
             success: false,
-            securityIssue: 'Protected key deletion attempt',
+            securityIssue: "Protected key deletion attempt",
           });
           continue;
         }
@@ -795,7 +842,7 @@ const createLocalStorageOperations = (nodeId: string) => {
       SecurityValidation.addToAuditLog({
         timestamp: Date.now(),
         nodeId,
-        operation: 'delete',
+        operation: "delete",
         keys: result.keysDeleted,
         success: result.success,
       });
@@ -822,7 +869,7 @@ const createLocalStorageOperations = (nodeId: string) => {
       SecurityValidation.addToAuditLog({
         timestamp: Date.now(),
         nodeId,
-        operation: 'get',
+        operation: "get",
         keys,
         success: false,
         blockedReason: rateLimitCheck.reason,
@@ -854,23 +901,24 @@ const createLocalStorageOperations = (nodeId: string) => {
     for (const key of keys) {
       try {
         // Security validation for each key
-        
+
         // 1. Check if key is protected
         if (SecurityValidation.isProtectedKey(key)) {
           const warning: SecurityWarning = {
-            type: 'protected_key',
+            type: "protected_key",
             message: `Blocked access to protected key: ${key}`,
             keys: [key],
-            suggestion: 'Protected keys cannot be accessed for security reasons'
+            suggestion:
+              "Protected keys cannot be accessed for security reasons",
           };
           result.warnings.push(warning);
           SecurityValidation.addToAuditLog({
             timestamp: Date.now(),
             nodeId,
-            operation: 'get',
+            operation: "get",
             keys: [key],
             success: false,
-            securityIssue: 'Protected key access attempt',
+            securityIssue: "Protected key access attempt",
           });
           continue;
         }
@@ -889,24 +937,25 @@ const createLocalStorageOperations = (nodeId: string) => {
           try {
             // First try to parse as JSON
             const parsedValue = JSON.parse(value);
-            
+
             // Check if data has expired
             if (SecurityValidation.isExpired(parsedValue)) {
               const warning: SecurityWarning = {
-                type: 'expired_data',
+                type: "expired_data",
                 message: `Data for key '${key}' has expired`,
                 keys: [key],
-                suggestion: 'Data is automatically removed after 24 hours for security'
+                suggestion:
+                  "Data is automatically removed after 24 hours for security",
               };
               result.warnings.push(warning);
               result.expiredKeys.push(key);
-              
+
               // Auto-cleanup expired data
               localStorage.removeItem(key);
               result.keysNotFound.push(key);
               continue;
             }
-            
+
             // Extract actual data from metadata wrapper
             const extractedData = SecurityValidation.extractData(parsedValue);
             result.data[key] = extractedData;
@@ -943,7 +992,7 @@ const createLocalStorageOperations = (nodeId: string) => {
       SecurityValidation.addToAuditLog({
         timestamp: Date.now(),
         nodeId,
-        operation: 'get',
+        operation: "get",
         keys: result.keysFound,
         success: result.success,
       });
@@ -969,7 +1018,7 @@ interface ModeToggleButtonProps {
   onToggle: () => void;
   disabled?: boolean;
   isProcessing?: boolean;
-  className?: string
+  className?: string;
 }
 
 interface CollapsedCounterProps {
@@ -977,7 +1026,10 @@ interface CollapsedCounterProps {
   inputData: Record<string, unknown> | null;
 }
 
-const CollapsedCounter: React.FC<CollapsedCounterProps> = ({ mode, inputData }) => {
+const CollapsedCounter: React.FC<CollapsedCounterProps> = ({
+  mode,
+  inputData,
+}) => {
   const getCountInfo = () => {
     if (!inputData || Object.keys(inputData).length === 0) {
       return { keyCount: 0, valueCount: 0, showValue: false };
@@ -987,10 +1039,10 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({ mode, inputData }) 
 
     switch (mode) {
       case "store":
-        return { 
+        return {
           keyCount,
           valueCount: keyCount,
-          showValue: true
+          showValue: true,
         };
       case "delete":
         // For delete mode, count existing keys in localStorage
@@ -1004,10 +1056,10 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({ mode, inputData }) 
         } catch {
           existingKeyCount = 0;
         }
-        return { 
+        return {
           keyCount: existingKeyCount,
           valueCount: existingKeyCount,
-          showValue: true
+          showValue: true,
         };
       case "get":
         // For get mode, count both keys and values that exist in localStorage
@@ -1022,10 +1074,10 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({ mode, inputData }) 
         } catch {
           existingCount = 0;
         }
-        return { 
+        return {
           keyCount: existingCount,
           valueCount: existingCount,
-          showValue: true
+          showValue: true,
         };
       default:
         return { keyCount: 0, valueCount: 0, showValue: false };
@@ -1040,10 +1092,14 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({ mode, inputData }) 
 
   const getModeConfig = () => {
     switch (mode) {
-      case "store": return MODE_CONFIG.STORE;
-      case "delete": return MODE_CONFIG.DELETE;
-      case "get": return MODE_CONFIG.GET;
-      default: return MODE_CONFIG.STORE;
+      case "store":
+        return MODE_CONFIG.STORE;
+      case "delete":
+        return MODE_CONFIG.DELETE;
+      case "get":
+        return MODE_CONFIG.GET;
+      default:
+        return MODE_CONFIG.STORE;
     }
   };
 
@@ -1058,7 +1114,9 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({ mode, inputData }) 
         </div>
         {showValue && (
           <div className={`${config.colors.counterBg} rounded px-1 py-0.5`}>
-            <div className={`text-[10px] ${config.colors.counterLabel}`}>Value</div>
+            <div className={`text-[10px] ${config.colors.counterLabel}`}>
+              Value
+            </div>
             <div className="font-semibold">{valueCount}</div>
           </div>
         )}
@@ -1072,26 +1130,30 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({
   onToggle,
   disabled = false,
   isProcessing = false,
-  className
+  className,
 }) => {
   const getModeConfig = () => {
     switch (mode) {
-      case "store": return MODE_CONFIG.STORE;
-      case "delete": return MODE_CONFIG.DELETE;
-      case "get": return MODE_CONFIG.GET;
-      default: return MODE_CONFIG.STORE;
+      case "store":
+        return MODE_CONFIG.STORE;
+      case "delete":
+        return MODE_CONFIG.DELETE;
+      case "get":
+        return MODE_CONFIG.GET;
+      default:
+        return MODE_CONFIG.STORE;
     }
   };
 
   const config = getModeConfig();
-  
+
   // Show loading spinner when processing, otherwise show mode label
   const buttonContent = isProcessing ? (
     <Loading showText={false} size="w-5 h-5" className="p-0" />
   ) : (
     config.label
   );
-  
+
   return (
     <Button
       onClick={onToggle}
@@ -1105,7 +1167,9 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({
         ${disabled ? `${UI_CONSTANTS.DISABLED_OPACITY} ${UI_CONSTANTS.DISABLED_CURSOR}` : ""}
       `}
     >
-      <span className={`absolute text-[6px] top-0 left-1 font-mono ${config.colors.modeLabel}`}>
+      <span
+        className={`absolute text-[6px] top-0 left-1 font-mono ${config.colors.modeLabel}`}
+      >
         MODE
       </span>
       {buttonContent}
@@ -1113,29 +1177,27 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({
   );
 };
 
-
-
 interface DataPreviewProps {
   data: Record<string, unknown> | null;
   mode: "store" | "delete" | "get";
   maxItems?: number;
 }
 
-const DataPreview: React.FC<DataPreviewProps> = ({ 
-  data, 
-  mode, 
-  maxItems = UI_CONSTANTS.MAX_PREVIEW_ITEMS 
+const DataPreview: React.FC<DataPreviewProps> = ({
+  data,
+  mode,
+  maxItems = UI_CONSTANTS.MAX_PREVIEW_ITEMS,
 }) => {
   // Helper function to get current localStorage value
   const getCurrentLocalStorageValue = (key: string): string => {
     try {
       const value = localStorage.getItem(key);
       if (value === null) return "null";
-      
+
       // Try to parse as JSON first
       try {
         const parsed = JSON.parse(value);
-        return typeof parsed === "object" 
+        return typeof parsed === "object"
           ? JSON.stringify(parsed).slice(0, 30) + "..."
           : String(parsed);
       } catch {
@@ -1149,9 +1211,7 @@ const DataPreview: React.FC<DataPreviewProps> = ({
 
   if (!data || Object.keys(data).length === 0) {
     return (
-      <div className="text-xs text-gray-500 italic">
-        No data to {mode}
-      </div>
+      <div className="text-xs text-gray-500 italic">No data to {mode}</div>
     );
   }
 
@@ -1160,36 +1220,48 @@ const DataPreview: React.FC<DataPreviewProps> = ({
     Object.entries(data).map(([key, value]) => {
       if (SecurityValidation.isProtectedKey(key)) {
         // Mask protected keys in the UI
-        return [
-          `🔒 ${key.slice(0, 8)}***`, 
-          "*** PROTECTED ***"
-        ];
+        return [`🔒 ${key.slice(0, 8)}***`, "*** PROTECTED ***"];
       }
       return [key, value];
     })
   );
 
-  const entries = maxItems === Infinity ? Object.entries(filteredData) : Object.entries(filteredData).slice(0, maxItems);
-  const hasMore = maxItems !== Infinity && Object.keys(filteredData).length > maxItems;
-  
+  const entries =
+    maxItems === Number.POSITIVE_INFINITY
+      ? Object.entries(filteredData)
+      : Object.entries(filteredData).slice(0, maxItems);
+  const hasMore =
+    maxItems !== Number.POSITIVE_INFINITY &&
+    Object.keys(filteredData).length > maxItems;
+
   // Count protected keys for security warning
-  const protectedKeysCount = Object.keys(data).filter(key => SecurityValidation.isProtectedKey(key)).length;
+  const protectedKeysCount = Object.keys(data).filter((key) =>
+    SecurityValidation.isProtectedKey(key)
+  ).length;
 
   const getPreviewTitle = () => {
     switch (mode) {
-      case "store": return "Will store";
-      case "delete": return "Will delete";
-      case "get": return "Output values";
-      default: return "Data";
+      case "store":
+        return "Will store";
+      case "delete":
+        return "Will delete";
+      case "get":
+        return "Output values";
+      default:
+        return "Data";
     }
   };
 
   const getModeConfig = () => {
     switch (mode) {
-      case "store": return MODE_CONFIG.STORE;
-      case "delete": return MODE_CONFIG.DELETE;
-      case "get": return MODE_CONFIG.GET;
-      default: return MODE_CONFIG.STORE;
+      case "store":
+        return MODE_CONFIG.STORE;
+      case "delete":
+        return MODE_CONFIG.DELETE;
+      case "get":
+        return MODE_CONFIG.GET;
+      default:
+        return MODE_CONFIG.STORE;
     }
   };
 
@@ -1197,45 +1269,55 @@ const DataPreview: React.FC<DataPreviewProps> = ({
 
   return (
     <div className={`text-xs space-y-2 w-full ${config.colors.container}`}>
-
-      
       {/* Table-like grid layout - full width */}
-      <div className={`border rounded-md overflow-hidden w-full ${config.colors.tableBorder}`}>
+      <div
+        className={`border rounded-md overflow-hidden w-full ${config.colors.tableBorder}`}
+      >
         {/* Header row */}
-        <div className={`grid grid-cols-2 border-b w-full ${config.colors.tableHeader}`}>
-          <div className={`px-2 py-1 font-semibold border-r ${config.colors.headerText} ${config.colors.rowBorder} min-w-0`}>
+        <div
+          className={`grid grid-cols-2 border-b w-full ${config.colors.tableHeader}`}
+        >
+          <div
+            className={`px-2 py-1 font-semibold border-r ${config.colors.headerText} ${config.colors.rowBorder} min-w-0`}
+          >
             Key
           </div>
-          <div className={`px-2 py-1 font-semibold ${config.colors.headerText} min-w-0`}>
+          <div
+            className={`px-2 py-1 font-semibold ${config.colors.headerText} min-w-0`}
+          >
             Value
           </div>
         </div>
-        
+
         {/* Data rows */}
         {entries.map(([key, value], index) => (
-          <div 
-            key={key} 
+          <div
+            key={key}
             className={`grid grid-cols-2 w-full ${
-              index !== entries.length - 1 ? `border-b ${config.colors.rowBorder}` : ''
+              index !== entries.length - 1
+                ? `border-b ${config.colors.rowBorder}`
+                : ""
             }`}
           >
-            <div className={`px-2 py-1 font-mono border-r text-[8px] truncate font-semibold ${config.colors.keyText} ${config.colors.rowBorder} min-w-0`}>
+            <div
+              className={`px-2 py-1 font-mono border-r text-[8px] truncate font-semibold ${config.colors.keyText} ${config.colors.rowBorder} min-w-0`}
+            >
               {key}
             </div>
-            <div className={`px-2 py-1 text-[8px] truncate font-medium ${config.colors.valueText} min-w-0`}>
-              {mode === "store" && (
-                typeof value === "object" 
+            <div
+              className={`px-2 py-1 text-[8px] truncate font-medium ${config.colors.valueText} min-w-0`}
+            >
+              {mode === "store" &&
+                (typeof value === "object"
                   ? `${JSON.stringify(value).slice(0, 30)}...`
-                  : String(value).slice(0, 30)
-              )}
-              {(mode === "get" || mode === "delete") && (
-                getCurrentLocalStorageValue(key)
-              )}
+                  : String(value).slice(0, 30))}
+              {(mode === "get" || mode === "delete") &&
+                getCurrentLocalStorageValue(key)}
             </div>
           </div>
         ))}
       </div>
-      
+
       {hasMore && (
         <div className="text-gray-500 italic text-center">
           ...and {Object.keys(data).length - maxItems} more
@@ -1250,35 +1332,37 @@ interface RetrievedDataDisplayProps {
   maxItems?: number;
 }
 
-const RetrievedDataDisplay: React.FC<RetrievedDataDisplayProps> = ({ 
-  data, 
-  maxItems = UI_CONSTANTS.MAX_PREVIEW_ITEMS 
+const RetrievedDataDisplay: React.FC<RetrievedDataDisplayProps> = ({
+  data,
+  maxItems = UI_CONSTANTS.MAX_PREVIEW_ITEMS,
 }) => {
   if (!data || Object.keys(data).length === 0) {
     return (
-      <div className="text-xs text-gray-500 italic">
-        No data retrieved
-      </div>
+      <div className="text-xs text-gray-500 italic">No data retrieved</div>
     );
   }
 
-  const entries = maxItems === Infinity ? Object.entries(data) : Object.entries(data).slice(0, maxItems);
-  const hasMore = maxItems !== Infinity && Object.keys(data).length > maxItems;
+  const entries =
+    maxItems === Number.POSITIVE_INFINITY
+      ? Object.entries(data)
+      : Object.entries(data).slice(0, maxItems);
+  const hasMore =
+    maxItems !== Number.POSITIVE_INFINITY &&
+    Object.keys(data).length > maxItems;
 
   return (
     <div className="text-xs space-y-1">
-      <div className="font-medium text-green-700">
-        Retrieved values:
-      </div>
+      <div className="font-medium text-green-700">Retrieved values:</div>
       <div className="bg-green-50 dark:bg-green-900/20 rounded-md p-2 space-y-1">
         {entries.map(([key, value]) => (
           <div key={key} className="flex items-start gap-2">
-            <span className="font-mono text-green-600 font-semibold">{key}:</span>
+            <span className="font-mono text-green-600 font-semibold">
+              {key}:
+            </span>
             <span className="text-gray-700 dark:text-gray-300 break-all">
-              {typeof value === "object" 
+              {typeof value === "object"
                 ? JSON.stringify(value, null, 2)
-                : String(value)
-              }
+                : String(value)}
             </span>
           </div>
         ))}
@@ -1307,7 +1391,8 @@ const CONTENT = {
   collapsed: "flex items-center justify-center w-full h-full",
   header: "flex items-center justify-between mb-3",
   body: "flex-1 flex items-center justify-center",
-  disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+  disabled:
+    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -1338,7 +1423,8 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
         position: "top",
         type: "target",
         dataType: "JSON",
-        tooltip: "Data to store in localStorage. Can be any JSON-serializable object.",
+        tooltip:
+          "Data to store in localStorage. Can be any JSON-serializable object.",
       },
       {
         id: "trigger-input",
@@ -1346,7 +1432,8 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
         position: "left",
         type: "target",
         dataType: "Boolean",
-        tooltip: "Trigger the operation when this input becomes true. Prevents auto-execution.",
+        tooltip:
+          "Trigger the operation when this input becomes true. Prevents auto-execution.",
       },
       {
         id: "output",
@@ -1354,7 +1441,8 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "JSON",
-        tooltip: "Outputs the result of the operation. Contains stored data, status, or retrieved data.",
+        tooltip:
+          "output the result of the operation. Contains stored data, status, or retrieved data.",
       },
     ],
     inspector: { key: "StoreLocalInspector" },
@@ -1370,7 +1458,7 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
       lastOperation: "none",
       lastOperationSuccess: false,
       operationMessage: "",
-      outputs: null,
+      output: null,
     }),
     dataSchema: StoreLocalDataSchema,
     controls: {
@@ -1386,17 +1474,17 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
         "lastOperationSuccess",
         "lastOperationTime",
         "operationMessage",
-        "outputs",
+        "output",
         "expandedSize",
         "collapsedSize",
       ],
       customFields: [
         { key: "isEnabled", type: "boolean", label: "Enable" },
         { key: "mode", type: "select", label: "Mode" },
-        { 
-          key: "store", 
-          type: "textarea", 
-          label: "Retrieved Data", 
+        {
+          key: "store",
+          type: "textarea",
+          label: "Retrieved Data",
           placeholder: "Retrieved localStorage data will appear here...",
           ui: { rows: 6 },
         },
@@ -1405,7 +1493,8 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
     },
     icon: "LuDatabase",
     author: "Agenitix Team",
-    description: "Enhanced localStorage management with store/delete/get modes. Only executes when triggered by boolean input.",
+    description:
+      "Enhanced localStorage management with store/delete/get modes. Only executes when triggered by boolean input.",
     feature: "storage",
     tags: ["store", "localStorage", "delete", "get", "pulse", "trigger"],
     featureFlag: {
@@ -1435,13 +1524,14 @@ const StoreLocalNode = memo(
     // -------------------------------------------------------------------------
     const { nodeData, updateNodeData } = useNodeData(id, data);
     const { showSuccess, showError, showWarning, showInfo } = useNodeToast(id);
-    
+
     // Use design system tokens for spacing and other values
     const containerPadding = useDesignSystemToken("spacing.md", "p-3");
-    const borderRadius = useDesignSystemToken("effects.rounded.md", "rounded-md");
+    const borderRadius = useDesignSystemToken(
+      "effects.rounded.md",
+      "rounded-md"
+    );
     const textSize = useDesignSystemToken("typography.sizes.sm", "text-sm");
-    
-
 
     // -------------------------------------------------------------------------
     // 4.2  Derived state
@@ -1460,7 +1550,7 @@ const StoreLocalNode = memo(
       lastOperationSuccess,
       lastOperationTime,
       operationMessage,
-      outputs,
+      output,
     } = nodeData as StoreLocalData;
 
     // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
@@ -1468,9 +1558,10 @@ const StoreLocalNode = memo(
     const edges = useStore((s) => s.edges);
 
     // Security-enhanced localStorage operations utility
-    const localStorageOps = useMemo(() => createLocalStorageOperations(id), [id]);
-    
-
+    const localStorageOps = useMemo(
+      () => createLocalStorageOperations(id),
+      [id]
+    );
 
     // Track connection initialization to prevent auto-triggering
     const connectionInitTimeRef = useRef<number | null>(null);
@@ -1480,19 +1571,20 @@ const StoreLocalNode = memo(
     // Check localStorage availability and setup security monitoring on mount
     useEffect(() => {
       if (!localStorageOps.isAvailable()) {
-        showError("localStorage unavailable", "Browser localStorage is not available or disabled");
+        showError(
+          "localStorage unavailable",
+          "Browser localStorage is not available or disabled"
+        );
       }
     }, [localStorageOps, showError]);
-    
-
 
     // Periodic cleanup of expired data (runs every 5 minutes)
     useEffect(() => {
       const cleanupExpiredData = () => {
         const keys = Object.keys(localStorage);
         let cleanedCount = 0;
-        
-        keys.forEach(key => {
+
+        keys.forEach((key) => {
           try {
             const value = localStorage.getItem(key);
             if (value) {
@@ -1506,41 +1598,43 @@ const StoreLocalNode = memo(
             // Skip non-JSON values (legacy data)
           }
         });
-        
+
         if (cleanedCount > 0) {
-          console.log(`🧹 Auto-cleanup: Removed ${cleanedCount} expired localStorage items`);
+          console.log(
+            `🧹 Auto-cleanup: Removed ${cleanedCount} expired localStorage items`
+          );
           SecurityValidation.addToAuditLog({
             timestamp: Date.now(),
             nodeId: id,
-            operation: 'get', // Using get as cleanup type
+            operation: "get", // Using get as cleanup type
             keys: [`AUTO_CLEANUP_${cleanedCount}_expired_items`],
             success: true,
           });
         }
       };
-      
+
       // Run cleanup immediately and then every 5 minutes
       cleanupExpiredData();
       const cleanupInterval = setInterval(cleanupExpiredData, 5 * 60 * 1000);
-      
+
       return () => clearInterval(cleanupInterval);
     }, [id]);
-    
+
     // Emergency cleanup function accessible via double-click when expanded
     const handleEmergencyCleanup = useCallback(() => {
       if (!isExpanded) return;
-      
+
       const confirmed = window.confirm(
-        '🔒 EMERGENCY CLEANUP\n\n' +
-        'This will remove ALL localStorage data created by Agenitix nodes.\n' +
-        'Protected authentication data will be preserved.\n\n' +
-        'Are you sure you want to continue?'
+        "🔒 EMERGENCY CLEANUP\n\n" +
+          "This will remove ALL localStorage data created by Agenitix nodes.\n" +
+          "Protected authentication data will be preserved.\n\n" +
+          "Are you sure you want to continue?"
       );
-      
+
       if (confirmed) {
         const result = SecurityUtils.emergencyCleanup(id);
         showSuccess(
-          '🧹 Emergency Cleanup Complete',
+          "🧹 Emergency Cleanup Complete",
           `Removed ${result.removed} items. Protected ${result.protectedKeys.length} sensitive keys.`
         );
       }
@@ -1563,7 +1657,7 @@ const StoreLocalNode = memo(
     /** Toggle between store, delete, and get modes */
     const toggleMode = useCallback(() => {
       let newMode: "store" | "delete" | "get";
-      
+
       switch (mode) {
         case "store":
           newMode = "delete";
@@ -1577,27 +1671,27 @@ const StoreLocalNode = memo(
         default:
           newMode = "store";
       }
-      
+
       updateNodeData({ mode: newMode });
     }, [mode, updateNodeData]);
 
-    /** 
+    /**
      * Compute the latest data coming from connected input handles.
      */
     const computeInputs = useCallback(() => {
       // Get data input
       const dataInputEdge = findEdgeByHandle(edges, id, "data-input");
       let dataInput = null;
-      
+
       if (dataInputEdge) {
         const src = nodes.find((n) => n.id === dataInputEdge.source);
         if (src) {
-          const rawData = src.data?.outputs ?? src.data?.data ?? src.data;
+          const rawData = src.data?.output ?? src.data?.data ?? src.data;
           try {
             // Try to parse as JSON if it's a string
-            if (typeof rawData === 'string') {
+            if (typeof rawData === "string") {
               dataInput = JSON.parse(rawData);
-            } else if (typeof rawData === 'object' && rawData !== null) {
+            } else if (typeof rawData === "object" && rawData !== null) {
               dataInput = rawData;
             }
           } catch {
@@ -1610,11 +1704,11 @@ const StoreLocalNode = memo(
       // Get trigger input
       const triggerInputEdge = findEdgeByHandle(edges, id, "trigger-input");
       let triggerValue = false;
-      
+
       if (triggerInputEdge) {
         const src = nodes.find((n) => n.id === triggerInputEdge.source);
         if (src) {
-          const rawTrigger = src.data?.outputs ?? src.data?.data ?? src.data;
+          const rawTrigger = src.data?.output ?? src.data?.data ?? src.data;
           triggerValue = Boolean(rawTrigger);
         }
       }
@@ -1633,28 +1727,48 @@ const StoreLocalNode = memo(
       try {
         if (mode === "store") {
           const result = localStorageOps.store(inputData);
-          
+
           // Handle security warnings via toast only
           if (result.warnings && result.warnings.length > 0) {
             // Show specific warning based on type
-            const protectedKeyWarning = result.warnings.find(w => w.type === 'protected_key');
-            const maliciousWarning = result.warnings.find(w => w.type === 'malicious_content');
-            const rateLimitWarning = result.warnings.find(w => w.type === 'rate_limit');
-            const sizeLimitWarning = result.warnings.find(w => w.type === 'size_limit');
-            
+            const protectedKeyWarning = result.warnings.find(
+              (w) => w.type === "protected_key"
+            );
+            const maliciousWarning = result.warnings.find(
+              (w) => w.type === "malicious_content"
+            );
+            const rateLimitWarning = result.warnings.find(
+              (w) => w.type === "rate_limit"
+            );
+            const sizeLimitWarning = result.warnings.find(
+              (w) => w.type === "size_limit"
+            );
+
             if (protectedKeyWarning) {
-              showError("🔒 Protected Key Blocked", `Cannot access protected keys: ${protectedKeyWarning.keys?.join(', ')}`);
+              showError(
+                "🔒 Protected Key Blocked",
+                `Cannot access protected keys: ${protectedKeyWarning.keys?.join(", ")}`
+              );
             } else if (maliciousWarning) {
-              showError("🚫 Malicious Content Detected", `Blocked potentially harmful content in keys: ${maliciousWarning.keys?.join(', ')}`);
+              showError(
+                "🚫 Malicious Content Detected",
+                `Blocked potentially harmful content in keys: ${maliciousWarning.keys?.join(", ")}`
+              );
             } else if (rateLimitWarning) {
-              showError("⏱️ Rate Limit Exceeded", "Too many operations. Please wait before trying again.");
+              showError(
+                "⏱️ Rate Limit Exceeded",
+                "Too many operations. Please wait before trying again."
+              );
             } else if (sizeLimitWarning) {
-              showError("📏 Size Limit Exceeded", `Data too large for keys: ${sizeLimitWarning.keys?.join(', ')}`);
+              showError(
+                "📏 Size Limit Exceeded",
+                `Data too large for keys: ${sizeLimitWarning.keys?.join(", ")}`
+              );
             } else {
               showError("⚠️ Security Warning", result.warnings[0].message);
             }
           }
-          
+
           updateNodeData({
             isProcessing: false,
             lastOperation: "store",
@@ -1662,35 +1776,54 @@ const StoreLocalNode = memo(
             lastOperationTime: Date.now(),
             operationMessage: result.message,
             store: "", // Clear store for store operations
-            outputs: null, // Clear outputs for store operations
+            output: null, // Clear output for store operations
           });
 
           // Only show success if no security warnings
-          if (result.success && (!result.warnings || result.warnings.length === 0)) {
-            showSuccess("Store success", `Stored ${result.keysProcessed.length} items`);
-          } else if (!result.success && (!result.warnings || result.warnings.length === 0)) {
+          if (
+            result.success &&
+            (!result.warnings || result.warnings.length === 0)
+          ) {
+            showSuccess(
+              "Store success",
+              `Stored ${result.keysProcessed.length} items`
+            );
+          } else if (
+            !result.success &&
+            (!result.warnings || result.warnings.length === 0)
+          ) {
             // Only show error if not a security warning (already shown above)
             showError("Store failed", result.message);
           }
         } else if (mode === "delete") {
           const keys = Object.keys(inputData);
           const result = localStorageOps.delete(keys);
-          
+
           // Handle security warnings via toast only
           if (result.warnings && result.warnings.length > 0) {
             // Show specific warning based on type
-            const protectedKeyWarning = result.warnings.find(w => w.type === 'protected_key');
-            const rateLimitWarning = result.warnings.find(w => w.type === 'rate_limit');
-            
+            const protectedKeyWarning = result.warnings.find(
+              (w) => w.type === "protected_key"
+            );
+            const rateLimitWarning = result.warnings.find(
+              (w) => w.type === "rate_limit"
+            );
+
             if (protectedKeyWarning) {
-              showError("🔒 Protected Key Blocked", `Cannot delete protected keys: ${protectedKeyWarning.keys?.join(', ')}`);
+              showError(
+                "🔒 Protected Key Blocked",
+                `Cannot delete protected keys: ${protectedKeyWarning.keys?.join(", ")}`
+              );
             } else if (rateLimitWarning) {
-              showError("⏱️ Rate Limit Exceeded", "Too many operations. Please wait before trying again.");
+              showError(
+                "⏱️ Rate Limit Exceeded",
+                "Too many operations. Please wait before trying again."
+              );
             } else {
               showError("⚠️ Security Warning", result.warnings[0].message);
             }
           }
-          
+
           updateNodeData({
             isProcessing: false,
             lastOperation: "delete",
@@ -1698,41 +1831,67 @@ const StoreLocalNode = memo(
             lastOperationTime: Date.now(),
             operationMessage: result.message,
             store: "", // Clear store for delete operations
-            outputs: null, // Clear outputs for delete operations
+            output: null, // Clear output for delete operations
           });
 
           // Only show success if no security warnings
-          if (result.success && (!result.warnings || result.warnings.length === 0)) {
-            showSuccess("Delete success", `Deleted ${result.keysDeleted.length} items`);
-          } else if (!result.success && (!result.warnings || result.warnings.length === 0)) {
+          if (
+            result.success &&
+            (!result.warnings || result.warnings.length === 0)
+          ) {
+            showSuccess(
+              "Delete success",
+              `Deleted ${result.keysDeleted.length} items`
+            );
+          } else if (
+            !result.success &&
+            (!result.warnings || result.warnings.length === 0)
+          ) {
             // Only show error if not a security warning (already shown above)
             showError("Delete failed", result.message);
           }
         } else if (mode === "get") {
           const keys = Object.keys(inputData);
           const result = localStorageOps.get(keys);
-          
+
           // Handle security warnings via toast only
           if (result.warnings && result.warnings.length > 0) {
             // Show specific warning based on type
-            const protectedKeyWarning = result.warnings.find(w => w.type === 'protected_key');
-            const expiredWarning = result.warnings.find(w => w.type === 'expired_data');
-            const rateLimitWarning = result.warnings.find(w => w.type === 'rate_limit');
-            
+            const protectedKeyWarning = result.warnings.find(
+              (w) => w.type === "protected_key"
+            );
+            const expiredWarning = result.warnings.find(
+              (w) => w.type === "expired_data"
+            );
+            const rateLimitWarning = result.warnings.find(
+              (w) => w.type === "rate_limit"
+            );
+
             if (protectedKeyWarning) {
-              showError("🔒 Protected Key Blocked", `Cannot access protected keys: ${protectedKeyWarning.keys?.join(', ')}`);
+              showError(
+                "🔒 Protected Key Blocked",
+                `Cannot access protected keys: ${protectedKeyWarning.keys?.join(", ")}`
+              );
             } else if (expiredWarning) {
-              showError("⏰ Data Expired", `Expired data removed for keys: ${expiredWarning.keys?.join(', ')}`);
+              showError(
+                "⏰ Data Expired",
+                `Expired data removed for keys: ${expiredWarning.keys?.join(", ")}`
+              );
             } else if (rateLimitWarning) {
-              showError("⏱️ Rate Limit Exceeded", "Too many operations. Please wait before trying again.");
+              showError(
+                "⏱️ Rate Limit Exceeded",
+                "Too many operations. Please wait before trying again."
+              );
             } else {
               showError("⚠️ Security Warning", result.warnings[0].message);
             }
           }
-          
+
           const retrievedData = result.success ? result.data : null;
           // Format store data as JSON string for inspector display
-          const storeDisplay = retrievedData ? JSON.stringify(retrievedData, null, 2) : "";
+          const storeDisplay = retrievedData
+            ? JSON.stringify(retrievedData, null, 2)
+            : "";
           updateNodeData({
             isProcessing: false,
             lastOperation: "get",
@@ -1740,23 +1899,30 @@ const StoreLocalNode = memo(
             lastOperationTime: Date.now(),
             operationMessage: result.message,
             store: storeDisplay, // Store formatted JSON string for inspector
-            outputs: retrievedData, // Output raw data for connections
+            output: retrievedData, // Output raw data for connections
           });
 
           // Only show success if no security warnings
-          if (result.success && (!result.warnings || result.warnings.length === 0)) {
+          if (
+            result.success &&
+            (!result.warnings || result.warnings.length === 0)
+          ) {
             let successMessage = `Retrieved ${result.keysFound.length} items`;
             if (result.expiredKeys && result.expiredKeys.length > 0) {
               successMessage += ` (${result.expiredKeys.length} expired items removed)`;
             }
             showSuccess("Get success", successMessage);
-          } else if (!result.success && (!result.warnings || result.warnings.length === 0)) {
+          } else if (
+            !result.success &&
+            (!result.warnings || result.warnings.length === 0)
+          ) {
             // Only show error if not a security warning (already shown above)
             showError("Get failed", result.message);
           }
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
         updateNodeData({
           isProcessing: false,
           lastOperation: mode,
@@ -1764,11 +1930,19 @@ const StoreLocalNode = memo(
           lastOperationTime: Date.now(),
           operationMessage: errorMessage,
           store: "",
-          outputs: null,
+          output: null,
         });
         showError(`${mode} failed`, errorMessage);
       }
-    }, [inputData, isProcessing, mode, localStorageOps, updateNodeData, showSuccess, showError]);
+    }, [
+      inputData,
+      isProcessing,
+      mode,
+      localStorageOps,
+      updateNodeData,
+      showSuccess,
+      showError,
+    ]);
 
     // -------------------------------------------------------------------------
     // 4.5  Effects
@@ -1777,41 +1951,47 @@ const StoreLocalNode = memo(
     /* 🔄 Whenever nodes/edges change, recompute inputs. */
     useEffect(() => {
       const { dataInput, triggerValue } = computeInputs();
-      
+
       // Check if trigger connection exists
       const triggerInputEdge = findEdgeByHandle(edges, id, "trigger-input");
       const hasTriggerConnection = Boolean(triggerInputEdge);
       const hadTriggerConnection = hasEverHadTriggerConnectionRef.current;
-      
+
       // Detect NEW trigger connection (didn't have one before, now we do)
       if (hasTriggerConnection && !hadTriggerConnection) {
         hasEverHadTriggerConnectionRef.current = true;
         connectionInitTimeRef.current = Date.now();
-        console.log(`StoreLocal ${id}: NEW trigger connection detected, debounce timer set`);
+        console.log(
+          `StoreLocal ${id}: NEW trigger connection detected, debounce timer set`
+        );
       }
-      
+
       // Detect trigger disconnection
       if (!hasTriggerConnection && hadTriggerConnection) {
         console.log(`StoreLocal ${id}: Trigger disconnected`);
       }
-      
+
       const updates: Partial<StoreLocalData> = {};
-      
+
       // Only update inputData if it actually changed - no operations should trigger from this
       if (JSON.stringify(dataInput) !== JSON.stringify(inputData)) {
         updates.inputData = dataInput;
       }
-      
+
       // Only update triggerInput if it actually changed
       if (triggerValue !== triggerInput) {
         updates.triggerInput = triggerValue;
-        console.log(`StoreLocal ${id}: Trigger change detected: ${triggerInput} -> ${triggerValue}`);
-        
+        console.log(
+          `StoreLocal ${id}: Trigger change detected: ${triggerInput} -> ${triggerValue}`
+        );
+
         // Handle trigger state changes, but connection detection is handled above
         if (triggerInput && !triggerValue) {
           // Reset connection timer when trigger goes false, allowing future true->false->true cycles
           connectionInitTimeRef.current = null;
-          console.log(`StoreLocal ${id}: Trigger went false, debounce timer reset`);
+          console.log(
+            `StoreLocal ${id}: Trigger went false, debounce timer reset`
+          );
           // Don't update lastTriggerState here - let the normal pulse effect handle it
         }
       }
@@ -1827,45 +2007,60 @@ const StoreLocalNode = memo(
       // Check if we have a trigger connection - only execute if we do
       const triggerInputEdge = findEdgeByHandle(edges, id, "trigger-input");
       const hasTriggerConnection = Boolean(triggerInputEdge);
-      
+
       // Only trigger on rising edge (false -> true transition) AND only if trigger is connected
       const isPulse = triggerInput && !lastTriggerState && hasTriggerConnection;
-      console.log(`StoreLocal ${id}: Pulse check - triggerInput: ${triggerInput}, lastTriggerState: ${lastTriggerState}, hasTriggerConnection: ${hasTriggerConnection}, isPulse: ${isPulse}`);
-      
+      console.log(
+        `StoreLocal ${id}: Pulse check - triggerInput: ${triggerInput}, lastTriggerState: ${lastTriggerState}, hasTriggerConnection: ${hasTriggerConnection}, isPulse: ${isPulse}`
+      );
+
       if (isPulse && isEnabled && inputData) {
         // Check if this is too soon after a connection was made
         const now = Date.now();
-        const timeSinceConnection = connectionInitTimeRef.current ? now - connectionInitTimeRef.current : Infinity;
-        
+        const timeSinceConnection = connectionInitTimeRef.current
+          ? now - connectionInitTimeRef.current
+          : Number.POSITIVE_INFINITY;
+
         // Only execute if enough time has passed since connection (debounce)
         if (timeSinceConnection > CONNECTION_DEBOUNCE_MS) {
-          console.log(`StoreLocal ${id}: Pulse EXECUTING operation. Time since connection: ${timeSinceConnection}ms`);
+          console.log(
+            `StoreLocal ${id}: Pulse EXECUTING operation. Time since connection: ${timeSinceConnection}ms`
+          );
           executeOperation();
         } else {
           // Log for debugging
-          console.log(`StoreLocal ${id}: Pulse BLOCKED by debounce. Time since connection: ${timeSinceConnection}ms, required: ${CONNECTION_DEBOUNCE_MS}ms`);
+          console.log(
+            `StoreLocal ${id}: Pulse BLOCKED by debounce. Time since connection: ${timeSinceConnection}ms, required: ${CONNECTION_DEBOUNCE_MS}ms`
+          );
         }
       }
-      
+
       // Always update last trigger state to track changes (this was missing proper sync)
       if (triggerInput !== lastTriggerState) {
         updateNodeData({ lastTriggerState: triggerInput });
       }
-    }, [triggerInput, lastTriggerState, isEnabled, inputData, executeOperation, updateNodeData, id, edges]);
+    }, [
+      triggerInput,
+      lastTriggerState,
+      isEnabled,
+      inputData,
+      executeOperation,
+      updateNodeData,
+      id,
+      edges,
+    ]);
 
     /* 🔄 Update active state based on input data - VISUAL ONLY, no operations */
     useEffect(() => {
       const hasValidData = inputData && Object.keys(inputData).length > 0;
-      
+
       // This effect only updates visual state, it should NOT trigger operations
       if (isEnabled) {
         if (isActive !== hasValidData) {
           updateNodeData({ isActive: Boolean(hasValidData) });
         }
-      } else {
-        if (isActive) {
-          updateNodeData({ isActive: false });
-        }
+      } else if (isActive) {
+        updateNodeData({ isActive: false });
       }
     }, [inputData, isEnabled, isActive, updateNodeData]);
 
@@ -1890,22 +2085,28 @@ const StoreLocalNode = memo(
       StoreLocalDataSchema,
       "StoreLocal",
       validation.data,
-      id,
+      id
     );
 
     // -------------------------------------------------------------------------
     // 4.7  Feature flag conditional rendering
     // -------------------------------------------------------------------------
-    
+
     // If flag is loading, show loading state
     if (flagState.isLoading) {
       // For small collapsed sizes (C1, C1W), hide text and center better
-      const isSmallNode = !isExpanded && (nodeData.collapsedSize === "C1" || nodeData.collapsedSize === "C1W");
-      
+      const isSmallNode =
+        !isExpanded &&
+        (nodeData.collapsedSize === "C1" || nodeData.collapsedSize === "C1W");
+
       return (
-        <Loading 
-          className={isSmallNode ? "flex items-center justify-center w-full h-full" : "p-4"} 
-          size={isSmallNode ? "w-6 h-6" : "w-8 h-8"} 
+        <Loading
+          className={
+            isSmallNode
+              ? "flex items-center justify-center w-full h-full"
+              : "p-4"
+          }
+          size={isSmallNode ? "w-6 h-6" : "w-8 h-8"}
           text={isSmallNode ? undefined : "Loading..."}
           showText={!isSmallNode}
         />
@@ -1939,45 +2140,21 @@ const StoreLocalNode = memo(
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (
-          <LabelNode nodeId={id} label={(nodeData as StoreLocalData).label || spec.displayName} />
+          <LabelNode
+            nodeId={id}
+            label={(nodeData as StoreLocalData).label || spec.displayName}
+          />
         )}
 
-        {!isExpanded ? (
-          <div 
+        {isExpanded ? (
+          <div
             className={`
-              ${CONTENT_CLASSES.collapsed} 
+              ${CONTENT_CLASSES.expanded}
               bg-node-store
               border-node-store
               text-node-store
-              ${!isEnabled ? CONTENT_CLASSES.disabled : ''}
+              ${isEnabled ? "" : CONTENT_CLASSES.disabled}
             `}
-          >
-            <div className="flex flex-col items-center justify-center gap-1 p-2">
-            <div className="flex content-center w-full">
-              <ModeToggleButton
-                className="w-full"
-                mode={mode}
-                onToggle={toggleMode}
-                disabled={!isEnabled}
-                isProcessing={isProcessing}
-              />
-              </div>
-              <CollapsedCounter
-                mode={mode}
-                inputData={inputData}
-              />
-            </div>
-          </div>
-        ) : (
-          <div 
-            className={`
-              ${CONTENT_CLASSES.expanded} 
-              bg-node-store
-              border-node-store
-              text-node-store
-              ${!isEnabled ? CONTENT_CLASSES.disabled : ''}
-            `}
-
           >
             {/* Fixed header section */}
             <div className={`${containerPadding} flex-shrink-0 mt-1`}>
@@ -1991,21 +2168,46 @@ const StoreLocalNode = memo(
                 />
               </div>
               <div className={`font-medium text-xs pt-0`}>
-                {mode === "store" ? "Will store" : mode === "delete" ? "Will delete" : "Output values"}
+                {mode === "store"
+                  ? "Will store"
+                  : mode === "delete"
+                    ? "Will delete"
+                    : "Output values"}
               </div>
             </div>
-            
-           
-            
+
             {/* Scrollable content section */}
-            <div className={`flex-1 flex flex-col items-stretch justify-start overflow-y-auto ${containerPadding} pt-0 nowheel w-full`}>
+            <div
+              className={`flex-1 flex flex-col items-stretch justify-start overflow-y-auto ${containerPadding} pt-0 nowheel w-full`}
+            >
               <DataPreview
                 data={inputData}
                 mode={mode}
-                maxItems={Infinity}
+                maxItems={Number.POSITIVE_INFINITY}
               />
-              
-
+            </div>
+          </div>
+        ) : (
+          <div
+            className={`
+              ${CONTENT_CLASSES.collapsed}
+              bg-node-store
+              border-node-store
+              text-node-store
+              ${isEnabled ? "" : CONTENT_CLASSES.disabled}
+            `}
+          >
+            <div className="flex flex-col items-center justify-center gap-1 p-2">
+              <div className="flex content-center w-full">
+                <ModeToggleButton
+                  className="w-full"
+                  mode={mode}
+                  onToggle={toggleMode}
+                  disabled={!isEnabled}
+                  isProcessing={isProcessing}
+                />
+              </div>
+              <CollapsedCounter mode={mode} inputData={inputData} />
             </div>
           </div>
         )}
@@ -2015,11 +2217,9 @@ const StoreLocalNode = memo(
           onToggle={toggleExpand}
           size="sm"
         />
-
-
       </>
     );
-  },
+  }
 );
 
 // -----------------------------------------------------------------------------
@@ -2043,7 +2243,7 @@ const StoreLocalNodeWithDynamicSpec = (props: NodeProps) => {
     [
       (nodeData as StoreLocalData).expandedSize,
       (nodeData as StoreLocalData).collapsedSize,
-    ],
+    ]
   );
 
   // Memoise the scaffolded component to keep focus
@@ -2052,7 +2252,7 @@ const StoreLocalNodeWithDynamicSpec = (props: NodeProps) => {
       withNodeScaffold(dynamicSpec, (p) => (
         <StoreLocalNode {...p} spec={dynamicSpec} />
       )),
-    [dynamicSpec],
+    [dynamicSpec]
   );
 
   return <ScaffoldedNode {...props} />;

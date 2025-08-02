@@ -39,7 +39,7 @@ interface EmailReaderData {
   // Account Configuration
   accountId: string;
   provider: EmailProviderType;
-  
+
   // Filtering Options
   filters: {
     sender?: string[];
@@ -47,37 +47,37 @@ interface EmailReaderData {
     dateRange?: {
       from?: Date;
       to?: Date;
-      relative?: 'last24h' | 'lastWeek' | 'lastMonth';
+      relative?: "last24h" | "lastWeek" | "lastMonth";
     };
-    readStatus?: 'all' | 'unread' | 'read';
+    readStatus?: "all" | "unread" | "read";
     hasAttachments?: boolean;
     contentSearch?: string;
   };
-  
+
   // Processing Options
   batchSize: number;
   maxMessages: number;
   includeAttachments: boolean;
   markAsRead: boolean;
-  
+
   // Real-time Monitoring
   enableRealTime: boolean;
   checkInterval: number; // minutes
-  
+
   // Output Configuration
-  outputFormat: 'full' | 'summary' | 'custom';
+  outputFormat: "full" | "summary" | "custom";
   customFields?: string[];
-  
+
   // State
   isActive: boolean;
   isEnabled: boolean;
   isExpanded: boolean;
   lastSync: number;
   processedCount: number;
-  
-  // Outputs
+
+  // output
   messages: EmailMessage[];
-  status: 'idle' | 'reading' | 'processing' | 'error';
+  status: "idle" | "reading" | "processing" | "error";
   error?: string;
 }
 ```
@@ -88,19 +88,28 @@ interface EmailReaderData {
 interface EmailServiceManager {
   // Core Operations
   connectToInbox(accountId: string): Promise<InboxConnection>;
-  readMessages(connection: InboxConnection, filters: MessageFilters): Promise<EmailMessage[]>;
-  monitorInbox(connection: InboxConnection, callback: (messages: EmailMessage[]) => void): void;
-  
+  readMessages(
+    connection: InboxConnection,
+    filters: MessageFilters
+  ): Promise<EmailMessage[]>;
+  monitorInbox(
+    connection: InboxConnection,
+    callback: (messages: EmailMessage[]) => void
+  ): void;
+
   // Message Operations
   markAsRead(messageId: string): Promise<void>;
   downloadAttachment(messageId: string, attachmentId: string): Promise<Buffer>;
-  
+
   // State Management
   getProcessedMessages(accountId: string): Promise<string[]>;
   markAsProcessed(accountId: string, messageIds: string[]): Promise<void>;
-  
+
   // Cache Management
-  getCachedMessages(accountId: string, filters: MessageFilters): Promise<EmailMessage[]>;
+  getCachedMessages(
+    accountId: string,
+    filters: MessageFilters
+  ): Promise<EmailMessage[]>;
   invalidateCache(accountId: string): Promise<void>;
 }
 ```
@@ -110,17 +119,23 @@ interface EmailServiceManager {
 ```typescript
 interface MessageProcessor {
   // Filtering
-  applyFilters(messages: EmailMessage[], filters: MessageFilters): EmailMessage[];
-  
+  applyFilters(
+    messages: EmailMessage[],
+    filters: MessageFilters
+  ): EmailMessage[];
+
   // Content Extraction
   extractContent(message: RawEmailMessage): EmailMessage;
   parseAttachments(message: RawEmailMessage): EmailAttachment[];
-  
+
   // Data Transformation
   transformToOutput(messages: EmailMessage[], format: OutputFormat): any;
-  
+
   // Batch Processing
-  processBatch(messages: EmailMessage[], batchSize: number): Promise<EmailMessage[]>;
+  processBatch(
+    messages: EmailMessage[],
+    batchSize: number
+  ): Promise<EmailMessage[]>;
 }
 ```
 
@@ -132,15 +147,24 @@ interface EmailProviderAdapter {
   connect(credentials: EmailCredentials): Promise<ProviderConnection>;
   disconnect(connection: ProviderConnection): Promise<void>;
   testConnection(connection: ProviderConnection): Promise<boolean>;
-  
+
   // Message Retrieval
-  getMessages(connection: ProviderConnection, options: RetrievalOptions): Promise<RawEmailMessage[]>;
-  getMessage(connection: ProviderConnection, messageId: string): Promise<RawEmailMessage>;
-  
+  getMessages(
+    connection: ProviderConnection,
+    options: RetrievalOptions
+  ): Promise<RawEmailMessage[]>;
+  getMessage(
+    connection: ProviderConnection,
+    messageId: string
+  ): Promise<RawEmailMessage>;
+
   // Real-time Support
   supportsRealTime(): boolean;
-  setupWebhook?(connection: ProviderConnection, callback: WebhookCallback): Promise<void>;
-  
+  setupWebhook?(
+    connection: ProviderConnection,
+    callback: WebhookCallback
+  ): Promise<void>;
+
   // Rate Limiting
   getRateLimit(): RateLimitInfo;
   handleRateLimit(error: RateLimitError): Promise<void>;
@@ -156,29 +180,29 @@ interface EmailMessage {
   id: string;
   threadId?: string;
   provider: EmailProviderType;
-  
+
   // Basic Info
   from: EmailAddress;
   to: EmailAddress[];
   cc?: EmailAddress[];
   bcc?: EmailAddress[];
   subject: string;
-  
+
   // Content
   textContent: string;
   htmlContent?: string;
   snippet: string;
-  
+
   // Metadata
   date: Date;
   isRead: boolean;
   isImportant?: boolean;
   labels?: string[];
-  
+
   // Attachments
   attachments: EmailAttachment[];
   hasAttachments: boolean;
-  
+
   // Processing State
   isProcessed: boolean;
   processedAt?: Date;
@@ -196,7 +220,7 @@ interface EmailAttachment {
   size: number;
   isInline: boolean;
   contentId?: string;
-  
+
   // Download Info
   downloadUrl?: string;
   isDownloaded: boolean;
@@ -213,31 +237,31 @@ interface MessageFilters {
     domains?: string[];
     exclude?: string[];
   };
-  
+
   subject?: {
     contains?: string;
     regex?: string;
     exclude?: string;
   };
-  
+
   dateRange?: {
     from?: Date;
     to?: Date;
     relative?: RelativeDateRange;
   };
-  
+
   content?: {
     search?: string;
     regex?: string;
     attachmentTypes?: string[];
   };
-  
+
   status?: {
     read?: boolean;
     important?: boolean;
     hasAttachments?: boolean;
   };
-  
+
   labels?: {
     include?: string[];
     exclude?: string[];
@@ -251,14 +275,14 @@ interface MessageFilters {
 
 ```typescript
 enum EmailReaderErrorType {
-  CONNECTION_FAILED = 'connection_failed',
-  AUTHENTICATION_EXPIRED = 'auth_expired',
-  RATE_LIMIT_EXCEEDED = 'rate_limit_exceeded',
-  INSUFFICIENT_PERMISSIONS = 'insufficient_permissions',
-  MESSAGE_NOT_FOUND = 'message_not_found',
-  PARSING_ERROR = 'parsing_error',
-  NETWORK_ERROR = 'network_error',
-  QUOTA_EXCEEDED = 'quota_exceeded'
+  CONNECTION_FAILED = "connection_failed",
+  AUTHENTICATION_EXPIRED = "auth_expired",
+  RATE_LIMIT_EXCEEDED = "rate_limit_exceeded",
+  INSUFFICIENT_PERMISSIONS = "insufficient_permissions",
+  MESSAGE_NOT_FOUND = "message_not_found",
+  PARSING_ERROR = "parsing_error",
+  NETWORK_ERROR = "network_error",
+  QUOTA_EXCEEDED = "quota_exceeded",
 }
 
 interface EmailReaderError {
@@ -300,17 +324,17 @@ interface EmailReaderError {
 
 ```typescript
 const mockEmailMessage: EmailMessage = {
-  id: 'msg_123',
-  provider: 'gmail',
-  from: { email: 'sender@example.com', name: 'Test Sender' },
-  to: [{ email: 'recipient@example.com', name: 'Test Recipient' }],
-  subject: 'Test Email Subject',
-  textContent: 'This is a test email content',
-  date: new Date('2024-01-15T10:30:00Z'),
+  id: "msg_123",
+  provider: "gmail",
+  from: { email: "sender@example.com", name: "Test Sender" },
+  to: [{ email: "recipient@example.com", name: "Test Recipient" }],
+  subject: "Test Email Subject",
+  textContent: "This is a test email content",
+  date: new Date("2024-01-15T10:30:00Z"),
   isRead: false,
   attachments: [],
   hasAttachments: false,
-  isProcessed: false
+  isProcessed: false,
 };
 ```
 
@@ -351,24 +375,28 @@ const mockEmailMessage: EmailMessage = {
 ## Implementation Phases
 
 ### Phase 1: Core Infrastructure (Week 1)
+
 - [ ] Basic emailReader node structure
 - [ ] Provider adapter interfaces
 - [ ] Message data models
 - [ ] Basic Gmail integration
 
 ### Phase 2: Message Processing (Week 2)
+
 - [ ] Message filtering system
 - [ ] Content extraction and parsing
 - [ ] Batch processing implementation
 - [ ] Cache management
 
 ### Phase 3: Real-time Features (Week 3)
+
 - [ ] Real-time monitoring system
 - [ ] Webhook support for supported providers
 - [ ] State management and persistence
 - [ ] Error handling and recovery
 
 ### Phase 4: Advanced Features (Week 4)
+
 - [ ] Outlook and IMAP support
 - [ ] Attachment handling
 - [ ] Performance optimizations
@@ -377,12 +405,14 @@ const mockEmailMessage: EmailMessage = {
 ## Dependencies
 
 ### External Dependencies
+
 - Gmail API SDK
 - Microsoft Graph SDK
 - IMAP client library
 - Email parsing libraries
 
 ### Internal Dependencies
+
 - emailAccount node (authentication)
 - Convex database (state storage)
 - Node core infrastructure
@@ -391,11 +421,13 @@ const mockEmailMessage: EmailMessage = {
 ## Migration and Compatibility
 
 ### Backward Compatibility
+
 - Maintain compatibility with existing emailAccount nodes
 - Support existing email workflow patterns
 - Graceful degradation for unsupported features
 
 ### Future Extensibility
+
 - Plugin architecture for new email providers
 - Extensible filtering system
 - Configurable output formats

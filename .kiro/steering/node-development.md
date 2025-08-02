@@ -12,18 +12,18 @@ AgenitiX uses a **NodeSpec System** for type-safe node definitions with automati
 
 ```typescript
 // Current Active Domains
-type ActiveDomain = 
-  | "create"    // Content creation and data generation
-  | "view"      // Data visualization and display
-  | "trigger"   // Event-driven and condition-based triggers
-  | "test"      // Testing, validation, and debugging
-  | "cycle"     // Loops, iterations, and repeated operations
-  | "store"     // Data storage and memory management
-  | "ai"        // AI model integration and processing
-  | "email"     // Email communication and management
-  | "time"      // Time-based operations and scheduling
-  | "flow"      // Flow control and workflow management
-  | "custom";   // Custom domain for specialized nodes
+type ActiveDomain =
+  | "create" // Content creation and data generation
+  | "view" // Data visualization and display
+  | "trigger" // Event-driven and condition-based triggers
+  | "test" // Testing, validation, and debugging
+  | "cycle" // Loops, iterations, and repeated operations
+  | "store" // Data storage and memory management
+  | "ai" // AI model integration and processing
+  | "email" // Email communication and management
+  | "time" // Time-based operations and scheduling
+  | "flow" // Flow control and workflow management
+  | "custom"; // Custom domain for specialized nodes
 ```
 
 ### Current Node Categories (Extensible)
@@ -31,16 +31,16 @@ type ActiveDomain =
 ```typescript
 // Current Active Categories from categories.ts
 export const CATEGORIES = {
-  CREATE: "CREATE",     // Content creation nodes
-  VIEW: "VIEW",         // Data visualization nodes  
-  TRIGGER: "TRIGGER",   // Event and condition triggers
-  TEST: "TEST",         // Testing and validation nodes
-  CYCLE: "CYCLE",       // Loop and iteration nodes
-  STORE: "STORE",       // Data storage nodes
-  AI: "AI",             // AI processing nodes
-  TIME: "TIME",         // Time-based operations
-  FLOW: "FLOW",         // Flow control nodes
-  EMAIL: "EMAIL",       // Email-specific operations
+  CREATE: "CREATE", // Content creation nodes
+  VIEW: "VIEW", // Data visualization nodes
+  TRIGGER: "TRIGGER", // Event and condition triggers
+  TEST: "TEST", // Testing and validation nodes
+  CYCLE: "CYCLE", // Loop and iteration nodes
+  STORE: "STORE", // Data storage nodes
+  AI: "AI", // AI processing nodes
+  TIME: "TIME", // Time-based operations
+  FLOW: "FLOW", // Flow control nodes
+  EMAIL: "EMAIL", // Email-specific operations
 } as const;
 
 export type NodeCategory = (typeof CATEGORIES)[keyof typeof CATEGORIES];
@@ -54,49 +54,49 @@ export type NodeCategory = (typeof CATEGORIES)[keyof typeof CATEGORIES];
 // features/business-logic-modern/infrastructure/node-core/NodeSpec.ts
 export interface NodeSpec {
   // Core Identification
-  kind: string;                    // e.g., 'createText', 'emailAccount'
-  displayName: string;             // Human-readable name
-  label?: string;                  // Optional custom instance label
-  category: NodeCategory;          // Functional category (CREATE, VIEW, etc.)
-  
+  kind: string; // e.g., 'createText', 'emailAccount'
+  displayName: string; // Human-readable name
+  label?: string; // Optional custom instance label
+  category: NodeCategory; // Functional category (CREATE, VIEW, etc.)
+
   // Visual Configuration
   size: {
-    expanded: typeof EXPANDED_SIZES[keyof typeof EXPANDED_SIZES];   // VE1, VE2, FE1, etc.
-    collapsed: typeof COLLAPSED_SIZES[keyof typeof COLLAPSED_SIZES]; // C1, C1W, C2, C3
+    expanded: (typeof EXPANDED_SIZES)[keyof typeof EXPANDED_SIZES]; // VE1, VE2, FE1, etc.
+    collapsed: (typeof COLLAPSED_SIZES)[keyof typeof COLLAPSED_SIZES]; // C1, C1W, C2, C3
   };
-  
+
   // Data Flow
-  handles: NodeHandleSpec[];       // Input/output connection points
+  handles: NodeHandleSpec[]; // Input/output connection points
   initialData: Record<string, any>; // Default data for new instances
-  
+
   // Schema & Controls
-  dataSchema?: z.ZodSchema<any>;   // Zod schema for type safety
-  controls?: ControlsConfig;       // Auto-generated inspector controls
-  
+  dataSchema?: z.ZodSchema<any>; // Zod schema for type safety
+  controls?: ControlsConfig; // Auto-generated inspector controls
+
   // Inspector Configuration
   inspector: {
-    key: string;                   // Inspector panel identifier
+    key: string; // Inspector panel identifier
   };
-  
+
   // Runtime & Execution
   runtime?: {
-    execute?: string;              // Execution handler identifier
+    execute?: string; // Execution handler identifier
   };
-  version?: number;                // Schema version for migrations
-  
+  version?: number; // Schema version for migrations
+
   // Memory & Caching
-  memory?: NodeMemoryConfig;       // Persistent cache configuration
-  
+  memory?: NodeMemoryConfig; // Persistent cache configuration
+
   // Metadata
-  icon?: string;                   // Lucide icon name (e.g., 'Mail', 'FileText')
-  author?: string;                 // Node creator
-  description?: string;            // Detailed description
-  feature?: string;                // Feature group (e.g., 'email', 'ai', 'base')
-  tags?: string[];                 // Searchable tags
-  
+  icon?: string; // Lucide icon name (e.g., 'Mail', 'FileText')
+  author?: string; // Node creator
+  description?: string; // Detailed description
+  feature?: string; // Feature group (e.g., 'email', 'ai', 'base')
+  tags?: string[]; // Searchable tags
+
   // Feature Flags & Theming
   featureFlag?: FeatureFlagConfig; // Feature flag integration
-  theming?: ThemingConfig;         // Dark mode overrides
+  theming?: ThemingConfig; // Dark mode overrides
   receivedData?: ReceivedDataConfig; // Data handling configuration
 }
 ```
@@ -105,10 +105,10 @@ export interface NodeSpec {
 
 ```typescript
 export interface NodeHandleSpec {
-  id: string;                      // Unique handle identifier
-  dataType?: string;               // Legacy data type code
-  tsSymbol?: string;               // TypeScript symbol for type safety
-  code?: string;                   // Fallback code when tsSymbol provided
+  id: string; // Unique handle identifier
+  dataType?: string; // Legacy data type code
+  tsSymbol?: string; // TypeScript symbol for type safety
+  code?: string; // Fallback code when tsSymbol provided
   position: "top" | "bottom" | "left" | "right";
   type: "source" | "target";
 }
@@ -118,11 +118,12 @@ export interface NodeHandleSpec {
 
 ```typescript
 export interface ControlsConfig {
-  autoGenerate?: boolean;          // Enable auto-generation from schema
+  autoGenerate?: boolean; // Enable auto-generation from schema
   customFields?: ControlFieldConfig[]; // Custom field overrides
-  excludeFields?: string[];        // Fields to exclude from auto-generation
-  customComponent?: string;        // Complete custom control override
-  fieldGroups?: Array<{           // Group related fields
+  excludeFields?: string[]; // Fields to exclude from auto-generation
+  customComponent?: string; // Complete custom control override
+  fieldGroups?: Array<{
+    // Group related fields
     title: string;
     fields: string[];
     collapsible?: boolean;
@@ -180,20 +181,20 @@ export const EmailAccountDataSchema = z.object({
   provider: z.enum(["gmail", "outlook", "imap", "smtp"]).default("gmail"),
   email: z.string().default(""),
   displayName: z.string().default(""),
-  
+
   // Connection State
   isConfigured: z.boolean().default(false),
   isConnected: z.boolean().default(false),
   connectionStatus: z.enum(["disconnected", "connecting", "connected", "error"]).default("disconnected"),
-  
+
   // UI State
   isEnabled: SafeSchemas.boolean(true),
   isActive: SafeSchemas.boolean(false),
   isExpanded: SafeSchemas.boolean(false),
   expandedSize: SafeSchemas.text("VE2"),
   collapsedSize: SafeSchemas.text("C2"),
-  
-  // Outputs
+
+  // output
   accountOutput: z.string().default(""),
   statusOutput: SafeSchemas.boolean(false),
 }).passthrough();
@@ -223,7 +224,7 @@ function createDynamicSpec(data: EmailAccountData): NodeSpec {
         id: "account-output",
         code: "a",
         position: "right",
-        type: "source", 
+        type: "source",
         dataType: "JSON",
       },
       {
@@ -271,7 +272,7 @@ function createDynamicSpec(data: EmailAccountData): NodeSpec {
 // 3️⃣ Node Component
 const EmailAccountNode: React.FC<NodeProps<EmailAccountData>> = memo(({ data }) => {
   const { nodeData, updateNodeData } = useNodeData<EmailAccountData>();
-  
+
   return (
     <div className="email-account-node">
       {/* Node content here */}
@@ -288,37 +289,43 @@ export default withNodeScaffold<EmailAccountData>(EmailAccountNode, createDynami
 ## Size Configuration System
 
 ### Collapsed Sizes
+
 ```typescript
 export const COLLAPSED_SIZES = {
-  C1: { width: 60, height: 60 },    // Standard
-  C1W: { width: 120, height: 60 },  // Wide
-  C2: { width: 120, height: 120 },  // Large
-  C3: { width: 180, height: 180 },  // Extra Large
+  C1: { width: 60, height: 60 }, // Standard
+  C1W: { width: 120, height: 60 }, // Wide
+  C2: { width: 120, height: 120 }, // Large
+  C3: { width: 180, height: 180 }, // Extra Large
 } as const;
 ```
 
 ### Expanded Sizes
+
 ```typescript
 export const EXPANDED_SIZES = {
   // Fixed sizes
-  FE0: { width: 60, height: 60 },     // Fixed - Tiny
-  FE1: { width: 120, height: 120 },   // Fixed - Default
-  FE2: { width: 180, height: 180 },   // Fixed - Large
-  FE3: { width: 240, height: 240 },   // Fixed - Extra Large
-  
+  FE0: { width: 60, height: 60 }, // Fixed - Tiny
+  FE1: { width: 120, height: 120 }, // Fixed - Default
+  FE2: { width: 180, height: 180 }, // Fixed - Large
+  FE3: { width: 240, height: 240 }, // Fixed - Extra Large
+
   // Variable heights (auto-sizing)
-  VE0: { width: 60, height: "auto" },   // Variable - Tiny
-  VE1: { width: 120, height: "auto" },  // Variable - Default
-  VE2: { width: 180, height: "auto" },  // Variable - Large
-  VE3: { width: 240, height: "auto" },  // Variable - Extra Large
+  VE0: { width: 60, height: "auto" }, // Variable - Tiny
+  VE1: { width: 120, height: "auto" }, // Variable - Default
+  VE2: { width: 180, height: "auto" }, // Variable - Large
+  VE3: { width: 240, height: "auto" }, // Variable - Extra Large
 } as const;
 ```
 
 ## Schema-Driven Development
 
 ### Safe Schema Helpers
+
 ```typescript
-import { SafeSchemas, createSafeInitialData } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+import {
+  SafeSchemas,
+  createSafeInitialData,
+} from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
 
 // Use SafeSchemas for consistent defaults
 const schema = z.object({
@@ -360,7 +367,7 @@ Nodes are automatically discovered and registered through the file system. Each 
 ```typescript
 // features/business-logic-modern/node-domain/email/index.ts
 export { default as emailAccount } from "./emailAccount.node";
-export { default as emailReader } from "./emailReader.node"; 
+export { default as emailReader } from "./emailReader.node";
 export * from "./types";
 export * from "./utils";
 ```

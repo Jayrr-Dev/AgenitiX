@@ -9,12 +9,12 @@ jobs:
   release:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
-    
+
     permissions:
       contents: write
       issues: write
       pull-requests: write
-      
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
         run: |
           # Run version analysis and capture output
           pnpm version:analyze > version_output.txt 2>&1 || true
-          
+
           # Check if version was updated by looking for success message
           if grep -q "Version successfully updated" version_output.txt; then
             echo "version_updated=true" >> $GITHUB_OUTPUT
@@ -57,39 +57,39 @@ jobs:
             echo "version_updated=false" >> $GITHUB_OUTPUT
             echo "No version update needed"
           fi
-          
+
           # Show the output for debugging
           cat version_output.txt
 
       - name: Commit version changes
-        if: steps.version_check.outputs.version_updated == 'true'
+        if: steps.version_check.output.version_updated == 'true'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          
+
           # Add the updated version file
           git add features/business-logic-modern/infrastructure/versioning/version.ts
           git add .version-cache.json
-          
+
           # Commit with version info
-          git commit -m "chore: bump version to ${{ steps.version_check.outputs.new_version }} [skip ci]"
-          
+          git commit -m "chore: bump version to ${{ steps.version_check.output.new_version }} [skip ci]"
+
           # Push changes
           git push
 
       - name: Create GitHub Release
-        if: steps.version_check.outputs.version_updated == 'true'
+        if: steps.version_check.output.version_updated == 'true'
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ steps.version_check.outputs.new_version }}
-          release_name: Release v${{ steps.version_check.outputs.new_version }}
+          tag_name: v${{ steps.version_check.output.new_version }}
+          release_name: Release v${{ steps.version_check.output.new_version }}
           body: |
             Automatically generated release based on conventional commits.
-            
-            Version: ${{ steps.version_check.outputs.new_version }}
-            
+
+            Version: ${{ steps.version_check.output.new_version }}
+
             See commit history for detailed changes.
           draft: false
           prerelease: false
@@ -101,4 +101,4 @@ jobs:
         run: pnpm test || true # Allow tests to be empty for now
 
       - name: Lint
-        run: pnpm lint 
+        run: pnpm lint

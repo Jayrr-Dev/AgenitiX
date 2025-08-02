@@ -30,6 +30,7 @@ The AI Agent Node integrates Convex AI agents into the AgenitiX workflow platfor
 ### Integration with Convex AI Agent
 
 The node leverages the `@convex-dev/agent` package to:
+
 - Create and manage conversation threads
 - Process text through configured LLM models
 - Handle tool calls and context management
@@ -40,38 +41,42 @@ The node leverages the `@convex-dev/agent` package to:
 ### Node Data Schema
 
 ```typescript
-export const AiAgentDataSchema = z.object({
-  // AI Model Configuration
-  selectedProvider: z.enum(["openai", "anthropic", "custom"]).default("openai"),
-  selectedModel: z.string().default("gpt-4o-mini"),
-  customApiKey: z.string().optional(),
-  customEndpoint: z.string().optional(),
-  
-  // Agent Configuration
-  systemPrompt: z.string().default("You are a helpful assistant."),
-  maxSteps: z.number().default(1),
-  temperature: z.number().min(0).max(2).default(0.7),
-  maxTokens: z.number().optional(),
-  
-  // Input/Output State
-  userInput: z.string().nullable().default(null),
-  jsonInput: z.any().nullable().default(null),
-  isActive: z.boolean().default(false),
-  isProcessing: z.any().nullable().default(null), // Promise<string> | null
-  
-  // Thread Management
-  threadId: z.string().nullable().default(null),
-  conversationHistory: z.array(z.any()).default([]),
-  
-  // UI State
-  isEnabled: z.boolean().default(true),
-  isExpanded: z.boolean().default(false),
-  expandedSize: z.string().default("VE2"),
-  collapsedSize: z.string().default("C2"),
-  
-  // Output
-  outputs: z.string().nullable().default(null),
-}).passthrough();
+export const AiAgentDataSchema = z
+  .object({
+    // AI Model Configuration
+    selectedProvider: z
+      .enum(["openai", "anthropic", "custom"])
+      .default("openai"),
+    selectedModel: z.string().default("gpt-4o-mini"),
+    customApiKey: z.string().optional(),
+    customEndpoint: z.string().optional(),
+
+    // Agent Configuration
+    systemPrompt: z.string().default("You are a helpful assistant."),
+    maxSteps: z.number().default(1),
+    temperature: z.number().min(0).max(2).default(0.7),
+    maxTokens: z.number().optional(),
+
+    // Input/Output State
+    userInput: z.string().nullable().default(null),
+    jsonInput: z.any().nullable().default(null),
+    isActive: z.boolean().default(false),
+    isProcessing: z.any().nullable().default(null), // Promise<string> | null
+
+    // Thread Management
+    threadId: z.string().nullable().default(null),
+    conversationHistory: z.array(z.any()).default([]),
+
+    // UI State
+    isEnabled: z.boolean().default(true),
+    isExpanded: z.boolean().default(false),
+    expandedSize: z.string().default("VE2"),
+    collapsedSize: z.string().default("C2"),
+
+    // Output
+    output: z.string().nullable().default(null),
+  })
+  .passthrough();
 ```
 
 ### Handle Configuration
@@ -99,7 +104,7 @@ handles: [
     type: "source",
     dataType: "String",
   },
-]
+];
 ```
 
 ### Convex Integration Layer
@@ -136,24 +141,24 @@ export const processUserMessage = action({
   },
   handler: async (ctx, args) => {
     const agent = createAiAgent(args.agentConfig);
-    
+
     let threadId = args.threadId;
     if (!threadId) {
       const { _id } = await ctx.runMutation(
         components.agent.threads.createThread,
-        { 
+        {
           userId: "workflow-user", // Or get from context
           title: "AI Agent Conversation",
         }
       );
       threadId = _id;
     }
-    
+
     const { thread } = await agent.continueThread(ctx, { threadId });
     const result = await thread.generateText({
       prompt: args.userInput,
     });
-    
+
     return {
       threadId,
       response: result.text,
@@ -170,11 +175,11 @@ export const processUserMessage = action({
 The node uses a Promise-based approach to manage processing states:
 
 ```typescript
-type ProcessingState = 
-  | null                    // No active processing
-  | Promise<string>         // Processing in progress
-  | string                  // Completed successfully
-  | Error                   // Failed with error
+type ProcessingState =
+  | null // No active processing
+  | Promise<string> // Processing in progress
+  | string // Completed successfully
+  | Error; // Failed with error
 
 interface ProcessingContext {
   promise: Promise<string> | null;
@@ -202,7 +207,7 @@ interface ThreadContext {
 ```typescript
 enum AiAgentErrorType {
   NETWORK_ERROR = "NETWORK_ERROR",
-  AUTHENTICATION_ERROR = "AUTHENTICATION_ERROR", 
+  AUTHENTICATION_ERROR = "AUTHENTICATION_ERROR",
   RATE_LIMIT_ERROR = "RATE_LIMIT_ERROR",
   MODEL_ERROR = "MODEL_ERROR",
   VALIDATION_ERROR = "VALIDATION_ERROR",
@@ -244,14 +249,14 @@ describe("AiAgentNode", () => {
     it("should automatically manage isActive based on internal state");
     it("should ignore processing when isActive is false");
   });
-  
+
   describe("Processing State", () => {
     it("should set isProcessing to pending Promise when activated");
     it("should resolve Promise with AI response on success");
     it("should reject Promise with error on failure");
     it("should cancel processing when isActive becomes false");
   });
-  
+
   describe("Output Propagation", () => {
     it("should output AI response when processing succeeds");
     it("should output error message when processing fails");
@@ -296,24 +301,28 @@ describe("Workflow Integration", () => {
 ## Implementation Phases
 
 ### Phase 1: Core Node Structure
+
 - Basic node component with handles
 - Input/output data flow
 - Promise-based processing state
 - Basic UI with loading states
 
 ### Phase 2: Convex Integration
+
 - AI agent configuration
 - Thread management
 - Basic text processing
 - Error handling
 
 ### Phase 3: Advanced Features
+
 - Conversation context management
 - Streaming responses (future)
 - Advanced error recovery
 - Performance optimizations
 
 ### Phase 4: Production Readiness
+
 - Comprehensive testing
 - Monitoring and logging
 - Documentation
@@ -322,16 +331,18 @@ describe("Workflow Integration", () => {
 ## UI Design Specifications
 
 ### Collapsed Mode
+
 - **Size**: C2 (120x120px)
 - **Display**: Show selected AI provider icon in center
 - **Icon Mapping**:
   - OpenAI: OpenAI logo placeholder (🤖 for now)
-  - Anthropic: Anthropic logo placeholder (🧠 for now)  
+  - Anthropic: Anthropic logo placeholder (🧠 for now)
   - Custom: Generic AI/gear icon (⚙️ for now)
 - **Status Indicators**: Small processing indicator when active
 - **No Text**: Clean icon-only display
 
 ### Expanded Mode
+
 - **Size**: VE2 (180px width, auto height)
 - **AI Provider Selection**:
   - Dropdown/tabs for provider selection (OpenAI, Anthropic, Custom)
@@ -360,6 +371,7 @@ describe("Workflow Integration", () => {
 ## Configuration Options
 
 ### AI Provider Configuration
+
 - **OpenAI Models**: gpt-4o, gpt-4o-mini, gpt-3.5-turbo
 - **Anthropic Models**: claude-3-5-sonnet, claude-3-haiku
 - **Custom Provider**: User-defined endpoint and model
@@ -367,18 +379,21 @@ describe("Workflow Integration", () => {
 - **Model Parameters**: Temperature, max tokens, top-p (future)
 
 ### Agent Configuration
+
 - **System Prompt**: Large textarea for customizing agent behavior and personality
 - **Max Steps**: Control tool usage and processing complexity
 - **Context Window**: Manage conversation history length
 - **Response Format**: Text, JSON, structured output (future)
 
 ### Processing Configuration
+
 - **Timeout**: Maximum processing time before cancellation
 - **Retry Policy**: Configure retry attempts and backoff
 - **Error Handling**: Configure error reporting verbosity
 - **Streaming**: Enable/disable response streaming (future)
 
 ### UI Configuration
+
 - **Display Mode**: Collapsed vs expanded view
 - **Status Indicators**: Show/hide processing states
 - **Debug Mode**: Show detailed processing information

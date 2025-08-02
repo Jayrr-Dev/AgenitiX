@@ -116,7 +116,7 @@ export const EmailUpdaterDataSchema = z
     expandedSize: SafeSchemas.text("VE2"),
     collapsedSize: SafeSchemas.text("C2"),
 
-    // Outputs
+    // output
     updatedEmailIds: z.array(z.string()).default([]),
     successOutput: z.boolean().default(false),
     errorOutput: z.string().default(""),
@@ -478,7 +478,7 @@ const EmailUpdaterNode = memo(
     // 4.4  Effects
     // -------------------------------------------------------------------------
 
-    /** Update outputs when data changes */
+    /** Update output when data changes */
     useEffect(() => {
       if (isEnabled && emailIds.length > 0) {
         updateNodeData({

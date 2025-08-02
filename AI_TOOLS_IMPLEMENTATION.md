@@ -11,17 +11,20 @@ This implementation adds tool configuration support to the AI Agent system, allo
 **Purpose**: Provides tool selection and configuration interface for AI agents.
 
 **Features**:
+
 - ✅ Tool selection checkboxes (webSearch, database, email, fileSystem, calculator)
 - ✅ Tool-specific configuration options
 - ✅ Dynamic sizing (collapsed/expanded views)
 - ✅ Schema-driven validation with Zod
-- ✅ Outputs Tools data type for aiAgent consumption
+- ✅ output Tools data type for aiAgent consumption
 - ✅ Auto-disables when no tools are selected
 
 **Handles**:
+
 - Output: `tools-output` (Tools data type, right position)
 
 **Schema**:
+
 ```typescript
 {
   webSearch: boolean,
@@ -39,6 +42,7 @@ This implementation adds tool configuration support to the AI Agent system, allo
 ### 2. aiAgent Node Updates (`features/business-logic-modern/node-domain/ai/aiAgent.node.tsx`)
 
 **Added Features**:
+
 - ✅ Tools input handle: `tools-input` (Tools data type, bottom position)
 - ✅ `toolsInput` field in schema for raw tools JSON
 - ✅ `enabledTools` field in schema for parsed tools array
@@ -47,22 +51,25 @@ This implementation adds tool configuration support to the AI Agent system, allo
 - ✅ Pass enabledTools to Convex action via agentConfig
 
 **New Handle**:
+
 - Input: `tools-input` (Tools data type, bottom position)
 
 ### 3. Convex Backend Updates (`convex/aiAgent.ts`)
 
 **Added Features**:
+
 - ✅ `enabledTools` field in AiAgentConfig interface
 - ✅ `enabledTools` validation in processUserMessage action schema
 - ✅ `getEnabledTools()` function to convert tool configs to Convex Agent tools
 - ✅ Tool implementations for all 5 tool types:
   - **webSearch**: Search the web for information
-  - **database**: Query database records  
+  - **database**: Query database records
   - **email**: Send and read emails
   - **fileSystem**: Read and write files
   - **calculator**: Perform mathematical calculations
 
 **Tool Handler Pattern**:
+
 ```typescript
 tools.webSearch = {
   description: "Search the web for information",
@@ -80,6 +87,7 @@ tools.webSearch = {
 ### 4. Registration & Exports
 
 **Files Updated**:
+
 - ✅ `features/business-logic-modern/node-domain/ai/index.ts` - Export aiTools node
 - ✅ `features/business-logic-modern/node-domain/index.ts` - Already included aiTools
 - ✅ `features/business-logic-modern/infrastructure/node-registry/nodespec-registry.ts` - Already included aiTools
@@ -91,7 +99,7 @@ tools.webSearch = {
 [aiTools] --Tools--> [aiAgent] --String--> [Output]
     ↓
 ✅ webSearch
-✅ database  
+✅ database
 ❌ email
 ❌ fileSystem
 ❌ calculator
@@ -100,7 +108,7 @@ tools.webSearch = {
 ## Usage Flow
 
 1. **Configure Tools**: User selects tools in aiTools node (checkboxes)
-2. **Tools Config**: aiTools outputs JSON with enabled tools and their configs
+2. **Tools Config**: aiTools output JSON with enabled tools and their configs
 3. **Agent Receives**: aiAgent reads tools config via Tools handle
 4. **Parse Tools**: aiAgent parses JSON and updates enabledTools array
 5. **Convex Processing**: AI agent gets enabled tools during conversation
@@ -109,6 +117,7 @@ tools.webSearch = {
 ## Data Flow
 
 ### aiTools Output Format
+
 ```json
 {
   "enabledTools": [
@@ -121,7 +130,7 @@ tools.webSearch = {
       }
     },
     {
-      "type": "database", 
+      "type": "database",
       "name": "Database Query",
       "config": {
         "maxRows": 100,
@@ -135,6 +144,7 @@ tools.webSearch = {
 ```
 
 ### aiAgent Processing
+
 1. Receives tools JSON via `tools-input` handle
 2. Parses JSON in useEffect and updates `enabledTools` array
 3. Passes `enabledTools` to Convex action via `agentConfig.enabledTools`
@@ -142,26 +152,29 @@ tools.webSearch = {
 
 ## Tool Implementation Status
 
-| Tool | Status | Description | Config Options |
-|------|--------|-------------|----------------|
-| calculator | ✅ **Fully Working** | Safe math calculations | None |
-| webSearch | ✅ **Fully Working** | Real web search with fallback | maxResults |
+| Tool       | Status               | Description                   | Config Options |
+| ---------- | -------------------- | ----------------------------- | -------------- |
+| calculator | ✅ **Fully Working** | Safe math calculations        | None           |
+| webSearch  | ✅ **Fully Working** | Real web search with fallback | maxResults     |
 
 **Note**: Both tools are fully functional and production-ready!
 
 ## Next Steps
 
 ### Phase 1: Calculator Tool Complete ✅
+
 1. **Calculator Tool**: ✅ **Fully implemented** with safe math parser
-   - Supports: +, -, *, /, parentheses, decimals, negative numbers
+   - Supports: +, -, \*, /, parentheses, decimals, negative numbers
    - No eval() security risks
    - Proper error handling
 
 ### Future Phases: Additional Tools (Removed for Clean Testing)
+
 - Web Search, Database, Email, File System tools can be added later
 - Current focus: Test and perfect the calculator tool integration
 
 ### Phase 2: Advanced Features
+
 1. **Tool Permissions**: User-level tool access control
 2. **Tool Monitoring**: Usage tracking and rate limiting
 3. **Custom Tools**: Allow users to define custom tools
@@ -169,6 +182,7 @@ tools.webSearch = {
 5. **Tool Debugging**: Debug tool execution and results
 
 ### Phase 3: UI Enhancements
+
 1. **Tool Configuration UI**: Advanced config panels for each tool
 2. **Tool Results Display**: Show tool execution results in chat
 3. **Tool Usage Analytics**: Track which tools are used most
@@ -178,6 +192,7 @@ tools.webSearch = {
 ## Testing
 
 ### Manual Testing Steps
+
 1. Create aiTools node in flow editor
 2. Select some tools (webSearch, database)
 3. Create aiAgent node
@@ -186,12 +201,14 @@ tools.webSearch = {
 6. Execute flow and verify tools are available to AI
 
 ### Expected Behavior
+
 - aiTools node shows selected tool count in collapsed mode
 - aiAgent receives tools configuration
 - AI agent can call enabled tools during conversation
 - Tool results are incorporated into AI responses
 
 ## File Structure
+
 ```
 features/business-logic-modern/node-domain/ai/
 ├── aiAgent.node.tsx     # Updated with tools support
@@ -203,6 +220,7 @@ convex/
 ```
 
 ## Dependencies
+
 - Convex Agents framework
 - Zod for schema validation
 - React Flow for node connections

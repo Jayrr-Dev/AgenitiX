@@ -151,7 +151,7 @@ export const EmailDataSchema = z
     expandedSize: SafeSchemas.text("VE3"),
     collapsedSize: SafeSchemas.text("C2"),
 
-    // Outputs
+    // output
     structuredDataOutput: z.record(z.unknown()).optional(),
     formattedOutput: z.string().optional(),
     errorOutput: z.string().default(""),

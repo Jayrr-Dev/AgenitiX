@@ -3,7 +3,7 @@
  *
  * • Provides tool selection and configuration for Ai agents
  * • Schema-driven with checkboxes for tool selection
- * • Outputs Tools data type for Ai agent consumption
+ * • output Tools data type for Ai agent consumption
  * • Dynamic sizing and validation
  * • Auto-disables when no tools are selected
  *
@@ -11,40 +11,45 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import React, {
+import {
+  type ChangeEvent,
   memo,
   useCallback,
   useEffect,
   useMemo,
   useRef,
-  ChangeEvent,
 } from "react";
 import { z } from "zod";
 
+import { Loading } from "@/components/Loading";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
-import { Loading } from "@/components/Loading";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
 } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
 import {
   createNodeValidator,
   reportValidationError,
   useNodeDataValidation,
 } from "@/features/business-logic-modern/infrastructure/node-core/validation";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
-import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
   COLLAPSED_SIZES,
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { useStore } from "@xyflow/react";
-import { TOOL_DEFINITIONS, getGridLayout, getIconSize, getEnabledTools, generateToolsConfig } from "./tools";
+import {
+  TOOL_DEFINITIONS,
+  generateToolsConfig,
+  getEnabledTools,
+  getGridLayout,
+  getIconSize,
+} from "./tools";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -63,7 +68,7 @@ export const AiToolsDataSchema = z
     expandedSize: SafeSchemas.text("VE2"),
     collapsedSize: SafeSchemas.text("C2"),
 
-    // Outputs
+    // output
     toolsOutput: z.string().default(""),
 
     // Optional label
@@ -73,10 +78,7 @@ export const AiToolsDataSchema = z
 
 export type AiToolsData = z.infer<typeof AiToolsDataSchema>;
 
-const validateNodeData = createNodeValidator(
-  AiToolsDataSchema,
-  "AiTools",
-);
+const validateNodeData = createNodeValidator(AiToolsDataSchema, "AiTools");
 
 // -----------------------------------------------------------------------------
 // 2️⃣  Constants
@@ -93,7 +95,8 @@ const CONTENT = {
   collapsed: "flex items-center justify-center w-full h-full",
   header: "flex items-center justify-between mb-3",
   body: "flex-1 flex flex-col gap-2",
-  disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+  disabled:
+    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -102,8 +105,10 @@ const CONTENT = {
 
 function createDynamicSpec(data: AiToolsData): NodeSpec {
   // Calculate number of enabled tools
-  const enabledToolsCount = [data.calculator, data.webSearch].filter(Boolean).length;
-  
+  const enabledToolsCount = [data.calculator, data.webSearch].filter(
+    Boolean
+  ).length;
+
   // Dynamic collapsed size based on tool count
   let dynamicCollapsedSize: keyof typeof COLLAPSED_SIZES;
   if (enabledToolsCount === 0) {
@@ -121,9 +126,7 @@ function createDynamicSpec(data: AiToolsData): NodeSpec {
   const expanded =
     EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
     EXPANDED_SIZES.VE2;
-  const collapsed =
-    COLLAPSED_SIZES[dynamicCollapsedSize] ??
-    COLLAPSED_SIZES.C1;
+  const collapsed = COLLAPSED_SIZES[dynamicCollapsedSize] ?? COLLAPSED_SIZES.C1;
 
   return {
     kind: "aiTools",
@@ -249,16 +252,16 @@ const AiToolsNode = memo(
           updateNodeData({ toolsOutput: out });
         }
       },
-      [isActive, isEnabled, updateNodeData],
+      [isActive, isEnabled, updateNodeData]
     );
 
     /** Handle tool checkbox changes */
     const handleToolToggle = useCallback(
-      (toolName: keyof Pick<AiToolsData, 'calculator' | 'webSearch'>) =>
+      (toolName: keyof Pick<AiToolsData, "calculator" | "webSearch">) =>
         (e: ChangeEvent<HTMLInputElement>) => {
           updateNodeData({ [toolName]: e.target.checked });
         },
-      [updateNodeData],
+      [updateNodeData]
     );
 
     /** Memoized enabled tools list to prevent infinite loops */
@@ -275,20 +278,25 @@ const AiToolsNode = memo(
       const hasAnyToolSelected = calculator || webSearch;
 
       // If disabled, always set isActive to false
-      if (!isEnabled) {
-        if (isActive) updateNodeData({ isActive: false });
-      } else {
+      if (isEnabled) {
         if (isActive !== hasAnyToolSelected) {
           updateNodeData({ isActive: hasAnyToolSelected });
         }
-      }
+      } else if (isActive) updateNodeData({ isActive: false });
     }, [calculator, webSearch, isEnabled, isActive, updateNodeData]);
 
-    // Sync outputs with active and enabled state
+    // Sync output with active and enabled state
     useEffect(() => {
       const toolsConfig = generateToolsConfigData();
       propagate(toolsConfig);
-    }, [calculator, webSearch, isActive, isEnabled, generateToolsConfigData, propagate]);
+    }, [
+      calculator,
+      webSearch,
+      isActive,
+      isEnabled,
+      generateToolsConfigData,
+      propagate,
+    ]);
 
     // -------------------------------------------------------------------------
     // 4.6  Validation
@@ -301,12 +309,7 @@ const AiToolsNode = memo(
       });
     }
 
-    useNodeDataValidation(
-      AiToolsDataSchema,
-      "AiTools",
-      validation.data,
-      id,
-    );
+    useNodeDataValidation(AiToolsDataSchema, "AiTools", validation.data, id);
 
     // -------------------------------------------------------------------------
     // 4.7  Feature flag conditional rendering
@@ -316,11 +319,15 @@ const AiToolsNode = memo(
     if (flagState.isLoading) {
       // For small collapsed sizes (C1), hide text and center better
       const isSmallNode = !isExpanded && spec.size.collapsed.width === 60;
-      
+
       return (
-        <Loading 
-          className={isSmallNode ? "flex items-center justify-center w-full h-full" : "p-4"} 
-          size={isSmallNode ? "w-6 h-6" : "w-8 h-8"} 
+        <Loading
+          className={
+            isSmallNode
+              ? "flex items-center justify-center w-full h-full"
+              : "p-4"
+          }
+          size={isSmallNode ? "w-6 h-6" : "w-8 h-8"}
           text={isSmallNode ? undefined : "Loading..."}
           showText={!isSmallNode}
         />
@@ -347,49 +354,24 @@ const AiToolsNode = memo(
     return (
       <>
         {/* Editable label or icon - hide labels when collapsed */}
-        {!isExpanded ? (
-          // No icon or label when collapsed - show only tool icons
-          null
-        ) : (
+        {isExpanded ? (
           // Show full label when expanded
-          <LabelNode nodeId={id} label={(nodeData as AiToolsData).label || spec.displayName} />
-        )}
+          <LabelNode
+            nodeId={id}
+            label={(nodeData as AiToolsData).label || spec.displayName}
+          />
+        ) : // No icon or label when collapsed - show only tool icons
+        null}
 
-        {!isExpanded ? (
-          <div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ''}`}>
-            {(() => {
-              const gridLayout = getGridLayout(enabledToolsList.length);
-              const iconSize = getIconSize(enabledToolsList.length);
-
-              if (enabledToolsList.length > 0) {
-                // Show enabled tools in dynamic grid with proportional icon sizes
-                return (
-                  <div className={gridLayout}>
-                    {enabledToolsList.map(({ key, tool }) => (
-                      <div key={key} className="flex items-center justify-center text-primary">
-                        {renderLucideIcon(tool.icon, "", iconSize)}
-                      </div>
-                    ))}
-                  </div>
-                );
-              } else {
-                // Show default state when no tools enabled
-                return (
-                  <div className="flex flex-col items-center justify-center text-muted-foreground">
-                    <div className="mb-1">
-                      {renderLucideIcon("LuWrench", "", 20)}
-                    </div>
-                    <div className="text-xs text-center">No Tools</div>
-                  </div>
-                );
-              }
-            })()}
-          </div>
-        ) : (
-          <div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ''}`}>
+        {isExpanded ? (
+          <div
+            className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
+          >
             <div className="flex flex-col gap-1">
               {Object.entries(TOOL_DEFINITIONS).map(([key, tool]) => {
-                const isChecked = validation.data[key as keyof typeof TOOL_DEFINITIONS] as boolean;
+                const isChecked = validation.data[
+                  key as keyof typeof TOOL_DEFINITIONS
+                ] as boolean;
                 return (
                   <label
                     key={`aitools-${key}-${id}`}
@@ -409,7 +391,12 @@ const AiToolsNode = memo(
                     <input
                       type="checkbox"
                       checked={isChecked}
-                      onChange={handleToolToggle(key as keyof Pick<AiToolsData, 'calculator' | 'webSearch'>)}
+                      onChange={handleToolToggle(
+                        key as keyof Pick<
+                          AiToolsData,
+                          "calculator" | "webSearch"
+                        >
+                      )}
                       disabled={!isEnabled}
                       className="sr-only"
                     />
@@ -422,6 +409,41 @@ const AiToolsNode = memo(
               })}
             </div>
           </div>
+        ) : (
+          <div
+            className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
+          >
+            {(() => {
+              const gridLayout = getGridLayout(enabledToolsList.length);
+              const iconSize = getIconSize(enabledToolsList.length);
+
+              if (enabledToolsList.length > 0) {
+                // Show enabled tools in dynamic grid with proportional icon sizes
+                return (
+                  <div className={gridLayout}>
+                    {enabledToolsList.map(({ key, tool }) => (
+                      <div
+                        key={key}
+                        className="flex items-center justify-center text-primary"
+                      >
+                        {renderLucideIcon(tool.icon, "", iconSize)}
+                      </div>
+                    ))}
+                  </div>
+                );
+              } else {
+                // Show default state when no tools enabled
+                return (
+                  <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <div className="mb-1">
+                      {renderLucideIcon("LuWrench", "", 20)}
+                    </div>
+                    <div className="text-xs text-center">No Tools</div>
+                  </div>
+                );
+              }
+            })()}
+          </div>
         )}
 
         <ExpandCollapseButton
@@ -431,7 +453,7 @@ const AiToolsNode = memo(
         />
       </>
     );
-  },
+  }
 );
 
 // -----------------------------------------------------------------------------
@@ -448,7 +470,7 @@ const AiToolsNodeWithDynamicSpec = (props: NodeProps) => {
       (nodeData as AiToolsData).expandedSize,
       (nodeData as AiToolsData).calculator,
       (nodeData as AiToolsData).webSearch,
-    ],
+    ]
   );
 
   // Memoise the scaffolded component to keep focus
@@ -457,7 +479,7 @@ const AiToolsNodeWithDynamicSpec = (props: NodeProps) => {
       withNodeScaffold(dynamicSpec, (p) => (
         <AiToolsNode {...p} spec={dynamicSpec} />
       )),
-    [dynamicSpec],
+    [dynamicSpec]
   );
 
   return <ScaffoldedNode {...props} />;

@@ -9,16 +9,18 @@ inclusion: always
 **Rule**: Security by design. Every feature must consider security implications from the start.
 
 ### Core Security Principles
+
 1. **Defense in Depth**: Multiple layers of security controls
 2. **Least Privilege**: Users get minimum necessary permissions
 3. **Fail Securely**: Systems fail to secure state by default
 4. **Input Validation**: All inputs are validated and sanitized
-5. **Output Encoding**: All outputs are properly encoded
+5. **Output Encoding**: All output are properly encoded
 6. **Audit Logging**: All security events are logged
 
 ## Authentication & Authorization
 
 ### User Authentication Flow
+
 ```typescript
 // convex/auth.ts
 export const authenticateUser = mutation({
@@ -27,9 +29,12 @@ export const authenticateUser = mutation({
     // Rate limiting for auth attempts
     const recentAttempts = await ctx.db
       .query("auth_attempts")
-      .withIndex("by_email_and_time", (q) =>
-        q.eq("email", args.email)
-          .gte("createdAt", new Date(Date.now() - 300000)) // 5 minutes
+      .withIndex(
+        "by_email_and_time",
+        (q) =>
+          q
+            .eq("email", args.email)
+            .gte("createdAt", new Date(Date.now() - 300000)) // 5 minutes
       )
       .collect();
 
@@ -62,6 +67,7 @@ export const authenticateUser = mutation({
 ```
 
 ### Authorization Patterns
+
 ```typescript
 // Authorization middleware for Convex functions
 const requireAuth = async (ctx: ActionCtx) => {
@@ -73,26 +79,27 @@ const requireAuth = async (ctx: ActionCtx) => {
 };
 
 const requireResourceAccess = async (
-  ctx: ActionCtx, 
-  resourceId: string, 
+  ctx: ActionCtx,
+  resourceId: string,
   resourceType: string
 ) => {
   const identity = await requireAuth(ctx);
-  
+
   const resource = await ctx.db.get(resourceId);
   if (!resource) {
     throw new Error("Resource not found");
   }
-  
+
   if (resource.userId !== identity.subject) {
     throw new Error("Access denied");
   }
-  
+
   return resource;
 };
 ```
 
 ### Role-Based Access Control
+
 ```typescript
 // User roles and permissions
 type UserRole = "user" | "admin" | "super_admin";
@@ -114,9 +121,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: "all_email_templates", action: "read" },
     { resource: "user_management", action: "read" },
   ],
-  super_admin: [
-    { resource: "*", action: "*" },
-  ],
+  super_admin: [{ resource: "*", action: "*" }],
 };
 
 // Permission checking
@@ -126,9 +131,10 @@ const checkPermission = (
   action: string
 ): boolean => {
   const permissions = ROLE_PERMISSIONS[userRole];
-  return permissions.some(p => 
-    (p.resource === resource || p.resource === "*") &&
-    (p.action === action || p.action === "*")
+  return permissions.some(
+    (p) =>
+      (p.resource === resource || p.resource === "*") &&
+      (p.action === action || p.action === "*")
   );
 };
 ```
@@ -136,6 +142,7 @@ const checkPermission = (
 ## Input Validation & Sanitization
 
 ### Data Validation Patterns
+
 ```typescript
 // Validation utilities
 export const validateEmail = (email: string): boolean => {
@@ -162,28 +169,29 @@ export const sanitizeHtml = (html: string): string => {
 
 export const validateNodeInput = (input: any, spec: NodeInput): string[] => {
   const errors: string[] = [];
-  
+
   // Required field validation
   if (spec.required && !input) {
     errors.push(`${spec.name} is required`);
     return errors;
   }
-  
+
   // Type validation
   if (input && !validateType(input, spec.type)) {
     errors.push(`${spec.name} must be of type ${spec.type}`);
   }
-  
+
   // Pattern validation
   if (spec.pattern && !spec.pattern.test(input)) {
     errors.push(spec.message || `${spec.name} format is invalid`);
   }
-  
+
   return errors;
 };
 ```
 
 ### SQL Injection Prevention
+
 ```typescript
 // Always use parameterized queries in Convex
 export const getUserWorkflows = query({
@@ -202,6 +210,7 @@ export const getUserWorkflows = query({
 ```
 
 ### XSS Prevention
+
 ```typescript
 // React component with XSS protection
 const SafeTextDisplay: React.FC<{ content: string }> = ({ content }) => {
@@ -212,9 +221,9 @@ const SafeTextDisplay: React.FC<{ content: string }> = ({ content }) => {
 // For HTML content, use dangerouslySetInnerHTML with sanitization
 const SafeHtmlDisplay: React.FC<{ htmlContent: string }> = ({ htmlContent }) => {
   const sanitizedHtml = sanitizeHtml(htmlContent);
-  
+
   return (
-    <div 
+    <div
       dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
       className="safe-html-content"
     />
@@ -225,6 +234,7 @@ const SafeHtmlDisplay: React.FC<{ htmlContent: string }> = ({ htmlContent }) => 
 ## Data Protection
 
 ### Sensitive Data Handling
+
 ```typescript
 // Environment variables for sensitive data
 const CONFIG = {
@@ -251,14 +261,14 @@ export const encryptSensitiveData = async (data: string): Promise<string> => {
     false,
     ["encrypt"]
   );
-  
+
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encrypted = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     key,
     encoder.encode(data)
   );
-  
+
   return JSON.stringify({
     iv: Array.from(iv),
     data: Array.from(new Uint8Array(encrypted)),
@@ -267,6 +277,7 @@ export const encryptSensitiveData = async (data: string): Promise<string> => {
 ```
 
 ### Data Retention & Privacy
+
 ```typescript
 // Data retention policies
 const DATA_RETENTION_POLICIES = {
@@ -280,23 +291,28 @@ const DATA_RETENTION_POLICIES = {
 export const cleanupExpiredData = action({
   handler: async (ctx) => {
     const now = new Date();
-    
+
     // Clean up email logs older than 90 days
     const expiredEmailLogs = await ctx.db
       .query("email_logs")
-      .filter((q) => q.lt(q.field("createdAt"), new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)))
+      .filter((q) =>
+        q.lt(
+          q.field("createdAt"),
+          new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+        )
+      )
       .collect();
-    
+
     for (const log of expiredEmailLogs) {
       await ctx.db.delete(log._id);
     }
-    
+
     // Clean up expired auth tokens
     const expiredTokens = await ctx.db
       .query("auth_tokens")
       .filter((q) => q.lt(q.field("expiresAt"), now))
       .collect();
-    
+
     for (const token of expiredTokens) {
       await ctx.db.delete(token._id);
     }
@@ -307,6 +323,7 @@ export const cleanupExpiredData = action({
 ## API Security
 
 ### Rate Limiting
+
 ```typescript
 // Rate limiting implementation
 export const rateLimit = async (
@@ -317,7 +334,7 @@ export const rateLimit = async (
 ): Promise<boolean> => {
   const now = Date.now();
   const windowStart = now - windowMs;
-  
+
   // Get recent requests
   const recentRequests = await ctx.db
     .query("rate_limit_logs")
@@ -325,29 +342,32 @@ export const rateLimit = async (
       q.eq("key", key).gte("timestamp", new Date(windowStart))
     )
     .collect();
-  
+
   if (recentRequests.length >= limit) {
     return false; // Rate limit exceeded
   }
-  
+
   // Log this request
   await ctx.db.insert("rate_limit_logs", {
     key,
     timestamp: new Date(now),
     userId: ctx.auth.getUserIdentity()?.subject,
   });
-  
+
   return true; // Request allowed
 };
 ```
 
 ### CORS Configuration
+
 ```typescript
 // Next.js API route CORS configuration
 import { NextRequest, NextResponse } from "next/server";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": process.env.ALLOWED_ORIGINS?.split(",") || ["http://localhost:3000"],
+  "Access-Control-Allow-Origin": process.env.ALLOWED_ORIGINS?.split(",") || [
+    "http://localhost:3000",
+  ],
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Max-Age": "86400",
@@ -360,25 +380,25 @@ export async function OPTIONS(request: NextRequest) {
 export async function POST(request: NextRequest) {
   // Validate origin
   const origin = request.headers.get("origin");
-  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || ["http://localhost:3000"];
-  
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [
+    "http://localhost:3000",
+  ];
+
   if (!allowedOrigins.includes(origin || "")) {
     return NextResponse.json({ error: "Unauthorized origin" }, { status: 403 });
   }
-  
+
   // Handle request
   const body = await request.json();
-  
-  return NextResponse.json(
-    { success: true },
-    { headers: corsHeaders }
-  );
+
+  return NextResponse.json({ success: true }, { headers: corsHeaders });
 }
 ```
 
 ## Security Monitoring
 
 ### Audit Logging
+
 ```typescript
 // Audit log structure
 interface AuditLog {
@@ -405,7 +425,7 @@ export const logAuditEvent = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    
+
     await ctx.db.insert("audit_logs", {
       userId: identity?.subject || "anonymous",
       action: args.action,
@@ -421,6 +441,7 @@ export const logAuditEvent = mutation({
 ```
 
 ### Security Headers
+
 ```typescript
 // Next.js security headers configuration
 // next.config.ts
@@ -478,23 +499,23 @@ module.exports = {
 ## Error Handling & Information Disclosure
 
 ### Secure Error Responses
+
 ```typescript
 // Secure error handling
 export const handleError = (error: unknown, context: string): never => {
   // Log the full error for debugging
   console.error(`Error in ${context}:`, error);
-  
+
   // Don't expose internal details to users
-  const userMessage = error instanceof Error 
-    ? error.message 
-    : "An unexpected error occurred";
-  
+  const userMessage =
+    error instanceof Error ? error.message : "An unexpected error occurred";
+
   // Send to Sentry for monitoring
   Sentry.captureException(error, {
     tags: { context },
     extra: { error },
   });
-  
+
   throw new Error(userMessage);
 };
 ```

@@ -118,11 +118,11 @@ export const EmailReaderDataSchema = z
     expandedSize: SafeSchemas.text("VE2"),
     collapsedSize: SafeSchemas.text("C2"),
 
-    // Outputs
+    // output
     messages: z.array(z.any()).default([]), // EmailMessage[]
     messageCount: z.number().default(0),
     emailsOutput: z.string().default(""), // JSON string of emails for output
-    outputs: z.string().default(""), // For compatibility with viewText node
+    output: z.string().default(""), // For compatibility with viewText node
     statusOutput: SafeSchemas.boolean(false),
     label: z.string().optional(), // User-editable node label
   })
@@ -239,7 +239,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
       messages: [],
       messageCount: 0,
       emailsOutput: "",
-      outputs: "",
+      output: "",
       statusOutput: false,
     }),
     dataSchema: EmailReaderDataSchema,
@@ -250,7 +250,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
         "messages",
         "messageCount",
         "emailsOutput",
-        "outputs",
+        "output",
         "statusOutput",
         "expandedSize",
         "collapsedSize",
@@ -624,7 +624,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
         messageCount: emails.length,
         messages: emails,
         emailsOutput: JSON.stringify(emails), // Raw data
-        outputs: JSON.stringify(formattedEmails, null, 2), // Formatted for viewText
+        output: JSON.stringify(formattedEmails, null, 2), // Formatted for viewText
         statusOutput: true,
       });
 
@@ -655,7 +655,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // 4.6  Effects
   // -------------------------------------------------------------------------
 
-  /** Update outputs when message state changes */
+  /** Update output when message state changes */
   useEffect(() => {
     if (isEnabled && isConnected) {
       updateNodeData({

@@ -9,14 +9,14 @@ Unified handle-based output system for all node data propagation. Provides singl
 ### Core Components
 
 **1. `handleOutputUtils.ts`** - Utilities for ID normalization and output generation
-**2. Object-based `outputs` field** - All nodes store outputs as plain objects for Convex serialization
+**2. Object-based `output` field** - All nodes store output as plain objects for Convex serialization
 **3. Unified input reading** - All consuming nodes use consistent priority system for input detection
 
 ### Data Flow
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Source Node   │────│   outputs: {}    │────│  Target Node    │
+│   Source Node   │────│   output: {}    │────│  Target Node    │
 │                 │    │ {cleanId:value}  │    │                 │
 │ Any Node Type   │────│ "output": value  │────│ Unified input   │
 │ Multiple handles│    │ "top": true      │    │ priority system │
@@ -42,13 +42,13 @@ Unified handle-based output system for all node data propagation. Provides singl
 
 ### Single Source of Truth
 
-- All nodes use only handle-based outputs
+- All nodes use only handle-based output
 - No secondary output fields or multiple propagation methods
 - Consistent data flow pattern across entire system
 
 ### Convex Compatibility
 
-- Outputs stored as plain objects (serializable)
+- output stored as plain objects (serializable)
 - Map-to-object conversion during generation
 - Direct object storage in Convex database
 
@@ -57,14 +57,14 @@ Unified handle-based output system for all node data propagation. Provides singl
 ### All Output Nodes
 
 ```typescript
-import { generateOutputsField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
+import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 
-// Single pattern for all nodes with outputs
+// Single pattern for all nodes with output
 useEffect(() => {
-  const outputsValue = generateOutputsField(spec, nodeData);
+  const outputValue = generateoutputField(spec, nodeData);
   // Convert Map to plain object for Convex compatibility
-  const outputsObject = Object.fromEntries(outputsValue.entries());
-  updateNodeData({ outputs: outputsObject });
+  const outputObject = Object.fromEntries(outputValue.entries());
+  updateNodeData({ output: outputObject });
 }, [spec.handles, nodeData, updateNodeData]);
 ```
 
@@ -74,13 +74,13 @@ useEffect(() => {
 import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 
 // Unified input reading priority system
-// 1. Handle-based outputs (primary)
-if (sourceData?.outputs && typeof sourceData.outputs === "object") {
+// 1. Handle-based output (primary)
+if (sourceData?.output && typeof sourceData.output === "object") {
   const handleId = incoming.sourceHandle
     ? normalizeHandleId(incoming.sourceHandle)
     : "output";
-  if (sourceData.outputs[handleId] !== undefined) {
-    inputValue = sourceData.outputs[handleId];
+  if (sourceData.output[handleId] !== undefined) {
+    inputValue = sourceData.output[handleId];
   }
 }
 // 2. Legacy fallbacks (compatibility)
@@ -92,8 +92,8 @@ if (sourceData?.outputs && typeof sourceData.outputs === "object") {
 ### Unified Format (Convex Compatible)
 
 ```typescript
-// All nodes store outputs as plain objects
-outputs: {
+// All nodes store output as plain objects
+output: {
   "output": true,    // single output nodes (triggerPulse, etc.)
   "top": true,       // multi-output nodes (flowConditional)
   "bottom": false    // multiple handles from same node
@@ -104,7 +104,7 @@ outputs: {
 
 ```typescript
 // Standard schema for all nodes
-outputs: z.record(z.string(), z.boolean()).optional();
+output: z.record(z.string(), z.boolean()).optional();
 ```
 
 ### Node Specification
@@ -119,7 +119,7 @@ handles: [
 
 ## API Reference
 
-### `generateHandleOutputs(spec, nodeData)`
+### `generateHandleoutput(spec, nodeData)`
 
 Generates Map with normalized handle IDs from node specification and data.
 
@@ -149,9 +149,9 @@ normalizeHandleId("resultOutput"); // → "result"
 normalizeHandleId("booleanInput"); // → "input"
 ```
 
-### `generateOutputsField(spec, nodeData)`
+### `generateoutputField(spec, nodeData)`
 
-Alias for `generateHandleOutputs` with identical functionality.
+Alias for `generateHandleoutput` with identical functionality.
 
 ## Migration Status
 
@@ -168,7 +168,7 @@ Alias for `generateHandleOutputs` with identical functionality.
 ```
 features/business-logic-modern/infrastructure/node-core/
 ├── handleOutputUtils.ts           # Core utilities
-├── HANDLE_OUTPUTS_SYSTEM.md      # Documentation
+├── HANDLE_output_SYSTEM.md      # Documentation
 └── NodeSpec.ts                    # Type definitions
 
 features/business-logic-modern/node-domain/

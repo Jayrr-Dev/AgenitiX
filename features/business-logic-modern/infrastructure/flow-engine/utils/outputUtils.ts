@@ -17,134 +17,138 @@ import { extractNodeValue, safeStringify } from "./nodeUtils";
  * Computes the output string for a given node
  */
 export function getNodeOutput(
-	node: AgenNode,
-	allNodes: AgenNode[],
-	allEdges: AgenEdge[]
+  node: AgenNode,
+  allNodes: AgenNode[],
+  allEdges: AgenEdge[]
 ): string | null {
-	// Use extractNodeValue for consistent value extraction
-	const extractedValue = extractNodeValue(node.data);
+  // Use extractNodeValue for consistent value extraction
+  const extractedValue = extractNodeValue(node.data);
 
-	if (node.type === "viewOutput" || node.type === "viewText") {
-		const incoming = allEdges
-			.filter((e) => e.target === node.id)
-			.map((e) => allNodes.find((n) => n.id === e.source))
-			.filter(Boolean) as AgenNode[];
+  if (node.type === "viewOutput" || node.type === "viewText") {
+    const incoming = allEdges
+      .filter((e) => e.target === node.id)
+      .map((e) => allNodes.find((n) => n.id === e.source))
+      .filter(Boolean) as AgenNode[];
 
-		const values = incoming
-			.map((n) => {
-				const value = extractNodeValue(n.data);
-				return value !== undefined && value !== null ? value : null;
-			})
-			.filter((value) => value !== null);
+    const values = incoming
+      .map((n) => {
+        const value = extractNodeValue(n.data);
+        return value !== undefined && value !== null ? value : null;
+      })
+      .filter((value) => value !== null);
 
-		return values.map((value) => formatValue(value)).join(", ");
-	}
+    return values.map((value) => formatValue(value)).join(", ");
+  }
 
-	// For all other node types, format the extracted value
-	if (extractedValue === undefined || extractedValue === null) {
-		return null;
-	}
+  // For all other node types, format the extracted value
+  if (extractedValue === undefined || extractedValue === null) {
+    return null;
+  }
 
-	// Handle special case where outputs is an object with text property (common in text nodes)
-	if (typeof extractedValue === "object" && extractedValue !== null && "text" in extractedValue) {
-		const textObj = extractedValue as { text: unknown };
-		return formatValue(textObj.text);
-	}
+  // Handle special case where output is an object with text property (common in text nodes)
+  if (
+    typeof extractedValue === "object" &&
+    extractedValue !== null &&
+    "text" in extractedValue
+  ) {
+    const textObj = extractedValue as { text: unknown };
+    return formatValue(textObj.text);
+  }
 
-	// Handle AI Agent specific case
-	if (node.type === "aiAgent") {
-		// For AI Agent, outputs should always be a string - if it's not, extract it
-		if (typeof extractedValue === "object" && extractedValue !== null) {
-			const obj = extractedValue as Record<string, unknown>;
+  // Handle AI Agent specific case
+  if (node.type === "aiAgent") {
+    // For AI Agent, output should always be a string - if it's not, extract it
+    if (typeof extractedValue === "object" && extractedValue !== null) {
+      const obj = extractedValue as Record<string, unknown>;
 
-			// Extract text from malformed output object
-			if (typeof obj.response === "string") {
-				return obj.response;
-			}
-			if (typeof obj.text === "string") {
-				return obj.text;
-			}
-			if (typeof obj.content === "string") {
-				return obj.content;
-			}
+      // Extract text from malformed output object
+      if (typeof obj.response === "string") {
+        return obj.response;
+      }
+      if (typeof obj.text === "string") {
+        return obj.text;
+      }
+      if (typeof obj.content === "string") {
+        return obj.content;
+      }
 
-			// Warn about data corruption and stringify as fallback
-			console.warn("AI Agent outputs contains object instead of string:", obj);
-			return JSON.stringify(extractedValue);
-		}
+      // Warn about data corruption and stringify as fallback
+      console.warn("AI Agent output contains object instead of string:", obj);
+      return JSON.stringify(extractedValue);
+    }
 
-		// If extractedValue is already a string, return it
-		if (typeof extractedValue === "string") {
-			return extractedValue;
-		}
+    // If extractedValue is already a string, return it
+    if (typeof extractedValue === "string") {
+      return extractedValue;
+    }
 
-		// Fallback to processingResult if outputs is null/undefined
-		if (!extractedValue && node.data && "processingResult" in node.data) {
-			return String(node.data.processingResult);
-		}
+    // Fallback to processingResult if output is null/undefined
+    if (!extractedValue && node.data && "processingResult" in node.data) {
+      return String(node.data.processingResult);
+    }
 
-		return String(extractedValue || "");
-	}
+    return String(extractedValue || "");
+  }
 
-	return formatValue(extractedValue);
+  return formatValue(extractedValue);
 }
 
 /**
  * Formats a value for display in the output
  */
 export function formatValue(value: unknown): string {
-	if (typeof value === "string") {
-		return value;
-	}
+  if (typeof value === "string") {
+    return value;
+  }
 
-	if (typeof value === "number") {
-		if (Number.isNaN(value)) {
-			return "NaN";
-		}
-		if (!Number.isFinite(value)) {
-			return value > 0 ? "Infinity" : "-Infinity";
-		}
-		return value.toString();
-	}
+  if (typeof value === "number") {
+    if (Number.isNaN(value)) {
+      return "NaN";
+    }
+    if (!Number.isFinite(value)) {
+      return value > 0 ? "Infinity" : "-Infinity";
+    }
+    return value.toString();
+  }
 
-	if (typeof value === "boolean") {
-		return value ? "true" : "false";
-	}
-	if (typeof value === "bigint") {
-		return `${value.toString()}n`;
-	}
+  if (typeof value === "boolean") {
+    return value ? "true" : "false";
+  }
+  if (typeof value === "bigint") {
+    return `${value.toString()}n`;
+  }
 
-	try {
-		return safeStringify(value);
-	} catch {
-		return String(value);
-	}
+  try {
+    return safeStringify(value);
+  } catch {
+    return String(value);
+  }
 }
 
 /**
  * Gets all incoming nodes for a given node
  */
 export function getIncomingNodes(
-	nodeId: string,
-	allNodes: AgenNode[],
-	allEdges: AgenEdge[]
+  nodeId: string,
+  allNodes: AgenNode[],
+  allEdges: AgenEdge[]
 ): AgenNode[] {
-	return allEdges
-		.filter((e) => e.target === nodeId)
-		.map((e) => allNodes.find((n) => n.id === e.source))
-		.filter(Boolean) as AgenNode[];
+  return allEdges
+    .filter((e) => e.target === nodeId)
+    .map((e) => allNodes.find((n) => n.id === e.source))
+    .filter(Boolean) as AgenNode[];
 }
 
 /**
  * Gets all outgoing nodes for a given node
  */
 export function getOutgoingNodes(
-	nodeId: string,
-	allNodes: AgenNode[],
-	allEdges: AgenEdge[]
+  nodeId: string,
+  allNodes: AgenNode[],
+  allEdges: AgenEdge[]
 ): AgenNode[] {
-	return allEdges
-		.filter((e) => e.source === nodeId)
-		.map((e) => allNodes.find((n) => n.id === e.target))
-		.filter(Boolean) as AgenNode[];
+  return allEdges
+    .filter((e) => e.source === nodeId)
+    .map((e) => allNodes.find((n) => n.id === e.target))
+    .filter(Boolean) as AgenNode[];
 }

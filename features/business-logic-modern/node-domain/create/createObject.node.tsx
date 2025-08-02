@@ -1,20 +1,20 @@
 /**
  * CreateObject Node - JSON object creation with schema validation
- * 
+ *
  * Creates and validates JSON objects with real-time editing and type safety.
  * Supports dynamic sizing, input connections, and automatic validation.
- * 
+ *
  * @example
- * <CreateObjectNode 
+ * <CreateObjectNode
  *   id="node-123"
  *   data={{ store: '{"key": "value"}' }}
  * />
  */
 
+import Editor from "@monaco-editor/react";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
-import Editor from "@monaco-editor/react";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
@@ -48,7 +48,7 @@ export const CreateObjectDataSchema = z
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
     inputs: SafeSchemas.optionalText().nullable().default(null),
-    outputs: SafeSchemas.optionalText(),
+    output: SafeSchemas.optionalText(),
     expandedSize: SafeSchemas.text("VE2"),
     collapsedSize: SafeSchemas.text("C1W"),
     label: z.string().optional(),
@@ -57,7 +57,10 @@ export const CreateObjectDataSchema = z
 
 export type CreateObjectData = z.infer<typeof CreateObjectDataSchema>;
 
-const validateNodeData = createNodeValidator(CreateObjectDataSchema, "CreateObject");
+const validateNodeData = createNodeValidator(
+  CreateObjectDataSchema,
+  "CreateObject"
+);
 
 // Constants
 const CATEGORY_TEXT = {
@@ -69,7 +72,8 @@ const CATEGORY_TEXT = {
 const CONTENT = {
   expanded: "p-4 w-full h-full flex flex-col",
   collapsed: "flex items-center justify-center w-full h-full",
-  disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+  disabled:
+    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
 
 // Performance constants
@@ -87,8 +91,12 @@ const createDynamicSpec = (() => {
       return specCache.get(cacheKey)!;
     }
 
-    const expanded = EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ?? EXPANDED_SIZES.VE2;
-    const collapsed = COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ?? COLLAPSED_SIZES.C1W;
+    const expanded =
+      EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
+      EXPANDED_SIZES.VE2;
+    const collapsed =
+      COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
+      COLLAPSED_SIZES.C1W;
 
     const spec: NodeSpec = {
       kind: "createObject",
@@ -118,12 +126,18 @@ const createDynamicSpec = (() => {
       initialData: createSafeInitialData(CreateObjectDataSchema, {
         store: "{}",
         inputs: null,
-        outputs: "",
+        output: "",
       }),
       dataSchema: CreateObjectDataSchema,
       controls: {
         autoGenerate: true,
-        excludeFields: ["isActive", "inputs", "outputs", "expandedSize", "collapsedSize"],
+        excludeFields: [
+          "isActive",
+          "inputs",
+          "output",
+          "expandedSize",
+          "collapsedSize",
+        ],
         customFields: [
           { key: "isEnabled", type: "boolean", label: "Enable" },
           {
@@ -138,7 +152,8 @@ const createDynamicSpec = (() => {
       },
       icon: "LuBraces",
       author: "Agenitix Team",
-      description: "Creates JSON objects with customizable structure and validation",
+      description:
+        "Creates JSON objects with customizable structure and validation",
       feature: "base",
       tags: ["content", "json", "object"],
       theming: {},
@@ -159,164 +174,172 @@ export const spec: NodeSpec = createDynamicSpec({
 // 4️⃣  React component – data propagation & rendering
 // -----------------------------------------------------------------------------
 
-const CreateObjectNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
-  // State management
-  const { nodeData, updateNodeData } = useNodeData(id, data);
-  const { showSuccess, showError, showWarning, showInfo } = useNodeToast(id);
+const CreateObjectNode = memo(
+  ({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
+    // State management
+    const { nodeData, updateNodeData } = useNodeData(id, data);
+    const { showSuccess, showError, showWarning, showInfo } = useNodeToast(id);
 
-  // Optimized state extraction - only re-compute when nodeData changes
-  const { isExpanded, isEnabled, isActive, store } = useMemo(() => {
-    const typedData = nodeData as CreateObjectData;
-    return {
-      isExpanded: typedData.isExpanded,
-      isEnabled: typedData.isEnabled,
-      isActive: typedData.isActive,
-      store: typedData.store,
-    };
-  }, [nodeData]);
+    // Optimized state extraction - only re-compute when nodeData changes
+    const { isExpanded, isEnabled, isActive, store } = useMemo(() => {
+      const typedData = nodeData as CreateObjectData;
+      return {
+        isExpanded: typedData.isExpanded,
+        isEnabled: typedData.isEnabled,
+        isActive: typedData.isActive,
+        store: typedData.store,
+      };
+    }, [nodeData]);
 
-  // Optimized store selectors - only subscribe to what we need
-  const nodes = useStore(useCallback((s) => s.nodes, []));
-  const edges = useStore(useCallback((s) => s.edges, []));
+    // Optimized store selectors - only subscribe to what we need
+    const nodes = useStore(useCallback((s) => s.nodes, []));
+    const edges = useStore(useCallback((s) => s.edges, []));
 
-  // Refs for performance
-  const lastOutputRef = useRef<string | null>(null);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const editorRef = useRef<any>(null);
+    // Refs for performance
+    const lastOutputRef = useRef<string | null>(null);
+    const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const editorRef = useRef<any>(null);
 
-  // JSON validity check
-  const isJsonValid = useMemo(() => {
-    if (!store || store.trim() === "") return true; // Empty is considered valid
-    try {
-      JSON.parse(store);
-      return true;
-    } catch {
-      return false;
-    }
-  }, [store]);
-
-  // Optimized callbacks
-  const toggleExpand = useCallback(() => {
-    updateNodeData({ isExpanded: !isExpanded });
-  }, [isExpanded, updateNodeData]);
-
-  // Debounced JSON parsing for better performance
-  const parseJsonSafely = useCallback((value: string, showToast = false) => {
-    try {
-      const parsed = JSON.parse(value);
-      if (showToast) {
-        showSuccess("Valid JSON", "Object parsed successfully");
+    // JSON validity check
+    const isJsonValid = useMemo(() => {
+      if (!store || store.trim() === "") return true; // Empty is considered valid
+      try {
+        JSON.parse(store);
+        return true;
+      } catch {
+        return false;
       }
-      return parsed;
-    } catch (error) {
-      if (showToast) {
-        showError("Invalid JSON", error instanceof Error ? error.message : "Failed to parse JSON");
+    }, [store]);
+
+    // Optimized callbacks
+    const toggleExpand = useCallback(() => {
+      updateNodeData({ isExpanded: !isExpanded });
+    }, [isExpanded, updateNodeData]);
+
+    // Debounced JSON parsing for better performance
+    const parseJsonSafely = useCallback(
+      (value: string, showToast = false) => {
+        try {
+          const parsed = JSON.parse(value);
+          if (showToast) {
+            showSuccess("Valid JSON", "Object parsed successfully");
+          }
+          return parsed;
+        } catch (error) {
+          if (showToast) {
+            showError(
+              "Invalid JSON",
+              error instanceof Error ? error.message : "Failed to parse JSON"
+            );
+          }
+          return value;
+        }
+      },
+      [showSuccess, showError]
+    );
+
+    const propagate = useCallback(
+      (value: string) => {
+        if (!(isActive && isEnabled)) return;
+
+        const parsed = parseJsonSafely(value, false); // Don't show toast immediately, basically silent parsing
+        const serialized = JSON.stringify(parsed);
+
+        if (serialized !== JSON.stringify(lastOutputRef.current)) {
+          lastOutputRef.current = parsed;
+          updateNodeData({ output: parsed });
+        }
+      },
+      [isActive, isEnabled, updateNodeData, parseJsonSafely]
+    );
+
+    const blockJsonWhenInactive = useCallback(() => {
+      if (!(isActive && isEnabled)) {
+        updateNodeData({
+          json: null,
+          data: null,
+          payload: null,
+          result: null,
+          response: null,
+        });
       }
-      return value;
-    }
-  }, [showSuccess, showError]);
+    }, [isActive, isEnabled, updateNodeData]);
 
+    // Optimized input computation with memoization
+    const computeInput = useCallback((): string | null => {
+      const jsonInputEdge = findEdgeByHandle(edges, id, "json-input");
+      const inputEdge = findEdgeByHandle(edges, id, "input");
+      const incoming = jsonInputEdge || inputEdge;
 
+      if (!incoming) return null;
 
-  const propagate = useCallback(
-    (value: string) => {
-      if (!(isActive && isEnabled)) return;
+      const src = nodes.find((n) => n.id === incoming.source);
+      if (!src) return null;
 
-      const parsed = parseJsonSafely(value, false); // Don't show toast immediately, basically silent parsing
-      const serialized = JSON.stringify(parsed);
+      const inputValue = src.data?.output ?? src.data?.store ?? src.data;
+      return typeof inputValue === "string"
+        ? inputValue
+        : JSON.stringify(inputValue || {});
+    }, [edges, nodes, id]);
 
-      if (serialized !== JSON.stringify(lastOutputRef.current)) {
-        lastOutputRef.current = parsed;
-        updateNodeData({ outputs: parsed });
-      }
-    },
-    [isActive, isEnabled, updateNodeData, parseJsonSafely]
-  );
+    // Monaco Editor change handler
+    const handleEditorChange = useCallback(
+      (value: string | undefined) => {
+        const newValue = value || "";
 
-  const blockJsonWhenInactive = useCallback(() => {
-    if (!(isActive && isEnabled)) {
-      updateNodeData({
-        json: null,
-        data: null,
-        payload: null,
-        result: null,
-        response: null,
-      });
-    }
-  }, [isActive, isEnabled, updateNodeData]);
+        // Clear existing timeout
+        if (debounceTimeoutRef.current) {
+          clearTimeout(debounceTimeoutRef.current);
+        }
 
-  // Optimized input computation with memoization
-  const computeInput = useCallback((): string | null => {
-    const jsonInputEdge = findEdgeByHandle(edges, id, "json-input");
-    const inputEdge = findEdgeByHandle(edges, id, "input");
-    const incoming = jsonInputEdge || inputEdge;
+        // Immediate UI update
+        updateNodeData({ store: newValue });
 
-    if (!incoming) return null;
+        // Debounced validation and propagation
+        debounceTimeoutRef.current = setTimeout(() => {
+          propagate(newValue === "{}" ? "{}" : newValue);
+        }, DEBOUNCE_DELAY);
+      },
+      [updateNodeData, propagate]
+    );
 
-    const src = nodes.find((n) => n.id === incoming.source);
-    if (!src) return null;
+    // Monaco Editor blur handler
+    const handleEditorBlur = useCallback(() => {
+      // Get the current value directly from the editor to avoid stale state
+      const currentValue = editorRef.current?.getValue() || store;
+      // Show validation toast when editor loses focus, basically feedback on blur
+      parseJsonSafely(currentValue, true);
+    }, [parseJsonSafely, store]);
 
-    const inputValue = src.data?.outputs ?? src.data?.store ?? src.data;
-    return typeof inputValue === "string" ? inputValue : JSON.stringify(inputValue || {});
-  }, [edges, nodes, id]);
+    // Monaco Editor mount handler
+    const handleEditorDidMount = useCallback(
+      (editor: any, monaco: any) => {
+        editorRef.current = editor;
 
-  // Monaco Editor change handler
-  const handleEditorChange = useCallback(
-    (value: string | undefined) => {
-      const newValue = value || "";
+        // Configure JSON validation and formatting
+        monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+          validate: true,
+          allowComments: false,
+          schemas: [],
+          enableSchemaRequest: false,
+        });
 
-      // Clear existing timeout
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
+        // Add blur event listener for toast validation
+        editor.onDidBlurEditorText(() => {
+          handleEditorBlur();
+        });
 
-      // Immediate UI update
-      updateNodeData({ store: newValue });
+        // Fix tooltip positioning and styling
+        setTimeout(() => {
+          const editorElement = editor.getDomNode();
+          if (editorElement) {
+            // Ensure the editor container has proper positioning context
+            editorElement.style.position = "relative";
+            editorElement.style.zIndex = "9999";
 
-      // Debounced validation and propagation
-      debounceTimeoutRef.current = setTimeout(() => {
-        propagate(newValue === "{}" ? "{}" : newValue);
-      }, DEBOUNCE_DELAY);
-    },
-    [updateNodeData, propagate]
-  );
-
-  // Monaco Editor blur handler
-  const handleEditorBlur = useCallback(() => {
-    // Get the current value directly from the editor to avoid stale state
-    const currentValue = editorRef.current?.getValue() || store;
-    // Show validation toast when editor loses focus, basically feedback on blur
-    parseJsonSafely(currentValue, true);
-  }, [parseJsonSafely, store]);
-
-  // Monaco Editor mount handler
-  const handleEditorDidMount = useCallback((editor: any, monaco: any) => {
-    editorRef.current = editor;
-    
-    // Configure JSON validation and formatting
-    monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
-      validate: true,
-      allowComments: false,
-      schemas: [],
-      enableSchemaRequest: false,
-    });
-
-    // Add blur event listener for toast validation
-    editor.onDidBlurEditorText(() => {
-      handleEditorBlur();
-    });
-
-    // Fix tooltip positioning and styling
-    setTimeout(() => {
-      const editorElement = editor.getDomNode();
-      if (editorElement) {
-        // Ensure the editor container has proper positioning context
-        editorElement.style.position = 'relative';
-        editorElement.style.zIndex = '9999';
-        
-        // Add custom CSS for tooltip styling
-        const style = document.createElement('style');
-        style.textContent = `
+            // Add custom CSS for tooltip styling
+            const style = document.createElement("style");
+            style.textContent = `
           .monaco-hover {
             position: fixed !important;
             font-size: 10px !important;
@@ -334,217 +357,265 @@ const CreateObjectNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
             font-size: 10px !important;
           }
         `;
-        document.head.appendChild(style);
-        
-        // Find and adjust existing tooltip containers
-        const tooltipContainers = document.querySelectorAll('.monaco-hover');
-        tooltipContainers.forEach(container => {
-          const htmlContainer = container as HTMLElement;
-          htmlContainer.style.position = 'fixed';
-          htmlContainer.style.fontSize = '10px';
-        });
+            document.head.appendChild(style);
+
+            // Find and adjust existing tooltip containers
+            const tooltipContainers =
+              document.querySelectorAll(".monaco-hover");
+            tooltipContainers.forEach((container) => {
+              const htmlContainer = container as HTMLElement;
+              htmlContainer.style.position = "fixed";
+              htmlContainer.style.fontSize = "10px";
+            });
+          }
+        }, 100);
+      },
+      [handleEditorBlur]
+    );
+
+    // Optimized effects with proper dependencies
+    useEffect(() => {
+      const inputVal = computeInput();
+      const currentInputs = (nodeData as CreateObjectData).inputs;
+
+      if (inputVal !== currentInputs) {
+        updateNodeData({ inputs: inputVal });
       }
-    }, 100);
-  }, [handleEditorBlur]);
+    }, [computeInput, nodeData, updateNodeData]);
 
-  // Optimized effects with proper dependencies
-  useEffect(() => {
-    const inputVal = computeInput();
-    const currentInputs = (nodeData as CreateObjectData).inputs;
+    useEffect(() => {
+      const currentInputs = (nodeData as CreateObjectData).inputs;
 
-    if (inputVal !== currentInputs) {
-      updateNodeData({ inputs: inputVal });
-    }
-  }, [computeInput, nodeData, updateNodeData]);
-
-  useEffect(() => {
-    const currentInputs = (nodeData as CreateObjectData).inputs;
-
-    if (currentInputs !== null) {
-      const nextEnabled = Boolean(currentInputs?.trim());
-      if (nextEnabled !== isEnabled) {
-        updateNodeData({ isEnabled: nextEnabled });
-        if (nextEnabled) {
-          showInfo("Node enabled", "Input connection detected");
-        } else {
-          showWarning("Node disabled", "No input connection");
+      if (currentInputs !== null) {
+        const nextEnabled = Boolean(currentInputs?.trim());
+        if (nextEnabled !== isEnabled) {
+          updateNodeData({ isEnabled: nextEnabled });
+          if (nextEnabled) {
+            showInfo("Node enabled", "Input connection detected");
+          } else {
+            showWarning("Node disabled", "No input connection");
+          }
         }
       }
-    }
-  }, [nodeData, isEnabled, updateNodeData, showInfo, showWarning]);
+    }, [nodeData, isEnabled, updateNodeData, showInfo, showWarning]);
 
-  useEffect(() => {
-    const currentStore = store ?? "";
-    const hasValidStore = currentStore.trim().length > 0 && currentStore !== "{}";
-    const shouldBeActive = isEnabled && hasValidStore;
+    useEffect(() => {
+      const currentStore = store ?? "";
+      const hasValidStore =
+        currentStore.trim().length > 0 && currentStore !== "{}";
+      const shouldBeActive = isEnabled && hasValidStore;
 
-    if (isActive !== shouldBeActive) {
-      updateNodeData({ isActive: shouldBeActive });
-    }
-  }, [store, isEnabled, isActive, updateNodeData]);
-
-  useEffect(() => {
-    const currentStore = store ?? "";
-    const actualContent = currentStore === "{}" ? "{}" : currentStore;
-
-    if (isActive && isEnabled) {
-      propagate(actualContent);
-    } else {
-      blockJsonWhenInactive();
-    }
-  }, [isActive, isEnabled, store, propagate, blockJsonWhenInactive]);
-
-  // Cleanup debounce timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
+      if (isActive !== shouldBeActive) {
+        updateNodeData({ isActive: shouldBeActive });
       }
-    };
-  }, []);
+    }, [store, isEnabled, isActive, updateNodeData]);
 
-  // Validation (memoized for performance)
-  const validation = useMemo(() => validateNodeData(nodeData), [nodeData]);
+    useEffect(() => {
+      const currentStore = store ?? "";
+      const actualContent = currentStore === "{}" ? "{}" : currentStore;
 
-  if (!validation.success) {
-    reportValidationError("CreateObject", id, validation.errors, {
-      originalData: validation.originalData,
-      component: "CreateObjectNode",
-    });
-  }
-
-  useNodeDataValidation(CreateObjectDataSchema, "CreateObject", validation.data, id);
-
-  // Cleanup timeout on unmount to prevent memory leaks
-  useEffect(() => {
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
+      if (isActive && isEnabled) {
+        propagate(actualContent);
+      } else {
+        blockJsonWhenInactive();
       }
-    };
-  }, []);
+    }, [isActive, isEnabled, store, propagate, blockJsonWhenInactive]);
 
-  // Memoized styles and values
-  const categoryStyles = useMemo(() => CATEGORY_TEXT.CREATE, []);
-  const displayValue = useMemo(() => store === "{}" ? "" : (store ?? ""), [store]);
-  
-  // Count keys in the JSON object for collapsed mode display
-  const objectKeyCount = useMemo(() => {
-    try {
-      if (!store || store === "{}") return 0;
-      const parsed = JSON.parse(store);
-      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-        return Object.keys(parsed).length;
-      }
-      return 0;
-    } catch {
-      return 0;
+    // Cleanup debounce timeout on unmount
+    useEffect(() => {
+      return () => {
+        if (debounceTimeoutRef.current) {
+          clearTimeout(debounceTimeoutRef.current);
+        }
+      };
+    }, []);
+
+    // Validation (memoized for performance)
+    const validation = useMemo(() => validateNodeData(nodeData), [nodeData]);
+
+    if (!validation.success) {
+      reportValidationError("CreateObject", id, validation.errors, {
+        originalData: validation.originalData,
+        component: "CreateObjectNode",
+      });
     }
-  }, [store]);
 
-  // Validation status and parameter count display for collapsed view
-  const CollapsedEditor = useMemo(() => (
-    <div className="flex flex-col items-center justify-center w-full h-full text-center">
-    
-      {/* Parameter Count */}
-      <div className="text-[10px] text-gray-700 dark:text-gray-300 pt-2">
-        Params : {objectKeyCount}
-      </div>
-        {/* Validation Status */}
-        <div className={`text-[10px] font-medium ${isJsonValid ? 'text-green-600' : 'text-red-600'}`}>
-        {isJsonValid ? 'Valid' : 'Invalid'}
-      </div>
-      
-    </div>
-  ), [isJsonValid, objectKeyCount]);
-
-  // Optimized Monaco Editor for expanded view
-  const ExpandedEditor = useMemo(() => (
-    <div
-      className={`nowheel h-32 min-h-48 mt-2 text-xs ${categoryStyles.primary}`}
-      style={{ 
-        verticalAlign: 'top',
-        ...((!isJsonValid) && {
-          border: '1px solid #ef4444',
-          boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.2)'
-        })
-      }}
-    >
-      <Editor
-        className="nodrag"
-        height="190px"
-        language="json"
-        value={displayValue}
-        onChange={handleEditorChange}
-        onMount={handleEditorDidMount}
-        options={{
-          minimap: { enabled: false },
-          scrollBeyondLastLine: false,
-          wordWrap: 'on',
-          lineNumbers: 'off',
-          glyphMargin: false,
-          folding: false,
-          lineDecorationsWidth: 0,
-          lineNumbersMinChars: 0,
-          scrollbar: { 
-            vertical: 'auto', 
-            horizontal: 'auto',
-            verticalScrollbarSize: 0,
-            horizontalScrollbarSize: 8,
-            verticalSliderSize: 8,
-            horizontalSliderSize: 8
-          },
-          fontSize: 10,
-          fontFamily: 'monospace',
-          readOnly: !isEnabled,
-          placeholder: "Enter your JSON object here…",
-          formatOnPaste: true,
-          formatOnType: true,
-          automaticLayout: true,
-          hover: {
-            enabled: true,
-            delay: 300,
-            sticky: true,
-            above: false,
-          },
-          quickSuggestions: false,
-          parameterHints: { enabled: false },
-        }}
-        theme="vs-dark"
-      />
-    </div>
-  ), [displayValue, handleEditorChange, handleEditorDidMount, isEnabled, isJsonValid, categoryStyles.primary]);
-
-  // Memoized render components
-  const IconOrLabel = useMemo(() => {
-    const shouldShowIcon = !isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60;
-
-    return shouldShowIcon ? (
-      <div className="absolute inset-0 flex justify-center p-1 text-foreground/80 text-lg">
-        {spec.icon && renderLucideIcon(spec.icon, "", 16)}
-      </div>
-    ) : (
-      <LabelNode nodeId={id} label={(nodeData as CreateObjectData).label || spec.displayName} />
+    useNodeDataValidation(
+      CreateObjectDataSchema,
+      "CreateObject",
+      validation.data,
+      id
     );
-  }, [isExpanded, spec.size.collapsed.width, spec.size.collapsed.height, spec.icon, spec.displayName, id, nodeData]);
 
-  const contentClassName = useMemo(() => {
-    const baseClass = isExpanded ? CONTENT.expanded : CONTENT.collapsed;
-    return `${baseClass} ${isEnabled ? "" : CONTENT.disabled}`;
-  }, [isExpanded, isEnabled]);
+    // Cleanup timeout on unmount to prevent memory leaks
+    useEffect(() => {
+      return () => {
+        if (debounceTimeoutRef.current) {
+          clearTimeout(debounceTimeoutRef.current);
+        }
+      };
+    }, []);
 
-  return (
-    <>
-      {IconOrLabel}
+    // Memoized styles and values
+    const categoryStyles = useMemo(() => CATEGORY_TEXT.CREATE, []);
+    const displayValue = useMemo(
+      () => (store === "{}" ? "" : (store ?? "")),
+      [store]
+    );
 
-      <div className={contentClassName}>
-        {isExpanded ? ExpandedEditor : CollapsedEditor}
-      </div>
+    // Count keys in the JSON object for collapsed mode display
+    const objectKeyCount = useMemo(() => {
+      try {
+        if (!store || store === "{}") return 0;
+        const parsed = JSON.parse(store);
+        if (
+          typeof parsed === "object" &&
+          parsed !== null &&
+          !Array.isArray(parsed)
+        ) {
+          return Object.keys(parsed).length;
+        }
+        return 0;
+      } catch {
+        return 0;
+      }
+    }, [store]);
 
-      <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
-    </>
-  );
-});
+    // Validation status and parameter count display for collapsed view
+    const CollapsedEditor = useMemo(
+      () => (
+        <div className="flex flex-col items-center justify-center w-full h-full text-center">
+          {/* Parameter Count */}
+          <div className="text-[10px] text-gray-700 dark:text-gray-300 pt-2">
+            Params : {objectKeyCount}
+          </div>
+          {/* Validation Status */}
+          <div
+            className={`text-[10px] font-medium ${isJsonValid ? "text-green-600" : "text-red-600"}`}
+          >
+            {isJsonValid ? "Valid" : "Invalid"}
+          </div>
+        </div>
+      ),
+      [isJsonValid, objectKeyCount]
+    );
+
+    // Optimized Monaco Editor for expanded view
+    const ExpandedEditor = useMemo(
+      () => (
+        <div
+          className={`nowheel h-32 min-h-48 mt-2 text-xs ${categoryStyles.primary}`}
+          style={{
+            verticalAlign: "top",
+            ...(!isJsonValid && {
+              border: "1px solid #ef4444",
+              boxShadow: "0 0 0 2px rgba(239, 68, 68, 0.2)",
+            }),
+          }}
+        >
+          <Editor
+            className="nodrag"
+            height="190px"
+            language="json"
+            value={displayValue}
+            onChange={handleEditorChange}
+            onMount={handleEditorDidMount}
+            options={{
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              wordWrap: "on",
+              lineNumbers: "off",
+              glyphMargin: false,
+              folding: false,
+              lineDecorationsWidth: 0,
+              lineNumbersMinChars: 0,
+              scrollbar: {
+                vertical: "auto",
+                horizontal: "auto",
+                verticalScrollbarSize: 0,
+                horizontalScrollbarSize: 8,
+                verticalSliderSize: 8,
+                horizontalSliderSize: 8,
+              },
+              fontSize: 10,
+              fontFamily: "monospace",
+              readOnly: !isEnabled,
+              placeholder: "Enter your JSON object here…",
+              formatOnPaste: true,
+              formatOnType: true,
+              automaticLayout: true,
+              hover: {
+                enabled: true,
+                delay: 300,
+                sticky: true,
+                above: false,
+              },
+              quickSuggestions: false,
+              parameterHints: { enabled: false },
+            }}
+            theme="vs-dark"
+          />
+        </div>
+      ),
+      [
+        displayValue,
+        handleEditorChange,
+        handleEditorDidMount,
+        isEnabled,
+        isJsonValid,
+        categoryStyles.primary,
+      ]
+    );
+
+    // Memoized render components
+    const IconOrLabel = useMemo(() => {
+      const shouldShowIcon =
+        !isExpanded &&
+        spec.size.collapsed.width === 60 &&
+        spec.size.collapsed.height === 60;
+
+      return shouldShowIcon ? (
+        <div className="absolute inset-0 flex justify-center p-1 text-foreground/80 text-lg">
+          {spec.icon && renderLucideIcon(spec.icon, "", 16)}
+        </div>
+      ) : (
+        <LabelNode
+          nodeId={id}
+          label={(nodeData as CreateObjectData).label || spec.displayName}
+        />
+      );
+    }, [
+      isExpanded,
+      spec.size.collapsed.width,
+      spec.size.collapsed.height,
+      spec.icon,
+      spec.displayName,
+      id,
+      nodeData,
+    ]);
+
+    const contentClassName = useMemo(() => {
+      const baseClass = isExpanded ? CONTENT.expanded : CONTENT.collapsed;
+      return `${baseClass} ${isEnabled ? "" : CONTENT.disabled}`;
+    }, [isExpanded, isEnabled]);
+
+    return (
+      <>
+        {IconOrLabel}
+
+        <div className={contentClassName}>
+          {isExpanded ? ExpandedEditor : CollapsedEditor}
+        </div>
+
+        <ExpandCollapseButton
+          showUI={isExpanded}
+          onToggle={toggleExpand}
+          size="sm"
+        />
+      </>
+    );
+  }
+);
 
 // Optimized wrapper with performance improvements
 const CreateObjectNodeWithDynamicSpec = memo((props: NodeProps) => {
@@ -568,7 +639,10 @@ const CreateObjectNodeWithDynamicSpec = memo((props: NodeProps) => {
 
   // Stable scaffolded component reference
   const ScaffoldedNode = useMemo(
-    () => withNodeScaffold(dynamicSpec, (p) => <CreateObjectNode {...p} spec={dynamicSpec} />),
+    () =>
+      withNodeScaffold(dynamicSpec, (p) => (
+        <CreateObjectNode {...p} spec={dynamicSpec} />
+      )),
     [dynamicSpec]
   );
 

@@ -489,7 +489,7 @@ const EmailTemplateNode = memo(
     // 4.6  Effects
     // -------------------------------------------------------------------------
 
-    /** Update outputs when template changes */
+    /** Update output when template changes */
     useEffect(() => {
       if (isEnabled && templateName) {
         const compiled = compileTemplate();

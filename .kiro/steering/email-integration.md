@@ -10,6 +10,7 @@ fileMatchPattern: "**/email/**/*, convex/emails.ts, features/**/email*.tsx"
 AgenitiX provides comprehensive email capabilities through nodes, templates, and analytics. The email system supports both sending and receiving with template variables, scheduling, and tracking.
 
 ### Email System Components
+
 - **Email Templates**: Reusable templates with variable substitution
 - **Email Sending**: Direct and scheduled email delivery
 - **Email Receiving**: Webhook-based email processing
@@ -19,6 +20,7 @@ AgenitiX provides comprehensive email capabilities through nodes, templates, and
 ## Email Template System
 
 ### Template Structure
+
 ```typescript
 // convex/schema.ts - Email template schema
 export const emailTemplates = defineTable({
@@ -34,6 +36,7 @@ export const emailTemplates = defineTable({
 ```
 
 ### Template Variable Processing
+
 ```typescript
 // utils/email-utils.ts
 export const processTemplate = (
@@ -49,17 +52,19 @@ export const processTemplate = (
 ## Email Sending Nodes
 
 ### Create Email Node
+
 ```typescript
 // features/business-logic-modern/node-domain/create/createEmail/createEmail.spec.ts
 export const createEmailSpec: NodeSpec = {
   type: "createEmail",
   category: "create",
   domain: "create",
-  
+
   name: "Create Email",
-  description: "Creates an email with template support and variable substitution",
+  description:
+    "Creates an email with template support and variable substitution",
   icon: "Mail",
-  
+
   inputs: [
     {
       name: "templateId",
@@ -96,8 +101,8 @@ export const createEmailSpec: NodeSpec = {
       description: "Schedule email for specific date/time (ISO string)",
     },
   ],
-  
-  outputs: [
+
+  output: [
     {
       name: "emailId",
       type: "string",
@@ -113,17 +118,18 @@ export const createEmailSpec: NodeSpec = {
 ```
 
 ### Send Email Node
+
 ```typescript
 // features/business-logic-modern/node-domain/create/sendEmail/sendEmail.spec.ts
 export const sendEmailSpec: NodeSpec = {
   type: "sendEmail",
   category: "create",
   domain: "create",
-  
+
   name: "Send Email",
   description: "Sends an email immediately or adds to queue",
   icon: "Send",
-  
+
   inputs: [
     {
       name: "emailId",
@@ -139,8 +145,8 @@ export const sendEmailSpec: NodeSpec = {
       defaultValue: "normal",
     },
   ],
-  
-  outputs: [
+
+  output: [
     {
       name: "sentAt",
       type: "string",
@@ -158,17 +164,18 @@ export const sendEmailSpec: NodeSpec = {
 ## Email Receiving Nodes
 
 ### Receive Email Node
+
 ```typescript
 // features/business-logic-modern/node-domain/trigger/receiveEmail/receiveEmail.spec.ts
 export const receiveEmailSpec: NodeSpec = {
   type: "receiveEmail",
   category: "trigger",
   domain: "trigger",
-  
+
   name: "Receive Email",
   description: "Triggers workflow when email is received",
   icon: "Mail",
-  
+
   inputs: [
     {
       name: "webhookUrl",
@@ -183,8 +190,8 @@ export const receiveEmailSpec: NodeSpec = {
       description: "Email filters (from, subject, etc.)",
     },
   ],
-  
-  outputs: [
+
+  output: [
     {
       name: "emailData",
       type: "object",
@@ -196,23 +203,24 @@ export const receiveEmailSpec: NodeSpec = {
       description: "Timestamp when email was received",
     },
   ],
-  
+
   isTrigger: true,
 };
 ```
 
 ### Process Email Node
+
 ```typescript
 // features/business-logic-modern/node-domain/create/processEmail/processEmail.spec.ts
 export const processEmailSpec: NodeSpec = {
   type: "processEmail",
   category: "create",
   domain: "create",
-  
+
   name: "Process Email",
   description: "Processes received email content",
   icon: "Settings",
-  
+
   inputs: [
     {
       name: "emailData",
@@ -227,8 +235,8 @@ export const processEmailSpec: NodeSpec = {
       description: "Fields to extract from email",
     },
   ],
-  
-  outputs: [
+
+  output: [
     {
       name: "processedData",
       type: "object",
@@ -246,6 +254,7 @@ export const processEmailSpec: NodeSpec = {
 ## Email Analytics
 
 ### Email Tracking
+
 ```typescript
 // convex/emails.ts - Email tracking functions
 export const trackEmailOpen = mutation({
@@ -271,17 +280,18 @@ export const trackEmailClick = mutation({
 ```
 
 ### Email Analytics Node
+
 ```typescript
 // features/business-logic-modern/node-domain/view/viewEmailAnalytics/viewEmailAnalytics.spec.ts
 export const viewEmailAnalyticsSpec: NodeSpec = {
   type: "viewEmailAnalytics",
   category: "view",
   domain: "view",
-  
+
   name: "Email Analytics",
   description: "Displays email performance metrics and analytics",
   icon: "BarChart",
-  
+
   inputs: [
     {
       name: "emailId",
@@ -296,8 +306,8 @@ export const viewEmailAnalyticsSpec: NodeSpec = {
       description: "Date range for analytics",
     },
   ],
-  
-  outputs: [
+
+  output: [
     {
       name: "analytics",
       type: "object",
@@ -315,6 +325,7 @@ export const viewEmailAnalyticsSpec: NodeSpec = {
 ## Email Queue System
 
 ### Queue Management
+
 ```typescript
 // convex/emails.ts - Email queue functions
 export const addToEmailQueue = mutation({
@@ -337,7 +348,7 @@ export const addToEmailQueue = mutation({
       maxAttempts: 3,
       createdAt: new Date(),
     });
-    
+
     return { queueId };
   },
 });
@@ -346,6 +357,7 @@ export const addToEmailQueue = mutation({
 ## Email Provider Integration
 
 ### Provider Configuration
+
 ```typescript
 // lib/email-providers.ts
 interface EmailProvider {
@@ -358,12 +370,12 @@ interface EmailProvider {
 // Resend provider example
 export const resendProvider: EmailProvider = {
   name: "resend",
-  
+
   async sendEmail(email: EmailData): Promise<SendResult> {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -373,11 +385,11 @@ export const resendProvider: EmailProvider = {
         html: email.body,
       }),
     });
-    
+
     if (!response.ok) {
       throw new Error(`Email send failed: ${response.statusText}`);
     }
-    
+
     const result = await response.json();
     return {
       messageId: result.id,

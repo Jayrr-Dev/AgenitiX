@@ -25,7 +25,7 @@ The createObject node is a visual workflow component that allows users to create
 #### Acceptance Criteria
 
 1. WHEN the node is created THEN it SHALL follow the NodeSpec architecture with proper typing
-2. WHEN the node is disabled THEN it SHALL not propagate outputs and show disabled state
+2. WHEN the node is disabled THEN it SHALL not propagate output and show disabled state
 3. WHEN the node has no valid content THEN it SHALL set isActive to false
 4. WHEN the node has valid JSON content THEN it SHALL set isActive to true and propagate the object
 5. WHEN the node is resized THEN it SHALL respect the dynamic sizing system (collapsed/expanded sizes)
@@ -40,7 +40,7 @@ The createObject node is a visual workflow component that allows users to create
 2. WHEN the node is rendered THEN it SHALL have a JSON output handle on the right for sending objects
 3. WHEN the node is rendered THEN it SHALL have a boolean input handle on the left for trigger/enable control
 4. WHEN input is received through handles THEN it SHALL properly merge or utilize that data in object creation
-5. WHEN the node outputs data THEN it SHALL use the correct JSON data type for type-safe connections
+5. WHEN the node output data THEN it SHALL use the correct JSON data type for type-safe connections
 
 ### Requirement 4
 

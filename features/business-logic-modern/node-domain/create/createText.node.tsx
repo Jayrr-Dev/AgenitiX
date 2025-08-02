@@ -27,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
-  generateOutputsField,
+  generateoutputField,
   normalizeHandleId,
 } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
@@ -60,7 +60,7 @@ export const CreateTextDataSchema = z
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
     inputs: SafeSchemas.optionalText().nullable().default(null),
-    outputs: z.record(z.string(), z.string()).optional(), // handle-based outputs object for Convex compatibility
+    output: z.record(z.string(), z.string()).optional(), // handle-based output object for Convex compatibility
     expandedSize: SafeSchemas.text("VE2"),
     collapsedSize: SafeSchemas.text("C1W"),
     label: z.string().optional(), // User-editable node label
@@ -149,7 +149,7 @@ const createDynamicSpec = (() => {
       initialData: createSafeInitialData(CreateTextDataSchema, {
         store: "Default text",
         inputs: null,
-        outputs: {}, // handle-based outputs object
+        output: {}, // handle-based output object
       }),
       dataSchema: CreateTextDataSchema,
       controls: {
@@ -157,7 +157,7 @@ const createDynamicSpec = (() => {
         excludeFields: [
           "isActive",
           "inputs",
-          "outputs",
+          "output",
           "expandedSize",
           "collapsedSize",
         ],
@@ -223,7 +223,7 @@ const CreateTextNode = memo(
     const nodes = useStore((s) => s.nodes);
     const edges = useStore((s) => s.edges);
 
-    // keep last emitted outputs to avoid redundant writes
+    // keep last emitted output to avoid redundant writes
     const lastGeneralOutputRef = useRef<any>(null);
 
     // Ref for collapsed textarea to keep scroll at top
@@ -269,22 +269,22 @@ const CreateTextNode = memo(
         return null;
       }
 
-      // Unified input reading system - prioritize handle-based outputs, basically single source for input data
+      // Unified input reading system - prioritize handle-based output, basically single source for input data
       const sourceData = src.data;
       let inputValue: any;
 
-      // 1. Handle-based outputs (unified system)
-      if (sourceData?.outputs && typeof sourceData.outputs === "object") {
-        // Try to get value from handle-based outputs
+      // 1. Handle-based output (unified system)
+      if (sourceData?.output && typeof sourceData.output === "object") {
+        // Try to get value from handle-based output
         const handleId = incoming.sourceHandle
           ? normalizeHandleId(incoming.sourceHandle)
           : "output";
-        const outputs = sourceData.outputs as Record<string, any>;
-        if (outputs[handleId] !== undefined) {
-          inputValue = outputs[handleId];
+        const output = sourceData.output as Record<string, any>;
+        if (output[handleId] !== undefined) {
+          inputValue = output[handleId];
         } else {
           // Fallback: get first available output value
-          const firstOutput = Object.values(outputs)[0];
+          const firstOutput = Object.values(output)[0];
           if (firstOutput !== undefined) {
             inputValue = firstOutput;
           }
@@ -313,43 +313,49 @@ const CreateTextNode = memo(
     // 4.5  Effects
     // -------------------------------------------------------------------------
 
-    /* 🔄 Handle-based outputs field generation for multi-handle compatibility */
+    /* 🔄 Handle-based output field generation for multi-handle compatibility */
     useEffect(() => {
       try {
-        // Generate Map-based outputs with error handling
-        const outputsValue = generateOutputsField(spec, nodeData as any);
+        // Create a data object with proper handle field mapping, basically map store to output handle
+        const mappedData = {
+          ...nodeData,
+          output: nodeData.store, // Map store field to output handle
+        };
+
+        // Generate Map-based output with error handling
+        const outputValue = generateoutputField(spec, mappedData as any);
 
         // Validate the result
-        if (!(outputsValue instanceof Map)) {
+        if (!(outputValue instanceof Map)) {
           console.error(
-            `CreateText ${id}: generateOutputsField did not return a Map`,
-            outputsValue
+            `CreateText ${id}: generateoutputField did not return a Map`,
+            outputValue
           );
           return;
         }
 
         // Convert Map to plain object for Convex compatibility, basically serialize for storage
-        const outputsObject = Object.fromEntries(outputsValue.entries());
+        const outputObject = Object.fromEntries(outputValue.entries());
 
         // Only update if changed
-        const currentOutputs = lastGeneralOutputRef.current;
+        const currentoutput = lastGeneralOutputRef.current;
         let hasChanged = true;
 
-        if (currentOutputs instanceof Map && outputsValue instanceof Map) {
+        if (currentoutput instanceof Map && outputValue instanceof Map) {
           // Compare Map contents
           hasChanged =
-            currentOutputs.size !== outputsValue.size ||
-            !Array.from(outputsValue.entries()).every(
-              ([key, value]) => currentOutputs.get(key) === value
+            currentoutput.size !== outputValue.size ||
+            !Array.from(outputValue.entries()).every(
+              ([key, value]) => currentoutput.get(key) === value
             );
         }
 
         if (hasChanged) {
-          lastGeneralOutputRef.current = outputsValue;
-          updateNodeData({ outputs: outputsObject });
+          lastGeneralOutputRef.current = outputValue;
+          updateNodeData({ output: outputObject });
         }
       } catch (error) {
-        console.error(`CreateText ${id}: Error generating outputs`, error, {
+        console.error(`CreateText ${id}: Error generating output`, error, {
           spec: spec?.kind,
           nodeDataKeys: Object.keys(nodeData || {}),
         });
@@ -357,7 +363,7 @@ const CreateTextNode = memo(
         // Fallback: set empty object to prevent crashes, basically empty state for storage
         if (lastGeneralOutputRef.current !== null) {
           lastGeneralOutputRef.current = new Map();
-          updateNodeData({ outputs: {} });
+          updateNodeData({ output: {} });
         }
       }
     }, [spec.handles, nodeData, updateNodeData, id]);

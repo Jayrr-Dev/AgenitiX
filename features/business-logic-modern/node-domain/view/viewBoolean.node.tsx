@@ -1,12 +1,16 @@
 /**
- * ViewBoolean NODE – Minimalistic boolean visualization with pass-through
+ * viewBoolean NODE – Boolean‑focused, schema‑driven, type‑safe
  *
- * • Simple icon-based boolean display (✓/✗/-)
- * • Passes boolean value through unchanged
- * • Clean, minimal visual indicators
- * • Consistent with design system
- *
- * Keywords: view-boolean, minimalistic, boolean-display, pass-through
+ * • Presents incoming boolean values with ZERO structural styling – the surrounding scaffold handles
+ *   borders, sizing, themes, drag/selection states, etc.
+ * • Zod‑based schema gives auto‑generated, type‑checked Inspector controls.
+ * • Dynamic sizing is driven directly by node data (expandedSize / collapsedSize).
+ * • All data handling is funnelled through one converter (convertToBoolean) to avoid duplication.
+ * • Strict separation of responsibilities:
+ *     – createDynamicSpec: returns a NodeSpec based only on data               (pure)
+ *     – ViewBooleanNode:   deals with React‑Flow store & data propagation       (impure)
+ * • Memoised helpers & refs prevent unnecessary renders / infinite loops.
+ * • Updated to use new unified handle-based input reading system
  */
 
 import type { NodeProps } from "@xyflow/react";
@@ -59,7 +63,7 @@ export const ViewBooleanDataSchema = z
       .record(z.string(), z.boolean().nullable())
       .nullable()
       .default(null),
-    outputs: z.boolean().nullable().default(null), // single output value for pass-through
+    output: z.boolean().nullable().default(null), // single output value for pass-through
 
     // Connection tracking
     connectionStates: z
@@ -147,7 +151,7 @@ function createDynamicSpec(data: ViewBooleanData): NodeSpec {
     initialData: createSafeInitialData(ViewBooleanDataSchema, {
       booleanValue: null,
       inputs: null,
-      outputs: null,
+      output: null,
       connectionStates: null,
     }),
     dataSchema: ViewBooleanDataSchema,
@@ -156,7 +160,7 @@ function createDynamicSpec(data: ViewBooleanData): NodeSpec {
       excludeFields: [
         "isActive",
         "inputs",
-        "outputs",
+        "output",
         "booleanValue",
         "connectionStates",
         "expandedSize",
@@ -275,7 +279,7 @@ const ViewBooleanNode = memo(
         const out = shouldSend ? value : null;
         if (out !== lastOutputRef.current) {
           lastOutputRef.current = out;
-          updateNodeData({ outputs: out });
+          updateNodeData({ output: out });
         }
       },
       [isActive, isEnabled, updateNodeData]
@@ -303,107 +307,61 @@ const ViewBooleanNode = memo(
         const sourceNode = nodes.find((n) => n.id === edge.source);
         if (!sourceNode?.data) continue;
 
-        // More comprehensive value extraction
+        // New unified handle-based input reading system
         const sourceData = sourceNode.data as any;
         let inputValue: unknown;
 
-        // CLEAN HANDLE OUTPUT SYSTEM: Support both Map and plain object formats, basically universal compatibility
-        if (sourceData.outputs instanceof Map) {
-          try {
-            if (edge.sourceHandle) {
-              const normalizedId = normalizeHandleId(edge.sourceHandle);
-              inputValue = sourceData.outputs.get(normalizedId);
-
-              // Debug logging for development
-              if (
-                process.env.NODE_ENV === "development" &&
-                inputValue === undefined
-              ) {
-                console.warn(
-                  `ViewBoolean ${id}: No value found for handle "${edge.sourceHandle}" -> "${normalizedId}"`,
-                  {
-                    availableKeys: Array.from(sourceData.outputs.keys()),
-                    sourceNode: edge.source,
-                  }
-                );
-              }
+        // 1. Handle-based output (primary system)
+        if (sourceData?.output && typeof sourceData.output === "object") {
+          // Try to get value from specific handle first
+          if (edge.sourceHandle) {
+            const handleId = normalizeHandleId(edge.sourceHandle);
+            const output = sourceData.output as Record<string, any>;
+            if (output[handleId] !== undefined) {
+              inputValue = output[handleId];
             } else {
-              // Fallback: get first value
-              const firstValue = sourceData.outputs.values().next();
-              inputValue = firstValue.done ? null : firstValue.value;
-            }
-          } catch (error) {
-            console.error(
-              `ViewBoolean ${id}: Error processing Map outputs`,
-              error,
-              {
-                sourceHandle: edge.sourceHandle,
-                mapSize: sourceData.outputs.size,
+              // Fallback: get first available output value
+              const firstOutputValue = Object.values(output)[0];
+              if (firstOutputValue !== undefined) {
+                inputValue = firstOutputValue;
               }
-            );
-            inputValue = null; // Safe fallback
+            }
+          } else {
+            // No specific handle, get first available output value
+            const output = sourceData.output as Record<string, any>;
+            const firstOutputValue = Object.values(output)[0];
+            if (firstOutputValue !== undefined) {
+              inputValue = firstOutputValue;
+            }
           }
-        } else if (
-          sourceData.outputs &&
-          typeof sourceData.outputs === "object" &&
-          !Array.isArray(sourceData.outputs)
-        ) {
-          // Handle plain object format (from Convex serialization), basically converted Map data
-          try {
-            if (edge.sourceHandle) {
-              const normalizedId = normalizeHandleId(edge.sourceHandle);
-              inputValue = sourceData.outputs[normalizedId];
+        }
 
-              // Debug logging for development
-              if (
-                process.env.NODE_ENV === "development" &&
-                inputValue === undefined
-              ) {
-                console.warn(
-                  `ViewBoolean ${id}: No value found for handle "${edge.sourceHandle}" -> "${normalizedId}"`,
-                  {
-                    availableKeys: Object.keys(sourceData.outputs),
-                    sourceNode: edge.source,
-                  }
-                );
-              }
-            } else {
-              // Fallback: get first value from object
-              const values = Object.values(sourceData.outputs);
-              inputValue = values.length > 0 ? values[0] : null;
-            }
-          } catch (error) {
-            console.error(
-              `ViewBoolean ${id}: Error processing object outputs`,
-              error,
-              {
-                sourceHandle: edge.sourceHandle,
-                outputKeys: Object.keys(sourceData.outputs || {}),
-              }
-            );
-            inputValue = null; // Safe fallback
+        // 2. Legacy fallbacks for compatibility
+        if (inputValue === undefined) {
+          if (
+            sourceData?.booleanValue !== undefined &&
+            sourceData.booleanValue !== null
+          ) {
+            inputValue = sourceData.booleanValue;
+          } else if (
+            sourceData?.store !== undefined &&
+            sourceData.store !== null
+          ) {
+            inputValue = sourceData.store;
+          } else if (
+            sourceData?.value !== undefined &&
+            sourceData.value !== null
+          ) {
+            inputValue = sourceData.value;
+          } else if (sourceData?.isActive !== undefined) {
+            inputValue = sourceData.isActive;
+          } else if (sourceData?.isEnabled !== undefined) {
+            inputValue = sourceData.isEnabled;
           }
-        } else if (
-          sourceData.booleanValue !== undefined &&
-          sourceData.booleanValue !== null
-        ) {
-          inputValue = sourceData.booleanValue;
-        } else if (
-          sourceData.store !== undefined &&
-          sourceData.store !== null
-        ) {
-          inputValue = sourceData.store;
-        } else if (
-          sourceData.value !== undefined &&
-          sourceData.value !== null
-        ) {
-          inputValue = sourceData.value;
-        } else if (sourceData.isActive !== undefined) {
-          inputValue = sourceData.isActive;
-        } else if (sourceData.isEnabled !== undefined) {
-          inputValue = sourceData.isEnabled;
-        } else {
-          // Fallback to the whole data object
+        }
+
+        // 3. Final fallback to whole data object
+        if (inputValue === undefined) {
           inputValue = sourceData;
         }
 

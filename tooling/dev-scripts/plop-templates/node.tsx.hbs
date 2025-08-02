@@ -58,7 +58,7 @@ export const {{pascalCase kind}}DataSchema = z
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
     inputs: SafeSchemas.optionalText().nullable().default(null),
-    outputs: SafeSchemas.optionalText(),
+    output: SafeSchemas.optionalText(),
     expandedSize: SafeSchemas.text("{{expandedSize}}"),
     collapsedSize: SafeSchemas.text("{{collapsedSize}}"),
     label: z.string().optional(), // User-editable node label
@@ -140,7 +140,7 @@ function createDynamicSpec(data: {{pascalCase kind}}Data): NodeSpec {
     initialData: createSafeInitialData({{pascalCase kind}}DataSchema, {
       store: "Default text",
       inputs: null,
-      outputs: "",
+      output: "",
     }),
     dataSchema: {{pascalCase kind}}DataSchema,
     controls: {
@@ -148,7 +148,7 @@ function createDynamicSpec(data: {{pascalCase kind}}Data): NodeSpec {
       excludeFields: [
         "isActive",
         "inputs",
-        "outputs",
+        "output",
         "expandedSize",
         "collapsedSize",
       ],
@@ -232,7 +232,7 @@ const {{pascalCase kind}}Node = memo(
         const out = shouldSend ? value : null;
         if (out !== lastOutputRef.current) {
           lastOutputRef.current = out;
-          updateNodeData({ outputs: out });
+          updateNodeData({ output: out });
         }
       },
       [isActive, isEnabled, updateNodeData],
@@ -251,27 +251,27 @@ const {{pascalCase kind}}Node = memo(
       }
     }, [isActive, isEnabled, updateNodeData]);
 
-    /** 
+    /**
      * Compute the latest text coming from connected input handles.
-     * 
+     *
      * Uses findEdgeByHandle utility to properly handle React Flow's handle naming
      * conventions (handles get type suffixes like "json-input__j", "input__b").
-     * 
+     *
      * Priority: json-input > input (modify based on your node's specific handles)
      */
     const computeInput = useCallback((): string | null => {
       // Check json-input handle first, then input handle as fallback
       const jsonInputEdge = findEdgeByHandle(edges, id, "json-input");
       const inputEdge = findEdgeByHandle(edges, id, "input");
-      
+
       const incoming = jsonInputEdge || inputEdge;
       if (!incoming) return null;
 
       const src = nodes.find((n) => n.id === incoming.source);
       if (!src) return null;
 
-      // priority: outputs ➜ store ➜ whole data
-      const inputValue = src.data?.outputs ?? src.data?.store ?? src.data;
+      // priority: output ➜ store ➜ whole data
+      const inputValue = src.data?.output ?? src.data?.store ?? src.data;
       return typeof inputValue === 'string' ? inputValue : String(inputValue || '');
     }, [edges, nodes, id]);
 
@@ -324,7 +324,7 @@ const {{pascalCase kind}}Node = memo(
       }
     }, [store, isEnabled, isActive, updateNodeData]);
 
-    // Sync outputs with active and enabled state
+    // Sync output with active and enabled state
     useEffect(() => {
       const currentStore = store ?? "";
       const actualContent = currentStore === "Default text" ? "" : currentStore;
@@ -353,7 +353,7 @@ const {{pascalCase kind}}Node = memo(
     // -------------------------------------------------------------------------
     // 4.7  Feature flag conditional rendering
     // -------------------------------------------------------------------------
-    
+
     // If flag is loading, show loading state
     if (flagState.isLoading) {
       return (

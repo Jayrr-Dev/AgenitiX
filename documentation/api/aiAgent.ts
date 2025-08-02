@@ -27,7 +27,7 @@ import { z } from "zod";
 
 // Node Data Schema
 export const aiAgentDataSchema = z.object({
-	// Define your node data properties here
+  // Define your node data properties here
 });
 
 // Type inference from schema
@@ -35,42 +35,50 @@ export type aiAgentData = z.infer<typeof aiAgentDataSchema>;
 
 // Node Specification
 export const aiAgentSpec = {
-	kind: "aiAgent",
-	displayName: "aiAgent",
-	category: "AI",
-	size: {
-		expanded: { width: 120, height: 120 },
-		collapsed: { width: 60, height: 60 },
-	},
-	version: 1,
-	runtime: { execute: "aiAgent_execute_v1" },
+  kind: "aiAgent",
+  displayName: "aiAgent",
+  category: "AI",
+  size: {
+    expanded: { width: 120, height: 120 },
+    collapsed: { width: 60, height: 60 },
+  },
+  version: 1,
+  runtime: { execute: "aiAgent_execute_v1" },
 
-	handles: [
-		{ id: "json-input", code: "j", position: "top", type: "JSON" },
-		{ id: "input", code: "j", position: "left", type: "Boolean" },
-		{ id: "output", code: "j", position: "right", type: "String" },
-	],
-	inspector: {
-		key: "aiAgentInspector",
-	},
-	initialData: {
-		// Define initial data properties here
-	},
-	controls: {
-		autoGenerate: true,
-		excludeFields: ["isActive", "inputs", "outputs", "expandedSize", "collapsedSize", ""],
-		customFields: [],
-	},
-	icon: "LuBot",
-	author: "Agenitix Team",
-	description: "The aiAgent node provides functionality for ai operations in the AI category.",
-	feature: "ai",
+  handles: [
+    { id: "json-input", code: "j", position: "top", type: "JSON" },
+    { id: "input", code: "j", position: "left", type: "Boolean" },
+    { id: "output", code: "j", position: "right", type: "String" },
+  ],
+  inspector: {
+    key: "aiAgentInspector",
+  },
+  initialData: {
+    // Define initial data properties here
+  },
+  controls: {
+    autoGenerate: true,
+    excludeFields: [
+      "isActive",
+      "inputs",
+      "output",
+      "expandedSize",
+      "collapsedSize",
+      "",
+    ],
+    customFields: [],
+  },
+  icon: "LuBot",
+  author: "Agenitix Team",
+  description:
+    "The aiAgent node provides functionality for ai operations in the AI category.",
+  feature: "ai",
 };
 
 // Node Component
 export const aiAgentNode = (_props: NodeProps) => {
-	// Your node component implementation
-	return React.createElement("div", null, "Node content goes here");
+  // Your node component implementation
+  return React.createElement("div", null, "Node content goes here");
 };
 
 // Export for use in other modules

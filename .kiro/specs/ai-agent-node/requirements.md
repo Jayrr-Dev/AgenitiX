@@ -15,7 +15,7 @@ The AI Agent Node is a core component that integrates Convex AI agents into the 
 1. WHEN a user adds an AI agent node to the canvas THEN the system SHALL display a node with a text input handle on the left side and a JSON input handle on the top
 2. WHEN text data is connected to the input handle THEN the system SHALL receive and store the input text internally as user context
 3. WHEN JSON data is connected to the JSON handle THEN the system SHALL receive and use it as additional context or configuration
-4. WHEN the node receives empty or invalid input text THEN the system SHALL handle it gracefully and may produce appropriate error outputs
+4. WHEN the node receives empty or invalid input text THEN the system SHALL handle it gracefully and may produce appropriate error output
 
 ### Requirement 2
 

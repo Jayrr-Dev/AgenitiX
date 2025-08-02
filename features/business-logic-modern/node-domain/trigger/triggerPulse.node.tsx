@@ -27,7 +27,7 @@ import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
-  generateOutputsField,
+  generateoutputField,
   normalizeHandleId,
 } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import {
@@ -61,7 +61,7 @@ export const TriggerPulseDataSchema = z
     isExpanded: SafeSchemas.boolean(false), // inspector open?
     isInverted: SafeSchemas.boolean(false), // inverts pulse behavior (true→false→true instead of false→true→false)
     inputs: z.boolean().nullable().default(null), // last received input
-    outputs: z.record(z.string(), z.boolean()).optional(), // handle-based outputs object for Convex compatibility
+    output: z.record(z.string(), z.boolean()).optional(), // handle-based output object for Convex compatibility
     expandedSize: SafeSchemas.text("FE1"),
     collapsedSize: SafeSchemas.text("C1"),
     label: z.string().optional(), // User-editable node label
@@ -146,7 +146,7 @@ function createDynamicSpec(data: TriggerPulseData): NodeSpec {
       store: false, // Set initial store to false for normal logic
       pulseDuration: 400,
       inputs: null,
-      outputs: {}, // Handle-based outputs object
+      output: {}, // Handle-based output object
       isInverted: false, // Default to normal logic (false→true→false)
     }),
     dataSchema: TriggerPulseDataSchema,
@@ -155,7 +155,7 @@ function createDynamicSpec(data: TriggerPulseData): NodeSpec {
       excludeFields: [
         "isActive",
         "inputs",
-        "outputs",
+        "output",
         "expandedSize",
         "collapsedSize",
       ],
@@ -207,7 +207,7 @@ const TriggerPulseNode = memo(
     const nodes = useStore((s) => s.nodes);
     const edges = useStore((s) => s.edges);
 
-    // keep last emitted outputs to avoid redundant writes
+    // keep last emitted output to avoid redundant writes
     const lastGeneralOutputRef = useRef<any>(null);
     // timer ref for pulse timeout
     const pulseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -231,22 +231,21 @@ const TriggerPulseNode = memo(
       // Handle-based input reading with unified priority system, basically single source for input data
       const sourceData = src.data;
 
-      // 1. Handle-based outputs (unified system)
-      if (sourceData?.outputs && typeof sourceData.outputs === "object") {
-        // Try to get value from handle-based outputs
+      // 1. Handle-based output (unified system)
+      if (sourceData?.output && typeof sourceData.output === "object") {
+        // Try to get value from handle-based output
         const handleId = incoming.sourceHandle
           ? normalizeHandleId(incoming.sourceHandle)
           : "output";
         if (
-          (sourceData.outputs as Record<string, unknown>)[handleId] !==
-          undefined
+          (sourceData.output as Record<string, unknown>)[handleId] !== undefined
         ) {
           return toBool(
-            (sourceData.outputs as Record<string, unknown>)[handleId]
+            (sourceData.output as Record<string, unknown>)[handleId]
           );
         }
         // Fallback: get first available output value
-        const firstOutput = Object.values(sourceData.outputs)[0];
+        const firstOutput = Object.values(sourceData.output)[0];
         if (firstOutput !== undefined) {
           return toBool(firstOutput);
         }
@@ -306,43 +305,43 @@ const TriggerPulseNode = memo(
       }
     }, [isInverted, store, updateNodeData]);
 
-    /* 🔄 Handle-based outputs field generation for multi-handle compatibility */
+    /* 🔄 Handle-based output field generation for multi-handle compatibility */
     useEffect(() => {
       try {
-        // Generate Map-based outputs with error handling
-        const outputsValue = generateOutputsField(spec, nodeData as any);
+        // Generate Map-based output with error handling
+        const outputValue = generateoutputField(spec, nodeData as any);
 
         // Validate the result
-        if (!(outputsValue instanceof Map)) {
+        if (!(outputValue instanceof Map)) {
           console.error(
-            `TriggerPulse ${id}: generateOutputsField did not return a Map`,
-            outputsValue
+            `TriggerPulse ${id}: generateoutputField did not return a Map`,
+            outputValue
           );
           return;
         }
 
         // Convert Map to plain object for Convex compatibility, basically serialize for storage
-        const outputsObject = Object.fromEntries(outputsValue.entries());
+        const outputObject = Object.fromEntries(outputValue.entries());
 
         // Only update if changed
-        const currentOutputs = lastGeneralOutputRef.current;
+        const currentoutput = lastGeneralOutputRef.current;
         let hasChanged = true;
 
-        if (currentOutputs instanceof Map && outputsValue instanceof Map) {
+        if (currentoutput instanceof Map && outputValue instanceof Map) {
           // Compare Map contents
           hasChanged =
-            currentOutputs.size !== outputsValue.size ||
-            !Array.from(outputsValue.entries()).every(
-              ([key, value]) => currentOutputs.get(key) === value
+            currentoutput.size !== outputValue.size ||
+            !Array.from(outputValue.entries()).every(
+              ([key, value]) => currentoutput.get(key) === value
             );
         }
 
         if (hasChanged) {
-          lastGeneralOutputRef.current = outputsValue;
-          updateNodeData({ outputs: outputsObject });
+          lastGeneralOutputRef.current = outputValue;
+          updateNodeData({ output: outputObject });
         }
       } catch (error) {
-        console.error(`TriggerPulse ${id}: Error generating outputs`, error, {
+        console.error(`TriggerPulse ${id}: Error generating output`, error, {
           spec: spec?.kind,
           nodeDataKeys: Object.keys(nodeData || {}),
         });
@@ -350,7 +349,7 @@ const TriggerPulseNode = memo(
         // Fallback: set empty object to prevent crashes, basically empty state for storage
         if (lastGeneralOutputRef.current !== null) {
           lastGeneralOutputRef.current = new Map();
-          updateNodeData({ outputs: {} });
+          updateNodeData({ output: {} });
         }
       }
     }, [spec.handles, nodeData, updateNodeData, id]);

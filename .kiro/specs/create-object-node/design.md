@@ -28,29 +28,31 @@ JSON Input       Visual Feedback   Active/Inactive    Type Safety
 ### Data Schema
 
 ```typescript
-export const CreateObjectDataSchema = z.object({
-  // Core object content
-  objectContent: z.string().default("{}"),
-  parsedObject: z.any().optional(),
-  
-  // State management
-  isEnabled: SafeSchemas.boolean(true),
-  isActive: SafeSchemas.boolean(false),
-  isExpanded: SafeSchemas.boolean(false),
-  
-  // Input/output data
-  inputs: SafeSchemas.optionalText().nullable().default(null),
-  outputs: z.any().optional(),
-  
-  // UI configuration
-  expandedSize: SafeSchemas.text("FE1"),
-  collapsedSize: SafeSchemas.text("C1"),
-  label: z.string().optional(),
-  
-  // Validation state
-  isValidJson: SafeSchemas.boolean(true),
-  validationError: z.string().optional(),
-}).passthrough();
+export const CreateObjectDataSchema = z
+  .object({
+    // Core object content
+    objectContent: z.string().default("{}"),
+    parsedObject: z.any().optional(),
+
+    // State management
+    isEnabled: SafeSchemas.boolean(true),
+    isActive: SafeSchemas.boolean(false),
+    isExpanded: SafeSchemas.boolean(false),
+
+    // Input/output data
+    inputs: SafeSchemas.optionalText().nullable().default(null),
+    output: z.any().optional(),
+
+    // UI configuration
+    expandedSize: SafeSchemas.text("FE1"),
+    collapsedSize: SafeSchemas.text("C1"),
+    label: z.string().optional(),
+
+    // Validation state
+    isValidJson: SafeSchemas.boolean(true),
+    validationError: z.string().optional(),
+  })
+  .passthrough();
 ```
 
 ### Handle Configuration
@@ -67,7 +69,7 @@ handles: [
   {
     id: "object-output",
     code: "j",
-    position: "right", 
+    position: "right",
     type: "source",
     dataType: "JSON",
   },
@@ -78,21 +80,23 @@ handles: [
     type: "target",
     dataType: "Boolean",
   },
-]
+];
 ```
 
 ### Visual States
 
 #### Collapsed State
+
 - **Size**: C1 (60x60px) by default
 - **Display**: Fixed curly braces `{}` centered
 - **Icon**: Custom JSON braces icon or LuBraces from Lucide
 - **Interaction**: Click to expand, shows tooltip with current object preview
 
-#### Expanded State  
+#### Expanded State
+
 - **Size**: FE1 (120x120px) by default, configurable
 - **Display**: Full textarea for JSON editing
-- **Features**: 
+- **Features**:
   - Syntax highlighting (if feasible)
   - Real-time validation
   - Error messages below textarea
@@ -105,26 +109,26 @@ handles: [
 ```typescript
 interface CreateObjectData {
   // Primary content
-  objectContent: string;        // Raw JSON string input
-  parsedObject?: any;          // Parsed JavaScript object
-  
+  objectContent: string; // Raw JSON string input
+  parsedObject?: any; // Parsed JavaScript object
+
   // State flags
-  isEnabled: boolean;          // Node enabled/disabled
-  isActive: boolean;           // Has valid content
-  isExpanded: boolean;         // UI state
-  
+  isEnabled: boolean; // Node enabled/disabled
+  isActive: boolean; // Has valid content
+  isExpanded: boolean; // UI state
+
   // Data flow
-  inputs: string | null;       // Incoming data
-  outputs?: any;               // Outgoing object
-  
+  inputs: string | null; // Incoming data
+  output?: any; // Outgoing object
+
   // Configuration
-  expandedSize: string;        // Dynamic sizing
-  collapsedSize: string;       // Dynamic sizing
-  label?: string;              // Custom label
-  
+  expandedSize: string; // Dynamic sizing
+  collapsedSize: string; // Dynamic sizing
+  label?: string; // Custom label
+
   // Validation
-  isValidJson: boolean;        // JSON validity flag
-  validationError?: string;    // Error message
+  isValidJson: boolean; // JSON validity flag
+  validationError?: string; // Error message
 }
 ```
 
@@ -147,13 +151,13 @@ const validateJsonContent = (content: string): ValidationResult => {
     return {
       isValid: true,
       parsedObject: parsed,
-      error: null
+      error: null,
     };
   } catch (error) {
     return {
       isValid: false,
       parsedObject: null,
-      error: error.message
+      error: error.message,
     };
   }
 };

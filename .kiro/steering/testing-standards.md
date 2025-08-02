@@ -10,6 +10,7 @@ fileMatchPattern: "**/*.test.*, **/*.spec.*, **/__tests__/**/*"
 **Rule**: Test behavior, not implementation. Focus on user outcomes and business logic.
 
 ### Testing Pyramid
+
 - **Unit Tests** (70%): Pure functions, utilities, isolated components
 - **Integration Tests** (20%): Component interactions, API flows
 - **E2E Tests** (10%): Critical user journeys
@@ -17,6 +18,7 @@ fileMatchPattern: "**/*.test.*, **/*.spec.*, **/__tests__/**/*"
 ## Unit Testing Standards
 
 ### Component Testing Pattern
+
 ```typescript
 // components/ui/Button.test.tsx
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -31,7 +33,7 @@ describe("Button Component", () => {
   it("calls onClick when clicked", () => {
     const handleClick = jest.fn();
     render(<Button onClick={handleClick}>Click me</Button>);
-    
+
     fireEvent.click(screen.getByRole("button"));
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
@@ -50,6 +52,7 @@ describe("Button Component", () => {
 ```
 
 ### Hook Testing Pattern
+
 ```typescript
 // hooks/useNodeData.test.ts
 import { renderHook, act } from "@testing-library/react";
@@ -58,24 +61,25 @@ import { useNodeData } from "./useNodeData";
 describe("useNodeData", () => {
   it("returns initial node data", () => {
     const { result } = renderHook(() => useNodeData("node-1"));
-    
+
     expect(result.current.nodeData).toBeDefined();
     expect(result.current.isLoading).toBe(true);
   });
 
   it("updates node data when changed", async () => {
     const { result } = renderHook(() => useNodeData("node-1"));
-    
+
     await act(async () => {
       result.current.updateNodeData({ name: "Updated Node" });
     });
-    
+
     expect(result.current.nodeData.name).toBe("Updated Node");
   });
 });
 ```
 
 ### Utility Function Testing
+
 ```typescript
 // utils/nodeUtils.test.ts
 import { validateNodeSpec, createNodeInstance } from "./nodeUtils";
@@ -86,9 +90,9 @@ describe("Node Utilities", () => {
       const validSpec = {
         type: "createText",
         inputs: [{ name: "text", type: "string" }],
-        outputs: [{ name: "result", type: "string" }],
+        output: [{ name: "result", type: "string" }],
       };
-      
+
       expect(validateNodeSpec(validSpec)).toBe(true);
     });
 
@@ -97,7 +101,7 @@ describe("Node Utilities", () => {
         type: "createText",
         // Missing required fields
       };
-      
+
       expect(() => validateNodeSpec(invalidSpec)).toThrow();
     });
   });
@@ -105,7 +109,7 @@ describe("Node Utilities", () => {
   describe("createNodeInstance", () => {
     it("creates node with default values", () => {
       const node = createNodeInstance("createText", { x: 100, y: 200 });
-      
+
       expect(node.id).toBeDefined();
       expect(node.type).toBe("createText");
       expect(node.position).toEqual({ x: 100, y: 200 });
@@ -117,6 +121,7 @@ describe("Node Utilities", () => {
 ## Convex Function Testing
 
 ### Mutation Testing
+
 ```typescript
 // convex/emails.test.ts
 import { ConvexError } from "convex/values";
@@ -162,15 +167,16 @@ describe("Email Functions", () => {
   describe("getEmailTemplates", () => {
     it("returns user's templates", async () => {
       const templates = await runQuery(api.emails.getEmailTemplates);
-      
+
       expect(Array.isArray(templates)).toBe(true);
-      expect(templates.every(t => t.userId === "test-user")).toBe(true);
+      expect(templates.every((t) => t.userId === "test-user")).toBe(true);
     });
   });
 });
 ```
 
 ### Action Testing
+
 ```typescript
 // convex/workflows.test.ts
 import { runAction } from "./_generated/test";
@@ -201,6 +207,7 @@ describe("Workflow Actions", () => {
 ## Integration Testing
 
 ### Component Integration Testing
+
 ```typescript
 // features/flow-editor/FlowEditor.test.tsx
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
@@ -243,6 +250,7 @@ describe("Flow Editor Integration", () => {
 ```
 
 ### API Integration Testing
+
 ```typescript
 // app/api/email/templates/route.test.ts
 import { createMocks } from "node-mocks-http";
@@ -289,6 +297,7 @@ describe("/api/email/templates", () => {
 ## E2E Testing
 
 ### Critical User Journey Testing
+
 ```typescript
 // e2e/workflow-creation.test.ts
 import { test, expect } from "@playwright/test";
@@ -297,27 +306,35 @@ test.describe("Workflow Creation", () => {
   test("user can create and execute email workflow", async ({ page }) => {
     // Navigate to flow editor
     await page.goto("/flow-editor");
-    
+
     // Add nodes
-    await page.dragAndDrop('[data-testid="node-createText"]', '[data-testid="canvas"]');
-    await page.dragAndDrop('[data-testid="node-sendEmail"]', '[data-testid="canvas"]');
-    
+    await page.dragAndDrop(
+      '[data-testid="node-createText"]',
+      '[data-testid="canvas"]'
+    );
+    await page.dragAndDrop(
+      '[data-testid="node-sendEmail"]',
+      '[data-testid="canvas"]'
+    );
+
     // Connect nodes
     await page.drag('[data-handle-id="output"]', '[data-handle-id="input"]');
-    
+
     // Configure nodes
     await page.click('[data-testid="node-createText"]');
     await page.fill('[data-testid="text-input"]', "Hello {{name}}");
-    
+
     await page.click('[data-testid="node-sendEmail"]');
     await page.fill('[data-testid="to-input"]', "test@example.com");
     await page.fill('[data-testid="subject-input"]', "Welcome");
-    
+
     // Execute workflow
     await page.click('[data-testid="execute-workflow"]');
-    
+
     // Verify execution
-    await expect(page.locator('[data-testid="execution-success"]')).toBeVisible();
+    await expect(
+      page.locator('[data-testid="execution-success"]')
+    ).toBeVisible();
   });
 });
 ```
@@ -325,6 +342,7 @@ test.describe("Workflow Creation", () => {
 ## Testing Utilities & Helpers
 
 ### Custom Testing Utilities
+
 ```typescript
 // test-utils/renderWithProviders.tsx
 import { render, RenderOptions } from "@testing-library/react";
@@ -360,12 +378,13 @@ const { getByText } = renderWithProviders(<MyComponent />, {
 ```
 
 ### Mock Data Factories
+
 ```typescript
 // test-utils/factories.ts
 export const createNodeSpec = (overrides = {}) => ({
   type: "createText",
   inputs: [{ name: "text", type: "string" }],
-  outputs: [{ name: "result", type: "string" }],
+  output: [{ name: "result", type: "string" }],
   ...overrides,
 });
 
@@ -393,6 +412,7 @@ export const createWorkflow = (overrides = {}) => ({
 ## Accessibility Testing
 
 ### Component A11y Testing
+
 ```typescript
 // components/ui/Button.test.tsx
 import { render, screen } from "@testing-library/react";
@@ -411,14 +431,14 @@ describe("Button Accessibility", () => {
   it("supports keyboard navigation", () => {
     render(<Button>Click me</Button>);
     const button = screen.getByRole("button");
-    
+
     expect(button).toHaveAttribute("tabindex", "0");
     expect(button).toHaveAttribute("role", "button");
   });
 
   it("announces loading state to screen readers", () => {
     render(<Button loading aria-label="Submit form">Submit</Button>);
-    
+
     expect(screen.getByLabelText("Submit form")).toHaveAttribute("aria-busy", "true");
   });
 });

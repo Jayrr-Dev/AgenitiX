@@ -10,12 +10,13 @@
  *     – createDynamicSpec: returns a NodeSpec based only on data               (pure)
  *     – ViewTextNode:      deals with React‑Flow store & data propagation       (impure)
  * • Memoised helpers & refs prevent unnecessary renders / infinite loops.
+ * • Updated to use new unified handle-based input reading system
  */
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import { generateOutputsField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
+import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
@@ -48,7 +49,7 @@ export const ViewTextDataSchema = z
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
     inputs: SafeSchemas.optionalText(),
-    outputs: z.record(z.string(), z.string()).optional(), // handle-based outputs object for Convex compatibility
+    output: z.record(z.string(), z.string()).optional(), // handle-based output object for Convex compatibility
     expandedSize: SafeSchemas.text("VE2"),
     collapsedSize: SafeSchemas.text("C2"),
     label: z.string().optional(), // User-editable node label
@@ -64,7 +65,7 @@ const validateNodeData = createNodeValidator(ViewTextDataSchema, "ViewText");
 // -----------------------------------------------------------------------------
 
 const COMMON_OBJECT_PROPS = [
-  "response", // Prioritize response field for AI outputs
+  "response", // Prioritize response field for AI output
   "text",
   "output",
   "value",
@@ -185,7 +186,7 @@ function createDynamicSpec(data: ViewTextData): NodeSpec {
       excludeFields: [
         "isActive",
         "inputs",
-        "outputs",
+        "output",
         "expandedSize",
         "collapsedSize",
       ],
@@ -249,6 +250,10 @@ const ViewTextNode = memo(
     // Helpers -------------------------------------------------------------------
     const lastInputRef = useRef<string | null>(null);
     const lastGeneralOutputRef = useRef<any>(null);
+    const lastInputDataRef = useRef<{
+      inputs: string;
+      isActive: boolean;
+    } | null>(null);
 
     /** Toggle between collapsed / expanded */
     const toggleExpand = useCallback(() => {
@@ -268,43 +273,45 @@ const ViewTextNode = memo(
       }
     }, [nodeData, updateNodeData]);
 
-    // Handle-based outputs field generation for multi-handle compatibility -------
+    // Handle-based output field generation for multi-handle compatibility -------
     useEffect(() => {
       try {
-        // Generate Map-based outputs with error handling
-        const outputsValue = generateOutputsField(spec, nodeData as any);
+        // Generate Map-based output with error handling
+        const outputValue = generateoutputField(spec, nodeData as any);
 
         // Validate the result
-        if (!(outputsValue instanceof Map)) {
+        if (!(outputValue instanceof Map)) {
           console.error(
-            `ViewText ${id}: generateOutputsField did not return a Map`,
-            outputsValue
+            `ViewText ${id}: generateoutputField did not return a Map`,
+            outputValue
           );
           return;
         }
 
         // Convert Map to plain object for Convex compatibility, basically serialize for storage
-        const outputsObject = Object.fromEntries(outputsValue.entries());
+        const outputObject = Object.fromEntries(outputValue.entries());
 
-        // Only update if changed
-        const currentOutputs = lastGeneralOutputRef.current;
+        // Only update if changed - compare with ref to avoid circular dependencies
+        const currentOutput = lastGeneralOutputRef.current;
         let hasChanged = true;
 
-        if (currentOutputs instanceof Map && outputsValue instanceof Map) {
+        if (currentOutput instanceof Map && outputValue instanceof Map) {
           // Compare Map contents
           hasChanged =
-            currentOutputs.size !== outputsValue.size ||
-            !Array.from(outputsValue.entries()).every(
-              ([key, value]) => currentOutputs.get(key) === value
+            currentOutput.size !== outputValue.size ||
+            !Array.from(outputValue.entries()).every(
+              ([key, value]) => currentOutput.get(key) === value
             );
+        } else if (currentOutput === null && outputValue.size === 0) {
+          hasChanged = false;
         }
 
         if (hasChanged) {
-          lastGeneralOutputRef.current = outputsValue;
-          updateNodeData({ outputs: outputsObject });
+          lastGeneralOutputRef.current = outputValue;
+          updateNodeData({ output: outputObject });
         }
       } catch (error) {
-        console.error(`ViewText ${id}: Error generating outputs`, error, {
+        console.error(`ViewText ${id}: Error generating output`, error, {
           spec: spec?.kind,
           nodeDataKeys: Object.keys(nodeData || {}),
         });
@@ -312,10 +319,10 @@ const ViewTextNode = memo(
         // Fallback: set empty object to prevent crashes, basically empty state for storage
         if (lastGeneralOutputRef.current !== null) {
           lastGeneralOutputRef.current = new Map();
-          updateNodeData({ outputs: {} });
+          updateNodeData({ output: {} });
         }
       }
-    }, [spec.handles, nodeData, updateNodeData, id]);
+    }, [spec.handles, nodeData.inputs, nodeData.isActive, updateNodeData, id]);
 
     // Main effect – watch upstream nodes & compute text -------------------------
     useEffect(() => {
@@ -326,7 +333,7 @@ const ViewTextNode = memo(
         .map((e) => nodes.find((n) => n.id === e.source))
         .filter(Boolean) as typeof nodes;
 
-      // Enhanced input processing with meaningful content validation
+      // Enhanced input processing with new unified handle-based system
       const texts = connected
         .filter((n) => {
           // Only accept content from active source nodes
@@ -335,25 +342,31 @@ const ViewTextNode = memo(
             return false;
           }
 
-          // Unified input reading system - prioritize handle-based outputs, basically single source for input data
+          // New unified handle-based input reading system
           const sourceData = n.data;
           let inputValue: any;
 
-          // 1. Handle-based outputs (unified system)
-          if (sourceData?.outputs && typeof sourceData.outputs === "object") {
-            // For viewText, we don't have specific source handles, so get first available output
-            const outputs = sourceData.outputs as Record<string, any>;
-            const firstOutput = Object.values(outputs)[0];
-            if (firstOutput !== undefined) {
-              inputValue = firstOutput;
+          // 1. Handle-based output (primary system)
+          if (sourceData?.output && typeof sourceData.output === "object") {
+            // For viewText, we accept any output from connected handles
+            const output = sourceData.output as Record<string, any>;
+            // Get first available output value
+            const firstOutputValue = Object.values(output)[0];
+            if (firstOutputValue !== undefined) {
+              inputValue = firstOutputValue;
             }
           }
 
-          // 2. Legacy value fallbacks for compatibility
+          // 2. Legacy fallbacks for compatibility
           if (inputValue === undefined) {
             if (sourceData?.output !== undefined) {
               inputValue = sourceData.output;
             }
+          }
+
+          // 3. Final fallback to whole data object
+          if (inputValue === undefined) {
+            inputValue = sourceData;
           }
 
           const nodeText = formatValue(inputValue);
@@ -369,25 +382,31 @@ const ViewTextNode = memo(
           return hasMeaningfulContent;
         })
         .map((n) => {
-          // Unified input reading system - get meaningful text from handle-based outputs first
+          // New unified handle-based input reading system
           const sourceData = n.data;
           let inputValue: any;
 
-          // 1. Handle-based outputs (unified system)
-          if (sourceData?.outputs && typeof sourceData.outputs === "object") {
-            // For viewText, we don't have specific source handles, so get first available output
-            const outputs = sourceData.outputs as Record<string, any>;
-            const firstOutput = Object.values(outputs)[0];
-            if (firstOutput !== undefined) {
-              inputValue = firstOutput;
+          // 1. Handle-based output (primary system)
+          if (sourceData?.output && typeof sourceData.output === "object") {
+            // For viewText, we accept any output from connected handles
+            const output = sourceData.output as Record<string, any>;
+            // Get first available output value
+            const firstOutputValue = Object.values(output)[0];
+            if (firstOutputValue !== undefined) {
+              inputValue = firstOutputValue;
             }
           }
 
-          // 2. Legacy value fallbacks for compatibility
+          // 2. Legacy fallbacks for compatibility
           if (inputValue === undefined) {
             if (sourceData?.output !== undefined) {
               inputValue = sourceData.output;
             }
+          }
+
+          // 3. Final fallback to whole data object
+          if (inputValue === undefined) {
+            inputValue = sourceData;
           }
 
           return formatValue(inputValue) || "";
@@ -403,12 +422,23 @@ const ViewTextNode = memo(
         const hasConnectedInputs = connected.length > 0;
         const active = hasConnectedInputs && hasContent;
 
-        updateNodeData({
+        const newInputData = {
           inputs: hasConnectedInputs ? joined || "No inputs" : "No inputs",
           isActive: active,
-        });
+        };
 
-        blockJsonWhenInactive();
+        // Only update if the input data actually changed, basically avoid unnecessary updates
+        const lastInputData = lastInputDataRef.current;
+        const hasInputDataChanged =
+          !lastInputData ||
+          lastInputData.inputs !== newInputData.inputs ||
+          lastInputData.isActive !== newInputData.isActive;
+
+        if (hasInputDataChanged) {
+          lastInputDataRef.current = newInputData;
+          updateNodeData(newInputData);
+          blockJsonWhenInactive();
+        }
       }
     }, [getEdges, getNodes, id, blockJsonWhenInactive, updateNodeData]);
 
@@ -444,10 +474,10 @@ const ViewTextNode = memo(
           <div className={CONTENT.expanded}>
             <div className={CONTENT.body}>
               <div className="whitespace-pre-line break-words text-center font-normal text-xs mt-2">
-                {typeof validation.data.outputs === "string"
-                  ? validation.data.outputs
-                  : validation.data.outputs
-                    ? JSON.stringify(validation.data.outputs, null, 2)
+                {typeof validation.data.inputs === "string"
+                  ? validation.data.inputs
+                  : validation.data.inputs
+                    ? JSON.stringify(validation.data.inputs, null, 2)
                     : "No inputs"}
               </div>
             </div>
@@ -455,9 +485,9 @@ const ViewTextNode = memo(
         ) : (
           <div className={CONTENT.collapsed}>
             {spec.receivedData?.showInCollapsed &&
-            (typeof validation.data.outputs === "string"
-              ? validation.data.outputs !== "No inputs"
-              : validation.data.outputs !== undefined) ? (
+            (typeof validation.data.inputs === "string"
+              ? validation.data.inputs !== "No inputs"
+              : validation.data.inputs !== undefined) ? (
               <div
                 className={` nowheel overflow-y-auto text-center text-xs mt-6 ${categoryStyles.primary}`}
                 style={{
@@ -465,10 +495,10 @@ const ViewTextNode = memo(
                   height: `${spec.size.collapsed.height - 20}px`,
                 }}
               >
-                {typeof validation.data.outputs === "string"
-                  ? validation.data.outputs
-                  : validation.data.outputs
-                    ? JSON.stringify(validation.data.outputs, null, 2)
+                {typeof validation.data.inputs === "string"
+                  ? validation.data.inputs
+                  : validation.data.inputs
+                    ? JSON.stringify(validation.data.inputs, null, 2)
                     : "..."}
               </div>
             ) : (

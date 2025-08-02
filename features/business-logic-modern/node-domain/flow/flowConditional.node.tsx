@@ -22,7 +22,7 @@ import LabelNode from "@/components/nodes/labelNode";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
-  generateOutputsField,
+  generateoutputField,
   normalizeHandleId,
 } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
@@ -57,7 +57,7 @@ export const FlowConditionalDataSchema = z
     booleanInput: z.boolean().nullable().default(null), // incoming boolean signal
     topOutput: z.boolean().nullable().default(null), // top output (true path)
     bottomOutput: z.boolean().nullable().default(null), // bottom output (false path)
-    outputs: z.record(z.string(), z.boolean()).optional(), // handle-based outputs object for Convex compatibility
+    output: z.record(z.string(), z.boolean()).optional(), // handle-based output object for Convex compatibility
     lastRoute: z.enum(["true", "false", "none"]).default("none"), // last active route
     invertLogic: SafeSchemas.boolean(false), // invert the routing logic
     expandedSize: SafeSchemas.text("FE1"),
@@ -191,7 +191,7 @@ function createDynamicSpec(data: FlowConditionalData): NodeSpec {
       booleanInput: null,
       topOutput: null,
       bottomOutput: null,
-      outputs: {}, // Handle-based outputs object
+      output: {}, // Handle-based output object
       lastRoute: "none",
       expandedSize: "FE1",
       collapsedSize: "C1",
@@ -204,7 +204,7 @@ function createDynamicSpec(data: FlowConditionalData): NodeSpec {
         "booleanInput",
         "topOutput",
         "bottomOutput",
-        "outputs",
+        "output",
         "lastRoute",
         "expandedSize",
         "collapsedSize",
@@ -218,7 +218,7 @@ function createDynamicSpec(data: FlowConditionalData): NodeSpec {
     icon: "LuRefreshCw",
     author: "Agenitix Team",
     description:
-      "Routes boolean signals to complementary outputs - true goes to top, false goes to bottom",
+      "Routes boolean signals to complementary output - true goes to top, false goes to bottom",
     feature: "base",
     tags: ["trigger", "flowConditional"],
     featureFlag: {
@@ -532,7 +532,7 @@ export const FlowConditionalNode = memo(
     const nodes = useStore((s) => s.nodes);
     const edges = useStore((s) => s.edges);
 
-    // keep last emitted outputs to avoid redundant writes
+    // keep last emitted output to avoid redundant writes
     const lastTopOutputRef = useRef<any>(null);
     const lastBottomOutputRef = useRef<any>(null);
     const lastGeneralOutputRef = useRef<any>(null);
@@ -553,11 +553,11 @@ export const FlowConditionalNode = memo(
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
 
-    /** Main routing logic - routes boolean input to complementary outputs */
+    /** Main routing logic - routes boolean input to complementary output */
     const routeData = useCallback(
       (inputSignal: boolean | null) => {
         if (!isActive || !isEnabled || inputSignal === null) {
-          // Clear outputs when inactive/disabled or no input
+          // Clear output when inactive/disabled or no input
           if (
             lastTopOutputRef.current !== null ||
             lastBottomOutputRef.current !== null
@@ -576,7 +576,7 @@ export const FlowConditionalNode = memo(
         // Apply invert logic if enabled
         const processedSignal = invertLogic ? !inputSignal : inputSignal;
 
-        // Flow switcher: both outputs are always active with complementary values
+        // Flow switcher: both output are always active with complementary values
         if (processedSignal === true) {
           // TRUE signal: top=true, bottom=false
           const topOutput = true;
@@ -640,35 +640,35 @@ export const FlowConditionalNode = memo(
       const sourceData = src.data as any;
       let inputValue: unknown;
 
-      // Check if source is a FlowConditional with specific handle-based outputs
+      // Check if source is a FlowConditional with specific handle-based output
       if (
         booleanInputEdge.sourceHandle &&
         sourceData.topOutput !== undefined &&
         sourceData.bottomOutput !== undefined
       ) {
-        // Handle FlowConditional outputs based on source handle
+        // Handle FlowConditional output based on source handle
         if (booleanInputEdge.sourceHandle === "topOutput") {
           inputValue = sourceData.topOutput;
         } else if (booleanInputEdge.sourceHandle === "bottomOutput") {
           inputValue = sourceData.bottomOutput;
         } else {
-          // Fallback to general outputs
-          inputValue = sourceData.outputs;
+          // Fallback to general output
+          inputValue = sourceData.output;
         }
       } else {
-        // Unified input reading system - prioritize handle-based outputs, basically single source for input data
+        // Unified input reading system - prioritize handle-based output, basically single source for input data
 
-        // 1. Handle-based outputs (unified system)
-        if (sourceData?.outputs && typeof sourceData.outputs === "object") {
-          // Try to get value from handle-based outputs
+        // 1. Handle-based output (unified system)
+        if (sourceData?.output && typeof sourceData.output === "object") {
+          // Try to get value from handle-based output
           const handleId = booleanInputEdge.sourceHandle
             ? normalizeHandleId(booleanInputEdge.sourceHandle)
             : "output";
-          if (sourceData.outputs[handleId] !== undefined) {
-            inputValue = sourceData.outputs[handleId];
+          if (sourceData.output[handleId] !== undefined) {
+            inputValue = sourceData.output[handleId];
           } else {
             // Fallback: get first available output value
-            const firstOutput = Object.values(sourceData.outputs)[0];
+            const firstOutput = Object.values(sourceData.output)[0];
             if (firstOutput !== undefined) {
               inputValue = firstOutput;
             }
@@ -755,7 +755,7 @@ export const FlowConditionalNode = memo(
       if (hasInput && !isEnabled) {
         updateNodeData({ isEnabled: true });
       }
-      // Also ensure disabled nodes clear their outputs
+      // Also ensure disabled nodes clear their output
       if (!hasInput && isEnabled) {
         updateNodeData({ isEnabled: false });
       }
@@ -771,55 +771,51 @@ export const FlowConditionalNode = memo(
       routeData(inputSignal);
     }, [nodeData, isActive, isEnabled, routeData]);
 
-    /* 🔄 Smart outputs field with robust error handling */
+    /* 🔄 Smart output field with robust error handling */
     useEffect(() => {
       try {
-        // Generate Map-based outputs with error handling
-        const outputsValue = generateOutputsField(spec, nodeData as any);
+        // Generate Map-based output with error handling
+        const outputValue = generateoutputField(spec, nodeData as any);
 
         // Validate the result
-        if (!(outputsValue instanceof Map)) {
+        if (!(outputValue instanceof Map)) {
           console.error(
-            `FlowConditional ${id}: generateOutputsField did not return a Map`,
-            outputsValue
+            `FlowConditional ${id}: generateoutputField did not return a Map`,
+            outputValue
           );
           return;
         }
 
         // Convert Map to plain object for Convex compatibility, basically serialize for storage
-        const outputsObject = Object.fromEntries(outputsValue.entries());
+        const outputObject = Object.fromEntries(outputValue.entries());
 
         // Only update if changed (deep comparison for Maps)
-        const currentOutputs = lastGeneralOutputRef.current;
+        const currentoutput = lastGeneralOutputRef.current;
         let hasChanged = true;
 
-        if (currentOutputs instanceof Map && outputsValue instanceof Map) {
+        if (currentoutput instanceof Map && outputValue instanceof Map) {
           // Compare Map contents
           hasChanged =
-            currentOutputs.size !== outputsValue.size ||
-            !Array.from(outputsValue.entries()).every(
-              ([key, value]) => currentOutputs.get(key) === value
+            currentoutput.size !== outputValue.size ||
+            !Array.from(outputValue.entries()).every(
+              ([key, value]) => currentoutput.get(key) === value
             );
         }
 
         if (hasChanged) {
-          lastGeneralOutputRef.current = outputsValue;
-          updateNodeData({ outputs: outputsObject });
+          lastGeneralOutputRef.current = outputValue;
+          updateNodeData({ output: outputObject });
         }
       } catch (error) {
-        console.error(
-          `FlowConditional ${id}: Error generating outputs`,
-          error,
-          {
-            spec: spec?.kind,
-            nodeDataKeys: Object.keys(nodeData || {}),
-          }
-        );
+        console.error(`FlowConditional ${id}: Error generating output`, error, {
+          spec: spec?.kind,
+          nodeDataKeys: Object.keys(nodeData || {}),
+        });
 
         // Fallback: set empty object to prevent crashes, basically empty state for storage
         if (lastGeneralOutputRef.current !== null) {
           lastGeneralOutputRef.current = new Map();
-          updateNodeData({ outputs: {} });
+          updateNodeData({ output: {} });
         }
       }
     }, [spec.handles, nodeData, updateNodeData, id]);

@@ -16,22 +16,22 @@ const StoreLocalDataSchema = z.object({
   inputData: z.record(z.unknown()).nullable().default(null),
   triggerInput: z.boolean().default(false),
   lastTriggerState: z.boolean().default(false),
-  
+
   // Status and feedback
   isProcessing: z.boolean().default(false),
   lastOperation: z.enum(["none", "store", "delete"]).default("none"),
   lastOperationSuccess: z.boolean().default(false),
   lastOperationTime: z.number().optional(),
   operationMessage: z.string().default(""),
-  
+
   // UI state (existing)
   isEnabled: z.boolean().default(true),
   isActive: z.boolean().default(false),
   isExpanded: z.boolean().default(false),
   expandedSize: z.string().default("VE2"),
   collapsedSize: z.string().default("C2"),
-  
-  // Outputs
+
+  // output
   statusOutput: z.boolean().default(false),
 });
 ```
@@ -48,7 +48,7 @@ handles: [
     dataType: "JSON",
   },
   {
-    id: "trigger-input", 
+    id: "trigger-input",
     code: "b",
     position: "left",
     type: "target",
@@ -61,7 +61,7 @@ handles: [
     type: "source",
     dataType: "Boolean",
   },
-]
+];
 ```
 
 ## Components and Interfaces
@@ -89,7 +89,7 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({
       className={cn(
         "px-3 py-2 rounded-md font-medium text-sm transition-all duration-200",
         "border-2 min-w-[80px] h-[36px]",
-        mode === "store" 
+        mode === "store"
           ? "bg-blue-500 text-white border-blue-600 hover:bg-blue-600"
           : "bg-red-500 text-white border-red-600 hover:bg-red-600",
         disabled && "opacity-50 cursor-not-allowed",
@@ -137,10 +137,10 @@ const StatusDisplay: React.FC<StatusDisplayProps> = ({
       <div className="flex items-center gap-1">
         <span>{getStatusIcon()}</span>
         <span>
-          {isProcessing 
-            ? "Processing..." 
-            : lastOperation === "none" 
-              ? "Ready" 
+          {isProcessing
+            ? "Processing..."
+            : lastOperation === "none"
+              ? "Ready"
               : `${lastOperation} ${lastOperationSuccess ? "success" : "failed"}`
           }
         </span>
@@ -169,10 +169,10 @@ interface DataPreviewProps {
   maxItems?: number;
 }
 
-const DataPreview: React.FC<DataPreviewProps> = ({ 
-  data, 
-  mode, 
-  maxItems = 5 
+const DataPreview: React.FC<DataPreviewProps> = ({
+  data,
+  mode,
+  maxItems = 5
 }) => {
   if (!data || Object.keys(data).length === 0) {
     return (
@@ -195,7 +195,7 @@ const DataPreview: React.FC<DataPreviewProps> = ({
           <span className="font-mono text-blue-600">{key}:</span>
           {mode === "store" && (
             <span className="text-gray-600 truncate">
-              {typeof value === "object" 
+              {typeof value === "object"
                 ? JSON.stringify(value).slice(0, 30) + "..."
                 : String(value).slice(0, 30)
               }
@@ -225,14 +225,14 @@ interface LocalStorageOperations {
     keysProcessed: string[];
     errors: Array<{ key: string; error: string }>;
   }>;
-  
+
   delete: (keys: string[]) => Promise<{
     success: boolean;
     message: string;
     keysDeleted: string[];
     keysNotFound: string[];
   }>;
-  
+
   isAvailable: () => boolean;
   getQuotaInfo: () => Promise<{
     used: number;
@@ -248,8 +248,8 @@ interface LocalStorageOperations {
 const createLocalStorageOperations = (): LocalStorageOperations => {
   const isAvailable = (): boolean => {
     try {
-      const test = '__localStorage_test__';
-      localStorage.setItem(test, 'test');
+      const test = "__localStorage_test__";
+      localStorage.setItem(test, "test");
       localStorage.removeItem(test);
       return true;
     } catch {
@@ -274,7 +274,7 @@ const createLocalStorageOperations = (): LocalStorageOperations => {
     for (const [key, value] of Object.entries(data)) {
       try {
         let serializedValue: string;
-        
+
         if (typeof value === "string") {
           serializedValue = JSON.stringify(value);
         } else if (typeof value === "number" || typeof value === "boolean") {
@@ -296,7 +296,7 @@ const createLocalStorageOperations = (): LocalStorageOperations => {
       }
     }
 
-    result.message = result.success 
+    result.message = result.success
       ? `Successfully stored ${result.keysProcessed.length} items`
       : `Stored ${result.keysProcessed.length} items with ${result.errors.length} errors`;
 
@@ -371,7 +371,7 @@ const createLocalStorageOperations = (): LocalStorageOperations => {
 ```typescript
 enum LocalStorageErrorType {
   NOT_AVAILABLE = "NOT_AVAILABLE",
-  QUOTA_EXCEEDED = "QUOTA_EXCEEDED", 
+  QUOTA_EXCEEDED = "QUOTA_EXCEEDED",
   SERIALIZATION_ERROR = "SERIALIZATION_ERROR",
   INVALID_DATA = "INVALID_DATA",
   OPERATION_FAILED = "OPERATION_FAILED",
@@ -384,7 +384,10 @@ interface LocalStorageError {
   originalError?: Error;
 }
 
-const handleLocalStorageError = (error: unknown, key?: string): LocalStorageError => {
+const handleLocalStorageError = (
+  error: unknown,
+  key?: string
+): LocalStorageError => {
   if (error instanceof DOMException) {
     if (error.name === "QuotaExceededError") {
       return {
@@ -461,7 +464,7 @@ describe("StoreLocal Node", () => {
 
     it("should delete specified keys", async () => {
       const operations = createLocalStorageOperations();
-      
+
       // Setup data
       localStorage.setItem("key1", "value1");
       localStorage.setItem("key2", "value2");
@@ -482,9 +485,9 @@ describe("StoreLocal Node", () => {
       const { result } = renderHook(() => {
         const [lastState, setLastState] = useState(false);
         const [currentState, setCurrentState] = useState(false);
-        
+
         const isPulse = currentState && !lastState;
-        
+
         return { isPulse, setCurrentState, setLastState };
       });
 
@@ -509,11 +512,11 @@ describe("StoreLocal Node", () => {
     it("should toggle between store and delete modes", () => {
       const { result } = renderHook(() => {
         const [mode, setMode] = useState<"store" | "delete">("store");
-        
+
         const toggleMode = () => {
-          setMode(prev => prev === "store" ? "delete" : "store");
+          setMode((prev) => (prev === "store" ? "delete" : "store"));
         };
-        
+
         return { mode, toggleMode };
       });
 
@@ -539,7 +542,7 @@ describe("StoreLocal Node", () => {
 describe("StoreLocal Node Integration", () => {
   it("should perform complete store operation flow", async () => {
     const { getByRole, getByText } = render(
-      <StoreLocalNode 
+      <StoreLocalNode
         id="test-node"
         data={{
           mode: "store",
@@ -569,7 +572,7 @@ describe("StoreLocal Node Integration", () => {
     localStorage.setItem("count", "42");
 
     const { getByText } = render(
-      <StoreLocalNode 
+      <StoreLocalNode
         id="test-node"
         data={{
           mode: "delete",
@@ -598,11 +601,13 @@ describe("StoreLocal Node Integration", () => {
 ## Visual Design
 
 ### Collapsed State (C2 - 120x120px)
+
 - Mode toggle button centered in upper portion
 - Status indicator (icon + text) in lower portion
 - Minimal data preview if space allows
 
 ### Expanded State (VE2 - 180px width, auto height)
+
 - Mode toggle button at top
 - Data preview section showing keys and values
 - Status display with detailed information
@@ -610,6 +615,7 @@ describe("StoreLocal Node Integration", () => {
 - Error messages if any
 
 ### Color Scheme
+
 - Store mode: Blue theme (#3B82F6)
 - Delete mode: Red theme (#EF4444)
 - Success states: Green (#10B981)
@@ -620,6 +626,7 @@ describe("StoreLocal Node Integration", () => {
 ## Performance Considerations
 
 ### Optimization Strategies
+
 1. **Debounced Operations**: Prevent rapid-fire operations
 2. **Memoized Components**: Prevent unnecessary re-renders
 3. **Lazy Serialization**: Only serialize when actually storing
@@ -627,6 +634,7 @@ describe("StoreLocal Node Integration", () => {
 5. **Error Boundaries**: Isolate localStorage failures
 
 ### Memory Management
+
 - Clear operation history after 10 entries
 - Limit data preview to 5 items
 - Use weak references for temporary data
@@ -635,12 +643,14 @@ describe("StoreLocal Node Integration", () => {
 ## Security Considerations
 
 ### Data Validation
+
 - Validate input data structure before processing
 - Sanitize keys to prevent localStorage pollution
 - Limit maximum data size per operation
 - Prevent circular reference serialization
 
 ### Error Information
+
 - Don't expose sensitive data in error messages
 - Log detailed errors to console only in development
 - Provide user-friendly error messages

@@ -2,7 +2,7 @@
 node_modules/
 .pnpm-store/
 
-# Build outputs
+# Build output
 dist/
 build/
 *.tsbuildinfo
@@ -81,4 +81,4 @@ Thumbs.db
 
 # Temporary files
 *.tmp
-*.temp 
+*.temp
