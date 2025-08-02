@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node Toast System - AgenitiX Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fafafa;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2563eb;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #1e40af;
+            margin-top: 30px;
+            border-left: 4px solid #3b82f6;
+            padding-left: 15px;
+        }
+        h3 {
+            color: #1e3a8a;
+            margin-top: 25px;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .feature-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid #3b82f6;
+        }
+        .feature-card h4 {
+            margin-top: 0;
+            color: #1e40af;
+        }
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        .code-inline {
+            background: #e2e8f0;
+            color: #1e293b;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9em;
+        }
+        .toast-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .toast-type {
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        .toast-success {
+            background: #f0fdf4;
+            border-color: #22c55e;
+        }
+        .toast-error {
+            background: #fef2f2;
+            border-color: #ef4444;
+        }
+        .toast-warning {
+            background: #fffbeb;
+            border-color: #f59e0b;
+        }
+        .toast-info {
+            background: #eff6ff;
+            border-color: #3b82f6;
+        }
+        .best-practices {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .warning {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .api-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .api-table th,
+        .api-table td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            text-align: left;
+        }
+        .api-table th {
+            background: #f8fafc;
+            font-weight: 600;
+        }
+        .toc {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .toc li {
+            margin: 5px 0;
+        }
+        .toc a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Node Toast System</h1>
+        <p><strong>A contextual notification system that displays toast messages above individual nodes in the flow editor.</strong></p>
+
+        <div class="toc">
+            <h3>Table of Contents</h3>
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#quick-start">Quick Start</a></li>
+                <li><a href="#api-reference">API Reference</a></li>
+                <li><a href="#toast-types">Toast Types</a></li>
+                <li><a href="#styling">Styling and Theming</a></li>
+                <li><a href="#best-practices">Best Practices</a></li>
+                <li><a href="#examples">Examples</a></li>
+                <li><a href="#troubleshooting">Troubleshooting</a></li>
+            </ul>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>The Node Toast System is a modular notification component that appears directly above nodes to provide contextual feedback. Unlike global toasts, these notifications are tied to specific nodes and automatically match their dimensions and styling.</p>
+
+        <h2 id="features">Features</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h4>🎯 Node-Specific</h4>
+                <p>Each toast is tied to a specific node, providing contextual feedback exactly where it's needed.</p>
+            </div>
+            <div class="feature-card">
+                <h4>📏 Perfect Width Matching</h4>
+                <p>Automatically matches the node's width using standardized sizing system.</p>
+            </div>
+            <div class="feature-card">
+                <h4>🎨 Theme Integration</h4>
+                <p>Follows shadcn/ui design patterns with automatic light/dark mode support.</p>
+            </div>
+            <div class="feature-card">
+                <h4>⚡ Auto-Dismiss</h4>
+                <p>Configurable duration with sensible defaults for different toast types.</p>
+            </div>
+            <div class="feature-card">
+                <h4>📱 Responsive Design</h4>
+                <p>Adapts layout based on node width with smart content hiding.</p>
+            </div>
+            <div class="feature-card">
+                <h4>🔄 Queue Management</h4>
+                <p>Multiple toasts stack vertically with smooth animations.</p>
+            </div>
+        </div>
+
+        <h2 id="quick-start">Quick Start</h2>
+        <h3>Basic Usage</h3>
+        <div class="code-block">
+import { useNodeToast } from '@/hooks/useNodeToast';
+
+const MyNode = ({ id }: NodeProps) => {
+  const { showSuccess, showError, showWarning, showInfo } = useNodeToast(id);
+
+  const handleSave = async () => {
+    try {
+      await saveData();
+      showSuccess('Data saved successfully');
+    } catch (error) {
+      showError('Save failed', error.message);
+    }
+  };
+
+  return &lt;div&gt;{/* Node content */}&lt;/div&gt;;
+};
+        </div>
+
+        <h3>Advanced Usage</h3>
+        <div class="code-block">
+const { showToast, clearToasts } = useNodeToast(id);
+
+// Custom configuration
+showToast({
+  type: 'warning',
+  message: 'Rate limit approaching',
+  description: 'Consider reducing request frequency',
+  duration: 8000,
+  dismissible: true
+});
+
+// Clear all toasts for this node
+clearToasts();
+        </div>
+
+        <h2 id="api-reference">API Reference</h2>
+        <h3>useNodeToast Hook</h3>
+        <div class="code-block">
+const {
+  showToast,     // Show custom toast
+  showSuccess,   // Show success toast
+  showError,     // Show error toast  
+  showWarning,   // Show warning toast
+  showInfo,      // Show info toast
+  clearToasts    // Clear all toasts for this node
+} = useNodeToast(nodeId);
+        </div>
+
+        <table class="api-table">
+            <thead>
+                <tr>
+                    <th>Method</th>
+                    <th>Parameters</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>showToast</code></td>
+                    <td><code>(config: ToastConfig)</code></td>
+                    <td>Show a custom toast with full configuration</td>
+                </tr>
+                <tr>
+                    <td><code>showSuccess</code></td>
+                    <td><code>(message: string, description?: string, duration?: number)</code></td>
+                    <td>Show a success toast</td>
+                </tr>
+                <tr>
+                    <td><code>showError</code></td>
+                    <td><code>(message: string, description?: string, duration?: number)</code></td>
+                    <td>Show an error toast</td>
+                </tr>
+                <tr>
+                    <td><code>showWarning</code></td>
+                    <td><code>(message: string, description?: string, duration?: number)</code></td>
+                    <td>Show a warning toast</td>
+                </tr>
+                <tr>
+                    <td><code>showInfo</code></td>
+                    <td><code>(message: string, description?: string, duration?: number)</code></td>
+                    <td>Show an info toast</td>
+                </tr>
+                <tr>
+                    <td><code>clearToasts</code></td>
+                    <td><code>()</code></td>
+                    <td>Clear all toasts for this node</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2 id="toast-types">Toast Types</h2>
+        <div class="toast-types">
+            <div class="toast-type toast-success">
+                <h4>✅ Success Toast</h4>
+                <p><strong>Duration:</strong> 3 seconds</p>
+                <p><strong>Use Case:</strong> Successful operations, confirmations</p>
+                <div class="code-block">showSuccess('Operation completed');</div>
+            </div>
+            <div class="toast-type toast-error">
+                <h4>❌ Error Toast</h4>
+                <p><strong>Duration:</strong> 6 seconds</p>
+                <p><strong>Use Case:</strong> Errors, failures, critical issues</p>
+                <div class="code-block">showError('Connection failed');</div>
+            </div>
+            <div class="toast-type toast-warning">
+                <h4>⚠️ Warning Toast</h4>
+                <p><strong>Duration:</strong> 5 seconds</p>
+                <p><strong>Use Case:</strong> Warnings, potential issues</p>
+                <div class="code-block">showWarning('Rate limit approaching');</div>
+            </div>
+            <div class="toast-type toast-info">
+                <h4>ℹ️ Info Toast</h4>
+                <p><strong>Duration:</strong> 4 seconds</p>
+                <p><strong>Use Case:</strong> Information, status updates</p>
+                <div class="code-block">showInfo('Processing started');</div>
+            </div>
+        </div>
+
+        <h2 id="styling">Styling and Theming</h2>
+        <h3>Theme Integration</h3>
+        <p>The toast system automatically adapts to the current theme using shadcn/ui design tokens:</p>
+        <ul>
+            <li><strong>Background:</strong> <code>bg-background</code> (theme-aware)</li>
+            <li><strong>Border:</strong> <code>border-border</code> (theme-aware)</li>
+            <li><strong>Text:</strong> <code>text-foreground</code> (theme-aware)</li>
+            <li><strong>Secondary Text:</strong> <code>text-muted-foreground</code></li>
+            <li><strong>Icons:</strong> Color-coded with dark mode variants</li>
+        </ul>
+
+        <h3>Responsive Design</h3>
+        <p>Toasts automatically adapt their layout based on node width:</p>
+        <ul>
+            <li><strong>Narrow nodes (&lt; 150px):</strong> Smaller icons, reduced padding, no dismiss button</li>
+            <li><strong>Medium nodes (&lt; 200px):</strong> Hide descriptions to save space</li>
+            <li><strong>Wide nodes (≥ 200px):</strong> Full feature set with descriptions and dismiss buttons</li>
+        </ul>
+
+        <h2 id="best-practices">Best Practices</h2>
+        <div class="best-practices">
+            <h3>✅ Good Use Cases</h3>
+            <ul>
+                <li>Operation confirmations (save, delete, update)</li>
+                <li>Validation feedback</li>
+                <li>Connection status updates</li>
+                <li>Processing notifications</li>
+                <li>Error messages specific to the node</li>
+            </ul>
+
+            <h3>❌ Avoid For</h3>
+            <ul>
+                <li>Global application messages (use global toast instead)</li>
+                <li>Long-running status updates (use progress indicators)</li>
+                <li>Non-actionable information</li>
+                <li>Debugging messages (use console.log)</li>
+            </ul>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Message Guidelines:</strong>
+            <ul>
+                <li><strong>Keep it Short:</strong> Messages should be concise and scannable</li>
+                <li><strong>Be Specific:</strong> Provide actionable information when possible</li>
+                <li><strong>Use Descriptions:</strong> Add context with the description parameter</li>
+                <li><strong>Consistent Tone:</strong> Match the application's voice and tone</li>
+            </ul>
+        </div>
+
+        <h2 id="examples">Examples</h2>
+        <h3>Email Node Integration</h3>
+        <div class="code-block">
+const EmailNode = ({ id }: NodeProps) => {
+  const { showSuccess, showError, showInfo } = useNodeToast(id);
+
+  const sendEmail = async () => {
+    showInfo('Sending email...');
+    
+    try {
+      await emailService.send(emailData);
+      showSuccess('Email sent', 'Message delivered successfully');
+    } catch (error) {
+      showError('Send failed', 'Please check your connection');
+    }
+  };
+
+  return (
+    &lt;div&gt;
+      &lt;button onClick={sendEmail}&gt;Send Email&lt;/button&gt;
+    &lt;/div&gt;
+  );
+};
+        </div>
+
+        <h3>Data Processing Node</h3>
+        <div class="code-block">
+const ProcessDataNode = ({ id }: NodeProps) => {
+  const { showSuccess, showWarning, showError } = useNodeToast(id);
+
+  const processData = async (data: any[]) => {
+    if (data.length === 0) {
+      showWarning('No data to process');
+      return;
+    }
+
+    if (data.length > 1000) {
+      showWarning('Large dataset', 'Processing may take longer');
+    }
+
+    try {
+      const result = await processor.process(data);
+      showSuccess(`Processed ${result.count} items`);
+    } catch (error) {
+      showError('Processing failed', error.message);
+    }
+  };
+
+  return &lt;div&gt;{/* Node content */}&lt;/div&gt;;
+};
+        </div>
+
+        <h2 id="troubleshooting">Troubleshooting</h2>
+        <h3>Toast Not Appearing</h3>
+        <ul>
+            <li>Ensure <code>useNodeToast</code> is called with the correct node ID</li>
+            <li>Check that the node is wrapped with <code>withNodeScaffold</code></li>
+            <li>Verify the toast container is not hidden by CSS</li>
+        </ul>
+
+        <h3>Width Not Matching</h3>
+        <ul>
+            <li>Check that the node has proper data attributes</li>
+            <li>Verify the node is using standardized sizing from the theming system</li>
+            <li>Enable debug mode by setting <code>DEBUG_WIDTH = true</code> in NodeToast.tsx</li>
+        </ul>
+
+        <h3>Performance Issues</h3>
+        <ul>
+            <li>Avoid calling toast methods in render loops</li>
+            <li>Use debouncing for rapid-fire events</li>
+            <li>Clear toasts when appropriate using <code>clearToasts()</code></li>
+        </ul>
+
+        <hr style="margin: 40px 0; border: none; border-top: 1px solid #e2e8f0;">
+        <p style="text-align: center; color: #64748b; font-size: 0.9em;">
+            <em>This documentation covers the complete Node Toast System. For implementation details, see the source code in <code>features/business-logic-modern/infrastructure/node-core/NodeToast.tsx</code>.</em>
+        </p>
+    </div>
+</body>
+</html>

@@ -79,72 +79,86 @@ const CONTENT = {
 } as const;
 
 // -----------------------------------------------------------------------------
-// 3️⃣  Dynamic spec factory (pure)
+// 3️⃣  Dynamic spec factory (pure) - Optimized with caching
 // -----------------------------------------------------------------------------
 
 /**
  * Builds a NodeSpec whose size keys can change at runtime via node data.
+ * Performance optimized with memoization cache to avoid recreating spec objects.
  */
-function createDynamicSpec(data: CreateTextData): NodeSpec {
-	const expanded =
-		EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ?? EXPANDED_SIZES.VE2;
-	const collapsed =
-		COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ?? COLLAPSED_SIZES.C1W;
+const createDynamicSpec = (() => {
+	const specCache = new Map<string, NodeSpec>();
+	
+	return (data: CreateTextData): NodeSpec => {
+		const cacheKey = `${data.expandedSize}-${data.collapsedSize}`;
+		
+		if (specCache.has(cacheKey)) {
+			return specCache.get(cacheKey)!;
+		}
+		
+		const expanded =
+			EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ?? EXPANDED_SIZES.VE2;
+		const collapsed =
+			COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ?? COLLAPSED_SIZES.C1W;
 
-	return {
-		kind: "createText",
-		displayName: "Create Text",
-		label: "Create Text",
-		category: CATEGORIES.CREATE,
-		size: { expanded, collapsed },
-		handles: [
-			{
-				id: "output",
-				code: "s",
-				position: "right",
-				type: "source",
-				dataType: "String",
-			},
-			{
-				id: "input",
-				code: "b",
-				position: "left",
-				type: "target",
-				dataType: "Boolean",
-			},
-		],
-		inspector: { key: "CreateTextInspector" },
-		version: 1,
-		runtime: { execute: "createText_execute_v1" },
-		initialData: createSafeInitialData(CreateTextDataSchema, {
-			store: "Default text",
-			inputs: null,
-			outputs: "",
-		}),
-		dataSchema: CreateTextDataSchema,
-		controls: {
-			autoGenerate: true,
-			excludeFields: ["isActive", "inputs", "outputs", "expandedSize", "collapsedSize"],
-			customFields: [
-				{ key: "isEnabled", type: "boolean", label: "Enable" },
+		const spec: NodeSpec = {
+			kind: "createText",
+			displayName: "Create Text",
+			label: "Create Text",
+			category: CATEGORIES.CREATE,
+			size: { expanded, collapsed },
+			handles: [
 				{
-					key: "store",
-					type: "textarea",
-					label: "Store",
-					placeholder: "Enter Text",
-					ui: { rows: 4 },
+					id: "output",
+					code: "s",
+					position: "right",
+					type: "source",
+					dataType: "String",
 				},
-				{ key: "isExpanded", type: "boolean", label: "Expand" },
+				{
+					id: "input",
+					code: "b",
+					position: "left",
+					type: "target",
+					dataType: "Boolean",
+				},
 			],
-		},
-		icon: "LuFileText",
-		author: "Agenitix Team",
-		description: "Creates text content with customizable formatting and styling options",
-		feature: "base",
-		tags: ["content", "formatting"],
-		theming: {},
+			inspector: { key: "CreateTextInspector" },
+			version: 1,
+			runtime: { execute: "createText_execute_v1" },
+			initialData: createSafeInitialData(CreateTextDataSchema, {
+				store: "Default text",
+				inputs: null,
+				outputs: "",
+			}),
+			dataSchema: CreateTextDataSchema,
+			controls: {
+				autoGenerate: true,
+				excludeFields: ["isActive", "inputs", "outputs", "expandedSize", "collapsedSize"],
+				customFields: [
+					{ key: "isEnabled", type: "boolean", label: "Enable" },
+					{
+						key: "store",
+						type: "textarea",
+						label: "Store",
+						placeholder: "Enter Text",
+						ui: { rows: 4 },
+					},
+					{ key: "isExpanded", type: "boolean", label: "Expand" },
+				],
+			},
+			icon: "LuFileText",
+			author: "Agenitix Team",
+			description: "Creates text content with customizable formatting and styling options",
+			feature: "base",
+			tags: ["content", "formatting"],
+			theming: {},
+		};
+		
+		specCache.set(cacheKey, spec);
+		return spec;
 	};
-}
+})();
 
 /** Static spec for registry (uses default size keys) */
 export const spec: NodeSpec = createDynamicSpec({
@@ -379,6 +393,13 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
 			<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
 		</>
 	);
+}, (prevProps, nextProps) => {
+	// Custom comparison for performance, basically only re-render when essential props change
+	return (
+		prevProps.id === nextProps.id &&
+		prevProps.data === nextProps.data &&
+		prevProps.spec?.displayName === nextProps.spec?.displayName
+	);
 });
 
 // -----------------------------------------------------------------------------
@@ -392,23 +413,22 @@ const CreateTextNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec })
  * on every keystroke causes React to unmount / remount the subtree (and your
  * textarea loses focus).  We memoise the scaffolded component so its identity
  * stays stable across renders unless the *spec itself* really changes.
+ * 
+ * Performance optimizations:
+ * • Added React.memo with custom comparison function, basically prevents unnecessary re-renders
+ * • Optimized useMemo dependencies to only track size changes, basically reduces spec recalculation
+ * • Added specCache to createDynamicSpec, basically reuses spec objects when possible
  */
-const CreateTextNodeWithDynamicSpec = (props: NodeProps) => {
+const CreateTextNodeWithDynamicSpec = memo((props: NodeProps) => {
 	const { nodeData } = useNodeData(props.id, props.data);
 
-	// Extract only size keys to keep spec stable while typing
-	const sizeKeys = useMemo(
-		() => ({
+	// Optimized: Direct dependency tracking without intermediate object creation
+	const dynamicSpec = useMemo(
+		() => createDynamicSpec({
 			expandedSize: (nodeData as CreateTextData).expandedSize,
 			collapsedSize: (nodeData as CreateTextData).collapsedSize,
-		}),
+		} as CreateTextData),
 		[(nodeData as CreateTextData).expandedSize, (nodeData as CreateTextData).collapsedSize]
-	);
-
-	// Recompute spec only when size keys change (NOT when store/outputs change)
-	const dynamicSpec = useMemo(
-		() => createDynamicSpec({ ...sizeKeys, store: "Default text" } as CreateTextData),
-		[sizeKeys]
 	);
 
 	// Memoise the scaffolded component to keep focus
@@ -418,6 +438,13 @@ const CreateTextNodeWithDynamicSpec = (props: NodeProps) => {
 	);
 
 	return <ScaffoldedNode {...props} />;
-};
+}, (prevProps, nextProps) => {
+	// Custom comparison function for memo, basically only re-render when essential props change
+	return (
+		prevProps.id === nextProps.id && 
+		prevProps.data === nextProps.data && 
+		prevProps.selected === nextProps.selected
+	);
+});
 
 export default CreateTextNodeWithDynamicSpec;

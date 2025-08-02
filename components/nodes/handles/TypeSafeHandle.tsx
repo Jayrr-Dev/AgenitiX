@@ -12,7 +12,7 @@
 import { Handle, type HandleProps, type IsValidConnection, useStore } from "@xyflow/react";
 import React, { useCallback, memo, useMemo } from "react";
 import type { IconType } from "react-icons";
-import { LuBraces, LuBrackets, LuCheck, LuCircle, LuHash, LuWrench, LuType } from "react-icons/lu";
+import { LuBraces, LuBrackets, LuCheck, LuCircle, LuHash, LuWrench, LuType, LuMail, LuFileText, LuSend } from "react-icons/lu";
 import { VscJson } from "react-icons/vsc";
 import { toast } from "sonner";
 // Auto-generated at build time (can be empty in dev before first build)
@@ -46,6 +46,10 @@ const initializeHandleIcons = () => {
 		any: LuCircle,
 		json: VscJson,
 		tools: LuWrench,
+		// Email-specific data types
+		emailaccount: LuMail,
+		emailtemplate: LuFileText,
+		composedemail: LuSend,
 	};
 
 	Object.entries(handleIconComponents).forEach(([typeName, IconComponent]) => {
@@ -162,6 +166,14 @@ const UNIFIED_TYPE_DISPLAY: Record<
 	any: { iconKey: "any", tokenKey: "any" },
 	json: { iconKey: "json", tokenKey: "json" },
 	tools: { iconKey: "tools", tokenKey: "tools" },
+	// Email-specific data types
+	emailaccount: { iconKey: "emailaccount", tokenKey: "email" },
+	emailtemplate: { iconKey: "emailtemplate", tokenKey: "email" },
+	composedemail: { iconKey: "composedemail", tokenKey: "email" },
+	// Alternative casing for email data types
+	emailAccount: { iconKey: "emailaccount", tokenKey: "email" },
+	emailTemplate: { iconKey: "emailtemplate", tokenKey: "email" },
+	composedEmail: { iconKey: "composedemail", tokenKey: "email" },
 };
 
 /**
@@ -184,6 +196,10 @@ const ULTIMATE_TYPE_MAP: Record<string, { tokenKey: string; label: string }> = {
 	Array: { tokenKey: "array", label: "array" },
 	Object: { tokenKey: "object", label: "object" },
 	Tools: { tokenKey: "tools", label: "tools" },
+	// Email-specific data types
+	emailAccount: { tokenKey: "email", label: "emailAccount" },
+	emailTemplate: { tokenKey: "email", label: "emailTemplate" },
+	composedEmail: { tokenKey: "email", label: "composedEmail" },
 };
 
 /**
@@ -206,6 +222,10 @@ const TYPE_DESCRIPTIONS: Record<string, string> = {
 	Array: "Array - Lists and array structures",
 	Object: "Object - JavaScript objects and data structures",
 	Tools: "Tools - AI agent tool configurations",
+	// Email-specific data types
+	emailAccount: "Email Account - Email service configuration and credentials",
+	emailTemplate: "Email Template - Reusable email template with variables",
+	composedEmail: "Composed Email - Ready-to-send email message",
 };
 
 // ============================================================================

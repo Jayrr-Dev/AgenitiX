@@ -20,11 +20,11 @@ export default function MainMobileNav() {
 			<DropdownMenuTrigger asChild={true}>
 				<Button
 					variant="link"
-					className="t px-0 text-2xl hover:border-b-2 data-[state=open]:border-[#f6733c] data-[state=open]:border-b-2 data-[state=open]:text-[#f6733c] md:hidden"
+					className="t px-0 text-2xl hover:border-b-2 data-[state=open]:border-[##FF0000] data-[state=open]:border-b-2 data-[state=open]:text-[##FF0000] md:hidden"
 					onClick={(e) => {
-						e.currentTarget.classList.add("border-b-2", "border-[#f6733c]", "text-[#f6733c]");
+						e.currentTarget.classList.add("border-b-2", "border-[##FF0000]", "text-[##FF0000]");
 						setTimeout(() => {
-							e.currentTarget.classList.remove("border-b-2", "border-[#f6733c]", "text-[#f6733c]");
+							e.currentTarget.classList.remove("border-b-2", "border-[##FF0000]", "text-[##FF0000]");
 						}, 300);
 					}}
 				>

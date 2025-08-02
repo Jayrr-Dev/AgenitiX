@@ -19,26 +19,11 @@ interface FilteredNodesState {
 	error: string | null;
 }
 
-// Simple in-memory cache for feature flag results
-interface FlagCacheEntry {
-	enabled: boolean;
-	timestamp: number;
-}
-
-const FLAG_CACHE = new Map<string, FlagCacheEntry>();
-const CACHE_TTL = 30000; // 30 seconds cache
-
 /**
- * Get feature flag value with caching to prevent duplicate API calls
+ * Get feature flag value - now uses the global cache from useNodeFeatureFlag to prevent conflicts, basically shared caching
  */
 async function getCachedFlagValue(flagName: string): Promise<boolean> {
-	// Check cache first
-	const cached = FLAG_CACHE.get(flagName);
-	if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-		return cached.enabled;
-	}
-
-	// Cache miss - fetch from API
+	// Use a simple direct API call since the global cache in useNodeFeatureFlag will handle caching
 	try {
 		const response = await fetch("/api/flags/evaluate", {
 			method: "POST",
@@ -50,15 +35,7 @@ async function getCachedFlagValue(flagName: string): Promise<boolean> {
 
 		if (response.ok) {
 			const data = await response.json();
-			const enabled = data.enabled;
-
-			// Cache the result
-			FLAG_CACHE.set(flagName, {
-				enabled,
-				timestamp: Date.now(),
-			});
-
-			return enabled;
+			return data.enabled;
 		}
 	} catch (error) {
 		console.warn(`Failed to evaluate feature flag '${flagName}':`, error);

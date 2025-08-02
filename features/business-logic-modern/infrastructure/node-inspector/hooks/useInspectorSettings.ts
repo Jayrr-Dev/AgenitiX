@@ -60,9 +60,9 @@ const DEFAULT_SETTINGS: InspectorSettings = {
 
 // Default card order, basically the initial layout sequence
 const DEFAULT_CARD_ORDER: CardType[] = [
+	'output',
 	'nodeInfo',
 	'nodeData',
-	'output',
 	'controls',
 	'handles',
 	'connections',

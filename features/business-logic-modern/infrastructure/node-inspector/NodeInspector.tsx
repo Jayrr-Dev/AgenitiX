@@ -418,7 +418,6 @@ const renderCard = (cardType: CardType, props: CardRenderProps): React.ReactNode
 			);
 
 		case 'errors':
-			if (errors.length === 0) return null;
 			return (
 				<SortableAccordionSection
 					key={cardType}

@@ -7,22 +7,12 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 const navItemStyle =
-	"relative px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200";
+	"bg-green border-b-1 rounded-none p-2  border-transparent bg-fill-border hover:animate-fill-transparency font-thin text-xl";
 
-interface MainDesktopNavProps {
-	scrolled?: boolean;
-}
-
-export default function MainDesktopNav({ scrolled = false }: MainDesktopNavProps) {
+export default function MainDesktopNav() {
 	return (
-		<NavigationMenu className={cn(
-			"transition-all duration-300 w-full",
-			scrolled ? "max-w-[66.67%] mx-auto px-4 py-1 rounded-full" : "w-full"
-		)}>
-			<NavigationMenuList className={cn(
-				"flex flex-row items-center space-x-6 transition-all duration-300 w-full",
-				scrolled ? "scale-95 justify-center" : ""
-			)}>
+		<NavigationMenu>
+			<NavigationMenuList className="flex flex-row flex-wrap gap-4 mb-2">
 				<NavigationMenuItem>
 					<Link href="/" className={navItemStyle}>
 						Home

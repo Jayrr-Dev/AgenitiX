@@ -1,5 +1,6 @@
 "use client";
 
+import { LogomarkSvg } from "@/branding/logomark-svg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/convex/_generated/api";
@@ -32,7 +33,8 @@ export const ProtectedNavigation = () => {
 				<div className="flex h-16 items-center justify-between">
 					{/* Logo and main navigation */}
 					<div className="flex items-center space-x-8">
-						<Link href="/dashboard" className="flex items-center">
+						<Link href="/dashboard" className="flex items-center gap-3">
+							<LogomarkSvg width={40} height={40} />
 							<h1 className="font-bold text-foreground text-xl">AgenitiX</h1>
 						</Link>
 					</div>

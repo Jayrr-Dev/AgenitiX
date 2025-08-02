@@ -48,6 +48,41 @@
 	box-shadow: var(--node-create-modern-shadow-hover-dark);
 }
 
+/* Store Node Utilities - Orange Theme */
+@utility bg-node-store {
+	background-color: hsl(var(--node-store-bg));
+} /* Light orange */
+@utility bg-node-store-gradient {
+	background: var(--node-store-bg-gradient);
+} /* Modern gradient */
+@utility bg-node-store-hover {
+	background-color: hsl(var(--node-store-bg-hover));
+} /* Orange hover */
+@utility border-node-store {
+	border-color: hsl(var(--node-store-border));
+} /* Orange border */
+@utility border-node-store-hover {
+	border-color: hsl(var(--node-store-border-hover));
+} /* Orange border hover */
+@utility text-node-store {
+	color: hsl(var(--node-store-text));
+} /* Dark text */
+@utility text-node-store-secondary {
+	color: hsl(var(--node-store-text-secondary));
+} /* Secondary text */
+@utility shadow-node-store {
+	box-shadow: var(--node-store-modern-shadow);
+}
+@utility shadow-node-store-hover {
+	box-shadow: var(--node-store-modern-shadow-hover);
+}
+@utility shadow-node-store-dark {
+	box-shadow: var(--node-store-modern-shadow-dark);
+}
+@utility shadow-node-store-hover-dark {
+	box-shadow: var(--node-store-modern-shadow-hover-dark);
+}
+
 @utility bg-node-view {
 	background-color: hsl(var(--node-view-bg));
 } /* #f7f7f7 */

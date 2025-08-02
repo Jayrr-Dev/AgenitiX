@@ -10,7 +10,8 @@ import { spec as triggerPulseSpec } from "../../node-domain/trigger/triggerPulse
 import { spec as aiToolsSpec } from "../../node-domain/ai/aiTools.node";
 import { spec as storeLocalSpec } from "../../node-domain/store/storeLocal.node";
 import { spec as aiManagerSpec } from "../../node-domain/ai/aiManager.node";
-import { spec as timeSchedulerSpec } from "../../node-domain/trigger/timeScheduler.node";
+import { spec as createObjectSpec } from "../../node-domain/create/createObject.node";
+import { spec as createMapSpec } from "../../node-domain/create/createMap.node";
 import { spec as createTextSpec } from "../../node-domain/create/createText.node";
 import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
 import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
@@ -20,11 +21,6 @@ import { spec as emailSenderSpec } from "../../node-domain/email/emailSender.nod
 import { spec as emailReplierSpec } from "../../node-domain/email/emailReplier.node";
 import { spec as emailTemplateSpec } from "../../node-domain/email/emailTemplate.node";
 import { spec as emailBrandSpec } from "../../node-domain/email/emailBrand.node";
-import { spec as emailUpdaterSpec } from "../../node-domain/email/emailUpdater.node";
-import { spec as emailListSpec } from "../../node-domain/email/emailList.node";
-import { spec as emailDataSpec } from "../../node-domain/email/emailData.node";
-import { spec as emailBulkSpec } from "../../node-domain/email/emailBulk.node";
-import { spec as emailAnalyticsSpec } from "../../node-domain/email/emailAnalytics.node";
 import { spec as flowConditionalSpec } from "../../node-domain/flow/flowConditional.node";
 import { spec as testNodeSpec } from "../../node-domain/test/testNode.node";
 import { spec as triggerToggleSpec } from "../../node-domain/trigger/triggerToggle.node";
@@ -40,7 +36,8 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	aiTools: aiToolsSpec,
 	storeLocal: storeLocalSpec,
 	aiManager: aiManagerSpec,
-	timeScheduler: timeSchedulerSpec,
+	createObject: createObjectSpec,
+	createMap: createMapSpec,
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
 	aiAgent: aiAgentSpec,
@@ -52,11 +49,6 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	emailReplier: emailReplierSpec,
 	emailTemplate: emailTemplateSpec,
 	emailBrand: emailBrandSpec,
-	emailUpdater: emailUpdaterSpec,
-	emailList: emailListSpec,
-	emailData: emailDataSpec,
-	emailBulk: emailBulkSpec,
-	emailAnalytics: emailAnalyticsSpec,
 	testNode: testNodeSpec,
 	triggerToggle: triggerToggleSpec,
 	viewText: viewTextSpec,

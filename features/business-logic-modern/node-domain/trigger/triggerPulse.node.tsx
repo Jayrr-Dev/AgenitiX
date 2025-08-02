@@ -1,7 +1,7 @@
 /**
  * TriggerPulse NODE – Boolean pulse button with configurable duration and invert option
  *
- * ✔ Green = TRUE, Red = FALSE - simple color coding
+ * ✔ Red = FALSE, Green = TRUE - simple color coding
  * ✔ Sends a TRUE signal for a configurable duration when clicked, then reverts to FALSE.
  * ✔ Optional invert mode: sends FALSE for duration, then reverts to TRUE (true→false→true).
  * ✔ Configurable pulse duration in milliseconds (expanded view).
@@ -45,14 +45,14 @@ import { useNodeData } from "@/hooks/useNodeData";
 
 export const TriggerPulseDataSchema = z
   .object({
-    store: z.boolean().default(true), // current pulse state (true during pulse)
+    store: z.boolean().default(false), // current pulse state (true during pulse)
     pulseDuration: z.number().min(1).max(60000).default(400), // pulse duration in ms (1ms to 60s)
     isEnabled: SafeSchemas.boolean(true), // is pulse button interactive?
     isActive: SafeSchemas.boolean(false), // reflects store when enabled
     isExpanded: SafeSchemas.boolean(false), // inspector open?
-    isInverted: SafeSchemas.boolean(true), // inverts pulse behavior (true→false→true instead of false→true→false)
+    isInverted: SafeSchemas.boolean(false), // inverts pulse behavior (true→false→true instead of false→true→false)
     inputs: z.boolean().nullable().default(null), // last received input
-    outputs: z.boolean().default(true), // last emitted output
+    outputs: z.boolean().default(false), // last emitted output
     expandedSize: SafeSchemas.text("FE1"),
     collapsedSize: SafeSchemas.text("C1"),
     label: z.string().optional(), // User-editable node label
@@ -120,11 +120,11 @@ function createDynamicSpec(data: TriggerPulseData): NodeSpec {
     version: 1,
     runtime: { execute: "triggerPulse_execute_v1" },
     initialData: createSafeInitialData(TriggerPulseDataSchema, {
-      store: true, // Set initial store to true for inverted logic
+      store: false, // Set initial store to false for normal logic
       pulseDuration: 400,
       inputs: null,
-      outputs: true, // Set initial output to true for inverted logic
-      isInverted: true, // Default to inverted logic
+      outputs: false, // Set initial output to false for normal logic
+      isInverted: false, // Default to normal logic (false→true→false)
     }),
     dataSchema: TriggerPulseDataSchema,
     controls: {
@@ -246,7 +246,7 @@ const TriggerPulseNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec 
     // When invert state changes, reset to the appropriate idle state
     // Only do this if we're not currently in a pulse (no active timeout)
     if (!pulseTimeoutRef.current) {
-      const expectedIdleState = isInverted;
+      const expectedIdleState = isInverted ? true : false; // Inverted idle = true, normal idle = false
       if (store !== expectedIdleState) {
         updateNodeData({ store: expectedIdleState });
       }
