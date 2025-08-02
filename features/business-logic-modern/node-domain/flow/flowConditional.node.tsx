@@ -54,11 +54,11 @@ export const FlowConditionalDataSchema = z
 		isExpanded: SafeSchemas.boolean(false), // inspector open?
 		dataInput: z.any().nullable().default(null), // incoming data to route
 		conditionInput: z.boolean().nullable().default(null), // condition input
-		trueOutput: z.any().nullable().default(null), // data sent to true path
-		falseOutput: z.any().nullable().default(null), // data sent to false path
+		firstOutput: z.boolean().nullable().default(null), // true value sent to first output
+		secondOutput: z.boolean().nullable().default(null), // false value sent to second output
 		lastRoute: z.enum(["true", "false", "none"]).default("none"), // last active route
-		expandedSize: SafeSchemas.text("FE1"),
-		collapsedSize: SafeSchemas.text("C1"),
+		expandedSize: SafeSchemas.text("FE3"),
+		collapsedSize: SafeSchemas.text("C3"),
 		label: z.string().optional(), // User-editable node label
 	})
 	.passthrough();
@@ -78,19 +78,55 @@ const CATEGORY_TEXT = {
 } as const;
 
 const CONTENT = {
-	expanded: "p-4 w-full h-full flex flex-col cursor-pointer",
-	collapsed: "flex items-center justify-center w-full h-full cursor-pointer",
-	header: "flex items-center justify-between mb-3",
+	expanded: "p-6 w-full h-full flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm cursor-pointer",
+	collapsed: "flex items-center justify-center w-full h-full bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-lg border border-purple-200 dark:border-purple-700 shadow-sm cursor-pointer",
+	header: "flex items-center justify-between mb-4 pb-3 border-b border-slate-200 dark:border-slate-700",
 	body: "flex-1 flex items-center justify-center",
-	disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
-	route: "flex items-center justify-center w-full h-full relative",
-	trueRoute: "text-green-500 font-bold",
-	falseRoute: "text-red-500 font-bold",
-	noRoute: "text-gray-400 font-bold",
-	arrow: "absolute text-2xl",
-	arrowRight: "right-0 top-1/2 transform -translate-y-1/2",
-	arrowBottom: "bottom-0 left-1/2 transform -translate-x-1/2 rotate-90",
+	disabled: "opacity-60 grayscale transition-all duration-300",
+	
+	// Conditional display
+	conditionSection: "bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700 shadow-sm",
+	conditionHeader: "text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2",
+	conditionDisplay: "flex flex-col items-center gap-3",
+	conditionLabel: "text-sm text-slate-600 dark:text-slate-400",
+	
+	// Toggle button
+	toggleButton: "px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 transform hover:scale-105 shadow-md",
+	toggleTrue: "bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700",
+	toggleFalse: "bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700",
+	
+	// Status section
+	statusSection: "bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-lg p-4 border border-slate-200 dark:border-slate-700",
+	statusGrid: "grid grid-cols-1 gap-2",
+	statusRow: "flex items-center justify-between",
+	statusLabel: "text-xs font-medium text-slate-500 dark:text-slate-400",
+	statusValue: "text-xs font-semibold",
+	statusActive: "text-emerald-600 dark:text-emerald-400",
+	statusInactive: "text-red-500 dark:text-red-400",
+	
+	// Route indicators
+	route: "flex items-center justify-center w-full h-full relative p-4",
+	routeIndicator: "text-center relative z-10",
+	trueRoute: "text-emerald-500 font-bold text-lg",
+	falseRoute: "text-red-500 font-bold text-lg", 
+	noRoute: "text-slate-400 font-bold text-lg",
+	
+	// Arrows
+	arrow: "absolute text-2xl font-bold transition-all duration-300",
+	arrowRight: "right-2 top-1/2 transform -translate-y-1/2",
+	arrowBottom: "bottom-2 left-1/2 transform -translate-x-1/2",
 	arrowActive: "text-blue-500 animate-pulse",
+	arrowInactive: "text-slate-400 dark:text-slate-600",
+	
+	// Collapsed view
+	collapsedIcon: "text-2xl mb-2 text-purple-600 dark:text-purple-400",
+	collapsedTitle: "text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1",
+	collapsedStatus: "mt-2 px-2 py-1 rounded-full text-xs font-medium",
+	collapsedActive: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+	collapsedInactive: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+	
+	// External condition indicator
+	externalIndicator: "text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-full border border-amber-200 dark:border-amber-800",
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -115,31 +151,31 @@ function createDynamicSpec(data: FlowConditionalData): NodeSpec {
 		handles: [
 			{
 				id: "dataInput",
-				code: "b",
+				code: "b", 
 				position: "left",
 				type: "target",
-				dataType: "any",
+				dataType: "Boolean",
 			},
 			{
 				id: "conditionInput",
 				code: "b",
 				position: "top",
 				type: "target",
-				dataType: "boolean",
+				dataType: "Boolean",
 			},
 			{
-				id: "trueOutput",
-				code: "b",
+				id: "firstOutput",
+				code: "b", 
 				position: "right",
 				type: "source",
-				dataType: "any",
+				dataType: "Boolean",
 			},
 			{
-				id: "falseOutput",
-				code: "b",
+				id: "secondOutput",
+				code: "b", 
 				position: "bottom",
 				type: "source",
-				dataType: "any",
+				dataType: "Boolean",
 			},
 		],
 		inspector: { key: "FlowConditionalInspector" },
@@ -149,9 +185,11 @@ function createDynamicSpec(data: FlowConditionalData): NodeSpec {
 			condition: false,
 			dataInput: null,
 			conditionInput: null,
-			trueOutput: null,
-			falseOutput: null,
+			firstOutput: null,
+			secondOutput: null,
 			lastRoute: "none",
+			expandedSize: "FE3",
+			collapsedSize: "C3",
 		}),
 		dataSchema: FlowConditionalDataSchema,
 		controls: {
@@ -160,8 +198,8 @@ function createDynamicSpec(data: FlowConditionalData): NodeSpec {
 				"isActive",
 				"dataInput",
 				"conditionInput",
-				"trueOutput",
-				"falseOutput",
+				"firstOutput",
+				"secondOutput",
 				"lastRoute",
 				"expandedSize",
 				"collapsedSize",
@@ -173,7 +211,7 @@ function createDynamicSpec(data: FlowConditionalData): NodeSpec {
 			],
 		},
 		icon: "LuRefreshCw",
-		author: "Hoang Nguyen",
+		author: "Agenitix Team",
 		description: "Decision-based routing node that directs data flow based on a boolean condition",
 		feature: "base",
 		tags: ["trigger", "flowConditional"],
@@ -189,8 +227,8 @@ function createDynamicSpec(data: FlowConditionalData): NodeSpec {
 
 /** Static spec for registry (uses default size keys) */
 export const spec: NodeSpec = createDynamicSpec({
-	expandedSize: "FE1",
-	collapsedSize: "C1",
+	expandedSize: "FE3",
+	collapsedSize: "C3",
 } as FlowConditionalData);
 
 // -----------------------------------------------------------------------------
@@ -207,6 +245,36 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 	// 4.1  Sync with React‑Flow store
 	// -------------------------------------------------------------------------
 	const { nodeData, updateNodeData } = useNodeData(id, data);
+
+	// Initialize missing fields if needed
+	useEffect(() => {
+		const updates: Partial<FlowConditionalData> = {};
+		let needsUpdate = false;
+
+		// Check if required fields are missing
+		if (nodeData.condition === undefined) {
+			updates.condition = false;
+			needsUpdate = true;
+		}
+		if (nodeData.firstOutput === undefined) {
+			updates.firstOutput = null;
+			needsUpdate = true;
+		}
+		if (nodeData.secondOutput === undefined) {
+			updates.secondOutput = null;
+			needsUpdate = true;
+		}
+		if (nodeData.lastRoute === undefined) {
+			updates.lastRoute = "none";
+			needsUpdate = true;
+		}
+
+		// Only update if needed
+		if (needsUpdate) {
+			console.log('Initializing missing FlowConditional fields:', updates);
+			updateNodeData(updates);
+		}
+	}, [nodeData, updateNodeData]);
 
 	// -------------------------------------------------------------------------
 	// 4.2  Derived state
@@ -237,55 +305,62 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 		updateNodeData({ isExpanded: !isExpanded });
 	}, [isExpanded, updateNodeData]);
 
-	/** Propagate outputs based on condition ONLY when node is active AND enabled */
-	const propagate = useCallback(
-		(value: any, currentCondition: boolean) => {
-			const shouldSend = isActive && isEnabled;
-
-			if (shouldSend) {
-				if (currentCondition) {
-					// Route to true output
-					if (value !== lastTrueOutputRef.current) {
-						lastTrueOutputRef.current = value;
-						updateNodeData({
-							trueOutput: value,
-							falseOutput: null,
-							lastRoute: "true",
-						});
-					}
-				} else if (value !== lastFalseOutputRef.current) {
-					// Route to false output
-					lastFalseOutputRef.current = value;
+	/** Main routing logic - routes data based on condition */
+	const routeData = useCallback(
+		(dataInput: any, effectiveCondition: boolean) => {
+			if (!isActive || !isEnabled) {
+				// Clear outputs when inactive/disabled
+				if (lastTrueOutputRef.current !== null || lastFalseOutputRef.current !== null) {
+					lastTrueOutputRef.current = null;
+					lastFalseOutputRef.current = null;
 					updateNodeData({
-						trueOutput: null,
-						falseOutput: value,
+						firstOutput: null,
+						secondOutput: null,
+						lastRoute: "none",
+					});
+				}
+				return;
+			}
+
+			// Route data based on condition - complementary outputs
+			if (effectiveCondition) {
+				// TRUE path: firstOutput gets the data, secondOutput gets false
+				const trueOutput = dataInput;
+				const falseOutput = false;
+				
+				if (trueOutput !== lastTrueOutputRef.current || falseOutput !== lastFalseOutputRef.current) {
+					lastTrueOutputRef.current = trueOutput;
+					lastFalseOutputRef.current = falseOutput;
+					updateNodeData({
+						firstOutput: trueOutput,
+						secondOutput: falseOutput,
+						lastRoute: "true",
+					});
+				}
+			} else {
+				// FALSE path: firstOutput gets false, secondOutput gets the data
+				const trueOutput = false;
+				const falseOutput = dataInput;
+				
+				if (trueOutput !== lastTrueOutputRef.current || falseOutput !== lastFalseOutputRef.current) {
+					lastTrueOutputRef.current = trueOutput;
+					lastFalseOutputRef.current = falseOutput;
+					updateNodeData({
+						firstOutput: trueOutput,
+						secondOutput: falseOutput,
 						lastRoute: "false",
 					});
 				}
-			} else if (lastTrueOutputRef.current !== null || lastFalseOutputRef.current !== null) {
-				// When inactive or disabled, clear both outputs
-				lastTrueOutputRef.current = null;
-				lastFalseOutputRef.current = null;
-				updateNodeData({
-					trueOutput: null,
-					falseOutput: null,
-					lastRoute: "none",
-				});
 			}
 		},
 		[isActive, isEnabled, updateNodeData]
 	);
 
-	/** Clear outputs when inactive or disabled */
-	const clearOutputsWhenInactive = useCallback(() => {
-		if (!(isActive && isEnabled)) {
-			updateNodeData({
-				trueOutput: null,
-				falseOutput: null,
-				lastRoute: "none",
-			});
-		}
-	}, [isActive, isEnabled, updateNodeData]);
+	/** Get effective condition (external input takes precedence) */
+	const getEffectiveCondition = useCallback((): boolean => {
+		const conditionInput = (nodeData as FlowConditionalData).conditionInput;
+		return conditionInput !== null ? conditionInput : condition;
+	}, [nodeData, condition]);
 
 	/**
 	 * Compute the latest data coming from connected data input handle.
@@ -331,12 +406,22 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 
 	/** Handle condition toggle */
 	const handleConditionToggle = useCallback(() => {
-		updateNodeData({ condition: !condition });
+		const newCondition = !condition;
+		const currentData = (nodeData as FlowConditionalData).dataInput;
+		const hasExternalCondition = (nodeData as FlowConditionalData).conditionInput !== null;
+		
+		// Always update internal condition
+		updateNodeData({ condition: newCondition });
+		
+		// Only route data if we're not externally controlled and have data
+		if (!hasExternalCondition && isActive && isEnabled) {
+			routeData(currentData, newCondition);
+		}
 
-		// Visual feedback for click
+		// Visual feedback
 		setWasClicked(true);
 		setTimeout(() => setWasClicked(false), 300);
-	}, [condition, updateNodeData]);
+	}, [condition, nodeData, updateNodeData, isActive, isEnabled, routeData]);
 
 	/** Handle node click to toggle condition */
 	const handleNodeClick = useCallback(
@@ -364,10 +449,10 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 	);
 
 	// -------------------------------------------------------------------------
-	// 4.5  Effects
+	// 4.5  Effects - Simplified and consolidated
 	// -------------------------------------------------------------------------
 
-	/* 🔄 Whenever nodes/edges change, recompute data input. */
+	/* 🔄 Update data input when edges change */
 	useEffect(() => {
 		const dataInputVal = computeDataInput();
 		if (dataInputVal !== (nodeData as FlowConditionalData).dataInput) {
@@ -375,7 +460,7 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 		}
 	}, [computeDataInput, nodeData, updateNodeData]);
 
-	/* 🔄 Whenever nodes/edges change, recompute condition input. */
+	/* 🔄 Update condition input when edges change */
 	useEffect(() => {
 		const conditionInputVal = computeConditionInput();
 		if (conditionInputVal !== (nodeData as FlowConditionalData).conditionInput) {
@@ -383,52 +468,37 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 		}
 	}, [computeConditionInput, nodeData, updateNodeData]);
 
-	/* 🔄 Make isEnabled dependent on data input value only when there are connections. */
+	/* 🔄 Update isActive based on data input presence */
 	useEffect(() => {
 		const hasDataInput = (nodeData as FlowConditionalData).dataInput !== null;
-		// Only auto-control isEnabled when there are connections (dataInput !== null)
-		// When dataInput is null (no connections), let user manually control isEnabled
-		if (hasDataInput) {
-			if (!isEnabled) {
-				updateNodeData({ isEnabled: true });
-			}
-		}
-	}, [nodeData, isEnabled, updateNodeData]);
-
-	// Monitor data input and update active state
-	useEffect(() => {
-		const hasDataInput = (nodeData as FlowConditionalData).dataInput !== null;
-
-		// If disabled, always set isActive to false
-		if (isEnabled) {
-			if (isActive !== hasDataInput) {
-				updateNodeData({ isActive: hasDataInput });
-			}
-		} else if (isActive) {
-			updateNodeData({ isActive: false });
+		const shouldBeActive = isEnabled && hasDataInput;
+		
+		if (isActive !== shouldBeActive) {
+			updateNodeData({ isActive: shouldBeActive });
 		}
 	}, [(nodeData as FlowConditionalData).dataInput, isEnabled, isActive, updateNodeData]);
 
-	// Determine current condition and route data accordingly
+	/* 🔄 Auto-enable when data input is present */
 	useEffect(() => {
-		// Get the current condition value - prioritize input over stored value
-		const conditionInputVal = (nodeData as FlowConditionalData).conditionInput;
-		const currentCondition = conditionInputVal !== null ? conditionInputVal : condition;
+		const hasDataInput = (nodeData as FlowConditionalData).dataInput !== null;
+		if (hasDataInput && !isEnabled) {
+			updateNodeData({ isEnabled: true });
+		}
+	}, [(nodeData as FlowConditionalData).dataInput, isEnabled, updateNodeData]);
 
-		// Get the data to route
-		const dataToRoute = (nodeData as FlowConditionalData).dataInput;
-
-		// Route the data based on condition
-		propagate(dataToRoute, currentCondition);
-		clearOutputsWhenInactive();
+	/* 🔄 Main routing effect - handles all data routing */
+	useEffect(() => {
+		const dataInput = (nodeData as FlowConditionalData).dataInput;
+		const effectiveCondition = getEffectiveCondition();
+		
+		routeData(dataInput, effectiveCondition);
 	}, [
+		nodeData,
 		isActive,
 		isEnabled,
 		condition,
-		(nodeData as FlowConditionalData).dataInput,
-		(nodeData as FlowConditionalData).conditionInput,
-		propagate,
-		clearOutputsWhenInactive,
+		routeData,
+		getEffectiveCondition
 	]);
 
 	// -------------------------------------------------------------------------
@@ -454,12 +524,16 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 		const isSmallNode = !isExpanded && (collapsedSize === "C1" || collapsedSize === "C1W");
 		
 		return (
-			<Loading 
-				className={isSmallNode ? "flex items-center justify-center w-full h-full" : "p-4"} 
-				size={isSmallNode ? "w-6 h-6" : "w-8 h-8"} 
-				text={isSmallNode ? undefined : "Loading..."}
-				showText={!isSmallNode}
-			/>
+			<div className={`${CONTENT.collapsed} animate-pulse`}>
+				<div className="flex flex-col items-center justify-center w-full h-full p-4">
+					<div className={`${CONTENT.collapsedIcon} opacity-50`}>
+						{spec.icon && renderLucideIcon(spec.icon, "", 32)}
+					</div>
+					<div className="text-sm font-medium text-slate-500 dark:text-slate-400">
+						Loading...
+					</div>
+				</div>
+			</div>
 		);
 	}
 
@@ -508,41 +582,53 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 					aria-label="Toggle flow conditional"
 					ref={nodeRef}
 				>
+					{/* Header with title */}
 					<div className={CONTENT.header}>
-						<div className="text-sm font-medium">Flow Conditional</div>
-						<div className="flex items-center space-x-1">
-							<div
-								className={`w-2 h-2 rounded-full ${isActive ? "bg-green-500" : "bg-gray-300"}`}
-								title={isActive ? "Active" : "Inactive"}
-							/>
+						<div className="flex items-center gap-2">
+							{spec.icon && renderLucideIcon(spec.icon, "text-purple-600 dark:text-purple-400", 18)}
+							<h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
+								Flow Conditional
+							</h3>
 						</div>
+						<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
 					</div>
+
 					<div className={CONTENT.body}>
-						<div className="flex flex-col items-center justify-center w-full h-full">
-							<div className="text-sm mb-2">Current Condition:</div>
-							<button
-								type="button"
-								onClick={handleConditionToggle}
-								className={`px-4 py-2 rounded-md ${condition ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}
-							>
-								{condition ? "TRUE" : "FALSE"}
-							</button>
-
-							<div className="mt-4 text-sm">Active Route:</div>
-							<div
-								className={`mt-1 font-bold ${lastRoute === "true" ? CONTENT.trueRoute : lastRoute === "false" ? CONTENT.falseRoute : CONTENT.noRoute}`}
-							>
-								{lastRoute === "true"
-									? "TRUE PATH"
-									: lastRoute === "false"
-										? "FALSE PATH"
-										: "NO ROUTE"}
+						{/* Condition Control Section */}
+						<div className={CONTENT.conditionSection}>
+							<div className={CONTENT.conditionHeader}>
+								{renderLucideIcon("LuGitBranch", "text-slate-500", 16)}
+								Condition Control
 							</div>
+							<div className={CONTENT.conditionDisplay}>
+								<div className={CONTENT.conditionLabel}>Current State:</div>
+								<button
+									type="button"
+									onClick={handleConditionToggle}
+									className={`${CONTENT.toggleButton} ${condition ? CONTENT.toggleTrue : CONTENT.toggleFalse}`}
+									title={`Click to ${condition ? "disable" : "enable"} condition`}
+								>
+									{condition ? "TRUE" : "FALSE"}
+								</button>
+								
+								{/* External condition indicator */}
+								{(nodeData as FlowConditionalData).conditionInput !== null && (
+									<div className={CONTENT.externalIndicator}>
+										⚡ External Control
+									</div>
+								)}
+							</div>
+						</div>
 
-							<div className="mt-4 text-xs text-gray-500">
-								{(nodeData as FlowConditionalData).conditionInput !== null
-									? "Using external condition input"
-									: "Using internal condition value"}
+						{/* Route Information */}
+						<div className={CONTENT.statusSection}>
+							<div className={CONTENT.statusGrid}>
+								<div className={CONTENT.statusRow}>
+									<span className={CONTENT.statusLabel}>Active Route:</span>
+									<span className={`${CONTENT.statusValue} ${lastRoute === "true" ? CONTENT.statusActive : lastRoute === "false" ? CONTENT.statusInactive : "text-slate-500"}`}>
+										{lastRoute === "true" ? "→ TRUE PATH" : lastRoute === "false" ? "↓ FALSE PATH" : "No Route"}
+									</span>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -562,39 +648,32 @@ export const FlowConditionalNode = memo(({ id, data, spec }: NodeProps & { spec:
 					ref={nodeRef}
 				>
 					<div className={CONTENT.route}>
-						{/* Condition indicator */}
-						<div
-							className={`text-center ${lastRoute === "true" ? CONTENT.trueRoute : lastRoute === "false" ? CONTENT.falseRoute : CONTENT.noRoute}`}
-							onClick={handleConditionToggle}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" || e.key === " ") {
-									handleConditionToggle();
-								}
-							}}
-							tabIndex={0}
-							role="button"
-							aria-label="Toggle condition"
-						>
-							{lastRoute === "true" ? "T" : lastRoute === "false" ? "F" : "?"}
+						{/* Central icon and condition indicator */}
+						<div className={CONTENT.routeIndicator}>
+							<div className={CONTENT.collapsedIcon}>
+								{spec.icon && renderLucideIcon(spec.icon, "", 32)}
+							</div>
+							<div className={CONTENT.collapsedTitle}>
+								{condition ? "TRUE" : "FALSE"}
+							</div>
 						</div>
 
 						{/* Right arrow (true path) */}
 						<div
-							className={`${CONTENT.arrow} ${CONTENT.arrowRight} ${lastRoute === "true" ? CONTENT.arrowActive : ""}`}
+							className={`${CONTENT.arrow} ${CONTENT.arrowRight} ${lastRoute === "true" ? CONTENT.arrowActive : CONTENT.arrowInactive}`}
 						>
 							→
 						</div>
 
 						{/* Bottom arrow (false path) */}
 						<div
-							className={`${CONTENT.arrow} ${CONTENT.arrowBottom} ${lastRoute === "false" ? CONTENT.arrowActive : ""}`}
+							className={`${CONTENT.arrow} ${CONTENT.arrowBottom} ${lastRoute === "false" ? CONTENT.arrowActive : CONTENT.arrowInactive}`}
 						>
-							→
+							↓
 						</div>
 					</div>
 				</div>
 			)}
-			<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
 		</>
 	);
 });
