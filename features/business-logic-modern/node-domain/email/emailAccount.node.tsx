@@ -10,29 +10,30 @@ import {
 } from "react";
 import { z } from "zod";
 
+import { useAuthContext } from "@/components/auth/AuthProvider";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { api } from "@/convex/_generated/api";
+import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
-	SafeSchemas,
-	createSafeInitialData,
+  SafeSchemas,
+  createSafeInitialData,
 } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
 import {
-	createNodeValidator,
-	reportValidationError,
+  createNodeValidator,
+  reportValidationError,
+  useNodeDataValidation,
 } from "@/features/business-logic-modern/infrastructure/node-core/validation";
+import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
-	COLLAPSED_SIZES,
-	EXPANDED_SIZES,
+  COLLAPSED_SIZES,
+  EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
-import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 import type { EmailAccountConfig, EmailProviderType } from "./types";
-import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
-import { useAuthContext } from "@/components/auth/AuthProvider";
-import { api } from "@/convex/_generated/api";
 // Convex integration
 import { useAction, useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
@@ -42,70 +43,74 @@ import { toast } from "sonner";
 // -----------------------------------------------------------------------------
 
 export const EmailAccountDataSchema = z
-	.object({
-		// Provider configuration
-		provider: z.enum(["gmail", "outlook", "imap", "smtp"]).default("gmail"),
-		email: z.string().default(""),
-		displayName: z.string().default(""),
+  .object({
+    // Provider configuration
+    provider: z.enum(["gmail", "outlook", "imap", "smtp"]).default("gmail"),
+    email: z.string().default(""),
+    displayName: z.string().default(""),
 
-		// Connection state
-		isConfigured: z.boolean().default(false),
-		isConnected: z.boolean().default(false),
-		connectionStatus: z
-			.enum(["disconnected", "connecting", "connected", "error"])
-			.default("disconnected"),
-		lastValidated: z.number().optional(),
-		accountId: z.string().optional(), // Convex document ID
+    // Connection state
+    isConfigured: z.boolean().default(false),
+    isConnected: z.boolean().default(false),
+    connectionStatus: z
+      .enum(["disconnected", "connecting", "connected", "error"])
+      .default("disconnected"),
+    lastValidated: z.number().optional(),
+    accountId: z.string().optional(), // Convex document ID
 
-		// Manual configuration fields (IMAP/SMTP)
-		imapHost: z.string().default(""),
-		imapPort: z.number().default(993),
-		smtpHost: z.string().default(""),
-		smtpPort: z.number().default(587),
-		username: z.string().default(""),
-		password: z.string().default(""),
-		useSSL: z.boolean().default(true),
-		useTLS: z.boolean().default(true),
+    // Manual configuration fields (IMAP/SMTP)
+    imapHost: z.string().default(""),
+    imapPort: z.number().default(993),
+    smtpHost: z.string().default(""),
+    smtpPort: z.number().default(587),
+    username: z.string().default(""),
+    password: z.string().default(""),
+    useSSL: z.boolean().default(true),
+    useTLS: z.boolean().default(true),
 
-		// OAuth2 state (not stored, just for UI)
-		isAuthenticating: z.boolean().default(false),
+    // OAuth2 state (not stored, just for UI)
+    isAuthenticating: z.boolean().default(false),
 
-		// Error handling
-		lastError: z.string().default(""),
+    // Error handling
+    lastError: z.string().default(""),
 
-		// UI state
-		isEnabled: SafeSchemas.boolean(true),
-		isActive: SafeSchemas.boolean(false),
-		isExpanded: SafeSchemas.boolean(false),
-		expandedSize: SafeSchemas.text("VE2"),
-		collapsedSize: SafeSchemas.text("C2"),
+    // UI state
+    isEnabled: SafeSchemas.boolean(true),
+    isActive: SafeSchemas.boolean(false),
+    isExpanded: SafeSchemas.boolean(false),
+    expandedSize: SafeSchemas.text("VE2"),
+    collapsedSize: SafeSchemas.text("C2"),
 
-		// output - unified handle-based output system
-		output: z.string().optional(), // handle-based output as string for React compatibility
-		label: z.string().optional(), // User-editable node label
-	})
-	.passthrough();
+    // output - unified handle-based output system
+    output: z.record(z.string(), z.unknown()).optional(), // handle-based output object for Convex compatibility
+    label: z.string().optional(), // User-editable node label
+  })
+  .passthrough();
 
 export type EmailAccountData = z.infer<typeof EmailAccountDataSchema>;
 
-const validateNodeData = createNodeValidator(EmailAccountDataSchema, "EmailAccount");
+const validateNodeData = createNodeValidator(
+  EmailAccountDataSchema,
+  "EmailAccount"
+);
 
 // -----------------------------------------------------------------------------
 // 2️⃣  Constants
 // -----------------------------------------------------------------------------
 
 const CATEGORY_TEXT = {
-	EMAIL: {
-		primary: "text-[--node-email-text]",
-	},
+  EMAIL: {
+    primary: "text-[--node-email-text]",
+  },
 } as const;
 
 const CONTENT = {
-	expanded: "p-4 w-full h-full flex flex-col",
-	collapsed: "flex items-center justify-center w-full h-full",
-	header: "flex items-center justify-between mb-3",
-	body: "flex-1 flex flex-col gap-3",
-	disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+  expanded: "p-4 w-full h-full flex flex-col",
+  collapsed: "flex items-center justify-center w-full h-full",
+  header: "flex items-center justify-between mb-3",
+  body: "flex-1 flex flex-col gap-3",
+  disabled:
+    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -113,129 +118,8 @@ const CONTENT = {
 // -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
-// 4️⃣  Component  
+// 4️⃣  Component
 // -----------------------------------------------------------------------------
-
-const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
-  // Get authenticated user context
-  const { user, token } = useAuthContext();
-  
-  // Node data access
-  const { nodeData, updateNodeData } = useNodeData(id);
-  const lastGeneralOutputRef = useRef<Map<string, any> | null>(null);
-
-  // Extract node data with defaults
-  const {
-    provider = "gmail",
-    email = "",
-    displayName = "",
-    isConfigured = false,
-    isConnected = false,
-    connectionStatus = "disconnected",
-    lastValidated,
-    accountId,
-    lastError = "",
-    isEnabled = true,
-    isActive = false,
-    isExpanded = false,
-  } = nodeData as EmailAccountData;
-
-  // Available email accounts
-  const availableAccounts = useQuery(
-    api.emailAccounts.getEmailAccountsByUserEmail,
-    user?.email ? { userEmail: user.email } : "skip"
-  );
-
-  // Connection validation
-  const validateConnection = useAction(api.emailAccounts.testEmailConnection);
-
-  // Handle-based output generation
-  useEffect(() => {
-    if (isEnabled && isConnected) {
-      try {
-        // Generate Map-based output with error handling
-        const outputValue = generateoutputField(spec, nodeData as any);
-
-        // Validate the result
-        if (!(outputValue instanceof Map)) {
-          console.error(
-            `EmailAccount ${id}: generateoutputField did not return a Map`,
-            outputValue
-          );
-          return;
-        }
-
-        // Convert Map to plain object for Convex compatibility
-        const outputObject = Object.fromEntries(outputValue.entries());
-
-        // Only update if changed
-        const currentOutput = lastGeneralOutputRef.current;
-        let hasChanged = true;
-
-        if (currentOutput instanceof Map && outputValue instanceof Map) {
-          hasChanged =
-            currentOutput.size !== outputValue.size ||
-            !Array.from(outputValue.entries()).every(
-              ([key, value]) => currentOutput.get(key) === value
-            );
-        }
-
-        if (hasChanged) {
-          lastGeneralOutputRef.current = outputValue;
-          updateNodeData({
-            output: outputObject,
-            isActive: isEnabled && isConnected,
-          });
-        }
-      } else {
-        updateNodeData({
-          isActive: false,
-        });
-      }
-    }
-  }, [
-    isEnabled,
-    isConnected,
-    provider,
-    email,
-    displayName,
-    accountId,
-    lastValidated,
-    spec.handles,
-    nodeData,
-    updateNodeData,
-    id,
-  ]);
-
-  return (
-    <>
-      <LabelNode nodeId={id} label="Email Account" />
-      {isExpanded ? (
-        <div className="p-4 w-full h-full flex flex-col">
-          <div className="text-sm text-gray-600">Email Account</div>
-          <div className="text-xs text-gray-500 mt-1">
-            {email && <div>📧 {email}</div>}
-            <div>Status: {connectionStatus}</div>
-            <div>Provider: {provider.toUpperCase()}</div>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center justify-center w-full h-full">
-          <div className="text-xs text-center">
-            <div>📧 Account</div>
-            <div className="text-gray-500">{connectionStatus}</div>
-          </div>
-        </div>
-      )}
-      <ExpandCollapseButton
-        showUI={isExpanded}
-        onToggle={() => updateNodeData({ isExpanded: !isExpanded })}
-      />
-    </>
-  );
-});
-
-EmailAccountNode.displayName = "EmailAccountNode";
 
 function createDynamicSpec(data: EmailAccountData): NodeSpec {
   const expanded =
@@ -284,7 +168,23 @@ function createDynamicSpec(data: EmailAccountData): NodeSpec {
       isConfigured: false,
       isConnected: false,
       connectionStatus: "disconnected",
+      isEnabled: true,
+      isActive: false,
+      isExpanded: false,
+      expandedSize: "VE2",
+      collapsedSize: "C2",
+      imapHost: "",
+      imapPort: 993,
+      smtpHost: "",
+      smtpPort: 587,
+      username: "",
+      password: "",
+      useSSL: true,
+      useTLS: true,
+      isAuthenticating: false,
+      lastError: "",
       output: {}, // handle-based output object for Convex compatibility
+      label: undefined, // User-editable node label
     }),
     dataSchema: EmailAccountDataSchema,
     controls: {
@@ -390,6 +290,7 @@ const EmailAccountNode = memo(
 
     // Keep last emitted output to avoid redundant writes
     const _lastOutputRef = useRef<string | null>(null);
+    const lastGeneralOutputRef = useRef<Map<string, any> | null>(null);
 
     // -------------------------------------------------------------------------
     // 4.3  Convex integration
