@@ -72,7 +72,8 @@ const CONTENT = {
 
 export const EmailDataSchema = z
   .object({
-    // Input Email Data
+    // Input Email Data (can be single email or array from emailReader)
+    inputEmails: z.array(z.any()).default([]), // Array of emails from emailReader
     emailContent: z.string().default(""),
     emailSubject: z.string().default(""),
     emailFrom: z.string().default(""),
@@ -190,11 +191,11 @@ const createDynamicSpec = (data: EmailDataType): NodeSpec => {
 
     handles: [
       {
-        id: "email-input",
-        code: "e",
+        id: "messages-input",
+        code: "m",
         position: "left",
         type: "target",
-        dataType: "JSON",
+        dataType: "Array",
       },
       {
         id: "structured-output",
@@ -210,12 +211,20 @@ const createDynamicSpec = (data: EmailDataType): NodeSpec => {
         type: "source",
         dataType: "String",
       },
+      {
+        id: "outputs",
+        code: "o",
+        position: "right",
+        type: "source",
+        dataType: "String",
+      },
     ],
 
     inspector: { key: "EmailDataInspector" },
     version: 1,
     runtime: { execute: "emailData_execute_v1" },
     initialData: createSafeInitialData(EmailDataSchema, {
+      inputEmails: [],
       emailContent: "",
       emailSubject: "",
       emailFrom: "",
@@ -255,6 +264,7 @@ const createDynamicSpec = (data: EmailDataType): NodeSpec => {
       autoGenerate: true,
       excludeFields: [
         "isActive",
+        "inputEmails",
         "structuredDataOutput",
         "formattedOutput",
         "errorOutput",
@@ -772,10 +782,63 @@ const formatExtractedData = (data: EmailDataType, format: string): string => {
   }
 };
 
+/** Extract email data from emailReader array format */
+const extractEmailFromArray = (inputEmails: any[]): Partial<EmailDataType> => {
+  if (!inputEmails || inputEmails.length === 0) {
+    return {};
+  }
+
+  // Take the first email from the array
+  const firstEmail = inputEmails[0];
+
+  // Helper function to extract email strings from various formats
+  const extractEmailStrings = (emailField: any): string[] => {
+    if (!emailField) return [];
+    
+    if (typeof emailField === 'string') {
+      return [emailField];
+    }
+    
+    if (Array.isArray(emailField)) {
+      return emailField.map(item => {
+        if (typeof item === 'string') return item;
+        if (typeof item === 'object' && item.email) return item.email;
+        if (typeof item === 'object' && item.address) return item.address;
+        return String(item);
+      }).filter(Boolean);
+    }
+    
+    if (typeof emailField === 'object') {
+      if (emailField.email) return [emailField.email];
+      if (emailField.address) return [emailField.address];
+    }
+    
+    return [String(emailField)];
+  };
+
+  return {
+    emailContent: firstEmail?.body || firstEmail?.content || firstEmail?.text || "",
+    emailSubject: firstEmail?.subject || "",
+    emailFrom: typeof firstEmail?.from === 'object' ? (firstEmail.from.email || firstEmail.from.address || String(firstEmail.from)) : (firstEmail?.from || firstEmail?.sender || ""),
+    emailTo: extractEmailStrings(firstEmail?.to),
+    emailCc: extractEmailStrings(firstEmail?.cc),
+    emailBcc: extractEmailStrings(firstEmail?.bcc),
+    emailDate: firstEmail?.date || firstEmail?.timestamp || "",
+    emailAttachments: firstEmail?.attachments || [],
+  };
+};
+
 /** Process email data and extract information */
 const processEmailData = (data: EmailDataType): EmailDataType => {
   const updatedData = { ...data };
-  const content = data.emailContent;
+  
+  // If we have inputEmails array, extract data from it first
+  if (data.inputEmails && data.inputEmails.length > 0) {
+    const extractedData = extractEmailFromArray(data.inputEmails);
+    Object.assign(updatedData, extractedData);
+  }
+
+  const content = updatedData.emailContent;
 
   // Extract data based on settings
   if (data.extractEmails) {
@@ -996,9 +1059,28 @@ const EmailDataNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     updateNodeData({ isExpanded: !isExpanded });
   }, [isExpanded, updateNodeData]);
 
+  // Detect connection with emailReader and update inputEmails
+  useEffect(() => {
+    const connectedEdges = _edges.filter(
+      (edge) => edge.target === id && edge.targetHandle === "messages-input__m"
+    );
+
+    if (connectedEdges.length > 0) {
+      const sourceEdge = connectedEdges[0];
+      const sourceNode = _nodes.find((node) => node.id === sourceEdge.source);
+      
+      if (sourceNode && sourceNode.data?.messages) {
+        // Update inputEmails with data from connected emailReader
+        updateNodeData({ inputEmails: sourceNode.data.messages as any[] });
+      }
+    }
+  }, [_nodes, _edges, id, updateNodeData]);
+
   // Process data when email content or extraction options change
   useEffect(() => {
-    if (!emailContent) return;
+    // Check if we have either manual email content or input emails from emailReader
+    const hasEmailData = emailContent || (nodeData as EmailDataType).inputEmails?.length > 0;
+    if (!hasEmailData) return;
 
     updateNodeData({ isProcessing: true });
     setError(null);
@@ -1007,10 +1089,32 @@ const EmailDataNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       // Simular un pequeño retraso para mostrar el procesamiento
       const timer = setTimeout(() => {
         const processedData = processEmailData(nodeData as EmailDataType);
+        
+        // Generate structured output
+        const outputData = {
+          "📧 Email Data Analysis": {
+            "Subject": processedData.emailSubject || "No subject",
+            "From": processedData.emailFrom || "Unknown sender",
+            "To": processedData.emailTo?.join(", ") || "No recipients",
+            "📊 Extracted Data": {
+              "🏷️ Entities": processedData.entities?.length || 0,
+              "🔗 Links": processedData.links?.length || 0,
+              "📧 Emails": processedData.emails?.length || 0,
+              "📞 Phones": processedData.phones?.length || 0,
+              "🗓️ Dates": processedData.dates?.length || 0,
+              "🔑 Keywords": processedData.keywords?.length || 0,
+            },
+            "😊 Sentiment": processedData.sentiment?.label || "Not analyzed",
+            "📄 Output Format": processedData.outputFormat || "json",
+            "⏰ Processed At": new Date().toLocaleString(),
+          }
+        };
+        
         updateNodeData({
           ...processedData,
           isProcessing: false,
           isActive: true,
+          outputs: JSON.stringify(outputData, null, 2),
         });
       }, 500);
 
@@ -1025,6 +1129,7 @@ const EmailDataNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     }
   }, [
     emailContent,
+    (nodeData as EmailDataType).inputEmails,
     extractEmails,
     extractLinks,
     extractPhones,
@@ -1034,6 +1139,7 @@ const EmailDataNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     extractSentiment,
     outputFormat,
     updateNodeData,
+    nodeData,
   ]);
 
   // Handle changes in extraction options

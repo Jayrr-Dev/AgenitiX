@@ -103,6 +103,7 @@ export const EmailTemplateDataSchema = z
 
     // Output Data
     templateOutput: z.string().default(""),
+    outputs: z.string().default(""), // Structured output for viewText nodes
     compiledTemplate: z
       .object({
         subject: z.string(),
@@ -201,6 +202,13 @@ function createDynamicSpec(data: EmailTemplateData): NodeSpec {
         position: "bottom",
         type: "source",
         dataType: "JSON",
+      },
+      {
+        id: "outputs",
+        code: "o",
+        position: "right",
+        type: "source",
+        dataType: "String",
       },
     ],
     inspector: { key: "EmailTemplateInspector" },
@@ -333,6 +341,7 @@ const EmailTemplateNode = memo(
       lastError,
       templateOutput,
       isActive,
+      lastSaved,
     } = nodeData as EmailTemplateData;
 
     const categoryStyles = CATEGORY_TEXT.EMAIL;
@@ -359,7 +368,9 @@ const EmailTemplateNode = memo(
     // -------------------------------------------------------------------------
     // 4.3  Convex integration
     // -------------------------------------------------------------------------
-    const emailTemplates = useQuery(api.emailAccounts.getEmailReplyTemplates);
+    const emailTemplates = useQuery(api.emailAccounts.getEmailReplyTemplates, {
+      token_hash: token || undefined,
+    });
 
     const saveTemplateMutation = useMutation(
       api.emailAccounts.storeEmailReplyTemplate
@@ -421,8 +432,10 @@ const EmailTemplateNode = memo(
 
     /** Save template */
     const handleSaveTemplate = useCallback(async () => {
+      console.log("🔐 Auth Debug:", { token: token ? "present" : "missing", tokenLength: token?.length });
+      
       if (!token) {
-        toast.error("Authentication required");
+        toast.error("Authentication required - please login first");
         return;
       }
 
@@ -444,20 +457,39 @@ const EmailTemplateNode = memo(
         };
 
         const result = await saveTemplateMutation({
+          token_hash: token || undefined,
           name: templateName,
           subject: subject,
           body: htmlContent || textContent,
           category: category,
+          description: templateDescription,
+          variables: variables.map((v) => v.name),
         });
 
         if (result.success) {
+          // Create structured output
+          const formattedOutput = {
+            "📄 Template Saved": {
+              "Template Name": templateName,
+              "Category": category,
+              "Subject": subject,
+              "Variables": variables.length > 0 ? variables.map(v => v.name).join(", ") : "None",
+              "Content Type": htmlContent ? "HTML + Text" : "Text Only",
+              "Content Length": `${(htmlContent || textContent).length} characters`,
+              "Template ID": result.templateId,
+              "✅ Status": result.isUpdate ? "Updated" : "Created",
+              "⏰ Saved At": new Date().toLocaleString(),
+            }
+          };
+
           updateNodeData({
             isSaving: false,
             templateId: result.templateId,
             lastSaved: Date.now(),
             isActive: true,
+            outputs: JSON.stringify(formattedOutput, null, 2),
           });
-          toast.success("Template saved successfully");
+          toast.success(`Template ${result.isUpdate ? 'updated' : 'created'} successfully`);
         } else {
           throw new Error("Failed to save template");
         }
@@ -526,6 +558,43 @@ const EmailTemplateNode = memo(
       updateNodeData,
     ]);
 
+    /** Update structured output for viewText nodes */
+    useEffect(() => {
+      if (templateName && isEnabled) {
+        const formattedOutput = {
+          "📄 Email Template": {
+            "Template Name": templateName,
+            "Category": category || "general",
+            "Subject": subject || "(No subject)",
+            "Variables": variables.length > 0 ? variables.map(v => v.name).join(", ") : "None",
+            "Content Type": htmlContent ? "HTML + Text" : textContent ? "Text Only" : "Empty",
+            "Content Length": `${(htmlContent || textContent || "").length} characters`,
+            "Status": isActive ? "✅ Active" : "⏸️ Inactive",
+            "Last Updated": lastSaved ? new Date(lastSaved).toLocaleString() : "Not saved",
+          }
+        };
+        
+        updateNodeData({
+          outputs: JSON.stringify(formattedOutput, null, 2),
+        });
+      } else {
+        updateNodeData({
+          outputs: "",
+        });
+      }
+    }, [
+      templateName,
+      category,
+      subject,
+      variables,
+      htmlContent,
+      textContent,
+      isActive,
+      lastSaved,
+      isEnabled,
+      updateNodeData,
+    ]);
+
     // -------------------------------------------------------------------------
     // 4.7  Validation
     // -------------------------------------------------------------------------
@@ -548,33 +617,18 @@ const EmailTemplateNode = memo(
     // 4.8  Render
     // -------------------------------------------------------------------------
 
-    if (!isExpanded) {
-      return (
-        <div className={CONTENT.collapsed}>
-          <div className="flex flex-col items-center gap-1">
-            <div className="text-xs font-medium text-gray-600 dark:text-gray-300">
-              Template
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[100px]">
-              {templateName || "Untitled"}
-            </div>
-            {isActive && (
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            )}
-          </div>
-        </div>
-      );
-    }
-
     return (
-      <div
-        className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
-      >
-        {/* Header */}
-        <div className={CONTENT.header}>
-          <LabelNode nodeId={id} label="Email Template" />
-          <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} />
-        </div>
+      <>
+        <LabelNode nodeId={id} label="Email Template" />
+
+        {isExpanded ? (
+          <div
+            className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
+          >
+            {/* Header */}
+            <div className={CONTENT.header}>
+              <span className="font-medium text-sm">Email Template</span>
+            </div>
 
         {/* Body */}
         <div className={CONTENT.body}>
@@ -736,7 +790,27 @@ const EmailTemplateNode = memo(
             </div>
           )}
         </div>
-      </div>
+          </div>
+        ) : (
+          <div
+            className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                Template
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[100px]">
+                {templateName || "Untitled"}
+              </div>
+              {isActive && (
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              )}
+            </div>
+          </div>
+        )}
+
+        <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} />
+      </>
     );
   }
 );

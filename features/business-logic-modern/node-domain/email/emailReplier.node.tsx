@@ -130,6 +130,7 @@ export const EmailReplierDataSchema = z
     collapsedSize: SafeSchemas.text("C2"),
 
     // Input Data
+    inputEmails: z.array(z.any()).default([]), // Array of emails from emailReader
     inputEmail: z.string().default(""),
 
     // Output Data
@@ -192,11 +193,11 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
     size: { expanded, collapsed },
     handles: [
       {
-        id: "email-input",
-        code: "e",
+        id: "messages-input",
+        code: "m",
         position: "top",
         type: "target",
-        dataType: "JSON",
+        dataType: "Array",
       },
       {
         id: "template-input",
@@ -206,8 +207,8 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
         dataType: "String",
       },
       {
-        id: "reply-output",
-        code: "r",
+        id: "message-output",
+        code: "m",
         position: "right",
         type: "source",
         dataType: "JSON",
@@ -218,6 +219,13 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
         position: "bottom",
         type: "source",
         dataType: "Boolean",
+      },
+      {
+        id: "outputs",
+        code: "o",
+        position: "right",
+        type: "source",
+        dataType: "String",
       },
     ],
     inspector: { key: "EmailReplierInspector" },
@@ -251,6 +259,7 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
       lastError: "",
       retryCount: 0,
       maxRetries: 3,
+      inputEmails: [],
       inputEmail: "",
       generatedReply: "",
     }),
@@ -259,6 +268,7 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
       autoGenerate: true,
       excludeFields: [
         "isActive",
+        "inputEmails",
         "inputEmail",
         "generatedReply",
         "replyMetadata",
@@ -382,6 +392,7 @@ const EmailReplierNode = memo(
       lastError,
       retryCount,
       maxRetries,
+      inputEmails,
       inputEmail,
       generatedReply,
       replyMetadata,
@@ -425,6 +436,30 @@ const EmailReplierNode = memo(
     const toggleExpand = useCallback(() => {
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
+
+    // Detect connection with emailReader and update inputEmails
+    useEffect(() => {
+      const connectedEdges = _edges.filter(
+        (edge) => edge.target === id && edge.targetHandle === "messages-input__m"
+      );
+
+      if (connectedEdges.length > 0) {
+        const sourceEdge = connectedEdges[0];
+        const sourceNode = _nodes.find((node) => node.id === sourceEdge.source);
+
+        if (sourceNode && sourceNode.data?.messages) {
+          // Update inputEmails with data from connected emailReader
+          updateNodeData({ inputEmails: sourceNode.data.messages as any[] });
+
+          // Extract the first email content for processing
+          const firstEmail = sourceNode.data.messages[0];
+          if (firstEmail) {
+            const emailContent = firstEmail?.body || firstEmail?.content || firstEmail?.text || "";
+            updateNodeData({ inputEmail: emailContent });
+          }
+        }
+      }
+    }, [_nodes, _edges, id, updateNodeData]);
 
     /** Handle strategy change */
     const handleStrategyChange = useCallback(
@@ -514,12 +549,29 @@ const EmailReplierNode = memo(
           retryCount: 0,
         });
 
-        // TODO: Implement actual reply generation logic
-        // This will be implemented in subsequent tasks
-
-        // Simulate reply generation for now
+        // Simulate reply generation for now (AI integration ready for future)
         setTimeout(() => {
           const mockReply = `Thank you for your email. This is a ${replyStrategy} reply generated at ${new Date().toLocaleString()}.`;
+
+          // Generate structured output
+          const outputData = {
+            "📧 Email Reply Generated": {
+              "Strategy": replyStrategy || "auto",
+              "Tone": "professional",
+              "Reply Length": `${mockReply.length} characters`,
+              "✅ Features Applied": {
+                "Reply to All": replyToAll ? "✅" : "❌",
+                "Include Original": includeOriginal ? "✅" : "❌",
+                "Add Signature": addSignature ? "✅" : "❌",
+                "Auto Reply": enableAutoReply ? "✅" : "❌",
+              },
+              "📊 Processing": {
+                "Input Source": inputEmails?.length > 0 ? "EmailReader" : "Manual",
+                "Generated At": new Date().toLocaleString(),
+                "Status": "✅ Success (Simulated)",
+              }
+            }
+          };
 
           updateNodeData({
             isProcessing: false,
@@ -533,6 +585,7 @@ const EmailReplierNode = memo(
               tokensUsed: replyStrategy.includes("ai") ? 150 : undefined,
             },
             isActive: true,
+            outputs: JSON.stringify(outputData, null, 2),
           });
 
           toast.success("Reply generated successfully");
@@ -549,7 +602,7 @@ const EmailReplierNode = memo(
           description: error instanceof Error ? error.message : "Unknown error",
         });
       }
-    }, [token, replyStrategy, processedCount, retryCount]); // CIRCULAR REFERENCE FIX: Removed updateNodeData from dependencies
+    }, [token, replyStrategy, processedCount, retryCount, replyToAll, includeOriginal, addSignature, enableAutoReply, inputEmails]); // CIRCULAR REFERENCE FIX: Removed updateNodeData from dependencies
 
     // -------------------------------------------------------------------------
     // 4.6  Effects
@@ -692,46 +745,46 @@ const EmailReplierNode = memo(
               {/* AI Configuration */}
               {(replyStrategy === "ai-generated" ||
                 replyStrategy === "hybrid") && (
-                <div className="space-y-2">
-                  <div>
-                    <label
-                      htmlFor="ai-model-select"
-                      className="mb-1 block text-gray-600 text-xs"
-                    >
-                      AI Model:
-                    </label>
-                    <select
-                      id="ai-model-select"
-                      value={aiModel}
-                      onChange={handleAIModelChange}
-                      className="w-full rounded border border-gray-300 p-2 text-xs"
-                      disabled={!isEnabled || isProcessing}
-                    >
-                      <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                      <option value="gpt-4">GPT-4</option>
-                      <option value="claude-3">Claude 3</option>
-                      <option value="local">Local Model</option>
-                    </select>
+                  <div className="space-y-2">
+                    <div>
+                      <label
+                        htmlFor="ai-model-select"
+                        className="mb-1 block text-gray-600 text-xs"
+                      >
+                        AI Model:
+                      </label>
+                      <select
+                        id="ai-model-select"
+                        value={aiModel}
+                        onChange={handleAIModelChange}
+                        className="w-full rounded border border-gray-300 p-2 text-xs"
+                        disabled={!isEnabled || isProcessing}
+                      >
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                        <option value="gpt-4">GPT-4</option>
+                        <option value="claude-3">Claude 3</option>
+                        <option value="local">Local Model</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="ai-prompt-textarea"
+                        className="mb-1 block text-gray-600 text-xs"
+                      >
+                        AI Prompt:
+                      </label>
+                      <textarea
+                        id="ai-prompt-textarea"
+                        value={aiPrompt}
+                        onChange={handleAIPromptChange}
+                        placeholder="Enter AI prompt for reply generation..."
+                        className="w-full rounded border border-gray-300 p-2 text-xs resize-none"
+                        rows={2}
+                        disabled={!isEnabled || isProcessing}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label
-                      htmlFor="ai-prompt-textarea"
-                      className="mb-1 block text-gray-600 text-xs"
-                    >
-                      AI Prompt:
-                    </label>
-                    <textarea
-                      id="ai-prompt-textarea"
-                      value={aiPrompt}
-                      onChange={handleAIPromptChange}
-                      placeholder="Enter AI prompt for reply generation..."
-                      className="w-full rounded border border-gray-300 p-2 text-xs resize-none"
-                      rows={2}
-                      disabled={!isEnabled || isProcessing}
-                    />
-                  </div>
-                </div>
-              )}
+                )}
 
               {/* Reply Settings */}
               <div className="flex flex-col gap-2">
