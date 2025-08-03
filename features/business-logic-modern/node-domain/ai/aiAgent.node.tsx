@@ -13,6 +13,7 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
+import type React from "react";
 import {
   type ChangeEvent,
   memo,
@@ -34,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+
 import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import { createSafeInitialData } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
@@ -230,8 +232,8 @@ export const AiAgentDataSchema = z
     collapsedSize: z.string().default("C2"),
     label: z.string().optional(), // User-editable node label
 
-    // Output - unified handle-based output system
-    output: z.record(z.string(), z.any()).optional(), // handle-based output object for Convex compatibility
+    // Output - handle-based output object for multi-handle compatibility
+    output: z.record(z.string(), z.string()).optional(), // Handle-based output object for Convex compatibility
     store: z.string().nullable().default(null), // Store full Convex Agents response as JSON string
   })
   .passthrough();
@@ -256,9 +258,20 @@ const extractCleanText = (value: unknown): string => {
     return "";
   }
 
-  // If already a string, handle meta-description format
+  // If already a string, try to parse as JSON first, then handle as text
   if (typeof value === "string") {
     let cleanText = value.trim();
+
+    // Try to parse as JSON first to extract response field
+    try {
+      const parsed = JSON.parse(cleanText);
+      if (parsed && typeof parsed === "object") {
+        // Recursively call extractCleanText on the parsed object
+        return extractCleanText(parsed);
+      }
+    } catch {
+      // Not valid JSON, continue with string processing
+    }
 
     // Handle Convex Agents meta-description format
     if (
@@ -366,15 +379,7 @@ const extractCleanText = (value: unknown): string => {
       }
     }
 
-    // Last resort: stringify the object but only if it contains useful data
-    const hasUsefulData = Object.keys(obj).some(
-      (key) => typeof obj[key] === "string" || typeof obj[key] === "number"
-    );
-
-    if (hasUsefulData) {
-      return JSON.stringify(value);
-    }
-
+    // Last resort: return empty string instead of JSON
     return "";
   }
 
@@ -466,7 +471,7 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
       trigger: false,
       processingState: PROCESSING_STATE.IDLE,
       threadId: null,
-      output: {}, // handle-based output object
+      output: {}, // Handle-based output object
       store: null,
     }),
     dataSchema: AiAgentDataSchema,
@@ -582,7 +587,6 @@ const AiAgentNode = memo(
 
     // keep last emitted output to avoid redundant writes
     const lastGeneralOutputRef = useRef<any>(null);
-    const lastStoreRef = useRef<string | null>(null);
 
     const categoryStyles = CATEGORY_TEXT.AI;
 
@@ -686,28 +690,6 @@ const AiAgentNode = memo(
     const toggleExpand = useCallback(() => {
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
-
-    /** Propagate output when node is enabled and has completed processing */
-    const propagate = useCallback(
-      (value: unknown, forcePropagate = false) => {
-        // Always extract clean text from the store, never propagate objects
-        const cleanText = extractCleanText(value);
-
-        const shouldSend =
-          forcePropagate ||
-          (isEnabled &&
-            (processingState === PROCESSING_STATE.SUCCESS ||
-              processingState === PROCESSING_STATE.ERROR));
-
-        const out = shouldSend ? cleanText : null;
-
-        if (out !== lastOutputRef.current) {
-          lastOutputRef.current = out;
-          updateNodeData({ output: out });
-        }
-      },
-      [isEnabled, processingState, updateNodeData]
-    );
 
     /** Clear JSON‑ish fields when inactive or disabled */
     const blockJsonWhenInactive = useCallback(() => {
@@ -1015,7 +997,9 @@ const AiAgentNode = memo(
 
     /** View thread history - memoized to prevent unnecessary calls */
     const viewThreadHistory = useCallback(async () => {
-      if (!threadId) return;
+      if (!threadId) {
+        return;
+      }
 
       try {
         const result = await getThreadMessagesAction({
@@ -1391,8 +1375,7 @@ const AiAgentNode = memo(
               isActive: false, // Turn off after processing
             });
 
-            // Ensure only the clean AI response is propagated
-            propagate(safeCleanResponse, true);
+            // Processing will trigger the output effect automatically
           })
           .catch(async (error) => {
             console.error("AI processing error:", error);
@@ -1418,8 +1401,7 @@ const AiAgentNode = memo(
                 }),
                 isActive: false,
               });
-              // Propagate model error
-              propagate(modelErrorMessage, true);
+              // Processing will trigger the output effect automatically
               return;
             }
 
@@ -1442,8 +1424,7 @@ const AiAgentNode = memo(
                   : JSON.stringify({ error: String(retryResult) }),
                 isActive: false,
               });
-              // Propagate error result
-              propagate(isSuccess ? retryResult : errorMessage, true);
+              // Processing will trigger the output effect automatically
             } catch (finalError) {
               console.error("All retries failed:", finalError);
 
@@ -1457,8 +1438,7 @@ const AiAgentNode = memo(
                 store: JSON.stringify({ error: String(finalError) }),
                 isActive: false,
               });
-              // Propagate final error
-              propagate(finalErrorMessage, true);
+              // Processing will trigger the output effect automatically
             }
           });
       }
@@ -1509,116 +1489,65 @@ const AiAgentNode = memo(
       }
     }, [isActive, processingState, updateNodeData]);
 
-    // Sync output with processing state - output depend on store
-    useEffect(() => {
-      let outputValue: string | null = null;
-
-      if (processingState === PROCESSING_STATE.PROCESSING) {
-        // Processing in progress
-        outputValue = null;
-      } else if (processingState === PROCESSING_STATE.SUCCESS && store) {
-        // Processing completed successfully - extract clean text from store JSON
-        try {
-          const storeObj = JSON.parse(store);
-
-          // Check for null/empty response specifically
-          if (
-            storeObj.response === "" ||
-            storeObj.response === null ||
-            storeObj.response === undefined
-          ) {
-            outputValue =
-              "Error: No response received from AI. Please try again.";
-          } else {
-            // Try to get the response field first, then fallback to extractCleanText
-            outputValue =
-              storeObj.response ||
-              extractCleanText(storeObj) ||
-              extractCleanText(store);
-          }
-        } catch {
-          // Fallback if store is not valid JSON
-          outputValue = extractCleanText(store);
-        }
-      } else if (
-        processingState === PROCESSING_STATE.ERROR &&
-        processingError
-      ) {
-        // Processing failed
-        outputValue = `Error: ${processingError}`;
-      }
-
-      // Only update if store has changed to avoid recursion
-      if (store !== lastStoreRef.current) {
-        lastStoreRef.current = store;
-        propagate(outputValue || "");
-      }
-      blockJsonWhenInactive();
-    }, [
-      processingState,
-      store,
-      processingError,
-      propagate,
-      blockJsonWhenInactive,
-    ]);
-
     /* 🔄 Handle-based output field generation for multi-handle compatibility */
     useEffect(() => {
       try {
-        // Create a data object with proper handle field mapping, basically map AI response to output handle
-        let outputValue = "";
+        // Create AI response data
+        let aiResponseValue: string | null = null;
 
         if (processingState === PROCESSING_STATE.SUCCESS && store) {
           // Extract clean text from the AI response
-          outputValue = extractCleanText(store);
-        } else if (
-          processingState === PROCESSING_STATE.ERROR &&
-          processingError
-        ) {
-          outputValue = `❌ AI Error: ${processingError}`;
-        } else if (processingState === PROCESSING_STATE.PROCESSING) {
-          outputValue = "🤖 AI thinking...";
-        } else {
-          outputValue =
-            processingState === PROCESSING_STATE.IDLE ? "🤖 AI ready" : "";
+          const cleanResponse = extractCleanText(store);
+          // Ensure we have a string, not an object
+          aiResponseValue =
+            typeof cleanResponse === "string" && cleanResponse.trim()
+              ? cleanResponse.trim()
+              : null;
         }
 
+        // Create a data object with proper handle field mapping, basically map AI response to output handle
         const mappedData = {
           ...nodeData,
-          output: outputValue, // Map AI response to main output handle
+          output: aiResponseValue, // Map AI response to output handle
         };
 
         // Generate Map-based output with error handling
-        const outputObject = generateoutputField(spec, mappedData as any);
+        const outputValue = generateoutputField(spec, mappedData as any);
 
         // Validate the result
-        if (!(outputObject instanceof Map)) {
+        if (!(outputValue instanceof Map)) {
           console.error(
             `AiAgent ${id}: generateoutputField did not return a Map`,
-            outputObject
+            outputValue
           );
           return;
         }
 
         // Convert Map to plain object for Convex compatibility, basically serialize for storage
-        const serializedOutput = Object.fromEntries(outputObject.entries());
+        const outputObject = Object.fromEntries(outputValue.entries());
 
         // Only update if changed
         const currentOutput = lastGeneralOutputRef.current;
         let hasChanged = true;
 
-        if (currentOutput instanceof Map && outputObject instanceof Map) {
+        if (currentOutput instanceof Map && outputValue instanceof Map) {
           // Compare Map contents
           hasChanged =
-            currentOutput.size !== outputObject.size ||
-            !Array.from(outputObject.entries()).every(
+            currentOutput.size !== outputValue.size ||
+            !Array.from(outputValue.entries()).every(
               ([key, value]) => currentOutput.get(key) === value
             );
+        } else if (currentOutput === null && outputValue.size === 0) {
+          hasChanged = false;
         }
 
         if (hasChanged) {
-          lastGeneralOutputRef.current = outputObject;
-          updateNodeData({ output: serializedOutput });
+          lastGeneralOutputRef.current = outputValue;
+          console.log("AI Agent setting output:", {
+            aiResponseValue,
+            type: typeof aiResponseValue,
+          });
+          updateNodeData({ output: aiResponseValue });
         }
       } catch (error) {
         console.error(`AiAgent ${id}: Error generating output`, error, {
@@ -1626,21 +1555,13 @@ const AiAgentNode = memo(
           nodeDataKeys: Object.keys(nodeData || {}),
         });
 
-        // Fallback: set empty object to prevent crashes, basically empty state for storage
+        // Fallback: set empty string to prevent crashes, basically empty state for storage
         if (lastGeneralOutputRef.current !== null) {
           lastGeneralOutputRef.current = new Map();
-          updateNodeData({ output: {} });
+          updateNodeData({ output: "" });
         }
       }
-    }, [
-      spec.handles,
-      nodeData,
-      processingState,
-      store,
-      processingError,
-      updateNodeData,
-      id,
-    ]);
+    }, [spec.handles, nodeData, processingState, store, updateNodeData, id]);
 
     // -------------------------------------------------------------------------
     // 4.6  Validation
@@ -2052,6 +1973,7 @@ const AiAgentNode = memo(
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     >
+                      <title>Send message</title>
                       <path d="M22 2L11 13" />
                       <path d="M22 2L15 22L11 13L2 9L22 2Z" />
                     </svg>
@@ -2059,15 +1981,18 @@ const AiAgentNode = memo(
                 </div>
 
                 {/* AI Response Preview */}
-                {output && (
+                {output && Object.keys(output).length > 0 && (
                   <div className="text-xs bg-gray-50 dark:bg-gray-800 rounded p-2">
                     <span className="text-muted-foreground block mb-1">
                       AI Response:
                     </span>
                     <span className="font-mono text-foreground">
-                      {output.length > 100
-                        ? `${output.substring(0, 100)}...`
-                        : output}
+                      {(() => {
+                        const responseText = Object.values(output)[0] as string;
+                        return responseText && responseText.length > 100
+                          ? `${responseText.substring(0, 100)}...`
+                          : responseText || "No response";
+                      })()}
                     </span>
                   </div>
                 )}

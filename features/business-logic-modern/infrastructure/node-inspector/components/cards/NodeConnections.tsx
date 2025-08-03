@@ -118,7 +118,13 @@ export const NodeConnections: React.FC<NodeConnectionsProps> = ({
                 </div>
                 {connection.sourceOutput && (
                   <div className="rounded border border-border/30 bg-background p-1.5 text-muted-foreground text-xs">
-                    {connection.sourceOutput}
+                    {(() => {
+                      const output = connection.sourceOutput;
+                      if (typeof output === "string") return output;
+                      if (output && typeof output === "object")
+                        return JSON.stringify(output, null, 2);
+                      return String(output);
+                    })()}
                   </div>
                 )}
               </div>
@@ -159,7 +165,13 @@ export const NodeConnections: React.FC<NodeConnectionsProps> = ({
                 </div>
                 {connection.targetInput && (
                   <div className="rounded border border-border/30 bg-background p-1.5 text-muted-foreground text-xs">
-                    {connection.targetInput}
+                    {(() => {
+                      const input = connection.targetInput;
+                      if (typeof input === "string") return input;
+                      if (input && typeof input === "object")
+                        return JSON.stringify(input, null, 2);
+                      return String(input);
+                    })()}
                   </div>
                 )}
               </div>

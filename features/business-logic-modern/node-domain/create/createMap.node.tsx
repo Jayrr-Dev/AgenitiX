@@ -12,6 +12,7 @@
  * Keywords: create-map, key-value-table, dictionary, type‑safe, clean‑architecture
  */
 
+import { Button } from "@/components/ui/button";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
@@ -222,6 +223,9 @@ const CreateMapNode = memo(
       { key: "", value: "" },
     ]);
 
+    // Ref to track debounce timeout for store updates
+    const storeUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     // -------------------------------------------------------------------------
     // 4.3  Feature flag evaluation (after all hooks)
     // -------------------------------------------------------------------------
@@ -323,24 +327,45 @@ const CreateMapNode = memo(
       return pairs;
     }, []);
 
-    // Handle key-value pair changes
+    // Handle key-value pair changes with debounced store updates
     const handlePairChange = useCallback(
       (index: number, field: "key" | "value", value: string) => {
         const newPairs = [...keyValuePairs];
         newPairs[index][field] = value;
         setKeyValuePairs(newPairs);
 
-        // Convert to object and update store
-        const obj = convertPairsToObject(newPairs);
-        updateNodeData({ store: JSON.stringify(obj) });
+        // Clear existing timeout to prevent multiple updates
+        if (storeUpdateTimeoutRef.current) {
+          clearTimeout(storeUpdateTimeoutRef.current);
+        }
+
+        // Debounce the store update to prevent focus loss, basically delay the update
+        storeUpdateTimeoutRef.current = setTimeout(() => {
+          const obj = convertPairsToObject(newPairs);
+          updateNodeData({ store: JSON.stringify(obj) });
+          storeUpdateTimeoutRef.current = null;
+        }, 300); // 300ms delay
       },
       [keyValuePairs, convertPairsToObject, updateNodeData]
     );
 
     // Add new key-value pair
     const addPair = useCallback(() => {
-      setKeyValuePairs([...keyValuePairs, { key: "", value: "" }]);
-    }, [keyValuePairs]);
+      const newPairs = [...keyValuePairs, { key: "", value: "" }];
+      setKeyValuePairs(newPairs);
+
+      // Clear existing timeout to prevent multiple updates
+      if (storeUpdateTimeoutRef.current) {
+        clearTimeout(storeUpdateTimeoutRef.current);
+      }
+
+      // Debounce the store update
+      storeUpdateTimeoutRef.current = setTimeout(() => {
+        const obj = convertPairsToObject(newPairs);
+        updateNodeData({ store: JSON.stringify(obj) });
+        storeUpdateTimeoutRef.current = null;
+      }, 300);
+    }, [keyValuePairs, convertPairsToObject, updateNodeData]);
 
     // Remove key-value pair
     const removePair = useCallback(
@@ -349,9 +374,17 @@ const CreateMapNode = memo(
           const newPairs = keyValuePairs.filter((_, i) => i !== index);
           setKeyValuePairs(newPairs);
 
-          // Convert to object and update store
-          const obj = convertPairsToObject(newPairs);
-          updateNodeData({ store: JSON.stringify(obj) });
+          // Clear existing timeout to prevent multiple updates
+          if (storeUpdateTimeoutRef.current) {
+            clearTimeout(storeUpdateTimeoutRef.current);
+          }
+
+          // Debounce the store update
+          storeUpdateTimeoutRef.current = setTimeout(() => {
+            const obj = convertPairsToObject(newPairs);
+            updateNodeData({ store: JSON.stringify(obj) });
+            storeUpdateTimeoutRef.current = null;
+          }, 300);
         }
       },
       [keyValuePairs, convertPairsToObject, updateNodeData]
@@ -517,6 +550,15 @@ const CreateMapNode = memo(
       }
     }, [keyValuePairs, isExpanded, updateNodeData]);
 
+    // Cleanup timeout on unmount
+    useEffect(() => {
+      return () => {
+        if (storeUpdateTimeoutRef.current) {
+          clearTimeout(storeUpdateTimeoutRef.current);
+        }
+      };
+    }, []);
+
     // -------------------------------------------------------------------------
     // 4.6  Validation
     // -------------------------------------------------------------------------
@@ -571,7 +613,7 @@ const CreateMapNode = memo(
         {!isExpanded &&
         spec.size.collapsed.width === 60 &&
         spec.size.collapsed.height === 60 ? (
-          <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+          <div className="absolute inset-0 flex justify-center text-lg text-foreground/80">
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (
@@ -586,11 +628,11 @@ const CreateMapNode = memo(
             className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
           >
             {/* Key-Value Table */}
-            <div className="space-y-1">
+            <div className="space-y-1 nowheel">
               {/* Table Header */}
-              <div className="grid grid-cols-[1fr_1fr_16px] gap-1 text-[10px] font-medium text-muted-foreground border-b border-border pb-1">
-                <div className="truncate">Key</div>
-                <div className="truncate">Value</div>
+              <div className="grid  grid-cols-[1fr_1fr_16px] gap-1 text-[10px] font-medium text-muted-foreground border-b border-border pb-1">
+                <div className="truncate text-foreground">Key</div>
+                <div className="truncate text-foreground">Value</div>
                 <div />
               </div>
 
@@ -608,7 +650,7 @@ const CreateMapNode = memo(
                         handlePairChange(pairIndex, "key", e.target.value)
                       }
                       placeholder="key"
-                      className="text-[10px] px-1 py-0.5 bg-background border border-border rounded text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring w-full min-w-0"
+                      className="text-[10px] px-1 py-0.5 bg-background border border-border rounded text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring w-full min-w-0 nodrag"
                       disabled={!isEnabled}
                     />
                     <input
@@ -618,7 +660,7 @@ const CreateMapNode = memo(
                         handlePairChange(pairIndex, "value", e.target.value)
                       }
                       placeholder="value"
-                      className="text-[10px] px-1 py-0.5 bg-background border border-border rounded text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring w-full min-w-0"
+                      className="text-[10px] px-1 py-0.5 bg-background border border-border rounded text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring w-full min-w-0 nodrag"
                       disabled={!isEnabled}
                     />
                     {keyValuePairs.length > 1 ? (
@@ -639,14 +681,15 @@ const CreateMapNode = memo(
               </div>
 
               {/* Add Button */}
-              <button
+              <Button
                 type="button"
+                size="sm"
                 onClick={addPair}
-                className="text-[10px] px-1 py-0.5 text-blue-500 hover:text-blue-700 disabled:opacity-50 w-full text-left"
+                className="text-[10px]  w-full text-left p-0 m-0"
                 disabled={!isEnabled}
               >
                 + Add Row
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
@@ -656,7 +699,15 @@ const CreateMapNode = memo(
             {/* Show key count in collapsed mode */}
             <div className="text-center text-[10px] text-muted-foreground">
               <div>
-                Keys: {Object.keys(convertPairsToObject(keyValuePairs)).length}
+                Keys:{" "}
+                {(() => {
+                  try {
+                    const obj = convertPairsToObject(keyValuePairs);
+                    return Object.keys(obj).length;
+                  } catch {
+                    return 0;
+                  }
+                })()}
               </div>
             </div>
           </div>

@@ -350,7 +350,7 @@ const AiManagerNode = memo(
 
         if (hasChanged) {
           lastGeneralOutputRef.current = outputValue;
-          updateNodeData({ output: outputObject });
+          updateNodeData({ output: nodeData.store });
         }
       } catch (error) {
         console.error(`AiManager ${id}: Error generating output`, error, {
@@ -358,10 +358,10 @@ const AiManagerNode = memo(
           nodeDataKeys: Object.keys(nodeData || {}),
         });
 
-        // Fallback: set empty object to prevent crashes, basically empty state for storage
+        // Fallback: set empty string to prevent crashes, basically empty state for storage
         if (lastGeneralOutputRef.current !== null) {
           lastGeneralOutputRef.current = new Map();
-          updateNodeData({ output: {} });
+          updateNodeData({ output: "" });
         }
       }
     }, [spec.handles, nodeData, updateNodeData, id]);
@@ -467,11 +467,14 @@ const AiManagerNode = memo(
             className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
           >
             <textarea
-              value={
-                validation.data.store === "Default text"
-                  ? ""
-                  : (validation.data.store ?? "")
-              }
+              value={(() => {
+                const store = validation.data.store;
+                if (store === "Default text") return "";
+                if (typeof store === "string") return store;
+                if (store && typeof store === "object")
+                  return JSON.stringify(store, null, 2);
+                return "";
+              })()}
               onChange={handleStoreChange}
               placeholder="Enter your content here…"
               className={` resize-none nowheel bg-background rounded-md p-2 text-xs h-32 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
@@ -483,11 +486,14 @@ const AiManagerNode = memo(
             className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
           >
             <textarea
-              value={
-                validation.data.store === "Default text"
-                  ? ""
-                  : (validation.data.store ?? "")
-              }
+              value={(() => {
+                const store = validation.data.store;
+                if (store === "Default text") return "";
+                if (typeof store === "string") return store;
+                if (store && typeof store === "object")
+                  return JSON.stringify(store, null, 2);
+                return "";
+              })()}
               onChange={handleStoreChange}
               placeholder="..."
               className={` resize-none text-center nowheel rounded-md h-8 m-4 translate-y-2 text-xs p-1 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}

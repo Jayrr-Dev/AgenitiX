@@ -10,6 +10,7 @@
 
 import type { NodeProps } from "@xyflow/react";
 import { useStore } from "@xyflow/react";
+import type React from "react";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { z } from "zod";
 

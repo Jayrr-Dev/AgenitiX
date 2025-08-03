@@ -1044,7 +1044,7 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({
           valueCount: keyCount,
           showValue: true,
         };
-      case "delete":
+      case "delete": {
         // For delete mode, count existing keys in localStorage
         let existingKeyCount = 0;
         try {
@@ -1061,7 +1061,8 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({
           valueCount: existingKeyCount,
           showValue: true,
         };
-      case "get":
+      }
+      case "get": {
         // For get mode, count both keys and values that exist in localStorage
         let existingCount = 0;
         try {
@@ -1079,6 +1080,7 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({
           valueCount: existingCount,
           showValue: true,
         };
+      }
       default:
         return { keyCount: 0, valueCount: 0, showValue: false };
     }

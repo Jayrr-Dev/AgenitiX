@@ -1,10 +1,10 @@
 /**
  * StoreLocal Node Tests
- * 
+ *
  * Tests for the enhanced localStorage management node functionality
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from "vitest";
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -28,17 +28,17 @@ const localStorageMock = (() => {
   };
 })();
 
-Object.defineProperty(window, 'localStorage', {
+Object.defineProperty(window, "localStorage", {
   value: localStorageMock,
 });
 
-describe('StoreLocal Node', () => {
+describe("StoreLocal Node", () => {
   beforeEach(() => {
     localStorage.clear();
   });
 
-  describe('localStorage operations', () => {
-    it('should store simple data types correctly', () => {
+  describe("localStorage operations", () => {
+    it("should store simple data types correctly", () => {
       const data = {
         theme: "dark",
         loggedIn: true,
@@ -48,7 +48,7 @@ describe('StoreLocal Node', () => {
       // Simulate the storage logic
       for (const [key, value] of Object.entries(data)) {
         let serializedValue: string;
-        
+
         if (typeof value === "string") {
           serializedValue = JSON.stringify(value);
         } else if (typeof value === "number" || typeof value === "boolean") {
@@ -65,7 +65,7 @@ describe('StoreLocal Node', () => {
       expect(localStorage.getItem("count")).toBe("42");
     });
 
-    it('should store complex objects as JSON', () => {
+    it("should store complex objects as JSON", () => {
       const data = {
         user: { id: "abc123", name: "Sam" },
         settings: { theme: "dark", notifications: true },
@@ -76,17 +76,23 @@ describe('StoreLocal Node', () => {
         localStorage.setItem(key, serializedValue);
       }
 
-      expect(JSON.parse(localStorage.getItem("user")!)).toEqual({
+      const userItem = localStorage.getItem("user");
+      const settingsItem = localStorage.getItem("settings");
+
+      expect(userItem).not.toBeNull();
+      expect(settingsItem).not.toBeNull();
+
+      expect(JSON.parse(userItem as string)).toEqual({
         id: "abc123",
         name: "Sam",
       });
-      expect(JSON.parse(localStorage.getItem("settings")!)).toEqual({
+      expect(JSON.parse(settingsItem as string)).toEqual({
         theme: "dark",
         notifications: true,
       });
     });
 
-    it('should delete specified keys', () => {
+    it("should delete specified keys", () => {
       // Setup data
       localStorage.setItem("key1", "value1");
       localStorage.setItem("key2", "value2");
@@ -104,11 +110,11 @@ describe('StoreLocal Node', () => {
     });
   });
 
-  describe('pulse detection logic', () => {
-    it('should detect rising edge trigger', () => {
+  describe("pulse detection logic", () => {
+    it("should detect rising edge trigger", () => {
       let lastState = false;
       let currentState = false;
-      
+
       // Initial state - no pulse
       let isPulse = currentState && !lastState;
       expect(isPulse).toBe(false);
@@ -130,10 +136,10 @@ describe('StoreLocal Node', () => {
     });
   });
 
-  describe('mode switching', () => {
-    it('should toggle between store and delete modes', () => {
+  describe("mode switching", () => {
+    it("should toggle between store and delete modes", () => {
       let mode: "store" | "delete" = "store";
-      
+
       expect(mode).toBe("store");
 
       // Toggle to delete

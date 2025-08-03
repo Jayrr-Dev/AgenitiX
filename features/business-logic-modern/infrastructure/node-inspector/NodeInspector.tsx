@@ -15,65 +15,64 @@
 "use client";
 
 import {
-	useFlowStore,
-	useNodeErrors,
+  useFlowStore,
+  useNodeErrors,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import { getNodeOutput } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/outputUtils";
-import { ChevronDown, Copy, Edit3, GripVertical, PanelLeftClose, PanelLeftOpen, Settings, Trash2 } from "lucide-react";
-import React, { useCallback, useMemo, useState, memo } from "react";
+import {
+  ChevronDown,
+  Copy,
+  GripVertical,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+  Trash2,
+} from "lucide-react";
+import React, { memo, useCallback, useMemo, useState } from "react";
 import { FaLock, FaLockOpen, FaSearch } from "react-icons/fa";
 
+import EditableNodeLabel from "@/components/nodes/EditableNodeLabel";
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 // DnD Kit imports for drag and drop functionality, basically sortable card reordering
 import {
-	DndContext,
-	DragEndEvent,
-	DragOverlay,
-	DragStartEvent,
-	MouseSensor,
-	TouchSensor,
-	closestCenter,
-	useSensor,
-	useSensors,
+  DndContext,
+  type DragEndEvent,
+  DragOverlay,
+  type DragStartEvent,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
 } from "@dnd-kit/core";
 import {
-	SortableContext,
-	arrayMove,
-	verticalListSortingStrategy,
-	rectSortingStrategy,
-} from "@dnd-kit/sortable";
-import {
-	useSortable,
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-
-import EditableNodeDescription from "@/components/nodes/EditableNodeDescription";
-import EditableNodeLabel from "@/components/nodes/EditableNodeLabel";
-import EditableNodeId from "@/components/nodes/editableNodeId";
-import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import { NODE_TYPE_CONFIG } from "../flow-engine/constants";
 import type { AgenNode, NodeType } from "../flow-engine/types/nodeData";
 import { useComponentTheme } from "../theming/components";
 import { NODE_INSPECTOR_TOKENS as DESIGN_CONFIG } from "../theming/components/nodeInspector";
 import { NodeInspectorAdapter } from "./adapters/NodeInspectorAdapter";
 import { EdgeInspector } from "./components/EdgeInspector";
-import { EditableJsonEditor } from "./components/EditableJsonEditor";
 import { ErrorLog } from "./components/ErrorLog";
-import { HandlePositionEditor } from "./components/HandlePositionEditor";
-import { NodeControls } from "./components/NodeControls";
-import { NodeOutput } from "./components/NodeOutput";
-import { SizeControls } from "./components/SizeControls";
 // Import card components with explicit naming
 import NodeInformation from "./components/cards/NodeInformation";
 
-import NodeDataCard from "./components/cards/NodeData";
-import NodeSizeCard from "./components/cards/NodeSize";
-import NodeOutputCard from "./components/cards/NodeOutput";
-import NodeControlsCard from "./components/cards/NodeControls";
-import NodeHandlesCard from "./components/cards/NodeHandles";
-import NodeConnectionsCard from "./components/cards/NodeConnections";
-import { useInspectorState } from "./hooks/useInspectorState";
-import { useInspectorSettings, type CardType } from "./hooks/useInspectorSettings";
 import { InspectorSettingsDropdown } from "./components/InspectorSettingsDropdown";
+import NodeConnectionsCard from "./components/cards/NodeConnections";
+import NodeControlsCard from "./components/cards/NodeControls";
+import NodeDataCard from "./components/cards/NodeData";
+import NodeHandlesCard from "./components/cards/NodeHandles";
+import NodeOutputCard from "./components/cards/NodeOutput";
+import NodeSizeCard from "./components/cards/NodeSize";
+import {
+  type CardType,
+  useInspectorSettings,
+} from "./hooks/useInspectorSettings";
 
 // =====================================================================
 // STYLING CONSTANTS - Thin, minimalistic design with original colors
@@ -132,8 +131,10 @@ const STYLING_ICON_STATE_LARGE = DESIGN_CONFIG.icons.large;
 const STYLING_JSON_HIGHLIGHTER = `${DESIGN_CONFIG.dimensions.fullWidth} ${DESIGN_CONFIG.dimensions.minWidth} ${DESIGN_CONFIG.dimensions.flexBasis}`;
 
 // CARD STYLES - Compact card components
-const STYLING_CARD_SECTION = "p-3 bg-card rounded-lg border border-border shadow-sm";
-const _STYLING_CARD_SECTION_HEADER = "p-3 bg-muted/30 rounded-t-lg border-b border-border/30";
+const STYLING_CARD_SECTION =
+  "p-3 bg-card rounded-lg border border-border shadow-sm";
+const _STYLING_CARD_SECTION_HEADER =
+  "p-3 bg-muted/30 rounded-t-lg border-b border-border/30";
 const _STYLING_CARD_SECTION_CONTENT = "p-3 bg-card rounded-b-lg";
 
 // =====================================================================
@@ -141,39 +142,43 @@ const _STYLING_CARD_SECTION_CONTENT = "p-3 bg-card rounded-b-lg";
 // =====================================================================
 
 interface AccordionSectionProps {
-	title: string;
-	isOpen: boolean;
-	onToggle: () => void;
-	children: React.ReactNode;
+  title: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
 }
 
 const AccordionSection: React.FC<AccordionSectionProps> = ({
-	title,
-	isOpen,
-	onToggle,
-	children,
+  title,
+  isOpen,
+  onToggle,
+  children,
 }) => {
-	return (
-		<div className={STYLING_CARD_SECTION}>
-			<button
-				onClick={onToggle}
-				className="flex w-full items-center justify-between rounded-t-lg border-border/30 border-b bg-muted/30 px-3 py-0 transition-colors duration-200 hover:bg-muted/50"
-				type="button"
-			>
-				<h4 className="mb-1 font-medium text-muted-foreground text-xs">{title}</h4>
-				<ChevronDown
-					className={`h-3 w-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-				/>
-			</button>
-			<div
-				className={`overflow-hidden transition-all duration-300 ease-in-out ${
-					isOpen ? "max-h-none opacity-100" : "max-h-0 opacity-0"
-				}`}
-			>
-				<div className="overflow-y-auto rounded-b-lg bg-card p-3">{children}</div>
-			</div>
-		</div>
-	);
+  return (
+    <div className={STYLING_CARD_SECTION}>
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center justify-between rounded-t-lg border-border/30 border-b bg-muted/30 px-3 py-0 transition-colors duration-200 hover:bg-muted/50"
+        type="button"
+      >
+        <h4 className="mb-1 font-medium text-muted-foreground text-xs">
+          {title}
+        </h4>
+        <ChevronDown
+          className={`h-3 w-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          isOpen ? "max-h-none opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <div className="overflow-y-auto rounded-b-lg bg-card p-3">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // =====================================================================
@@ -181,258 +186,291 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 // =====================================================================
 
 interface SortableAccordionSectionProps extends AccordionSectionProps {
-	id: CardType;
-	isDragging?: boolean;
+  id: CardType;
+  isDragging?: boolean;
 }
 
-const SortableAccordionSection: React.FC<SortableAccordionSectionProps> = ({
-	id,
-	title,
-	isOpen,
-	onToggle,
-	children,
-	isDragging = false,
-}) => {
-	const {
-		attributes,
-		listeners,
-		setNodeRef,
-		transform,
-		transition,
-		isDragging: isSortableDragging,
-	} = useSortable({ id });
+const SortableAccordionSection = memo<SortableAccordionSectionProps>(
+  ({ id, title, isOpen, onToggle, children, isDragging = false }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging: isSortableDragging,
+    } = useSortable({ id });
 
-	const style = {
-		transform: CSS.Transform.toString(transform),
-		transition,
-		opacity: isSortableDragging ? 0.5 : 1,
-	};
+    // Memoize style object to prevent recreation on every render
+    const style = useMemo(
+      () => ({
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isSortableDragging ? 0.5 : 1,
+      }),
+      [transform, transition, isSortableDragging]
+    );
 
-	return (
-		<div ref={setNodeRef} style={style} className={`${STYLING_CARD_SECTION} ${isDragging ? 'shadow-lg' : ''}`}>
-			<div className="flex w-full items-center rounded-t-lg border-border/30 border-b bg-muted/30">
-				{/* Drag Handle */}
-				<div
-					{...attributes}
-					{...listeners}
-					className="flex items-center justify-center px-2 py-2 cursor-grab active:cursor-grabbing hover:bg-muted/50 transition-colors duration-200"
-					title="Drag to reorder"
-				>
-					<GripVertical className="h-3 w-3 text-muted-foreground/60" />
-				</div>
-				
-				{/* Accordion Toggle Button */}
-				<button
-					onClick={onToggle}
-					className="flex flex-1 items-center justify-between px-3 py-0 transition-colors duration-200 hover:bg-muted/50"
-					type="button"
-				>
-					<h4 className="mb-1 font-medium text-muted-foreground text-xs">{title}</h4>
-					<ChevronDown
-						className={`h-3 w-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-					/>
-				</button>
-			</div>
-			<div
-				className={`overflow-hidden transition-all duration-300 ease-in-out ${
-					isOpen ? "max-h-none opacity-100" : "max-h-0 opacity-0"
-				}`}
-			>
-				<div className="overflow-y-auto rounded-b-lg bg-card p-3">{children}</div>
-			</div>
-		</div>
-	);
-};
+    // Memoize className to prevent string concatenation on every render
+    const containerClassName = useMemo(
+      () => `${STYLING_CARD_SECTION} ${isDragging ? "shadow-lg" : ""}`,
+      [isDragging]
+    );
+
+    // Memoize chevron className to prevent recreation
+    const chevronClassName = useMemo(
+      () =>
+        `h-3 w-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`,
+      [isOpen]
+    );
+
+    // Memoize content wrapper className
+    const contentClassName = useMemo(
+      () =>
+        `overflow-hidden transition-all duration-300 ease-in-out ${
+          isOpen ? "max-h-none opacity-100" : "max-h-0 opacity-0"
+        }`,
+      [isOpen]
+    );
+
+    return (
+      <div ref={setNodeRef} style={style} className={containerClassName}>
+        <div className="flex w-full items-center rounded-t-lg border-border/30 border-b bg-muted/30">
+          {/* Drag Handle */}
+          <div
+            {...attributes}
+            {...listeners}
+            className="flex items-center justify-center px-2 py-2 cursor-grab active:cursor-grabbing hover:bg-muted/50 transition-colors duration-200"
+            title="Drag to reorder"
+          >
+            <GripVertical className="h-3 w-3 text-muted-foreground/60" />
+          </div>
+
+          {/* Accordion Toggle Button */}
+          <button
+            onClick={onToggle}
+            className="flex flex-1 items-center justify-between px-3 py-0 transition-colors duration-200 hover:bg-muted/50"
+            type="button"
+          >
+            <h4 className="mb-1 font-medium text-muted-foreground text-xs">
+              {title}
+            </h4>
+            <ChevronDown className={chevronClassName} />
+          </button>
+        </div>
+        <div className={contentClassName}>
+          <div className="overflow-y-auto rounded-b-lg bg-card p-3">
+            {children}
+          </div>
+        </div>
+      </div>
+    );
+  }
+);
+
+SortableAccordionSection.displayName = "SortableAccordionSection";
 
 // =====================================================================
 // CARD RENDERING HELPERS
 // =====================================================================
 
 interface CardRenderProps {
-	selectedNode: any;
-	nodeInfo: any;
-	nodeConfig: any;
-	output: any;
-	connections: any;
-	errors: any[];
-	cardVisibility: any;
-	accordionState: any;
-	toggleAccordion: (section: any) => void;
-	updateNodeData: any;
-	handleUpdateNodeId: any;
-	handleUpdateNodeData: any;
-	logNodeError: any;
-	handleClearErrors: any;
-	nodes: any[];
-	edges: any[];
-	viewMode: "bottom" | "side";
-	hasRightColumn: boolean;
+  selectedNode: any;
+  nodeInfo: any;
+  nodeConfig: any;
+  output: any;
+  connections: any;
+  errors: any[];
+  cardVisibility: any;
+  accordionState: any;
+  toggleAccordion: (section: any) => void;
+  updateNodeData: any;
+  handleUpdateNodeId: any;
+  handleUpdateNodeData: any;
+  logNodeError: any;
+  handleClearErrors: any;
+  nodes: any[];
+  edges: any[];
+  viewMode: "bottom" | "side";
+  hasRightColumn: boolean;
 }
 
 /**
  * Renders a single card based on its type, basically creates the appropriate card component
  */
-const renderCard = (cardType: CardType, props: CardRenderProps): React.ReactNode | null => {
-	const {
-		selectedNode,
-		nodeInfo,
-		nodeConfig,
-		output,
-		connections,
-		errors,
-		cardVisibility,
-		accordionState,
-		toggleAccordion,
-		updateNodeData,
-		handleUpdateNodeId,
-		handleUpdateNodeData,
-		logNodeError,
-		handleClearErrors,
-		nodes,
-		edges,
-		viewMode,
-		hasRightColumn,
-	} = props;
+const renderCard = (
+  cardType: CardType,
+  props: CardRenderProps
+): React.ReactNode | null => {
+  const {
+    selectedNode,
+    nodeInfo,
+    nodeConfig,
+    output,
+    connections,
+    errors,
+    cardVisibility,
+    accordionState,
+    toggleAccordion,
+    updateNodeData,
+    handleUpdateNodeId,
+    handleUpdateNodeData,
+    logNodeError,
+    handleClearErrors,
+    nodes,
+    edges,
+    viewMode,
+    hasRightColumn,
+  } = props;
 
-	// Check if card should be visible, basically filter out hidden cards
-	if (!cardVisibility[cardType]) {
-		return null;
-	}
+  // Check if card should be visible, basically filter out hidden cards
+  if (!cardVisibility[cardType]) {
+    return null;
+  }
 
-	// Special conditions for certain cards, basically handle conditional rendering
-	switch (cardType) {
-		case 'nodeInfo':
-			return (
-				<SortableAccordionSection
-					key={cardType}
-					id={cardType}
-					title="Node Information"
-					isOpen={accordionState.nodeInfo}
-					onToggle={() => toggleAccordion("nodeInfo")}
-				>
-					<NodeInformation
-						selectedNode={selectedNode}
-						nodeInfo={nodeInfo}
-						updateNodeData={updateNodeData}
-						onUpdateNodeId={handleUpdateNodeId}
-					/>
-				</SortableAccordionSection>
-			);
+  // Special conditions for certain cards, basically handle conditional rendering
+  switch (cardType) {
+    case "nodeInfo":
+      return (
+        <SortableAccordionSection
+          key={cardType}
+          id={cardType}
+          title="Node Information"
+          isOpen={accordionState.nodeInfo}
+          onToggle={() => toggleAccordion("nodeInfo")}
+        >
+          <NodeInformation
+            selectedNode={selectedNode}
+            nodeInfo={nodeInfo}
+            updateNodeData={updateNodeData}
+            onUpdateNodeId={handleUpdateNodeId}
+          />
+        </SortableAccordionSection>
+      );
 
-		case 'nodeData':
-			return (
-				<SortableAccordionSection
-					key={cardType}
-					id={cardType}
-					title="Node Data"
-					isOpen={accordionState.nodeData}
-					onToggle={() => toggleAccordion("nodeData")}
-				>
-					<NodeDataCard
-						selectedNode={selectedNode}
-						nodeInfo={nodeInfo}
-						updateNodeData={handleUpdateNodeData}
-					/>
-				</SortableAccordionSection>
-			);
+    case "nodeData":
+      return (
+        <SortableAccordionSection
+          key={cardType}
+          id={cardType}
+          title="Node Data"
+          isOpen={accordionState.nodeData}
+          onToggle={() => toggleAccordion("nodeData")}
+        >
+          <NodeDataCard
+            selectedNode={selectedNode}
+            nodeInfo={nodeInfo}
+            updateNodeData={handleUpdateNodeData}
+          />
+        </SortableAccordionSection>
+      );
 
-		case 'output':
-			if (!(nodeConfig?.hasOutput || viewMode === "side")) return null;
-			return (
-				<SortableAccordionSection
-					key={cardType}
-					id={cardType}
-					title="Output"
-					isOpen={accordionState.output}
-					onToggle={() => toggleAccordion("output")}
-				>
-					<NodeOutputCard output={output} nodeType={selectedNode.type} />
-				</SortableAccordionSection>
-			);
+    case "output":
+      if (!(nodeConfig?.hasOutput || viewMode === "side")) return null;
+      return (
+        <SortableAccordionSection
+          key={cardType}
+          id={cardType}
+          title="Output"
+          isOpen={accordionState.output}
+          onToggle={() => toggleAccordion("output")}
+        >
+          <NodeOutputCard output={output} nodeType={selectedNode.type} />
+        </SortableAccordionSection>
+      );
 
-		case 'controls':
-			if (!(nodeInfo.hasControls || viewMode === "side")) return null;
-			return (
-				<SortableAccordionSection
-					key={cardType}
-					id={cardType}
-					title="Controls"
-					isOpen={accordionState.controls}
-					onToggle={() => toggleAccordion("controls")}
-				>
-					<NodeControlsCard
-						selectedNode={selectedNode}
-						updateNodeData={updateNodeData}
-						onLogError={logNodeError}
-					/>
-				</SortableAccordionSection>
-			);
+    case "controls":
+      if (!(nodeInfo.hasControls || viewMode === "side")) return null;
+      return (
+        <SortableAccordionSection
+          key={cardType}
+          id={cardType}
+          title="Controls"
+          isOpen={accordionState.controls}
+          onToggle={() => toggleAccordion("controls")}
+        >
+          <NodeControlsCard
+            selectedNode={selectedNode}
+            updateNodeData={updateNodeData}
+            onLogError={logNodeError}
+          />
+        </SortableAccordionSection>
+      );
 
-		case 'handles':
-			return (
-				<SortableAccordionSection
-					key={cardType}
-					id={cardType}
-					title="Handles"
-					isOpen={accordionState.handles}
-					onToggle={() => toggleAccordion("handles")}
-				>
-					<NodeHandlesCard
-						selectedNode={selectedNode}
-						nodeInfo={nodeInfo}
-						edges={edges}
-						updateNodeData={updateNodeData}
-					/>
-				</SortableAccordionSection>
-			);
+    case "handles":
+      return (
+        <SortableAccordionSection
+          key={cardType}
+          id={cardType}
+          title="Handles"
+          isOpen={accordionState.handles}
+          onToggle={() => toggleAccordion("handles")}
+        >
+          <NodeHandlesCard
+            selectedNode={selectedNode}
+            nodeInfo={nodeInfo}
+            edges={edges}
+            updateNodeData={updateNodeData}
+          />
+        </SortableAccordionSection>
+      );
 
-		case 'connections':
-			return (
-				<SortableAccordionSection
-					key={cardType}
-					id={cardType}
-					title="Connections"
-					isOpen={accordionState.connections}
-					onToggle={() => toggleAccordion("connections")}
-				>
-					<NodeConnectionsCard
-						selectedNode={selectedNode}
-						nodes={nodes}
-						edges={edges}
-					/>
-				</SortableAccordionSection>
-			);
+    case "connections":
+      return (
+        <SortableAccordionSection
+          key={cardType}
+          id={cardType}
+          title="Connections"
+          isOpen={accordionState.connections}
+          onToggle={() => toggleAccordion("connections")}
+        >
+          <NodeConnectionsCard
+            selectedNode={selectedNode}
+            nodes={nodes}
+            edges={edges}
+          />
+        </SortableAccordionSection>
+      );
 
-		case 'size':
-			if (!(selectedNode.data && (selectedNode.data as any).expandedSize !== undefined)) return null;
-			return (
-				<SortableAccordionSection
-					key={cardType}
-					id={cardType}
-					title="Size"
-					isOpen={accordionState.size}
-					onToggle={() => toggleAccordion("size")}
-				>
-					<NodeSizeCard selectedNode={selectedNode} updateNodeData={updateNodeData} />
-				</SortableAccordionSection>
-			);
+    case "size":
+      if (
+        !(
+          selectedNode.data &&
+          (selectedNode.data as any).expandedSize !== undefined
+        )
+      )
+        return null;
+      return (
+        <SortableAccordionSection
+          key={cardType}
+          id={cardType}
+          title="Size"
+          isOpen={accordionState.size}
+          onToggle={() => toggleAccordion("size")}
+        >
+          <NodeSizeCard
+            selectedNode={selectedNode}
+            updateNodeData={updateNodeData}
+          />
+        </SortableAccordionSection>
+      );
 
-		case 'errors':
-			return (
-				<SortableAccordionSection
-					key={cardType}
-					id={cardType}
-					title="Error Log"
-					isOpen={accordionState.errors}
-					onToggle={() => toggleAccordion("errors")}
-				>
-					<ErrorLog errors={errors} onClearErrors={handleClearErrors} />
-				</SortableAccordionSection>
-			);
+    case "errors":
+      return (
+        <SortableAccordionSection
+          key={cardType}
+          id={cardType}
+          title="Error Log"
+          isOpen={accordionState.errors}
+          onToggle={() => toggleAccordion("errors")}
+        >
+          <ErrorLog errors={errors} onClearErrors={handleClearErrors} />
+        </SortableAccordionSection>
+      );
 
-		default:
-			return null;
-	}
+    default:
+      return null;
+  }
 };
 
 // =====================================================================
@@ -440,199 +478,210 @@ const renderCard = (cardType: CardType, props: CardRenderProps): React.ReactNode
 // =====================================================================
 
 interface NodeInspectorProps {
-	viewMode?: "bottom" | "side";
+  viewMode?: "bottom" | "side";
 }
 
 // Shell component that handles store subscriptions and passes plain data
 const NodeInspectorShell: React.FC<NodeInspectorProps> = ({
-	viewMode = "bottom",
+  viewMode = "bottom",
 }) => {
-	const {
-		nodes,
-		edges,
-		selectedNodeId,
-		selectedEdgeId,
-		inspectorLocked,
-		inspectorViewMode,
-		setInspectorLocked,
-		toggleInspectorViewMode,
-		updateNodeData,
-		updateNodeId,
-		logNodeError,
-		clearNodeErrors,
-		removeNode,
-		removeEdge,
-		addNode,
-		selectNode,
-	} = useFlowStore();
+  const {
+    nodes,
+    edges,
+    selectedNodeId,
+    selectedEdgeId,
+    inspectorLocked,
+    inspectorViewMode,
+    setInspectorLocked,
+    toggleInspectorViewMode,
+    updateNodeData,
+    updateNodeId,
+    logNodeError,
+    clearNodeErrors,
+    removeNode,
+    removeEdge,
+    addNode,
+    selectNode,
+  } = useFlowStore();
 
-	// Settings management with persistence, basically card visibility controls
-	const { 
-		settings: cardVisibilityWithOrder, 
-		toggleSetting, 
-		updateCardOrder,
-		resetToDefaults,
-		isLoaded: settingsLoaded 
-	} = useInspectorSettings();
+  // Settings management with persistence, basically card visibility controls
+  const {
+    settings: cardVisibilityWithOrder,
+    toggleSetting,
+    updateCardOrder,
+    resetToDefaults,
+    isLoaded: settingsLoaded,
+  } = useInspectorSettings();
 
-	// Extract card visibility and order, basically separate visibility state from ordering
-	const cardVisibility = {
-		nodeInfo: cardVisibilityWithOrder.nodeInfo,
-		nodeData: cardVisibilityWithOrder.nodeData,
-		output: cardVisibilityWithOrder.output,
-		controls: cardVisibilityWithOrder.controls,
-		handles: cardVisibilityWithOrder.handles,
-		connections: cardVisibilityWithOrder.connections,
-		errors: cardVisibilityWithOrder.errors,
-		size: cardVisibilityWithOrder.size,
-	};
-	const cardOrder = cardVisibilityWithOrder.cardOrder;
+  // Extract card visibility and order, basically separate visibility state from ordering
+  const cardVisibility = {
+    nodeInfo: cardVisibilityWithOrder.nodeInfo,
+    nodeData: cardVisibilityWithOrder.nodeData,
+    output: cardVisibilityWithOrder.output,
+    controls: cardVisibilityWithOrder.controls,
+    handles: cardVisibilityWithOrder.handles,
+    connections: cardVisibilityWithOrder.connections,
+    errors: cardVisibilityWithOrder.errors,
+    size: cardVisibilityWithOrder.size,
+  };
+  const cardOrder = cardVisibilityWithOrder.cardOrder;
 
-	// Drag and drop state management, basically track active drag item
-	const [activeId, setActiveId] = useState<CardType | null>(null);
+  // Drag and drop state management, basically track active drag item
+  const [activeId, setActiveId] = useState<CardType | null>(null);
 
-	// DnD sensors configuration, basically define how drag interactions work
-	const sensors = useSensors(
-		useSensor(MouseSensor, {
-			activationConstraint: {
-				distance: 8, // Require 8px movement before drag starts, basically prevent accidental drags
-			},
-		}),
-		useSensor(TouchSensor, {
-			activationConstraint: {
-				delay: 250,
-				tolerance: 8,
-			},
-		})
-	);
+  // DnD sensors configuration, basically define how drag interactions work
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px movement before drag starts, basically prevent accidental drags
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 8,
+      },
+    })
+  );
 
-	// Accordion state management
-	const [accordionState, setAccordionState] = useState({
-		nodeInfo: true,
-		description: true,
-		handles: true,
-		nodeData: true,
-		output: true,
-		controls: true,
-		connections: true,
-		errors: true,
-		size: true,
-	});
+  // Accordion state management
+  const [accordionState, setAccordionState] = useState({
+    nodeInfo: true,
+    description: true,
+    handles: true,
+    nodeData: true,
+    output: true,
+    controls: true,
+    connections: true,
+    errors: true,
+    size: true,
+  });
 
-	const toggleAccordion = (section: keyof typeof accordionState) => {
-		setAccordionState((prev) => ({
-			...prev,
-			[section]: !prev[section],
-		}));
-	};
+  const toggleAccordion = (section: keyof typeof accordionState) => {
+    setAccordionState((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
 
-	// Drag and drop event handlers, basically manage card reordering
-	const handleDragStart = (event: DragStartEvent) => {
-		setActiveId(event.active.id as CardType);
-	};
+  // Drag and drop event handlers, basically manage card reordering
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as CardType);
+  };
 
-	const handleDragEnd = (event: DragEndEvent) => {
-		const { active, over } = event;
-		
-		if (over && active.id !== over.id) {
-			const oldIndex = cardOrder.indexOf(active.id as CardType);
-			const newIndex = cardOrder.indexOf(over.id as CardType);
-			
-			if (oldIndex !== -1 && newIndex !== -1) {
-				const newOrder = arrayMove(cardOrder, oldIndex, newIndex);
-				updateCardOrder(newOrder);
-			}
-		}
-		
-		setActiveId(null);
-	};
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
 
-	// Get theme for node inspector
-	const _theme = useComponentTheme("nodeInspector");
+    if (over && active.id !== over.id) {
+      const oldIndex = cardOrder.indexOf(active.id as CardType);
+      const newIndex = cardOrder.indexOf(over.id as CardType);
 
-	// Get selected items - memoized to prevent unnecessary recalculations
-	const selectedNode = useMemo(() => {
-		return selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) || null : null;
-	}, [selectedNodeId, nodes]);
-	
-	const selectedEdge = useMemo(() => {
-		return selectedEdgeId ? edges.find((e) => e.id === selectedEdgeId) || null : null;
-	}, [selectedEdgeId, edges]);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newOrder = arrayMove(cardOrder, oldIndex, newIndex);
+        updateCardOrder(newOrder);
+      }
+    }
 
-	// Pass stable props to the content component to avoid re-renders - MUST be before early returns to avoid conditional hooks
-	const shellProps = useMemo(() => ({
-		selectedNode,
-		selectedEdge,
-		nodes,
-		edges,
-		viewMode,
-		inspectorLocked,
-		inspectorViewMode,
-		setInspectorLocked,
-		toggleInspectorViewMode,
-		updateNodeData,
-		updateNodeId,
-		logNodeError,
-		clearNodeErrors,
-		removeNode,
-		removeEdge,
-		addNode,
-		selectNode,
-	}), [
-		selectedNode,
-		selectedEdge,
-		nodes,
-		edges,
-		viewMode,
-		inspectorLocked,
-		inspectorViewMode,
-		setInspectorLocked,
-		toggleInspectorViewMode,
-		updateNodeData,
-		updateNodeId,
-		logNodeError,
-		clearNodeErrors,
-		removeNode,
-		removeEdge,
-		addNode,
-		selectNode,
-	]);
+    setActiveId(null);
+  };
 
-	// Early return for locked state
-	if (inspectorLocked) {
-		return (
-			<div
-				className={`${
-					viewMode === "side"
-						? "flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card shadow-lg"
-						: STYLING_CONTAINER_LOCKED
-				}`}
-			>
-				<button
-					type="button"
-					aria-label={DESIGN_CONFIG.content.aria.unlockInspector}
-					title={DESIGN_CONFIG.content.tooltips.unlockInspector}
-					onClick={() => setInspectorLocked(false)}
-					className={STYLING_BUTTON_UNLOCK_LARGE}
-				>
-					{React.createElement(FaLock as React.ComponentType<any>, { className: STYLING_ICON_STATE_LARGE })}
-				</button>
-			</div>
-		);
-	}
+  // Get theme for node inspector
+  const _theme = useComponentTheme("nodeInspector");
 
-	// Early return for no node selected in side mode
-	if (!selectedNode && viewMode === "side") {
-		return (
-			<div className="flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card shadow-lg">
-				<div className="text-muted-foreground">
-					{React.createElement(FaSearch as React.ComponentType<any>, { className: "h-4 w-4" })}
-				</div>
-			</div>
-		);
-	}
+  // Get selected items - memoized to prevent unnecessary recalculations
+  const selectedNode = useMemo(() => {
+    return selectedNodeId
+      ? nodes.find((n) => n.id === selectedNodeId) || null
+      : null;
+  }, [selectedNodeId, nodes]);
 
-	return <NodeInspectorContent {...shellProps} />;
+  const selectedEdge = useMemo(() => {
+    return selectedEdgeId
+      ? edges.find((e) => e.id === selectedEdgeId) || null
+      : null;
+  }, [selectedEdgeId, edges]);
+
+  // Pass stable props to the content component to avoid re-renders - MUST be before early returns to avoid conditional hooks
+  const shellProps = useMemo(
+    () => ({
+      selectedNode,
+      selectedEdge,
+      nodes,
+      edges,
+      viewMode,
+      inspectorLocked,
+      inspectorViewMode,
+      setInspectorLocked,
+      toggleInspectorViewMode,
+      updateNodeData,
+      updateNodeId,
+      logNodeError,
+      clearNodeErrors,
+      removeNode,
+      removeEdge,
+      addNode,
+      selectNode,
+    }),
+    [
+      selectedNode,
+      selectedEdge,
+      nodes,
+      edges,
+      viewMode,
+      inspectorLocked,
+      inspectorViewMode,
+      setInspectorLocked,
+      toggleInspectorViewMode,
+      updateNodeData,
+      updateNodeId,
+      logNodeError,
+      clearNodeErrors,
+      removeNode,
+      removeEdge,
+      addNode,
+      selectNode,
+    ]
+  );
+
+  // Early return for locked state
+  if (inspectorLocked) {
+    return (
+      <div
+        className={`${
+          viewMode === "side"
+            ? "flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card shadow-lg"
+            : STYLING_CONTAINER_LOCKED
+        }`}
+      >
+        <button
+          type="button"
+          aria-label={DESIGN_CONFIG.content.aria.unlockInspector}
+          title={DESIGN_CONFIG.content.tooltips.unlockInspector}
+          onClick={() => setInspectorLocked(false)}
+          className={STYLING_BUTTON_UNLOCK_LARGE}
+        >
+          {React.createElement(FaLock as React.ComponentType<any>, {
+            className: STYLING_ICON_STATE_LARGE,
+          })}
+        </button>
+      </div>
+    );
+  }
+
+  // Early return for no node selected in side mode
+  if (!selectedNode && viewMode === "side") {
+    return (
+      <div className="flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card shadow-lg">
+        <div className="text-muted-foreground">
+          {React.createElement(FaSearch as React.ComponentType<any>, {
+            className: "h-4 w-4",
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return <NodeInspectorContent {...shellProps} />;
 };
 
 // =====================================================================
@@ -640,381 +689,444 @@ const NodeInspectorShell: React.FC<NodeInspectorProps> = ({
 // =====================================================================
 
 interface NodeInspectorContentProps {
-	selectedNode: any;
-	selectedEdge: any;
-	nodes: any[];
-	edges: any[];
-	viewMode: "bottom" | "side";
-	inspectorLocked: boolean;
-	inspectorViewMode: "bottom" | "side";
-	setInspectorLocked: (locked: boolean) => void;
-	toggleInspectorViewMode: () => void;
-	updateNodeData: any;
-	updateNodeId: any;
-	logNodeError: any;
-	clearNodeErrors: any;
-	removeNode: any;
-	removeEdge: any;
-	addNode: any;
-	selectNode: any;
+  selectedNode: any;
+  selectedEdge: any;
+  nodes: any[];
+  edges: any[];
+  viewMode: "bottom" | "side";
+  inspectorLocked: boolean;
+  inspectorViewMode: "bottom" | "side";
+  setInspectorLocked: (locked: boolean) => void;
+  toggleInspectorViewMode: () => void;
+  updateNodeData: any;
+  updateNodeId: any;
+  logNodeError: any;
+  clearNodeErrors: any;
+  removeNode: any;
+  removeEdge: any;
+  addNode: any;
+  selectNode: any;
 }
 
-const NodeInspectorContent = memo<NodeInspectorContentProps>(({
-	selectedNode,
-	selectedEdge,
-	nodes,
-	edges,
-	viewMode,
-	inspectorLocked,
-	inspectorViewMode,
-	setInspectorLocked,
-	toggleInspectorViewMode,
-	updateNodeData,
-	updateNodeId,
-	logNodeError,
-	clearNodeErrors,
-	removeNode,
-	removeEdge,
-	addNode,
-	selectNode,
-}) => {
-	// Settings management with persistence, basically card visibility controls
-	const { 
-		settings: cardVisibilityWithOrder, 
-		toggleSetting, 
-		updateCardOrder,
-		resetToDefaults,
-		isLoaded: settingsLoaded 
-	} = useInspectorSettings();
+const NodeInspectorContent = memo<NodeInspectorContentProps>(
+  ({
+    selectedNode,
+    selectedEdge,
+    nodes,
+    edges,
+    viewMode,
+    inspectorLocked,
+    inspectorViewMode,
+    setInspectorLocked,
+    toggleInspectorViewMode,
+    updateNodeData,
+    updateNodeId,
+    logNodeError,
+    clearNodeErrors,
+    removeNode,
+    removeEdge,
+    addNode,
+    selectNode,
+  }) => {
+    // Settings management with persistence, basically card visibility controls
+    const {
+      settings: cardVisibilityWithOrder,
+      toggleSetting,
+      updateCardOrder,
+      resetToDefaults,
+      isLoaded: settingsLoaded,
+    } = useInspectorSettings();
 
-	// Optimized card visibility extraction with selective dependency tracking, basically avoid recreating object unless individual properties change
-	const cardVisibility = useMemo(() => ({
-		nodeInfo: cardVisibilityWithOrder.nodeInfo,
-		nodeData: cardVisibilityWithOrder.nodeData,
-		output: cardVisibilityWithOrder.output,
-		controls: cardVisibilityWithOrder.controls,
-		handles: cardVisibilityWithOrder.handles,
-		connections: cardVisibilityWithOrder.connections,
-		errors: cardVisibilityWithOrder.errors,
-		size: cardVisibilityWithOrder.size,
-	}), [
-		cardVisibilityWithOrder.nodeInfo,
-		cardVisibilityWithOrder.nodeData,
-		cardVisibilityWithOrder.output,
-		cardVisibilityWithOrder.controls,
-		cardVisibilityWithOrder.handles,
-		cardVisibilityWithOrder.connections,
-		cardVisibilityWithOrder.errors,
-		cardVisibilityWithOrder.size,
-	]);
-	
-	const cardOrder = cardVisibilityWithOrder.cardOrder;
+    // Ultra-optimized card visibility extraction with ref-based tracking, basically prevents object recreation entirely
+    const cardVisibility = useMemo(
+      () => ({
+        nodeInfo: cardVisibilityWithOrder.nodeInfo,
+        nodeData: cardVisibilityWithOrder.nodeData,
+        output: cardVisibilityWithOrder.output,
+        controls: cardVisibilityWithOrder.controls,
+        handles: cardVisibilityWithOrder.handles,
+        connections: cardVisibilityWithOrder.connections,
+        errors: cardVisibilityWithOrder.errors,
+        size: cardVisibilityWithOrder.size,
+      }),
+      [cardVisibilityWithOrder] // Single dependency for better performance, basically reduce comparison overhead
+    );
 
-	// Drag and drop state management, basically track active drag item
-	const [activeId, setActiveId] = useState<CardType | null>(null);
+    const cardOrder = cardVisibilityWithOrder.cardOrder;
 
-	// DnD sensors configuration, basically define how drag interactions work
-	const sensors = useSensors(
-		useSensor(MouseSensor, {
-			activationConstraint: {
-				distance: 8, // Require 8px movement before drag starts, basically prevent accidental drags
-			},
-		}),
-		useSensor(TouchSensor, {
-			activationConstraint: {
-				delay: 250,
-				tolerance: 8,
-			},
-		})
-	);
+    // Drag and drop state management, basically track active drag item
+    const [activeId, setActiveId] = useState<CardType | null>(null);
 
-	// Accordion state management - moved to component level to avoid context re-creation
-	const [accordionState, setAccordionState] = useState({
-		nodeInfo: true,
-		description: true,
-		handles: true,
-		nodeData: true,
-		output: true,
-		controls: true,
-		connections: true,
-		errors: true,
-		size: true,
-	});
+    // DnD sensors configuration, basically define how drag interactions work
+    const sensors = useSensors(
+      useSensor(MouseSensor, {
+        activationConstraint: {
+          distance: 8, // Require 8px movement before drag starts, basically prevent accidental drags
+        },
+      }),
+      useSensor(TouchSensor, {
+        activationConstraint: {
+          delay: 250,
+          tolerance: 8,
+        },
+      })
+    );
 
-	const toggleAccordion = useCallback((section: keyof typeof accordionState) => {
-		setAccordionState((prev) => ({
-			...prev,
-			[section]: !prev[section],
-		}));
-	}, []);
+    // Accordion state management - moved to component level to avoid context re-creation
+    const [accordionState, setAccordionState] = useState({
+      nodeInfo: true,
+      description: true,
+      handles: true,
+      nodeData: true,
+      output: true,
+      controls: true,
+      connections: true,
+      errors: true,
+      size: true,
+    });
 
-	// Drag and drop event handlers, basically manage card reordering
-	const handleDragStart = useCallback((event: DragStartEvent) => {
-		setActiveId(event.active.id as CardType);
-	}, []);
+    const toggleAccordion = useCallback(
+      (section: keyof typeof accordionState) => {
+        setAccordionState((prev) => ({
+          ...prev,
+          [section]: !prev[section],
+        }));
+      },
+      []
+    );
 
-	const handleDragEnd = useCallback((event: DragEndEvent) => {
-		const { active, over } = event;
-		
-		if (over && active.id !== over.id) {
-			const oldIndex = cardOrder.indexOf(active.id as CardType);
-			const newIndex = cardOrder.indexOf(over.id as CardType);
-			
-			if (oldIndex !== -1 && newIndex !== -1) {
-				const newOrder = arrayMove(cardOrder, oldIndex, newIndex);
-				updateCardOrder(newOrder);
-			}
-		}
-		
-		setActiveId(null);
-	}, [cardOrder, updateCardOrder]);
+    // Drag and drop event handlers, basically manage card reordering
+    const handleDragStart = useCallback((event: DragStartEvent) => {
+      setActiveId(event.active.id as CardType);
+    }, []);
 
-	// Get theme for node inspector
-	const _theme = useComponentTheme("nodeInspector");
+    const handleDragEnd = useCallback(
+      (event: DragEndEvent) => {
+        const { active, over } = event;
 
-	// Get node category for display
-	const nodeCategory = useMemo(() => {
-		if (!selectedNode) {
-			return null;
-		}
-		// Try to get category from node metadata or spec
-		const nodeMetadata = NodeInspectorAdapter.getNodeInfo(selectedNode.type as NodeType);
-		return nodeMetadata?.category || "unknown";
-	}, [selectedNode]);
+        if (over && active.id !== over.id) {
+          const oldIndex = cardOrder.indexOf(active.id as CardType);
+          const newIndex = cardOrder.indexOf(over.id as CardType);
 
-	// Always call useNodeErrors to avoid conditional hook usage
-	const errors = useNodeErrors(selectedNode?.id || null);
+          if (oldIndex !== -1 && newIndex !== -1) {
+            const newOrder = arrayMove(cardOrder, oldIndex, newIndex);
+            updateCardOrder(newOrder);
+          }
+        }
 
-	// Optimized output computation with reduced dependency scope, basically only recalculate when relevant data changes
-	const selectedNodeId = selectedNode?.id;
-	const output = useMemo(() => {
-		if (!selectedNodeId) {
-			return null;
-		}
-		// Get the most up-to-date node data by finding it again
-		const currentNode = nodes.find((n) => n.id === selectedNodeId);
-		if (!currentNode) {
-			return null;
-		}
-		const result = getNodeOutput(currentNode, nodes, edges);
-		return result;
-	}, [selectedNodeId, nodes, edges]);
+        setActiveId(null);
+      },
+      [cardOrder, updateCardOrder]
+    );
 
-	// Optimized connections computation with early returns, basically minimize expensive operations when node unchanged
-	const connections = useMemo(() => {
-		if (!selectedNodeId) {
-			return { incoming: [], outgoing: [] };
-		}
+    // Get theme for node inspector
+    const _theme = useComponentTheme("nodeInspector");
 
-		// Use more efficient filtering approach
-		const incoming = [];
-		const outgoing = [];
-		
-		// Single pass through edges, basically avoid double iteration
-		for (const edge of edges) {
-			if (edge.target === selectedNodeId) {
-				const sourceNode = nodes.find((n) => n.id === edge.source);
-				incoming.push({
-					edge,
-					sourceNode,
-					sourceOutput: sourceNode ? getNodeOutput(sourceNode, nodes, edges) : null,
-				});
-			} else if (edge.source === selectedNodeId) {
-				const targetNode = nodes.find((n) => n.id === edge.target);
-				outgoing.push({
-					edge,
-					targetNode,
-					targetInput: targetNode ? getNodeOutput(targetNode, nodes, edges) : null,
-				});
-			}
-		}
+    // Get node category for display
+    const nodeCategory = useMemo(() => {
+      if (!selectedNode) {
+        return null;
+      }
+      // Try to get category from node metadata or spec
+      const nodeMetadata = NodeInspectorAdapter.getNodeInfo(
+        selectedNode.type as NodeType
+      );
+      return nodeMetadata?.category || "unknown";
+    }, [selectedNode]);
 
-		return { incoming, outgoing };
-	}, [selectedNodeId, nodes, edges]);
+    // Always call useNodeErrors to avoid conditional hook usage
+    const errors = useNodeErrors(selectedNode?.id || null);
 
-	const nodeInfo = useMemo(() => {
-		if (!selectedNode) {
-			return null;
-		}
-		return NodeInspectorAdapter.getNodeInfo(selectedNode.type as NodeType);
-	}, [selectedNode]);
+    // Optimized output computation with reduced dependency scope, basically only recalculate when relevant data changes
+    const selectedNodeId = selectedNode?.id;
+    const output = useMemo(() => {
+      if (!selectedNodeId) {
+        return null;
+      }
+      // Get the most up-to-date node data by finding it again
+      const currentNode = nodes.find((n) => n.id === selectedNodeId);
+      if (!currentNode) {
+        return null;
+      }
+      const result = getNodeOutput(currentNode, nodes, edges);
+      return result;
+    }, [selectedNodeId, nodes, edges]);
 
-	// Node action handlers
-	const handleUpdateNodeId = useCallback(
-		(oldId: string, newId: string) => {
-			const success = updateNodeId(oldId, newId);
-			if (!success) {
-				console.warn(
-					`Failed to update node ID from "${oldId}" to "${newId}" - ID might already exist`
-				);
-			}
-			return success;
-		},
-		[updateNodeId]
-	);
+    // Create a stable node lookup map to avoid repeated finds
+    const nodeMap = useMemo(() => {
+      const map = new Map();
+      nodes.forEach((node) => map.set(node.id, node));
+      return map;
+    }, [nodes]);
 
-	const handleDeleteNode = useCallback(
-		(nodeId: string) => {
-			removeNode(nodeId);
-		},
-		[removeNode]
-	);
+    // Optimized connections computation with early returns and node map, basically minimize expensive operations when node unchanged
+    const connections = useMemo(() => {
+      if (!selectedNodeId) {
+        return { incoming: [], outgoing: [] };
+      }
 
-	const handleDuplicateNode = useCallback(
-		(nodeId: string) => {
-			const nodeToDuplicate = nodes.find((n) => n.id === nodeId);
-			if (!nodeToDuplicate) {
-				return;
-			}
+      // Use more efficient filtering approach with pre-computed node map
+      const incoming = [];
+      const outgoing = [];
 
-			// Create a new node with a unique ID and offset position
-			const newId = `${nodeId}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-			const newNode = {
-				...nodeToDuplicate,
-				id: newId,
-				position: {
-					x: nodeToDuplicate.position.x + 40,
-					y: nodeToDuplicate.position.y + 40,
-				},
-				selected: false,
-				data: { ...nodeToDuplicate.data },
-			} as AgenNode;
+      // Single pass through edges with map lookup instead of find, basically O(1) vs O(n) lookup
+      for (const edge of edges) {
+        if (edge.target === selectedNodeId) {
+          const sourceNode = nodeMap.get(edge.source);
+          incoming.push({
+            edge,
+            sourceNode,
+            sourceOutput: sourceNode
+              ? getNodeOutput(sourceNode, nodes, edges)
+              : null,
+          });
+        } else if (edge.source === selectedNodeId) {
+          const targetNode = nodeMap.get(edge.target);
+          outgoing.push({
+            edge,
+            targetNode,
+            targetInput: targetNode
+              ? getNodeOutput(targetNode, nodes, edges)
+              : null,
+          });
+        }
+      }
 
-			// Add the new node using the Zustand store
-			addNode(newNode);
+      return { incoming, outgoing };
+    }, [selectedNodeId, nodeMap, edges]);
 
-			// Select the new duplicated node
-			selectNode(newId);
-		},
-		[nodes, addNode, selectNode]
-	);
+    const nodeInfo = useMemo(() => {
+      if (!selectedNode) {
+        return null;
+      }
+      return NodeInspectorAdapter.getNodeInfo(selectedNode.type as NodeType);
+    }, [selectedNode]);
 
-	const handleDeleteEdge = useCallback(
-		(edgeId: string) => {
-			removeEdge(edgeId);
-		},
-		[removeEdge]
-	);
+    // Node action handlers
+    const handleUpdateNodeId = useCallback(
+      (oldId: string, newId: string) => {
+        const success = updateNodeId(oldId, newId);
+        if (!success) {
+          console.warn(
+            `Failed to update node ID from "${oldId}" to "${newId}" - ID might already exist`
+          );
+        }
+        return success;
+      },
+      [updateNodeId]
+    );
 
-	const handleClearErrors = useCallback(() => {
-		if (selectedNode?.id) {
-			clearNodeErrors(selectedNode.id);
-		}
-	}, [selectedNode?.id, clearNodeErrors]);
+    const handleDeleteNode = useCallback(
+      (nodeId: string) => {
+        removeNode(nodeId);
+      },
+      [removeNode]
+    );
 
-	// Handle node data updates
-	const handleUpdateNodeData = useCallback(
-		(nodeId: string, newData: any) => {
-			updateNodeData(nodeId, newData);
-		},
-		[updateNodeData]
-	);
+    const handleDuplicateNode = useCallback(
+      (nodeId: string) => {
+        const nodeToDuplicate = nodes.find((n) => n.id === nodeId);
+        if (!nodeToDuplicate) {
+          return;
+        }
 
-	// Show node inspector if node is selected (prioritize nodes over edges)
-	if (selectedNode && nodeInfo) {
-		// Get node type config for hasOutput information
-		const nodeConfig = selectedNode.type ? NODE_TYPE_CONFIG[selectedNode.type as NodeType] : undefined;
-		// Check if node has right column content (output or controls)
-		const hasRightColumn = nodeConfig?.hasOutput || nodeInfo.hasControls;
+        // Create a new node with a unique ID and offset position
+        const newId = `${nodeId}-copy-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+        const newNode = {
+          ...nodeToDuplicate,
+          id: newId,
+          position: {
+            x: nodeToDuplicate.position.x + 40,
+            y: nodeToDuplicate.position.y + 40,
+          },
+          selected: false,
+          data: { ...nodeToDuplicate.data },
+        } as AgenNode;
 
-		return (
-			<div
-				id={DESIGN_CONFIG.content.ids.nodeInfoContainer}
-				className={STYLING_CONTAINER_NODE_INSPECTOR}
-			>
-				{/* FIXED HEADER: NODE INFO + ACTION BUTTONS */}
-				<div className={STYLING_CONTAINER_HEADER_FIXED}>
-					{/* Left Header Section: Node Info */}
-					<div className={STYLING_CONTAINER_HEADER_LEFT_SECTION}>
-						<div className={STYLING_CONTAINER_HEADER_ICON_TEXT}>
-							{nodeInfo.icon && (
-								<span className={STYLING_TEXT_NODE_ICON}>
-									{renderLucideIcon(nodeInfo.icon, "", 20) }
-								</span>
-							)}
-							<div>
-								<EditableNodeLabel
-									nodeId={selectedNode.id}
-									label={
-										(selectedNode.data as any)?.label || nodeInfo.label || nodeInfo.displayName
-									}
-									displayName={nodeInfo.displayName}
-									onUpdateNodeData={updateNodeData}
-									className={STYLING_TEXT_NODE_NAME}
-								/>
-							</div>
-						</div>
-					</div>
+        // Add the new node using the Zustand store
+        addNode(newNode);
 
-					{/* Right Header Section: Action Buttons */}
-					<div className={STYLING_CONTAINER_HEADER_RIGHT_SECTION}>
-						{/* Settings Button */}
-						<InspectorSettingsDropdown
-							settings={cardVisibility}
-							onToggleSetting={toggleSetting}
-							onResetToDefaults={resetToDefaults}
-						>
-							<button
-								type="button"
-								className={STYLING_BUTTON_LOCK_SMALL}
-								title="Inspector card visibility settings"
-							>
-								<Settings className={STYLING_ICON_ACTION_SMALL} />
-							</button>
-						</InspectorSettingsDropdown>
+        // Select the new duplicated node
+        selectNode(newId);
+      },
+      [nodes, addNode, selectNode]
+    );
 
-						{/* Lock Button */}
-						<button
-							type="button"
-							onClick={() => setInspectorLocked(!inspectorLocked)}
-							className={STYLING_BUTTON_LOCK_SMALL}
-							title={
-								inspectorLocked
-									? DESIGN_CONFIG.content.tooltips.unlockInspector
-									: DESIGN_CONFIG.content.tooltips.lockInspector
-							}
-						>
-							{inspectorLocked ? (
-								React.createElement(FaLock as React.ComponentType<any>, { className: STYLING_ICON_ACTION_SMALL })
-							) : (
-								React.createElement(FaLockOpen as React.ComponentType<any>, { className: STYLING_ICON_ACTION_SMALL })
-							)}
-						</button>
+    const handleDeleteEdge = useCallback(
+      (edgeId: string) => {
+        removeEdge(edgeId);
+      },
+      [removeEdge]
+    );
 
-						{/* View Mode Toggle Button */}
-						<button
-							type="button"
-							onClick={toggleInspectorViewMode}
-							className={STYLING_BUTTON_DUPLICATE}
-							title={`Switch to ${inspectorViewMode === "bottom" ? "side" : "bottom"} panel view`}
-						>
-							{inspectorViewMode === "bottom" ? (
-								<PanelLeftOpen className={STYLING_ICON_ACTION_SMALL} />
-							) : (
-								<PanelLeftClose className={STYLING_ICON_ACTION_SMALL} />
-							)}
-						</button>
+    const handleClearErrors = useCallback(() => {
+      if (selectedNode?.id) {
+        clearNodeErrors(selectedNode.id);
+      }
+    }, [selectedNode?.id, clearNodeErrors]);
 
-						<button
-							type="button"
-							onClick={() => handleDuplicateNode(selectedNode.id)}
-							className={STYLING_BUTTON_DUPLICATE}
-							title={DESIGN_CONFIG.content.tooltips.duplicateNode}
-						>
-							<Copy className={STYLING_ICON_ACTION_SMALL} />
-						</button>
+    // Handle node data updates
+    const handleUpdateNodeData = useCallback(
+      (nodeId: string, newData: any) => {
+        updateNodeData(nodeId, newData);
+      },
+      [updateNodeData]
+    );
 
-						<button
-							type="button"
-							onClick={() => handleDeleteNode(selectedNode.id)}
-							className={STYLING_BUTTON_DELETE}
-							title={DESIGN_CONFIG.content.tooltips.deleteNode}
-						>
-							<Trash2 className={STYLING_ICON_ACTION_SMALL} />
-						</button>
+    // Memoized card render props to prevent recreation on every render, basically improves performance
+    const cardRenderProps = useMemo(
+      () => ({
+        selectedNode,
+        nodeInfo,
+        output,
+        connections,
+        errors,
+        cardVisibility,
+        accordionState,
+        toggleAccordion,
+        updateNodeData,
+        handleUpdateNodeId,
+        handleUpdateNodeData,
+        logNodeError: logNodeError as any,
+        handleClearErrors,
+        nodes,
+        edges,
+        viewMode,
+      }),
+      [
+        selectedNode,
+        nodeInfo,
+        output,
+        connections,
+        errors,
+        cardVisibility,
+        accordionState,
+        toggleAccordion,
+        updateNodeData,
+        handleUpdateNodeId,
+        handleUpdateNodeData,
+        logNodeError,
+        handleClearErrors,
+        nodes,
+        edges,
+        viewMode,
+      ]
+    );
 
-						{/* DEV-ONLY ERROR SIMULATION BUTTONS */}
-						{/* {process.env.NODE_ENV === "development" && (
+    // Show node inspector if node is selected (prioritize nodes over edges)
+    if (selectedNode && nodeInfo) {
+      // Get node type config for hasOutput information
+      const nodeConfig = selectedNode.type
+        ? NODE_TYPE_CONFIG[selectedNode.type as NodeType]
+        : undefined;
+      // Check if node has right column content (output or controls)
+      const hasRightColumn = nodeConfig?.hasOutput || nodeInfo.hasControls;
+
+      return (
+        <div
+          id={DESIGN_CONFIG.content.ids.nodeInfoContainer}
+          className={STYLING_CONTAINER_NODE_INSPECTOR}
+        >
+          {/* FIXED HEADER: NODE INFO + ACTION BUTTONS */}
+          <div className={STYLING_CONTAINER_HEADER_FIXED}>
+            {/* Left Header Section: Node Info */}
+            <div className={STYLING_CONTAINER_HEADER_LEFT_SECTION}>
+              <div className={STYLING_CONTAINER_HEADER_ICON_TEXT}>
+                {nodeInfo.icon && (
+                  <span className={STYLING_TEXT_NODE_ICON}>
+                    {renderLucideIcon(nodeInfo.icon, "", 20)}
+                  </span>
+                )}
+                <div>
+                  <EditableNodeLabel
+                    nodeId={selectedNode.id}
+                    label={
+                      (selectedNode.data as any)?.label ||
+                      nodeInfo.label ||
+                      nodeInfo.displayName
+                    }
+                    displayName={nodeInfo.displayName}
+                    onUpdateNodeData={updateNodeData}
+                    className={STYLING_TEXT_NODE_NAME}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Right Header Section: Action Buttons */}
+            <div className={STYLING_CONTAINER_HEADER_RIGHT_SECTION}>
+              {/* Settings Button */}
+              <InspectorSettingsDropdown
+                settings={cardVisibility}
+                onToggleSetting={toggleSetting}
+                onResetToDefaults={resetToDefaults}
+              >
+                <button
+                  type="button"
+                  className={STYLING_BUTTON_LOCK_SMALL}
+                  title="Inspector card visibility settings"
+                >
+                  <Settings className={STYLING_ICON_ACTION_SMALL} />
+                </button>
+              </InspectorSettingsDropdown>
+
+              {/* Lock Button */}
+              <button
+                type="button"
+                onClick={() => setInspectorLocked(!inspectorLocked)}
+                className={STYLING_BUTTON_LOCK_SMALL}
+                title={
+                  inspectorLocked
+                    ? DESIGN_CONFIG.content.tooltips.unlockInspector
+                    : DESIGN_CONFIG.content.tooltips.lockInspector
+                }
+              >
+                {inspectorLocked
+                  ? React.createElement(FaLock as React.ComponentType<any>, {
+                      className: STYLING_ICON_ACTION_SMALL,
+                    })
+                  : React.createElement(
+                      FaLockOpen as React.ComponentType<any>,
+                      {
+                        className: STYLING_ICON_ACTION_SMALL,
+                      }
+                    )}
+              </button>
+
+              {/* View Mode Toggle Button */}
+              <button
+                type="button"
+                onClick={toggleInspectorViewMode}
+                className={STYLING_BUTTON_DUPLICATE}
+                title={`Switch to ${inspectorViewMode === "bottom" ? "side" : "bottom"} panel view`}
+              >
+                {inspectorViewMode === "bottom" ? (
+                  <PanelLeftOpen className={STYLING_ICON_ACTION_SMALL} />
+                ) : (
+                  <PanelLeftClose className={STYLING_ICON_ACTION_SMALL} />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDuplicateNode(selectedNode.id)}
+                className={STYLING_BUTTON_DUPLICATE}
+                title={DESIGN_CONFIG.content.tooltips.duplicateNode}
+              >
+                <Copy className={STYLING_ICON_ACTION_SMALL} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDeleteNode(selectedNode.id)}
+                className={STYLING_BUTTON_DELETE}
+                title={DESIGN_CONFIG.content.tooltips.deleteNode}
+              >
+                <Trash2 className={STYLING_ICON_ACTION_SMALL} />
+              </button>
+
+              {/* DEV-ONLY ERROR SIMULATION BUTTONS */}
+              {/* {process.env.NODE_ENV === "development" && (
 							<>
 								<button
 									onClick={() => {
@@ -1052,154 +1164,137 @@ const NodeInspectorContent = memo<NodeInspectorContentProps>(({
 								</button>
 							</>
 						)} */}
-					</div>
-				</div>
+            </div>
+          </div>
 
-				{/* SCROLLABLE CONTENT: SORTABLE CARDS */}
-				<div
-					className={`${
-						viewMode === "side"
-							? "flex flex-1 flex-col gap-4 overflow-auto p-4"
-							: "flex flex-1 flex-col gap-2 p-3 overflow-auto"
-					}`}
-				>
-					<DndContext
-						sensors={sensors}
-						collisionDetection={closestCenter}
-						onDragStart={handleDragStart}
-						onDragEnd={handleDragEnd}
-					>
-						<SortableContext items={cardOrder} strategy={rectSortingStrategy}>
-							{viewMode === "side" ? (
-								// Single column layout for side mode
-								<div className="flex flex-col gap-2">
-									{cardOrder.map((cardType) => {
-										const cardProps: CardRenderProps = {
-											selectedNode,
-											nodeInfo,
-											nodeConfig,
-											output,
-											connections,
-											errors,
-											cardVisibility,
-											accordionState,
-											toggleAccordion,
-											updateNodeData,
-											handleUpdateNodeId,
-											handleUpdateNodeData,
-											logNodeError: logNodeError as any,
-											handleClearErrors,
-											nodes,
-											edges,
-											viewMode,
-											hasRightColumn,
-										};
-										
-										return renderCard(cardType, cardProps);
-									})}
-								</div>
-							) : (
-								// Masonry-style grid layout for bottom mode with 2 columns
-								<div className="columns-2 gap-2 space-y-2">
-									{cardOrder.map((cardType) => {
-										const cardProps: CardRenderProps = {
-											selectedNode,
-											nodeInfo,
-											nodeConfig,
-											output,
-											connections,
-											errors,
-											cardVisibility,
-											accordionState,
-											toggleAccordion,
-											updateNodeData,
-											handleUpdateNodeId,
-											handleUpdateNodeData,
-											logNodeError: logNodeError as any,
-											handleClearErrors,
-											nodes,
-											edges,
-											viewMode,
-											hasRightColumn,
-										};
-										
-										return renderCard(cardType, cardProps);
-									})}
-								</div>
-							)}
-						</SortableContext>
-						
-						<DragOverlay>
-							{activeId ? (
-								<div className="bg-card border border-border rounded-lg shadow-lg opacity-80">
-									<div className="flex w-full items-center rounded-t-lg border-border/30 border-b bg-muted/30 p-3">
-										<GripVertical className="h-3 w-3 text-muted-foreground/60 mr-2" />
-										<h4 className="font-medium text-muted-foreground text-xs">
-											{activeId === 'nodeInfo' ? 'Node Information' :
-											 activeId === 'nodeData' ? 'Node Data' :
-											 activeId === 'output' ? 'Output' :
-											 activeId === 'controls' ? 'Controls' :
-											 activeId === 'handles' ? 'Handles' :
-											 activeId === 'connections' ? 'Connections' :
-											 activeId === 'size' ? 'Size' :
-											 activeId === 'errors' ? 'Error Log' : activeId}
-										</h4>
-									</div>
-								</div>
-							) : null}
-						</DragOverlay>
-					</DndContext>
-				</div>
-			</div>
-		);
-	}
+          {/* SCROLLABLE CONTENT: SORTABLE CARDS */}
+          <div
+            className={`${
+              viewMode === "side"
+                ? "flex flex-1 flex-col gap-4 overflow-auto p-4"
+                : "flex flex-1 flex-col gap-2 p-3 overflow-auto"
+            }`}
+          >
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={cardOrder} strategy={rectSortingStrategy}>
+                {viewMode === "side" ? (
+                  // Single column layout for side mode
+                  <div className="flex flex-col gap-2">
+                    {cardOrder.map((cardType) => {
+                      return renderCard(cardType, {
+                        ...cardRenderProps,
+                        nodeConfig,
+                        hasRightColumn,
+                      });
+                    })}
+                  </div>
+                ) : (
+                  // Masonry-style grid layout for bottom mode with 2 columns
+                  <div className="columns-2 gap-2 space-y-2">
+                    {cardOrder.map((cardType) => {
+                      return renderCard(cardType, {
+                        ...cardRenderProps,
+                        nodeConfig,
+                        hasRightColumn,
+                      });
+                    })}
+                  </div>
+                )}
+              </SortableContext>
 
-	// Show edge inspector if edge is selected (only when no node is selected)
-	if (selectedEdge && nodes) {
-		return (
-			<div
-				id={DESIGN_CONFIG.content.ids.edgeInfoContainer}
-				className={STYLING_CONTAINER_EDGE_INSPECTOR}
-			>
-				<div className={STYLING_CONTAINER_EDGE_CONTENT}>
-					<EdgeInspector edge={selectedEdge} allNodes={nodes} onDeleteEdge={handleDeleteEdge} />
-				</div>
-			</div>
-		);
-	}
+              <DragOverlay>
+                {activeId ? (
+                  <div className="bg-card border border-border rounded-lg shadow-lg opacity-80">
+                    <div className="flex w-full items-center rounded-t-lg border-border/30 border-b bg-muted/30 p-3">
+                      <GripVertical className="h-3 w-3 text-muted-foreground/60 mr-2" />
+                      <h4 className="font-medium text-muted-foreground text-xs">
+                        {activeId === "nodeInfo"
+                          ? "Node Information"
+                          : activeId === "nodeData"
+                            ? "Node Data"
+                            : activeId === "output"
+                              ? "Output"
+                              : activeId === "controls"
+                                ? "Controls"
+                                : activeId === "handles"
+                                  ? "Handles"
+                                  : activeId === "connections"
+                                    ? "Connections"
+                                    : activeId === "size"
+                                      ? "Size"
+                                      : activeId === "errors"
+                                        ? "Error Log"
+                                        : activeId}
+                      </h4>
+                    </div>
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          </div>
+        </div>
+      );
+    }
 
-	// Show empty state if no node or edge selected
-	return (
-		<div className={STYLING_CONTAINER_EMPTY_STATE}>
-			<button
-				type="button"
-				aria-label={DESIGN_CONFIG.content.aria.lockInspector}
-				title={DESIGN_CONFIG.content.tooltips.lockInspectorDescription}
-				onClick={() => setInspectorLocked(true)}
-				className={STYLING_BUTTON_MAGNIFYING_GLASS}
-			>
-				{React.createElement(FaSearch as React.ComponentType<any>, { className: STYLING_ICON_STATE_LARGE })}
-			</button>
-		</div>
-	);
-}, (prevProps, nextProps) => {
-	// Custom comparison for memo optimization
-	return (
-		prevProps.selectedNode?.id === nextProps.selectedNode?.id &&
-		prevProps.selectedNode?.data === nextProps.selectedNode?.data &&
-		prevProps.selectedEdge?.id === nextProps.selectedEdge?.id &&
-		prevProps.viewMode === nextProps.viewMode &&
-		prevProps.inspectorLocked === nextProps.inspectorLocked &&
-		prevProps.inspectorViewMode === nextProps.inspectorViewMode
-	);
-});
+    // Show edge inspector if edge is selected (only when no node is selected)
+    if (selectedEdge && nodes) {
+      return (
+        <div
+          id={DESIGN_CONFIG.content.ids.edgeInfoContainer}
+          className={STYLING_CONTAINER_EDGE_INSPECTOR}
+        >
+          <div className={STYLING_CONTAINER_EDGE_CONTENT}>
+            <EdgeInspector
+              edge={selectedEdge}
+              allNodes={nodes}
+              onDeleteEdge={handleDeleteEdge}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    // Show empty state if no node or edge selected
+    return (
+      <div className={STYLING_CONTAINER_EMPTY_STATE}>
+        <button
+          type="button"
+          aria-label={DESIGN_CONFIG.content.aria.lockInspector}
+          title={DESIGN_CONFIG.content.tooltips.lockInspectorDescription}
+          onClick={() => setInspectorLocked(true)}
+          className={STYLING_BUTTON_MAGNIFYING_GLASS}
+        >
+          {React.createElement(FaSearch as React.ComponentType<any>, {
+            className: STYLING_ICON_STATE_LARGE,
+          })}
+        </button>
+      </div>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison for memo optimization
+    return (
+      prevProps.selectedNode?.id === nextProps.selectedNode?.id &&
+      prevProps.selectedNode?.data === nextProps.selectedNode?.data &&
+      prevProps.selectedEdge?.id === nextProps.selectedEdge?.id &&
+      prevProps.viewMode === nextProps.viewMode &&
+      prevProps.inspectorLocked === nextProps.inspectorLocked &&
+      prevProps.inspectorViewMode === nextProps.inspectorViewMode
+    );
+  }
+);
 
 // =====================================================================
 // MAIN EXPORTED COMPONENT
 // =====================================================================
 
 const NodeInspector = memo<NodeInspectorProps>((props) => {
-	return <NodeInspectorShell {...props} />;
+  return <NodeInspectorShell {...props} />;
 });
 
 NodeInspector.displayName = "NodeInspector";

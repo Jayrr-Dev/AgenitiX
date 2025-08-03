@@ -438,7 +438,13 @@ const CreateTextNode = memo(
         <Textarea
           key={`collapsed-${id}`}
           ref={collapsedTextareaRef}
-          value={store === "Default text" ? "" : (store ?? "")}
+          value={(() => {
+            if (store === "Default text") return "";
+            if (typeof store === "string") return store;
+            if (store && typeof store === "object")
+              return JSON.stringify(store, null, 2);
+            return "";
+          })()}
           onChange={handleStoreChange}
           variant="barebones"
           placeholder="..."
@@ -455,7 +461,13 @@ const CreateTextNode = memo(
         <Textarea
           key={`expanded-${id}`}
           ref={expandedTextareaRef}
-          value={store === "Default text" ? "" : (store ?? "")}
+          value={(() => {
+            if (store === "Default text") return "";
+            if (typeof store === "string") return store;
+            if (store && typeof store === "object")
+              return JSON.stringify(store, null, 2);
+            return "";
+          })()}
           onChange={handleStoreChange}
           variant="barebones"
           placeholder="Enter your content here…"

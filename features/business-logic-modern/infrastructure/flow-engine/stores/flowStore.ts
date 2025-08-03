@@ -19,6 +19,7 @@ import type {
   AgenNode,
   NodeError,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
+import { StateComparator } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/StateComparator";
 import { getNodesWithRemovedInputs } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import { performCompleteMemoryCleanup } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/memoryCleanup";
 import {
@@ -37,6 +38,64 @@ import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { generateEdgeId, generateNodeId } from "../utils/nodeUtils";
+
+// Batching system for node updates, basically reduces unnecessary re-renders
+interface BatchedUpdate {
+  nodeId: string;
+  data: Partial<Record<string, unknown>>;
+  timestamp: number;
+}
+
+class NodeUpdateBatcher {
+  private static instance: NodeUpdateBatcher;
+  private pendingUpdates = new Map<string, BatchedUpdate>();
+  private batchTimeout: NodeJS.Timeout | null = null;
+  private readonly BATCH_DELAY = 16; // 1 frame at 60fps, basically batches updates within animation frame
+
+  static getInstance(): NodeUpdateBatcher {
+    if (!NodeUpdateBatcher.instance) {
+      NodeUpdateBatcher.instance = new NodeUpdateBatcher();
+    }
+    return NodeUpdateBatcher.instance;
+  }
+
+  addUpdate(
+    nodeId: string,
+    data: Partial<Record<string, unknown>>,
+    applyFn: () => void
+  ): void {
+    // Merge with existing pending update for the same node, basically combine multiple updates
+    const existing = this.pendingUpdates.get(nodeId);
+    const mergedData = existing ? { ...existing.data, ...data } : data;
+
+    this.pendingUpdates.set(nodeId, {
+      nodeId,
+      data: mergedData,
+      timestamp: Date.now(),
+    });
+
+    // Clear existing timeout and set a new one, basically ensures batch is applied after brief delay
+    if (this.batchTimeout) {
+      clearTimeout(this.batchTimeout);
+    }
+
+    this.batchTimeout = setTimeout(() => {
+      this.flushUpdates(applyFn);
+    }, this.BATCH_DELAY);
+  }
+
+  private flushUpdates(applyFn: () => void): void {
+    if (this.pendingUpdates.size > 0) {
+      applyFn();
+      this.pendingUpdates.clear();
+    }
+    this.batchTimeout = null;
+  }
+
+  getPendingUpdates(): Map<string, BatchedUpdate> {
+    return this.pendingUpdates;
+  }
+}
 
 // ============================================================================
 // STORE TYPES
@@ -333,98 +392,73 @@ export const useFlowStore = create<FlowStore>()(
           nodeId: string,
           data: Partial<Record<string, unknown>>
         ) => {
-          set((state) => {
-            const node = state.nodes.find((n) => n.id === nodeId);
-            if (node) {
-              // CIRCULAR REFERENCE FIX: Use safe serialization to prevent infinite loops
-              let hasChanges = false;
-              const newData = { ...node.data };
+          // Use batching for better performance, basically reduces rapid state updates
+          const batcher = NodeUpdateBatcher.getInstance();
+          const stateComparator = StateComparator.getInstance();
 
-              for (const [key, value] of Object.entries(data)) {
-                const currentValue = newData[key];
+          batcher.addUpdate(nodeId, data, () => {
+            set((state) => {
+              // Process all pending updates for all nodes in the batch, basically handles multiple node updates at once
+              const pendingUpdates = batcher.getPendingUpdates();
 
-                // Enhanced comparison logic with circular reference protection
-                let valuesAreDifferent = false;
+              for (const [batchNodeId, update] of pendingUpdates) {
+                const node = state.nodes.find((n) => n.id === batchNodeId);
+                if (node) {
+                  // Use enhanced StateComparator for intelligent comparison, basically more efficient change detection
+                  const comparisonResult = stateComparator.compare(
+                    node.data as Record<string, unknown>,
+                    update.data
+                  );
 
-                try {
-                  // Handle primitive values first (fastest)
-                  if (
-                    typeof value !== "object" ||
-                    value === null ||
-                    typeof currentValue !== "object" ||
-                    currentValue === null
-                  ) {
-                    valuesAreDifferent = currentValue !== value;
-                  }
-                  // Handle objects/arrays with circular reference-safe JSON comparison
-                  else {
-                    // Use a Set to track visited objects and prevent circular references
-                    const visited = new Set();
-                    const safeStringify = (obj: unknown): string => {
-                      return JSON.stringify(obj, (key, val) => {
-                        if (typeof val === "object" && val !== null) {
-                          if (visited.has(val)) {
-                            return "[Circular]";
-                          }
-                          visited.add(val);
+                  // Only update the node if there are actual changes, basically prevents unnecessary re-renders
+                  if (comparisonResult.hasChanges) {
+                    const newData = { ...node.data };
+
+                    // Apply only the changed keys for better performance, basically minimal updates
+                    for (const key of comparisonResult.changedKeys) {
+                      if (key in update.data) {
+                        // Safe clone without circular references, basically prevents state corruption
+                        try {
+                          newData[key] = structuredClone
+                            ? structuredClone(update.data[key])
+                            : JSON.parse(JSON.stringify(update.data[key]));
+                        } catch (cloneError) {
+                          // Fallback to direct assignment if cloning fails
+                          console.warn(
+                            `Failed to clone value for key ${key}, using direct assignment:`,
+                            cloneError
+                          );
+                          newData[key] = update.data[key];
                         }
-                        return val;
-                      });
-                    };
-
-                    const currentStr = safeStringify(currentValue);
-                    const newStr = safeStringify(value);
-                    valuesAreDifferent = currentStr !== newStr;
-                  }
-                } catch (error) {
-                  // Fallback to reference comparison if JSON.stringify fails
-                  console.warn(
-                    `JSON comparison failed for key ${key}, using reference comparison:`,
-                    error
-                  );
-                  valuesAreDifferent = currentValue !== value;
-                }
-
-                if (valuesAreDifferent) {
-                  // CIRCULAR REFERENCE FIX: Deep clone the value to break potential circular references
-                  try {
-                    newData[key] = JSON.parse(JSON.stringify(value));
-                  } catch (cloneError) {
-                    // If cloning fails, use the original value but log a warning
-                    console.warn(
-                      `Failed to clone value for key ${key}, using original:`,
-                      cloneError
-                    );
-                    newData[key] = value;
-                  }
-                  hasChanges = true;
-                }
-              }
-
-              // Only update if there are actual changes
-              if (hasChanges) {
-                // Update node data
-                node.data = newData;
-
-                // Special logging for handle position changes
-                if (data.handleOverrides !== undefined) {
-                  console.log(
-                    `🔄 Handle positions updated for node ${nodeId}:`,
-                    {
-                      handleOverrides: data.handleOverrides,
+                      }
                     }
-                  );
-                }
 
-                // Add debug logging for development
-                if (process.env.NODE_ENV === "development") {
-                  console.debug(
-                    `Node ${nodeId} data updated:`,
-                    Object.keys(data)
-                  );
+                    node.data = newData;
+
+                    // Special logging for handle position changes
+                    if (update.data.handleOverrides !== undefined) {
+                      console.log(
+                        `🔄 Handle positions updated for node ${batchNodeId}:`,
+                        {
+                          handleOverrides: update.data.handleOverrides,
+                        }
+                      );
+                    }
+
+                    // Log performance metrics in development, basically monitor update efficiency
+                    if (process.env.NODE_ENV === "development") {
+                      console.debug(`Node ${batchNodeId} update:`, {
+                        keys: Object.keys(update.data),
+                        method: comparisonResult.comparisonMethod,
+                        changedKeys: comparisonResult.changedKeys,
+                        performanceMs: comparisonResult.performanceMs,
+                        batchSize: pendingUpdates.size,
+                      });
+                    }
+                  }
                 }
               }
-            }
+            });
           });
         },
 
@@ -854,31 +888,6 @@ export const useFlowStore = create<FlowStore>()(
           nodes: state.nodes,
           edges: state.edges,
         }),
-        serialize: (state) => {
-          // CIRCULAR REFERENCE FIX: Use safe serialization for localStorage
-          try {
-            const visited = new Set();
-            return JSON.stringify(state, (key, val) => {
-              if (typeof val === "object" && val !== null) {
-                if (visited.has(val)) {
-                  return "[Circular]";
-                }
-                visited.add(val);
-              }
-              return val;
-            });
-          } catch (error) {
-            console.error(
-              "Failed to serialize flow state for persistence:",
-              error
-            );
-            // Return a minimal safe state if serialization fails
-            return JSON.stringify({
-              nodes: [],
-              edges: [],
-            });
-          }
-        },
         onRehydrateStorage: () => (state) => {
           if (state) {
             state.setHasHydrated(true);

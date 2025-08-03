@@ -25,7 +25,7 @@ import type { AgenNode } from "@/features/business-logic-modern/infrastructure/f
 import type { NodeHandleSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { RotateCcw } from "lucide-react";
 import type React from "react";
-import { useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 
 // ============================================================================
@@ -38,11 +38,6 @@ const AVAILABLE_POSITIONS = [
   { value: "left", label: "Left", icon: "⬅️" },
   { value: "right", label: "Right", icon: "➡️" },
 ] as const;
-
-const HANDLE_TYPE_COLORS = {
-  source: "text-green-600 dark:text-green-400",
-  target: "text-blue-600 dark:text-blue-400",
-} as const;
 
 // ============================================================================
 // TYPES
@@ -60,15 +55,72 @@ interface HandlePositionEditorProps {
 }
 
 // ============================================================================
-// COMPONENT
+// HANDLE ITEM COMPONENT - Memoized for performance
 // ============================================================================
 
-export const HandlePositionEditor: React.FC<HandlePositionEditorProps> = ({
+interface HandleItemProps {
+  handle: NodeHandleSpec;
+  currentPosition: string;
+  isOverridden: boolean;
+  onPositionChange: (handleId: string, newPosition: string) => void;
+  type: "input" | "output";
+}
+
+const HandleItem = memo<HandleItemProps>(
+  ({ handle, currentPosition, isOverridden, onPositionChange, type }) => {
+    const colorClass = type === "input" ? "bg-blue-500" : "bg-green-500";
+
+    return (
+      <div
+        key={handle.id}
+        className="flex items-center justify-between gap-3 p-2 rounded-md border border-border/30 bg-muted/10"
+      >
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className={`h-2 w-2 rounded-full ${colorClass} flex-shrink-0`} />
+          <div className="min-w-0 flex-1">
+            <div className="font-mono text-xs text-foreground truncate">
+              {handle.id}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {handle.dataType || "any"} •{" "}
+              {isOverridden && <span className="text-orange-500">custom</span>}
+            </div>
+          </div>
+        </div>
+        <Select
+          value={currentPosition}
+          onValueChange={(value) => onPositionChange(handle.id, value)}
+        >
+          <SelectTrigger className="w-32 h-7 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {AVAILABLE_POSITIONS.map((pos) => (
+              <SelectItem key={pos.value} value={pos.value} className="text-xs">
+                <span className="flex items-center gap-1">
+                  {pos.icon} {pos.label}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
+);
+
+HandleItem.displayName = "HandleItem";
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
+const HandlePositionEditorBase: React.FC<HandlePositionEditorProps> = ({
   node,
   handles,
   updateNodeData,
 }) => {
-  // Get current handle overrides from node data
+  // Get current handle overrides from node data - optimized for stable reference
   const currentOverrides = useMemo(() => {
     const overrides = (node.data as any)?.handleOverrides as
       | HandleOverride[]
@@ -76,7 +128,7 @@ export const HandlePositionEditor: React.FC<HandlePositionEditorProps> = ({
     return overrides || [];
   }, [node.data]);
 
-  // Create map for quick lookup of current positions
+  // Create map for quick lookup of current positions - optimized dependency array
   const positionMap = useMemo(() => {
     const map = new Map<string, string>();
 
@@ -146,11 +198,21 @@ export const HandlePositionEditor: React.FC<HandlePositionEditorProps> = ({
     toast.success("All handle positions reset to defaults");
   }, [node.id, updateNodeData]);
 
-  // Group handles by type
+  // Group handles by type - cache stable references to arrays
   const handlesByType = useMemo(() => {
-    const inputs = handles.filter((h) => h.type === "target");
-    const output = handles.filter((h) => h.type === "source");
-    return { inputs, output };
+    const inputs: NodeHandleSpec[] = [];
+    const outputs: NodeHandleSpec[] = [];
+
+    // Single pass through handles for better performance
+    handles.forEach((handle) => {
+      if (handle.type === "target") {
+        inputs.push(handle);
+      } else if (handle.type === "source") {
+        outputs.push(handle);
+      }
+    });
+
+    return { inputs, outputs };
   }, [handles]);
 
   const hasOverrides = currentOverrides.length > 0;
@@ -197,65 +259,31 @@ export const HandlePositionEditor: React.FC<HandlePositionEditorProps> = ({
             );
 
             return (
-              <div
+              <HandleItem
                 key={handle.id}
-                className="flex items-center justify-between gap-3 p-2 rounded-md border border-border/30 bg-muted/10"
-              >
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <div className="font-mono text-xs text-foreground truncate">
-                      {handle.id}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {handle.dataType || "any"} •{" "}
-                      {isOverridden && (
-                        <span className="text-orange-500">custom</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <Select
-                  value={currentPosition}
-                  onValueChange={(value) =>
-                    handlePositionChange(handle.id, value)
-                  }
-                >
-                  <SelectTrigger className="w-32 h-7 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {AVAILABLE_POSITIONS.map((pos) => (
-                      <SelectItem
-                        key={pos.value}
-                        value={pos.value}
-                        className="text-xs"
-                      >
-                        <span className="flex items-center gap-1">
-                          {pos.icon} {pos.label}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                handle={handle}
+                currentPosition={currentPosition}
+                isOverridden={isOverridden}
+                onPositionChange={handlePositionChange}
+                type="input"
+              />
             );
           })}
         </div>
       )}
 
       {/* Separator */}
-      {handlesByType.inputs.length > 0 && handlesByType.output.length > 0 && (
+      {handlesByType.inputs.length > 0 && handlesByType.outputs.length > 0 && (
         <Separator />
       )}
 
       {/* Output Handles */}
-      {handlesByType.output.length > 0 && (
+      {handlesByType.outputs.length > 0 && (
         <div className="space-y-2">
           <div className="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wide">
-            Output Handles ({handlesByType.output.length})
+            Output Handles ({handlesByType.outputs.length})
           </div>
-          {handlesByType.output.map((handle) => {
+          {handlesByType.outputs.map((handle) => {
             const currentPosition =
               positionMap.get(handle.id) || handle.position;
             const isOverridden = currentOverrides.some(
@@ -263,48 +291,14 @@ export const HandlePositionEditor: React.FC<HandlePositionEditorProps> = ({
             );
 
             return (
-              <div
+              <HandleItem
                 key={handle.id}
-                className="flex items-center justify-between gap-3 p-2 rounded-md border border-border/30 bg-muted/10"
-              >
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <div className="h-2 w-2 rounded-full bg-green-500 flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <div className="font-mono text-xs text-foreground truncate">
-                      {handle.id}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {handle.dataType || "any"} •{" "}
-                      {isOverridden && (
-                        <span className="text-orange-500">custom</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <Select
-                  value={currentPosition}
-                  onValueChange={(value) =>
-                    handlePositionChange(handle.id, value)
-                  }
-                >
-                  <SelectTrigger className="w-32 h-7 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {AVAILABLE_POSITIONS.map((pos) => (
-                      <SelectItem
-                        key={pos.value}
-                        value={pos.value}
-                        className="text-xs"
-                      >
-                        <span className="flex items-center gap-1">
-                          {pos.icon} {pos.label}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                handle={handle}
+                currentPosition={currentPosition}
+                isOverridden={isOverridden}
+                onPositionChange={handlePositionChange}
+                type="output"
+              />
             );
           })}
         </div>
@@ -322,3 +316,27 @@ export const HandlePositionEditor: React.FC<HandlePositionEditorProps> = ({
     </div>
   );
 };
+
+// ============================================================================
+// MEMOIZED EXPORT - Optimized performance with stable prop comparison
+// ============================================================================
+
+export const HandlePositionEditor = memo(
+  HandlePositionEditorBase,
+  (prevProps, nextProps) => {
+    // Custom comparison to prevent unnecessary re-renders, basically check if relevant props changed
+    return (
+      prevProps.node.id === nextProps.node.id &&
+      prevProps.node.data === nextProps.node.data &&
+      prevProps.handles.length === nextProps.handles.length &&
+      prevProps.handles.every(
+        (handle, index) =>
+          handle.id === nextProps.handles[index]?.id &&
+          handle.position === nextProps.handles[index]?.position &&
+          handle.type === nextProps.handles[index]?.type
+      )
+    );
+  }
+);
+
+HandlePositionEditor.displayName = "HandlePositionEditor";

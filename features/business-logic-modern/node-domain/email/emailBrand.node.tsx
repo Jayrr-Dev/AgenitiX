@@ -444,7 +444,7 @@ function createDynamicSpec(data: EmailBrandData): NodeSpec {
         { key: "isExpanded", type: "boolean", label: "Expand" },
       ],
     },
-    icon: "LuPalette",
+    icon: "LuImage",
     author: "Agenitix Team",
     description:
       "Manage email branding, visual identity, and corporate styling for consistent email communications",
@@ -613,7 +613,6 @@ const EmailBrandNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
       toast.success("Brand configuration saved successfully");
     } catch (error) {
-      console.error("Save brand error:", error);
       updateNodeData({
         isSaving: false,
         lastError:
@@ -766,7 +765,13 @@ const EmailBrandNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
               id={`brand-type-${id}`}
               value={brandType}
               onChange={(e) =>
-                updateNodeData({ brandType: e.target.value as any })
+                updateNodeData({
+                  brandType: e.target.value as
+                    | "corporate"
+                    | "personal"
+                    | "product"
+                    | "campaign",
+                })
               }
               className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               disabled={!isEnabled}
@@ -790,7 +795,11 @@ const EmailBrandNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
           ].map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
+              onClick={() =>
+                setActiveTab(
+                  tab.key as "identity" | "colors" | "typography" | "signature"
+                )
+              }
               className={`flex-shrink-0 px-2 py-1 text-xs font-medium ${
                 activeTab === tab.key
                   ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
