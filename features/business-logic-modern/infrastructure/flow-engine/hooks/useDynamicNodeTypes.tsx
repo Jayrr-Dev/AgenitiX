@@ -1,24 +1,22 @@
-import { type Suspense, lazy, useMemo } from "react";
+import { useMemo, lazy, Suspense } from "react";
 import type { ComponentType } from "react";
 
 // Loading component for lazy-loaded nodes, basically shows fallback while loading
 const NodeLoadingFallback = () => (
   <div className="flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg">
-    <div className="text-sm text-gray-500">Loading
-node;
-...</div>
-</div>
-)
+    <div className="text-sm text-gray-500">Loading node...</div>
+  </div>
+);
 
 // Lazy load all node components to reduce initial bundle size, basically improves app startup performance
-const triggerPulse = lazy(() => import("../../../node-domain/trigger/triggerPulse.node"));
-const timeScheduler = lazy(() => import("../../../node-domain/trigger/timeScheduler.node"));
-const aiTools = lazy(() => import("../../../node-domain/ai/aiTools.node"));
-const storeLocal = lazy(() => import("../../../node-domain/store/storeLocal.node"));
-const aiManager = lazy(() => import("../../../node-domain/ai/aiManager.node"));
-const createObject = lazy(() => import("../../../node-domain/create/createObject.node"));
-const createMap = lazy(() => import("../../../node-domain/create/createMap.node"));
-const viewTest = lazy(() => import("../../../node-domain/view/viewTest.node"));
+const triggerPulse = lazy(() => import('../../../node-domain/trigger/triggerPulse.node'));
+const timeScheduler = lazy(() => import('../../../node-domain/trigger/timeScheduler.node'));
+const aiTools = lazy(() => import('../../../node-domain/ai/aiTools.node'));
+const storeLocal = lazy(() => import('../../../node-domain/store/storeLocal.node'));
+const aiManager = lazy(() => import('../../../node-domain/ai/aiManager.node'));
+const createObject = lazy(() => import('../../../node-domain/create/createObject.node'));
+const createMap = lazy(() => import('../../../node-domain/create/createMap.node'));
+const viewTest = lazy(() => import('../../../node-domain/view/viewTest.node'));
 const aiAgent = lazy(() => import("../../../node-domain/ai/aiAgent.node"));
 const createText = lazy(() => import("../../../node-domain/create/createText.node"));
 const storeInMemory = lazy(() => import("../../../node-domain/create/storeInMemory.node"));

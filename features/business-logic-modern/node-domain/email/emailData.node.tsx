@@ -386,7 +386,7 @@ const extractDates = (
   const results: Array<{ text: string; date: string; type?: string }> = [];
 
   datePatterns.forEach((pattern) => {
-    let match;
+    let match: RegExpExecArray | null;
     while ((match = pattern.regex.exec(text)) !== null) {
       results.push({
         text: match[0],
@@ -562,7 +562,7 @@ const extractEntities = (
   // Simple company detection (words ending with Inc, LLC, etc.)
   const companyRegex =
     /\b[A-Z][\w\s&-]+(?:Inc|LLC|Ltd|Corp|Corporation|Company)\b/g;
-  let match;
+  let match: RegExpExecArray | null;
   while ((match = companyRegex.exec(text)) !== null) {
     entities.push({
       text: match[0],
@@ -686,7 +686,7 @@ const formatExtractedData = (data: EmailDataType, format: string): string => {
     case "json":
       return JSON.stringify(outputData, null, 2);
 
-    case "csv":
+    case "csv": {
       // Simple CSV format for demonstration
       let csv = "Type,Value\n";
 
@@ -705,8 +705,9 @@ const formatExtractedData = (data: EmailDataType, format: string): string => {
       data.emails.forEach((email) => (csv += `Email,${email}\n`));
 
       return csv;
+    }
 
-    case "html":
+    case "html": {
       // Simple HTML format for demonstration
       let html = `<div class="email-data">\n`;
       html += `  <h2>${data.emailSubject || "Email Data"}</h2>\n`;
@@ -742,9 +743,10 @@ const formatExtractedData = (data: EmailDataType, format: string): string => {
 
       html += `</div>`;
       return html;
+    }
 
     case "text":
-    default:
+    default: {
       // Simple text format
       let text = `Email Data Extraction\n\n`;
       text += `Subject: ${data.emailSubject}\n`;
@@ -769,6 +771,7 @@ const formatExtractedData = (data: EmailDataType, format: string): string => {
       }
 
       return text;
+    }
   }
 };
 

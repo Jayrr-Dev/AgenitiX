@@ -474,11 +474,16 @@ const ViewTextNode = memo(
           <div className={CONTENT.expanded}>
             <div className={CONTENT.body}>
               <div className="whitespace-pre-line break-words text-center font-normal text-xs mt-2">
-                {typeof validation.data.inputs === "string"
-                  ? validation.data.inputs
-                  : validation.data.inputs
-                    ? JSON.stringify(validation.data.inputs, null, 2)
-                    : "No inputs"}
+                {(() => {
+                  const inputs = validation.data.inputs;
+                  if (typeof inputs === "string") {
+                    return inputs;
+                  }
+                  if (inputs && typeof inputs === "object") {
+                    return JSON.stringify(inputs, null, 2);
+                  }
+                  return "No inputs";
+                })()}
               </div>
             </div>
           </div>
@@ -495,11 +500,16 @@ const ViewTextNode = memo(
                   height: `${spec.size.collapsed.height - 20}px`,
                 }}
               >
-                {typeof validation.data.inputs === "string"
-                  ? validation.data.inputs
-                  : validation.data.inputs
-                    ? JSON.stringify(validation.data.inputs, null, 2)
-                    : "..."}
+                {(() => {
+                  const inputs = validation.data.inputs;
+                  if (typeof inputs === "string") {
+                    return inputs;
+                  }
+                  if (inputs && typeof inputs === "object") {
+                    return JSON.stringify(inputs, null, 2);
+                  }
+                  return "...";
+                })()}
               </div>
             ) : (
               <div

@@ -308,7 +308,8 @@ const AiToolsNode = memo(
 
         if (hasChanged) {
           lastGeneralOutputRef.current = outputValue;
-          updateNodeData({ output: outputObject });
+          const toolsConfig = generateToolsConfig({ calculator, webSearch });
+          updateNodeData({ output: isActive && isEnabled ? toolsConfig : "" });
         }
       } catch (error) {
         console.error(`AiTools ${id}: Error generating output`, error, {
@@ -316,10 +317,10 @@ const AiToolsNode = memo(
           nodeDataKeys: Object.keys(nodeData || {}),
         });
 
-        // Fallback: set empty object to prevent crashes, basically empty state for storage
+        // Fallback: set empty string to prevent crashes, basically empty state for storage
         if (lastGeneralOutputRef.current !== null) {
           lastGeneralOutputRef.current = new Map();
-          updateNodeData({ output: {} });
+          updateNodeData({ output: "" });
         }
       }
     }, [

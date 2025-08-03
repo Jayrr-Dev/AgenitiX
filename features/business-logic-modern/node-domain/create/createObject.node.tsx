@@ -92,7 +92,10 @@ const createDynamicSpec = (() => {
     const cacheKey = `${data.expandedSize}-${data.collapsedSize}`;
 
     if (specCache.has(cacheKey)) {
-      return specCache.get(cacheKey)!;
+      const cachedSpec = specCache.get(cacheKey);
+      if (cachedSpec) {
+        return cachedSpec;
+      }
     }
 
     const expanded =
@@ -206,9 +209,12 @@ const CreateObjectNode = memo(
 
     // JSON validity check
     const isJsonValid = useMemo(() => {
-      if (!store || store.trim() === "") return true; // Empty is considered valid
+      // Ensure store is a string before checking
+      const storeString =
+        typeof store === "string" ? store : JSON.stringify(store || {});
+      if (!storeString || storeString.trim() === "") return true; // Empty is considered valid
       try {
-        JSON.parse(store);
+        JSON.parse(storeString);
         return true;
       } catch {
         return false;
@@ -307,7 +313,7 @@ const CreateObjectNode = memo(
           clearTimeout(debounceTimeoutRef.current);
         }
 
-        // Immediate UI update
+        // Immediate UI update - ensure we always store as string
         updateNodeData({ store: newValue });
 
         // Debounced validation
@@ -525,13 +531,23 @@ const CreateObjectNode = memo(
 
     // Memoized styles and values
     const categoryStyles = useMemo(() => CATEGORY_TEXT.CREATE, []);
-    const displayValue = useMemo(() => store ?? "{\n\n}", [store]);
+    const displayValue = useMemo(() => {
+      // Ensure we always return a string for the editor
+      if (typeof store === "string") {
+        return store || "{\n\n}";
+      }
+      return JSON.stringify(store || {}, null, 2);
+    }, [store]);
 
     // Count keys in the JSON object for collapsed mode display
     const objectKeyCount = useMemo(() => {
       try {
-        if (!store || store === "{}" || store === "{\n\n}") return 0;
-        const parsed = JSON.parse(store);
+        // Ensure store is a string before parsing
+        const storeString =
+          typeof store === "string" ? store : JSON.stringify(store || {});
+        if (!storeString || storeString === "{}" || storeString === "{\n\n}")
+          return 0;
+        const parsed = JSON.parse(storeString);
         if (
           typeof parsed === "object" &&
           parsed !== null &&

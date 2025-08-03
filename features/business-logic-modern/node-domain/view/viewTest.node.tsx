@@ -1,13 +1,16 @@
 /**
- * TestNode NODE – Content‑focused, schema‑driven, type‑safe
+ * ViewTest NODE – Content‑focused, schema‑driven, type‑safe
  *
  * • Shows only internal layout; the scaffold provides borders, sizing, theming, and interactivity.
  * • Zod schema auto‑generates type‑checked Inspector controls.
  * • Dynamic sizing (expandedSize / collapsedSize) drives the spec.
  * • Output propagation is gated by `isActive` *and* `isEnabled` to prevent runaway loops.
+ * • Uses findEdgeByHandle utility for robust React Flow edge handling.
+ * • Auto-disables when all input connections are removed (handled by flow store).
  * • Code is fully commented and follows current React + TypeScript best practices.
+ * • Uses unified handle-based output system for consistent data propagation.
  *
- * Keywords: test-node, schema-driven, type‑safe, clean‑architecture
+ * Keywords: view-test, schema-driven, type‑safe, clean‑architecture, unified-handles
  */
 
 import type { NodeProps } from "@xyflow/react";
@@ -21,10 +24,8 @@ import {
 } from "react";
 import { z } from "zod";
 
-import { Loading } from "@/components/Loading";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
-import { Textarea } from "@/components/ui/textarea";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
@@ -55,7 +56,7 @@ import { useStore } from "@xyflow/react";
 // 1️⃣  Data schema & validation
 // -----------------------------------------------------------------------------
 
-export const TestNodeDataSchema = z
+export const ViewTestDataSchema = z
   .object({
     store: SafeSchemas.text("Default text"),
     isEnabled: SafeSchemas.boolean(true),
@@ -69,17 +70,17 @@ export const TestNodeDataSchema = z
   })
   .passthrough();
 
-export type TestNodeData = z.infer<typeof TestNodeDataSchema>;
+export type ViewTestData = z.infer<typeof ViewTestDataSchema>;
 
-const validateNodeData = createNodeValidator(TestNodeDataSchema, "TestNode");
+const validateNodeData = createNodeValidator(ViewTestDataSchema, "ViewTest");
 
 // -----------------------------------------------------------------------------
 // 2️⃣  Constants
 // -----------------------------------------------------------------------------
 
 const CATEGORY_TEXT = {
-  TEST: {
-    primary: "text-[--node--t-e-s-t-text]",
+  VIEW: {
+    primary: "text-[--node--v-i-e-w-text]",
   },
 } as const;
 
@@ -99,7 +100,7 @@ const CONTENT = {
 /**
  * Builds a NodeSpec whose size keys can change at runtime via node data.
  */
-function createDynamicSpec(data: TestNodeData): NodeSpec {
+function createDynamicSpec(data: ViewTestData): NodeSpec {
   const expanded =
     EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
     EXPANDED_SIZES.FE0;
@@ -108,10 +109,10 @@ function createDynamicSpec(data: TestNodeData): NodeSpec {
     COLLAPSED_SIZES.C1;
 
   return {
-    kind: "testNode",
-    displayName: "TestNode",
-    label: "TestNode",
-    category: CATEGORIES.TEST,
+    kind: "viewTest",
+    displayName: "ViewTest",
+    label: "ViewTest",
+    category: CATEGORIES.VIEW,
     size: { expanded, collapsed },
     handles: [
       {
@@ -120,8 +121,6 @@ function createDynamicSpec(data: TestNodeData): NodeSpec {
         position: "top",
         type: "target",
         dataType: "JSON",
-        tooltip:
-          "This is a custom tooltip for the JSON input handle. It will appear below the default tooltip.",
       },
       {
         id: "output",
@@ -129,8 +128,6 @@ function createDynamicSpec(data: TestNodeData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "String",
-        tooltip:
-          "This is a custom tooltip for the output handle. It will appear below the default tooltip.",
       },
       {
         id: "input",
@@ -138,19 +135,17 @@ function createDynamicSpec(data: TestNodeData): NodeSpec {
         position: "left",
         type: "target",
         dataType: "Boolean",
-        tooltip:
-          "This is a custom tooltip for the input handle. It will appear below the default tooltip.",
       },
     ],
-    inspector: { key: "TestNodeInspector" },
+    inspector: { key: "ViewTestInspector" },
     version: 1,
-    runtime: { execute: "testNode_execute_v1" },
-    initialData: createSafeInitialData(TestNodeDataSchema, {
+    runtime: { execute: "viewTest_execute_v1" },
+    initialData: createSafeInitialData(ViewTestDataSchema, {
       store: "Default text",
       inputs: null,
       output: {}, // handle-based output object
     }),
-    dataSchema: TestNodeDataSchema,
+    dataSchema: ViewTestDataSchema,
     controls: {
       autoGenerate: true,
       excludeFields: [
@@ -174,14 +169,14 @@ function createDynamicSpec(data: TestNodeData): NodeSpec {
     },
     icon: "LuFileText",
     author: "Agenitix Team",
-    description: "TestNode node for testing",
+    description: "ViewTest node for display",
     feature: "base",
-    tags: ["test", "testNode"],
+    tags: ["view", "viewTest"],
     featureFlag: {
       flag: "test",
       fallback: true,
-      disabledMessage: "This testNode node is currently disabled",
-      hideWhenDisabled: true,
+      disabledMessage: "This viewTest node is currently disabled",
+      hideWhenDisabled: false,
     },
     theming: {},
   };
@@ -191,13 +186,13 @@ function createDynamicSpec(data: TestNodeData): NodeSpec {
 export const spec: NodeSpec = createDynamicSpec({
   expandedSize: "FE0",
   collapsedSize: "C1",
-} as TestNodeData);
+} as ViewTestData);
 
 // -----------------------------------------------------------------------------
 // 4️⃣  React component – data propagation & rendering
 // -----------------------------------------------------------------------------
 
-const TestNodeNode = memo(
+const ViewTestNode = memo(
   ({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
     // -------------------------------------------------------------------------
     // 4.1  Sync with React‑Flow store
@@ -207,8 +202,7 @@ const TestNodeNode = memo(
     // -------------------------------------------------------------------------
     // 4.2  Derived state
     // -------------------------------------------------------------------------
-    const { isExpanded, isEnabled, isActive, store, collapsedSize } =
-      nodeData as TestNodeData;
+    const { isExpanded, isEnabled, isActive, store } = nodeData as ViewTestData;
 
     // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
     const nodes = useStore((s) => s.nodes);
@@ -217,7 +211,7 @@ const TestNodeNode = memo(
     // keep last emitted output to avoid redundant writes
     const lastGeneralOutputRef = useRef<any>(null);
 
-    const categoryStyles = CATEGORY_TEXT.TEST;
+    const categoryStyles = CATEGORY_TEXT.VIEW;
 
     // -------------------------------------------------------------------------
     // 4.3  Feature flag evaluation (after all hooks)
@@ -246,21 +240,24 @@ const TestNodeNode = memo(
       }
     }, [isActive, isEnabled, updateNodeData]);
 
-    /** Compute the latest text coming from connected input handles. */
+    /**
+     * Compute the latest text coming from connected input handles.
+     *
+     * Uses findEdgeByHandle utility to properly handle React Flow's handle naming
+     * conventions (handles get type suffixes like "json-input__j", "input__b").
+     *
+     * Priority: json-input > input (modify based on your node's specific handles)
+     */
     const computeInput = useCallback((): string | null => {
       // Check json-input handle first, then input handle as fallback
       const jsonInputEdge = findEdgeByHandle(edges, id, "json-input");
       const inputEdge = findEdgeByHandle(edges, id, "input");
 
       const incoming = jsonInputEdge || inputEdge;
-      if (!incoming) {
-        return null;
-      }
+      if (!incoming) return null;
 
       const src = nodes.find((n) => n.id === incoming.source);
-      if (!src) {
-        return null;
-      }
+      if (!src) return null;
 
       // Unified input reading system - prioritize handle-based output, basically single source for input data
       const sourceData = src.data;
@@ -306,14 +303,6 @@ const TestNodeNode = memo(
     // 4.5  Effects
     // -------------------------------------------------------------------------
 
-    /* 🔄 Whenever nodes/edges change, recompute inputs. */
-    useEffect(() => {
-      const inputVal = computeInput();
-      if (inputVal !== (nodeData as TestNodeData).inputs) {
-        updateNodeData({ inputs: inputVal });
-      }
-    }, [computeInput, nodeData, updateNodeData]);
-
     /* 🔄 Handle-based output field generation for multi-handle compatibility */
     useEffect(() => {
       try {
@@ -329,7 +318,7 @@ const TestNodeNode = memo(
         // Validate the result
         if (!(outputValue instanceof Map)) {
           console.error(
-            `TestNode ${id}: generateoutputField did not return a Map`,
+            `ViewTest ${id}: generateoutputField did not return a Map`,
             outputValue
           );
           return;
@@ -356,7 +345,7 @@ const TestNodeNode = memo(
           updateNodeData({ output: outputObject });
         }
       } catch (error) {
-        console.error(`TestNode ${id}: Error generating output`, error, {
+        console.error(`ViewTest ${id}: Error generating output`, error, {
           spec: spec?.kind,
           nodeDataKeys: Object.keys(nodeData || {}),
         });
@@ -369,9 +358,17 @@ const TestNodeNode = memo(
       }
     }, [spec.handles, nodeData, updateNodeData, id]);
 
+    /* 🔄 Whenever nodes/edges change, recompute inputs. */
+    useEffect(() => {
+      const inputVal = computeInput();
+      if (inputVal !== (nodeData as ViewTestData).inputs) {
+        updateNodeData({ inputs: inputVal });
+      }
+    }, [computeInput, nodeData, updateNodeData]);
+
     /* 🔄 Make isEnabled dependent on input value only when there are connections. */
     useEffect(() => {
-      const hasInput = (nodeData as TestNodeData).inputs;
+      const hasInput = (nodeData as ViewTestData).inputs;
       // Only auto-control isEnabled when there are connections (inputs !== null)
       // When inputs is null (no connections), let user manually control isEnabled
       if (hasInput !== null) {
@@ -393,9 +390,7 @@ const TestNodeNode = memo(
         if (isActive !== hasValidStore) {
           updateNodeData({ isActive: hasValidStore });
         }
-      } else if (isActive) {
-        updateNodeData({ isActive: false });
-      }
+      } else if (isActive) updateNodeData({ isActive: false });
     }, [store, isEnabled, isActive, updateNodeData]);
 
     // Sync JSON fields with active and enabled state
@@ -408,13 +403,13 @@ const TestNodeNode = memo(
     // -------------------------------------------------------------------------
     const validation = validateNodeData(nodeData);
     if (!validation.success) {
-      reportValidationError("TestNode", id, validation.errors, {
+      reportValidationError("ViewTest", id, validation.errors, {
         originalData: validation.originalData,
-        component: "TestNodeNode",
+        component: "ViewTestNode",
       });
     }
 
-    useNodeDataValidation(TestNodeDataSchema, "TestNode", validation.data, id);
+    useNodeDataValidation(ViewTestDataSchema, "ViewTest", validation.data, id);
 
     // -------------------------------------------------------------------------
     // 4.7  Feature flag conditional rendering
@@ -422,21 +417,10 @@ const TestNodeNode = memo(
 
     // If flag is loading, show loading state
     if (flagState.isLoading) {
-      // For small collapsed sizes (C1, C1W), hide text and center better
-      const isSmallNode =
-        !isExpanded && (collapsedSize === "C1" || collapsedSize === "C1W");
-
       return (
-        <Loading
-          className={
-            isSmallNode
-              ? "flex items-center justify-center w-full h-full"
-              : "p-4"
-          }
-          size={isSmallNode ? "w-6 h-6" : "w-8 h-8"}
-          text={isSmallNode ? undefined : "Loading..."}
-          showText={!isSmallNode}
-        />
+        <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
+          Loading viewTest feature...
+        </div>
       );
     }
 
@@ -448,7 +432,7 @@ const TestNodeNode = memo(
     // If flag is disabled, show disabled message
     if (!flagState.isEnabled) {
       return (
-        <div className="flex items-center justify-center rounded-lg border border-muted-foreground/20 border-dashed p-4 text-muted-foreground text-sm">
+        <div className="flex items-center justify-center p-4 text-sm text-muted-foreground border border-dashed border-muted-foreground/20 rounded-lg">
           {flagState.disabledMessage}
         </div>
       );
@@ -463,13 +447,13 @@ const TestNodeNode = memo(
         {!isExpanded &&
         spec.size.collapsed.width === 60 &&
         spec.size.collapsed.height === 60 ? (
-          <div className="absolute inset-0 flex justify-center p-1 text-foreground/80 text-lg">
+          <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (
           <LabelNode
             nodeId={id}
-            label={(nodeData as TestNodeData).label || spec.displayName}
+            label={(nodeData as ViewTestData).label || spec.displayName}
           />
         )}
 
@@ -477,7 +461,7 @@ const TestNodeNode = memo(
           <div
             className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
           >
-            <Textarea
+            <textarea
               value={(() => {
                 const store = validation.data.store;
                 if (store === "Default text") return "";
@@ -488,7 +472,7 @@ const TestNodeNode = memo(
               })()}
               onChange={handleStoreChange}
               placeholder="Enter your content here…"
-              className={`nowheel h-32 resize-none overflow-y-auto bg-background p-2 text-xs ${categoryStyles.primary}`}
+              className={` resize-none nowheel bg-background rounded-md p-2 text-xs h-32 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
               disabled={!isEnabled}
             />
           </div>
@@ -496,7 +480,7 @@ const TestNodeNode = memo(
           <div
             className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
           >
-            <Textarea
+            <textarea
               value={(() => {
                 const store = validation.data.store;
                 if (store === "Default text") return "";
@@ -507,7 +491,7 @@ const TestNodeNode = memo(
               })()}
               onChange={handleStoreChange}
               placeholder="..."
-              className={`nowheel m-4 h-8 resize-none overflow-y-auto p-1 text-center text-xs ${categoryStyles.primary}`}
+              className={` resize-none text-center nowheel rounded-md h-8 m-4 translate-y-2 text-xs p-1 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
               disabled={!isEnabled}
             />
           </div>
@@ -535,15 +519,15 @@ const TestNodeNode = memo(
  * textarea loses focus).  We memoise the scaffolded component so its identity
  * stays stable across renders unless the *spec itself* really changes.
  */
-const TestNodeNodeWithDynamicSpec = (props: NodeProps) => {
+const ViewTestNodeWithDynamicSpec = (props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, props.data);
 
   // Recompute spec only when the size keys change
   const dynamicSpec = useMemo(
-    () => createDynamicSpec(nodeData as TestNodeData),
+    () => createDynamicSpec(nodeData as ViewTestData),
     [
-      (nodeData as TestNodeData).expandedSize,
-      (nodeData as TestNodeData).collapsedSize,
+      (nodeData as ViewTestData).expandedSize,
+      (nodeData as ViewTestData).collapsedSize,
     ]
   );
 
@@ -551,7 +535,7 @@ const TestNodeNodeWithDynamicSpec = (props: NodeProps) => {
   const ScaffoldedNode = useMemo(
     () =>
       withNodeScaffold(dynamicSpec, (p) => (
-        <TestNodeNode {...p} spec={dynamicSpec} />
+        <ViewTestNode {...p} spec={dynamicSpec} />
       )),
     [dynamicSpec]
   );
@@ -559,4 +543,4 @@ const TestNodeNodeWithDynamicSpec = (props: NodeProps) => {
   return <ScaffoldedNode {...props} />;
 };
 
-export default TestNodeNodeWithDynamicSpec;
+export default ViewTestNodeWithDynamicSpec;

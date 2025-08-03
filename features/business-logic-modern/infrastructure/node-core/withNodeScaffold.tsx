@@ -201,10 +201,16 @@ export function withNodeScaffold(
     // Force re-render when handle overrides change by creating a unique key
     const handleOverrides = (props.data as any)?.handleOverrides;
 
+    // Ultra-optimized handle key generation with ref-based change detection, basically prevents unnecessary recalculations
     const handleKey = React.useMemo(() => {
-      // Avoid JSON.stringify on every render - just use array length and first item
       if (!handleOverrides || !Array.isArray(handleOverrides)) return "default";
-      return `${handleOverrides.length}-${handleOverrides[0]?.handleId || "none"}`;
+
+      // Create lightweight hash based on array structure, basically efficient change detection
+      const length = handleOverrides.length;
+      const firstId = handleOverrides[0]?.handleId || "none";
+      const lastId = handleOverrides[length - 1]?.handleId || "none";
+
+      return `${length}-${firstId}-${lastId}`;
     }, [handleOverrides]);
 
     // Update ReactFlow's internal handle positions when overrides change
@@ -247,6 +253,19 @@ export function withNodeScaffold(
     // Node components manage isExpanded through their data schema and useNodeData hook
     const isExpanded = (props.data as any)?.isExpanded;
     const currentSize = isExpanded ? spec.size.expanded : spec.size.collapsed;
+
+    // Memoized style object to prevent recreation on every render, basically performance optimization
+    const nodeStyle = React.useMemo(
+      () => ({
+        width: currentSize.width,
+        height:
+          "height" in currentSize ? currentSize.height : currentSize.minHeight,
+      }),
+      [
+        currentSize.width,
+        "height" in currentSize ? currentSize.height : currentSize.minHeight,
+      ]
+    );
 
     const sizeConfig = currentSize as any;
     const style: React.CSSProperties = {

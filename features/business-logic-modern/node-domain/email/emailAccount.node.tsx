@@ -47,6 +47,7 @@ import type { EmailAccountConfig, EmailProviderType } from "./types";
 
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 // Convex integration
 import { useAction, useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
@@ -95,7 +96,7 @@ export const EmailAccountDataSchema = z
     collapsedSize: SafeSchemas.text("C2"),
 
     // output - unified handle-based output system
-    output: z.record(z.string(), z.any()).optional(), // handle-based output object for Convex compatibility
+    output: z.record(z.string(), z.unknown()).optional(), // handle-based output object for Convex compatibility
     label: z.string().optional(), // User-editable node label
   })
   .passthrough();
@@ -281,7 +282,7 @@ const EmailAccountNode = memo(
     const _edges = useStore((s) => s.edges);
 
     // Keep last emitted output to avoid redundant writes
-    const lastGeneralOutputRef = useRef<any>(null);
+    const lastGeneralOutputRef = useRef<Map<string, unknown> | null>(null);
 
     // -------------------------------------------------------------------------
     // 4.3  Convex integration
@@ -435,7 +436,6 @@ const EmailAccountNode = memo(
           }
         }, 1000);
       } catch (error) {
-        console.error("OAuth2 authentication error:", error);
         updateNodeData({
           isAuthenticating: false,
           lastError:
@@ -578,7 +578,6 @@ const EmailAccountNode = memo(
           throw new Error("Failed to store account");
         }
       } catch (error) {
-        console.error("Manual save error:", error);
         updateNodeData({
           connectionStatus: "error",
           lastError:
@@ -619,7 +618,7 @@ const EmailAccountNode = memo(
         updateNodeData({ connectionStatus: "connecting", lastError: "" });
 
         const result = await validateConnection({
-          accountId: nodeData.accountId as any,
+          accountId: nodeData.accountId as Id<"email_accounts">,
         });
 
         if (result.success) {
@@ -653,21 +652,11 @@ const EmailAccountNode = memo(
 
     /** Check URL parameters for auth result on component mount */
     useEffect(() => {
-      console.log("🔄 EmailAccount useEffect running for node:", id);
       const urlParams = new URLSearchParams(window.location.search);
-      console.log("🔍 Checking URL params:", {
-        hasAuthSuccess: !!urlParams.get("auth_success"),
-        hasAuthData: !!urlParams.get("auth_data"),
-        isConnected,
-        currentUrl: window.location.href,
-        nodeId: id,
-      });
 
       if (urlParams.get("auth_success") && !isConnected) {
         const authData = urlParams.get("auth_data");
         if (authData) {
-          console.log("✅ Processing auth success from URL params");
-          console.log("📦 Auth data:", authData.substring(0, 50) + "...");
           handleAuthSuccess(authData);
           // Clean up URL parameters
           window.history.replaceState(
@@ -679,7 +668,6 @@ const EmailAccountNode = memo(
       } else if (urlParams.get("auth_error")) {
         const errorDesc =
           urlParams.get("auth_error_description") || "Authentication failed";
-        console.log("❌ Processing auth error:", errorDesc);
         handleAuthError(errorDesc);
         // Clean up URL parameters
         window.history.replaceState(
@@ -698,7 +686,7 @@ const EmailAccountNode = memo(
           provider,
           email,
           displayName,
-          accountId: nodeData.accountId,
+          accountId: nodeData.accountId as Id<"email_accounts">,
           lastValidated,
         };
 
@@ -720,10 +708,6 @@ const EmailAccountNode = memo(
 
         // Validate the result
         if (!(outputValue instanceof Map)) {
-          console.error(
-            `EmailAccount ${id}: generateoutputField did not return a Map`,
-            outputValue
-          );
           return;
         }
 
@@ -751,11 +735,6 @@ const EmailAccountNode = memo(
           });
         }
       } catch (error) {
-        console.error(`EmailAccount ${id}: Error generating output`, error, {
-          spec: spec?.kind,
-          nodeDataKeys: Object.keys(nodeData || {}),
-        });
-
         // Fallback: set empty object to prevent crashes, basically empty state for storage
         if (lastGeneralOutputRef.current !== null) {
           lastGeneralOutputRef.current = new Map();

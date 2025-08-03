@@ -503,7 +503,7 @@ const TimeSchedulerNode = memo(
           if (startTime) {
             // Parse HH:MM format
             const [hours, minutes] = startTime.split(":").map(Number);
-            if (!isNaN(hours) && !isNaN(minutes)) {
+            if (!Number.isNaN(hours) && !Number.isNaN(minutes)) {
               const scheduledTime = new Date();
               scheduledTime.setHours(hours, minutes, 0, 0);
 
@@ -521,7 +521,7 @@ const TimeSchedulerNode = memo(
           if (startTime) {
             // Parse HH:MM format for one-time schedule
             const [hours, minutes] = startTime.split(":").map(Number);
-            if (!isNaN(hours) && !isNaN(minutes)) {
+            if (!Number.isNaN(hours) && !Number.isNaN(minutes)) {
               const scheduledTime = new Date();
               scheduledTime.setHours(hours, minutes, 0, 0);
 
@@ -677,11 +677,11 @@ const TimeSchedulerNode = memo(
       // Check if date is today or tomorrow
       if (date.toDateString() === today.toDateString()) {
         return "Today";
-      } else if (date.toDateString() === tomorrow.toDateString()) {
-        return "Tomorrow";
-      } else {
-        return date.toLocaleDateString();
       }
+      if (date.toDateString() === tomorrow.toDateString()) {
+        return "Tomorrow";
+      }
+      return date.toLocaleDateString();
     }, []);
 
     // -------------------------------------------------------------------------
@@ -757,7 +757,7 @@ const TimeSchedulerNode = memo(
 
         {isExpanded ? (
           <div
-            className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
+            className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
           >
             <div className="flex flex-col items-center justify-center w-full h-full p-2">
               {/* Icon */}
@@ -791,7 +791,7 @@ const TimeSchedulerNode = memo(
           </div>
         ) : (
           <div
-            className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
+            className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
           >
             {/* Header with title and expand button */}
             <div className={CONTENT.header}>
@@ -813,8 +813,11 @@ const TimeSchedulerNode = memo(
                   {/* Schedule Type */}
                   <div className={CONTENT.formGroup}>
                     <div className={CONTENT.formRow}>
-                      <label className={CONTENT.label}>Type:</label>
+                      <label htmlFor="schedule-type" className={CONTENT.label}>
+                        Type:
+                      </label>
                       <select
+                        id="schedule-type"
                         className={CONTENT.select}
                         value={scheduleType}
                         onChange={(e) =>
@@ -834,9 +837,15 @@ const TimeSchedulerNode = memo(
                   {scheduleType === "interval" && (
                     <div className={CONTENT.formGroup}>
                       <div className={CONTENT.formRow}>
-                        <label className={CONTENT.label}>Every:</label>
+                        <label
+                          htmlFor="interval-minutes"
+                          className={CONTENT.label}
+                        >
+                          Every:
+                        </label>
                         <div className="flex items-center gap-1 flex-1">
                           <input
+                            id="interval-minutes"
                             type="number"
                             className={CONTENT.input}
                             value={intervalMinutes}
@@ -862,8 +871,11 @@ const TimeSchedulerNode = memo(
                   {(scheduleType === "daily" || scheduleType === "once") && (
                     <div className={CONTENT.formGroup}>
                       <div className={CONTENT.formRow}>
-                        <label className={CONTENT.label}>Time:</label>
+                        <label htmlFor="start-time" className={CONTENT.label}>
+                          Time:
+                        </label>
                         <input
+                          id="start-time"
                           type="time"
                           className={CONTENT.input}
                           value={startTime}
