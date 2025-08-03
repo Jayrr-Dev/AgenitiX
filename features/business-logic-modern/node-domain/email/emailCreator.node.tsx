@@ -30,7 +30,10 @@ import { Textarea } from "@/components/ui/textarea";
 
 // Node Infrastructure
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import { createSafeInitialData } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+import { 
+  SafeSchemas,
+  createSafeInitialData 
+} from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
 import {
   createNodeValidator,
   reportValidationError,
@@ -44,13 +47,20 @@ import {
   COLLAPSED_SIZES,
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
+import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import { useNodeData } from "@/hooks/useNodeData";
+import { useStore } from "@xyflow/react";
 
 // Email Components
 import { RichTextEditor } from "./components/RichTextEditor";
 
 // Types and Utilities
 import type { EmailValidationResult } from "./types";
+
+// Convex
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useAuth } from "@/hooks/useAuth";
 
 // -----------------------------------------------------------------------------
 // 🎨  Styling Constants
@@ -160,14 +170,18 @@ export const EmailCreatorDataSchema = z
       }),
 
     // Node Configuration
-    isEnabled: z.boolean().default(true),
-    expandedSize: z.string().default("VE3"),
-    collapsedSize: z.string().default("C2"),
+    isEnabled: SafeSchemas.boolean(true),
+    isActive: SafeSchemas.boolean(false),
+    isExpanded: SafeSchemas.boolean(false),
+    expandedSize: SafeSchemas.text("VE3"),
+    collapsedSize: SafeSchemas.text("C2"),
+    label: z.string().optional(),
 
     // output
     emailOutput: z.any().optional(),
     validationOutput: z.boolean().optional(),
     errorOutput: z.string().default(""),
+    outputs: z.string().default(""), // Structured output for viewText nodes
   })
   .passthrough();
 
@@ -194,10 +208,10 @@ function createDynamicSpec(data: EmailCreatorData): NodeSpec {
     kind: "emailCreator",
     displayName: "Email Creator",
     label: "Email Creator",
-    category: "EMAIL",
+    category: CATEGORIES.EMAIL,
     size: {
-      expanded: EXPANDED_SIZES.FE2, // 180x180 for email composition
-      collapsed: COLLAPSED_SIZES.C1W, // 120x60 for collapsed view
+      expanded: _expanded,
+      collapsed: _collapsed,
     },
     handles: [
       {
@@ -225,7 +239,7 @@ function createDynamicSpec(data: EmailCreatorData): NodeSpec {
         id: "emailOutput",
         type: "source",
         dataType: "JSON",
-        code: "j",
+        code: "m",
         position: "right",
       },
       {
@@ -233,6 +247,13 @@ function createDynamicSpec(data: EmailCreatorData): NodeSpec {
         type: "source",
         dataType: "Boolean",
         code: "b",
+        position: "right",
+      },
+      {
+        id: "outputs",
+        type: "source",
+        dataType: "String",
+        code: "o",
         position: "right",
       },
     ],
@@ -265,6 +286,8 @@ function createDynamicSpec(data: EmailCreatorData): NodeSpec {
         warnings: [],
       },
       isEnabled: true,
+      isActive: false,
+      isExpanded: false,
       expandedSize: "VE3",
       collapsedSize: "C2",
       errorOutput: "",
@@ -276,6 +299,7 @@ function createDynamicSpec(data: EmailCreatorData): NodeSpec {
         "emailOutput",
         "validationOutput",
         "errorOutput",
+        "isActive",
         "expandedSize",
         "collapsedSize",
         "validation",
@@ -283,6 +307,7 @@ function createDynamicSpec(data: EmailCreatorData): NodeSpec {
       ],
       customFields: [
         { key: "isEnabled", type: "boolean", label: "Enable" },
+        { key: "isExpanded", type: "boolean", label: "Expand" },
         {
           key: "subject",
           type: "text",
@@ -303,6 +328,11 @@ function createDynamicSpec(data: EmailCreatorData): NodeSpec {
         },
       ],
     },
+    icon: "LuMail",
+    author: "Agenitix Team",
+    description: "Create and compose emails with rich text editing and template support",
+    feature: "email",
+    tags: ["email", "composition", "rich-text", "templates"],
     theming: {},
   };
 }
@@ -410,18 +440,139 @@ const EmailCreatorNode = memo(
       attachments,
       validation,
       isEnabled = true,
+      isActive = false,
+      isExpanded = false,
     } = nodeData as EmailCreatorData;
 
+    // Global React‑Flow store (nodes & edges) – triggers re‑render on change
+    const _nodes = useStore((s) => s.nodes);
+    const _edges = useStore((s) => s.edges);
+
+    // Authentication and template loading
+    const { token } = useAuth();
+    const availableTemplates = useQuery(
+      api.emailAccounts.getEmailReplyTemplates,
+      token ? { token_hash: token } : "skip"
+    );
+
     // -------------------------------------------------------------------------
-    // 4.2  State Management
+    // 4.2  Template Connection Detection
     // -------------------------------------------------------------------------
-    const [isExpanded, setIsExpanded] = useState(false);
+    
+    // Detect connected EmailTemplate nodes
+    const connectedTemplateData = useMemo(() => {
+      const templateEdges = _edges.filter(
+        (e) => e.target === id && e.targetHandle === "templateInput"
+      );
+      
+      if (templateEdges.length === 0) return null;
+      
+      const templateNode = _nodes.find((n) => n.id === templateEdges[0].source);
+      if (!templateNode || templateNode.type !== 'emailTemplate') return null;
+      
+      const templateNodeData = templateNode.data;
+      if (!templateNodeData?.templateName || !templateNodeData?.isActive) return null;
+      
+      return {
+        name: String(templateNodeData.templateName || ""),
+        subject: String(templateNodeData.subject || ""),
+        htmlContent: String(templateNodeData.htmlContent || ""),
+        textContent: String(templateNodeData.textContent || ""),
+        variables: Array.isArray(templateNodeData.variables) ? templateNodeData.variables : [],
+        category: String(templateNodeData.category || "general")
+      };
+    }, [_nodes, _edges, id]);
+
+    // -------------------------------------------------------------------------
+    // 4.3  State Management
+    // -------------------------------------------------------------------------
     const [_previewMode, _setPreviewMode] = useState<
       "desktop" | "mobile" | "text"
     >("desktop");
 
     // -------------------------------------------------------------------------
-    // 4.3  Validation and Processing
+    // 4.4  Auto-load Template from Connection
+    // -------------------------------------------------------------------------
+    
+    // Auto-load template when connected to EmailTemplate node
+    useEffect(() => {
+      if (connectedTemplateData) {
+        console.log('📄 Loading template from connection:', connectedTemplateData.name);
+        
+        // Extract variables from template content
+        const extractVariables = (text: string) => {
+          const variableRegex = /\{\{(\w+)\}\}/g;
+          const variables: string[] = [];
+          let match;
+          while ((match = variableRegex.exec(text)) !== null) {
+            if (!variables.includes(match[1])) {
+              variables.push(match[1]);
+            }
+          }
+          return variables;
+        };
+        
+        const subjectVars = extractVariables(connectedTemplateData.subject || "");
+        const contentVars = extractVariables((connectedTemplateData.htmlContent || "") + (connectedTemplateData.textContent || ""));
+        const allVariables = [...new Set([...subjectVars, ...contentVars])];
+        
+        // Create variables object with empty values
+        const variablesObj: Record<string, string> = {};
+        const existingVariables = template.variables as Record<string, string> || {};
+        allVariables.forEach(varName => {
+          variablesObj[varName] = existingVariables[varName] || ""; // Keep existing values
+        });
+        
+        updateNodeData({
+          subject: connectedTemplateData.subject,
+          content: {
+            ...content,
+            html: connectedTemplateData.htmlContent,
+            text: connectedTemplateData.textContent,
+            mode: connectedTemplateData.htmlContent ? "html" : "text"
+          },
+          template: {
+            ...template,
+            id: `template_${Date.now()}`,
+            name: connectedTemplateData.name,
+            variables: variablesObj,
+            useTemplate: true
+          }
+        });
+      }
+    }, [connectedTemplateData, updateNodeData]);
+
+    // Process template variables and update content
+    useEffect(() => {
+      if (template.useTemplate && connectedTemplateData && Object.keys(template.variables).length > 0) {
+        // Replace variables in subject and content
+        const processTemplate = (text: string, variables: Record<string, string>) => {
+          let processed = text;
+          Object.entries(variables).forEach(([varName, varValue]) => {
+            const regex = new RegExp(`\\{\\{${varName}\\}\\}`, 'g');
+            processed = processed.replace(regex, varValue || `{{${varName}}}`);
+          });
+          return processed;
+        };
+
+        const processedSubject = processTemplate(connectedTemplateData.subject, template.variables);
+        const processedHtmlContent = processTemplate(connectedTemplateData.htmlContent, template.variables);
+        const processedTextContent = processTemplate(connectedTemplateData.textContent, template.variables);
+
+        // Update subject and content with processed template
+        updateNodeData({
+          subject: processedSubject,
+          content: {
+            ...content,
+            html: processedHtmlContent,
+            text: processedTextContent,
+          },
+        });
+      }
+    }, [template.variables, connectedTemplateData, template.useTemplate, updateNodeData]);
+
+    // -------------------------------------------------------------------------
+    // 4.5  Validation and Processing
     // -------------------------------------------------------------------------
     const validationResult = useMemo(() => {
       return validateEmailContent(nodeData as EmailCreatorData);
@@ -444,6 +595,24 @@ const EmailCreatorNode = memo(
       }
     }, [validationResult, validation, updateNodeData]);
 
+    // Update structured output for viewText nodes
+    useEffect(() => {
+      const totalRecipients = recipients.to.length + recipients.cc.length + recipients.bcc.length;
+      const contentLength = (content.html || content.text || "").length;
+      
+      if (subject || totalRecipients > 0 || contentLength > 0) {
+        const simpleOutput = `📧 Email: ${subject || "(No subject)"} | To: ${totalRecipients} recipients | ${validationResult.isValid ? "✅ Valid" : "❌ Invalid"}`;
+        
+        updateNodeData({
+          outputs: simpleOutput,
+        });
+      } else {
+        updateNodeData({
+          outputs: "",
+        });
+      }
+    }, [subject, recipients, content, template, attachments, validationResult, updateNodeData]);
+
     // -------------------------------------------------------------------------
     // 4.4  Event Handlers
     // -------------------------------------------------------------------------
@@ -452,9 +621,25 @@ const EmailCreatorNode = memo(
     const handleRecipientsChange = useCallback(
       (field: "to" | "cc" | "bcc") => (e: ChangeEvent<HTMLTextAreaElement>) => {
         const recipientString = e.target.value;
+        
+        // Always update the raw value immediately for responsive UI
+        updateNodeData({
+          recipients: {
+            ...recipients,
+            [field]: recipientString.split(/[,;\n]/).map(email => email.trim()).filter(email => email.length > 0),
+          },
+        });
+      },
+      [recipients, updateNodeData]
+    );
+
+    /** Handle recipients validation on blur */
+    const handleRecipientsBlur = useCallback(
+      (field: "to" | "cc" | "bcc") => (e: ChangeEvent<HTMLTextAreaElement>) => {
+        const recipientString = e.target.value;
         const { valid, invalid } = parseEmailAddresses(recipientString);
 
-        // Update recipients with validated emails
+        // Update with validated emails
         updateNodeData({
           recipients: {
             ...recipients,
@@ -462,8 +647,8 @@ const EmailCreatorNode = memo(
           },
         });
 
-        // Show validation feedback for invalid emails
-        if (invalid.length > 0) {
+        // Show validation feedback only on blur and if there are invalid emails
+        if (invalid.length > 0 && recipientString.trim().length > 0) {
           toast.warning(`Invalid email addresses: ${invalid.join(", ")}`);
         }
       },
@@ -491,6 +676,85 @@ const EmailCreatorNode = memo(
       [template, updateNodeData]
     );
 
+    /** Handle template variable change */
+    const handleVariableChange = useCallback(
+      (varName: string, value: string) => {
+        updateNodeData({
+          template: {
+            ...template,
+            variables: {
+              ...template.variables,
+              [varName]: value,
+            },
+          },
+        });
+      },
+      [template, updateNodeData]
+    );
+
+    /** Handle manual template selection */
+    const handleTemplateSelection = useCallback(
+      (templateId: string) => {
+        if (!templateId || !availableTemplates) return;
+        
+        const selectedTemplate = availableTemplates.find(t => t.id === templateId);
+        if (!selectedTemplate) return;
+
+        console.log('📄 Loading selected template:', selectedTemplate.name);
+        
+        // Extract variables from template content
+        const extractVariables = (text: string) => {
+          const variableRegex = /\{\{(\w+)\}\}/g;
+          const variables: string[] = [];
+          let match;
+          while ((match = variableRegex.exec(text)) !== null) {
+            if (!variables.includes(match[1])) {
+              variables.push(match[1]);
+            }
+          }
+          return variables;
+        };
+        
+        const subjectVars = extractVariables(selectedTemplate.subject_template || "");
+        const contentVars = extractVariables(selectedTemplate.content_template || "");
+        const allVariables = [...new Set([...subjectVars, ...contentVars])];
+        
+        // Create variables object with empty values
+        const variablesObj: Record<string, string> = {};
+        allVariables.forEach(varName => {
+          variablesObj[varName] = "";
+        });
+        
+        // Determine if content is HTML or text
+        const isHtml = selectedTemplate.content_template?.includes('<') && selectedTemplate.content_template?.includes('>');
+        
+        updateNodeData({
+          subject: selectedTemplate.subject_template || "",
+          content: {
+            ...content,
+            html: isHtml ? selectedTemplate.content_template || "" : "",
+            text: !isHtml ? selectedTemplate.content_template || "" : "",
+            mode: isHtml ? "html" : "text"
+          },
+          template: {
+            ...template,
+            id: selectedTemplate.id,
+            name: selectedTemplate.name,
+            variables: variablesObj,
+            useTemplate: true
+          }
+        });
+        
+        toast.success(`Template "${selectedTemplate.name}" loaded successfully!`);
+      },
+      [availableTemplates, template, content, updateNodeData]
+    );
+
+    /** Toggle between collapsed / expanded */
+    const toggleExpand = useCallback(() => {
+      updateNodeData({ isExpanded: !isExpanded });
+    }, [isExpanded, updateNodeData]);
+
     // -------------------------------------------------------------------------
     // 4.5  Validation & Error Handling
     // -------------------------------------------------------------------------
@@ -503,6 +767,45 @@ const EmailCreatorNode = memo(
     }
 
     useNodeDataValidation(EmailCreatorDataSchema, "EmailCreator", nodeData, id);
+
+    // -------------------------------------------------------------------------
+    // 4.6  Generate emailOutput for EmailSender connection
+    // -------------------------------------------------------------------------
+    useEffect(() => {
+      if (validationResult.isValid && (subject || recipients.to.length > 0)) {
+        const emailData = {
+          recipients: {
+            to: recipients.to,
+            cc: recipients.cc,
+            bcc: recipients.bcc,
+          },
+          subject: subject,
+          content: {
+            text: content.text,
+            html: content.html,
+            useHtml: content.mode === "html" || content.mode === "rich",
+          },
+          attachments: attachments,
+          template: template.useTemplate ? {
+            id: template.id,
+            name: template.name,
+            variables: template.variables,
+          } : undefined,
+        };
+        
+        updateNodeData({
+          emailOutput: emailData,
+          validationOutput: validationResult.isValid,
+          errorOutput: validationResult.errors.join(", "),
+        });
+      } else {
+        updateNodeData({
+          emailOutput: undefined,
+          validationOutput: false,
+          errorOutput: validationResult.errors.join(", "),
+        });
+      }
+    }, [subject, recipients, content, template, attachments, validationResult, updateNodeData]);
 
     // -------------------------------------------------------------------------
     // 4.6  Computed Values
@@ -616,7 +919,7 @@ const EmailCreatorNode = memo(
 
               {/* Template Section */}
               <div>
-                <label className="flex items-center text-xs text-gray-600 mb-1">
+                <label className="text-xs text-gray-600 mb-1 block">
                   <input
                     type="checkbox"
                     checked={template.useTemplate}
@@ -626,16 +929,69 @@ const EmailCreatorNode = memo(
                   />
                   Use Template
                 </label>
-                {template.useTemplate && (
-                  <select
-                    className="w-full text-xs p-2 border rounded"
-                    disabled={!isEnabled}
-                  >
-                    <option value="">Select template...</option>
-                    <option value="welcome">Welcome Email</option>
-                    <option value="newsletter">Newsletter</option>
-                    <option value="notification">Notification</option>
-                  </select>
+                
+                {/* Connected Template Info */}
+                {connectedTemplateData && (
+                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                    <div className="font-medium text-blue-800">📧 Connected Template: {connectedTemplateData.name}</div>
+                    <div className="text-blue-600 mt-1">Category: {connectedTemplateData.category}</div>
+                  </div>
+                )}
+                
+                {template.useTemplate && !connectedTemplateData && (
+                  <div className="mt-2">
+                    <select
+                      className="w-full text-xs p-2 border rounded"
+                      disabled={!isEnabled}
+                      value={template.id || ""}
+                      onChange={(e) => handleTemplateSelection(e.target.value)}
+                    >
+                      <option value="">Select template...</option>
+                      {availableTemplates?.map((tmpl) => (
+                        <option key={tmpl.id} value={tmpl.id}>
+                          {tmpl.name} ({tmpl.category})
+                        </option>
+                      ))}
+                    </select>
+                    
+                    {/* Loading state */}
+                    {availableTemplates === undefined && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        🔄 Loading templates...
+                      </div>
+                    )}
+                    
+                    {/* No templates state */}
+                    {availableTemplates?.length === 0 && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        📄 No templates found. Create one in EmailTemplate node.
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Template Variables */}
+                {template.useTemplate && Object.keys(template.variables).length > 0 && (
+                  <div className="mt-3">
+                    <div className="text-xs text-gray-600 mb-2 font-medium">📝 Template Variables:</div>
+                    <div className="space-y-2">
+                      {Object.entries(template.variables).map(([varName, varValue]) => (
+                        <div key={varName}>
+                          <label className="text-xs text-gray-500 block mb-1">
+                            {varName}:
+                          </label>
+                          <input
+                            type="text"
+                            value={varValue}
+                            onChange={(e) => handleVariableChange(varName, e.target.value)}
+                            placeholder={`Enter value for ${varName}`}
+                            className="w-full text-xs p-2 border rounded"
+                            disabled={!isEnabled}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -688,7 +1044,7 @@ const EmailCreatorNode = memo(
 
         <ExpandCollapseButton
           showUI={isExpanded}
-          onToggle={() => setIsExpanded(!isExpanded)}
+          onToggle={toggleExpand}
           size="sm"
         />
       </>

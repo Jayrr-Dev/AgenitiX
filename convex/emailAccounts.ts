@@ -336,8 +336,34 @@ export const getEmailAccountsByUserEmail = query({
 export const testEmailConnection = action({
   args: {
     accountId: v.id("email_accounts"),
+    token_hash: v.optional(v.string()), // Support for custom auth
   },
   handler: async (ctx, args) => {
+    console.log('🔍 testEmailConnection called', {
+      accountId: args.accountId,
+      tokenProvided: !!args.token_hash,
+    });
+
+    // Try custom auth first if token provided
+    let identity = null;
+    if (args.token_hash) {
+      identity = await getUserIdentityFromTokenInAction(ctx, args.token_hash);
+    }
+    
+    // Fallback to Convex Auth if no custom token or custom auth failed
+    if (!identity) {
+      try {
+        identity = await ctx.auth.getUserIdentity();
+      } catch (error) {
+        console.log('⚠️ Convex Auth not available, using custom auth only');
+      }
+    }
+
+    if (!identity) {
+      throw new Error("User must be authenticated to test email connection. Please make sure you're logged in to the system.");
+    }
+
+    console.log('✅ User authenticated for connection test:', identity.email);
     const account = await ctx.runQuery(api.emailAccounts.getAccountById, { accountId: args.accountId });
     if (!account) {
       throw new Error("Account not found");
@@ -415,35 +441,156 @@ export const testEmailConnection = action({
   },
 });
 
-// Get email reply templates (placeholder)
+// Get email reply templates (with hybrid authentication)
 export const getEmailReplyTemplates = query({
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
+  args: {
+    token_hash: v.optional(v.string()), // Support for custom auth
+  },
+  handler: async (ctx, args) => {
+    // Try custom auth first if token provided
+    let identity = null;
+    if (args.token_hash) {
+      identity = await getUserIdentityFromToken(ctx, args.token_hash);
+    }
+    
+    // Fallback to Convex Auth if no custom token or custom auth failed
+    if (!identity) {
+      try {
+        identity = await ctx.auth.getUserIdentity();
+      } catch (error) {
+        console.log('Convex Auth not available, using custom auth only');
+        return [];
+      }
+    }
+
     if (!identity) {
       return [];
     }
 
-    // TODO: Implement actual template fetching
-    return [];
+    // Get user from identity
+    let user = null;
+    if (args.token_hash) {
+      user = await getAuthenticatedUser(ctx, args.token_hash);
+    } else {
+      // For Convex Auth, find user by email
+      user = await ctx.db
+        .query("auth_users")
+        .withIndex("by_email", (q) => q.eq("email", identity.email!))
+        .first();
+    }
+
+    if (!user) {
+      return [];
+    }
+
+    // Fetch templates from database
+    const templates = await ctx.db
+      .query("email_reply_templates")
+      .withIndex("by_user_id", (q) => q.eq("user_id", user._id))
+      .filter((q) => q.eq(q.field("is_active"), true))
+      .collect();
+
+    return templates.map((template) => ({
+      id: template._id,
+      name: template.name,
+      category: template.category,
+      subject_template: template.subject_template,
+      content_template: template.content_template,
+      variables: template.variables,
+      description: template.description,
+      created_at: template.created_at,
+      updated_at: template.updated_at,
+    }));
   },
 });
 
-// Store email reply template (placeholder)
+// Store email reply template (with hybrid authentication)
 export const storeEmailReplyTemplate = mutation({
   args: {
+    token_hash: v.optional(v.string()), // Support for custom auth
     name: v.string(),
     subject: v.string(),
     body: v.string(),
     category: v.string(),
+    description: v.optional(v.string()),
+    variables: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
+    // Try custom auth first if token provided
+    let identity = null;
+    if (args.token_hash) {
+      identity = await getUserIdentityFromToken(ctx, args.token_hash);
+    }
+    
+    // Fallback to Convex Auth if no custom token or custom auth failed
+    if (!identity) {
+      try {
+        identity = await ctx.auth.getUserIdentity();
+      } catch (error) {
+        console.log('Convex Auth not available, using custom auth only');
+      }
+    }
+
     if (!identity) {
       throw new Error("Not authenticated");
     }
 
-    // TODO: Implement actual template storage
-    return { success: true, templateId: "temp_" + Date.now() };
+    // Get user from identity
+    let user = null;
+    if (args.token_hash) {
+      user = await getAuthenticatedUser(ctx, args.token_hash);
+    } else {
+      // For Convex Auth, find user by email
+      user = await ctx.db
+        .query("auth_users")
+        .withIndex("by_email", (q) => q.eq("email", identity.email!))
+        .first();
+    }
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Check if template with same name already exists for this user
+    const existingTemplate = await ctx.db
+      .query("email_reply_templates")
+      .withIndex("by_user_id", (q) => q.eq("user_id", user._id))
+      .filter((q) => q.eq(q.field("name"), args.name))
+      .filter((q) => q.eq(q.field("is_active"), true))
+      .first();
+
+    const now = Date.now();
+    const templateData = {
+      user_id: user._id,
+      name: args.name,
+      category: args.category,
+      subject_template: args.subject,
+      content_template: args.body,
+      variables: args.variables || [],
+      description: args.description || "",
+      is_active: true,
+      created_at: now,
+      updated_at: now,
+    };
+
+    let templateId;
+    if (existingTemplate) {
+      // Update existing template
+      templateId = existingTemplate._id;
+      await ctx.db.patch(templateId, {
+        ...templateData,
+        created_at: existingTemplate.created_at, // Keep original creation date
+      });
+    } else {
+      // Create new template
+      templateId = await ctx.db.insert("email_reply_templates", templateData);
+    }
+
+    return {
+      success: true,
+      templateId: templateId,
+      isUpdate: !!existingTemplate,
+    };
   },
 });
 
@@ -464,14 +611,10 @@ export const sendEmail = action({
       filename: v.string(),
       mimeType: v.string(),
       size: v.number(),
+      content: v.optional(v.string()), // Base64 content
     }))),
   },
   handler: async (ctx, args) => {
-    console.log('📤 sendEmail called', {
-      accountId: args.accountId,
-      tokenProvided: !!(args.token_hash || args.sessionToken),
-      recipientCount: args.to.length,
-    });
 
     // Try custom auth first if token provided (support both token_hash and sessionToken)
     let identity = null;
@@ -493,8 +636,6 @@ export const sendEmail = action({
       throw new Error("User must be authenticated to send emails. Please make sure you're logged in to the system.");
     }
 
-    console.log('✅ User authenticated for email sending:', identity.email);
-
     // Get the email account
     const account = await ctx.runQuery(api.emailAccounts.getAccountById, { 
       accountId: args.accountId 
@@ -513,11 +654,6 @@ export const sendEmail = action({
       throw new Error("Email account is not active");
     }
 
-    // Additional security: we could add more ownership verification here if needed
-    // For now, we trust that the account was properly created with the right user_id
-
-    console.log('✅ Account ownership verified:', account.email);
-
     try {
       // Parse credentials
       const credentials = JSON.parse(account.encrypted_credentials || '{}');
@@ -530,7 +666,11 @@ export const sendEmail = action({
       let result;
       if (account.provider === 'gmail') {
         // Build email message in RFC 2822 format
-        const boundary = `boundary_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const hasAttachments = args.attachments && args.attachments.length > 0;
+        const mainBoundary = `boundary_main_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const altBoundary = `boundary_alt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+
         
         let emailContent = '';
         
@@ -545,26 +685,78 @@ export const sendEmail = action({
         emailContent += `Subject: ${args.subject}\r\n`;
         emailContent += `MIME-Version: 1.0\r\n`;
         
-        if (args.htmlContent) {
-          emailContent += `Content-Type: multipart/alternative; boundary="${boundary}"\r\n`;
+        if (hasAttachments) {
+          // Use multipart/mixed for attachments
+          emailContent += `Content-Type: multipart/mixed; boundary="${mainBoundary}"\r\n`;
           emailContent += `\r\n`;
           
-          // Text part
-          emailContent += `--${boundary}\r\n`;
-          emailContent += `Content-Type: text/plain; charset=utf-8\r\n\r\n`;
-          emailContent += `${args.textContent || ''}\r\n`;
+          // Message content part
+          emailContent += `--${mainBoundary}\r\n`;
           
-          // HTML part
-          emailContent += `--${boundary}\r\n`;
-          emailContent += `Content-Type: text/html; charset=utf-8\r\n\r\n`;
-          emailContent += `${args.htmlContent}\r\n`;
+          if (args.htmlContent) {
+            // Use multipart/alternative for text and HTML
+            emailContent += `Content-Type: multipart/alternative; boundary="${altBoundary}"\r\n`;
+            emailContent += `\r\n`;
+            
+            // Text part
+            emailContent += `--${altBoundary}\r\n`;
+            emailContent += `Content-Type: text/plain; charset=utf-8\r\n\r\n`;
+            emailContent += `${args.textContent || ''}\r\n`;
+            
+            // HTML part
+            emailContent += `--${altBoundary}\r\n`;
+            emailContent += `Content-Type: text/html; charset=utf-8\r\n\r\n`;
+            emailContent += `${args.htmlContent}\r\n`;
+            
+            emailContent += `--${altBoundary}--\r\n`;
+          } else {
+            // Plain text only
+            emailContent += `Content-Type: text/plain; charset=utf-8\r\n\r\n`;
+            emailContent += `${args.textContent || ''}\r\n`;
+          }
           
-          emailContent += `--${boundary}--\r\n`;
+          // Add attachments
+          for (const attachment of args.attachments || []) {
+            if (attachment.content) {
+              emailContent += `--${mainBoundary}\r\n`;
+              emailContent += `Content-Type: ${attachment.mimeType}; name="${attachment.filename}"\r\n`;
+              emailContent += `Content-Disposition: attachment; filename="${attachment.filename}"\r\n`;
+              emailContent += `Content-Transfer-Encoding: base64\r\n\r\n`;
+              
+              // Add base64 content in chunks of 76 characters (RFC requirement)
+              const base64Content = attachment.content;
+              for (let i = 0; i < base64Content.length; i += 76) {
+                emailContent += base64Content.substr(i, 76) + '\r\n';
+              }
+            }
+          }
+          
+          emailContent += `--${mainBoundary}--\r\n`;
         } else {
-          emailContent += `Content-Type: text/plain; charset=utf-8\r\n`;
-          emailContent += `\r\n`;
-          emailContent += args.textContent || '';
+          // No attachments - use simple structure
+          if (args.htmlContent) {
+            emailContent += `Content-Type: multipart/alternative; boundary="${altBoundary}"\r\n`;
+            emailContent += `\r\n`;
+            
+            // Text part
+            emailContent += `--${altBoundary}\r\n`;
+            emailContent += `Content-Type: text/plain; charset=utf-8\r\n\r\n`;
+            emailContent += `${args.textContent || ''}\r\n`;
+            
+            // HTML part
+            emailContent += `--${altBoundary}\r\n`;
+            emailContent += `Content-Type: text/html; charset=utf-8\r\n\r\n`;
+            emailContent += `${args.htmlContent}\r\n`;
+            
+            emailContent += `--${altBoundary}--\r\n`;
+          } else {
+            emailContent += `Content-Type: text/plain; charset=utf-8\r\n`;
+            emailContent += `\r\n`;
+            emailContent += args.textContent || '';
+          }
         }
+
+
 
         // Encode the message in base64url format (Convex-compatible)
         const encodedMessage = btoa(emailContent)

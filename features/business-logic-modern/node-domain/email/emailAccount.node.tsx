@@ -95,7 +95,7 @@ export const EmailAccountDataSchema = z
     collapsedSize: SafeSchemas.text("C2"),
 
     // output - unified handle-based output system
-    output: z.record(z.string(), z.any()).optional(), // handle-based output object for Convex compatibility
+    output: z.string().optional(), // handle-based output as string for React compatibility
     label: z.string().optional(), // User-editable node label
   })
   .passthrough();
@@ -177,7 +177,7 @@ function createDynamicSpec(data: EmailAccountData): NodeSpec {
       isConfigured: false,
       isConnected: false,
       connectionStatus: "disconnected",
-      output: {}, // handle-based output object
+      output: "{}", // handle-based output as string
     }),
     dataSchema: EmailAccountDataSchema,
     controls: {
@@ -620,6 +620,7 @@ const EmailAccountNode = memo(
 
         const result = await validateConnection({
           accountId: nodeData.accountId as any,
+          token_hash: token,
         });
 
         if (result.success) {
@@ -746,7 +747,7 @@ const EmailAccountNode = memo(
         if (hasChanged) {
           lastGeneralOutputRef.current = outputValue;
           updateNodeData({
-            output: outputObject,
+            output: JSON.stringify(outputObject, null, 2),
             isActive: isEnabled && isConnected,
           });
         }
@@ -759,7 +760,7 @@ const EmailAccountNode = memo(
         // Fallback: set empty object to prevent crashes, basically empty state for storage
         if (lastGeneralOutputRef.current !== null) {
           lastGeneralOutputRef.current = new Map();
-          updateNodeData({ output: {} });
+          updateNodeData({ output: "{}" });
         }
       }
     }, [
