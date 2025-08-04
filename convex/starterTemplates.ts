@@ -217,7 +217,7 @@ const DATA_TEMPLATE_NODES = [
           name: "Sample Data",
           value: 100,
           category: "example",
-          timestamp: new Date().toISOString(),
+          timestamp: "2025-08-04T00:00:00.000Z",
         },
       },
       isExpanded: false,
@@ -253,11 +253,11 @@ const DATA_TEMPLATE_NODES = [
       label: "Create Map",
       description: "Create a data map for processing",
       outputs: {
-        map: new Map([
-          ["key1", "value1"],
-          ["key2", "value2"],
-          ["key3", "value3"],
-        ]),
+        map: {
+          key1: "value1",
+          key2: "value2",
+          key3: "value3",
+        },
       },
       isExpanded: false,
       isEnabled: true, // Enable node by default

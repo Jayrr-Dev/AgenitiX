@@ -12,7 +12,14 @@
 
 "use client";
 
-import { type ChangeEvent, memo, useCallback, useEffect, useMemo } from "react";
+import {
+  type ChangeEvent,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -397,12 +404,11 @@ const EmailCreatorNode = memo(
     );
 
     const {
-      recipients,
-      subject,
-      content,
+      recipients = { to: [], cc: [], bcc: [] },
+      subject = "",
+      content = { text: "", html: "", mode: "rich" as const },
       template = { variables: {}, useTemplate: false },
-      attachments,
-      validation,
+      attachments = [],
       isEnabled = true,
       isExpanded = false,
     } = nodeData as EmailCreatorData;
@@ -422,17 +428,20 @@ const EmailCreatorNode = memo(
     // 4.2  Template Connection Detection
     // -------------------------------------------------------------------------
 
-    // Detect connected EmailTemplate nodes
-    const connectedTemplateData = useMemo(() => {
+    // Detect connected EmailTemplate nodes with safer dependencies
+    const templateEdgeId = useMemo(() => {
       const templateEdges = _edges.filter(
         (e) => e.target === id && e.targetHandle === "templateInput"
       );
+      return templateEdges.length > 0 ? templateEdges[0].source : null;
+    }, [_edges.length, id]);
 
-      if (templateEdges.length === 0) {
+    const connectedTemplateData = useMemo(() => {
+      if (!templateEdgeId) {
         return null;
       }
 
-      const templateNode = _nodes.find((n) => n.id === templateEdges[0].source);
+      const templateNode = _nodes.find((n) => n.id === templateEdgeId);
       if (!templateNode || templateNode.type !== "emailTemplate") {
         return null;
       }
@@ -455,11 +464,18 @@ const EmailCreatorNode = memo(
           : [],
         category: String(templateNodeData.category || "general"),
       };
-    }, [_nodes, _edges, id]);
+    }, [templateEdgeId, _nodes.length]);
 
     // -------------------------------------------------------------------------
     // 4.3  State Management
     // -------------------------------------------------------------------------
+
+    // Refs to track previous values and prevent infinite loops
+    const lastProcessedTemplateRef = useRef<string>("");
+    const isProcessingTemplateRef = useRef(false);
+    const lastValidationUpdateRef = useRef<string>("");
+    const lastOutputUpdateRef = useRef<string>("");
+    const lastEmailOutputUpdateRef = useRef<string>("");
 
     // -------------------------------------------------------------------------
     // 4.4  Auto-load Template from Connection
@@ -467,7 +483,10 @@ const EmailCreatorNode = memo(
 
     // Auto-load template when connected to EmailTemplate node
     useEffect(() => {
-      if (connectedTemplateData) {
+      if (
+        connectedTemplateData &&
+        (!template?.name || template.name !== connectedTemplateData.name)
+      ) {
         console.log(
           "📄 Loading template from connection:",
           connectedTemplateData.name
@@ -526,7 +545,14 @@ const EmailCreatorNode = memo(
           },
         });
       }
-    }, [connectedTemplateData, updateNodeData]);
+    }, [
+      connectedTemplateData?.name,
+      connectedTemplateData?.subject,
+      connectedTemplateData?.htmlContent,
+      connectedTemplateData?.textContent,
+      template?.name,
+      updateNodeData,
+    ]);
 
     // Process template variables and update content
     useEffect(() => {
@@ -534,44 +560,52 @@ const EmailCreatorNode = memo(
         template?.useTemplate &&
         connectedTemplateData &&
         template?.variables &&
-        Object.keys(template.variables).length > 0
+        Object.keys(template.variables).length > 0 &&
+        !isProcessingTemplateRef.current
       ) {
-        // Replace variables in subject and content
-        const processTemplate = (
-          text: string,
-          variables: Record<string, string>
-        ) => {
-          let processed = text;
-          Object.entries(variables).forEach(([varName, varValue]) => {
-            const regex = new RegExp(`\\{\\{${varName}\\}\\}`, "g");
-            processed = processed.replace(regex, varValue || `{{${varName}}}`);
-          });
-          return processed;
-        };
+        // Create a unique signature for this template processing
+        const templateSignature = `${connectedTemplateData.name}|${Object.keys(
+          template.variables || {}
+        )
+          .sort()
+          .join(
+            ","
+          )}|${Object.values(template.variables || {}).join(",")}|${connectedTemplateData.subject}|${connectedTemplateData.htmlContent}|${connectedTemplateData.textContent}`;
 
-        const processedSubject = processTemplate(
-          connectedTemplateData.subject,
-          template.variables
-        );
-        const processedHtmlContent = processTemplate(
-          connectedTemplateData.htmlContent,
-          template.variables
-        );
-        const processedTextContent = processTemplate(
-          connectedTemplateData.textContent,
-          template.variables
-        );
+        // Only process if this is a different template configuration
+        if (templateSignature !== lastProcessedTemplateRef.current) {
+          isProcessingTemplateRef.current = true;
+          lastProcessedTemplateRef.current = templateSignature;
 
-        // Only update if the processed content is different from current content, basically prevent infinite loops
-        const currentSubject = subject || "";
-        const currentHtmlContent = content.html || "";
-        const currentTextContent = content.text || "";
+          // Replace variables in subject and content
+          const processTemplate = (
+            text: string,
+            variables: Record<string, string>
+          ) => {
+            let processed = text;
+            Object.entries(variables).forEach(([varName, varValue]) => {
+              const regex = new RegExp(`\\{\\{${varName}\\}\\}`, "g");
+              processed = processed.replace(
+                regex,
+                varValue || `{{${varName}}}`
+              );
+            });
+            return processed;
+          };
 
-        if (
-          processedSubject !== currentSubject ||
-          processedHtmlContent !== currentHtmlContent ||
-          processedTextContent !== currentTextContent
-        ) {
+          const processedSubject = processTemplate(
+            connectedTemplateData.subject,
+            template.variables
+          );
+          const processedHtmlContent = processTemplate(
+            connectedTemplateData.htmlContent,
+            template.variables
+          );
+          const processedTextContent = processTemplate(
+            connectedTemplateData.textContent,
+            template.variables
+          );
+
           // Update subject and content with processed template
           updateNodeData({
             subject: processedSubject,
@@ -581,13 +615,22 @@ const EmailCreatorNode = memo(
               text: processedTextContent,
             },
           });
+
+          // Reset processing flag after a brief delay
+          setTimeout(() => {
+            isProcessingTemplateRef.current = false;
+          }, 100);
         }
       }
     }, [
-      template.variables,
-      connectedTemplateData,
-      template.useTemplate,
-      // Removed content and subject from dependencies to prevent circular updates, basically these are outputs not inputs
+      Object.keys(template?.variables || {}).join(","),
+      Object.values(template?.variables || {}).join(","),
+      connectedTemplateData?.name,
+      connectedTemplateData?.subject,
+      connectedTemplateData?.htmlContent,
+      connectedTemplateData?.textContent,
+      template?.useTemplate,
+      updateNodeData,
     ]);
 
     // -------------------------------------------------------------------------
@@ -595,52 +638,64 @@ const EmailCreatorNode = memo(
     // -------------------------------------------------------------------------
     const validationResult = useMemo(() => {
       return validateEmailContent(nodeData as EmailCreatorData);
-    }, [recipients, subject, content, attachments]);
+    }, [
+      recipients?.to?.length,
+      recipients?.cc?.length,
+      recipients?.bcc?.length,
+      subject,
+      content?.text,
+      content?.html,
+      content?.mode,
+      attachments?.length,
+    ]);
 
     // Update validation in node data when it changes
     useEffect(() => {
-      const validationChanged =
-        validationResult.isValid !== validation.isValid ||
-        JSON.stringify(validationResult.errors) !==
-          JSON.stringify(validation.errors) ||
-        JSON.stringify(validationResult.warnings) !==
-          JSON.stringify(validation.warnings);
+      const validationSignature = `${Boolean(validationResult?.isValid)}|${(validationResult?.errors || []).join(",")}|${(validationResult?.warnings || []).join(",")}`;
 
-      if (validationChanged) {
+      if (validationSignature !== lastValidationUpdateRef.current) {
+        lastValidationUpdateRef.current = validationSignature;
+
         updateNodeData({
           validation: validationResult,
-          validationOutput: validationResult.isValid,
-          errorOutput: validationResult.errors.join(", "),
+          validationOutput: Boolean(validationResult?.isValid),
+          errorOutput: (validationResult?.errors || []).join(", "),
         });
       }
-    }, [validationResult, validation, updateNodeData]);
+    }, [validationResult, updateNodeData]);
 
     // Update structured output for viewText nodes
     useEffect(() => {
       const totalRecipients =
-        recipients.to.length + recipients.cc.length + recipients.bcc.length;
+        (recipients?.to?.length || 0) +
+        (recipients?.cc?.length || 0) +
+        (recipients?.bcc?.length || 0);
 
       const hasContent =
         subject ||
         totalRecipients > 0 ||
-        (content.html || content.text || "").length > 0;
+        (content?.html || content?.text || "").length > 0;
       const newOutput = hasContent
-        ? `📧 Email: ${subject || "(No subject)"} | To: ${totalRecipients} recipients | ${validationResult.isValid ? "✅ Valid" : "❌ Invalid"}`
+        ? `📧 Email: ${subject || "(No subject)"} | To: ${totalRecipients} recipients | ${validationResult?.isValid ? "✅ Valid" : "❌ Invalid"}`
         : "";
 
-      // Only update if the output has actually changed, basically prevent infinite loops
-      const currentOutput = (nodeData as EmailCreatorData).outputs || "";
-      if (newOutput !== currentOutput) {
+      const outputSignature = `${subject || ""}|${totalRecipients}|${Boolean(content?.html)}|${Boolean(content?.text)}|${Boolean(validationResult?.isValid)}`;
+
+      if (outputSignature !== lastOutputUpdateRef.current) {
+        lastOutputUpdateRef.current = outputSignature;
+
         updateNodeData({
           outputs: newOutput,
         });
       }
     }, [
       subject,
-      recipients,
-      content,
-      validationResult,
-      nodeData,
+      recipients?.to?.length,
+      recipients?.cc?.length,
+      recipients?.bcc?.length,
+      content?.html,
+      content?.text,
+      validationResult?.isValid,
       updateNodeData,
     ]);
 
@@ -656,7 +711,7 @@ const EmailCreatorNode = memo(
         // Always update the raw value immediately for responsive UI
         updateNodeData({
           recipients: {
-            ...recipients,
+            ...(recipients || { to: [], cc: [], bcc: [] }),
             [field]: recipientString
               .split(/[,;\n]/)
               .map((email) => email.trim())
@@ -808,51 +863,49 @@ const EmailCreatorNode = memo(
     // -------------------------------------------------------------------------
     useEffect(() => {
       const shouldHaveOutput =
-        validationResult.isValid && (subject || recipients.to.length > 0);
+        Boolean(validationResult?.isValid) &&
+        (subject || (recipients?.to?.length || 0) > 0);
 
-      const newEmailData = shouldHaveOutput
-        ? {
-            recipients: {
-              to: recipients.to,
-              cc: recipients.cc,
-              bcc: recipients.bcc,
-            },
-            subject: subject,
-            content: {
-              text: content.text,
-              html: content.html,
-              useHtml: content.mode === "html" || content.mode === "rich",
-            },
-            attachments: attachments,
-            template: template?.useTemplate
-              ? {
-                  id: template.id,
-                  name: template.name,
-                  variables: template.variables,
-                }
-              : undefined,
-          }
-        : undefined;
+      const emailOutputSignature = `${shouldHaveOutput}|${subject || ""}|${recipients?.to?.length || 0}|${recipients?.cc?.length || 0}|${recipients?.bcc?.length || 0}|${content?.text || ""}|${content?.html || ""}|${content?.mode || "text"}|${Boolean(template?.useTemplate)}|${template?.id || ""}|${template?.name || ""}|${Object.keys(
+        template?.variables || {}
+      )
+        .sort()
+        .join(
+          ","
+        )}|${Object.values(template?.variables || {}).join(",")}|${attachments?.length || 0}|${Boolean(validationResult?.isValid)}|${(validationResult?.errors || []).join(",")}`;
 
-      const newValidationOutput = shouldHaveOutput
-        ? validationResult.isValid
-        : false;
-      const newErrorOutput = validationResult.errors.join(", ");
+      if (emailOutputSignature !== lastEmailOutputUpdateRef.current) {
+        lastEmailOutputUpdateRef.current = emailOutputSignature;
 
-      // Only update if the output has actually changed, basically prevent infinite loops
-      const currentEmailOutput = (nodeData as EmailCreatorData).emailOutput;
-      const currentValidationOutput = (nodeData as EmailCreatorData)
-        .validationOutput;
-      const currentErrorOutput =
-        (nodeData as EmailCreatorData).errorOutput || "";
+        const newEmailData = shouldHaveOutput
+          ? {
+              recipients: {
+                to: recipients?.to || [],
+                cc: recipients?.cc || [],
+                bcc: recipients?.bcc || [],
+              },
+              subject: subject,
+              content: {
+                text: content?.text || "",
+                html: content?.html || "",
+                useHtml: content?.mode === "html" || content?.mode === "rich",
+              },
+              attachments: attachments,
+              template: template?.useTemplate
+                ? {
+                    id: template?.id,
+                    name: template?.name,
+                    variables: template?.variables,
+                  }
+                : undefined,
+            }
+          : undefined;
 
-      const emailOutputChanged =
-        JSON.stringify(currentEmailOutput) !== JSON.stringify(newEmailData);
-      const validationOutputChanged =
-        currentValidationOutput !== newValidationOutput;
-      const errorOutputChanged = currentErrorOutput !== newErrorOutput;
+        const newValidationOutput = shouldHaveOutput
+          ? Boolean(validationResult?.isValid)
+          : false;
+        const newErrorOutput = (validationResult?.errors || []).join(", ");
 
-      if (emailOutputChanged || validationOutputChanged || errorOutputChanged) {
         updateNodeData({
           emailOutput: newEmailData,
           validationOutput: newValidationOutput,
@@ -861,21 +914,29 @@ const EmailCreatorNode = memo(
       }
     }, [
       subject,
-      recipients,
-      content,
-      template,
-      attachments,
-      validationResult,
-      nodeData,
+      recipients?.to?.length,
+      recipients?.cc?.length,
+      recipients?.bcc?.length,
+      content?.text,
+      content?.html,
+      content?.mode,
+      template?.useTemplate,
+      template?.id,
+      template?.name,
+      Object.keys(template?.variables || {}).join(","),
+      Object.values(template?.variables || {}).join(","),
+      attachments?.length,
+      validationResult?.isValid,
+      (validationResult?.errors || []).join(","),
       updateNodeData,
     ]);
 
     // -------------------------------------------------------------------------
     // 4.6  Computed Values
     // -------------------------------------------------------------------------
-    const isValidEmail = validationResult.isValid;
-    const hasWarnings = validationResult.warnings.length > 0;
-    const hasErrors = validationResult.errors.length > 0;
+    const isValidEmail = Boolean(validationResult?.isValid);
+    const hasWarnings = (validationResult?.warnings?.length || 0) > 0;
+    const hasErrors = (validationResult?.errors?.length || 0) > 0;
 
     // -------------------------------------------------------------------------
     // 4.7  Render
@@ -912,7 +973,7 @@ const EmailCreatorNode = memo(
                 </label>
                 <Textarea
                   id="email-to"
-                  value={recipients.to.join(", ")}
+                  value={(recipients?.to || []).join(", ")}
                   onChange={handleRecipientsChange("to")}
                   placeholder="recipient@example.com, another@example.com"
                   className="w-full text-xs p-2 resize-none"
@@ -931,7 +992,7 @@ const EmailCreatorNode = memo(
                 </label>
                 <Textarea
                   id="email-cc"
-                  value={recipients.cc.join(", ")}
+                  value={(recipients?.cc || []).join(", ")}
                   onChange={handleRecipientsChange("cc")}
                   placeholder="cc@example.com"
                   className="w-full text-xs p-2 resize-none"
@@ -1085,19 +1146,19 @@ const EmailCreatorNode = memo(
                 </div>
                 <div>
                   Recipients:{" "}
-                  {recipients.to.length +
-                    recipients.cc.length +
-                    recipients.bcc.length}
+                  {(recipients?.to?.length || 0) +
+                    (recipients?.cc?.length || 0) +
+                    (recipients?.bcc?.length || 0)}
                 </div>
-                <div>Attachments: {attachments.length}</div>
+                <div>Attachments: {attachments?.length || 0}</div>
                 {hasErrors && (
                   <div className="text-red-600 mt-1">
-                    Errors: {validationResult.errors.join(", ")}
+                    Errors: {(validationResult?.errors || []).join(", ")}
                   </div>
                 )}
                 {hasWarnings && (
                   <div className="text-yellow-600 mt-1">
-                    Warnings: {validationResult.warnings.join(", ")}
+                    Warnings: {(validationResult?.warnings || []).join(", ")}
                   </div>
                 )}
               </div>

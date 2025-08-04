@@ -547,7 +547,7 @@ export const deleteAccount = mutation({
         await ctx.db.delete(userSession._id);
       }
 
-      // 2. Delete all user email accounts
+      // 2. Delete all user email accounts and related data
       const emailAccounts = await ctx.db
         .query("email_accounts")
         .withIndex("by_user_id", (q) => q.eq("user_id", userId))
@@ -555,6 +555,46 @@ export const deleteAccount = mutation({
 
       for (const emailAccount of emailAccounts) {
         await ctx.db.delete(emailAccount._id);
+      }
+
+      // Delete email templates
+      const emailTemplates = await ctx.db
+        .query("email_templates")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+
+      for (const template of emailTemplates) {
+        await ctx.db.delete(template._id);
+      }
+
+      // Delete email logs
+      const emailLogs = await ctx.db
+        .query("email_logs")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+
+      for (const log of emailLogs) {
+        await ctx.db.delete(log._id);
+      }
+
+      // Delete email reply templates
+      const emailReplyTemplates = await ctx.db
+        .query("email_reply_templates")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+
+      for (const template of emailReplyTemplates) {
+        await ctx.db.delete(template._id);
+      }
+
+      // Delete email reply logs
+      const emailReplyLogs = await ctx.db
+        .query("email_reply_logs")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+
+      for (const log of emailReplyLogs) {
+        await ctx.db.delete(log._id);
       }
 
       // 3. Delete all user flows and related data
@@ -617,7 +657,9 @@ export const deleteAccount = mutation({
       // 5. Delete flow access requests made by user
       const userAccessRequests = await ctx.db
         .query("flow_access_requests")
-        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .withIndex("by_requesting_user_id", (q) =>
+          q.eq("requesting_user_id", userId)
+        )
         .collect();
 
       for (const request of userAccessRequests) {
@@ -634,7 +676,59 @@ export const deleteAccount = mutation({
         await ctx.db.delete(upvote._id);
       }
 
-      // 7. Finally delete the user account
+      // 7. Delete additional user data
+      // Delete workflow runs
+      const workflowRuns = await ctx.db
+        .query("workflow_runs")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+
+      for (const run of workflowRuns) {
+        await ctx.db.delete(run._id);
+      }
+
+      // Delete flow nodes
+      const flowNodes = await ctx.db
+        .query("flow_nodes")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+
+      for (const node of flowNodes) {
+        await ctx.db.delete(node._id);
+      }
+
+      // Delete AI prompts
+      const aiPrompts = await ctx.db
+        .query("ai_prompts")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+
+      for (const prompt of aiPrompts) {
+        await ctx.db.delete(prompt._id);
+      }
+
+      // Delete AI agent threads and their messages
+      const aiThreads = await ctx.db
+        .query("ai_agent_threads")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+
+      for (const thread of aiThreads) {
+        // Delete all messages in this thread
+        const threadMessages = await ctx.db
+          .query("ai_agent_messages")
+          .withIndex("by_thread_id", (q) => q.eq("thread_id", thread._id))
+          .collect();
+
+        for (const message of threadMessages) {
+          await ctx.db.delete(message._id);
+        }
+
+        // Delete the thread
+        await ctx.db.delete(thread._id);
+      }
+
+      // 8. Finally delete the user account
       await ctx.db.delete(userId);
 
       return {
