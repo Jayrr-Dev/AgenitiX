@@ -581,7 +581,7 @@ const createLocalStorageOperations = (nodeId: string) => {
       return result;
     }
 
-    if (!data || Object.keys(data).length === 0) {
+    if (!data || Object.keys(data || {}).length === 0) {
       result.success = false;
       result.message = "No data provided to store";
       return result;
@@ -1031,11 +1031,11 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({
   inputData,
 }) => {
   const getCountInfo = () => {
-    if (!inputData || Object.keys(inputData).length === 0) {
+    if (!inputData || Object.keys(inputData || {}).length === 0) {
       return { keyCount: 0, valueCount: 0, showValue: false };
     }
 
-    const keyCount = Object.keys(inputData).length;
+    const keyCount = Object.keys(inputData || {}).length;
 
     switch (mode) {
       case "store":
@@ -1048,7 +1048,7 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({
         // For delete mode, count existing keys in localStorage
         let existingKeyCount = 0;
         try {
-          for (const key of Object.keys(inputData)) {
+          for (const key of Object.keys(inputData || {})) {
             if (localStorage.getItem(key) !== null) {
               existingKeyCount++;
             }
@@ -1065,7 +1065,7 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({
         // For get mode, count both keys and values that exist in localStorage
         let existingCount = 0;
         try {
-          for (const key of Object.keys(inputData)) {
+          for (const key of Object.keys(inputData || {})) {
             const value = localStorage.getItem(key);
             if (value !== null) {
               existingCount++;
@@ -1209,7 +1209,7 @@ const DataPreview: React.FC<DataPreviewProps> = ({
     }
   };
 
-  if (!data || Object.keys(data).length === 0) {
+  if (!data || Object.keys(data || {}).length === 0) {
     return (
       <div className="text-xs text-gray-500 italic">No data to {mode}</div>
     );
@@ -1232,10 +1232,10 @@ const DataPreview: React.FC<DataPreviewProps> = ({
       : Object.entries(filteredData).slice(0, maxItems);
   const hasMore =
     maxItems !== Number.POSITIVE_INFINITY &&
-    Object.keys(filteredData).length > maxItems;
+    Object.keys(filteredData || {}).length > maxItems;
 
   // Count protected keys for security warning
-  const protectedKeysCount = Object.keys(data).filter((key) =>
+  const protectedKeysCount = Object.keys(data || {}).filter((key) =>
     SecurityValidation.isProtectedKey(key)
   ).length;
 
@@ -1320,7 +1320,7 @@ const DataPreview: React.FC<DataPreviewProps> = ({
 
       {hasMore && (
         <div className="text-gray-500 italic text-center">
-          ...and {Object.keys(data).length - maxItems} more
+          ...and {Object.keys(data || {}).length - maxItems} more
         </div>
       )}
     </div>
@@ -1336,7 +1336,7 @@ const RetrievedDataDisplay: React.FC<RetrievedDataDisplayProps> = ({
   data,
   maxItems = UI_CONSTANTS.MAX_PREVIEW_ITEMS,
 }) => {
-  if (!data || Object.keys(data).length === 0) {
+  if (!data || Object.keys(data || {}).length === 0) {
     return (
       <div className="text-xs text-gray-500 italic">No data retrieved</div>
     );
@@ -1348,7 +1348,7 @@ const RetrievedDataDisplay: React.FC<RetrievedDataDisplayProps> = ({
       : Object.entries(data).slice(0, maxItems);
   const hasMore =
     maxItems !== Number.POSITIVE_INFINITY &&
-    Object.keys(data).length > maxItems;
+    Object.keys(data || {}).length > maxItems;
 
   return (
     <div className="text-xs space-y-1">
@@ -1368,7 +1368,7 @@ const RetrievedDataDisplay: React.FC<RetrievedDataDisplayProps> = ({
         ))}
         {hasMore && (
           <div className="text-gray-500 italic">
-            ...and {Object.keys(data).length - maxItems} more
+            ...and {Object.keys(data || {}).length - maxItems} more
           </div>
         )}
       </div>
@@ -1796,7 +1796,7 @@ const StoreLocalNode = memo(
             showError("Store failed", result.message);
           }
         } else if (mode === "delete") {
-          const keys = Object.keys(inputData);
+          const keys = Object.keys(inputData || {});
           const result = localStorageOps.delete(keys);
 
           // Handle security warnings via toast only
@@ -1851,7 +1851,7 @@ const StoreLocalNode = memo(
             showError("Delete failed", result.message);
           }
         } else if (mode === "get") {
-          const keys = Object.keys(inputData);
+          const keys = Object.keys(inputData || {});
           const result = localStorageOps.get(keys);
 
           // Handle security warnings via toast only
@@ -1997,7 +1997,7 @@ const StoreLocalNode = memo(
       }
 
       // Only update if there are actual changes
-      if (Object.keys(updates).length > 0) {
+      if (Object.keys(updates || {}).length > 0) {
         updateNodeData(updates);
       }
     }, [computeInputs, inputData, triggerInput, edges, id, updateNodeData]);
@@ -2052,7 +2052,7 @@ const StoreLocalNode = memo(
 
     /* 🔄 Update active state based on input data - VISUAL ONLY, no operations */
     useEffect(() => {
-      const hasValidData = inputData && Object.keys(inputData).length > 0;
+      const hasValidData = inputData && Object.keys(inputData || {}).length > 0;
 
       // This effect only updates visual state, it should NOT trigger operations
       if (isEnabled) {

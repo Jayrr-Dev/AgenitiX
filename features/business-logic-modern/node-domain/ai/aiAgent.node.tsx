@@ -366,7 +366,7 @@ const extractCleanText = (value: unknown): string => {
     }
 
     // Last resort: stringify the object but only if it contains useful data
-    const hasUsefulData = Object.keys(obj).some(
+    const hasUsefulData = Object.keys(obj || {}).some(
       (key) => typeof obj[key] === "string" || typeof obj[key] === "number"
     );
 

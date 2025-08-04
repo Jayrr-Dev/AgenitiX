@@ -29,6 +29,7 @@ import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useMultiSelectionCopyPaste } from "./hooks/useMultiSelectionCopyPaste";
+import { usePieMenuIntegration } from "./hooks/usePieMenuIntegration";
 
 // Import the new NodeSpec registry
 import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
@@ -296,6 +297,13 @@ const FlowEditorInternal = () => {
   }, [nodes, edges, removeNode, removeEdge, recordAction]);
 
   // Initialize keyboard shortcuts
+  // Pie Menu Integration, basically handle G key activation with full system
+  const { handleKeyboardActivation: handlePieMenuActivation } =
+    usePieMenuIntegration({
+      enabled: true,
+      includeDebugActions: process.env.NODE_ENV === "development",
+    });
+
   useKeyboardShortcuts({
     onCopy: handleCopy,
     onPaste: handlePaste,
@@ -317,6 +325,7 @@ const FlowEditorInternal = () => {
     onToggleSidebar: () => {
       // Sidebar toggle - not implemented yet
     },
+    onPieMenu: handlePieMenuActivation,
   });
 
   const onDragOver = useCallback((event: React.DragEvent) => {
