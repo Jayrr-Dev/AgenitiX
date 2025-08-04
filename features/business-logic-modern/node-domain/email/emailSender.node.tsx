@@ -280,7 +280,6 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
       expandedSize: "VE3",
       collapsedSize: "C2",
       output: {}, // handle-based output object for Convex compatibility
-      label: undefined, // User-editable node label
     }),
     dataSchema: EmailSenderDataSchema,
     controls: {
@@ -370,6 +369,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   // 4.2  Derived state
   // -------------------------------------------------------------------------
+  const safeNodeData = nodeData || {};
   const {
     isExpanded,
     isEnabled,
@@ -394,7 +394,12 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     failedCount,
     lastSent,
     lastError,
-  } = nodeData as EmailSenderData;
+  } = safeNodeData as EmailSenderData;
+
+  // Provide safe defaults for critical objects that might be undefined
+  const safeRecipients = recipients || { to: [], cc: [], bcc: [] };
+  const safeContent = content || { text: "", html: "", useHtml: false, useTemplate: false, templateId: "", variables: {} };
+  const safeAttachments = attachments || [];
 
   const categoryStyles = CATEGORY_TEXT.EMAIL;
 
@@ -711,12 +716,12 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
       updateNodeData({
         recipients: {
-          ...recipients,
+          ...safeRecipients,
           [field]: emails,
         },
       });
     },
-    [recipients, updateNodeData]
+    [safeRecipients, updateNodeData]
   );
 
   /** Handle message content change */
@@ -724,12 +729,12 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     (field: "text" | "html") => (e: ChangeEvent<HTMLTextAreaElement>) => {
       updateNodeData({
         content: {
-          ...content,
+          ...safeContent,
           [field]: e.target.value,
         },
       });
     },
-    [content, updateNodeData]
+    [safeContent, updateNodeData]
   );
 
   /** Handle checkbox changes */
@@ -794,7 +799,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
         );
 
         updateNodeData({
-          attachments: [...attachments, ...newAttachments],
+          attachments: [...safeAttachments, ...newAttachments],
         });
         toast.success(`Added ${newAttachments.length} attachment(s)`);
       } catch (error) {
@@ -812,11 +817,11 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   const removeAttachment = useCallback(
     (attachmentId: string) => {
       updateNodeData({
-        attachments: attachments.filter((att) => att.id !== attachmentId),
+        attachments: safeAttachments.filter((att) => att.id !== attachmentId),
       });
       toast.info("Attachment removed");
     },
-    [attachments, updateNodeData]
+    [safeAttachments, updateNodeData]
   );
 
   /** Handle number input changes */
@@ -861,13 +866,13 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       return;
     }
 
-    if (recipients.to.length === 0) {
+    if (safeRecipients.to.length === 0) {
       toast.error("Please add at least one recipient");
       return;
     }
 
     // Validate email addresses
-    const allEmails = [...recipients.to, ...recipients.cc, ...recipients.bcc];
+    const allEmails = [...safeRecipients.to, ...safeRecipients.cc, ...safeRecipients.bcc];
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const invalidEmails = allEmails.filter(
       (email) => email && !emailRegex.test(email)
@@ -883,7 +888,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       return;
     }
 
-    if (!content.text.trim() && !content.html.trim()) {
+    if (!safeContent.text.trim() && !safeContent.html.trim()) {
       toast.error("Please enter message content");
       return;
     }
@@ -898,15 +903,15 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       const emailPayload = {
         token_hash: token, // Pass authentication token
         accountId: accountId as any,
-        to: recipients.to,
-        cc: recipients.cc.length > 0 ? recipients.cc : undefined,
-        bcc: recipients.bcc.length > 0 ? recipients.bcc : undefined,
+        to: safeRecipients.to,
+        cc: safeRecipients.cc.length > 0 ? safeRecipients.cc : undefined,
+        bcc: safeRecipients.bcc.length > 0 ? safeRecipients.bcc : undefined,
         subject: subject,
-        textContent: content.text,
-        htmlContent: content.html || undefined,
+        textContent: safeContent.text,
+        htmlContent: safeContent.html || undefined,
         attachments:
-          attachments.length > 0
-            ? attachments.map((att) => ({
+          safeAttachments.length > 0
+            ? safeAttachments.map((att) => ({
                 id: att.id,
                 filename: att.filename,
                 size: att.size,
@@ -924,17 +929,17 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
           "Email Sent Successfully": {
             "Message ID": result.messageId || "N/A",
             Subject: subject,
-            To: recipients.to.join(", "),
-            CC: recipients.cc.length > 0 ? recipients.cc.join(", ") : "None",
-            BCC: recipients.bcc.length > 0 ? recipients.bcc.join(", ") : "None",
+            To: safeRecipients.to.join(", "),
+            CC: safeRecipients.cc.length > 0 ? safeRecipients.cc.join(", ") : "None",
+            BCC: safeRecipients.bcc.length > 0 ? safeRecipients.bcc.join(", ") : "None",
             "Sent At": new Date().toLocaleString(),
-            "Content Type": content.useHtml ? "HTML" : "Plain Text",
+            "Content Type": safeContent.useHtml ? "HTML" : "Plain Text",
             "Content Preview":
-              (content.text || content.html).substring(0, 100) +
-              ((content.text || content.html).length > 100 ? "..." : ""),
+              (safeContent.text || safeContent.html).substring(0, 100) +
+              ((safeContent.text || safeContent.html).length > 100 ? "..." : ""),
             Attachments:
-              attachments.length > 0
-                ? `${attachments.length} file(s) (${Math.round(attachments.reduce((sum, att) => sum + att.size, 0) / 1024)}KB)`
+              safeAttachments.length > 0
+                ? `${safeAttachments.length} file(s) (${Math.round(safeAttachments.reduce((sum, att) => sum + att.size, 0) / 1024)}KB)`
                 : "None",
             "Account Used": selectedAccount?.email || "Unknown",
             Status: "✅ Delivered",
@@ -943,7 +948,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
         updateNodeData({
           sendingStatus: "sent",
-          sentCount: sentCount + recipients.to.length,
+          sentCount: sentCount + safeRecipients.to.length,
           lastSent: Date.now(),
           successOutput: true,
           messageIdOutput: result.messageId,
@@ -952,7 +957,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
         });
 
         toast.success(
-          `Email sent successfully to ${recipients.to.length} recipient(s)`
+          `Email sent successfully to ${safeRecipients.to.length} recipient(s)`
         );
       } else {
         const errorMessage = "Failed to send email";
@@ -961,9 +966,9 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
         const errorOutput = {
           "Email Send Failed": {
             Subject: subject,
-            To: recipients.to.join(", "),
-            CC: recipients.cc.length > 0 ? recipients.cc.join(", ") : "None",
-            BCC: recipients.bcc.length > 0 ? recipients.bcc.join(", ") : "None",
+            To: safeRecipients.to.join(", "),
+            CC: safeRecipients.cc.length > 0 ? safeRecipients.cc.join(", ") : "None",
+            BCC: safeRecipients.bcc.length > 0 ? safeRecipients.bcc.join(", ") : "None",
             "Failed At": new Date().toLocaleString(),
             "Account Used": selectedAccount?.email || "Unknown",
             Error: errorMessage,
@@ -973,7 +978,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
         updateNodeData({
           sendingStatus: "error",
-          failedCount: failedCount + recipients.to.length,
+          failedCount: failedCount + safeRecipients.to.length,
           lastError: errorMessage,
           successOutput: false,
           messageIdOutput: "",
@@ -994,9 +999,9 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       const exceptionOutput = {
         "Email Send Exception": {
           Subject: subject,
-          To: recipients.to.join(", "),
-          CC: recipients.cc.length > 0 ? recipients.cc.join(", ") : "None",
-          BCC: recipients.bcc.length > 0 ? recipients.bcc.join(", ") : "None",
+          To: safeRecipients.to.join(", "),
+          CC: safeRecipients.cc.length > 0 ? safeRecipients.cc.join(", ") : "None",
+          BCC: safeRecipients.bcc.length > 0 ? safeRecipients.bcc.join(", ") : "None",
           "Failed At": new Date().toLocaleString(),
           "Account Used": selectedAccount?.email || "Unknown",
           Exception: errorMessage,
@@ -1007,7 +1012,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       updateNodeData({
         sendingStatus: "error",
         lastError: errorMessage,
-        failedCount: failedCount + recipients.to.length,
+        failedCount: failedCount + safeRecipients.to.length,
         successOutput: false,
         errorOutput: errorMessage,
         output: JSON.stringify(exceptionOutput, null, 2),
@@ -1095,11 +1100,11 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     }
   }, [
     spec.handles,
-    nodeData.isActive,
-    nodeData.sendingStatus,
-    nodeData.successOutput,
-    nodeData.messageIdOutput,
-    nodeData.errorOutput,
+    (safeNodeData as any).isActive,
+    (safeNodeData as any).sendingStatus,
+    (safeNodeData as any).successOutput,
+    (safeNodeData as any).messageIdOutput,
+    (safeNodeData as any).errorOutput,
     updateNodeData,
     id,
   ]);
@@ -1256,7 +1261,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
                 To (comma-separated):
               </label>
               <textarea
-                value={recipients.to.join(", ")}
+                value={safeRecipients.to.join(", ")}
                 onChange={handleRecipientsChange("to")}
                 placeholder="recipient1@example.com, recipient2@example.com"
                 className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 h-16 resize-none"
@@ -1270,7 +1275,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
                 CC (optional):
               </label>
               <textarea
-                value={recipients.cc.join(", ")}
+                value={safeRecipients.cc.join(", ")}
                 onChange={handleRecipientsChange("cc")}
                 placeholder="cc@example.com"
                 className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 h-12 resize-none"
@@ -1299,7 +1304,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
                 Message:
               </label>
               <textarea
-                value={content.text}
+                value={safeContent.text}
                 onChange={handleContentChange("text")}
                 placeholder="Enter your message here..."
                 className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 h-24 resize-none"
@@ -1336,9 +1341,9 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
               </div>
 
               {/* Attachments List */}
-              {attachments.length > 0 && (
+              {safeAttachments.length > 0 && (
                 <div className="space-y-1 max-h-20 overflow-y-auto">
-                  {attachments.map((attachment) => (
+                  {safeAttachments.map((attachment) => (
                     <div
                       key={attachment.id}
                       className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs"
@@ -1366,11 +1371,11 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
               )}
 
               {/* Attachments Summary */}
-              {attachments.length > 0 && (
+              {safeAttachments.length > 0 && (
                 <div className="text-xs text-gray-500 mt-1">
-                  {attachments.length} file(s) • Total:{" "}
+                  {safeAttachments.length} file(s) • Total:{" "}
                   {Math.round(
-                    attachments.reduce((sum, att) => sum + att.size, 0) / 1024
+                    safeAttachments.reduce((sum, att) => sum + att.size, 0) / 1024
                   )}
                   KB
                 </div>
@@ -1496,7 +1501,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
                   !isEnabled ||
                   !accountId ||
                   sendingStatus === "sending" ||
-                  recipients.to.length === 0
+                  safeRecipients.to.length === 0
                 }
                 className="flex-1 text-xs p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -1511,17 +1516,17 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
               </div>
               <div>
                 Recipients:{" "}
-                {recipients.to.length +
-                  recipients.cc.length +
-                  recipients.bcc.length}
+                {safeRecipients.to.length +
+                  safeRecipients.cc.length +
+                  safeRecipients.bcc.length}
               </div>
               <div>
-                Attachments: {attachments.length}
-                {attachments.length > 0 && (
+                Attachments: {safeAttachments.length}
+                {safeAttachments.length > 0 && (
                   <span className="ml-1">
                     (
                     {Math.round(
-                      attachments.reduce((sum, att) => sum + att.size, 0) / 1024
+                      safeAttachments.reduce((sum, att) => sum + att.size, 0) / 1024
                     )}
                     KB)
                   </span>
