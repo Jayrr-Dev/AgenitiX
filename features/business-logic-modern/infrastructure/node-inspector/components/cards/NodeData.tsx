@@ -12,7 +12,13 @@
 
 import type React from "react";
 import { useMemo } from "react";
-import ReactJson from "react-json-view";
+import dynamic from "next/dynamic";
+
+// Dynamically import ReactJson to avoid SSR issues
+const ReactJson = dynamic(() => import("react-json-view"), {
+  ssr: false,
+  loading: () => <div className="p-4 text-sm text-muted-foreground">Loading JSON viewer...</div>,
+});
 
 import type {
   AgenNode,

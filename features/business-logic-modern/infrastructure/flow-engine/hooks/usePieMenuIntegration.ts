@@ -67,6 +67,9 @@ export function usePieMenuIntegration(
       }
     };
 
+    // Check if we're in a browser environment before accessing window
+    if (typeof window === "undefined") return;
+
     // Use passive event listener for performance, basically don't block scrolling
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
     return () => window.removeEventListener("mousemove", handleMouseMove);

@@ -33,6 +33,11 @@ interface KeyboardShortcutsProps {
  * Helper function to check if user is currently focused on an input field
  */
 const isInputFocused = (): boolean => {
+  // Check if we're in a browser environment before accessing document
+  if (typeof document === "undefined") {
+    return false;
+  }
+  
   const activeElement = document.activeElement;
   return !!(
     activeElement &&
@@ -275,6 +280,9 @@ export function useKeyboardShortcuts({
         });
       }
     };
+
+    // Check if we're in a browser environment before accessing window
+    if (typeof window === "undefined") return;
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
