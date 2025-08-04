@@ -19,6 +19,7 @@ interface StencilGridProps {
 	onRemoveStencil?: (stencilId: string) => void;
 	showRemoveButtons?: boolean;
 	getKeyboardShortcut?: (index: number) => string;
+	isReadOnly?: boolean;
 }
 
 // Pre-computed keyboard shortcut mapping for better performance, basically avoid object recreation
@@ -40,6 +41,7 @@ const StencilGridComponent = ({
 	onRemoveStencil,
 	showRemoveButtons = false,
 	getKeyboardShortcut,
+	isReadOnly = false,
 }: StencilGridProps) => {
 	const sensors = useDragSensors();
 	
@@ -83,9 +85,10 @@ const StencilGridComponent = ({
 				onRemove={onRemoveStencil}
 				showRemoveButton={showRemoveButtons}
 				keyboardShortcut={getKeyboardShortcut?.(index) || fallbackKeyboardShortcut(index)}
+				isReadOnly={isReadOnly}
 			/>
 		)),
-		[stencils, onNativeDragStart, onDoubleClickCreate, setHovered, onRemoveStencil, showRemoveButtons, getKeyboardShortcut, fallbackKeyboardShortcut]
+		[stencils, onNativeDragStart, onDoubleClickCreate, setHovered, onRemoveStencil, showRemoveButtons, getKeyboardShortcut, fallbackKeyboardShortcut, isReadOnly]
 	);
 
 	return (
@@ -110,6 +113,7 @@ export const StencilGrid = memo(StencilGridComponent, (prev, next) => {
 		prev.setHovered === next.setHovered &&
 		prev.onRemoveStencil === next.onRemoveStencil &&
 		prev.showRemoveButtons === next.showRemoveButtons &&
-		prev.getKeyboardShortcut === next.getKeyboardShortcut
+		prev.getKeyboardShortcut === next.getKeyboardShortcut &&
+		prev.isReadOnly === next.isReadOnly
 	);
 });

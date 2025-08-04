@@ -24,6 +24,7 @@ interface SearchBarProps {
 	setHovered: (s: HoveredStencil | null) => void;
 	isVisible: boolean;
 	onClose: () => void;
+	isReadOnly?: boolean;
 }
 
 export function SearchBar({
@@ -32,6 +33,7 @@ export function SearchBar({
 	setHovered,
 	isVisible,
 	onClose,
+	isReadOnly = false,
 }: SearchBarProps) {
 	// Create theme object that maps to semantic tokens
 	const theme = {
@@ -133,6 +135,11 @@ export function SearchBar({
 	// KEYBOARD EVENT HANDLING - Enter to exit, QWERTY shortcuts for results
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
+			// Early return if in read-only mode, basically disable all node creation shortcuts
+			if (isReadOnly) {
+				return;
+			}
+			
 				// Detect if the user is actively typing inside an input, textarea, or contenteditable element.
 				const activeElement = document.activeElement as HTMLElement | null;
 				const isTypingInAnyInput =
@@ -190,18 +197,18 @@ export function SearchBar({
 			// Allow Alt+Q to bypass throttling for fast text deletion
 			const isAltQBackspace = e.altKey && currentKey === "q";
 
-			if (
-				!isTypingInAnyInput && !isAltQBackspace &&
-				lastKeyPress &&
-				lastKeyPress.key === currentKey &&
-				currentTime - lastKeyPress.timestamp < KEY_REPEAT_COOLDOWN
-			) {
+			const shouldThrottle = !isTypingInAnyInput && !isAltQBackspace && lastKeyPress;
+			const isRepeatKey = lastKeyPress?.key === currentKey;
+			const isWithinCooldown = lastKeyPress && (currentTime - lastKeyPress.timestamp < KEY_REPEAT_COOLDOWN);
+			
+			if (shouldThrottle && isRepeatKey && isWithinCooldown) {
 				e.preventDefault();
 				return;
 			}
 
 			// Only update throttling timestamp for non-Alt+Q keys
-			if (!isAltQBackspace && !isTypingInAnyInput) {
+			const shouldUpdateTimestamp = !isAltQBackspace && !isTypingInAnyInput;
+			if (shouldUpdateTimestamp) {
 				lastKeyPressRef.current = { key: currentKey, timestamp: currentTime };
 			}
 
@@ -394,7 +401,7 @@ export function SearchBar({
 
 		document.addEventListener("keydown", handleKeyDown);
 		return () => document.removeEventListener("keydown", handleKeyDown);
-	}, [isVisible, filteredStencils, onDoubleClickCreate, handleClose]);
+	}, [isVisible, filteredStencils, onDoubleClickCreate, handleClose, isReadOnly]);
 
 	// Focus management when search becomes visible
 	useEffect(() => {
@@ -517,6 +524,7 @@ export function SearchBar({
 							onDoubleClickCreate={onDoubleClickCreate}
 							setHovered={setHovered}
 							getKeyboardShortcut={getKeyboardShortcut}
+							isReadOnly={isReadOnly}
 						/>
 					</div>
 				) : searchQuery.trim() ? (

@@ -30,6 +30,7 @@ import {
 
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import type { NodeType } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
+import { useFlowMetadataOptional } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
 
 import { generateNodeId } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
 // REGISTRY INTEGRATION - Imports from the new NodeSpec registry
@@ -151,6 +152,11 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
 
     const { screenToFlowPosition } = useReactFlow();
     const { addNode } = useFlowStore();
+    
+    // Check for read-only mode from flow metadata, basically if user can't edit flow then disable node creation
+    const { flow } = useFlowMetadataOptional() || { flow: null };
+    const canEdit = flow?.canEdit ?? true;
+    const isReadOnly = !canEdit;
 
     // PERFORMANCE OPTIMIZATION - Track mouse position
     const mousePositionRef = useRef({ x: 300, y: 200 });
@@ -197,6 +203,12 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
      */
     const handleCreateNode = useCallback(
       (nodeType: string, customPosition?: { x: number; y: number }) => {
+        // Prevent node creation in read-only mode, basically for public flows accessed from explore
+        if (isReadOnly) {
+          console.log("Node creation disabled in read-only mode");
+          return false;
+        }
+        
         try {
           // STEP 1: Registry validation with detailed feedback
           const validation = validateNode(nodeType);
@@ -264,6 +276,7 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
         enableDebug,
         onNodeCreated,
         onCreationError,
+        isReadOnly,
       ]
     );
 
@@ -323,7 +336,7 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
         <div className="flex items-center gap-2 border-[var(--infra-sidebar-border)] border-b bg-[var(--infra-sidebar-bg-hover)] p-3">
           <SidebarIcon className="text-[var(--infra-sidebar-text)]" size={20} />
           <span className="font-semibold text-[var(--infra-sidebar-text)]">
-            Node Library
+            {isReadOnly ? "Node Library (Read-Only)" : "Node Library"}
           </span>
         </div>
 
@@ -358,14 +371,15 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
           variant={variant}
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          onDoubleClickCreate={handleCreateNode}
+          onDoubleClickCreate={isReadOnly ? () => false : handleCreateNode}
           isHidden={isHidden}
           customNodes={customNodes}
-          onAddCustomNode={addCustomNode}
-          onRemoveCustomNode={removeCustomNode}
-          onReorderCustomNodes={reorderCustomNodes}
+          onAddCustomNode={isReadOnly ? () => {} : addCustomNode}
+          onRemoveCustomNode={isReadOnly ? () => {} : removeCustomNode}
+          onReorderCustomNodes={isReadOnly ? () => {} : reorderCustomNodes}
           onVariantChange={setVariant}
           onToggle={toggleVisibility}
+          isReadOnly={isReadOnly}
         />
 
         <ToggleButton isHidden={isHidden} onToggle={toggleVisibility} />

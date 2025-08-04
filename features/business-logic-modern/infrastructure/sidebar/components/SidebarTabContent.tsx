@@ -26,6 +26,7 @@ interface TabContentProps {
 	onReorderCustomNodes?: (newOrder: NodeStencil[]) => void;
 	// Callback to notify parent of stencil changes
 	onStencilsChange?: (tabKey: string, stencils: NodeStencil[]) => void;
+	isReadOnly?: boolean;
 }
 
 const SidebarTabContentComponent: React.FC<TabContentProps> = ({
@@ -40,6 +41,7 @@ const SidebarTabContentComponent: React.FC<TabContentProps> = ({
 	onRemoveCustomNode,
 	onReorderCustomNodes,
 	onStencilsChange,
+	isReadOnly = false,
 }) => {
 	// Memoized variant config lookup to prevent recalculation on every render
 	const variantConfig = useMemo(() => {
@@ -177,7 +179,11 @@ const SidebarTabContentComponent: React.FC<TabContentProps> = ({
 						<div className="flex flex-wrap justify-evenly gap-2 bg-[var(--infra-sidebar-bg)] sm:mx-auto sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center">
 							{/* Add Node Button as first item in grid */}
 							<div className="flex items-center justify-center">
-								<AddNodeButton onClick={onAddCustomNode || (() => {})} title="Add Node (Q)" />
+								<AddNodeButton 
+									onClick={isReadOnly ? () => {} : (onAddCustomNode || (() => {}))} 
+									title={isReadOnly ? "Read-only mode" : "Add Node (Q)"}
+									disabled={isReadOnly}
+								/>
 							</div>
 
 							{/* Custom nodes - now sortable */}
@@ -209,6 +215,7 @@ const SidebarTabContentComponent: React.FC<TabContentProps> = ({
 				onDoubleClickCreate={onDoubleClickCreate}
 				setHovered={setHovered}
 				getKeyboardShortcut={getKeyboardShortcut}
+				isReadOnly={isReadOnly}
 			/>
 		</TabsContent>
 	);
@@ -228,6 +235,7 @@ export const SidebarTabContent = memo(SidebarTabContentComponent, (prev, next) =
 		prev.onRemoveCustomNode === next.onRemoveCustomNode &&
 		prev.onReorderCustomNodes === next.onReorderCustomNodes &&
 		prev.onStencilsChange === next.onStencilsChange &&
+		prev.isReadOnly === next.isReadOnly &&
 		// Deep compare custom nodes array for changes
 		prev.customNodes === next.customNodes
 	);

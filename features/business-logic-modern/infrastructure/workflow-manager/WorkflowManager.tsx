@@ -267,14 +267,12 @@ const WorkflowManagerComponent: React.FC<WorkflowManagerProps> = ({
                 <span className="text-orange-500">Empty workflow</span>
               </>
             )}
-            {flow &&
-              !flow.canEdit &&
-              g(
-                <>
-                  <span>•</span>
-                  <span className="text-amber-600">Read Only</span>
-                </>
-              )}
+            {flow && !flow.canEdit && (
+              <>
+                <span>•</span>
+                <span className="text-amber-600">Read Only</span>
+              </>
+            )}
           </div>
         </div>
       </div>

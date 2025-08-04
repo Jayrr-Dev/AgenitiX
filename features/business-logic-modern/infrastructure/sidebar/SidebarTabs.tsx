@@ -43,6 +43,7 @@ interface SidebarTabsProps {
 	onReorderCustomNodes: (newOrder: NodeStencil[]) => void;
 	onVariantChange: (variant: SidebarVariant) => void;
 	onToggle: () => void;
+	isReadOnly?: boolean;
 }
 
 export function SidebarTabs({
@@ -56,6 +57,8 @@ export function SidebarTabs({
 	onRemoveCustomNode,
 	onReorderCustomNodes,
 	onVariantChange,
+	onToggle: _onToggle,
+	isReadOnly = false,
 }: SidebarTabsProps) {
 	// IMPROVED VARIANT HANDLING - More defensive programming
 	const normalizedVariant = (
@@ -153,6 +156,11 @@ export function SidebarTabs({
 	// IMPROVED KEYBOARD SHORTCUTS
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
+			// Early return if in read-only mode, basically disable all node creation shortcuts
+			if (isReadOnly) {
+				return;
+			}
+			
 				// Detect if the user is typing inside an input, textarea or contenteditable element.
 				const activeElement = document.activeElement as HTMLElement | null;
 				const isTypingInAnyInput =
@@ -182,7 +190,11 @@ export function SidebarTabs({
 			const currentKey = e.key.toLowerCase();
 			const isAltQBackspace = e.altKey && currentKey === "q";
 
-			if (!isTypingInAnyInput && !isAltQBackspace && isKeyThrottled(currentKey)) {
+			const notTyping = !isTypingInAnyInput;
+			const notAltQ = !isAltQBackspace;
+			const keyThrottled = isKeyThrottled(currentKey);
+			const shouldThrottle = notTyping && notAltQ && keyThrottled;
+			if (shouldThrottle) {
 				e.preventDefault();
 				return;
 			}
@@ -265,6 +277,7 @@ export function SidebarTabs({
 		onVariantChange,
 		uiState.isSearchVisible,
 		isKeyThrottled,
+		isReadOnly,
 		setIsSearchModalOpen,
 		setIsSearchVisible,
 	]);
@@ -323,6 +336,7 @@ export function SidebarTabs({
 								onRemoveCustomNode={isCustomTab ? onRemoveCustomNode : undefined}
 								onReorderCustomNodes={isCustomTab ? onReorderCustomNodes : undefined}
 								onStencilsChange={isCustomTab ? undefined : updateTabStencils}
+								isReadOnly={isReadOnly}
 							/>
 						);
 					})}
@@ -334,6 +348,7 @@ export function SidebarTabs({
 						onNativeDragStart={handleNativeDragStart}
 						onDoubleClickCreate={onDoubleClickCreate}
 						setHovered={setHovered}
+						isReadOnly={isReadOnly}
 					/>
 				</div>
 

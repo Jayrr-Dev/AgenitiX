@@ -24,21 +24,22 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { useDebounce } from "@/hooks";
 import { useMutation, useQuery } from "convex/react";
 import {
-	Activity,
-	Bot,
-	Calendar,
-	Code,
-	Database,
-	ExternalLink,
-	Filter,
-	Globe,
-	Mail,
-	MessageSquare,
-	Search,
-	Settings,
-	ThumbsUp,
-	Users,
-	Zap,
+  Activity,
+  Bot,
+  Calendar,
+  Code,
+  Copy,
+  Database,
+  ExternalLink,
+  Filter,
+  Globe,
+  Mail,
+  MessageSquare,
+  Search,
+  Settings,
+  ThumbsUp,
+  Users,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
@@ -46,16 +47,16 @@ import { toast } from "sonner";
 
 // ICON MAPPING
 const ICON_MAP = {
-	zap: Zap,
-	bot: Bot,
-	activity: Activity,
-	code: Code,
-	database: Database,
-	globe: Globe,
-	mail: Mail,
-	message: MessageSquare,
-	settings: Settings,
-	users: Users,
+  zap: Zap,
+  bot: Bot,
+  activity: Activity,
+  code: Code,
+  database: Database,
+  globe: Globe,
+  mail: Mail,
+  message: MessageSquare,
+  settings: Settings,
+  users: Users,
 };
 
 // PAGINATION CONSTANTS
@@ -64,10 +65,10 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 // SORT OPTIONS
 const SORT_OPTIONS = {
-	recent: { label: "Most Recent", field: "updated_at" },
-	popular: { label: "Most Popular", field: "upvoteCount" },
-	name: { label: "Name A-Z", field: "name" },
-	created: { label: "Recently Created", field: "created_at" },
+  recent: { label: "Most Recent", field: "updated_at" },
+  popular: { label: "Most Popular", field: "upvoteCount" },
+  name: { label: "Name A-Z", field: "name" },
+  created: { label: "Recently Created", field: "created_at" },
 } as const;
 
 type SortOption = keyof typeof SORT_OPTIONS;
@@ -76,482 +77,549 @@ type SortOption = keyof typeof SORT_OPTIONS;
  * Flow interface for typing
  */
 interface FlowType {
-	_id: Id<"flows">;
-	_creationTime: number;
-	name: string;
-	description?: string;
-	created_at: string;
-	updated_at: string;
-	upvoteCount: number;
-	hasUpvoted: boolean;
-	creator: {
-		id: Id<"auth_users">;
-		name: string;
-		email: string;
-	} | null;
-	user_id: Id<"auth_users">;
-	is_private: boolean;
-	icon?: string;
-	[key: string]: unknown; // Allow additional properties
+  _id: Id<"flows">;
+  _creationTime: number;
+  name: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+  upvoteCount: number;
+  hasUpvoted: boolean;
+  creator: {
+    id: Id<"auth_users">;
+    name: string;
+    email: string;
+  } | null;
+  user_id: Id<"auth_users">;
+  is_private: boolean;
+  icon?: string;
+  [key: string]: unknown; // Allow additional properties
 }
 
 /**
  * Sorts flows based on the specified criteria
  */
 const sortFlows = (flows: FlowType[], sortBy: string) => {
-	try {
-		return [...flows].sort((a, b) => {
-			if (sortBy === "popular") {
-				return (b.upvoteCount || 0) - (a.upvoteCount || 0);
-			}
-			if (sortBy === "name") {
-				return (a.name || "").localeCompare(b.name || "");
-			}
-			if (sortBy === "created") {
-				const dateA = new Date(a.created_at || 0).getTime();
-				const dateB = new Date(b.created_at || 0).getTime();
-				return dateB - dateA;
-			}
-			// Default: recent
-			const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
-			const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
-			return dateB - dateA;
-		});
-	} catch (error) {
-		console.warn("Error sorting flows:", error);
-		return flows;
-	}
+  try {
+    return [...flows].sort((a, b) => {
+      if (sortBy === "popular") {
+        return (b.upvoteCount || 0) - (a.upvoteCount || 0);
+      }
+      if (sortBy === "name") {
+        return (a.name || "").localeCompare(b.name || "");
+      }
+      if (sortBy === "created") {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA;
+      }
+      // Default: recent
+      const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+      const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+      return dateB - dateA;
+    });
+  } catch (error) {
+    console.warn("Error sorting flows:", error);
+    return flows;
+  }
 };
 
 const ExplorePage = () => {
-	const { user, isLoading: authLoading } = useAuthContext();
+  const { user, isLoading: authLoading } = useAuthContext();
 
-	// State management
-	const [searchQuery, setSearchQuery] = useState("");
-	const [sortBy, setSortBy] = useState<SortOption>("recent");
+  // State management
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("recent");
 
-	// Debounced search for performance
-	const debouncedSearch = useDebounce(searchQuery, SEARCH_DEBOUNCE_MS);
+  // Debounced search for performance
+  const debouncedSearch = useDebounce(searchQuery, SEARCH_DEBOUNCE_MS);
 
-	// Fetch public flows
-	const publicFlows = useQuery(api.flows.getPublicFlowsWithUpvotes, {
-		user_id: user?.id,
-		limit: ITEMS_PER_PAGE * 3, // Fetch more for client-side filtering
-	});
+  // Fetch public flows
+  const publicFlows = useQuery(api.flows.getPublicFlowsWithUpvotes, {
+    user_id: user?.id,
+    limit: ITEMS_PER_PAGE * 3, // Fetch more for client-side filtering
+  });
 
-	// Upvote mutation
-	const toggleUpvote = useMutation(api.flows.toggleFlowUpvote);
+  // Upvote mutation
+  const toggleUpvote = useMutation(api.flows.toggleFlowUpvote);
 
-	// Test mutation for debugging
-	const createFlow = useMutation(api.flows.createFlow);
+  // Clone mutation for adding workflows to user account
+  const clonePublicFlow = useMutation(api.flows.clonePublicFlow);
 
-	// All hooks must be called before any conditional returns
-	const handleUpvote = useCallback(
-		async (flowId: Id<"flows">) => {
-			if (!user?.id) {
-				toast.error("Please sign in to upvote flows");
-				return;
-			}
+  // Test mutation for debugging
+  const createFlow = useMutation(api.flows.createFlow);
 
-			try {
-				await toggleUpvote({
-					flow_id: flowId,
-					user_id: user.id,
-				});
-			} catch (error) {
-				console.error("Failed to toggle upvote:", error);
-				toast.error("Failed to update upvote");
-			}
-		},
-		[user?.id, toggleUpvote]
-	);
+  // All hooks must be called before any conditional returns
+  const handleUpvote = useCallback(
+    async (flowId: Id<"flows">) => {
+      if (!user?.id) {
+        toast.error("Please sign in to upvote flows");
+        return;
+      }
 
-	const handleSearch = useCallback((value: string) => {
-		setSearchQuery(value);
-	}, []);
+      try {
+        await toggleUpvote({
+          flow_id: flowId,
+          user_id: user.id,
+        });
+      } catch (error) {
+        console.error("Failed to toggle upvote:", error);
+        toast.error("Failed to update upvote");
+      }
+    },
+    [user?.id, toggleUpvote]
+  );
 
-	const handleSort = useCallback((sort: SortOption) => {
-		setSortBy(sort);
-	}, []);
+  const handleSearch = useCallback((value: string) => {
+    setSearchQuery(value);
+  }, []);
 
-	// Test function to create a public flow
-	const handleCreateTestFlow = useCallback(async () => {
-		if (!user?.id) {
-			toast.error("Please sign in to create test flows");
-			return;
-		}
+  const handleSort = useCallback((sort: SortOption) => {
+    setSortBy(sort);
+  }, []);
 
-		try {
-			await createFlow({
-				name: `Test Public Flow ${Date.now()}`,
-				description: "A test public flow for debugging",
-				icon: "LuZap",
-				is_private: false,
-				user_id: user.id,
-			});
-			toast.success("Test public flow created!");
-		} catch (error) {
-			console.error("Failed to create test flow:", error);
-			toast.error("Failed to create test flow");
-		}
-	}, [user?.id, createFlow]);
+  // Clone workflow function, basically adds the public workflow to user's account with canvas data
+  const handleCloneWorkflow = useCallback(
+    async (flow: FlowType) => {
+      if (!user?.id) {
+        toast.error("Please sign in to add workflows to your account");
+        return;
+      }
 
-	// Helper function to get icon category
-	const getIconCategory = useCallback((iconName?: string) => {
-		if (!iconName) {
-			return null;
-		}
+      try {
+        // Clone the complete workflow including canvas data, basically full workflow copy
+        const clonedFlowId = await clonePublicFlow({
+          source_flow_id: flow._id,
+          user_id: user.id,
+          new_name: `${flow.name} (Copy)`,
+        });
 
-		try {
-			const iconCategories: Record<string, string> = {
-				// Popular icons
-				LuZap: "Popular",
-				bot: "Popular",
-				activity: "Popular",
-				code: "Popular",
+        toast.success(`Added "${flow.name}" to your flows!`, {
+          action: {
+            label: "Open",
+            onClick: () => window.open(`/matrix/${clonedFlowId}`, "_blank"),
+          },
+        });
+      } catch (error) {
+        console.error("Failed to clone workflow:", error);
+        toast.error("Failed to add workflow to your account");
+      }
+    },
+    [user?.id, clonePublicFlow]
+  );
 
-				// Business icons
-				briefcase: "Business",
-				trending: "Business",
-				barChart: "Business",
-				pieChart: "Business",
+  // Test function to create a public flow
+  const handleCreateTestFlow = useCallback(async () => {
+    if (!user?.id) {
+      toast.error("Please sign in to create test flows");
+      return;
+    }
 
-				// Social icons
-				users: "Social",
-				user: "Social",
-				heart: "Social",
-				messageSquare: "Social",
+    try {
+      await createFlow({
+        name: `Test Public Flow ${Date.now()}`,
+        description: "A test public flow for debugging",
+        icon: "LuZap",
+        is_private: false,
+        user_id: user.id,
+      });
+      toast.success("Test public flow created!");
+    } catch (error) {
+      console.error("Failed to create test flow:", error);
+      toast.error("Failed to create test flow");
+    }
+  }, [user?.id, createFlow]);
 
-				// Data icons
-				database: "Data",
-				server: "Data",
-				hardDrive: "Data",
-				cloud: "Data",
+  // Helper function to get icon category
+  const getIconCategory = useCallback((iconName?: string) => {
+    if (!iconName) {
+      return null;
+    }
 
-				// Tech icons
-				cpu: "Tech",
-				smartphone: "Tech",
-				monitor: "Tech",
-				terminal: "Tech",
+    try {
+      const iconCategories: Record<string, string> = {
+        // Popular icons
+        LuZap: "Popular",
+        bot: "Popular",
+        activity: "Popular",
+        code: "Popular",
 
-				// Tools icons
-				settings: "Tools",
-				wrench: "Tools",
-				tool: "Tools",
-				hammer: "Tools",
+        // Business icons
+        briefcase: "Business",
+        trending: "Business",
+        barChart: "Business",
+        pieChart: "Business",
 
-				// Media icons
-				image: "Media",
-				video: "Media",
-				music: "Media",
-				file: "Media",
+        // Social icons
+        users: "Social",
+        user: "Social",
+        heart: "Social",
+        messageSquare: "Social",
 
-				// Navigate icons
-				globe: "Navigate",
-				map: "Navigate",
-				compass: "Navigate",
-				flag: "Navigate",
-			};
+        // Data icons
+        database: "Data",
+        server: "Data",
+        hardDrive: "Data",
+        cloud: "Data",
 
-			return iconCategories[iconName] || "Other";
-		} catch (error) {
-			return "Other";
-		}
-	}, []);
+        // Tech icons
+        cpu: "Tech",
+        smartphone: "Tech",
+        monitor: "Tech",
+        terminal: "Tech",
 
-	// Process and filter flows
-	const processedFlows = useMemo(() => {
-		if (!publicFlows || publicFlows === null) {
-			return [];
-		}
+        // Tools icons
+        settings: "Tools",
+        wrench: "Tools",
+        tool: "Tools",
+        hammer: "Tools",
 
-		try {
-			// Apply filtering
-			let filtered = publicFlows.filter((flow) => {
-				if (!flow || !flow.name) {
-					return false;
-				}
+        // Media icons
+        image: "Media",
+        video: "Media",
+        music: "Media",
+        file: "Media",
 
-				const searchLower = debouncedSearch.toLowerCase();
-				const nameLower = (flow.name || "").toLowerCase();
-				const descriptionLower = (flow.description || "").toLowerCase();
-				const categoryLower = (getIconCategory(flow.icon) || "").toLowerCase();
+        // Navigate icons
+        globe: "Navigate",
+        map: "Navigate",
+        compass: "Navigate",
+        flag: "Navigate",
+      };
 
-				const matchesSearch =
-					nameLower.includes(searchLower) ||
-					descriptionLower.includes(searchLower) ||
-					categoryLower.includes(searchLower);
+      return iconCategories[iconName] || "Other";
+    } catch (error) {
+      return "Other";
+    }
+  }, []);
 
-				return matchesSearch;
-			});
+  // Process and filter flows
+  const processedFlows = useMemo(() => {
+    if (!publicFlows || publicFlows === null) {
+      return [];
+    }
 
-			// Apply sorting
-			filtered = sortFlows(filtered, sortBy);
+    try {
+      // Apply filtering
+      let filtered = publicFlows.filter((flow) => {
+        if (!flow || !flow.name) {
+          return false;
+        }
 
-			return filtered;
-		} catch (error) {
-			console.warn("Error processing flows:", error);
-			return [];
-		}
-	}, [publicFlows, debouncedSearch, sortBy, getIconCategory]);
+        const searchLower = debouncedSearch.toLowerCase();
+        const nameLower = (flow.name || "").toLowerCase();
+        const descriptionLower = (flow.description || "").toLowerCase();
+        const categoryLower = (getIconCategory(flow.icon) || "").toLowerCase();
 
-	const totalFlows = processedFlows.length;
+        const matchesSearch =
+          nameLower.includes(searchLower) ||
+          descriptionLower.includes(searchLower) ||
+          categoryLower.includes(searchLower);
 
-	// Loading state - must come after all hooks
-	if (authLoading || publicFlows === undefined) {
-		return <Loading />;
-	}
+        return matchesSearch;
+      });
 
-	// Error state - handle both null and empty array cases
-	if (publicFlows === null || (Array.isArray(publicFlows) && publicFlows.length === 0 && !authLoading)) {
-		return (
-			<div className="py-16 text-center">
-				<div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
-					<Globe className="h-12 w-12 text-muted-foreground" />
-				</div>
-				<h3 className="mb-3 font-semibold text-2xl text-foreground">Error loading flows</h3>
-				<p className="mx-auto mb-8 max-w-md text-muted-foreground">
-					Unable to load public flows. Please try refreshing the page.
-				</p>
-				<Button onClick={() => window.location.reload()} type="button">
-					Refresh Page
-				</Button>
-			</div>
-		);
-	}
+      // Apply sorting
+      filtered = sortFlows(filtered, sortBy);
 
-	const getIconComponent = (iconName: string) => {
-		try {
-			const IconComponent = ICON_MAP[iconName as keyof typeof ICON_MAP] || Zap;
-			return <IconComponent className="h-5 w-5" />;
-		} catch (error) {
-			return <Zap className="h-5 w-5" />;
-		}
-	};
+      return filtered;
+    } catch (error) {
+      console.warn("Error processing flows:", error);
+      return [];
+    }
+  }, [publicFlows, debouncedSearch, sortBy, getIconCategory]);
 
-	const formatDate = (dateString: string) => {
-		try {
-			const date = new Date(dateString);
-			if (isNaN(date.getTime())) {
-				return "Unknown date";
-			}
-			return date.toLocaleDateString("en-US", {
-				year: "numeric",
-				month: "short",
-				day: "numeric",
-			});
-		} catch (error) {
-			return "Unknown date";
-		}
-	};
+  const totalFlows = processedFlows.length;
 
-	return (
-		<div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-			<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-				{/* Enhanced Header with SEO */}
-				<header className="mb-8">
-					<div className="flex flex-col gap-6">
-						<div className="flex items-center justify-between">
-							<div>
-								<h1 className="mb-2 font-bold text-3xl text-foreground">Explore Flows</h1>
-								<p className="text-muted-foreground">
-									Discover {totalFlows.toLocaleString()}+ public automation workflows from the
-									community
-								</p>
-								{/* Removed debug info as per edit hint */}
-							</div>
-							<div className="flex items-center gap-2">
-								<Link href="/dashboard">
-									<Button variant="outline">My Flows</Button>
-								</Link>
-								{user?.id && (
-									<Button variant="outline" size="sm" onClick={handleCreateTestFlow}>
-										Create Test Flow
-									</Button>
-								)}
-							</div>
-						</div>
+  // Loading state - must come after all hooks
+  if (authLoading || publicFlows === undefined) {
+    return <Loading />;
+  }
 
-						{/* Enhanced Search and Filter Controls */}
-						<div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-							<div className="flex max-w-md flex-1 items-center gap-4">
-								<div className="relative flex-1">
-									<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 transform text-muted-foreground" />
-									<Input
-										placeholder="Search public flows..."
-										value={searchQuery}
-										onChange={(e) => handleSearch(e.target.value)}
-										className="pl-10"
-									/>
-								</div>
-							</div>
+  // Error state - handle both null and empty array cases
+  if (
+    publicFlows === null ||
+    (Array.isArray(publicFlows) && publicFlows.length === 0 && !authLoading)
+  ) {
+    return (
+      <div className="py-16 text-center">
+        <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
+          <Globe className="h-12 w-12 text-muted-foreground" />
+        </div>
+        <h3 className="mb-3 font-semibold text-2xl text-foreground">
+          Error loading flows
+        </h3>
+        <p className="mx-auto mb-8 max-w-md text-muted-foreground">
+          Unable to load public flows. Please try refreshing the page.
+        </p>
+        <Button onClick={() => window.location.reload()} type="button">
+          Refresh Page
+        </Button>
+      </div>
+    );
+  }
 
-							{/* Sort Controls */}
-							<div className="flex items-center gap-2">
-								<Filter className="h-4 w-4 text-muted-foreground" />
-								<select
-									value={sortBy}
-									onChange={(e) => handleSort(e.target.value as SortOption)}
-									className="rounded-md border border-border bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-								>
-									{Object.entries(SORT_OPTIONS).map(([key, option]) => (
-										<option key={key} value={key}>
-											{option.label}
-										</option>
-									))}
-								</select>
-							</div>
+  const getIconComponent = (iconName: string) => {
+    try {
+      const IconComponent = ICON_MAP[iconName as keyof typeof ICON_MAP] || Zap;
+      return <IconComponent className="h-5 w-5" />;
+    } catch (error) {
+      return <Zap className="h-5 w-5" />;
+    }
+  };
 
-							<div className="text-muted-foreground text-sm">
-								{totalFlows.toLocaleString()} flows
-							</div>
-						</div>
-					</div>
-				</header>
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (Number.isNaN(date.getTime())) {
+        return "Unknown date";
+      }
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    } catch (error) {
+      return "Unknown date";
+    }
+  };
 
-				{/* Optimized Flows Grid with Virtual Scrolling */}
-				<div
-					className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-					style={{ gridAutoRows: "1fr" }}
-				>
-					{processedFlows.map((flow) => {
-						// Safety check for flow data
-						if (!flow || !flow._id) {
-							return null;
-						}
-						
-						return (
-							<Card
-								key={flow._id}
-								className="group flex aspect-square flex-col border border-transparent bg-fill-border shadow-sm transition-all duration-300 hover:animate-fill-transparency dark:shadow-white/5"
-								style={{
-									backgroundColor: "light-dark(#f5f5f5, var(--fill-border-color, #1a1a1a))",
-								}}
-							>
-							<CardHeader className="pb-3">
-								{/* Header with Icon and Creator */}
-								<div className="flex items-start justify-between">
-									<div className="flex items-center gap-3">
-										<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 text-green-600">
-											{getIconComponent(flow.icon || "zap")}
-										</div>
-										<div className="min-w-0 flex-1">
-											<h3 className="whitespace-normal break-words font-semibold text-foreground text-lg">
-												{flow.name || "Unnamed Flow"}
-											</h3>
-											{flow.creator ? (
-												<p className="mt-1 text-muted-foreground text-sm">
-													Created by {flow.creator.name}
-												</p>
-											) : (
-												<p className="mt-1 text-muted-foreground text-sm">
-													Created by Community Member
-												</p>
-											)}
-										</div>
-									</div>
-								</div>
-							</CardHeader>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Enhanced Header with SEO */}
+        <header className="mb-8">
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="mb-2 font-bold text-3xl text-foreground">
+                  Explore Flows
+                </h1>
+                <p className="text-muted-foreground">
+                  Discover {totalFlows.toLocaleString()}+ public automation
+                  workflows from the community
+                </p>
+                {/* Removed debug info as per edit hint */}
+              </div>
+              <div className="flex items-center gap-2">
+                <Link href="/dashboard">
+                  <Button variant="outline">My Flows</Button>
+                </Link>
+                {user?.id && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCreateTestFlow}
+                  >
+                    Create Test Flow
+                  </Button>
+                )}
+              </div>
+            </div>
 
-							<CardContent className="flex flex-1 flex-col space-y-2">
-								{/* Description - 6 lines */}
-								<div className="scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent h-24 overflow-y-auto overflow-x-hidden">
-									{flow.description ? (
-										<p className="whitespace-normal break-words text-muted-foreground text-sm leading-relaxed">
-											{flow.description}
-										</p>
-									) : (
-										<div className="h-full" />
-									)}
-								</div>
+            {/* Enhanced Search and Filter Controls */}
+            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+              <div className="flex max-w-md flex-1 items-center gap-4">
+                <div className="relative flex-1">
+                  <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 transform text-muted-foreground" />
+                  <Input
+                    placeholder="Search public flows..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
 
-								{/* Spacer to push bottom content down */}
-								<div className="flex-1" />
+              {/* Sort Controls */}
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => handleSort(e.target.value as SortOption)}
+                  className="rounded-md border border-border bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  {Object.entries(SORT_OPTIONS).map(([key, option]) => (
+                    <option key={key} value={key}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-								{/* Creator and timestamp info */}
-								<div className="mb-1 flex items-center justify-between">
-									<div className="flex items-center gap-1">
-										<Calendar className="h-3 w-3 text-muted-foreground" />
-										<span className="text-muted-foreground text-xs">
-											Updated {formatDate(flow.updated_at || flow.created_at || new Date().toISOString())}
-										</span>
-									</div>
-									<div className="flex items-center gap-1">
-										<Users className="h-3 w-3 text-muted-foreground" />
-										<span className="text-muted-foreground text-xs">
-											by {flow.creator?.name || "Community Member"}
-										</span>
-									</div>
-								</div>
+              <div className="text-muted-foreground text-sm">
+                {totalFlows.toLocaleString()} flows
+              </div>
+            </div>
+          </div>
+        </header>
 
-								<Separator className="my-1" />
+        {/* Optimized Flows Grid with Virtual Scrolling */}
+        <div
+          className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          style={{ gridAutoRows: "1fr" }}
+        >
+          {processedFlows.map((flow) => {
+            // Safety check for flow data
+            if (!flow || !flow._id) {
+              return null;
+            }
 
-								{/* Actions - Always at bottom */}
-								<div className="flex items-center justify-between gap-2">
-									<div className="flex items-center gap-2">
-										<Button
-											size="sm"
-											variant="ghost"
-											onClick={() => handleUpvote(flow._id)}
-											className={`gap-1 transition-colors ${
-												flow.hasUpvoted
-													? "text-blue-600 hover:text-blue-700"
-													: "text-muted-foreground hover:text-foreground"
-											}`}
-										>
-											{flow.hasUpvoted ? (
-												<ThumbsUp className="h-3 w-3 fill-current" />
-											) : (
-												<ThumbsUp className="h-3 w-3" />
-											)}
-											<span className="text-xs">{flow.upvoteCount || 0}</span>
-										</Button>
-									</div>
+            return (
+              <Card
+                key={flow._id}
+                className="group flex aspect-square flex-col border border-transparent bg-fill-border shadow-sm transition-all duration-300 hover:animate-fill-transparency dark:shadow-white/5"
+                style={{
+                  backgroundColor:
+                    "light-dark(#f5f5f5, var(--fill-border-color, #1a1a1a))",
+                }}
+              >
+                <CardHeader className="pb-3">
+                  {/* Header with Icon and Creator */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 text-green-600">
+                        {getIconComponent(flow.icon || "zap")}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="whitespace-normal break-words font-semibold text-foreground text-lg">
+                          {flow.name || "Unnamed Flow"}
+                        </h3>
+                        {flow.creator ? (
+                          <p className="mt-1 text-muted-foreground text-sm">
+                            Created by {flow.creator.name}
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-muted-foreground text-sm">
+                            Created by Community Member
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
 
-									<Link href={`/matrix/${flow._id}`}>
-										<Button size="sm" className="gap-2">
-											<ExternalLink className="h-3 w-3" />
-											Open
-										</Button>
-									</Link>
-								</div>
-							</CardContent>
-						</Card>
-					);
-				})}
-				</div>
+                <CardContent className="flex flex-1 flex-col space-y-2">
+                  {/* Description - 6 lines */}
+                  <div className="scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent h-24 overflow-y-auto overflow-x-hidden">
+                    {flow.description ? (
+                      <p className="whitespace-normal break-words text-muted-foreground text-sm leading-relaxed">
+                        {flow.description}
+                      </p>
+                    ) : (
+                      <div className="h-full" />
+                    )}
+                  </div>
 
-				{/* Enhanced Empty States */}
-				{publicFlows && Array.isArray(publicFlows) && publicFlows.length === 0 ? (
-					<div className="py-16 text-center">
-						<div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
-							<Globe className="h-12 w-12 text-muted-foreground" />
-						</div>
-						<h3 className="mb-3 font-semibold text-2xl text-foreground">No public flows yet</h3>
-						<p className="mx-auto mb-8 max-w-md text-muted-foreground">
-							Be the first to share a public flow with the community!
-						</p>
-						<Link href="/dashboard">
-							<Button>Create a Flow</Button>
-						</Link>
-					</div>
-				) : processedFlows.length === 0 ? (
-					<div className="py-16 text-center">
-						<div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
-							<Search className="h-12 w-12 text-muted-foreground" />
-						</div>
-						<h3 className="mb-3 font-semibold text-foreground text-xl">No flows found</h3>
-						<p className="mx-auto mb-6 max-w-md text-muted-foreground">
-							No public flows match "{searchQuery}". Try adjusting your search terms.
-						</p>
-						<Button variant="outline" onClick={() => handleSearch("")}>
-							Clear Search
-						</Button>
-					</div>
-				) : null}
-			</div>
-		</div>
-	);
+                  {/* Spacer to push bottom content down */}
+                  <div className="flex-1" />
+
+                  {/* Creator and timestamp info */}
+                  <div className="mb-1 flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-muted-foreground text-xs">
+                        Updated{" "}
+                        {formatDate(
+                          flow.updated_at ||
+                            flow.created_at ||
+                            new Date().toISOString()
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Users className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-muted-foreground text-xs">
+                        by {flow.creator?.name || "Community Member"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <Separator className="my-1" />
+
+                  {/* Actions - Always at bottom */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleUpvote(flow._id)}
+                        className={`gap-1 transition-colors ${
+                          flow.hasUpvoted
+                            ? "text-blue-600 hover:text-blue-700"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {flow.hasUpvoted ? (
+                          <ThumbsUp className="h-3 w-3 fill-current" />
+                        ) : (
+                          <ThumbsUp className="h-3 w-3" />
+                        )}
+                        <span className="text-xs">{flow.upvoteCount || 0}</span>
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleCloneWorkflow(flow)}
+                        className="gap-1 text-muted-foreground hover:text-foreground"
+                        title="Add to my flows"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+
+                    <Link href={`/matrix/${flow._id}`}>
+                      <Button size="sm" className="gap-2">
+                        <ExternalLink className="h-3 w-3" />
+                        Open
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Enhanced Empty States */}
+        {publicFlows &&
+        Array.isArray(publicFlows) &&
+        publicFlows.length === 0 ? (
+          <div className="py-16 text-center">
+            <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
+              <Globe className="h-12 w-12 text-muted-foreground" />
+            </div>
+            <h3 className="mb-3 font-semibold text-2xl text-foreground">
+              No public flows yet
+            </h3>
+            <p className="mx-auto mb-8 max-w-md text-muted-foreground">
+              Be the first to share a public flow with the community!
+            </p>
+            <Link href="/dashboard">
+              <Button>Create a Flow</Button>
+            </Link>
+          </div>
+        ) : processedFlows.length === 0 ? (
+          <div className="py-16 text-center">
+            <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
+              <Search className="h-12 w-12 text-muted-foreground" />
+            </div>
+            <h3 className="mb-3 font-semibold text-foreground text-xl">
+              No flows found
+            </h3>
+            <p className="mx-auto mb-6 max-w-md text-muted-foreground">
+              No public flows match "{searchQuery}". Try adjusting your search
+              terms.
+            </p>
+            <Button variant="outline" onClick={() => handleSearch("")}>
+              Clear Search
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
 };
 
 export default ExplorePage;

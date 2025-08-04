@@ -67,7 +67,9 @@ const CATEGORY_ICON_MAP: Record<string, string> = {
  * Get category-based fallback icon for stencils, basically provides appropriate icons when stencil.icon is not available
  */
 const getCategoryFallbackIcon = (category?: string): string => {
-	if (!category) return "LuCircle";
+	if (!category) {
+		return "LuCircle";
+	}
 	return CATEGORY_ICON_MAP[category.toLowerCase()] || "LuCircle";
 };
 
@@ -79,6 +81,7 @@ interface SortableStencilProps {
 	onRemove?: (stencilId: string) => void;
 	showRemoveButton?: boolean;
 	keyboardShortcut?: string;
+	isReadOnly?: boolean;
 }
 
 interface TouchState {
@@ -96,6 +99,7 @@ const SortableStencilComponent: React.FC<SortableStencilProps> = ({
 	onRemove,
 	showRemoveButton = false,
 	keyboardShortcut,
+	isReadOnly = false,
 }) => {
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
 		id: stencil.id,
@@ -154,8 +158,12 @@ const SortableStencilComponent: React.FC<SortableStencilProps> = ({
 	}, [setHovered, hoveredState]);
 
 	const handleDoubleClick = useCallback(() => {
+		// Prevent node creation in read-only mode, basically for public flows accessed from explore
+		if (isReadOnly) {
+			return;
+		}
 		onDoubleClickCreate(stencil.nodeType);
-	}, [onDoubleClickCreate, stencil.nodeType]);
+	}, [onDoubleClickCreate, stencil.nodeType, isReadOnly]);
 
 	const handleMouseEnter = useCallback(() => {
 		setHovered(hoveredState);
@@ -189,7 +197,10 @@ const SortableStencilComponent: React.FC<SortableStencilProps> = ({
 			if (timeSinceLastTap < DOUBLE_TAP_THRESHOLD_MAX && timeSinceLastTap > DOUBLE_TAP_THRESHOLD_MIN) {
 				e.preventDefault();
 				e.stopPropagation();
-				onDoubleClickCreate(stencil.nodeType);
+				// Prevent node creation in read-only mode, basically for public flows accessed from explore
+				if (!isReadOnly) {
+					onDoubleClickCreate(stencil.nodeType);
+				}
 				return;
 			}
 			touchState.current.lastTapTime = now;
@@ -199,7 +210,7 @@ const SortableStencilComponent: React.FC<SortableStencilProps> = ({
 			target.style.transform = SCALE_TRANSFORM;
 			target.style.transition = SCALE_TRANSITION;
 		},
-		[onDoubleClickCreate, stencil.nodeType]
+		[onDoubleClickCreate, stencil.nodeType, isReadOnly]
 	);
 
 	const handleTouchMove = useCallback(
@@ -407,7 +418,8 @@ export const SortableStencil = memo(SortableStencilComponent, (prevProps, nextPr
 		prevProps.onNativeDragStart === nextProps.onNativeDragStart &&
 		prevProps.onDoubleClickCreate === nextProps.onDoubleClickCreate &&
 		prevProps.setHovered === nextProps.setHovered &&
-		prevProps.onRemove === nextProps.onRemove
+		prevProps.onRemove === nextProps.onRemove &&
+		prevProps.isReadOnly === nextProps.isReadOnly
 	);
 });
 
