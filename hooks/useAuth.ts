@@ -94,7 +94,7 @@ export const useAuth = () => {
 			// Request magic link from Convex
 			const result = (await sendMagicLinkMutation({
 				email: data.email,
-				type: "verification",
+				type: "login", // Changed from "verification" to "login" for sign in
 			})) as AuthResult<{ magicToken: string }>;
 
 			// Handle Convex errors

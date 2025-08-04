@@ -10,6 +10,7 @@ import {
 } from "@/components/anubis/AnubisProvider";
 import { OptimisticVerificationProvider } from "@/components/anubis/OptimisticVerification";
 import { RiskDashboard } from "@/components/anubis/RiskDashboard";
+import MagicLinkTest from "@/components/auth/MagicLinkTest";
 import { Analytics } from "@vercel/analytics/react";
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "next-themes";
@@ -121,6 +122,7 @@ export default function RootLayout({
                 <Suspense fallback={<Loading />}>
                   <LayoutWrapper>{children}</LayoutWrapper>
                 </Suspense>
+                {process.env.NODE_ENV === "development" && <MagicLinkTest />}
               </Providers>
               <PWAInstallPrompt />
               <PWAStatus />

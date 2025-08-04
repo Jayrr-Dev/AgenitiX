@@ -25,7 +25,7 @@ export interface EmailResult {
  */
 export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<EmailResult> {
 	const { to, name, magicToken, type } = data;
-	console.log(`Sending ${type} email to ${to} with magic token ${magicToken}`);
+	
 	// Generate magic link URL - always use localhost in development
 	const baseUrl =
 		process.env.NODE_ENV === "development"
@@ -114,7 +114,7 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 			`,
 				};
 
-	// For development: Log to console
+	// For development: Log to console and return success
 	if (process.env.NODE_ENV === "development") {
 		// Log the magic link to console for development testing
 		console.log("\n🔗 MAGIC LINK FOR DEVELOPMENT:");
@@ -149,13 +149,25 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 		const { Resend } = await import("resend");
 		const resend = new Resend(process.env.RESEND_API_KEY);
 
+		// Determine the from email address
+		const fromEmail = process.env.RESEND_FROM_EMAIL || "AgenitiX <noreply@agenitix.com>";
+
+		console.log(`📧 Sending ${type} email to ${to} using Resend`);
+
 		const result = await resend.emails.send({
-			from: "AgenitiX <noreply@agenitix.com>", // Try with a custom domain
+			from: fromEmail,
 			to: [to],
 			subject: emailContent.subject,
 			html: emailContent.html,
 		});
+
+		if (result.error) {
+			throw new Error(`Resend API error: ${result.error.message}`);
+		}
+
+		console.log(`✅ Email sent successfully. Message ID: ${result.data?.id}`);
 		return { success: true, messageId: result.data?.id || "sent" };
+
 	} catch (error) {
 		console.error("❌ Email sending failed:", error);
 
@@ -164,18 +176,27 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 			const { Resend } = await import("resend");
 			const resend = new Resend(process.env.RESEND_API_KEY);
 
+			console.log("🔄 Attempting fallback with Resend default domain...");
+
 			const fallbackResult = await resend.emails.send({
 				from: "onboarding@resend.dev", // Resend's default domain
 				to: [to],
 				subject: emailContent.subject,
 				html: emailContent.html,
 			});
+
+			if (fallbackResult.error) {
+				throw new Error(`Fallback Resend API error: ${fallbackResult.error.message}`);
+			}
+
+			console.log(`✅ Fallback email sent successfully. Message ID: ${fallbackResult.data?.id}`);
 			return { success: true, messageId: fallbackResult.data?.id || "sent" };
+
 		} catch (fallbackError) {
 			console.error("❌ Fallback email also failed:", fallbackError);
 			return {
 				success: false,
-				error: `Email sending failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+				error: `Email sending failed: ${error instanceof Error ? error.message : "Unknown error"}. Fallback also failed: ${fallbackError instanceof Error ? fallbackError.message : "Unknown fallback error"}`,
 			};
 		}
 	}

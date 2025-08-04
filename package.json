@@ -48,6 +48,7 @@
 		"generate:handle-types": "node scripts/gen-handle-types.js",
 		"generate:tokens": "npx ts-node --project tsconfig.node.json scripts/gen-tokens.ts",
 		"generate:docs": "npx ts-node --project tsconfig.node.json scripts/gen-docs-tokens.ts",
+		"check:production": "node scripts/deploy-production.js",
 		"generate:node-docs": "npx ts-node --project tsconfig.node.json scripts/generate-node-docs.ts",
 		"generate:nodes-overview": "npx ts-node --project tsconfig.node.json scripts/generate-nodes-overview.ts",
 		"generate:handle-docs": "npx ts-node --project tsconfig.node.json scripts/generate-handle-docs.ts",
