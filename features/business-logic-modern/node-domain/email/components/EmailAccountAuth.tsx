@@ -26,9 +26,9 @@ const AUTH_STYLES = {
   },
   fieldGroup: "space-y-1",
   inlineGroup: "grid grid-cols-2 gap-2",
-  label: "text-[--node-email-text] text-[10px] font-medium mb-1 block",
+  label: "text-[--node-email-text] text-[8px] font-medium mb-0 block",
   input:
-    "h-8 text-[10px] border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] rounded-md px-2 focus:ring-1 focus:ring-[--node-email-border-hover] focus:border-[--node-email-border-hover] disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-[--node-email-text-secondary] placeholder:text-[10px] transition-all duration-200",
+    "h-6 text-[10px] border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] rounded-md px-2 focus:ring-1 focus:ring-[--node-email-border-hover] focus:border-[--node-email-border-hover] disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-[--node-email-text-secondary] placeholder:text-[10px] transition-all duration-200",
   checkbox: "mr-1.5 text-[--node-email-text] scale-75",
   divider: "h-px bg-[--node-email-border] my-3",
 } as const;
@@ -185,7 +185,7 @@ export const EmailAccountAuth = memo(
         {/* Manual Configuration */}
         {isManualProvider && (
           <div className="space-y-1 mt-2 pt-1 border-t border-black/20">
-            <div className="text-[11px] font-medium text-[--node-email-text-secondary] mb-3">
+            <div className="text-[11px] font-medium text-[--node-email-text-secondary] mb-1">
               Advanced Settings
             </div>
 
@@ -198,7 +198,7 @@ export const EmailAccountAuth = memo(
                     type="text"
                     value={imapHost}
                     onChange={handleManualFieldChange("imapHost")}
-                    placeholder="imap.example.com"
+                    placeholder="x.y.com"
                     className={AUTH_STYLES.input}
                     disabled={!isEnabled}
                   />
@@ -224,7 +224,7 @@ export const EmailAccountAuth = memo(
                     type="text"
                     value={smtpHost}
                     onChange={handleManualFieldChange("smtpHost")}
-                    placeholder="smtp.example.com"
+                    placeholder="x.y.com"
                     className={AUTH_STYLES.input}
                     disabled={!isEnabled}
                   />
@@ -245,7 +245,7 @@ export const EmailAccountAuth = memo(
             {/* Credentials */}
             <div className={AUTH_STYLES.inlineGroup}>
               <div className={AUTH_STYLES.fieldGroup}>
-                <label className={AUTH_STYLES.label}>Username</label>
+                {/* <label className={AUTH_STYLES.label}>Username</label> */}
                 <Input
                   type="text"
                   value={username}
@@ -256,7 +256,7 @@ export const EmailAccountAuth = memo(
                 />
               </div>
               <div className={AUTH_STYLES.fieldGroup}>
-                <label className={AUTH_STYLES.label}>Password</label>
+                {/* <label className={AUTH_STYLES.label}>Password</label> */}
                 <Input
                   type="password"
                   value={password}
