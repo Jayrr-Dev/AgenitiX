@@ -150,6 +150,9 @@ const createDynamicSpec = (() => {
         store: "Default text",
         inputs: null,
         output: {}, // handle-based output object
+        isEnabled: true, // Enable node by default
+        isActive: false, // Will become active when enabled
+        isExpanded: false, // Default to collapsed
       }),
       dataSchema: CreateTextDataSchema,
       controls: {

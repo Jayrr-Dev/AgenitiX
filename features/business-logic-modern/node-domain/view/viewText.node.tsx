@@ -179,7 +179,11 @@ function createDynamicSpec(data: ViewTextData): NodeSpec {
     inspector: { key: "ViewTextInspector" },
     version: 1,
     runtime: { execute: "viewText_execute_v1" },
-    initialData: createSafeInitialData(ViewTextDataSchema),
+    initialData: createSafeInitialData(ViewTextDataSchema, {
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when enabled
+      isExpanded: false, // Default to collapsed
+    }),
     dataSchema: ViewTextDataSchema,
     controls: {
       autoGenerate: true,

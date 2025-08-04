@@ -502,6 +502,155 @@ export const resetRateLimits = mutation({
   },
 });
 
+// Delete User Account (with proper cascade deletion)
+export const deleteAccount = mutation({
+  args: {
+    token_hash: v.string(),
+    confirmation: v.string(), // User must type "delete" to confirm
+  },
+  handler: async (ctx, args) => {
+    // Verify confirmation text
+    if (args.confirmation !== "delete") {
+      throw new Error(
+        "Invalid confirmation. You must type 'delete' to confirm account deletion."
+      );
+    }
+
+    // Get current user from session
+    const session = await ctx.db
+      .query("auth_sessions")
+      .withIndex("by_token_hash", (q) => q.eq("token_hash", args.token_hash))
+      .filter((q) => q.eq(q.field("is_active"), true))
+      .filter((q) => q.gt(q.field("expires_at"), Date.now()))
+      .first();
+
+    if (!session) {
+      throw new Error("Invalid session");
+    }
+
+    const userId = session.user_id;
+
+    // Get user to verify account exists
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    try {
+      // 1. Delete all user sessions first
+      const userSessions = await ctx.db
+        .query("auth_sessions")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+
+      for (const userSession of userSessions) {
+        await ctx.db.delete(userSession._id);
+      }
+
+      // 2. Delete all user email accounts
+      const emailAccounts = await ctx.db
+        .query("email_accounts")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+
+      for (const emailAccount of emailAccounts) {
+        await ctx.db.delete(emailAccount._id);
+      }
+
+      // 3. Delete all user flows and related data
+      const userFlows = await ctx.db
+        .query("flows")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+
+      for (const flow of userFlows) {
+        // Delete flow upvotes
+        const upvotes = await ctx.db
+          .query("flow_upvotes")
+          .withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id))
+          .collect();
+        for (const upvote of upvotes) {
+          await ctx.db.delete(upvote._id);
+        }
+
+        // Delete flow shares
+        const shares = await ctx.db
+          .query("flow_shares")
+          .withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id))
+          .collect();
+        for (const share of shares) {
+          await ctx.db.delete(share._id);
+        }
+
+        // Delete flow permissions
+        const permissions = await ctx.db
+          .query("flow_share_permissions")
+          .withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id))
+          .collect();
+        for (const permission of permissions) {
+          await ctx.db.delete(permission._id);
+        }
+
+        // Delete flow access requests
+        const accessRequests = await ctx.db
+          .query("flow_access_requests")
+          .withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id))
+          .collect();
+        for (const request of accessRequests) {
+          await ctx.db.delete(request._id);
+        }
+
+        // Finally delete the flow
+        await ctx.db.delete(flow._id);
+      }
+
+      // 4. Delete flows where user has been granted access
+      const userFlowPermissions = await ctx.db
+        .query("flow_share_permissions")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+
+      for (const permission of userFlowPermissions) {
+        await ctx.db.delete(permission._id);
+      }
+
+      // 5. Delete flow access requests made by user
+      const userAccessRequests = await ctx.db
+        .query("flow_access_requests")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+
+      for (const request of userAccessRequests) {
+        await ctx.db.delete(request._id);
+      }
+
+      // 6. Delete flow upvotes by user
+      const userUpvotes = await ctx.db
+        .query("flow_upvotes")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+
+      for (const upvote of userUpvotes) {
+        await ctx.db.delete(upvote._id);
+      }
+
+      // 7. Finally delete the user account
+      await ctx.db.delete(userId);
+
+      return {
+        success: true,
+        message: "Account successfully deleted",
+        deletedAt: Date.now(),
+      };
+    } catch (error) {
+      console.error("Error deleting user account:", error);
+      throw new Error(
+        "Failed to delete account. Please contact support if this issue persists."
+      );
+    }
+  },
+});
+
 // Migration helper: Normalize all user emails to lowercase
 export const normalizeUserEmails = mutation({
   args: {},

@@ -7,6 +7,7 @@
  * • Data Processing Template: Object creation and storage workflow
  * • Automatic provisioning during user signup
  * • Pre-configured nodes, connections, and positioning
+ * • All nodes enabled by default with proper handle connections
  *
  * Keywords: templates, onboarding, automation, workflows, new-users
  */
@@ -34,6 +35,8 @@ const WELCOME_TEMPLATE_NODES = [
         text: "Welcome to Agenitix! This is your first workflow. You can edit this text and connect it to other nodes.",
       },
       isExpanded: false,
+      isEnabled: true, // Enable node by default
+      isActive: true, // Set as active for immediate output
     },
   },
   {
@@ -50,6 +53,8 @@ const WELCOME_TEMPLATE_NODES = [
         response: "",
       },
       isExpanded: false,
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when connected
     },
   },
   {
@@ -63,6 +68,8 @@ const WELCOME_TEMPLATE_NODES = [
         text: "", // Will be connected
       },
       isExpanded: false,
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when connected
     },
   },
 ];
@@ -100,6 +107,8 @@ const EMAIL_TEMPLATE_NODES = [
         status: "disconnected",
       },
       isExpanded: false,
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when configured
     },
   },
   {
@@ -118,6 +127,8 @@ const EMAIL_TEMPLATE_NODES = [
         },
       },
       isExpanded: false,
+      isEnabled: true, // Enable node by default
+      isActive: true, // Set as active for immediate output
     },
   },
   {
@@ -138,6 +149,8 @@ const EMAIL_TEMPLATE_NODES = [
         email: null,
       },
       isExpanded: false,
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when connected
     },
   },
   {
@@ -156,6 +169,8 @@ const EMAIL_TEMPLATE_NODES = [
         status: "pending",
       },
       isExpanded: false,
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when connected
     },
   },
 ];
@@ -206,6 +221,8 @@ const DATA_TEMPLATE_NODES = [
         },
       },
       isExpanded: false,
+      isEnabled: true, // Enable node by default
+      isActive: true, // Set as active for immediate output
     },
   },
   {
@@ -224,6 +241,8 @@ const DATA_TEMPLATE_NODES = [
         key: "sample_data",
       },
       isExpanded: false,
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when connected
     },
   },
   {
@@ -241,6 +260,8 @@ const DATA_TEMPLATE_NODES = [
         ]),
       },
       isExpanded: false,
+      isEnabled: true, // Enable node by default
+      isActive: true, // Set as active for immediate output
     },
   },
   {
@@ -259,6 +280,8 @@ const DATA_TEMPLATE_NODES = [
         key: "processed_map",
       },
       isExpanded: false,
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when connected
     },
   },
   {
@@ -272,6 +295,8 @@ const DATA_TEMPLATE_NODES = [
         value: false, // Will be connected
       },
       isExpanded: false,
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when connected
     },
   },
 ];

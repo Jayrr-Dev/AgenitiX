@@ -13,6 +13,7 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
+import type React from "react";
 import {
   type ChangeEvent,
   memo,
@@ -467,6 +468,9 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
       threadId: null,
       output: null,
       store: null,
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when enabled
+      isExpanded: false, // Default to collapsed
     }),
     dataSchema: AiAgentDataSchema,
     controls: {

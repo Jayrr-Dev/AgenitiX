@@ -1459,6 +1459,9 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
       lastOperationSuccess: false,
       operationMessage: "",
       output: null,
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when enabled
+      isExpanded: false, // Default to collapsed
     }),
     dataSchema: StoreLocalDataSchema,
     controls: {

@@ -139,6 +139,9 @@ function createDynamicSpec(data: CreateMapData): NodeSpec {
       store: "Default text",
       inputs: null,
       output: "",
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when enabled
+      isExpanded: false, // Default to collapsed
     }),
     dataSchema: CreateMapDataSchema,
     controls: {

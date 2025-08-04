@@ -88,7 +88,10 @@ const createDynamicSpec = (() => {
     const cacheKey = `${data.expandedSize}-${data.collapsedSize}`;
 
     if (specCache.has(cacheKey)) {
-      return specCache.get(cacheKey)!;
+      const cachedSpec = specCache.get(cacheKey);
+      if (cachedSpec) {
+        return cachedSpec;
+      }
     }
 
     const expanded =
@@ -127,6 +130,9 @@ const createDynamicSpec = (() => {
         store: "{}",
         inputs: null,
         output: "",
+        isEnabled: true, // Enable node by default
+        isActive: false, // Will become active when enabled
+        isExpanded: false, // Default to collapsed
       }),
       dataSchema: CreateObjectDataSchema,
       controls: {
