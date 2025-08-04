@@ -26,7 +26,7 @@ interface KeyboardShortcutsProps {
   onToggleInspectorLock?: () => void; // Optional inspector lock toggle for Alt+A
   onDuplicateNode?: () => void; // Optional node duplication for Alt+W
   onToggleSidebar?: () => void; // Optional sidebar toggle for Alt+S
-  onPieMenu?: (e: KeyboardEvent) => void; // Optional pie menu activation for G key
+  onPieMenu?: (e: KeyboardEvent) => void; // Optional pie menu activation for Tab key
 }
 
 /**
@@ -233,7 +233,7 @@ export function useKeyboardShortcuts({
         return;
       }
 
-      // Handle Pie Menu (G key) - no modifiers, basically simple activation
+      // Handle Pie Menu (Tab key) - no modifiers, basically simple activation
       if (
         key === KEYBOARD_SHORTCUTS.PIE_MENU &&
         !ctrl &&

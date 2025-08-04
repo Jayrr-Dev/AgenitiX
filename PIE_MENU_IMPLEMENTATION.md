@@ -2,7 +2,7 @@
 
 ## Overview
 
-Successfully implemented a **Blender-inspired pie menu system** for the workflow editor, activated with the **G key**. The system provides context-aware radial menus for quick access to workflow operations.
+Successfully implemented a **Blender-inspired pie menu system** for the workflow editor, activated with the **Tab key**. The system provides context-aware radial menus for quick access to workflow operations.
 
 ## 🎯 Features Implemented
 
@@ -31,7 +31,7 @@ Successfully implemented a **Blender-inspired pie menu system** for the workflow
 
 ### Activation Methods
 
-1. **Keyboard**: Press `G` key anywhere in the flow editor
+1. **Keyboard**: Press `Tab` key anywhere in the flow editor
 2. **Programmatic**: Use `usePieMenuTrigger` hook in custom components
 
 ### Available Actions
@@ -108,7 +108,7 @@ app/(user-pages)/matrix/[flowId]/
 
 ### Interaction Pattern
 
-1. Press `G` key while in flow editor
+1. Press `Tab` key while in flow editor
 2. Pie menu appears at cursor position with available actions
 3. Mouse movement selects different actions (visual feedback)
 4. Click to execute action or press Escape to cancel

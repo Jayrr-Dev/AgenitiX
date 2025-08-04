@@ -136,7 +136,7 @@ export const KEYBOARD_SHORTCUTS = {
   TOGGLE_INSPECTOR: "a",
   DUPLICATE_NODE: "w",
   TOGGLE_SIDEBAR: "s",
-  PIE_MENU: "g",
+  PIE_MENU: "tab",
 };
 
 // ============================================================================

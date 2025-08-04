@@ -799,12 +799,46 @@ export const useFlowStore = create<FlowStore>()(
 
         setNodes: (nodes: AgenNode[]) => {
           set((state) => {
+            // Skip update when nodes are referentially equal to prevent unnecessary re-renders (infinite loop guard)
+            if (state.nodes === nodes) return;
+
+            // QUICK DEEP CHECK – bail early if lengths & ids match and every shallow field is equal
+            const sameLength = state.nodes.length === nodes.length;
+            const shallowEqual =
+              sameLength &&
+              state.nodes.every((n, idx) => {
+                const other = nodes[idx];
+                return (
+                  n.id === other.id &&
+                  n.position.x === other.position.x &&
+                  n.position.y === other.position.y &&
+                  n.type === other.type &&
+                  n.selected === other.selected
+                );
+              });
+            if (shallowEqual) return;
+
             state.nodes = nodes;
           });
         },
 
         setEdges: (edges: AgenEdge[]) => {
           set((state) => {
+            if (state.edges === edges) return;
+            const sameLength = state.edges.length === edges.length;
+            const shallowEqual =
+              sameLength &&
+              state.edges.every((e, idx) => {
+                const other = edges[idx];
+                return (
+                  e.id === other.id &&
+                  e.source === other.source &&
+                  e.target === other.target &&
+                  e.selected === other.selected
+                );
+              });
+            if (shallowEqual) return;
+
             state.edges = edges;
           });
         },

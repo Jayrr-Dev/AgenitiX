@@ -369,7 +369,15 @@ const CreateTextNode = memo(
           updateNodeData({ output: {} });
         }
       }
-    }, [spec.handles, nodeData, updateNodeData, id]);
+    }, [
+      spec.handles,
+      nodeData.isActive,
+      nodeData.isEnabled,
+      nodeData.store,
+      nodeData.inputs,
+      updateNodeData,
+      id,
+    ]);
 
     /* 🔄 Whenever nodes/edges change, recompute inputs. */
     useEffect(() => {

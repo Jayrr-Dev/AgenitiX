@@ -1,19 +1,23 @@
+/**
+ * Route: features/business-logic-modern/node-domain/email/emailAccount.node.tsx
+ * EMAIL ACCOUNT NODE - Email account configuration and authentication
+ *
+ * • OAuth2 authentication for Gmail and Outlook
+ * • Manual configuration for IMAP/SMTP servers
+ * • Connection status monitoring and testing
+ * • Dark mode optimized with proper contrast
+ * • Form inputs, buttons, and status indicators use CSS variables
+ *
+ * Keywords: email-authentication, oauth2, imap-smtp, dark-mode, form-inputs
+ */
+
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position } from "@xyflow/react";
-import {
-  type ChangeEvent,
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
-import { api } from "@/convex/_generated/api";
 import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
@@ -33,10 +37,11 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
-import type { EmailAccountConfig, EmailProviderType } from "./types";
-// Convex integration
-import { useAction, useMutation, useQuery } from "convex/react";
-import { toast } from "sonner";
+
+// Component imports
+import { EmailAccountCollapsed } from "./components/EmailAccountCollapsed";
+import { EmailAccountExpanded } from "./components/EmailAccountExpanded";
+import { EmailAccountProvider } from "./components/EmailAccountProvider";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -45,7 +50,9 @@ import { toast } from "sonner";
 export const EmailAccountDataSchema = z
   .object({
     // Provider configuration
-    provider: z.enum(["gmail", "outlook", "imap", "smtp"]).default("gmail"),
+    provider: z
+      .enum(["gmail", "outlook", "yahoo", "imap", "smtp"])
+      .default("gmail"),
     email: z.string().default(""),
     displayName: z.string().default(""),
 
@@ -87,6 +94,7 @@ export const EmailAccountDataSchema = z
   })
   .passthrough();
 
+// Type alias for the schema-based data structure
 export type EmailAccountData = z.infer<typeof EmailAccountDataSchema>;
 
 const validateNodeData = createNodeValidator(
@@ -104,21 +112,8 @@ const CATEGORY_TEXT = {
   },
 } as const;
 
-const CONTENT = {
-  expanded: "p-4 w-full h-full flex flex-col",
-  collapsed: "flex items-center justify-center w-full h-full",
-  header: "flex items-center justify-between mb-3",
-  body: "flex-1 flex flex-col gap-3",
-  disabled:
-    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
-} as const;
-
 // -----------------------------------------------------------------------------
 // 3️⃣  Dynamic spec factory (pure)
-// -----------------------------------------------------------------------------
-
-// -----------------------------------------------------------------------------
-// 4️⃣  Component
 // -----------------------------------------------------------------------------
 
 function createDynamicSpec(data: EmailAccountData): NodeSpec {
@@ -254,33 +249,12 @@ const EmailAccountNode = memo(
       nodeData: EmailAccountData;
       updateNodeData: (data: Partial<EmailAccountData>) => void;
     };
-    const { token } = useAuthContext();
 
     // -------------------------------------------------------------------------
     // 4.2  Derived state
     // -------------------------------------------------------------------------
-    const {
-      isExpanded,
-      isEnabled,
-      provider,
-      email,
-      displayName,
-      connectionStatus,
-      isConnected,
-      isConfigured,
-      lastValidated,
-      lastError,
-      isAuthenticating,
-      // Manual config fields
-      imapHost,
-      imapPort,
-      smtpHost,
-      smtpPort,
-      username,
-      password,
-      useSSL,
-      useTLS,
-    } = nodeData as EmailAccountData;
+    const { isExpanded, isEnabled, isConnected, isAuthenticating } =
+      nodeData as EmailAccountData;
 
     const categoryStyles = CATEGORY_TEXT.EMAIL;
 
@@ -289,47 +263,10 @@ const EmailAccountNode = memo(
     const _edges = useStore((s) => s.edges);
 
     // Keep last emitted output to avoid redundant writes
-    const _lastOutputRef = useRef<string | null>(null);
     const lastGeneralOutputRef = useRef<Map<string, any> | null>(null);
 
     // -------------------------------------------------------------------------
-    // 4.3  Convex integration
-    // -------------------------------------------------------------------------
-    const storeEmailAccount = useMutation(api.emailAccounts.upsertEmailAccount);
-    const validateConnection = useAction(api.emailAccounts.testEmailConnection);
-    const _emailAccounts = useQuery(
-      api.emailAccounts.getEmailAccountsByUserEmail,
-      token ? { token_hash: token } : "skip"
-    );
-
-    // -------------------------------------------------------------------------
-    // 4.4  Provider helpers
-    // -------------------------------------------------------------------------
-    const currentProvider = useMemo(() => {
-      // Simplified provider info
-      const providers = {
-        gmail: { id: "gmail", name: "Gmail", authType: "oauth2" },
-        outlook: { id: "outlook", name: "Outlook", authType: "oauth2" },
-        imap: { id: "imap", name: "IMAP", authType: "manual" },
-        smtp: { id: "smtp", name: "SMTP", authType: "manual" },
-      };
-      return providers[provider as keyof typeof providers];
-    }, [provider]);
-
-    const availableProviders = useMemo(() => {
-      return [
-        { value: "gmail", label: "Gmail" },
-        { value: "outlook", label: "Outlook" },
-        { value: "imap", label: "IMAP" },
-        { value: "smtp", label: "SMTP" },
-      ];
-    }, []);
-
-    const isOAuth2Provider = currentProvider?.authType === "oauth2";
-    const isManualProvider = currentProvider?.authType === "manual";
-
-    // -------------------------------------------------------------------------
-    // 4.5  Callbacks
+    // 4.3  Callbacks
     // -------------------------------------------------------------------------
 
     /** Toggle between collapsed / expanded */
@@ -337,380 +274,13 @@ const EmailAccountNode = memo(
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
 
-    /** Handle provider change */
-    const handleProviderChange = useCallback(
-      (e: ChangeEvent<HTMLSelectElement>) => {
-        const newProvider = e.target.value as EmailProviderType;
-        updateNodeData({
-          provider: newProvider,
-          connectionStatus: "disconnected",
-          isConnected: false,
-          isConfigured: false,
-          lastError: "",
-        });
-      },
-      [updateNodeData]
-    );
-
-    /** Handle email change */
-    const handleEmailChange = useCallback(
-      (e: ChangeEvent<HTMLInputElement>) => {
-        updateNodeData({ email: e.target.value });
-      },
-      [updateNodeData]
-    );
-
-    /** Handle display name change */
-    const handleDisplayNameChange = useCallback(
-      (e: ChangeEvent<HTMLInputElement>) => {
-        updateNodeData({ displayName: e.target.value });
-      },
-      [updateNodeData]
-    );
-
-    // Manual configuration handlers
-    const handleManualFieldChange = useCallback(
-      (field: string) => (e: ChangeEvent<HTMLInputElement>) => {
-        const value =
-          e.target.type === "number"
-            ? Number.parseInt(e.target.value)
-            : e.target.type === "checkbox"
-              ? e.target.checked
-              : e.target.value;
-        updateNodeData({ [field]: value });
-      },
-      [updateNodeData]
-    );
-
-    /**
-     * Handle OAuth2 authentication flow
-     * Opens popup window for OAuth2 authorization and handles the response
-     */
-    const handleOAuth2Auth = useCallback(async () => {
-      if (!(currentProvider && isOAuth2Provider)) {
-        return;
-      }
-
-      try {
-        updateNodeData({ isAuthenticating: true, lastError: "" });
-
-        // Get OAuth2 URL from API
-        const redirectUri = `${window.location.origin}/api/auth/email/${provider}/callback`;
-        const response = await fetch(
-          `/api/auth/email/${provider}?redirect_uri=${encodeURIComponent(redirectUri)}&session_token=${encodeURIComponent(token || "")}`
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to get OAuth2 URL");
-        }
-
-        const { authUrl } = await response.json();
-
-        // Open OAuth2 popup
-        const popup = window.open(
-          authUrl,
-          "oauth2",
-          "width=500,height=600,scrollbars=yes,resizable=yes"
-        );
-
-        // Listen for messages from the popup
-        const handleMessage = (event: MessageEvent) => {
-          // Verify origin for security
-          if (event.origin !== window.location.origin) {
-            return;
-          }
-
-          if (event.data.type === "OAUTH_SUCCESS") {
-            handleAuthSuccess(event.data.authData);
-            popup?.close();
-            window.removeEventListener("message", handleMessage);
-            updateNodeData({ isAuthenticating: false });
-          } else if (event.data.type === "OAUTH_ERROR") {
-            handleAuthError(event.data.error);
-            popup?.close();
-            window.removeEventListener("message", handleMessage);
-            updateNodeData({ isAuthenticating: false });
-          }
-        };
-
-        window.addEventListener("message", handleMessage);
-
-        // Fallback: Check if popup was closed manually
-        const checkClosed = setInterval(() => {
-          if (popup?.closed) {
-            clearInterval(checkClosed);
-            window.removeEventListener("message", handleMessage);
-            updateNodeData({ isAuthenticating: false });
-          }
-        }, 1000);
-      } catch (error) {
-        console.error("OAuth2 authentication error:", error);
-        updateNodeData({
-          isAuthenticating: false,
-          lastError:
-            error instanceof Error ? error.message : "Authentication failed",
-        });
-        toast.error("Authentication failed", {
-          description: error instanceof Error ? error.message : "Unknown error",
-        });
-      }
-    }, [currentProvider, isOAuth2Provider, provider, updateNodeData]);
-
-    /**
-     * Process successful OAuth2 authentication
-     * Decodes auth data and stores account in Convex
-     */
-    const handleAuthSuccess = useCallback(
-      async (authDataEncoded: string | null) => {
-        if (!(authDataEncoded && token)) {
-          return;
-        }
-
-        try {
-          const authData = JSON.parse(atob(authDataEncoded));
-
-          // Store account in Convex
-          const accountId = await storeEmailAccount({
-            provider: authData.provider,
-            email: authData.email,
-            displayName: authData.displayName,
-            accessToken: authData.accessToken,
-            refreshToken: authData.refreshToken,
-            tokenExpiry: authData.tokenExpiry,
-            sessionToken: authData.sessionToken || token, // Pass session token
-          });
-
-          if (accountId) {
-            updateNodeData({
-              email: authData.email,
-              displayName: authData.displayName || authData.email,
-              isConfigured: true,
-              isConnected: true,
-              connectionStatus: "connected",
-              lastValidated: Date.now(),
-              accountId: accountId,
-              lastError: "",
-            });
-
-            toast.success("Email account connected!", {
-              description: `Successfully connected ${authData.email}`,
-            });
-          } else {
-            throw new Error("Failed to store account");
-          }
-        } catch (error) {
-          updateNodeData({
-            lastError:
-              error instanceof Error ? error.message : "Failed to save account",
-          });
-          toast.error("Failed to save account", {
-            description:
-              error instanceof Error ? error.message : "Unknown error",
-          });
-        }
-      },
-      [token, storeEmailAccount, updateNodeData]
-    );
-
-    /** Handle authentication error */
-    const handleAuthError = useCallback(
-      (errorMessage: string) => {
-        updateNodeData({
-          lastError: errorMessage,
-          isAuthenticating: false,
-        });
-        toast.error("Authentication failed", {
-          description: errorMessage,
-        });
-      },
-      [updateNodeData]
-    );
-
-    /** Handle manual configuration save */
-    const handleManualSave = useCallback(async () => {
-      if (!(token && isManualProvider)) {
-        return;
-      }
-
-      try {
-        updateNodeData({ connectionStatus: "connecting", lastError: "" });
-
-        const credentials: EmailAccountConfig = {
-          provider,
-          email,
-          displayName,
-          imapHost,
-          imapPort,
-          smtpHost,
-          smtpPort,
-          username,
-          password,
-          useSSL,
-          useTLS,
-        };
-
-        // Store account in Convex
-        const accountId = await storeEmailAccount({
-          provider,
-          email,
-          displayName,
-          imapConfig: {
-            host: imapHost,
-            port: imapPort,
-            secure: useSSL,
-            username,
-            password,
-          },
-          smtpConfig: {
-            host: smtpHost,
-            port: smtpPort,
-            secure: useSSL,
-            username,
-            password,
-          },
-        });
-
-        if (accountId) {
-          updateNodeData({
-            isConfigured: true,
-            isConnected: true,
-            connectionStatus: "connected",
-            lastValidated: Date.now(),
-            accountId: accountId,
-            lastError: "",
-          });
-
-          toast.success("Email account configured!", {
-            description: `Successfully configured ${email}`,
-          });
-        } else {
-          throw new Error("Failed to store account");
-        }
-      } catch (error) {
-        console.error("Manual save error:", error);
-        updateNodeData({
-          connectionStatus: "error",
-          lastError:
-            error instanceof Error ? error.message : "Configuration failed",
-        });
-        toast.error("Configuration failed", {
-          description: error instanceof Error ? error.message : "Unknown error",
-        });
-      }
-    }, [
-      token,
-      isManualProvider,
-      provider,
-      email,
-      displayName,
-      imapHost,
-      imapPort,
-      smtpHost,
-      smtpPort,
-      username,
-      password,
-      useSSL,
-      useTLS,
-      storeEmailAccount,
-      updateNodeData,
-    ]);
-
-    /** Test connection */
-    const handleTestConnection = useCallback(async () => {
-      if (
-        !(token && nodeData.accountId) ||
-        typeof nodeData.accountId !== "string"
-      ) {
-        return;
-      }
-
-      try {
-        updateNodeData({ connectionStatus: "connecting", lastError: "" });
-
-        const result = await validateConnection({
-          accountId: nodeData.accountId as any,
-          token_hash: token,
-        });
-
-        if (result.success) {
-          updateNodeData({
-            connectionStatus: "connected",
-            isConnected: true,
-            lastValidated: Date.now(),
-            lastError: "",
-          });
-
-          toast.success("Connection test successful!");
-        } else {
-          throw new Error(result.error || "Connection test failed");
-        }
-      } catch (error) {
-        updateNodeData({
-          connectionStatus: "error",
-          isConnected: false,
-          lastError:
-            error instanceof Error ? error.message : "Connection test failed",
-        });
-        toast.error("Connection test failed", {
-          description: error instanceof Error ? error.message : "Unknown error",
-        });
-      }
-    }, [token, nodeData.accountId, validateConnection, updateNodeData]);
-
     // -------------------------------------------------------------------------
-    // 4.6  Effects
+    // 4.4  Effects
     // -------------------------------------------------------------------------
-
-    /** Check URL parameters for auth result on component mount */
-    useEffect(() => {
-      console.log("🔄 EmailAccount useEffect running for node:", id);
-      const urlParams = new URLSearchParams(window.location.search);
-      console.log("🔍 Checking URL params:", {
-        hasAuthSuccess: !!urlParams.get("auth_success"),
-        hasAuthData: !!urlParams.get("auth_data"),
-        isConnected,
-        currentUrl: window.location.href,
-        nodeId: id,
-      });
-
-      if (urlParams.get("auth_success") && !isConnected) {
-        const authData = urlParams.get("auth_data");
-        if (authData) {
-          console.log("✅ Processing auth success from URL params");
-          console.log("📦 Auth data:", authData.substring(0, 50) + "...");
-          handleAuthSuccess(authData);
-          // Clean up URL parameters
-          window.history.replaceState(
-            {},
-            document.title,
-            window.location.pathname
-          );
-        }
-      } else if (urlParams.get("auth_error")) {
-        const errorDesc =
-          urlParams.get("auth_error_description") || "Authentication failed";
-        console.log("❌ Processing auth error:", errorDesc);
-        handleAuthError(errorDesc);
-        // Clean up URL parameters
-        window.history.replaceState(
-          {},
-          document.title,
-          window.location.pathname
-        );
-      }
-    }, [handleAuthSuccess, handleAuthError, isConnected]);
 
     /** Update output when connection state changes */
     useEffect(() => {
       if (isEnabled && isConnected) {
-        const accountConfig = {
-          provider,
-          email,
-          displayName,
-          accountId: nodeData.accountId,
-          lastValidated,
-        };
-
         // Generate Map-based output with error handling
         const outputValue = generateoutputField(spec, nodeData as any);
 
@@ -751,19 +321,10 @@ const EmailAccountNode = memo(
           isActive: false,
         });
       }
-    }, [
-      isEnabled,
-      isConnected,
-      provider,
-      email,
-      displayName,
-      nodeData.accountId,
-      lastValidated,
-      updateNodeData,
-    ]);
+    }, [isEnabled, isConnected, updateNodeData]);
 
     // -------------------------------------------------------------------------
-    // 4.7  Validation
+    // 4.5  Validation
     // -------------------------------------------------------------------------
     const validation = validateNodeData(nodeData);
     if (!validation.success) {
@@ -781,331 +342,52 @@ const EmailAccountNode = memo(
     );
 
     // -------------------------------------------------------------------------
-    // 4.8  Render
+    // 4.6  Render
     // -------------------------------------------------------------------------
     return (
-      <>
-        {/* Output handle for connecting to other email nodes */}
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="account-output"
-          style={{
-            background: "#555",
-            width: 8,
-            height: 8,
-            top: 20,
-          }}
-        />
+      <EmailAccountProvider nodeData={nodeData} updateNodeData={updateNodeData}>
+        <>
+          {/* Output handle for connecting to other email nodes */}
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="account-output"
+            style={{
+              background: "#555",
+              width: 8,
+              height: 8,
+              top: 20,
+            }}
+          />
 
-        {/* Editable label */}
-        <LabelNode
-          nodeId={id}
-          label={(nodeData as EmailAccountData).label || spec.displayName}
-        />
+          {/* Editable label */}
+          <LabelNode
+            nodeId={id}
+            label={(nodeData as EmailAccountData).label || spec.displayName}
+          />
 
-        {isExpanded ? (
-          <div
-            className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
-          >
-            <div className={CONTENT.header}>
-              <span className="font-medium text-sm">Email Account</span>
-              <div
-                className={`text-xs ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}
-              >
-                {connectionStatus === "connected"
-                  ? "✓"
-                  : connectionStatus === "error"
-                    ? "✗"
-                    : "○"}{" "}
-                {connectionStatus}
-              </div>
-            </div>
+          {/* Conditional rendering based on expanded state */}
+          {isExpanded ? (
+            <EmailAccountExpanded
+              nodeData={nodeData}
+              updateNodeData={updateNodeData}
+              isEnabled={isEnabled}
+              isAuthenticating={isAuthenticating}
+            />
+          ) : (
+            <EmailAccountCollapsed
+              nodeData={nodeData}
+              categoryStyles={categoryStyles}
+            />
+          )}
 
-            <div className={CONTENT.body}>
-              {/* Provider Selection */}
-              <div>
-                <label
-                  htmlFor="provider-select"
-                  className="mb-1 block text-gray-600 text-xs"
-                >
-                  Provider:
-                </label>
-                <select
-                  id="provider-select"
-                  value={provider}
-                  onChange={handleProviderChange}
-                  className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  disabled={!isEnabled || isAuthenticating}
-                >
-                  {availableProviders.map((p) => (
-                    <option key={p.value} value={p.value}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Email Address */}
-              <div>
-                <label
-                  htmlFor="email-input"
-                  className="mb-1 block text-gray-600 text-xs"
-                >
-                  Email:
-                </label>
-                <input
-                  id="email-input"
-                  type="email"
-                  value={email}
-                  onChange={handleEmailChange}
-                  placeholder="your.email@example.com"
-                  className={`w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 ${categoryStyles.primary}`}
-                  disabled={!isEnabled || isAuthenticating}
-                />
-              </div>
-
-              {/* Display Name */}
-              <div>
-                <label
-                  htmlFor="display-name-input"
-                  className="mb-1 block text-gray-600 text-xs"
-                >
-                  Display Name:
-                </label>
-                <input
-                  id="display-name-input"
-                  type="text"
-                  value={displayName}
-                  onChange={handleDisplayNameChange}
-                  placeholder="Your Name"
-                  className={`w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 ${categoryStyles.primary}`}
-                  disabled={!isEnabled || isAuthenticating}
-                />
-              </div>
-
-              {/* OAuth2 Authentication */}
-              {isOAuth2Provider && (
-                <div>
-                  <button
-                    onClick={handleOAuth2Auth}
-                    disabled={!isEnabled || isAuthenticating || !email}
-                    className="w-full rounded bg-blue-500 p-2 text-white text-xs hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                    type="button"
-                  >
-                    {isAuthenticating
-                      ? "Authenticating..."
-                      : `Connect ${currentProvider?.name}`}
-                  </button>
-                </div>
-              )}
-
-              {/* Manual Configuration */}
-              {isManualProvider && (
-                <>
-                  {provider === "imap" && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label
-                          htmlFor="imap-host"
-                          className="mb-1 block text-gray-600 text-xs"
-                        >
-                          IMAP Host:
-                        </label>
-                        <input
-                          id="imap-host"
-                          type="text"
-                          value={imapHost}
-                          onChange={handleManualFieldChange("imapHost")}
-                          placeholder="imap.example.com"
-                          className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          disabled={!isEnabled}
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="imap-port"
-                          className="mb-1 block text-gray-600 text-xs"
-                        >
-                          Port:
-                        </label>
-                        <input
-                          id="imap-port"
-                          type="number"
-                          value={imapPort}
-                          onChange={handleManualFieldChange("imapPort")}
-                          placeholder="993"
-                          className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          disabled={!isEnabled}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {provider === "smtp" && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label
-                          htmlFor="smtp-host"
-                          className="mb-1 block text-gray-600 text-xs"
-                        >
-                          SMTP Host:
-                        </label>
-                        <input
-                          id="smtp-host"
-                          type="text"
-                          value={smtpHost}
-                          onChange={handleManualFieldChange("smtpHost")}
-                          placeholder="smtp.example.com"
-                          className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          disabled={!isEnabled}
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="smtp-port"
-                          className="mb-1 block text-gray-600 text-xs"
-                        >
-                          Port:
-                        </label>
-                        <input
-                          id="smtp-port"
-                          type="number"
-                          value={smtpPort}
-                          onChange={handleManualFieldChange("smtpPort")}
-                          placeholder="587"
-                          className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          disabled={!isEnabled}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label
-                        htmlFor="username"
-                        className="mb-1 block text-gray-600 text-xs"
-                      >
-                        Username:
-                      </label>
-                      <input
-                        id="username"
-                        type="text"
-                        value={username}
-                        onChange={handleManualFieldChange("username")}
-                        placeholder="Usually your email"
-                        className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        disabled={!isEnabled}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="password"
-                        className="mb-1 block text-gray-600 text-xs"
-                      >
-                        Password:
-                      </label>
-                      <input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={handleManualFieldChange("password")}
-                        placeholder="Password or app password"
-                        className="w-full rounded border p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        disabled={!isEnabled}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <label
-                      htmlFor={`use-ssl-${provider}`}
-                      className="flex items-center text-xs"
-                    >
-                      <input
-                        id={`use-ssl-${provider}`}
-                        type="checkbox"
-                        checked={provider === "imap" ? useSSL : useTLS}
-                        onChange={handleManualFieldChange(
-                          provider === "imap" ? "useSSL" : "useTLS"
-                        )}
-                        className="mr-1"
-                        disabled={!isEnabled}
-                      />
-                      Use {provider === "imap" ? "SSL" : "TLS"}
-                    </label>
-                  </div>
-
-                  <button
-                    onClick={handleManualSave}
-                    disabled={!(isEnabled && email && username && password)}
-                    className="w-full rounded bg-green-500 p-2 text-white text-xs hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50"
-                    type="button"
-                  >
-                    Save Configuration
-                  </button>
-                </>
-              )}
-
-              {/* Connection Actions */}
-              {isConfigured && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleTestConnection}
-                    disabled={!isEnabled || connectionStatus === "connecting"}
-                    className="flex-1 rounded bg-blue-500 p-2 text-white text-xs hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                    type="button"
-                  >
-                    {connectionStatus === "connecting"
-                      ? "Testing..."
-                      : "Test Connection"}
-                  </button>
-                </div>
-              )}
-
-              {/* Status Information */}
-              <div className="rounded bg-gray-50 p-2 text-gray-500 text-xs">
-                <div>Status: {connectionStatus}</div>
-                {lastValidated && (
-                  <div>
-                    Last validated: {new Date(lastValidated).toLocaleString()}
-                  </div>
-                )}
-                {lastError && (
-                  <div className="mt-1 text-red-600">Error: {lastError}</div>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div
-            className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
-          >
-            <div className="p-2 text-center">
-              <div className={`font-mono text-xs ${categoryStyles.primary}`}>
-                {email || provider}
-              </div>
-              <div
-                className={`text-xs ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}
-              >
-                {connectionStatus === "connected"
-                  ? "✓"
-                  : connectionStatus === "error"
-                    ? "✗"
-                    : "○"}{" "}
-                {connectionStatus}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <ExpandCollapseButton
-          showUI={isExpanded}
-          onToggle={toggleExpand}
-          size="sm"
-        />
-      </>
+          <ExpandCollapseButton
+            showUI={isExpanded}
+            onToggle={toggleExpand}
+            size="sm"
+          />
+        </>
+      </EmailAccountProvider>
     );
   }
 );

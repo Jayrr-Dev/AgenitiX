@@ -303,6 +303,9 @@ importers:
       '@types/three':
         specifier: ^0.176.0
         version: 0.176.0
+      '@welldone-software/why-did-you-render':
+        specifier: ^10.0.1
+        version: 10.0.1(react@19.1.1)
       chokidar:
         specifier: ^4.0.3
         version: 4.0.3
@@ -3882,6 +3885,11 @@ packages:
 
   '@webgpu/types@0.1.60':
     resolution: {integrity: sha512-8B/tdfRFKdrnejqmvq95ogp8tf52oZ51p3f4QD5m5Paey/qlX4Rhhy5Y8tgFMi7Ms70HzcMMw3EQjH/jdhTwlA==}
+
+  '@welldone-software/why-did-you-render@10.0.1':
+    resolution: {integrity: sha512-tMgGkt30iVYeLMUKExNmtm019QgyjLtA7lwB0QAizYNEuihlCG2eoAWBBaz/bDeI7LeqAJ9msC6hY3vX+JB97g==}
+    peerDependencies:
+      react: ^19
 
   '@xobotyi/scrollbar-width@1.9.5':
     resolution: {integrity: sha512-N8tkAACJx2ww8vFMneJmaAgmjAG1tnVBZJRLRcx061tmsLRZHSEZSLuGWnwPtunsSLvSqXQ2wfp7Mgqg1I+2dQ==}
@@ -13949,6 +13957,11 @@ snapshots:
       '@xtuc/long': 4.2.2
 
   '@webgpu/types@0.1.60': {}
+
+  '@welldone-software/why-did-you-render@10.0.1(react@19.1.1)':
+    dependencies:
+      lodash: 4.17.21
+      react: 19.1.1
 
   '@xobotyi/scrollbar-width@1.9.5': {}
 

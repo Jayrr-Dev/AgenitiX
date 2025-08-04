@@ -1093,7 +1093,16 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
         updateNodeData({ output: {} });
       }
     }
-  }, [spec.handles, nodeData, updateNodeData, id]);
+  }, [
+    spec.handles,
+    nodeData.isActive,
+    nodeData.sendingStatus,
+    nodeData.successOutput,
+    nodeData.messageIdOutput,
+    nodeData.errorOutput,
+    updateNodeData,
+    id,
+  ]);
 
   // -------------------------------------------------------------------------
   // 4.7  Validation
