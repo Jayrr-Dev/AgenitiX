@@ -16,7 +16,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type React from "react";
-import { useCallback, useRef, useMemo, memo } from "react";
+import { memo, useCallback, useMemo, useRef } from "react";
 
 import { LucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
@@ -41,387 +41,436 @@ const DRAG_PREVIEW_OFFSET_Y = 15; // Vertical offset for drag preview, basically
  * Formats node label with proper capitalization, basically converts camelCase to Title Case
  */
 const formatNodeLabel = (label: string): string => {
-	return label
-		.replace(/([A-Z])/g, " $1") // Add space before capital letters
-		.replace(/^./, (str) => str.toUpperCase()) // Capitalize first letter
-		.trim(); // Remove leading/trailing spaces
+  return label
+    .replace(/([A-Z])/g, " $1") // Add space before capital letters
+    .replace(/^./, (str) => str.toUpperCase()) // Capitalize first letter
+    .trim(); // Remove leading/trailing spaces
 };
 
 /**
  * Category-based fallback icon mapping, basically provides default icons when stencil icon is missing
  */
 const CATEGORY_ICON_MAP: Record<string, string> = {
-	create: "LuPlus",
-	view: "LuEye",
-	trigger: "LuZap",
-	test: "LuTestTube",
-	cycle: "LuRefreshCw",
-	store: "LuDatabase",
-	ai: "LuBot",
-	time: "LuClock",
-	flow: "LuGitBranch",
-	email: "LuMail",
+  create: "LuPlus",
+  view: "LuEye",
+  trigger: "LuZap",
+  test: "LuTestTube",
+  cycle: "LuRefreshCw",
+  store: "LuDatabase",
+  ai: "LuBot",
+  time: "LuClock",
+  flow: "LuGitBranch",
+  email: "LuMail",
 } as const;
 
 /**
  * Get category-based fallback icon for stencils, basically provides appropriate icons when stencil.icon is not available
  */
 const getCategoryFallbackIcon = (category?: string): string => {
-	if (!category) {
-		return "LuCircle";
-	}
-	return CATEGORY_ICON_MAP[category.toLowerCase()] || "LuCircle";
+  if (!category) {
+    return "LuCircle";
+  }
+  return CATEGORY_ICON_MAP[category.toLowerCase()] || "LuCircle";
 };
 
 interface SortableStencilProps {
-	stencil: NodeStencil;
-	onNativeDragStart: (e: React.DragEvent<HTMLDivElement>, nodeType: string) => void;
-	onDoubleClickCreate: (nodeType: string) => void;
-	setHovered: (s: HoveredStencil | null) => void;
-	onRemove?: (stencilId: string) => void;
-	showRemoveButton?: boolean;
-	keyboardShortcut?: string;
-	isReadOnly?: boolean;
+  stencil: NodeStencil;
+  onNativeDragStart: (
+    e: React.DragEvent<HTMLDivElement>,
+    nodeType: string
+  ) => void;
+  onDoubleClickCreate: (nodeType: string) => void;
+  setHovered: (s: HoveredStencil | null) => void;
+  onRemove?: (stencilId: string) => void;
+  showRemoveButton?: boolean;
+  keyboardShortcut?: string;
+  isReadOnly?: boolean;
 }
 
 interface TouchState {
-	startTime: number;
-	startPos: { x: number; y: number };
-	lastTapTime: number;
-	isDragging: boolean;
+  startTime: number;
+  startPos: { x: number; y: number };
+  lastTapTime: number;
+  isDragging: boolean;
 }
 
 const SortableStencilComponent: React.FC<SortableStencilProps> = ({
-	stencil,
-	onNativeDragStart,
-	onDoubleClickCreate,
-	setHovered,
-	onRemove,
-	showRemoveButton = false,
-	keyboardShortcut,
-	isReadOnly = false,
+  stencil,
+  onNativeDragStart,
+  onDoubleClickCreate,
+  setHovered,
+  onRemove,
+  showRemoveButton = false,
+  keyboardShortcut,
+  isReadOnly = false,
 }) => {
-	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-		id: stencil.id,
-	});
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: stencil.id,
+  });
 
-	// Memoized style object to prevent recreation on every render
-	const style = useMemo(() => ({
-		transform: CSS.Transform.toString(transform),
-		transition,
-		opacity: isDragging ? 0.5 : 1,
-	}), [transform, transition, isDragging]);
+  // Memoized style object to prevent recreation on every render
+  const style = useMemo(
+    () => ({
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    }),
+    [transform, transition, isDragging]
+  );
 
-	// Consolidated touch state for better performance
-	const touchState = useRef<TouchState>({
-		startTime: 0,
-		startPos: { x: 0, y: 0 },
-		lastTapTime: 0,
-		isDragging: false,
-	});
+  // Consolidated touch state for better performance
+  const touchState = useRef<TouchState>({
+    startTime: 0,
+    startPos: { x: 0, y: 0 },
+    lastTapTime: 0,
+    isDragging: false,
+  });
 
-	// Memoized hover state object to prevent recreation
-	const hoveredState = useMemo(() => ({
-		id: stencil.id,
-		label: stencil.label,
-		description: stencil.description,
-		nodeType: stencil.nodeType,
-	}), [stencil.id, stencil.label, stencil.description, stencil.nodeType]);
+  // Memoized hover state object to prevent recreation
+  const hoveredState = useMemo(
+    () => ({
+      id: stencil.id,
+      label: stencil.label,
+      description: stencil.description,
+      nodeType: stencil.nodeType,
+    }),
+    [stencil.id, stencil.label, stencil.description, stencil.nodeType]
+  );
 
-	// Optimized icon name computation with stable memoization, basically prevent unnecessary re-computation
-	const iconName = useMemo(() => {
-		const registryIcon = getNodeSpecMetadata(stencil.nodeType)?.icon;
-		const finalIconName = stencil.icon || registryIcon || getCategoryFallbackIcon(stencil.category);
-		
-		// Debug logging in development only when icon is missing
-		if (process.env.NODE_ENV === "development" && !stencil.icon && !registryIcon) {
-			console.warn(`⚠️ No icon found for stencil: ${stencil.label} (${stencil.nodeType}), using fallback: ${finalIconName}`);
-		}
-		
-		return finalIconName;
-	}, [stencil.nodeType, stencil.icon, stencil.category]);
+  // Optimized icon name computation with stable memoization, basically prevent unnecessary re-computation
+  const iconName = useMemo(() => {
+    const registryIcon = getNodeSpecMetadata(stencil.nodeType)?.icon;
+    const finalIconName =
+      stencil.icon || registryIcon || getCategoryFallbackIcon(stencil.category);
 
-	// Memoized formatted label with proper dependency
-	const formattedLabel = useMemo(() => formatNodeLabel(stencil.label), [stencil.label]);
+    // Debug logging in development only when icon is missing
+    if (
+      process.env.NODE_ENV === "development" &&
+      !stencil.icon &&
+      !registryIcon
+    ) {
+      console.warn(
+        `⚠️ No icon found for stencil: ${stencil.label} (${stencil.nodeType}), using fallback: ${finalIconName}`
+      );
+    }
 
-	// Memoized title computation
-	const titleText = useMemo(() => 
-		keyboardShortcut ? `${stencil.label} (${keyboardShortcut})` : stencil.label,
-		[stencil.label, keyboardShortcut]
-	);
+    return finalIconName;
+  }, [stencil.nodeType, stencil.icon, stencil.category]);
 
-	// Optimized event handlers with better memoization
-	const handleKeyFocus = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-		if (["Enter", " "].includes(e.key)) {
-			setHovered(hoveredState);
-		}
-	}, [setHovered, hoveredState]);
+  // Memoized formatted label with proper dependency
+  const formattedLabel = useMemo(
+    () => formatNodeLabel(stencil.label),
+    [stencil.label]
+  );
 
-	const handleDoubleClick = useCallback(() => {
-		// Prevent node creation in read-only mode, basically for public flows accessed from explore
-		if (isReadOnly) {
-			return;
-		}
-		onDoubleClickCreate(stencil.nodeType);
-	}, [onDoubleClickCreate, stencil.nodeType, isReadOnly]);
+  // Memoized title computation
+  const titleText = useMemo(
+    () =>
+      keyboardShortcut
+        ? `${stencil.label} (${keyboardShortcut})`
+        : stencil.label,
+    [stencil.label, keyboardShortcut]
+  );
 
-	const handleMouseEnter = useCallback(() => {
-		setHovered(hoveredState);
-	}, [setHovered, hoveredState]);
+  // Optimized event handlers with better memoization
+  const handleKeyFocus = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (["Enter", " "].includes(e.key)) {
+        setHovered(hoveredState);
+      }
+    },
+    [setHovered, hoveredState]
+  );
 
-	const handleMouseLeave = useCallback(() => {
-		setHovered(null);
-	}, [setHovered]);
+  const handleDoubleClick = useCallback(() => {
+    // Prevent node creation in read-only mode, basically for public flows accessed from explore
+    if (isReadOnly) {
+      return;
+    }
+    onDoubleClickCreate(stencil.nodeType);
+  }, [onDoubleClickCreate, stencil.nodeType, isReadOnly]);
 
-	const handleFocus = useCallback(() => {
-		setHovered(hoveredState);
-	}, [setHovered, hoveredState]);
+  const handleMouseEnter = useCallback(() => {
+    setHovered(hoveredState);
+  }, [setHovered, hoveredState]);
 
-	const handleBlur = useCallback(() => {
-		setHovered(null);
-	}, [setHovered]);
+  const handleMouseLeave = useCallback(() => {
+    setHovered(null);
+  }, [setHovered]);
 
-	// Optimized touch event handlers with consolidated state
-	const handleTouchStart = useCallback(
-		(e: React.TouchEvent) => {
-			const touch = e.touches[0];
-			const now = Date.now();
-			
-			// Update touch state efficiently
-			touchState.current.startTime = now;
-			touchState.current.startPos = { x: touch.clientX, y: touch.clientY };
-			touchState.current.isDragging = false;
+  const handleFocus = useCallback(() => {
+    setHovered(hoveredState);
+  }, [setHovered, hoveredState]);
 
-			// Check for double tap with constants
-			const timeSinceLastTap = now - touchState.current.lastTapTime;
-			if (timeSinceLastTap < DOUBLE_TAP_THRESHOLD_MAX && timeSinceLastTap > DOUBLE_TAP_THRESHOLD_MIN) {
-				e.preventDefault();
-				e.stopPropagation();
-				// Prevent node creation in read-only mode, basically for public flows accessed from explore
-				if (!isReadOnly) {
-					onDoubleClickCreate(stencil.nodeType);
-				}
-				return;
-			}
-			touchState.current.lastTapTime = now;
+  const handleBlur = useCallback(() => {
+    setHovered(null);
+  }, [setHovered]);
 
-			// Add visual feedback for touch start using constants
-			const target = e.currentTarget as HTMLElement;
-			target.style.transform = SCALE_TRANSFORM;
-			target.style.transition = SCALE_TRANSITION;
-		},
-		[onDoubleClickCreate, stencil.nodeType, isReadOnly]
-	);
+  // Optimized touch event handlers with consolidated state
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      const touch = e.touches[0];
+      const now = Date.now();
 
-	const handleTouchMove = useCallback(
-		(e: React.TouchEvent) => {
-			const touch = e.touches[0];
-			const deltaX = Math.abs(touch.clientX - touchState.current.startPos.x);
-			const deltaY = Math.abs(touch.clientY - touchState.current.startPos.y);
-			const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      // Update touch state efficiently
+      touchState.current.startTime = now;
+      touchState.current.startPos = { x: touch.clientX, y: touch.clientY };
+      touchState.current.isDragging = false;
 
-			// Use constant for threshold and check consolidated state
-			if (distance > TOUCH_THRESHOLD && !touchState.current.isDragging) {
-				touchState.current.isDragging = true;
-				e.preventDefault();
+      // Check for double tap with constants
+      const timeSinceLastTap = now - touchState.current.lastTapTime;
+      if (
+        timeSinceLastTap < DOUBLE_TAP_THRESHOLD_MAX &&
+        timeSinceLastTap > DOUBLE_TAP_THRESHOLD_MIN
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Prevent node creation in read-only mode, basically for public flows accessed from explore
+        if (!isReadOnly) {
+          onDoubleClickCreate(stencil.nodeType);
+        }
+        return;
+      }
+      touchState.current.lastTapTime = now;
 
-				// Start touch drag simulation
-				startTouchDrag(touch, e.currentTarget);
-			}
-		},
-		[stencil.nodeType, stencil.label]
-	);
+      // Add visual feedback for touch start using constants
+      const target = e.currentTarget as HTMLElement;
+      target.style.transform = SCALE_TRANSFORM;
+      target.style.transition = SCALE_TRANSITION;
+    },
+    [onDoubleClickCreate, stencil.nodeType, isReadOnly]
+  );
 
-	const startTouchDrag = useCallback(
-		(touch: React.Touch, _element: EventTarget) => {
-			// Create optimized drag preview with constants
-			const dragPreview = document.createElement("div");
-			dragPreview.textContent = stencil.label;
-			dragPreview.className =
-				"fixed z-50 pointer-events-none bg-node-create text-node-create-text px-2 py-1 rounded text-xs";
-			dragPreview.style.left = `${touch.clientX - DRAG_PREVIEW_OFFSET_X}px`;
-			dragPreview.style.top = `${touch.clientY - DRAG_PREVIEW_OFFSET_Y}px`;
-			document.body.appendChild(dragPreview);
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      const touch = e.touches[0];
+      const deltaX = Math.abs(touch.clientX - touchState.current.startPos.x);
+      const deltaY = Math.abs(touch.clientY - touchState.current.startPos.y);
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-			// Optimized touch movement handler with null checks
-			const handleTouchMoveGlobal = (e: TouchEvent) => {
-				const currentTouch = e.touches[0];
-				if (currentTouch && dragPreview.parentNode) {
-					dragPreview.style.left = `${currentTouch.clientX - DRAG_PREVIEW_OFFSET_X}px`;
-					dragPreview.style.top = `${currentTouch.clientY - DRAG_PREVIEW_OFFSET_Y}px`;
-				}
-			};
+      // Use constant for threshold and check consolidated state
+      if (distance > TOUCH_THRESHOLD && !touchState.current.isDragging) {
+        touchState.current.isDragging = true;
+        e.preventDefault();
 
-			// Optimized cleanup function
-			const cleanup = () => {
-				if (dragPreview.parentNode) {
-					dragPreview.parentNode.removeChild(dragPreview);
-				}
-				document.removeEventListener("touchmove", handleTouchMoveGlobal);
-				document.removeEventListener("touchend", handleTouchEndGlobal);
-				touchState.current.isDragging = false;
-			};
+        // Start touch drag simulation
+        startTouchDrag(touch, e.currentTarget);
+      }
+    },
+    [stencil.nodeType, stencil.label]
+  );
 
-			// Handle touch end (drop) with better error handling
-			const handleTouchEndGlobal = (e: TouchEvent) => {
-				e.preventDefault();
+  const startTouchDrag = useCallback(
+    (touch: React.Touch, _element: EventTarget) => {
+      // Create optimized drag preview with constants
+      const dragPreview = document.createElement("div");
+      dragPreview.textContent = stencil.label;
+      dragPreview.className =
+        "fixed z-50 pointer-events-none bg-node-create text-node-create-text px-2 py-1 rounded text-xs";
+      dragPreview.style.left = `${touch.clientX - DRAG_PREVIEW_OFFSET_X}px`;
+      dragPreview.style.top = `${touch.clientY - DRAG_PREVIEW_OFFSET_Y}px`;
+      document.body.appendChild(dragPreview);
 
-				try {
-					// Find the drop target
-					const lastTouch = e.changedTouches[0];
-					if (!lastTouch) {
-						cleanup();
-						return;
-					}
+      // Optimized touch movement handler with null checks
+      const handleTouchMoveGlobal = (e: TouchEvent) => {
+        const currentTouch = e.touches[0];
+        if (currentTouch && dragPreview.parentNode) {
+          dragPreview.style.left = `${currentTouch.clientX - DRAG_PREVIEW_OFFSET_X}px`;
+          dragPreview.style.top = `${currentTouch.clientY - DRAG_PREVIEW_OFFSET_Y}px`;
+        }
+      };
 
-					const dropTarget = document.elementFromPoint(lastTouch.clientX, lastTouch.clientY);
-					const flowCanvas = dropTarget?.closest(".react-flow");
-					
-					if (flowCanvas) {
-						// Create optimized synthetic drop event
-						const syntheticDropEvent = new DragEvent("drop", {
-							bubbles: true,
-							cancelable: true,
-							clientX: lastTouch.clientX,
-							clientY: lastTouch.clientY,
-						});
+      // Optimized cleanup function
+      const cleanup = () => {
+        if (dragPreview.parentNode) {
+          dragPreview.parentNode.removeChild(dragPreview);
+        }
+        document.removeEventListener("touchmove", handleTouchMoveGlobal);
+        document.removeEventListener("touchend", handleTouchEndGlobal);
+        touchState.current.isDragging = false;
+      };
 
-						// Create minimal DataTransfer object
-						Object.defineProperty(syntheticDropEvent, "dataTransfer", {
-							value: {
-								getData: (format: string) => 
-									format === "application/reactflow" ? stencil.nodeType : "",
-								setData: () => {},
-								effectAllowed: "move",
-								dropEffect: "move",
-							},
-							writable: false,
-						});
+      // Handle touch end (drop) with better error handling
+      const handleTouchEndGlobal = (e: TouchEvent) => {
+        e.preventDefault();
 
-						// Dispatch the drop event
-						flowCanvas.dispatchEvent(syntheticDropEvent);
-					}
-				} catch (error) {
-					console.warn("Touch drag cleanup error:", error);
-				} finally {
-					cleanup();
-				}
-			};
+        try {
+          // Find the drop target
+          const lastTouch = e.changedTouches[0];
+          if (!lastTouch) {
+            cleanup();
+            return;
+          }
 
-			// Add global event listeners with proper options
-			document.addEventListener("touchmove", handleTouchMoveGlobal, {
-				passive: false,
-			});
-			document.addEventListener("touchend", handleTouchEndGlobal, {
-				passive: false,
-			});
-		},
-		[stencil.nodeType, stencil.label]
-	);
+          const dropTarget = document.elementFromPoint(
+            lastTouch.clientX,
+            lastTouch.clientY
+          );
+          const flowCanvas = dropTarget?.closest(".react-flow");
 
-	const handleTouchEnd = useCallback(
-		(e: React.TouchEvent) => {
-			const touchDuration = Date.now() - touchState.current.startTime;
+          if (flowCanvas) {
+            // Create optimized synthetic drop event
+            const syntheticDropEvent = new DragEvent("drop", {
+              bubbles: true,
+              cancelable: true,
+              clientX: lastTouch.clientX,
+              clientY: lastTouch.clientY,
+            });
 
-			// Reset visual feedback efficiently
-			const target = e.currentTarget as HTMLElement;
-			target.style.transform = "";
-			target.style.transition = "";
+            // Create minimal DataTransfer object
+            Object.defineProperty(syntheticDropEvent, "dataTransfer", {
+              value: {
+                getData: (format: string) =>
+                  format === "application/reactflow" ? stencil.nodeType : "",
+                setData: () => {},
+                effectAllowed: "move",
+                dropEffect: "move",
+              },
+              writable: false,
+            });
 
-			// Use constant for duration check and consolidated state
-			if (!touchState.current.isDragging && touchDuration < SINGLE_TAP_DURATION) {
-				// Single tap - show hover state briefly using memoized state
-				setHovered(hoveredState);
-				setTimeout(() => setHovered(null), HOVER_DISPLAY_DURATION);
-			}
+            // Dispatch the drop event
+            flowCanvas.dispatchEvent(syntheticDropEvent);
+          }
+        } catch (error) {
+          console.warn("Touch drag cleanup error:", error);
+        } finally {
+          cleanup();
+        }
+      };
 
-			touchState.current.isDragging = false;
-		},
-		[hoveredState, setHovered]
-	);
+      // Add global event listeners with proper options
+      document.addEventListener("touchmove", handleTouchMoveGlobal, {
+        passive: false,
+      });
+      document.addEventListener("touchend", handleTouchEndGlobal, {
+        passive: false,
+      });
+    },
+    [stencil.nodeType, stencil.label]
+  );
 
-	// Memoized drag start handler
-	const handleDragStart = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-		onNativeDragStart(e, stencil.nodeType);
-	}, [onNativeDragStart, stencil.nodeType]);
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      const touchDuration = Date.now() - touchState.current.startTime;
 
-	// Memoized remove handler
-	const handleRemove = useCallback((e: React.MouseEvent) => {
-		e.stopPropagation();
-		onRemove?.(stencil.id);
-	}, [onRemove, stencil.id]);
+      // Reset visual feedback efficiently
+      const target = e.currentTarget as HTMLElement;
+      target.style.transform = "";
+      target.style.transition = "";
 
-	return (
-		<div
-			ref={setNodeRef}
-			style={style}
-			className="group relative flex h-[70px] w-[70px] cursor-pointer select-none items-center justify-center rounded border-2 border-[var(--infra-sidebar-border)] bg-[var(--infra-sidebar-bg)] text-[var(--infra-sidebar-text)] transition-colors hover:bg-[var(--infra-sidebar-bg-hover)]"
-			title={titleText}
-			onDoubleClick={handleDoubleClick}
-			onMouseEnter={handleMouseEnter}
-			onMouseLeave={handleMouseLeave}
-			onFocus={handleFocus}
-			onBlur={handleBlur}
-			onKeyDown={handleKeyFocus}
-			onTouchStart={handleTouchStart}
-			onTouchMove={handleTouchMove}
-			onTouchEnd={handleTouchEnd}
-		>
-			<button
-				{...attributes}
-				{...listeners}
-				type="button"
-				title="Re-order"
-				className="absolute top-1 left-1 h-3 w-3 cursor-grab text-[8px] text-[var(--infra-sidebar-text-secondary)] active:cursor-grabbing"
-				draggable={false}
-			>
-				⦿
-			</button>
+      // Use constant for duration check and consolidated state
+      if (
+        !touchState.current.isDragging &&
+        touchDuration < SINGLE_TAP_DURATION
+      ) {
+        // Single tap - show hover state briefly using memoized state
+        setHovered(hoveredState);
+        setTimeout(() => setHovered(null), HOVER_DISPLAY_DURATION);
+      }
 
-			{showRemoveButton && onRemove && (
-				<button
-					type="button"
-					title="Remove from custom section"
-					onClick={handleRemove}
-					className="absolute top-1 right-1 flex h-3 w-3 cursor-pointer items-center justify-center rounded-full text-[12px] text-destructive opacity-0 transition-opacity hover:text-destructive/80 group-hover:opacity-100"
-				>
-					x
-				</button>
-			)}
+      touchState.current.isDragging = false;
+    },
+    [hoveredState, setHovered]
+  );
 
-			<div
-				draggable={true}
-				onDragStart={handleDragStart}
-				className="flex h-full w-full flex-col items-center justify-center text-center font-medium text-xs"
-			>
-				<LucideIcon name={iconName} size={ICON_SIZE} />
-				<div className="mt-1 text-[10px] text-[var(--infra-sidebar-text-secondary)] leading-tight">
-					{formattedLabel}
-				</div>
-			</div>
-		</div>
-	);
+  // Memoized drag start handler
+  const handleDragStart = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      onNativeDragStart(e, stencil.nodeType);
+    },
+    [onNativeDragStart, stencil.nodeType]
+  );
+
+  // Memoized remove handler
+  const handleRemove = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onRemove?.(stencil.id);
+    },
+    [onRemove, stencil.id]
+  );
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="group relative flex h-[70px] w-[70px] cursor-pointer select-none items-center justify-center rounded border-2 border-[var(--infra-sidebar-border)] bg-[var(--infra-sidebar-bg)] text-[var(--infra-sidebar-text)] transition-colors hover:bg-[var(--infra-sidebar-bg-hover)]"
+      title={titleText}
+      onDoubleClick={handleDoubleClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyFocus}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        type="button"
+        title="Re-order"
+        className="absolute top-1 left-1 h-3 w-3 cursor-grab text-[8px] text-[var(--infra-sidebar-text-secondary)] active:cursor-grabbing"
+        draggable={false}
+      >
+        ⦿
+      </button>
+
+      {showRemoveButton && onRemove && (
+        <button
+          type="button"
+          title="Remove from custom section"
+          onClick={handleRemove}
+          className="absolute top-1 right-1 flex h-3 w-3 cursor-pointer items-center justify-center rounded-full text-[12px] text-destructive opacity-0 transition-opacity hover:text-destructive/80 group-hover:opacity-100"
+        >
+          x
+        </button>
+      )}
+
+      <div
+        draggable={true}
+        onDragStart={handleDragStart}
+        className="flex h-full w-full flex-col items-center justify-center text-center font-medium text-xs"
+      >
+        <LucideIcon name={iconName} size={ICON_SIZE} />
+        <div className="mt-1 text-[10px] text-[var(--infra-sidebar-text-secondary)] leading-tight">
+          {formattedLabel}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // Memoized component for better performance with shallow comparison
-export const SortableStencil = memo(SortableStencilComponent, (prevProps, nextProps) => {
-	// Custom comparison for better performance, basically only re-render if essential props change
-	return (
-		prevProps.stencil.id === nextProps.stencil.id &&
-		prevProps.stencil.label === nextProps.stencil.label &&
-		prevProps.stencil.nodeType === nextProps.stencil.nodeType &&
-		prevProps.stencil.icon === nextProps.stencil.icon &&
-		prevProps.stencil.category === nextProps.stencil.category &&
-		prevProps.stencil.description === nextProps.stencil.description &&
-		prevProps.showRemoveButton === nextProps.showRemoveButton &&
-		prevProps.keyboardShortcut === nextProps.keyboardShortcut &&
-		prevProps.onNativeDragStart === nextProps.onNativeDragStart &&
-		prevProps.onDoubleClickCreate === nextProps.onDoubleClickCreate &&
-		prevProps.setHovered === nextProps.setHovered &&
-		prevProps.onRemove === nextProps.onRemove &&
-		prevProps.isReadOnly === nextProps.isReadOnly
-	);
-});
+export const SortableStencil = memo(
+  SortableStencilComponent,
+  (prevProps, nextProps) => {
+    // Custom comparison for better performance, basically only re-render if essential props change
+    return (
+      prevProps.stencil.id === nextProps.stencil.id &&
+      prevProps.stencil.label === nextProps.stencil.label &&
+      prevProps.stencil.nodeType === nextProps.stencil.nodeType &&
+      prevProps.stencil.icon === nextProps.stencil.icon &&
+      prevProps.stencil.category === nextProps.stencil.category &&
+      prevProps.stencil.description === nextProps.stencil.description &&
+      prevProps.showRemoveButton === nextProps.showRemoveButton &&
+      prevProps.keyboardShortcut === nextProps.keyboardShortcut &&
+      prevProps.onNativeDragStart === nextProps.onNativeDragStart &&
+      prevProps.onDoubleClickCreate === nextProps.onDoubleClickCreate &&
+      prevProps.setHovered === nextProps.setHovered &&
+      prevProps.onRemove === nextProps.onRemove &&
+      prevProps.isReadOnly === nextProps.isReadOnly
+    );
+  }
+);
 
 SortableStencil.displayName = "SortableStencil";
-

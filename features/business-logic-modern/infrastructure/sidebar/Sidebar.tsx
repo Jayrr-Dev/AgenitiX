@@ -28,9 +28,9 @@ import {
   useState,
 } from "react";
 
+import { useFlowMetadataOptional } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import type { NodeType } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
-import { useFlowMetadataOptional } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
 
 import { generateNodeId } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/nodeUtils";
 // REGISTRY INTEGRATION - Imports from the new NodeSpec registry
@@ -152,7 +152,7 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
 
     const { screenToFlowPosition } = useReactFlow();
     const { addNode } = useFlowStore();
-    
+
     // Check for read-only mode from flow metadata, basically if user can't edit flow then disable node creation
     const { flow } = useFlowMetadataOptional() || { flow: null };
     const canEdit = flow?.canEdit ?? true;
@@ -208,7 +208,7 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
           console.log("Node creation disabled in read-only mode");
           return false;
         }
-        
+
         try {
           // STEP 1: Registry validation with detailed feedback
           const validation = validateNode(nodeType);

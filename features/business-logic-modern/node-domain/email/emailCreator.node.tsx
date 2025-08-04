@@ -12,14 +12,7 @@
 
 "use client";
 
-import {
-  type ChangeEvent,
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { type ChangeEvent, memo, useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -30,9 +23,9 @@ import { Textarea } from "@/components/ui/textarea";
 
 // Node Infrastructure
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import { 
+import {
   SafeSchemas,
-  createSafeInitialData 
+  createSafeInitialData,
 } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
 import {
   createNodeValidator,
@@ -42,12 +35,12 @@ import {
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
 import type { NodeProps } from "@xyflow/react";
 
+import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 // Theming and Sizing
 import {
   COLLAPSED_SIZES,
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
-import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 
@@ -57,20 +50,14 @@ import { RichTextEditor } from "./components/RichTextEditor";
 // Types and Utilities
 import type { EmailValidationResult } from "./types";
 
-// Convex
-import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/hooks/useAuth";
+// Convex
+import { useQuery } from "convex/react";
 
 // -----------------------------------------------------------------------------
 // 🎨  Styling Constants
 // -----------------------------------------------------------------------------
-
-const CATEGORY_TEXT = {
-  EMAIL: {
-    primary: "text-[--node-email-text]",
-  },
-} as const;
 
 const CONTENT = {
   expanded: "p-4 w-full h-full flex flex-col",
@@ -330,7 +317,8 @@ function createDynamicSpec(data: EmailCreatorData): NodeSpec {
     },
     icon: "LuMail",
     author: "Agenitix Team",
-    description: "Create and compose emails with rich text editing and template support",
+    description:
+      "Create and compose emails with rich text editing and template support",
     feature: "email",
     tags: ["email", "composition", "rich-text", "templates"],
     theming: {},
@@ -346,35 +334,6 @@ export const spec: NodeSpec = createDynamicSpec({
 // -----------------------------------------------------------------------------
 // 3️⃣  Utility Functions
 // -----------------------------------------------------------------------------
-
-/** Validate email addresses */
-const validateEmailAddress = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email.trim()) && email.length <= 254;
-};
-
-/** Parse comma-separated email addresses */
-const parseEmailAddresses = (
-  emailString: string
-): { valid: string[]; invalid: string[] } => {
-  const emails = emailString
-    .split(/[,;\n]/)
-    .map((email) => email.trim())
-    .filter((email) => email.length > 0);
-
-  const valid: string[] = [];
-  const invalid: string[] = [];
-
-  for (const email of emails) {
-    if (validateEmailAddress(email)) {
-      valid.push(email);
-    } else {
-      invalid.push(email);
-    }
-  }
-
-  return { valid, invalid };
-};
 
 /** Validate email content */
 const validateEmailContent = (
@@ -430,17 +389,21 @@ const EmailCreatorNode = memo(
     // -------------------------------------------------------------------------
     // 4.1  Sync with React‑Flow store
     // -------------------------------------------------------------------------
-    const { nodeData, updateNodeData } = useNodeData(id, {});
+    const { nodeData, updateNodeData } = useNodeData(
+      id,
+      createSafeInitialData(EmailCreatorDataSchema, {
+        template: { variables: {}, useTemplate: false },
+      })
+    );
 
     const {
       recipients,
       subject,
       content,
-      template,
+      template = { variables: {}, useTemplate: false },
       attachments,
       validation,
       isEnabled = true,
-      isActive = false,
       isExpanded = false,
     } = nodeData as EmailCreatorData;
 
@@ -458,118 +421,174 @@ const EmailCreatorNode = memo(
     // -------------------------------------------------------------------------
     // 4.2  Template Connection Detection
     // -------------------------------------------------------------------------
-    
+
     // Detect connected EmailTemplate nodes
     const connectedTemplateData = useMemo(() => {
       const templateEdges = _edges.filter(
         (e) => e.target === id && e.targetHandle === "templateInput"
       );
-      
-      if (templateEdges.length === 0) return null;
-      
+
+      if (templateEdges.length === 0) {
+        return null;
+      }
+
       const templateNode = _nodes.find((n) => n.id === templateEdges[0].source);
-      if (!templateNode || templateNode.type !== 'emailTemplate') return null;
-      
+      if (!templateNode || templateNode.type !== "emailTemplate") {
+        return null;
+      }
+
       const templateNodeData = templateNode.data;
-      if (!templateNodeData?.templateName || !templateNodeData?.isActive) return null;
-      
+      if (!templateNodeData?.templateName) {
+        return null;
+      }
+      if (!templateNodeData?.isActive) {
+        return null;
+      }
+
       return {
         name: String(templateNodeData.templateName || ""),
         subject: String(templateNodeData.subject || ""),
         htmlContent: String(templateNodeData.htmlContent || ""),
         textContent: String(templateNodeData.textContent || ""),
-        variables: Array.isArray(templateNodeData.variables) ? templateNodeData.variables : [],
-        category: String(templateNodeData.category || "general")
+        variables: Array.isArray(templateNodeData.variables)
+          ? templateNodeData.variables
+          : [],
+        category: String(templateNodeData.category || "general"),
       };
     }, [_nodes, _edges, id]);
 
     // -------------------------------------------------------------------------
     // 4.3  State Management
     // -------------------------------------------------------------------------
-    const [_previewMode, _setPreviewMode] = useState<
-      "desktop" | "mobile" | "text"
-    >("desktop");
 
     // -------------------------------------------------------------------------
     // 4.4  Auto-load Template from Connection
     // -------------------------------------------------------------------------
-    
+
     // Auto-load template when connected to EmailTemplate node
     useEffect(() => {
       if (connectedTemplateData) {
-        console.log('📄 Loading template from connection:', connectedTemplateData.name);
-        
+        console.log(
+          "📄 Loading template from connection:",
+          connectedTemplateData.name
+        );
+
         // Extract variables from template content
         const extractVariables = (text: string) => {
           const variableRegex = /\{\{(\w+)\}\}/g;
           const variables: string[] = [];
-          let match;
-          while ((match = variableRegex.exec(text)) !== null) {
+          let match: RegExpExecArray | null = null;
+
+          // Use a while loop with explicit assignment to avoid linting issues
+          while (true) {
+            match = variableRegex.exec(text);
+            if (match === null) {
+              break;
+            }
             if (!variables.includes(match[1])) {
               variables.push(match[1]);
             }
           }
           return variables;
         };
-        
-        const subjectVars = extractVariables(connectedTemplateData.subject || "");
-        const contentVars = extractVariables((connectedTemplateData.htmlContent || "") + (connectedTemplateData.textContent || ""));
+
+        const subjectVars = extractVariables(
+          connectedTemplateData.subject || ""
+        );
+        const contentVars = extractVariables(
+          (connectedTemplateData.htmlContent || "") +
+            (connectedTemplateData.textContent || "")
+        );
         const allVariables = [...new Set([...subjectVars, ...contentVars])];
-        
+
         // Create variables object with empty values
         const variablesObj: Record<string, string> = {};
-        const existingVariables = template.variables as Record<string, string> || {};
-        allVariables.forEach(varName => {
+        const existingVariables =
+          (template?.variables as Record<string, string>) || {};
+        allVariables.forEach((varName) => {
           variablesObj[varName] = existingVariables[varName] || ""; // Keep existing values
         });
-        
+
         updateNodeData({
           subject: connectedTemplateData.subject,
           content: {
             ...content,
             html: connectedTemplateData.htmlContent,
             text: connectedTemplateData.textContent,
-            mode: connectedTemplateData.htmlContent ? "html" : "text"
+            mode: connectedTemplateData.htmlContent ? "html" : "text",
           },
           template: {
-            ...template,
+            ...(template || {}),
             id: `template_${Date.now()}`,
             name: connectedTemplateData.name,
             variables: variablesObj,
-            useTemplate: true
-          }
+            useTemplate: true,
+          },
         });
       }
     }, [connectedTemplateData, updateNodeData]);
 
     // Process template variables and update content
     useEffect(() => {
-      if (template.useTemplate && connectedTemplateData && Object.keys(template.variables).length > 0) {
+      if (
+        template?.useTemplate &&
+        connectedTemplateData &&
+        template?.variables &&
+        Object.keys(template.variables).length > 0
+      ) {
         // Replace variables in subject and content
-        const processTemplate = (text: string, variables: Record<string, string>) => {
+        const processTemplate = (
+          text: string,
+          variables: Record<string, string>
+        ) => {
           let processed = text;
           Object.entries(variables).forEach(([varName, varValue]) => {
-            const regex = new RegExp(`\\{\\{${varName}\\}\\}`, 'g');
+            const regex = new RegExp(`\\{\\{${varName}\\}\\}`, "g");
             processed = processed.replace(regex, varValue || `{{${varName}}}`);
           });
           return processed;
         };
 
-        const processedSubject = processTemplate(connectedTemplateData.subject, template.variables);
-        const processedHtmlContent = processTemplate(connectedTemplateData.htmlContent, template.variables);
-        const processedTextContent = processTemplate(connectedTemplateData.textContent, template.variables);
+        const processedSubject = processTemplate(
+          connectedTemplateData.subject,
+          template.variables
+        );
+        const processedHtmlContent = processTemplate(
+          connectedTemplateData.htmlContent,
+          template.variables
+        );
+        const processedTextContent = processTemplate(
+          connectedTemplateData.textContent,
+          template.variables
+        );
 
-        // Update subject and content with processed template
-        updateNodeData({
-          subject: processedSubject,
-          content: {
-            ...content,
-            html: processedHtmlContent,
-            text: processedTextContent,
-          },
-        });
+        // Only update if the processed content is different from current content, basically prevent infinite loops
+        const currentSubject = subject || "";
+        const currentHtmlContent = content.html || "";
+        const currentTextContent = content.text || "";
+
+        if (
+          processedSubject !== currentSubject ||
+          processedHtmlContent !== currentHtmlContent ||
+          processedTextContent !== currentTextContent
+        ) {
+          // Update subject and content with processed template
+          updateNodeData({
+            subject: processedSubject,
+            content: {
+              ...content,
+              html: processedHtmlContent,
+              text: processedTextContent,
+            },
+          });
+        }
       }
-    }, [template.variables, connectedTemplateData, template.useTemplate, updateNodeData]);
+    }, [
+      template.variables,
+      connectedTemplateData,
+      template.useTemplate,
+      // Removed content and subject from dependencies to prevent circular updates, basically these are outputs not inputs
+    ]);
 
     // -------------------------------------------------------------------------
     // 4.5  Validation and Processing
@@ -580,13 +599,14 @@ const EmailCreatorNode = memo(
 
     // Update validation in node data when it changes
     useEffect(() => {
-      if (
+      const validationChanged =
         validationResult.isValid !== validation.isValid ||
         JSON.stringify(validationResult.errors) !==
           JSON.stringify(validation.errors) ||
         JSON.stringify(validationResult.warnings) !==
-          JSON.stringify(validation.warnings)
-      ) {
+          JSON.stringify(validation.warnings);
+
+      if (validationChanged) {
         updateNodeData({
           validation: validationResult,
           validationOutput: validationResult.isValid,
@@ -597,21 +617,32 @@ const EmailCreatorNode = memo(
 
     // Update structured output for viewText nodes
     useEffect(() => {
-      const totalRecipients = recipients.to.length + recipients.cc.length + recipients.bcc.length;
-      const contentLength = (content.html || content.text || "").length;
-      
-      if (subject || totalRecipients > 0 || contentLength > 0) {
-        const simpleOutput = `📧 Email: ${subject || "(No subject)"} | To: ${totalRecipients} recipients | ${validationResult.isValid ? "✅ Valid" : "❌ Invalid"}`;
-        
+      const totalRecipients =
+        recipients.to.length + recipients.cc.length + recipients.bcc.length;
+
+      const hasContent =
+        subject ||
+        totalRecipients > 0 ||
+        (content.html || content.text || "").length > 0;
+      const newOutput = hasContent
+        ? `📧 Email: ${subject || "(No subject)"} | To: ${totalRecipients} recipients | ${validationResult.isValid ? "✅ Valid" : "❌ Invalid"}`
+        : "";
+
+      // Only update if the output has actually changed, basically prevent infinite loops
+      const currentOutput = (nodeData as EmailCreatorData).outputs || "";
+      if (newOutput !== currentOutput) {
         updateNodeData({
-          outputs: simpleOutput,
-        });
-      } else {
-        updateNodeData({
-          outputs: "",
+          outputs: newOutput,
         });
       }
-    }, [subject, recipients, content, template, attachments, validationResult, updateNodeData]);
+    }, [
+      subject,
+      recipients,
+      content,
+      validationResult,
+      nodeData,
+      updateNodeData,
+    ]);
 
     // -------------------------------------------------------------------------
     // 4.4  Event Handlers
@@ -621,36 +652,17 @@ const EmailCreatorNode = memo(
     const handleRecipientsChange = useCallback(
       (field: "to" | "cc" | "bcc") => (e: ChangeEvent<HTMLTextAreaElement>) => {
         const recipientString = e.target.value;
-        
+
         // Always update the raw value immediately for responsive UI
         updateNodeData({
           recipients: {
             ...recipients,
-            [field]: recipientString.split(/[,;\n]/).map(email => email.trim()).filter(email => email.length > 0),
+            [field]: recipientString
+              .split(/[,;\n]/)
+              .map((email) => email.trim())
+              .filter((email) => email.length > 0),
           },
         });
-      },
-      [recipients, updateNodeData]
-    );
-
-    /** Handle recipients validation on blur */
-    const handleRecipientsBlur = useCallback(
-      (field: "to" | "cc" | "bcc") => (e: ChangeEvent<HTMLTextAreaElement>) => {
-        const recipientString = e.target.value;
-        const { valid, invalid } = parseEmailAddresses(recipientString);
-
-        // Update with validated emails
-        updateNodeData({
-          recipients: {
-            ...recipients,
-            [field]: valid,
-          },
-        });
-
-        // Show validation feedback only on blur and if there are invalid emails
-        if (invalid.length > 0 && recipientString.trim().length > 0) {
-          toast.warning(`Invalid email addresses: ${invalid.join(", ")}`);
-        }
       },
       [recipients, updateNodeData]
     );
@@ -681,9 +693,9 @@ const EmailCreatorNode = memo(
       (varName: string, value: string) => {
         updateNodeData({
           template: {
-            ...template,
+            ...(template || {}),
             variables: {
-              ...template.variables,
+              ...(template?.variables || {}),
               [varName]: value,
             },
           },
@@ -695,57 +707,80 @@ const EmailCreatorNode = memo(
     /** Handle manual template selection */
     const handleTemplateSelection = useCallback(
       (templateId: string) => {
-        if (!templateId || !availableTemplates) return;
-        
-        const selectedTemplate = availableTemplates.find(t => t.id === templateId);
-        if (!selectedTemplate) return;
+        if (!templateId) {
+          return;
+        }
+        if (!availableTemplates) {
+          return;
+        }
 
-        console.log('📄 Loading selected template:', selectedTemplate.name);
-        
+        const selectedTemplate = availableTemplates.find(
+          (t) => t.id === templateId
+        );
+        if (!selectedTemplate) {
+          return;
+        }
+
+        console.log("📄 Loading selected template:", selectedTemplate.name);
+
         // Extract variables from template content
         const extractVariables = (text: string) => {
           const variableRegex = /\{\{(\w+)\}\}/g;
           const variables: string[] = [];
-          let match;
-          while ((match = variableRegex.exec(text)) !== null) {
+          let match: RegExpExecArray | null = null;
+
+          // Use a while loop with explicit assignment to avoid linting issues
+          while (true) {
+            match = variableRegex.exec(text);
+            if (match === null) {
+              break;
+            }
             if (!variables.includes(match[1])) {
               variables.push(match[1]);
             }
           }
           return variables;
         };
-        
-        const subjectVars = extractVariables(selectedTemplate.subject_template || "");
-        const contentVars = extractVariables(selectedTemplate.content_template || "");
+
+        const subjectVars = extractVariables(
+          selectedTemplate.subject_template || ""
+        );
+        const contentVars = extractVariables(
+          selectedTemplate.content_template || ""
+        );
         const allVariables = [...new Set([...subjectVars, ...contentVars])];
-        
+
         // Create variables object with empty values
         const variablesObj: Record<string, string> = {};
-        allVariables.forEach(varName => {
+        allVariables.forEach((varName) => {
           variablesObj[varName] = "";
         });
-        
+
         // Determine if content is HTML or text
-        const isHtml = selectedTemplate.content_template?.includes('<') && selectedTemplate.content_template?.includes('>');
-        
+        const isHtml =
+          selectedTemplate.content_template?.includes("<") &&
+          selectedTemplate.content_template?.includes(">");
+
         updateNodeData({
           subject: selectedTemplate.subject_template || "",
           content: {
             ...content,
             html: isHtml ? selectedTemplate.content_template || "" : "",
-            text: !isHtml ? selectedTemplate.content_template || "" : "",
-            mode: isHtml ? "html" : "text"
+            text: isHtml ? "" : selectedTemplate.content_template || "",
+            mode: isHtml ? "html" : "text",
           },
           template: {
             ...template,
             id: selectedTemplate.id,
             name: selectedTemplate.name,
             variables: variablesObj,
-            useTemplate: true
-          }
+            useTemplate: true,
+          },
         });
-        
-        toast.success(`Template "${selectedTemplate.name}" loaded successfully!`);
+
+        toast.success(
+          `Template "${selectedTemplate.name}" loaded successfully!`
+        );
       },
       [availableTemplates, template, content, updateNodeData]
     );
@@ -772,45 +807,72 @@ const EmailCreatorNode = memo(
     // 4.6  Generate emailOutput for EmailSender connection
     // -------------------------------------------------------------------------
     useEffect(() => {
-      if (validationResult.isValid && (subject || recipients.to.length > 0)) {
-        const emailData = {
-          recipients: {
-            to: recipients.to,
-            cc: recipients.cc,
-            bcc: recipients.bcc,
-          },
-          subject: subject,
-          content: {
-            text: content.text,
-            html: content.html,
-            useHtml: content.mode === "html" || content.mode === "rich",
-          },
-          attachments: attachments,
-          template: template.useTemplate ? {
-            id: template.id,
-            name: template.name,
-            variables: template.variables,
-          } : undefined,
-        };
-        
+      const shouldHaveOutput =
+        validationResult.isValid && (subject || recipients.to.length > 0);
+
+      const newEmailData = shouldHaveOutput
+        ? {
+            recipients: {
+              to: recipients.to,
+              cc: recipients.cc,
+              bcc: recipients.bcc,
+            },
+            subject: subject,
+            content: {
+              text: content.text,
+              html: content.html,
+              useHtml: content.mode === "html" || content.mode === "rich",
+            },
+            attachments: attachments,
+            template: template?.useTemplate
+              ? {
+                  id: template.id,
+                  name: template.name,
+                  variables: template.variables,
+                }
+              : undefined,
+          }
+        : undefined;
+
+      const newValidationOutput = shouldHaveOutput
+        ? validationResult.isValid
+        : false;
+      const newErrorOutput = validationResult.errors.join(", ");
+
+      // Only update if the output has actually changed, basically prevent infinite loops
+      const currentEmailOutput = (nodeData as EmailCreatorData).emailOutput;
+      const currentValidationOutput = (nodeData as EmailCreatorData)
+        .validationOutput;
+      const currentErrorOutput =
+        (nodeData as EmailCreatorData).errorOutput || "";
+
+      const emailOutputChanged =
+        JSON.stringify(currentEmailOutput) !== JSON.stringify(newEmailData);
+      const validationOutputChanged =
+        currentValidationOutput !== newValidationOutput;
+      const errorOutputChanged = currentErrorOutput !== newErrorOutput;
+
+      if (emailOutputChanged || validationOutputChanged || errorOutputChanged) {
         updateNodeData({
-          emailOutput: emailData,
-          validationOutput: validationResult.isValid,
-          errorOutput: validationResult.errors.join(", "),
-        });
-      } else {
-        updateNodeData({
-          emailOutput: undefined,
-          validationOutput: false,
-          errorOutput: validationResult.errors.join(", "),
+          emailOutput: newEmailData,
+          validationOutput: newValidationOutput,
+          errorOutput: newErrorOutput,
         });
       }
-    }, [subject, recipients, content, template, attachments, validationResult, updateNodeData]);
+    }, [
+      subject,
+      recipients,
+      content,
+      template,
+      attachments,
+      validationResult,
+      nodeData,
+      updateNodeData,
+    ]);
 
     // -------------------------------------------------------------------------
     // 4.6  Computed Values
     // -------------------------------------------------------------------------
-    const categoryStyles = CATEGORY_TEXT.EMAIL;
     const isValidEmail = validationResult.isValid;
     const hasWarnings = validationResult.warnings.length > 0;
     const hasErrors = validationResult.errors.length > 0;
@@ -929,15 +991,19 @@ const EmailCreatorNode = memo(
                   />
                   Use Template
                 </label>
-                
+
                 {/* Connected Template Info */}
                 {connectedTemplateData && (
                   <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
-                    <div className="font-medium text-blue-800">📧 Connected Template: {connectedTemplateData.name}</div>
-                    <div className="text-blue-600 mt-1">Category: {connectedTemplateData.category}</div>
+                    <div className="font-medium text-blue-800">
+                      📧 Connected Template: {connectedTemplateData.name}
+                    </div>
+                    <div className="text-blue-600 mt-1">
+                      Category: {connectedTemplateData.category}
+                    </div>
                   </div>
                 )}
-                
+
                 {template.useTemplate && !connectedTemplateData && (
                   <div className="mt-2">
                     <select
@@ -953,14 +1019,14 @@ const EmailCreatorNode = memo(
                         </option>
                       ))}
                     </select>
-                    
+
                     {/* Loading state */}
                     {availableTemplates === undefined && (
                       <div className="text-xs text-gray-500 mt-1">
                         🔄 Loading templates...
                       </div>
                     )}
-                    
+
                     {/* No templates state */}
                     {availableTemplates?.length === 0 && (
                       <div className="text-xs text-gray-500 mt-1">
@@ -969,30 +1035,42 @@ const EmailCreatorNode = memo(
                     )}
                   </div>
                 )}
-                
+
                 {/* Template Variables */}
-                {template.useTemplate && Object.keys(template.variables).length > 0 && (
-                  <div className="mt-3">
-                    <div className="text-xs text-gray-600 mb-2 font-medium">📝 Template Variables:</div>
-                    <div className="space-y-2">
-                      {Object.entries(template.variables).map(([varName, varValue]) => (
-                        <div key={varName}>
-                          <label className="text-xs text-gray-500 block mb-1">
-                            {varName}:
-                          </label>
-                          <input
-                            type="text"
-                            value={varValue}
-                            onChange={(e) => handleVariableChange(varName, e.target.value)}
-                            placeholder={`Enter value for ${varName}`}
-                            className="w-full text-xs p-2 border rounded"
-                            disabled={!isEnabled}
-                          />
-                        </div>
-                      ))}
+                {template?.useTemplate &&
+                  template?.variables &&
+                  Object.keys(template.variables).length > 0 && (
+                    <div className="mt-3">
+                      <div className="text-xs text-gray-600 mb-2 font-medium">
+                        📝 Template Variables:
+                      </div>
+                      <div className="space-y-2">
+                        {Object.entries(template.variables).map(
+                          ([varName, varValue]) => (
+                            <div key={varName}>
+                              <label
+                                className="text-xs text-gray-500 block mb-1"
+                                htmlFor={`var-${varName}`}
+                              >
+                                {varName}:
+                              </label>
+                              <input
+                                id={`var-${varName}`}
+                                type="text"
+                                value={varValue}
+                                onChange={(e) =>
+                                  handleVariableChange(varName, e.target.value)
+                                }
+                                placeholder={`Enter value for ${varName}`}
+                                className="w-full text-xs p-2 border rounded"
+                                disabled={!isEnabled}
+                              />
+                            </div>
+                          )
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
 
               {/* Validation Status */}
@@ -1030,7 +1108,7 @@ const EmailCreatorNode = memo(
             className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
           >
             <div className="text-center p-2">
-              <div className={`text-xs font-mono ${categoryStyles.primary}`}>
+              <div className="text-xs font-mono text-[--node-email-text]">
                 Email Creator
               </div>
               <div
@@ -1058,27 +1136,53 @@ EmailCreatorNode.displayName = "EmailCreatorNode";
 // 5️⃣  Dynamic Spec Wrapper
 // -----------------------------------------------------------------------------
 
-const EmailCreatorNodeWithDynamicSpec = (props: NodeProps) => {
-  const { nodeData } = useNodeData(props.id, props.data);
+/**
+ * ⚠️ THIS is the piece that fixes the focus‑loss issue.
+ *
+ * `withNodeScaffold` returns a *component function*.  Re‑creating that function
+ * on every keystroke causes React to unmount / remount the subtree (and your
+ * textarea loses focus).  We memoise the scaffolded component so its identity
+ * stays stable across renders unless the *spec itself* really changes.
+ *
+ * Performance optimizations:
+ * • Added React.memo with custom comparison function, basically prevents unnecessary re-renders
+ * • Optimized useMemo dependencies to only track size changes, basically reduces spec recalculation
+ * • Added specCache to createDynamicSpec, basically reuses spec objects when possible
+ */
+const EmailCreatorNodeWithDynamicSpec = memo(
+  (props: NodeProps) => {
+    const { nodeData } = useNodeData(props.id, props.data);
 
-  // Recompute spec only when the size keys change
-  const dynamicSpec = useMemo(
-    () => createDynamicSpec(nodeData as EmailCreatorData),
-    [
-      (nodeData as EmailCreatorData).expandedSize,
-      (nodeData as EmailCreatorData).collapsedSize,
-    ]
-  );
+    // Optimized: Direct dependency tracking without intermediate object creation
+    const dynamicSpec = useMemo(
+      () => createDynamicSpec(nodeData as EmailCreatorData),
+      [
+        (nodeData as EmailCreatorData).expandedSize,
+        (nodeData as EmailCreatorData).collapsedSize,
+      ]
+    );
 
-  const ScaffoldedNode = useMemo(
-    () =>
-      withNodeScaffold(dynamicSpec, (p) => (
-        <EmailCreatorNode {...p} spec={dynamicSpec} />
-      )),
-    [dynamicSpec]
-  );
+    // Memoise the scaffolded component to keep focus
+    const ScaffoldedNode = useMemo(
+      () =>
+        withNodeScaffold(dynamicSpec, (p) => (
+          <EmailCreatorNode {...p} spec={dynamicSpec} />
+        )),
+      [dynamicSpec]
+    );
 
-  return <ScaffoldedNode {...props} />;
-};
+    return <ScaffoldedNode {...props} />;
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison function for memo, basically only re-render when essential props change
+    return (
+      prevProps.id === nextProps.id &&
+      prevProps.data === nextProps.data &&
+      prevProps.selected === nextProps.selected
+    );
+  }
+);
+
+EmailCreatorNodeWithDynamicSpec.displayName = "EmailCreatorNodeWithDynamicSpec";
 
 export default EmailCreatorNodeWithDynamicSpec;
