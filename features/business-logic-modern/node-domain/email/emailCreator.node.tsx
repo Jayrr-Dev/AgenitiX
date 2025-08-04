@@ -342,26 +342,26 @@ const validateEmailContent = (
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Validate recipients
-  if (data.recipients.to.length === 0) {
+  // Validate recipients - add null check, basically ensure recipients object exists
+  if (!data.recipients?.to?.length) {
     errors.push("At least one recipient is required");
   }
 
-  // Validate subject
-  if (!data.subject.trim()) {
+  // Validate subject - add null check, basically ensure subject exists
+  if (!data.subject?.trim()) {
     errors.push("Subject is required");
   } else if (data.subject.length > 200) {
     warnings.push("Subject is very long and may be truncated");
   }
 
-  // Validate content
-  if (!(data.content.text.trim() || data.content.html.trim())) {
+  // Validate content - add null check, basically ensure content object exists
+  if (!(data.content?.text?.trim() || data.content?.html?.trim())) {
     errors.push("Message content is required");
   }
 
-  // Validate attachments
-  const totalAttachmentSize = data.attachments.reduce(
-    (sum, att) => sum + att.size,
+  // Validate attachments - add null check, basically ensure attachments array exists
+  const totalAttachmentSize = (data.attachments || []).reduce(
+    (sum, att) => sum + (att?.size || 0),
     0
   );
   if (totalAttachmentSize > 25 * 1024 * 1024) {
@@ -369,7 +369,7 @@ const validateEmailContent = (
     errors.push("Total attachment size exceeds 25MB limit");
   }
 
-  if (data.attachments.length > 10) {
+  if ((data.attachments || []).length > 10) {
     warnings.push("Large number of attachments may cause delivery issues");
   }
 
