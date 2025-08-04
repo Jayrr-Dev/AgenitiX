@@ -47,6 +47,7 @@ export default defineSchema({
 		provider: v.union(
 			v.literal("gmail"),
 			v.literal("outlook"),
+			v.literal("yahoo"),
 			v.literal("imap"),
 			v.literal("smtp")
 		),

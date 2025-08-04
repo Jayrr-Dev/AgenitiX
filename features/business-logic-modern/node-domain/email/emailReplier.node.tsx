@@ -410,7 +410,7 @@ const EmailReplierNode = memo(
     // -------------------------------------------------------------------------
     // 4.3  Convex integration
     // -------------------------------------------------------------------------
-    const emailTemplates = useQuery(api.emailAccounts.getEmailReplyTemplates);
+    const emailTemplates = useQuery(api.emailAccounts.getEmailReplyTemplates, {});
 
     // -------------------------------------------------------------------------
     // 4.4  Available templates for selection
@@ -447,7 +447,7 @@ const EmailReplierNode = memo(
         const sourceEdge = connectedEdges[0];
         const sourceNode = _nodes.find((node) => node.id === sourceEdge.source);
 
-        if (sourceNode && sourceNode.data?.messages) {
+        if (sourceNode && sourceNode.data?.messages && Array.isArray(sourceNode.data.messages)) {
           // Update inputEmails with data from connected emailReader
           updateNodeData({ inputEmails: sourceNode.data.messages as any[] });
 

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { provisionStarterTemplates } from "./starterTemplates";
 export type AuthErrorCode =
   | "USER_NOT_FOUND"
@@ -109,7 +110,57 @@ export const signUp = mutation({
 
     // Provision starter templates for new user, basically welcome workflows
     try {
-      await provisionStarterTemplates(ctx, { user_id: userId });
+      // Create starter templates directly in this mutation
+      const now = new Date().toISOString();
+      const templateIds: Id<"flows">[] = [];
+
+      // Define starter templates inline
+      const STARTER_TEMPLATES = [
+        {
+          name: "🚀 Welcome & AI Introduction",
+          description: "Learn the basics with text creation and AI interaction",
+          icon: "rocket",
+          nodes: [],
+          edges: [],
+        },
+        {
+          name: "📧 Email Automation Starter", 
+          description: "Set up your first email automation workflow",
+          icon: "mail",
+          nodes: [],
+          edges: [],
+        },
+        {
+          name: "📊 Data Processing Basics",
+          description: "Learn to create, process, and store data",
+          icon: "database",
+          nodes: [],
+          edges: [],
+        },
+      ];
+
+      // Create each starter template for the user
+      for (const template of STARTER_TEMPLATES) {
+        try {
+          const flowId = await ctx.db.insert("flows", {
+            name: template.name,
+            description: template.description,
+            icon: template.icon,
+            is_private: true, // Templates are private by default
+            user_id: userId,
+            nodes: template.nodes,
+            edges: template.edges,
+            canvas_updated_at: now,
+            created_at: now,
+            updated_at: now,
+          });
+
+          templateIds.push(flowId);
+        } catch (error) {
+          console.error(`Failed to create template "${template.name}":`, error);
+          // Continue creating other templates even if one fails
+        }
+      }
     } catch (error) {
       // Log error but don't fail signup if template provisioning fails
       console.error(

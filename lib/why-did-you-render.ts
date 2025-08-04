@@ -27,43 +27,12 @@ if (process.env.NODE_ENV === "development") {
     // Log render reasons
     logOwnerReasons: true,
 
-    // Track refs
-    trackRefs: true,
-
     // Customize what gets logged
     logOnDifferentValues: true,
 
-    // Hot reload support
-    hotReload: true,
 
-    // Custom component name resolver
-    getDisplayName: (Component) => {
-      return Component.displayName || Component.name || "Unknown";
-    },
 
-    // Custom render reason formatter
-    renderReason: (info) => {
-      const { Component, props, prevProps, state, prevState } = info;
 
-      const reasons = [];
-
-      // Check for prop changes
-      if (props !== prevProps) {
-        reasons.push("props changed");
-      }
-
-      // Check for state changes
-      if (state !== prevState) {
-        reasons.push("state changed");
-      }
-
-      // Check for parent re-render
-      if (info.owner) {
-        reasons.push("parent re-rendered");
-      }
-
-      return reasons.join(", ");
-    },
 
     // Custom component filter - focus on problematic components
     include: [

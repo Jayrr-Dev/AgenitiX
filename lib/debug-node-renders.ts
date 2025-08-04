@@ -79,7 +79,7 @@ export function debugNodeRender<T extends React.ComponentType<any>>(
   });
 
   DebuggedComponent.displayName = `Debugged${componentName}`;
-  return DebuggedComponent as T;
+  return DebuggedComponent as unknown as T;
 }
 
 /**

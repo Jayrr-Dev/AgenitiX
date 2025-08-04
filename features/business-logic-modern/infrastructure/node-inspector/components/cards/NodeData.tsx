@@ -137,7 +137,7 @@ export const NodeData: React.FC<NodeDataProps> = ({
             onDelete={handleJsonUpdate.onDelete}
             validationMessage="Validation Error"
             quotesOnKeys={true} // Show quotes on keys
-            displayArrayKey={true} // Show array indices
+
             sortKeys={false} // Don't sort keys to maintain order
           />
         </div>

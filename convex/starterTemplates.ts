@@ -14,7 +14,7 @@
 
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 
 // Template node positioning constants, basically layout spacing
 const NODE_SPACING_X = 300;
@@ -398,7 +398,7 @@ export const provisionStarterTemplates = mutation({
 /**
  * Check if user already has starter templates (to avoid duplicates)
  */
-export const hasStarterTemplates = mutation({
+export const hasStarterTemplates = query({
   args: {
     user_id: v.id("auth_users"),
   },

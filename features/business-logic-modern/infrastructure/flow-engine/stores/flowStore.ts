@@ -888,31 +888,7 @@ export const useFlowStore = create<FlowStore>()(
           nodes: state.nodes,
           edges: state.edges,
         }),
-        serialize: (state) => {
-          // CIRCULAR REFERENCE FIX: Use safe serialization for localStorage
-          try {
-            const visited = new Set();
-            return JSON.stringify(state, (key, val) => {
-              if (typeof val === "object" && val !== null) {
-                if (visited.has(val)) {
-                  return "[Circular]";
-                }
-                visited.add(val);
-              }
-              return val;
-            });
-          } catch (error) {
-            console.error(
-              "Failed to serialize flow state for persistence:",
-              error
-            );
-            // Return a minimal safe state if serialization fails
-            return JSON.stringify({
-              nodes: [],
-              edges: [],
-            });
-          }
-        },
+
         onRehydrateStorage: () => (state) => {
           if (state) {
             state.setHasHydrated(true);

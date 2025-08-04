@@ -982,29 +982,87 @@ export const getStarterTemplatesForUser = mutation({
     user_id: v.id("auth_users"),
   },
   handler: async (ctx, args) => {
-    // Check if user already has starter templates
-    const templateCheck = await hasStarterTemplates(ctx, {
-      user_id: args.user_id,
-    });
+    // Check if user already has starter templates by querying directly
+    const userFlows = await ctx.db
+      .query("flows")
+      .withIndex("by_user_id", (q) => q.eq("user_id", args.user_id))
+      .collect();
 
-    if (templateCheck.hasTemplates) {
+    // Check if any flows match our starter template names
+    const starterTemplateNames = [
+      "🚀 Welcome & AI Introduction",
+      "📧 Email Automation Starter", 
+      "📊 Data Processing Basics",
+    ];
+    const hasTemplates = userFlows.some((flow) =>
+      starterTemplateNames.includes(flow.name)
+    );
+
+    if (hasTemplates) {
       return {
         success: false,
         message: "User already has starter templates",
-        existingFlowCount: templateCheck.flowCount,
+        existingFlowCount: userFlows.length,
       };
     }
 
-    // Provision starter templates for existing user
-    const result = await provisionStarterTemplates(ctx, {
-      user_id: args.user_id,
-    });
+    // Create starter templates directly in this mutation
+    const now = new Date().toISOString();
+    const templateIds: Id<"flows">[] = [];
+
+    // Define starter templates inline
+    const STARTER_TEMPLATES = [
+      {
+        name: "🚀 Welcome & AI Introduction",
+        description: "Learn the basics with text creation and AI interaction",
+        icon: "rocket",
+        nodes: [],
+        edges: [],
+      },
+      {
+        name: "📧 Email Automation Starter",
+        description: "Set up your first email automation workflow",
+        icon: "mail",
+        nodes: [],
+        edges: [],
+      },
+      {
+        name: "📊 Data Processing Basics",
+        description: "Learn to create, process, and store data",
+        icon: "database",
+        nodes: [],
+        edges: [],
+      },
+    ];
+
+    // Create each starter template for the user
+    for (const template of STARTER_TEMPLATES) {
+      try {
+        const flowId = await ctx.db.insert("flows", {
+          name: template.name,
+          description: template.description,
+          icon: template.icon,
+          is_private: true, // Templates are private by default
+          user_id: args.user_id,
+          nodes: template.nodes,
+          edges: template.edges,
+          canvas_updated_at: now,
+          created_at: now,
+          updated_at: now,
+        });
+
+        templateIds.push(flowId);
+      } catch (error) {
+        console.error(`Failed to create template "${template.name}":`, error);
+        // Continue creating other templates even if one fails
+      }
+    }
 
     return {
       success: true,
-      message: `Successfully created ${result.templateCount} starter templates`,
-      templateCount: result.templateCount,
-      templateIds: result.templateIds,
+      message: `Successfully created ${templateIds.length} starter templates`,
+      templateCount: templateIds.length,
+      templateIds,
     };
   },
 });

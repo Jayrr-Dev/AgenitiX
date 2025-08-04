@@ -92,25 +92,14 @@ export default function StarterTemplates({
       const result = await addStarterTemplates({ user_id: userId });
 
       if (result.success) {
-        toast({
-          title: "Templates Added!",
-          description: `Successfully created ${result.templateCount} starter templates.`,
-        });
+        toast.success(`Successfully created ${result.templateCount} starter templates.`);
         onTemplateCreated?.();
       } else {
-        toast({
-          title: "Templates Already Exist",
-          description: result.message,
-          variant: "destructive",
-        });
+        toast.error(result.message);
       }
     } catch (error) {
       console.error("Failed to add starter templates:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add starter templates. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Failed to add starter templates. Please try again.");
     } finally {
       setIsAdding(false);
     }

@@ -75,7 +75,7 @@ export function usePieMenuActions(options: UsePieMenuActionsOptions = {}) {
             if (!selectedNode) return;
 
             // Create duplicated node with offset position
-            const newNode: AgenNode = {
+            const newNode = {
               ...selectedNode,
               id: generateNodeId(),
               position: {
@@ -83,7 +83,7 @@ export function usePieMenuActions(options: UsePieMenuActionsOptions = {}) {
                 y: selectedNode.position.y + 50,
               },
               data: { ...selectedNode.data },
-            };
+            } as AgenNode;
 
             addNode(newNode);
           },
