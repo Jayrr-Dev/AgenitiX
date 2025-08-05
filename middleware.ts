@@ -2,8 +2,10 @@ import { getRouteProtectionManager, loadAnubisConfig } from "@/lib/anubis/config
 import { verifyJWT } from "@/lib/anubis/crypto";
 import { adaptiveRateLimiter } from "@/lib/anubis/rate-limiter";
 import { analyzeRequest, trackRisk } from "@/lib/anubis/risk-engine";
-// middleware.ts
+import { convexAuthNextjsMiddleware } from "@convex-dev/auth/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
+
+export default convexAuthNextjsMiddleware();
 
 // ADAPTIVE ANUBIS MIDDLEWARE
 export async function middleware(request: NextRequest) {

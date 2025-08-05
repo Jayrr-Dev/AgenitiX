@@ -1,4 +1,4 @@
-import { Providers } from "@/app/provider";
+
 import LayoutWrapper from "@/app/wrapper/LayoutWrapper";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import PWAStatus from "@/components/PWAStatus";
@@ -21,6 +21,8 @@ import { Suspense } from "react";
 import { Toaster } from "sonner";
 import "./globals.css";
 import Loading from "./loading";
+import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
+import { ConvexClientProvider } from "./provider";
 
 // Import why-did-you-render for development debugging
 import "@/lib/why-did-you-render";
@@ -99,6 +101,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
+    <ConvexAuthNextjsServerProvider>
     <html lang="en" className={`${geistSans.className} ${inter.className}`}>
       <head>
         <link
@@ -118,12 +121,12 @@ export default function RootLayout({
         >
           <AnubisProvider>
             <OptimisticVerificationProvider>
-              <Providers>
+              <ConvexClientProvider>
                 <Suspense fallback={<Loading />}>
                   <LayoutWrapper>{children}</LayoutWrapper>
                 </Suspense>
-                {process.env.NODE_ENV === "development" && <MagicLinkTest />}
-              </Providers>
+                {/* {process.env.NODE_ENV === "development" && <MagicLinkTest />} */}
+              </ConvexClientProvider>
               <PWAInstallPrompt />
               <PWAStatus />
               {/* <AnubisToggle /> */}
@@ -163,7 +166,8 @@ export default function RootLayout({
             }}
           />
         </ThemeProvider>
-      </body>
-    </html>
+        </body>
+      </html>
+    </ConvexAuthNextjsServerProvider>
   );
 }

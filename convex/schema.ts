@@ -1,8 +1,41 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
-	// Authentication Domain
+	// Use authTables but override with custom schema, basically integrating Convex Auth with existing naming
+	...authTables,
+	
+	// Authentication Domain - Custom users table with existing naming scheme
+	users: defineTable({
+		// Standard Convex Auth fields
+		name: v.optional(v.string()),
+		image: v.optional(v.string()),
+		email: v.optional(v.string()),
+		emailVerificationTime: v.optional(v.number()),
+		phone: v.optional(v.string()),
+		phoneVerificationTime: v.optional(v.number()),
+		isAnonymous: v.optional(v.boolean()),
+		
+		// Custom fields matching existing auth_users schema
+		avatar_url: v.optional(v.string()),
+		email_verified: v.optional(v.boolean()),
+		created_at: v.optional(v.number()),
+		updated_at: v.optional(v.number()),
+		last_login: v.optional(v.number()),
+		is_active: v.optional(v.boolean()),
+		// Profile information
+		company: v.optional(v.string()),
+		role: v.optional(v.string()),
+		timezone: v.optional(v.string()),
+		// Magic Link fields (keeping for backward compatibility)
+		magic_link_token: v.optional(v.string()),
+		magic_link_expires: v.optional(v.number()),
+		login_attempts: v.optional(v.number()),
+		last_login_attempt: v.optional(v.number()),
+	}).index("email", ["email"]),
+
+	// Keep existing auth_users table for backward compatibility during migration
 	auth_users: defineTable({
 		email: v.string(),
 		name: v.string(),

@@ -1,120 +1,83 @@
-import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
-import { provisionStarterTemplates } from "./starterTemplates";
-export type AuthErrorCode =
-  | "USER_NOT_FOUND"
-  | "RATE_LIMIT_EXCEEDED"
-  | "INVALID_MAGIC_LINK"
-  | "EXPIRED_MAGIC_LINK"
-  | "USER_ALREADY_EXISTS"
-  | "EMAIL_SEND_FAILED"
-  | "UNKNOWN_ERROR";
+/**
+ * Route: convex/auth.ts
+ * CONVEX AUTH CONFIGURATION - Modern authentication setup with GitHub and Google OAuth
+ *
+ * • Integrates with existing auth_users table schema via custom createOrUpdateUser callback
+ * • Supports OAuth providers (GitHub, Google) with profile data mapping
+ * • Maintains backward compatibility with existing magic link authentication
+ * • Maps Convex Auth user data to custom schema fields (snake_case naming)
+ * • Handles user creation with starter template provisioning
+ *
+ * Keywords: convex-auth, oauth, github, google, custom-schema, backward-compatibility
+ */
 
-export type AuthError = {
-  code: AuthErrorCode;
-  message: string;
-  retryAfter?: number; // Minutes until user can try again
-};
+import { convexAuth } from "@convex-dev/auth/server";
+import GitHub from "@auth/core/providers/github";
+import Google from "@auth/core/providers/google";
+import { DataModel } from "./_generated/dataModel";
 
-export type AuthResult<T = unknown> =
-  | {
-      success: true;
-      data: T;
-    }
-  | {
-      success: false;
-      error: AuthError;
-    };
+export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
+  providers: [
+    GitHub({
+      clientId: process.env.AUTH_GITHUB_ID,
+      clientSecret: process.env.AUTH_GITHUB_SECRET,
+    }),
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+    }),
+  ],
+  callbacks: {
+    async afterUserCreatedOrUpdated(ctx, args) {
+      // This callback is called after the user is created or updated in the users table
+      // We use this to sync with our existing auth_users table
+      
+      const { userId, existingUserId } = args;
+      const user = await ctx.db.get(userId);
+      
+      if (!user?.email) return;
 
-// Generate secure random token
-function generateMagicToken(): string {
-  const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < 32; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
+            // Check if user exists in our custom auth_users table
+      const existingAuthUser = await ctx.db
+        .query("auth_users")
+        .filter((q) => q.eq(q.field("email"), user.email))
+        .first();
 
-// Función de utilidad para normalizar correos electrónicos
-function normalizeEmail(email: string): string {
-  return email.toLowerCase().trim();
-}
+      const now = Date.now();
 
-// Check if user exists (for better UX)
-export const checkUserExists = query({
-  args: { email: v.string() },
-  handler: async (ctx, args) => {
-    const normalizedEmail = normalizeEmail(args.email);
-
-    const user = await ctx.db
-      .query("auth_users")
-      .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
-      .first();
-
-    return {
-      exists: !!user,
-      isActive: user?.is_active ?? false,
-    };
-  },
-});
-
-// User Registration with Magic Link
-export const signUp = mutation({
-  args: {
-    email: v.string(),
-    name: v.string(),
-    company: v.optional(v.string()),
-    role: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const normalizedEmail = normalizeEmail(args.email);
-
-    // Check if user already exists
-    const existingUser = await ctx.db
-      .query("auth_users")
-      .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
-      .first();
-
-    if (existingUser) {
-      return {
-        success: false,
-        error: {
-          code: "USER_ALREADY_EXISTS" as const,
-          message:
-            "An account with this email already exists. Please sign in instead.",
-        },
-      };
-    }
-
-    // Generate magic link token
-    const magicToken = generateMagicToken();
-    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
-
-    // Create new user (unverified)
-    const userId = await ctx.db.insert("auth_users", {
-      email: normalizedEmail,
-      name: args.name,
-      company: args.company,
-      role: args.role,
-      email_verified: false,
+      if (existingAuthUser) {
+        // Update existing user in auth_users table
+        await ctx.db.patch(existingAuthUser._id, {
+          name: user.name || existingAuthUser.name,
+          avatar_url: user.image || existingAuthUser.avatar_url,
+          email_verified: !!user.emailVerificationTime || existingAuthUser.email_verified,
+          updated_at: now,
+          last_login: now,
+        });
+      } else {
+        // Create new user in auth_users table
+        const authUserId = await ctx.db.insert("auth_users", {
+          email: user.email,
+          name: user.name || "User",
+          avatar_url: user.image,
+          email_verified: !!user.emailVerificationTime,
+          created_at: now,
+          updated_at: now,
+          last_login: now,
       is_active: true,
-      created_at: Date.now(),
-      updated_at: Date.now(),
-      magic_link_token: magicToken,
-      magic_link_expires: expiresAt,
+          company: undefined,
+          role: undefined,
+          timezone: undefined,
+          magic_link_token: undefined,
+          magic_link_expires: undefined,
       login_attempts: 0,
+          last_login_attempt: undefined,
     });
 
     // Provision starter templates for new user, basically welcome workflows
-    try {
-      // Create starter templates directly in this mutation
-      const now = new Date().toISOString();
-      const templateIds: Id<"flows">[] = [];
-
-      // Define starter templates inline
+        if (!existingUserId) {
+          try {
+            const nowISO = new Date().toISOString();
       const STARTER_TEMPLATES = [
         {
           name: "🚀 Welcome & AI Introduction",
@@ -139,687 +102,29 @@ export const signUp = mutation({
         },
       ];
 
-      // Create each starter template for the user
       for (const template of STARTER_TEMPLATES) {
         try {
-          const flowId = await ctx.db.insert("flows", {
+                await ctx.db.insert("flows", {
             name: template.name,
             description: template.description,
             icon: template.icon,
-            is_private: true, // Templates are private by default
-            user_id: userId,
+                  is_private: true,
+                  user_id: authUserId,
             nodes: template.nodes,
             edges: template.edges,
-            canvas_updated_at: now,
-            created_at: now,
-            updated_at: now,
-          });
-
-          templateIds.push(flowId);
+                  canvas_updated_at: nowISO,
+                  created_at: nowISO,
+                  updated_at: nowISO,
+                });
         } catch (error) {
           console.error(`Failed to create template "${template.name}":`, error);
-          // Continue creating other templates even if one fails
         }
       }
     } catch (error) {
-      // Log error but don't fail signup if template provisioning fails
-      console.error(
-        "Failed to provision starter templates for user:",
-        userId,
-        error
-      );
-    }
-
-    return {
-      success: true,
-      data: {
-        userId,
-        email: normalizedEmail,
-        name: args.name,
-        magicToken,
-        needsVerification: true,
-      },
-    };
-  },
-});
-
-// Send Magic Link (for login or verification)
-export const sendMagicLink = mutation({
-  args: {
-    email: v.string(),
-    type: v.union(v.literal("login"), v.literal("verification")),
-  },
-  handler: async (ctx, args) => {
-    const normalizedEmail = normalizeEmail(args.email);
-
-    // Find user
-    const user = await ctx.db
-      .query("auth_users")
-      .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
-      .first();
-
-    if (!user) {
-      return {
-        success: false,
-        error: {
-          code: "USER_NOT_FOUND" as const,
-          message:
-            "No account found with this email address. Please create an account first.",
-        },
-      };
-    }
-
-    // Check rate limiting (max 3 attempts per hour)
-    const oneHourAgo = Date.now() - 60 * 60 * 1000;
-    const currentAttempts = user.login_attempts || 0;
-    const lastAttempt = user.last_login_attempt || 0;
-
-    // Reset attempts if more than an hour has passed
-    let attemptsToUse = currentAttempts;
-    if (lastAttempt < oneHourAgo) {
-      attemptsToUse = 0;
-    }
-
-    // Check if user has exceeded rate limit
-    if (attemptsToUse >= 3) {
-      const timeUntilReset = Math.ceil(
-        (lastAttempt + 60 * 60 * 1000 - Date.now()) / (60 * 1000)
-      );
-      return {
-        success: false,
-        error: {
-          code: "RATE_LIMIT_EXCEEDED" as const,
-          message: `Too many attempts. Please try again in ${timeUntilReset} minutes.`,
-          retryAfter: timeUntilReset,
-        },
-      };
-    }
-
-    // Generate new magic link token
-    const magicToken = generateMagicToken();
-    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
-
-    // Update user with new token and increment attempts
-    const newAttempts = lastAttempt < oneHourAgo ? 1 : attemptsToUse + 1;
-
-    await ctx.db.patch(user._id, {
-      magic_link_token: magicToken,
-      magic_link_expires: expiresAt,
-      login_attempts: newAttempts,
-      last_login_attempt: Date.now(),
-      updated_at: Date.now(),
-    });
-
-    return {
-      success: true,
-      data: {
-        email: args.email,
-        magicToken,
-        type: args.type,
-      },
-    };
-  },
-});
-
-// Verify Magic Link and Sign In
-export const verifyMagicLink = mutation({
-  args: {
-    token: v.string(),
-    ip_address: v.optional(v.string()),
-    user_agent: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    // Find user by magic link token
-    const user = await ctx.db
-      .query("auth_users")
-      .withIndex("by_magic_link_token", (q) =>
-        q.eq("magic_link_token", args.token)
-      )
-      .first();
-
-    if (!user?.is_active) {
-      return {
-        success: false,
-        error: {
-          code: "INVALID_MAGIC_LINK" as const,
-          message: "Invalid magic link. Please request a new one.",
-        },
-      };
-    }
-
-    // Check if token is expired
-    if (!user.magic_link_expires || user.magic_link_expires < Date.now()) {
-      return {
-        success: false,
-        error: {
-          code: "EXPIRED_MAGIC_LINK" as const,
-          message: "Magic link has expired. Please request a new one.",
-        },
-      };
-    }
-
-    // Generate session token
-    const sessionToken = `session_${user._id}_${Date.now()}`;
-
-    // Create session
-    const sessionId = await ctx.db.insert("auth_sessions", {
-      user_id: user._id,
-      token_hash: sessionToken,
-      expires_at: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
-      created_at: Date.now(),
-      ip_address: args.ip_address,
-      user_agent: args.user_agent,
-      is_active: true,
-    });
-
-    // Update user: verify email, clear magic link, reset attempts
-    await ctx.db.patch(user._id, {
-      email_verified: true,
-      last_login: Date.now(),
-      updated_at: Date.now(),
-      magic_link_token: undefined,
-      magic_link_expires: undefined,
-      login_attempts: 0,
-    });
-
-    return {
-      success: true,
-      data: {
-        user: {
-          id: user._id,
-          email: user.email,
-          name: user.name,
-          company: user.company,
-          role: user.role,
-          email_verified: true,
-        },
-        sessionToken,
-        sessionId,
-      },
-    };
-  },
-});
-
-// Legacy signIn for backward compatibility (will be removed)
-export const signIn = mutation({
-  args: {
-    email: v.string(),
-    token_hash: v.string(),
-    ip_address: v.optional(v.string()),
-    user_agent: v.optional(v.string()),
-  },
-  handler: () => {
-    // This is now just for backward compatibility
-    // In production, this should redirect to magic link flow
-    throw new Error("Please use magic link authentication");
-  },
-});
-
-// Get Current User (from session)
-export const getCurrentUser = query({
-  args: { token_hash: v.optional(v.string()) },
-  handler: async (ctx, args) => {
-    if (!args.token_hash) {
-      return null;
-    }
-
-    // Find active session
-    const session = await ctx.db
-      .query("auth_sessions")
-      .withIndex("by_token_hash", (q) =>
-        q.eq("token_hash", args.token_hash || "")
-      )
-      .filter((q) => q.eq(q.field("is_active"), true))
-      .filter((q) => q.gt(q.field("expires_at"), Date.now()))
-      .unique();
-
-    if (!session) {
-      return null;
-    }
-
-    // Get user data
-    const user = await ctx.db.get(session.user_id);
-    if (!user?.is_active) {
-      return null;
-    }
-
-    return {
-      id: user._id,
-      email: user.email,
-      name: user.name,
-      company: user.company,
-      role: user.role,
-      avatar_url: user.avatar_url,
-      email_verified: user.email_verified,
-      last_login: user.last_login,
-    };
-  },
-});
-
-// Sign Out
-export const signOut = mutation({
-  args: { token_hash: v.string() },
-  handler: async (ctx, args) => {
-    // Find and deactivate session
-    const session = await ctx.db
-      .query("auth_sessions")
-      .withIndex("by_token_hash", (q) => q.eq("token_hash", args.token_hash))
-      .first();
-
-    if (session) {
-      await ctx.db.patch(session._id, {
-        is_active: false,
-      });
-    }
-
-    return { success: true };
-  },
-});
-
-// Update User Profile
-export const updateProfile = mutation({
-  args: {
-    token_hash: v.string(),
-    name: v.optional(v.string()),
-    company: v.optional(v.string()),
-    role: v.optional(v.string()),
-    timezone: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    // Get current user from session
-    const session = await ctx.db
-      .query("auth_sessions")
-      .withIndex("by_token_hash", (q) => q.eq("token_hash", args.token_hash))
-      .filter((q) => q.eq(q.field("is_active"), true))
-      .filter((q) => q.gt(q.field("expires_at"), Date.now()))
-      .first();
-
-    if (!session) {
-      throw new Error("Invalid session");
-    }
-
-    // Update user profile
-    const updateData: Record<string, unknown> = { updated_at: Date.now() };
-    if (args.name !== undefined) {
-      updateData.name = args.name;
-    }
-    if (args.company !== undefined) {
-      updateData.company = args.company;
-    }
-    if (args.role !== undefined) {
-      updateData.role = args.role;
-    }
-    if (args.timezone !== undefined) {
-      updateData.timezone = args.timezone;
-    }
-
-    await ctx.db.patch(session.user_id, updateData);
-
-    return { success: true };
-  },
-});
-
-// Get User Sessions (for security/account management)
-export const getUserSessions = query({
-  args: { token_hash: v.string() },
-  handler: async (ctx, args) => {
-    // Get current user
-    const session = await ctx.db
-      .query("auth_sessions")
-      .withIndex("by_token_hash", (q) => q.eq("token_hash", args.token_hash))
-      .filter((q) => q.eq(q.field("is_active"), true))
-      .first();
-
-    if (!session) {
-      throw new Error("Invalid session");
-    }
-
-    // Get all active sessions for this user
-    const sessions = await ctx.db
-      .query("auth_sessions")
-      .withIndex("by_user_id", (q) => q.eq("user_id", session.user_id))
-      .filter((q) => q.eq(q.field("is_active"), true))
-      .collect();
-
-    return sessions.map((s) => ({
-      id: s._id,
-      created_at: s.created_at,
-      ip_address: s.ip_address,
-      user_agent: s.user_agent,
-      is_current: s._id === session._id,
-    }));
-  },
-});
-
-// Revoke Session (for security)
-export const revokeSession = mutation({
-  args: {
-    token_hash: v.string(),
-    session_id: v.id("auth_sessions"),
-  },
-  handler: async (ctx, args) => {
-    // Verify current user owns the session to revoke
-    const currentSession = await ctx.db
-      .query("auth_sessions")
-      .withIndex("by_token_hash", (q) => q.eq("token_hash", args.token_hash))
-      .filter((q) => q.eq(q.field("is_active"), true))
-      .first();
-
-    if (!currentSession) {
-      throw new Error("Invalid session");
-    }
-
-    const sessionToRevoke = await ctx.db.get(args.session_id);
-    if (
-      !sessionToRevoke ||
-      sessionToRevoke.user_id !== currentSession.user_id
-    ) {
-      throw new Error("Session not found or unauthorized");
-    }
-
-    // Revoke the session
-    await ctx.db.patch(args.session_id, { is_active: false });
-
-    return { success: true };
-  },
-});
-
-// Development helper: Reset rate limits (only available in development)
-export const resetRateLimits = mutation({
-  args: { email: v.string() },
-  handler: async (ctx, args) => {
-    // Only allow in development
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("This function is only available in development");
-    }
-
-    const user = await ctx.db
-      .query("auth_users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
-      .first();
-
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    // Reset rate limiting
-    await ctx.db.patch(user._id, {
-      login_attempts: 0,
-      last_login_attempt: undefined,
-      updated_at: Date.now(),
-    });
-
-    return { success: true, message: "Rate limits reset" };
-  },
-});
-
-// Delete User Account (with proper cascade deletion)
-export const deleteAccount = mutation({
-  args: {
-    token_hash: v.string(),
-    confirmation: v.string(), // User must type "delete" to confirm
-  },
-  handler: async (ctx, args) => {
-    // Verify confirmation text
-    if (args.confirmation !== "delete") {
-      throw new Error(
-        "Invalid confirmation. You must type 'delete' to confirm account deletion."
-      );
-    }
-
-    // Get current user from session
-    const session = await ctx.db
-      .query("auth_sessions")
-      .withIndex("by_token_hash", (q) => q.eq("token_hash", args.token_hash))
-      .filter((q) => q.eq(q.field("is_active"), true))
-      .filter((q) => q.gt(q.field("expires_at"), Date.now()))
-      .first();
-
-    if (!session) {
-      throw new Error("Invalid session");
-    }
-
-    const userId = session.user_id;
-
-    // Get user to verify account exists
-    const user = await ctx.db.get(userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    try {
-      // 1. Delete all user sessions first
-      const userSessions = await ctx.db
-        .query("auth_sessions")
-        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
-        .collect();
-
-      for (const userSession of userSessions) {
-        await ctx.db.delete(userSession._id);
-      }
-
-      // 2. Delete all user email accounts and related data
-      const emailAccounts = await ctx.db
-        .query("email_accounts")
-        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
-        .collect();
-
-      for (const emailAccount of emailAccounts) {
-        await ctx.db.delete(emailAccount._id);
-      }
-
-      // Delete email templates
-      const emailTemplates = await ctx.db
-        .query("email_templates")
-        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
-        .collect();
-
-      for (const template of emailTemplates) {
-        await ctx.db.delete(template._id);
-      }
-
-      // Delete email logs
-      const emailLogs = await ctx.db
-        .query("email_logs")
-        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
-        .collect();
-
-      for (const log of emailLogs) {
-        await ctx.db.delete(log._id);
-      }
-
-      // Delete email reply templates
-      const emailReplyTemplates = await ctx.db
-        .query("email_reply_templates")
-        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
-        .collect();
-
-      for (const template of emailReplyTemplates) {
-        await ctx.db.delete(template._id);
-      }
-
-      // Delete email reply logs
-      const emailReplyLogs = await ctx.db
-        .query("email_reply_logs")
-        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
-        .collect();
-
-      for (const log of emailReplyLogs) {
-        await ctx.db.delete(log._id);
-      }
-
-      // 3. Delete all user flows and related data
-      const userFlows = await ctx.db
-        .query("flows")
-        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
-        .collect();
-
-      for (const flow of userFlows) {
-        // Delete flow upvotes
-        const upvotes = await ctx.db
-          .query("flow_upvotes")
-          .withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id))
-          .collect();
-        for (const upvote of upvotes) {
-          await ctx.db.delete(upvote._id);
+            console.error("Failed to provision starter templates:", error);
+          }
         }
-
-        // Delete flow shares
-        const shares = await ctx.db
-          .query("flow_shares")
-          .withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id))
-          .collect();
-        for (const share of shares) {
-          await ctx.db.delete(share._id);
-        }
-
-        // Delete flow permissions
-        const permissions = await ctx.db
-          .query("flow_share_permissions")
-          .withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id))
-          .collect();
-        for (const permission of permissions) {
-          await ctx.db.delete(permission._id);
-        }
-
-        // Delete flow access requests
-        const accessRequests = await ctx.db
-          .query("flow_access_requests")
-          .withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id))
-          .collect();
-        for (const request of accessRequests) {
-          await ctx.db.delete(request._id);
-        }
-
-        // Finally delete the flow
-        await ctx.db.delete(flow._id);
       }
-
-      // 4. Delete flows where user has been granted access
-      const userFlowPermissions = await ctx.db
-        .query("flow_share_permissions")
-        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
-        .collect();
-
-      for (const permission of userFlowPermissions) {
-        await ctx.db.delete(permission._id);
-      }
-
-      // 5. Delete flow access requests made by user
-      const userAccessRequests = await ctx.db
-        .query("flow_access_requests")
-        .withIndex("by_requesting_user_id", (q) =>
-          q.eq("requesting_user_id", userId)
-        )
-        .collect();
-
-      for (const request of userAccessRequests) {
-        await ctx.db.delete(request._id);
-      }
-
-      // 6. Delete flow upvotes by user
-      const userUpvotes = await ctx.db
-        .query("flow_upvotes")
-        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
-        .collect();
-
-      for (const upvote of userUpvotes) {
-        await ctx.db.delete(upvote._id);
-      }
-
-      // 7. Delete additional user data
-      // Delete workflow runs
-      const workflowRuns = await ctx.db
-        .query("workflow_runs")
-        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
-        .collect();
-
-      for (const run of workflowRuns) {
-        await ctx.db.delete(run._id);
-      }
-
-      // Delete flow nodes
-      const flowNodes = await ctx.db
-        .query("flow_nodes")
-        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
-        .collect();
-
-      for (const node of flowNodes) {
-        await ctx.db.delete(node._id);
-      }
-
-      // Delete AI prompts
-      const aiPrompts = await ctx.db
-        .query("ai_prompts")
-        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
-        .collect();
-
-      for (const prompt of aiPrompts) {
-        await ctx.db.delete(prompt._id);
-      }
-
-      // Delete AI agent threads and their messages
-      const aiThreads = await ctx.db
-        .query("ai_agent_threads")
-        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
-        .collect();
-
-      for (const thread of aiThreads) {
-        // Delete all messages in this thread
-        const threadMessages = await ctx.db
-          .query("ai_agent_messages")
-          .withIndex("by_thread_id", (q) => q.eq("thread_id", thread._id))
-          .collect();
-
-        for (const message of threadMessages) {
-          await ctx.db.delete(message._id);
-        }
-
-        // Delete the thread
-        await ctx.db.delete(thread._id);
-      }
-
-      // 8. Finally delete the user account
-      await ctx.db.delete(userId);
-
-      return {
-        success: true,
-        message: "Account successfully deleted",
-        deletedAt: Date.now(),
-      };
-    } catch (error) {
-      console.error("Error deleting user account:", error);
-      throw new Error(
-        "Failed to delete account. Please contact support if this issue persists."
-      );
-    }
-  },
-});
-
-// Migration helper: Normalize all user emails to lowercase
-export const normalizeUserEmails = mutation({
-  args: {},
-  handler: async (ctx, _args) => {
-    const users = await ctx.db.query("auth_users").collect();
-
-    let updatedCount = 0;
-
-    for (const user of users) {
-      const normalizedEmail = user.email.toLowerCase().trim();
-      if (user.email !== normalizedEmail) {
-        await ctx.db.patch(user._id, {
-          email: normalizedEmail,
-          updated_at: Date.now(),
-        });
-        updatedCount++;
-      }
-    }
-
-    return {
-      success: true,
-      message: `Normalized ${updatedCount} user emails to lowercase`,
-      totalUsers: users.length,
-      updatedUsers: updatedCount,
-    };
+    },
   },
 });

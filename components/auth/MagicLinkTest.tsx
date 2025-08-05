@@ -70,7 +70,7 @@ export default function MagicLinkTest() {
 		<div className="fixed bottom-4 right-4 z-50">
 			<Card className="w-80 border-2 border-blue-200 bg-blue-50">
 				<CardHeader className="pb-3">
-					<CardTitle className="text-sm">🧪 Magic Link Test</CardTitle>
+					<CardTitle className="text-sm text-black">🧪 Magic Link Test</CardTitle>
 					<CardDescription className="text-xs">
 						Development only - Test magic link authentication
 					</CardDescription>

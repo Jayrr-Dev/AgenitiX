@@ -13,6 +13,7 @@ import type * as auth from "../auth.js";
 import type * as devHelpers from "../devHelpers.js";
 import type * as emailAccounts from "../emailAccounts.js";
 import type * as flows from "../flows.js";
+import type * as http from "../http.js";
 import type * as starterTemplates from "../starterTemplates.js";
 
 import type {
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   devHelpers: typeof devHelpers;
   emailAccounts: typeof emailAccounts;
   flows: typeof flows;
+  http: typeof http;
   starterTemplates: typeof starterTemplates;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
