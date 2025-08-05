@@ -1,9 +1,14 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useConvexAuth } from "@/hooks/useConvexAuth";
+import { useConvexAuth as useConvexAuthState } from "convex/react";
 import { type ReactNode, createContext, useContext } from "react";
 
-type AuthContextType = ReturnType<typeof useAuth>;
+type AuthContextType = ReturnType<typeof useAuth> & ReturnType<typeof useConvexAuth> & {
+	convexAuthState: ReturnType<typeof useConvexAuthState>;
+	isOAuthAuthenticated: boolean;
+};
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -21,6 +26,20 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
 	const auth = useAuth();
+	const convexAuth = useConvexAuth();
+	const convexAuthState = useConvexAuthState();
+	
+	// Check if user is authenticated via OAuth, basically modern authentication using Convex Auth
+	const isOAuthAuthenticated = convexAuthState.isAuthenticated;
 
-	return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
+	const combinedAuth = {
+		...auth,
+		...convexAuth,
+		convexAuthState,
+		isOAuthAuthenticated,
+		// Override isAuthenticated to check both auth methods
+		isAuthenticated: auth.isAuthenticated || isOAuthAuthenticated,
+	};
+
+	return <AuthContext.Provider value={combinedAuth}>{children}</AuthContext.Provider>;
 };

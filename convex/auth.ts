@@ -18,14 +18,7 @@ import { DataModel } from "./_generated/dataModel";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
-    GitHub({
-      clientId: process.env.AUTH_GITHUB_ID,
-      clientSecret: process.env.AUTH_GITHUB_SECRET,
-    }),
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET,
-    }),
+    GitHub
   ],
   callbacks: {
     async afterUserCreatedOrUpdated(ctx, args) {
@@ -39,9 +32,9 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
 
             // Check if user exists in our custom auth_users table
       const existingAuthUser = await ctx.db
-        .query("auth_users")
+      .query("auth_users")
         .filter((q) => q.eq(q.field("email"), user.email))
-        .first();
+      .first();
 
       const now = Date.now();
 

@@ -14,10 +14,10 @@ export function ConvexClientProvider({ children }: { children: React.ReactNode }
 	const [queryClient] = useState(() => new QueryClient());
 
 	return (
-		<ConvexAuthNextjsProvider client={convex}>
-			<QueryClientProvider client={queryClient}>
+		<QueryClientProvider client={queryClient}>
+			<ConvexAuthNextjsProvider client={convex}>
 				<AuthProvider>{children}</AuthProvider>
-			</QueryClientProvider>
-		</ConvexAuthNextjsProvider>
+			</ConvexAuthNextjsProvider>
+		</QueryClientProvider>
 	);
 }

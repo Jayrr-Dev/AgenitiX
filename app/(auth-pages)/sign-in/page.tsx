@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuthContext } from "@/components/auth/AuthProvider";
+import { GitHubButton } from "@/components/auth/GitHubButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -252,6 +253,24 @@ export default function SignInPage() {
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
+							{/* OAuth Sign-in Options */}
+							<div className="space-y-3 mb-6">
+								<GitHubButton disabled={isLoading} />
+								
+								{/* Divider */}
+								<div className="relative">
+									<div className="absolute inset-0 flex items-center">
+										<span className="w-full border-t" />
+									</div>
+									<div className="relative flex justify-center text-xs uppercase">
+										<span className="bg-white px-2 text-gray-500">
+											Or continue with email
+										</span>
+									</div>
+								</div>
+							</div>
+
+							{/* Magic Link Form */}
 							<form onSubmit={handleSubmit} className="space-y-4">
 								<div className="space-y-2">
 									<Label htmlFor="email">Email address</Label>
