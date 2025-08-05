@@ -33,7 +33,10 @@ export default defineSchema({
 		magic_link_expires: v.optional(v.number()),
 		login_attempts: v.optional(v.number()),
 		last_login_attempt: v.optional(v.number()),
-	}).index("email", ["email"]),
+		// Cross-reference for sync tracking
+		auth_user_id: v.optional(v.id("auth_users")),
+	}).index("email", ["email"])
+		.index("by_auth_user_id", ["auth_user_id"]),
 
 	// Keep existing auth_users table for backward compatibility during migration
 	auth_users: defineTable({
@@ -54,11 +57,14 @@ export default defineSchema({
 		magic_link_expires: v.optional(v.number()),
 		login_attempts: v.optional(v.number()),
 		last_login_attempt: v.optional(v.number()),
+		// Cross-reference for sync tracking
+		convex_user_id: v.optional(v.id("users")),
 	})
 		.index("by_email", ["email"])
 		.index("by_created_at", ["created_at"])
 		.index("by_is_active", ["is_active"])
-		.index("by_magic_link_token", ["magic_link_token"]),
+		.index("by_magic_link_token", ["magic_link_token"])
+		.index("by_convex_user_id", ["convex_user_id"]),
 
 	auth_sessions: defineTable({
 		user_id: v.id("auth_users"),

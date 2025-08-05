@@ -10,11 +10,15 @@
 
 import type * as aiAgent from "../aiAgent.js";
 import type * as auth from "../auth.js";
+import type * as authFunctions from "../authFunctions.js";
 import type * as devHelpers from "../devHelpers.js";
 import type * as emailAccounts from "../emailAccounts.js";
 import type * as flows from "../flows.js";
 import type * as http from "../http.js";
+import type * as migrations_syncUserTables from "../migrations/syncUserTables.js";
 import type * as starterTemplates from "../starterTemplates.js";
+import type * as userSync from "../userSync.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -33,11 +37,15 @@ import type {
 declare const fullApi: ApiFromModules<{
   aiAgent: typeof aiAgent;
   auth: typeof auth;
+  authFunctions: typeof authFunctions;
   devHelpers: typeof devHelpers;
   emailAccounts: typeof emailAccounts;
   flows: typeof flows;
   http: typeof http;
+  "migrations/syncUserTables": typeof migrations_syncUserTables;
   starterTemplates: typeof starterTemplates;
+  userSync: typeof userSync;
+  users: typeof users;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 

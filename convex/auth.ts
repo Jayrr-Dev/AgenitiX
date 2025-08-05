@@ -1,55 +1,59 @@
 /**
  * Route: convex/auth.ts
- * CONVEX AUTH CONFIGURATION - Modern authentication setup with GitHub and Google OAuth
+ * CONVEX AUTH CONFIGURATION - Modern authentication setup with GitHub OAuth and user sync
  *
- * • Integrates with existing auth_users table schema via custom createOrUpdateUser callback
- * • Supports OAuth providers (GitHub, Google) with profile data mapping
+ * • Integrates with existing auth_users table schema via custom afterUserCreatedOrUpdated callback
+ * • Supports OAuth providers (GitHub) with profile data mapping
  * • Maintains backward compatibility with existing magic link authentication
  * • Maps Convex Auth user data to custom schema fields (snake_case naming)
  * • Handles user creation with starter template provisioning
+ * • Bidirectional sync between users and auth_users tables
  *
- * Keywords: convex-auth, oauth, github, google, custom-schema, backward-compatibility
+ * Keywords: convex-auth, oauth, github, custom-schema, backward-compatibility, user-sync
  */
 
 import { convexAuth } from "@convex-dev/auth/server";
 import GitHub from "@auth/core/providers/github";
-import Google from "@auth/core/providers/google";
+import { Password } from "@convex-dev/auth/providers/Password";
 import { DataModel } from "./_generated/dataModel";
 
-export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
+export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = convexAuth({
   providers: [
-    GitHub
+    GitHub,
+    Password, // Magic link authentication
   ],
   callbacks: {
     async afterUserCreatedOrUpdated(ctx, args) {
-      // This callback is called after the user is created or updated in the users table
-      // We use this to sync with our existing auth_users table
-      
+      // Sync Convex Auth users table with custom auth_users table, basically keeping both in sync
       const { userId, existingUserId } = args;
       const user = await ctx.db.get(userId);
       
       if (!user?.email) return;
 
-            // Check if user exists in our custom auth_users table
+      // Find existing auth_user by email
       const existingAuthUser = await ctx.db
-      .query("auth_users")
+        .query("auth_users")
         .filter((q) => q.eq(q.field("email"), user.email))
-      .first();
+        .first();
 
       const now = Date.now();
 
+      let authUserId: string;
+
       if (existingAuthUser) {
-        // Update existing user in auth_users table
+        // Update existing auth_user record
         await ctx.db.patch(existingAuthUser._id, {
           name: user.name || existingAuthUser.name,
           avatar_url: user.image || existingAuthUser.avatar_url,
           email_verified: !!user.emailVerificationTime || existingAuthUser.email_verified,
           updated_at: now,
           last_login: now,
+          convex_user_id: userId,
         });
+        authUserId = existingAuthUser._id;
       } else {
-        // Create new user in auth_users table
-        const authUserId = await ctx.db.insert("auth_users", {
+        // Create new auth_user record
+        authUserId = await ctx.db.insert("auth_users", {
           email: user.email,
           name: user.name || "User",
           avatar_url: user.image,
@@ -57,67 +61,91 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           created_at: now,
           updated_at: now,
           last_login: now,
-      is_active: true,
+          is_active: true,
           company: undefined,
           role: undefined,
           timezone: undefined,
           magic_link_token: undefined,
           magic_link_expires: undefined,
-      login_attempts: 0,
+          login_attempts: 0,
           last_login_attempt: undefined,
-    });
-
-    // Provision starter templates for new user, basically welcome workflows
-        if (!existingUserId) {
-          try {
-            const nowISO = new Date().toISOString();
-      const STARTER_TEMPLATES = [
-        {
-          name: "🚀 Welcome & AI Introduction",
-          description: "Learn the basics with text creation and AI interaction",
-          icon: "rocket",
-          nodes: [],
-          edges: [],
-        },
-        {
-          name: "📧 Email Automation Starter", 
-          description: "Set up your first email automation workflow",
-          icon: "mail",
-          nodes: [],
-          edges: [],
-        },
-        {
-          name: "📊 Data Processing Basics",
-          description: "Learn to create, process, and store data",
-          icon: "database",
-          nodes: [],
-          edges: [],
-        },
-      ];
-
-      for (const template of STARTER_TEMPLATES) {
-        try {
-                await ctx.db.insert("flows", {
-            name: template.name,
-            description: template.description,
-            icon: template.icon,
-                  is_private: true,
-                  user_id: authUserId,
-            nodes: template.nodes,
-            edges: template.edges,
-                  canvas_updated_at: nowISO,
-                  created_at: nowISO,
-                  updated_at: nowISO,
-                });
-        } catch (error) {
-          console.error(`Failed to create template "${template.name}":`, error);
-        }
+          convex_user_id: userId,
+        });
       }
-    } catch (error) {
-            console.error("Failed to provision starter templates:", error);
+
+      // Sync data to users table with cross-reference, basically ensuring bidirectional sync
+      await ctx.db.patch(userId, {
+        avatar_url: user.image,
+        email_verified: !!user.emailVerificationTime,
+        updated_at: now,
+        last_login: now,
+        is_active: true,
+        auth_user_id: authUserId,
+      });
+
+      // Provision starter templates for new users only, basically onboarding workflows
+      if (!existingUserId && !existingAuthUser) {
+        try {
+          const nowISO = new Date().toISOString();
+          
+          const STARTER_TEMPLATES = [
+            {
+              name: "🚀 Welcome & AI Introduction",
+              description: "Learn the basics with text creation and AI interaction",
+              icon: "rocket",
+              nodes: [],
+              edges: [],
+            },
+            {
+              name: "📧 Email Automation Starter",
+              description: "Set up your first email automation workflow",
+              icon: "mail",
+              nodes: [],
+              edges: [],
+            },
+            {
+              name: "📊 Data Processing Basics",
+              description: "Learn to create, process, and store data",
+              icon: "database",
+              nodes: [],
+              edges: [],
+            },
+          ];
+
+          for (const template of STARTER_TEMPLATES) {
+            try {
+              await ctx.db.insert("flows", {
+                name: template.name,
+                description: template.description,
+                icon: template.icon,
+                is_private: true,
+                user_id: authUserId,
+                nodes: template.nodes,
+                edges: template.edges,
+                canvas_updated_at: nowISO,
+                created_at: nowISO,
+                updated_at: nowISO,
+              });
+            } catch (error) {
+              console.error(`Failed to create template "${template.name}":`, error);
+            }
           }
+        } catch (error) {
+          console.error("Failed to provision starter templates:", error);
         }
       }
     },
   },
 });
+
+// Export custom auth functions for backward compatibility with existing frontend
+export {
+  sendMagicLink,
+  verifyMagicLink,
+  signUp,
+  getCurrentUser,
+  signOut,
+  updateProfile,
+  getUserSessions,
+  revokeSession,
+} from "./authFunctions";
