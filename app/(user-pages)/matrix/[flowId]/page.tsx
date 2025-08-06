@@ -47,7 +47,7 @@ export default function FlowPage({ params }: PageProps) {
     flowId && user?.id
       ? {
           flow_id: flowId as Id<"flows">,
-          user_id: user.id,
+          user_id: user.id as Id<"users">,
         }
       : "skip"
   );

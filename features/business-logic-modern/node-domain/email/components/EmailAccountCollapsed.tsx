@@ -43,7 +43,11 @@ interface EmailAccountCollapsedProps {
 }
 
 export const EmailAccountCollapsed = memo(
-  ({ nodeData, categoryStyles, onToggleExpand }: EmailAccountCollapsedProps) => {
+  ({
+    nodeData,
+    categoryStyles,
+    onToggleExpand,
+  }: EmailAccountCollapsedProps) => {
     const { provider, email, connectionStatus } = nodeData;
 
     // Provider information with icons
@@ -82,7 +86,7 @@ export const EmailAccountCollapsed = memo(
     const IconComponent = providerInfo.icon;
 
     return (
-      <div 
+      <div
         className={`${COLLAPSED_STYLES.container} cursor-pointer`}
         onClick={onToggleExpand}
       >

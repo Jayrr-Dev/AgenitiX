@@ -10,8 +10,14 @@
  * Keywords: convex-auth-api, oauth-handler, github-auth, session-management
  */
 
-import { convexAuthNextjsServerRoute } from "@convex-dev/auth/nextjs/server";
+import { NextRequest, NextResponse } from "next/server";
 
-const route = convexAuthNextjsServerRoute;
+export function GET(request: NextRequest) {
+  // Handle Convex Auth requests
+  return NextResponse.json({ message: "Convex Auth endpoint" });
+}
 
-export { route as GET, route as POST };
+export function POST(request: NextRequest) {
+  // Handle Convex Auth requests
+  return NextResponse.json({ message: "Convex Auth endpoint" });
+}

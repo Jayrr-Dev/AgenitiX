@@ -103,7 +103,7 @@ const DashboardContent = () => {
 	}, []);
 
 	// Convex hooks
-	const flows = useQuery(api.flows.getUserFlows, user?.id ? { user_id: user.id } : "skip");
+	const flows = useQuery(api.flows.getUserFlows, user?.id ? { user_id: user.id as Id<"users"> } : "skip");
 	const createFlow = useMutation(api.flows.createFlow);
 	const updateFlow = useMutation(api.flows.updateFlow);
 
@@ -161,7 +161,7 @@ const DashboardContent = () => {
 				description: flowData.description,
 				icon: flowData.icon,
 				is_private: flowData.private,
-				user_id: user.id,
+				user_id: user.id as Id<"users">,
 			});
 
 			// Navigate to the new flow
@@ -196,7 +196,7 @@ const DashboardContent = () => {
 		try {
 			await updateFlow({
 				flow_id: flowId as Id<"flows">,
-				user_id: user.id,
+				user_id: user.id as Id<"users">,
 				is_private: !currentPrivacy,
 			});
 
@@ -314,32 +314,33 @@ const DashboardContent = () => {
 					</div>
 				</div>
 
-				{/* Enhanced Grid Layout */}
-				<div
-					className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-					style={{ gridAutoRows: "1fr" }}
-				>
-					{/* Enhanced "New Flow" card */}
-					<Card
-						className="group cursor-pointer transition-all duration-300 border-dashed border-2 border-muted-foreground/30 hover:border-primary/60 hover:bg-primary/5 bg-fill-border hover:animate-fill-transparency aspect-square shadow-sm dark:shadow-white/5"
-						style={{
-							backgroundColor: "light-dark(#f5f5f5, var(--fill-border-color, #1a1a1a))",
-						}}
-						onClick={() => setIsModalOpen(true)}
+				{/* Enhanced Grid Layout - Only show when user has flows */}
+				{allFlows.length > 0 && (
+					<div
+						className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+						style={{ gridAutoRows: "1fr" }}
 					>
-						<CardContent className="flex flex-col items-center justify-center py-16">
-							<div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-								<Plus className="w-8 h-8 text-primary" />
-							</div>
-							<h3 className="text-lg font-semibold text-foreground mb-2">Create New Flow</h3>
-							<p className="text-sm text-muted-foreground text-center">
-								Build a new automation workflow
-							</p>
-						</CardContent>
-					</Card>
+						{/* Enhanced "New Flow" card */}
+						<Card
+							className="group cursor-pointer transition-all duration-300 border-dashed border-2 border-muted-foreground/30 hover:border-primary/60 hover:bg-primary/5 bg-fill-border hover:animate-fill-transparency aspect-square shadow-sm dark:shadow-white/5"
+							style={{
+								backgroundColor: "light-dark(#f5f5f5, var(--fill-border-color, #1a1a1a))",
+							}}
+							onClick={() => setIsModalOpen(true)}
+						>
+							<CardContent className="flex flex-col items-center justify-center py-16">
+								<div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+									<Plus className="w-8 h-8 text-primary" />
+								</div>
+								<h3 className="text-lg font-semibold text-foreground mb-2">Create New Flow</h3>
+								<p className="text-sm text-muted-foreground text-center">
+									Build a new automation workflow
+								</p>
+							</CardContent>
+						</Card>
 
-					{/* Enhanced Flow Cards */}
-					{dashboardFlows.map((flow) => (
+						{/* Enhanced Flow Cards */}
+						{dashboardFlows.map((flow) => (
 						<Card
 							key={flow.id}
 							className="group transition-all duration-300 border border-transparent bg-fill-border hover:animate-fill-transparency flex flex-col aspect-square shadow-sm dark:shadow-white/5"
@@ -431,7 +432,8 @@ const DashboardContent = () => {
 							</CardContent>
 						</Card>
 					))}
-				</div>
+					</div>
+				)}
 
 				{/* Empty States */}
 				{allFlows.length === 0 ? (

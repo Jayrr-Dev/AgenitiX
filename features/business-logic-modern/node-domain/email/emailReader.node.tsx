@@ -47,6 +47,7 @@ import { api } from "@/convex/_generated/api";
 // Convex integration
 import { useQuery } from "convex/react";
 import { toast } from "sonner";
+import { useFlowMetadataOptional } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -365,6 +366,10 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // 4.3  Convex integration
   // -------------------------------------------------------------------------
   const { user, token } = useAuthContext();
+  const flowMetadata = useFlowMetadataOptional();
+  const canEdit = flowMetadata?.flow?.canEdit ?? true;
+
+  // Fetch email accounts for both owners and viewers - viewers can use their own accounts
   const emailAccounts = useQuery(
     api.emailAccounts.getEmailAccountsByUserEmail,
     // Use hybrid auth: prefer token_hash, fallback to userEmail
@@ -441,6 +446,8 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     console.log("📊 EmailReader availableAccounts debug:", {
       emailAccountsCount: emailAccounts?.length || 0,
       connectedAccountIds,
+      canEdit,
+      isPublicWorkflow: !canEdit,
       emailAccounts: emailAccounts?.map((acc) => ({
         id: acc._id,
         email: acc.email,
