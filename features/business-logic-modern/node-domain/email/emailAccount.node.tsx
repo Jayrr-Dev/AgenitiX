@@ -378,6 +378,7 @@ const EmailAccountNode = memo(
             <EmailAccountCollapsed
               nodeData={nodeData}
               categoryStyles={categoryStyles}
+              onToggleExpand={toggleExpand}
             />
           )}
 

@@ -246,7 +246,7 @@ export function SidebarTabs({
       }
 
       // SIMPLIFIED THROTTLING - Only for non-Alt+Q keys
-      const currentKey = e.key.toLowerCase();
+      const currentKey = e.key ? e.key.toLowerCase() : '';
       const isAltQBackspace = e.altKey && currentKey === "q";
 
       const notTyping = !isTypingInAnyInput;

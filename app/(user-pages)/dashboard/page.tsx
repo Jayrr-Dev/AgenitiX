@@ -261,10 +261,10 @@ const DashboardContent = () => {
 										Explore
 									</Button>
 								</Link>
-								<Button onClick={() => setIsModalOpen(true)} className="gap-2">
+								{/* <Button onClick={() => setIsModalOpen(true)} className="gap-2">
 									<Plus className="w-4 h-4" />
 									New Flow
-								</Button>
+								</Button> */}
 							</div>
 						</div>
 
@@ -443,10 +443,10 @@ const DashboardContent = () => {
 						<p className="text-muted-foreground mb-8 max-w-md mx-auto">
 							Create your first workflow to start automating tasks and streamlining your processes.
 						</p>
-						<Button onClick={() => setIsModalOpen(true)} size="lg" className="gap-2">
+						{/* <Button onClick={() => setIsModalOpen(true)} size="lg" className="gap-2">
 							<Plus className="w-5 h-5" />
 							Create Your First Flow
-						</Button>
+						</Button> */}
 					</div>
 				) : dashboardFlows.length === 0 ? (
 					// No flows match current filter/search
