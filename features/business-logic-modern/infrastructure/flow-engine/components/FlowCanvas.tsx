@@ -52,6 +52,7 @@ import { useDynamicNodeTypes } from "../hooks/useDynamicNodeTypes";
 
 // Debug tool for clearing local storage in dev mode
 import ClearLocalStorage from "@/features/business-logic-modern/infrastructure/components/ClearLocalStorage";
+import { useFlowMetadataOptional } from "../contexts/flow-metadata-context";
 
 interface NodeError {
   message: string;
@@ -184,6 +185,10 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   // Theme integration
   const { resolvedTheme } = useTheme();
   const [_mounted, setMounted] = useState(false);
+
+  // Get flow metadata for permission checking
+  const flowMetadata = useFlowMetadataOptional();
+  const canEdit = flowMetadata?.flow?.canEdit ?? true; // Default to true for backward compatibility
 
   useEffect(() => {
     setMounted(true);
@@ -431,8 +436,8 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         {/* DEBUG TOOL - Clears local storage (development utility) */}
         <ClearLocalStorage className={PANEL_STYLES.margin} />
 
-        {/* MOBILE DELETE BUTTON - Only visible on mobile when node or edge is selected */}
-        {(selectedNode || selectedEdge) && (
+        {/* MOBILE DELETE BUTTON - Only visible on mobile when node or edge is selected and user can edit */}
+        {(selectedNode || selectedEdge) && canEdit && (
           <Panel
             position={deleteButtonPosition}
             className={`md:hidden ${controlsClassName}`}
