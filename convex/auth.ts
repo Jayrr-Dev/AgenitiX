@@ -19,16 +19,18 @@ import { Password } from "@convex-dev/auth/providers/Password";
 import { Email } from "@convex-dev/auth/providers/Email";
 import { DataModel } from "./_generated/dataModel";
 
-// Debug environment variables in development, basically check if auth keys are loaded
-console.log("🔑 Convex Auth Environment Debug:", {
-  nodeEnv: process.env.NODE_ENV,
-  hasGitHubId: !!process.env.AUTH_GITHUB_ID,
-  hasGitHubSecret: !!process.env.AUTH_GITHUB_SECRET,
-  hasAuthSecret: !!process.env.AUTH_SECRET,
-  gitHubIdPrefix: process.env.AUTH_GITHUB_ID?.substring(0, 8) + "...",
-  authSecretPrefix: process.env.AUTH_SECRET?.substring(0, 8) + "...",
-  allEnvKeys: Object.keys(process.env).filter(key => key.includes('AUTH')),
-});
+// Debug environment variables in development only, basically check if auth keys are loaded
+if (process.env.NODE_ENV === "development") {
+  console.log("🔑 Convex Auth Environment Debug:", {
+    nodeEnv: process.env.NODE_ENV,
+    hasGitHubId: !!process.env.AUTH_GITHUB_ID,
+    hasGitHubSecret: !!process.env.AUTH_GITHUB_SECRET,
+    hasAuthSecret: !!process.env.AUTH_SECRET,
+    gitHubIdPrefix: process.env.AUTH_GITHUB_ID?.substring(0, 8) + "...",
+    authSecretPrefix: process.env.AUTH_SECRET?.substring(0, 8) + "...",
+    allEnvKeys: Object.keys(process.env).filter(key => key.includes('AUTH')),
+  });
+}
 
 export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = convexAuth({
   providers: [
@@ -43,15 +45,17 @@ export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = c
         const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
         const magicLinkUrl = `${baseUrl}/auth/verify?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
         
-        // Always log to console for development
-        console.log("\n🔗 MAGIC LINK GENERATED:");
-        console.log(`📧 Email: ${email}`);
-        console.log(`🔑 Token: ${token}`);
-        console.log(`🔗 Original Auth URL: ${url}`);
-        console.log(`🔗 Magic Link URL: ${magicLinkUrl}`);
-        console.log("📋 Click this magic link to sign in:");
-        console.log(magicLinkUrl);
-        console.log(""); 
+        // Log magic links only in development, basically debug email auth flow
+        if (process.env.NODE_ENV === "development") {
+          console.log("\n🔗 MAGIC LINK GENERATED:");
+          console.log(`📧 Email: ${email}`);
+          console.log(`🔑 Token: ${token}`);
+          console.log(`🔗 Original Auth URL: ${url}`);
+          console.log(`🔗 Magic Link URL: ${magicLinkUrl}`);
+          console.log("📋 Click this magic link to sign in:");
+          console.log(magicLinkUrl);
+          console.log("");
+        } 
 
         // In production, you would send actual emails here with the magicLinkUrl
         // For development, just return success
@@ -61,8 +65,11 @@ export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = c
   ],
   callbacks: {
     async afterUserCreatedOrUpdated(ctx, args) {
-      console.log("🔧 User callback triggered");
-      console.log("Args:", JSON.stringify(args));
+      // Log user creation only in development, basically track onboarding flow
+      if (process.env.NODE_ENV === "development") {
+        console.log("🔧 User callback triggered");
+        console.log("Args:", JSON.stringify(args));
+      }
       
       const { userId, existingUserId } = args;
       const user = await ctx.db.get(userId);
@@ -124,11 +131,17 @@ export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = c
                 updated_at: nowISO,
               });
             } catch (error) {
-              console.error(`Failed to create template "${template.name}":`, error);
+              // Log template creation errors only in development, basically debug onboarding
+              if (process.env.NODE_ENV === "development") {
+                console.error(`Failed to create template "${template.name}":`, error);
+              }
             }
           }
         } catch (error) {
-          console.error("Failed to provision starter templates:", error);
+          // Log starter template errors only in development, basically debug onboarding flow
+          if (process.env.NODE_ENV === "development") {
+            console.error("Failed to provision starter templates:", error);
+          }
         }
       }
     },
