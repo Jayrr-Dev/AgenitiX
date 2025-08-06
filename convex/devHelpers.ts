@@ -51,22 +51,48 @@ export const createTestUser = mutation({
 			login_attempts: 0,
 		});
 
-		// Create a test session token
-		const sessionToken = `dev_session_${userId}_${Date.now()}`;
+		// Create a magic link token for dev session
+		const magicToken = `dev_magic_${userId}_${Date.now()}`;
+		
+		// Set magic link token in auth_users for authentication
+		await ctx.db.patch(userId, {
+			magic_link_token: magicToken,
+			magic_link_expires: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
+		});
 
-		const sessionId = await ctx.db.insert("auth_sessions", {
-			user_id: userId,
-			token_hash: sessionToken,
-			expires_at: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
-			created_at: Date.now(),
-			ip_address: "127.0.0.1",
-			user_agent: "Development",
-			is_active: true,
+		// Create corresponding Convex Auth user if not exists
+		const existingConvexUser = await ctx.db
+			.query("users")
+			.withIndex("email", (q) => q.eq("email", email))
+			.first();
+
+		let convexUserId;
+		if (!existingConvexUser) {
+			convexUserId = await ctx.db.insert("users", {
+				email,
+				name,
+				email_verified: true,
+				is_active: true,
+				created_at: Date.now(),
+				updated_at: Date.now(),
+				auth_user_id: userId,
+			});
+			
+			// Link back
+			await ctx.db.patch(userId, { convex_user_id: convexUserId });
+		} else {
+			convexUserId = existingConvexUser._id;
+		}
+
+		// Create Convex Auth session
+		const sessionId = await ctx.db.insert("authSessions", {
+			userId: convexUserId,
+			expirationTime: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
 		});
 
 		return {
 			userId,
-			sessionToken,
+			magicToken,
 			sessionId,
 			message: "Test user created successfully",
 			existing: false,
@@ -181,7 +207,7 @@ export const clearTestData = mutation({
 		}
 
 		// Clear sessions (but keep users for easier testing)
-		const sessions = await ctx.db.query("auth_sessions").collect();
+		const sessions = await ctx.db.query("authSessions").collect();
 		for (const session of sessions) {
 			await ctx.db.delete(session._id);
 		}

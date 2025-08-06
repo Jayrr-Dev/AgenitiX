@@ -1,12 +1,21 @@
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import type { AuthResult } from "@/convex/auth";
 import { useMutation, useQuery } from "convex/react";
 import { useCallback, useEffect, useState } from "react";
 
 interface AuthError extends Error {
 	code?: string;
 	retryAfter?: number;
+}
+
+interface AuthResult<T> {
+	success: boolean;
+	data?: T;
+	error?: {
+		code: string;
+		message: string;
+		retryAfter?: number;
+	};
 }
 
 // Simple token management (in production, use secure storage)
@@ -236,32 +245,11 @@ export const useUserSessions = () => {
 		}
 	}, []);
 
-	const sessions = useQuery(api.auth.getUserSessions, token ? { token_hash: token } : "skip");
-
-	const revokeSessionMutation = useMutation(api.auth.revokeSession);
-
-	const revokeSession = useCallback(
-		async (sessionId: Id<"auth_sessions">) => {
-			if (!token) {
-				throw new Error("Not authenticated");
-			}
-
-			try {
-				return await revokeSessionMutation({
-					token_hash: token,
-					session_id: sessionId,
-				});
-			} catch (error) {
-				console.error("Revoke session error:", error);
-				throw error;
-			}
-		},
-		[revokeSessionMutation, token]
-	);
+	// Session management is now handled through Convex Auth
 
 	return {
-		sessions,
-		isLoading: sessions === undefined && token !== null,
-		revokeSession,
+		// Session management now handled by Convex Auth
+		sessions: [], // Deprecated
+		isLoading: false, // Simplified for now
 	};
 };

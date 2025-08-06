@@ -8,21 +8,23 @@ export const getAuthenticatedUserByToken = query({
     tokenHash: v.string(),
   },
   handler: async (ctx, args) => {
-    // Find active session by token hash
-    const session = await ctx.db
-      .query("auth_sessions")
-      .withIndex("by_token_hash", (q) => q.eq("token_hash", args.tokenHash))
+    // Find user by magic link token hash
+    const authUser = await ctx.db
+      .query("auth_users")
+      .filter((q) => q.eq(q.field("magic_link_token"), args.tokenHash))
       .filter((q) => q.eq(q.field("is_active"), true))
-      .filter((q) => q.gt(q.field("expires_at"), Date.now()))
       .first();
 
-    if (!session) {
+    if (!authUser) {
       return null;
     }
 
-    // Get user from session
-    const user = await ctx.db.get(session.user_id);
-    return user;
+    // Check if magic link is still valid
+    if (authUser.magic_link_expires && authUser.magic_link_expires < Date.now()) {
+      return null;
+    }
+
+    return authUser;
   },
 });
 
@@ -57,21 +59,22 @@ async function getAuthenticatedUser(ctx: any, tokenHash?: string) {
     return null;
   }
 
-  // Find active session by token hash
-  const session = await ctx.db
-    .query("auth_sessions")
-    .withIndex("by_token_hash", (q: any) => q.eq("token_hash", tokenHash))
+  // Find user by magic link token hash
+  const authUser = await ctx.db
+    .query("auth_users")
+    .filter((q: any) => q.eq(q.field("magic_link_token"), tokenHash))
     .filter((q: any) => q.eq(q.field("is_active"), true))
-    .filter((q: any) => q.gt(q.field("expires_at"), Date.now()))
     .first();
 
-  if (!session) {
+  if (!authUser) {
     return null;
   }
 
-  // Get user from session
-  const user = await ctx.db.get(session.user_id);
-  return user;
+  // Check if magic link is still valid
+  if (authUser.magic_link_expires && authUser.magic_link_expires < Date.now()) {
+    return null;
+  }
+  return authUser;
 }
 
 // Helper function to simulate ctx.auth.getUserIdentity() for compatibility in mutations/queries

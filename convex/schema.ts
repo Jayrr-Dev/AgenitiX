@@ -66,19 +66,7 @@ export default defineSchema({
 		.index("by_magic_link_token", ["magic_link_token"])
 		.index("by_convex_user_id", ["convex_user_id"]),
 
-	auth_sessions: defineTable({
-		user_id: v.id("auth_users"),
-		token_hash: v.string(),
-		expires_at: v.number(),
-		created_at: v.number(),
-		ip_address: v.optional(v.string()),
-		user_agent: v.optional(v.string()),
-		is_active: v.boolean(),
-	})
-		.index("by_user_id", ["user_id"])
-		.index("by_token_hash", ["token_hash"])
-		.index("by_expires_at", ["expires_at"])
-		.index("by_is_active", ["is_active"]),
+
 
 	// Email Domain
 	email_accounts: defineTable({

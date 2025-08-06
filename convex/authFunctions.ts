@@ -172,19 +172,47 @@ export const verifyMagicLink = mutation({
         };
       }
 
-      // Generate session token
-      const sessionToken = generateMagicToken() + "_session";
+      // Create Convex Auth session for magic link user
       const sessionExpiresAt = now + 30 * 24 * 60 * 60 * 1000; // 30 days
-
-      // Create session
-      await ctx.db.insert("auth_sessions", {
-        user_id: user._id,
-        token_hash: sessionToken,
-        expires_at: sessionExpiresAt,
-        created_at: now,
-        ip_address,
-        user_agent,
-        is_active: true,
+      
+      // Ensure the user has a corresponding Convex Auth user
+      let convexUserId = user.convex_user_id;
+      if (!convexUserId) {
+        // Create or link to Convex Auth user
+        const existingConvexUser = await ctx.db
+          .query("users")
+          .withIndex("email", (q) => q.eq("email", user.email))
+          .first();
+          
+        if (existingConvexUser) {
+          convexUserId = existingConvexUser._id;
+          // Link the auth_user to the convex user
+          await ctx.db.patch(user._id, { convex_user_id: convexUserId });
+        } else {
+          // Create new Convex Auth user
+          convexUserId = await ctx.db.insert("users", {
+            email: user.email,
+            name: user.name,
+            avatar_url: user.avatar_url,
+            company: user.company,
+            role: user.role,
+            timezone: user.timezone,
+            email_verified: true,
+            is_active: true,
+            created_at: now,
+            updated_at: now,
+            auth_user_id: user._id,
+          });
+          
+          // Link back
+          await ctx.db.patch(user._id, { convex_user_id: convexUserId });
+        }
+      }
+      
+      // Create Convex Auth session
+      await ctx.db.insert("authSessions", {
+        userId: convexUserId,
+        expirationTime: sessionExpiresAt,
       });
 
       // Update user: verify email, clear magic link, reset attempts
@@ -199,57 +227,12 @@ export const verifyMagicLink = mutation({
         updated_at: now,
       });
 
-      // Sync with Convex Auth users table if not already linked
-      if (!user.convex_user_id) {
-        try {
-          // Check if user exists in Convex Auth users table
-          const existingConvexUser = await ctx.db
-            .query("users")
-            .filter((q) => q.eq(q.field("email"), user.email))
-            .first();
-
-          let convexUserId;
-          if (existingConvexUser) {
-            // Link existing Convex user
-            convexUserId = existingConvexUser._id;
-            await ctx.db.patch(existingConvexUser._id, {
-              auth_user_id: user._id,
-              updated_at: now,
-            });
-          } else {
-            // Create new Convex user for sync
-            convexUserId = await ctx.db.insert("users", {
-              name: user.name,
-              email: user.email,
-              avatar_url: user.avatar_url,
-              email_verified: user.email_verified,
-              created_at: user.created_at,
-              updated_at: now,
-              last_login: user.last_login,
-              is_active: user.is_active,
-              company: user.company,
-              role: user.role,
-              timezone: user.timezone,
-              auth_user_id: user._id,
-            });
-          }
-
-          // Update auth_user with cross-reference
-          await ctx.db.patch(user._id, {
-            convex_user_id: convexUserId,
-          });
-        } catch (syncError) {
-          console.error("Failed to sync with Convex Auth:", syncError);
-          // Continue anyway - authentication still works
-        }
-      }
-
       return {
         success: true,
         data: {
-          sessionToken,
+          token: magicToken, // Use the magic token as the auth token for the magic link system
           user: {
-            id: user._id,
+            id: convexUserId, // Return the Convex Auth user ID
             email: user.email,
             name: user.name,
             avatar_url: user.avatar_url,
@@ -364,6 +347,7 @@ export const signUp = mutation({
 
 /**
  * Get current user by session token, basically session-based authentication
+ * Now adapted to work with Convex Auth's authSessions table
  */
 export const getCurrentUser = query({
   args: {
@@ -374,42 +358,42 @@ export const getCurrentUser = query({
     const now = Date.now();
 
     try {
-      // Find active session
-      const session = await ctx.db
-        .query("auth_sessions")
-        .filter((q) => q.eq(q.field("token_hash"), token_hash))
+      // For magic link, we need to find the user via auth_users table
+      // since the token_hash is stored there, not in Convex Auth sessions
+      const authUser = await ctx.db
+        .query("auth_users")
+        .filter((q) => q.eq(q.field("magic_link_token"), token_hash))
         .filter((q) => q.eq(q.field("is_active"), true))
         .first();
 
-      if (!session) {
+      if (!authUser) {
         return null;
       }
 
-      // Check if session is expired
-      if (session.expires_at < now) {
-        // Mark session as inactive
-        await ctx.db.patch(session._id, { is_active: false });
+      // Check if magic link is expired
+      if (authUser.magic_link_expires && authUser.magic_link_expires < now) {
         return null;
       }
 
-      // Get user
-      const user = await ctx.db.get(session.user_id);
-      if (!user || !user.is_active) {
+      // Get the corresponding Convex Auth user
+      const user = authUser.convex_user_id ? await ctx.db.get(authUser.convex_user_id) : null;
+      
+      if (!user) {
         return null;
       }
 
       return {
         id: user._id,
-        email: user.email,
-        name: user.name,
-        avatar_url: user.avatar_url,
-        email_verified: user.email_verified,
+        email: user.email || authUser.email,
+        name: user.name || authUser.name,
+        avatar_url: user.avatar_url || authUser.avatar_url,
+        email_verified: user.email_verified || authUser.email_verified,
         is_active: user.is_active,
-        company: user.company,
-        role: user.role,
-        timezone: user.timezone,
-        created_at: user.created_at,
-        last_login: user.last_login,
+        company: user.company || authUser.company,
+        role: user.role || authUser.role,
+        timezone: user.timezone || authUser.timezone,
+        created_at: user.created_at || authUser.created_at,
+        last_login: user.last_login || authUser.last_login,
       };
     } catch (error) {
       console.error("Get current user error:", error);
@@ -420,6 +404,7 @@ export const getCurrentUser = query({
 
 /**
  * Sign out user by invalidating session, basically session cleanup
+ * Now handles both magic link tokens and Convex Auth sessions
  */
 export const signOut = mutation({
   args: {
@@ -429,14 +414,31 @@ export const signOut = mutation({
     const { token_hash } = args;
 
     try {
-      // Find and deactivate session
-      const session = await ctx.db
-        .query("auth_sessions")
-        .filter((q) => q.eq(q.field("token_hash"), token_hash))
+      // For magic link users, find by magic link token and clear it
+      const authUser = await ctx.db
+        .query("auth_users")
+        .filter((q) => q.eq(q.field("magic_link_token"), token_hash))
         .first();
 
-      if (session) {
-        await ctx.db.patch(session._id, { is_active: false });
+      if (authUser) {
+        // Clear the magic link token to sign out
+        await ctx.db.patch(authUser._id, {
+          magic_link_token: undefined,
+          magic_link_expires: undefined,
+        });
+
+        // If there's a linked Convex Auth user, invalidate their sessions too
+        if (authUser.convex_user_id) {
+          const convexAuthSessions = await ctx.db
+            .query("authSessions")
+            .withIndex("userId", (q) => q.eq("userId", authUser.convex_user_id))
+            .collect();
+
+          // Delete all Convex Auth sessions for this user
+          for (const session of convexAuthSessions) {
+            await ctx.db.delete(session._id);
+          }
+        }
       }
 
       return { success: true };
@@ -480,7 +482,7 @@ export const deleteAccount = mutation({
     // Fallback to custom auth if provided
     if (!user && args.token_hash) {
       const session = await ctx.db
-        .query("auth_sessions")
+        		.query("authSessions")
         .filter((q) => q.eq(q.field("token_hash"), args.token_hash))
         .first();
 
@@ -545,7 +547,7 @@ export const deleteAccount = mutation({
 
       // Delete user sessions
       const sessions = await ctx.db
-        .query("auth_sessions")
+        		.query("authSessions")
         .withIndex("by_user_id", (q) => q.eq("user_id", userId))
         .collect();
       for (const session of sessions) {
@@ -605,7 +607,7 @@ export const updateProfile = mutation({
     try {
       // Find active session
       const session = await ctx.db
-        .query("auth_sessions")
+        		.query("authSessions")
         .filter((q) => q.eq(q.field("token_hash"), token_hash))
         .filter((q) => q.eq(q.field("is_active"), true))
         .first();
@@ -654,83 +656,3 @@ export const updateProfile = mutation({
 /**
  * Get user sessions for security management, basically session monitoring
  */
-export const getUserSessions = query({
-  args: {
-    token_hash: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const { token_hash } = args;
-    const now = Date.now();
-
-    try {
-      // Find current session to get user
-      const currentSession = await ctx.db
-        .query("auth_sessions")
-        .filter((q) => q.eq(q.field("token_hash"), token_hash))
-        .filter((q) => q.eq(q.field("is_active"), true))
-        .first();
-
-      if (!currentSession) {
-        return [];
-      }
-
-      // Get all active sessions for this user
-      const sessions = await ctx.db
-        .query("auth_sessions")
-        .filter((q) => q.eq(q.field("user_id"), currentSession.user_id))
-        .filter((q) => q.eq(q.field("is_active"), true))
-        .filter((q) => q.gt(q.field("expires_at"), now))
-        .collect();
-
-      return sessions.map((session) => ({
-        id: session._id,
-        created_at: session.created_at,
-        ip_address: session.ip_address,
-        user_agent: session.user_agent,
-        is_current: session._id === currentSession._id,
-      }));
-    } catch (error) {
-      console.error("Get user sessions error:", error);
-      return [];
-    }
-  },
-});
-
-/**
- * Revoke a session, basically security management
- */
-export const revokeSession = mutation({
-  args: {
-    token_hash: v.string(),
-    session_id: v.id("auth_sessions"),
-  },
-  handler: async (ctx, args) => {
-    const { token_hash, session_id } = args;
-
-    try {
-      // Verify current user owns the session to revoke
-      const currentSession = await ctx.db
-        .query("auth_sessions")
-        .filter((q) => q.eq(q.field("token_hash"), token_hash))
-        .filter((q) => q.eq(q.field("is_active"), true))
-        .first();
-
-      if (!currentSession) {
-        return { success: false, error: "Invalid session" };
-      }
-
-      const sessionToRevoke = await ctx.db.get(session_id);
-      if (!sessionToRevoke || sessionToRevoke.user_id !== currentSession.user_id) {
-        return { success: false, error: "Session not found" };
-      }
-
-      // Revoke the session
-      await ctx.db.patch(session_id, { is_active: false });
-
-      return { success: true };
-    } catch (error) {
-      console.error("Revoke session error:", error);
-      return { success: false, error: "Failed to revoke session" };
-    }
-  },
-});

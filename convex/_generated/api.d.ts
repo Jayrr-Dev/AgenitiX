@@ -17,6 +17,7 @@ import type * as flows from "../flows.js";
 import type * as http from "../http.js";
 import type * as migrations_syncUserTables from "../migrations/syncUserTables.js";
 import type * as starterTemplates from "../starterTemplates.js";
+import type * as testAuthRefactor from "../testAuthRefactor.js";
 import type * as userSync from "../userSync.js";
 import type * as users from "../users.js";
 
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "migrations/syncUserTables": typeof migrations_syncUserTables;
   starterTemplates: typeof starterTemplates;
+  testAuthRefactor: typeof testAuthRefactor;
   userSync: typeof userSync;
   users: typeof users;
 }>;
