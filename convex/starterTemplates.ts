@@ -358,7 +358,7 @@ const STARTER_TEMPLATES = [
  */
 export const provisionStarterTemplates = mutation({
   args: {
-    user_id: v.id("auth_users"),
+    user_id: v.id("users"), // Use Convex Auth users table for OAuth compatibility
   },
   handler: async (ctx, args) => {
     const now = new Date().toISOString();
@@ -400,7 +400,7 @@ export const provisionStarterTemplates = mutation({
  */
 export const hasStarterTemplates = query({
   args: {
-    user_id: v.id("auth_users"),
+    user_id: v.id("users"), // Use Convex Auth users table for OAuth compatibility
   },
   handler: async (ctx, args) => {
     const userFlows = await ctx.db

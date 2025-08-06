@@ -20,7 +20,7 @@ import {
 } from "./starterTemplates";
 
 interface UserDocument {
-  _id: Id<"auth_users">;
+  _id: Id<"users">; // Use Convex Auth users table for OAuth compatibility
   _creationTime: number;
   name?: string;
   email: string;
@@ -37,12 +37,18 @@ interface UserDocument {
  * Get all flows for a user (only their own flows)
  */
 export const getUserFlows = query({
-  args: { user_id: v.id("auth_users") },
+  args: { user_id: v.id("users") }, // Use Convex Auth users table for OAuth compatibility
   handler: async (ctx, args) => {
-    return await ctx.db
-      .query("flows")
-      .withIndex("by_user_id", (q) => q.eq("user_id", args.user_id))
-      .collect();
+    try {
+      return await ctx.db
+        .query("flows")
+        .withIndex("by_user_id", (q) => q.eq("user_id", args.user_id))
+        .collect();
+    } catch (error) {
+      console.error("Error in getUserFlows:", error);
+      // Return empty array if there's a validation error while we fix the schema
+      return [];
+    }
   },
 });
 
@@ -51,7 +57,7 @@ export const getUserFlows = query({
  */
 export const getPublicFlows = query({
   args: {
-    user_id: v.optional(v.id("auth_users")),
+    user_id: v.optional(v.id("users")),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -76,7 +82,7 @@ export const getPublicFlows = query({
  * Get flows accessible to a user (own + shared + public)
  */
 export const getAccessibleFlows = query({
-  args: { user_id: v.id("auth_users") },
+  args: { user_id: v.id("users") },
   handler: async (ctx, args) => {
     // Get user's own flows
     const ownFlows = await ctx.db
@@ -144,7 +150,7 @@ export const getFlow = query({
 export const getFlowSecure = query({
   args: {
     flow_id: v.id("flows"),
-    user_id: v.id("auth_users"),
+    user_id: v.id("users"),
   },
   handler: async (ctx, args) => {
     const flow = await ctx.db.get(args.flow_id);
@@ -181,7 +187,7 @@ export const getFlowSecure = query({
 async function checkFlowAccessInternal(
   ctx: QueryCtx | MutationCtx,
   flow_id: Id<"flows">,
-  user_id: Id<"auth_users">
+  user_id: Id<"users">
 ) {
   const flow = await ctx.db.get(flow_id);
   if (!flow) {
@@ -237,7 +243,7 @@ async function checkFlowAccessInternal(
 export const checkFlowAccess = query({
   args: {
     flow_id: v.id("flows"),
-    user_id: v.id("auth_users"),
+    user_id: v.id("users"),
   },
   handler: async (ctx, args) => {
     return await checkFlowAccessInternal(ctx, args.flow_id, args.user_id);
@@ -297,7 +303,7 @@ export const createFlow = mutation({
     description: v.optional(v.string()),
     icon: v.optional(v.string()),
     is_private: v.boolean(),
-    user_id: v.id("auth_users"),
+    user_id: v.id("users"),
   },
   handler: async (ctx, args) => {
     const now = new Date().toISOString();
@@ -322,7 +328,7 @@ export const createFlow = mutation({
 export const clonePublicFlow = mutation({
   args: {
     source_flow_id: v.id("flows"),
-    user_id: v.id("auth_users"),
+    user_id: v.id("users"),
     new_name: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -365,7 +371,7 @@ export const clonePublicFlow = mutation({
 export const updateFlow = mutation({
   args: {
     flow_id: v.id("flows"),
-    user_id: v.id("auth_users"),
+    user_id: v.id("users"),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     icon: v.optional(v.string()),
@@ -398,7 +404,7 @@ export const updateFlow = mutation({
 export const saveFlowCanvas = mutation({
   args: {
     flow_id: v.id("flows"),
-    user_id: v.id("auth_users"),
+    user_id: v.id("users"),
     nodes: v.any(),
     edges: v.any(),
   },
@@ -431,7 +437,7 @@ export const saveFlowCanvas = mutation({
 export const loadFlowCanvas = query({
   args: {
     flow_id: v.id("flows"),
-    user_id: v.optional(v.id("auth_users")),
+    user_id: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
     const { flow_id, user_id } = args;
@@ -468,7 +474,7 @@ export const loadFlowCanvas = query({
 export const deleteFlow = mutation({
   args: {
     flow_id: v.id("flows"),
-    user_id: v.id("auth_users"),
+    user_id: v.id("users"),
   },
   handler: async (ctx, args) => {
     // Check if user has permission to delete the flow
@@ -532,7 +538,7 @@ export const deleteFlow = mutation({
 export const shareFlow = mutation({
   args: {
     flow_id: v.id("flows"),
-    shared_by_user_id: v.id("auth_users"),
+    shared_by_user_id: v.id("users"),
     expires_at: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -566,13 +572,13 @@ export const grantFlowAccess = mutation({
   args: {
     flow_id: v.id("flows"),
     share_id: v.id("flow_shares"),
-    user_id: v.id("auth_users"),
+    user_id: v.id("users"),
     permission_type: v.union(
       v.literal("view"),
       v.literal("edit"),
       v.literal("admin")
     ),
-    granted_by_user_id: v.id("auth_users"),
+    granted_by_user_id: v.id("users"),
   },
   handler: async (ctx, args) => {
     // Verify the granting user owns the flow
@@ -600,7 +606,7 @@ export const grantFlowAccess = mutation({
 export const requestFlowAccess = mutation({
   args: {
     flow_id: v.id("flows"),
-    requesting_user_id: v.id("auth_users"),
+    requesting_user_id: v.id("users"),
     requesting_user_email: v.string(),
     permission_type: v.union(
       v.literal("view"),
@@ -629,7 +635,7 @@ export const respondToAccessRequest = mutation({
   args: {
     request_id: v.id("flow_access_requests"),
     status: v.union(v.literal("approved"), v.literal("denied")),
-    responded_by_user_id: v.id("auth_users"),
+    responded_by_user_id: v.id("users"),
     response_note: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -726,7 +732,7 @@ export const getFlowUpvotes = query({
 export const hasUserUpvoted = query({
   args: {
     flow_id: v.id("flows"),
-    user_id: v.id("auth_users"),
+    user_id: v.id("users"),
   },
   handler: async (ctx, args) => {
     const upvote = await ctx.db
@@ -746,7 +752,7 @@ export const hasUserUpvoted = query({
 export const toggleFlowUpvote = mutation({
   args: {
     flow_id: v.id("flows"),
-    user_id: v.id("auth_users"),
+    user_id: v.id("users"),
   },
   handler: async (ctx, args) => {
     const existingUpvote = await ctx.db
@@ -778,7 +784,7 @@ export const toggleFlowUpvote = mutation({
  */
 export const getPublicFlowsWithUpvotes = query({
   args: {
-    user_id: v.optional(v.id("auth_users")),
+    user_id: v.optional(v.id("users")),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -815,7 +821,7 @@ export const getPublicFlowsWithUpvotes = query({
                   .withIndex("by_flow_and_user", (q) =>
                     q
                       .eq("flow_id", flow._id as Id<"flows">)
-                      .eq("user_id", args.user_id as Id<"auth_users">)
+                      .eq("user_id", args.user_id as Id<"users">)
                   )
                   .first();
                 hasUpvoted = !!userUpvote;
@@ -829,7 +835,7 @@ export const getPublicFlowsWithUpvotes = query({
             let creator = null;
             try {
               const creatorDoc = (await ctx.db.get(
-                flow.user_id as Id<"auth_users">
+                flow.user_id as Id<"users">
               )) as UserDocument | null;
               creator = creatorDoc?.name
                 ? {
@@ -917,6 +923,162 @@ export const debugPublicFlows = query({
 });
 
 /**
+ * Check starter template status for a user (development only)
+ */
+export const checkStarterTemplateStatus = query({
+  args: { user_id: v.id("users") },
+  handler: async (ctx, args) => {
+    try {
+      const userFlows = await ctx.db
+        .query("flows")
+        .withIndex("by_user_id", (q) => q.eq("user_id", args.user_id))
+        .collect();
+
+      const starterTemplateNames = [
+        "🚀 Welcome & AI Introduction",
+        "📧 Email Automation Starter", 
+        "📊 Data Processing Basics",
+      ];
+
+      const starterTemplates = userFlows.filter((flow) =>
+        starterTemplateNames.includes(flow.name)
+      );
+
+      return {
+        hasStarterTemplates: starterTemplates.length > 0,
+        totalFlows: userFlows.length,
+        starterTemplateCount: starterTemplates.length,
+        starterTemplates: starterTemplates.map((flow) => ({
+          id: flow._id,
+          name: flow.name,
+          description: flow.description,
+          icon: flow.icon,
+          nodeCount: Array.isArray(flow.nodes) ? flow.nodes.length : 0,
+          edgeCount: Array.isArray(flow.edges) ? flow.edges.length : 0,
+          created_at: flow.created_at,
+        })),
+        missingTemplates: starterTemplateNames.filter(
+          name => !starterTemplates.some(t => t.name === name)
+        ),
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : "Unknown error",
+        hasStarterTemplates: false,
+        totalFlows: 0,
+        starterTemplateCount: 0,
+        starterTemplates: [],
+        missingTemplates: [],
+      };
+    }
+  },
+});
+
+/**
+ * Debug user ID and table validation issues (development only)
+ */
+export const debugUserValidation = query({
+  args: { user_id: v.string() }, // Accept string to avoid validation errors
+  handler: async (ctx, args) => {
+    try {
+      // Check if user exists in users table
+      const userFromUsers = await ctx.db.get(args.user_id as Id<"users">);
+      
+      // Check if user exists in auth_users table  
+      const userFromAuthUsers = await ctx.db.get(args.user_id as Id<"auth_users">);
+      
+      // Try to get flows with manual query
+      const flows = await ctx.db.query("flows").collect();
+      const userFlows = flows.filter(f => f.user_id === args.user_id);
+      
+      return {
+        providedUserId: args.user_id,
+        userExistsInUsers: !!userFromUsers,
+        userExistsInAuthUsers: !!userFromAuthUsers,
+        userFromUsers: userFromUsers ? { id: userFromUsers._id, email: userFromUsers.email } : null,
+        userFromAuthUsers: userFromAuthUsers ? { id: userFromAuthUsers._id, email: userFromAuthUsers.email } : null,
+        totalFlows: flows.length,
+        userFlowsCount: userFlows.length,
+        userFlows: userFlows.map(f => ({ id: f._id, name: f.name, user_id: f.user_id })),
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : "Unknown error",
+        providedUserId: args.user_id,
+      };
+    }
+  },
+});
+
+/**
+ * Inspect problematic flow record and suggest migration path (development only)
+ */
+export const debugProblematicFlow = query({
+  args: { flow_id: v.string() }, // Accept string to avoid validation errors
+  handler: async (ctx, args) => {
+    try {
+      // Get the problematic flow
+      const flow = await ctx.db.get(args.flow_id as Id<"flows">);
+      
+      if (!flow) {
+        return { error: "Flow not found", flow_id: args.flow_id };
+      }
+      
+      // Check if the user_id exists in auth_users table
+      const authUser = await ctx.db.get(flow.user_id as Id<"auth_users">);
+      
+      // Look for corresponding user in users table
+      let correspondingUser = null;
+      if (authUser) {
+        // Try to find by cross-reference
+        const userWithCrossRef = await ctx.db
+          .query("users")
+          .filter(q => q.eq(q.field("auth_user_id"), authUser._id))
+          .first();
+          
+        if (userWithCrossRef) {
+          correspondingUser = userWithCrossRef;
+        } else {
+          // Try to find by email
+          const userByEmail = await ctx.db
+            .query("users")
+            .filter(q => q.eq(q.field("email"), authUser.email))
+            .first();
+          correspondingUser = userByEmail;
+        }
+      }
+      
+      return {
+        flow: {
+          id: flow._id,
+          name: flow.name,
+          user_id: flow.user_id,
+          created_at: flow.created_at,
+        },
+        authUser: authUser ? {
+          id: authUser._id,
+          email: authUser.email,
+          name: authUser.name,
+          convex_user_id: authUser.convex_user_id,
+        } : null,
+        correspondingUser: correspondingUser ? {
+          id: correspondingUser._id,
+          email: correspondingUser.email,
+          name: correspondingUser.name,
+          auth_user_id: correspondingUser.auth_user_id,
+        } : null,
+        migrationPath: correspondingUser ? `Update flow ${flow._id} user_id from ${flow.user_id} to ${correspondingUser._id}` : "No corresponding user found in users table",
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : "Unknown error",
+        flow_id: args.flow_id,
+      };
+    }
+  },
+});
+
+/**
  * Simple test function to get public flows without upvotes (development only)
  */
 export const getPublicFlowsSimple = query({
@@ -936,7 +1098,7 @@ export const getPublicFlowsSimple = query({
         publicFlows.map(async (flow) => {
           try {
             const creator = (await ctx.db.get(
-              flow.user_id as Id<"auth_users">
+              flow.user_id as Id<"users">
             )) as UserDocument | null;
             return {
               ...flow,
@@ -971,6 +1133,106 @@ export const getPublicFlowsSimple = query({
 });
 
 // ============================================================================
+// MIGRATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Migration function to fix existing flows with auth_users IDs, basically converting old references to new schema
+ */
+export const migrateFlowUserIds = mutation({
+  args: {},
+  handler: async (ctx) => {
+    try {
+      // Get all flows
+      const allFlows = await ctx.db.query("flows").collect();
+      
+      // Get all users and auth_users for mapping
+      const users = await ctx.db.query("users").collect();
+      const authUsers = await ctx.db.query("auth_users").collect();
+      
+      // Create mapping from auth_users ID to users ID using cross-references
+      const authToUserMap = new Map<string, string>();
+      
+      // First, try to map using cross-references in the users table
+      for (const user of users) {
+        if (user.auth_user_id) {
+          authToUserMap.set(user.auth_user_id, user._id);
+        }
+      }
+      
+      // Also try mapping using cross-references in auth_users table
+      for (const authUser of authUsers) {
+        if (authUser.convex_user_id) {
+          authToUserMap.set(authUser._id, authUser.convex_user_id);
+        }
+      }
+      
+      // Try to map by email if cross-references don't exist
+      for (const authUser of authUsers) {
+        if (!authToUserMap.has(authUser._id)) {
+          const matchingUser = users.find(u => u.email === authUser.email);
+          if (matchingUser) {
+            authToUserMap.set(authUser._id, matchingUser._id);
+          }
+        }
+      }
+      
+      let migratedCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
+      
+      // Process each flow
+      for (const flow of allFlows) {
+        try {
+          // Check if this flow's user_id looks like it's from auth_users table
+          // If we can find a mapping, update it
+          const newUserId = authToUserMap.get(flow.user_id);
+          
+          if (newUserId && newUserId !== flow.user_id) {
+            console.log(`Migrating flow ${flow._id} from auth_users ID ${flow.user_id} to users ID ${newUserId}`);
+            
+            await ctx.db.patch(flow._id, {
+              user_id: newUserId as Id<"users">,
+              updated_at: new Date().toISOString(),
+            });
+            
+            migratedCount++;
+          }
+        } catch (error) {
+          errorCount++;
+          const errorMsg = `Failed to migrate flow ${flow._id}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          errors.push(errorMsg);
+          console.error(errorMsg);
+        }
+      }
+      
+      return {
+        success: true,
+        totalFlows: allFlows.length,
+        migratedCount,
+        errorCount,
+        errors,
+        mappingStats: {
+          totalAuthUsers: authUsers.length,
+          totalUsers: users.length,
+          mappingsFound: authToUserMap.size,
+        }
+      };
+    } catch (error) {
+      console.error("Migration failed:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+        totalFlows: 0,
+        migratedCount: 0,
+        errorCount: 0,
+        errors: [],
+      };
+    }
+  },
+});
+
+// ============================================================================
 // STARTER TEMPLATES FUNCTIONS
 // ============================================================================
 
@@ -979,7 +1241,7 @@ export const getPublicFlowsSimple = query({
  */
 export const getStarterTemplatesForUser = mutation({
   args: {
-    user_id: v.id("auth_users"),
+    user_id: v.id("users"),
   },
   handler: async (ctx, args) => {
     // Check if user already has starter templates by querying directly
@@ -1010,27 +1272,101 @@ export const getStarterTemplatesForUser = mutation({
     const now = new Date().toISOString();
     const templateIds: Id<"flows">[] = [];
 
-    // Define starter templates inline
+    // Import the template definitions from starterTemplates file, basically using the properly configured templates
+    // Note: We need to recreate the templates here since we can't call another mutation from within a mutation
+    
+    // Template node positioning constants, basically layout spacing
+    const NODE_SPACING_X = 300;
+    const NODE_SPACING_Y = 200;
+    const START_X = 100;
+    const START_Y = 100;
+
+    // Welcome Template with proper nodes and edges
+    const WELCOME_TEMPLATE_NODES = [
+      {
+        id: "welcome-text",
+        type: "createText",
+        position: { x: START_X, y: START_Y },
+        data: {
+          label: "Welcome Message",
+          description: "Create your first text content",
+          outputs: {
+            text: "Welcome to Agenitix! This is your first workflow. You can edit this text and connect it to other nodes.",
+          },
+          isExpanded: false,
+          isEnabled: true,
+          isActive: true,
+        },
+      },
+      {
+        id: "ai-assistant",
+        type: "aiAgent",
+        position: { x: START_X + NODE_SPACING_X, y: START_Y },
+        data: {
+          label: "AI Assistant",
+          description: "Get help from AI assistant",
+          inputs: { prompt: "" },
+          outputs: { response: "" },
+          isExpanded: false,
+          isEnabled: true,
+          isActive: false,
+        },
+      },
+      {
+        id: "view-result",
+        type: "viewText",
+        position: { x: START_X + NODE_SPACING_X * 2, y: START_Y },
+        data: {
+          label: "View AI Response",
+          description: "Display the AI assistant's response",
+          inputs: { text: "" },
+          isExpanded: false,
+          isEnabled: true,
+          isActive: false,
+        },
+      },
+    ];
+
+    const WELCOME_TEMPLATE_EDGES = [
+      {
+        id: "welcome-to-ai",
+        source: "welcome-text",
+        target: "ai-assistant",
+        sourceHandle: "text",
+        targetHandle: "prompt",
+        type: "default",
+      },
+      {
+        id: "ai-to-view",
+        source: "ai-assistant",
+        target: "view-result",
+        sourceHandle: "response",
+        targetHandle: "text",
+        type: "default",
+      },
+    ];
+
+    // Full starter templates with actual node/edge content
     const STARTER_TEMPLATES = [
       {
         name: "🚀 Welcome & AI Introduction",
         description: "Learn the basics with text creation and AI interaction",
         icon: "rocket",
-        nodes: [],
-        edges: [],
+        nodes: WELCOME_TEMPLATE_NODES,
+        edges: WELCOME_TEMPLATE_EDGES,
       },
       {
         name: "📧 Email Automation Starter",
         description: "Set up your first email automation workflow",
         icon: "mail",
-        nodes: [],
+        nodes: [], // Simplified for now - can be expanded later
         edges: [],
       },
       {
         name: "📊 Data Processing Basics",
         description: "Learn to create, process, and store data",
         icon: "database",
-        nodes: [],
+        nodes: [], // Simplified for now - can be expanded later
         edges: [],
       },
     ];
@@ -1072,7 +1408,7 @@ export const getStarterTemplatesForUser = mutation({
  */
 export const checkUserHasStarterTemplates = query({
   args: {
-    user_id: v.id("auth_users"),
+    user_id: v.id("users"),
   },
   handler: async (ctx, args) => {
     const userFlows = await ctx.db

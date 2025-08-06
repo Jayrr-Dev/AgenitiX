@@ -297,7 +297,7 @@ export default defineSchema({
 		description: v.optional(v.string()),
 		icon: v.optional(v.string()),
 		is_private: v.boolean(),
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"), // Use Convex Auth users table for OAuth compatibility
 		// Canvas state
 		nodes: v.optional(v.any()), // React Flow nodes array
 		edges: v.optional(v.any()), // React Flow edges array
@@ -313,7 +313,7 @@ export default defineSchema({
 	// FLOW SHARING TABLES
 	flow_shares: defineTable({
 		flow_id: v.id("flows"),
-		shared_by_user_id: v.id("auth_users"),
+		shared_by_user_id: v.id("users"), // Use Convex Auth users table for OAuth compatibility
 		share_token: v.string(),
 		is_active: v.boolean(),
 		expires_at: v.optional(v.string()),
@@ -326,10 +326,10 @@ export default defineSchema({
 	flow_share_permissions: defineTable({
 		flow_id: v.id("flows"),
 		share_id: v.id("flow_shares"),
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"), // Use Convex Auth users table for OAuth compatibility
 		permission_type: v.union(v.literal("view"), v.literal("edit"), v.literal("admin")),
 		granted_at: v.string(),
-		granted_by_user_id: v.id("auth_users"),
+		granted_by_user_id: v.id("users"), // Use Convex Auth users table for OAuth compatibility
 	})
 		.index("by_flow_id", ["flow_id"])
 		.index("by_share_id", ["share_id"])
@@ -339,13 +339,13 @@ export default defineSchema({
 	// FLOW ACCESS REQUESTS
 	flow_access_requests: defineTable({
 		flow_id: v.id("flows"),
-		requesting_user_id: v.id("auth_users"),
+		requesting_user_id: v.id("users"), // Use Convex Auth users table for OAuth compatibility
 		requesting_user_email: v.string(),
 		permission_type: v.union(v.literal("view"), v.literal("edit"), v.literal("admin")),
 		status: v.union(v.literal("pending"), v.literal("approved"), v.literal("denied")),
 		requested_at: v.string(),
 		responded_at: v.optional(v.string()),
-		responded_by_user_id: v.optional(v.id("auth_users")),
+		responded_by_user_id: v.optional(v.id("users")), // Use Convex Auth users table for OAuth compatibility
 		response_note: v.optional(v.string()),
 	})
 		.index("by_flow_id", ["flow_id"])
@@ -356,7 +356,7 @@ export default defineSchema({
 	// FLOW UPVOTES - User upvotes for public flows
 	flow_upvotes: defineTable({
 		flow_id: v.id("flows"),
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"), // Use Convex Auth users table for OAuth compatibility
 		created_at: v.string(),
 	})
 		.index("by_flow_id", ["flow_id"])

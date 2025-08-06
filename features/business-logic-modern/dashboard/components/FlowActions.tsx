@@ -68,15 +68,15 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 	const [editIsPrivate, setEditIsPrivate] = useState(flow.private);
 
 	// Auth context
-	const { user } = useAuthContext();
+	const { user, isAuthenticated } = useAuthContext();
 
 	// Convex mutations
 	const deleteFlow = useMutation(api.flows.deleteFlow);
 	const updateFlow = useMutation(api.flows.updateFlow);
 
 	const handleDelete = async () => {
-		if (!user?.id) {
-			toast.error("Authentication required");
+		if (!isAuthenticated || !user?.id) {
+			toast.error("Authentication required - please sign in again");
 			return;
 		}
 
@@ -101,8 +101,8 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 	};
 
 	const handleEdit = async () => {
-		if (!user?.id) {
-			toast.error("Authentication required");
+		if (!isAuthenticated || !user?.id) {
+			toast.error("Authentication required - please sign in again");
 			return;
 		}
 

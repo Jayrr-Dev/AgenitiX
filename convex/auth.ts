@@ -17,6 +17,17 @@ import GitHub from "@auth/core/providers/github";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { DataModel } from "./_generated/dataModel";
 
+// Debug environment variables in development, basically check if auth keys are loaded
+console.log("🔑 Convex Auth Environment Debug:", {
+  nodeEnv: process.env.NODE_ENV,
+  hasGitHubId: !!process.env.AUTH_GITHUB_ID,
+  hasGitHubSecret: !!process.env.AUTH_GITHUB_SECRET,
+  hasAuthSecret: !!process.env.AUTH_SECRET,
+  gitHubIdPrefix: process.env.AUTH_GITHUB_ID?.substring(0, 8) + "...",
+  authSecretPrefix: process.env.AUTH_SECRET?.substring(0, 8) + "...",
+  allEnvKeys: Object.keys(process.env).filter(key => key.includes('AUTH')),
+});
+
 export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = convexAuth({
   providers: [
     GitHub,
@@ -24,6 +35,9 @@ export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = c
   ],
   callbacks: {
     async afterUserCreatedOrUpdated(ctx, args) {
+      console.log("🔧 User sync callback triggered");
+      console.log("Args:", JSON.stringify(args));
+      
       // Sync Convex Auth users table with custom auth_users table, basically keeping both in sync
       const { userId, existingUserId } = args;
       const user = await ctx.db.get(userId);
@@ -73,15 +87,15 @@ export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = c
         });
       }
 
-      // Sync data to users table with cross-reference, basically ensuring bidirectional sync
-      await ctx.db.patch(userId, {
-        avatar_url: user.image,
-        email_verified: !!user.emailVerificationTime,
-        updated_at: now,
-        last_login: now,
-        is_active: true,
-        auth_user_id: authUserId,
-      });
+      // TODO: Fix schema mismatch - Convex Auth users table doesn't have these custom fields
+      // await ctx.db.patch(userId, {
+      //   avatar_url: user.image,
+      //   email_verified: !!user.emailVerificationTime,
+      //   updated_at: now,
+      //   last_login: now,
+      //   is_active: true,
+      //   auth_user_id: authUserId,
+      // });
 
       // Provision starter templates for new users only, basically onboarding workflows
       if (!existingUserId && !existingAuthUser) {

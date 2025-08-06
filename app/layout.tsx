@@ -101,7 +101,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ConvexAuthNextjsServerProvider>
+    <>
+      <ConvexAuthNextjsServerProvider>
     <html lang="en" className={`${geistSans.className} ${inter.className}`}>
       <head>
         <link
@@ -169,5 +170,6 @@ export default function RootLayout({
         </body>
       </html>
     </ConvexAuthNextjsServerProvider>
+      </>
   );
 }

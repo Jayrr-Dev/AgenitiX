@@ -5,11 +5,20 @@ import { analyzeRequest, trackRisk } from "@/lib/anubis/risk-engine";
 import { convexAuthNextjsMiddleware } from "@convex-dev/auth/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
 
-export default convexAuthNextjsMiddleware();
+// Use Convex Auth middleware as the base
+const convexMiddleware = convexAuthNextjsMiddleware();
 
-// ADAPTIVE ANUBIS MIDDLEWARE
-export async function middleware(request: NextRequest) {
+// COMBINED MIDDLEWARE - Convex Auth + Anubis Protection
+export default async function middleware(request: NextRequest) {
 	const { pathname } = request.nextUrl;
+	
+	// Always let Convex Auth handle OAuth callbacks or auth API routes, basically route them to Convex middleware
+	if (pathname.startsWith('/api/auth') || request.nextUrl.searchParams.has('code')) {
+		// @ts-expect-error Convex middleware handles its own response type internally
+		return convexMiddleware(request);
+	}
+
+	// For all other routes, apply Anubis protection
 	const userAgent = request.headers.get("user-agent") || "";
 
 	// LOAD ANUBIS CONFIGURATION
@@ -263,18 +272,22 @@ function isAllowedUserAgent(userAgent: string | undefined, allowedAgents: string
 export const config = {
 	matcher: [
 		/*
-		 * Match all request paths including home page
+		 * Match all request paths including auth API routes
 		 * Exclude only:
 		 * - api/anubis (Anubis API routes)
+		 * - api/convex (Convex backend API)  
 		 * - _next/static (static files)
 		 * - _next/image (image optimization files)
 		 * - favicon.ico (favicon file)
 		 * - manifest.json (PWA manifest)
 		 * - logo-mark.png (logo)
 		 * - .well-known (well-known paths)
+		 * - auth pages (sign-in, sign-up, forgot-password, verify)
+		 * - callback pages (OAuth callbacks)
 		 */
-		"/((?!api/anubis|_next/static|_next/image|favicon.ico|manifest.json|logo-mark.png|.well-known).*)",
-		// Explicitly match home page
+		"/((?!api/anubis|api/convex|_next/static|_next/image|favicon.ico|manifest.json|logo-mark.png|.well-known|sign-in|sign-up|forgot-password|auth/verify|callback).*)",
+		// Explicitly match home page and API auth routes
 		"/",
+		"/api/auth/:path*",
 	],
 };

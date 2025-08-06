@@ -448,6 +448,146 @@ export const signOut = mutation({
 });
 
 /**
+ * Delete user account and all associated data, basically complete account removal
+ */
+export const deleteAccount = mutation({
+  args: {
+    token_hash: v.optional(v.string()),
+    confirmation: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Verify confirmation text
+    if (args.confirmation !== "delete") {
+      throw new Error("Invalid confirmation. Please type 'delete' to confirm account deletion.");
+    }
+
+    // Get user identity (try Convex Auth first, then fallback to custom auth)
+    let user = null;
+    
+    try {
+      // Try Convex Auth first
+      const identity = await ctx.auth.getUserIdentity();
+      if (identity?.email) {
+        user = await ctx.db
+          .query("users")
+          .filter((q) => q.eq(q.field("email"), identity.email))
+          .first();
+      }
+    } catch (error) {
+      console.log("Convex Auth not available, trying custom auth");
+    }
+
+    // Fallback to custom auth if provided
+    if (!user && args.token_hash) {
+      const session = await ctx.db
+        .query("auth_sessions")
+        .filter((q) => q.eq(q.field("token_hash"), args.token_hash))
+        .first();
+
+      if (session && session.is_active) {
+        user = await ctx.db.get(session.user_id);
+      }
+    }
+
+    if (!user) {
+      throw new Error("User not found or not authenticated");
+    }
+
+    const userId = user._id;
+
+    try {
+      // Delete flows and related data
+      const userFlows = await ctx.db
+        .query("flows")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+
+      for (const flow of userFlows) {
+        // Delete flow upvotes
+        const upvotes = await ctx.db
+          .query("flow_upvotes")
+          .withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id))
+          .collect();
+        for (const upvote of upvotes) {
+          await ctx.db.delete(upvote._id);
+        }
+
+        // Delete flow shares
+        const shares = await ctx.db
+          .query("flow_shares")
+          .withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id))
+          .collect();
+        for (const share of shares) {
+          await ctx.db.delete(share._id);
+        }
+
+        // Delete flow permissions
+        const permissions = await ctx.db
+          .query("flow_share_permissions")
+          .withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id))
+          .collect();
+        for (const permission of permissions) {
+          await ctx.db.delete(permission._id);
+        }
+
+        // Delete access requests
+        const requests = await ctx.db
+          .query("flow_access_requests")
+          .withIndex("by_flow_id", (q) => q.eq("flow_id", flow._id))
+          .collect();
+        for (const request of requests) {
+          await ctx.db.delete(request._id);
+        }
+
+        // Delete the flow itself
+        await ctx.db.delete(flow._id);
+      }
+
+      // Delete user sessions
+      const sessions = await ctx.db
+        .query("auth_sessions")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+      for (const session of sessions) {
+        await ctx.db.delete(session._id);
+      }
+
+      // Delete email accounts (if any)
+      const emailAccounts = await ctx.db
+        .query("email_accounts")
+        .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+        .collect();
+      for (const account of emailAccounts) {
+        await ctx.db.delete(account._id);
+      }
+
+      // Find and delete corresponding users table record if it exists
+      if (user.email) {
+        const convexUser = await ctx.db
+          .query("users")
+          .filter((q) => q.eq(q.field("email"), user.email))
+          .first();
+        if (convexUser) {
+          await ctx.db.delete(convexUser._id);
+        }
+      }
+
+      // Finally delete the auth_users record
+      await ctx.db.delete(userId);
+
+      return {
+        success: true,
+        message: "Account deleted successfully",
+        deletedFlows: userFlows.length,
+      };
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      throw new Error("Failed to delete account. Please try again.");
+    }
+  },
+});
+
+/**
  * Update user profile, basically profile management
  */
 export const updateProfile = mutation({

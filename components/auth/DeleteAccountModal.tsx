@@ -55,16 +55,16 @@ export const DeleteAccountModal = ({
   isOpen,
   onClose,
 }: DeleteAccountModalProps) => {
-  const { user, signOut } = useAuthContext();
-  const deleteAccount = useMutation(api.auth.deleteAccount);
+  const { user, signOut, isAuthenticated, authToken } = useAuthContext();
+  const deleteAccount = useMutation(api.authFunctions.deleteAccount);
   const router = useRouter();
 
   const [confirmationInput, setConfirmationInput] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Get auth token, basically session identifier for API calls
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
+  // Get auth token - check both OAuth and magic link tokens, basically unified auth check
+  const token = authToken || 
+    (typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null);
 
   // Check if user typed correct confirmation text
   const isConfirmationValid =
@@ -76,8 +76,8 @@ export const DeleteAccountModal = ({
       return;
     }
 
-    if (!token) {
-      toast.error("Authentication required");
+    if (!isAuthenticated || !user?.id) {
+      toast.error("Authentication required - please sign in again");
       return;
     }
 
@@ -86,7 +86,7 @@ export const DeleteAccountModal = ({
 
       // Call the deleteAccount mutation with proper confirmation
       await deleteAccount({
-        token_hash: token,
+        token_hash: token || undefined, // Pass token if available (magic link auth)
         confirmation: CONFIRMATION_TEXT,
       });
 
