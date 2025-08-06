@@ -86,11 +86,11 @@ interface FlowType {
   upvoteCount: number;
   hasUpvoted: boolean;
   creator: {
-    id: Id<"auth_users">;
+    id: Id<"users">;
     name: string;
     email: string;
   } | null;
-  user_id: Id<"auth_users">;
+  user_id: Id<"users">;
   is_private: boolean;
   icon?: string;
   [key: string]: unknown; // Allow additional properties
@@ -136,7 +136,7 @@ const ExplorePage = () => {
 
   // Fetch public flows
   const publicFlows = useQuery(api.flows.getPublicFlowsWithUpvotes, {
-    user_id: user?.id,
+    user_id: user?.id as Id<"users"> | undefined,
     limit: ITEMS_PER_PAGE * 3, // Fetch more for client-side filtering
   });
 
@@ -160,7 +160,7 @@ const ExplorePage = () => {
       try {
         await toggleUpvote({
           flow_id: flowId,
-          user_id: user.id,
+          user_id: user.id as Id<"users">,
         });
       } catch (error) {
         console.error("Failed to toggle upvote:", error);
@@ -190,7 +190,7 @@ const ExplorePage = () => {
         // Clone the complete workflow including canvas data, basically full workflow copy
         const clonedFlowId = await clonePublicFlow({
           source_flow_id: flow._id,
-          user_id: user.id,
+          user_id: user.id as Id<"users">,
           new_name: `${flow.name} (Copy)`,
         });
 
@@ -221,7 +221,7 @@ const ExplorePage = () => {
         description: "A test public flow for debugging",
         icon: "LuZap",
         is_private: false,
-        user_id: user.id,
+        user_id: user.id as Id<"users">,
       });
       toast.success("Test public flow created!");
     } catch (error) {

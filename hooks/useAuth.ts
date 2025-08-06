@@ -1,5 +1,4 @@
 import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -60,9 +59,9 @@ export const useAuth = () => {
 
 			// Handle Convex errors
 			if (!result.success) {
-				const error = new Error(result.error.message);
-				(error as AuthError).code = result.error.code;
-				(error as AuthError).retryAfter = result.error.retryAfter;
+				const error = new Error(result.error?.message || "Authentication failed");
+				(error as AuthError).code = result.error?.code;
+				(error as AuthError).retryAfter = result.error?.retryAfter;
 				throw error;
 			}
 
@@ -74,7 +73,7 @@ export const useAuth = () => {
 					body: JSON.stringify({
 						email: data.email,
 						name: data.name,
-						magicToken: result.data.magicToken,
+						magicToken: result.data?.magicToken,
 						type: "verification",
 					}),
 				});
@@ -108,9 +107,9 @@ export const useAuth = () => {
 
 			// Handle Convex errors
 			if (!result.success) {
-				const error = new Error(result.error.message);
-				(error as AuthError).code = result.error.code;
-				(error as AuthError).retryAfter = result.error.retryAfter;
+				const error = new Error(result.error?.message || "Authentication failed");
+				(error as AuthError).code = result.error?.code;
+				(error as AuthError).retryAfter = result.error?.retryAfter;
 				throw error;
 			}
 
@@ -122,7 +121,7 @@ export const useAuth = () => {
 					body: JSON.stringify({
 						email: data.email,
 						name: data.email.split("@")[0], // Use email prefix as fallback name
-						magicToken: result.data.magicToken,
+						magicToken: result.data?.magicToken,
 						type: "login",
 					}),
 				});

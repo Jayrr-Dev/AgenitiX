@@ -103,7 +103,7 @@ const DashboardContent = () => {
 	}, []);
 
 	// Convex hooks
-	const flows = useQuery(api.flows.getUserFlows, user?.id ? { user_id: user.id } : "skip");
+	const flows = useQuery(api.flows.getUserFlows, user?.id ? { user_id: user.id as Id<"users"> } : "skip");
 	const createFlow = useMutation(api.flows.createFlow);
 	const updateFlow = useMutation(api.flows.updateFlow);
 
@@ -161,7 +161,7 @@ const DashboardContent = () => {
 				description: flowData.description,
 				icon: flowData.icon,
 				is_private: flowData.private,
-				user_id: user.id,
+				user_id: user.id as Id<"users">,
 			});
 
 			// Navigate to the new flow
@@ -196,7 +196,7 @@ const DashboardContent = () => {
 		try {
 			await updateFlow({
 				flow_id: flowId as Id<"flows">,
-				user_id: user.id,
+				user_id: user.id as Id<"users">,
 				is_private: !currentPrivacy,
 			});
 

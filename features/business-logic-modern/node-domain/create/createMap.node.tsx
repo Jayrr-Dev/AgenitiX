@@ -14,7 +14,7 @@
 
 import type { NodeProps } from "@xyflow/react";
 import {
-  type ChangeEvent,
+  ChangeEvent,
   memo,
   useCallback,
   useEffect,
@@ -58,7 +58,7 @@ export const CreateMapDataSchema = z
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
     inputs: SafeSchemas.optionalText().nullable().default(null),
-    output: SafeSchemas.optionalText(),
+    outputs: SafeSchemas.optionalText(),
     expandedSize: SafeSchemas.text("FE1"),
     collapsedSize: SafeSchemas.text("C1W"),
     label: z.string().optional(), // User-editable node label
@@ -122,7 +122,7 @@ function createDynamicSpec(data: CreateMapData): NodeSpec {
         code: "s",
         position: "right",
         type: "source",
-        dataType: "String",
+        dataType: "JSON",
       },
       {
         id: "input",
@@ -138,10 +138,7 @@ function createDynamicSpec(data: CreateMapData): NodeSpec {
     initialData: createSafeInitialData(CreateMapDataSchema, {
       store: "Default text",
       inputs: null,
-      output: "",
-      isEnabled: true, // Enable node by default
-      isActive: false, // Will become active when enabled
-      isExpanded: false, // Default to collapsed
+      outputs: "",
     }),
     dataSchema: CreateMapDataSchema,
     controls: {
@@ -149,7 +146,7 @@ function createDynamicSpec(data: CreateMapData): NodeSpec {
       excludeFields: [
         "isActive",
         "inputs",
-        "output",
+        "outputs",
         "expandedSize",
         "collapsedSize",
       ],
@@ -230,10 +227,22 @@ const CreateMapNode = memo(
     const propagate = useCallback(
       (value: string) => {
         const shouldSend = isActive && isEnabled;
-        const out = shouldSend ? value : null;
-        if (out !== lastOutputRef.current) {
+        let out = null;
+
+        if (shouldSend && value) {
+          try {
+            // Try to parse as JSON first, if it fails, create a JSON object with the content
+            const parsed = JSON.parse(value);
+            out = parsed;
+          } catch {
+            // If not valid JSON, create a JSON object with the content as a string
+            out = { content: value };
+          }
+        }
+
+        if (JSON.stringify(out) !== JSON.stringify(lastOutputRef.current)) {
           lastOutputRef.current = out;
-          updateNodeData({ output: out });
+          updateNodeData({ outputs: out });
         }
       },
       [isActive, isEnabled, updateNodeData]
@@ -271,8 +280,8 @@ const CreateMapNode = memo(
       const src = nodes.find((n) => n.id === incoming.source);
       if (!src) return null;
 
-      // priority: output ➜ store ➜ whole data
-      const inputValue = src.data?.output ?? src.data?.store ?? src.data;
+      // priority: outputs ➜ store ➜ whole data
+      const inputValue = src.data?.outputs ?? src.data?.store ?? src.data;
       return typeof inputValue === "string"
         ? inputValue
         : String(inputValue || "");
@@ -318,20 +327,22 @@ const CreateMapNode = memo(
         currentStore.trim().length > 0 && currentStore !== "Default text";
 
       // If disabled, always set isActive to false
-      if (isEnabled) {
+      if (!isEnabled) {
+        if (isActive) updateNodeData({ isActive: false });
+      } else {
         if (isActive !== hasValidStore) {
           updateNodeData({ isActive: hasValidStore });
         }
-      } else if (isActive) updateNodeData({ isActive: false });
+      }
     }, [store, isEnabled, isActive, updateNodeData]);
 
-    // Sync output with active and enabled state
+    // Sync outputs with active and enabled state
     useEffect(() => {
       const currentStore = store ?? "";
       const actualContent = currentStore === "Default text" ? "" : currentStore;
       propagate(actualContent);
       blockJsonWhenInactive();
-    }, [isActive, isEnabled, store, propagate, blockJsonWhenInactive]);
+    }, [store, propagate, blockJsonWhenInactive]);
 
     // -------------------------------------------------------------------------
     // 4.6  Validation
@@ -397,25 +408,9 @@ const CreateMapNode = memo(
           />
         )}
 
-        {isExpanded ? (
+        {!isExpanded ? (
           <div
-            className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
-          >
-            <textarea
-              value={
-                validation.data.store === "Default text"
-                  ? ""
-                  : (validation.data.store ?? "")
-              }
-              onChange={handleStoreChange}
-              placeholder="Enter your content here…"
-              className={` resize-none nowheel bg-background rounded-md p-2 text-xs h-32 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
-              disabled={!isEnabled}
-            />
-          </div>
-        ) : (
-          <div
-            className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
+            className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ""}`}
           >
             <textarea
               value={
@@ -426,6 +421,22 @@ const CreateMapNode = memo(
               onChange={handleStoreChange}
               placeholder="..."
               className={` resize-none text-center nowheel rounded-md h-8 m-4 translate-y-2 text-xs p-1 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
+              disabled={!isEnabled}
+            />
+          </div>
+        ) : (
+          <div
+            className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}
+          >
+            <textarea
+              value={
+                validation.data.store === "Default text"
+                  ? ""
+                  : (validation.data.store ?? "")
+              }
+              onChange={handleStoreChange}
+              placeholder="Enter your content here…"
+              className={` resize-none nowheel bg-background rounded-md p-2 text-xs h-32 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
               disabled={!isEnabled}
             />
           </div>
@@ -459,10 +470,7 @@ const CreateMapNodeWithDynamicSpec = (props: NodeProps) => {
   // Recompute spec only when the size keys change
   const dynamicSpec = useMemo(
     () => createDynamicSpec(nodeData as CreateMapData),
-    [
-      (nodeData as CreateMapData).expandedSize,
-      (nodeData as CreateMapData).collapsedSize,
-    ]
+    [nodeData]
   );
 
   // Memoise the scaffolded component to keep focus
