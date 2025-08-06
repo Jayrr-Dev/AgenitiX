@@ -33,44 +33,13 @@ export default defineSchema({
 		magic_link_expires: v.optional(v.number()),
 		login_attempts: v.optional(v.number()),
 		last_login_attempt: v.optional(v.number()),
-		// Cross-reference for sync tracking
-		auth_user_id: v.optional(v.id("auth_users")),
-	}).index("email", ["email"])
-		.index("by_auth_user_id", ["auth_user_id"]),
-
-	// Keep existing auth_users table for backward compatibility during migration
-	auth_users: defineTable({
-		email: v.string(),
-		name: v.string(),
-		avatar_url: v.optional(v.string()),
-		email_verified: v.boolean(),
-		created_at: v.number(),
-		updated_at: v.number(),
-		last_login: v.optional(v.number()),
-		is_active: v.boolean(),
-		// Profile information
-		company: v.optional(v.string()),
-		role: v.optional(v.string()),
-		timezone: v.optional(v.string()),
-		// Magic Link fields
-		magic_link_token: v.optional(v.string()),
-		magic_link_expires: v.optional(v.number()),
-		login_attempts: v.optional(v.number()),
-		last_login_attempt: v.optional(v.number()),
-		// Cross-reference for sync tracking
-		convex_user_id: v.optional(v.id("users")),
-	})
-		.index("by_email", ["email"])
-		.index("by_created_at", ["created_at"])
-		.index("by_is_active", ["is_active"])
-		.index("by_magic_link_token", ["magic_link_token"])
-		.index("by_convex_user_id", ["convex_user_id"]),
+	}).index("email", ["email"]),
 
 
 
 	// Email Domain
 	email_accounts: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		provider: v.union(
 			v.literal("gmail"),
 			v.literal("outlook"),
@@ -101,7 +70,7 @@ export default defineSchema({
 		.index("by_connection_status", ["connection_status"]),
 
 	email_templates: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		name: v.string(),
 		subject: v.string(),
 		html_content: v.string(),
@@ -117,7 +86,7 @@ export default defineSchema({
 		.index("by_is_active", ["is_active"]),
 
 	email_logs: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		account_id: v.optional(v.id("email_accounts")), // Reference to email account used
 		template_id: v.optional(v.id("email_templates")),
 		to_email: v.string(),
@@ -148,7 +117,7 @@ export default defineSchema({
 
 	// Email Reply Domain
 	email_reply_templates: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		name: v.string(),
 		category: v.string(),
 		subject_template: v.string(),
@@ -165,7 +134,7 @@ export default defineSchema({
 		.index("by_user_and_category", ["user_id", "category"]),
 
 	email_reply_logs: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		account_id: v.id("email_accounts"),
 		original_email_id: v.string(), // ID from email provider
 		reply_strategy: v.union(
@@ -198,7 +167,7 @@ export default defineSchema({
 
 	// Workflow Domain
 	workflow_runs: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		workflow_name: v.string(),
 		status: v.union(
 			v.literal("running"),
@@ -218,7 +187,7 @@ export default defineSchema({
 		.index("by_started_at", ["started_at"]),
 
 	flow_nodes: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		workflow_id: v.optional(v.string()), // Reference to workflow
 		node_type: v.string(), // createText, viewCsv, etc.
 		node_data: v.any(), // Node configuration and state
@@ -234,7 +203,7 @@ export default defineSchema({
 
 	// AI Domain
 	ai_prompts: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		name: v.string(),
 		prompt_text: v.string(),
 		model: v.string(), // gpt-4, claude-3, etc.
@@ -251,7 +220,7 @@ export default defineSchema({
 
 	// AI Agent Domain (for Convex AI Agent integration)
 	ai_agent_threads: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		title: v.optional(v.string()),
 		summary: v.optional(v.string()),
 		status: v.optional(v.string()),

@@ -10,7 +10,7 @@ export const getAuthenticatedUserByToken = query({
   handler: async (ctx, args) => {
     // Find user by magic link token hash
     const authUser = await ctx.db
-      .query("auth_users")
+      		.query("users")
       .filter((q) => q.eq(q.field("magic_link_token"), args.tokenHash))
       .filter((q) => q.eq(q.field("is_active"), true))
       .first();
@@ -61,7 +61,7 @@ async function getAuthenticatedUser(ctx: any, tokenHash?: string) {
 
   // Find user by magic link token hash
   const authUser = await ctx.db
-    .query("auth_users")
+    		.query("users")
     .filter((q: any) => q.eq(q.field("magic_link_token"), tokenHash))
     .filter((q: any) => q.eq(q.field("is_active"), true))
     .first();
@@ -161,8 +161,8 @@ export const upsertEmailAccount = mutation({
 
     // Find the authenticated user (not the email owner)
     const user = await ctx.db
-      .query("auth_users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email!))
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email!))
       .first();
 
     console.log("upsertEmailAccount - User lookup:", {
@@ -271,8 +271,8 @@ export const getUserEmailAccounts = query({
 
     // Find user
     const user = await ctx.db
-      .query("auth_users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email!))
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email!))
       .first();
 
     if (!user) {
@@ -332,8 +332,8 @@ export const getEmailAccountsByUserEmail = query({
 
     // Find user by email
     const user = await ctx.db
-      .query("auth_users")
-      .withIndex("by_email", (q) => q.eq("email", userEmail))
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", userEmail))
       .first();
 
     if (!user) {
@@ -506,8 +506,8 @@ export const getEmailReplyTemplates = query({
     } else {
       // For Convex Auth, find user by email
       user = await ctx.db
-        .query("auth_users")
-        .withIndex("by_email", (q) => q.eq("email", identity.email!))
+        		.query("users")
+        .withIndex("email", (q) => q.eq("email", identity.email!))
         .first();
     }
 
@@ -574,8 +574,8 @@ export const storeEmailReplyTemplate = mutation({
     } else {
       // For Convex Auth, find user by email
       user = await ctx.db
-        .query("auth_users")
-        .withIndex("by_email", (q) => q.eq("email", identity.email!))
+        		.query("users")
+        .withIndex("email", (q) => q.eq("email", identity.email!))
         .first();
     }
 

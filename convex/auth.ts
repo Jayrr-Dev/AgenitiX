@@ -59,70 +59,27 @@ export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = c
   ],
   callbacks: {
     async afterUserCreatedOrUpdated(ctx, args) {
-      console.log("🔧 User sync callback triggered");
+      console.log("🔧 User callback triggered");
       console.log("Args:", JSON.stringify(args));
       
-      // Sync Convex Auth users table with custom auth_users table, basically keeping both in sync
       const { userId, existingUserId } = args;
       const user = await ctx.db.get(userId);
       
       if (!user?.email) return;
 
-      // Find existing auth_user by email
-      const existingAuthUser = await ctx.db
-        .query("auth_users")
-        .filter((q) => q.eq(q.field("email"), user.email))
-        .first();
-
       const now = Date.now();
 
-      let authUserId: string;
-
-      if (existingAuthUser) {
-        // Update existing auth_user record
-        await ctx.db.patch(existingAuthUser._id, {
-          name: user.name || existingAuthUser.name,
-          avatar_url: user.image || existingAuthUser.avatar_url,
-          email_verified: !!user.emailVerificationTime || existingAuthUser.email_verified,
-          updated_at: now,
-          last_login: now,
-          convex_user_id: userId,
-        });
-        authUserId = existingAuthUser._id;
-      } else {
-        // Create new auth_user record
-        authUserId = await ctx.db.insert("auth_users", {
-          email: user.email,
-          name: user.name || "User",
-          avatar_url: user.image,
-          email_verified: !!user.emailVerificationTime,
-          created_at: now,
-          updated_at: now,
-          last_login: now,
-          is_active: true,
-          company: undefined,
-          role: undefined,
-          timezone: undefined,
-          magic_link_token: undefined,
-          magic_link_expires: undefined,
-          login_attempts: 0,
-          last_login_attempt: undefined,
-          convex_user_id: userId,
-        });
-      }
-
-      // TODO: Fix schema mismatch - Convex Auth users table doesn't have these custom fields
-      // await ctx.db.patch(userId, {
-      //   avatar_url: user.image,
-      //   email_verified: !!user.emailVerificationTime,
-      //   updated_at: now,
-      //   last_login: now,
-      //   is_active: true,
-      //   auth_user_id: authUserId,
-      // });
+      // Update user with additional fields
+      await ctx.db.patch(userId, {
+        avatar_url: user.image,
+        email_verified: !!user.emailVerificationTime,
+        updated_at: now,
+        last_login: now,
+        is_active: true,
+      });
 
       // Provision starter templates for new users only, basically onboarding workflows
-      if (!existingUserId && !existingAuthUser) {
+      if (!existingUserId) {
         try {
           const nowISO = new Date().toISOString();
           
@@ -157,7 +114,7 @@ export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = c
                 description: template.description,
                 icon: template.icon,
                 is_private: true,
-                user_id: authUserId,
+                user_id: userId,
                 nodes: template.nodes,
                 edges: template.edges,
                 canvas_updated_at: nowISO,

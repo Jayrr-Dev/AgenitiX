@@ -30,7 +30,7 @@ import { Database, Mail, Rocket } from "lucide-react";
 import { useState } from "react";
 
 interface StarterTemplatesProps {
-  userId: Id<"auth_users">;
+  	userId: Id<"users">;
   onTemplateCreated?: () => void;
 }
 

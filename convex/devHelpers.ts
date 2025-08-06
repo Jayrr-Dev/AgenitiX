@@ -26,8 +26,8 @@ export const createTestUser = mutation({
 
 		// Check if user already exists
 		const existingUser = await ctx.db
-			.query("auth_users")
-			.withIndex("by_email", (q) => q.eq("email", args.email))
+			.query("users")
+			.withIndex("email", (q) => q.eq("email", args.email))
 			.first();
 
 		if (existingUser) {
@@ -39,7 +39,7 @@ export const createTestUser = mutation({
 		}
 
 		// Create test user (already verified)
-		const userId = await ctx.db.insert("auth_users", {
+		const userId = await ctx.db.insert("users", {
 			email: args.email,
 			name: args.name,
 			company: args.company,
@@ -54,39 +54,15 @@ export const createTestUser = mutation({
 		// Create a magic link token for dev session
 		const magicToken = `dev_magic_${userId}_${Date.now()}`;
 		
-		// Set magic link token in auth_users for authentication
+		// Set magic link token for authentication
 		await ctx.db.patch(userId, {
 			magic_link_token: magicToken,
 			magic_link_expires: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
 		});
 
-		// Create corresponding Convex Auth user if not exists
-		const existingConvexUser = await ctx.db
-			.query("users")
-			.withIndex("email", (q) => q.eq("email", email))
-			.first();
-
-		let convexUserId;
-		if (!existingConvexUser) {
-			convexUserId = await ctx.db.insert("users", {
-				email,
-				name,
-				email_verified: true,
-				is_active: true,
-				created_at: Date.now(),
-				updated_at: Date.now(),
-				auth_user_id: userId,
-			});
-			
-			// Link back
-			await ctx.db.patch(userId, { convex_user_id: convexUserId });
-		} else {
-			convexUserId = existingConvexUser._id;
-		}
-
 		// Create Convex Auth session
 		const sessionId = await ctx.db.insert("authSessions", {
-			userId: convexUserId,
+			userId: userId,
 			expirationTime: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
 		});
 
@@ -105,7 +81,7 @@ export const createTestUser = mutation({
  */
 export const createTestFlows = mutation({
 	args: {
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		count: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
@@ -236,7 +212,7 @@ export const getAllUsers = query({
 			throw new Error("This function is only available in development");
 		}
 
-		const users = await ctx.db.query("auth_users").collect();
+		const users = await ctx.db.query("users").collect();
 
 		return users.map((user) => ({
 			id: user._id,

@@ -984,8 +984,8 @@ export const debugUserValidation = query({
       // Check if user exists in users table
       const userFromUsers = await ctx.db.get(args.user_id as Id<"users">);
       
-      // Check if user exists in auth_users table  
-      const userFromAuthUsers = await ctx.db.get(args.user_id as Id<"auth_users">);
+      // Since we unified to users table only
+      const userFromAuthUsers = null;
       
       // Try to get flows with manual query
       const flows = await ctx.db.query("flows").collect();
@@ -996,7 +996,7 @@ export const debugUserValidation = query({
         userExistsInUsers: !!userFromUsers,
         userExistsInAuthUsers: !!userFromAuthUsers,
         userFromUsers: userFromUsers ? { id: userFromUsers._id, email: userFromUsers.email } : null,
-        userFromAuthUsers: userFromAuthUsers ? { id: userFromAuthUsers._id, email: userFromAuthUsers.email } : null,
+        userFromAuthUsers: null, // Unified schema - no longer using separate auth_users table
         totalFlows: flows.length,
         userFlowsCount: userFlows.length,
         userFlows: userFlows.map(f => ({ id: f._id, name: f.name, user_id: f.user_id })),
@@ -1024,28 +1024,15 @@ export const debugProblematicFlow = query({
         return { error: "Flow not found", flow_id: args.flow_id };
       }
       
-      // Check if the user_id exists in auth_users table
-      const authUser = await ctx.db.get(flow.user_id as Id<"auth_users">);
+      // Check if the user_id exists in users table
+      const authUser = await ctx.db.get(flow.user_id as Id<"users">);
       
       // Look for corresponding user in users table
       let correspondingUser = null;
       if (authUser) {
         // Try to find by cross-reference
-        const userWithCrossRef = await ctx.db
-          .query("users")
-          .filter(q => q.eq(q.field("auth_user_id"), authUser._id))
-          .first();
-          
-        if (userWithCrossRef) {
-          correspondingUser = userWithCrossRef;
-        } else {
-          // Try to find by email
-          const userByEmail = await ctx.db
-            .query("users")
-            .filter(q => q.eq(q.field("email"), authUser.email))
-            .first();
-          correspondingUser = userByEmail;
-        }
+        // In unified schema, the authUser IS the user
+        correspondingUser = authUser;
       }
       
       return {
@@ -1059,13 +1046,11 @@ export const debugProblematicFlow = query({
           id: authUser._id,
           email: authUser.email,
           name: authUser.name,
-          convex_user_id: authUser.convex_user_id,
         } : null,
         correspondingUser: correspondingUser ? {
           id: correspondingUser._id,
           email: correspondingUser.email,
           name: correspondingUser.name,
-          auth_user_id: correspondingUser.auth_user_id,
         } : null,
         migrationPath: correspondingUser ? `Update flow ${flow._id} user_id from ${flow.user_id} to ${correspondingUser._id}` : "No corresponding user found in users table",
       };
@@ -1146,36 +1131,16 @@ export const migrateFlowUserIds = mutation({
       // Get all flows
       const allFlows = await ctx.db.query("flows").collect();
       
-      // Get all users and auth_users for mapping
+      // Get all users 
       const users = await ctx.db.query("users").collect();
-      const authUsers = await ctx.db.query("auth_users").collect();
       
       // Create mapping from auth_users ID to users ID using cross-references
       const authToUserMap = new Map<string, string>();
       
-      // First, try to map using cross-references in the users table
-      for (const user of users) {
-        if (user.auth_user_id) {
-          authToUserMap.set(user.auth_user_id, user._id);
-        }
-      }
+      // Since we unified to users table, all flows should already use correct user IDs
+      // No mapping needed in unified schema
       
-      // Also try mapping using cross-references in auth_users table
-      for (const authUser of authUsers) {
-        if (authUser.convex_user_id) {
-          authToUserMap.set(authUser._id, authUser.convex_user_id);
-        }
-      }
-      
-      // Try to map by email if cross-references don't exist
-      for (const authUser of authUsers) {
-        if (!authToUserMap.has(authUser._id)) {
-          const matchingUser = users.find(u => u.email === authUser.email);
-          if (matchingUser) {
-            authToUserMap.set(authUser._id, matchingUser._id);
-          }
-        }
-      }
+      // Since we unified to a single users table, no additional mapping needed
       
       let migratedCount = 0;
       let errorCount = 0;
@@ -1213,7 +1178,6 @@ export const migrateFlowUserIds = mutation({
         errorCount,
         errors,
         mappingStats: {
-          totalAuthUsers: authUsers.length,
           totalUsers: users.length,
           mappingsFound: authToUserMap.size,
         }
