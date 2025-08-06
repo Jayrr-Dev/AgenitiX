@@ -11,6 +11,7 @@
 import type * as aiAgent from "../aiAgent.js";
 import type * as auth from "../auth.js";
 import type * as authFunctions from "../authFunctions.js";
+import type * as cleanupOrphanedSessions from "../cleanupOrphanedSessions.js";
 import type * as devHelpers from "../devHelpers.js";
 import type * as emailAccounts from "../emailAccounts.js";
 import type * as flows from "../flows.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   aiAgent: typeof aiAgent;
   auth: typeof auth;
   authFunctions: typeof authFunctions;
+  cleanupOrphanedSessions: typeof cleanupOrphanedSessions;
   devHelpers: typeof devHelpers;
   emailAccounts: typeof emailAccounts;
   flows: typeof flows;
