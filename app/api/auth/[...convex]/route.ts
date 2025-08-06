@@ -10,14 +10,6 @@
  * Keywords: convex-auth-api, oauth-handler, github-auth, session-management
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { convexAuthNextjsMiddleware } from "@convex-dev/auth/nextjs/server";
 
-export function GET(request: NextRequest) {
-  // Handle Convex Auth requests
-  return NextResponse.json({ message: "Convex Auth endpoint" });
-}
-
-export function POST(request: NextRequest) {
-  // Handle Convex Auth requests
-  return NextResponse.json({ message: "Convex Auth endpoint" });
-}
+export default convexAuthNextjsMiddleware();

@@ -37,8 +37,8 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
-    company: user?.company || "",
-    role: user?.role || "",
+    company: (user as any)?.company || "",
+    role: (user as any)?.role || "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,9 +93,9 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="flex flex-col items-center mb-6">
-            {user.avatar_url ? (
+            {(user as any).avatar_url ? (
               <img
-                src={user.avatar_url}
+                src={(user as any).avatar_url}
                 alt={user.name}
                 className="w-24 h-24 rounded-full object-cover border-2 border-primary/20"
               />

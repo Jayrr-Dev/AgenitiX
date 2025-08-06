@@ -85,7 +85,7 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 			// Use Convex to delete the flow
 			await deleteFlow({
 				flow_id: flow.id as Id<"flows">,
-				user_id: user.id,
+				user_id: user.id as any,
 			});
 
 			// Call the callback to update the UI immediately
@@ -111,7 +111,7 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 			// Use Convex to update the flow
 			await updateFlow({
 				flow_id: flow.id as Id<"flows">,
-				user_id: user.id,
+				user_id: user.id as any,
 				name: editName.trim(),
 				description: editDescription.trim() || undefined,
 				is_private: editIsPrivate,

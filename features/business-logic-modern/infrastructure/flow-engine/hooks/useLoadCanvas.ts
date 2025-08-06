@@ -40,7 +40,7 @@ export function useLoadCanvas(): UseLoadCanvasResult {
 		flow?.id
 			? {
 					flow_id: flow.id as Id<"flows">,
-					user_id: user?.id,
+					user_id: user?.id as any,
 				}
 			: "skip"
 	);

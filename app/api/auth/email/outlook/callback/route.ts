@@ -103,7 +103,9 @@ export async function GET(request: NextRequest) {
 						}, '${new URL(request.url).origin}');
 						window.close();
 					} catch (e) {
-						window.location.href = '/dashboard?error=${encodeURIComponent(error)}';
+						// CRITICAL FIX: Don't redirect parent window on error
+						console.error('PostMessage failed for error communication');
+						window.close();
 					}
 				</script>
 				<p>Authentication failed. This window should close automatically.</p>
@@ -128,7 +130,9 @@ export async function GET(request: NextRequest) {
 						}, '${new URL(request.url).origin}');
 						window.close();
 					} catch (e) {
-						window.location.href = '/dashboard?error=no_code';
+						// CRITICAL FIX: Don't redirect parent window - just close popup
+						console.error('PostMessage failed, closing popup without redirect');
+						window.close();
 					}
 				</script>
 				<p>Authentication failed. This window should close automatically.</p>
@@ -142,7 +146,7 @@ export async function GET(request: NextRequest) {
 		console.log("Exchanging authorization code for tokens...");
 
 		// Exchange code for tokens using credential provider
-		const tokens = await exchangeCodeForTokens("outlook", code, state || undefined);
+		const tokens = await exchangeCodeForTokens("outlook", code);
 
 		if (!tokens) {
 			throw new Error("Failed to exchange authorization code for tokens");
@@ -197,7 +201,9 @@ export async function GET(request: NextRequest) {
 			window.close();
 		} catch (error) {
 			console.error('PostMessage failed:', error);
-			window.location.href = '/dashboard?auth_success=true&auth_data=${encodeURIComponent(authDataEncoded)}';
+			// CRITICAL FIX: Don't redirect parent - show message and close
+			document.body.innerHTML = '<div style="text-align:center;font-family:system-ui;margin-top:2rem;"><p style="color:#059669;">✅ Authentication successful!</p><p>Please close this window and try connecting your email again.</p></div>';
+			setTimeout(() => window.close(), 3000);
 		}
 	</script>
 </body>
@@ -221,7 +227,9 @@ export async function GET(request: NextRequest) {
 						}, '${new URL(request.url).origin}');
 						window.close();
 					} catch (e) {
-						window.location.href = '/dashboard?error=oauth_failed';
+						// CRITICAL FIX: Don't redirect parent window - just close popup
+						console.error('PostMessage failed for Outlook OAuth error communication');
+						window.close();
 					}
 				</script>
 				<p>Authentication failed. This window should close automatically.</p>

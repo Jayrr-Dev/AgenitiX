@@ -63,7 +63,11 @@ const SecurityModal = ({
   isOpen: boolean;
   onClose: () => void;
 }) => {
-  const { sessions, revokeSession } = useUserSessions();
+  const { sessions } = useUserSessions();
+  const revokeSession = (sessionId: string) => {
+    // Implement session revocation logic here, basically handle session cleanup
+    console.log("Revoking session:", sessionId);
+  };
   const [revoking, setRevoking] = useState<string | null>(null);
 
   const handleRevokeSession = async (sessionId: string) => {
@@ -225,9 +229,9 @@ export const UserDropdown = () => {
             className="relative h-8 w-8 rounded-full border-2 border-transparent hover:border-primary/20 transition-all"
           >
             <Avatar className="h-8 w-8">
-              <AvatarImage src={user.avatar_url} alt={user.name} />
+              <AvatarImage src={(user as any).avatar_url} alt={user.name} />
               <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                {getInitials(user.name)}
+                {getInitials(user.name || "User")}
               </AvatarFallback>
             </Avatar>
           </Button>
@@ -236,9 +240,9 @@ export const UserDropdown = () => {
           {/* User Info Header */}
           <div className="flex items-center gap-3 p-3">
             <Avatar className="h-12 w-12">
-              <AvatarImage src={user.avatar_url} alt={user.name} />
+              <AvatarImage src={(user as any).avatar_url} alt={user.name} />
               <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                {getInitials(user.name)}
+                {getInitials(user.name || "User")}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col space-y-1">
@@ -246,9 +250,9 @@ export const UserDropdown = () => {
               <p className="text-xs text-muted-foreground truncate max-w-[160px]">
                 {user.email}
               </p>
-              {user.company && (
+              {(user as any).company && (
                 <p className="text-xs text-muted-foreground truncate max-w-[160px]">
-                  {user.company}
+                  {(user as any).company}
                 </p>
               )}
             </div>

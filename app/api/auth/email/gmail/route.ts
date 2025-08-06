@@ -46,6 +46,15 @@ export async function GET(request: NextRequest) {
     // Build OAuth2 authorization URL using credential provider, basically creates secure auth URL
     const authUrl = buildOAuth2AuthUrl(config, sessionToken || undefined);
 
+    // Debug OAuth URL and configuration
+    console.log("📧 Gmail OAuth Configuration:", {
+      clientId: config.clientId?.substring(0, 20) + "...",
+      redirectUri: config.redirectUri,
+      scopes: config.scopes,
+      hasClientSecret: !!config.clientSecret,
+      authUrl: authUrl.substring(0, 100) + "...",
+    });
+
     return NextResponse.json({
       authUrl,
     });

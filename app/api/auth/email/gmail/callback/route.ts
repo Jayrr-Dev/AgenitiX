@@ -5,10 +5,23 @@ import {
 } from "@/features/business-logic-modern/node-domain/email/providers/credentialProviders";
 
 export async function GET(request: NextRequest) {
+  const timestamp = new Date().toISOString();
+  console.log(`📧 [${timestamp}] Gmail OAuth Callback START`);
+  
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
   const error = searchParams.get("error");
   const state = searchParams.get("state");
+  
+  console.log("📧 Gmail OAuth Callback params:", { 
+    hasCode: !!code, 
+    hasState: !!state, 
+    error,
+    url: request.url,
+    userAgent: request.headers.get('user-agent'),
+    referer: request.headers.get('referer'),
+    timestamp
+  });
 
   if (error) {
     console.error("OAuth error:", error);
@@ -25,7 +38,9 @@ export async function GET(request: NextRequest) {
 						}, '${new URL(request.url).origin}');
 						window.close();
 					} catch (e) {
-						window.location.href = '/dashboard?error=${encodeURIComponent(error)}';
+						// CRITICAL FIX: Don't redirect parent window on error
+						console.error('PostMessage failed for error communication');
+						window.close();
 					}
 				</script>
 				<p>Authentication failed. This window should close automatically.</p>
@@ -36,7 +51,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!code) {
-    console.error("No authorization code received");
+    console.error(`❌ [${timestamp}] No authorization code received - this will cause session loss`);
     const html = `
 			<!DOCTYPE html>
 			<html>
@@ -49,9 +64,11 @@ export async function GET(request: NextRequest) {
 							error: 'No authorization code received'
 						}, '${new URL(request.url).origin}');
 						window.close();
-					} catch (e) {
-						window.location.href = '/dashboard?error=no_code';
-					}
+									} catch (e) {
+					// CRITICAL FIX: Don't redirect parent window - just close popup
+					console.error('PostMessage failed, closing popup without redirect');
+					window.close();
+				}
 				</script>
 				<p>Authentication failed. This window should close automatically.</p>
 			</body>
@@ -64,7 +81,7 @@ export async function GET(request: NextRequest) {
     console.log("Exchanging authorization code for tokens...");
 
     // Exchange code for tokens using credential provider
-    const tokens = await exchangeCodeForTokens("gmail", code, state || undefined);
+    const tokens = await exchangeCodeForTokens("gmail", code);
 
     if (!tokens) {
       throw new Error("Failed to exchange authorization code for tokens");
@@ -148,10 +165,8 @@ export async function GET(request: NextRequest) {
 			return false;
 		}
 
-		// Method 3: Fallback redirect
-		function fallbackRedirect() {
-			window.location.href = '/dashboard?auth_success=true&auth_data=${encodeURIComponent(authDataEncoded)}';
-		}
+		// Method 3: REMOVED - No more parent window redirects
+		// This method was causing session clearing by redirecting the parent window
 
 		// Try communication methods in order
 		let success = tryPostMessage();
@@ -171,14 +186,50 @@ export async function GET(request: NextRequest) {
 				if (success) {
 					window.close();
 				} else {
-					fallbackRedirect();
+					// CRITICAL FIX: Don't redirect parent - show error and close
+					console.error('All communication methods failed - closing popup');
+					document.body.innerHTML = '<p style="text-align:center;font-family:system-ui;color:#dc2626;margin-top:2rem;">Communication failed. Please close this window and try again.</p>';
+					setTimeout(() => window.close(), 3000);
 				}
 			}
 		}, 1000);
 
 		// Try to close immediately if postMessage worked
 		if (success) {
-			setTimeout(() => window.close(), 500);
+			        setTimeout(() => {
+            // CRITICAL: Preserve parent session before closing
+            try {
+                if (window.opener && !window.opener.closed) {
+                    // Send multiple signals to ensure parent receives the message
+                    const preserveMessage = { 
+                        type: 'PRESERVE_SESSION', 
+                        timestamp: Date.now(),
+                        authSuccess: true 
+                    };
+                    
+                    // Try multiple communication methods
+                    window.opener.postMessage(preserveMessage, '${new URL(request.url).origin}');
+                    
+                    // Also try BroadcastChannel as backup
+                    try {
+                        const bc = new BroadcastChannel('oauth-auth');
+                        bc.postMessage(preserveMessage);
+                        bc.close();
+                    } catch (bcError) {
+                        console.log('BroadcastChannel not available');
+                    }
+                    
+                    console.log('✅ Session preservation signals sent');
+                }
+            } catch (e) {
+                console.error('Failed to preserve session:', e);
+            }
+            
+            // Delay closing to ensure messages are delivered
+            setTimeout(() => {
+                window.close();
+            }, 200);
+        }, 500);
 		}
 	</script>
 </body>
@@ -187,8 +238,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse(html, {
       headers: { 
         "Content-Type": "text/html",
-        "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
-        "Cross-Origin-Embedder-Policy": "unsafe-none"
+        // Remove COOP/COEP headers to avoid interfering with parent session
       },
     });
   } catch (error) {
@@ -206,7 +256,9 @@ export async function GET(request: NextRequest) {
 						}, '${new URL(request.url).origin}');
 						window.close();
 					} catch (e) {
-						window.location.href = '/dashboard?error=oauth_failed';
+						// CRITICAL FIX: Don't redirect parent window - just close popup
+						console.error('PostMessage failed for OAuth error communication');
+						window.close();
 					}
 				</script>
 				<p>Authentication failed. This window should close automatically.</p>

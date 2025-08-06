@@ -365,7 +365,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   // 4.3  Convex integration
   // -------------------------------------------------------------------------
-  const { user, token } = useAuthContext();
+  const { user, authToken: token } = useAuthContext();
   const flowMetadata = useFlowMetadataOptional();
   const canEdit = flowMetadata?.flow?.canEdit ?? true;
 

@@ -365,7 +365,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // 4.1  Sync with React‑Flow store and auth
   // -------------------------------------------------------------------------
   const { nodeData, updateNodeData } = useNodeData(id, {});
-  const { user, token } = useAuthContext();
+  const { user, authToken: token } = useAuthContext();
 
   // -------------------------------------------------------------------------
   // 4.2  Derived state

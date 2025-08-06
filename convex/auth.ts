@@ -14,6 +14,7 @@
 
 import { convexAuth } from "@convex-dev/auth/server";
 import GitHub from "@auth/core/providers/github";
+// import Google from "@auth/core/providers/google"; // REMOVED: Conflicts with Gmail OAuth
 import { Password } from "@convex-dev/auth/providers/Password";
 import { Email } from "@convex-dev/auth/providers/Email";
 import { DataModel } from "./_generated/dataModel";
@@ -32,6 +33,7 @@ console.log("🔑 Convex Auth Environment Debug:", {
 export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = convexAuth({
   providers: [
     GitHub,
+    // Google, // REMOVED: Conflicts with custom Gmail OAuth for email accounts
     Password, // Keep for backwards compatibility
     Email({
       id: "email", 

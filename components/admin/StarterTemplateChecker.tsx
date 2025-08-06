@@ -24,7 +24,7 @@ interface StarterTemplateCheckerProps {
 export const StarterTemplateChecker = ({ userId }: StarterTemplateCheckerProps) => {
 	const templateStatus = useQuery(
 		api.flows.checkStarterTemplateStatus,
-		userId ? { user_id: userId } : "skip"
+		userId ? { user_id: userId as any } : "skip"
 	);
 
 	if (!userId) {

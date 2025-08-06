@@ -4,7 +4,7 @@ import { useConvexAuth as useConvexAuthFromHook } from "@/hooks/useConvexAuth";
 import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
 import { useQuery, useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { type ReactNode, createContext, useContext, useEffect } from "react";
+import { type ReactNode, createContext, useContext, useEffect, useMemo, useRef, useCallback } from "react";
 
 type AuthContextType = ReturnType<typeof useConvexAuth> & {
 	isAuthenticated: boolean;
@@ -20,6 +20,9 @@ type AuthContextType = ReturnType<typeof useConvexAuth> & {
 		email?: string;
 		image?: string;
 	} | null;
+	// 🎯 COLLISION PREVENTION - Session tracking and recovery
+	sessionSource: "convex" | null;
+	recoverAuth: () => boolean;
 	// Legacy functions for backwards compatibility (but using new system)
 	signIn: (params: { email: string }) => Promise<any>;
 	signUp: (params: { email: string; name: string; company?: string; role?: string }) => Promise<any>;
@@ -111,6 +114,116 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		}
 	}, [isOAuthAuthenticated, authToken]);
 
+	// Listen for messages from OAuth popups to preserve session with ENHANCED RECOVERY
+	useEffect(() => {
+		const handleMessage = (event: MessageEvent) => {
+			console.log("📨 AuthProvider received message:", event.data, "from:", event.origin);
+			if (event.origin !== window.location.origin) {
+				console.log("❌ Ignoring message from different origin");
+				return;
+			}
+			
+			if (event.data?.type === 'PRESERVE_SESSION') {
+				console.log("🔄 CRITICAL: Preserving session after OAuth popup - initiating recovery");
+				
+				// ENHANCED RECOVERY STRATEGY
+				const currentAuth = {
+					isAuthenticated: isOAuthAuthenticated,
+					hasTokens: !!localStorage.getItem('__convexAuthJWT_httpsveraciousparakeet120convexcloud')
+				};
+				
+				console.log("🔍 Current auth state before recovery:", currentAuth);
+				
+				if (!currentAuth.isAuthenticated && !currentAuth.hasTokens) {
+					console.log("🚨 No auth state detected - forcing full page reload");
+					window.location.href = '/dashboard';
+				} else if (!currentAuth.isAuthenticated && currentAuth.hasTokens) {
+					console.log("🔄 Tokens exist but not authenticated - soft reload");
+					window.location.reload();
+				} else {
+					console.log("✅ Auth state preserved - no recovery needed");
+				}
+			}
+		};
+
+		window.addEventListener('message', handleMessage);
+		return () => window.removeEventListener('message', handleMessage);
+	}, [isOAuthAuthenticated]);
+
+	// Debug storage changes and detect session clearing with IMMEDIATE RECOVERY
+	useEffect(() => {
+		const handleStorageChange = (event: StorageEvent) => {
+			console.log("🗄️ Storage changed:", {
+				key: event.key,
+				oldValue: event.oldValue,
+				newValue: event.newValue,
+				url: event.url
+			});
+
+			// CRITICAL: Detect Convex token clearing
+			if (event.key?.includes('convex') && event.key?.includes('auth') && event.oldValue && !event.newValue) {
+				console.error("🚨 CONVEX AUTH TOKEN CLEARED! Initiating emergency recovery:", {
+					key: event.key,
+					oldValue: event.oldValue.substring(0, 100) + "...",
+					stackTrace: new Error().stack
+				});
+				
+				// 🚨 EMERGENCY RECOVERY - Immediate action
+				if (event.key.includes('JWT')) {
+					console.log("🚑 EMERGENCY: JWT cleared - attempting immediate restoration");
+					
+					// Check if we're in an OAuth callback URL and ignore if so
+					const currentUrl = window.location.href;
+					if (currentUrl.includes('error=no_code') || currentUrl.includes('callback')) {
+						console.log("🚑 OAuth callback detected - scheduling delayed recovery");
+						setTimeout(() => {
+							console.log("🔄 Delayed recovery: Redirecting to dashboard");
+							window.location.href = '/dashboard';
+						}, 2000);
+					} else {
+						// Immediate recovery for non-OAuth contexts
+						setTimeout(() => {
+							if (!isOAuthAuthenticated) {
+								console.log("🚑 Emergency redirect to restore session");
+								window.location.reload();
+							}
+						}, 1000);
+					}
+				}
+			}
+		};
+
+		window.addEventListener('storage', handleStorageChange);
+		return () => window.removeEventListener('storage', handleStorageChange);
+	}, [isOAuthAuthenticated]);
+
+	// Monitor auth token changes in real-time
+	useEffect(() => {
+		const interval = setInterval(() => {
+			const currentJWT = localStorage.getItem('__convexAuthJWT_httpsveraciousparakeet120convexcloud');
+			const currentRefresh = localStorage.getItem('__convexAuthRefreshToken_httpsveraciousparakeet120convexcloud');
+			
+			if (process.env.NODE_ENV === "development") {
+				console.log("🔍 Token monitor:", {
+					hasJWT: !!currentJWT,
+					hasRefresh: !!currentRefresh,
+					jwtLength: currentJWT?.length || 0,
+					refreshLength: currentRefresh?.length || 0,
+					isAuthenticated: isOAuthAuthenticated,
+					timestamp: new Date().toISOString()
+				});
+			}
+		}, 5000); // Check every 5 seconds
+
+		return () => clearInterval(interval);
+	}, [isOAuthAuthenticated]);
+
+	// 🎯 SESSION SOURCE TRACKING - Critical for collision detection
+	const sessionSource = useMemo(() => {
+		if (isOAuthAuthenticated && authToken) return "convex";
+		return null;
+	}, [isOAuthAuthenticated, authToken]);
+
 	// Extract user ID from OAuth token if available, basically get the real user identifier
 	const oauthUserId = isOAuthAuthenticated && authToken
 		? (() => {
@@ -124,6 +237,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 			}
 		})()
 		: null;
+
+	// 🚨 COLLISION DETECTION - Monitor for session source changes
+	const prevSessionSourceRef = useRef<string | null>(null);
+	useEffect(() => {
+		if (prevSessionSourceRef.current && prevSessionSourceRef.current !== sessionSource) {
+			console.error("🚨 SESSION SOURCE CHANGED - POSSIBLE COLLISION:", {
+				previous: prevSessionSourceRef.current,
+				current: sessionSource,
+				timestamp: new Date().toISOString(),
+				stackTrace: new Error().stack
+			});
+		}
+		prevSessionSourceRef.current = sessionSource;
+	}, [sessionSource]);
 
 	// Fetch real user data from Convex database for OAuth users, basically get actual profile information  
 	const oauthUserData = useQuery(
@@ -241,6 +368,55 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		throw new Error("Please use the magic link URL instead of calling verifyMagicLink directly");
 	};
 
+	// 🔧 AUTH RECOVERY MECHANISM
+	const recoverAuth = useCallback(() => {
+		const lastKnownJWT = localStorage.getItem('__convexAuthJWT_httpsveraciousparakeet120convexcloud');
+		const lastKnownRefresh = localStorage.getItem('__convexAuthRefreshToken_httpsveraciousparakeet120convexcloud');
+		
+		console.log("🔄 Attempting auth recovery:", {
+			hasJWT: !!lastKnownJWT,
+			hasRefresh: !!lastKnownRefresh,
+			currentAuth: isOAuthAuthenticated,
+		});
+		
+		if (lastKnownJWT && !isOAuthAuthenticated) {
+			console.log("🔄 Auth tokens found but not authenticated - triggering reload");
+			window.location.reload();
+			return true;
+		}
+		
+		return false;
+	}, [isOAuthAuthenticated]);
+
+	// 🚨 AUTO-RECOVERY on auth loss detection
+	useEffect(() => {
+		if (sessionSource === null && prevSessionSourceRef.current === "convex") {
+			console.error("🚨 CONVEX AUTH LOST - Attempting immediate recovery");
+			
+			// Try multiple recovery strategies
+			setTimeout(async () => {
+				console.log("🔄 Strategy 1: Basic token recovery");
+				if (recoverAuth()) {
+					console.log("✅ Basic recovery initiated");
+					return;
+				}
+				
+				console.log("🔄 Strategy 2: Force Convex auth refresh");
+				try {
+					// Try to trigger Convex auth refresh
+					await convexOAuthMethods.signOutOAuth();
+					setTimeout(() => {
+						console.log("🔄 Strategy 3: Redirect to restore session");
+						// Force navigation to trigger auth restoration
+						window.location.href = '/dashboard';
+					}, 1000);
+				} catch (error) {
+					console.error("❌ All recovery strategies failed:", error);
+				}
+			}, 500); // Faster response
+		}
+	}, [sessionSource, recoverAuth, convexOAuthMethods]);
+
 	const combinedAuth = {
 		...convexOAuthMethods,
 		authToken,
@@ -249,6 +425,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		// Set authentication status based on Convex Auth only
 		isAuthenticated: isOAuthAuthenticated,
 		isLoading: convexAuthState.isLoading, // Use Convex Auth's proper loading state
+		// 🎯 COLLISION PREVENTION - Expose session tracking
+		sessionSource,
+		recoverAuth,
 		// Legacy functions for backwards compatibility
 		signIn: legacySignIn,
 		signUp: legacySignUp,

@@ -63,7 +63,7 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 		user?.id
 			? {
 					flow_id: flowId as Id<"flows">,
-					user_id: user.id,
+					user_id: user.id as any,
 				}
 			: "skip"
 	);
@@ -93,7 +93,7 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 		try {
 			await requestFlowAccess({
 				flow_id: flowId as Id<"flows">,
-				requesting_user_id: user.id,
+				requesting_user_id: user.id as any,
 				requesting_user_email: requestEmail,
 				permission_type: requestPermission,
 			});

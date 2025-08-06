@@ -340,7 +340,7 @@ export const spec: NodeSpec = createDynamicSpec({
 const EmailBulkNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   const { nodeData, updateNodeData } = useNodeData(id, {});
-  const { token } = useAuthContext();
+  const { authToken: token } = useAuthContext();
 
   // -------------------------------------------------------------------------
   // STATE MANAGEMENT (grouped for clarity)

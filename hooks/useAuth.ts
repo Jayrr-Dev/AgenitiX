@@ -175,15 +175,17 @@ export const useAuth = () => {
 
 			// Handle Convex errors
 			if (!result.success) {
-				const error = new Error(result.error.message);
-				(error as AuthError).code = result.error.code;
+				const error = new Error(result.error?.message || "Verification failed");
+				(error as AuthError).code = result.error?.code || "VERIFICATION_ERROR";
 				throw error;
 			}
 
 			// Set session token
-			const sessionToken = result.data.sessionToken;
-			setToken(sessionToken);
-			localStorage.setItem(TOKEN_KEY, sessionToken);
+			const sessionToken = result.data?.sessionToken;
+			if (sessionToken) {
+				setToken(sessionToken);
+				localStorage.setItem(TOKEN_KEY, sessionToken);
+			}
 
 			return result.data;
 		},

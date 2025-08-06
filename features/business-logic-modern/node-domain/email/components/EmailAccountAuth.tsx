@@ -1,48 +1,99 @@
-/**
+/* ----------------------------------------------------------------------
  * Route: features/business-logic-modern/node-domain/email/components/EmailAccountAuth.tsx
- * EMAIL ACCOUNT AUTHENTICATION - OAuth2 and manual authentication flows
- *
- * • OAuth2 authentication buttons for supported providers
- * • Manual configuration form for IMAP/SMTP
- * • Authentication state management and error handling
- * • Reset functionality for stuck authentication states
- *
- * Keywords: oauth2-authentication, manual-config, auth-flow, error-handling
+ * EMAIL ACCOUNT AUTH – OAuth2 & manual config UI for an email-connection node
+ * ----------------------------------------------------------------------
  */
 
+import { memo, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { memo, useCallback, useMemo } from "react";
-import type { EmailProviderType } from "../types";
 import { useEmailAccountContext } from "./EmailAccountProvider";
+import type { EmailProviderType } from "../types";
 
-// Authentication styling constants
+/* -------------------------------------------------------------------- */
+/* Types                                                                */
+/* -------------------------------------------------------------------- */
+
+type ConnectionMode = "oauth2" | "manual";
+
+/** Shape of the node’s local state (extend as needed) */
+export interface EmailNodeData {
+  provider: EmailProviderType;
+  email?: string;
+  displayName?: string;
+  isAuthenticating?: boolean;
+
+  /* Manual config */
+  imapHost?: string;
+  imapPort?: number | "";
+  smtpHost?: string;
+  smtpPort?: number | "";
+  username?: string;
+  password?: string;
+  useSSL?: boolean;
+  useTLS?: boolean;
+}
+
+interface EmailAccountAuthProps {
+  nodeData: EmailNodeData;
+  updateNodeData: (d: Partial<EmailNodeData>) => void;
+  isEnabled: boolean;
+}
+
+/* -------------------------------------------------------------------- */
+/* Provider metadata (one source of truth)                              */
+/* -------------------------------------------------------------------- */
+
+const PROVIDER_MAP: Record<
+  EmailProviderType,
+  { name: string; mode: ConnectionMode }
+> = {
+  gmail: { name: "Gmail", mode: "oauth2" },
+  outlook: { name: "Outlook", mode: "oauth2" },
+  yahoo: { name: "Yahoo", mode: "oauth2" },
+  imap: { name: "IMAP", mode: "manual" },
+  smtp: { name: "SMTP", mode: "manual" },
+};
+
+/* -------------------------------------------------------------------- */
+/* Styling constants – keep in sync with Tailwind / Radix tokens        */
+/* -------------------------------------------------------------------- */
+
 const AUTH_STYLES = {
   button: {
     primary:
-      "w-full h-6 rounded-md bg-white text-black text-[10px] font-medium hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 flex items-center justify-center",
+      "w-full h-6 rounded-md bg-white text-black text-[10px] font-medium hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 transition-all flex items-center justify-center",
     secondary:
-      "w-full h-6 rounded-md border border-[--node-email-border] bg-transparent text-[--node-email-text] text-[10px] font-medium hover:bg-[--node-email-bg-hover] disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 flex items-center justify-center",
+      "w-full h-6 rounded-md border border-[--node-email-border] bg-transparent text-[--node-email-text] text-[10px] font-medium hover:bg-[--node-email-bg-hover] disabled:cursor-not-allowed disabled:opacity-50 transition-all flex items-center justify-center",
   },
   fieldGroup: "space-y-1",
   inlineGroup: "grid grid-cols-2 gap-2",
   label: "text-[--node-email-text] text-[8px] font-medium mb-0 block",
   input:
-    "h-6 text-[10px] border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] rounded-md px-2 focus:ring-1 focus:ring-[--node-email-border-hover] focus:border-[--node-email-border-hover] disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-[--node-email-text-secondary] placeholder:text-[10px] transition-all duration-200",
-  checkbox: "mr-1.5 text-[--node-email-text] scale-75",
-  divider: "h-px bg-[--node-email-border] my-3",
+    "h-6 text-[10px] border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] rounded-md px-2 focus:ring-1 focus:ring-[--node-email-border-hover] focus:border-[--node-email-border-hover] disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-[--node-email-text-secondary] placeholder:text-[10px] transition-all",
 } as const;
 
-interface EmailAccountAuthProps {
-  nodeData: any; // Using any for now to avoid type conflicts
-  updateNodeData: (data: any) => void;
-  isEnabled: boolean;
-}
+/* -------------------------------------------------------------------- */
+/* Utilities                                                            */
+/* -------------------------------------------------------------------- */
+
+/** Port helper – returns valid number or empty string */
+const sanitizePort = (v: string): number | "" => {
+  const digits = v.replace(/\D/g, "");
+  if (!digits) return "";
+  const n = Number(digits);
+  return n >= 1 && n <= 65_535 ? n : "";
+};
+
+/* -------------------------------------------------------------------- */
+/* Component                                                            */
+/* -------------------------------------------------------------------- */
 
 export const EmailAccountAuth = memo(
   ({ nodeData, updateNodeData, isEnabled }: EmailAccountAuthProps) => {
+    /* ---------------- Context: shared auth handlers ------------------ */
     const {
-      isAuthenticating,
+      isAuthenticating: globalAuthenticating,
       handleOAuth2Auth,
       handleResetAuth,
       handleManualSave,
@@ -52,74 +103,52 @@ export const EmailAccountAuth = memo(
       provider,
       email,
       displayName,
-      isAuthenticating: localIsAuthenticating,
-      // Manual config fields
       imapHost,
       imapPort,
       smtpHost,
       smtpPort,
       username,
       password,
-      useSSL,
-      useTLS,
+      useSSL = false,
+      useTLS = true,
     } = nodeData;
 
-    // Provider information
-    const currentProvider = useMemo(() => {
-      const providers = {
-        gmail: { id: "gmail", name: "Gmail", authType: "oauth2" },
-        outlook: { id: "outlook", name: "Outlook", authType: "oauth2" },
-        yahoo: { id: "yahoo", name: "Yahoo", authType: "oauth2" },
-        imap: { id: "imap", name: "IMAP", authType: "manual" },
-        smtp: { id: "smtp", name: "SMTP", authType: "manual" },
-      };
-      return providers[provider as keyof typeof providers];
-    }, [provider]);
+    const meta = PROVIDER_MAP[provider];
+    const isOAuth = meta.mode === "oauth2";
+    const isManual = meta.mode === "manual";
 
-    const isOAuth2Provider = currentProvider?.authType === "oauth2";
-    const isManualProvider = currentProvider?.authType === "manual";
+    /* ---------------- Handlers --------------------------------------- */
 
-    /** Handle OAuth2 authentication */
-    const handleOAuth2Click = useCallback(() => {
-      if (isOAuth2Provider && email) {
-        handleOAuth2Auth(provider as EmailProviderType);
-      }
-    }, [isOAuth2Provider, email, provider, handleOAuth2Auth]);
+    /** Launch OAuth2 popup */
+    const onOAuthClick = useCallback(() => {
+      if (isOAuth && email) handleOAuth2Auth(provider);
+    }, [isOAuth, email, provider, handleOAuth2Auth]);
 
-    /** Handle manual field changes */
-    const handleManualFieldChange = useCallback(
-      (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value: string | number | boolean;
+    /** Generic field updater */
+    const updateField = useCallback(
+      <K extends keyof EmailNodeData>(key: K) =>
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+          const { type, checked, value } = e.target;
 
-        if (e.target.type === "checkbox") {
-          value = e.target.checked;
-        } else if (field === "smtpPort" || field === "imapPort") {
-          // Number-safe validation for port fields, basically ensures only valid port numbers
-          const portValue = e.target.value.replace(/[^0-9]/g, ""); // Remove non-numeric characters
-          const portNumber = parseInt(portValue, 10);
+          const nextValue: EmailNodeData[K] =
+            type === "checkbox"
+              ? (checked as EmailNodeData[K])
+              : (["imapPort", "smtpPort"].includes(key as string)
+                  ? sanitizePort(value)
+                  : value) as EmailNodeData[K];
 
-          if (portValue === "" || (portNumber >= 1 && portNumber <= 65535)) {
-            value = portValue === "" ? "" : portNumber;
-          } else {
-            // Invalid port number, keep previous value
-            return;
-          }
-        } else {
-          value = e.target.value;
-        }
-
-        updateNodeData({ [field]: value });
-      },
-      [updateNodeData]
+          updateNodeData({ [key]: nextValue } as Partial<EmailNodeData>);
+        },
+      [updateNodeData],
     );
 
-    /** Handle manual configuration save */
-    const handleManualSaveClick = useCallback(() => {
-      if (!isManualProvider) return;
+    /** Persist manual settings */
+    const onSaveManual = useCallback(() => {
+      if (!isManual) return;
 
-      const config = {
+      handleManualSave({
         provider,
-        email,
+        email: email ?? "",
         displayName,
         imapConfig: {
           host: imapHost,
@@ -131,15 +160,13 @@ export const EmailAccountAuth = memo(
         smtpConfig: {
           host: smtpHost,
           port: smtpPort,
-          secure: useSSL,
+          secure: useTLS,
           username,
           password,
         },
-      };
-
-      handleManualSave(config);
+      });
     }, [
-      isManualProvider,
+      isManual,
       provider,
       email,
       displayName,
@@ -148,33 +175,42 @@ export const EmailAccountAuth = memo(
       smtpHost,
       smtpPort,
       useSSL,
+      useTLS,
       username,
       password,
       handleManualSave,
     ]);
 
+    /* ---------------- Memo helpers ----------------------------------- */
+    const oauthBtnLabel = useMemo(
+      () =>
+        globalAuthenticating
+          ? "Signing in… (30 s timeout)"
+          : `Sign in with ${meta.name}`,
+      [globalAuthenticating, meta.name],
+    );
+
+    /* ---------------- Render ----------------------------------------- */
     return (
       <div className="space-y-3">
-        {/* OAuth2 Authentication */}
-        {isOAuth2Provider && (
-          <div className="pt-2 space-y-2">
+        {/* ---------- OAuth2 block ---------- */}
+        {isOAuth && (
+          <div className="space-y-2 pt-2">
             <button
-              onClick={handleOAuth2Click}
-              disabled={!isEnabled || isAuthenticating || !email}
-              className={AUTH_STYLES.button.primary}
               type="button"
+              className={AUTH_STYLES.button.primary}
+              disabled={!isEnabled || globalAuthenticating || !email}
+              onClick={onOAuthClick}
+              aria-label={`Authenticate ${meta.name} account`}
             >
-              {isAuthenticating
-                ? "Signing in... (30s timeout)"
-                : `Sign in with ${currentProvider?.name}`}
+              {oauthBtnLabel}
             </button>
 
-            {/* Reset button for stuck state */}
-            {isAuthenticating && (
+            {globalAuthenticating && (
               <button
-                onClick={handleResetAuth}
-                className={AUTH_STYLES.button.secondary}
                 type="button"
+                className={AUTH_STYLES.button.secondary}
+                onClick={handleResetAuth}
               >
                 Cancel & Reset
               </button>
@@ -182,32 +218,32 @@ export const EmailAccountAuth = memo(
           </div>
         )}
 
-        {/* Manual Configuration */}
-        {isManualProvider && (
+        {/* ---------- Manual block ---------- */}
+        {isManual && (
           <div className="space-y-1 mt-2 pt-1 border-t border-black/20">
-            <div className="text-[11px] font-medium text-[--node-email-text-secondary] mb-1">
+            <p className="text-[11px] font-medium text-[--node-email-text-secondary] mb-1">
               Advanced Settings
-            </div>
+            </p>
 
-            {/* Server Configuration */}
+            {/* ---------------- Server host / port -------------------- */}
             {provider === "imap" && (
               <div className={AUTH_STYLES.inlineGroup}>
                 <div className={AUTH_STYLES.fieldGroup}>
                   <label className={AUTH_STYLES.label}>IMAP Server</label>
                   <Input
-                    type="text"
-                    value={imapHost}
-                    onChange={handleManualFieldChange("imapHost")}
-                    placeholder="x.y.com"
+                    value={imapHost ?? ""}
+                    onChange={updateField("imapHost")}
+                    placeholder="imap.example.com"
                     className={AUTH_STYLES.input}
                     disabled={!isEnabled}
                   />
                 </div>
+
                 <div className={AUTH_STYLES.fieldGroup}>
                   <label className={AUTH_STYLES.label}>Port</label>
                   <Input
-                    value={imapPort}
-                    onChange={handleManualFieldChange("imapPort")}
+                    value={imapPort ?? ""}
+                    onChange={updateField("imapPort")}
                     placeholder="993"
                     className={AUTH_STYLES.input}
                     disabled={!isEnabled}
@@ -221,19 +257,19 @@ export const EmailAccountAuth = memo(
                 <div className={AUTH_STYLES.fieldGroup}>
                   <label className={AUTH_STYLES.label}>SMTP Server</label>
                   <Input
-                    type="text"
-                    value={smtpHost}
-                    onChange={handleManualFieldChange("smtpHost")}
-                    placeholder="x.y.com"
+                    value={smtpHost ?? ""}
+                    onChange={updateField("smtpHost")}
+                    placeholder="smtp.example.com"
                     className={AUTH_STYLES.input}
                     disabled={!isEnabled}
                   />
                 </div>
+
                 <div className={AUTH_STYLES.fieldGroup}>
                   <label className={AUTH_STYLES.label}>Port</label>
                   <Input
-                    value={smtpPort}
-                    onChange={handleManualFieldChange("smtpPort")}
+                    value={smtpPort ?? ""}
+                    onChange={updateField("smtpPort")}
                     placeholder="587"
                     className={AUTH_STYLES.input}
                     disabled={!isEnabled}
@@ -242,55 +278,58 @@ export const EmailAccountAuth = memo(
               </div>
             )}
 
-            {/* Credentials */}
+            {/* ---------------- Credentials --------------------------- */}
             <div className={AUTH_STYLES.inlineGroup}>
-              <div className={AUTH_STYLES.fieldGroup}>
-                {/* <label className={AUTH_STYLES.label}>Username</label> */}
-                <Input
-                  type="text"
-                  value={username}
-                  onChange={handleManualFieldChange("username")}
-                  placeholder="Username"
-                  className={AUTH_STYLES.input}
-                  disabled={!isEnabled}
-                />
-              </div>
-              <div className={AUTH_STYLES.fieldGroup}>
-                {/* <label className={AUTH_STYLES.label}>Password</label> */}
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={handleManualFieldChange("password")}
-                  placeholder="Password"
-                  className={AUTH_STYLES.input}
-                  disabled={!isEnabled}
-                />
-              </div>
+              <Input
+                value={username ?? ""}
+                onChange={updateField("username")}
+                placeholder="Username"
+                className={AUTH_STYLES.input}
+                disabled={!isEnabled}
+                aria-label="Username"
+              />
+
+              <Input
+                type="password"
+                value={password ?? ""}
+                onChange={updateField("password")}
+                placeholder="Password"
+                className={AUTH_STYLES.input}
+                disabled={!isEnabled}
+                aria-label="Password"
+              />
             </div>
 
-            {/* Security Options */}
-            <div className="flex items-center pt-2">
-              <label className="flex items-center text-[11px] text-[--node-email-text]">
-                <input
-                  type="checkbox"
-                  checked={provider === "imap" ? useSSL : useTLS}
-                  onChange={handleManualFieldChange(
-                    provider === "imap" ? "useSSL" : "useTLS"
-                  )}
-                  className="mr-2"
-                  disabled={!isEnabled}
-                />
-                Use {provider === "imap" ? "SSL" : "TLS"} encryption
-              </label>
-            </div>
+            {/* ---------------- Security opts ------------------------- */}
+            <label className="flex items-center gap-2 pt-2 text-[11px] text-[--node-email-text]">
+              <input
+                type="checkbox"
+                checked={provider === "imap" ? useSSL : useTLS}
+                onChange={updateField(provider === "imap" ? "useSSL" : "useTLS")}
+                className="scale-75"
+                disabled={!isEnabled}
+                aria-label={`Use ${provider === "imap" ? "SSL" : "TLS"} encryption`}
+              />
+              Use {provider === "imap" ? "SSL" : "TLS"} encryption
+            </label>
 
             <Button
-              onClick={handleManualSaveClick}
-              disabled={!(isEnabled && email && username && password)}
+              type="button"
+              size="xm"
               variant="outline"
               className="w-full p-0 mt-0 text-xs"
-              size="xm"
-              type="button"
+              onClick={onSaveManual}
+              disabled={
+                !(
+                  isEnabled &&
+                  email &&
+                  username &&
+                  password &&
+                  (provider === "imap"
+                    ? imapHost && imapPort
+                    : smtpHost && smtpPort)
+                )
+              }
             >
               Save Settings
             </Button>
@@ -298,7 +337,7 @@ export const EmailAccountAuth = memo(
         )}
       </div>
     );
-  }
+  },
 );
 
 EmailAccountAuth.displayName = "EmailAccountAuth";

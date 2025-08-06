@@ -77,7 +77,7 @@ export function useAutoSaveCanvas(options: UseAutoSaveCanvasOptions = {}): AutoS
 		try {
 			await saveFlowCanvas({
 				flow_id: flow.id as Id<"flows">,
-				user_id: user.id,
+				user_id: user.id as any,
 				nodes,
 				edges,
 			});

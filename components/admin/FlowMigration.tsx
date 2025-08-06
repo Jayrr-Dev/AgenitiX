@@ -67,7 +67,7 @@ export const FlowMigration = () => {
 			const userId = "your-user-id-here"; // Replace with actual user ID
 			
 			console.log("🚀 Creating starter templates...");
-			const result = await getStarterTemplatesForUser({ user_id: userId });
+			const result = await getStarterTemplatesForUser({ user_id: userId as any });
 			setStarterTemplateResult(result);
 			console.log("✅ Starter templates created:", result);
 		} catch (error) {

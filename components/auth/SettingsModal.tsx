@@ -88,8 +88,8 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
         user: {
           name: user?.name,
           email: user?.email,
-          company: user?.company,
-          role: user?.role,
+          company: (user as any)?.company,
+          role: (user as any)?.role,
         },
         settings: {
           theme,

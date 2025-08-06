@@ -1,370 +1,416 @@
 /**
  * Route: features/business-logic-modern/node-domain/email/components/EmailAccountProvider.tsx
- * EMAIL ACCOUNT PROVIDER - Authentication state management for email accounts
  *
- * • Manages OAuth2 authentication flow state
- * • Handles connection status and validation
- * • Provides authentication context to child components
- * • Centralizes auth-related callbacks and state updates
- *
- * Keywords: authentication-provider, oauth2-state, connection-management, context
+ * EMAIL ACCOUNT PROVIDER  – centralises authentication and connection logic
+ * ------------------------------------------------------------------------
+ *  • COOP-safe: never polls popup.closed
+ *  • Primary channel = BroadcastChannel, fallback = same-origin postMessage
+ *  • Includes redirect-flow fallback for strict browsers
+ *  • Collision detection & auto-recovery using <AuthProvider>
+ * ------------------------------------------------------------------------
  */
 
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
+import { toast } from "sonner";
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
 import { useAction, useMutation } from "convex/react";
-import { createContext, ReactNode, useCallback, useContext } from "react";
-import { toast } from "sonner";
 import type { EmailProviderType } from "../types";
+import { Id } from "@/convex/_generated/dataModel";
+
+/* ----------------------------------------------------------------------- */
+/* Types & Constants                                                       */
+/* ----------------------------------------------------------------------- */
+
+type ConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
 
 interface EmailAccountContextType {
-  // Authentication state
   isAuthenticating: boolean;
-  connectionStatus: "disconnected" | "connecting" | "connected" | "error";
+  connectionStatus: ConnectionStatus;
   lastError: string;
-
-  // Authentication methods
   handleOAuth2Auth: (provider: EmailProviderType) => Promise<void>;
-  handleAuthSuccess: (authDataEncoded: string | null) => Promise<void>;
-  handleAuthError: (errorMessage: string) => void;
   handleResetAuth: () => void;
   handleTestConnection: (accountId: string) => Promise<void>;
-  handleManualSave: (config: any) => Promise<void>;
-
-  // Convex mutations
-  storeEmailAccount: any;
-  validateConnection: any;
+  handleManualSave: (config: EmailConfig) => Promise<void>;
 }
 
-const EmailAccountContext = createContext<EmailAccountContextType | null>(null);
-
-export const useEmailAccountContext = () => {
-  const context = useContext(EmailAccountContext);
-  if (!context) {
-    throw new Error(
-      "useEmailAccountContext must be used within EmailAccountProvider"
-    );
-  }
-  return context;
-};
+/** Shape of a manually saved email configuration */
+interface EmailConfig {
+  email: string;
+  displayName?: string;
+  [k: string]: unknown;
+}
 
 interface EmailAccountProviderProps {
   children: ReactNode;
-  nodeData: any; // Using any for now to avoid type conflicts
-  updateNodeData: (data: any) => void;
+  nodeData: Record<string, unknown>;
+  updateNodeData: (d: Partial<Record<string, unknown>>) => void;
 }
+
+const BC_PREFIX = "oauth_";
+const JWT_KEY = "__convexAuthJWT_httpsveraciousparakeet120convexcloud";
+const REFRESH_KEY =
+  "__convexAuthRefreshToken_httpsveraciousparakeet120convexcloud";
+
+/* ----------------------------------------------------------------------- */
+/* Helpers                                                                 */
+/* ----------------------------------------------------------------------- */
+
+/** Stringify any error to a readable message */
+const toMessage = (err: unknown): string =>
+  err instanceof Error ? err.message : String(err);
+
+/** Convert AuthProvider state into a comparable snapshot */
+const snapshotAuth = ({
+  isAuthenticated,
+  authToken,
+  sessionSource,
+}: {
+  isAuthenticated: boolean;
+  authToken: string | null;
+  sessionSource: string | null;
+}) => ({
+  isAuthenticated,
+  hasAuthToken: !!authToken,
+  sessionSource,
+  jwtToken: localStorage.getItem(JWT_KEY),
+  refreshToken: localStorage.getItem(REFRESH_KEY),
+});
+
+/* ----------------------------------------------------------------------- */
+/* Context                                                                  */
+/* ----------------------------------------------------------------------- */
+
+const EmailAccountCtx = createContext<EmailAccountContextType | null>(null);
+export const useEmailAccountContext = () => {
+  const ctx = useContext(EmailAccountCtx);
+  if (!ctx) {
+    throw new Error(
+      "useEmailAccountContext must be used within EmailAccountProvider",
+    );
+  }
+  return ctx;
+};
+
+/* ----------------------------------------------------------------------- */
+/* Provider                                                                */
+/* ----------------------------------------------------------------------- */
 
 export const EmailAccountProvider = ({
   children,
   nodeData,
   updateNodeData,
 }: EmailAccountProviderProps) => {
-  const { authToken, user } = useAuthContext();
-  
-  // For Convex Auth users, we'll use the user ID as the session token
-  // For Magic Link users, they would have a session token stored differently
-  const token = authToken || (user?.id ? `convex_user_${user.id}` : null);
-  
-  // Debug logging (development only)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('EmailAccountProvider Auth Debug:', {
-      authToken: !!authToken,
-      user: !!user,
-      userId: user?.id,
-      hasToken: !!token,
-    });
-  }
+  /* -------------------------------------------------------------------- */
+  /* External hooks / mutations                                           */
+  /* -------------------------------------------------------------------- */
+  const {
+    authToken,
+    user,
+    isOAuthAuthenticated,
+    sessionSource,
+    recoverAuth,
+  } = useAuthContext();
+
+  const token = useMemo(
+    () => authToken || (user?.id ? `convex_user_${user.id}` : null),
+    [authToken, user?.id],
+  );
+
   const storeEmailAccount = useMutation(api.emailAccounts.upsertEmailAccount);
   const validateConnection = useAction(api.emailAccounts.testEmailConnection);
 
-  /**
-   * Process successful OAuth2 authentication
-   * Decodes auth data and stores account in Convex
-   */
-  const handleAuthSuccess = useCallback(
-    async (authDataEncoded: string | null) => {
-      if (!(authDataEncoded && token)) {
-        return;
-      }
+  const isDev = process.env.NODE_ENV === "development";
 
+  /* -------------------------------------------------------------------- */
+  /* 🔑 Shared OAuth → Convex save handler                                */
+  /* -------------------------------------------------------------------- */
+  const onOAuthSuccess = useCallback(
+    async (authDataEncoded: string) => {
+      if (!token) return;
       try {
-        const authData = JSON.parse(atob(authDataEncoded));
+        const authData = JSON.parse(atob(authDataEncoded)) as EmailConfig & {
+          sessionToken?: string;
+        };
 
-        // Store account in Convex
         const accountId = await storeEmailAccount({
-          provider: authData.provider,
-          email: authData.email,
-          displayName: authData.displayName,
-          accessToken: authData.accessToken,
-          refreshToken: authData.refreshToken,
-          tokenExpiry: authData.tokenExpiry,
-          sessionToken: authData.sessionToken || token, // Pass session token
+          ...authData,
+          provider: authData.provider as EmailProviderType,
+          displayName: authData.displayName ?? authData.email,
+          sessionToken: authData.sessionToken ?? token,
         });
+        if (!accountId) throw new Error("Failed to save account");
 
-        if (accountId) {
-          updateNodeData({
-            email: authData.email,
-            displayName: authData.displayName || authData.email,
-            isConfigured: true,
-            isConnected: true,
-            connectionStatus: "connected",
-            lastValidated: Date.now(),
-            accountId: accountId,
-            lastError: "",
-          });
-
-          toast.success("Email account connected!", {
-            description: `Successfully connected ${authData.email}`,
-          });
-        } else {
-          throw new Error("Failed to store account");
-        }
-      } catch (error) {
         updateNodeData({
-          lastError:
-            error instanceof Error ? error.message : "Failed to save account",
+          ...authData,
+          displayName: authData.displayName ?? authData.email,
+          isConfigured: true,
+          isConnected: true,
+          connectionStatus: "connected",
+          lastValidated: Date.now(),
+          accountId,
+          lastError: "",
         });
-        toast.error("Failed to save account", {
-          description: error instanceof Error ? error.message : "Unknown error",
+        toast.success("Email account connected!", {
+          description: `Successfully connected ${authData.email}`,
         });
+      } catch (err) {
+        const msg = toMessage(err);
+        updateNodeData({ lastError: msg });
+        toast.error("OAuth save failed", { description: msg });
       }
     },
-    [token, storeEmailAccount, updateNodeData]
+    [storeEmailAccount, token, updateNodeData],
   );
 
-  /** Handle authentication error */
-  const handleAuthError = useCallback(
-    (errorMessage: string) => {
-      updateNodeData({
-        lastError: errorMessage,
-        isAuthenticating: false,
-      });
-      toast.error("Authentication failed", {
-        description: errorMessage,
-      });
-    },
-    [updateNodeData]
-  );
-
-  /**
-   * Handle OAuth2 authentication flow
-   * Opens popup window for OAuth2 authorization and handles the response
-   */
+  /* -------------------------------------------------------------------- */
+  /* 🚀 Main OAuth launcher                                               */
+  /* -------------------------------------------------------------------- */
   const handleOAuth2Auth = useCallback(
     async (provider: EmailProviderType) => {
-      try {
-        updateNodeData({ isAuthenticating: true, lastError: "" });
+      if (!token) return;
 
-        // Get OAuth2 URL from API
-        const redirectUri = `${window.location.origin}/api/auth/email/${provider}/callback`;
-        const response = await fetch(
-          `/api/auth/email/${provider}?redirect_uri=${encodeURIComponent(redirectUri)}&session_token=${encodeURIComponent(token || "")}`
-        );
+      /* -------- Snapshot pre-OAuth state ------------------------------ */
+      const preState = snapshotAuth({
+        isAuthenticated: isOAuthAuthenticated,
+        authToken,
+        sessionSource,
+      });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.error || `HTTP ${response.status}: ${response.statusText}`
-          );
-        }
-
-        const { authUrl } = await response.json();
-
-        if (!authUrl) {
-          throw new Error("No authentication URL received from server");
-        }
-
-        // Open OAuth2 popup
-        const popup = window.open(
-          authUrl,
-          "oauth2",
-          "width=500,height=600,scrollbars=yes,resizable=yes"
-        );
-
-        if (!popup) {
-          throw new Error(
-            "Popup blocked by browser. Please allow popups for this site."
-          );
-        }
-
-        // Timeout after 30 seconds for better UX
-        const timeoutId = setTimeout(() => {
-          if (!popup?.closed) {
-            popup?.close();
-            updateNodeData({
-              isAuthenticating: false,
-              lastError: "Authentication timed out after 30 seconds. Please try again.",
-            });
-            toast.error("Authentication timed out", {
-              description:
-                "The authentication took too long. Please check your internet connection and try again.",
-            });
-          }
-        }, 30000); // 30 seconds
-
-        // Listen for messages from the popup
-        const handleMessage = (event: MessageEvent) => {
-          // Clear timeout when we get a response
-          clearTimeout(timeoutId);
-          
-          // Verify origin for security
-          if (event.origin !== window.location.origin) {
-            return;
-          }
-
-          if (event.data.type === "OAUTH_SUCCESS") {
-            handleAuthSuccess(event.data.authData);
-            popup?.close();
-            window.removeEventListener("message", handleMessage);
-            updateNodeData({ isAuthenticating: false });
-          } else if (event.data.type === "OAUTH_ERROR") {
-            handleAuthError(event.data.error);
-            popup?.close();
-            window.removeEventListener("message", handleMessage);
-            updateNodeData({ isAuthenticating: false });
-          }
-        };
-
-        window.addEventListener("message", handleMessage);
-
-        // Listen for localStorage communication bridge (COOP fallback)
-        const handleStorageAuth = (event: StorageEvent) => {
-          console.log('🔍 Storage event received:', event.key, !!event.newValue);
-          if (event.key === 'gmail_oauth_result' && event.newValue) {
-            try {
-              const authResult = JSON.parse(event.newValue);
-              console.log('✅ Gmail OAuth result from localStorage:', authResult.type);
-              if (authResult.type === 'OAUTH_SUCCESS' && authResult.authData) {
-                // Clear the localStorage item
-                localStorage.removeItem('gmail_oauth_result');
-                // Handle the success
-                handleAuthSuccess(authResult.authData);
-                // Try to close popup (may fail due to COOP)
-                try { popup?.close(); } catch (e) { console.log('Could not close popup:', e); }
-                clearTimeout(timeoutId);
-                window.removeEventListener("message", handleMessage);
-                window.removeEventListener("storage", handleStorageAuth);
-                updateNodeData({ isAuthenticating: false });
-              }
-            } catch (error) {
-              console.error('Failed to parse localStorage auth result:', error);
-            }
-          }
-        };
-
-        window.addEventListener("storage", handleStorageAuth);
-
-        // Also check localStorage immediately in case the event didn't fire
-        const checkLocalStorage = () => {
-          const stored = localStorage.getItem('gmail_oauth_result');
-          if (stored) {
-            console.log('📦 Found Gmail OAuth result in localStorage');
-            try {
-              const authResult = JSON.parse(stored);
-              if (authResult.type === 'OAUTH_SUCCESS' && authResult.authData) {
-                console.log('🎉 Processing Gmail OAuth success from localStorage');
-                localStorage.removeItem('gmail_oauth_result');
-                handleAuthSuccess(authResult.authData);
-                // Try to close popup (may fail due to COOP)
-                try { popup?.close(); } catch (e) { console.log('Could not close popup:', e); }
-                clearTimeout(timeoutId);
-                window.removeEventListener("message", handleMessage);
-                window.removeEventListener("storage", handleStorageAuth);
-                clearInterval(storageCheck);
-                updateNodeData({ isAuthenticating: false });
-              }
-            } catch (error) {
-              console.error('Failed to parse stored auth result:', error);
-            }
-          }
-        };
-
-        // Check localStorage more frequently for faster response
-        const storageCheck = setInterval(checkLocalStorage, 500);
-
-        // Fallback: Check if popup was closed manually
-        const checkClosed = setInterval(() => {
-          if (popup?.closed) {
-            clearInterval(checkClosed);
-            clearInterval(storageCheck);
-            clearTimeout(timeoutId);
-            window.removeEventListener("message", handleMessage);
-            window.removeEventListener("storage", handleStorageAuth);
-            updateNodeData({ isAuthenticating: false });
-          }
-        }, 1000);
-      } catch (error) {
-        console.error("OAuth2 authentication error:", error);
+      /* -------- Abort if session source invalid ----------------------- */
+      if (sessionSource !== "convex") {
         updateNodeData({
           isAuthenticating: false,
           lastError:
-            error instanceof Error ? error.message : "Authentication failed",
+            "Authentication session is invalid. Please refresh and try again.",
         });
-        toast.error("Authentication failed", {
-          description: error instanceof Error ? error.message : "Unknown error",
-        });
-      }
-    },
-    [token, updateNodeData, handleAuthSuccess, handleAuthError]
-  );
-
-  /** Handle manual configuration save */
-  const handleManualSave = useCallback(
-    async (config: any) => {
-      if (!token) {
         return;
       }
 
+      /* -------- Fetch OAuth URL --------------------------------------- */
+      const redirectUri = `${window.location.origin}/api/auth/email/${provider}/callback`;
+
       try {
-        updateNodeData({ connectionStatus: "connecting", lastError: "" });
+        updateNodeData({ isAuthenticating: true, lastError: "" });
 
-        // Store account in Convex
-        const accountId = await storeEmailAccount(config);
-
-        if (accountId) {
-          updateNodeData({
-            isConfigured: true,
-            isConnected: true,
-            connectionStatus: "connected",
-            lastValidated: Date.now(),
-            accountId: accountId,
-            lastError: "",
-          });
-
-          toast.success("Email account configured!", {
-            description: `Successfully configured ${config.email}`,
-          });
-        } else {
-          throw new Error("Failed to store account");
+        const res = await fetch(
+          `/api/auth/email/${provider}?redirect_uri=${encodeURIComponent(
+            redirectUri,
+          )}&session_token=${encodeURIComponent(token)}`,
+        );
+        if (!res.ok) {
+          const { error } = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          throw new Error(error ?? `HTTP ${res.status}`);
         }
-      } catch (error) {
-        console.error("Manual save error:", error);
+        const { authUrl } = (await res.json()) as { authUrl?: string };
+        if (!authUrl) throw new Error("Server did not return authUrl");
+
+        /* -------- Open popup + wire listeners ------------------------- */
+        const popup = window.open(
+          authUrl,
+          "oauth2",
+          "width=500,height=600,scrollbars=yes,resizable=yes,noopener",
+        );
+        if (!popup) {
+          updateNodeData({
+            isAuthenticating: false,
+            lastError:
+              "Popup blocked. Please enable popups for this site and try again.",
+          });
+          return;
+        }
+
+        const channel = new BroadcastChannel(`${BC_PREFIX}${provider}`);
+        const timeoutId = isDev
+          ? window.setTimeout(() => {
+              updateNodeData({
+                isAuthenticating: false,
+                lastError:
+                  "Dev timeout: popup did not respond in 30 s. Check console.",
+              });
+              popup.close();
+              channel.close();
+            }, 30_000)
+          : undefined;
+
+        /** Helper: verify auth collision & attempt recovery */
+        const verifyCollision = () => {
+          const postState = snapshotAuth({
+            isAuthenticated: isOAuthAuthenticated,
+            authToken,
+            sessionSource,
+          });
+
+          if (preState.isAuthenticated && !postState.isAuthenticated) {
+            toast.error("Authentication was lost, trying to recover…");
+            if (!recoverAuth()) {
+              updateNodeData({
+                lastError:
+                  "Authentication was lost during email connection. Please sign in again.",
+              });
+            }
+          }
+        };
+
+        /** Unified clean-up */
+        const clean = () => {
+          channel.close();
+          window.removeEventListener("message", onMessage);
+          window.clearTimeout(timeoutId);
+          if (!popup.closed) popup.close();
+        };
+
+        /** BroadcastChannel handler */
+        channel.onmessage = (ev) => {
+          if (ev.data?.type === "OAUTH_SUCCESS") {
+            onOAuthSuccess(ev.data.authData);
+            verifyCollision();
+            updateNodeData({ isAuthenticating: false });
+            clean();
+          }
+        };
+
+        /** Same-origin postMessage fallback */
+        const onMessage = (ev: MessageEvent) => {
+          if (ev.origin !== window.location.origin) return;
+          if (ev.data?.type === "OAUTH_SUCCESS") {
+            onOAuthSuccess(ev.data.authData);
+            verifyCollision();
+            updateNodeData({ isAuthenticating: false });
+            clean();
+          }
+        };
+        window.addEventListener("message", onMessage);
+      } catch (err) {
         updateNodeData({
-          connectionStatus: "error",
-          lastError:
-            error instanceof Error ? error.message : "Configuration failed",
+          isAuthenticating: false,
+          lastError: toMessage(err),
         });
-        toast.error("Configuration failed", {
-          description: error instanceof Error ? error.message : "Unknown error",
-        });
+        toast.error("Authentication Error", { description: toMessage(err) });
       }
     },
-    [token, storeEmailAccount, updateNodeData]
+    [
+      authToken,
+      isOAuthAuthenticated,
+      onOAuthSuccess,
+      recoverAuth,
+      sessionSource,
+      token,
+      updateNodeData,
+    ],
   );
 
-  /** Reset authentication state and close any open popups */
-  const handleResetAuth = useCallback(() => {
-    // Close any open OAuth2 popups
-    const popups = [];
-    try {
-      // Try to close OAuth2 popup if it exists
-      if (window.opener) {
-        window.close();
-      }
-    } catch (error) {
-      // Ignore popup closing errors
-    }
+  /* -------------------------------------------------------------------- */
+  /* 🌀 Redirect-flow fallback (no popup)                                */
+  /* -------------------------------------------------------------------- */
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get("code");
+    const state = url.searchParams.get("state");
+    const error = url.searchParams.get("error");
+    const nodeStateRaw = sessionStorage.getItem("oauth_node_state");
 
+    const cleanUrl = () => {
+      ["code", "state", "error"].forEach((k) => url.searchParams.delete(k));
+      window.history.replaceState({}, "", url.toString());
+    };
+
+    (async () => {
+      if (!code || !nodeStateRaw) return;
+      try {
+        const { provider } = JSON.parse(nodeStateRaw) as {
+          provider: EmailProviderType;
+        };
+        sessionStorage.removeItem("oauth_node_state");
+        // Exchange code in a hidden iframe so CORS is identical to popup path
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = `${window.location.origin}/api/auth/email/${provider}/callback?code=${encodeURIComponent(
+          code,
+        )}${state ? `&state=${encodeURIComponent(state)}` : ""}`;
+        document.body.appendChild(iframe);
+
+        const channel = new BroadcastChannel(`${BC_PREFIX}${provider}`);
+        const timer = window.setTimeout(() => {
+          updateNodeData({
+            isAuthenticating: false,
+            lastError: "OAuth processing timeout",
+          });
+          channel.close();
+          document.body.removeChild(iframe);
+        }, 30_000);
+
+        channel.onmessage = (ev) => {
+          window.clearTimeout(timer);
+          channel.close();
+          document.body.removeChild(iframe);
+          if (ev.data?.type === "OAUTH_SUCCESS") {
+            onOAuthSuccess(ev.data.authData);
+          } else if (ev.data?.type === "OAUTH_ERROR") {
+            updateNodeData({
+              isAuthenticating: false,
+              lastError: ev.data.error,
+            });
+          }
+        };
+      } catch (e) {
+        updateNodeData({
+          isAuthenticating: false,
+          lastError: toMessage(e),
+        });
+      } finally {
+        cleanUrl();
+      }
+    })();
+  }, [onOAuthSuccess, updateNodeData]);
+
+  /* -------------------------------------------------------------------- */
+  /* Manual save / reset / test                                            */
+  /* -------------------------------------------------------------------- */
+
+  const handleManualSave = useCallback(
+    async (config: EmailConfig) => {
+      if (!token) return;
+      try {
+        updateNodeData({ connectionStatus: "connecting", lastError: "" });
+        const id = await storeEmailAccount({
+          ...config,
+          provider: config.provider as EmailProviderType,
+          displayName: config.displayName ?? config.email,
+        });
+        if (!id) throw new Error("Failed to store account");
+        updateNodeData({
+          ...config,
+          isConfigured: true,
+          isConnected: true,
+          connectionStatus: "connected",
+          lastValidated: Date.now(),
+          accountId: id,
+          lastError: "",
+        });
+        toast.success("Email account configured!", {
+          description: `Successfully configured ${config.email}`,
+        });
+      } catch (err) {
+        const msg = toMessage(err);
+        updateNodeData({ connectionStatus: "error", lastError: msg });
+        toast.error("Configuration failed", { description: msg });
+      }
+    },
+    [storeEmailAccount, token, updateNodeData],
+  );
+
+  const handleResetAuth = useCallback(() => {
     updateNodeData({
       isAuthenticating: false,
       connectionStatus: "disconnected",
@@ -373,70 +419,56 @@ export const EmailAccountProvider = ({
       lastError: "",
       accountId: undefined,
     });
-    toast.info("Authentication cancelled", {
-      description: "You can try signing in again",
-    });
+    toast.info("Authentication cancelled");
   }, [updateNodeData]);
 
-  /** Test connection */
   const handleTestConnection = useCallback(
     async (accountId: string) => {
-      if (!token) {
-        return;
-      }
-
+      if (!token) return;
       try {
         updateNodeData({ connectionStatus: "connecting", lastError: "" });
-
         const result = await validateConnection({
-          accountId: accountId as any,
+          accountId: accountId as unknown as Id<"email_accounts">,
           token_hash: token,
         });
-
-        if (result.success) {
-          updateNodeData({
-            connectionStatus: "connected",
-            isConnected: true,
-            lastValidated: Date.now(),
-            lastError: "",
-          });
-
-          toast.success("Connection test successful!");
-        } else {
-          throw new Error(result.error || "Connection test failed");
-        }
-      } catch (error) {
+        if (!result.success) throw new Error(result.error!);
+        updateNodeData({
+          connectionStatus: "connected",
+          isConnected: true,
+          lastValidated: Date.now(),
+          lastError: "",
+        });
+        toast.success("Connection test successful!");
+      } catch (err) {
+        const msg = toMessage(err);
         updateNodeData({
           connectionStatus: "error",
           isConnected: false,
-          lastError:
-            error instanceof Error ? error.message : "Connection test failed",
+          lastError: msg,
         });
-        toast.error("Connection test failed", {
-          description: error instanceof Error ? error.message : "Unknown error",
-        });
+        toast.error("Connection test failed", { description: msg });
       }
     },
-    [token, validateConnection, updateNodeData]
+    [token, updateNodeData, validateConnection],
   );
 
-  const contextValue: EmailAccountContextType = {
-    isAuthenticating: nodeData.isAuthenticating,
-    connectionStatus: nodeData.connectionStatus,
-    lastError: nodeData.lastError,
-    handleOAuth2Auth,
-    handleAuthSuccess,
-    handleAuthError,
-    handleResetAuth,
-    handleTestConnection,
-    handleManualSave,
-    storeEmailAccount,
-    validateConnection,
-  };
+  /* -------------------------------------------------------------------- */
+  /* Render                                                                */
+  /* -------------------------------------------------------------------- */
 
   return (
-    <EmailAccountContext.Provider value={contextValue}>
+    <EmailAccountCtx.Provider
+      value={{
+        isAuthenticating: !!nodeData.isAuthenticating,
+        connectionStatus: nodeData.connectionStatus as ConnectionStatus,
+        lastError: (nodeData.lastError as string) ?? "",
+        handleOAuth2Auth,
+        handleResetAuth,
+        handleTestConnection,
+        handleManualSave,
+      }}
+    >
       {children}
-    </EmailAccountContext.Provider>
+    </EmailAccountCtx.Provider>
   );
 };

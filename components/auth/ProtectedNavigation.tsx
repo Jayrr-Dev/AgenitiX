@@ -21,7 +21,7 @@ export const ProtectedNavigation = () => {
 	const pathname = usePathname();
 
 	// Fetch flows for search functionality
-	const _flows = useQuery(api.flows.getUserFlows, user?.id ? { user_id: user.id } : "skip");
+	const _flows = useQuery(api.flows.getUserFlows, user?.id ? { user_id: user.id as any } : "skip");
 
 	const toggleTheme = () => {
 		setTheme(theme === "dark" ? "light" : "dark");
