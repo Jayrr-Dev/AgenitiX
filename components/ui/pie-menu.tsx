@@ -456,8 +456,8 @@ function CentralIndicator(props: {
         if (actions.length > 0)
           executeAction(selectedIndex >= 0 ? selectedIndex : 0);
       }}
-      title="Execute selected action"
-      aria-label="Execute selected action"
+      title="Exit"
+      aria-label="Exit"
     />
   );
 }
