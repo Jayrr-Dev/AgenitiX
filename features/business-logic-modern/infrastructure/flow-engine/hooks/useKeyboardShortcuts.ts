@@ -229,7 +229,7 @@ export function useKeyboardShortcuts({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const { ctrl, alt } = getModifierKeys(e);
-      const key = e.key.toLowerCase();
+      const key = e.key ? e.key.toLowerCase() : '';
 
       // ReactFlow handles delete keys natively, so we don't need custom handling
 

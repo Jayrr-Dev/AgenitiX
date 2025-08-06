@@ -39,10 +39,11 @@ const COLLAPSED_STYLES = {
 interface EmailAccountCollapsedProps {
   nodeData: any; // Using any for now to avoid type conflicts
   categoryStyles: { primary: string };
+  onToggleExpand?: () => void;
 }
 
 export const EmailAccountCollapsed = memo(
-  ({ nodeData, categoryStyles }: EmailAccountCollapsedProps) => {
+  ({ nodeData, categoryStyles, onToggleExpand }: EmailAccountCollapsedProps) => {
     const { provider, email, connectionStatus } = nodeData;
 
     // Provider information with icons
@@ -81,7 +82,10 @@ export const EmailAccountCollapsed = memo(
     const IconComponent = providerInfo.icon;
 
     return (
-      <div className={COLLAPSED_STYLES.container}>
+      <div 
+        className={`${COLLAPSED_STYLES.container} cursor-pointer`}
+        onClick={onToggleExpand}
+      >
         <div className={COLLAPSED_STYLES.content}>
           {/* Provider Icon */}
           <div className="flex justify-center">
