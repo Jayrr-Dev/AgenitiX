@@ -48,6 +48,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 import EditableNodeDescription from "@/components/nodes/EditableNodeDescription";
 import EditableNodeLabel from "@/components/nodes/EditableNodeLabel";
+import { useFlowMetadataOptional } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
 import EditableNodeId from "@/components/nodes/editableNodeId";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import { NODE_TYPE_CONFIG } from "../flow-engine/constants";
@@ -466,6 +467,10 @@ const NodeInspectorShell: React.FC<NodeInspectorProps> = ({
 		selectNode,
 	} = useFlowStore();
 
+	// Get flow metadata for permission checking
+	const flowMetadata = useFlowMetadataOptional();
+	const canEdit = flowMetadata?.flow?.canEdit ?? true; // Default to true for backward compatibility
+
 	// Settings management with persistence, basically card visibility controls
 	const { 
 		settings: cardVisibilityWithOrder, 
@@ -578,6 +583,7 @@ const NodeInspectorShell: React.FC<NodeInspectorProps> = ({
 		removeEdge,
 		addNode,
 		selectNode,
+		canEdit, // Add permission check
 	}), [
 		selectedNode,
 		selectedEdge,
@@ -596,6 +602,7 @@ const NodeInspectorShell: React.FC<NodeInspectorProps> = ({
 		removeEdge,
 		addNode,
 		selectNode,
+		canEdit,
 	]);
 
 	// Early return for locked state
@@ -657,6 +664,7 @@ interface NodeInspectorContentProps {
 	removeEdge: any;
 	addNode: any;
 	selectNode: any;
+	canEdit: boolean; // Add permission prop
 }
 
 const NodeInspectorContent = memo<NodeInspectorContentProps>(({
@@ -677,6 +685,7 @@ const NodeInspectorContent = memo<NodeInspectorContentProps>(({
 	removeEdge,
 	addNode,
 	selectNode,
+	canEdit,
 }) => {
 	// Settings management with persistence, basically card visibility controls
 	const { 
@@ -995,23 +1004,28 @@ const NodeInspectorContent = memo<NodeInspectorContentProps>(({
 							)}
 						</button>
 
-						<button
-							type="button"
-							onClick={() => handleDuplicateNode(selectedNode.id)}
-							className={STYLING_BUTTON_DUPLICATE}
-							title={DESIGN_CONFIG.content.tooltips.duplicateNode}
-						>
-							<Copy className={STYLING_ICON_ACTION_SMALL} />
-						</button>
+						{/* Only show duplicate/delete buttons if user can edit */}
+						{canEdit && (
+							<>
+								<button
+									type="button"
+									onClick={() => handleDuplicateNode(selectedNode.id)}
+									className={STYLING_BUTTON_DUPLICATE}
+									title={DESIGN_CONFIG.content.tooltips.duplicateNode}
+								>
+									<Copy className={STYLING_ICON_ACTION_SMALL} />
+								</button>
 
-						<button
-							type="button"
-							onClick={() => handleDeleteNode(selectedNode.id)}
-							className={STYLING_BUTTON_DELETE}
-							title={DESIGN_CONFIG.content.tooltips.deleteNode}
-						>
-							<Trash2 className={STYLING_ICON_ACTION_SMALL} />
-						</button>
+								<button
+									type="button"
+									onClick={() => handleDeleteNode(selectedNode.id)}
+									className={STYLING_BUTTON_DELETE}
+									title={DESIGN_CONFIG.content.tooltips.deleteNode}
+								>
+									<Trash2 className={STYLING_ICON_ACTION_SMALL} />
+								</button>
+							</>
+						)}
 
 						{/* DEV-ONLY ERROR SIMULATION BUTTONS */}
 						{/* {process.env.NODE_ENV === "development" && (

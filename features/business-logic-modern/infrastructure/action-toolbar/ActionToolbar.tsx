@@ -22,6 +22,7 @@ import { useComponentButtonClasses, useComponentClasses } from "../theming/compo
 import { useUndoRedo } from "./history/undo-redo-context";
 import { useSelectedNodeId, useSelectedNode, useAddNode, useRemoveNode, useSelectNode } from "../flow-engine/stores/flowStore";
 import type { AgenNode } from "../flow-engine/types/nodeData";
+import { useFlowMetadataOptional } from "../flow-engine/contexts/flow-metadata-context";
 
 interface ActionToolbarProps {
 	showHistoryPanel: boolean;
@@ -72,6 +73,10 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 	
 	// Use optimized selector for selected node, basically prevents unnecessary re-renders
 	const selectedNode = useSelectedNode();
+
+	// Get flow metadata for permission checking
+	const flowMetadata = useFlowMetadataOptional();
+	const canEdit = flowMetadata?.flow?.canEdit ?? true; // Default to true for backward compatibility
 
 	// Optimize themed classes with better memoization, basically cache class strings
 	const containerClasses = useMemo(
@@ -165,8 +170,8 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 
 	return (
 		<div className={themedContainerClasses}>
-			{/* NODE ACTION BUTTONS - Optimized rendering with conditional display */}
-			{selectedNodeId && (
+			{/* NODE ACTION BUTTONS - Only show if user can edit */}
+			{selectedNodeId && canEdit && (
 				<>
 					<button
 						type="button"

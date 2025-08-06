@@ -789,7 +789,17 @@ export const sendEmail = action({
         }
 
         // Encode the message in base64url format (Convex-compatible)
-        const encodedMessage = btoa(emailContent)
+        // Use TextEncoder to handle UTF-8 characters properly
+        const encoder = new TextEncoder();
+        const uint8Array = encoder.encode(emailContent);
+        
+        // Convert Uint8Array to base64 string
+        let binaryString = '';
+        for (let i = 0; i < uint8Array.length; i++) {
+          binaryString += String.fromCharCode(uint8Array[i]);
+        }
+        
+        const encodedMessage = btoa(binaryString)
           .replace(/\+/g, "-")
           .replace(/\//g, "_")
           .replace(/=+$/, "");
