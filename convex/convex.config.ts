@@ -11,8 +11,10 @@
 
 import { defineApp } from "convex/server";
 import agent from "@convex-dev/agent/convex.config";
+import auth from "@convex-dev/auth/convex.config";
 
 const app = defineApp();
 app.use(agent);
+app.use(auth);
 
 export default app;

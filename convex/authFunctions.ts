@@ -230,7 +230,7 @@ export const verifyMagicLink = mutation({
       return {
         success: true,
         data: {
-          token: magicToken, // Use the magic token as the auth token for the magic link system
+          token: token, // Use the magic token as the auth token for the magic link system
           user: {
             id: convexUserId, // Return the Convex Auth user ID
             email: user.email,

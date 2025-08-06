@@ -15,6 +15,7 @@
 import { convexAuth } from "@convex-dev/auth/server";
 import GitHub from "@auth/core/providers/github";
 import { Password } from "@convex-dev/auth/providers/Password";
+import { Email } from "@convex-dev/auth/providers/Email";
 import { DataModel } from "./_generated/dataModel";
 
 // Debug environment variables in development, basically check if auth keys are loaded
@@ -31,7 +32,30 @@ console.log("🔑 Convex Auth Environment Debug:", {
 export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = convexAuth({
   providers: [
     GitHub,
-    Password, // Magic link authentication
+    Password, // Keep for backwards compatibility
+    Email({
+      id: "email", 
+      name: "Email",
+      sendVerificationRequest: async ({ identifier: email, url, token }) => {
+        // Create a custom magic link URL that includes both email and token
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+        const magicLinkUrl = `${baseUrl}/auth/verify?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+        
+        // Always log to console for development
+        console.log("\n🔗 MAGIC LINK GENERATED:");
+        console.log(`📧 Email: ${email}`);
+        console.log(`🔑 Token: ${token}`);
+        console.log(`🔗 Original Auth URL: ${url}`);
+        console.log(`🔗 Magic Link URL: ${magicLinkUrl}`);
+        console.log("📋 Click this magic link to sign in:");
+        console.log(magicLinkUrl);
+        console.log(""); 
+
+        // In production, you would send actual emails here with the magicLinkUrl
+        // For development, just return success
+        return;
+      },
+    }),
   ],
   callbacks: {
     async afterUserCreatedOrUpdated(ctx, args) {

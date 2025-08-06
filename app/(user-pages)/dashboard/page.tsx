@@ -20,6 +20,7 @@ export const runtime = "edge";
 
 import { Loading } from "@/components/Loading";
 import { useAuthContext } from "@/components/auth/AuthProvider";
+import { AuthDebugComponent } from "@/components/auth/AuthDebugComponent";
 import { DevAuthHelper } from "@/components/auth/DevAuthHelper";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -487,5 +488,10 @@ const DashboardContent = () => {
 };
 
 export default function DashboardPage() {
-	return <DashboardContent />;
+	return (
+		<>
+			<DashboardContent />
+			<AuthDebugComponent />
+		</>
+	);
 }

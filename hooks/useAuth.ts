@@ -33,14 +33,14 @@ export const useAuth = () => {
 	}, []);
 
 	// Get current user
-	const user = useQuery(api.auth.getCurrentUser, token ? { token_hash: token } : "skip");
+	const user = useQuery(api.authFunctions.getCurrentUser, token ? { token_hash: token } : "skip");
 
 	// Authentication mutations
-	const signUpMutation = useMutation(api.auth.signUp);
-	const sendMagicLinkMutation = useMutation(api.auth.sendMagicLink);
-	const verifyMagicLinkMutation = useMutation(api.auth.verifyMagicLink);
-	const signOutMutation = useMutation(api.auth.signOut);
-	const updateProfileMutation = useMutation(api.auth.updateProfile);
+	const signUpMutation = useMutation(api.authFunctions.signUp);
+	const sendMagicLinkMutation = useMutation(api.authFunctions.sendMagicLink);
+	const verifyMagicLinkMutation = useMutation(api.authFunctions.verifyMagicLink);
+	const signOutMutation = useMutation(api.authFunctions.signOut);
+	const updateProfileMutation = useMutation(api.authFunctions.updateProfile);
 
 	// Sign up function with Magic Link
 	const signUp = useCallback(

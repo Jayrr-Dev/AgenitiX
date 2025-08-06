@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/Loading";
@@ -14,11 +15,13 @@ export default function VerifyMagicLinkPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const token = searchParams.get("token");
+	const email = searchParams.get("email");
 
 	const [status, setStatus] = useState<"loading" | "success" | "error" | "expired">("loading");
 	const [error, setError] = useState<string | null>(null);
 
-	const { verifyMagicLink, isAuthenticated } = useAuthContext();
+	const { isAuthenticated } = useAuthContext();
+	const { signIn } = useAuthActions();
 
 	// Redirect if already authenticated
 	useEffect(() => {
@@ -28,10 +31,10 @@ export default function VerifyMagicLinkPage() {
 	}, [isAuthenticated, router]);
 
 	useEffect(() => {
-		if (!token) {
+		if (!token || !email) {
 			setStatus("error");
 			setError(
-				"No verification token provided in the URL. Please check the magic link and try again."
+				"Invalid magic link. Missing token or email parameter. Please check the magic link and try again."
 			);
 			return;
 		}
@@ -50,12 +53,15 @@ export default function VerifyMagicLinkPage() {
 
 		const verify = async () => {
 			try {
-				const _result = await verifyMagicLink(
-					token,
-					"127.0.0.1", // In production, get real IP
-					navigator.userAgent
-				);
+				console.log("🔐 Verifying magic link with Convex Auth:", { email, token: token.substring(0, 10) + "..." });
+				
+				// Use Convex Auth Email provider's verification flow
+				await signIn("email", { 
+					email,
+					code: token, // Pass token as code for email verification
+				});
 
+				console.log("✅ Magic link verification successful");
 				setStatus("success");
 
 				// Show success toast
@@ -69,38 +75,35 @@ export default function VerifyMagicLinkPage() {
 					router.push("/dashboard");
 				}, 1500);
 			} catch (err) {
-				console.error("Magic link verification failed:", err);
+				console.error("❌ Magic link verification failed:", err);
 
 				if (err instanceof Error) {
-					// Check for specific error codes with proper type checking
-					const errorCode = "code" in err && typeof err.code === "string" ? err.code : null;
+					// Check for specific error types
+					const errorMessage = err.message.toLowerCase();
 
-					switch (errorCode) {
-						case "EXPIRED_MAGIC_LINK":
-							setStatus("expired");
-							setError("This magic link has expired. Please request a new one.");
-							toast.error("Magic link expired", {
-								description: "Please request a new magic link to continue.",
-								duration: 5000,
-							});
-							break;
-						case "INVALID_MAGIC_LINK":
-							setStatus("error");
-							setError(
-								"This magic link is invalid or has already been used. Please request a new one."
-							);
-							toast.error("Invalid magic link", {
-								description: "This link may have been used already or is malformed.",
-								duration: 5000,
-							});
-							break;
-						default:
-							setStatus("error");
-							setError(err.message || "Verification failed. Please try again.");
-							toast.error("Verification failed", {
-								description: err.message || "Please try requesting a new magic link.",
-								duration: 5000,
-							});
+					if (errorMessage.includes("expired")) {
+						setStatus("expired");
+						setError("This magic link has expired. Please request a new one.");
+						toast.error("Magic link expired", {
+							description: "Please request a new magic link to continue.",
+							duration: 5000,
+						});
+					} else if (errorMessage.includes("invalid") || errorMessage.includes("token")) {
+						setStatus("error");
+						setError(
+							"This magic link is invalid or has already been used. Please request a new one."
+						);
+						toast.error("Invalid magic link", {
+							description: "This link may have been used already or is malformed.",
+							duration: 5000,
+						});
+					} else {
+						setStatus("error");
+						setError(err.message || "Verification failed. Please try again.");
+						toast.error("Verification failed", {
+							description: err.message || "Please try requesting a new magic link.",
+							duration: 5000,
+						});
 					}
 				} else {
 					setStatus("error");
@@ -110,7 +113,7 @@ export default function VerifyMagicLinkPage() {
 		};
 
 		verify();
-	}, [token, verifyMagicLink, router, isAuthenticated]);
+	}, [token, email, signIn, router, isAuthenticated]);
 
 	const getStatusContent = () => {
 		switch (status) {

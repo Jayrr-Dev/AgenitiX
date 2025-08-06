@@ -1,12 +1,15 @@
 "use client";
 
 import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Building, User } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { ArrowRight, Building, User, Mail, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
@@ -16,7 +19,8 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 
 export default function SignUpPage() {
-	const { signUp, isAuthenticated, isLoading: authLoading } = useAuthContext();
+	const { isAuthenticated, isLoading: authLoading } = useAuthContext();
+	const { signIn: convexSignIn } = useAuthActions();
 	const router = useRouter();
 	const [formData, setFormData] = useState({
 		name: "",
@@ -26,6 +30,7 @@ export default function SignUpPage() {
 	});
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [success, setSuccess] = useState(false);
 
 	// Redirect if already authenticated
 	useEffect(() => {
@@ -58,30 +63,27 @@ export default function SignUpPage() {
 		e.preventDefault();
 		setIsLoading(true);
 		setError(null);
+		setSuccess(false);
 
 		try {
-			const result = await signUp({
-				name: formData.name.trim(),
+			// Use new Convex Auth Email provider - it handles both sign up and sign in
+			await convexSignIn("email", { 
 				email: formData.email.trim(),
-				company: formData.company.trim() || undefined,
-				role: formData.role.trim() || undefined,
 			});
-
-			// Show success message with toast
-			setError(null);
-
-			// Log success in development
+			
+			setSuccess(true);
+			
+			// Log success in development - magic link will be logged by the auth provider
 			if (process.env.NODE_ENV === "development") {
-				console.log("\n🎉 ACCOUNT CREATION SUCCESSFUL:");
-				console.log(`👤 Name: ${formData.name.trim()}`);
+				console.log("\n🎉 MAGIC LINK SENT FOR SIGNUP:");
 				console.log(`📧 Email: ${formData.email.trim()}`);
-				console.log(`✅ Status: ${result.message}`);
-				console.log("📋 Check the server console for the verification magic link URL");
+				console.log(`👤 Name: ${formData.name.trim()}`);
+				console.log("📋 Check the server console above for the magic link URL");
 				console.log("");
 			}
 
-			toast.success("Account created!", {
-				description: result.message,
+			toast.success("Magic link sent!", {
+				description: "Check your email and click the link to complete registration.",
 				duration: 5000,
 			});
 		} catch (err) {
@@ -99,7 +101,7 @@ export default function SignUpPage() {
 		}
 	};
 
-	const isFormValid = formData.name.trim() && formData.email.trim();
+	const isFormValid = formData.email.trim(); // Only email is required for magic link
 
 	return (
 		<div className="flex min-h-screen">
@@ -168,17 +170,43 @@ export default function SignUpPage() {
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<form onSubmit={handleSubmit} className="space-y-4">
+							{success ? (
+								<div className="text-center space-y-4">
+									<div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+										<CheckCircle className="w-6 h-6 text-green-600" />
+									</div>
+									<div>
+										<h3 className="text-lg font-medium text-gray-900">Magic link sent!</h3>
+										<p className="text-gray-600 mt-1">
+											Check your email and click the link to complete your registration.
+										</p>
+										{process.env.NODE_ENV === "development" && (
+											<p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-2 mt-3">
+												<strong>Development mode:</strong> Check the server console for the magic link URL.
+											</p>
+										)}
+									</div>
+									<Button
+										onClick={() => {
+											setSuccess(false);
+											setFormData({ name: "", email: "", company: "", role: "" });
+										}}
+										variant="outline"
+									>
+										Send another link
+									</Button>
+								</div>
+							) : (
+							<form onSubmit={handleSubmit} className="space-y-4">								
 								<div className="grid grid-cols-1 gap-4">
 									<div className="space-y-2">
-										<Label htmlFor="name">Full name *</Label>
+										<Label htmlFor="name">Full name (optional)</Label>
 										<Input
 											id="name"
 											type="text"
 											placeholder="Enter your full name"
 											value={formData.name}
 											onChange={handleChange("name")}
-											required={true}
 											disabled={isLoading}
 											className="h-11"
 										/>
@@ -235,10 +263,13 @@ export default function SignUpPage() {
 									{isLoading ? (
 										<>
 											<Loading showText={false} size="w-4 h-4" className="mr-2 p-0" />
-											Creating account...
+											Sending magic link...
 										</>
 									) : (
-										"Create account"
+										<>
+											<Mail className="mr-2 h-4 w-4" />
+											Send magic link
+										</>
 									)}
 								</Button>
 
@@ -249,6 +280,7 @@ export default function SignUpPage() {
 									</Link>
 								</div>
 							</form>
+							)}
 						</CardContent>
 					</Card>
 

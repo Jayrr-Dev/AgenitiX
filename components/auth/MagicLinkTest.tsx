@@ -12,6 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { ConvexAuthEmailForm } from "@/components/auth/ConvexAuthEmailForm";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -21,6 +24,7 @@ export default function MagicLinkTest() {
 	const [name, setName] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [testType, setTestType] = useState<"signin" | "signup">("signin");
+	const [useConvexAuth, setUseConvexAuth] = useState(true); // Default to new system
 
 	// Only show in development
 	if (process.env.NODE_ENV !== "development") {
@@ -70,64 +74,108 @@ export default function MagicLinkTest() {
 		<div className="fixed bottom-4 right-4 z-50">
 			<Card className="w-80 border-2 border-blue-200 bg-blue-50">
 				<CardHeader className="pb-3">
-					<CardTitle className="text-sm text-black">🧪 Magic Link Test</CardTitle>
+					<div className="flex items-center justify-between">
+						<CardTitle className="text-sm text-black">🧪 Magic Link Test</CardTitle>
+						{useConvexAuth ? (
+							<Badge variant="default" className="text-xs">New</Badge>
+						) : (
+							<Badge variant="secondary" className="text-xs">Legacy</Badge>
+						)}
+					</div>
 					<CardDescription className="text-xs">
 						Development only - Test magic link authentication
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
-					<div className="space-y-2">
-						<Label htmlFor="test-email" className="text-xs">Email</Label>
-						<Input
-							id="test-email"
-							type="email"
-							placeholder="test@example.com"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							className="h-8 text-xs"
+					<div className="flex items-center justify-between py-2">
+						<Label htmlFor="auth-toggle" className="text-xs">Use Convex Auth Email</Label>
+						<Switch
+							id="auth-toggle"
+							checked={useConvexAuth}
+							onCheckedChange={setUseConvexAuth}
 						/>
 					</div>
 
-					{testType === "signup" && (
+					{useConvexAuth ? (
+						<div className="space-y-3">
+							<ConvexAuthEmailForm 
+								mode={testType}
+								onSuccess={() => toast.success("Magic link sent! Check console for the link.")}
+								className="space-y-2"
+							/>
+							<div className="flex space-x-2">
+								<Button
+									size="sm"
+									variant={testType === "signin" ? "default" : "outline"}
+									onClick={() => setTestType("signin")}
+									className="text-xs h-7"
+								>
+									Sign In
+								</Button>
+								<Button
+									size="sm"
+									variant={testType === "signup" ? "default" : "outline"}
+									onClick={() => setTestType("signup")}
+									className="text-xs h-7"
+								>
+									Sign Up
+								</Button>
+							</div>
+						</div>
+					) : (
 						<div className="space-y-2">
-							<Label htmlFor="test-name" className="text-xs">Name</Label>
+							<Label htmlFor="test-email" className="text-xs">Email</Label>
 							<Input
-								id="test-name"
-								type="text"
-								placeholder="Test User"
-								value={name}
-								onChange={(e) => setName(e.target.value)}
+								id="test-email"
+								type="email"
+								placeholder="test@example.com"
+								value={email}
+								onChange={(e) => setEmail(e.target.value)}
 								className="h-8 text-xs"
 							/>
 						</div>
+
+						{testType === "signup" && (
+							<div className="space-y-2">
+								<Label htmlFor="test-name" className="text-xs">Name</Label>
+								<Input
+									id="test-name"
+									type="text"
+									placeholder="Test User"
+									value={name}
+									onChange={(e) => setName(e.target.value)}
+									className="h-8 text-xs"
+								/>
+							</div>
+						)}
+
+						<div className="flex space-x-2">
+							<Button
+								size="sm"
+								variant={testType === "signin" ? "default" : "outline"}
+								onClick={() => setTestType("signin")}
+								className="text-xs h-7"
+							>
+								Sign In
+							</Button>
+							<Button
+								size="sm"
+								variant={testType === "signup" ? "default" : "outline"}
+								onClick={() => setTestType("signup")}
+								className="text-xs h-7"
+							>
+								Sign Up
+							</Button>
+						</div>
+
+						<Button
+							onClick={testType === "signin" ? handleTestSignIn : handleTestSignUp}
+							disabled={isLoading}
+							className="w-full h-8 text-xs"
+						>
+							{isLoading ? "Testing..." : `Test ${testType === "signin" ? "Sign In" : "Sign Up"}`}
+						</Button>
 					)}
-
-					<div className="flex space-x-2">
-						<Button
-							size="sm"
-							variant={testType === "signin" ? "default" : "outline"}
-							onClick={() => setTestType("signin")}
-							className="text-xs h-7"
-						>
-							Sign In
-						</Button>
-						<Button
-							size="sm"
-							variant={testType === "signup" ? "default" : "outline"}
-							onClick={() => setTestType("signup")}
-							className="text-xs h-7"
-						>
-							Sign Up
-						</Button>
-					</div>
-
-					<Button
-						onClick={testType === "signin" ? handleTestSignIn : handleTestSignUp}
-						disabled={isLoading}
-						className="w-full h-8 text-xs"
-					>
-						{isLoading ? "Testing..." : `Test ${testType === "signin" ? "Sign In" : "Sign Up"}`}
-					</Button>
 
 					{isAuthenticated && (
 						<div className="text-xs text-green-600 bg-green-100 p-2 rounded">
