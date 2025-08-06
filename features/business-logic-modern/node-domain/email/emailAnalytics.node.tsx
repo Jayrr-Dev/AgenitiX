@@ -35,7 +35,7 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+
 import { toast } from "sonner";
 
 // -----------------------------------------------------------------------------
@@ -554,7 +554,6 @@ const EmailAnalyticsNode = memo(
   ({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     // -------------------------------------------------------------------------
     const { nodeData, updateNodeData } = useNodeData(id, {});
-    const { token } = useAuthContext();
 
     // -------------------------------------------------------------------------
     // STATE MANAGEMENT (grouped for clarity)
