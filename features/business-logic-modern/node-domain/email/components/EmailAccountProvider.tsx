@@ -59,7 +59,21 @@ export const EmailAccountProvider = ({
   nodeData,
   updateNodeData,
 }: EmailAccountProviderProps) => {
-  const { token } = useAuthContext();
+  const { authToken, user } = useAuthContext();
+  
+  // For Convex Auth users, we'll use the user ID as the session token
+  // For Magic Link users, they would have a session token stored differently
+  const token = authToken || (user?.id ? `convex_user_${user.id}` : null);
+  
+  // Debug logging (development only)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('EmailAccountProvider Auth Debug:', {
+      authToken: !!authToken,
+      user: !!user,
+      userId: user?.id,
+      hasToken: !!token,
+    });
+  }
   const storeEmailAccount = useMutation(api.emailAccounts.upsertEmailAccount);
   const validateConnection = useAction(api.emailAccounts.testEmailConnection);
 
@@ -173,8 +187,26 @@ export const EmailAccountProvider = ({
           );
         }
 
+        // Timeout after 30 seconds for better UX
+        const timeoutId = setTimeout(() => {
+          if (!popup?.closed) {
+            popup?.close();
+            updateNodeData({
+              isAuthenticating: false,
+              lastError: "Authentication timed out after 30 seconds. Please try again.",
+            });
+            toast.error("Authentication timed out", {
+              description:
+                "The authentication took too long. Please check your internet connection and try again.",
+            });
+          }
+        }, 30000); // 30 seconds
+
         // Listen for messages from the popup
         const handleMessage = (event: MessageEvent) => {
+          // Clear timeout when we get a response
+          clearTimeout(timeoutId);
+          
           // Verify origin for security
           if (event.origin !== window.location.origin) {
             return;
@@ -195,30 +227,72 @@ export const EmailAccountProvider = ({
 
         window.addEventListener("message", handleMessage);
 
+        // Listen for localStorage communication bridge (COOP fallback)
+        const handleStorageAuth = (event: StorageEvent) => {
+          console.log('🔍 Storage event received:', event.key, !!event.newValue);
+          if (event.key === 'gmail_oauth_result' && event.newValue) {
+            try {
+              const authResult = JSON.parse(event.newValue);
+              console.log('✅ Gmail OAuth result from localStorage:', authResult.type);
+              if (authResult.type === 'OAUTH_SUCCESS' && authResult.authData) {
+                // Clear the localStorage item
+                localStorage.removeItem('gmail_oauth_result');
+                // Handle the success
+                handleAuthSuccess(authResult.authData);
+                // Try to close popup (may fail due to COOP)
+                try { popup?.close(); } catch (e) { console.log('Could not close popup:', e); }
+                clearTimeout(timeoutId);
+                window.removeEventListener("message", handleMessage);
+                window.removeEventListener("storage", handleStorageAuth);
+                updateNodeData({ isAuthenticating: false });
+              }
+            } catch (error) {
+              console.error('Failed to parse localStorage auth result:', error);
+            }
+          }
+        };
+
+        window.addEventListener("storage", handleStorageAuth);
+
+        // Also check localStorage immediately in case the event didn't fire
+        const checkLocalStorage = () => {
+          const stored = localStorage.getItem('gmail_oauth_result');
+          if (stored) {
+            console.log('📦 Found Gmail OAuth result in localStorage');
+            try {
+              const authResult = JSON.parse(stored);
+              if (authResult.type === 'OAUTH_SUCCESS' && authResult.authData) {
+                console.log('🎉 Processing Gmail OAuth success from localStorage');
+                localStorage.removeItem('gmail_oauth_result');
+                handleAuthSuccess(authResult.authData);
+                // Try to close popup (may fail due to COOP)
+                try { popup?.close(); } catch (e) { console.log('Could not close popup:', e); }
+                clearTimeout(timeoutId);
+                window.removeEventListener("message", handleMessage);
+                window.removeEventListener("storage", handleStorageAuth);
+                clearInterval(storageCheck);
+                updateNodeData({ isAuthenticating: false });
+              }
+            } catch (error) {
+              console.error('Failed to parse stored auth result:', error);
+            }
+          }
+        };
+
+        // Check localStorage more frequently for faster response
+        const storageCheck = setInterval(checkLocalStorage, 500);
+
         // Fallback: Check if popup was closed manually
         const checkClosed = setInterval(() => {
           if (popup?.closed) {
             clearInterval(checkClosed);
+            clearInterval(storageCheck);
+            clearTimeout(timeoutId);
             window.removeEventListener("message", handleMessage);
+            window.removeEventListener("storage", handleStorageAuth);
             updateNodeData({ isAuthenticating: false });
           }
         }, 1000);
-
-        // Timeout after 5 minutes
-        setTimeout(() => {
-          if (!popup?.closed) {
-            popup?.close();
-            window.removeEventListener("message", handleMessage);
-            updateNodeData({
-              isAuthenticating: false,
-              lastError: "Authentication timed out. Please try again.",
-            });
-            toast.error("Authentication timed out", {
-              description:
-                "The authentication process took too long. Please try again.",
-            });
-          }
-        }, 300000); // 5 minutes
       } catch (error) {
         console.error("OAuth2 authentication error:", error);
         updateNodeData({
@@ -278,8 +352,19 @@ export const EmailAccountProvider = ({
     [token, storeEmailAccount, updateNodeData]
   );
 
-  /** Reset authentication state */
+  /** Reset authentication state and close any open popups */
   const handleResetAuth = useCallback(() => {
+    // Close any open OAuth2 popups
+    const popups = [];
+    try {
+      // Try to close OAuth2 popup if it exists
+      if (window.opener) {
+        window.close();
+      }
+    } catch (error) {
+      // Ignore popup closing errors
+    }
+
     updateNodeData({
       isAuthenticating: false,
       connectionStatus: "disconnected",
@@ -288,7 +373,7 @@ export const EmailAccountProvider = ({
       lastError: "",
       accountId: undefined,
     });
-    toast.info("Authentication state reset", {
+    toast.info("Authentication cancelled", {
       description: "You can try signing in again",
     });
   }, [updateNodeData]);

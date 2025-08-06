@@ -28,12 +28,25 @@ export const getAuthenticatedUserByToken = query({
   },
 });
 
-// Helper function for actions to get authenticated user from token hash
+// Helper function for actions to get authenticated user from token hash or Convex Auth
 async function getAuthenticatedUserInAction(ctx: any, tokenHash?: string) {
   if (!tokenHash) {
     return null;
   }
 
+  // Handle Convex Auth users (token starts with 'convex_user_')
+  if (tokenHash.startsWith('convex_user_')) {
+    const userId = tokenHash.replace('convex_user_', '');
+    try {
+      const user = await ctx.runQuery(api.users.getUserById, { userId: userId as any });
+      return user;
+    } catch (error) {
+      console.log('Failed to get Convex Auth user:', error);
+      return null;
+    }
+  }
+
+  // Handle Magic Link users (original implementation)
   return await ctx.runQuery(api.emailAccounts.getAuthenticatedUserByToken, {
     tokenHash,
   });
@@ -53,12 +66,25 @@ async function getUserIdentityFromTokenInAction(ctx: any, tokenHash?: string) {
   };
 }
 
-// Helper function for mutations/queries to get authenticated user from token hash
+// Helper function for mutations/queries to get authenticated user from token hash or Convex Auth
 async function getAuthenticatedUser(ctx: any, tokenHash?: string) {
   if (!tokenHash) {
     return null;
   }
 
+  // Handle Convex Auth users (token starts with 'convex_user_')
+  if (tokenHash.startsWith('convex_user_')) {
+    const userId = tokenHash.replace('convex_user_', '');
+    try {
+      const user = await ctx.db.get(userId as any);
+      return user;
+    } catch (error) {
+      console.log('Failed to get Convex Auth user:', error);
+      return null;
+    }
+  }
+
+  // Handle Magic Link users (original implementation)
   // Find user by magic link token hash
   const authUser = await ctx.db
     		.query("users")
@@ -128,19 +154,21 @@ export const upsertEmailAccount = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    // Try custom auth first if token provided (support both token_hash and sessionToken)
+    // Try Convex Auth first (most common case)
     let identity = null;
-    const token = args.token_hash || args.sessionToken;
-    if (token) {
-      identity = await getUserIdentityFromToken(ctx, token);
+    try {
+      identity = await ctx.auth.getUserIdentity();
+      console.log("✅ Using Convex Auth for email account creation");
+    } catch (error) {
+      console.log("⚠️ Convex Auth not available, trying custom auth");
     }
 
-    // Fallback to Convex Auth if no custom token or custom auth failed
+    // Fallback to custom auth if token provided
     if (!identity) {
-      try {
-        identity = await ctx.auth.getUserIdentity();
-      } catch (error) {
-        console.log("Convex Auth not available, using custom auth only");
+      const token = args.token_hash || args.sessionToken;
+      if (token) {
+        identity = await getUserIdentityFromToken(ctx, token);
+        console.log("✅ Using custom auth token for email account creation");
       }
     }
 

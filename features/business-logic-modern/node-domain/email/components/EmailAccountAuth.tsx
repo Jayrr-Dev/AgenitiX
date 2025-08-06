@@ -165,7 +165,7 @@ export const EmailAccountAuth = memo(
               type="button"
             >
               {isAuthenticating
-                ? "Signing in..."
+                ? "Signing in... (30s timeout)"
                 : `Sign in with ${currentProvider?.name}`}
             </button>
 
@@ -176,7 +176,7 @@ export const EmailAccountAuth = memo(
                 className={AUTH_STYLES.button.secondary}
                 type="button"
               >
-                Reset Authentication
+                Cancel & Reset
               </button>
             )}
           </div>
