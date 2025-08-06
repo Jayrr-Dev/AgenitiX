@@ -1,15 +1,16 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
-import { useConvexAuth } from "@/hooks/useConvexAuth";
+import { useConvexAuth as useConvexAuthFromHook } from "@/hooks/useConvexAuth";
 import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
-import { useQuery } from "convex/react";
+import { useQuery, useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { type ReactNode, createContext, useContext, useEffect } from "react";
 
-type AuthContextType = ReturnType<typeof useAuth> & ReturnType<typeof useConvexAuth> & {
+type AuthContextType = ReturnType<typeof useConvexAuth> & {
+	isAuthenticated: boolean;
 	isOAuthAuthenticated: boolean;
 	authToken: string | null;
+	isLoading: boolean;
 	// Override signOut with our combined function type, basically unified logout
 	signOut: () => Promise<void>;
 	// Add user property for Convex Auth user
@@ -19,6 +20,10 @@ type AuthContextType = ReturnType<typeof useAuth> & ReturnType<typeof useConvexA
 		email?: string;
 		image?: string;
 	} | null;
+	// Legacy functions for backwards compatibility (but using new system)
+	signIn: (params: { email: string }) => Promise<any>;
+	signUp: (params: { email: string; name: string; company?: string; role?: string }) => Promise<any>;
+	verifyMagicLink: (token: string, ip?: string, userAgent?: string) => Promise<any>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -36,8 +41,8 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-	const auth = useAuth();
-	const convexAuth = useConvexAuth();
+	const convexOAuthMethods = useConvexAuthFromHook();
+	const convexAuthState = useConvexAuth();
 	const authToken = useAuthToken();
 	const { signIn: convexSignIn } = useAuthActions();
 	
@@ -70,8 +75,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 			console.log("🔄 Auth State Change:", {
 				isOAuthAuthenticated,
 				authToken: !!authToken,
-				magicLinkAuth: auth.isAuthenticated,
-				magicLinkLoading: auth.isLoading,
 				hasAuthCode: !!authCode,
 				authCode: authCode,
 				state: state,
@@ -106,7 +109,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 			console.log("🔐 JWT Token (first 50 chars):", convexJWT.substring(0, 50) + "...");
 			console.log("💡 This might resolve automatically - waiting for auth state to update...");
 		}
-	}, [isOAuthAuthenticated, authToken, auth.isAuthenticated, auth.isLoading]);
+	}, [isOAuthAuthenticated, authToken]);
 
 	// Extract user ID from OAuth token if available, basically get the real user identifier
 	const oauthUserId = isOAuthAuthenticated && authToken
@@ -128,15 +131,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		oauthUserId ? { userId: oauthUserId as any } : "skip"
 	);
 
-	// Create a unified user object - prefer Convex Auth user if available, fallback to magic link user
+	// Create a unified user object using Convex Auth
 	const user = isOAuthAuthenticated && oauthUserId
 		? (() => {
 			// Use real user data from database if available, otherwise fallback to JWT info
 			if (oauthUserData) {
 				return {
 					id: oauthUserId,
-					name: oauthUserData.name || "GitHub User",
-					email: oauthUserData.email || "github-user@oauth.local",
+					name: oauthUserData.name || "User",
+					email: oauthUserData.email || "user@example.com",
 					image: oauthUserData.avatar_url,
 				};
 			}
@@ -148,39 +151,33 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 				email: "Loading...",
 			};
 		})()
-		: auth.user;
+		: null;
 
 	// Debug logging for auth state
 	if (process.env.NODE_ENV === "development") {
 		console.log("AuthProvider Debug:", {
 			isOAuthAuthenticated,
 			authToken: !!authToken,
-			magicLinkAuth: auth.isAuthenticated,
-			magicLinkLoading: auth.isLoading,
 			authTokenValue: authToken ? authToken.substring(0, 50) + "..." : null,
 			userId: user?.id,
 			userObject: user,
 		});
 	}
 
-	// Combined sign out function that handles both authentication methods, basically unified logout
+	// Sign out function using Convex Auth
 	const combinedSignOut = async () => {
 		try {
-			console.log("🚪 Starting combined sign out...");
+			console.log("🚪 Starting sign out...");
 			
-			// Sign out from OAuth if authenticated via OAuth
-			if (isOAuthAuthenticated) {
-				console.log("🔑 Signing out from OAuth...");
-				await convexAuth.signOutOAuth();
+			// Always try to sign out from Convex Auth (works for both OAuth and email auth)
+			try {
+				console.log("🔑 Signing out from Convex Auth...");
+				await convexOAuthMethods.signOutOAuth();
+			} catch (signOutError) {
+				console.log("⚠️ Convex sign out failed (might already be signed out):", signOutError);
 			}
 			
-			// Sign out from magic link auth if authenticated via magic link
-			if (auth.isAuthenticated) {
-				console.log("✉️ Signing out from magic link auth...");
-				await auth.signOut();
-			}
-			
-			// Clear all auth-related localStorage items, basically complete cleanup
+			// Clear all auth-related localStorage items
 			const authKeys = [
 				'__convexAuthJWT_httpsveraciousparakeet120convexcloud',
 				'__convexAuthRefreshToken_httpsveraciousparakeet120convexcloud',
@@ -188,33 +185,75 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 				'convex-auth-token',
 			];
 			
+			console.log("🧹 Clearing localStorage auth keys...");
 			authKeys.forEach(key => {
 				if (localStorage.getItem(key)) {
 					localStorage.removeItem(key);
-					console.log(`🧹 Cleared ${key}`);
+					console.log(`✅ Cleared ${key}`);
 				}
 			});
 			
-			// Force reload to ensure complete state reset
-			window.location.href = '/';
+			// Clear any auth-related cookies
+			document.cookie.split(";").forEach(cookie => {
+				const eqPos = cookie.indexOf("=");
+				const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+				if (name.includes('auth') || name.includes('convex') || name.includes('token')) {
+					document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+					console.log(`🧹 Cleared cookie: ${name}`);
+				}
+			});
+			
+			console.log("✅ Sign out complete, redirecting...");
+			
+			// Use window.location.replace to avoid back button issues
+			window.location.replace('/');
 			
 		} catch (error) {
 			console.error("❌ Sign out error:", error);
 			// Force clear everything even if sign out calls fail
+			console.log("🔥 Force clearing all storage...");
 			localStorage.clear();
-			window.location.href = '/';
+			sessionStorage.clear();
+			
+			// Clear all cookies
+			document.cookie.split(";").forEach(cookie => {
+				const eqPos = cookie.indexOf("=");
+				const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+				document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+			});
+			
+			window.location.replace('/');
 		}
 	};
 
+	// Legacy auth functions for backwards compatibility - now using Convex Auth
+	const legacySignIn = async (params: { email: string }) => {
+		return await convexSignIn("email", { email: params.email });
+	};
+
+	const legacySignUp = async (params: { email: string; name: string; company?: string; role?: string }) => {
+		// Convex Auth Email provider handles both sign up and sign in the same way
+		return await convexSignIn("email", { email: params.email });
+	};
+
+	const legacyVerifyMagicLink = async (token: string, ip?: string, userAgent?: string) => {
+		// This should not be called directly anymore - verification is handled by the /auth/verify page
+		throw new Error("Please use the magic link URL instead of calling verifyMagicLink directly");
+	};
+
 	const combinedAuth = {
-		...auth,
-		...convexAuth,
+		...convexOAuthMethods,
 		authToken,
 		isOAuthAuthenticated,
 		user,
-		// Override isAuthenticated to check both auth methods
-		isAuthenticated: auth.isAuthenticated || isOAuthAuthenticated,
-		// Use our combined sign out function instead of individual ones
+		// Set authentication status based on Convex Auth only
+		isAuthenticated: isOAuthAuthenticated,
+		isLoading: convexAuthState.isLoading, // Use Convex Auth's proper loading state
+		// Legacy functions for backwards compatibility
+		signIn: legacySignIn,
+		signUp: legacySignUp,
+		verifyMagicLink: legacyVerifyMagicLink,
+		// Use our sign out function
 		signOut: combinedSignOut,
 	};
 
