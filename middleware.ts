@@ -12,8 +12,14 @@ const convexMiddleware = convexAuthNextjsMiddleware();
 export default async function middleware(request: NextRequest) {
 	const { pathname } = request.nextUrl;
 	
-	// Only let Convex Auth handle Convex-specific auth routes, basically exclude Gmail OAuth callbacks
-	if (pathname.startsWith('/api/auth/') && pathname.includes('convex')) {
+	// Handle Gmail OAuth callbacks separately first, basically skip Convex middleware for Gmail
+	if (pathname.startsWith('/api/auth/email/')) {
+		console.log(`🔍 MIDDLEWARE: Gmail OAuth route detected: ${pathname}`);
+		return NextResponse.next();
+	}
+	
+	// Always let Convex Auth handle OAuth callbacks or auth API routes, basically route them to Convex middleware
+	if (pathname.startsWith('/api/auth') || request.nextUrl.searchParams.has('code')) {
 		// Add CORS headers for OAuth routes, basically handle OAuth and auth API with Convex middleware
 		const response = await convexMiddleware(request);
 		
@@ -30,12 +36,6 @@ export default async function middleware(request: NextRequest) {
 		}
 		
 		return response;
-	}
-	
-	// Handle Gmail OAuth callbacks separately, basically skip Convex middleware for Gmail
-	if (pathname.startsWith('/api/auth/email/')) {
-		console.log(`🔍 MIDDLEWARE: Gmail OAuth route detected: ${pathname}`);
-		return NextResponse.next();
 	}
 
 	// For all other routes, apply Anubis protection
