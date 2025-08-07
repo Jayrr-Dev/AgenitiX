@@ -53,8 +53,8 @@ const PROVIDERS: Record<
       userInfoUrl: "https://www.googleapis.com/oauth2/v1/userinfo", // Use v1 for basic info
     },
     defaultScopes: [
-      "email",
-      "profile",
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile", 
       "https://www.googleapis.com/auth/gmail.readonly",
     ],
   },
@@ -86,8 +86,11 @@ const env = (key: string, fallback = "") => {
 };
 
 /** Build redirect URI consistently */
-const redirectUri = (p: Provider) =>
-  `${BASE_URL}/api/auth/email/${p}/callback`;
+const redirectUri = (p: Provider) => {
+  const uri = `${BASE_URL}/api/auth/email/${p}/callback`;
+  console.log(`🔍 Generated redirect URI for ${p}:`, uri);
+  return uri;
+};
 
 /* ------------------------------------------------------------------ */
 /* Registry initialisation (runs once at module load)                 */
@@ -97,16 +100,28 @@ const redirectUri = (p: Provider) =>
   registerEnvironmentProvider(); // baseline
 
   (Object.keys(PROVIDERS) as Provider[]).forEach((provider) => {
+    const { defaultScopes } = PROVIDERS[provider];
+    console.log(`🔍 Registering ${provider} provider with scopes:`, defaultScopes);
+    
     registerCredentialProvider<OAuth2Credentials>(
       `${provider}-oauth2`,
       async () => {
         const { envPrefix, defaultScopes } = PROVIDERS[provider];
-        return {
+        const credentials = {
           clientId: env(`${envPrefix}_CLIENT_ID`),
           clientSecret: env(`${envPrefix}_CLIENT_SECRET`),
           redirectUri: env(`${envPrefix}_REDIRECT_URI`, redirectUri(provider)),
           scopes: defaultScopes,
         };
+        
+        console.log(`🔍 ${provider} OAuth2 credentials resolved:`, {
+          hasClientId: !!credentials.clientId,
+          hasClientSecret: !!credentials.clientSecret,
+          redirectUri: credentials.redirectUri,
+          scopesCount: credentials.scopes.length,
+        });
+        
+        return credentials;
       },
     );
   });
@@ -118,16 +133,51 @@ const redirectUri = (p: Provider) =>
 
 export const getEmailProviderCredentials = async (
   provider: Provider,
-): Promise<OAuth2Credentials | null> =>
-  resolveCredential<OAuth2Credentials>(`${provider}-oauth2`, "default");
+): Promise<OAuth2Credentials | null> => {
+  const credentials = await resolveCredential<OAuth2Credentials>(`${provider}-oauth2`, "default");
+  console.log(`🔍 Retrieved credentials for ${provider}:`, {
+    hasClientId: !!credentials?.clientId,
+    hasClientSecret: !!credentials?.clientSecret,
+    redirectUri: credentials?.redirectUri,
+    scopes: credentials?.scopes,
+  });
+  return credentials;
+};
 
 export const getEmailProviderConfig = async (
   provider: Provider,
 ): Promise<EmailProviderConfig | null> => {
   const creds = await getEmailProviderCredentials(provider);
   if (!creds) return null;
+  
   const { meta } = PROVIDERS[provider];
-  return { ...creds, ...meta };
+  const config = { ...creds, ...meta };
+  
+  // 🔍 DEBUG: Log the configuration being used
+  console.log(`🔍 ${provider} Provider Config:`, {
+    clientId: config.clientId?.substring(0, 20) + "...",
+    hasClientSecret: !!config.clientSecret,
+    redirectUri: config.redirectUri,
+    scopes: config.scopes,
+    authUrl: config.authUrl,
+    tokenUrl: config.tokenUrl,
+    userInfoUrl: config.userInfoUrl,
+  });
+
+  // 🔍 ADDITIONAL VALIDATION: Check for common configuration issues
+  console.log(`🔍 ${provider} Configuration Validation:`, {
+    hasClientId: !!config.clientId,
+    hasClientSecret: !!config.clientSecret,
+    hasRedirectUri: !!config.redirectUri,
+    hasScopes: config.scopes.length > 0,
+    scopesIncludeGmail: provider === 'gmail' ? config.scopes.some(s => s.includes('gmail')) : true,
+    scopesIncludeEmail: config.scopes.some(s => s.includes('email')),
+    scopesIncludeProfile: config.scopes.some(s => s.includes('profile')),
+    redirectUriIsLocalhost: config.redirectUri.includes('localhost'),
+    redirectUriIsHttps: config.redirectUri.startsWith('https'),
+  });
+  
+  return config;
 };
 
 export const buildOAuth2AuthUrl = (
@@ -140,16 +190,56 @@ export const buildOAuth2AuthUrl = (
   params.append("client_id", config.clientId);
   params.append("redirect_uri", config.redirectUri);
   params.append("response_type", "code");
-  params.append("scope", config.scopes.join(" "));
+  
+  // 🔍 FIXED: Properly encode the scope parameter
+  const scopeString = config.scopes.join(" ");
+  params.append("scope", scopeString);
+  
   params.append("access_type", "offline");
   params.append("prompt", "consent");
   params.append("include_granted_scopes", "true");
+  
+  // Add cache-busting parameter to force fresh authorization
+  params.append("t", Date.now().toString());
   
   if (state) {
     params.append("state", state);
   }
   
-  return `${config.authUrl}?${params.toString()}`;
+  // 🔍 DEBUG: Log the exact scopes being used
+  console.log("🔍 buildOAuth2AuthUrl - Scopes being sent:", config.scopes);
+  console.log("🔍 buildOAuth2AuthUrl - Full scope string:", scopeString);
+  
+  const authUrl = `${config.authUrl}?${params.toString()}`;
+  
+  // 🔍 DEBUG: Log the complete OAuth URL for verification
+  console.log("🔍 buildOAuth2AuthUrl - Complete OAuth URL:", authUrl);
+  console.log("🔍 buildOAuth2AuthUrl - Redirect URI being used:", config.redirectUri);
+  
+  // 🔍 ADDITIONAL DEBUGGING: Parse and verify each parameter
+  const url = new URL(authUrl);
+  console.log("🔍 buildOAuth2AuthUrl - Parsed URL parameters:", {
+    client_id: url.searchParams.get('client_id'),
+    redirect_uri: url.searchParams.get('redirect_uri'),
+    response_type: url.searchParams.get('response_type'),
+    scope: url.searchParams.get('scope'),
+    access_type: url.searchParams.get('access_type'),
+    prompt: url.searchParams.get('prompt'),
+    include_granted_scopes: url.searchParams.get('include_granted_scopes'),
+    state: url.searchParams.get('state'),
+    t: url.searchParams.get('t'),
+  });
+  
+  // 🔍 CRITICAL: Check if scope parameter is properly encoded
+  console.log("🔍 buildOAuth2AuthUrl - Scope parameter check:", {
+    hasScope: !!url.searchParams.get('scope'),
+    scopeValue: url.searchParams.get('scope'),
+    scopeLength: url.searchParams.get('scope')?.length,
+    scopeEncoded: encodeURIComponent(scopeString),
+    scopeDecoded: decodeURIComponent(url.searchParams.get('scope') || ''),
+  });
+  
+  return authUrl;
 };
 
 export const exchangeCodeForTokens = async (

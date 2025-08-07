@@ -113,6 +113,7 @@
 		"convex": "^1.25.4",
 		"date-fns": "^4.1.0",
 		"dlx": "^0.2.1",
+		"dotenv": "^17.2.1",
 		"embla-carousel-autoplay": "^8.5.2",
 		"embla-carousel-react": "^8.5.2",
 		"fast-glob": "^3.3.3",

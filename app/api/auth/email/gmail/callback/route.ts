@@ -1,3 +1,16 @@
+/**
+ * Route: api/auth/email/gmail/callback/route.ts
+ * GMAIL OAUTH CALLBACK HANDLER - Processes OAuth2 callback from Google
+ *
+ * • Handles authorization code exchange for access tokens
+ * • Validates OAuth flow completion and error states
+ * • Provides detailed error messages for debugging
+ * • Communicates results back to parent window via postMessage
+ * • Auto-closes popup window after completion
+ *
+ * Keywords: oauth-callback, gmail-auth, authorization-code, token-exchange
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import {
   exchangeCodeForTokens,
@@ -42,13 +55,64 @@ const htmlResponse = (html: string, status = 200) =>
 
 export async function GET(request: NextRequest) {
   const timestamp = new Date().toISOString();
-  console.log(`📧 [${timestamp}] Gmail OAuth Callback START`);
+  
+  // 🔍 REQUEST COUNTER FOR DEBUGGING
+  if (!(global as any).requestCounter) {
+    (global as any).requestCounter = 0;
+  }
+  (global as any).requestCounter++;
+  
+  console.log(`📧 [${timestamp}] Gmail OAuth Callback START (Request #${(global as any).requestCounter})`);
+  
+  // 🔍 CRITICAL: Log the raw URL first
+  console.log("🔍 RAW REQUEST URL:", request.url);
+  console.log("🔍 REQUEST METHOD:", request.method);
+  console.log("🔍 REQUEST HEADERS:", Object.fromEntries(request.headers.entries()));
+  
+  // 🔍 CHECK FOR CODE IN RAW URL STRING
+  const rawUrlString = request.url;
+  const hasCodeInRawUrl = rawUrlString.includes('code=');
+  console.log("🔍 RAW URL ANALYSIS:", {
+    rawUrl: rawUrlString,
+    hasCodeInRawUrl: hasCodeInRawUrl,
+    codeIndex: rawUrlString.indexOf('code='),
+    urlLength: rawUrlString.length,
+  });
+  
+  // 🔍 CHECK FOR REDIRECT ISSUES
+  const referer = request.headers.get('referer');
+  const userAgent = request.headers.get('user-agent');
+  console.log("🔍 REDIRECT ANALYSIS:", {
+    referer: referer,
+    userAgent: userAgent,
+    isFromGoogle: referer?.includes('accounts.google.com'),
+    isFromLocalhost: referer?.includes('localhost'),
+    hasReferer: !!referer,
+  });
   
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
   const error = searchParams.get("error");
   const state = searchParams.get("state");
+  const scope = searchParams.get("scope");
+  const authuser = searchParams.get("authuser");
+  const prompt = searchParams.get("prompt");
   
+  // 🔍 MANUAL URL PARSING CHECK
+  const url = new URL(request.url);
+  const manualParams = Object.fromEntries(url.searchParams.entries());
+  console.log("🔍 MANUAL URL PARSING:", {
+    originalUrl: request.url,
+    searchParams: manualParams,
+    hasCodeManual: !!manualParams.code,
+    codeManual: manualParams.code ? manualParams.code.substring(0, 20) + "..." : null,
+    nextJsCode: code,
+    nextJsHasCode: !!code,
+    paramsMatch: manualParams.code === code,
+  });
+  
+  // 🔍 ENHANCED DEBUGGING: Log all possible parameters that Google might send
+  const allParams = Object.fromEntries(searchParams.entries());
   console.log("📧 Gmail OAuth Callback params:", { 
     hasCode: !!code, 
     code: code ? code.substring(0, 20) + "..." : null,
@@ -56,11 +120,74 @@ export async function GET(request: NextRequest) {
     state: state ? state.substring(0, 50) + "..." : null,
     error,
     url: request.url,
-    searchParams: Object.fromEntries(searchParams.entries()),
+    searchParams: allParams,
     userAgent: request.headers.get('user-agent'),
     referer: request.headers.get('referer'),
     timestamp
   });
+
+  // 🔍 CRITICAL: Log the EXACT callback URL to debug redirect URI mismatch
+  console.log("🔍 EXACT Callback URL from Google:", request.url);
+  console.log("🔍 Parsed Callback Parameters:", {
+    code: code,
+    error: error,
+    state: state,
+    scope: searchParams.get('scope'),
+    authuser: searchParams.get('authuser'),
+    prompt: searchParams.get('prompt'),
+    allParams: allParams
+  });
+
+  // 🔍 ADDITIONAL DEBUGGING: Check for common OAuth issues
+  const expectedRedirectUri = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/auth/email/gmail/callback`;
+  console.log("🔍 OAuth Debug Info:", {
+    expectedRedirectUri,
+    actualUrl: request.url,
+    hasCode: !!code,
+    hasError: !!error,
+    hasState: !!state,
+    scopeReceived: searchParams.get('scope'),
+    authuser: searchParams.get('authuser'),
+    prompt: searchParams.get('prompt'),
+    sessionState: searchParams.get('session_state'),
+    hd: searchParams.get('hd'), // hosted domain
+  });
+
+  // 🔍 ADDITIONAL ANALYSIS: Check for specific OAuth flow issues
+  console.log("🔍 OAuth Flow Analysis:", {
+    hasScopeButNoCode: !!scope && !code,
+    hasStateButNoCode: !!state && !code,
+    hasAuthuser: !!authuser,
+    hasPrompt: !!prompt,
+    scopeIncludesGmail: scope?.includes('gmail'),
+    scopeIncludesEmail: scope?.includes('email'),
+    scopeIncludesProfile: scope?.includes('profile'),
+    scopeIncludesOpenId: scope?.includes('openid'),
+  });
+
+  // 🔍 CRITICAL: Check if this is a user cancellation or consent screen issue
+  console.log("🔍 OAuth Flow Status:", {
+    isUserCancellation: !code && !error && !!state,
+    isConsentScreenIssue: !code && !error && !!scope,
+    isRedirectUriMismatch: !!error && error === 'redirect_uri_mismatch',
+    isInvalidClient: !!error && error === 'invalid_client',
+    isAccessDenied: !!error && error === 'access_denied',
+    hasValidState: !!state && state !== 'test', // Check if state is a real session token
+    isConsentFlowIncomplete: !code && !!scope && !!state && prompt === 'consent',
+  });
+
+  // 🔍 SPECIFIC CONSENT FLOW DETECTION
+  const isConsentFlowIncomplete = !code && !!scope && !!state && prompt === 'consent';
+  if (isConsentFlowIncomplete) {
+    console.log("🔍 CONSENT FLOW ISSUE DETECTED:", {
+      hasScope: !!scope,
+      hasState: !!state,
+      prompt: prompt,
+      authuser: authuser,
+      scopeIncludesGmail: scope?.includes('gmail'),
+      scopeIncludesEmail: scope?.includes('email'),
+    });
+  }
 
   // Helper function to escape HTML for XSS protection
   const escapeHtml = (str: string) => {
@@ -114,8 +241,6 @@ export async function GET(request: NextRequest) {
     
     // Check for additional error information
     const errorDescription = searchParams.get("error_description");
-    const scope = searchParams.get("scope");
-    const authuser = searchParams.get("authuser");
     const prompt = searchParams.get("prompt");
     
     console.error("📧 Gmail OAuth Error Details:", {
@@ -124,20 +249,46 @@ export async function GET(request: NextRequest) {
       hasScope: !!scope,
       authuser,
       prompt,
-      allParams: Object.fromEntries(searchParams.entries())
+      allParams: allParams
     });
     
     // Determine specific error message based on parameters
     let errorMsg = "No authorization code received";
-    if (scope && !error) {
-      errorMsg = "OAuth flow completed but no authorization code was provided. This might be due to redirect URI mismatch.";
+    let errorType = "NO_CODE";
+    let userGuidance = "Please try the authentication again.";
+    
+    if (isConsentFlowIncomplete) {
+      errorMsg = "Consent flow was not completed. You need to click 'Allow' to grant access to your Gmail account.";
+      errorType = "CONSENT_INCOMPLETE";
+      userGuidance = "When the Google consent screen appears, please click 'Allow' to grant access to your Gmail account. Then try the authentication again.";
+    } else if (scope && !error) {
+      errorMsg = "OAuth flow completed but no authorization code was provided. This might be due to redirect URI mismatch or user cancellation.";
+      errorType = "CONSENT_INCOMPLETE";
+      userGuidance = "Please ensure you click 'Allow' when prompted to grant access to your Gmail account.";
     } else if (error === "access_denied") {
       errorMsg = "Access was denied by the user";
+      errorType = "ACCESS_DENIED";
+      userGuidance = "You need to grant permission to access your Gmail account. Please try again and click 'Allow' when prompted.";
     } else if (errorDescription) {
       errorMsg = errorDescription;
+      errorType = "OAUTH_ERROR";
+      userGuidance = "Please check your Google account settings and try again.";
+    } else if (prompt === "consent" && authuser === "0") {
+      errorMsg = "User did not complete the consent flow. Please try again and ensure you click 'Allow' to grant access.";
+      errorType = "CONSENT_CANCELLED";
+      userGuidance = "When the Google consent screen appears, please click 'Allow' to grant access to your Gmail account.";
+    } else if (scope?.includes('gmail') && !code) {
+      errorMsg = "Gmail scopes were granted but no authorization code received. This may indicate a configuration issue.";
+      errorType = "SCOPE_GRANTED_NO_CODE";
+      userGuidance = "Please try the authentication again. If the issue persists, contact support.";
+    } else if (scope && scope.includes('email') && scope.includes('profile')) {
+      errorMsg = "Basic scopes were granted but Gmail access was not completed. Please ensure you grant all requested permissions.";
+      errorType = "PARTIAL_SCOPE_GRANTED";
+      userGuidance = "Please try again and make sure to grant access to your Gmail account when prompted.";
     }
     
     const safeErrorMsg = escapeHtml(errorMsg);
+    const safeUserGuidance = escapeHtml(userGuidance);
     const html = `
 			<!DOCTYPE html>
 			<html>
@@ -147,24 +298,31 @@ export async function GET(request: NextRequest) {
 					<div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
 					<h2 style="color: #dc2626;">Gmail Authentication Failed</h2>
 					<p style="color: #6b7280;">${safeErrorMsg}</p>
-					<p style="color: #6b7280; font-size: 0.875rem;">This window will close automatically...</p>
+					<p style="color: #059669; font-weight: 500; margin-top: 1rem;">${safeUserGuidance}</p>
+					<p style="color: #6b7280; font-size: 0.875rem; margin-top: 1rem;">DEBUGGING: Window will NOT auto-close. Check network tab and console.</p>
+					<button onclick="window.close()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #dc2626; color: white; border: none; border-radius: 0.375rem; cursor: pointer;">Close Window</button>
 				</div>
 				<script>
+					console.log('🔍 DEBUGGING: OAuth callback error page loaded');
+					console.log('🔍 URL:', window.location.href);
+					console.log('🔍 Search params:', window.location.search);
+					
 					try {
 						if (window.opener && !window.opener.closed) {
 							window.opener.postMessage({
 								type: 'OAUTH_ERROR',
-								error: '${safeErrorMsg}'
+								error: '${safeErrorMsg}',
+								errorType: '${errorType}',
+								userGuidance: '${safeUserGuidance}',
+								timestamp: Date.now()
 							}, '${new URL(request.url).origin}');
 						}
 					} catch (e) {
 						console.error('PostMessage failed for error communication');
 					}
 					
-					// Auto-close after 3 seconds
-					setTimeout(() => {
-						window.close();
-					}, 3000);
+					// 🔍 DEBUGGING: Don't auto-close - let user check network tab
+					console.log('🔍 DEBUGGING: Window will NOT auto-close for debugging');
 				</script>
 			</body>
 			</html>

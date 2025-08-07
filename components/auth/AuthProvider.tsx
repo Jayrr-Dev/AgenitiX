@@ -414,12 +414,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
 	// Legacy auth functions for backwards compatibility - now using Convex Auth
 	const legacySignIn = async (params: { email: string }) => {
-		return await convexSignIn("email", { email: params.email });
+		return await convexSignIn("resend", { email: params.email });
 	};
 
 	const legacySignUp = async (params: { email: string; name: string; company?: string; role?: string }) => {
-		// Convex Auth Email provider handles both sign up and sign in the same way
-		return await convexSignIn("email", { email: params.email });
+		// Convex Auth Resend provider handles both sign up and sign in the same way
+		return await convexSignIn("resend", { email: params.email });
 	};
 
 	const legacyVerifyMagicLink = async (token: string, ip?: string, userAgent?: string) => {
@@ -451,6 +451,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 	useEffect(() => {
 		if (sessionSource === null && prevSessionSourceRef.current === "convex") {
 			console.error("🚨 CONVEX AUTH LOST - Attempting immediate recovery");
+			
+			// Check if we're in an OAuth flow to avoid interference, basically prevent recovery during OAuth
+			const isOAuthFlow = sessionStorage.getItem("oauth_node_state");
+			if (isOAuthFlow) {
+				console.log("🔄 OAuth flow detected - skipping auth recovery to prevent interference");
+				return;
+			}
 			
 			// Try multiple recovery strategies
 			setTimeout(async () => {

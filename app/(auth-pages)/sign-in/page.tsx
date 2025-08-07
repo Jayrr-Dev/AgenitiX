@@ -74,8 +74,8 @@ export default function SignInPage() {
 		const trimmedEmail = email.trim();
 
 		try {
-			// Use new Convex Auth Email provider
-			await convexSignIn("email", { 
+			// Use Convex Auth Resend provider for magic links
+			await convexSignIn("resend", { 
 				email: trimmedEmail,
 			});
 

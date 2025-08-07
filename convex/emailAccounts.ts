@@ -365,7 +365,7 @@ export const getEmailAccountsByUserEmail = query({
     // Find user by email
     const user = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", userEmail))
+      .withIndex("by_email", (q) => q.eq("email", userEmail))
       .first();
 
     if (!user) {

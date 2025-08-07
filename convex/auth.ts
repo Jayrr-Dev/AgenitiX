@@ -15,9 +15,8 @@
 import { convexAuth } from "@convex-dev/auth/server";
 import GitHub from "@auth/core/providers/github";
 import Google from "@auth/core/providers/google";
+import Resend from "@auth/core/providers/resend";
 import { Password } from "@convex-dev/auth/providers/Password";
-import { Email } from "@convex-dev/auth/providers/Email";
-import { DataModel } from "./_generated/dataModel";
 
 // Debug environment variables in development only, basically check if auth keys are loaded
 if (process.env.NODE_ENV === "development") {
@@ -38,46 +37,9 @@ if (process.env.NODE_ENV === "development") {
 export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = convexAuth({
   providers: [
     GitHub,
-    Google, // Re-enabled for general authentication, separate from Gmail OAuth
+    // Google, // Temporarily disabled to avoid conflict with email account OAuth
     Password, // Keep for backwards compatibility
-    Email({
-      id: "email", 
-      name: "Email",
-      sendVerificationRequest: async ({ identifier: email, url, token }) => {
-        // Create a custom magic link URL that includes both email and token
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-        const magicLinkUrl = `${baseUrl}/auth/verify?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
-        
-        // Log magic links for development debugging, basically always show in dev deployment
-        console.log("🔍 DEBUG: NODE_ENV =", process.env.NODE_ENV);
-        console.log("🔍 DEBUG: All env vars with NODE:", Object.keys(process.env).filter(key => key.includes('NODE')));
-        
-        // Always log magic links for debugging, basically ensure they're visible
-        console.log("🔍 DEBUG: CONVEX_DEPLOYMENT =", process.env.CONVEX_DEPLOYMENT);
-        console.log("🔍 DEBUG: Will log magic link:", true);
-        
-        // Always log magic links for now, basically ensure they're visible in development
-        if (true) {
-          console.log("\n" + "=".repeat(60));
-          console.log("🔗 MAGIC LINK GENERATED FOR DEVELOPMENT");
-          console.log("=".repeat(60));
-          console.log(`📧 Email: ${email}`);
-          console.log(`🔑 Token: ${token}`);
-          console.log(`🔗 Original Auth URL: ${url}`);
-          console.log(`🔗 Magic Link URL: ${magicLinkUrl}`);
-          console.log("");
-          console.log("📋 COPY AND PASTE THIS MAGIC LINK TO SIGN IN:");
-          console.log("=".repeat(60));
-          console.log(magicLinkUrl);
-          console.log("=".repeat(60));
-          console.log("");
-        } 
-
-        // In production, you would send actual emails here with the magicLinkUrl
-        // For development, just return success
-        return;
-      },
-    }),
+    Resend, // Standard Auth.js email provider for magic links
   ],
   callbacks: {
     async afterUserCreatedOrUpdated(ctx, args) {
@@ -164,14 +126,5 @@ export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = c
   },
 });
 
-// Export custom auth functions for backward compatibility with existing frontend
-export {
-  sendMagicLink,
-  verifyMagicLink,
-  signUp,
-  getCurrentUser,
-  signOut,
-  updateProfile,
-  getUserSessions,
-  revokeSession,
-} from "./authFunctions";
+// Note: Custom auth functions in authFunctions.ts are kept for backward compatibility
+// but Convex Auth is now the primary authentication system

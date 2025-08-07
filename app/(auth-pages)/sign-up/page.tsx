@@ -69,7 +69,7 @@ export default function SignUpPage() {
 
 		try {
 			// Use new Convex Auth Email provider - it handles both sign up and sign in
-			await convexSignIn("email", { 
+			await convexSignIn("resend", { 
 				email: formData.email.trim(),
 			});
 			

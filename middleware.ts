@@ -12,9 +12,9 @@ const convexMiddleware = convexAuthNextjsMiddleware();
 export default async function middleware(request: NextRequest) {
 	const { pathname } = request.nextUrl;
 	
-	// Always let Convex Auth handle OAuth callbacks or auth API routes, basically route them to Convex middleware
-	if (pathname.startsWith('/api/auth') || request.nextUrl.searchParams.has('code')) {
-		// Add CORS headers for OAuth routes
+	// Only let Convex Auth handle Convex-specific auth routes, basically exclude Gmail OAuth callbacks
+	if (pathname.startsWith('/api/auth/') && pathname.includes('convex')) {
+		// Add CORS headers for OAuth routes, basically handle OAuth and auth API with Convex middleware
 		const response = await convexMiddleware(request);
 		
 		// Add CORS headers for OAuth development
@@ -24,16 +24,18 @@ export default async function middleware(request: NextRequest) {
 			response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin");
 			response.headers.set("Access-Control-Allow-Credentials", "true");
 			
-			// Remove COOP headers that block popup communication
-			response.headers.delete("Cross-Origin-Opener-Policy");
-			response.headers.delete("Cross-Origin-Embedder-Policy");
-			
-			// Add permissive headers for OAuth popup flow
-			response.headers.set("Cross-Origin-Opener-Policy", "unsafe-none");
-			response.headers.set("Cross-Origin-Embedder-Policy", "unsafe-none");
+			// Set OAuth-compatible COOP headers for popup communication
+			response.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+			response.headers.delete("Cross-Origin-Embedder-Policy"); // Remove restrictive COEP
 		}
 		
 		return response;
+	}
+	
+	// Handle Gmail OAuth callbacks separately, basically skip Convex middleware for Gmail
+	if (pathname.startsWith('/api/auth/email/')) {
+		console.log(`🔍 MIDDLEWARE: Gmail OAuth route detected: ${pathname}`);
+		return NextResponse.next();
 	}
 
 	// For all other routes, apply Anubis protection
