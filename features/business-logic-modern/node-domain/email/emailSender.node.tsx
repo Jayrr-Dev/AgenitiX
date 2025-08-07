@@ -851,13 +851,6 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
   /** Handle send email action */
   const handleSendEmail = useCallback(async () => {
-    console.log("🔍 handleSendEmail debug:", {
-      accountId,
-      tokenExists: !!token,
-      tokenValue: token ? "present" : "missing",
-      userExists: !!user,
-      userEmail: user?.email,
-    });
 
     if (!accountId) {
       toast.error("Please select an email account first");
