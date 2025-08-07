@@ -14,7 +14,6 @@ The email system uses a credential registry for secure OAuth2 configuration mana
 
 - **Gmail** - Google OAuth2 with Gmail API access
 - **Outlook** - Microsoft OAuth2 with Graph API access
-- **Yahoo** - Yahoo OAuth2 (configuration ready)
 
 ## Environment Variables Setup
 
@@ -68,19 +67,7 @@ NEXT_PUBLIC_BASE_URL=https://your-domain.com
    OUTLOOK_REDIRECT_URI=https://your-domain.com/api/auth/email/outlook/callback
    ```
 
-### Yahoo OAuth2 Setup (Optional)
 
-1. **Create Yahoo Developer Application**
-   - Go to [Yahoo Developer Network](https://developer.yahoo.com/)
-   - Create new application
-   - Select required permissions: Mail
-
-2. **Environment Variables**
-   ```bash
-   YAHOO_CLIENT_ID=your-yahoo-client-id
-   YAHOO_CLIENT_SECRET=your-yahoo-client-secret
-   YAHOO_REDIRECT_URI=https://your-domain.com/api/auth/email/yahoo/callback
-   ```
 
 ## Local Development Setup
 
@@ -96,8 +83,7 @@ GMAIL_REDIRECT_URI=http://localhost:3000/api/auth/email/gmail/callback
 # Outlook  
 OUTLOOK_REDIRECT_URI=http://localhost:3000/api/auth/email/outlook/callback
 
-# Yahoo
-YAHOO_REDIRECT_URI=http://localhost:3000/api/auth/email/yahoo/callback
+
 ```
 
 **Important:** Update your OAuth2 application settings to include localhost URLs for development.

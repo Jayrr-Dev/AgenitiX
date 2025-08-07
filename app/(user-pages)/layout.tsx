@@ -2,7 +2,6 @@
 
 import { ProtectedNavigation } from "@/components/auth/ProtectedNavigation";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { AuthCollisionTester } from "@/components/auth/AuthCollisionTester";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -21,7 +20,6 @@ export default function UserPagesLayout({ children }: UserPagesLayoutProps) {
 			<div className="min-h-screen bg-background">
 				{!shouldHideNavigation && <ProtectedNavigation />}
 				<main>{children}</main>
-				<AuthCollisionTester />
 			</div>
 		</ProtectedRoute>
 	);

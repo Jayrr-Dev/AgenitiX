@@ -2,6 +2,8 @@
 
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { GoogleButton } from "@/components/auth/GoogleButton";
+import { GitHubButton } from "@/components/auth/GitHubButton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -197,89 +199,109 @@ export default function SignUpPage() {
 									</Button>
 								</div>
 							) : (
-							<form onSubmit={handleSubmit} className="space-y-4">								
-								<div className="grid grid-cols-1 gap-4">
-									<div className="space-y-2">
-										<Label htmlFor="name">Full name (optional)</Label>
-										<Input
-											id="name"
-											type="text"
-											placeholder="Enter your full name"
-											value={formData.name}
-											onChange={handleChange("name")}
-											disabled={isLoading}
-											className="h-11"
-										/>
+								<>
+									{/* OAuth Sign-up Options */}
+									<div className="space-y-3 mb-6">
+										<GoogleButton disabled={isLoading} />
+										<GitHubButton disabled={isLoading} />
+										
+										{/* Divider */}
+										<div className="relative">
+											<div className="absolute inset-0 flex items-center">
+												<span className="w-full border-t" />
+											</div>
+											<div className="relative flex justify-center text-xs uppercase">
+												<span className="bg-white px-2 text-gray-500">
+													Or continue with email
+												</span>
+											</div>
+										</div>
 									</div>
 
-									<div className="space-y-2">
-										<Label htmlFor="email">Email address *</Label>
-										<Input
-											id="email"
-											type="email"
-											placeholder="Enter your email"
-											value={formData.email}
-											onChange={handleChange("email")}
-											required={true}
-											disabled={isLoading}
-											className="h-11"
-										/>
-									</div>
+									<form onSubmit={handleSubmit} className="space-y-4">								
+										<div className="grid grid-cols-1 gap-4">
+											<div className="space-y-2">
+												<Label htmlFor="name">Full name (optional)</Label>
+												<Input
+													id="name"
+													type="text"
+													placeholder="Enter your full name"
+													value={formData.name}
+													onChange={handleChange("name")}
+													disabled={isLoading}
+													className="h-11"
+												/>
+											</div>
 
-									<div className="space-y-2">
-										<Label htmlFor="company">Company (optional)</Label>
-										<Input
-											id="company"
-											type="text"
-											placeholder="Your company name"
-											value={formData.company}
-											onChange={handleChange("company")}
-											disabled={isLoading}
-											className="h-11"
-										/>
-									</div>
+											<div className="space-y-2">
+												<Label htmlFor="email">Email address *</Label>
+												<Input
+													id="email"
+													type="email"
+													placeholder="Enter your email"
+													value={formData.email}
+													onChange={handleChange("email")}
+													required={true}
+													disabled={isLoading}
+													className="h-11"
+												/>
+											</div>
 
-									<div className="space-y-2">
-										<Label htmlFor="role">Role (optional)</Label>
-										<Input
-											id="role"
-											type="text"
-											placeholder="Your role or title"
-											value={formData.role}
-											onChange={handleChange("role")}
-											disabled={isLoading}
-											className="h-11"
-										/>
-									</div>
-								</div>
+											<div className="space-y-2">
+												<Label htmlFor="company">Company (optional)</Label>
+												<Input
+													id="company"
+													type="text"
+													placeholder="Your company name"
+													value={formData.company}
+													onChange={handleChange("company")}
+													disabled={isLoading}
+													className="h-11"
+												/>
+											</div>
 
-								{error && (
-									<Alert variant="destructive">
-										<AlertDescription>{error}</AlertDescription>
-									</Alert>
-								)}
+											<div className="space-y-2">
+												<Label htmlFor="role">Role (optional)</Label>
+												<Input
+													id="role"
+													type="text"
+													placeholder="Your role or title"
+													value={formData.role}
+													onChange={handleChange("role")}
+													disabled={isLoading}
+													className="h-11"
+												/>
+											</div>
+										</div>
 
-								<Button type="submit" className="h-11 w-full" disabled={isLoading || !isFormValid}>
-									{isLoading ? (
-										<>
-											<Loading showText={false} size="w-4 h-4" className="mr-2 p-0" />
-											Sending magic link...
-										</>
-									) : (
-										<>
-											<Mail className="mr-2 h-4 w-4" />
-											Send magic link
-										</>
-									)}
-								</Button>
+										{error && (
+											<Alert variant="destructive">
+												<AlertDescription>{error}</AlertDescription>
+											</Alert>
+										)}
 
-								<div className="text-center text-sm">
-									<span className="text-gray-600">Already have an account? </span>
-									<Link href="/sign-in" className="font-medium text-blue-600 hover:text-blue-500">
-										Sign in
-									</Link>
-								</div>
-							</form>
+										<Button type="submit" className="h-11 w-full" disabled={isLoading || !isFormValid}>
+											{isLoading ? (
+												<>
+													<Loading showText={false} size="w-4 h-4" className="mr-2 p-0" />
+													Sending magic link...
+												</>
+											) : (
+												<>
+													<Mail className="mr-2 h-4 w-4" />
+													Send magic link
+												</>
+											)}
+										</Button>
+
+										<div className="text-center text-sm">
+											<span className="text-gray-600">Already have an account? </span>
+											<Link href="/sign-in" className="font-medium text-blue-600 hover:text-blue-500">
+												Sign in
+											</Link>
+										</div>
+									</form>
+								</>
 							)}
 						</CardContent>
 					</Card>

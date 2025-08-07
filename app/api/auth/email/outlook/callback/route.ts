@@ -193,18 +193,38 @@ export async function GET(request: NextRequest) {
 		<p>This window will close automatically...</p>
 	</div>
 	<script>
-		try {
-			window.opener.postMessage({
-				type: 'OAUTH_SUCCESS',
-				authData: '${authDataEncoded}'
-			}, '${new URL(request.url).origin}');
-			window.close();
-		} catch (error) {
-			console.error('PostMessage failed:', error);
-			// CRITICAL FIX: Don't redirect parent - show message and close
-			document.body.innerHTML = '<div style="text-align:center;font-family:system-ui;margin-top:2rem;"><p style="color:#059669;">✅ Authentication successful!</p><p>Please close this window and try connecting your email again.</p></div>';
-			setTimeout(() => window.close(), 3000);
+		const authData = {
+			type: 'OAUTH_SUCCESS',
+			authData: '${authDataEncoded}',
+			timestamp: Date.now()
+		};
+
+		// Send success via BroadcastChannel for redirect flow
+		function sendSuccess() {
+			try {
+				const channel = new BroadcastChannel('oauth_outlook');
+				channel.postMessage(authData);
+				channel.close();
+				return true;
+			} catch (error) {
+				console.log('BroadcastChannel failed:', error);
+				return false;
+			}
 		}
+
+		const success = sendSuccess();
+
+		// Simple success message and auto-close for redirect flow
+		if (success) {
+			document.body.innerHTML = '<div style="text-align:center;font-family:system-ui;margin-top:2rem;"><p style="color:#059669;">✅ Outlook Connected!</p><p>Returning to your workflow...</p></div>';
+		} else {
+			document.body.innerHTML = '<div style="text-align:center;font-family:system-ui;margin-top:2rem;"><p style="color:#059669;">✅ Outlook Connected!</p><p>You can close this window and return to your workflow.</p></div>';
+		}
+
+		// Auto-close after delay for redirect flow
+		setTimeout(() => {
+			window.close();
+		}, 2000);
 	</script>
 </body>
 </html>`;

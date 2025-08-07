@@ -3,6 +3,7 @@
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { GitHubButton } from "@/components/auth/GitHubButton";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -85,11 +86,15 @@ export default function SignInPage() {
 				console.log("\n🎉 MAGIC LINK SENT FOR SIGNIN:");
 				console.log(`📧 Email: ${trimmedEmail}`);
 				console.log("📋 Check the server console above for the magic link URL");
+				console.log("💡 The magic link URL should appear in the server logs above");
+				console.log("🔍 If you don't see it, check the terminal where you ran 'pnpm dev'");
 				console.log("");
 			}
 
 			toast.success("Magic link sent!", {
-				description: "Check your email and click the link to sign in.",
+				description: process.env.NODE_ENV === "development" 
+					? "Check the terminal/console for the magic link URL" 
+					: "Check your email and click the link to sign in.",
 				duration: 5000,
 			});
 		} catch (err) {
@@ -202,6 +207,7 @@ export default function SignInPage() {
 								<>
 									{/* OAuth Sign-in Options */}
 									<div className="space-y-3 mb-6">
+										<GoogleButton disabled={isLoading} />
 										<GitHubButton disabled={isLoading} />
 										
 										{/* Divider */}

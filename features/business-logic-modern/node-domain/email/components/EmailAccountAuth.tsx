@@ -119,9 +119,20 @@ export const EmailAccountAuth = memo(
 
     /* ---------------- Handlers --------------------------------------- */
 
-    /** Launch OAuth2 popup */
+    /** Launch OAuth2 redirect flow */
     const onOAuthClick = useCallback(() => {
-      if (isOAuth && email) handleOAuth2Auth(provider);
+      if (isOAuth && email) {
+        // Dispatch debug event for OAuth initiation
+        window.dispatchEvent(new CustomEvent('email-debug', {
+          detail: {
+            type: 'OAUTH_INITIATED',
+            provider,
+            email,
+            timestamp: Date.now()
+          }
+        }));
+        handleOAuth2Auth(provider);
+      }
     }, [isOAuth, email, provider, handleOAuth2Auth]);
 
     /** Generic field updater */
@@ -185,8 +196,8 @@ export const EmailAccountAuth = memo(
     const oauthBtnLabel = useMemo(
       () =>
         globalAuthenticating
-          ? "Signing in… (30 s timeout)"
-          : `Sign in with ${meta.name}`,
+          ? "Redirecting… (30 s timeout)"
+          : `Connect ${meta.name}`,
       [globalAuthenticating, meta.name],
     );
 

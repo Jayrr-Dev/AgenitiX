@@ -172,18 +172,11 @@ export const EmailAccountProvider = ({
   );
 
   /* -------------------------------------------------------------------- */
-  /* 🚀 Main OAuth launcher                                               */
+  /* 🚀 Main OAuth launcher - redirect-only approach                     */
   /* -------------------------------------------------------------------- */
   const handleOAuth2Auth = useCallback(
     async (provider: EmailProviderType) => {
       if (!token) return;
-
-      /* -------- Snapshot pre-OAuth state ------------------------------ */
-      const preState = snapshotAuth({
-        isAuthenticated: isOAuthAuthenticated,
-        authToken,
-        sessionSource,
-      });
 
       /* -------- Abort if session source invalid ----------------------- */
       if (sessionSource !== "convex") {
@@ -195,102 +188,42 @@ export const EmailAccountProvider = ({
         return;
       }
 
-      /* -------- Fetch OAuth URL --------------------------------------- */
-      const redirectUri = `${window.location.origin}/api/auth/email/${provider}/callback`;
-
+      /* -------- Store state and redirect directly --------------------- */
       try {
         updateNodeData({ isAuthenticating: true, lastError: "" });
 
+        // Store state for redirect flow, basically prepare for OAuth redirect
+        sessionStorage.setItem("oauth_node_state", JSON.stringify({
+          provider,
+          nodeData: { ...nodeData },
+          timestamp: Date.now()
+        }));
+
+        // Fetch OAuth URL from API
+        const redirectUri = `${window.location.origin}/api/auth/email/${provider}/callback`;
         const res = await fetch(
           `/api/auth/email/${provider}?redirect_uri=${encodeURIComponent(
             redirectUri,
           )}&session_token=${encodeURIComponent(token)}`,
         );
+        
         if (!res.ok) {
           const { error } = (await res.json().catch(() => ({}))) as {
             error?: string;
           };
           throw new Error(error ?? `HTTP ${res.status}`);
         }
+        
         const { authUrl } = (await res.json()) as { authUrl?: string };
         if (!authUrl) throw new Error("Server did not return authUrl");
 
-        /* -------- Open popup + wire listeners ------------------------- */
-        const popup = window.open(
-          authUrl,
-          "oauth2",
-          "width=500,height=600,scrollbars=yes,resizable=yes,noopener",
-        );
-        if (!popup) {
-          updateNodeData({
-            isAuthenticating: false,
-            lastError:
-              "Popup blocked. Please enable popups for this site and try again.",
-          });
-          return;
-        }
+        // Show user feedback before redirect
+        toast.info(`Redirecting to ${provider} authentication...`, {
+          description: "You'll be redirected back after signing in"
+        });
 
-        const channel = new BroadcastChannel(`${BC_PREFIX}${provider}`);
-        const timeoutId = isDev
-          ? window.setTimeout(() => {
-              updateNodeData({
-                isAuthenticating: false,
-                lastError:
-                  "Dev timeout: popup did not respond in 30 s. Check console.",
-              });
-              popup.close();
-              channel.close();
-            }, 30_000)
-          : undefined;
-
-        /** Helper: verify auth collision & attempt recovery */
-        const verifyCollision = () => {
-          const postState = snapshotAuth({
-            isAuthenticated: isOAuthAuthenticated,
-            authToken,
-            sessionSource,
-          });
-
-          if (preState.isAuthenticated && !postState.isAuthenticated) {
-            toast.error("Authentication was lost, trying to recover…");
-            if (!recoverAuth()) {
-              updateNodeData({
-                lastError:
-                  "Authentication was lost during email connection. Please sign in again.",
-              });
-            }
-          }
-        };
-
-        /** Unified clean-up */
-        const clean = () => {
-          channel.close();
-          window.removeEventListener("message", onMessage);
-          window.clearTimeout(timeoutId);
-          if (!popup.closed) popup.close();
-        };
-
-        /** BroadcastChannel handler */
-        channel.onmessage = (ev) => {
-          if (ev.data?.type === "OAUTH_SUCCESS") {
-            onOAuthSuccess(ev.data.authData);
-            verifyCollision();
-            updateNodeData({ isAuthenticating: false });
-            clean();
-          }
-        };
-
-        /** Same-origin postMessage fallback */
-        const onMessage = (ev: MessageEvent) => {
-          if (ev.origin !== window.location.origin) return;
-          if (ev.data?.type === "OAUTH_SUCCESS") {
-            onOAuthSuccess(ev.data.authData);
-            verifyCollision();
-            updateNodeData({ isAuthenticating: false });
-            clean();
-          }
-        };
-        window.addEventListener("message", onMessage);
+        // Redirect to OAuth provider
+        window.location.href = authUrl;
       } catch (err) {
         updateNodeData({
           isAuthenticating: false,
@@ -301,17 +234,15 @@ export const EmailAccountProvider = ({
     },
     [
       authToken,
-      isOAuthAuthenticated,
-      onOAuthSuccess,
-      recoverAuth,
       sessionSource,
       token,
       updateNodeData,
+      nodeData,
     ],
   );
 
   /* -------------------------------------------------------------------- */
-  /* 🌀 Redirect-flow fallback (no popup)                                */
+  /* 🌀 Handle redirect-flow OAuth callback                              */
   /* -------------------------------------------------------------------- */
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -327,12 +258,26 @@ export const EmailAccountProvider = ({
 
     (async () => {
       if (!code || !nodeStateRaw) return;
+      
       try {
-        const { provider } = JSON.parse(nodeStateRaw) as {
+        const { provider, nodeData: savedNodeData } = JSON.parse(nodeStateRaw) as {
           provider: EmailProviderType;
+          nodeData: Record<string, unknown>;
+          timestamp: number;
         };
+        
+        // Restore node state for redirect flow, basically sync UI with OAuth process
+        if (savedNodeData) {
+          updateNodeData({
+            ...savedNodeData,
+            isAuthenticating: true,
+            lastError: ""
+          });
+        }
+        
         sessionStorage.removeItem("oauth_node_state");
-        // Exchange code in a hidden iframe so CORS is identical to popup path
+        
+        // Process OAuth callback directly via hidden iframe
         const iframe = document.createElement("iframe");
         iframe.style.display = "none";
         iframe.src = `${window.location.origin}/api/auth/email/${provider}/callback?code=${encodeURIComponent(
@@ -340,34 +285,45 @@ export const EmailAccountProvider = ({
         )}${state ? `&state=${encodeURIComponent(state)}` : ""}`;
         document.body.appendChild(iframe);
 
+        // Listen for success via BroadcastChannel
         const channel = new BroadcastChannel(`${BC_PREFIX}${provider}`);
         const timer = window.setTimeout(() => {
           updateNodeData({
             isAuthenticating: false,
-            lastError: "OAuth processing timeout",
+            lastError: "OAuth processing timeout - please try again",
           });
           channel.close();
-          document.body.removeChild(iframe);
+          if (iframe.parentNode) document.body.removeChild(iframe);
+          toast.error("Authentication timeout", {
+            description: "Please try connecting your email again"
+          });
         }, 30_000);
 
         channel.onmessage = (ev) => {
           window.clearTimeout(timer);
           channel.close();
-          document.body.removeChild(iframe);
+          if (iframe.parentNode) document.body.removeChild(iframe);
+          
           if (ev.data?.type === "OAUTH_SUCCESS") {
             onOAuthSuccess(ev.data.authData);
+            updateNodeData({ isAuthenticating: false });
           } else if (ev.data?.type === "OAUTH_ERROR") {
             updateNodeData({
               isAuthenticating: false,
-              lastError: ev.data.error,
+              lastError: ev.data.error || "OAuth authentication failed",
+            });
+            toast.error("Authentication failed", {
+              description: ev.data.error || "Please try again"
             });
           }
         };
       } catch (e) {
+        const msg = toMessage(e);
         updateNodeData({
           isAuthenticating: false,
-          lastError: toMessage(e),
+          lastError: msg,
         });
+        toast.error("OAuth processing failed", { description: msg });
       } finally {
         cleanUrl();
       }

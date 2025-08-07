@@ -9,9 +9,26 @@ export async function GET(request: NextRequest) {
   const redirectUri = searchParams.get("redirect_uri");
   const sessionToken = searchParams.get("session_token");
 
+  console.log("📧 Gmail OAuth Request:", {
+    redirectUri,
+    hasSessionToken: !!sessionToken,
+    sessionTokenLength: sessionToken?.length,
+    userAgent: request.headers.get('user-agent'),
+    origin: request.headers.get('origin'),
+    referer: request.headers.get('referer'),
+  });
+
   if (!redirectUri) {
     return NextResponse.json(
       { error: "redirect_uri is required" },
+      { status: 400 }
+    );
+  }
+
+  if (!sessionToken) {
+    console.error("📧 Missing session token in OAuth request");
+    return NextResponse.json(
+      { error: "session_token is required for OAuth authentication" },
       { status: 400 }
     );
   }
@@ -50,9 +67,11 @@ export async function GET(request: NextRequest) {
     console.log("📧 Gmail OAuth Configuration:", {
       clientId: config.clientId?.substring(0, 20) + "...",
       redirectUri: config.redirectUri,
+      requestedRedirectUri: redirectUri,
       scopes: config.scopes,
       hasClientSecret: !!config.clientSecret,
       authUrl: authUrl.substring(0, 100) + "...",
+      fullAuthUrl: authUrl, // Log full URL to debug params
     });
 
     return NextResponse.json({

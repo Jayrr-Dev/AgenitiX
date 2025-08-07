@@ -15,9 +15,12 @@ export async function GET(request: NextRequest) {
   
   console.log("📧 Gmail OAuth Callback params:", { 
     hasCode: !!code, 
+    code: code ? code.substring(0, 20) + "..." : null,
     hasState: !!state, 
+    state: state ? state.substring(0, 50) + "..." : null,
     error,
     url: request.url,
+    searchParams: Object.fromEntries(searchParams.entries()),
     userAgent: request.headers.get('user-agent'),
     referer: request.headers.get('referer'),
     timestamp
@@ -52,6 +55,32 @@ export async function GET(request: NextRequest) {
 
   if (!code) {
     console.error(`❌ [${timestamp}] No authorization code received - this will cause session loss`);
+    
+    // Check for additional error information
+    const errorDescription = searchParams.get("error_description");
+    const scope = searchParams.get("scope");
+    const authuser = searchParams.get("authuser");
+    const prompt = searchParams.get("prompt");
+    
+    console.error("📧 Gmail OAuth Error Details:", {
+      error,
+      errorDescription,
+      hasScope: !!scope,
+      authuser,
+      prompt,
+      allParams: Object.fromEntries(searchParams.entries())
+    });
+    
+    // Determine specific error message based on parameters
+    let errorMsg = "No authorization code received";
+    if (scope && !error) {
+      errorMsg = "OAuth flow completed but no authorization code was provided. This might be due to redirect URI mismatch.";
+    } else if (error === "access_denied") {
+      errorMsg = "Access was denied by the user";
+    } else if (errorDescription) {
+      errorMsg = errorDescription;
+    }
+    
     const html = `
 			<!DOCTYPE html>
 			<html>
@@ -59,18 +88,22 @@ export async function GET(request: NextRequest) {
 			<body>
 				<script>
 					try {
-						window.opener.postMessage({
+						// Send error via BroadcastChannel for redirect flow
+						const channel = new BroadcastChannel('oauth_gmail');
+						channel.postMessage({
 							type: 'OAUTH_ERROR',
-							error: 'No authorization code received'
-						}, '${new URL(request.url).origin}');
-						window.close();
-									} catch (e) {
-					// CRITICAL FIX: Don't redirect parent window - just close popup
-					console.error('PostMessage failed, closing popup without redirect');
-					window.close();
-				}
+							error: '${errorMsg}'
+						});
+						channel.close();
+					} catch (e) {
+						console.error('BroadcastChannel failed, error communication failed');
+					}
 				</script>
-				<p>Authentication failed. This window should close automatically.</p>
+				<div style="text-align:center;font-family:system-ui;margin-top:2rem;">
+					<p style="color:#dc2626;">❌ Gmail Authentication Failed</p>
+					<p>${errorMsg}</p>
+					<p>You can close this window and try again.</p>
+				</div>
 			</body>
 			</html>
 		`;
@@ -136,101 +169,32 @@ export async function GET(request: NextRequest) {
 			timestamp: Date.now()
 		};
 
-		// Method 1: Try postMessage to opener
-		function tryPostMessage() {
+		// Send success via BroadcastChannel for redirect flow communication
+		function sendSuccess() {
 			try {
-				if (window.opener && !window.opener.closed) {
-					window.opener.postMessage(authData, '${new URL(request.url).origin}');
-					return true;
-				}
-			} catch (error) {
-				console.log('PostMessage to opener failed:', error);
-			}
-			return false;
-		}
-
-		// Method 2: Use localStorage as communication bridge
-		function useLocalStorageBridge() {
-			try {
-				localStorage.setItem('gmail_oauth_result', JSON.stringify(authData));
-				// Trigger storage event
-				window.dispatchEvent(new StorageEvent('storage', {
-					key: 'gmail_oauth_result',
-					newValue: JSON.stringify(authData)
-				}));
+				const channel = new BroadcastChannel('oauth_gmail');
+				channel.postMessage(authData);
+				channel.close();
 				return true;
 			} catch (error) {
-				console.log('localStorage bridge failed:', error);
+				console.log('BroadcastChannel failed:', error);
+				return false;
 			}
-			return false;
 		}
 
-		// Method 3: REMOVED - No more parent window redirects
-		// This method was causing session clearing by redirecting the parent window
+		const success = sendSuccess();
 
-		// Try communication methods in order
-		let success = tryPostMessage();
-		if (!success) {
-			success = useLocalStorageBridge();
-		}
-
-		// Countdown and auto-close
-		let countdown = 3;
-		const countdownEl = document.getElementById('countdown');
-		const timer = setInterval(() => {
-			countdown--;
-			if (countdownEl) countdownEl.textContent = countdown;
-			
-			if (countdown <= 0) {
-				clearInterval(timer);
-				if (success) {
-					window.close();
-				} else {
-					// CRITICAL FIX: Don't redirect parent - show error and close
-					console.error('All communication methods failed - closing popup');
-					document.body.innerHTML = '<p style="text-align:center;font-family:system-ui;color:#dc2626;margin-top:2rem;">Communication failed. Please close this window and try again.</p>';
-					setTimeout(() => window.close(), 3000);
-				}
-			}
-		}, 1000);
-
-		// Try to close immediately if postMessage worked
+		// Simple auto-close for redirect flow
 		if (success) {
-			        setTimeout(() => {
-            // CRITICAL: Preserve parent session before closing
-            try {
-                if (window.opener && !window.opener.closed) {
-                    // Send multiple signals to ensure parent receives the message
-                    const preserveMessage = { 
-                        type: 'PRESERVE_SESSION', 
-                        timestamp: Date.now(),
-                        authSuccess: true 
-                    };
-                    
-                    // Try multiple communication methods
-                    window.opener.postMessage(preserveMessage, '${new URL(request.url).origin}');
-                    
-                    // Also try BroadcastChannel as backup
-                    try {
-                        const bc = new BroadcastChannel('oauth-auth');
-                        bc.postMessage(preserveMessage);
-                        bc.close();
-                    } catch (bcError) {
-                        console.log('BroadcastChannel not available');
-                    }
-                    
-                    console.log('✅ Session preservation signals sent');
-                }
-            } catch (e) {
-                console.error('Failed to preserve session:', e);
-            }
-            
-            // Delay closing to ensure messages are delivered
-            setTimeout(() => {
-                window.close();
-            }, 200);
-        }, 500);
+			document.body.innerHTML = '<div style="text-align:center;font-family:system-ui;margin-top:2rem;"><p style="color:#059669;">✅ Gmail Connected!</p><p>Returning to your workflow...</p></div>';
+		} else {
+			document.body.innerHTML = '<div style="text-align:center;font-family:system-ui;margin-top:2rem;"><p style="color:#059669;">✅ Gmail Connected!</p><p>You can close this window and return to your workflow.</p></div>';
 		}
+
+		// Auto-close after delay for redirect flow
+		setTimeout(() => {
+			window.close();
+		}, 2000);
 	</script>
 </body>
 </html>`;

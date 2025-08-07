@@ -16,7 +16,7 @@ import {
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
 
-export type Provider = "gmail" | "outlook" | "yahoo";
+export type Provider = "gmail" | "outlook";
 
 export interface OAuth2Credentials {
   clientId: string;
@@ -48,15 +48,14 @@ const PROVIDERS: Record<
   gmail: {
     envPrefix: "GMAIL",
     meta: {
-      authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
-      tokenUrl: "https://oauth2.googleapis.com/token",
-      userInfoUrl: "https://www.googleapis.com/oauth2/v2/userinfo",
+      authUrl: "https://accounts.google.com/o/oauth2/auth", // Use v1 endpoint for better compatibility
+      tokenUrl: "https://www.googleapis.com/oauth2/v4/token", // Use v4 for better reliability
+      userInfoUrl: "https://www.googleapis.com/oauth2/v1/userinfo", // Use v1 for basic info
     },
     defaultScopes: [
+      "email",
+      "profile",
       "https://www.googleapis.com/auth/gmail.readonly",
-      "https://www.googleapis.com/auth/gmail.send",
-      "https://www.googleapis.com/auth/userinfo.email",
-      "https://www.googleapis.com/auth/userinfo.profile",
     ],
   },
   outlook: {
@@ -72,15 +71,7 @@ const PROVIDERS: Record<
       "https://graph.microsoft.com/User.Read",
     ],
   },
-  yahoo: {
-    envPrefix: "YAHOO",
-    meta: {
-      authUrl: "https://api.login.yahoo.com/oauth2/request_auth",
-      tokenUrl: "https://api.login.yahoo.com/oauth2/get_token",
-      userInfoUrl: "https://api.login.yahoo.com/openid/v1/userinfo",
-    },
-    defaultScopes: ["mail-r", "mail-w", "openid", "email", "profile"],
-  },
+
 };
 
 /* ------------------------------------------------------------------ */
@@ -143,15 +134,21 @@ export const buildOAuth2AuthUrl = (
   config: EmailProviderConfig,
   state?: string,
 ): string => {
-  const params = new URLSearchParams({
-    client_id: config.clientId,
-    redirect_uri: config.redirectUri,
-    response_type: "code",
-    scope: config.scopes.join(" "),
-    access_type: "offline",
-    prompt: "consent",
-    ...(state && { state }),
-  });
+  const params = new URLSearchParams();
+  
+  // Add parameters in specific order for better compatibility
+  params.append("client_id", config.clientId);
+  params.append("redirect_uri", config.redirectUri);
+  params.append("response_type", "code");
+  params.append("scope", config.scopes.join(" "));
+  params.append("access_type", "offline");
+  params.append("prompt", "consent");
+  params.append("include_granted_scopes", "true");
+  
+  if (state) {
+    params.append("state", state);
+  }
+  
   return `${config.authUrl}?${params.toString()}`;
 };
 
