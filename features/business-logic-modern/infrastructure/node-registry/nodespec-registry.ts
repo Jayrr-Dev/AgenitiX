@@ -315,3 +315,13 @@ export function getNodeFeatureFlag(nodeType: string): any {
  * Alias for getNodeMetadata to maintain compatibility with existing code
  */
 export const getNodeSpecMetadata = getNodeMetadata;
+
+// Debug: Make functions available in browser console for debugging (after all exports)
+if (typeof window !== 'undefined') {
+	// Use setTimeout to ensure functions are defined after module initialization
+	setTimeout(() => {
+		(window as any).getNodeSpecMetadata = getNodeSpecMetadata;
+		(window as any).nodeSpecs = nodeSpecs;
+		(window as any).hasNodeSpec = hasNodeSpec;
+	}, 0);
+}

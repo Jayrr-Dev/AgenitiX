@@ -17,6 +17,7 @@ import {
 import React, { useCallback, useEffect, useRef } from "react";
 import { type FlowMetadata, FlowProvider } from "./contexts/flow-context";
 import { useFlowMetadataOptional } from "./contexts/flow-metadata-context";
+import AddNodeOverlay from "./components/AddNodeOverlay";
 
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/action-toolbar/ActionToolbar";
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
@@ -564,6 +565,11 @@ const FlowEditorInternal = () => {
         isReadOnly={isReadOnly}
       />
       <Sidebar className="z-50" enableDebug={true} />
+      
+      {/* Add Node Overlay - Shows enhanced add node interface when Tab is pressed */}
+      <AddNodeOverlay />
+      
+      {/* Add Node Overlay - Shows enhanced add node interface when Tab is pressed */}
     </div>
   );
 };

@@ -11,6 +11,7 @@
  */
 
 import type { PieMenuAction } from "@/components/ui/pie-menu";
+import { usePieMenu } from "@/components/ui/pie-menu";
 import { useCallback, useMemo } from "react";
 import { useUndoRedo } from "../../action-toolbar/history/undo-redo-context";
 import {
@@ -36,6 +37,9 @@ export interface UsePieMenuActionsOptions {
  */
 export function usePieMenuActions(options: UsePieMenuActionsOptions = {}) {
   const { mousePosition, includeDebugActions = false } = options;
+  
+  // Get pie menu context to access center position and state
+  const { position: pieMenuPosition, actions: pieMenuActions, isVisible: pieMenuVisible } = usePieMenu();
 
   // Flow store hooks
   const selectedNodeId = useSelectedNodeId();
@@ -109,6 +113,7 @@ export function usePieMenuActions(options: UsePieMenuActionsOptions = {}) {
       );
     }
 
+<<<<<<< Updated upstream
     // CREATION ACTIONS - Add new nodes at mouse position
     if (mousePosition) {
       baseActions.push({
@@ -122,6 +127,70 @@ export function usePieMenuActions(options: UsePieMenuActionsOptions = {}) {
         },
       });
     }
+=======
+    // CREATION ACTIONS - Add new nodes at pie menu center
+    baseActions.push({
+      id: "add-node",
+      label: "Add Node",
+      icon: "Plus",
+      shortcut: "Tab",
+      action: () => { 
+        // Use pie menu center, but fallback to mouse position if pie menu position is not initialized
+        // Fixed: Detect if pieMenu has been actually shown vs. initial {x: 0, y: 0} state
+        const isPieMenuInitialized = pieMenuPosition && 
+          typeof pieMenuPosition.x === 'number' && 
+          typeof pieMenuPosition.y === 'number' &&
+          !isNaN(pieMenuPosition.x) && 
+          !isNaN(pieMenuPosition.y) &&
+          // Additional check: if position is {0,0} but pieMenu has never been shown with actions,
+          // it's likely the initial uninitialized state
+          !(pieMenuPosition.x === 0 && pieMenuPosition.y === 0 && pieMenuActions.length === 0);
+        
+        const isValidPosition = isPieMenuInitialized;
+        
+        // Determine the best position to use
+        let targetPosition;
+        if (isValidPosition) {
+          targetPosition = pieMenuPosition;
+        } else if (mousePosition && mousePosition.x > 0 && mousePosition.y > 0) {
+          targetPosition = mousePosition;
+        } else {
+          // Ultimate fallback: center of screen
+          targetPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        }
+        
+        // Determine which position source was used
+        let positionSource;
+        if (isValidPosition) {
+          positionSource = 'pieMenu center';
+        } else if (mousePosition && mousePosition.x > 0 && mousePosition.y > 0) {
+          positionSource = 'mouse position';
+        } else {
+          positionSource = 'screen center (ultimate fallback)';
+        }
+        
+        console.log('🎯 PieMenu: Dispatching show-add-node-menu event', {
+          pieMenuPosition,
+          mousePosition,
+          targetPosition,
+          isValidPosition,
+          positionSource,
+          usingPieMenuCenter: isValidPosition,
+          pieMenuState: {
+            actionsCount: pieMenuActions.length,
+            isVisible: pieMenuVisible,
+            isInitialState: pieMenuPosition.x === 0 && pieMenuPosition.y === 0 && pieMenuActions.length === 0
+          }
+        });
+        
+        const event = new CustomEvent('show-add-node-menu', {
+          detail: { position: targetPosition }
+        });
+        window.dispatchEvent(event);
+        console.log('✅ PieMenu: Event dispatched successfully');
+      },
+    });
+>>>>>>> Stashed changes
 
     // SELECTION ACTIONS
     baseActions.push(
