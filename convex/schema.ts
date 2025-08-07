@@ -30,7 +30,8 @@ export default defineSchema({
 		timezone: v.optional(v.string()),
 		// Reference to Convex Auth user
 		convex_user_id: v.optional(v.string()),
-		// Magic Link fields		magic_link_token: v.optional(v.string()),
+		// Magic Link fields
+		magic_link_token: v.optional(v.string()),
 		magic_link_expires: v.optional(v.number()),
 		login_attempts: v.optional(v.number()),
 		last_login_attempt: v.optional(v.number()),
