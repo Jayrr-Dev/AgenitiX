@@ -168,27 +168,17 @@ export const upsertEmailAccount = mutation({
       hasTokenHash: !!args.token_hash,
       hasSessionToken: !!args.sessionToken,
     });
-    
-    // 🛡️ COLLISION-SAFE: Use priority-based auth resolution
+
+    // 🔑 Resolve authentication via hybrid mechanism (Convex first, then custom token)
     const token = getTokenFromArgs(args);
     const { authContext, user } = await requireUser(ctx, token);
 
-    // 🔍 Log auth state for debugging
-    logAuthState("upsertEmailAccount", authContext, {
+    logAuthState("upsertEmailAccount_auth", authContext, {
       provider: args.provider,
-      targetEmail: args.email,
-      operation: "email_account_creation",
+      email: args.email,
     });
 
-    // 🚨 CRITICAL: Detect potential auth source conflicts
-    if (token && authContext.authSource === "convex") {
-      debug("upsertEmailAccount", "⚠️ COLLISION DETECTED: Token provided but using Convex auth", {
-        tokenProvided: !!token,
-        actualAuthSource: authContext.authSource,
-        userEmail: authContext.session!.email,
-      });
-      // This is safe - Convex auth takes precedence, preventing collision
-    }
+    // Continue with simplified authentication approach
 
     // Check if account already exists
     const existingAccount = await ctx.db
@@ -355,7 +345,7 @@ export const getEmailAccountsByUserEmail = query({
     // Find user by email
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", userEmail))
+      .withIndex("email", (q) => q.eq("email", userEmail))
       .first();
 
     if (!user) {

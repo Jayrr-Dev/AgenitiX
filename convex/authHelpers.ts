@@ -193,6 +193,13 @@ export const getSession = async (
   /* 1️⃣ Try Convex auth first (PRIORITY - prevents collisions) */
   try {
     const convexIdentity = await ctx.auth.getUserIdentity();
+    console.log('🔍 getSession: Convex auth result:', {
+      hasIdentity: !!convexIdentity,
+      email: convexIdentity?.email,
+      tokenIdentifier: convexIdentity?.tokenIdentifier,
+      name: convexIdentity?.name
+    });
+    
     if (convexIdentity && convexIdentity.email) {
       debug("getSession", "✅ Convex auth successful:", { 
         email: convexIdentity.email,
@@ -210,6 +217,7 @@ export const getSession = async (
     debug("getSession", "Convex auth returned empty identity");
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log('🔍 getSession: Convex auth error:', errorMessage);
     debug("getSession", "⚠️ Convex auth unavailable:", errorMessage);
   }
 

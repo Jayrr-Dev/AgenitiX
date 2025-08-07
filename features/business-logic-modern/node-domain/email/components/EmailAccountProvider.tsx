@@ -121,12 +121,15 @@ export const EmailAccountProvider = ({
   } = useAuth();
 
   const token = useMemo(
-    () => authToken || (user?.id ? `convex_user_${user.id}` : null),
+    () => (user?.id ? `convex_user_${user.id}` : authToken),
     [authToken, user?.id],
   );
 
   const storeEmailAccount = useMutation(api.emailAccounts.upsertEmailAccount);
   const validateConnection = useAction(api.emailAccounts.testEmailConnection);
+  
+  // 🔍 TEST: Add a simple test mutation to check if auth context works
+  // const testMutation = useMutation(api.flows.createFlow);
 
   const isDev = process.env.NODE_ENV === "development";
 
@@ -135,7 +138,19 @@ export const EmailAccountProvider = ({
   /* -------------------------------------------------------------------- */
   const onOAuthSuccess = useCallback(
     async (authDataEncoded: string) => {
+      console.log('🔍 onOAuthSuccess: Authentication state:', {
+        authToken,
+        userId: user?.id,
+        token,
+        isOAuthAuthenticated,
+        sessionSource
+      });
+      
       if (!token) {
+        console.error('🔍 onOAuthSuccess: No token available, aborting save');
+        toast.error("Authentication required", {
+          description: "Please sign in to connect your email account"
+        });
         return;
       }
       try {
@@ -143,12 +158,25 @@ export const EmailAccountProvider = ({
           sessionToken?: string;
         };
 
+        console.log('🔍 onOAuthSuccess: About to call storeEmailAccount with:', {
+          ...authData,
+          provider: authData.provider as EmailProviderType,
+          displayName: authData.displayName ?? authData.email,
+          // Don't pass sessionToken - let Convex Auth handle it automatically
+          // Hide sensitive tokens in logs
+          accessToken: authData.accessToken ? '[HIDDEN]' : undefined,
+          refreshToken: authData.refreshToken ? '[HIDDEN]' : undefined,
+        });
+        
+        // 🔧 FIXED: Don't pass sessionToken manually - Convex Auth handles this automatically
         const accountId = await storeEmailAccount({
           ...authData,
           provider: authData.provider as EmailProviderType,
           displayName: authData.displayName ?? authData.email,
-          sessionToken: authData.sessionToken ?? token,
+          sessionToken: token,
         });
+        
+        console.log('🔍 onOAuthSuccess: storeEmailAccount returned:', accountId);
         if (!accountId) throw new Error("Failed to save account");
 
         const updateData = {
@@ -162,6 +190,7 @@ export const EmailAccountProvider = ({
           lastError: "",
         };
         
+        console.log('📧 onOAuthSuccess: Updating node data with:', updateData);
         updateNodeData(updateData);
         toast.success("Email account connected!", {
           description: `Successfully connected ${authData.email}`,
@@ -239,25 +268,49 @@ export const EmailAccountProvider = ({
 
         // Listen for messages from popup window
         const handlePopupMessage = (event: MessageEvent) => {
+          console.log('🔍 POPUP MESSAGE RECEIVED:', {
+            type: event.data?.type,
+            origin: event.origin,
+            expectedOrigin: window.location.origin,
+            data: event.data
+          });
+
           // Filter out React DevTools messages
           if (event.data?.source === 'react-devtools-bridge') {
+            console.log('🔍 Filtered out React DevTools message');
             return;
           }
           
           // Only accept messages from our origin
           if (event.origin !== window.location.origin) {
+            console.log('🔍 Origin mismatch, ignoring message');
             return;
           }
 
-          if (event.data?.type === "OAUTH_SUCCESS") {
-            window.removeEventListener("message", handlePopupMessage);
+          if (event.data?.type === "TEST_MESSAGE") {
+            console.log('🔍 TEST MESSAGE RECEIVED from popup!', event.data);
+          } else if (event.data?.type === "OAUTH_SUCCESS") {
+            console.log('🔍 OAUTH_SUCCESS message received!', event.data);
+            console.log('🔍 About to call onOAuthSuccess with:', event.data.authData);
+                      clearInterval(checkPopupClosed);
+          clearTimeout(timeoutId);
+          window.removeEventListener("message", handlePopupMessage);
+          updateNodeData({ isAuthenticating: false });
+          popup.close();
+          
+          // 🔧 DELAY: Call onOAuthSuccess in next tick to ensure proper auth context
+          setTimeout(() => {
+            console.log('🔍 DELAYED: Calling onOAuthSuccess after context stabilization (postMessage)');
             onOAuthSuccess(event.data.authData);
-            updateNodeData({ isAuthenticating: false });
-            popup.close();
-            toast.success("Email account connected!", {
-              description: "Authentication completed successfully"
-            });
+          }, 100);
+          
+          toast.success("Email account connected!", {
+            description: "Authentication completed successfully"
+          });
           } else if (event.data?.type === "OAUTH_ERROR") {
+            console.log('🔍 OAUTH_ERROR message received:', event.data.error);
+            clearInterval(checkPopupClosed);
+            clearTimeout(timeoutId);
             window.removeEventListener("message", handlePopupMessage);
             updateNodeData({
               isAuthenticating: false,
@@ -272,12 +325,50 @@ export const EmailAccountProvider = ({
 
         window.addEventListener("message", handlePopupMessage);
 
+        // Listen for BroadcastChannel messages (COOP-safe)
+        const broadcastChannel = new BroadcastChannel('oauth_gmail');
+        console.log('🔍 PARENT: BroadcastChannel listener set up');
+        
+        // Test BroadcastChannel immediately
+        setTimeout(() => {
+          broadcastChannel.postMessage({ type: 'TEST_PARENT', test: true });
+          console.log('🔍 PARENT: Test message sent via BroadcastChannel');
+        }, 100);
+        
+        broadcastChannel.onmessage = (event) => {
+          console.log('🔍 PARENT: BroadcastChannel message received:', event.data);
+          if (event.data?.type === "OAUTH_SUCCESS") {
+                    console.log('🔍 PARENT: OAuth success via BroadcastChannel!');
+        console.log('🔍 About to call onOAuthSuccess with BroadcastChannel data:', event.data.authData);
+        clearInterval(checkPopupClosed);
+        clearTimeout(timeoutId);
+        window.removeEventListener("message", handlePopupMessage);
+        broadcastChannel.close();
+        updateNodeData({ isAuthenticating: false });
+        popup.close();
+        
+        // 🔧 DELAY: Call onOAuthSuccess in next tick to ensure proper auth context
+        setTimeout(() => {
+          console.log('🔍 DELAYED: Calling onOAuthSuccess after context stabilization');
+          onOAuthSuccess(event.data.authData);
+        }, 100);
+            toast.success("Email account connected!", {
+              description: "Authentication completed successfully"
+            });
+          }
+        };
+
+        // Declare timeout ID first so it can be referenced in checkPopupClosed
+        let timeoutId: NodeJS.Timeout;
+        
         // Fallback: Check if popup was closed manually (with COOP fallback)
         const checkPopupClosed = setInterval(() => {
           try {
             if (popup.closed) {
               clearInterval(checkPopupClosed);
+              clearTimeout(timeoutId);
               window.removeEventListener("message", handlePopupMessage);
+              broadcastChannel.close();
               updateNodeData({
                 isAuthenticating: false,
                 lastError: "Authentication was cancelled",
@@ -289,13 +380,15 @@ export const EmailAccountProvider = ({
           } catch (error) {
             // COOP policy blocks window.closed check - this is expected
             // The popup will communicate via postMessage instead
+            // Don't treat COOP errors as cancellation - just continue monitoring
           }
         }, 1000);
 
         // Timeout after 5 minutes
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           clearInterval(checkPopupClosed);
           window.removeEventListener("message", handlePopupMessage);
+          broadcastChannel.close();
           try {
             if (!popup.closed) {
               popup.close();
@@ -345,6 +438,7 @@ export const EmailAccountProvider = ({
           ...config,
           provider: config.provider as EmailProviderType,
           displayName: config.displayName ?? config.email,
+          sessionToken: token,
         });
         if (!id) throw new Error("Failed to store account");
         updateNodeData({

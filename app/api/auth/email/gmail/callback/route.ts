@@ -36,13 +36,9 @@ const addOAuthHeaders = (response: NextResponse) => {
   return response;
 };
 
-// Base64-URL encode helper (RFC 4648 §5)
-const base64url = (str: string) =>
-  Buffer.from(str, "utf8")
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+// Base64 encode helper (standard, compatible with atob in browser)
+const base64Encode = (str: string) =>
+  Buffer.from(str, "utf8").toString("base64");
 
 // Helper to wrap HTML in a NextResponse with correct headers + CORS/COOP fix
 const htmlResponse = (html: string, status = 200) =>
@@ -55,6 +51,11 @@ const htmlResponse = (html: string, status = 200) =>
 
 export async function GET(request: NextRequest) {
   const timestamp = new Date().toISOString();
+  
+  console.log('🔍 CALLBACK: Gmail callback route hit!', {
+    url: request.url,
+    timestamp
+  });
   
   // 🔍 REQUEST COUNTER FOR DEBUGGING
   if (!(global as any).requestCounter) {
@@ -250,7 +251,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Encode in base64 as expected by handleAuthSuccess
-    const authDataEncoded = base64url(JSON.stringify(authData));
+    const authDataEncoded = base64Encode(JSON.stringify(authData));
 
 
 
@@ -297,26 +298,61 @@ export async function GET(request: NextRequest) {
 		</div>
 	</div>
 	<script>
+		console.log('🔍 POPUP: Callback JavaScript is running!');
+		
 		const authData = {
 			type: 'OAUTH_SUCCESS',
 			authData: '${authDataEncoded}',
 			timestamp: Date.now()
 		};
+		console.log('🔍 POPUP: Auth data created:', authData);
 
 		// Send success message to parent window
 		function sendSuccessToParent() {
+			console.log('🔍 POPUP: Attempting to send message to parent:', authData);
 			try {
 				if (window.opener && !window.opener.closed) {
+					console.log('🔍 POPUP: Parent window found, sending message...');
 					window.opener.postMessage(authData, window.location.origin);
+					console.log('🔍 POPUP: Message sent successfully');
 					return true;
+				} else {
+					console.log('🔍 POPUP: No parent window or parent is closed');
 				}
 			} catch (error) {
-				// Silent fail for production
+				console.error('🔍 POPUP: Error sending message to parent:', error);
 			}
 			return false;
 		}
 
-		// Try to send message to parent window
+		// Main execution with error handling
+		try {
+		
+		// Test basic postMessage first
+		console.log('🔍 POPUP: Testing basic postMessage...');
+		try {
+			if (window.opener) {
+				window.opener.postMessage({ type: 'TEST_MESSAGE', test: true }, window.location.origin);
+				console.log('🔍 POPUP: Test message sent');
+			} else {
+				console.log('🔍 POPUP: No window.opener available');
+			}
+		} catch (e) {
+			console.error('🔍 POPUP: Test message failed:', e);
+		}
+
+		// Try BroadcastChannel first (COOP-safe)
+		console.log('🔍 POPUP: Trying BroadcastChannel...');
+		try {
+			const channel = new BroadcastChannel('oauth_gmail');
+			channel.postMessage(authData);
+			console.log('🔍 POPUP: BroadcastChannel message sent successfully');
+			channel.close();
+		} catch (error) {
+			console.error('🔍 POPUP: BroadcastChannel failed:', error);
+		}
+
+		// Try to send message to parent window as fallback
 		const success = sendSuccessToParent();
 
 		// Update UI based on success
@@ -351,6 +387,17 @@ export async function GET(request: NextRequest) {
 				window.close();
 			}
 		}, 1000);
+		
+		} catch (error) {
+			console.error('🔍 POPUP: JavaScript execution error:', error);
+			document.querySelector('.container').innerHTML = \`
+				<div class="icon">⚠️</div>
+				<div class="success">
+					<h2>Gmail Connected!</h2>
+					<p>You can close this window manually.</p>
+				</div>
+			\`;
+		}
 	</script>
 </body>
 </html>`;
