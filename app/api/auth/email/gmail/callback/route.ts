@@ -3,6 +3,42 @@ import {
   exchangeCodeForTokens,
   getUserInfo,
 } from "@/features/business-logic-modern/node-domain/email/providers/credentialProviders";
+import { oauthCorsHeaders } from "@/lib/cors";
+
+// Helper function to add OAuth-specific headers
+const addOAuthHeaders = (response: NextResponse) => {
+  // Add CORS headers
+  Object.entries(oauthCorsHeaders).forEach(([key, value]) => {
+    response.headers.set(key, value);
+  });
+  
+  // Remove COOP headers that block popup communication
+  response.headers.delete("Cross-Origin-Opener-Policy");
+  response.headers.delete("Cross-Origin-Embedder-Policy");
+  
+  // Add permissive headers for OAuth popup flow
+  response.headers.set("Cross-Origin-Opener-Policy", "unsafe-none");
+  response.headers.set("Cross-Origin-Embedder-Policy", "unsafe-none");
+  
+  return response;
+};
+
+// Base64-URL encode helper (RFC 4648 §5)
+const base64url = (str: string) =>
+  Buffer.from(str, "utf8")
+    .toString("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+
+// Helper to wrap HTML in a NextResponse with correct headers + CORS/COOP fix
+const htmlResponse = (html: string, status = 200) =>
+  addOAuthHeaders(
+    new NextResponse(html, {
+      status,
+      headers: { "Content-Type": "text/html" },
+    }),
+  );
 
 export async function GET(request: NextRequest) {
   const timestamp = new Date().toISOString();
@@ -26,31 +62,51 @@ export async function GET(request: NextRequest) {
     timestamp
   });
 
+  // Helper function to escape HTML for XSS protection
+  const escapeHtml = (str: string) => {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;');
+  };
+
   if (error) {
     console.error("OAuth error:", error);
+    const safeError = escapeHtml(error);
     const html = `
 			<!DOCTYPE html>
 			<html>
 			<head><title>Authentication Error</title></head>
-			<body>
+			<body style="font-family: system-ui, sans-serif; text-align: center; padding: 2rem; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+				<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); max-width: 400px; width: 100%;">
+					<div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
+					<h2 style="color: #dc2626;">Authentication Failed</h2>
+					<p style="color: #6b7280;">${safeError}</p>
+					<p style="color: #6b7280; font-size: 0.875rem;">This window will close automatically...</p>
+				</div>
 				<script>
 					try {
-						window.opener.postMessage({
-							type: 'OAUTH_ERROR',
-							error: '${error}'
-						}, '${new URL(request.url).origin}');
-						window.close();
+						if (window.opener && !window.opener.closed) {
+							window.opener.postMessage({
+								type: 'OAUTH_ERROR',
+								error: '${safeError}'
+							}, '${new URL(request.url).origin}');
+						}
 					} catch (e) {
-						// CRITICAL FIX: Don't redirect parent window on error
 						console.error('PostMessage failed for error communication');
-						window.close();
 					}
+					
+					// Auto-close after 3 seconds
+					setTimeout(() => {
+						window.close();
+					}, 3000);
 				</script>
-				<p>Authentication failed. This window should close automatically.</p>
 			</body>
 			</html>
 		`;
-    return new NextResponse(html, { headers: { "Content-Type": "text/html" } });
+    return htmlResponse(html);
   }
 
   if (!code) {
@@ -81,33 +137,39 @@ export async function GET(request: NextRequest) {
       errorMsg = errorDescription;
     }
     
+    const safeErrorMsg = escapeHtml(errorMsg);
     const html = `
 			<!DOCTYPE html>
 			<html>
 			<head><title>Authentication Error</title></head>
-			<body>
+			<body style="font-family: system-ui, sans-serif; text-align: center; padding: 2rem; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+				<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); max-width: 400px; width: 100%;">
+					<div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
+					<h2 style="color: #dc2626;">Gmail Authentication Failed</h2>
+					<p style="color: #6b7280;">${safeErrorMsg}</p>
+					<p style="color: #6b7280; font-size: 0.875rem;">This window will close automatically...</p>
+				</div>
 				<script>
 					try {
-						// Send error via BroadcastChannel for redirect flow
-						const channel = new BroadcastChannel('oauth_gmail');
-						channel.postMessage({
-							type: 'OAUTH_ERROR',
-							error: '${errorMsg}'
-						});
-						channel.close();
+						if (window.opener && !window.opener.closed) {
+							window.opener.postMessage({
+								type: 'OAUTH_ERROR',
+								error: '${safeErrorMsg}'
+							}, '${new URL(request.url).origin}');
+						}
 					} catch (e) {
-						console.error('BroadcastChannel failed, error communication failed');
+						console.error('PostMessage failed for error communication');
 					}
+					
+					// Auto-close after 3 seconds
+					setTimeout(() => {
+						window.close();
+					}, 3000);
 				</script>
-				<div style="text-align:center;font-family:system-ui;margin-top:2rem;">
-					<p style="color:#dc2626;">❌ Gmail Authentication Failed</p>
-					<p>${errorMsg}</p>
-					<p>You can close this window and try again.</p>
-				</div>
 			</body>
 			</html>
 		`;
-    return new NextResponse(html, { headers: { "Content-Type": "text/html" } });
+    return htmlResponse(html);
   }
 
   try {
@@ -129,11 +191,16 @@ export async function GET(request: NextRequest) {
       throw new Error("Failed to get user info from Google");
     }
 
+    // Validate required user info fields
+    if (!userInfo.email) {
+      throw new Error("User email not provided by Google");
+    }
+
     // Store tokens and redirect with success
     const authData = {
       provider: "gmail",
       email: userInfo.email,
-      displayName: userInfo.name,
+      displayName: userInfo.name || userInfo.email,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       tokenExpiry: Date.now() + tokens.expiresIn * 1000,
@@ -141,26 +208,51 @@ export async function GET(request: NextRequest) {
     };
 
     // Encode in base64 as expected by handleAuthSuccess
-    const authDataEncoded = btoa(JSON.stringify(authData));
+    const authDataEncoded = base64url(JSON.stringify(authData));
 
     console.log("Authentication successful for:", userInfo.email);
 
-    // Create HTML page that communicates with parent window using multiple methods
+    // Create HTML page that communicates with parent window via postMessage
     const html = `<!DOCTYPE html>
 <html>
 <head>
 	<title>Authentication Success</title>
 	<style>
-		body { font-family: system-ui, sans-serif; text-align: center; padding: 2rem; }
+		body { 
+			font-family: system-ui, sans-serif; 
+			text-align: center; 
+			padding: 2rem; 
+			background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+			margin: 0;
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.container {
+			background: white;
+			padding: 2rem;
+			border-radius: 12px;
+			box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+			max-width: 400px;
+			width: 100%;
+		}
 		.success { color: #059669; }
 		.countdown { color: #6b7280; font-size: 0.875rem; margin-top: 1rem; }
+		.icon {
+			font-size: 3rem;
+			margin-bottom: 1rem;
+		}
 	</style>
 </head>
 <body>
-	<div class="success">
-		<h2>✅ Authentication Successful</h2>
-		<p>This window will close automatically...</p>
-		<div class="countdown">Closing in <span id="countdown">3</span> seconds</div>
+	<div class="container">
+		<div class="icon">✅</div>
+		<div class="success">
+			<h2>Authentication Successful</h2>
+			<p>Connecting your Gmail account...</p>
+			<div class="countdown">Closing in <span id="countdown">3</span> seconds</div>
+		</div>
 	</div>
 	<script>
 		const authData = {
@@ -169,66 +261,93 @@ export async function GET(request: NextRequest) {
 			timestamp: Date.now()
 		};
 
-		// Send success via BroadcastChannel for redirect flow communication
-		function sendSuccess() {
+		// Send success message to parent window
+		function sendSuccessToParent() {
 			try {
-				const channel = new BroadcastChannel('oauth_gmail');
-				channel.postMessage(authData);
-				channel.close();
-				return true;
+				if (window.opener && !window.opener.closed) {
+					window.opener.postMessage(authData, window.location.origin);
+					return true;
+				}
 			} catch (error) {
-				console.log('BroadcastChannel failed:', error);
-				return false;
+				console.log('PostMessage to parent failed:', error);
 			}
+			return false;
 		}
 
-		const success = sendSuccess();
+		// Try to send message to parent window
+		const success = sendSuccessToParent();
 
-		// Simple auto-close for redirect flow
+		// Update UI based on success
 		if (success) {
-			document.body.innerHTML = '<div style="text-align:center;font-family:system-ui;margin-top:2rem;"><p style="color:#059669;">✅ Gmail Connected!</p><p>Returning to your workflow...</p></div>';
+			document.querySelector('.container').innerHTML = \`
+				<div class="icon">✅</div>
+				<div class="success">
+					<h2>Gmail Connected!</h2>
+					<p>Returning to your workflow...</p>
+				</div>
+			\`;
 		} else {
-			document.body.innerHTML = '<div style="text-align:center;font-family:system-ui;margin-top:2rem;"><p style="color:#059669;">✅ Gmail Connected!</p><p>You can close this window and return to your workflow.</p></div>';
+			document.querySelector('.container').innerHTML = \`
+				<div class="icon">⚠️</div>
+				<div class="success">
+					<h2>Gmail Connected!</h2>
+					<p>You can close this window and return to your workflow.</p>
+				</div>
+			\`;
 		}
 
-		// Auto-close after delay for redirect flow
-		setTimeout(() => {
-			window.close();
-		}, 2000);
+		// Countdown and auto-close
+		let countdown = 3;
+		const countdownElement = document.getElementById('countdown');
+		const timer = setInterval(() => {
+			countdown--;
+			if (countdownElement) {
+				countdownElement.textContent = countdown.toString();
+			}
+			if (countdown <= 0) {
+				clearInterval(timer);
+				window.close();
+			}
+		}, 1000);
 	</script>
 </body>
 </html>`;
 
-    return new NextResponse(html, {
-      headers: { 
-        "Content-Type": "text/html",
-        // Remove COOP/COEP headers to avoid interfering with parent session
-      },
-    });
+    return htmlResponse(html);
   } catch (error) {
     console.error("Gmail OAuth callback error:", error);
+    const safeErrorMessage = escapeHtml(error instanceof Error ? error.message : "oauth_failed");
     const html = `
 			<!DOCTYPE html>
 			<html>
 			<head><title>Authentication Error</title></head>
-			<body>
+			<body style="font-family: system-ui, sans-serif; text-align: center; padding: 2rem; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+				<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); max-width: 400px; width: 100%;">
+					<div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
+					<h2 style="color: #dc2626;">Authentication Error</h2>
+					<p style="color: #6b7280;">${safeErrorMessage}</p>
+					<p style="color: #6b7280; font-size: 0.875rem;">This window will close automatically...</p>
+				</div>
 				<script>
 					try {
-						window.opener.postMessage({
-							type: 'OAUTH_ERROR',
-							error: '${error instanceof Error ? error.message : "oauth_failed"}'
-						}, '${new URL(request.url).origin}');
-						window.close();
+						if (window.opener && !window.opener.closed) {
+							window.opener.postMessage({
+								type: 'OAUTH_ERROR',
+								error: '${safeErrorMessage}'
+							}, '${new URL(request.url).origin}');
+						}
 					} catch (e) {
-						// CRITICAL FIX: Don't redirect parent window - just close popup
 						console.error('PostMessage failed for OAuth error communication');
-						window.close();
 					}
+					
+					// Auto-close after 3 seconds
+					setTimeout(() => {
+						window.close();
+					}, 3000);
 				</script>
-				<p>Authentication failed. This window should close automatically.</p>
 			</body>
 			</html>
 		`;
-    return new NextResponse(html, { headers: { "Content-Type": "text/html" } });
+    return htmlResponse(html);
   }
 }

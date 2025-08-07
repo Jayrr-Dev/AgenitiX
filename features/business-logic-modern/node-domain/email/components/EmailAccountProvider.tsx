@@ -172,7 +172,7 @@ export const EmailAccountProvider = ({
   );
 
   /* -------------------------------------------------------------------- */
-  /* 🚀 Main OAuth launcher - redirect-only approach                     */
+  /* 🚀 Main OAuth launcher - popup window approach                     */
   /* -------------------------------------------------------------------- */
   const handleOAuth2Auth = useCallback(
     async (provider: EmailProviderType) => {
@@ -188,11 +188,11 @@ export const EmailAccountProvider = ({
         return;
       }
 
-      /* -------- Store state and redirect directly --------------------- */
+      /* -------- Store state and open popup window --------------------- */
       try {
         updateNodeData({ isAuthenticating: true, lastError: "" });
 
-        // Store state for redirect flow, basically prepare for OAuth redirect
+        // Store state for popup flow, basically prepare for OAuth popup
         sessionStorage.setItem("oauth_node_state", JSON.stringify({
           provider,
           nodeData: { ...nodeData },
@@ -217,13 +217,92 @@ export const EmailAccountProvider = ({
         const { authUrl } = (await res.json()) as { authUrl?: string };
         if (!authUrl) throw new Error("Server did not return authUrl");
 
-        // Show user feedback before redirect
-        toast.info(`Redirecting to ${provider} authentication...`, {
-          description: "You'll be redirected back after signing in"
+        // Show user feedback before opening popup
+        toast.info(`Opening ${provider} authentication...`, {
+          description: "A new window will open for authentication"
         });
 
-        // Redirect to OAuth provider
-        window.location.href = authUrl;
+        // Open OAuth provider in popup window, basically keep current page intact
+        const popup = window.open(
+          authUrl,
+          `${provider}_oauth`,
+          "width=500,height=600,scrollbars=yes,resizable=yes,status=yes,location=yes,toolbar=no,menubar=no"
+        );
+
+        if (!popup) {
+          throw new Error("Popup blocked by browser. Please allow popups for this site.");
+        }
+
+        // Listen for messages from popup window
+        const handlePopupMessage = (event: MessageEvent) => {
+          // Only accept messages from our origin
+          if (event.origin !== window.location.origin) return;
+
+          if (event.data?.type === "OAUTH_SUCCESS") {
+            window.removeEventListener("message", handlePopupMessage);
+            onOAuthSuccess(event.data.authData);
+            updateNodeData({ isAuthenticating: false });
+            popup.close();
+            toast.success("Email account connected!", {
+              description: "Authentication completed successfully"
+            });
+          } else if (event.data?.type === "OAUTH_ERROR") {
+            window.removeEventListener("message", handlePopupMessage);
+            updateNodeData({
+              isAuthenticating: false,
+              lastError: event.data.error || "OAuth authentication failed",
+            });
+            popup.close();
+            toast.error("Authentication failed", {
+              description: event.data.error || "Please try again"
+            });
+          }
+        };
+
+        window.addEventListener("message", handlePopupMessage);
+
+        // Fallback: Check if popup was closed manually (with COOP fallback)
+        const checkPopupClosed = setInterval(() => {
+          try {
+            if (popup.closed) {
+              clearInterval(checkPopupClosed);
+              window.removeEventListener("message", handlePopupMessage);
+              updateNodeData({
+                isAuthenticating: false,
+                lastError: "Authentication was cancelled",
+              });
+              toast.error("Authentication cancelled", {
+                description: "The authentication window was closed"
+              });
+            }
+          } catch (error) {
+            // COOP policy blocks window.closed check - this is expected
+            // The popup will communicate via postMessage instead
+            console.log("COOP policy blocks window.closed check - using postMessage fallback");
+          }
+        }, 1000);
+
+        // Timeout after 5 minutes
+        setTimeout(() => {
+          clearInterval(checkPopupClosed);
+          window.removeEventListener("message", handlePopupMessage);
+          try {
+            if (!popup.closed) {
+              popup.close();
+            }
+          } catch (error) {
+            // COOP policy blocks window.close - this is expected
+            console.log("COOP policy blocks window.close - popup will close itself");
+          }
+          updateNodeData({
+            isAuthenticating: false,
+            lastError: "Authentication timeout - please try again",
+          });
+          toast.error("Authentication timeout", {
+            description: "Please try connecting your email again"
+          });
+        }, 300000); // 5 minutes
+
       } catch (err) {
         updateNodeData({
           isAuthenticating: false,
@@ -238,97 +317,11 @@ export const EmailAccountProvider = ({
       token,
       updateNodeData,
       nodeData,
+      onOAuthSuccess,
     ],
   );
 
-  /* -------------------------------------------------------------------- */
-  /* 🌀 Handle redirect-flow OAuth callback                              */
-  /* -------------------------------------------------------------------- */
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    const code = url.searchParams.get("code");
-    const state = url.searchParams.get("state");
-    const error = url.searchParams.get("error");
-    const nodeStateRaw = sessionStorage.getItem("oauth_node_state");
 
-    const cleanUrl = () => {
-      ["code", "state", "error"].forEach((k) => url.searchParams.delete(k));
-      window.history.replaceState({}, "", url.toString());
-    };
-
-    (async () => {
-      if (!code || !nodeStateRaw) return;
-      
-      try {
-        const { provider, nodeData: savedNodeData } = JSON.parse(nodeStateRaw) as {
-          provider: EmailProviderType;
-          nodeData: Record<string, unknown>;
-          timestamp: number;
-        };
-        
-        // Restore node state for redirect flow, basically sync UI with OAuth process
-        if (savedNodeData) {
-          updateNodeData({
-            ...savedNodeData,
-            isAuthenticating: true,
-            lastError: ""
-          });
-        }
-        
-        sessionStorage.removeItem("oauth_node_state");
-        
-        // Process OAuth callback directly via hidden iframe
-        const iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        iframe.src = `${window.location.origin}/api/auth/email/${provider}/callback?code=${encodeURIComponent(
-          code,
-        )}${state ? `&state=${encodeURIComponent(state)}` : ""}`;
-        document.body.appendChild(iframe);
-
-        // Listen for success via BroadcastChannel
-        const channel = new BroadcastChannel(`${BC_PREFIX}${provider}`);
-        const timer = window.setTimeout(() => {
-          updateNodeData({
-            isAuthenticating: false,
-            lastError: "OAuth processing timeout - please try again",
-          });
-          channel.close();
-          if (iframe.parentNode) document.body.removeChild(iframe);
-          toast.error("Authentication timeout", {
-            description: "Please try connecting your email again"
-          });
-        }, 30_000);
-
-        channel.onmessage = (ev) => {
-          window.clearTimeout(timer);
-          channel.close();
-          if (iframe.parentNode) document.body.removeChild(iframe);
-          
-          if (ev.data?.type === "OAUTH_SUCCESS") {
-            onOAuthSuccess(ev.data.authData);
-            updateNodeData({ isAuthenticating: false });
-          } else if (ev.data?.type === "OAUTH_ERROR") {
-            updateNodeData({
-              isAuthenticating: false,
-              lastError: ev.data.error || "OAuth authentication failed",
-            });
-            toast.error("Authentication failed", {
-              description: ev.data.error || "Please try again"
-            });
-          }
-        };
-      } catch (e) {
-        const msg = toMessage(e);
-        updateNodeData({
-          isAuthenticating: false,
-          lastError: msg,
-        });
-        toast.error("OAuth processing failed", { description: msg });
-      } finally {
-        cleanUrl();
-      }
-    })();
-  }, [onOAuthSuccess, updateNodeData]);
 
   /* -------------------------------------------------------------------- */
   /* Manual save / reset / test                                            */

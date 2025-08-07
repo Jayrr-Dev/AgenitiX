@@ -48,7 +48,7 @@ const PROVIDERS: Record<
   gmail: {
     envPrefix: "GMAIL",
     meta: {
-      authUrl: "https://accounts.google.com/o/oauth2/auth", // Use v1 endpoint for better compatibility
+      authUrl: "https://accounts.google.com/o/oauth2/v2/auth", // Use v2 endpoint per Google docs
       tokenUrl: "https://www.googleapis.com/oauth2/v4/token", // Use v4 for better reliability
       userInfoUrl: "https://www.googleapis.com/oauth2/v1/userinfo", // Use v1 for basic info
     },

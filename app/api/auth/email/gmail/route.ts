@@ -3,8 +3,9 @@ import {
   getEmailProviderConfig,
   buildOAuth2AuthUrl,
 } from "@/features/business-logic-modern/node-domain/email/providers/credentialProviders";
+import { withCors } from "@/lib/cors";
 
-export async function GET(request: NextRequest) {
+export const GET = withCors(async (request: NextRequest) => {
   const searchParams = request.nextUrl.searchParams;
   const redirectUri = searchParams.get("redirect_uri");
   const sessionToken = searchParams.get("session_token");
@@ -87,4 +88,20 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+});
+
+// Handle OPTIONS requests for CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": process.env.NODE_ENV === "development" 
+        ? "http://localhost:3000" 
+        : process.env.NEXT_PUBLIC_BASE_URL || "https://your-domain.com",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept, Origin",
+      "Access-Control-Allow-Credentials": "true",
+      "Access-Control-Max-Age": "86400",
+    },
+  });
 }

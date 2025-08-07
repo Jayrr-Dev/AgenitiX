@@ -14,8 +14,26 @@ export default async function middleware(request: NextRequest) {
 	
 	// Always let Convex Auth handle OAuth callbacks or auth API routes, basically route them to Convex middleware
 	if (pathname.startsWith('/api/auth') || request.nextUrl.searchParams.has('code')) {
-		// @ts-expect-error Convex middleware handles its own response type internally
-		return convexMiddleware(request);
+		// Add CORS headers for OAuth routes
+		const response = await convexMiddleware(request);
+		
+		// Add CORS headers for OAuth development
+		if (process.env.NODE_ENV === "development" && response) {
+			response.headers.set("Access-Control-Allow-Origin", "http://localhost:3000");
+			response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+			response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin");
+			response.headers.set("Access-Control-Allow-Credentials", "true");
+			
+			// Remove COOP headers that block popup communication
+			response.headers.delete("Cross-Origin-Opener-Policy");
+			response.headers.delete("Cross-Origin-Embedder-Policy");
+			
+			// Add permissive headers for OAuth popup flow
+			response.headers.set("Cross-Origin-Opener-Policy", "unsafe-none");
+			response.headers.set("Cross-Origin-Embedder-Policy", "unsafe-none");
+		}
+		
+		return response;
 	}
 
 	// For all other routes, apply Anubis protection
