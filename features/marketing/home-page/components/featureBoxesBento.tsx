@@ -7,6 +7,8 @@ import Image from "next/image";
 import type React from "react";
 import { useEffect, useRef } from "react";
 import type { typeFeatureBoxesBento } from "../types";
+import { useTheme } from "next-themes";
+
 
 export default function FeatureBoxesBento({
   features,

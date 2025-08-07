@@ -8,13 +8,15 @@ const ContainerScroll = dynamic(
 	}
 );
 import Image from "next/image";
+import { useTheme } from "next-themes";
 
 export const TabletScroller = () => {
+	const { theme, setTheme } = useTheme();
 	return (
 		<ContainerScroll
-			titleComponent=<h1 className="font-semibold text-4xl text-black dark:text-white">
-				Impactful and Modern <br />
-				<span className="mt-1 font-bold text-4xl leading-none md:text-[6rem]">
+			titleComponent=<h1 className={`${theme === 'dark' ? 'text-white font-semibold text-4xl text-black dark:text-white' : 'text-black font-semibold text-4xl text-black dark:text-white'}font-semibold text-4xl text-black dark:text-white`}>
+				Packed with thousands of features <br />
+				<span className={`${theme === 'dark' ? 'text-white mt-1 font-bold text-4xl leading-none md:text-[6rem] text-black dark:text-white' : 'text-black'}mt-1 font-bold text-4xl leading-none md:text-[6rem] text-black dark:text-white`}>
 					Digital Solutions
 				</span>
 			</h1>
