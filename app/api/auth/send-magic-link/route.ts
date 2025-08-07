@@ -31,16 +31,7 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: result.error || "Failed to send email" }, { status: 500 });
 		}
 
-		// Log success in development
-		if (process.env.NODE_ENV === "development") {
-			console.log("\n✅ MAGIC LINK SENT SUCCESSFULLY:");
-			console.log(`📧 To: ${email}`);
-			console.log(`📝 Type: ${type}`);
-			if (result.magicLinkUrl) {
-				console.log(`🔗 URL: ${result.magicLinkUrl}`);
-			}
-			console.log("");
-		}
+
 
 		return NextResponse.json({
 			success: true,

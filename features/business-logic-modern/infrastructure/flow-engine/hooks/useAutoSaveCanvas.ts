@@ -10,7 +10,7 @@
  * Keywords: auto-save, canvas, debounce, real-time, convex
  */
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
@@ -45,7 +45,7 @@ export function useAutoSaveCanvas(options: UseAutoSaveCanvasOptions = {}): AutoS
 	const { debounceMs = 1000, enabled = true, showNotifications = false } = options;
 
 	// Hooks
-	const { user } = useAuthContext();
+	  const { user } = useAuth();
 	const { flow } = useFlowMetadataOptional() || { flow: null };
 	const { nodes, edges } = useFlowStore();
 	const saveFlowCanvas = useMutation(api.flows.saveFlowCanvas);
@@ -77,7 +77,7 @@ export function useAutoSaveCanvas(options: UseAutoSaveCanvasOptions = {}): AutoS
 		try {
 			await saveFlowCanvas({
 				flow_id: flow.id as Id<"flows">,
-				user_id: user.id,
+				user_id: user.id as any,
 				nodes,
 				edges,
 			});

@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/Loading";
@@ -64,7 +64,7 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 	const [requestNote, setRequestNote] = useState("");
 
 	// Get authenticated user
-	const { user } = useAuthContext();
+	  const { user } = useAuth();
 
 	// Convex mutations
 	const shareFlow = useMutation(api.flows.shareFlow);
@@ -88,7 +88,7 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 		try {
 			const _result = await shareFlow({
 				flow_id: flow.id as Id<"flows">,
-				shared_by_user_id: user.id,
+				shared_by_user_id: user.id as any,
 			});
 
 			toast.success("Flow shared successfully");
@@ -112,7 +112,7 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 		try {
 			await requestFlowAccess({
 				flow_id: flow.id as Id<"flows">,
-				requesting_user_id: user.id,
+				requesting_user_id: user.id as any,
 				requesting_user_email: requestEmail,
 				permission_type: requestPermission,
 			});
@@ -136,7 +136,7 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 			await respondToAccessRequest({
 				request_id: requestId as Id<"flow_access_requests">,
 				status,
-				responded_by_user_id: user.id,
+				responded_by_user_id: user.id as any,
 				response_note: requestNote,
 			});
 

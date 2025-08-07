@@ -1,12 +1,17 @@
 "use client";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { GitHubButton } from "@/components/auth/GitHubButton";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { formatAuthError, getAuthErrorType, getRetryInfo } from "@/lib/auth-utils";
-import { AlertCircle, ArrowRight, Mail } from "lucide-react";
+import { AlertCircle, ArrowRight, Mail, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
@@ -15,14 +20,14 @@ import { Loading } from "@/components/Loading";
 import { toast } from "sonner";
 
 export default function SignInPage() {
-	const { signIn, isAuthenticated, isLoading: authLoading } = useAuthContext();
+	  const { isAuthenticated, isLoading: authLoading } = useAuth();
+	const { signIn: convexSignIn } = useAuthActions();
 	const router = useRouter();
 	const [email, setEmail] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [isRateLimited, setIsRateLimited] = useState(false);
-	const [retryAfter, setRetryAfter] = useState<number | undefined>();
 	const [mounted, setMounted] = useState(false);
+	const [success, setSuccess] = useState(false);
 
 	// Ensure component is mounted to avoid hydration issues
 	useEffect(() => {
@@ -36,22 +41,6 @@ export default function SignInPage() {
 		}
 	}, [mounted, isAuthenticated, authLoading, router]);
 
-	// Handle rate limit countdown
-	useEffect(() => {
-		if (isRateLimited && retryAfter) {
-			const timer = setTimeout(
-				() => {
-					setIsRateLimited(false);
-					setRetryAfter(undefined);
-					setError(null);
-				},
-				retryAfter * 60 * 1000
-			); // Convert minutes to milliseconds
-
-			return () => clearTimeout(timer);
-		}
-		return undefined;
-	}, [isRateLimited, retryAfter]);
 
 	// Don't render if not mounted or authenticated (will redirect)
 	if (!mounted || authLoading) {
@@ -75,112 +64,43 @@ export default function SignInPage() {
 		);
 	}
 
-	/**
-	 * Handles rate limit errors
-	 */
-	const handleRateLimitError = (errorMessage: string, retryAfter?: number) => {
-		setIsRateLimited(true);
-		setRetryAfter(retryAfter);
-		setError(errorMessage);
-
-		toast.error("Too many attempts", {
-			description: errorMessage,
-			duration: 8000,
-		});
-	};
-
-	/**
-	 * Handles user not found errors
-	 */
-	const handleUserNotFoundError = (errorMessage: string) => {
-		setError(errorMessage);
-		toast.error("Account not found", {
-			description: "Please check your email or create a new account.",
-			duration: 5000,
-		});
-	};
-
-	/**
-	 * Handles general authentication errors
-	 */
-	const handleGeneralAuthError = (errorMessage: string) => {
-		setError(errorMessage);
-		toast.error("Sign in failed", {
-			description: errorMessage,
-			duration: 5000,
-		});
-	};
-
-	/**
-	 * Handles unexpected errors
-	 */
-	const handleUnexpectedError = () => {
-		const errorMessage = "An unexpected error occurred. Please try again.";
-		setError(errorMessage);
-		toast.error("Error", {
-			description: errorMessage,
-			duration: 5000,
-		});
-	};
-
-	/**
-	 * Handles all authentication errors
-	 */
-	const handleAuthenticationError = (err: unknown) => {
-		if (err instanceof Error) {
-			const errorCode = getAuthErrorType(err);
-			const retryInfo = getRetryInfo(err);
-			const errorMessage = formatAuthError(err);
-
-			if (errorCode === "RATE_LIMIT_EXCEEDED") {
-				handleRateLimitError(errorMessage, retryInfo.retryAfter);
-			} else if (errorCode === "USER_NOT_FOUND") {
-				handleUserNotFoundError(errorMessage);
-			} else {
-				handleGeneralAuthError(errorMessage);
-			}
-		} else {
-			handleUnexpectedError();
-		}
-	};
-
-	/**
-	 * Resets form state before submission
-	 */
-	const resetFormState = () => {
-		setIsLoading(true);
-		setError(null);
-		setIsRateLimited(false);
-		setRetryAfter(undefined);
-	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		resetFormState();
+		setIsLoading(true);
+		setError(null);
+		setSuccess(false);
 
 		const trimmedEmail = email.trim();
 
 		try {
-			const result = await signIn({ email: trimmedEmail });
+			// Use Convex Auth Resend provider for magic links
+			await convexSignIn("resend", { 
+				email: trimmedEmail,
+			});
 
-			// Clear any previous errors and show success
-			setError(null);
+			setSuccess(true);
 
-			// Log success in development
+			// Log success in development - magic link will be logged by the auth provider
 			if (process.env.NODE_ENV === "development") {
-				console.log("\n🎉 MAGIC LINK REQUEST SUCCESSFUL:");
-				console.log(`📧 Email: ${trimmedEmail}`);
-				console.log(`✅ Status: ${result.message}`);
-				console.log("📋 Check the server console for the magic link URL");
-				console.log("");
+				
 			}
 
 			toast.success("Magic link sent!", {
-				description: result.message,
+				description: process.env.NODE_ENV === "development" 
+					? "Check the terminal/console for the magic link URL" 
+					: "Check your email and click the link to sign in.",
 				duration: 5000,
 			});
 		} catch (err) {
-			handleAuthenticationError(err);
+			const { formatAuthError } = await import("@/lib/auth-utils");
+			const errorMessage = formatAuthError(err);
+			setError(errorMessage);
+
+			toast.error("Sign in failed", {
+				description: errorMessage,
+				duration: 5000,
+			});
 		} finally {
 			setIsLoading(false);
 		}
@@ -252,76 +172,117 @@ export default function SignInPage() {
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<form onSubmit={handleSubmit} className="space-y-4">
-								<div className="space-y-2">
-									<Label htmlFor="email">Email address</Label>
-									<Input
-										id="email"
-										type="email"
-										placeholder="Enter your email"
-										value={email}
-										onChange={(e) => {
-											setEmail(e.target.value);
-											// Clear errors when user types (but keep rate limiting)
-											if (!isRateLimited) {
-												setError(null);
-											}
+							{success ? (
+								<div className="text-center space-y-4">
+									<div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+										<CheckCircle className="w-6 h-6 text-green-600" />
+									</div>
+									<div>
+										<h3 className="text-lg font-medium text-gray-900">Magic link sent!</h3>
+										<p className="text-gray-600 mt-1">
+											Check your email and click the link to sign in.
+										</p>
+										{process.env.NODE_ENV === "development" && (
+											<p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-2 mt-3">
+												<strong>Development mode:</strong> Check the server console for the magic link URL.
+											</p>
+										)}
+									</div>
+									<Button
+										onClick={() => {
+											setSuccess(false);
+											setEmail("");
 										}}
-										required={true}
-										disabled={isLoading}
-										className="h-11"
-									/>
+										variant="outline"
+									>
+										Send another link
+									</Button>
 								</div>
-
-								{/* Error messages */}
-								{error && (
-									<div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-600 text-sm">
-										<div className="flex items-start space-x-2">
-											<AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-											<div className="flex-1">
-												<p>{error}</p>
-
-												{/* Rate limit specific info */}
-												{isRateLimited && retryAfter && (
-													<p className="mt-1 text-red-500 text-xs">
-														You can try again in {retryAfter}{" "}
-														{retryAfter === 1 ? "minute" : "minutes"}.
-													</p>
-												)}
-
-												{/* Account not found - show sign up option */}
-												{error.includes("Account not found") && (
-													<div className="mt-3">
-														<Link href="/sign-up">
-															<Button variant="outline" size="sm" className="w-full">
-																Create New Account
-															</Button>
-														</Link>
-													</div>
-												)}
+							) : (
+								<>
+									{/* OAuth Sign-in Options */}
+									<div className="space-y-3 mb-6">
+										<GoogleButton disabled={isLoading} />
+										<GitHubButton disabled={isLoading} />
+										
+										{/* Divider */}
+										<div className="relative">
+											<div className="absolute inset-0 flex items-center">
+												<span className="w-full border-t" />
+											</div>
+											<div className="relative flex justify-center text-xs uppercase">
+												<span className="bg-white px-2 text-gray-500">
+													Or continue with email
+												</span>
 											</div>
 										</div>
 									</div>
-								)}
 
-								<Button type="submit" className="h-11 w-full" disabled={isLoading || !email.trim()}>
-									{isLoading ? (
-										<>
-											<Loading showText={false} size="w-4 h-4" className="mr-2 p-0" />
-											Signing in...
-										</>
-									) : (
-										"Sign in"
-									)}
-								</Button>
+									{/* Magic Link Form */}
+									<form onSubmit={handleSubmit} className="space-y-4">
+										<div className="space-y-2">
+											<Label htmlFor="email">Email address</Label>
+											<Input
+												id="email"
+												type="email"
+												placeholder="Enter your email"
+												value={email}
+												onChange={(e) => {
+													setEmail(e.target.value);
+													setError(null); // Clear errors when user types
+												}}
+												required={true}
+												disabled={isLoading}
+												className="h-11"
+											/>
+										</div>
 
-								<div className="text-center text-sm">
-									<span className="text-gray-600">Don't have an account? </span>
-									<Link href="/sign-up" className="font-medium text-blue-600 hover:text-blue-500">
-										Sign up
-									</Link>
-								</div>
-							</form>
+										{/* Error messages */}
+										{error && (
+											<div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-600 text-sm">
+												<div className="flex items-start space-x-2">
+													<AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+													<div className="flex-1">
+														<p>{error}</p>
+														
+														{/* Account not found - show sign up option */}
+														{error.includes("Account not found") && (
+															<div className="mt-3">
+																<Link href="/sign-up">
+																	<Button variant="outline" size="sm" className="w-full">
+																		Create New Account
+																	</Button>
+																</Link>
+															</div>
+														)}
+													</div>
+												</div>
+											</div>
+										)}
+
+										<Button type="submit" className="h-11 w-full" disabled={isLoading || !email.trim()}>
+											{isLoading ? (
+												<>
+													<Loading showText={false} size="w-4 h-4" className="mr-2 p-0" />
+													Sending magic link...
+												</>
+											) : (
+												<>
+													<Mail className="mr-2 h-4 w-4" />
+													Send magic link
+												</>
+											)}
+										</Button>
+
+										<div className="text-center text-sm">
+											<span className="text-gray-600">Don't have an account? </span>
+											<Link href="/sign-up" className="font-medium text-blue-600 hover:text-blue-500">
+												Sign up
+											</Link>
+										</div>
+									</form>
+								</>
+							)}
 						</CardContent>
 					</Card>
 

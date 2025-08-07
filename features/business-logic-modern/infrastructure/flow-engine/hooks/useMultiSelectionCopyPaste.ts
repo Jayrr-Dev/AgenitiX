@@ -80,6 +80,9 @@ export function useMultiSelectionCopyPaste() {
 
 	// Install mouse tracking when component mounts
 	const installMouseTracking = useCallback(() => {
+		// Check if we're in a browser environment before accessing document
+		if (typeof document === "undefined") return;
+
 		document.addEventListener("mousemove", updateMousePosition);
 		return () => document.removeEventListener("mousemove", updateMousePosition);
 	}, [updateMousePosition]);

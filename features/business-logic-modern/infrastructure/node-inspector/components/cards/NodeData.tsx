@@ -12,7 +12,13 @@
 
 import type React from "react";
 import { useMemo } from "react";
-import ReactJson from "react-json-view";
+import dynamic from "next/dynamic";
+
+// Dynamically import ReactJson to avoid SSR issues
+const ReactJson = dynamic(() => import("react-json-view"), {
+  ssr: false,
+  loading: () => <div className="p-4 text-sm text-muted-foreground">Loading JSON viewer...</div>,
+});
 
 import type {
   AgenNode,
@@ -137,7 +143,7 @@ export const NodeData: React.FC<NodeDataProps> = ({
             onDelete={handleJsonUpdate.onDelete}
             validationMessage="Validation Error"
             quotesOnKeys={true} // Show quotes on keys
-            displayArrayKey={true} // Show array indices
+
             sortKeys={false} // Don't sort keys to maintain order
           />
         </div>

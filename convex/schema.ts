@@ -1,54 +1,50 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
-	// Authentication Domain
-	auth_users: defineTable({
-		email: v.string(),
-		name: v.string(),
+	// Use authTables but override with custom schema, basically integrating Convex Auth with existing naming
+	...authTables,
+	
+	// Authentication Domain - Custom users table with existing naming scheme
+	users: defineTable({
+		// Standard Convex Auth fields
+		name: v.optional(v.string()),
+		image: v.optional(v.string()),
+		email: v.optional(v.string()),
+		emailVerificationTime: v.optional(v.number()),
+		phone: v.optional(v.string()),
+		phoneVerificationTime: v.optional(v.number()),
+		isAnonymous: v.optional(v.boolean()),
+		
+		// Custom fields matching existing auth_users schema
 		avatar_url: v.optional(v.string()),
-		email_verified: v.boolean(),
-		created_at: v.number(),
-		updated_at: v.number(),
+		email_verified: v.optional(v.boolean()),
+		created_at: v.optional(v.number()),
+		updated_at: v.optional(v.number()),
 		last_login: v.optional(v.number()),
-		is_active: v.boolean(),
+		is_active: v.optional(v.boolean()),
 		// Profile information
 		company: v.optional(v.string()),
 		role: v.optional(v.string()),
 		timezone: v.optional(v.string()),
 		// Reference to Convex Auth user
 		convex_user_id: v.optional(v.string()),
-		// Magic Link fields
-		magic_link_token: v.optional(v.string()),
+		// Magic Link fields		magic_link_token: v.optional(v.string()),
 		magic_link_expires: v.optional(v.number()),
 		login_attempts: v.optional(v.number()),
 		last_login_attempt: v.optional(v.number()),
-	})
-		.index("by_email", ["email"])
-		.index("by_created_at", ["created_at"])
-		.index("by_is_active", ["is_active"])
-		.index("by_magic_link_token", ["magic_link_token"]),
+	}).index("email", ["email"]),
 
-	auth_sessions: defineTable({
-		user_id: v.id("auth_users"),
-		token_hash: v.string(),
-		expires_at: v.number(),
-		created_at: v.number(),
-		ip_address: v.optional(v.string()),
-		user_agent: v.optional(v.string()),
-		is_active: v.boolean(),
-	})
-		.index("by_user_id", ["user_id"])
-		.index("by_token_hash", ["token_hash"])
-		.index("by_expires_at", ["expires_at"])
-		.index("by_is_active", ["is_active"]),
+
 
 	// Email Domain
 	email_accounts: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		provider: v.union(
 			v.literal("gmail"),
 			v.literal("outlook"),
+			v.literal("yahoo"),
 			v.literal("imap"),
 			v.literal("smtp")
 		),
@@ -75,7 +71,7 @@ export default defineSchema({
 		.index("by_connection_status", ["connection_status"]),
 
 	email_templates: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		name: v.string(),
 		subject: v.string(),
 		html_content: v.string(),
@@ -91,7 +87,7 @@ export default defineSchema({
 		.index("by_is_active", ["is_active"]),
 
 	email_logs: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		account_id: v.optional(v.id("email_accounts")), // Reference to email account used
 		template_id: v.optional(v.id("email_templates")),
 		to_email: v.string(),
@@ -122,7 +118,7 @@ export default defineSchema({
 
 	// Email Reply Domain
 	email_reply_templates: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		name: v.string(),
 		category: v.string(),
 		subject_template: v.string(),
@@ -139,7 +135,7 @@ export default defineSchema({
 		.index("by_user_and_category", ["user_id", "category"]),
 
 	email_reply_logs: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		account_id: v.id("email_accounts"),
 		original_email_id: v.string(), // ID from email provider
 		reply_strategy: v.union(
@@ -172,7 +168,7 @@ export default defineSchema({
 
 	// Workflow Domain
 	workflow_runs: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		workflow_name: v.string(),
 		status: v.union(
 			v.literal("running"),
@@ -192,7 +188,7 @@ export default defineSchema({
 		.index("by_started_at", ["started_at"]),
 
 	flow_nodes: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		workflow_id: v.optional(v.string()), // Reference to workflow
 		node_type: v.string(), // createText, viewCsv, etc.
 		node_data: v.any(), // Node configuration and state
@@ -208,7 +204,7 @@ export default defineSchema({
 
 	// AI Domain
 	ai_prompts: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		name: v.string(),
 		prompt_text: v.string(),
 		model: v.string(), // gpt-4, claude-3, etc.
@@ -225,7 +221,7 @@ export default defineSchema({
 
 	// AI Agent Domain (for Convex AI Agent integration)
 	ai_agent_threads: defineTable({
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		title: v.optional(v.string()),
 		summary: v.optional(v.string()),
 		status: v.optional(v.string()),
@@ -259,7 +255,7 @@ export default defineSchema({
 		description: v.optional(v.string()),
 		icon: v.optional(v.string()),
 		is_private: v.boolean(),
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"), // Use Convex Auth users table for OAuth compatibility
 		// Canvas state
 		nodes: v.optional(v.any()), // React Flow nodes array
 		edges: v.optional(v.any()), // React Flow edges array
@@ -275,7 +271,7 @@ export default defineSchema({
 	// FLOW SHARING TABLES
 	flow_shares: defineTable({
 		flow_id: v.id("flows"),
-		shared_by_user_id: v.id("auth_users"),
+		shared_by_user_id: v.id("users"), // Use Convex Auth users table for OAuth compatibility
 		share_token: v.string(),
 		is_active: v.boolean(),
 		expires_at: v.optional(v.string()),
@@ -288,10 +284,10 @@ export default defineSchema({
 	flow_share_permissions: defineTable({
 		flow_id: v.id("flows"),
 		share_id: v.id("flow_shares"),
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"), // Use Convex Auth users table for OAuth compatibility
 		permission_type: v.union(v.literal("view"), v.literal("edit"), v.literal("admin")),
 		granted_at: v.string(),
-		granted_by_user_id: v.id("auth_users"),
+		granted_by_user_id: v.id("users"), // Use Convex Auth users table for OAuth compatibility
 	})
 		.index("by_flow_id", ["flow_id"])
 		.index("by_share_id", ["share_id"])
@@ -301,13 +297,13 @@ export default defineSchema({
 	// FLOW ACCESS REQUESTS
 	flow_access_requests: defineTable({
 		flow_id: v.id("flows"),
-		requesting_user_id: v.id("auth_users"),
+		requesting_user_id: v.id("users"), // Use Convex Auth users table for OAuth compatibility
 		requesting_user_email: v.string(),
 		permission_type: v.union(v.literal("view"), v.literal("edit"), v.literal("admin")),
 		status: v.union(v.literal("pending"), v.literal("approved"), v.literal("denied")),
 		requested_at: v.string(),
 		responded_at: v.optional(v.string()),
-		responded_by_user_id: v.optional(v.id("auth_users")),
+		responded_by_user_id: v.optional(v.id("users")), // Use Convex Auth users table for OAuth compatibility
 		response_note: v.optional(v.string()),
 	})
 		.index("by_flow_id", ["flow_id"])
@@ -318,7 +314,7 @@ export default defineSchema({
 	// FLOW UPVOTES - User upvotes for public flows
 	flow_upvotes: defineTable({
 		flow_id: v.id("flows"),
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"), // Use Convex Auth users table for OAuth compatibility
 		created_at: v.string(),
 	})
 		.index("by_flow_id", ["flow_id"])

@@ -1,5 +1,20 @@
+/**
+ * EmailSender NODE – Email composition and sending with advanced features
+ *
+ * • Multi-account support with connection validation
+ * • Rich text and HTML email composition
+ * • File attachment handling with size validation
+ * • Batch sending and scheduling capabilities
+ * • Delivery tracking and retry mechanisms
+ * • Auto-fill from emailCreator and emailReplier nodes
+ * • Handle-based output system for workflow integration
+ * • Dynamic sizing with expand/collapse functionality
+ *
+ * Keywords: email-sending, composition, attachments, batch-sending, tracking, handle-system
+ */
+
 import type { NodeProps } from "@xyflow/react";
-import { Handle, Position, useStore } from "@xyflow/react";
+import { Handle, Position, useReactFlow, useStore } from "@xyflow/react";
 import {
   type ChangeEvent,
   memo,
@@ -10,271 +25,156 @@ import {
 } from "react";
 import { z } from "zod";
 
+import { useAuth } from "@/components/auth/AuthProvider";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { api } from "@/convex/_generated/api";
+import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
-	SafeSchemas,
-	createSafeInitialData,
+  SafeSchemas,
+  createSafeInitialData,
 } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
 import {
-	createNodeValidator,
-	reportValidationError,
+  createNodeValidator,
+  reportValidationError,
+  useNodeDataValidation,
 } from "@/features/business-logic-modern/infrastructure/node-core/validation";
+import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
-	COLLAPSED_SIZES,
-	EXPANDED_SIZES,
+  COLLAPSED_SIZES,
+  EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
-import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
 import { useNodeData } from "@/hooks/useNodeData";
-import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
-import { useAuthContext } from "@/components/auth/AuthProvider";
-import { api } from "@/convex/_generated/api";
 import { useAction, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { EmailAccountService } from "./services/emailAccountService";
+import { useFlowMetadataOptional } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
 // -----------------------------------------------------------------------------
 
 export const EmailSenderDataSchema = z
-	.object({
-		// Account Configuration
-		accountId: z.string().default(""),
-		provider: z.enum(["gmail", "outlook", "imap", "smtp"]).default("gmail"),
+  .object({
+    // Account Configuration
+    accountId: z.string().default(""),
+    provider: z.enum(["gmail", "outlook", "imap", "smtp"]).default("gmail"),
 
-		// Recipients
-		recipients: z
-			.object({
-				to: z.array(z.string()).default([]),
-				cc: z.array(z.string()).default([]),
-				bcc: z.array(z.string()).default([]),
-			})
-			.default({ to: [], cc: [], bcc: [] }),
+    // Recipients
+    recipients: z
+      .object({
+        to: z.array(z.string()).default([]),
+        cc: z.array(z.string()).default([]),
+        bcc: z.array(z.string()).default([]),
+      })
+      .default({ to: [], cc: [], bcc: [] }),
 
-		// Message Content
-		subject: z.string().default(""),
-		content: z
-			.object({
-				text: z.string().default(""),
-				html: z.string().default(""),
-				useHtml: z.boolean().default(false),
-				useTemplate: z.boolean().default(false),
-				templateId: z.string().default(""),
-				variables: z.record(z.any()).default({}),
-			})
-			.default({
-				text: "",
-				html: "",
-				useHtml: false,
-				useTemplate: false,
-				templateId: "",
-				variables: {},
-			}),
+    // Message Content
+    subject: z.string().default(""),
+    content: z
+      .object({
+        text: z.string().default(""),
+        html: z.string().default(""),
+        useHtml: z.boolean().default(false),
+        useTemplate: z.boolean().default(false),
+        templateId: z.string().default(""),
+        variables: z.record(z.any()).default({}),
+      })
+      .default({
+        text: "",
+        html: "",
+        useHtml: false,
+        useTemplate: false,
+        templateId: "",
+        variables: {},
+      }),
 
-		// Attachments
-		attachments: z
-			.array(
-				z.object({
-					id: z.string(),
-					filename: z.string(),
-					size: z.number(),
-					mimeType: z.string(),
-					content: z.string().optional(), // Base64 content
-					file: z.any().optional(), // File object for UI
-				})
-			)
-			.default([]),
-		maxAttachmentSize: z.number().default(25 * 1024 * 1024), // 25MB
+    // Attachments
+    attachments: z
+      .array(
+        z.object({
+          id: z.string(),
+          filename: z.string(),
+          size: z.number(),
+          mimeType: z.string(),
+          content: z.string().optional(), // Base64 content
+          file: z.any().optional(), // File object for UI
+        })
+      )
+      .default([]),
+    maxAttachmentSize: z.number().default(25 * 1024 * 1024), // 25MB
 
-		// Sending Options
-		sendMode: z.enum(["immediate", "batch", "scheduled"]).default("immediate"),
-		batchSize: z.number().min(1).max(100).default(10),
-		delayBetweenSends: z.number().min(0).max(60000).default(1000), // milliseconds
-		scheduledTime: z.string().optional(),
+    // Sending Options
+    sendMode: z.enum(["immediate", "batch", "scheduled"]).default("immediate"),
+    batchSize: z.number().min(1).max(100).default(10),
+    delayBetweenSends: z.number().min(0).max(60000).default(1000), // milliseconds
+    scheduledTime: z.string().optional(),
 
-		// Delivery Tracking
-		trackDelivery: z.boolean().default(true),
-		trackReads: z.boolean().default(false),
-		trackClicks: z.boolean().default(false),
+    // Delivery Tracking
+    trackDelivery: z.boolean().default(true),
+    trackReads: z.boolean().default(false),
+    trackClicks: z.boolean().default(false),
 
-		// Error Handling
-		retryAttempts: z.number().min(0).max(5).default(3),
-		retryDelay: z.number().min(1000).max(60000).default(5000), // milliseconds
-		continueOnError: z.boolean().default(true),
+    // Error Handling
+    retryAttempts: z.number().min(0).max(5).default(3),
+    retryDelay: z.number().min(1000).max(60000).default(5000), // milliseconds
+    continueOnError: z.boolean().default(true),
 
-		// Connection State
-		isConnected: z.boolean().default(false),
-		sendingStatus: z.enum(["idle", "composing", "sending", "sent", "error"]).default("idle"),
+    // Connection State
+    isConnected: z.boolean().default(false),
+    sendingStatus: z
+      .enum(["idle", "composing", "sending", "sent", "error"])
+      .default("idle"),
 
-		// Results
-		sentCount: z.number().default(0),
-		failedCount: z.number().default(0),
-		lastSent: z.number().optional(),
-		lastError: z.string().default(""),
+    // Results
+    sentCount: z.number().default(0),
+    failedCount: z.number().default(0),
+    lastSent: z.number().optional(),
+    lastError: z.string().default(""),
 
-		// UI State
-		isEnabled: SafeSchemas.boolean(true),
-		isActive: SafeSchemas.boolean(false),
-		isExpanded: SafeSchemas.boolean(false),
-		expandedSize: SafeSchemas.text("VE3"),
-		collapsedSize: SafeSchemas.text("C2"),
+    // UI State
+    isEnabled: SafeSchemas.boolean(true),
+    isActive: SafeSchemas.boolean(false),
+    isExpanded: SafeSchemas.boolean(false),
+    expandedSize: SafeSchemas.text("VE3"),
+    collapsedSize: SafeSchemas.text("C2"),
 
-		// output - unified handle-based output system
-		output: z.string().optional(), // handle-based output as string for React compatibility
-	})
-	.passthrough();
+    // output - unified handle-based output system
+    output: z.record(z.string(), z.unknown()).optional(), // handle-based output object for Convex compatibility
+  })
+  .passthrough();
 
 export type EmailSenderData = z.infer<typeof EmailSenderDataSchema>;
 
-const validateNodeData = createNodeValidator(EmailSenderDataSchema, "EmailSender");
+const validateNodeData = createNodeValidator(
+  EmailSenderDataSchema,
+  "EmailSender"
+);
 
 // -----------------------------------------------------------------------------
 // 2️⃣  Constants
 // -----------------------------------------------------------------------------
 
 const CATEGORY_TEXT = {
-	EMAIL: {
-		primary: "text-[--node-email-text]",
-	},
+  EMAIL: {
+    primary: "text-[--node-email-text]",
+  },
 } as const;
 
 const CONTENT = {
-	expanded: "p-4 w-full h-full flex flex-col",
-	collapsed: "flex items-center justify-center w-full h-full",
-	header: "flex items-center justify-between mb-3 flex-shrink-0",
-	body: "flex-1 flex flex-col gap-3 overflow-y-auto max-h-[400px] pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent",
-	disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+  expanded: "p-4 w-full h-full flex flex-col",
+  collapsed: "flex items-center justify-center w-full h-full",
+  header: "flex items-center justify-between mb-3 flex-shrink-0",
+  body: "flex-1 flex flex-col gap-3 overflow-y-auto max-h-[400px] pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent",
+  disabled:
+    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
 
 // -----------------------------------------------------------------------------
 // 3️⃣  Dynamic spec factory (pure)
 // -----------------------------------------------------------------------------
-
-// -----------------------------------------------------------------------------
-// 4️⃣  Component
-// -----------------------------------------------------------------------------
-
-const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
-  // Get authenticated user context
-  const { user, token } = useAuthContext();
-  const { getNodes, getEdges } = useStore((s) => ({ getNodes: s.getNodes, getEdges: s.getEdges }));
-  
-  // Node data access
-  const { nodeData, updateNodeData } = useNodeData(id);
-  const lastGeneralOutputRef = useRef<Map<string, any> | null>(null);
-
-  // Extract node data with defaults
-  const {
-    accountId,
-    provider = "gmail",
-    recipients = { to: [], cc: [], bcc: [] },
-    subject = "",
-    content = { text: "", html: "", useHtml: false },
-    attachments = [],
-    maxAttachmentSize = 25 * 1024 * 1024,
-    sendMode = "immediate",
-    batchSize = 10,
-    delayBetweenSends = 1000,
-    scheduledTime,
-    trackDelivery = true,
-    trackReads = false,
-    trackClicks = false,
-    retryAttempts = 3,
-    retryDelay = 5000,
-    continueOnError = true,
-    isConnected = false,
-    sendingStatus = "idle",
-    sentCount = 0,
-    failedCount = 0,
-    lastSent,
-    lastError = "",
-    isEnabled = true,
-    isActive = false,
-    isExpanded = false,
-  } = nodeData as EmailSenderData;
-
-  // Available email accounts
-  const availableAccounts = useQuery(
-    api.emailAccounts.getEmailAccountsByUserEmail,
-    user?.email ? { userEmail: user.email } : "skip"
-  );
-
-  // Send email action
-  const sendEmailAction = useAction(api.emailAccounts.sendEmail);
-
-  // Handle-based output generation
-  useEffect(() => {
-    try {
-      // Generate Map-based output with error handling
-      const outputValue = generateoutputField(spec, nodeData as any);
-
-      // Validate the result
-      if (!(outputValue instanceof Map)) {
-        console.error(
-          `EmailSender ${id}: generateoutputField did not return a Map`,
-          outputValue
-        );
-        return;
-      }
-
-      // Convert Map to plain object for Convex compatibility
-      const outputObject = Object.fromEntries(outputValue.entries());
-
-      // Only update if changed
-      const currentOutput = lastGeneralOutputRef.current;
-      let hasChanged = true;
-
-      if (currentOutput instanceof Map && outputValue instanceof Map) {
-        hasChanged =
-          currentOutput.size !== outputValue.size ||
-          !Array.from(outputValue.entries()).every(
-            ([key, value]) => currentOutput.get(key) === value
-          );
-      }
-
-      if (hasChanged) {
-        lastGeneralOutputRef.current = outputValue;
-        updateNodeData({ output: outputObject });
-      }
-    } catch (error) {
-      console.error(`EmailSender ${id}: Error generating output`, error);
-      if (lastGeneralOutputRef.current !== null) {
-        lastGeneralOutputRef.current = new Map();
-        updateNodeData({ output: {} });
-      }
-    }
-  }, [spec.handles, nodeData, updateNodeData, id]);
-
-  return (
-    <>
-      <LabelNode nodeId={id} label="Email Sender" />
-      {isExpanded ? (
-        <div className="p-4 w-full h-full flex flex-col">
-          <div className="text-sm text-gray-600">Email Sender</div>
-          <div className="text-xs text-gray-500 mt-1">
-            Status: {sendingStatus} | Sent: {sentCount}
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center justify-center w-full h-full">
-          <div className="text-xs text-center">
-            <div>📧 Sender</div>
-            <div className="text-gray-500">{sendingStatus}</div>
-          </div>
-        </div>
-      )}
-      <ExpandCollapseButton
-        showUI={isExpanded}
-        onToggle={() => updateNodeData({ isExpanded: !isExpanded })}
-      />
-    </>
-  );
-});
-
-EmailSenderNode.displayName = "EmailSenderNode";
 
 function createDynamicSpec(data: EmailSenderData): NodeSpec {
   const expanded =
@@ -362,6 +262,7 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
       sendMode: "immediate",
       batchSize: 10,
       delayBetweenSends: 1000,
+      scheduledTime: undefined,
       trackDelivery: true,
       trackReads: false,
       trackClicks: false,
@@ -374,6 +275,11 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
       failedCount: 0,
       lastSent: undefined,
       lastError: "",
+      isEnabled: true,
+      isActive: false,
+      isExpanded: false,
+      expandedSize: "VE3",
+      collapsedSize: "C2",
       output: {}, // handle-based output object for Convex compatibility
     }),
     dataSchema: EmailSenderDataSchema,
@@ -459,11 +365,12 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // 4.1  Sync with React‑Flow store and auth
   // -------------------------------------------------------------------------
   const { nodeData, updateNodeData } = useNodeData(id, {});
-  const { user, token } = useAuthContext();
+  const { user, authToken: token } = useAuth();
 
   // -------------------------------------------------------------------------
   // 4.2  Derived state
   // -------------------------------------------------------------------------
+  const safeNodeData = nodeData || {};
   const {
     isExpanded,
     isEnabled,
@@ -488,7 +395,12 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     failedCount,
     lastSent,
     lastError,
-  } = nodeData as EmailSenderData;
+  } = safeNodeData as EmailSenderData;
+
+  // Provide safe defaults for critical objects that might be undefined
+  const safeRecipients = recipients || { to: [], cc: [], bcc: [] };
+  const safeContent = content || { text: "", html: "", useHtml: false, useTemplate: false, templateId: "", variables: {} };
+  const safeAttachments = attachments || [];
 
   const categoryStyles = CATEGORY_TEXT.EMAIL;
 
@@ -498,10 +410,15 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
   // Keep last emitted output to avoid redundant writes
   const lastOutputRef = useRef<string | null>(null);
+  const lastGeneralOutputRef = useRef<Map<string, any> | null>(null);
 
   // -------------------------------------------------------------------------
   // 4.3  Convex integration
   // -------------------------------------------------------------------------
+  const flowMetadata = useFlowMetadataOptional();
+  const canEdit = flowMetadata?.flow?.canEdit ?? true;
+
+  // Fetch email accounts for both owners and viewers - viewers can use their own accounts
   const emailAccounts = useQuery(
     api.emailAccounts.getEmailAccountsByUserEmail,
     // Use hybrid auth: prefer token_hash, fallback to userEmail
@@ -540,7 +457,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       );
 
     const accountIds = connectedAccountNodes
-      .filter((node): node is NonNullable<typeof node={true}> => node != null)
+      .filter((node): node is NonNullable<typeof node> => node != null)
       .map((node) => node.data.accountId);
 
     return accountIds;
@@ -617,24 +534,41 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       const sourceNode = _nodes.find((node) => node.id === sourceEdge.source);
 
       // Handle EmailCreator connection
-      if (sourceNode && sourceNode.type === "emailCreator" && sourceNode.data?.emailOutput) {
+      if (
+        sourceNode &&
+        sourceNode.type === "emailCreator" &&
+        sourceNode.data?.emailOutput
+      ) {
         const emailData = sourceNode.data.emailOutput as any;
 
         console.log("Auto-filling emailSender from emailCreator:", emailData);
 
         // Validate emailData structure before using
-        if (emailData && typeof emailData === 'object') {
+        if (emailData && typeof emailData === "object") {
           // Auto-fill email fields from emailCreator data
           updateNodeData({
             recipients: {
-              to: Array.isArray(emailData.recipients?.to) ? emailData.recipients.to : [],
-              cc: Array.isArray(emailData.recipients?.cc) ? emailData.recipients.cc : [],
-              bcc: Array.isArray(emailData.recipients?.bcc) ? emailData.recipients.bcc : [],
+              to: Array.isArray(emailData.recipients?.to)
+                ? emailData.recipients.to
+                : [],
+              cc: Array.isArray(emailData.recipients?.cc)
+                ? emailData.recipients.cc
+                : [],
+              bcc: Array.isArray(emailData.recipients?.bcc)
+                ? emailData.recipients.bcc
+                : [],
             },
-            subject: typeof emailData.subject === 'string' ? emailData.subject : "",
+            subject:
+              typeof emailData.subject === "string" ? emailData.subject : "",
             content: {
-              text: typeof emailData.content?.text === 'string' ? emailData.content.text : "",
-              html: typeof emailData.content?.html === 'string' ? emailData.content.html : "",
+              text:
+                typeof emailData.content?.text === "string"
+                  ? emailData.content.text
+                  : "",
+              html:
+                typeof emailData.content?.html === "string"
+                  ? emailData.content.html
+                  : "",
               useHtml: Boolean(emailData.content?.useHtml),
             },
             isActive: true,
@@ -642,38 +576,50 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
         }
       }
       // Handle EmailReplier connection
-      else if (sourceNode && sourceNode.type === "emailReplier" && sourceNode.data?.generatedReply) {
+      else if (
+        sourceNode &&
+        sourceNode.type === "emailReplier" &&
+        sourceNode.data?.generatedReply
+      ) {
         // Auto-fill email fields from emailReplier data
         const replierData = sourceNode.data as any;
 
         // Extract recipient info from the original email data
-        const originalEmail = (replierData.inputEmails && Array.isArray(replierData.inputEmails) && replierData.inputEmails[0]) || {};
+        const originalEmail =
+          (replierData.inputEmails &&
+            Array.isArray(replierData.inputEmails) &&
+            replierData.inputEmails[0]) ||
+          {};
 
         // Try multiple fields for sender email
-        let senderEmail = originalEmail.from ||
+        let senderEmail =
+          originalEmail.from ||
           originalEmail.sender ||
           originalEmail.fromEmail ||
           originalEmail.email ||
           "sender@example.com";
 
         // If senderEmail is an object, extract the email field
-        if (typeof senderEmail === 'object' && senderEmail !== null) {
-          senderEmail = senderEmail.email || senderEmail.address || senderEmail.name || "sender@example.com";
+        if (typeof senderEmail === "object" && senderEmail !== null) {
+          senderEmail =
+            senderEmail.email ||
+            senderEmail.address ||
+            senderEmail.name ||
+            "sender@example.com";
         }
 
         // Try multiple fields for subject
-        const originalSubject = originalEmail.subject ||
-          originalEmail.title ||
-          "Your Email";
+        const originalSubject =
+          originalEmail.subject || originalEmail.title || "Your Email";
 
         // Handle CC emails safely
         let ccEmails = [];
         if (replierData.replyToAll) {
           const ccData = originalEmail.cc || originalEmail.ccEmails || [];
           if (Array.isArray(ccData)) {
-            ccEmails = ccData.filter(email => email && email.trim());
-          } else if (typeof ccData === 'string' && ccData.trim()) {
-            ccEmails = ccData.split(',').filter(email => email.trim());
+            ccEmails = ccData.filter((email) => email && email.trim());
+          } else if (typeof ccData === "string" && ccData.trim()) {
+            ccEmails = ccData.split(",").filter((email) => email.trim());
           }
         }
 
@@ -775,12 +721,12 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
       updateNodeData({
         recipients: {
-          ...recipients,
+          ...safeRecipients,
           [field]: emails,
         },
       });
     },
-    [recipients, updateNodeData]
+    [safeRecipients, updateNodeData]
   );
 
   /** Handle message content change */
@@ -788,12 +734,12 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     (field: "text" | "html") => (e: ChangeEvent<HTMLTextAreaElement>) => {
       updateNodeData({
         content: {
-          ...content,
+          ...safeContent,
           [field]: e.target.value,
         },
       });
     },
-    [content, updateNodeData]
+    [safeContent, updateNodeData]
   );
 
   /** Handle checkbox changes */
@@ -812,7 +758,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       reader.onload = () => {
         const result = reader.result as string;
         // Remove the data URL prefix (e.g., "data:image/png;base64,")
-        const base64 = result.split(',')[1];
+        const base64 = result.split(",")[1];
         resolve(base64);
       };
       reader.onerror = (error) => reject(error);
@@ -827,14 +773,16 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
       const validFiles = Array.from(files).filter((file) => {
         if (file.size > maxAttachmentSize) {
-          toast.error(`File ${file.name} is too large. Max size: ${Math.round(maxAttachmentSize / 1024 / 1024)}MB`);
+          toast.error(
+            `File ${file.name} is too large. Max size: ${Math.round(maxAttachmentSize / 1024 / 1024)}MB`
+          );
           return false;
         }
         return true;
       });
 
       if (validFiles.length === 0) {
-        e.target.value = '';
+        e.target.value = "";
         return;
       }
 
@@ -848,7 +796,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
               id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
               filename: file.name,
               size: file.size,
-              mimeType: file.type || 'application/octet-stream',
+              mimeType: file.type || "application/octet-stream",
               content: base64Content, // Store base64 content for sending
               file: file, // Keep file reference for UI
             };
@@ -856,16 +804,16 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
         );
 
         updateNodeData({
-          attachments: [...attachments, ...newAttachments],
+          attachments: [...safeAttachments, ...newAttachments],
         });
         toast.success(`Added ${newAttachments.length} attachment(s)`);
       } catch (error) {
-        toast.error('Failed to process files');
-        console.error('File processing error:', error);
+        toast.error("Failed to process files");
+        console.error("File processing error:", error);
       }
 
       // Clear the input
-      e.target.value = '';
+      e.target.value = "";
     },
     [attachments, maxAttachmentSize, updateNodeData]
   );
@@ -874,11 +822,11 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   const removeAttachment = useCallback(
     (attachmentId: string) => {
       updateNodeData({
-        attachments: attachments.filter((att) => att.id !== attachmentId),
+        attachments: safeAttachments.filter((att) => att.id !== attachmentId),
       });
-      toast.info('Attachment removed');
+      toast.info("Attachment removed");
     },
-    [attachments, updateNodeData]
+    [safeAttachments, updateNodeData]
   );
 
   /** Handle number input changes */
@@ -903,13 +851,6 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
   /** Handle send email action */
   const handleSendEmail = useCallback(async () => {
-    console.log("🔍 handleSendEmail debug:", {
-      accountId,
-      tokenExists: !!token,
-      tokenValue: token ? "present" : "missing",
-      userExists: !!user,
-      userEmail: user?.email,
-    });
 
     if (!accountId) {
       toast.error("Please select an email account first");
@@ -923,13 +864,13 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       return;
     }
 
-    if (recipients.to.length === 0) {
+    if (safeRecipients.to.length === 0) {
       toast.error("Please add at least one recipient");
       return;
     }
 
     // Validate email addresses
-    const allEmails = [...recipients.to, ...recipients.cc, ...recipients.bcc];
+    const allEmails = [...safeRecipients.to, ...safeRecipients.cc, ...safeRecipients.bcc];
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const invalidEmails = allEmails.filter(
       (email) => email && !emailRegex.test(email)
@@ -945,7 +886,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       return;
     }
 
-    if (!content.text.trim() && !content.html.trim()) {
+    if (!safeContent.text.trim() && !safeContent.html.trim()) {
       toast.error("Please enter message content");
       return;
     }
@@ -960,22 +901,23 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       const emailPayload = {
         token_hash: token, // Pass authentication token
         accountId: accountId as any,
-        to: recipients.to,
-        cc: recipients.cc.length > 0 ? recipients.cc : undefined,
-        bcc: recipients.bcc.length > 0 ? recipients.bcc : undefined,
+        to: safeRecipients.to,
+        cc: safeRecipients.cc.length > 0 ? safeRecipients.cc : undefined,
+        bcc: safeRecipients.bcc.length > 0 ? safeRecipients.bcc : undefined,
         subject: subject,
-        textContent: content.text,
-        htmlContent: content.html || undefined,
-        attachments: attachments.length > 0 ? attachments.map(att => ({
-          id: att.id,
-          filename: att.filename,
-          size: att.size,
-          mimeType: att.mimeType,
-          content: att.content, // Include base64 content
-        })) : undefined,
+        textContent: safeContent.text,
+        htmlContent: safeContent.html || undefined,
+        attachments:
+          safeAttachments.length > 0
+            ? safeAttachments.map((att) => ({
+                id: att.id,
+                filename: att.filename,
+                size: att.size,
+                mimeType: att.mimeType,
+                content: att.content, // Include base64 content
+              }))
+            : undefined,
       };
-
-
 
       const result = await sendEmailAction(emailPayload);
 
@@ -985,17 +927,18 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
           "Email Sent Successfully": {
             "Message ID": result.messageId || "N/A",
             Subject: subject,
-            To: recipients.to.join(", "),
-            CC: recipients.cc.length > 0 ? recipients.cc.join(", ") : "None",
-            BCC: recipients.bcc.length > 0 ? recipients.bcc.join(", ") : "None",
+            To: safeRecipients.to.join(", "),
+            CC: safeRecipients.cc.length > 0 ? safeRecipients.cc.join(", ") : "None",
+            BCC: safeRecipients.bcc.length > 0 ? safeRecipients.bcc.join(", ") : "None",
             "Sent At": new Date().toLocaleString(),
-            "Content Type": content.useHtml ? "HTML" : "Plain Text",
+            "Content Type": safeContent.useHtml ? "HTML" : "Plain Text",
             "Content Preview":
-              (content.text || content.html).substring(0, 100) +
-              ((content.text || content.html).length > 100 ? "..." : ""),
-            "Attachments": attachments.length > 0 ?
-              `${attachments.length} file(s) (${Math.round(attachments.reduce((sum, att) => sum + att.size, 0) / 1024)}KB)` :
-              "None",
+              (safeContent.text || safeContent.html).substring(0, 100) +
+              ((safeContent.text || safeContent.html).length > 100 ? "..." : ""),
+            Attachments:
+              safeAttachments.length > 0
+                ? `${safeAttachments.length} file(s) (${Math.round(safeAttachments.reduce((sum, att) => sum + att.size, 0) / 1024)}KB)`
+                : "None",
             "Account Used": selectedAccount?.email || "Unknown",
             Status: "✅ Delivered",
           },
@@ -1003,7 +946,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
         updateNodeData({
           sendingStatus: "sent",
-          sentCount: sentCount + recipients.to.length,
+          sentCount: sentCount + safeRecipients.to.length,
           lastSent: Date.now(),
           successOutput: true,
           messageIdOutput: result.messageId,
@@ -1012,7 +955,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
         });
 
         toast.success(
-          `Email sent successfully to ${recipients.to.length} recipient(s)`
+          `Email sent successfully to ${safeRecipients.to.length} recipient(s)`
         );
       } else {
         const errorMessage = "Failed to send email";
@@ -1021,9 +964,9 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
         const errorOutput = {
           "Email Send Failed": {
             Subject: subject,
-            To: recipients.to.join(", "),
-            CC: recipients.cc.length > 0 ? recipients.cc.join(", ") : "None",
-            BCC: recipients.bcc.length > 0 ? recipients.bcc.join(", ") : "None",
+            To: safeRecipients.to.join(", "),
+            CC: safeRecipients.cc.length > 0 ? safeRecipients.cc.join(", ") : "None",
+            BCC: safeRecipients.bcc.length > 0 ? safeRecipients.bcc.join(", ") : "None",
             "Failed At": new Date().toLocaleString(),
             "Account Used": selectedAccount?.email || "Unknown",
             Error: errorMessage,
@@ -1033,7 +976,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
         updateNodeData({
           sendingStatus: "error",
-          failedCount: failedCount + recipients.to.length,
+          failedCount: failedCount + safeRecipients.to.length,
           lastError: errorMessage,
           successOutput: false,
           messageIdOutput: "",
@@ -1054,9 +997,9 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       const exceptionOutput = {
         "Email Send Exception": {
           Subject: subject,
-          To: recipients.to.join(", "),
-          CC: recipients.cc.length > 0 ? recipients.cc.join(", ") : "None",
-          BCC: recipients.bcc.length > 0 ? recipients.bcc.join(", ") : "None",
+          To: safeRecipients.to.join(", "),
+          CC: safeRecipients.cc.length > 0 ? safeRecipients.cc.join(", ") : "None",
+          BCC: safeRecipients.bcc.length > 0 ? safeRecipients.bcc.join(", ") : "None",
           "Failed At": new Date().toLocaleString(),
           "Account Used": selectedAccount?.email || "Unknown",
           Exception: errorMessage,
@@ -1067,7 +1010,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       updateNodeData({
         sendingStatus: "error",
         lastError: errorMessage,
-        failedCount: failedCount + recipients.to.length,
+        failedCount: failedCount + safeRecipients.to.length,
         successOutput: false,
         errorOutput: errorMessage,
         output: JSON.stringify(exceptionOutput, null, 2),
@@ -1155,11 +1098,14 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     }
   }, [
     spec.handles,
-    nodeData,
+    (safeNodeData as any).isActive,
+    (safeNodeData as any).sendingStatus,
+    (safeNodeData as any).successOutput,
+    (safeNodeData as any).messageIdOutput,
+    (safeNodeData as any).errorOutput,
     updateNodeData,
     id,
   ]);
-
 
   // -------------------------------------------------------------------------
   // 4.7  Validation
@@ -1229,8 +1175,9 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
               <select
                 value={accountId}
                 onChange={handleAccountChange}
-                className={`w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${accountErrors.length > 0 ? "border-red-500" : ""
-                  }`}
+                className={`w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                  accountErrors.length > 0 ? "border-red-500" : ""
+                }`}
                 disabled={!isEnabled || sendingStatus === "sending"}
               >
                 <option value="">Select email account...</option>
@@ -1312,7 +1259,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
                 To (comma-separated):
               </label>
               <textarea
-                value={recipients.to.join(", ")}
+                value={safeRecipients.to.join(", ")}
                 onChange={handleRecipientsChange("to")}
                 placeholder="recipient1@example.com, recipient2@example.com"
                 className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 h-16 resize-none"
@@ -1326,7 +1273,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
                 CC (optional):
               </label>
               <textarea
-                value={recipients.cc.join(", ")}
+                value={safeRecipients.cc.join(", ")}
                 onChange={handleRecipientsChange("cc")}
                 placeholder="cc@example.com"
                 className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 h-12 resize-none"
@@ -1355,7 +1302,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
                 Message:
               </label>
               <textarea
-                value={content.text}
+                value={safeContent.text}
                 onChange={handleContentChange("text")}
                 placeholder="Enter your message here..."
                 className="w-full text-xs p-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 h-24 resize-none"
@@ -1392,9 +1339,9 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
               </div>
 
               {/* Attachments List */}
-              {attachments.length > 0 && (
+              {safeAttachments.length > 0 && (
                 <div className="space-y-1 max-h-20 overflow-y-auto">
-                  {attachments.map((attachment) => (
+                  {safeAttachments.map((attachment) => (
                     <div
                       key={attachment.id}
                       className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs"
@@ -1422,9 +1369,13 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
               )}
 
               {/* Attachments Summary */}
-              {attachments.length > 0 && (
+              {safeAttachments.length > 0 && (
                 <div className="text-xs text-gray-500 mt-1">
-                  {attachments.length} file(s) • Total: {Math.round(attachments.reduce((sum, att) => sum + att.size, 0) / 1024)}KB
+                  {safeAttachments.length} file(s) • Total:{" "}
+                  {Math.round(
+                    safeAttachments.reduce((sum, att) => sum + att.size, 0) / 1024
+                  )}
+                  KB
                 </div>
               )}
             </div>
@@ -1548,7 +1499,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
                   !isEnabled ||
                   !accountId ||
                   sendingStatus === "sending" ||
-                  recipients.to.length === 0
+                  safeRecipients.to.length === 0
                 }
                 className="flex-1 text-xs p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -1563,14 +1514,20 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
               </div>
               <div>
                 Recipients:{" "}
-                {recipients.to.length +
-                  recipients.cc.length +
-                  recipients.bcc.length}
+                {safeRecipients.to.length +
+                  safeRecipients.cc.length +
+                  safeRecipients.bcc.length}
               </div>
               <div>
-                Attachments: {attachments.length}
-                {attachments.length > 0 && (
-                  <span className="ml-1">({Math.round(attachments.reduce((sum, att) => sum + att.size, 0) / 1024)}KB)</span>
+                Attachments: {safeAttachments.length}
+                {safeAttachments.length > 0 && (
+                  <span className="ml-1">
+                    (
+                    {Math.round(
+                      safeAttachments.reduce((sum, att) => sum + att.size, 0) / 1024
+                    )}
+                    KB)
+                  </span>
                 )}
               </div>
               {lastError && (

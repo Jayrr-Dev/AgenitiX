@@ -42,7 +42,7 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
 // Convex integration
 import { useQuery } from "convex/react";
@@ -357,7 +357,7 @@ const EmailReplierNode = memo(
   ({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     // -------------------------------------------------------------------------
     const { nodeData, updateNodeData } = useNodeData(id, {});
-    const { token } = useAuthContext();
+    const { authToken: token } = useAuth();
 
     // -------------------------------------------------------------------------
     // STATE MANAGEMENT (grouped for clarity)
@@ -410,7 +410,7 @@ const EmailReplierNode = memo(
     // -------------------------------------------------------------------------
     // 4.3  Convex integration
     // -------------------------------------------------------------------------
-    const emailTemplates = useQuery(api.emailAccounts.getEmailReplyTemplates);
+    const emailTemplates = useQuery(api.emailAccounts.getEmailReplyTemplates, {});
 
     // -------------------------------------------------------------------------
     // 4.4  Available templates for selection
@@ -447,7 +447,7 @@ const EmailReplierNode = memo(
         const sourceEdge = connectedEdges[0];
         const sourceNode = _nodes.find((node) => node.id === sourceEdge.source);
 
-        if (sourceNode && sourceNode.data?.messages) {
+        if (sourceNode && sourceNode.data?.messages && Array.isArray(sourceNode.data.messages)) {
           // Update inputEmails with data from connected emailReader
           updateNodeData({ inputEmails: sourceNode.data.messages as any[] });
 

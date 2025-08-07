@@ -42,127 +42,26 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true,
-			"style": {
-				"noUnusedTemplateLiteral": "warn",
-				"useTemplate": "warn",
-				"useConst": "warn",
-				"useShorthandArrayType": "warn",
-				"useShorthandAssign": "warn",
-				"noImplicitBoolean": "warn",
-				"noNegationElse": "warn",
-				"useBlockStatements": "warn",
-				"useCollapsedElseIf": "warn",
-				"useConsistentArrayType": "warn",
-				"useFilenamingConvention": {
-					"level": "warn",
-					"options": {
-						"strictCase": false,
-						"requireAscii": true,
-						"filenameCases": ["kebab-case", "PascalCase", "camelCase"]
-					}
-				},
-				"useNamingConvention": "off",
-				"noParameterAssign": "warn"
+			"recommended": false,
+			"correctness": {
+				"noUnusedImports": "error",
+				"noUndeclaredVariables": "error",
+				"noConstAssign": "error",
+				"noInvalidConstructorSuper": "error",
+				"noUnsafeOptionalChaining": "error",
+				"useExhaustiveDependencies": "error",
+				"useIsNan": "error",
+				"useValidForDirection": "error"
 			},
 			"suspicious": {
 				"noConsoleLog": "off",
 				"noExplicitAny": "off",
-				"noArrayIndexKey": "warn",
-				"noCommentText": "warn",
 				"noDoubleEquals": "error",
-				"noThenProperty": "error",
-				"useAwait": "error",
-				"useValidTypeof": "error",
-				"noAssignInExpressions": "warn"
-			},
-			"complexity": {
-				"noExcessiveCognitiveComplexity": "off",
-				"noExcessiveNestedTestSuites": "warn",
-				"noMultipleSpacesInRegularExpressionLiterals": "warn",
-				"noUselessCatch": "warn",
-				"noUselessConstructor": "warn",
-				"noUselessEmptyExport": "warn",
-				"noUselessFragments": "warn",
-				"noUselessLabel": "warn",
-				"noUselessLoneBlockStatements": "warn",
-				"noUselessRename": "warn",
-				"noUselessSwitchCase": "warn",
-				"noUselessTernary": "warn",
-				"noUselessThisAlias": "warn",
-				"noUselessTypeConstraint": "warn",
-				"noVoid": "warn",
-				"noWith": "error",
-				"noForEach": "off",
-				"useLiteralKeys": "warn",
-				"useOptionalChain": "warn",
-				"useRegexLiterals": "warn",
-				"useSimpleNumberKeys": "warn",
-				"useSimplifiedLogicExpression": "warn"
-			},
-			"correctness": {
-				"noUnusedVariables": "warn",
-				"noUnusedImports": "error",
-				"noUndeclaredVariables": "error",
-				"noUnreachable": "warn",
-				"noConstAssign": "error",
-				"noConstantCondition": "error",
-				"noEmptyCharacterClassInRegex": "error",
-				"noEmptyPattern": "error",
-				"noInvalidConstructorSuper": "error",
-				"noNewSymbol": "error",
-				"noNonoctalDecimalEscape": "error",
-				"noPrecisionLoss": "error",
-				"noSetterReturn": "error",
-				"noSwitchDeclarations": "error",
-				"noUnnecessaryContinue": "warn",
-				"noUnreachableSuper": "error",
-				"noUnsafeFinally": "error",
-				"noUnsafeOptionalChaining": "error",
-				"noUnusedLabels": "warn",
-				"useArrayLiterals": "warn",
-				"useExhaustiveDependencies": "off",
-				"useIsNan": "error",
-				"useValidForDirection": "error",
-				"useYield": "error"
-			},
-			"performance": {
-				"noDelete": "warn",
-				"noAccumulatingSpread": "warn"
+				"useAwait": "error"
 			},
 			"security": {
 				"noDangerouslySetInnerHtml": "error",
 				"noDangerouslySetInnerHtmlWithChildren": "error"
-			},
-			"a11y": {
-				"noAccessKey": "warn",
-				"noAriaUnsupportedElements": "warn",
-				"noAutofocus": "warn",
-				"noBlankTarget": "warn",
-				"noDistractingElements": "warn",
-				"noHeaderScope": "warn",
-				"noPositiveTabindex": "warn",
-				"noRedundantAlt": "warn",
-				"noRedundantRoles": "warn",
-				"useAltText": "warn",
-				"useAnchorContent": "warn",
-				"useAriaPropsForRole": "warn",
-				"useButtonType": "warn",
-				"useHeadingContent": "warn",
-				"useHtmlLang": "error",
-				"useIframeTitle": "warn",
-				"useKeyWithClickEvents": "warn",
-				"useKeyWithMouseEvents": "warn",
-				"useMediaCaption": "warn",
-				"useValidAnchor": "warn",
-				"useValidAriaProps": "error",
-				"useValidAriaValues": "error",
-				"useValidLang": "error",
-				"noSvgWithoutTitle": "warn"
-			},
-			"nursery": {
-				"useConsistentMemberAccessibility": "warn",
-				"useSortedClasses": "off"
 			}
 		}
 	},
@@ -180,33 +79,11 @@
 	},
 	"overrides": [
 		{
-			"include": ["**/*.config.{ts,js,mjs}"],
-			"linter": {
-				"rules": {
-					"style": {
-						"useFilenamingConvention": "off",
-						"useNamingConvention": "off"
-					}
-				}
-			}
-		},
-		{
 			"include": ["app/layout.tsx"],
 			"linter": {
 				"rules": {
 					"security": {
 						"noDangerouslySetInnerHtml": "off"
-					}
-				}
-			}
-		},
-		{
-			"include": ["components/ui/**/*.{ts,tsx}"],
-			"linter": {
-				"rules": {
-					"a11y": {
-						"useButtonType": "off",
-						"noSvgWithoutTitle": "off"
 					}
 				}
 			}

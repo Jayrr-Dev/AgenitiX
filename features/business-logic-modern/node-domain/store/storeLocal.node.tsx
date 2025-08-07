@@ -23,8 +23,10 @@ import { Loading } from "@/components/Loading";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import { Button } from "@/components/ui/button";
+
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
@@ -1013,12 +1015,13 @@ const createLocalStorageOperations = (nodeId: string) => {
 // 2️⃣  UI Components
 // -----------------------------------------------------------------------------
 
-interface ModeToggleButtonProps {
+interface ModeSelectorProps {
   mode: "store" | "delete" | "get";
-  onToggle: () => void;
+  onModeChange: (mode: "store" | "delete" | "get") => void;
   disabled?: boolean;
   isProcessing?: boolean;
   className?: string;
+  isCollapsed?: boolean;
 }
 
 interface CollapsedCounterProps {
@@ -1032,7 +1035,7 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({
 }) => {
   const getCountInfo = () => {
     if (!inputData || Object.keys(inputData).length === 0) {
-      return { keyCount: 0, valueCount: 0, showValue: false };
+      return { keyCount: 0, valueCount: 0, showValue: true };
     }
 
     const keyCount = Object.keys(inputData).length;
@@ -1044,7 +1047,7 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({
           valueCount: keyCount,
           showValue: true,
         };
-      case "delete":
+      case "delete": {
         // For delete mode, count existing keys in localStorage
         let existingKeyCount = 0;
         try {
@@ -1061,7 +1064,8 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({
           valueCount: existingKeyCount,
           showValue: true,
         };
-      case "get":
+      }
+      case "get": {
         // For get mode, count both keys and values that exist in localStorage
         let existingCount = 0;
         try {
@@ -1079,6 +1083,7 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({
           valueCount: existingCount,
           showValue: true,
         };
+      }
       default:
         return { keyCount: 0, valueCount: 0, showValue: false };
     }
@@ -1086,9 +1091,7 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({
 
   const { keyCount, valueCount, showValue } = getCountInfo();
 
-  if (keyCount === 0 && valueCount === 0) {
-    return null;
-  }
+  // Always show the counter, even when values are 0
 
   const getModeConfig = () => {
     switch (mode) {
@@ -1125,55 +1128,161 @@ const CollapsedCounter: React.FC<CollapsedCounterProps> = ({
   );
 };
 
-const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({
+const ModeSelector: React.FC<ModeSelectorProps> = ({
   mode,
-  onToggle,
+  onModeChange,
   disabled = false,
   isProcessing = false,
   className,
+  isCollapsed = false,
 }) => {
-  const getModeConfig = () => {
-    switch (mode) {
-      case "store":
-        return MODE_CONFIG.STORE;
-      case "delete":
-        return MODE_CONFIG.DELETE;
-      case "get":
-        return MODE_CONFIG.GET;
-      default:
-        return MODE_CONFIG.STORE;
-    }
-  };
+  // Define the modes in order
+  const modes: Array<"store" | "delete" | "get"> = ["store", "delete", "get"];
+  const currentIndex = modes.indexOf(mode);
 
-  const config = getModeConfig();
+  // Handle mode cycling with up/down arrows
+  const handleModeChange = useCallback(
+    (direction: "up" | "down") => {
+      if (disabled || isProcessing) return;
 
-  // Show loading spinner when processing, otherwise show mode label
-  const buttonContent = isProcessing ? (
-    <Loading showText={false} size="w-5 h-5" className="p-0" />
-  ) : (
-    config.label
+      let newIndex: number;
+      if (direction === "up") {
+        newIndex = currentIndex > 0 ? currentIndex - 1 : modes.length - 1;
+      } else {
+        newIndex = currentIndex < modes.length - 1 ? currentIndex + 1 : 0;
+      }
+
+      const newMode = modes[newIndex];
+      if (newMode) {
+        onModeChange(newMode);
+      }
+    },
+    [currentIndex, modes, disabled, isProcessing, onModeChange]
   );
 
-  return (
-    <Button
-      onClick={onToggle}
-      disabled={disabled || isProcessing}
-      variant={config.shadcnVariant}
-      size="sm"
-      className={`
-        relative
-        w-full h-full justify-center my-1 rounded-sm py-1
-        ${config.colors.button}
-        ${disabled ? `${UI_CONSTANTS.DISABLED_OPACITY} ${UI_CONSTANTS.DISABLED_CURSOR}` : ""}
-      `}
-    >
-      <span
-        className={`absolute text-[6px] top-0 left-1 font-mono ${config.colors.modeLabel}`}
+  // Show loading spinner when processing
+  if (isProcessing) {
+    return (
+      <div
+        className={`w-full h-full flex items-center justify-center ${className}`}
       >
-        MODE
-      </span>
-      {buttonContent}
-    </Button>
+        <Loading showText={false} size="w-5 h-5" className="p-0" />
+      </div>
+    );
+  }
+
+  const config = MODE_CONFIG[mode.toUpperCase() as keyof typeof MODE_CONFIG];
+
+  return (
+    <div className={`relative w-full ${className}`}>
+      {/* Main Mode Card with overlapping arrows */}
+      <div className="relative w-full">
+        <Button
+          onClick={() => handleModeChange("down")}
+          disabled={disabled}
+          variant={config.shadcnVariant}
+          size="sm"
+          className={`
+            relative w-full h-full justify-center rounded-lg py-2 px-8
+            border border-border/20 shadow-sm hover:shadow-md
+            transition-all duration-200 ease-in-out
+            ${config.colors.button}
+            hover:scale-[1.02] active:scale-[0.98]
+            focus:ring-2 focus:ring-offset-1 focus:ring-primary/30
+            ${disabled ? `${UI_CONSTANTS.DISABLED_OPACITY} ${UI_CONSTANTS.DISABLED_CURSOR}` : ""}
+          `}
+        >
+          {/* Mode Label */}
+          <span
+            className={`absolute text-[7px] top-1 left-2 font-mono font-medium tracking-wider ${config.colors.modeLabel} opacity-80`}
+          >
+            MODE
+          </span>
+
+          {/* Main Mode Text */}
+          <span className="text-sm font-semibold tracking-wide">
+            {config.label}
+          </span>
+
+          {/* Mode indicator dots */}
+          <div className="absolute bottom-1 right-2 flex gap-0.5">
+            {modes.map((_, index) => (
+              <div
+                key={index}
+                className={`
+                  w-1 h-1 rounded-full transition-all duration-200
+                  ${
+                    index === currentIndex
+                      ? "bg-current opacity-60"
+                      : "bg-current opacity-20"
+                  }
+                `}
+              />
+            ))}
+          </div>
+        </Button>
+
+        {/* Left Arrow - Overlapping */}
+        <Button
+          onClick={() => handleModeChange("up")}
+          disabled={disabled}
+          variant="ghost"
+          size="sm"
+          className={`
+            absolute left-0 top-1/2 -translate-y-1/2 z-10
+            w-6 h-6 p-0 border-0 bg-transparent hover:bg-transparent
+            transition-all duration-150 ease-in-out
+            hover:scale-110 active:scale-95
+            ${disabled ? `${UI_CONSTANTS.DISABLED_OPACITY} ${UI_CONSTANTS.DISABLED_CURSOR}` : ""}
+          `}
+        >
+          <svg
+            className="w-3 h-3 text-foreground/70"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2.5}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          <span className="sr-only">Previous mode</span>
+        </Button>
+
+        {/* Right Arrow - Overlapping */}
+        <Button
+          onClick={() => handleModeChange("down")}
+          disabled={disabled}
+          variant="ghost"
+          size="sm"
+          className={`
+            absolute right-0 top-1/2 -translate-y-1/2 z-10
+            w-6 h-6 p-0 border-0 bg-transparent hover:bg-transparent
+            transition-all duration-150 ease-in-out
+            hover:scale-110 active:scale-95
+            ${disabled ? `${UI_CONSTANTS.DISABLED_OPACITY} ${UI_CONSTANTS.DISABLED_CURSOR}` : ""}
+          `}
+        >
+          <svg
+            className="w-3 h-3 text-foreground/70"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2.5}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+          <span className="sr-only">Next mode</span>
+        </Button>
+      </div>
+    </div>
   );
 };
 
@@ -1568,6 +1677,9 @@ const StoreLocalNode = memo(
     const hasEverHadTriggerConnectionRef = useRef<boolean>(false);
     const CONNECTION_DEBOUNCE_MS = 500; // 500ms debounce to prevent auto-trigger on connection
 
+    // Keep last emitted output to avoid redundant writes
+    const lastGeneralOutputRef = useRef<any>(null);
+
     // Check localStorage availability and setup security monitoring on mount
     useEffect(() => {
       if (!localStorageOps.isAvailable()) {
@@ -1654,62 +1766,109 @@ const StoreLocalNode = memo(
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
 
-    /** Toggle between store, delete, and get modes */
-    const toggleMode = useCallback(() => {
-      let newMode: "store" | "delete" | "get";
-
-      switch (mode) {
-        case "store":
-          newMode = "delete";
-          break;
-        case "delete":
-          newMode = "get";
-          break;
-        case "get":
-          newMode = "store";
-          break;
-        default:
-          newMode = "store";
-      }
-
-      updateNodeData({ mode: newMode });
-    }, [mode, updateNodeData]);
+    /** Set mode directly (for carousel selection) */
+    const setMode = useCallback(
+      (newMode: "store" | "delete" | "get") => {
+        updateNodeData({ mode: newMode });
+      },
+      [updateNodeData]
+    );
 
     /**
      * Compute the latest data coming from connected input handles.
+     *
+     * Uses unified handle-based input reading system for proper object handling.
+     * Priority: handle-based output > legacy fallbacks for compatibility.
      */
     const computeInputs = useCallback(() => {
-      // Get data input
+      // Get data input using unified handle-based system
       const dataInputEdge = findEdgeByHandle(edges, id, "data-input");
       let dataInput = null;
 
       if (dataInputEdge) {
         const src = nodes.find((n) => n.id === dataInputEdge.source);
         if (src) {
-          const rawData = src.data?.output ?? src.data?.data ?? src.data;
-          try {
-            // Try to parse as JSON if it's a string
-            if (typeof rawData === "string") {
-              dataInput = JSON.parse(rawData);
-            } else if (typeof rawData === "object" && rawData !== null) {
-              dataInput = rawData;
+          const sourceData = src.data;
+          let inputValue: any;
+
+          // 1. Handle-based output (unified system) - prioritize object data
+          if (sourceData?.output && typeof sourceData.output === "object") {
+            // Try to get value from handle-based output
+            const handleId = dataInputEdge.sourceHandle
+              ? dataInputEdge.sourceHandle
+                  .split("__")[0]
+                  .split("-")[0]
+                  .toLowerCase()
+              : "output";
+            const output = sourceData.output as Record<string, any>;
+            if (output[handleId] !== undefined) {
+              inputValue = output[handleId];
+            } else {
+              // Fallback: get first available output value
+              const firstOutput = Object.values(output)[0];
+              if (firstOutput !== undefined) {
+                inputValue = firstOutput;
+              }
             }
-          } catch {
-            // If parsing fails, treat as null
+          }
+
+          // 2. Legacy value fallbacks for compatibility
+          if (inputValue === undefined) {
+            inputValue = sourceData?.store ?? sourceData?.data ?? sourceData;
+          }
+
+          // 3. Parse JSON strings into objects for proper handling
+          if (typeof inputValue === "string") {
+            try {
+              dataInput = JSON.parse(inputValue);
+            } catch {
+              // If JSON parsing fails, treat as null
+              dataInput = null;
+            }
+          } else if (typeof inputValue === "object" && inputValue !== null) {
+            dataInput = inputValue;
+          } else {
             dataInput = null;
           }
         }
       }
 
-      // Get trigger input
+      // Get trigger input using unified handle-based system
       const triggerInputEdge = findEdgeByHandle(edges, id, "trigger-input");
       let triggerValue = false;
 
       if (triggerInputEdge) {
         const src = nodes.find((n) => n.id === triggerInputEdge.source);
         if (src) {
-          const rawTrigger = src.data?.output ?? src.data?.data ?? src.data;
-          triggerValue = Boolean(rawTrigger);
+          const sourceData = src.data;
+          let triggerInputValue: any;
+
+          // 1. Handle-based output (unified system)
+          if (sourceData?.output && typeof sourceData.output === "object") {
+            const handleId = triggerInputEdge.sourceHandle
+              ? triggerInputEdge.sourceHandle
+                  .split("__")[0]
+                  .split("-")[0]
+                  .toLowerCase()
+              : "output";
+            const output = sourceData.output as Record<string, any>;
+            if (output[handleId] !== undefined) {
+              triggerInputValue = output[handleId];
+            } else {
+              const firstOutput = Object.values(output)[0];
+              if (firstOutput !== undefined) {
+                triggerInputValue = firstOutput;
+              }
+            }
+          }
+
+          // 2. Legacy fallbacks for compatibility
+          if (triggerInputValue === undefined) {
+            triggerInputValue =
+              sourceData?.store ?? sourceData?.data ?? sourceData;
+          }
+
+          triggerValue = Boolean(triggerInputValue);
         }
       }
 
@@ -2071,6 +2230,48 @@ const StoreLocalNode = memo(
     // StoreLocal should ONLY execute when explicitly triggered by boolean input.
 
     // -------------------------------------------------------------------------
+    // 4.5c  Output generation
+    // -------------------------------------------------------------------------
+
+    /* 🔄 Handle-based output field generation for multi-handle compatibility */
+    useEffect(() => {
+      try {
+        // Create a data object with proper handle field mapping, basically map localStorage results to output handles
+        const mappedData = {
+          ...nodeData,
+          output: output || null, // Map output data to main output handle
+        };
+
+        // Only update if there are actual changes to prevent unnecessary re-renders
+        const currentOutput = lastGeneralOutputRef.current;
+        let hasChanged = true;
+
+        if (currentOutput && output) {
+          // Compare output contents
+          hasChanged = JSON.stringify(currentOutput) !== JSON.stringify(output);
+        } else if (currentOutput !== output) {
+          hasChanged = true;
+        }
+
+        if (hasChanged) {
+          lastGeneralOutputRef.current = output;
+          updateNodeData({ output: output || null });
+        }
+      } catch (error) {
+        console.error(`StoreLocal ${id}: Error generating output`, error, {
+          spec: spec?.kind,
+          nodeDataKeys: Object.keys(nodeData || {}),
+        });
+
+        // Fallback: set null to prevent crashes, basically empty state for storage
+        if (lastGeneralOutputRef.current !== null) {
+          lastGeneralOutputRef.current = null;
+          updateNodeData({ output: null });
+        }
+      }
+    }, [spec.handles, nodeData, output, updateNodeData, id]);
+
+    // -------------------------------------------------------------------------
     // 4.6  Validation
     // -------------------------------------------------------------------------
     const validation = validateNodeData(nodeData);
@@ -2158,13 +2359,14 @@ const StoreLocalNode = memo(
           >
             {/* Fixed header section */}
             <div className={`${containerPadding} flex-shrink-0 mt-1`}>
-              <div className="flex content-center">
-                <ModeToggleButton
+              <div className="flex content-center w-full">
+                <ModeSelector
                   className="w-full"
                   mode={mode}
-                  onToggle={toggleMode}
+                  onModeChange={setMode}
                   disabled={!isEnabled}
                   isProcessing={isProcessing}
+                  isCollapsed={false}
                 />
               </div>
               <div className={`font-medium text-xs pt-0`}>
@@ -2197,14 +2399,15 @@ const StoreLocalNode = memo(
               ${isEnabled ? "" : CONTENT_CLASSES.disabled}
             `}
           >
-            <div className="flex flex-col items-center justify-center gap-1 p-2">
+            <div className="flex flex-col items-center justify-center gap-1 p-1 w-full">
               <div className="flex content-center w-full">
-                <ModeToggleButton
+                <ModeSelector
                   className="w-full"
                   mode={mode}
-                  onToggle={toggleMode}
+                  onModeChange={setMode}
                   disabled={!isEnabled}
                   isProcessing={isProcessing}
+                  isCollapsed={true}
                 />
               </div>
               <CollapsedCounter mode={mode} inputData={inputData} />

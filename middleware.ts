@@ -2,12 +2,42 @@ import { getRouteProtectionManager, loadAnubisConfig } from "@/lib/anubis/config
 import { verifyJWT } from "@/lib/anubis/crypto";
 import { adaptiveRateLimiter } from "@/lib/anubis/rate-limiter";
 import { analyzeRequest, trackRisk } from "@/lib/anubis/risk-engine";
-// middleware.ts
+import { convexAuthNextjsMiddleware } from "@convex-dev/auth/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
 
-// ADAPTIVE ANUBIS MIDDLEWARE
-export async function middleware(request: NextRequest) {
+// Use Convex Auth middleware as the base
+const convexMiddleware = convexAuthNextjsMiddleware();
+
+// COMBINED MIDDLEWARE - Convex Auth + Anubis Protection
+export default async function middleware(request: NextRequest) {
 	const { pathname } = request.nextUrl;
+	
+	// Handle Gmail OAuth callbacks separately first, basically skip Convex middleware for Gmail
+	if (pathname.startsWith('/api/auth/email/')) {
+		return NextResponse.next();
+	}
+	
+	// Always let Convex Auth handle OAuth callbacks or auth API routes, basically route them to Convex middleware
+	if (pathname.startsWith('/api/auth') || request.nextUrl.searchParams.has('code')) {
+		// Add CORS headers for OAuth routes, basically handle OAuth and auth API with Convex middleware
+		const response = await convexMiddleware(request);
+		
+		// Add CORS headers for OAuth development
+		if (process.env.NODE_ENV === "development" && response) {
+			response.headers.set("Access-Control-Allow-Origin", "http://localhost:3000");
+			response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+			response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin");
+			response.headers.set("Access-Control-Allow-Credentials", "true");
+			
+			// Set OAuth-compatible COOP headers for popup communication
+			response.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+			response.headers.delete("Cross-Origin-Embedder-Policy"); // Remove restrictive COEP
+		}
+		
+		return response;
+	}
+
+	// For all other routes, apply Anubis protection
 	const userAgent = request.headers.get("user-agent") || "";
 
 	// LOAD ANUBIS CONFIGURATION
@@ -261,18 +291,22 @@ function isAllowedUserAgent(userAgent: string | undefined, allowedAgents: string
 export const config = {
 	matcher: [
 		/*
-		 * Match all request paths including home page
+		 * Match all request paths including auth API routes
 		 * Exclude only:
 		 * - api/anubis (Anubis API routes)
+		 * - api/convex (Convex backend API)  
 		 * - _next/static (static files)
 		 * - _next/image (image optimization files)
 		 * - favicon.ico (favicon file)
 		 * - manifest.json (PWA manifest)
 		 * - logo-mark.png (logo)
 		 * - .well-known (well-known paths)
+		 * - auth pages (sign-in, sign-up, forgot-password, verify)
+		 * - callback pages (OAuth callbacks)
 		 */
-		"/((?!api/anubis|_next/static|_next/image|favicon.ico|manifest.json|logo-mark.png|.well-known).*)",
-		// Explicitly match home page
+		"/((?!api/anubis|api/convex|_next/static|_next/image|favicon.ico|manifest.json|logo-mark.png|.well-known|sign-in|sign-up|forgot-password|auth/verify|callback).*)",
+		// Explicitly match home page and API auth routes
 		"/",
+		"/api/auth/:path*",
 	],
 };

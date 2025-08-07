@@ -42,11 +42,12 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { Handle, Position, useReactFlow, useStore } from "@xyflow/react";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
 // Convex integration
 import { useQuery } from "convex/react";
 import { toast } from "sonner";
+import { useFlowMetadataOptional } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -350,10 +351,6 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     retryCount,
   } = nodeData as EmailReaderData;
 
-  console.log("🚀 EmailReader render:", { id, accountId, isConnected });
-
-  const categoryStyles = CATEGORY_TEXT.EMAIL;
-
   // Global React‑Flow store (nodes & edges) – triggers re‑render on change
   const _nodes = useStore((s) => s.nodes);
   const _edges = useStore((s) => s.edges);
@@ -364,7 +361,11 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   // 4.3  Convex integration
   // -------------------------------------------------------------------------
-  const { user, token } = useAuthContext();
+  	const { user, authToken: token } = useAuth();
+  const flowMetadata = useFlowMetadataOptional();
+  const canEdit = flowMetadata?.flow?.canEdit ?? true;
+
+  // Fetch email accounts for both owners and viewers - viewers can use their own accounts
   const emailAccounts = useQuery(
     api.emailAccounts.getEmailAccountsByUserEmail,
     // Use hybrid auth: prefer token_hash, fallback to userEmail
@@ -380,98 +381,32 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   const { getNodes, getEdges } = useReactFlow();
 
-  console.log("🔍 About to check connections for node:", id);
-
   const connectedAccountIds = useMemo(() => {
     const edges = _edges.filter(
       (e) => e.target === id && e.targetHandle === "account-input__a"
     );
 
-    console.log("🔍 EmailReader Debug - ALL EDGES:");
-    _edges.forEach((edge, i) => {
-      console.log(`Edge ${i}:`, {
-        source: edge.source,
-        target: edge.target,
-        targetHandle: edge.targetHandle,
-        sourceHandle: edge.sourceHandle,
-        matchesThisNode: edge.target === id,
-      });
-    });
-    console.log('🔍 Looking for targetHandle: "account-input"');
-    console.log("🔍 This node ID:", id);
-
-    const connectedAccountNodes = edges
-      .map((e) => {
-        const sourceNode = _nodes.find((n) => n.id === e.source);
-        console.log(
-          "🔍 Source node found:",
-          sourceNode?.id,
-          sourceNode?.type,
-          sourceNode?.data
-        );
-        return sourceNode;
-      })
-      .filter(Boolean)
-      .filter((n) => {
-        const isValid =
-          n?.type === "emailAccount" &&
-          n?.data?.isConnected &&
-          n?.data?.accountId;
-        console.log("🔍 Node validation:", {
-          nodeId: n?.id,
-          type: n?.type,
-          isConnected: n?.data?.isConnected,
-          accountId: n?.data?.accountId,
-          isValid,
-        });
-        return isValid;
-      });
-
-    const accountIds = connectedAccountNodes
-      .map((node) => node?.data?.accountId)
-      .filter(Boolean);
-    console.log("🔍 Connected account IDs:", accountIds);
-    return accountIds;
-  }, [_nodes, _edges, id]);
+    return edges.map((e) => e.source);
+  }, [_edges, id]);
 
   // -------------------------------------------------------------------------
   // 4.5  Available accounts (filtered by connected nodes)
   // -------------------------------------------------------------------------
   const availableAccounts = useMemo(() => {
-    console.log("📊 EmailReader availableAccounts debug:", {
-      emailAccountsCount: emailAccounts?.length || 0,
-      connectedAccountIds,
-      emailAccounts: emailAccounts?.map((acc) => ({
-        id: acc._id,
-        email: acc.email,
-        displayName: acc.display_name,
-      })),
-    });
-
     if (!(emailAccounts && Array.isArray(emailAccounts))) {
-      console.log("📊 No email accounts available");
       return [];
     }
 
     // Only show accounts from connected nodes (no fallback to all accounts)
     if (connectedAccountIds.length === 0) {
-      console.log("📊 No connected account IDs");
       return []; // No connections = no available accounts
     }
 
     // Filter to show only accounts from connected nodes
     const filteredAccounts = emailAccounts.filter((account) => {
       const isIncluded = connectedAccountIds.includes(account._id);
-      console.log("📊 Account filter:", {
-        accountId: account._id,
-        email: account.email,
-        isIncluded,
-        connectedIds: connectedAccountIds,
-      });
       return isIncluded;
     });
-
-    console.log("📊 Filtered accounts:", filteredAccounts.length);
 
     return filteredAccounts.map((account) => ({
       value: account._id,
@@ -593,8 +528,6 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
         folder: "INBOX", // Default folder
         limit: batchSize,
       });
-
-      console.log("📧 Emails fetched:", emails);
 
       // Format emails for better readability
       const formattedEmails = emails.map((email, index) => ({

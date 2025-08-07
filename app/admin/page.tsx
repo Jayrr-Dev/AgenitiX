@@ -1,11 +1,14 @@
 "use client";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { UserDropdown } from "@/components/auth/UserDropdown";
+import { FlowMigration } from "@/components/admin/FlowMigration";
+import { StarterTemplateChecker } from "@/components/admin/StarterTemplateChecker";
 
 const AdminContent = () => {
-	const { user } = useAuthContext();
+	const auth = useAuth();
+	const { user } = auth;
 
 	return (
 		<div className="min-h-screen bg-background">
@@ -132,21 +135,80 @@ const AdminContent = () => {
 					</div>
 				</div>
 
+				{/* USER INFO DEBUG */}
+				<div className="mt-8 rounded-lg border border-border bg-card p-6">
+					<h3 className="mb-4 font-semibold text-foreground text-lg">Authentication Debug</h3>
+					<div className="space-y-2 text-sm">
+						<p><strong>User ID:</strong> {user?.id || "Not available"}</p>
+						<p><strong>Name:</strong> {user?.name || "Not available"}</p>
+						<p><strong>Email:</strong> {user?.email || "Not available"}</p>
+						<p><strong>Image:</strong> {user?.image || "Not available"}</p>
+						
+						<div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
+							<strong>Authentication Status:</strong>
+							<div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+								<div>Is Authenticated: {auth.isAuthenticated ? "✅ Yes" : "❌ No"}</div>
+								<div>OAuth Active: {auth.isOAuthAuthenticated ? "✅ Yes" : "❌ No"}</div>
+								<div>Auth Token: {auth.authToken ? "✅ Present" : "❌ Missing"}</div>
+								<div>Magic Link Token: {localStorage.getItem("agenitix_auth_token") ? "✅ Present" : "❌ Missing"}</div>
+							</div>
+						</div>
+						
+						<div className="mt-4 p-3 bg-green-50 rounded border border-green-200">
+							<strong>Delete Permission Check:</strong>
+							<div className="mt-2 text-xs">
+								{auth.isAuthenticated && user?.id ? (
+									<span className="text-green-600">✅ User can perform delete operations</span>
+								) : (
+									<span className="text-red-600">❌ Delete operations will fail - user not properly authenticated</span>
+								)}
+							</div>
+						</div>
+						
+						<div className="mt-4 p-3 bg-muted/50 rounded text-xs">
+							<strong>Full User Object:</strong>
+							<pre className="mt-1 whitespace-pre-wrap">{JSON.stringify(user, null, 2)}</pre>
+						</div>
+					</div>
+				</div>
+
+				{/* STARTER TEMPLATE CHECKER */}
+				<div className="mt-8">
+					<StarterTemplateChecker userId={user?.id} />
+				</div>
+
+				{/* FLOW MIGRATION TOOL */}
+				<div className="mt-8">
+					<FlowMigration />
+				</div>
+
 				{/* TEST ACTIONS */}
 				<div className="mt-8 rounded-lg border border-border bg-card p-6">
 					<h3 className="mb-4 font-semibold text-foreground text-lg">Test Actions</h3>
 					<div className="flex flex-wrap gap-3">
 						<button
 							type="button"
+							onClick={() => window.location.reload()}
 							className="rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
 						>
 							Refresh Page
 						</button>
 						<button
 							type="button"
-							className="rounded-lg bg-green-500 px-4 py-2 text-white transition-colors hover:bg-green-600"
+							onClick={() => {
+								// Force clear all auth data and redirect
+								localStorage.clear();
+								sessionStorage.clear();
+								document.cookie.split(";").forEach(c => {
+									const eqPos = c.indexOf("=");
+									const name = eqPos > -1 ? c.substr(0, eqPos) : c;
+									document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+								});
+								window.location.href = '/';
+							}}
+							className="rounded-lg bg-red-500 px-4 py-2 text-white transition-colors hover:bg-red-600"
 						>
-							Test API Call
+							Force Sign Out
 						</button>
 						<button
 							type="button"

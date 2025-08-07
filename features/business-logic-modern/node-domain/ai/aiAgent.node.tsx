@@ -13,7 +13,7 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import {
+import React, {
   type ChangeEvent,
   memo,
   useCallback,
@@ -366,7 +366,7 @@ const extractCleanText = (value: unknown): string => {
     }
 
     // Last resort: stringify the object but only if it contains useful data
-    const hasUsefulData = Object.keys(obj).some(
+    const hasUsefulData = Object.keys(obj || {}).some(
       (key) => typeof obj[key] === "string" || typeof obj[key] === "number"
     );
 
@@ -408,6 +408,14 @@ const CONTENT = {
  * Builds a NodeSpec whose size keys can change at runtime via node data.
  */
 function createDynamicSpec(data: AiAgentData): NodeSpec {
+  // Debug dynamic spec creation to track maximum depth errors
+  if (process.env.NODE_ENV === "development") {
+    console.log("🔧 createDynamicSpec called for AiAgent:", {
+      expandedSize: data.expandedSize,
+      collapsedSize: data.collapsedSize,
+      isExpanded: data.isExpanded,
+    });
+  }
   const expanded =
     EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
     EXPANDED_SIZES.FE3;
@@ -467,6 +475,9 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
       threadId: null,
       output: null,
       store: null,
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when enabled
+      isExpanded: false, // Default to collapsed
     }),
     dataSchema: AiAgentDataSchema,
     controls: {
@@ -2044,6 +2055,22 @@ const AiAgentNode = memo(
 const AiAgentNodeWithDynamicSpec = memo(
   (props: NodeProps) => {
     const { nodeData } = useNodeData(props.id, props.data);
+
+    // Debug node data changes
+    const prevNodeDataRef = React.useRef(nodeData);
+    React.useEffect(() => {
+      if (process.env.NODE_ENV === "development") {
+        console.log("📊 AiAgent node data changed:", {
+          nodeId: props.id,
+          prevData: prevNodeDataRef.current,
+          newData: nodeData,
+          changedKeys: Object.keys(nodeData || {}).filter(
+            (key) => nodeData[key] !== prevNodeDataRef.current?.[key]
+          ),
+        });
+      }
+      prevNodeDataRef.current = nodeData;
+    }, [nodeData, props.id]);
 
     // Recompute spec only when the size keys change
     const dynamicSpec = useMemo(

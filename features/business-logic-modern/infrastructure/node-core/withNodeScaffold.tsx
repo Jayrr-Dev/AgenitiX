@@ -15,6 +15,7 @@ import {
   useCategoryThemeWithSpec,
   useNodeStyleClasses,
 } from "@/features/business-logic-modern/infrastructure/theming/stores/nodeStyleStore";
+import { debugNodeData } from "@/lib/debug-node-renders";
 import type { NodeProps, Position } from "@xyflow/react";
 import { useUpdateNodeInternals } from "@xyflow/react";
 import { useTheme } from "next-themes";
@@ -193,8 +194,23 @@ export function withNodeScaffold(
   spec: NodeSpec,
   Component: React.FC<NodeProps>
 ) {
+  // Debug the spec creation to track maximum depth errors
+  if (process.env.NODE_ENV === "development") {
+    console.log("🔧 withNodeScaffold called with spec:", {
+      specKind: spec.kind,
+      handlesCount: spec.handles?.length || 0,
+      size: spec.size,
+    });
+  }
+
   // The returned component is what React Flow will render.
   const WrappedComponent = (props: NodeProps) => {
+    // Debug node data changes
+    const prevDataRef = React.useRef(props.data);
+    React.useEffect(() => {
+      debugNodeData(props.id, props.data, prevDataRef.current);
+      prevDataRef.current = props.data;
+    }, [props.data, props.id]);
     // Get ReactFlow's updateNodeInternals hook
     const updateNodeInternals = useUpdateNodeInternals();
 

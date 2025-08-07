@@ -7,6 +7,7 @@ import storeLocal from '../../../node-domain/store/storeLocal.node';
 import aiManager from '../../../node-domain/ai/aiManager.node';
 import createObject from '../../../node-domain/create/createObject.node';
 import createMap from '../../../node-domain/create/createMap.node';
+import viewObject from '../../../node-domain/view/viewObject.node';
 // Add new node imports here (Plop can auto-inject these)
 import aiAgent from "../../../node-domain/ai/aiAgent.node";
 import createText from "../../../node-domain/create/createText.node";
@@ -51,6 +52,7 @@ export function useDynamicNodeTypes() {
 			aiManager,
 			createObject,
 			createMap,
+			viewObject,
 			// Add new node types here
 			aiAgent,
 			testNode,

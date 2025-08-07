@@ -106,7 +106,6 @@ export const StoreInMemoryDataSchema = z
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
     inputs: SafeSchemas.optionalText().nullable().default(null),
-    output: SafeSchemas.optionalText(),
     output: SafeSchemas.optionalText(), // For compatibility with viewText
     expandedSize: SafeSchemas.text("VE1"),
     collapsedSize: SafeSchemas.text("C1W"),
@@ -198,7 +197,6 @@ function createDynamicSpec(data: StoreInMemoryData): NodeSpec {
       operation: "set",
       dataType: "string",
       inputs: null,
-      output: "",
       output: "",
       storageStatus: "ready",
       lastOperation: "",
@@ -379,7 +377,6 @@ const StoreInMemoryNode = memo(
 
         updateNodeData({
           output: result,
-          output: result, // For compatibility with viewText
           storageStatus: status,
           lastOperation: `${operation}:${key}`,
           isActive: true,
@@ -391,7 +388,6 @@ const StoreInMemoryNode = memo(
           error instanceof Error ? error.message : "Unknown error";
         updateNodeData({
           output: `Error: ${errorMsg}`,
-          output: `Error: ${errorMsg}`, // For compatibility with viewText
           storageStatus: "error",
           lastOperation: `${operation}:${key} (failed)`,
           isActive: false,

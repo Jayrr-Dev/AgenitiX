@@ -153,6 +153,9 @@ function createDynamicSpec(data: ViewBooleanData): NodeSpec {
       inputs: null,
       output: null,
       connectionStates: null,
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when enabled
+      isExpanded: false, // Default to collapsed
     }),
     dataSchema: ViewBooleanDataSchema,
     controls: {
@@ -410,7 +413,8 @@ const ViewBooleanNode = memo(
     /* 🔄 Auto-manage isEnabled based on input connections */
     useEffect(() => {
       const hasConnection =
-        connectionStates !== null && Object.keys(connectionStates).length > 0;
+        connectionStates !== null &&
+        Object.keys(connectionStates || {}).length > 0;
       if (hasConnection !== isEnabled) {
         updateNodeData({ isEnabled: hasConnection });
       }
@@ -460,9 +464,10 @@ const ViewBooleanNode = memo(
     // 5.6  Visual state computation
     // -------------------------------------------------------------------------
     const hasConnection =
-      connectionStates !== null && Object.keys(connectionStates).length > 0;
+      connectionStates !== null &&
+      Object.keys(connectionStates || {}).length > 0;
     const connectionCount = connectionStates
-      ? Object.keys(connectionStates).length
+      ? Object.keys(connectionStates || {}).length
       : 0;
     const display = getBooleanDisplay(
       booleanValue as boolean | null,

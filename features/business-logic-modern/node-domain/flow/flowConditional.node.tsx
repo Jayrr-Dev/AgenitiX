@@ -818,7 +818,17 @@ export const FlowConditionalNode = memo(
           updateNodeData({ output: {} });
         }
       }
-    }, [spec.handles, nodeData, updateNodeData, id]);
+    }, [
+      spec.handles,
+      nodeData.isActive,
+      nodeData.isEnabled,
+      nodeData.booleanInput,
+      nodeData.topOutput,
+      nodeData.bottomOutput,
+      nodeData.lastRoute,
+      updateNodeData,
+      id,
+    ]);
 
     // -------------------------------------------------------------------------
     // 4.6  Validation
