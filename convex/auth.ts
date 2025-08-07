@@ -20,18 +20,7 @@ import { Password } from "@convex-dev/auth/providers/Password";
 
 // Debug environment variables in development only, basically check if auth keys are loaded
 if (process.env.NODE_ENV === "development") {
-  console.log("🔑 Convex Auth Environment Debug:", {
-    nodeEnv: process.env.NODE_ENV,
-    hasGitHubId: !!process.env.AUTH_GITHUB_ID,
-    hasGitHubSecret: !!process.env.AUTH_GITHUB_SECRET,
-    hasGoogleId: !!process.env.AUTH_GOOGLE_ID,
-    hasGoogleSecret: !!process.env.AUTH_GOOGLE_SECRET,
-    hasAuthSecret: !!process.env.AUTH_SECRET,
-    gitHubIdPrefix: process.env.AUTH_GITHUB_ID?.substring(0, 8) + "...",
-    googleIdPrefix: process.env.AUTH_GOOGLE_ID?.substring(0, 8) + "...",
-    authSecretPrefix: process.env.AUTH_SECRET?.substring(0, 8) + "...",
-    allEnvKeys: Object.keys(process.env).filter(key => key.includes('AUTH')),
-  });
+  // Silent environment debugging
 }
 
 export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = convexAuth({
@@ -43,12 +32,6 @@ export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = c
   ],
   callbacks: {
     async afterUserCreatedOrUpdated(ctx, args) {
-      // Log user creation only in development, basically track onboarding flow
-      if (process.env.NODE_ENV === "development") {
-        console.log("🔧 User callback triggered");
-        console.log("Args:", JSON.stringify(args));
-      }
-      
       const { userId, existingUserId } = args;
       const user = await ctx.db.get(userId);
       

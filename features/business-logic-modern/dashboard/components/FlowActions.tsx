@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -68,7 +68,7 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 	const [editIsPrivate, setEditIsPrivate] = useState(flow.private);
 
 	// Auth context
-	const { user, isAuthenticated } = useAuthContext();
+	  const { user, isAuthenticated } = useAuth();
 
 	// Convex mutations
 	const deleteFlow = useMutation(api.flows.deleteFlow);

@@ -114,18 +114,8 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 			`,
 				};
 
-	// For development: Log to console and return success
+	// For development: Return success without logging
 	if (process.env.NODE_ENV === "development") {
-		// Log the magic link to console for development testing
-		console.log("\n🔗 MAGIC LINK FOR DEVELOPMENT:");
-		console.log("=".repeat(50));
-		console.log(`📧 Email: ${to}`);
-		console.log(`👤 Name: ${name}`);
-		console.log(`🔗 Magic Link: ${magicLinkUrl}`);
-		console.log(`📝 Type: ${type}`);
-		console.log("=".repeat(50));
-		console.log("💡 Copy the magic link above to test authentication\n");
-
 		// Return the magic link URL for the API response
 		return {
 			success: true,
@@ -152,7 +142,7 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 		// Determine the from email address
 		const fromEmail = process.env.RESEND_FROM_EMAIL || "AgenitiX <noreply@agenitix.com>";
 
-		console.log(`📧 Sending ${type} email to ${to} using Resend`);
+
 
 		const result = await resend.emails.send({
 			from: fromEmail,
@@ -165,7 +155,7 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 			throw new Error(`Resend API error: ${result.error.message}`);
 		}
 
-		console.log(`✅ Email sent successfully. Message ID: ${result.data?.id}`);
+
 		return { success: true, messageId: result.data?.id || "sent" };
 
 	} catch (error) {
@@ -176,7 +166,7 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 			const { Resend } = await import("resend");
 			const resend = new Resend(process.env.RESEND_API_KEY);
 
-			console.log("🔄 Attempting fallback with Resend default domain...");
+
 
 			const fallbackResult = await resend.emails.send({
 				from: "onboarding@resend.dev", // Resend's default domain
@@ -189,7 +179,7 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<Emai
 				throw new Error(`Fallback Resend API error: ${fallbackResult.error.message}`);
 			}
 
-			console.log(`✅ Fallback email sent successfully. Message ID: ${fallbackResult.data?.id}`);
+
 			return { success: true, messageId: fallbackResult.data?.id || "sent" };
 
 		} catch (fallbackError) {

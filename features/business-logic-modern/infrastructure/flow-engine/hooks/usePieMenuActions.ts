@@ -119,7 +119,6 @@ export function usePieMenuActions(options: UsePieMenuActionsOptions = {}) {
         action: () => {
           // Open sidebar or node creation modal at mouse position
           // This would integrate with your existing node creation system
-          console.log("Add node at position:", mousePosition);
         },
       });
     }
@@ -183,8 +182,7 @@ export function usePieMenuActions(options: UsePieMenuActionsOptions = {}) {
         label: "Debug Info",
         icon: "Settings",
         action: () => {
-          console.log("Selected Node:", selectedNode);
-          console.log("Mouse Position:", mousePosition);
+          // Debug info action - silent in production
         },
       });
     }

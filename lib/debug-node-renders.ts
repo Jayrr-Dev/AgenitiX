@@ -51,24 +51,10 @@ export function debugNodeRender<T extends React.ComponentType<any>>(
     renderCounts.set(componentId, renderCount);
     lastRenderTime.set(componentId, currentTime);
 
-    // Log excessive re-renders
+    // Monitor excessive re-renders silently
     if (renderCount > 10) {
-      console.warn(`⚠️ EXCESSIVE RE-RENDERS in ${componentName}:`, {
-        componentId,
-        renderCount,
-        props: props.data,
-        timeSinceLastRender:
-          currentTime - (lastRenderTime.get(componentId) || 0),
-      });
+      // Silent monitoring - no logging
     }
-
-    // Log every render in development
-    console.log(`🔄 ${componentName} render #${renderCount}:`, {
-      componentId,
-      props: props.data,
-      selected: props.selected,
-      timeSinceLastRender: currentTime - (lastRenderTime.get(componentId) || 0),
-    });
 
     // Clean up render stack after component renders
     setTimeout(() => {
@@ -91,14 +77,7 @@ export function debugNodeData(nodeId: string, data: any, prevData: any) {
   }
 
   if (data !== prevData) {
-    console.log(`📊 Node data changed for ${nodeId}:`, {
-      nodeId,
-      prevData,
-      newData: data,
-      changedKeys: Object.keys(data || {}).filter(
-        (key) => data[key] !== prevData?.[key]
-      ),
-    });
+    // Silent monitoring - no logging
   }
 }
 
@@ -111,12 +90,7 @@ export function debugDynamicSpec(nodeId: string, spec: any, prevSpec: any) {
   }
 
   if (spec !== prevSpec) {
-    console.log(`🔧 Dynamic spec changed for ${nodeId}:`, {
-      nodeId,
-      prevSpec: prevSpec?.handles?.length,
-      newSpec: spec?.handles?.length,
-      specKeys: Object.keys(spec || {}),
-    });
+    // Silent monitoring - no logging
   }
 }
 
@@ -127,5 +101,4 @@ export function resetDebugCounters() {
   renderCounts.clear();
   lastRenderTime.clear();
   renderStack.clear();
-  console.log("🧹 Debug counters reset");
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { GitHubButton } from "@/components/auth/GitHubButton";
@@ -21,7 +21,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 
 export default function SignUpPage() {
-	const { isAuthenticated, isLoading: authLoading } = useAuthContext();
+	  const { isAuthenticated, isLoading: authLoading } = useAuth();
 	const { signIn: convexSignIn } = useAuthActions();
 	const router = useRouter();
 	const [formData, setFormData] = useState({
@@ -77,11 +77,7 @@ export default function SignUpPage() {
 			
 			// Log success in development - magic link will be logged by the auth provider
 			if (process.env.NODE_ENV === "development") {
-				console.log("\n🎉 MAGIC LINK SENT FOR SIGNUP:");
-				console.log(`📧 Email: ${formData.email.trim()}`);
-				console.log(`👤 Name: ${formData.name.trim()}`);
-				console.log("📋 Check the server console above for the magic link URL");
-				console.log("");
+				
 			}
 
 			toast.success("Magic link sent!", {

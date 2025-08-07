@@ -30,7 +30,7 @@ import { AlertTriangle, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useAuthContext } from "./AuthProvider";
+import { useAuth } from "./AuthProvider";
 
 // TOP LEVEL CONSTANTS - Configuration for delete account modal
 const CONFIRMATION_TEXT = "delete";
@@ -55,7 +55,7 @@ export const DeleteAccountModal = ({
   isOpen,
   onClose,
 }: DeleteAccountModalProps) => {
-  const { user, signOut, isAuthenticated, authToken } = useAuthContext();
+  const { user, signOut, isAuthenticated, authToken } = useAuth();
   const deleteAccount = useMutation(api.authFunctions.deleteAccount);
   const router = useRouter();
 

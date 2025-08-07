@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { GitHubButton } from "@/components/auth/GitHubButton";
 import { GoogleButton } from "@/components/auth/GoogleButton";
@@ -20,7 +20,7 @@ import { Loading } from "@/components/Loading";
 import { toast } from "sonner";
 
 export default function SignInPage() {
-	const { isAuthenticated, isLoading: authLoading } = useAuthContext();
+	  const { isAuthenticated, isLoading: authLoading } = useAuth();
 	const { signIn: convexSignIn } = useAuthActions();
 	const router = useRouter();
 	const [email, setEmail] = useState("");
@@ -83,12 +83,7 @@ export default function SignInPage() {
 
 			// Log success in development - magic link will be logged by the auth provider
 			if (process.env.NODE_ENV === "development") {
-				console.log("\n🎉 MAGIC LINK SENT FOR SIGNIN:");
-				console.log(`📧 Email: ${trimmedEmail}`);
-				console.log("📋 Check the server console above for the magic link URL");
-				console.log("💡 The magic link URL should appear in the server logs above");
-				console.log("🔍 If you don't see it, check the terminal where you ran 'pnpm dev'");
-				console.log("");
+				
 			}
 
 			toast.success("Magic link sent!", {

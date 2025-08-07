@@ -14,7 +14,7 @@
 "use client";
 
 import { Loading } from "@/components/Loading";
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -125,7 +125,7 @@ const sortFlows = (flows: FlowType[], sortBy: string) => {
 };
 
 const ExplorePage = () => {
-  const { user, isLoading: authLoading } = useAuthContext();
+  const { user, isLoading: authLoading } = useAuth();
 
   // State management
   const [searchQuery, setSearchQuery] = useState("");

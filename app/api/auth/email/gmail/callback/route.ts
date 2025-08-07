@@ -62,33 +62,7 @@ export async function GET(request: NextRequest) {
   }
   (global as any).requestCounter++;
   
-  console.log(`📧 [${timestamp}] Gmail OAuth Callback START (Request #${(global as any).requestCounter})`);
-  
-  // 🔍 CRITICAL: Log the raw URL first
-  console.log("🔍 RAW REQUEST URL:", request.url);
-  console.log("🔍 REQUEST METHOD:", request.method);
-  console.log("🔍 REQUEST HEADERS:", Object.fromEntries(request.headers.entries()));
-  
-  // 🔍 CHECK FOR CODE IN RAW URL STRING
-  const rawUrlString = request.url;
-  const hasCodeInRawUrl = rawUrlString.includes('code=');
-  console.log("🔍 RAW URL ANALYSIS:", {
-    rawUrl: rawUrlString,
-    hasCodeInRawUrl: hasCodeInRawUrl,
-    codeIndex: rawUrlString.indexOf('code='),
-    urlLength: rawUrlString.length,
-  });
-  
-  // 🔍 CHECK FOR REDIRECT ISSUES
-  const referer = request.headers.get('referer');
-  const userAgent = request.headers.get('user-agent');
-  console.log("🔍 REDIRECT ANALYSIS:", {
-    referer: referer,
-    userAgent: userAgent,
-    isFromGoogle: referer?.includes('accounts.google.com'),
-    isFromLocalhost: referer?.includes('localhost'),
-    hasReferer: !!referer,
-  });
+
   
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
@@ -98,96 +72,7 @@ export async function GET(request: NextRequest) {
   const authuser = searchParams.get("authuser");
   const prompt = searchParams.get("prompt");
   
-  // 🔍 MANUAL URL PARSING CHECK
-  const url = new URL(request.url);
-  const manualParams = Object.fromEntries(url.searchParams.entries());
-  console.log("🔍 MANUAL URL PARSING:", {
-    originalUrl: request.url,
-    searchParams: manualParams,
-    hasCodeManual: !!manualParams.code,
-    codeManual: manualParams.code ? manualParams.code.substring(0, 20) + "..." : null,
-    nextJsCode: code,
-    nextJsHasCode: !!code,
-    paramsMatch: manualParams.code === code,
-  });
-  
-  // 🔍 ENHANCED DEBUGGING: Log all possible parameters that Google might send
-  const allParams = Object.fromEntries(searchParams.entries());
-  console.log("📧 Gmail OAuth Callback params:", { 
-    hasCode: !!code, 
-    code: code ? code.substring(0, 20) + "..." : null,
-    hasState: !!state, 
-    state: state ? state.substring(0, 50) + "..." : null,
-    error,
-    url: request.url,
-    searchParams: allParams,
-    userAgent: request.headers.get('user-agent'),
-    referer: request.headers.get('referer'),
-    timestamp
-  });
 
-  // 🔍 CRITICAL: Log the EXACT callback URL to debug redirect URI mismatch
-  console.log("🔍 EXACT Callback URL from Google:", request.url);
-  console.log("🔍 Parsed Callback Parameters:", {
-    code: code,
-    error: error,
-    state: state,
-    scope: searchParams.get('scope'),
-    authuser: searchParams.get('authuser'),
-    prompt: searchParams.get('prompt'),
-    allParams: allParams
-  });
-
-  // 🔍 ADDITIONAL DEBUGGING: Check for common OAuth issues
-  const expectedRedirectUri = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/auth/email/gmail/callback`;
-  console.log("🔍 OAuth Debug Info:", {
-    expectedRedirectUri,
-    actualUrl: request.url,
-    hasCode: !!code,
-    hasError: !!error,
-    hasState: !!state,
-    scopeReceived: searchParams.get('scope'),
-    authuser: searchParams.get('authuser'),
-    prompt: searchParams.get('prompt'),
-    sessionState: searchParams.get('session_state'),
-    hd: searchParams.get('hd'), // hosted domain
-  });
-
-  // 🔍 ADDITIONAL ANALYSIS: Check for specific OAuth flow issues
-  console.log("🔍 OAuth Flow Analysis:", {
-    hasScopeButNoCode: !!scope && !code,
-    hasStateButNoCode: !!state && !code,
-    hasAuthuser: !!authuser,
-    hasPrompt: !!prompt,
-    scopeIncludesGmail: scope?.includes('gmail'),
-    scopeIncludesEmail: scope?.includes('email'),
-    scopeIncludesProfile: scope?.includes('profile'),
-    scopeIncludesOpenId: scope?.includes('openid'),
-  });
-
-  // 🔍 CRITICAL: Check if this is a user cancellation or consent screen issue
-  console.log("🔍 OAuth Flow Status:", {
-    isUserCancellation: !code && !error && !!state,
-    isConsentScreenIssue: !code && !error && !!scope,
-    isRedirectUriMismatch: !!error && error === 'redirect_uri_mismatch',
-    isInvalidClient: !!error && error === 'invalid_client',
-    isAccessDenied: !!error && error === 'access_denied',
-    hasValidState: !!state && state !== 'test', // Check if state is a real session token
-    isConsentFlowIncomplete: !code && !!scope && !!state && prompt === 'consent',
-  });
-
-  // 🔍 SPECIFIC CONSENT FLOW DETECTION
-  const isConsentFlowIncomplete = !code && !!scope && !!state && prompt === 'consent';
-  if (isConsentFlowIncomplete) {
-    console.log("🔍 CONSENT FLOW ISSUE DETECTED:", {
-      hasScope: !!scope,
-      hasState: !!state,
-      prompt: prompt,
-      authuser: authuser,
-      scopeIncludesGmail: scope?.includes('gmail'),
-      scopeIncludesEmail: scope?.includes('email'),
-    });
-  }
 
   // Helper function to escape HTML for XSS protection
   const escapeHtml = (str: string) => {
@@ -248,8 +133,7 @@ export async function GET(request: NextRequest) {
       errorDescription,
       hasScope: !!scope,
       authuser,
-      prompt,
-      allParams: allParams
+      prompt
     });
     
     // Determine specific error message based on parameters
@@ -257,7 +141,7 @@ export async function GET(request: NextRequest) {
     let errorType = "NO_CODE";
     let userGuidance = "Please try the authentication again.";
     
-    if (isConsentFlowIncomplete) {
+    if (scope && !error && prompt === 'consent') {
       errorMsg = "Consent flow was not completed. You need to click 'Allow' to grant access to your Gmail account.";
       errorType = "CONSENT_INCOMPLETE";
       userGuidance = "When the Google consent screen appears, please click 'Allow' to grant access to your Gmail account. Then try the authentication again.";
@@ -331,7 +215,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log("Exchanging authorization code for tokens...");
+
 
     // Exchange code for tokens using credential provider
     const tokens = await exchangeCodeForTokens("gmail", code);
@@ -340,7 +224,7 @@ export async function GET(request: NextRequest) {
       throw new Error("Failed to exchange authorization code for tokens");
     }
 
-    console.log("Getting user info from Google...");
+
 
     // Get user info using credential provider
     const userInfo = await getUserInfo("gmail", tokens.accessToken);
@@ -368,7 +252,7 @@ export async function GET(request: NextRequest) {
     // Encode in base64 as expected by handleAuthSuccess
     const authDataEncoded = base64url(JSON.stringify(authData));
 
-    console.log("Authentication successful for:", userInfo.email);
+
 
     // Create HTML page that communicates with parent window via postMessage
     const html = `<!DOCTYPE html>
@@ -427,7 +311,7 @@ export async function GET(request: NextRequest) {
 					return true;
 				}
 			} catch (error) {
-				console.log('PostMessage to parent failed:', error);
+				// Silent fail for production
 			}
 			return false;
 		}

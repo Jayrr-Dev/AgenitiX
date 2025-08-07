@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
 import { Loading } from "@/components/Loading";
-import { useAuthContext } from "./AuthProvider";
+import { useAuth } from "./AuthProvider";
 
 interface ProtectedRouteProps {
 	children: ReactNode;
@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: Pick<ProtectedRouteProps, "children">) => {
-	const { user, isLoading, isAuthenticated } = useAuthContext();
+	const { user, isLoading, isAuthenticated } = useAuth();
 	const router = useRouter();
 	const [mounted, setMounted] = useState(false);
 

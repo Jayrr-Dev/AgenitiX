@@ -38,10 +38,8 @@ export const FlowMigration = () => {
 		
 		setIsRunning(true);
 		try {
-			console.log("🔧 Starting flow user_id migration...");
 			const result = await migrateFlowUserIds();
 			setMigrationResult(result);
-			console.log("✅ Migration completed:", result);
 		} catch (error) {
 			console.error("❌ Migration failed:", error);
 			setMigrationResult({
@@ -66,10 +64,8 @@ export const FlowMigration = () => {
 			// In a real implementation, you'd get this from the current user context
 			const userId = "your-user-id-here"; // Replace with actual user ID
 			
-			console.log("🚀 Creating starter templates...");
 			const result = await getStarterTemplatesForUser({ user_id: userId as any });
 			setStarterTemplateResult(result);
-			console.log("✅ Starter templates created:", result);
 		} catch (error) {
 			console.error("❌ Failed to create starter templates:", error);
 			setStarterTemplateResult({

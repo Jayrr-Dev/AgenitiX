@@ -10,11 +10,11 @@ import { useTheme } from "next-themes";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { useAuthContext } from "./AuthProvider";
+import { useAuth } from "./AuthProvider";
 import { UserDropdown } from "./UserDropdown";
 
 export const ProtectedNavigation = () => {
-	const { user } = useAuthContext();
+	const { user } = useAuth();
 	const { theme, setTheme } = useTheme();
 	const [searchQuery, setSearchQuery] = useState("");
 	const router = useRouter();

@@ -52,8 +52,7 @@ async function getAuthenticatedUserInAction(ctx: any, tokenHash?: string) {
       const user = await ctx.runQuery(api.users.getUserById, { userId: userId as any });
       return user;
     } catch (error) {
-      console.log('Failed to get Convex Auth user:', error);
-      return null;
+      // Failed to get Convex Auth user
     }
   }
 
@@ -90,8 +89,7 @@ async function getAuthenticatedUser(ctx: any, tokenHash?: string) {
       const user = await ctx.db.get(userId as any);
       return user;
     } catch (error) {
-      console.log('Failed to get Convex Auth user:', error);
-      return null;
+      // Failed to get Convex Auth user
     }
   }
 
@@ -327,11 +325,6 @@ export const getEmailAccountsByUserEmail = query({
     token_hash: v.optional(v.string()), // Support for custom auth
   },
   handler: async (ctx, args) => {
-    console.log("📧 getEmailAccountsByUserEmail called", {
-      userEmail: args.userEmail,
-      tokenProvided: !!args.token_hash,
-    });
-
     let identity = null;
     let userEmail = args.userEmail;
 
@@ -340,7 +333,6 @@ export const getEmailAccountsByUserEmail = query({
       identity = await getUserIdentityFromToken(ctx, args.token_hash);
       if (identity) {
         userEmail = identity.email;
-        console.log("✅ Using custom auth, email:", userEmail);
       }
     }
 
@@ -350,15 +342,13 @@ export const getEmailAccountsByUserEmail = query({
         identity = await ctx.auth.getUserIdentity();
         if (identity) {
           userEmail = identity.email;
-          console.log("✅ Using Convex Auth, email:", userEmail);
         }
       } catch (error) {
-        console.log("⚠️ Convex Auth not available, using custom auth only");
+        // Convex Auth not available, using custom auth only
       }
     }
 
     if (!userEmail) {
-      console.log("❌ No user email available");
       return [];
     }
 
@@ -369,7 +359,6 @@ export const getEmailAccountsByUserEmail = query({
       .first();
 
     if (!user) {
-      console.log("❌ User not found for email:", userEmail);
       return [];
     }
 
@@ -380,7 +369,6 @@ export const getEmailAccountsByUserEmail = query({
       .filter((q) => q.eq(q.field("is_active"), true))
       .collect();
 
-    console.log("✅ Found email accounts:", accounts.length);
     return accounts;
   },
 });
@@ -426,8 +414,6 @@ export const testEmailConnection = action({
       });
 
       if (account.provider === "gmail") {
-        console.log("Testing Gmail API connection...");
-
         // Test Gmail API connection
         const response = await fetch(
           "https://www.googleapis.com/oauth2/v2/userinfo",
@@ -438,22 +424,14 @@ export const testEmailConnection = action({
           }
         );
 
-        console.log("Gmail API response:", {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok,
-        });
-
         if (!response.ok) {
           const errorText = await response.text();
-          console.log("Gmail API error response:", errorText);
           throw new Error(
             `Gmail API test failed: ${response.status} ${response.statusText} - ${errorText}`
           );
         }
 
         const userInfo = await response.json();
-        console.log("Gmail user info:", userInfo);
 
         // Verify the email matches
         if (userInfo.email !== account.email) {
@@ -461,8 +439,6 @@ export const testEmailConnection = action({
             `Email mismatch: expected ${account.email}, got ${userInfo.email}`
           );
         }
-
-        console.log("Gmail connection test successful");
       }
 
       // Update connection status
@@ -506,7 +482,7 @@ export const getEmailReplyTemplates = query({
       try {
         identity = await ctx.auth.getUserIdentity();
       } catch (error) {
-        console.log("Convex Auth not available, using custom auth only");
+        // Convex Auth not available, using custom auth only
         return [];
       }
     }
@@ -575,7 +551,7 @@ export const storeEmailReplyTemplate = mutation({
       try {
         identity = await ctx.auth.getUserIdentity();
       } catch (error) {
-        console.log("Convex Auth not available, using custom auth only");
+        // Convex Auth not available, using custom auth only
       }
     }
 
@@ -850,7 +826,7 @@ export const sendEmail = action({
       }
 
       // Log the sent email (optional)
-      console.log("Email sent successfully:", {
+      debug("sendEmail", "Email sent successfully:", {
         accountId: args.accountId,
         to: args.to,
         subject: args.subject,
@@ -863,7 +839,7 @@ export const sendEmail = action({
         sentAt: Date.now(),
       };
     } catch (error) {
-      console.error("Send email error:", error);
+      debug("sendEmail", "Send email error:", error);
       throw new Error(
         `Failed to send email: ${error instanceof Error ? error.message : "Unknown error"}`
       );

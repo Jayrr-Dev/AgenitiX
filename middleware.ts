@@ -14,7 +14,6 @@ export default async function middleware(request: NextRequest) {
 	
 	// Handle Gmail OAuth callbacks separately first, basically skip Convex middleware for Gmail
 	if (pathname.startsWith('/api/auth/email/')) {
-		console.log(`🔍 MIDDLEWARE: Gmail OAuth route detected: ${pathname}`);
 		return NextResponse.next();
 	}
 	

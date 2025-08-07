@@ -70,5 +70,5 @@ if (process.env.NODE_ENV === "development") {
     ],
   });
 
-  console.log("🔍 Why Did You Render enabled for debugging");
+
 }

@@ -1154,8 +1154,6 @@ export const migrateFlowUserIds = mutation({
           const newUserId = authToUserMap.get(flow.user_id);
           
           if (newUserId && newUserId !== flow.user_id) {
-            console.log(`Migrating flow ${flow._id} from auth_users ID ${flow.user_id} to users ID ${newUserId}`);
-            
             await ctx.db.patch(flow._id, {
               user_id: newUserId as Id<"users">,
               updated_at: new Date().toISOString(),

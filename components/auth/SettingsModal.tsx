@@ -38,7 +38,7 @@ import {
 import { useTheme } from "next-themes";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useAuthContext } from "./AuthProvider";
+import { useAuth } from "./AuthProvider";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -46,7 +46,7 @@ interface SettingsModalProps {
 }
 
 export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
-  const { user } = useAuthContext();
+  const { user } = useAuth();
   const { theme, setTheme } = useTheme();
 
   // Local state for settings

@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
 	}
 
 	try {
-		console.log("Exchanging authorization code for tokens...");
+
 
 		// Exchange code for tokens using credential provider
 		const tokens = await exchangeCodeForTokens("outlook", code);
@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
 			throw new Error("Failed to exchange authorization code for tokens");
 		}
 
-		console.log("Getting user info from Microsoft...");
+
 
 		// Get user info using credential provider
 		const userInfo = await getUserInfo("outlook", tokens.accessToken);
@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
 		// Encode in base64 as expected by handleAuthSuccess
 		const authDataEncoded = btoa(JSON.stringify(authData));
 
-		console.log("Authentication successful for:", userInfo.email);
+
 
 		// Create HTML page that communicates with parent window
 		const html = `<!DOCTYPE html>
@@ -207,7 +207,7 @@ export async function GET(request: NextRequest) {
 				channel.close();
 				return true;
 			} catch (error) {
-				console.log('BroadcastChannel failed:', error);
+				// Silent fail for production
 				return false;
 			}
 		}

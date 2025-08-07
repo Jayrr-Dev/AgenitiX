@@ -20,7 +20,7 @@ import {
   useRef,
 } from "react";
 import { toast } from "sonner";
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
 import { useAction, useMutation } from "convex/react";
 import type { EmailProviderType } from "../types";
@@ -118,7 +118,7 @@ export const EmailAccountProvider = ({
     isOAuthAuthenticated,
     sessionSource,
     recoverAuth,
-  } = useAuthContext();
+  } = useAuth();
 
   const token = useMemo(
     () => authToken || (user?.id ? `convex_user_${user.id}` : null),
@@ -135,7 +135,9 @@ export const EmailAccountProvider = ({
   /* -------------------------------------------------------------------- */
   const onOAuthSuccess = useCallback(
     async (authDataEncoded: string) => {
-      if (!token) return;
+      if (!token) {
+        return;
+      }
       try {
         const authData = JSON.parse(atob(authDataEncoded)) as EmailConfig & {
           sessionToken?: string;
@@ -149,7 +151,7 @@ export const EmailAccountProvider = ({
         });
         if (!accountId) throw new Error("Failed to save account");
 
-        updateNodeData({
+        const updateData = {
           ...authData,
           displayName: authData.displayName ?? authData.email,
           isConfigured: true,
@@ -158,7 +160,9 @@ export const EmailAccountProvider = ({
           lastValidated: Date.now(),
           accountId,
           lastError: "",
-        });
+        };
+        
+        updateNodeData(updateData);
         toast.success("Email account connected!", {
           description: `Successfully connected ${authData.email}`,
         });
@@ -235,8 +239,15 @@ export const EmailAccountProvider = ({
 
         // Listen for messages from popup window
         const handlePopupMessage = (event: MessageEvent) => {
+          // Filter out React DevTools messages
+          if (event.data?.source === 'react-devtools-bridge') {
+            return;
+          }
+          
           // Only accept messages from our origin
-          if (event.origin !== window.location.origin) return;
+          if (event.origin !== window.location.origin) {
+            return;
+          }
 
           if (event.data?.type === "OAUTH_SUCCESS") {
             window.removeEventListener("message", handlePopupMessage);
@@ -278,7 +289,6 @@ export const EmailAccountProvider = ({
           } catch (error) {
             // COOP policy blocks window.closed check - this is expected
             // The popup will communicate via postMessage instead
-            console.log("COOP policy blocks window.closed check - using postMessage fallback");
           }
         }, 1000);
 
@@ -292,7 +302,6 @@ export const EmailAccountProvider = ({
             }
           } catch (error) {
             // COOP policy blocks window.close - this is expected
-            console.log("COOP policy blocks window.close - popup will close itself");
           }
           updateNodeData({
             isAuthenticating: false,

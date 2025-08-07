@@ -406,15 +406,7 @@ export const useFlowStore = create<FlowStore>()(
                 // Update node data
                 node.data = newData;
 
-                // Special logging for handle position changes
-                if (data.handleOverrides !== undefined) {
-                  console.log(
-                    `🔄 Handle positions updated for node ${nodeId}:`,
-                    {
-                      handleOverrides: data.handleOverrides,
-                    }
-                  );
-                }
+                // Handle position changes - silent in production
 
                 // Add debug logging for development
                 if (process.env.NODE_ENV === "development") {

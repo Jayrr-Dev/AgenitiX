@@ -12,10 +12,10 @@
 
 "use client";
 
-import { useAuthContext } from "./AuthProvider";
+import { useAuth } from "./AuthProvider";
 
 export const AuthDebugComponent = () => {
-  const auth = useAuthContext();
+  const auth = useAuth();
 
   // Only show in development
   if (process.env.NODE_ENV !== "development") {

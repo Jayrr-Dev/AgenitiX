@@ -1,13 +1,13 @@
 "use client";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { UserDropdown } from "@/components/auth/UserDropdown";
 import { FlowMigration } from "@/components/admin/FlowMigration";
 import { StarterTemplateChecker } from "@/components/admin/StarterTemplateChecker";
 
 const AdminContent = () => {
-	const auth = useAuthContext();
+	const auth = useAuth();
 	const { user } = auth;
 
 	return (

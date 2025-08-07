@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 // ============================================================================
 // STORAGE CONSTANTS
@@ -170,7 +170,7 @@ const debouncedSave = (settings: InspectorSettingsWithOrder, userId?: string) =>
  */
 export function useInspectorSettings() {
 	// Get authenticated user for user-specific settings, basically access current user
-	const { user } = useAuthContext();
+	  const { user } = useAuth();
 	
 	// Initialize with defaults for SSR safety, basically start with safe values
 	const [settings, setSettings] = useState<InspectorSettingsWithOrder>(DEFAULT_SETTINGS_WITH_ORDER);

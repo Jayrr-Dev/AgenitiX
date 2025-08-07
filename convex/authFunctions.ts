@@ -431,7 +431,7 @@ export const deleteAccount = mutation({
           .first();
       }
     } catch (error) {
-      console.log("Convex Auth not available, trying custom auth");
+      // Convex Auth not available, trying custom auth
     }
 
     // Fallback to magic link auth if provided

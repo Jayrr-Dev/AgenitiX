@@ -54,7 +54,6 @@ export function useWorkflowActions({
 			// - Serializing the workflow data
 			// - Creating a downloadable JSON/XML file
 			// - Showing export options modal
-			console.log('Exporting workflow...', { flowId });
 		} catch (error) {
 			console.error('Workflow export failed:', error);
 		}
@@ -82,7 +81,6 @@ export function useWorkflowActions({
 			// - Validating the workflow graph
 			// - Starting the execution engine
 			// - Showing execution progress
-			console.log('Running workflow...', { flowId });
 		} catch (error) {
 			console.error('Workflow execution failed:', error);
 		}
@@ -100,7 +98,6 @@ export function useWorkflowActions({
 			// - Sending stop signal to execution engine
 			// - Cleaning up running processes
 			// - Updating execution status
-			console.log('Stopping workflow...', { flowId });
 		} catch (error) {
 			console.error('Workflow stop failed:', error);
 		}
@@ -118,7 +115,6 @@ export function useWorkflowActions({
 			// - Opening settings modal/panel
 			// - Loading current workflow configuration
 			// - Providing editing interface for metadata
-			console.log('Opening workflow settings...', { flowId });
 		} catch (error) {
 			console.error('Failed to open workflow settings:', error);
 		}

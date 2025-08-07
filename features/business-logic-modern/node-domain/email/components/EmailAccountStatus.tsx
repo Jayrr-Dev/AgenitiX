@@ -59,6 +59,8 @@ export const EmailAccountStatus = memo(
       isConnected 
     } = nodeData;
 
+    // 🔍 DEBUG: Log status values (temporarily removed to clean logs)
+
     /** Handle test connection click */
     const handleTestClick = useCallback(() => {
       if (accountId && typeof accountId === "string") {

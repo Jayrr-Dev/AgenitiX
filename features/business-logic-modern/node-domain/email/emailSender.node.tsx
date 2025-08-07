@@ -25,7 +25,7 @@ import {
 } from "react";
 import { z } from "zod";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import { api } from "@/convex/_generated/api";
@@ -365,7 +365,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // 4.1  Sync with React‑Flow store and auth
   // -------------------------------------------------------------------------
   const { nodeData, updateNodeData } = useNodeData(id, {});
-  const { user, authToken: token } = useAuthContext();
+  const { user, authToken: token } = useAuth();
 
   // -------------------------------------------------------------------------
   // 4.2  Derived state

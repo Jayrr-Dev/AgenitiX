@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +25,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 export default function MagicLinkTest() {
-  const { signIn, signUp, isAuthenticated } = useAuthContext();
+  const { signIn, signUp, isAuthenticated } = useAuth();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);

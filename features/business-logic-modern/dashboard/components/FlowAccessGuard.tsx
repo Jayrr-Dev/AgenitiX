@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/Loading";
@@ -54,7 +54,7 @@ export const FlowAccessGuard: React.FC<FlowAccessGuardProps> = ({ flowId, childr
 	const router = useRouter();
 
 	// Get authenticated user
-	const { user } = useAuthContext();
+	  const { user } = useAuth();
 
 	// Convex queries
 	const flow = useQuery(api.flows.getFlow, { flow_id: flowId as Id<"flows"> });

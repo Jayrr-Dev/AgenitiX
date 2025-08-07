@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "edge";
 
 import { Loading } from "@/components/Loading";
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { AuthDebugComponent } from "@/components/auth/AuthDebugComponent";
 import { DevAuthHelper } from "@/components/auth/DevAuthHelper";
 import { Button } from "@/components/ui/button";
@@ -77,7 +77,7 @@ const DashboardContent = () => {
 	const [showPrivateOnly, setShowPrivateOnly] = useState(false);
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const { user, isAuthenticated, isLoading: authLoading } = useAuthContext();
+	  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
 	// Handle search query from URL parameters
 	useEffect(() => {

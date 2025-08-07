@@ -10,14 +10,7 @@ export const GET = withCors(async (request: NextRequest) => {
   const redirectUri = searchParams.get("redirect_uri");
   const sessionToken = searchParams.get("session_token");
 
-  console.log("📧 Gmail OAuth Request:", {
-    redirectUri,
-    hasSessionToken: !!sessionToken,
-    sessionTokenLength: sessionToken?.length,
-    userAgent: request.headers.get('user-agent'),
-    origin: request.headers.get('origin'),
-    referer: request.headers.get('referer'),
-  });
+
 
   if (!redirectUri) {
     return NextResponse.json(
@@ -64,50 +57,7 @@ export const GET = withCors(async (request: NextRequest) => {
     // Build OAuth2 authorization URL using credential provider, basically creates secure auth URL
     const authUrl = buildOAuth2AuthUrl(config, sessionToken || undefined);
 
-    // Debug OAuth URL and configuration
-    console.log("📧 Gmail OAuth Configuration:", {
-      clientId: config.clientId?.substring(0, 20) + "...",
-      redirectUri: config.redirectUri,
-      requestedRedirectUri: redirectUri,
-      scopes: config.scopes,
-      hasClientSecret: !!config.clientSecret,
-      authUrl: authUrl.substring(0, 100) + "...",
-    });
 
-    // 🔍 CRITICAL: Log exact OAuth URL to debug missing code parameter
-    console.log("🔍 FULL OAuth URL for debugging:", authUrl);
-    
-    // Parse URL to check each parameter
-    const url = new URL(authUrl);
-    console.log("🔍 OAuth URL Parameters:", {
-      client_id: url.searchParams.get('client_id'),
-      redirect_uri: url.searchParams.get('redirect_uri'),
-      response_type: url.searchParams.get('response_type'),
-      scope: url.searchParams.get('scope'),
-      access_type: url.searchParams.get('access_type'),
-      prompt: url.searchParams.get('prompt'),
-      state: url.searchParams.get('state')?.substring(0, 20) + '...',
-    });
-
-    // 🔍 ADDITIONAL DEBUGGING: Check for popup-related issues
-    console.log("🔍 OAuth Flow Debug:", {
-      userAgent: request.headers.get('user-agent'),
-      origin: request.headers.get('origin'),
-      referer: request.headers.get('referer'),
-      isIncognito: request.headers.get('user-agent')?.includes('Incognito') || false,
-      hasSessionToken: !!sessionToken,
-      sessionTokenLength: sessionToken?.length,
-    });
-
-    // 🔍 CRITICAL: Verify redirect URI configuration
-    const expectedRedirectUri = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/auth/email/gmail/callback`;
-    console.log("🔍 Redirect URI Verification:", {
-      expectedRedirectUri,
-      actualRedirectUri: config.redirectUri,
-      matches: expectedRedirectUri === config.redirectUri,
-      requestedRedirectUri: redirectUri,
-      allMatch: expectedRedirectUri === config.redirectUri && config.redirectUri === redirectUri,
-    });
 
     return NextResponse.json({
       authUrl,

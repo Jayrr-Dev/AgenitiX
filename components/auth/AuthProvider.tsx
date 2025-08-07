@@ -31,10 +31,10 @@ type AuthContextType = ReturnType<typeof useConvexAuth> & {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export const useAuthContext = () => {
+export const useAuth = () => {
 	const context = useContext(AuthContext);
 	if (!context) {
-		throw new Error("useAuthContext must be used within AuthProvider");
+		throw new Error("useAuth must be used within an AuthProvider");
 	}
 	return context;
 };
@@ -59,10 +59,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		);
 		
 		if (supabaseCookies.length > 0) {
-			// Log Supabase cleanup only in development, basically debug auth conflicts
-			if (process.env.NODE_ENV === "development") {
-				console.log("🧹 Clearing conflicting Supabase auth tokens...");
-			}
 			// Clear Supabase cookies by setting them to expire
 			supabaseCookies.forEach(cookie => {
 				const name = cookie.split('=')[0].trim();
@@ -76,91 +72,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		const urlParams = new URLSearchParams(window.location.search);
 		const authCode = urlParams.get('code');
 		const state = urlParams.get('state');
-		
-		if (process.env.NODE_ENV === "development") {
-			console.log("🔄 Auth State Change:", {
-				isOAuthAuthenticated,
-				authToken: !!authToken,
-				hasAuthCode: !!authCode,
-				authCode: authCode,
-				state: state,
-				url: window.location.href,
-				cookies: document.cookie,
-				localStorage: Object.keys(localStorage).filter(key => 
-					key.includes('auth') || key.includes('convex') || key.includes('token')
-				).map(key => ({
-					key,
-					value: localStorage.getItem(key)?.substring(0, 200) + "..." // Show more detail for auth tokens
-				})),
-				// Check for specific Convex auth tokens
-				convexJWT: localStorage.getItem('__convexAuthJWT_httpsveraciousparakeet120convexcloud'),
-				convexRefreshToken: localStorage.getItem('__convexAuthRefreshToken_httpsveraciousparakeet120convexcloud'),
-			});
-		}
-
-		// If we have an auth code but haven't processed it yet, wait a bit longer (dev only)
-		if (authCode && !authToken && process.env.NODE_ENV === "development") {
-			console.log("⏳ OAuth callback detected, waiting for authentication to complete...");
-			console.log("🔍 Auth Code Details:", {
-				authCode,
-				state,
-				authToken: !!authToken,
-			});
-		}
-
-		// If we have a JWT token but aren't authenticated, log it but don't clear immediately (dev only)
-		const convexJWT = localStorage.getItem('__convexAuthJWT_httpsveraciousparakeet120convexcloud');
-		if (convexJWT && convexJWT !== 'undefined' && !authToken && process.env.NODE_ENV === "development") {
-			console.log("⚠️ Found Convex JWT token but user not authenticated");
-			console.log("🔐 JWT Token (first 50 chars):", convexJWT.substring(0, 50) + "...");
-			console.log("💡 This might resolve automatically - waiting for auth state to update...");
-		}
 	}, [isOAuthAuthenticated, authToken]);
 
 	// Listen for messages from OAuth popups to preserve session with ENHANCED RECOVERY
 	useEffect(() => {
 		const handleMessage = (event: MessageEvent) => {
-			// Log message handling only in development, basically debug popup communication
-			if (process.env.NODE_ENV === "development") {
-				console.log("📨 AuthProvider received message:", event.data, "from:", event.origin);
-			}
 			if (event.origin !== window.location.origin) {
-				if (process.env.NODE_ENV === "development") {
-					console.log("❌ Ignoring message from different origin");
-				}
 				return;
 			}
 			
 			if (event.data?.type === 'PRESERVE_SESSION') {
-				// Log session preservation only in development, basically debug recovery flow
-				if (process.env.NODE_ENV === "development") {
-					console.log("🔄 CRITICAL: Preserving session after OAuth popup - initiating recovery");
-				}
-				
 				// ENHANCED RECOVERY STRATEGY
 				const currentAuth = {
 					isAuthenticated: isOAuthAuthenticated,
 					hasTokens: !!localStorage.getItem('__convexAuthJWT_httpsveraciousparakeet120convexcloud')
 				};
 				
-				if (process.env.NODE_ENV === "development") {
-					console.log("🔍 Current auth state before recovery:", currentAuth);
-				}
-				
 				if (!currentAuth.isAuthenticated && !currentAuth.hasTokens) {
-					if (process.env.NODE_ENV === "development") {
-						console.log("🚨 No auth state detected - forcing full page reload");
-					}
 					window.location.href = '/dashboard';
 				} else if (!currentAuth.isAuthenticated && currentAuth.hasTokens) {
-					if (process.env.NODE_ENV === "development") {
-						console.log("🔄 Tokens exist but not authenticated - soft reload");
-					}
 					window.location.reload();
-				} else {
-					if (process.env.NODE_ENV === "development") {
-						console.log("✅ Auth state preserved - no recovery needed");
-					}
 				}
 			}
 		};
@@ -172,51 +103,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 	// Debug storage changes and detect session clearing with IMMEDIATE RECOVERY (dev logging only)
 	useEffect(() => {
 		const handleStorageChange = (event: StorageEvent) => {
-			// Log storage changes only in development, basically debug token management
-			if (process.env.NODE_ENV === "development") {
-				console.log("🗄️ Storage changed:", {
-					key: event.key,
-					oldValue: event.oldValue,
-					newValue: event.newValue,
-					url: event.url
-				});
-			}
-
 			// CRITICAL: Detect Convex token clearing
 			if (event.key?.includes('convex') && event.key?.includes('auth') && event.oldValue && !event.newValue) {
-				if (process.env.NODE_ENV === "development") {
-					console.error("🚨 CONVEX AUTH TOKEN CLEARED! Initiating emergency recovery:", {
-						key: event.key,
-						oldValue: event.oldValue.substring(0, 100) + "...",
-						stackTrace: new Error().stack
-					});
-				}
-				
 				// 🚨 EMERGENCY RECOVERY - Immediate action
 				if (event.key.includes('JWT')) {
-					if (process.env.NODE_ENV === "development") {
-						console.log("🚑 EMERGENCY: JWT cleared - attempting immediate restoration");
-					}
-					
 					// Check if we're in an OAuth callback URL and ignore if so
 					const currentUrl = window.location.href;
 					if (currentUrl.includes('error=no_code') || currentUrl.includes('callback')) {
-						if (process.env.NODE_ENV === "development") {
-							console.log("🚑 OAuth callback detected - scheduling delayed recovery");
-						}
 						setTimeout(() => {
-							if (process.env.NODE_ENV === "development") {
-								console.log("🔄 Delayed recovery: Redirecting to dashboard");
-							}
 							window.location.href = '/dashboard';
 						}, 2000);
 					} else {
 						// Immediate recovery for non-OAuth contexts
 						setTimeout(() => {
 							if (!isOAuthAuthenticated) {
-								if (process.env.NODE_ENV === "development") {
-									console.log("🚑 Emergency redirect to restore session");
-								}
 								window.location.reload();
 							}
 						}, 1000);
@@ -241,12 +141,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 			// Only log when authentication state changes, basically reduce noise
 			const hasTokens = !!currentJWT && !!currentRefresh;
 			if (hasTokens !== isOAuthAuthenticated) {
-				console.log("🔍 Token state change detected:", {
-					hasJWT: !!currentJWT,
-					hasRefresh: !!currentRefresh,
-					isAuthenticated: isOAuthAuthenticated,
-					timestamp: new Date().toISOString()
-				});
+				// Silent monitoring - no logging
 			}
 		}, 30000); // Check every 30 seconds instead of 5
 
@@ -319,75 +214,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 	useEffect(() => {
 		// Only log in development with heavy throttling to prevent console spam
 		if (process.env.NODE_ENV === "development" && Math.random() < 0.01) {
-			console.log("AuthProvider Debug (throttled):", {
-				isOAuthAuthenticated,
-				authToken: !!authToken,
-				userId: user?.id,
-				userObject: {
-					id: user?.id,
-					name: user?.name || 'Loading...',
-					email: user?.email || 'Loading...',
-				},
-			});
+			// Silent monitoring - no logging
 		}
-	}, [isOAuthAuthenticated, user?.id]); // Only log when key auth state changes
+	}, [isOAuthAuthenticated, user?.id]);
 
-	// Sign out function using Convex Auth
 	const combinedSignOut = async () => {
 		try {
-			// Log sign out start only in development, basically debug logout flow
-			if (process.env.NODE_ENV === "development") {
-				console.log("🚪 Starting sign out...");
-			}
+			// Clear Convex Auth
+			await convexOAuthMethods.signOutOAuth();
 			
-			// Always try to sign out from Convex Auth (works for both OAuth and email auth)
-			try {
-				if (process.env.NODE_ENV === "development") {
-					console.log("🔑 Signing out from Convex Auth...");
-				}
-				await convexOAuthMethods.signOutOAuth();
-			} catch (signOutError) {
-				if (process.env.NODE_ENV === "development") {
-					console.log("⚠️ Convex sign out failed (might already be signed out):", signOutError);
-				}
-			}
+			// Clear all local storage
+			localStorage.clear();
+			sessionStorage.clear();
 			
-			// Clear all auth-related localStorage items
-			const authKeys = [
-				'__convexAuthJWT_httpsveraciousparakeet120convexcloud',
-				'__convexAuthRefreshToken_httpsveraciousparakeet120convexcloud',
-				'agenitix_auth_token',
-				'convex-auth-token',
-			];
-			
-			// Log sign out process only in development, basically debug logout flow
-			if (process.env.NODE_ENV === "development") {
-				console.log("🧹 Clearing localStorage auth keys...");
-			}
-			authKeys.forEach(key => {
-				if (localStorage.getItem(key)) {
-					localStorage.removeItem(key);
-					if (process.env.NODE_ENV === "development") {
-						console.log(`✅ Cleared ${key}`);
-					}
-				}
-			});
-			
-			// Clear any auth-related cookies
+			// Clear all cookies
 			document.cookie.split(";").forEach(cookie => {
 				const eqPos = cookie.indexOf("=");
 				const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-				if (name.includes('auth') || name.includes('convex') || name.includes('token')) {
-					document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-					if (process.env.NODE_ENV === "development") {
-						console.log(`🧹 Cleared cookie: ${name}`);
-					}
-				}
+				document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
 			});
-			
-			if (process.env.NODE_ENV === "development") {
-				console.log("✅ Sign out complete, redirecting...");
-			}
 			
 			// Use window.location.replace to avoid back button issues
 			window.location.replace('/');
@@ -396,7 +241,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 			// Log sign out errors only in development, basically debug logout issues
 			if (process.env.NODE_ENV === "development") {
 				console.error("❌ Sign out error:", error);
-				console.log("🔥 Force clearing all storage...");
 			}
 			localStorage.clear();
 			sessionStorage.clear();
@@ -432,14 +276,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		const lastKnownJWT = localStorage.getItem('__convexAuthJWT_httpsveraciousparakeet120convexcloud');
 		const lastKnownRefresh = localStorage.getItem('__convexAuthRefreshToken_httpsveraciousparakeet120convexcloud');
 		
-		console.log("🔄 Attempting auth recovery:", {
-			hasJWT: !!lastKnownJWT,
-			hasRefresh: !!lastKnownRefresh,
-			currentAuth: isOAuthAuthenticated,
-		});
-		
 		if (lastKnownJWT && !isOAuthAuthenticated) {
-			console.log("🔄 Auth tokens found but not authenticated - triggering reload");
 			window.location.reload();
 			return true;
 		}
@@ -455,24 +292,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 			// Check if we're in an OAuth flow to avoid interference, basically prevent recovery during OAuth
 			const isOAuthFlow = sessionStorage.getItem("oauth_node_state");
 			if (isOAuthFlow) {
-				console.log("🔄 OAuth flow detected - skipping auth recovery to prevent interference");
 				return;
 			}
 			
 			// Try multiple recovery strategies
 			setTimeout(async () => {
-				console.log("🔄 Strategy 1: Basic token recovery");
 				if (recoverAuth()) {
-					console.log("✅ Basic recovery initiated");
 					return;
 				}
 				
-				console.log("🔄 Strategy 2: Force Convex auth refresh");
 				try {
 					// Try to trigger Convex auth refresh
 					await convexOAuthMethods.signOutOAuth();
 					setTimeout(() => {
-						console.log("🔄 Strategy 3: Redirect to restore session");
 						// Force navigation to trigger auth restoration
 						window.location.href = '/dashboard';
 					}, 1000);

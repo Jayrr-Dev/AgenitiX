@@ -44,7 +44,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useAuthContext } from "./AuthProvider";
+import { useAuth } from "./AuthProvider";
 import { SettingsModal } from "./SettingsModal";
 
 interface SessionInfo {
@@ -66,7 +66,6 @@ const SecurityModal = ({
   const { sessions } = useUserSessions();
   const revokeSession = (sessionId: string) => {
     // Implement session revocation logic here, basically handle session cleanup
-    console.log("Revoking session:", sessionId);
   };
   const [revoking, setRevoking] = useState<string | null>(null);
 
@@ -187,7 +186,7 @@ const SecurityModal = ({
 };
 
 export const UserDropdown = () => {
-  const { user, signOut } = useAuthContext();
+  	const { user, signOut } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);

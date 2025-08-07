@@ -13,7 +13,7 @@
 "use client";
 
 import { Loading } from "@/components/Loading";
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { PieMenuProvider } from "@/components/ui/pie-menu";
 import { api } from "@/convex/_generated/api";
@@ -39,7 +39,7 @@ type PageProps = {
  */
 export default function FlowPage({ params }: PageProps) {
   const { flowId } = use(params);
-  const { user, isAuthenticated, isLoading: authLoading } = useAuthContext();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   // Fetch flow data from Convex with proper access control
   const flow = useQuery(

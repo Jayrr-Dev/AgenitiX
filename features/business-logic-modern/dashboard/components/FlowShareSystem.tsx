@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/Loading";
@@ -64,7 +64,7 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 	const [requestNote, setRequestNote] = useState("");
 
 	// Get authenticated user
-	const { user } = useAuthContext();
+	  const { user } = useAuth();
 
 	// Convex mutations
 	const shareFlow = useMutation(api.flows.shareFlow);

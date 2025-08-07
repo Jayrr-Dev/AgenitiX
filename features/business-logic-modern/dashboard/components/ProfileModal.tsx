@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { DeleteAccountModal } from "@/components/auth/DeleteAccountModal";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +30,7 @@ interface ProfileModalProps {
 const AUTH_TOKEN_KEY = "agenitix_auth_token";
 
 export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
-  const { user } = useAuthContext();
+  const { user } = useAuth();
   const updateProfile = useMutation(api.auth.updateProfile);
   const token =
     typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;

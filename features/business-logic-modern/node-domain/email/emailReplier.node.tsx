@@ -42,7 +42,7 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
 // Convex integration
 import { useQuery } from "convex/react";
@@ -357,7 +357,7 @@ const EmailReplierNode = memo(
   ({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     // -------------------------------------------------------------------------
     const { nodeData, updateNodeData } = useNodeData(id, {});
-    const { authToken: token } = useAuthContext();
+    const { authToken: token } = useAuth();
 
     // -------------------------------------------------------------------------
     // STATE MANAGEMENT (grouped for clarity)

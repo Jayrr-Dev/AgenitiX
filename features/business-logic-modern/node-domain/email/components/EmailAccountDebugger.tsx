@@ -442,7 +442,9 @@ export const EmailAccountDebugger = memo(({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => console.log('Email Account Debug State:', { nodeData, debugState })}
+              onClick={() => {
+                // Silent debug state logging
+              }}
             >
               Log to Console
             </Button>
