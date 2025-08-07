@@ -113,21 +113,6 @@ export function usePieMenuActions(options: UsePieMenuActionsOptions = {}) {
       );
     }
 
-<<<<<<< Updated upstream
-    // CREATION ACTIONS - Add new nodes at mouse position
-    if (mousePosition) {
-      baseActions.push({
-        id: "add-node",
-        label: "Add Node",
-        icon: "Plus",
-        shortcut: "Tab",
-        action: () => {
-          // Open sidebar or node creation modal at mouse position
-          // This would integrate with your existing node creation system
-        },
-      });
-    }
-=======
     // CREATION ACTIONS - Add new nodes at pie menu center
     baseActions.push({
       id: "add-node",
@@ -190,7 +175,6 @@ export function usePieMenuActions(options: UsePieMenuActionsOptions = {}) {
         console.log('✅ PieMenu: Event dispatched successfully');
       },
     });
->>>>>>> Stashed changes
 
     // SELECTION ACTIONS
     baseActions.push(
