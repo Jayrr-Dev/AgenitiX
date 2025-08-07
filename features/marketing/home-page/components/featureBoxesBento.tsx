@@ -7,8 +7,10 @@ import Image from "next/image";
 import type React from "react";
 import { useEffect, useRef } from "react";
 import type { typeFeatureBoxesBento } from "../types";
+import { useTheme } from "next-themes";
 
 export default function FeatureBoxesBento({ features }: { features: typeFeatureBoxesBento[] }) {
+	const { theme, setTheme } = useTheme();
 	const getSkeleton = (type: typeFeatureBoxesBento["skeleton"]) => {
 		switch (type) {
 			case "SkeletonOne":
@@ -26,11 +28,11 @@ export default function FeatureBoxesBento({ features }: { features: typeFeatureB
 	return (
 		<div className="relative z-20 mx-auto max-w-7xl py-10 lg:py-40">
 			<div className="px-8">
-				<h4 className="mx-auto max-w-5xl text-center font-medium text-3xl text-black tracking-tight lg:text-5xl lg:leading-tight dark:text-white">
+				<h4 className={`mx-auto max-w-5xl text-center font-medium text-3xl tracking-tight lg:text-5xl lg:leading-tight ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
 					Packed with thousands of features
 				</h4>
 
-				<p className="mx-auto my-4 max-w-2xl text-center font-normal text-neutral-500 text-sm lg:text-base dark:text-neutral-300">
+				<p className={`mx-auto my-4 max-w-2xl text-center font-normal text-sm lg:text-base ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-500'}`}>
 					From Image generation to video generation, Everything AI has APIs for literally
 					everything. It can even create this website copy for you.
 				</p>

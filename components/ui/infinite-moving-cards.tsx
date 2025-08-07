@@ -1,9 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useInView } from "framer-motion";
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export const InfiniteMovingCards = ({
 	items,
@@ -31,45 +30,55 @@ export const InfiniteMovingCards = ({
 }) => {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const scrollerRef = useRef<HTMLUListElement>(null);
-
-	// Detect visibility
-	const isInView = useInView(containerRef, { once: false, margin: "-10% 0px" });
-
 	const [start, setStart] = useState(false);
 
-	const addAnimation = useCallback(() => {
-		if (!scrollerRef.current) {
-			return;
-		}
-
-		setStart(true);
-
-		// Apply direction and speed
-		const scrollerContent = scrollerRef.current;
-		if (scrollerContent) {
-			scrollerContent.style.transform = `translateX(-${scrollerContent.scrollWidth / 2}px)`;
-		}
+	useEffect(() => {
+		addAnimation();
 	}, []);
 
-	useEffect(() => {
-		if (isInView && !start) {
-			addAnimation();
+	function addAnimation() {
+		if (containerRef.current && scrollerRef.current) {
+			const scrollerContent = Array.from(scrollerRef.current.children);
+
+			scrollerContent.forEach((item) => {
+				const duplicatedItem = item.cloneNode(true);
+				if (scrollerRef.current) {
+					scrollerRef.current.appendChild(duplicatedItem);
+				}
+			});
+
+			getDirection();
+			getSpeed();
+			setStart(true);
 		}
-	}, [isInView, start, addAnimation]);
+	}
 
-	const _setAnimationProps = () => {
-		if (!containerRef.current) {
-			return;
+	const getDirection = () => {
+		if (containerRef.current) {
+			if (direction === "left") {
+				containerRef.current.style.setProperty(
+					"--animation-direction",
+					"forwards"
+				);
+			} else {
+				containerRef.current.style.setProperty(
+					"--animation-direction",
+					"reverse"
+				);
+			}
 		}
+	};
 
-		containerRef.current.style.setProperty(
-			"--animation-direction",
-			direction === "left" ? "forwards" : "reverse"
-		);
-
-		const duration = speed === "fast" ? "20s" : speed === "normal" ? "40s" : "80s";
-
-		containerRef.current.style.setProperty("--animation-duration", duration);
+	const getSpeed = () => {
+		if (containerRef.current) {
+			if (speed === "fast") {
+				containerRef.current.style.setProperty("--animation-duration", "20s");
+			} else if (speed === "normal") {
+				containerRef.current.style.setProperty("--animation-duration", "40s");
+			} else {
+				containerRef.current.style.setProperty("--animation-duration", "80s");
+			}
+		}
 	};
 
 	return (
