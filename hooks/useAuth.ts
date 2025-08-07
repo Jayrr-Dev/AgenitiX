@@ -31,15 +31,16 @@ export const useAuth = () => {
 		}
 	}, []);
 
-	// Get current user
-	const user = useQuery(api.authFunctions.getCurrentUser, token ? { token_hash: token } : "skip");
+  // Legacy hook now deprecated; prefer components/auth/AuthProvider
+  const user = undefined as unknown as any;
 
 	// Authentication mutations
-	const signUpMutation = useMutation(api.authFunctions.signUp);
-	const sendMagicLinkMutation = useMutation(api.authFunctions.sendMagicLink);
-	const verifyMagicLinkMutation = useMutation(api.authFunctions.verifyMagicLink);
-	const signOutMutation = useMutation(api.authFunctions.signOut);
-	const updateProfileMutation = useMutation(api.authFunctions.updateProfile);
+  // Deprecated legacy mutations kept as placeholders to prevent runtime imports
+  const signUpMutation = (() => { throw new Error("Legacy auth removed"); }) as unknown as ReturnType<typeof useMutation>;
+  const sendMagicLinkMutation = (() => { throw new Error("Legacy auth removed"); }) as unknown as ReturnType<typeof useMutation>;
+  const verifyMagicLinkMutation = (() => { throw new Error("Legacy auth removed"); }) as unknown as ReturnType<typeof useMutation>;
+  const signOutMutation = (() => { throw new Error("Legacy auth removed"); }) as unknown as ReturnType<typeof useMutation>;
+  const updateProfileMutation = (() => { throw new Error("Legacy auth removed"); }) as unknown as ReturnType<typeof useMutation>;
 
 	// Sign up function with Magic Link
 	const signUp = useCallback(

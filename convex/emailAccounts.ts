@@ -2,69 +2,31 @@ import { v } from "convex/values";
 import { api } from "./_generated/api";
 import { action, mutation, query } from "./_generated/server";
 import { 
-  getSession,
   getAuthContext,
   requireAuth,
   requireUser,
-  tokenArgs,
-  getTokenFromArgs,
   logAuthState,
   debug,
-  type SessionIdentity 
 } from "./authHelpers";
 
 // Query to get authenticated user from token hash (for use in mutations/queries)
-export const getAuthenticatedUserByToken = query({
-  args: {
-    tokenHash: v.string(),
-  },
-  handler: async (ctx, args) => {
-    // Find user by magic link token hash
-    const authUser = await ctx.db
-      		.query("users")
-      .filter((q) => q.eq(q.field("magic_link_token"), args.tokenHash))
-      .filter((q) => q.eq(q.field("is_active"), true))
-      .first();
+// Removed legacy token lookup – Convex Auth only
 
-    if (!authUser) {
-      return null;
-    }
-
-    // Check if magic link is still valid
-    if (authUser.magic_link_expires && authUser.magic_link_expires < Date.now()) {
-      return null;
-    }
-
-    return authUser;
-  },
-});
-
-// Helper function for actions to get authenticated user from token hash or Convex Auth
-async function getAuthenticatedUserInAction(ctx: any, tokenHash?: string) {
-  if (!tokenHash) {
+// Helper function for actions to get authenticated user via Convex Auth only
+async function getAuthenticatedUserInAction(ctx: any) {
+  try {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.email) return null;
+    const user = await ctx.runQuery(api.users.getUserByEmail as any, { email: identity.email });
+    return user;
+  } catch {
     return null;
   }
-
-  // Handle Convex Auth users (token starts with 'convex_user_')
-  if (tokenHash.startsWith('convex_user_')) {
-    const userId = tokenHash.replace('convex_user_', '');
-    try {
-      const user = await ctx.runQuery(api.users.getUserById, { userId: userId as any });
-      return user;
-    } catch (error) {
-      // Failed to get Convex Auth user
-    }
-  }
-
-  // Handle Magic Link users (original implementation)
-  return await ctx.runQuery(api.emailAccounts.getAuthenticatedUserByToken, {
-    tokenHash,
-  });
 }
 
 // Helper function to simulate ctx.auth.getUserIdentity() for compatibility in actions
-async function getUserIdentityFromTokenInAction(ctx: any, tokenHash?: string) {
-  const user = await getAuthenticatedUserInAction(ctx, tokenHash);
+async function getUserIdentityFromTokenInAction(ctx: any) {
+  const user = await getAuthenticatedUserInAction(ctx);
   if (!user) {
     return null;
   }
@@ -77,44 +39,23 @@ async function getUserIdentityFromTokenInAction(ctx: any, tokenHash?: string) {
 }
 
 // Helper function for mutations/queries to get authenticated user from token hash or Convex Auth
-async function getAuthenticatedUser(ctx: any, tokenHash?: string) {
-  if (!tokenHash) {
+async function getAuthenticatedUser(ctx: any) {
+  try {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.email) return null;
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q: any) => q.eq("email", identity.email))
+      .first();
+    return user;
+  } catch {
     return null;
   }
-
-  // Handle Convex Auth users (token starts with 'convex_user_')
-  if (tokenHash.startsWith('convex_user_')) {
-    const userId = tokenHash.replace('convex_user_', '');
-    try {
-      const user = await ctx.db.get(userId as any);
-      return user;
-    } catch (error) {
-      // Failed to get Convex Auth user
-    }
-  }
-
-  // Handle Magic Link users (original implementation)
-  // Find user by magic link token hash
-  const authUser = await ctx.db
-    		.query("users")
-    .filter((q: any) => q.eq(q.field("magic_link_token"), tokenHash))
-    .filter((q: any) => q.eq(q.field("is_active"), true))
-    .first();
-
-  if (!authUser) {
-    return null;
-  }
-
-  // Check if magic link is still valid
-  if (authUser.magic_link_expires && authUser.magic_link_expires < Date.now()) {
-    return null;
-  }
-  return authUser;
 }
 
 // Helper function to simulate ctx.auth.getUserIdentity() for compatibility in mutations/queries
-async function getUserIdentityFromToken(ctx: any, tokenHash?: string) {
-  const user = await getAuthenticatedUser(ctx, tokenHash);
+async function getUserIdentityFromToken(ctx: any) {
+  const user = await getAuthenticatedUser(ctx);
   if (!user) {
     return null;
   }
@@ -129,7 +70,6 @@ async function getUserIdentityFromToken(ctx: any, tokenHash?: string) {
 // Create or update email account (COLLISION-SAFE with authHelpers)
 export const upsertEmailAccount = mutation({
   args: {
-    ...tokenArgs,
     provider: v.union(
       v.literal("gmail"),
       v.literal("outlook"),
@@ -165,13 +105,10 @@ export const upsertEmailAccount = mutation({
     debug("upsertEmailAccount", "=== EMAIL ACCOUNT UPSERT START ===", {
       provider: args.provider,
       email: args.email,
-      hasTokenHash: !!args.token_hash,
-      hasSessionToken: !!args.sessionToken,
     });
 
-    // 🔑 Resolve authentication via hybrid mechanism (Convex first, then custom token)
-    const token = getTokenFromArgs(args);
-    const { authContext, user } = await requireUser(ctx, token);
+    // 🔑 Resolve authentication via Convex Auth
+    const { authContext, user } = await requireUser(ctx);
 
     logAuthState("upsertEmailAccount_auth", authContext, {
       provider: args.provider,
@@ -241,6 +178,169 @@ export const upsertEmailAccount = mutation({
   },
 });
 
+// Internal mutation used by the action to avoid client auth races
+export const upsertEmailAccountForUser = mutation({
+  args: {
+    userId: v.id("users"),
+    provider: v.union(
+      v.literal("gmail"),
+      v.literal("outlook"),
+      v.literal("yahoo"),
+      v.literal("imap"),
+      v.literal("smtp"),
+    ),
+    email: v.string(),
+    displayName: v.string(),
+    accessToken: v.optional(v.string()),
+    refreshToken: v.optional(v.string()),
+    tokenExpiry: v.optional(v.number()),
+    imapConfig: v.optional(
+      v.object({
+        host: v.string(),
+        port: v.number(),
+        secure: v.boolean(),
+        username: v.string(),
+        password: v.string(),
+      }),
+    ),
+    smtpConfig: v.optional(
+      v.object({
+        host: v.string(),
+        port: v.number(),
+        secure: v.boolean(),
+        username: v.string(),
+        password: v.string(),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = args;
+    debug("upsertEmailAccountForUser", "=== EMAIL ACCOUNT UPSERT START ===", {
+      provider: args.provider,
+      email: args.email,
+      userId,
+    });
+
+    // Check if account already exists for this user + email
+    const existingAccount = await ctx.db
+      .query("email_accounts")
+      .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+      .filter((q) => q.eq(q.field("email"), args.email))
+      .first();
+
+    // Prepare credentials payload
+    const credentials = {
+      accessToken: args.accessToken,
+      refreshToken: args.refreshToken,
+      tokenExpiry: args.tokenExpiry,
+      imapConfig: args.imapConfig,
+      smtpConfig: args.smtpConfig,
+    };
+
+    const accountData = {
+      user_id: userId,
+      provider: args.provider,
+      email: args.email,
+      display_name: args.displayName,
+      encrypted_credentials: JSON.stringify(credentials),
+      connection_status: "connected" as const,
+      created_at: Date.now(),
+      updated_at: Date.now(),
+      is_active: true,
+    };
+
+    let accountId: string;
+    if (existingAccount) {
+      await ctx.db.patch(existingAccount._id, {
+        ...accountData,
+        created_at: existingAccount.created_at,
+      });
+      accountId = existingAccount._id;
+      debug("upsertEmailAccountForUser", "✅ Updated existing account:", { accountId });
+    } else {
+      accountId = await ctx.db.insert("email_accounts", accountData);
+      debug("upsertEmailAccountForUser", "✅ Created new account:", { accountId });
+    }
+
+    return accountId;
+  },
+});
+
+// Action wrapper to ensure auth over HTTP and avoid WS auth races
+export const upsertEmailAccountAction = action({
+  args: {
+    provider: v.union(
+      v.literal("gmail"),
+      v.literal("outlook"),
+      v.literal("yahoo"),
+      v.literal("imap"),
+      v.literal("smtp"),
+    ),
+    email: v.string(),
+    displayName: v.string(),
+    accessToken: v.optional(v.string()),
+    refreshToken: v.optional(v.string()),
+    tokenExpiry: v.optional(v.number()),
+    imapConfig: v.optional(
+      v.object({
+        host: v.string(),
+        port: v.number(),
+        secure: v.boolean(),
+        username: v.string(),
+        password: v.string(),
+      }),
+    ),
+    smtpConfig: v.optional(
+      v.object({
+        host: v.string(),
+        port: v.number(),
+        secure: v.boolean(),
+        username: v.string(),
+        password: v.string(),
+      }),
+    ),
+    // Optional client-provided hint to recover user context if auth propagation lags
+    userEmailHint: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<string> => {
+    let userObj: any | null = null;
+    try {
+      const { authContext, user } = await requireUser(ctx);
+      logAuthState("upsertEmailAccount_action", authContext, {
+        provider: args.provider,
+        email: args.email,
+      });
+      userObj = user;
+    } catch {
+      // Fallback: recover via userEmailHint if provided
+      if (args.userEmailHint) {
+        try {
+          userObj = await ctx.runQuery(api.users.getUserByEmail as any, { email: args.userEmailHint });
+        } catch {}
+      }
+      if (!userObj) {
+        throw new Error("Authentication required. Please sign in to continue.");
+      }
+    }
+
+    const { userEmailHint: _omit, ...rest } = args as any;
+    const resolvedUserId = (userObj as any)._id ?? (userObj as any).id;
+    if (!resolvedUserId) {
+      throw new Error("Authentication required. Please sign in to continue.");
+    }
+
+    const accountId: string = await ctx.runMutation(
+      api.emailAccounts.upsertEmailAccountForUser as any,
+      {
+        userId: resolvedUserId,
+        ...rest,
+      },
+    );
+
+    return accountId;
+  },
+});
+
 // Get account by ID (helper for actions)
 export const getAccountById = query({
   args: {
@@ -278,12 +378,9 @@ export const updateAccountStatus = mutation({
 
 // Get user's email accounts (COLLISION-SAFE)
 export const getUserEmailAccounts = query({
-  args: {
-    ...tokenArgs,
-  },
+  args: {},
   handler: async (ctx, args) => {
-    const token = getTokenFromArgs(args);
-    const authContext = await getAuthContext(ctx, token);
+    const authContext = await getAuthContext(ctx);
     
     if (!authContext.isAuthenticated || !authContext.user) {
       debug("getUserEmailAccounts", "No authentication available");
@@ -311,33 +408,14 @@ export const getUserEmailAccounts = query({
 // Get email accounts by user email (with hybrid authentication support)
 export const getEmailAccountsByUserEmail = query({
   args: {
-    userEmail: v.optional(v.string()), // Made optional for hybrid auth
-    token_hash: v.optional(v.string()), // Support for custom auth
+    userEmail: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    let identity = null;
     let userEmail = args.userEmail;
-
-    // Try custom auth first if token provided
-    if (args.token_hash) {
-      identity = await getUserIdentityFromToken(ctx, args.token_hash);
-      if (identity) {
-        userEmail = identity.email;
-      }
+    if (!userEmail) {
+      const identity = await ctx.auth.getUserIdentity();
+      userEmail = identity?.email ?? undefined;
     }
-
-    // Fallback to Convex Auth if no custom token or custom auth failed
-    if (!identity && !userEmail) {
-      try {
-        identity = await ctx.auth.getUserIdentity();
-        if (identity) {
-          userEmail = identity.email;
-        }
-      } catch (error) {
-        // Convex Auth not available, using custom auth only
-      }
-    }
-
     if (!userEmail) {
       return [];
     }
@@ -367,15 +445,13 @@ export const getEmailAccountsByUserEmail = query({
 export const testEmailConnection = action({
   args: {
     accountId: v.id("email_accounts"),
-    ...tokenArgs,
   },
   handler: async (ctx, args) => {
     debug("testEmailConnection", "=== CONNECTION TEST START ===", {
       accountId: args.accountId,
     });
 
-    const token = getTokenFromArgs(args);
-    const authContext = await requireAuth(ctx, token);
+    const authContext = await requireAuth(ctx);
 
     logAuthState("testEmailConnection", authContext, {
       accountId: args.accountId,
@@ -457,41 +533,14 @@ export const testEmailConnection = action({
 
 // Get email reply templates (with hybrid authentication)
 export const getEmailReplyTemplates = query({
-  args: {
-    token_hash: v.optional(v.string()), // Support for custom auth
-  },
+  args: {},
   handler: async (ctx, args) => {
-    // Try custom auth first if token provided
-    let identity = null;
-    if (args.token_hash) {
-      identity = await getUserIdentityFromToken(ctx, args.token_hash);
-    }
-
-    // Fallback to Convex Auth if no custom token or custom auth failed
-    if (!identity) {
-      try {
-        identity = await ctx.auth.getUserIdentity();
-      } catch (error) {
-        // Convex Auth not available, using custom auth only
-        return [];
-      }
-    }
-
-    if (!identity) {
-      return [];
-    }
-
-    // Get user from identity
-    let user = null;
-    if (args.token_hash) {
-      user = await getAuthenticatedUser(ctx, args.token_hash);
-    } else {
-      // For Convex Auth, find user by email
-      user = await ctx.db
-        		.query("users")
-        .withIndex("email", (q) => q.eq("email", identity.email!))
-        .first();
-    }
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.email) return [];
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email!))
+      .first();
 
     if (!user) {
       return [];
@@ -521,7 +570,6 @@ export const getEmailReplyTemplates = query({
 // Store email reply template (with hybrid authentication)
 export const storeEmailReplyTemplate = mutation({
   args: {
-    token_hash: v.optional(v.string()), // Support for custom auth
     name: v.string(),
     subject: v.string(),
     body: v.string(),
@@ -530,36 +578,12 @@ export const storeEmailReplyTemplate = mutation({
     variables: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    // Try custom auth first if token provided
-    let identity = null;
-    if (args.token_hash) {
-      identity = await getUserIdentityFromToken(ctx, args.token_hash);
-    }
-
-    // Fallback to Convex Auth if no custom token or custom auth failed
-    if (!identity) {
-      try {
-        identity = await ctx.auth.getUserIdentity();
-      } catch (error) {
-        // Convex Auth not available, using custom auth only
-      }
-    }
-
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    // Get user from identity
-    let user = null;
-    if (args.token_hash) {
-      user = await getAuthenticatedUser(ctx, args.token_hash);
-    } else {
-      // For Convex Auth, find user by email
-      user = await ctx.db
-        		.query("users")
-        .withIndex("email", (q) => q.eq("email", identity.email!))
-        .first();
-    }
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.email) throw new Error("Not authenticated");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email!))
+      .first();
 
     if (!user) {
       throw new Error("User not found");
@@ -611,7 +635,6 @@ export const storeEmailReplyTemplate = mutation({
 // Send email (COLLISION-SAFE)
 export const sendEmail = action({
   args: {
-    ...tokenArgs,
     accountId: v.id("email_accounts"),
     to: v.array(v.string()),
     cc: v.optional(v.array(v.string())),
@@ -639,8 +662,7 @@ export const sendEmail = action({
       hasAttachments: !!(args.attachments && args.attachments.length > 0),
     });
 
-    const token = getTokenFromArgs(args);
-    const authContext = await requireAuth(ctx, token);
+    const authContext = await requireAuth(ctx);
 
     logAuthState("sendEmail", authContext, {
       accountId: args.accountId,

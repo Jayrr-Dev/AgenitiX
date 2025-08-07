@@ -31,7 +31,10 @@ const AUTH_TOKEN_KEY = "agenitix_auth_token";
 
 export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
   const { user } = useAuth();
-  const updateProfile = useMutation(api.authFunctions.updateProfile);
+  // Legacy mutation removed; keep inert handler to avoid crashes
+  const updateProfile = async (_args: any) => {
+    throw new Error("Legacy updateProfile removed. Use Convex Auth user updates.");
+  };
   const token =
     typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
 
