@@ -91,8 +91,8 @@ const getCachedHandleIcon = (typeName: string): React.ComponentType<{ width?: nu
 /**
  * Handle visual configuration
  */
-const HANDLE_SIZE_PX = 10;
-const HANDLE_POSITION_OFFSET = 10; // pixels to move handles further out from nodes
+const HANDLE_SIZE_PX = 12;
+const HANDLE_POSITION_OFFSET = 12; // pixels to move handles further out from nodes
 const HANDLE_SPACING = 16; // pixels between multiple handles on the same side
 
 /**
@@ -116,7 +116,7 @@ const getInjectableClasses = (cssVar: string): string => {
  */
 const UNIFIED_HANDLE_STYLES = {
 	// Base styling classes with perfect centering
-	base: "flex items-center justify-center rounded-sm text-[6px] font-semibold uppercase select-none z-30 leading-none",
+	base: "flex items-center justify-center rounded-sm text-[8px] uppercase select-none z-30 leading-none",
 
 	// Background colors using semantic tokens
 	backgrounds: {
@@ -528,6 +528,12 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
 				: getInjectableClasses("--core-handle-classes-target")
 	}), [isConnected, isSource]);
 
+	// Memoize font weight classes for output handles, basically make outputs bolder
+	const fontWeightClasses = useMemo(() => 
+		isSource ? "font-black" : "font-semibold", // Output handles get black font weight, inputs get semibold
+		[isSource]
+	);
+
 	// Memoize tooltip content generation, basically prevent string recalculation on re-renders  
 	const tooltipContent = useMemo(() => {
 		const defaultTooltip = getTooltipContent(props.type || "target", dataType, code, tsSymbol);
@@ -548,9 +554,10 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
 	const handleStyles = useMemo(() => ({
 		width: HANDLE_SIZE_PX,
 		height: HANDLE_SIZE_PX,
-		borderWidth: UNIFIED_HANDLE_STYLES.border.width,
+		borderWidth: 0.5, // Set visible border width for dashed/solid styles
 		boxShadow: `${UNIFIED_HANDLE_STYLES.border.shadow} ${typeDisplay.color}`,
 		borderColor: typeDisplay.color,
+		borderStyle: isSource ? "solid" : "dashed", // Input handles get dashed border, outputs get solid
 		color: typeDisplay.color,
 		backgroundColor,
 		pointerEvents: "all" as const, // Ensure pointer events work for both input and output handles
@@ -558,23 +565,31 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
 		alignItems: "center" as const,
 		justifyContent: "center" as const,
 		lineHeight: "1",
+		fontWeight: isSource ? "900" : "600", // Make output handles bolder, basically thicker text for outputs
 		...positionOffset, // Apply smart positioning
 		...props.style,
-	}), [typeDisplay.color, backgroundColor, positionOffset, props.style]);
+	}), [typeDisplay.color, backgroundColor, positionOffset, props.style, isSource]);
 
 	return (
 		<Tooltip delayDuration={0}>
 			<TooltipTrigger asChild>
 				<Handle
 					{...(props as HandleProps)}
-					className={`${UNIFIED_HANDLE_STYLES.base} ${baseClasses} ${stateClasses}`}
+					className={`${UNIFIED_HANDLE_STYLES.base} ${baseClasses} ${stateClasses} ${fontWeightClasses}`}
 					style={handleStyles}
 					isValidConnection={isValidConnection}
 					isConnectableStart={connectableStart}
 					isConnectableEnd={connectableEnd}
 				>
 					{MemoizedIconComponent && (
-						<MemoizedIconComponent width={8} height={8} style={{ pointerEvents: "none" }} />
+						<MemoizedIconComponent 
+							width={8} 
+							height={8} 
+							style={{ 
+								pointerEvents: "none",
+								fontWeight: isSource ? "900" : "600" // Make output handle icons bolder too
+							}} 
+						/>
 					)}
 				</Handle>
 			</TooltipTrigger>
