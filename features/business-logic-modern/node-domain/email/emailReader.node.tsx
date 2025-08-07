@@ -325,6 +325,9 @@ export const spec: NodeSpec = createDynamicSpec({
 const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   const { nodeData, updateNodeData } = useNodeData(id, {});
+  
+  // Category styling for consistent theming, basically email node styling
+  const categoryStyles = CATEGORY_TEXT.EMAIL;
 
   // -------------------------------------------------------------------------
   // STATE MANAGEMENT (grouped for clarity)

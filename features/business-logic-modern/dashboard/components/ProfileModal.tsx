@@ -31,7 +31,7 @@ const AUTH_TOKEN_KEY = "agenitix_auth_token";
 
 export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
   const { user } = useAuth();
-  const updateProfile = useMutation(api.auth.updateProfile);
+  const updateProfile = useMutation(api.authFunctions.updateProfile);
   const token =
     typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
 
