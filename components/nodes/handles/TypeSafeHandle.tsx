@@ -15,7 +15,8 @@ import type { IconType } from "react-icons";
 import { LuBraces, LuBrackets, LuCheck, LuCircle, LuHash, LuWrench, LuType, LuMail, LuFileText, LuSend } from "react-icons/lu";
 import { VscJson } from "react-icons/vsc";
 import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+ import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 // Auto-generated at build time (can be empty in dev before first build)
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore – file is generated post-install / build
@@ -414,6 +415,37 @@ function getTooltipContent(
 	return `${direction}<br/>${typeCode}`;
 }
 
+/**
+ * Escape HTML entities for safe innerHTML usage
+ */
+function escapeHtml(input: string): string {
+  return input
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+/**
+ * Summarize a value for tooltip display
+ * [Summarize values for concise tooltip], basically shorten values per type
+ */
+function summarizeValueForTooltip(value: unknown): string {
+  if (value === null || value === undefined) return "empty";
+  if (Array.isArray(value)) return `${value.length} params`;
+  const typeOf = typeof value;
+  if (typeOf === "string") return `${(value as string).length} chars`;
+  if (typeOf === "boolean") return (value as boolean) ? "true" : "false";
+  if (typeOf === "number") return String(value as number);
+  if (typeOf === "object") return `${Object.keys(value as Record<string, unknown>).length} params`;
+  try {
+    return String(value);
+  } catch {
+    return "unknown";
+  }
+}
+
 function isTypeCompatible(sourceType: string, targetType: string): boolean {
 	if (sourceType === "x" || targetType === "x") {
 		return true;
@@ -534,12 +566,67 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
 		[isSource]
 	);
 
+  // Subscribe to nodes and edges for dynamic tooltip values
+  const nodes = useStore(React.useCallback((state) => state.nodes, []));
+  const edges = useStore(React.useCallback((state) => state.edges, []));
+
 	// Memoize tooltip content generation, basically prevent string recalculation on re-renders  
 	const tooltipContent = useMemo(() => {
-		const defaultTooltip = getTooltipContent(props.type || "target", dataType, code, tsSymbol);
-		// If custom tooltip is provided, replace the default tooltip
-		return customTooltip || defaultTooltip;
-	}, [props.type, dataType, code, tsSymbol, customTooltip]);
+    const baseTooltip = customTooltip || getTooltipContent(props.type || "target", dataType, code, tsSymbol);
+
+    // Compute dynamic value summary for this handle
+    let suffix = "";
+    try {
+      const cleanId = props.id ? normalizeHandleId(props.id) : "";
+      if (props.type === "source") {
+        const selfNode = nodes.find((n: any) => n.id === nodeId);
+        const rawOut = selfNode?.data?.output as unknown;
+        let value: unknown = undefined;
+        if (rawOut && typeof rawOut === "object" && !Array.isArray(rawOut)) {
+          const out = rawOut as Record<string, unknown>;
+          value = out[cleanId] ?? out["output"] ?? Object.values(out)[0];
+        } else if (rawOut !== undefined) {
+          // Supports nodes that store scalar output (e.g., boolean) instead of per-handle object
+          value = rawOut;
+        } else {
+          // Fallback: check for per-handle field directly on node data
+          value = (selfNode?.data as Record<string, unknown> | undefined)?.[cleanId]
+            ?? (selfNode?.data as Record<string, unknown> | undefined)?.[props.id as string];
+        }
+        const parts: string[] = [];
+        if (value !== undefined) {
+          parts.push(`value: ${escapeHtml(summarizeValueForTooltip(value))}`);
+        }
+        const outgoingCount = edges.filter((e: any) => e.source === nodeId && e.sourceHandle === props.id).length;
+        if (outgoingCount > 0) {
+          parts.push(`sending to ${outgoingCount}`);
+        }
+        if (parts.length > 0) suffix = `<br/>${escapeHtml(parts.join(", "))}`;
+      } else if (props.type === "target") {
+        const incoming = edges.filter((e: any) => e.target === nodeId && e.targetHandle === props.id);
+        if (incoming.length > 0) {
+          const first = incoming[0];
+          const src = nodes.find((n: any) => n.id === first.source);
+          const out = src?.data?.output as Record<string, unknown> | undefined;
+          let value: unknown;
+          if (out) {
+            const srcHandleId = first.sourceHandle ? normalizeHandleId(first.sourceHandle) : "output";
+            value = out[srcHandleId] ?? Object.values(out)[0];
+          }
+          if (value !== undefined) {
+            const prefix = incoming.length > 1 ? `${incoming.length} inputs, first: ` : "receiving: ";
+            suffix = `<br/>${escapeHtml(prefix)}${escapeHtml(summarizeValueForTooltip(value))}`;
+          } else if (incoming.length > 1) {
+            suffix = `<br/>${incoming.length} inputs`;
+          }
+        }
+      }
+    } catch {
+      // no-op on tooltip value failures
+    }
+
+    return `${baseTooltip}${suffix}`;
+  }, [props.type, dataType, code, tsSymbol, customTooltip, nodes, edges, nodeId, props.id]);
 
 	// Memoize the icon component to prevent re-creation on re-renders, basically stable icon reference
 	const MemoizedIconComponent = useMemo(() => typeDisplay.iconComponent, [typeDisplay.iconComponent]);

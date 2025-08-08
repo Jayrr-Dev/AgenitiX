@@ -9,13 +9,11 @@
  */
 
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
-import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { type NodeProps } from "@xyflow/react";
 import { z } from "zod";
 
-import { useStore } from "@xyflow/react";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
-import TypeSafeHandle from "@/components/nodes/handles/TypeSafeHandle";
 import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import {
   SafeSchemas,
@@ -139,10 +137,10 @@ const createDynamicSpec = (
     category: CATEGORIES.EMAIL,
     size: { expanded, collapsed },
     handles: [
-      { id: "trigger-input", code: "t", position: "top", type: "target", dataType: "Boolean" },
+      { id: "trigger-input", code: "b", position: "top", type: "target", dataType: "Boolean", tooltip: "IN<br/>Trigger" },
       // Expose a strongly-typed account payload for downstream consumers, basically provide the connected account object
-      { id: "account-output", code: "a", position: "right", type: "source", dataType: "emailAccount" },
-      { id: "status-output", code: "s", position: "bottom", type: "source", dataType: "Boolean" },
+      { id: "account-output", code: "j", position: "right", type: "source", dataType: "JSON", tooltip: "OUT<br/>Email Account" },
+      { id: "status-output", code: "b", position: "bottom", type: "source", dataType: "Boolean", tooltip: "OUT<br/>Connection Status" },
     ],
     inspector: { key: "EmailAccountInspector" },
     version: 1,
@@ -310,33 +308,7 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
   return (
     <EmailAccountProvider nodeData={nodeData} updateNodeData={updateNodeData}>
       <>
-        {/* TypeSafe handles with proper email-specific icons and validation */}
-        <TypeSafeHandle
-          type="target"
-          position="top"
-          id="trigger-input"
-          dataType="Boolean"
-          nodeId={id}
-          customTooltip="IN<br/>Trigger"
-        />
-        
-        <TypeSafeHandle
-          type="source"
-          position="right"
-          id="account-output"
-          dataType="emailAccount"
-          nodeId={id}
-          customTooltip="OUT<br/>Email Account"
-        />
-        
-        <TypeSafeHandle
-          type="source"
-          position="bottom"
-          id="status-output"
-          dataType="Boolean"
-          nodeId={id}
-          customTooltip="OUT<br/>Connection Status"
-        />
+        {/* Handles are rendered by scaffold from spec */}
 
         <LabelNode nodeId={id} label={nodeData.label ?? spec.displayName} />
 

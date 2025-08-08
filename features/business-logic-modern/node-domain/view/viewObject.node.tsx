@@ -525,7 +525,7 @@ const ViewObjectNode = memo(
                         return (
                           <div
                             key={`summary-${String(k)}-${idx}`}
-                            className={`truncate nowheel ${isDrillable ? 'cursor-zoom-in' : ''}`}
+                            className={`truncate select-text cursor-text nodrag nowheel ${isDrillable ? 'cursor-zoom-in' : ''}`}
                             onDoubleClick={(e) => {
                               e.stopPropagation();
                               if (isDrillable) drillIntoKey(k as string | number, root);
@@ -570,7 +570,7 @@ const ViewObjectNode = memo(
         ) : (
           // Expanded: show the same nested view as collapsed using viewPath
           <div className={`nowheel ${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ''}`}>
-            <div className="flex items-center gap-2 text-[10px] text-foreground/70 mb-2">
+            <div className="flex items-center gap-2  text-[10px] text-foreground/70 mb-2">
               <span className="text-foreground/50">Path:</span>
               <code className="px-1 py-0.5 rounded bg-muted/40">
                 {((validation.data as ViewObjectData).viewPath ?? []).length === 0
@@ -580,7 +580,7 @@ const ViewObjectNode = memo(
                       .join('.')}
               </code>
             </div>
-            <div className="flex-1 overflow-auto rounded-md bg-muted/10">
+            <div className="flex-1  overflow-auto rounded-md bg-muted/10">
               <JsonHighlighter
                 data={(() => {
                   const root = (validation.data as ViewObjectData).inputs;
@@ -588,7 +588,7 @@ const ViewObjectNode = memo(
                   return (path.length === 0 ? root : resolveAtPath(root, path));
                 })()}
                 maxDepth={3}
-                className="text-[10px]"
+                className="text-[10px] select-text cursor-text nodrag nowheel "
               />
             </div>
           </div>
