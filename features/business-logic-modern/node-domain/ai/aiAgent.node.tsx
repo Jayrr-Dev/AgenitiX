@@ -42,6 +42,7 @@ import {
   reportValidationError,
   useNodeDataValidation,
 } from "@/features/business-logic-modern/infrastructure/node-core/validation";
+import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
@@ -820,7 +821,10 @@ const AiAgentNode = memo(
       ]
     );
 
-    /** Compute the latest text input from connected text-input handle */
+    /**
+     * Compute the latest text input from connected text-input handle.
+     * [Use unified handle-based reading first] , basically read `source.data.output[cleanHandleId]` before legacy fallbacks
+     */
     const computeTextInput = useCallback((): string | null => {
       const textEdge = findEdgeByHandle(edges, id, "text-input");
       if (!textEdge) {
@@ -832,21 +836,48 @@ const AiAgentNode = memo(
         return null;
       }
 
-      // priority: output ➜ store ➜ whole data
-      const rawInput = src.data?.output ?? src.data?.store ?? src.data;
+      // 1) New propagation system: handle-based output object
+      const sourceData = src.data as Record<string, unknown> | undefined;
+      let inputValue: unknown = undefined;
 
-      // If upstream node output an object with a `text` field (e.g. Create-Text),
-      // extract that for a cleaner prompt.
       if (
-        typeof rawInput === "object" &&
-        rawInput !== null &&
-        "text" in rawInput
+        sourceData &&
+        typeof sourceData.output === "object" &&
+        sourceData.output !== null
       ) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return String((rawInput as any).text ?? "");
+        const outputObj = sourceData.output as Record<string, unknown>;
+        const cleanId = textEdge.sourceHandle
+          ? normalizeHandleId(textEdge.sourceHandle)
+          : "output";
+
+        if (outputObj[cleanId] !== undefined) {
+          inputValue = outputObj[cleanId];
+        } else if (outputObj.output !== undefined) {
+          inputValue = outputObj.output;
+        } else {
+          const first = Object.values(outputObj)[0];
+          inputValue = first;
+        }
       }
 
-      return typeof rawInput === "string" ? rawInput : String(rawInput ?? "");
+      // 2) Legacy fallbacks for compatibility
+      if (inputValue === undefined || inputValue === null) {
+        const legacyRaw = (sourceData?.output as unknown) ?? sourceData?.store ?? src.data;
+        inputValue = legacyRaw;
+      }
+
+      // 3) Convenience: if upstream provided a `{ text: string }` shape
+      if (
+        typeof inputValue === "object" &&
+        inputValue !== null &&
+        "text" in (inputValue as Record<string, unknown>)
+      ) {
+        return String((inputValue as Record<string, unknown>).text ?? "");
+      }
+
+      return typeof inputValue === "string"
+        ? inputValue
+        : String(inputValue ?? "");
     }, [edges, nodes, id]);
 
     /**
