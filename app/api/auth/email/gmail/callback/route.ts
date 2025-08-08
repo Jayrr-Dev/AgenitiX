@@ -1,12 +1,11 @@
 /**
  * Route: api/auth/email/gmail/callback/route.ts
- * GMAIL OAUTH CALLBACK HANDLER - Processes OAuth2 callback from Google
+ * GMAIL OAUTH CALLBACK HANDLER – Branded popup result page + token exchange
  *
- * • Handles authorization code exchange for access tokens
- * • Validates OAuth flow completion and error states
- * • Provides detailed error messages for debugging
- * • Communicates results back to parent window via postMessage
- * • Auto-closes popup window after completion
+ * • Exchanges authorization code for tokens and fetches basic profile
+ * • Returns a small, branded HTML page that posts a message to the opener
+ * • Uses safe COOP/CORS headers for popup communication
+ * • UTF‑8 meta + charset header to prevent garbled emoji/symbols
  *
  * Keywords: oauth-callback, gmail-auth, authorization-code, token-exchange
  */
@@ -18,7 +17,7 @@ import {
 } from "@/features/business-logic-modern/node-domain/email/providers/credentialProviders";
 import { oauthCorsHeaders } from "@/lib/cors";
 
-// Helper function to add OAuth-specific headers
+// Helper function to add OAuth/popup-safe headers
 const addOAuthHeaders = (response: NextResponse) => {
   // Add CORS headers
   Object.entries(oauthCorsHeaders).forEach(([key, value]) => {
@@ -40,31 +39,73 @@ const addOAuthHeaders = (response: NextResponse) => {
 const base64Encode = (str: string) =>
   Buffer.from(str, "utf8").toString("base64");
 
-// Helper to wrap HTML in a NextResponse with correct headers + CORS/COOP fix
+// Helper to wrap HTML with correct headers + CORS/COOP + UTF‑8 charset
 const htmlResponse = (html: string, status = 200) =>
   addOAuthHeaders(
     new NextResponse(html, {
       status,
-      headers: { "Content-Type": "text/html" },
+      headers: { "Content-Type": "text/html; charset=utf-8" },
     }),
   );
 
-export async function GET(request: NextRequest) {
-  const timestamp = new Date().toISOString();
-  
-  console.log('🔍 CALLBACK: Gmail callback route hit!', {
-    url: request.url,
-    timestamp
-  });
-  
-  // 🔍 REQUEST COUNTER FOR DEBUGGING
-  if (!(global as any).requestCounter) {
-    (global as any).requestCounter = 0;
-  }
-  (global as any).requestCounter++;
-  
+// Brand tokens (keep simple constants for maintainability)
+const BRAND_BG_GRADIENT =
+  "radial-gradient(1200px 600px at 50% -100px, rgba(120,119,198,0.22) 0%, rgba(0,0,0,0.0) 50%), linear-gradient(180deg, #0b0f1a 0%, #000000 100%)";
+const BRAND_CARD_BG = "rgba(0,0,0,0.60)";
+const BRAND_CARD_BORDER = "rgba(255,255,255,0.08)";
+const BRAND_TEXT = "#ffffff";
+const BRAND_MUTED = "#a3a3a3";
+const BRAND_SUCCESS = "#22c55e"; // aligned with home green accents
+const BRAND_ERROR = "#ef4444";
 
-  
+// Small branded HTML shell
+const renderBrandedShell = (inner: string, title = "Agenitix") => `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${title}</title>
+  <style>
+    :root {
+      --bg: ${BRAND_BG_GRADIENT};
+      --card: ${BRAND_CARD_BG};
+      --card-border: ${BRAND_CARD_BORDER};
+      --text: ${BRAND_TEXT};
+      --muted: ${BRAND_MUTED};
+      --success: ${BRAND_SUCCESS};
+      --error: ${BRAND_ERROR};
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0; display: grid; place-items: center; min-height: 100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: var(--bg);
+      color: var(--text);
+    }
+    .card {
+      width: 100%; max-width: 440px; padding: 24px 22px; border-radius: 14px;
+      background: var(--card); border: 1px solid var(--card-border);
+      box-shadow: 0 6px 30px rgba(0,0,0,0.35);
+      text-align: center;
+      backdrop-filter: blur(6px);
+    }
+    .title { font-weight: 700; font-size: 22px; margin: 8px 0 6px; }
+    .desc { color: var(--muted); font-size: 14px; margin: 0 0 8px; }
+    .ok { color: var(--success); }
+    .err { color: var(--error); }
+    .spacer { height: 8px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; color: var(--muted); }
+    .badge { display:inline-block; border:1px solid var(--card-border); border-radius:999px; padding:4px 10px; color:var(--muted); margin-top:6px; }
+    button { margin-top: 10px; padding: 8px 12px; background: var(--success); color: #051b0d; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="card">${inner}</div>
+</body>
+</html>`;
+
+export async function GET(request: NextRequest) {
+  // [Explanation], basically avoid noisy console logs in production
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
   const error = searchParams.get("error");
@@ -88,54 +129,28 @@ export async function GET(request: NextRequest) {
   if (error) {
     console.error("OAuth error:", error);
     const safeError = escapeHtml(error);
-    const html = `
-			<!DOCTYPE html>
-			<html>
-			<head><title>Authentication Error</title></head>
-			<body style="font-family: system-ui, sans-serif; text-align: center; padding: 2rem; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
-				<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); max-width: 400px; width: 100%;">
-					<div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
-					<h2 style="color: #dc2626;">Authentication Failed</h2>
-					<p style="color: #6b7280;">${safeError}</p>
-					<p style="color: #6b7280; font-size: 0.875rem;">This window will close automatically...</p>
-				</div>
-				<script>
-					try {
-						if (window.opener && !window.opener.closed) {
-							window.opener.postMessage({
-								type: 'OAUTH_ERROR',
-								error: '${safeError}'
-							}, '${new URL(request.url).origin}');
-						}
-					} catch (e) {
-						console.error('PostMessage failed for error communication');
-					}
-					
-					// Auto-close after 3 seconds
-					setTimeout(() => {
-						window.close();
-					}, 3000);
-				</script>
-			</body>
-			</html>
-		`;
-    return htmlResponse(html);
+    const inner = `
+      <div class="err" aria-hidden="true" style="font-size:34px">✖️</div>
+      <div class="title err">Authentication Failed</div>
+      <p class="desc">${safeError}</p>
+      <div class="badge">Gmail OAuth</div>
+      <div class="spacer"></div>
+      <div class="mono">This window will close automatically.</div>
+      <script>
+        try {
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage({ type: 'OAUTH_ERROR', error: '${safeError}' }, '${new URL(request.url).origin}');
+          }
+        } catch (e) {}
+        setTimeout(() => window.close(), 3000);
+      </script>`;
+    return htmlResponse(renderBrandedShell(inner, "Agenitix • Auth Error"));
   }
 
   if (!code) {
-    console.error(`❌ [${timestamp}] No authorization code received - this will cause session loss`);
-    
-    // Check for additional error information
+    // [Explanation], basically handle missing code with helpful guidance
     const errorDescription = searchParams.get("error_description");
-    const prompt = searchParams.get("prompt");
-    
-    console.error("📧 Gmail OAuth Error Details:", {
-      error,
-      errorDescription,
-      hasScope: !!scope,
-      authuser,
-      prompt
-    });
+    const promptParam = searchParams.get("prompt");
     
     // Determine specific error message based on parameters
     let errorMsg = "No authorization code received";
@@ -158,7 +173,7 @@ export async function GET(request: NextRequest) {
       errorMsg = errorDescription;
       errorType = "OAUTH_ERROR";
       userGuidance = "Please check your Google account settings and try again.";
-    } else if (prompt === "consent" && authuser === "0") {
+    } else if (promptParam === "consent" && authuser === "0") {
       errorMsg = "User did not complete the consent flow. Please try again and ensure you click 'Allow' to grant access.";
       errorType = "CONSENT_CANCELLED";
       userGuidance = "When the Google consent screen appears, please click 'Allow' to grant access to your Gmail account.";
@@ -174,45 +189,21 @@ export async function GET(request: NextRequest) {
     
     const safeErrorMsg = escapeHtml(errorMsg);
     const safeUserGuidance = escapeHtml(userGuidance);
-    const html = `
-			<!DOCTYPE html>
-			<html>
-			<head><title>Authentication Error</title></head>
-			<body style="font-family: system-ui, sans-serif; text-align: center; padding: 2rem; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
-				<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); max-width: 400px; width: 100%;">
-					<div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
-					<h2 style="color: #dc2626;">Gmail Authentication Failed</h2>
-					<p style="color: #6b7280;">${safeErrorMsg}</p>
-					<p style="color: #059669; font-weight: 500; margin-top: 1rem;">${safeUserGuidance}</p>
-					<p style="color: #6b7280; font-size: 0.875rem; margin-top: 1rem;">DEBUGGING: Window will NOT auto-close. Check network tab and console.</p>
-					<button onclick="window.close()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #dc2626; color: white; border: none; border-radius: 0.375rem; cursor: pointer;">Close Window</button>
-				</div>
-				<script>
-					console.log('🔍 DEBUGGING: OAuth callback error page loaded');
-					console.log('🔍 URL:', window.location.href);
-					console.log('🔍 Search params:', window.location.search);
-					
-					try {
-						if (window.opener && !window.opener.closed) {
-							window.opener.postMessage({
-								type: 'OAUTH_ERROR',
-								error: '${safeErrorMsg}',
-								errorType: '${errorType}',
-								userGuidance: '${safeUserGuidance}',
-								timestamp: Date.now()
-							}, '${new URL(request.url).origin}');
-						}
-					} catch (e) {
-						console.error('PostMessage failed for error communication');
-					}
-					
-					// 🔍 DEBUGGING: Don't auto-close - let user check network tab
-					console.log('🔍 DEBUGGING: Window will NOT auto-close for debugging');
-				</script>
-			</body>
-			</html>
-		`;
-    return htmlResponse(html);
+    const inner = `
+      <div class="err" aria-hidden="true" style="font-size:34px">❌</div>
+      <div class="title err">Gmail Authentication Failed</div>
+      <p class="desc">${safeErrorMsg}</p>
+      <p class="desc" style="color:var(--success)">${safeUserGuidance}</p>
+      <div class="badge">${errorType}</div>
+      <button onclick="window.close()">Close Window</button>
+      <script>
+        try {
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage({ type: 'OAUTH_ERROR', error: '${safeErrorMsg}', errorType: '${errorType}', userGuidance: '${safeUserGuidance}', timestamp: Date.now() }, '${new URL(request.url).origin}');
+          }
+        } catch (e) {}
+      </script>`;
+    return htmlResponse(renderBrandedShell(inner, "Agenitix • Auth Error"));
   }
 
   try {
@@ -255,188 +246,42 @@ export async function GET(request: NextRequest) {
 
 
 
-    // Create HTML page that communicates with parent window via postMessage
-    const html = `<!DOCTYPE html>
-<html>
-<head>
-	<title>Authentication Success</title>
-	<style>
-		body { 
-			font-family: system-ui, sans-serif; 
-			text-align: center; 
-			padding: 2rem; 
-			background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-			margin: 0;
-			min-height: 100vh;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-		}
-		.container {
-			background: white;
-			padding: 2rem;
-			border-radius: 12px;
-			box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-			max-width: 400px;
-			width: 100%;
-		}
-		.success { color: #059669; }
-		.countdown { color: #6b7280; font-size: 0.875rem; margin-top: 1rem; }
-		.icon {
-			font-size: 3rem;
-			margin-bottom: 1rem;
-		}
-	</style>
-</head>
-<body>
-	<div class="container">
-		<div class="icon">✅</div>
-		<div class="success">
-			<h2>Authentication Successful</h2>
-			<p>Connecting your Gmail account...</p>
-			<div class="countdown">Closing in <span id="countdown">3</span> seconds</div>
-		</div>
-	</div>
-	<script>
-		console.log('🔍 POPUP: Callback JavaScript is running!');
-		
-		const authData = {
-			type: 'OAUTH_SUCCESS',
-			authData: '${authDataEncoded}',
-			timestamp: Date.now()
-		};
-		console.log('🔍 POPUP: Auth data created:', authData);
-
-		// Send success message to parent window
-		function sendSuccessToParent() {
-			console.log('🔍 POPUP: Attempting to send message to parent:', authData);
-			try {
-				if (window.opener && !window.opener.closed) {
-					console.log('🔍 POPUP: Parent window found, sending message...');
-					window.opener.postMessage(authData, window.location.origin);
-					console.log('🔍 POPUP: Message sent successfully');
-					return true;
-				} else {
-					console.log('🔍 POPUP: No parent window or parent is closed');
-				}
-			} catch (error) {
-				console.error('🔍 POPUP: Error sending message to parent:', error);
-			}
-			return false;
-		}
-
-		// Main execution with error handling
-		try {
-		
-		// Test basic postMessage first
-		console.log('🔍 POPUP: Testing basic postMessage...');
-		try {
-			if (window.opener) {
-				window.opener.postMessage({ type: 'TEST_MESSAGE', test: true }, window.location.origin);
-				console.log('🔍 POPUP: Test message sent');
-			} else {
-				console.log('🔍 POPUP: No window.opener available');
-			}
-		} catch (e) {
-			console.error('🔍 POPUP: Test message failed:', e);
-		}
-
-		// Try BroadcastChannel first (COOP-safe)
-		console.log('🔍 POPUP: Trying BroadcastChannel...');
-		try {
-			const channel = new BroadcastChannel('oauth_gmail');
-			channel.postMessage(authData);
-			console.log('🔍 POPUP: BroadcastChannel message sent successfully');
-			channel.close();
-		} catch (error) {
-			console.error('🔍 POPUP: BroadcastChannel failed:', error);
-		}
-
-		// Try to send message to parent window as fallback
-		const success = sendSuccessToParent();
-
-		// Update UI based on success
-		if (success) {
-			document.querySelector('.container').innerHTML = \`
-				<div class="icon">✅</div>
-				<div class="success">
-					<h2>Gmail Connected!</h2>
-					<p>Returning to your workflow...</p>
-				</div>
-			\`;
-		} else {
-			document.querySelector('.container').innerHTML = \`
-				<div class="icon">⚠️</div>
-				<div class="success">
-					<h2>Gmail Connected!</h2>
-					<p>You can close this window and return to your workflow.</p>
-				</div>
-			\`;
-		}
-
-		// Countdown and auto-close
-		let countdown = 3;
-		const countdownElement = document.getElementById('countdown');
-		const timer = setInterval(() => {
-			countdown--;
-			if (countdownElement) {
-				countdownElement.textContent = countdown.toString();
-			}
-			if (countdown <= 0) {
-				clearInterval(timer);
-				window.close();
-			}
-		}, 1000);
-		
-		} catch (error) {
-			console.error('🔍 POPUP: JavaScript execution error:', error);
-			document.querySelector('.container').innerHTML = \`
-				<div class="icon">⚠️</div>
-				<div class="success">
-					<h2>Gmail Connected!</h2>
-					<p>You can close this window manually.</p>
-				</div>
-			\`;
-		}
-	</script>
-</body>
-</html>`;
-
-    return htmlResponse(html);
+    // Create branded HTML page that communicates with parent via postMessage
+    const inner = `
+      <div class="ok" aria-hidden="true" style="font-size:34px">✅</div>
+      <div class="title ok">Gmail Connected!</div>
+      <p class="desc">Returning to your workflow…</p>
+      <div id="closing" class="mono">Closing in <span id="countdown">3</span>s</div>
+      <script>
+        const authData = { type: 'OAUTH_SUCCESS', authData: '${authDataEncoded}', timestamp: Date.now() };
+        function tryBroadcast() {
+          try { const ch = new BroadcastChannel('oauth_gmail'); ch.postMessage(authData); ch.close(); } catch (_) {}
+        }
+        function tryPostMessage() {
+          try { if (window.opener && !window.opener.closed) { window.opener.postMessage(authData, window.location.origin); return true; } } catch (_) {}
+          return false;
+        }
+        tryBroadcast();
+        const sent = tryPostMessage();
+        let t = 3; const el = document.getElementById('countdown');
+        const timer = setInterval(() => { t--; if (el) el.textContent = String(t); if (t <= 0) { clearInterval(timer); window.close(); } }, 1000);
+        if (!sent) {
+          const closing = document.getElementById('closing'); if (closing) closing.textContent = 'You can close this window.';
+        }
+      </script>`;
+    return htmlResponse(renderBrandedShell(inner, "Agenitix • Gmail Connected"));
   } catch (error) {
     console.error("Gmail OAuth callback error:", error);
     const safeErrorMessage = escapeHtml(error instanceof Error ? error.message : "oauth_failed");
-    const html = `
-			<!DOCTYPE html>
-			<html>
-			<head><title>Authentication Error</title></head>
-			<body style="font-family: system-ui, sans-serif; text-align: center; padding: 2rem; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
-				<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); max-width: 400px; width: 100%;">
-					<div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
-					<h2 style="color: #dc2626;">Authentication Error</h2>
-					<p style="color: #6b7280;">${safeErrorMessage}</p>
-					<p style="color: #6b7280; font-size: 0.875rem;">This window will close automatically...</p>
-				</div>
-				<script>
-					try {
-						if (window.opener && !window.opener.closed) {
-							window.opener.postMessage({
-								type: 'OAUTH_ERROR',
-								error: '${safeErrorMessage}'
-							}, '${new URL(request.url).origin}');
-						}
-					} catch (e) {
-						console.error('PostMessage failed for OAuth error communication');
-					}
-					
-					// Auto-close after 3 seconds
-					setTimeout(() => {
-						window.close();
-					}, 3000);
-				</script>
-			</body>
-			</html>
-		`;
-    return htmlResponse(html);
+    const inner = `
+      <div class="err" aria-hidden="true" style="font-size:34px">✖️</div>
+      <div class="title err">Authentication Error</div>
+      <p class="desc">${safeErrorMessage}</p>
+      <div class="mono">This window will close automatically.</div>
+      <script>
+        try { if (window.opener && !window.opener.closed) { window.opener.postMessage({ type: 'OAUTH_ERROR', error: '${safeErrorMessage}' }, '${new URL(request.url).origin}'); } } catch (e) {}
+        setTimeout(() => window.close(), 3000);
+      </script>`;
+    return htmlResponse(renderBrandedShell(inner, "Agenitix • Auth Error"));
   }
 }

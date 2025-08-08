@@ -14,7 +14,7 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import { Handle, Position, useReactFlow, useStore } from "@xyflow/react";
+import { useStore } from "@xyflow/react";
 import {
   type ChangeEvent,
   memo,
@@ -203,7 +203,7 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
         code: "a",
         position: "left",
         type: "target",
-        dataType: "emailAccount",
+        dataType: "JSON",
       },
       {
         id: "message-input",
@@ -404,19 +404,13 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
   const categoryStyles = CATEGORY_TEXT.EMAIL;
 
-  // Global React‑Flow store (nodes & edges) – triggers re‑render on change
-  const nodes = useStore((s) => s.nodes);
-  const edges = useStore((s) => s.edges);
-
   // Keep last emitted output to avoid redundant writes
-  const lastOutputRef = useRef<string | null>(null);
   const lastGeneralOutputRef = useRef<Map<string, any> | null>(null);
 
   // -------------------------------------------------------------------------
   // 4.3  Convex integration
   // -------------------------------------------------------------------------
   const flowMetadata = useFlowMetadataOptional();
-  const canEdit = flowMetadata?.flow?.canEdit ?? true;
 
   // Fetch email accounts for both owners and viewers - viewers can use their own accounts
   const emailAccounts = useQuery(
@@ -434,7 +428,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   // 4.4  Get connected email account nodes
   // -------------------------------------------------------------------------
-  const { getNodes, getEdges } = useReactFlow();
+  // Using global store for edges/nodes, no direct ReactFlow API needed here
 
   const connectedAccountIds = useMemo(() => {
     const edges = _edges.filter(
@@ -536,8 +530,6 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       ) {
         const emailData = sourceNode.data.emailOutput as any;
 
-        console.log("Auto-filling emailSender from emailCreator:", emailData);
-
         // Validate emailData structure before using
         if (emailData && typeof emailData === "object") {
           // Auto-fill email fields from emailCreator data
@@ -635,13 +627,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
           // Don't override accountId - keep the existing one
         });
 
-        console.log("Auto-filled emailSender from emailReplier:", {
-          originalEmail: originalEmail,
-          to: senderEmail,
-          subject: `Re: ${originalSubject}`,
-          message: replierData.generatedReply,
-          replierData: replierData,
-        });
+        // Removed debug logging per code hygiene rules
       }
     }
   }, [_nodes, _edges, id, updateNodeData]);
@@ -942,9 +928,9 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
           sendingStatus: "sent",
           sentCount: sentCount + safeRecipients.to.length,
           lastSent: Date.now(),
-          successOutput: true,
-          messageIdOutput: result.messageId,
-          errorOutput: "",
+          "success-output": true,
+          "message-id-output": result.messageId,
+          "error-output": "",
           output: JSON.stringify(formattedOutput, null, 2), // Formatted for viewText
         });
 
@@ -972,9 +958,9 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
           sendingStatus: "error",
           failedCount: failedCount + safeRecipients.to.length,
           lastError: errorMessage,
-          successOutput: false,
-          messageIdOutput: "",
-          errorOutput: errorMessage,
+          "success-output": false,
+          "message-id-output": "",
+          "error-output": errorMessage,
           output: JSON.stringify(errorOutput, null, 2),
         });
 
@@ -1005,8 +991,8 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
         sendingStatus: "error",
         lastError: errorMessage,
         failedCount: failedCount + safeRecipients.to.length,
-        successOutput: false,
-        errorOutput: errorMessage,
+        "success-output": false,
+        "error-output": errorMessage,
         output: JSON.stringify(exceptionOutput, null, 2),
       });
 
@@ -1094,9 +1080,9 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     spec.handles,
     (safeNodeData as any).isActive,
     (safeNodeData as any).sendingStatus,
-    (safeNodeData as any).successOutput,
-    (safeNodeData as any).messageIdOutput,
-    (safeNodeData as any).errorOutput,
+    (safeNodeData as any)["success-output"],
+    (safeNodeData as any)["message-id-output"],
+    (safeNodeData as any)["error-output"],
     updateNodeData,
     id,
   ]);
@@ -1124,19 +1110,6 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   return (
     <>
-      {/* Input handle for email account connection */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="account-input"
-        style={{
-          background: "#555",
-          width: 8,
-          height: 8,
-          top: 20,
-        }}
-      />
-
       {/* Editable label */}
       <LabelNode nodeId={id} label={spec?.displayName || "Email Sender"} />
 
@@ -1149,13 +1122,6 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
             <div
               className={`text-xs ${sendingStatus === "sent" ? "text-green-600" : sendingStatus === "error" ? "text-red-600" : "text-gray-600"}`}
             >
-              {sendingStatus === "sending"
-                ? "📤"
-                : sendingStatus === "sent"
-                  ? "✓"
-                  : sendingStatus === "error"
-                    ? "✗"
-                    : "○"}{" "}
               {sendingStatus}
             </div>
           </div>
@@ -1325,7 +1291,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
                   htmlFor={`file-input-${id}`}
                   className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  📎 Add Files
+                  Add Files
                 </label>
                 <span className="text-xs text-gray-500 ml-2">
                   Max: {Math.round(maxAttachmentSize / 1024 / 1024)}MB per file
@@ -1341,7 +1307,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
                       className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs"
                     >
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="text-blue-600">📄</span>
+                        <span className="text-blue-600" aria-hidden="true">•</span>
                         <span className="truncate font-medium">
                           {attachment.filename}
                         </span>

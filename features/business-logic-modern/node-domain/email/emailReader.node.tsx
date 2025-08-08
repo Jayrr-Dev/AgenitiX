@@ -51,7 +51,8 @@ import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
 import { toast } from "sonner";
 import { useFlowMetadataOptional } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
-import EnforceNumericInput from "@/components/EnforceNumericInput";
+import { EmailReaderExpanded } from "./components/EmailReaderExpanded";
+import { EmailReaderCollapsed } from "./components/EmailReaderCollapsed";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -150,14 +151,7 @@ const CATEGORY_TEXT = {
   },
 } as const;
 
-const CONTENT = {
-  expanded: "p-4 w-full h-full flex flex-col",
-  collapsed: "flex items-center justify-center w-full h-full",
-  header: "flex items-center justify-between mb-3",
-  body: "flex-1 flex flex-col gap-3",
-  disabled:
-    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
-} as const;
+// [Explanation], basically view layout tokens kept within subcomponents for consistency
 
 // -----------------------------------------------------------------------------
 // 3️⃣  Dynamic spec factory (pure)
@@ -496,10 +490,11 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   );
 
   /** Handle check interval change */
-  const handleCheckIntervalChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const value = Number.parseInt(e.target.value) || 5;
-      updateNodeData({ checkInterval: Math.max(1, Math.min(60, value)) });
+  const handleCheckIntervalChangeNumeric = useCallback(
+    (numericText: string) => {
+      const parsed = Number.parseInt(numericText || "1", 10);
+      const clamped = Math.max(1, Math.min(60, isNaN(parsed) ? 1 : parsed));
+      updateNodeData({ checkInterval: clamped });
     },
     [updateNodeData]
   );
@@ -647,191 +642,35 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   return (
     <>
-      {/* Editable label */}
       <LabelNode
         nodeId={id}
         label={(nodeData as EmailReaderData).label || spec.displayName}
       />
 
       {isExpanded ? (
-        <div
-          className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
-        >
-            
-       
-          
-
-            <div className={`${CONTENT.body} max-h-[400px] overflow-y-auto`}>
-            {/* Account Selection */}
-            <div>
-              <div className="flex justify-between flex-row w-full ">
-
-              <label
-                htmlFor="email-account-select"
-                className="block text-gray-600 text-xs"
-                >
-                Email Account
-              </label>
-            <div className={`text-xs  ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}>{connectionStatus}</div>
-
-                </div>
-              <select
-                id="email-account-select"
-                value={accountId}
-                onChange={handleAccountChange}
-                className="w-full rounded border border-gray-300 p-2 text-xs"
-                disabled={!isEnabled || connectionStatus === "reading"}
-              >
-                <option value="">Select email account...</option>
-                {availableAccounts.map((account) => (
-                  <option
-                    key={account.value}
-                    value={account.value}
-                    disabled={!account.isActive}
-                  >
-                      {account.label} {account.isActive ? "" : "(inactive)"}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Processing Options */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label
-                  htmlFor="batch-size-input"
-                  className="mb-1 block text-gray-600 text-xs"
-                >
-                  Batch Size:
-                </label>
-                <EnforceNumericInput
-                  id="batch-size-input"
-                  value={batchSize}
-                  onValueChange={handleBatchSizeChangeNumeric}
-                  className="w-full rounded border border-gray-300 p-2 text-xs"
-                  disabled={!isEnabled || connectionStatus === "reading"}
-                  placeholder="10"
-                  aria-label="Batch Size"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="max-messages-input"
-                  className="mb-1 block text-gray-600 text-xs"
-                >
-                  Max Messages:
-                </label>
-                <EnforceNumericInput
-                  id="max-messages-input"
-                  value={maxMessages}
-                  onValueChange={handleMaxMessagesChangeNumeric}
-                  className="w-full rounded border border-gray-300 p-2 text-xs"
-                  disabled={!isEnabled || connectionStatus === "reading"}
-                  placeholder="50"
-                  aria-label="Max Messages"
-                />
-              </div>
-            </div>
-
-            {/* Options */}
-            <div className="flex flex-col gap-2">
-              <label className="flex items-center text-xs">
-                <input
-                  type="checkbox"
-                  checked={includeAttachments}
-                  onChange={handleCheckboxChange("includeAttachments")}
-                  className="mr-2"
-                  disabled={!isEnabled}
-                />
-                Include Attachments
-              </label>
-              <label className="flex items-center text-xs">
-                <input
-                  type="checkbox"
-                  checked={markAsRead}
-                  onChange={handleCheckboxChange("markAsRead")}
-                  className="mr-2"
-                  disabled={!isEnabled}
-                />
-                Mark as Read
-              </label>
-              <label className="flex items-center text-xs">
-                <input
-                  type="checkbox"
-                  checked={enableRealTime}
-                  onChange={handleCheckboxChange("enableRealTime")}
-                  className="mr-2"
-                  disabled={!isEnabled}
-                />
-                Real-time Monitoring
-              </label>
-            </div>
-
-            {/* Real-time Interval */}
-            {enableRealTime && (
-              <div>
-                <label
-                  htmlFor="check-interval-input"
-                  className="mb-1 block text-gray-600 text-xs"
-                >
-                  Check Interval (minutes):
-                </label>
-                <input
-                  id="check-interval-input"
-                  type="number"
-                  value={checkInterval}
-                  onChange={handleCheckIntervalChange}
-                  min="1"
-                  max="60"
-                  className="w-full rounded border border-gray-300 p-2 text-xs"
-                  disabled={!isEnabled}
-                />
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-2">
-              <button
-                onClick={handleReadMessages}
-                disabled={
-                  !(isEnabled && accountId) || connectionStatus === "reading"
-                }
-                className="flex-1 rounded bg-blue-500 p-2 text-white text-xs hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                type="button"
-              >
-                {connectionStatus === "reading" ? "Reading..." : "Read Messages"}
-              </button>
-            </div>
-
-            {/* Status Information */}
-            <div className="rounded bg-gray-50 p-2 text-gray-500 text-xs">
-              <div>
-                Messages: {messageCount} | Processed: {processedCount}
-              </div>
-              {lastSync && (
-                <div>Last sync: {new Date(lastSync).toLocaleString()}</div>
-              )}
-              {lastError && (
-                <div className="mt-1 text-red-600">Error: {lastError}</div>
-              )}
-              {retryCount > 0 && (
-                <div className="text-yellow-600">Retries: {retryCount}</div>
-              )}
-            </div>
-          </div>
-        </div>
+        <EmailReaderExpanded
+          nodeData={nodeData as EmailReaderData}
+          isEnabled={isEnabled as boolean}
+          connectionStatus={connectionStatus as EmailReaderData["connectionStatus"]}
+          availableAccounts={availableAccounts}
+          onAccountChange={handleAccountChange}
+          onBatchSizeChange={handleBatchSizeChangeNumeric}
+          onMaxMessagesChange={handleMaxMessagesChangeNumeric}
+          onIncludeAttachmentsChange={handleCheckboxChange("includeAttachments")}
+          onMarkAsReadChange={handleCheckboxChange("markAsRead")}
+          onEnableRealTimeChange={handleCheckboxChange("enableRealTime")}
+          onCheckIntervalChange={handleCheckIntervalChangeNumeric}
+          onReadMessages={handleReadMessages}
+        />
       ) : (
-        <div className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}>
-          <div className="p-2 text-center">
-            <div className={`font-mono text-xs ${categoryStyles.primary}`}>
-              {accountId ? `${messageCount} messages` : "No account"}
-            </div>
-            <div className={`text-xs ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}>{connectionStatus}</div>
-          </div>
-        </div>
+        <EmailReaderCollapsed
+          nodeData={nodeData as EmailReaderData}
+          categoryStyles={categoryStyles}
+          onToggleExpand={toggleExpand}
+        />
       )}
 
-      <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} />
+      <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
     </>
   );
 });
