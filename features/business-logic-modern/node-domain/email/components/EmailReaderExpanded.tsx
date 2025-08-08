@@ -26,7 +26,7 @@ const EXPANDED_STYLES = {
 } as const;
 
 const FIELD_STYLES = {
-  label: "text-[--node-email-text] text-[10px] font-medium mb-1 block",
+  label: "text-[--node-email-text] text-[10px] font-medium mb-1 block w-full flex items-center justify-between",
   input:
     "h-6 text-[10px] border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] rounded-md px-2 focus:ring-1 focus:ring-[--node-email-border-hover] focus:border-[--node-email-border-hover] disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-[--node-email-text-secondary] placeholder:text-[10px] transition-all duration-200",
   select:
@@ -119,6 +119,7 @@ export const EmailReaderExpanded = React.memo(function EmailReaderExpanded(
             <span className="inline-flex items-center gap-1">
               Email Account
               {/* Live connection status, basically visual indicator */}
+            </span>
               <RenderStatusDot
                 eventActive={connectionStatus === "connected"}
                 isProcessing={connectionStatus === "connecting" || connectionStatus === "reading"}
@@ -127,7 +128,6 @@ export const EmailReaderExpanded = React.memo(function EmailReaderExpanded(
                 size="sm"
                 titleText={connectionStatus}
               />
-            </span>
           </label>
           <select
             id="email-account-select"
@@ -142,7 +142,7 @@ export const EmailReaderExpanded = React.memo(function EmailReaderExpanded(
         </div>
 
         {/* Processing Options */}
-        <div className="grid grid-cols-2 gap-1">
+
           <div>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -185,7 +185,7 @@ export const EmailReaderExpanded = React.memo(function EmailReaderExpanded(
               aria-label="Max Messages"
             />
           </div>
-        </div>
+  
 
         {/* Options */}
         <div className="flex flex-col gap-1">

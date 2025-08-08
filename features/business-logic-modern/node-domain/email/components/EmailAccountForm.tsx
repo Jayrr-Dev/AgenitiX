@@ -27,7 +27,7 @@ import type { EmailProviderType } from "../types";
 
 // Form styling constants
 const FORM_STYLES = {
-  label: "text-[--node-email-text] text-[10px] font-medium mb-1 block",
+  label: "text-[--node-email-text] text-[10px] font-medium mb-1 block w-full flex items-center justify-between",
   fieldGroup: "space-y-1",
   input:
     "h-6 text-[10px] border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] rounded-md px-2 focus:ring-1 focus:ring-[--node-email-border-hover] focus:border-[--node-email-border-hover] disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-[--node-email-text-secondary] placeholder:text-[10px] transition-all duration-200",
@@ -108,8 +108,8 @@ export const EmailAccountForm = memo(
             <span className="inline-flex items-center gap-1">
               Provider
               {/* Status dot for provider connection, basically shows live status */}
-              <RenderStatusDot {...providerStatusProps} />
             </span>
+            <RenderStatusDot {...providerStatusProps} />
           </label>
           <Select
             onValueChange={handleProviderChange}

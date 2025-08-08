@@ -618,6 +618,32 @@ const EmailReaderNode = memo(({ id, spec, ...rest }: NodeProps & { spec: NodeSpe
   // 4.6  Effects
   // -------------------------------------------------------------------------
 
+  /**
+   * Auto-select a connected account when available
+   * [Explanation], basically choose the first connected account (or first available) if none is selected or current is invalid
+   */
+  useEffect(() => {
+    if (!Array.isArray(availableAccounts) || availableAccounts.length === 0) {
+      return;
+    }
+
+    const hasValidCurrent = availableAccounts.some((acc) => acc.value === accountId);
+    if (hasValidCurrent && accountId) {
+      return;
+    }
+
+    const preferred = availableAccounts.find((acc) => acc.isConnected) ?? availableAccounts[0];
+    if (preferred) {
+      updateNodeData({
+        accountId: preferred.value,
+        provider: preferred.provider || "gmail",
+        connectionStatus: "idle",
+        isConnected: false,
+        lastError: "",
+      });
+    }
+  }, [availableAccounts, accountId, updateNodeData]);
+
   /** Update output when message state changes */
   useEffect(() => {
     if (isEnabled && isConnected) {

@@ -15,6 +15,7 @@ import { spec as createJsonpec } from "../../node-domain/create/createJson.node"
 import { spec as createMapSpec } from "../../node-domain/create/createMap.node";
 import { spec as viewObjectSpec } from "../../node-domain/view/viewObject.node";
 import { spec as viewArraySpec } from "../../node-domain/view/viewArray.node";
+import { spec as emailPreviewSpec } from "../../node-domain/email/emailPreview.node";
 import { spec as createTextSpec } from "../../node-domain/create/createText.node";
 import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
 import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
@@ -55,6 +56,7 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	createMap: createMapSpec,
 	viewObject: viewObjectSpec,
 	viewArray: viewArraySpec,
+	emailPreview: emailPreviewSpec,
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
 	aiAgent: aiAgentSpec,

@@ -42,10 +42,24 @@ export interface EnforceNumericInputProps
 /**
  * EnforceNumericInput – text input that accepts only numeric characters.
  * [Explanation], basically blocks non-digit keys and sanitizes pasted text
+ *
+ * UX detail: while the input is focused we allow a temporary empty string so
+ * users can backspace and retype. On blur the parent value takes over again.
  */
 const EnforceNumericInput = React.forwardRef<HTMLInputElement, EnforceNumericInputProps>(
   ({ value, onValueChange, className, disabled, placeholder, id, name, ...rest }, ref) => {
     const stringValue = String(value ?? "");
+
+    // Local editing state so users can clear the field while focused
+    const [isFocused, setIsFocused] = React.useState(false);
+    const [displayValue, setDisplayValue] = React.useState<string>(stringValue);
+
+    // Keep local state in sync when not focused
+    React.useEffect(() => {
+      if (!isFocused) {
+        setDisplayValue(stringValue);
+      }
+    }, [stringValue, isFocused]);
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
       const isMeta = event.ctrlKey || event.metaKey;
@@ -64,12 +78,8 @@ const EnforceNumericInput = React.forwardRef<HTMLInputElement, EnforceNumericInp
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       const cleaned = event.target.value.replace(NON_DIGIT_REGEX, "");
-      if (cleaned !== event.target.value) {
-        // Replace with cleaned text
-        onValueChange(cleaned);
-        return;
-      }
-      onValueChange(event.target.value);
+      setDisplayValue(cleaned); // reflect user's typing, including empty
+      onValueChange(cleaned);
     };
 
     const handlePaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
@@ -77,8 +87,19 @@ const EnforceNumericInput = React.forwardRef<HTMLInputElement, EnforceNumericInp
       const cleaned = pasted.replace(NON_DIGIT_REGEX, "");
       if (cleaned !== pasted) {
         event.preventDefault();
-        onValueChange(cleaned);
       }
+      setDisplayValue(cleaned);
+      onValueChange(cleaned);
+    };
+
+    const handleFocus = () => {
+      setIsFocused(true);
+      setDisplayValue(stringValue);
+    };
+
+    const handleBlur = () => {
+      setIsFocused(false);
+      // On blur the parent-provided value will render. No-op here.
     };
 
     return (
@@ -92,10 +113,12 @@ const EnforceNumericInput = React.forwardRef<HTMLInputElement, EnforceNumericInp
         placeholder={placeholder}
         disabled={disabled}
         className={className}
-        value={stringValue}
+        value={isFocused ? displayValue : stringValue}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         {...rest}
       />
     );

@@ -56,7 +56,7 @@ export const ViewArrayDataSchema = z
     // [Explanation], basically pass-through arbitrary JSON safely (expect array)
     inputs: z.unknown().nullable().default(null),
     output: z.unknown().optional(),
-    expandedSize: SafeSchemas.text("FE1H"),
+    expandedSize: SafeSchemas.text("FE3H"),
     collapsedSize: SafeSchemas.text("C2W"),
     label: z.string().optional(), // User-editable node label
     // [Explanation], basically path stack for collapsed-view drill navigation (indexes/keys)
@@ -274,11 +274,13 @@ const ViewArrayNode = memo(
       const inputValue =
         src.data?.output ?? src.data?.inputData ?? src.data?.store ?? src.data;
       if (typeof inputValue === "string") {
-        // Try to parse stringified arrays; otherwise return string
+        // Try to parse JSON-like strings (arrays or objects); otherwise return string
         try {
           const trimmed = inputValue.trim();
           if (trimmed.length === 0) return null;
-          if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+          const looksArray = trimmed.startsWith("[") && trimmed.endsWith("]");
+          const looksObject = trimmed.startsWith("{") && trimmed.endsWith("}");
+          if (looksArray || looksObject) {
             return JSON.parse(trimmed);
           }
           return inputValue; // plain string allowed
@@ -364,6 +366,11 @@ const ViewArrayNode = memo(
       const invalid = path.length > 0 && (current === undefined || current === null || typeof current !== "object");
       if (invalid) updateNodeData({ viewPath: [] });
     }, [nodeData, resolveAtPath, updateNodeData]);
+
+    /* 🔁 Reset collapsed summary count when navigating levels */
+    useEffect(() => {
+      updateNodeData({ summaryLimit: 6 });
+    }, [viewPath?.length, updateNodeData]);
 
     // Monitor inputs and update active state (allow any value, prefer arrays)
     useEffect(() => {
@@ -494,16 +501,19 @@ const ViewArrayNode = memo(
 
                 // Body: list entries at current level with types, double-click to drill
                 const renderLevel = (value: unknown) => {
-                  if (!Array.isArray(value)) {
-                    // Show type and brief preview for non-arrays
+                  // Support arrays and plain objects; otherwise show a brief notice
+                  if (value === null || (typeof value !== 'object' && !Array.isArray(value))) {
                     const typeText = value === null ? 'null' : typeof value;
                     return (
                       <div className="text-muted-foreground">
-                        (not an array) <span className="text-foreground/60">{typeText}</span>
+                        (not a collection) <span className="text-foreground/60">{typeText}</span>
                       </div>
                     );
                   }
-                  const entries = (value as Array<unknown>).map((v, i) => [i, v] as [number, unknown]);
+                  const isArray = Array.isArray(value);
+                  const entries = isArray
+                    ? (value as Array<unknown>).map((v, i) => [i, v] as [number, unknown])
+                    : Object.entries(value as Record<string, unknown>);
                   const limit = (validation.data as ViewArrayData).summaryLimit ?? SUMMARY_MAX_ITEMS;
                   const shown = entries.slice(0, limit);
                   return (
@@ -521,10 +531,10 @@ const ViewArrayNode = memo(
                             }}
                             title={isDrillable ? 'Double-click to open' : undefined}
                           >
-                            <span className="text-red-400">{typeof k === 'string' ? `"${k}"` : `[${String(k)}]`}</span>
+                            <span className="text-red-400">{isArray ? `[${String(k)}]` : `"${String(k)}"`}</span>
                             <span className="text-foreground/70">: </span>
                             <span className={isDrillable ? 'text-blue-400' : 'text-blue-300'}>
-                              {Array.isArray(v) ? `[${(v as unknown[]).length}]` : typeText}
+                              {Array.isArray(v) ? 'array' : (typeof v === 'object' ? 'object' : typeText)}
                             </span>
                             {idx < shown.length - 1 && <span className="text-foreground/50">,</span>}
                           </div>

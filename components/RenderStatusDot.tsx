@@ -88,7 +88,7 @@ export const RenderStatusDot = memo(function RenderStatusDot({
   hasError = false,
   enableGlow = true,
   size = "sm",
-  className = "",
+  className = "text-right",
   ariaLabel,
   titleText,
 }: RenderStatusDotProps) {

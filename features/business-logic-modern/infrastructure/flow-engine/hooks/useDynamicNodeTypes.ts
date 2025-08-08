@@ -9,6 +9,7 @@ import createJson from '../../../node-domain/create/createJson.node';
 import createMap from '../../../node-domain/create/createMap.node';
 import viewObject from '../../../node-domain/view/viewObject.node';
 import viewArray from '../../../node-domain/view/viewArray.node';
+import emailPreview from '../../../node-domain/email/emailPreview.node';
 // Add new node imports here (Plop can auto-inject these)
 import aiAgent from "../../../node-domain/ai/aiAgent.node";
 import createText from "../../../node-domain/create/createText.node";
@@ -60,6 +61,7 @@ export function useDynamicNodeTypes() {
 			createMap,
 			viewObject,
 			viewArray,
+			emailPreview,
 			// Add new node types here
 			aiAgent,
 			testNode,
