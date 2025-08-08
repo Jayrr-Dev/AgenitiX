@@ -91,7 +91,7 @@ const getCachedHandleIcon = (typeName: string): React.ComponentType<{ width?: nu
 /**
  * Handle visual configuration
  */
-const HANDLE_SIZE_PX = 12;
+const HANDLE_SIZE_PX = 14;
 const HANDLE_POSITION_OFFSET = 12; // pixels to move handles further out from nodes
 const HANDLE_SPACING = 16; // pixels between multiple handles on the same side
 

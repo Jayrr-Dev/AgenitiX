@@ -23,6 +23,7 @@ import { Loading } from "@/components/Loading";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import { Button } from "@/components/ui/button";
+import { CounterBoxContainer } from "@/components/ui/counter-box";
 
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
@@ -1666,6 +1667,44 @@ const StoreLocalNode = memo(
     const nodes = useStore((s) => s.nodes);
     const edges = useStore((s) => s.edges);
 
+    // Compute collapsed counter values (keys/values) based on mode
+    const collapsedCounts = useMemo(() => {
+      const safeInput: Record<string, unknown> | null = inputData && typeof inputData === "object" ? inputData : null;
+      if (!safeInput || Object.keys(safeInput).length === 0) {
+        return { keyCount: 0, valueCount: 0 };
+      }
+
+      const keys = Object.keys(safeInput);
+
+      if (mode === "store") {
+        return { keyCount: keys.length, valueCount: keys.length };
+      }
+
+      if (mode === "delete") {
+        let existingKeyCount = 0;
+        try {
+          for (const key of keys) {
+            if (localStorage.getItem(key) !== null) existingKeyCount++;
+          }
+        } catch {
+          existingKeyCount = 0;
+        }
+        return { keyCount: existingKeyCount, valueCount: existingKeyCount };
+      }
+
+      // mode === "get"
+      let existingCount = 0;
+      try {
+        for (const key of keys) {
+          const value = localStorage.getItem(key);
+          if (value !== null) existingCount++;
+        }
+      } catch {
+        existingCount = 0;
+      }
+      return { keyCount: existingCount, valueCount: existingCount };
+    }, [inputData, mode]);
+
     // Security-enhanced localStorage operations utility
     const localStorageOps = useMemo(
       () => createLocalStorageOperations(id),
@@ -2410,7 +2449,17 @@ const StoreLocalNode = memo(
                   isCollapsed={true}
                 />
               </div>
-              <CollapsedCounter mode={mode} inputData={inputData} />
+              {/* Collapsed counters using shared CounterBoxContainer */}
+              <CounterBoxContainer
+                className="mt-2"
+                // defaultTextColor={MODE_CONFIG[mode.toUpperCase() as keyof typeof MODE_CONFIG].colors.counterContainer}
+                // defaultBgColor={MODE_CONFIG[mode.toUpperCase() as keyof typeof MODE_CONFIG].colors.counterBg}
+                // defaultLabelColor={MODE_CONFIG[mode.toUpperCase() as keyof typeof MODE_CONFIG].colors.counterLabel}
+                counters={[
+                  { label: "Key", count: collapsedCounts.keyCount },
+                  { label: "Value", count: collapsedCounts.valueCount },
+                ]}
+              />
             </div>
           </div>
         )}
