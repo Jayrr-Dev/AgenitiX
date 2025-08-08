@@ -34,6 +34,11 @@ import { spec as testToastSpec } from "../../node-domain/test/testToast.node";
 import { spec as triggerToggleSpec } from "../../node-domain/trigger/triggerToggle.node";
 import { spec as viewBooleanSpec } from "../../node-domain/view/viewBoolean.node";
 import { spec as viewTextSpec } from "../../node-domain/view/viewText.node";
+import { spec as logicAndSpec } from "../../node-domain/logic/logicAnd.node";
+import { spec as logicOrSpec } from "../../node-domain/logic/logicOr.node";
+import { spec as logicNotSpec } from "../../node-domain/logic/logicNot.node";
+import { spec as logicXorSpec } from "../../node-domain/logic/logicXor.node";
+import { spec as logicXnorSpec } from "../../node-domain/logic/logicXnor.node";
 import type { NodeSpec } from "../node-core/NodeSpec";
 
 // Collect all specs in one place
@@ -68,6 +73,11 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	testToast: testToastSpec,
 	triggerToggle: triggerToggleSpec,
 	viewText: viewTextSpec,
+	logicAnd: logicAndSpec,
+	logicOr: logicOrSpec,
+	logicNot: logicNotSpec,
+	logicXor: logicXorSpec,
+	logicXnor: logicXnorSpec,
 };
 
 // Enhanced metadata that combines NodeSpec with additional UI properties
@@ -315,3 +325,13 @@ export function getNodeFeatureFlag(nodeType: string): any {
  * Alias for getNodeMetadata to maintain compatibility with existing code
  */
 export const getNodeSpecMetadata = getNodeMetadata;
+
+// Debug: Make functions available in browser console for debugging (after all exports)
+if (typeof window !== 'undefined') {
+	// Use setTimeout to ensure functions are defined after module initialization
+	setTimeout(() => {
+		(window as any).getNodeSpecMetadata = getNodeSpecMetadata;
+		(window as any).nodeSpecs = nodeSpecs;
+		(window as any).hasNodeSpec = hasNodeSpec;
+	}, 0);
+}

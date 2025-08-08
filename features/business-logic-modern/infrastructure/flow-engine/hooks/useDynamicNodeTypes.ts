@@ -32,6 +32,11 @@ import flowConditional from "../../../node-domain/flow/flowConditional.node";
 import triggerToggle from "../../../node-domain/trigger/triggerToggle.node";
 import viewBoolean from "../../../node-domain/view/viewBoolean.node";
 import viewText from "../../../node-domain/view/viewText.node";
+import logicAnd from "../../../node-domain/logic/logicAnd.node";
+import logicOr from "../../../node-domain/logic/logicOr.node";
+import logicNot from "../../../node-domain/logic/logicNot.node";
+import logicXor from "../../../node-domain/logic/logicXor.node";
+import logicXnor from "../../../node-domain/logic/logicXnor.node";
 
 /**
  * Hook that provides nodeTypes for React Flow
@@ -73,6 +78,11 @@ export function useDynamicNodeTypes() {
 			emailList,
 			emailUpdater,
 			viewText,
+			logicAnd,
+			logicOr,
+			logicNot,
+			logicXor,
+			logicXnor,
 		}),
 		[]
 	);

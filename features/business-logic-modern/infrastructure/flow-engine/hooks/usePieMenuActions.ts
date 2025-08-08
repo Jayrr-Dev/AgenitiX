@@ -10,8 +10,10 @@
  * Keywords: pie-menu-actions, workflow-operations, context-aware, shortcuts, node-operations
  */
 
-import type { PieMenuAction } from "@/components/ui/pie-menu";
+import type { PieMenuAction, PieMenuSubItem } from "@/components/ui/pie-menu";
+import { usePieMenu } from "@/components/ui/pie-menu";
 import { useCallback, useMemo } from "react";
+import { getAllNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 import { useUndoRedo } from "../../action-toolbar/history/undo-redo-context";
 import {
   useAddNode,
@@ -31,11 +33,52 @@ export interface UsePieMenuActionsOptions {
 }
 
 /**
+ * Generate sub-menu items for node creation
+ */
+function generateNodeSubMenuItems(pieMenuPosition: { x: number; y: number }): PieMenuSubItem[] {
+  const allNodes = getAllNodeSpecMetadata();
+
+  return allNodes.map(node => ({
+    id: node.kind,
+    label: node.displayName,
+    icon: node.icon || "Circle",
+    category: node.category,
+    action: () => {
+      console.log(`🎯 Creating node: ${node.kind} at pie menu center`);
+
+      // Create node at pie menu position
+      const newNode = {
+        id: generateNodeId(),
+        type: node.kind,
+        position: {
+          x: pieMenuPosition.x - 60, // Offset to center the node
+          y: pieMenuPosition.y - 30,
+        },
+        deletable: true,
+        data: {
+          ...node.initialData,
+          isActive: false,
+        },
+      };
+
+      // Add node to flow
+      const event = new CustomEvent('create-node-direct', {
+        detail: { node: newNode }
+      });
+      window.dispatchEvent(event);
+    },
+  }));
+}
+
+/**
  * Hook that provides context-aware pie menu actions
  * Actions change based on current selection and context
  */
 export function usePieMenuActions(options: UsePieMenuActionsOptions = {}) {
   const { mousePosition, includeDebugActions = false } = options;
+
+  // Get pie menu context to access center position and state
+  const { position: pieMenuPosition, actions: pieMenuActions, isVisible: pieMenuVisible } = usePieMenu();
 
   // Flow store hooks
   const selectedNodeId = useSelectedNodeId();
@@ -109,19 +152,26 @@ export function usePieMenuActions(options: UsePieMenuActionsOptions = {}) {
       );
     }
 
-    // CREATION ACTIONS - Add new nodes at mouse position
-    if (mousePosition) {
-      baseActions.push({
-        id: "add-node",
-        label: "Add Node",
-        icon: "Plus",
-        shortcut: "Tab",
-        action: () => {
-          // Open sidebar or node creation modal at mouse position
-          // This would integrate with your existing node creation system
+    // CREATION ACTIONS - Add new nodes with expandable sub-menu
+    baseActions.push({
+      id: "add-node",
+      label: "Add Node",
+      icon: "Plus",
+      shortcut: "Tab",
+      action: () => {
+        // Default action if clicked directly (fallback)
+        console.log('🎯 PieMenu: Add Node clicked directly - showing first available node');
+      },
+      subMenu: {
+        items: generateNodeSubMenuItems(pieMenuPosition),
+        onHover: () => {
+          console.log('🎯 PieMenu: Add Node hovered - showing sub-menu');
         },
-      });
-    }
+        onLeave: () => {
+          console.log('🎯 PieMenu: Add Node hover left');
+        },
+      },
+    });
 
     // SELECTION ACTIONS
     baseActions.push(

@@ -23,6 +23,16 @@ import {
   Settings,
   Square,
   Trash2,
+  // Category icons
+  FileText,
+  Zap,
+  TestTube,
+  Database,
+  Brain,
+  Mail,
+  Clock,
+  Workflow,
+  Wrench,
 } from "lucide-react";
 import React, {
   createContext,
@@ -47,6 +57,20 @@ export interface PieMenuAction {
   action: () => void;
   shortcut?: string;
   disabled?: boolean;
+  // Sub-menu support for expandable actions
+  subMenu?: {
+    items: PieMenuSubItem[];
+    onHover?: () => void;
+    onLeave?: () => void;
+  };
+}
+
+export interface PieMenuSubItem {
+  id: string;
+  label: string;
+  icon?: React.ReactNode | string;
+  action: () => void;
+  category?: string;
 }
 
 export interface PieMenuPosition {
@@ -63,6 +87,11 @@ interface PieMenuContextType {
   hidePieMenu: () => void;
   setSelectedIndex: (index: number) => void;
   executeAction: (index: number) => void;
+  // Sub-menu support
+  activeSubMenu: string | null;
+  subMenuItems: PieMenuSubItem[];
+  showSubMenu: (actionId: string, items: PieMenuSubItem[]) => void;
+  hideSubMenu: () => void;
 }
 
 // ------------------------------------------------------------------------------------
@@ -172,6 +201,9 @@ export function PieMenuProvider({ children }: { children: React.ReactNode }) {
   const [position, setPosition] = useState<PieMenuPosition>({ x: 0, y: 0 });
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [actions, setActions] = useState<PieMenuAction[]>([]);
+  // Sub-menu state
+  const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
+  const [subMenuItems, setSubMenuItems] = useState<PieMenuSubItem[]>([]);
 
   const showPieMenu = useCallback(
     (pos: PieMenuPosition, menu: PieMenuAction[]) => {
@@ -199,6 +231,17 @@ export function PieMenuProvider({ children }: { children: React.ReactNode }) {
     [actions, hidePieMenu]
   );
 
+  // Sub-menu functions
+  const showSubMenu = useCallback((actionId: string, items: PieMenuSubItem[]) => {
+    setActiveSubMenu(actionId);
+    setSubMenuItems(items);
+  }, []);
+
+  const hideSubMenu = useCallback(() => {
+    setActiveSubMenu(null);
+    setSubMenuItems([]);
+  }, []);
+
   const value = useMemo<PieMenuContextType>(
     () => ({
       isVisible,
@@ -209,6 +252,11 @@ export function PieMenuProvider({ children }: { children: React.ReactNode }) {
       hidePieMenu,
       setSelectedIndex,
       executeAction,
+      // Sub-menu properties
+      activeSubMenu,
+      subMenuItems,
+      showSubMenu,
+      hideSubMenu,
     }),
     [
       isVisible,
@@ -218,6 +266,10 @@ export function PieMenuProvider({ children }: { children: React.ReactNode }) {
       showPieMenu,
       hidePieMenu,
       executeAction,
+      activeSubMenu,
+      subMenuItems,
+      showSubMenu,
+      hideSubMenu,
     ]
   );
 
@@ -503,10 +555,27 @@ function ActionButton(props: {
   index: number;
   isSelected: boolean;
   executeAction: (index: number) => void;
+  showSubMenu: (actionId: string, items: PieMenuSubItem[]) => void;
+  hideSubMenu: () => void;
 }) {
-  const { action, position, index, isSelected, executeAction } = props;
+  const { action, position, index, isSelected, executeAction, showSubMenu, hideSubMenu } = props;
   const left = Math.round(CENTER_OFFSET + position.x);
   const top = Math.round(CENTER_OFFSET + position.y);
+
+  // Handle hover for sub-menu
+  const handleMouseEnter = useCallback(() => {
+    if (action.subMenu) {
+      showSubMenu(action.id, action.subMenu.items);
+      action.subMenu.onHover?.();
+    }
+  }, [action, showSubMenu]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (action.subMenu) {
+      // Don't hide immediately, let the sub-menu handle it
+      action.subMenu.onLeave?.();
+    }
+  }, [action]);
 
   return (
     <motion.button
@@ -550,11 +619,21 @@ function ActionButton(props: {
       }}
       onClick={(e) => {
         e.stopPropagation();
-        if (!action.disabled) executeAction(index);
+        if (!action.disabled) {
+          // If it has a sub-menu, don't execute immediately
+          if (action.subMenu) {
+            // Toggle sub-menu or execute default action
+            return;
+          }
+          executeAction(index);
+        }
       }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       role="menuitem"
       aria-label={`${action.label}${action.shortcut ? ` (${action.shortcut})` : ""}`}
       aria-disabled={action.disabled}
+      aria-haspopup={action.subMenu ? "menu" : undefined}
     >
       <span
         className={cn(
@@ -565,6 +644,324 @@ function ActionButton(props: {
         {renderIcon(action.icon)}
       </span>
     </motion.button>
+  );
+}
+
+// ------------------------------------------------------------------------------------
+// Sub-Menu Panel – SMART POSITIONING SYSTEM like Blender
+// ------------------------------------------------------------------------------------
+
+interface PanelLayout {
+  left: number;
+  top: number;
+  quadrant: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  width: number;
+  height: number;
+}
+
+function calculateSmartPanelPositions(
+  categories: string[], 
+  itemsByCategory: Record<string, PieMenuSubItem[]>,
+  centerPosition: PieMenuPosition
+): PanelLayout[] {
+  const PANEL_WIDTH = 160;  // Fixed width for consistency
+  const PANEL_SPACING = 20; // Space between panels
+  const DISTANCE_FROM_CENTER = 120; // Distance from pie menu center
+  
+  // Calculate panel dimensions based on content
+  const panelLayouts: PanelLayout[] = [];
+  
+  categories.forEach((category, index) => {
+    const itemCount = itemsByCategory[category].length;
+    const rows = Math.ceil(itemCount / 4); // 4 items per row
+    const panelHeight = Math.max(60, 32 + (rows * 44) + ((rows - 1) * 4)); // Header + rows + gaps
+    
+    // Smart quadrant assignment to avoid overlaps
+    let quadrant: PanelLayout['quadrant'];
+    let baseX: number;
+    let baseY: number;
+    
+    // Distribute panels in quadrants intelligently
+    switch (index % 4) {
+      case 0: // Top-right
+        quadrant = 'top-right';
+        baseX = centerPosition.x + DISTANCE_FROM_CENTER;
+        baseY = centerPosition.y - DISTANCE_FROM_CENTER - panelHeight;
+        break;
+      case 1: // Bottom-right  
+        quadrant = 'bottom-right';
+        baseX = centerPosition.x + DISTANCE_FROM_CENTER;
+        baseY = centerPosition.y + DISTANCE_FROM_CENTER;
+        break;
+      case 2: // Bottom-left
+        quadrant = 'bottom-left';
+        baseX = centerPosition.x - DISTANCE_FROM_CENTER - PANEL_WIDTH;
+        baseY = centerPosition.y + DISTANCE_FROM_CENTER;
+        break;
+      case 3: // Top-left
+        quadrant = 'top-left';
+        baseX = centerPosition.x - DISTANCE_FROM_CENTER - PANEL_WIDTH;
+        baseY = centerPosition.y - DISTANCE_FROM_CENTER - panelHeight;
+        break;
+      default:
+        quadrant = 'top-right';
+        baseX = centerPosition.x + DISTANCE_FROM_CENTER;
+        baseY = centerPosition.y - DISTANCE_FROM_CENTER - panelHeight;
+    }
+    
+    // Adjust for multiple panels in same quadrant
+    const panelsInQuadrant = Math.floor(index / 4);
+    if (panelsInQuadrant > 0) {
+      switch (quadrant) {
+        case 'top-right':
+        case 'top-left':
+          baseY -= panelsInQuadrant * (panelHeight + PANEL_SPACING);
+          break;
+        case 'bottom-right':
+        case 'bottom-left':
+          baseY += panelsInQuadrant * (panelHeight + PANEL_SPACING);
+          break;
+      }
+    }
+    
+    // Ensure panels stay within viewport bounds
+    const viewportPadding = 20;
+    baseX = Math.max(viewportPadding, Math.min(window.innerWidth - PANEL_WIDTH - viewportPadding, baseX));
+    baseY = Math.max(viewportPadding, Math.min(window.innerHeight - panelHeight - viewportPadding, baseY));
+    
+    panelLayouts.push({
+      left: baseX,
+      top: baseY,
+      quadrant,
+      width: PANEL_WIDTH,
+      height: panelHeight
+    });
+  });
+  
+  return panelLayouts;
+}
+
+function SubMenuPanel(props: {
+  items: PieMenuSubItem[];
+  position: { x: number; y: number };
+  onItemClick: (item: PieMenuSubItem) => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
+}) {
+  const { items, position, onItemClick, onMouseEnter, onMouseLeave } = props;
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [hoveredItemPosition, setHoveredItemPosition] = useState<{ x: number; y: number } | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Reset hovered item when component unmounts or items change
+  useEffect(() => {
+    return () => {
+      setHoveredItem(null);
+      setHoveredItemPosition(null);
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Reset hover state when items change (e.g., when menu reopens)
+  useEffect(() => {
+    setHoveredItem(null);
+    setHoveredItemPosition(null);
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+  }, [items.length]);
+
+  // Group items by category
+  const itemsByCategory = useMemo(() => {
+    const groups: Record<string, PieMenuSubItem[]> = {};
+    items.forEach(item => {
+      const category = item.category || 'Other';
+      if (!groups[category]) groups[category] = [];
+      groups[category].push(item);
+    });
+    return groups;
+  }, [items]);
+
+  // Calculate single panel position (optimized for space)
+  const panelPosition = useMemo(() => {
+    const PANEL_WIDTH = 240; // Reduced from 280
+    const PANEL_HEIGHT = 380; // Almost double the previous height
+    const OFFSET_X = 70; // Slightly closer
+    
+    // Position to the right of the pie menu, centered vertically
+    let left = position.x + OFFSET_X;
+    let top = position.y - PANEL_HEIGHT / 2;
+    
+    // Keep within viewport bounds
+    const padding = 16;
+    left = Math.max(padding, Math.min(window.innerWidth - PANEL_WIDTH - padding, left));
+    top = Math.max(padding, Math.min(window.innerHeight - PANEL_HEIGHT - padding, top));
+    
+    return { left, top, width: PANEL_WIDTH, height: PANEL_HEIGHT };
+  }, [position]);
+
+  const handleItemHover = useCallback((item: PieMenuSubItem) => {
+    setHoveredItem(item.id);
+  }, []);
+
+  const handleItemLeave = useCallback(() => {
+    setHoveredItem(null);
+  }, []);
+
+  // Safe hover handler with delay to prevent accidental category switches
+  const handleCategoryHover = useCallback((categoryItems: PieMenuSubItem[]) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredItem(categoryItems[0]?.id || '');
+    }, 800); // Longer delay for better control
+  }, []);
+
+  const handleCategoryLeave = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+  }, []);
+
+  // Force immediate category change on click
+  const handleCategoryClick = useCallback((categoryItems: PieMenuSubItem[]) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    setHoveredItem(categoryItems[0]?.id || '');
+  }, []);
+
+  const categories = Object.keys(itemsByCategory);
+
+  // Helper function to get category icons (professional Lucide React icons)
+  const getCategoryIcon = (category: string) => {
+    const iconMap: Record<string, React.ComponentType<any>> = {
+      'CYCLE': RotateCcw,
+      'VIEW': Eye,
+      'TRIGGER': Zap,
+      'STORE': Database,
+      'CREATE': FileText,
+      'EMAIL': Mail,
+      'AI': Brain,
+      'TIME': Clock,
+      'FLOW': Workflow,
+      'TOOLS': Wrench,
+      'TEST': TestTube,
+      'Other': Square
+    };
+    const IconComponent = iconMap[category] || Square;
+    return <IconComponent className="h-4 w-4" />;
+  };
+
+  return (
+    <div 
+      className="fixed z-50"
+      style={{
+        left: panelPosition.left,
+        top: panelPosition.top,
+      }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={() => {
+        setHoveredItem(null); // Clear immediately on leave
+        onMouseLeave?.();
+      }}
+    >
+      <div className="flex">
+        {/* Main Categories Panel */}
+        <motion.div
+          className="bg-card border border-border rounded-lg shadow-lg overflow-hidden"
+          style={{
+            width: '180px', // Fixed width - no more resizing
+            height: '350px',
+          }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.15 }}
+        >
+          {/* Header */}
+          <div className="p-2.5 border-b border-border bg-muted/50">
+            <h3 className="text-sm font-semibold text-foreground">Add Node</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Select a category</p>
+          </div>
+
+          {/* Categories Grid */}
+          <div className="p-2.5 overflow-y-auto" style={{ maxHeight: 'calc(100% - 55px)' }}>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(itemsByCategory).map(([category, categoryItems]) => (
+                <button
+                  key={category}
+                  onMouseEnter={() => handleCategoryHover(categoryItems)}
+                  onMouseLeave={handleCategoryLeave}
+                  onClick={() => handleCategoryClick(categoryItems)}
+                  className="p-2 rounded-md border border-border hover:border-accent-foreground hover:bg-accent transition-colors text-center group cursor-pointer"
+                >
+                  <div className="text-base mb-2 text-muted-foreground group-hover:text-foreground transition-colors">
+                    {getCategoryIcon(category)}
+                  </div>
+                  <div className="text-xs font-medium text-foreground truncate mb-1">
+                    {category}
+                  </div>
+                  <div className="text-xs text-muted-foreground bg-muted/50 rounded px-1.5 py-0.5 inline-block">
+                    {categoryItems.length}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Nodes Panel (appears to the right when hovering) */}
+        <AnimatePresence>
+          {hoveredItem && (
+            <motion.div
+              initial={{ opacity: 0, x: -10, width: 0 }}
+              animate={{ opacity: 1, x: 0, width: '180px' }}
+              exit={{ opacity: 0, x: -10, width: 0 }}
+              transition={{ duration: 0.15 }}
+              className="ml-1.5 bg-card border border-border rounded-lg shadow-lg overflow-hidden"
+              style={{ height: '350px' }}
+              onMouseEnter={() => setHoveredItem(hoveredItem)} // Keep hover active
+            >
+              {/* Nodes Header */}
+              <div className="p-2.5 border-b border-border bg-muted/50">
+                <h4 className="text-sm font-semibold text-foreground">
+                  {items.find(item => item.id === hoveredItem)?.category || ''}
+                </h4>
+                <p className="text-xs text-muted-foreground mt-0.5">Choose a node</p>
+              </div>
+
+              {/* Nodes List */}
+              <div className="p-1.5 overflow-y-auto" style={{ maxHeight: 'calc(100% - 55px)' }}>
+                <div className="space-y-0.5">
+                  {itemsByCategory[items.find(item => item.id === hoveredItem)?.category || '']?.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => onItemClick(item)}
+                      className="w-full text-left p-1.5 rounded-md hover:bg-accent transition-colors group"
+                      title={item.label}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <div className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                          <Plus className="h-3 w-3" />
+                        </div>
+                        <div className="text-sm font-medium text-foreground truncate">
+                          {item.label}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }
 
@@ -690,6 +1087,11 @@ function PieMenuRendererPortal() {
     setSelectedIndex,
     executeAction,
     hidePieMenu,
+    // Sub-menu properties
+    activeSubMenu,
+    subMenuItems,
+    showSubMenu,
+    hideSubMenu,
   } = usePieMenu();
 
   // Track mouse position for debugging, basically store current mouse coordinates
@@ -697,6 +1099,13 @@ function PieMenuRendererPortal() {
     x: number;
     y: number;
   } | null>(null);
+
+  // Clean up submenu when pie menu becomes invisible
+  useEffect(() => {
+    if (!isVisible && activeSubMenu) {
+      hideSubMenu();
+    }
+  }, [isVisible, activeSubMenu, hideSubMenu]);
 
   // Polar vectors for buttons (and radial unit vectors for labels).
   const actionVectors = useMemo(() => {
@@ -872,6 +1281,8 @@ function PieMenuRendererPortal() {
             index={i}
             isSelected={selectedIndex === i}
             executeAction={executeAction}
+            showSubMenu={showSubMenu}
+            hideSubMenu={hideSubMenu}
           />
         ))}
 
@@ -888,6 +1299,27 @@ function PieMenuRendererPortal() {
             onMeasure={onMeasure}
           />
         ))}
+
+        {/* Sub-Menu Panel */}
+        <AnimatePresence>
+          {activeSubMenu && subMenuItems.length > 0 && (
+            <SubMenuPanel
+              items={subMenuItems}
+              position={position}
+              onItemClick={(item) => {
+                item.action();
+                hidePieMenu();
+              }}
+              onMouseEnter={() => {
+                // Keep sub-menu open when hovering over it
+              }}
+              onMouseLeave={() => {
+                // Hide sub-menu when leaving
+                hideSubMenu();
+              }}
+            />
+          )}
+        </AnimatePresence>
       </motion.div>
     </>
   );
