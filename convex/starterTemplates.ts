@@ -206,7 +206,7 @@ const EMAIL_TEMPLATE_EDGES = [
 const DATA_TEMPLATE_NODES = [
   {
     id: "create-data",
-    type: "createObject",
+    type: "createJson",
     position: { x: START_X, y: START_Y },
     data: {
       label: "Create Data Object",

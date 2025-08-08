@@ -5,7 +5,7 @@ import timeScheduler from '../../../node-domain/trigger/timeScheduler.node';
 import aiTools from '../../../node-domain/ai/aiTools.node';
 import storeLocal from '../../../node-domain/store/storeLocal.node';
 import aiManager from '../../../node-domain/ai/aiManager.node';
-import createObject from '../../../node-domain/create/createObject.node';
+import createJson from '../../../node-domain/create/createJson.node';
 import createMap from '../../../node-domain/create/createMap.node';
 import viewObject from '../../../node-domain/view/viewObject.node';
 // Add new node imports here (Plop can auto-inject these)
@@ -50,7 +50,7 @@ export function useDynamicNodeTypes() {
 			aiTools,
 			storeLocal,
 			aiManager,
-			createObject,
+			createJson,
 			createMap,
 			viewObject,
 			// Add new node types here

@@ -103,7 +103,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
       // Create downloadable JSON
       const dataStr = JSON.stringify(exportData, null, 2);
       const dataBlob = new Blob([dataStr], { type: "application/json" });
-      const url = URL.createObjectURL(dataBlob);
+      const url = URL.createJsonURL(dataBlob);
 
       // Create download link
       const link = document.createElement("a");

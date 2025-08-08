@@ -1,11 +1,11 @@
 /**
- * CreateObject Node - JSON object creation with schema validation
+ * createJson Node - JSON object creation with schema validation
  *
  * Creates and validates JSON objects with real-time editing and type safety.
  * Supports dynamic sizing, input connections, and automatic validation.
  *
  * @example
- * <CreateObjectNode
+ * <createJsonNode
  *   id="node-123"
  *   data={{ store: '{"key": "value"}' }}
  * />
@@ -39,9 +39,10 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { useNodeToast } from "@/hooks/useNodeToast";
 import { useStore } from "@xyflow/react";
+import { CounterBoxContainer } from "@/components/ui/counter-box";
 
 // Schema & Types
-export const CreateObjectDataSchema = z
+export const createJsonDataSchema = z
   .object({
     store: z.string().default("{}"),
     isEnabled: SafeSchemas.boolean(true),
@@ -55,11 +56,11 @@ export const CreateObjectDataSchema = z
   })
   .passthrough();
 
-export type CreateObjectData = z.infer<typeof CreateObjectDataSchema>;
+export type createJsonData = z.infer<typeof createJsonDataSchema>;
 
 const validateNodeData = createNodeValidator(
-  CreateObjectDataSchema,
-  "CreateObject"
+  createJsonDataSchema,
+  "createJson"
 );
 
 // Constants
@@ -84,7 +85,7 @@ const DEBOUNCE_DELAY = 150; // ms
 const createDynamicSpec = (() => {
   const specCache = new Map<string, NodeSpec>();
 
-  return (data: CreateObjectData): NodeSpec => {
+  return (data: createJsonData): NodeSpec => {
     const cacheKey = `${data.expandedSize}-${data.collapsedSize}`;
 
     if (specCache.has(cacheKey)) {
@@ -102,9 +103,9 @@ const createDynamicSpec = (() => {
       COLLAPSED_SIZES.C1W;
 
     const spec: NodeSpec = {
-      kind: "createObject",
-      displayName: "Create Object",
-      label: "Create Object",
+      kind: "createJson",
+      displayName: "Create JSON",
+      label: "Create JSON",
       category: CATEGORIES.CREATE,
       size: { expanded, collapsed },
       handles: [
@@ -123,10 +124,10 @@ const createDynamicSpec = (() => {
           dataType: "Boolean",
         },
       ],
-      inspector: { key: "CreateObjectInspector" },
+      inspector: { key: "createJsonInspector" },
       version: 1,
-      runtime: { execute: "createObject_execute_v1" },
-      initialData: createSafeInitialData(CreateObjectDataSchema, {
+      runtime: { execute: "createJson_execute_v1" },
+      initialData: createSafeInitialData(createJsonDataSchema, {
         store: "{}",
         inputs: null,
         output: "",
@@ -134,7 +135,7 @@ const createDynamicSpec = (() => {
         isActive: false, // Will become active when enabled
         isExpanded: false, // Default to collapsed
       }),
-      dataSchema: CreateObjectDataSchema,
+      dataSchema: createJsonDataSchema,
       controls: {
         autoGenerate: true,
         excludeFields: [
@@ -174,13 +175,13 @@ const createDynamicSpec = (() => {
 export const spec: NodeSpec = createDynamicSpec({
   expandedSize: "VE2",
   collapsedSize: "C1W",
-} as CreateObjectData);
+} as createJsonData);
 
 // -----------------------------------------------------------------------------
 // 4️⃣  React component – data propagation & rendering
 // -----------------------------------------------------------------------------
 
-const CreateObjectNode = memo(
+const createJsonNode = memo(
   ({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
     // State management
     const { nodeData, updateNodeData } = useNodeData(id, data);
@@ -188,7 +189,7 @@ const CreateObjectNode = memo(
 
     // Optimized state extraction - only re-compute when nodeData changes
     const { isExpanded, isEnabled, isActive, store } = useMemo(() => {
-      const typedData = nodeData as CreateObjectData;
+      const typedData = nodeData as createJsonData;
       return {
         isExpanded: typedData.isExpanded,
         isEnabled: typedData.isEnabled,
@@ -382,7 +383,7 @@ const CreateObjectNode = memo(
     // Optimized effects with proper dependencies
     useEffect(() => {
       const inputVal = computeInput();
-      const currentInputs = (nodeData as CreateObjectData).inputs;
+      const currentInputs = (nodeData as createJsonData).inputs;
 
       if (inputVal !== currentInputs) {
         updateNodeData({ inputs: inputVal });
@@ -390,7 +391,7 @@ const CreateObjectNode = memo(
     }, [computeInput, nodeData, updateNodeData]);
 
     useEffect(() => {
-      const currentInputs = (nodeData as CreateObjectData).inputs;
+      const currentInputs = (nodeData as createJsonData).inputs;
 
       if (currentInputs !== null) {
         const nextEnabled = Boolean(currentInputs?.trim());
@@ -440,15 +441,15 @@ const CreateObjectNode = memo(
     const validation = useMemo(() => validateNodeData(nodeData), [nodeData]);
 
     if (!validation.success) {
-      reportValidationError("CreateObject", id, validation.errors, {
+      reportValidationError("createJson", id, validation.errors, {
         originalData: validation.originalData,
-        component: "CreateObjectNode",
+        component: "createJsonNode",
       });
     }
 
     useNodeDataValidation(
-      CreateObjectDataSchema,
-      "CreateObject",
+      createJsonDataSchema,
+      "createJson",
       validation.data,
       id
     );
@@ -490,17 +491,21 @@ const CreateObjectNode = memo(
     // Validation status and parameter count display for collapsed view
     const CollapsedEditor = useMemo(
       () => (
-        <div className="flex flex-col items-center justify-center w-full h-full text-center">
-          {/* Parameter Count */}
-          <div className="text-[10px] text-gray-700 dark:text-gray-300 pt-2">
-            Params : {objectKeyCount}
-          </div>
-          {/* Validation Status */}
-          <div
-            className={`text-[10px] font-medium ${isJsonValid ? "text-green-600" : "text-red-600"}`}
-          >
-            {isJsonValid ? "Valid" : "Invalid"}
-          </div>
+
+        <div className="">
+          <CounterBoxContainer
+            className="w-full mt-2"
+            counters={[
+              {
+                label: "Params",
+                count: objectKeyCount,
+                error: isJsonValid ? undefined : "Invalid",
+                textColor: "text-foreground",
+                bgColor: "bg-muted opacity-90",
+                labelColor: "text-foreground",
+              },
+            ]}
+          />
         </div>
       ),
       [isJsonValid, objectKeyCount]
@@ -587,7 +592,7 @@ const CreateObjectNode = memo(
       ) : (
         <LabelNode
           nodeId={id}
-          label={(nodeData as CreateObjectData).label || spec.displayName}
+          label={(nodeData as createJsonData).label || spec.displayName}
         />
       );
     }, [
@@ -624,9 +629,9 @@ const CreateObjectNode = memo(
 );
 
 // Optimized wrapper with performance improvements
-const CreateObjectNodeWithDynamicSpec = memo((props: NodeProps) => {
+const createJsonNodeWithDynamicSpec = memo((props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, props.data);
-  const typedData = nodeData as CreateObjectData;
+  const typedData = nodeData as createJsonData;
 
   // Highly optimized size key extraction
   const sizeKeys = useMemo(
@@ -639,23 +644,24 @@ const CreateObjectNodeWithDynamicSpec = memo((props: NodeProps) => {
 
   // Cached spec generation
   const dynamicSpec = useMemo(
-    () => createDynamicSpec({ ...sizeKeys, store: "{}" } as CreateObjectData),
+    () => createDynamicSpec({ ...sizeKeys, store: "{}" } as createJsonData),
     [sizeKeys]
   );
 
   // Stable scaffolded component reference
   const ScaffoldedNode = useMemo(
     () =>
-      withNodeScaffold(dynamicSpec, (p) => (
-        <CreateObjectNode {...p} spec={dynamicSpec} />
-      )),
+      withNodeScaffold(dynamicSpec, (p) => {
+        const CreateJsonNodeComponent = createJsonNode;
+        return <CreateJsonNodeComponent {...p} spec={dynamicSpec} />;
+      }),
     [dynamicSpec]
   );
 
   return <ScaffoldedNode {...props} />;
 });
 
-CreateObjectNode.displayName = "CreateObjectNode";
-CreateObjectNodeWithDynamicSpec.displayName = "CreateObjectNodeWithDynamicSpec";
+createJsonNode.displayName = "createJsonNode";
+createJsonNodeWithDynamicSpec.displayName = "createJsonNodeWithDynamicSpec";
 
-export default CreateObjectNodeWithDynamicSpec;
+export default createJsonNodeWithDynamicSpec;

@@ -38,13 +38,29 @@ const DRAG_PREVIEW_OFFSET_X = 35; // Horizontal offset for drag preview, basical
 const DRAG_PREVIEW_OFFSET_Y = 15; // Vertical offset for drag preview, basically the cursor position adjustment
 
 /**
- * Formats node label with proper capitalization, basically converts camelCase to Title Case
+ * Formats node label with proper capitalization.
+ * [Explanation], basically converts camelCase/PascalCase to Title Case without breaking acronyms (e.g., JSON)
  */
 const formatNodeLabel = (label: string): string => {
-  return label
-    .replace(/([A-Z])/g, " $1") // Add space before capital letters
-    .replace(/^./, (str) => str.toUpperCase()) // Capitalize first letter
-    .trim(); // Remove leading/trailing spaces
+  const raw = (label ?? "").trim();
+  if (raw === "") return "";
+
+  // If the label already contains whitespace, respect authoring and return as-is
+  // [Explanation], basically keep intentional spacing like "Create JSON"
+  if (/\s/.test(raw)) {
+    return raw;
+  }
+
+  // Insert space between lower-to-upper transitions: "createJson" -> "create Json"
+  // And between acronym-to-word boundaries: "JSONData" -> "JSON Data"
+  // [Explanation], basically add spaces only at semantic boundaries
+  const withBoundaries = raw
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2");
+
+  // Capitalize first character for title look
+  // [Explanation], basically ensure leading capital without altering the rest
+  return withBoundaries.charAt(0).toUpperCase() + withBoundaries.slice(1);
 };
 
 /**

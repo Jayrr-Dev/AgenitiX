@@ -203,7 +203,7 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
         code: "a",
         position: "left",
         type: "target",
-        dataType: "JSON",
+        dataType: "emailAccount",
       },
       {
         id: "message-input",

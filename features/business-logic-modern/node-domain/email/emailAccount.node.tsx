@@ -1,6 +1,10 @@
 /* ------------------------------------------------------------------
  * Route: features/business-logic-modern/node-domain/email/emailAccount.node.tsx
  * EMAIL ACCOUNT NODE  –  authentication, connection status & output
+ *
+ * • Emits typed per-handle values for downstream nodes
+ * • Aligns handle data types with TypeSafeHandle mapping (emailAccount, Boolean)
+ * • Generates stable Map-based outputs and avoids update loops
  * ------------------------------------------------------------------
  */
 
@@ -11,6 +15,7 @@ import { z } from "zod";
 import { useStore } from "@xyflow/react";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import TypeSafeHandle from "@/components/nodes/handles/TypeSafeHandle";
 import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import {
   SafeSchemas,
@@ -135,7 +140,8 @@ const createDynamicSpec = (
     size: { expanded, collapsed },
     handles: [
       { id: "trigger-input", code: "t", position: "top", type: "target", dataType: "Boolean" },
-      { id: "account-output", code: "a", position: "right", type: "source", dataType: "JSON" },
+      // Expose a strongly-typed account payload for downstream consumers, basically provide the connected account object
+      { id: "account-output", code: "a", position: "right", type: "source", dataType: "emailAccount" },
       { id: "status-output", code: "s", position: "bottom", type: "source", dataType: "Boolean" },
     ],
     inspector: { key: "EmailAccountInspector" },
@@ -201,31 +207,81 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 
   /* ----- output effect --------------------------------------------- */
   const lastOutputRef = useRef<Map<string, unknown> | null>(null);
+  const lastPerHandleSnapshotRef = useRef<{
+    account?: unknown;
+    status?: boolean;
+  } | null>(null);
 
   useEffect(() => {
+    // Guard: outputs only when node is enabled
     if (!isEnabled) return;
 
+    // Build per-handle values derived from current state
+    const statusOutput: boolean = Boolean(isConnected);
+    const accountOutput: Record<string, unknown> | undefined = isConnected
+      ? {
+          accountId: nodeData.accountId,
+          provider: nodeData.provider,
+          email: nodeData.email,
+          displayName: nodeData.displayName,
+          isConnected: nodeData.isConnected,
+          lastValidated: nodeData.lastValidated,
+        }
+      : undefined;
+
+    // Snapshot for change detection on per-handle payloads
+    const prevSnapshot = lastPerHandleSnapshotRef.current;
+    const perHandleChanged =
+      !prevSnapshot ||
+      prevSnapshot.status !== statusOutput ||
+      JSON.stringify(prevSnapshot.account ?? null) !==
+        JSON.stringify(accountOutput ?? null);
+
+    // Generate Map-based output using a synthetic data view that includes per-handle fields
+    const syntheticData = {
+      ...(nodeData as Record<string, unknown>),
+      "status-output": statusOutput,
+      "account-output": accountOutput,
+    };
+
+    const outputMap = generateoutputField(spec, syntheticData) as Map<string, unknown>;
+
+    // Compare against last emitted Map to avoid redundant writes
+    const mapChanged =
+      !lastOutputRef.current ||
+      outputMap.size !== lastOutputRef.current.size ||
+      [...outputMap.entries()].some(
+        ([key, value]) => lastOutputRef.current?.get(key) !== value,
+      );
+
     if (isConnected) {
-      const outputMap = generateoutputField(spec, nodeData) as Map<string, unknown>;
-
-      // Only update when content truly changes
-      const changed =
-        !lastOutputRef.current ||
-        outputMap.size !== lastOutputRef.current.size ||
-        [...outputMap.entries()].some(
-          ([key, value]) => lastOutputRef.current?.get(key) !== value,
-        );
-
-      if (changed) {
+      if (perHandleChanged || mapChanged) {
+        lastPerHandleSnapshotRef.current = { account: accountOutput, status: statusOutput };
         lastOutputRef.current = outputMap;
         updateNodeData({
+          // Persist per-handle fields so downstream nodes can read them directly if needed
+          "status-output": statusOutput,
+          "account-output": accountOutput,
+          // Serialized Map for inspector/view nodes
           output: Object.fromEntries(outputMap),
           isActive: true,
         });
       }
-    } else if (nodeData.isActive) {
-      // Only update if we actually need to flip the flag, basically avoid loops
-      updateNodeData({ isActive: false });
+    } else {
+      // When disconnected, clear outputs once if needed
+      if (
+        perHandleChanged ||
+        (lastOutputRef.current && lastOutputRef.current.size > 0)
+      ) {
+        lastPerHandleSnapshotRef.current = { account: undefined, status: false };
+        lastOutputRef.current = new Map();
+        updateNodeData({
+          "status-output": false,
+          "account-output": undefined,
+          output: {},
+          isActive: false,
+        });
+      }
     }
   }, [isEnabled, isConnected, nodeData, spec, updateNodeData]);
 
@@ -254,12 +310,32 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
   return (
     <EmailAccountProvider nodeData={nodeData} updateNodeData={updateNodeData}>
       <>
-        {/* Output handle */}
-        <Handle
+        {/* TypeSafe handles with proper email-specific icons and validation */}
+        <TypeSafeHandle
+          type="target"
+          position="top"
+          id="trigger-input"
+          dataType="Boolean"
+          nodeId={id}
+          customTooltip="IN<br/>Trigger"
+        />
+        
+        <TypeSafeHandle
           type="source"
-          position={Position.Right}
+          position="right"
           id="account-output"
-          style={{ background: "#555", width: 8, height: 8, top: 20 }}
+          dataType="emailAccount"
+          nodeId={id}
+          customTooltip="OUT<br/>Email Account"
+        />
+        
+        <TypeSafeHandle
+          type="source"
+          position="bottom"
+          id="status-output"
+          dataType="Boolean"
+          nodeId={id}
+          customTooltip="OUT<br/>Connection Status"
         />
 
         <LabelNode nodeId={id} label={nodeData.label ?? spec.displayName} />

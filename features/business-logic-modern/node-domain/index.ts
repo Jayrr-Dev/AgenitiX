@@ -5,7 +5,7 @@ export { default as timeScheduler } from "./trigger/timeScheduler.node";
 export { default as aiTools } from "./ai/aiTools.node";
 export { default as storeLocal } from "./store/storeLocal.node";
 export { default as aiManager } from "./ai/aiManager.node";
-export { default as createObject } from "./create/createObject.node";
+export { default as createJson } from "./create/createJson.node";
 export { default as createMap } from "./create/createMap.node";
 export { default as viewObject } from "./view/viewObject.node";
 // Node exports will be added here automatically by Plop

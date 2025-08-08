@@ -11,7 +11,7 @@ import { spec as timeSchedulerSpec } from "../../node-domain/trigger/timeSchedul
 import { spec as aiToolsSpec } from "../../node-domain/ai/aiTools.node";
 import { spec as storeLocalSpec } from "../../node-domain/store/storeLocal.node";
 import { spec as aiManagerSpec } from "../../node-domain/ai/aiManager.node";
-import { spec as createObjectSpec } from "../../node-domain/create/createObject.node";
+import { spec as createJsonpec } from "../../node-domain/create/createJson.node";
 import { spec as createMapSpec } from "../../node-domain/create/createMap.node";
 import { spec as viewObjectSpec } from "../../node-domain/view/viewObject.node";
 import { spec as createTextSpec } from "../../node-domain/create/createText.node";
@@ -45,7 +45,7 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	aiTools: aiToolsSpec,
 	storeLocal: storeLocalSpec,
 	aiManager: aiManagerSpec,
-	createObject: createObjectSpec,
+	createJson: createJsonpec,
 	createMap: createMapSpec,
 	viewObject: viewObjectSpec,
 	// Add new node specs here (auto-updated by Plop)

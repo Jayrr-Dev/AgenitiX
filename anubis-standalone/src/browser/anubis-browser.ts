@@ -190,7 +190,7 @@ export class AnubisBrowser {
       `;
 
 			const blob = new Blob([workerCode], { type: "application/javascript" });
-			this.worker = new Worker(URL.createObjectURL(blob));
+			this.worker = new Worker(URL.createJsonURL(blob));
 
 			this.worker.onmessage = (e) => {
 				const { type, nonce, hash, error } = e.data;
