@@ -336,7 +336,8 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       onDragOver={onDragOver}
       onDrop={onDrop}
       style={{
-        touchAction: "none",
+        // Let the browser handle panning/scrolling gestures natively for better INP
+        touchAction: "pan-x pan-y",
         width: "100%",
         height: "100%",
         minHeight: "100vh",

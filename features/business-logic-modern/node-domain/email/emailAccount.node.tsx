@@ -43,7 +43,7 @@ import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/n
 
 export const EmailAccountDataSchema = z
   .object({
-    provider: z.enum(["gmail", "outlook", "imap", "smtp"]),
+    provider: z.enum(["gmail", "outlook", "imap", "smtp"]).default("gmail"),
     email: z.string().default(""),
     displayName: z.string().default(""),
 

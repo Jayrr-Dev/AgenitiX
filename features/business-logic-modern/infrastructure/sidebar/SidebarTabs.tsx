@@ -1,7 +1,17 @@
+/**
+ * INFRASTRUCTURE SIDEBAR TABS - Optimized tab rendering for performance
+ *
+ * • Renders only the active tab content to avoid mounting hidden tabs
+ * • Preserves keyboard shortcuts and search overlays
+ * • Uses stable top-level constants and memoization to minimize re-work
+ * • Single keydown listener with refs (prevents frequent detach/attach)
+ *
+ * Keywords: sidebar, tabs, performance, lazy-render, shadcn, radix
+ */
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type HoveredStencil, StencilInfoPanel } from "./StencilInfoPanel";
 import { NodeSearchModal } from "./components/NodeSearchModal";
 import { SearchBar } from "./components/SearchBar";
@@ -98,7 +108,7 @@ interface SidebarTabsProps {
   isReadOnly?: boolean;
 }
 
-export function SidebarTabs({
+function SidebarTabsComponent({
   variant,
   activeTab,
   onTabChange,
@@ -126,25 +136,31 @@ export function SidebarTabs({
       return variantConfig.tabs;
     }
 
-    console.warn(
-      `Invalid variant '${variant}' (normalized to '${normalizedVariant}') - not found in VARIANT_CONFIG. Available variants:`,
-      Object.keys(VARIANT_CONFIG)
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        `Invalid variant '${variant}' (normalized to '${normalizedVariant}') - not found in VARIANT_CONFIG. Available variants:`,
+        Object.keys(VARIANT_CONFIG)
+      );
+    }
 
     // Try fallback variants in order of preference
     const fallbackVariants: SidebarVariant[] = ["A", "B", "C", "D", "E"];
     for (const fallbackVariant of fallbackVariants) {
       const fallbackConfig = VARIANT_CONFIG[fallbackVariant];
       if (fallbackConfig?.tabs) {
-        console.warn(`Using fallback variant '${fallbackVariant}'`);
+        if (process.env.NODE_ENV !== "production") {
+          console.warn(`Using fallback variant '${fallbackVariant}'`);
+        }
         return fallbackConfig.tabs;
       }
     }
 
     // Ultimate fallback - empty array
-    console.error(
-      "No valid variant configurations found! Using empty tabs array."
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.error(
+        "No valid variant configurations found! Using empty tabs array."
+      );
+    }
     return [];
   }, [variant, normalizedVariant, variantConfig]);
 
@@ -212,15 +228,33 @@ export function SidebarTabs({
     return false; // Key is not throttled
   }, []);
 
-  // IMPROVED KEYBOARD SHORTCUTS
+  // Stabilize frequently changing values in refs so the keydown listener
+  // is attached once and always reads the latest values.
+  const tabsRef = useRef(tabs);
+  const activeTabRef = useRef(activeTab);
+  const variantRef = useRef(variant);
+  const customNodesRef = useRef(customNodes);
+  const isSearchVisibleRef = useRef(uiState.isSearchVisible);
+  const isReadOnlyRef = useRef(isReadOnly);
+  const onTabChangeRef = useRef(onTabChange);
+  const onDoubleClickCreateRef = useRef(onDoubleClickCreate);
+  const onVariantChangeRef = useRef(onVariantChange);
+
+  useEffect(() => { tabsRef.current = tabs; }, [tabs]);
+  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+  useEffect(() => { variantRef.current = variant; }, [variant]);
+  useEffect(() => { customNodesRef.current = customNodes; }, [customNodes]);
+  useEffect(() => { isSearchVisibleRef.current = uiState.isSearchVisible; }, [uiState.isSearchVisible]);
+  useEffect(() => { isReadOnlyRef.current = isReadOnly; }, [isReadOnly]);
+  useEffect(() => { onTabChangeRef.current = onTabChange; }, [onTabChange]);
+  useEffect(() => { onDoubleClickCreateRef.current = onDoubleClickCreate; }, [onDoubleClickCreate]);
+  useEffect(() => { onVariantChangeRef.current = onVariantChange; }, [onVariantChange]);
+
+  // IMPROVED KEYBOARD SHORTCUTS - Single listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Early return if in read-only mode, basically disable all node creation shortcuts
-      if (isReadOnly) {
-        return;
-      }
+      if (isReadOnlyRef.current) return;
 
-      // Detect if the user is typing inside an input, textarea or contenteditable element.
       const activeElement = document.activeElement as HTMLElement | null;
       const isTypingInAnyInput =
         activeElement &&
@@ -228,10 +262,9 @@ export function SidebarTabs({
           activeElement.tagName === "TEXTAREA" ||
           activeElement.getAttribute("contenteditable") === "true" ||
           (activeElement as HTMLElement).contentEditable === "true");
-      // PREVENT BROWSER KEY REPEAT for node creation keys (except Alt+Q) - using pre-computed array
+
       if (e.repeat && !isTypingInAnyInput) {
         const isAltQBackspace = e.altKey && e.key.toLowerCase() === "q";
-
         if (
           NODE_CREATION_KEYS.includes(e.key.toLowerCase() as any) &&
           !e.ctrlKey &&
@@ -245,10 +278,8 @@ export function SidebarTabs({
         }
       }
 
-      // SIMPLIFIED THROTTLING - Only for non-Alt+Q keys
-      const currentKey = e.key ? e.key.toLowerCase() : '';
+      const currentKey = e.key ? e.key.toLowerCase() : "";
       const isAltQBackspace = e.altKey && currentKey === "q";
-
       const notTyping = !isTypingInAnyInput;
       const notAltQ = !isAltQBackspace;
       const keyThrottled = isKeyThrottled(currentKey);
@@ -258,20 +289,16 @@ export function SidebarTabs({
         return;
       }
 
-      // Check if user is typing in an input field
-      const isTyping = isTypingInAnyInput;
-
-      // If typing, only allow system shortcuts
-      if (isTyping && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+      if (isTypingInAnyInput && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
         return;
       }
 
-      // Variant switching shortcuts (Alt+1-5) - using pre-computed map
+      // Variant switching shortcuts (Alt+1-5)
       if (e.altKey && e.key >= "1" && e.key <= "5") {
         e.preventDefault();
         const targetVariant = VARIANT_MAP[e.key];
         if (targetVariant) {
-          onVariantChange(targetVariant);
+          onVariantChangeRef.current(targetVariant);
         }
         return;
       }
@@ -283,48 +310,39 @@ export function SidebarTabs({
           setIsSearchVisible(true);
         } else {
           const tabIndex = Number.parseInt(e.key) - 1;
-          if (tabIndex < tabs.length) {
-            onTabChange(tabs[tabIndex].key);
+          const localTabs = tabsRef.current;
+          if (tabIndex < localTabs.length) {
+            onTabChangeRef.current(localTabs[tabIndex].key);
           }
         }
         return;
       }
 
       // Skip QWERTY shortcuts with modifiers or when search is visible
-      if (
-        e.ctrlKey ||
-        e.metaKey ||
-        e.shiftKey ||
-        e.altKey ||
-        uiState.isSearchVisible
-      ) {
+      if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || isSearchVisibleRef.current) {
         return;
       }
 
-      // Node grid shortcuts
-      const isCustomTab = variant === "E" && activeTab === "custom";
-
+      const isCustomTab = variantRef.current === "E" && activeTabRef.current === "custom";
       if (isCustomTab) {
-        // Custom tab: q = add node, w-b for positions - using pre-computed map
         if (currentKey === "q") {
           e.preventDefault();
           setIsSearchModalOpen(true);
           return;
         }
-
         const position = CUSTOM_GRID_KEY_MAP[currentKey];
-        if (position !== undefined && position < customNodes.length) {
+        const localCustom = customNodesRef.current;
+        if (position !== undefined && position < localCustom.length) {
           e.preventDefault();
-          onDoubleClickCreate(customNodes[position].nodeType);
+          onDoubleClickCreateRef.current(localCustom[position].nodeType);
         }
       } else {
-        // Regular tabs: full QWERTY grid - using pre-computed map
         const position = REGULAR_GRID_KEY_MAP[currentKey];
         if (position !== undefined) {
-          const currentStencils = currentStencilsRef.current[activeTab] || [];
+          const currentStencils = currentStencilsRef.current[activeTabRef.current] || [];
           if (position < currentStencils.length) {
             e.preventDefault();
-            onDoubleClickCreate(currentStencils[position].nodeType);
+            onDoubleClickCreateRef.current(currentStencils[position].nodeType);
           }
         }
       }
@@ -332,20 +350,7 @@ export function SidebarTabs({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [
-    tabs,
-    onTabChange,
-    variant,
-    activeTab,
-    customNodes,
-    onDoubleClickCreate,
-    onVariantChange,
-    uiState.isSearchVisible,
-    isKeyThrottled,
-    isReadOnly,
-    setIsSearchModalOpen,
-    setIsSearchVisible,
-  ]);
+  }, [isKeyThrottled]);
 
   if (isHidden) {
     return null;
@@ -384,9 +389,10 @@ export function SidebarTabs({
         </TabsList>
 
         <div className={CONTENT_AREA_STYLES}>
-          {tabs.map(({ key }) => {
+          {(() => {
+            // [Explanation], basically only render the active tab to avoid mounting hidden tabs
+            const key = activeTab;
             const isCustomTab = variant === "E" && key === "custom";
-
             return (
               <SidebarTabContent
                 key={key}
@@ -410,7 +416,7 @@ export function SidebarTabs({
                 isReadOnly={isReadOnly}
               />
             );
-          })}
+          })()}
 
           {/* Search Overlay */}
           <SearchBar
@@ -433,3 +439,28 @@ export function SidebarTabs({
     </Tabs>
   );
 }
+
+// Precise memoization to avoid unnecessary re-renders from parent updates
+function areSidebarTabsEqual(prev: SidebarTabsProps, next: SidebarTabsProps): boolean {
+  if (
+    prev.variant !== next.variant ||
+    prev.activeTab !== next.activeTab ||
+    prev.isHidden !== next.isHidden ||
+    prev.isReadOnly !== next.isReadOnly
+  ) {
+    return false;
+  }
+
+  if (prev.customNodes.length !== next.customNodes.length) return false;
+  for (let i = 0; i < prev.customNodes.length; i++) {
+    const a = prev.customNodes[i];
+    const b = next.customNodes[i];
+    if (a.id !== b.id || a.nodeType !== b.nodeType) return false;
+  }
+
+  // Assume handlers are stable via useCallback from parent
+  return true;
+}
+
+export const SidebarTabs = memo(SidebarTabsComponent, areSidebarTabsEqual);
+SidebarTabs.displayName = "SidebarTabs";

@@ -3,6 +3,7 @@
  *
  * • Strips runtime fields like outputs/inputs/raw bodies that bloat storage
  * • Limits nesting depth and truncates very long strings
+ * • Optimized to minimize allocations and deep work
  * • Safe for client and server usage (pure functions)
  *
  * Keywords: sanitize, persist, convex, depth-limit, prune, canvas
@@ -46,6 +47,19 @@ export const STRIP_KEYS = new Set<string>([
   "emails",
 ]);
 
+/** [Explanation], basically keys we always keep from node data */
+export const PRESERVE_NODE_KEYS = new Set<string>([
+  "isExpanded",
+  "isEnabled",
+  "isActive",
+  "label",
+  "store",
+  "expandedSize",
+  "collapsedSize",
+  "viewPath",
+  "summaryLimit",
+]);
+
 // -----------------------------------------------------------------------------
 // Types (minimal, avoid importing React Flow types on server)
 // -----------------------------------------------------------------------------
@@ -77,30 +91,38 @@ function sanitizeValue(value: unknown, depth: number): Json {
   const type = typeof value;
   if (type === "string") return truncateString(value as string);
   if (type === "number" || type === "boolean") return value as Json;
+  if (type === "bigint") return String(value) as Json; // [Explanation], basically make serializable
+  if (type === "symbol" || type === "function") return "[unsupported]";
 
   if (Array.isArray(value)) {
+    // [Explanation], basically fast loop with cap and minimal allocations
     const arr = value as unknown[];
-    const limited = arr.slice(0, MAX_ARRAY_ITEMS);
-    const sanitized = limited.map((v) => sanitizeValue(v, depth + 1));
-    return sanitized as Json;
+    const length = Math.min(arr.length, MAX_ARRAY_ITEMS);
+    const out: Json[] = new Array(length);
+    for (let i = 0; i < length; i++) {
+      out[i] = sanitizeValue(arr[i], depth + 1);
+    }
+    return out as Json;
   }
 
   if (type === "object") {
-    const obj = value as Record<string, unknown>;
-    const result: Record<string, Json> = {};
-    for (const [k, v] of Object.entries(obj)) {
-      if (STRIP_KEYS.has(k)) continue;
-      result[k] = sanitizeValue(v, depth + 1);
+    // Dates should become ISO strings to be stable and small
+    if (value instanceof Date) {
+      return (value as Date).toISOString();
     }
-    return result as Json;
+
+    const obj = value as Record<string, unknown>;
+    const out: Record<string, Json> = {};
+    for (const k in obj) {
+      if (!Object.prototype.hasOwnProperty.call(obj, k)) continue;
+      if (STRIP_KEYS.has(k)) continue;
+      out[k] = sanitizeValue((obj as Record<string, unknown>)[k], depth + 1);
+    }
+    return out as Json;
   }
 
   // Fallback
-  try {
-    return JSON.parse(JSON.stringify(value)) as Json;
-  } catch {
-    return "[unserializable]";
-  }
+  return "[unserializable]";
 }
 
 /**
@@ -108,25 +130,36 @@ function sanitizeValue(value: unknown, depth: number): Json {
  */
 export function sanitizeNodeData(data: Record<string, unknown> | undefined): Record<string, Json> | undefined {
   if (!data || typeof data !== "object") return undefined;
-  // Ensure we keep key UI flags even if empty
-  const preserved: Record<string, Json> = {};
-  for (const key of ["isExpanded", "isEnabled", "isActive", "label", "store", "expandedSize", "collapsedSize", "viewPath", "summaryLimit"]) {
-    if (key in data) preserved[key] = sanitizeValue((data as any)[key], 0);
+  // [Explanation], basically single-pass sanitize that preserves required keys
+  const out: Record<string, Json> = {};
+  for (const k in data) {
+    if (!Object.prototype.hasOwnProperty.call(data, k)) continue;
+    if (STRIP_KEYS.has(k)) continue;
+    const value = (data as Record<string, unknown>)[k];
+    // Always include preserved keys if present
+    if (PRESERVE_NODE_KEYS.has(k)) {
+      out[k] = sanitizeValue(value, 0);
+      continue;
+    }
+    out[k] = sanitizeValue(value, 0);
   }
-
-  // Merge with sanitized rest while stripping heavy keys
-  const sanitizedRest = sanitizeValue(data, 0);
-  return { ...(sanitizedRest as Record<string, Json>), ...preserved };
+  return out;
 }
 
 /**
  * Sanitize nodes array before sending to Convex
  */
 export function sanitizeNodesForSave(nodes: MinimalNodeLike[]): MinimalNodeLike[] {
-  return nodes.map((n) => ({
-    ...n,
-    data: sanitizeNodeData(n.data),
-  }));
+  // [Explanation], basically fast path with for-loop to avoid intermediate arrays
+  const result: MinimalNodeLike[] = new Array(nodes.length);
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i];
+    result[i] = {
+      ...n,
+      data: sanitizeNodeData(n.data),
+    };
+  }
+  return result;
 }
 
 

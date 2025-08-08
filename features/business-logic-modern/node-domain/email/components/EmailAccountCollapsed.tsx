@@ -113,9 +113,7 @@ export const EmailAccountCollapsed = memo(
                 }
               }}
             >
-              <IconComponent
-                className={`w-6 h-6 ${providerInfo.color} ${COLLAPSED_STYLES.iconWrapper}`}
-              />
+              <IconComponent className={`w-6 h-6 ${providerInfo.color} ${COLLAPSED_STYLES.iconWrapper}`} />
             </div>
           </div>
 
@@ -137,3 +135,15 @@ export const EmailAccountCollapsed = memo(
 );
 
 EmailAccountCollapsed.displayName = "EmailAccountCollapsed";
+
+// Extra memo comparator to ensure this UI doesn't re-render during drag unless key props change
+export default memo(EmailAccountCollapsed, (prev, next) => {
+  const p = prev.nodeData;
+  const n = next.nodeData;
+  return (
+    p.provider === n.provider &&
+    p.email === n.email &&
+    p.connectionStatus === n.connectionStatus &&
+    prev.categoryStyles.primary === next.categoryStyles.primary
+  );
+});

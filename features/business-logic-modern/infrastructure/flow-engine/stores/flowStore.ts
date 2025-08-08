@@ -34,7 +34,7 @@ import {
   applyNodeChanges,
 } from "@xyflow/react";
 import { create } from "zustand";
-import { devtools, persist } from "zustand/middleware";
+import { devtools, persist, createJSONStorage, type StateStorage } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { generateEdgeId, generateNodeId } from "../utils/nodeUtils";
 
@@ -270,9 +270,21 @@ export const useFlowStore = create<FlowStore>()(
         // REACT FLOW EVENT HANDLERS
         // ============================================================================
         onNodesChange: (changes) => {
+          // Avoid synchronous localStorage writes while dragging nodes (huge INP win)
+          const isDragging = changes.some(
+            // @ts-expect-error XYFlow NodeChange has optional `dragging` on position changes
+            (c) => c.type === "position" && Boolean((c as any).dragging)
+          );
+          setAllowPersistWrites(!isDragging);
+
           set((state) => {
             state.nodes = applyNodeChanges(changes, state.nodes) as AgenNode[];
           });
+
+          // Re-enable persistence when a non-dragging update occurs (e.g., final drop or selection)
+          if (!isDragging) {
+            setAllowPersistWrites(true);
+          }
         },
         onEdgesChange: (changes) => {
           set((state) => {
@@ -875,6 +887,8 @@ export const useFlowStore = create<FlowStore>()(
       })),
       {
         name: "flow-editor-storage",
+        // Custom storage that skips writes while dragging to prevent INP regressions
+        storage: createJSONStorage(() => flowPersistStorage),
         partialize: (state) => ({
           // Only persist essential data, not UI state
           nodes: state.nodes,
@@ -956,3 +970,44 @@ export const useNodeCount = () => useFlowStore((state) => state.nodes.length);
 export const useEdgeCount = () => useFlowStore((state) => state.edges.length);
 export const useErrorCount = () =>
   useFlowStore((state) => Object.values(state.nodeErrors || {}).flat().length);
+
+// ============================================================================
+// PERSISTENCE STORAGE GATE (performance)
+// ============================================================================
+
+/**
+ * Prevent synchronous localStorage writes during drag operations, basically remove main-thread stalls
+ */
+let persistWritesAllowed = true;
+
+export function setAllowPersistWrites(allowed: boolean) {
+  persistWritesAllowed = allowed;
+}
+
+const flowPersistStorage: StateStorage = {
+  getItem: (name) => {
+    if (typeof window === "undefined") return null;
+    try {
+      return window.localStorage.getItem(name);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (name, value) => {
+    if (typeof window === "undefined") return;
+    if (!persistWritesAllowed) return; // skip writes while dragging
+    try {
+      window.localStorage.setItem(name, value);
+    } catch {
+      // ignore quota or private mode errors
+    }
+  },
+  removeItem: (name) => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.removeItem(name);
+    } catch {
+      // ignore
+    }
+  },
+};

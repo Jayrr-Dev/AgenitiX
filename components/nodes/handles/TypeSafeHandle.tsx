@@ -9,8 +9,8 @@
  * • Uses optimized cached React Icons for perfect centering and consistency.
  * • Performance optimized with memoized icon components and caching.
  */
-import { Handle, type HandleProps, type IsValidConnection, useStore } from "@xyflow/react";
-import React, { useCallback, memo, useMemo } from "react";
+ import { Handle, type HandleProps, type IsValidConnection, useStore, useStoreApi } from "@xyflow/react";
+ import React, { useCallback, memo, useMemo } from "react";
 import type { IconType } from "react-icons";
 import { LuBraces, LuBrackets, LuCheck, LuCircle, LuHash, LuWrench, LuType, LuMail, LuFileText, LuSend } from "react-icons/lu";
 import { VscJson } from "react-icons/vsc";
@@ -566,30 +566,37 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
 		[isSource]
 	);
 
-  // Subscribe to nodes and edges for dynamic tooltip values
-  const nodes = useStore(React.useCallback((state) => state.nodes, []));
-  const edges = useStore(React.useCallback((state) => state.edges, []));
+  // Avoid subscribing to the entire nodes/edges arrays which causes frequent re-renders.
+  // Instead, compute dynamic tooltip data only when the tooltip opens using store API.
+  const storeApi = useStoreApi();
+  const [isTooltipOpen, setIsTooltipOpen] = React.useState(false);
+  const [dynamicTooltipSuffix, setDynamicTooltipSuffix] = React.useState<string>("");
 
-	// Memoize tooltip content generation, basically prevent string recalculation on re-renders  
-	const tooltipContent = useMemo(() => {
-    const baseTooltip = customTooltip || getTooltipContent(props.type || "target", dataType, code, tsSymbol);
+  const baseTooltip = useMemo(
+    () => customTooltip || getTooltipContent(props.type || "target", dataType, code, tsSymbol),
+    [customTooltip, props.type, dataType, code, tsSymbol]
+  );
 
-    // Compute dynamic value summary for this handle
-    let suffix = "";
+  React.useEffect(() => {
+    if (!isTooltipOpen) {
+      // Clear when closed to avoid stale info and memory churn
+      setDynamicTooltipSuffix("");
+      return;
+    }
     try {
+      const { nodes, edges } = storeApi.getState();
       const cleanId = props.id ? normalizeHandleId(props.id) : "";
+      let suffix = "";
       if (props.type === "source") {
         const selfNode = nodes.find((n: any) => n.id === nodeId);
-        const rawOut = selfNode?.data?.output as unknown;
+        const rawOut = (selfNode?.data as any)?.output as unknown;
         let value: unknown = undefined;
         if (rawOut && typeof rawOut === "object" && !Array.isArray(rawOut)) {
           const out = rawOut as Record<string, unknown>;
           value = out[cleanId] ?? out["output"] ?? Object.values(out)[0];
         } else if (rawOut !== undefined) {
-          // Supports nodes that store scalar output (e.g., boolean) instead of per-handle object
           value = rawOut;
         } else {
-          // Fallback: check for per-handle field directly on node data
           value = (selfNode?.data as Record<string, unknown> | undefined)?.[cleanId]
             ?? (selfNode?.data as Record<string, unknown> | undefined)?.[props.id as string];
         }
@@ -607,7 +614,7 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
         if (incoming.length > 0) {
           const first = incoming[0];
           const src = nodes.find((n: any) => n.id === first.source);
-          const out = src?.data?.output as Record<string, unknown> | undefined;
+          const out = (src?.data as any)?.output as Record<string, unknown> | undefined;
           let value: unknown;
           if (out) {
             const srcHandleId = first.sourceHandle ? normalizeHandleId(first.sourceHandle) : "output";
@@ -621,12 +628,18 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
           }
         }
       }
+      setDynamicTooltipSuffix(suffix);
     } catch {
-      // no-op on tooltip value failures
+      // Swallow errors; tooltip is best-effort
+      setDynamicTooltipSuffix("");
     }
+  // Recompute only when opened or handle identity/context changes
+  }, [isTooltipOpen, nodeId, props.id, props.type, storeApi]);
 
-    return `${baseTooltip}${suffix}`;
-  }, [props.type, dataType, code, tsSymbol, customTooltip, nodes, edges, nodeId, props.id]);
+  const tooltipContent = useMemo(
+    () => `${baseTooltip}${dynamicTooltipSuffix}`,
+    [baseTooltip, dynamicTooltipSuffix]
+  );
 
 	// Memoize the icon component to prevent re-creation on re-renders, basically stable icon reference
 	const MemoizedIconComponent = useMemo(() => typeDisplay.iconComponent, [typeDisplay.iconComponent]);
@@ -657,8 +670,8 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
 		...props.style,
 	}), [typeDisplay.color, backgroundColor, positionOffset, props.style, isSource]);
 
-	return (
-		<Tooltip delayDuration={0}>
+    return (
+        <Tooltip delayDuration={700} open={isTooltipOpen} onOpenChange={setIsTooltipOpen}>
 			<TooltipTrigger asChild>
 				<Handle
 					{...(props as HandleProps)}
@@ -680,7 +693,7 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
 					)}
 				</Handle>
 			</TooltipTrigger>
-			<TooltipContent side="top" className="max-w-xs">
+            <TooltipContent side="top" className="max-w-xs select-none">
 				<div dangerouslySetInnerHTML={{ __html: tooltipContent }} />
 			</TooltipContent>
 		</Tooltip>

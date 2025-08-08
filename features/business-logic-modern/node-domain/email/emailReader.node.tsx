@@ -11,7 +11,7 @@
  * Keywords: email-reader, inbox, messages, filtering, real-time
  */
 
-import type { NodeProps } from "@xyflow/react";
+import type { NodeProps, Node as RFNode } from "@xyflow/react";
 import {
   type ChangeEvent,
   memo,
@@ -41,7 +41,7 @@ import {
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { useStore } from "@xyflow/react";
+import { useStore, useReactFlow } from "@xyflow/react";
 import { findEdgesByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 
@@ -320,7 +320,7 @@ export const spec: NodeSpec = createDynamicSpec({
 // 4️⃣  React component – data propagation & rendering
 // -----------------------------------------------------------------------------
 
-const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
+const EmailReaderNode = memo(({ id, spec, ...rest }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   const { nodeData, updateNodeData } = useNodeData(id, {});
   
@@ -352,12 +352,22 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     retryCount,
   } = nodeData as EmailReaderData;
 
-  // Global React‑Flow store (nodes & edges) – triggers re‑render on change
-  const _nodes = useStore((s) => s.nodes);
-  const _edges = useStore((s) => s.edges);
+  // Global React‑Flow store – subscribe only to relevant edges to avoid re-renders during node drag
+  const _edges = useStore(
+    (s) => s.edges.filter((e) => e.source === id || e.target === id),
+    (a, b) => {
+      if (a === b) return true;
+      if (a.length !== b.length) return false;
+      const aIds = a.map((e) => e.id).join("|");
+      const bIds = b.map((e) => e.id).join("|");
+      return aIds === bIds;
+    }
+  );
+  const { getNodes } = useReactFlow();
 
   // Keep last emitted output to avoid redundant writes
   const _lastOutputRef = useRef<string | null>(null);
+  const _prevIsConnectedRef = useRef<boolean>((nodeData as EmailReaderData).isConnected);
 
   // -------------------------------------------------------------------------
   // 4.3  Convex integration
@@ -367,9 +377,13 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   const canEdit = flowMetadata?.flow?.canEdit ?? true;
 
   // Fetch email accounts for both owners and viewers - viewers can use their own accounts
+  const emailQueryArgs = useMemo(
+    () => (user?.email ? { userEmail: user.email } : "skip"),
+    [user?.email]
+  );
   const emailAccounts = useQuery(
     api.emailAccounts.getEmailAccountsByUserEmail,
-    user?.email ? { userEmail: user.email } : "skip",
+    emailQueryArgs,
   );
 
   // -------------------------------------------------------------------------
@@ -382,7 +396,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
     const ids = new Set<string>();
     for (const edge of incomingEdges) {
-      const sourceNode = _nodes.find((n) => n.id === edge.source);
+      const sourceNode = (getNodes() as RFNode[]).find((n: RFNode) => n.id === edge.source);
       const output = (sourceNode?.data?.output ?? {}) as Record<string, unknown>;
       // Prefer explicit handle key from output map
       const explicit = output["account-output"] as Record<string, unknown> | undefined;
@@ -400,7 +414,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       }
     }
     return Array.from(ids);
-  }, [_edges, _nodes, id]);
+  }, [_edges, id, getNodes]);
 
   // -------------------------------------------------------------------------
   // 4.5  Available accounts (filtered by connected nodes)
@@ -619,10 +633,39 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     }
   }, [isEnabled, isConnected, messageCount, updateNodeData]);
 
+  /**
+   * Clear outputs when connection is lost
+   * [Explanation], basically wipe node outputs after disconnect to avoid stale data
+   */
+  useEffect(() => {
+    const wasConnected = _prevIsConnectedRef.current;
+
+    // Only clear when transitioning from connected -> disconnected
+    if (wasConnected && !isConnected) {
+      const data = nodeData as EmailReaderData;
+      const hasStaleData =
+        (Array.isArray(data.messages) && data.messages.length > 0) ||
+        (typeof data.messageCount === "number" && data.messageCount > 0) ||
+        (typeof data.emailsOutput === "string" && data.emailsOutput.length > 0) ||
+        (typeof data.output === "string" && data.output.length > 0);
+
+      if (hasStaleData) {
+        updateNodeData({
+          messages: [],
+          messageCount: 0,
+          emailsOutput: "",
+          output: "",
+        });
+      }
+    }
+
+    _prevIsConnectedRef.current = isConnected;
+  }, [isConnected, nodeData, updateNodeData]);
+
   // -------------------------------------------------------------------------
   // 4.7  Validation
   // -------------------------------------------------------------------------
-  const validation = validateNodeData(nodeData);
+  const validation = useMemo(() => validateNodeData(nodeData), [nodeData]);
   if (!validation.success) {
     reportValidationError("EmailReader", id, validation.errors, {
       originalData: validation.originalData,
@@ -672,6 +715,14 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
       <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
     </>
+  );
+}, (prevProps, nextProps) => {
+  // Ignore frequent ReactFlow position/transform changes; re-render when core props change
+  return (
+    prevProps.id === nextProps.id &&
+    prevProps.spec === nextProps.spec &&
+    prevProps.data === nextProps.data &&
+    prevProps.selected === nextProps.selected
   );
 });
 

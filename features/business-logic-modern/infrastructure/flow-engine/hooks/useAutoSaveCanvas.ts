@@ -14,7 +14,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { useFlowMetadataOptional } from "../contexts/flow-metadata-context";
 import { useFlowStore } from "../stores/flowStore";
@@ -58,8 +58,26 @@ export function useAutoSaveCanvas(options: UseAutoSaveCanvasOptions = {}): AutoS
 	const lastErrorRef = useRef<string | null>(null);
 	const isSavingRef = useRef(false);
 
-	// Create stable serialized data for comparison
-	const currentData = JSON.stringify({ nodes, edges });
+  // Create fast, lightweight signature for change detection (avoids heavy JSON.stringify on each render)
+  const currentData = useMemo(() => {
+    // [Explanation], basically generate a compact string from stable fields
+    let nodeSig = "";
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i] as any;
+      const x = n?.position?.x ?? 0;
+      const y = n?.position?.y ?? 0;
+      const type = n?.type ?? "";
+      const isExpanded = n?.data?.isExpanded ? 1 : 0;
+      const isEnabled = n?.data?.isEnabled ? 1 : 0;
+      nodeSig += `${n.id}:${Math.round(x)}:${Math.round(y)}:${type}:${isExpanded}:${isEnabled}|`;
+    }
+    let edgeSig = "";
+    for (let i = 0; i < edges.length; i++) {
+      const e = edges[i] as any;
+      edgeSig += `${e.id}:${e.source}:${e.target}|`;
+    }
+    return `${nodeSig}#${edgeSig}`;
+  }, [nodes, edges]);
 
 	// Save function
 	const performSave = useCallback(async () => {
@@ -131,7 +149,7 @@ export function useAutoSaveCanvas(options: UseAutoSaveCanvasOptions = {}): AutoS
 	}, [performSave]);
 
 	// Auto-save effect with debouncing
-	useEffect(() => {
+  useEffect(() => {
 		if (!(enabled && user?.id && flow?.id && flow.canEdit)) {
 			return;
 		}
@@ -146,10 +164,15 @@ export function useAutoSaveCanvas(options: UseAutoSaveCanvasOptions = {}): AutoS
 			clearTimeout(debounceTimeoutRef.current);
 		}
 
-		// Set new debounced save
-		debounceTimeoutRef.current = setTimeout(() => {
-			performSave();
-		}, debounceMs);
+    // Set new debounced save on a background tick to avoid blocking pointer events
+    debounceTimeoutRef.current = setTimeout(() => {
+      if (typeof (globalThis as any).requestIdleCallback === "function") {
+        (globalThis as any).requestIdleCallback(() => performSave());
+      } else {
+        // Fallback to a micro-delay to yield back to UI thread
+        setTimeout(() => performSave(), 0);
+      }
+    }, debounceMs);
 
 		// Cleanup function
 		return () => {

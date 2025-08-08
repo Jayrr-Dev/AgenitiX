@@ -151,7 +151,8 @@ const Sidebar = forwardRef<SidebarRef, SidebarProps>(
     } = useSidebarState();
 
     const { screenToFlowPosition } = useReactFlow();
-    const { addNode } = useFlowStore();
+    // Subscribe only to the action we need to avoid global store re-renders, basically minimize sidebar updates during drag
+    const addNode = useFlowStore((state) => state.addNode);
 
     // Check for read-only mode from flow metadata, basically if user can't edit flow then disable node creation
     const { flow } = useFlowMetadataOptional() || { flow: null };

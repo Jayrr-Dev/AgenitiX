@@ -64,7 +64,9 @@ export interface EmailReaderExpandedProps {
   onReadMessages: () => void;
 }
 
-export function EmailReaderExpanded(props: EmailReaderExpandedProps) {
+export const EmailReaderExpanded = React.memo(function EmailReaderExpanded(
+  props: EmailReaderExpandedProps
+) {
   const {
     nodeData,
     isEnabled,
@@ -95,6 +97,19 @@ export function EmailReaderExpanded(props: EmailReaderExpandedProps) {
     retryCount,
   } = nodeData;
 
+  // Memoize heavy/derived UI values to avoid recalculation during drags
+  const accountOptions = React.useMemo(() => {
+    return availableAccounts.map((account) => (
+      <option key={account.value} value={account.value} disabled={!account.isActive}>
+        {account.label} {account.isActive ? "" : "(inactive)"}
+      </option>
+    ));
+  }, [availableAccounts]);
+
+  const formattedLastSync = React.useMemo(() => {
+    return lastSync ? new Date(lastSync).toLocaleString() : null;
+  }, [lastSync]);
+
   return (
     <div className={`${EXPANDED_STYLES.container} ${isEnabled ? "" : EXPANDED_STYLES.disabled}`}>
       <div className={EXPANDED_STYLES.content}>
@@ -122,11 +137,7 @@ export function EmailReaderExpanded(props: EmailReaderExpandedProps) {
             disabled={!isEnabled || connectionStatus === "reading"}
           >
             <option value="">Select email account...</option>
-            {availableAccounts.map((account) => (
-              <option key={account.value} value={account.value} disabled={!account.isActive}>
-                {account.label} {account.isActive ? "" : "(inactive)"}
-              </option>
-            ))}
+            {accountOptions}
           </select>
         </div>
 
@@ -246,14 +257,50 @@ export function EmailReaderExpanded(props: EmailReaderExpandedProps) {
             <span className="text-[--node-email-text]">Messages:</span> {messageCount} {" "}
             <span className="text-[--node-email-text]">| Processed:</span> {processedCount}
           </div>
-          {lastSync && <div>Last sync: {new Date(lastSync).toLocaleString()}</div>}
+          {formattedLastSync && <div>Last sync: {formattedLastSync}</div>}
           {lastError && <div className="mt-1 text-red-600">Error: {lastError}</div>}
           {retryCount > 0 && <div className="text-yellow-600">Retries: {retryCount}</div>}
         </div>
       </div>
     </div>
   );
-}
+}, (prev, next) => {
+  // Compare primitive props
+  if (
+    prev.isEnabled !== next.isEnabled ||
+    prev.connectionStatus !== next.connectionStatus
+  ) {
+    return false;
+  }
+  // Shallow compare available accounts by id + length
+  const a = prev.availableAccounts;
+  const b = next.availableAccounts;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].value !== b[i].value || a[i].isConnected !== b[i].isConnected) {
+      return false;
+    }
+  }
+  // Compare nodeData fields that affect view
+  const keys: (keyof EmailReaderData)[] = [
+    "accountId",
+    "batchSize",
+    "maxMessages",
+    "includeAttachments",
+    "markAsRead",
+    "enableRealTime",
+    "checkInterval",
+    "processedCount",
+    "messageCount",
+    "lastSync",
+    "lastError",
+    "retryCount",
+  ];
+  for (const k of keys) {
+    if ((prev.nodeData as any)[k] !== (next.nodeData as any)[k]) return false;
+  }
+  return true;
+});
 
 export default EmailReaderExpanded;
 
