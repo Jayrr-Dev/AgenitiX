@@ -12,6 +12,8 @@
  */
 
 import { httpRouter } from "convex/server";
+import { httpAction } from "./_generated/server";
+import { resend } from "./sendEmails";
 import { auth } from "./auth";
 
 const http = httpRouter();
@@ -20,3 +22,12 @@ const http = httpRouter();
 auth.addHttpRoutes(http);
 
 export default http;
+
+// Resend webhook endpoint – delivery/bounce status updates
+http.route({
+  path: "/resend-webhook",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    return await resend.handleResendEventWebhook(ctx, req);
+  }),
+});

@@ -15,13 +15,28 @@ import * as React from "react";
 import EnforceNumericInput from "@/components/EnforceNumericInput";
 import type { EmailReaderData } from "../emailReader.node";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import RenderStatusDot from "@/components/RenderStatusDot";
 
-// Align styling tokens with EmailAccountExpanded
+// Align styling tokens with EmailAccountExpanded and EmailAccountForm
 const EXPANDED_STYLES = {
   container: "p-4 w-full h-full flex flex-col",
   disabled:
     "opacity-75 bg-[--node-email-bg-hover] dark:bg-[--node-email-bg] rounded-md transition-all duration-300",
-  content: "flex-1 space-y-2 max-h-[400px] overflow-y-auto",
+  content: "flex-1 space-y-1",
+} as const;
+
+const FIELD_STYLES = {
+  label: "text-[--node-email-text] text-[10px] font-medium mb-1 block",
+  input:
+    "h-6 text-[10px] border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] rounded-md px-2 focus:ring-1 focus:ring-[--node-email-border-hover] focus:border-[--node-email-border-hover] disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-[--node-email-text-secondary] placeholder:text-[10px] transition-all duration-200",
+  select:
+    "h-6 text-[10px] border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] rounded-md px-2 focus:ring-1 focus:ring-[--node-email-border-hover] focus:border-[--node-email-border-hover] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200",
+  checkboxLabel: "flex items-center gap-2 text-[10px] text-[--node-email-text]",
+  helperText: "text-[10px] text-[--node-email-text-secondary]",
+  button:
+    "w-full h-6 rounded-md border border-[--node-email-border] bg-transparent text-[--node-email-text] text-[10px] font-medium hover:bg-[--node-email-bg-hover] disabled:cursor-not-allowed disabled:opacity-50 transition-all flex items-center justify-center",
+  statusBox:
+    "rounded-md border border-[--node-email-border] bg-[--node-email-bg] p-2 text-[10px] text-[--node-email-text-secondary]",
 } as const;
 
 type AvailableAccount = {
@@ -85,19 +100,25 @@ export function EmailReaderExpanded(props: EmailReaderExpandedProps) {
       <div className={EXPANDED_STYLES.content}>
         {/* Account Selection */}
         <div>
-          <div className="flex justify-between flex-row w-full ">
-            <label htmlFor="email-account-select" className="block text-gray-600 text-xs">
+          <label htmlFor="email-account-select" className={FIELD_STYLES.label}>
+            <span className="inline-flex items-center gap-1">
               Email Account
-            </label>
-            <div className={`text-xs ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}>
-              {connectionStatus}
-            </div>
-          </div>
+              {/* Live connection status, basically visual indicator */}
+              <RenderStatusDot
+                eventActive={connectionStatus === "connected"}
+                isProcessing={connectionStatus === "connecting" || connectionStatus === "reading"}
+                hasError={connectionStatus === "error"}
+                enableGlow
+                size="sm"
+                titleText={connectionStatus}
+              />
+            </span>
+          </label>
           <select
             id="email-account-select"
             value={accountId}
             onChange={onAccountChange}
-            className="w-full rounded border border-gray-300 p-2 text-xs"
+            className={`${FIELD_STYLES.select} w-full`}
             disabled={!isEnabled || connectionStatus === "reading"}
           >
             <option value="">Select email account...</option>
@@ -110,15 +131,15 @@ export function EmailReaderExpanded(props: EmailReaderExpandedProps) {
         </div>
 
         {/* Processing Options */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-1">
           <div>
             <Tooltip>
               <TooltipTrigger asChild>
-                <label htmlFor="batch-size-input" className="mb-1 block text-gray-600 text-xs cursor-help">
+                <label htmlFor="batch-size-input" className={`${FIELD_STYLES.label} cursor-help`}>
                   Batch Size:
                 </label>
               </TooltipTrigger>
-              <TooltipContent sideOffset={6}>
+              <TooltipContent sideOffset={6} className={FIELD_STYLES.helperText}>
                 Number of emails to get at once, basically the chunk size.
               </TooltipContent>
             </Tooltip>
@@ -126,7 +147,7 @@ export function EmailReaderExpanded(props: EmailReaderExpandedProps) {
               id="batch-size-input"
               value={batchSize}
               onValueChange={onBatchSizeChange}
-              className="w-full rounded border border-gray-300 p-2 text-xs"
+              className={`${FIELD_STYLES.input} w-full`}
               disabled={!isEnabled || connectionStatus === "reading"}
               placeholder="10"
               aria-label="Batch Size"
@@ -135,19 +156,19 @@ export function EmailReaderExpanded(props: EmailReaderExpandedProps) {
           <div>
             <Tooltip>
               <TooltipTrigger asChild>
-                <label htmlFor="max-messages-input" className="mb-1 block text-gray-600 text-xs cursor-help">
+                <label htmlFor="max-messages-input" className={`${FIELD_STYLES.label} cursor-help`}>
                   Max Messages:
                 </label>
               </TooltipTrigger>
-              <TooltipContent sideOffset={6}>
-                The total cap for this run, basically stop at this number.
+              <TooltipContent sideOffset={6} className={FIELD_STYLES.helperText}>
+                The total message cap for this run to stop at, basically the stop limit.
               </TooltipContent>
             </Tooltip>
             <EnforceNumericInput
               id="max-messages-input"
               value={maxMessages}
               onValueChange={onMaxMessagesChange}
-              className="w-full rounded border border-gray-300 p-2 text-xs"
+              className={`${FIELD_STYLES.input} w-full`}
               disabled={!isEnabled || connectionStatus === "reading"}
               placeholder="50"
               aria-label="Max Messages"
@@ -156,8 +177,8 @@ export function EmailReaderExpanded(props: EmailReaderExpandedProps) {
         </div>
 
         {/* Options */}
-        <div className="flex flex-col gap-2">
-          <label className="flex items-center text-xs">
+        <div className="flex flex-col gap-1">
+          <label className={FIELD_STYLES.checkboxLabel}>
             <input
               type="checkbox"
               checked={includeAttachments}
@@ -167,7 +188,7 @@ export function EmailReaderExpanded(props: EmailReaderExpandedProps) {
             />
             Include Attachments
           </label>
-          <label className="flex items-center text-xs">
+          <label className={FIELD_STYLES.checkboxLabel}>
             <input
               type="checkbox"
               checked={markAsRead}
@@ -177,7 +198,7 @@ export function EmailReaderExpanded(props: EmailReaderExpandedProps) {
             />
             Mark as Read
           </label>
-          <label className="flex items-center text-xs">
+          <label className={FIELD_STYLES.checkboxLabel}>
             <input
               type="checkbox"
               checked={enableRealTime}
@@ -192,14 +213,14 @@ export function EmailReaderExpanded(props: EmailReaderExpandedProps) {
         {/* Real-time Interval */}
         {enableRealTime && (
           <div>
-            <label htmlFor="check-interval-input" className="mb-1 block text-gray-600 text-xs">
+            <label htmlFor="check-interval-input" className={FIELD_STYLES.label}>
               Check Interval (minutes):
             </label>
             <EnforceNumericInput
               id="check-interval-input"
               value={checkInterval}
               onValueChange={onCheckIntervalChange}
-              className="w-full rounded border border-gray-300 p-2 text-xs"
+              className={`${FIELD_STYLES.input} w-full`}
               disabled={!isEnabled}
               placeholder="5"
               aria-label="Check Interval"
@@ -208,11 +229,11 @@ export function EmailReaderExpanded(props: EmailReaderExpandedProps) {
         )}
 
         {/* Actions */}
-        <div className="flex gap-2">
+        <div>
           <button
             onClick={onReadMessages}
             disabled={!(isEnabled && accountId) || connectionStatus === "reading"}
-            className="flex-1 rounded bg-blue-500 p-2 text-white text-xs hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+            className={FIELD_STYLES.button}
             type="button"
           >
             {connectionStatus === "reading" ? "Reading..." : "Read Messages"}
@@ -220,9 +241,10 @@ export function EmailReaderExpanded(props: EmailReaderExpandedProps) {
         </div>
 
         {/* Status Information */}
-        <div className="rounded bg-gray-50 p-2 text-gray-500 text-xs">
+        <div className={FIELD_STYLES.statusBox}>
           <div>
-            Messages: {messageCount} | Processed: {processedCount}
+            <span className="text-[--node-email-text]">Messages:</span> {messageCount} {" "}
+            <span className="text-[--node-email-text]">| Processed:</span> {processedCount}
           </div>
           {lastSync && <div>Last sync: {new Date(lastSync).toLocaleString()}</div>}
           {lastError && <div className="mt-1 text-red-600">Error: {lastError}</div>}

@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { api } from "./_generated/api";
-import { action, mutation, query } from "./_generated/server";
+import { action, mutation, query, internalMutation } from "./_generated/server";
 import { 
   getAuthContext,
   requireAuth,
@@ -724,7 +724,7 @@ export const sendEmail = action({
       )
     ),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ success: boolean; messageId: string; sentAt: number }> => {
     debug("sendEmail", "=== EMAIL SEND START ===", {
       accountId: args.accountId,
       to: args.to,
@@ -741,7 +741,7 @@ export const sendEmail = action({
     });
 
     // Get the email account
-    const account = await ctx.runQuery(api.emailAccounts.getAccountById, {
+    const account: any = await ctx.runQuery(api.emailAccounts.getAccountById, {
       accountId: args.accountId,
     });
 
@@ -759,169 +759,42 @@ export const sendEmail = action({
     }
 
     try {
-      // Parse credentials
-      const credentials = JSON.parse(account.encrypted_credentials || "{}");
+      // Use Convex Resend component for durable sending
+      const { Resend } = await import("@convex-dev/resend");
+      const { components } = (await import("./_generated/api")) as any;
+      const resendInstance: InstanceType<typeof Resend> = new Resend(components.resend, {} as any) as any;
 
-      if (!credentials.accessToken) {
-        throw new Error("No access token found for account");
-      }
+      const fromAddress: string = `${account.display_name || "Agenitix"} <${account.email}>`;
 
-      // Send email using Gmail API directly
-      let result;
-      if (account.provider === "gmail") {
-        // Build email message in RFC 2822 format
-        const hasAttachments = args.attachments && args.attachments.length > 0;
-        const mainBoundary = `boundary_main_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const altBoundary = `boundary_alt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const emailId: unknown = await (resendInstance as any).sendEmail(ctx as any, {
+        from: fromAddress,
+        to: args.to,
+        subject: args.subject,
+        html: args.htmlContent || undefined,
+        text: args.textContent || undefined,
+        cc: args.cc && args.cc.length > 0 ? args.cc : undefined,
+        bcc: args.bcc && args.bcc.length > 0 ? args.bcc : undefined,
+        attachments: (args.attachments || []).map((a) => ({
+          filename: a.filename,
+          content: a.content || "",
+          contentType: a.mimeType,
+        })),
+      } as any);
 
-        let emailContent = "";
-
-        // Headers
-        emailContent += `To: ${args.to.join(", ")}\r\n`;
-        if (args.cc && args.cc.length > 0) {
-          emailContent += `Cc: ${args.cc.join(", ")}\r\n`;
-        }
-        if (args.bcc && args.bcc.length > 0) {
-          emailContent += `Bcc: ${args.bcc.join(", ")}\r\n`;
-        }
-        emailContent += `Subject: ${args.subject}\r\n`;
-        emailContent += `MIME-Version: 1.0\r\n`;
-
-        if (hasAttachments) {
-          // Use multipart/mixed for attachments
-          emailContent += `Content-Type: multipart/mixed; boundary="${mainBoundary}"\r\n`;
-          emailContent += `\r\n`;
-
-          // Message content part
-          emailContent += `--${mainBoundary}\r\n`;
-
-          if (args.htmlContent) {
-            // Use multipart/alternative for text and HTML
-            emailContent += `Content-Type: multipart/alternative; boundary="${altBoundary}"\r\n`;
-            emailContent += `\r\n`;
-
-            // Text part
-            emailContent += `--${altBoundary}\r\n`;
-            emailContent += `Content-Type: text/plain; charset=utf-8\r\n\r\n`;
-            emailContent += `${args.textContent || ""}\r\n`;
-
-            // HTML part
-            emailContent += `--${altBoundary}\r\n`;
-            emailContent += `Content-Type: text/html; charset=utf-8\r\n\r\n`;
-            emailContent += `${args.htmlContent}\r\n`;
-
-            emailContent += `--${altBoundary}--\r\n`;
-          } else {
-            // Plain text only
-            emailContent += `Content-Type: text/plain; charset=utf-8\r\n\r\n`;
-            emailContent += `${args.textContent || ""}\r\n`;
-          }
-
-          // Add attachments
-          for (const attachment of args.attachments || []) {
-            if (attachment.content) {
-              emailContent += `--${mainBoundary}\r\n`;
-              emailContent += `Content-Type: ${attachment.mimeType}; name="${attachment.filename}"\r\n`;
-              emailContent += `Content-Disposition: attachment; filename="${attachment.filename}"\r\n`;
-              emailContent += `Content-Transfer-Encoding: base64\r\n\r\n`;
-
-              // Add base64 content in chunks of 76 characters (RFC requirement)
-              const base64Content = attachment.content;
-              for (let i = 0; i < base64Content.length; i += 76) {
-                emailContent += base64Content.substr(i, 76) + "\r\n";
-              }
-            }
-          }
-
-          emailContent += `--${mainBoundary}--\r\n`;
-        } else {
-          // No attachments - use simple structure
-          if (args.htmlContent) {
-            emailContent += `Content-Type: multipart/alternative; boundary="${altBoundary}"\r\n`;
-            emailContent += `\r\n`;
-
-            // Text part
-            emailContent += `--${altBoundary}\r\n`;
-            emailContent += `Content-Type: text/plain; charset=utf-8\r\n\r\n`;
-            emailContent += `${args.textContent || ""}\r\n`;
-
-            // HTML part
-            emailContent += `--${altBoundary}\r\n`;
-            emailContent += `Content-Type: text/html; charset=utf-8\r\n\r\n`;
-            emailContent += `${args.htmlContent}\r\n`;
-
-            emailContent += `--${altBoundary}--\r\n`;
-          } else {
-            emailContent += `Content-Type: text/plain; charset=utf-8\r\n`;
-            emailContent += `\r\n`;
-            emailContent += args.textContent || "";
-          }
-        }
-
-        // Encode the message in base64url format (Convex-compatible)
-        // Use TextEncoder to handle UTF-8 characters properly
-        const encoder = new TextEncoder();
-        const uint8Array = encoder.encode(emailContent);
-        
-        // Convert Uint8Array to base64 string
-        let binaryString = '';
-        for (let i = 0; i < uint8Array.length; i++) {
-          binaryString += String.fromCharCode(uint8Array[i]);
-        }
-        
-        const encodedMessage = btoa(binaryString)
-          .replace(/\+/g, "-")
-          .replace(/\//g, "_")
-          .replace(/=+$/, "");
-
-        // Send via Gmail API
-        const response = await fetch(
-          "https://www.googleapis.com/gmail/v1/users/me/messages/send",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${credentials.accessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              raw: encodedMessage,
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(
-            `Gmail API error: ${response.status} ${response.statusText} - ${errorText}`
-          );
-        }
-
-        const gmailResult = await response.json();
-        result = {
-          messageId: gmailResult.id,
-          success: true,
-        };
-      } else {
-        throw new Error(
-          `Provider ${account.provider} not supported for sending yet`
-        );
-      }
-
-      // Log the sent email (optional)
-      debug("sendEmail", "Email sent successfully:", {
+      debug("sendEmail", "Email enqueued via Resend:", {
         accountId: args.accountId,
         to: args.to,
         subject: args.subject,
-        messageId: result.messageId,
+        emailId,
       });
 
       return {
         success: true,
-        messageId: result.messageId,
+        messageId: String(emailId),
         sentAt: Date.now(),
       };
     } catch (error) {
-      debug("sendEmail", "Send email error:", error);
+      debug("sendEmail", "Resend error:", error);
       throw new Error(
         `Failed to send email: ${error instanceof Error ? error.message : "Unknown error"}`
       );

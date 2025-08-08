@@ -289,7 +289,11 @@ export type DomainCategory =
   | "test"
   | "cycle"
   | "store"
-  | "ai";
+  | "ai"
+  | "email"
+  | "logic"
+  | "flow"
+  | "time";
 
 export interface DomainMetadata {
   category: DomainCategory;

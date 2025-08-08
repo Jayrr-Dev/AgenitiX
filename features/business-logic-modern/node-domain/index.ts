@@ -8,6 +8,7 @@ export { default as aiManager } from "./ai/aiManager.node";
 export { default as createJson } from "./create/createJson.node";
 export { default as createMap } from "./create/createMap.node";
 export { default as viewObject } from "./view/viewObject.node";
+export { default as viewArray } from "./view/viewArray.node";
 // Node exports will be added here automatically by Plop
 export { default as createText } from "./create/createText.node";
 export { default as aiAgent } from "./ai/aiAgent.node";

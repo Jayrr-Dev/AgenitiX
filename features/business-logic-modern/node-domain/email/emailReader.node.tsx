@@ -174,7 +174,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
     handles: [
       {
         id: "trigger-input",
-        code: "t",
+        code: "b",
         position: "top",
         type: "target",
         dataType: "Boolean",
@@ -188,21 +188,21 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
       },
       {
         id: "messages-output",
-        code: "m",
+        code: "a",
         position: "right",
         type: "source",
         dataType: "Array",
       },
       {
         id: "count-output",
-        code: "c",
+        code: "n",
         position: "bottom",
         type: "source",
         dataType: "Number",
       },
       {
         id: "status-output",
-        code: "s",
+        code: "b",
         position: "bottom",
         type: "source",
         dataType: "Boolean",
