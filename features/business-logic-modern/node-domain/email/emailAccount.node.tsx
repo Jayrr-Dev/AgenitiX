@@ -206,17 +206,14 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
     if (!isEnabled) return;
 
     if (isConnected) {
-      const outputMap = generateoutputField(spec, nodeData) as Map<
-        string,
-        unknown
-      >;
+      const outputMap = generateoutputField(spec, nodeData) as Map<string, unknown>;
 
-      /* Only update when content truly changes */
+      // Only update when content truly changes
       const changed =
         !lastOutputRef.current ||
         outputMap.size !== lastOutputRef.current.size ||
         [...outputMap.entries()].some(
-          ([k, v]) => lastOutputRef.current?.get(k) !== v,
+          ([key, value]) => lastOutputRef.current?.get(key) !== value,
         );
 
       if (changed) {
@@ -226,7 +223,8 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
           isActive: true,
         });
       }
-    } else {
+    } else if (nodeData.isActive) {
+      // Only update if we actually need to flip the flag, basically avoid loops
       updateNodeData({ isActive: false });
     }
   }, [isEnabled, isConnected, nodeData, spec, updateNodeData]);

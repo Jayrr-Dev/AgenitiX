@@ -376,6 +376,76 @@ export const updateAccountStatus = mutation({
   },
 });
 
+// Deactivate (logout) an email account
+export const deactivateEmailAccount = mutation({
+  args: {
+    accountId: v.id("email_accounts"),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean }> => {
+    const account = await ctx.db.get(args.accountId);
+    if (!account) {
+      throw new Error("Account not found");
+    }
+
+    // Soft-deactivate: keep record for history but mark inactive and disconnected
+    await ctx.db.patch(args.accountId, {
+      is_active: false,
+      connection_status: "disconnected",
+      last_validated: undefined,
+      updated_at: Date.now(),
+    } as any);
+
+    return { success: true };
+  },
+});
+
+// Action wrapper to ensure HTTP auth path and avoid WS auth races
+export const deactivateEmailAccountAction = action({
+  args: {
+    accountId: v.id("email_accounts"),
+    userEmailHint: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean }> => {
+    // Resolve user (Convex Auth preferred, fallback to userEmailHint)
+    let userObj: any | null = null;
+    try {
+      const { authContext, user } = await requireUser(ctx);
+      logAuthState("deactivateEmailAccount_action", authContext, {
+        accountId: args.accountId,
+        operation: "email_account_deactivate",
+      });
+      userObj = user;
+    } catch {
+      if (args.userEmailHint) {
+        try {
+          userObj = await ctx.runQuery(api.users.getUserByEmail as any, { email: args.userEmailHint });
+        } catch {}
+      }
+      if (!userObj) {
+        throw new Error("Authentication required. Please sign in to continue.");
+      }
+    }
+
+    // Verify account ownership before deactivation
+    const account = await ctx.runQuery(api.emailAccounts.getAccountById as any, {
+      accountId: args.accountId,
+    });
+    if (!account) {
+      throw new Error("Account not found");
+    }
+    const resolvedUserId = (userObj as any)._id ?? (userObj as any).id;
+    if (!resolvedUserId || String(account.user_id) !== String(resolvedUserId)) {
+      throw new Error("Forbidden: account does not belong to the current user");
+    }
+
+    const result = await ctx.runMutation(
+      api.emailAccounts.deactivateEmailAccount as any,
+      { accountId: args.accountId }
+    );
+    return result as { success: boolean };
+  },
+});
+
 // Get user's email accounts (COLLISION-SAFE)
 export const getUserEmailAccounts = query({
   args: {},

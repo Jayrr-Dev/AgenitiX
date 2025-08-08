@@ -26,7 +26,7 @@ if (process.env.NODE_ENV === "development") {
 export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = convexAuth({
   providers: [
     GitHub,
-    // Google, // Temporarily disabled to avoid conflict with email account OAuth
+    Google,
     Password, // Keep for backwards compatibility
     Resend, // Standard Auth.js email provider for magic links
   ],

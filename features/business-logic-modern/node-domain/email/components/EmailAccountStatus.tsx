@@ -133,16 +133,18 @@ export const EmailAccountStatus = memo(
       <div className={STATUS_STYLES.container}>
         <div className={STATUS_STYLES.header}>
           <span className={STATUS_STYLES.title}>Status</span>
-          {accountId && (
-            <button
-              onClick={handleTestClick}
-              disabled={!isEnabled || connectionStatus === "connecting"}
-              className={STATUS_STYLES.testButton}
-              type="button"
-            >
-              {connectionStatus === "connecting" ? "Testing..." : "Test"}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {accountId && (
+              <button
+                onClick={handleTestClick}
+                disabled={!isEnabled || connectionStatus === "connecting"}
+                className={STATUS_STYLES.testButton}
+                type="button"
+              >
+                {connectionStatus === "connecting" ? "Testing..." : "Test"}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className={STATUS_STYLES.statusBox}>

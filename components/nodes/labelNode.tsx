@@ -81,14 +81,8 @@ const LabelNode: React.FC<LabelNodeProps> = ({ nodeId, label, onEdit }) => {
 		<button
 			type="button"
 			className="-translate-x-1/2 absolute left-1/2 select-none truncate px-1 text-center"
-			onClick={() => {
-				// Handle editing if callback is provided
-				if (typeof onEdit === "function") {
-					onEdit(nodeId);
-				}
-			}}
-			aria-label="Edit node label"
 			style={{
+				top: "var(--core-label-top)",
 				maxWidth: "200px",
 				fontSize: "14px",
 				color: "var(--core-text-primary)",
@@ -96,6 +90,14 @@ const LabelNode: React.FC<LabelNodeProps> = ({ nodeId, label, onEdit }) => {
 				border: "1px solid var(--core-fill-border)",
 				borderRadius: "4px",
 			}}
+			onClick={() => {
+				// Handle editing if callback is provided
+				if (typeof onEdit === "function") {
+					onEdit(nodeId);
+				}
+			}}
+			aria-label="Edit node label"
+
 		>
 			<span
 				ref={spanRef}

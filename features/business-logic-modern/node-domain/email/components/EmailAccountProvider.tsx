@@ -40,6 +40,7 @@ interface EmailAccountContextType {
   handleResetAuth: () => void;
   handleTestConnection: (accountId: string) => Promise<void>;
   handleManualSave: (config: EmailConfig) => Promise<void>;
+  handleDisconnect: (accountId: string) => Promise<void>;
 }
 
 /** Shape of a manually saved email configuration */
@@ -131,6 +132,7 @@ export const EmailAccountProvider = ({
 
   const storeEmailAccountAction = useAction(api.emailAccounts.upsertEmailAccountAction);
   const validateConnection = useAction(api.emailAccounts.testEmailConnection);
+  const deactivateAccount = useAction(api.emailAccounts.deactivateEmailAccountAction);
   
   // 🔍 TEST: Add a simple test mutation to check if auth context works
   // const testMutation = useMutation(api.flows.createFlow);
@@ -525,6 +527,32 @@ export const EmailAccountProvider = ({
     [token, updateNodeData, validateConnection],
   );
 
+  const handleDisconnect = useCallback(
+    async (accountId: string) => {
+      if (!token) return;
+      try {
+        await deactivateAccount({ 
+          accountId: accountId as unknown as Id<"email_accounts">,
+          userEmailHint: user?.email,
+        });
+        updateNodeData({
+          isAuthenticating: false,
+          connectionStatus: "disconnected",
+          isConnected: false,
+          isConfigured: false,
+          lastValidated: undefined,
+          accountId: undefined,
+          lastError: "",
+        });
+        toast.success("Disconnected", { description: "Email account logged out" });
+      } catch (err) {
+        const msg = toMessage(err);
+        toast.error("Failed to disconnect", { description: msg });
+      }
+    },
+    [deactivateAccount, token, updateNodeData],
+  );
+
   /* -------------------------------------------------------------------- */
   /* Render                                                                */
   /* -------------------------------------------------------------------- */
@@ -539,6 +567,7 @@ export const EmailAccountProvider = ({
         handleResetAuth,
         handleTestConnection,
         handleManualSave,
+        handleDisconnect,
       }}
     >
       {children}

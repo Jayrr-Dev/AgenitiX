@@ -97,6 +97,7 @@ export const EmailAccountAuth = memo(
       handleOAuth2Auth,
       handleResetAuth,
       handleManualSave,
+      handleDisconnect,
     } = useEmailAccountContext();
 
     const {
@@ -116,6 +117,7 @@ export const EmailAccountAuth = memo(
     const meta = PROVIDER_MAP[provider];
     const isOAuth = meta.mode === "oauth2";
     const isManual = meta.mode === "manual";
+    const isLocked = !!nodeData.isConnected; // When connected, lock auth UI to enforce one email per node
 
     /* ---------------- Handlers --------------------------------------- */
 
@@ -193,13 +195,12 @@ export const EmailAccountAuth = memo(
     ]);
 
     /* ---------------- Memo helpers ----------------------------------- */
-    const oauthBtnLabel = useMemo(
-      () =>
-        globalAuthenticating
-          ? "Redirecting… (30 s timeout)"
-          : `Connect ${meta.name}`,
-      [globalAuthenticating, meta.name],
-    );
+    const isAuthInProgress = !!nodeData.isAuthenticating || !!globalAuthenticating;
+    const oauthBtnLabel = useMemo(() => {
+      if (nodeData.isConnected && email) return `Logout ${meta.name}`;
+      if (isAuthInProgress) return "Cancel";
+      return `Connect ${meta.name}`;
+    }, [meta.name, nodeData.isConnected, email, isAuthInProgress]);
 
     /* ---------------- Render ----------------------------------------- */
     return (
@@ -209,28 +210,44 @@ export const EmailAccountAuth = memo(
           <div className="space-y-2 pt-2">
             <button
               type="button"
-              className={AUTH_STYLES.button.primary}
-              disabled={!isEnabled || globalAuthenticating || !email}
-              onClick={onOAuthClick}
-              aria-label={`Authenticate ${meta.name} account`}
+              className={
+                nodeData.isConnected
+                  ? AUTH_STYLES.button.secondary
+                  : isAuthInProgress
+                    ? AUTH_STYLES.button.secondary
+                    : AUTH_STYLES.button.primary
+              }
+              disabled={
+                nodeData.isConnected
+                  ? !isEnabled
+                  : isAuthInProgress
+                    ? !isEnabled
+                    : (!isEnabled || !email || isLocked)
+              }
+              onClick={() => {
+                if (nodeData.isConnected && nodeData.accountId) {
+                  handleDisconnect(nodeData.accountId);
+                } else if (isAuthInProgress) {
+                  handleResetAuth();
+                } else {
+                  onOAuthClick();
+                }
+              }}
+              aria-label={
+                nodeData.isConnected
+                  ? `Logout ${meta.name}`
+                  : isAuthInProgress
+                    ? "Cancel authentication"
+                    : `Authenticate ${meta.name} account`
+              }
             >
               {oauthBtnLabel}
             </button>
-
-            {globalAuthenticating && (
-              <button
-                type="button"
-                className={AUTH_STYLES.button.secondary}
-                onClick={handleResetAuth}
-              >
-                Cancel & Reset
-              </button>
-            )}
           </div>
         )}
 
         {/* ---------- Manual block ---------- */}
-        {isManual && (
+        {isManual && !isLocked && (
           <div className="space-y-1 mt-2 pt-1 border-t border-black/20">
             <p className="text-[11px] font-medium text-[--node-email-text-secondary] mb-1">
               Advanced Settings

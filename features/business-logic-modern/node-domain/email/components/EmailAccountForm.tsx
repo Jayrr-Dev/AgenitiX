@@ -48,7 +48,7 @@ export const EmailAccountForm = memo(
     isEnabled,
     isAuthenticating,
   }: EmailAccountFormProps) => {
-    const { provider, email, displayName } = nodeData;
+    const { provider, email, displayName, isConnected } = nodeData;
 
     // Available providers with icons
     const availableProviders = useMemo(() => {
@@ -100,7 +100,7 @@ export const EmailAccountForm = memo(
           <Select
             onValueChange={handleProviderChange}
             defaultValue={provider}
-            disabled={!isEnabled || isAuthenticating}
+            disabled={!isEnabled || isAuthenticating || isConnected}
           >
             <SelectTrigger className={`${FORM_STYLES.select} w-full`}>
               <SelectValue placeholder="Select Provider" />
@@ -130,7 +130,7 @@ export const EmailAccountForm = memo(
             onChange={handleEmailChange}
             placeholder="Email"
             className={FORM_STYLES.input}
-            disabled={!isEnabled || isAuthenticating}
+            disabled={!isEnabled || isAuthenticating || isConnected}
           />
         </div>
 
