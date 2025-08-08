@@ -18,6 +18,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useFlowMetadataOptional } from "../contexts/flow-metadata-context";
 import { useFlowStore } from "../stores/flowStore";
+import { sanitizeNodesForSave } from "../utils/sanitizeCanvasData";
 
 interface UseAutoSaveCanvasOptions {
 	/** Debounce delay in milliseconds (default: 1000) */
@@ -75,10 +76,13 @@ export function useAutoSaveCanvas(options: UseAutoSaveCanvasOptions = {}): AutoS
 		lastErrorRef.current = null;
 
 		try {
-			await saveFlowCanvas({
+            // Sanitize nodes to avoid Convex nested/size limits
+            const prunedNodes = sanitizeNodesForSave(nodes as any);
+
+            await saveFlowCanvas({
 				flow_id: flow.id as Id<"flows">,
 				user_id: user.id as any,
-				nodes,
+                nodes: prunedNodes,
 				edges,
 			});
 
