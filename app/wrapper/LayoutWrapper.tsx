@@ -17,14 +17,19 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
 	const shouldHideUI = HIDE_UI_PATHS.some((path) => pathname.startsWith(path));
 
 	return (
-		<>
+		<div className="flex flex-col min-h-screen">
 			{!shouldHideUI && <MainNavBar />}
 
-			<div className="w-full">
+			<div className="flex-grow w-full">
 				{children}
 				{!shouldHideUI && <CookieConsent />}
-				{!shouldHideUI && <Footer />}
 			</div>
-		</>
+			
+			{!shouldHideUI && (
+				<div className="w-full mt-auto">
+					<Footer />
+				</div>
+			)}
+		</div>
 	);
 }

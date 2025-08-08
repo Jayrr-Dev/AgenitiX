@@ -421,12 +421,7 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // Fetch email accounts for both owners and viewers - viewers can use their own accounts
   const emailAccounts = useQuery(
     api.emailAccounts.getEmailAccountsByUserEmail,
-    // Use hybrid auth: prefer token_hash, fallback to userEmail
-    token
-      ? { token_hash: token }
-      : user?.email
-        ? { userEmail: user.email }
-        : "skip"
+    user?.email ? { userEmail: user.email } : "skip",
   );
 
   // Email sending action
@@ -851,13 +846,6 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
   /** Handle send email action */
   const handleSendEmail = useCallback(async () => {
-    console.log("🔍 handleSendEmail debug:", {
-      accountId,
-      tokenExists: !!token,
-      tokenValue: token ? "present" : "missing",
-      userExists: !!user,
-      userEmail: user?.email,
-    });
 
     if (!accountId) {
       toast.error("Please select an email account first");
@@ -906,7 +894,6 @@ const EmailSenderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
 
       // Send email via Convex backend
       const emailPayload = {
-        token_hash: token, // Pass authentication token
         accountId: accountId as any,
         to: safeRecipients.to,
         cc: safeRecipients.cc.length > 0 ? safeRecipients.cc : undefined,

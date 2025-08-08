@@ -22,7 +22,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
-import { useAction, useMutation } from "convex/react";
+import { useAction, useMutation, useConvexAuth as useConvexAuthClient } from "convex/react";
 import type { EmailProviderType } from "../types";
 import { Id } from "@/convex/_generated/dataModel";
 
@@ -116,16 +116,20 @@ export const EmailAccountProvider = ({
     authToken,
     user,
     isOAuthAuthenticated,
+    isLoading,
     sessionSource,
     recoverAuth,
   } = useAuth();
+
+  // Convex client auth – authoritative readiness for ctx.auth on the server
+  const convexClientAuth = useConvexAuthClient();
 
   const token = useMemo(
     () => (user?.id ? `convex_user_${user.id}` : authToken),
     [authToken, user?.id],
   );
 
-  const storeEmailAccount = useMutation(api.emailAccounts.upsertEmailAccount);
+  const storeEmailAccountAction = useAction(api.emailAccounts.upsertEmailAccountAction);
   const validateConnection = useAction(api.emailAccounts.testEmailConnection);
   
   // 🔍 TEST: Add a simple test mutation to check if auth context works
@@ -168,16 +172,42 @@ export const EmailAccountProvider = ({
           refreshToken: authData.refreshToken ? '[HIDDEN]' : undefined,
         });
         
+        // Ensure Convex Auth is fully ready before calling the mutation, basically avoid race conditions
+        const waitForConvexAuth = async () => {
+          const maxAttempts = 20;
+          for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const ready = !convexClientAuth.isLoading && convexClientAuth.isAuthenticated;
+            if (ready) break;
+            await new Promise((r) => setTimeout(r, 150));
+          }
+        };
+
+        await waitForConvexAuth();
+
         // 🔧 FIXED: Don't pass sessionToken manually - Convex Auth handles this automatically
-        const accountId = await storeEmailAccount({
-          ...authData,
-          provider: authData.provider as EmailProviderType,
-          displayName: authData.displayName ?? authData.email,
-          sessionToken: token,
-        });
-        
-        console.log('🔍 onOAuthSuccess: storeEmailAccount returned:', accountId);
-        if (!accountId) throw new Error("Failed to save account");
+        const { sessionToken: _omitSessionToken, ...authDataSanitized } = authData; // Remove sessionToken, basically don't send it to Convex
+
+        const tryStore = async () =>
+          await storeEmailAccountAction({
+            ...authDataSanitized,
+            provider: authData.provider as EmailProviderType,
+            displayName: authData.displayName ?? authData.email,
+            userEmailHint: user?.email,
+          });
+
+        let accountId: string | undefined;
+        try {
+          accountId = await tryStore();
+        } catch (e) {
+          const msg = toMessage(e);
+          if (/Authentication required/i.test(msg)) {
+            await waitForConvexAuth();
+            accountId = await tryStore();
+          } else {
+            throw e;
+          }
+        }
+        if (!accountId || typeof accountId !== "string") throw new Error("Failed to save account");
 
         const updateData = {
           ...authData,
@@ -190,7 +220,6 @@ export const EmailAccountProvider = ({
           lastError: "",
         };
         
-        console.log('📧 onOAuthSuccess: Updating node data with:', updateData);
         updateNodeData(updateData);
         toast.success("Email account connected!", {
           description: `Successfully connected ${authData.email}`,
@@ -201,7 +230,7 @@ export const EmailAccountProvider = ({
         toast.error("OAuth save failed", { description: msg });
       }
     },
-    [storeEmailAccount, token, updateNodeData],
+    [storeEmailAccountAction, token, updateNodeData, convexClientAuth.isAuthenticated, convexClientAuth.isLoading],
   );
 
   /* -------------------------------------------------------------------- */
@@ -361,28 +390,10 @@ export const EmailAccountProvider = ({
         // Declare timeout ID first so it can be referenced in checkPopupClosed
         let timeoutId: NodeJS.Timeout;
         
-        // Fallback: Check if popup was closed manually (with COOP fallback)
+        // Fallback: Avoid window.closed checks due to COOP; rely on messages + timeout
         const checkPopupClosed = setInterval(() => {
-          try {
-            if (popup.closed) {
-              clearInterval(checkPopupClosed);
-              clearTimeout(timeoutId);
-              window.removeEventListener("message", handlePopupMessage);
-              broadcastChannel.close();
-              updateNodeData({
-                isAuthenticating: false,
-                lastError: "Authentication was cancelled",
-              });
-              toast.error("Authentication cancelled", {
-                description: "The authentication window was closed"
-              });
-            }
-          } catch (error) {
-            // COOP policy blocks window.closed check - this is expected
-            // The popup will communicate via postMessage instead
-            // Don't treat COOP errors as cancellation - just continue monitoring
-          }
-        }, 1000);
+          // no-op: exists only to be cleared when we get a message or timeout
+        }, 60000);
 
         // Timeout after 5 minutes
         timeoutId = setTimeout(() => {
@@ -434,11 +445,22 @@ export const EmailAccountProvider = ({
       if (!token) return;
       try {
         updateNodeData({ connectionStatus: "connecting", lastError: "" });
-        const id = await storeEmailAccount({
+        const waitForConvexAuth = async () => {
+          const maxAttempts = 20;
+          for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const ready = !convexClientAuth.isLoading && convexClientAuth.isAuthenticated;
+            if (ready) break;
+            await new Promise((r) => setTimeout(r, 150));
+          }
+        };
+
+        await waitForConvexAuth();
+
+        const id = await storeEmailAccountAction({
           ...config,
           provider: config.provider as EmailProviderType,
           displayName: config.displayName ?? config.email,
-          sessionToken: token,
+          userEmailHint: user?.email as string | undefined,
         });
         if (!id) throw new Error("Failed to store account");
         updateNodeData({
@@ -459,7 +481,7 @@ export const EmailAccountProvider = ({
         toast.error("Configuration failed", { description: msg });
       }
     },
-    [storeEmailAccount, token, updateNodeData],
+    [storeEmailAccountAction, token, updateNodeData, convexClientAuth.isAuthenticated, convexClientAuth.isLoading],
   );
 
   const handleResetAuth = useCallback(() => {
@@ -481,7 +503,6 @@ export const EmailAccountProvider = ({
         updateNodeData({ connectionStatus: "connecting", lastError: "" });
         const result = await validateConnection({
           accountId: accountId as unknown as Id<"email_accounts">,
-          token_hash: token,
         });
         if (!result.success) throw new Error(result.error!);
         updateNodeData({

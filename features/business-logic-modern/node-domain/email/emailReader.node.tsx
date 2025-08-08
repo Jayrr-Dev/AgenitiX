@@ -325,6 +325,9 @@ export const spec: NodeSpec = createDynamicSpec({
 const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   const { nodeData, updateNodeData } = useNodeData(id, {});
+  
+  // Category styling for consistent theming, basically email node styling
+  const categoryStyles = CATEGORY_TEXT.EMAIL;
 
   // -------------------------------------------------------------------------
   // STATE MANAGEMENT (grouped for clarity)
@@ -368,12 +371,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // Fetch email accounts for both owners and viewers - viewers can use their own accounts
   const emailAccounts = useQuery(
     api.emailAccounts.getEmailAccountsByUserEmail,
-    // Use hybrid auth: prefer token_hash, fallback to userEmail
-    token
-      ? { token_hash: token }
-      : user?.email
-        ? { userEmail: user.email }
-        : "skip"
+    user?.email ? { userEmail: user.email } : "skip",
   );
 
   // -------------------------------------------------------------------------

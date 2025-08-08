@@ -58,7 +58,7 @@ import { RichTextEditor } from "./components/RichTextEditor";
 import type { EmailValidationResult } from "./types";
 
 import { api } from "@/convex/_generated/api";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/components/auth/AuthProvider";
 // Convex
 import { useQuery } from "convex/react";
 
@@ -418,10 +418,10 @@ const EmailCreatorNode = memo(
     const _edges = useStore((s) => s.edges);
 
     // Authentication and template loading
-    const { token } = useAuth();
+    const { user } = useAuth();
     const availableTemplates = useQuery(
       api.emailAccounts.getEmailReplyTemplates,
-      token ? { token_hash: token } : "skip"
+      user ? {} : "skip",
     );
 
     // -------------------------------------------------------------------------

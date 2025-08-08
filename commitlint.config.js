@@ -4,7 +4,7 @@
  * Ensures all commits follow the conventional commit format:
  * type(scope): description
  *
- * Types: feat, fix, docs, refactor, test, chore
+ * Types: feat, fix, docs, design, refactor, test, chore, style, perf, ci, build, revert
  */
 
 module.exports = {
@@ -18,6 +18,7 @@ module.exports = {
 				"feat", // new feature
 				"fix", // bug fix
 				"docs", // documentation changes
+				"design", // design improvements and UI/UX changes
 				"refactor", // code restructuring
 				"test", // test additions/changes
 				"chore", // maintenance tasks

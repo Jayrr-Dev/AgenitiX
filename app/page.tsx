@@ -21,14 +21,22 @@ import {
 	featureBoxesIconed,
 	featureBoxesPlain,
 } from "@/features/marketing/home-page/data";
+import { heroSlides, featureCards, featuresGridData } from "@/features/marketing/home-page/data/modern-ui-data";
+import { ThreeDCardGrid } from "@/components/ui/3d-card-grid";
+import { HeroSlider } from "@/components/ui/hero-slider";
+import { FeaturesGrid } from "@/components/ui/features-grid";
+import { SpotlightHover } from "@/components/ui/spotlight-hover";
 import { useAnubisProtection } from "@/hooks/useAnubisProtection";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Footer from "@/components/nav-bar/main-footer";
+import { useTheme } from "next-themes";
 
 export default function Home() {
 	  const { isAuthenticated, isLoading } = useAuth();
 	const router = useRouter();
 	const [mounted, setMounted] = useState(false);
+	const { theme } = useTheme();
 
 	// ENABLE ANUBIS PROTECTION FOR HOME PAGE
 	useAnubisProtection({
@@ -75,20 +83,47 @@ export default function Home() {
 			{/* Hero */}
 			<div id="hero" className="col-span-12 h-full w-full">
 				<Hero />
+				{/* Additional Hero Slider */}
+				<div className="col-span-10 col-start-2 mt-8 mb-16">
+					<HeroSlider slides={heroSlides} className="w-full" />
+				</div>
 			</div>
 
 			{/* Trust Us */}
-			<div id="trust-us" className="col-span-8 col-start-3 h-full w-full pt-20 pb-40">
+			<div id="trust-us" className="col-span-8 col-start-3 h-full w-full pt-20 pb-20">
 				<InfiniteLogoTicker />
 			</div>
-			<div className="col-span-12 flex h-full w-full flex-col pb-40">
+			
+			{/* 3D Feature Cards */}
+			<div className="col-span-10 col-start-2 mb-20">
+				<div className="text-center mb-10">
+					<h2 className="text-3xl font-bold text-white mb-4">Powerful Features</h2>
+					<p className="text-neutral-400 max-w-2xl mx-auto">Discover how our platform can transform your workflow with these powerful features</p>
+				</div>
+				<ThreeDCardGrid items={featureCards} />
+			</div>
+			
+			<div className="col-span-12 flex h-full w-full flex-col pb-20">
 				<TabletScroller />
+			</div>
+
+			{/* Modern Features Section */}
+			<div className="col-span-10 col-start-2 mb-40">
+				<SpotlightHover className="rounded-xl p-1">
+					<div className="bg-black/40 backdrop-blur-sm rounded-xl p-8 border border-neutral-800">
+						<div className="text-center mb-10">
+							<h2 className="text-3xl font-bold text-white dark:text-white mb-4">Everything You Need</h2>
+							<p className="text-white dark:text-neutral-400 max-w-2xl mx-auto">Our platform provides all the tools you need to automate your workflow</p>
+						</div>
+						<FeaturesGrid features={featuresGridData} spotlightColor="rgba(120, 119, 198, 0.15)" />
+					</div>
+				</SpotlightHover>
 			</div>
 
 			{/* Container Scroll */}
 			<div id="container-scroll" className="col-span-8 col-start-3 h-full w-full ">
 				{/* Features Bento */}
-				<div id="features-bento" className=" col-span-8 col-start-3 ">
+				<div id="features-bento" className="col-span-8 col-start-3">
 					<FeatureBoxesBento features={featureBoxesBento} />
 				</div>
 
@@ -116,21 +151,53 @@ export default function Home() {
 			{/* <BrandWordmark/> */}
 			{/* Features Section */}
 			<div id="features-section" className="col-span-8 col-start-3 h-full w-full ">
+				<div className="mb-12 text-center">
+					<h2 className={`text-3xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+						Powerful Features for Modern Developers
+					</h2>
+					<p className={`max-w-2xl mx-auto ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+						Discover the tools and capabilities that make AgenitiX the preferred choice for developers worldwide.
+					</p>
+				</div>
 				<FeatureBoxesPlain features={featureBoxesPlain} />
 			</div>
 
 			{/* Animated Testimonials */}
 			<div id="animated-testimonials" className="col-span-8 col-start-3 h-full w-full ">
+				<div className="mb-12 text-center">
+					<h2 className={`text-3xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+						What Our Users Are Saying
+					</h2>
+					<p className={`max-w-2xl mx-auto ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+						Hear from developers who have transformed their workflow with our platform.
+					</p>
+				</div>
 				<AnimatedTestimonialsDemo />
 			</div>
 
 			{/* Features Section 2 */}
 			<div id="features-section-2" className="col-span-8 col-start-3 h-full w-full ">
+				<div className="mb-12 text-center">
+					<h2 className={`text-3xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+						Integrated Development Experience
+					</h2>
+					<p className={`max-w-2xl mx-auto ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+						Seamlessly connect your workflow with our comprehensive suite of developer tools.
+					</p>
+				</div>
 				<FeatureBoxesIconed features={featureBoxesIconed} />
 			</div>
 
 			{/* Canvas Reveal Effect */}
 			<div id="canvas-reveal-effect" className="col-span-8 col-start-3 h-full w-full ">
+				<div className="mb-12 text-center">
+					<h2 className={`text-3xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+						Explore the Possibilities
+					</h2>
+					<p className={`max-w-2xl mx-auto ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+						Interact with our dynamic visualization to see how AgenitiX can enhance your development process.
+					</p>
+				</div>
 				<Revealer />
 			</div>
 

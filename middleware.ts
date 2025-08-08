@@ -3,13 +3,13 @@ import { verifyJWT } from "@/lib/anubis/crypto";
 import { adaptiveRateLimiter } from "@/lib/anubis/rate-limiter";
 import { analyzeRequest, trackRisk } from "@/lib/anubis/risk-engine";
 import { convexAuthNextjsMiddleware } from "@convex-dev/auth/nextjs/server";
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse, type NextFetchEvent } from "next/server";
 
 // Use Convex Auth middleware as the base
 const convexMiddleware = convexAuthNextjsMiddleware();
 
 // COMBINED MIDDLEWARE - Convex Auth + Anubis Protection
-export default async function middleware(request: NextRequest) {
+export default async function middleware(request: NextRequest, event: NextFetchEvent) {
 	const { pathname } = request.nextUrl;
 	
 	// Handle Gmail OAuth callbacks separately first, basically skip Convex middleware for Gmail
@@ -20,7 +20,7 @@ export default async function middleware(request: NextRequest) {
 	// Always let Convex Auth handle OAuth callbacks or auth API routes, basically route them to Convex middleware
 	if (pathname.startsWith('/api/auth') || request.nextUrl.searchParams.has('code')) {
 		// Add CORS headers for OAuth routes, basically handle OAuth and auth API with Convex middleware
-		const response = await convexMiddleware(request);
+		const response = await convexMiddleware(request, event);
 		
 		// Add CORS headers for OAuth development
 		if (process.env.NODE_ENV === "development" && response) {

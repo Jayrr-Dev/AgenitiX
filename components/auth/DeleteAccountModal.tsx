@@ -56,7 +56,10 @@ export const DeleteAccountModal = ({
   onClose,
 }: DeleteAccountModalProps) => {
   const { user, signOut, isAuthenticated, authToken } = useAuth();
-  const deleteAccount = useMutation(api.authFunctions.deleteAccount);
+  // Legacy mutation removed; prevent accidental calls
+  const deleteAccount = async (_args: any) => {
+    throw new Error("Legacy deleteAccount removed. Provide a new Convex mutation if needed.");
+  };
   const router = useRouter();
 
   const [confirmationInput, setConfirmationInput] = useState("");

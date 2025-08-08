@@ -318,7 +318,7 @@ const EmailTemplateNode = memo(
   ({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     // -------------------------------------------------------------------------
     const { nodeData, updateNodeData } = useNodeData(id, {});
-    const { authToken: token } = useAuth();
+    const { user } = useAuth();
 
     // -------------------------------------------------------------------------
     // STATE MANAGEMENT (grouped for clarity)
@@ -368,9 +368,10 @@ const EmailTemplateNode = memo(
     // -------------------------------------------------------------------------
     // 4.3  Convex integration
     // -------------------------------------------------------------------------
-    const emailTemplates = useQuery(api.emailAccounts.getEmailReplyTemplates, {
-      token_hash: token || undefined,
-    });
+    const emailTemplates = useQuery(
+      api.emailAccounts.getEmailReplyTemplates,
+      user ? {} : "skip",
+    );
 
     const saveTemplateMutation = useMutation(
       api.emailAccounts.storeEmailReplyTemplate
@@ -432,9 +433,7 @@ const EmailTemplateNode = memo(
 
     /** Save template */
     const handleSaveTemplate = useCallback(async () => {
-      console.log("🔐 Auth Debug:", { token: token ? "present" : "missing", tokenLength: token?.length });
-      
-      if (!token) {
+      if (!user) {
         toast.error("Authentication required - please login first");
         return;
       }
@@ -457,7 +456,6 @@ const EmailTemplateNode = memo(
         };
 
         const result = await saveTemplateMutation({
-          token_hash: token || undefined,
           name: templateName,
           subject: subject,
           body: htmlContent || textContent,
@@ -505,7 +503,7 @@ const EmailTemplateNode = memo(
         });
       }
     }, [
-      token,
+      user,
       templateName,
       category,
       subject,

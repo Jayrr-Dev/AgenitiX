@@ -32,7 +32,6 @@ import { useNodeData } from "@/hooks/useNodeData";
 import { EmailAccountCollapsed } from "./components/EmailAccountCollapsed";
 import { EmailAccountExpanded } from "./components/EmailAccountExpanded";
 import { EmailAccountProvider } from "./components/EmailAccountProvider";
-import { EmailAccountDebugger } from "./components/EmailAccountDebugger";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 
 /* ------------------------------------------------------------------ */
@@ -199,10 +198,6 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 
   const categoryStyles = { primary: "text-[--node-email-text]" };
   const { isExpanded, isEnabled, isConnected } = nodeData;
-  
-  // Show debugger in development mode for OAuth providers
-  const showDebugger = process.env.NODE_ENV === 'development' && 
-    ['gmail', 'outlook', 'yahoo'].includes(nodeData.provider);
 
   /* ----- output effect --------------------------------------------- */
   const lastOutputRef = useRef<Map<string, unknown> | null>(null);
@@ -261,25 +256,6 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
   return (
     <EmailAccountProvider nodeData={nodeData} updateNodeData={updateNodeData}>
       <>
-        {/* Floating Debug Panel - positioned to the left of the node */}
-        {showDebugger && (
-          <div
-            className="absolute z-50"
-            style={{
-              left: '-320px', // Position to the left of the node
-              top: '0px',
-              width: '300px',
-              pointerEvents: 'auto', // Ensure interactions work
-            }}
-          >
-            <EmailAccountDebugger 
-              nodeData={nodeData} 
-              isEnabled={isEnabled}
-              className="shadow-lg"
-            />
-          </div>
-        )}
-
         {/* Output handle */}
         <Handle
           type="source"

@@ -1,9 +1,9 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useInView } from "framer-motion";
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useInView } from "react-intersection-observer";
 
 export const InfiniteMovingCards = ({
   items,
@@ -29,11 +29,18 @@ export const InfiniteMovingCards = ({
   pauseOnHover?: boolean;
   className?: string;
 }) => {
+
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLUListElement>(null);
 
   // Detect visibility
-  const isInView = useInView(containerRef, { once: false, margin: "-10% 0px" });
+  const { ref: inViewRef, inView: isInView } = useInView();
+
+  // Combine refs
+  const combinedRef = (node: HTMLDivElement | null) => {
+    containerRef.current = node;
+    inViewRef(node);
+  };
 
   const [start, setStart] = useState(false);
 
@@ -72,10 +79,9 @@ export const InfiniteMovingCards = ({
 
     containerRef.current.style.setProperty("--animation-duration", duration);
   };
-
   return (
     <div
-      ref={containerRef}
+      ref={combinedRef}
       className={cn(
         "scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]",
         className
