@@ -10,9 +10,10 @@
  * Keywords: pie-menu-actions, workflow-operations, context-aware, shortcuts, node-operations
  */
 
-import type { PieMenuAction } from "@/components/ui/pie-menu";
+import type { PieMenuAction, PieMenuSubItem } from "@/components/ui/pie-menu";
 import { usePieMenu } from "@/components/ui/pie-menu";
 import { useCallback, useMemo } from "react";
+import { getAllNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 import { useUndoRedo } from "../../action-toolbar/history/undo-redo-context";
 import {
   useAddNode,
@@ -32,12 +33,50 @@ export interface UsePieMenuActionsOptions {
 }
 
 /**
+ * Generate sub-menu items for node creation
+ */
+function generateNodeSubMenuItems(pieMenuPosition: { x: number; y: number }): PieMenuSubItem[] {
+  const allNodes = getAllNodeSpecMetadata();
+
+  return allNodes.map(node => ({
+    id: node.kind,
+    label: node.displayName,
+    icon: node.icon || "Circle",
+    category: node.category,
+    action: () => {
+      console.log(`🎯 Creating node: ${node.kind} at pie menu center`);
+
+      // Create node at pie menu position
+      const newNode = {
+        id: generateNodeId(),
+        type: node.kind,
+        position: {
+          x: pieMenuPosition.x - 60, // Offset to center the node
+          y: pieMenuPosition.y - 30,
+        },
+        deletable: true,
+        data: {
+          ...node.initialData,
+          isActive: false,
+        },
+      };
+
+      // Add node to flow
+      const event = new CustomEvent('create-node-direct', {
+        detail: { node: newNode }
+      });
+      window.dispatchEvent(event);
+    },
+  }));
+}
+
+/**
  * Hook that provides context-aware pie menu actions
  * Actions change based on current selection and context
  */
 export function usePieMenuActions(options: UsePieMenuActionsOptions = {}) {
   const { mousePosition, includeDebugActions = false } = options;
-  
+
   // Get pie menu context to access center position and state
   const { position: pieMenuPosition, actions: pieMenuActions, isVisible: pieMenuVisible } = usePieMenu();
 
@@ -113,66 +152,24 @@ export function usePieMenuActions(options: UsePieMenuActionsOptions = {}) {
       );
     }
 
-    // CREATION ACTIONS - Add new nodes at pie menu center
+    // CREATION ACTIONS - Add new nodes with expandable sub-menu
     baseActions.push({
       id: "add-node",
       label: "Add Node",
       icon: "Plus",
       shortcut: "Tab",
-      action: () => { 
-        // Use pie menu center, but fallback to mouse position if pie menu position is not initialized
-        // Fixed: Detect if pieMenu has been actually shown vs. initial {x: 0, y: 0} state
-        const isPieMenuInitialized = pieMenuPosition && 
-          typeof pieMenuPosition.x === 'number' && 
-          typeof pieMenuPosition.y === 'number' &&
-          !isNaN(pieMenuPosition.x) && 
-          !isNaN(pieMenuPosition.y) &&
-          // Additional check: if position is {0,0} but pieMenu has never been shown with actions,
-          // it's likely the initial uninitialized state
-          !(pieMenuPosition.x === 0 && pieMenuPosition.y === 0 && pieMenuActions.length === 0);
-        
-        const isValidPosition = isPieMenuInitialized;
-        
-        // Determine the best position to use
-        let targetPosition;
-        if (isValidPosition) {
-          targetPosition = pieMenuPosition;
-        } else if (mousePosition && mousePosition.x > 0 && mousePosition.y > 0) {
-          targetPosition = mousePosition;
-        } else {
-          // Ultimate fallback: center of screen
-          targetPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-        }
-        
-        // Determine which position source was used
-        let positionSource;
-        if (isValidPosition) {
-          positionSource = 'pieMenu center';
-        } else if (mousePosition && mousePosition.x > 0 && mousePosition.y > 0) {
-          positionSource = 'mouse position';
-        } else {
-          positionSource = 'screen center (ultimate fallback)';
-        }
-        
-        console.log('🎯 PieMenu: Dispatching show-add-node-menu event', {
-          pieMenuPosition,
-          mousePosition,
-          targetPosition,
-          isValidPosition,
-          positionSource,
-          usingPieMenuCenter: isValidPosition,
-          pieMenuState: {
-            actionsCount: pieMenuActions.length,
-            isVisible: pieMenuVisible,
-            isInitialState: pieMenuPosition.x === 0 && pieMenuPosition.y === 0 && pieMenuActions.length === 0
-          }
-        });
-        
-        const event = new CustomEvent('show-add-node-menu', {
-          detail: { position: targetPosition }
-        });
-        window.dispatchEvent(event);
-        console.log('✅ PieMenu: Event dispatched successfully');
+      action: () => {
+        // Default action if clicked directly (fallback)
+        console.log('🎯 PieMenu: Add Node clicked directly - showing first available node');
+      },
+      subMenu: {
+        items: generateNodeSubMenuItems(pieMenuPosition),
+        onHover: () => {
+          console.log('🎯 PieMenu: Add Node hovered - showing sub-menu');
+        },
+        onLeave: () => {
+          console.log('🎯 PieMenu: Add Node hover left');
+        },
       },
     });
 

@@ -411,6 +411,40 @@ const FlowEditorInternal = () => {
     [screenToFlowPosition, addNode, recordAction, isReadOnly]
   );
 
+  // Handle direct node creation from pie menu sub-menu
+  React.useEffect(() => {
+    const handleCreateNodeDirect = (event: CustomEvent) => {
+      if (isReadOnly) {
+        console.log("Direct node creation disabled in read-only mode");
+        return;
+      }
+
+      const { node } = event.detail;
+      console.log('🎯 FlowEditor: Creating node directly from pie menu', node);
+      
+      try {
+        addNode(node);
+        
+        // Record node creation for undo/redo
+        recordAction("node_add", {
+          nodeType: node.type,
+          nodeId: node.id,
+          position: node.position,
+        });
+        
+        console.log('✅ FlowEditor: Node created successfully');
+      } catch (error) {
+        console.error("❌ Failed to create node directly:", error);
+      }
+    };
+
+    window.addEventListener('create-node-direct', handleCreateNodeDirect as EventListener);
+    
+    return () => {
+      window.removeEventListener('create-node-direct', handleCreateNodeDirect as EventListener);
+    };
+  }, [addNode, recordAction, isReadOnly]);
+
   const selectedNode = React.useMemo(
     () => nodes.find((n) => n.id === selectedNodeId) || null,
     [nodes, selectedNodeId]

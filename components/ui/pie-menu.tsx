@@ -47,6 +47,20 @@ export interface PieMenuAction {
   action: () => void;
   shortcut?: string;
   disabled?: boolean;
+  // Sub-menu support for expandable actions
+  subMenu?: {
+    items: PieMenuSubItem[];
+    onHover?: () => void;
+    onLeave?: () => void;
+  };
+}
+
+export interface PieMenuSubItem {
+  id: string;
+  label: string;
+  icon?: React.ReactNode | string;
+  action: () => void;
+  category?: string;
 }
 
 export interface PieMenuPosition {
@@ -63,6 +77,11 @@ interface PieMenuContextType {
   hidePieMenu: () => void;
   setSelectedIndex: (index: number) => void;
   executeAction: (index: number) => void;
+  // Sub-menu support
+  activeSubMenu: string | null;
+  subMenuItems: PieMenuSubItem[];
+  showSubMenu: (actionId: string, items: PieMenuSubItem[]) => void;
+  hideSubMenu: () => void;
 }
 
 // ------------------------------------------------------------------------------------
@@ -172,6 +191,9 @@ export function PieMenuProvider({ children }: { children: React.ReactNode }) {
   const [position, setPosition] = useState<PieMenuPosition>({ x: 0, y: 0 });
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [actions, setActions] = useState<PieMenuAction[]>([]);
+  // Sub-menu state
+  const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
+  const [subMenuItems, setSubMenuItems] = useState<PieMenuSubItem[]>([]);
 
   const showPieMenu = useCallback(
     (pos: PieMenuPosition, menu: PieMenuAction[]) => {
@@ -199,6 +221,17 @@ export function PieMenuProvider({ children }: { children: React.ReactNode }) {
     [actions, hidePieMenu]
   );
 
+  // Sub-menu functions
+  const showSubMenu = useCallback((actionId: string, items: PieMenuSubItem[]) => {
+    setActiveSubMenu(actionId);
+    setSubMenuItems(items);
+  }, []);
+
+  const hideSubMenu = useCallback(() => {
+    setActiveSubMenu(null);
+    setSubMenuItems([]);
+  }, []);
+
   const value = useMemo<PieMenuContextType>(
     () => ({
       isVisible,
@@ -209,6 +242,11 @@ export function PieMenuProvider({ children }: { children: React.ReactNode }) {
       hidePieMenu,
       setSelectedIndex,
       executeAction,
+      // Sub-menu properties
+      activeSubMenu,
+      subMenuItems,
+      showSubMenu,
+      hideSubMenu,
     }),
     [
       isVisible,
@@ -218,6 +256,10 @@ export function PieMenuProvider({ children }: { children: React.ReactNode }) {
       showPieMenu,
       hidePieMenu,
       executeAction,
+      activeSubMenu,
+      subMenuItems,
+      showSubMenu,
+      hideSubMenu,
     ]
   );
 
@@ -503,10 +545,27 @@ function ActionButton(props: {
   index: number;
   isSelected: boolean;
   executeAction: (index: number) => void;
+  showSubMenu: (actionId: string, items: PieMenuSubItem[]) => void;
+  hideSubMenu: () => void;
 }) {
-  const { action, position, index, isSelected, executeAction } = props;
+  const { action, position, index, isSelected, executeAction, showSubMenu, hideSubMenu } = props;
   const left = Math.round(CENTER_OFFSET + position.x);
   const top = Math.round(CENTER_OFFSET + position.y);
+
+  // Handle hover for sub-menu
+  const handleMouseEnter = useCallback(() => {
+    if (action.subMenu) {
+      showSubMenu(action.id, action.subMenu.items);
+      action.subMenu.onHover?.();
+    }
+  }, [action, showSubMenu]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (action.subMenu) {
+      // Don't hide immediately, let the sub-menu handle it
+      action.subMenu.onLeave?.();
+    }
+  }, [action]);
 
   return (
     <motion.button
@@ -550,11 +609,21 @@ function ActionButton(props: {
       }}
       onClick={(e) => {
         e.stopPropagation();
-        if (!action.disabled) executeAction(index);
+        if (!action.disabled) {
+          // If it has a sub-menu, don't execute immediately
+          if (action.subMenu) {
+            // Toggle sub-menu or execute default action
+            return;
+          }
+          executeAction(index);
+        }
       }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       role="menuitem"
       aria-label={`${action.label}${action.shortcut ? ` (${action.shortcut})` : ""}`}
       aria-disabled={action.disabled}
+      aria-haspopup={action.subMenu ? "menu" : undefined}
     >
       <span
         className={cn(
@@ -565,6 +634,79 @@ function ActionButton(props: {
         {renderIcon(action.icon)}
       </span>
     </motion.button>
+  );
+}
+
+// ------------------------------------------------------------------------------------
+// Sub-Menu Panel – lateral expandable panels for node categories
+// ------------------------------------------------------------------------------------
+
+function SubMenuPanel(props: {
+  items: PieMenuSubItem[];
+  position: PieMenuPosition;
+  onItemClick: (item: PieMenuSubItem) => void;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+}) {
+  const { items, position, onItemClick, onMouseEnter, onMouseLeave } = props;
+
+  // Group items by category
+  const itemsByCategory = useMemo(() => {
+    const groups: Record<string, PieMenuSubItem[]> = {};
+    items.forEach(item => {
+      const category = item.category || 'Other';
+      if (!groups[category]) groups[category] = [];
+      groups[category].push(item);
+    });
+    return groups;
+  }, [items]);
+
+  // Position the panel to the right of the pie menu
+  const panelStyle = {
+    left: position.x + 120, // Offset from pie menu center
+    top: position.y - 100,  // Center vertically relative to pie menu
+  };
+
+  return (
+    <motion.div
+      className="absolute z-50 bg-background border border-border rounded-lg shadow-xl p-3 min-w-[200px] max-w-[300px]"
+      style={panelStyle}
+      initial={{ opacity: 0, scale: 0.9, x: -20 }}
+      animate={{ opacity: 1, scale: 1, x: 0 }}
+      exit={{ opacity: 0, scale: 0.9, x: -20 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      {Object.entries(itemsByCategory).map(([category, categoryItems]) => (
+        <div key={category} className="mb-3 last:mb-0">
+          {/* Category Header */}
+          <div className="text-xs font-medium text-muted-foreground mb-2 px-1">
+            {category}
+          </div>
+          
+          {/* Items Grid */}
+          <div className="grid grid-cols-2 gap-1">
+            {categoryItems.map((item) => (
+              <motion.button
+                key={item.id}
+                className="flex items-center gap-2 p-2 rounded hover:bg-accent hover:text-accent-foreground text-left text-xs transition-colors"
+                onClick={() => onItemClick(item)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {item.icon && (
+                  <span className="flex-shrink-0 w-4 h-4">
+                    {renderIcon(item.icon)}
+                  </span>
+                )}
+                <span className="truncate">{item.label}</span>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </motion.div>
   );
 }
 
@@ -690,6 +832,11 @@ function PieMenuRendererPortal() {
     setSelectedIndex,
     executeAction,
     hidePieMenu,
+    // Sub-menu properties
+    activeSubMenu,
+    subMenuItems,
+    showSubMenu,
+    hideSubMenu,
   } = usePieMenu();
 
   // Track mouse position for debugging, basically store current mouse coordinates
@@ -872,6 +1019,8 @@ function PieMenuRendererPortal() {
             index={i}
             isSelected={selectedIndex === i}
             executeAction={executeAction}
+            showSubMenu={showSubMenu}
+            hideSubMenu={hideSubMenu}
           />
         ))}
 
@@ -888,6 +1037,27 @@ function PieMenuRendererPortal() {
             onMeasure={onMeasure}
           />
         ))}
+
+        {/* Sub-Menu Panel */}
+        <AnimatePresence>
+          {activeSubMenu && subMenuItems.length > 0 && (
+            <SubMenuPanel
+              items={subMenuItems}
+              position={position}
+              onItemClick={(item) => {
+                item.action();
+                hidePieMenu();
+              }}
+              onMouseEnter={() => {
+                // Keep sub-menu open when hovering over it
+              }}
+              onMouseLeave={() => {
+                // Hide sub-menu when leaving
+                hideSubMenu();
+              }}
+            />
+          )}
+        </AnimatePresence>
       </motion.div>
     </>
   );
