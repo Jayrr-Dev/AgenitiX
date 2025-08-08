@@ -28,3 +28,8 @@ export { default as testNode } from "./test/testNode.node";
 export { default as testToast } from "./test/testToast.node";
 export { default as triggerToggle } from "./trigger/triggerToggle.node";
 export { default as viewText } from "./view/viewText.node";
+export { default as logicAnd } from "./logic/logicAnd.node";
+export { default as logicOr } from "./logic/logicOr.node";
+export { default as logicNot } from "./logic/logicNot.node";
+export { default as logicXor } from "./logic/logicXor.node";
+export { default as logicXnor } from "./logic/logicXnor.node";

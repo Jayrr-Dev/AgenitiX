@@ -11,6 +11,7 @@ export const CATEGORIES = {
 	FLOW: "FLOW",
 	EMAIL: "EMAIL",
 	TOOLS: "TOOLS",
+	LOGIC: "LOGIC",
 } as const;
 
 export type NodeCategory = (typeof CATEGORIES)[keyof typeof CATEGORIES];

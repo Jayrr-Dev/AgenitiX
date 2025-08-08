@@ -38,6 +38,7 @@ export const TAB_CONFIG_B: readonly TabConfig[] = [
 	{ key: "TEST", label: "Test" },
 	{ key: "CYCLE", label: "Cycle" },
 	{ key: "STORE", label: "Store" },
+	{ key: "LOGIC", label: "Logic" },
 	{ key: "EMAIL", label: "Email" },
 	{ key: "FLOW", label: "Flow" },
 	{ key: "TIME", label: "Time" },
