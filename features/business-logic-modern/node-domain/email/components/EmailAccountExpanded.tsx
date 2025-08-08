@@ -13,7 +13,7 @@
 import { memo } from "react";
 import { EmailAccountAuth } from "./EmailAccountAuth";
 import { EmailAccountForm } from "./EmailAccountForm";
-import { EmailAccountStatus } from "./EmailAccountStatus";
+
 // No import needed for types
 
 // Expanded view styling constants
@@ -59,7 +59,7 @@ export const EmailAccountExpanded = memo(
           />
 
           {/* Status Section */}
-          <EmailAccountStatus nodeData={nodeData} isEnabled={isEnabled} />
+          {/* <EmailAccountStatus nodeData={nodeData} isEnabled={isEnabled} /> */}
         </div>
       </div>
     );

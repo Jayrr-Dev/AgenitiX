@@ -19,7 +19,7 @@ import {
   useMemo,
   useRef,
 } from "react";
-import { toast } from "sonner";
+import { useNodeToast } from "@/hooks/useNodeToast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
 import { useAction, useMutation, useConvexAuth as useConvexAuthClient } from "convex/react";
@@ -54,6 +54,7 @@ interface EmailAccountProviderProps {
   children: ReactNode;
   nodeData: Record<string, unknown>;
   updateNodeData: (d: Partial<Record<string, unknown>>) => void;
+  nodeId: string;
 }
 
 const BC_PREFIX = "oauth_";
@@ -109,7 +110,10 @@ export const EmailAccountProvider = ({
   children,
   nodeData,
   updateNodeData,
+  nodeId,
 }: EmailAccountProviderProps) => {
+  // Node-local toast helpers
+  const { showSuccess, showError, showInfo, showWarning } = useNodeToast(nodeId);
   /* -------------------------------------------------------------------- */
   /* External hooks / mutations                                           */
   /* -------------------------------------------------------------------- */
@@ -153,10 +157,7 @@ export const EmailAccountProvider = ({
       });
       
       if (!token) {
-        console.error('🔍 onOAuthSuccess: No token available, aborting save');
-        toast.error("Authentication required", {
-          description: "Please sign in to connect your email account"
-        });
+        showError("Authentication required", "Please sign in to connect your email account");
         return;
       }
       try {
@@ -223,13 +224,11 @@ export const EmailAccountProvider = ({
         };
         
         updateNodeData(updateData);
-        toast.success("Email account connected!", {
-          description: `Successfully connected ${authData.email}`,
-        });
+        showSuccess("Email account connected!", `Successfully connected ${authData.email}`);
       } catch (err) {
         const msg = toMessage(err);
         updateNodeData({ lastError: msg });
-        toast.error("OAuth save failed", { description: msg });
+        showError("OAuth save failed", msg);
       }
     },
     [storeEmailAccountAction, token, updateNodeData, convexClientAuth.isAuthenticated, convexClientAuth.isLoading],
@@ -282,9 +281,7 @@ export const EmailAccountProvider = ({
         if (!authUrl) throw new Error("Server did not return authUrl");
 
         // Show user feedback before opening popup
-        toast.info(`Opening ${provider} authentication...`, {
-          description: "A new window will open for authentication"
-        });
+        showInfo(`Opening ${provider}...`, "A new window will open for authentication");
 
         // Open OAuth provider in popup window, basically keep current page intact
         const popup = window.open(
@@ -335,9 +332,7 @@ export const EmailAccountProvider = ({
             onOAuthSuccess(event.data.authData);
           }, 100);
           
-          toast.success("Email account connected!", {
-            description: "Authentication completed successfully"
-          });
+          showSuccess("Email account connected!", "Authentication completed successfully");
           } else if (event.data?.type === "OAUTH_ERROR") {
             console.log('🔍 OAUTH_ERROR message received:', event.data.error);
             clearInterval(checkPopupClosed);
@@ -348,9 +343,7 @@ export const EmailAccountProvider = ({
               lastError: event.data.error || "OAuth authentication failed",
             });
             popup.close();
-            toast.error("Authentication failed", {
-              description: event.data.error || "Please try again"
-            });
+            showError("Authentication failed", event.data.error || "Please try again");
           }
         };
 
@@ -383,9 +376,7 @@ export const EmailAccountProvider = ({
           console.log('🔍 DELAYED: Calling onOAuthSuccess after context stabilization');
           onOAuthSuccess(event.data.authData);
         }, 100);
-            toast.success("Email account connected!", {
-              description: "Authentication completed successfully"
-            });
+            showSuccess("Email account connected!", "Authentication completed successfully");
           }
         };
 
@@ -413,9 +404,7 @@ export const EmailAccountProvider = ({
             isAuthenticating: false,
             lastError: "Authentication timeout - please try again",
           });
-          toast.error("Authentication timeout", {
-            description: "Please try connecting your email again"
-          });
+          showError("Authentication timeout", "Please try connecting your email again");
         }, 300000); // 5 minutes
 
       } catch (err) {
@@ -423,7 +412,7 @@ export const EmailAccountProvider = ({
           isAuthenticating: false,
           lastError: toMessage(err),
         });
-        toast.error("Authentication Error", { description: toMessage(err) });
+        showError("Authentication Error", toMessage(err));
       }
     },
     [
@@ -474,13 +463,11 @@ export const EmailAccountProvider = ({
           accountId: id,
           lastError: "",
         });
-        toast.success("Email account configured!", {
-          description: `Successfully configured ${config.email}`,
-        });
+        showSuccess("Email account configured!", `Successfully configured ${config.email}`);
       } catch (err) {
         const msg = toMessage(err);
         updateNodeData({ connectionStatus: "error", lastError: msg });
-        toast.error("Configuration failed", { description: msg });
+        showError("Configuration failed", msg);
       }
     },
     [storeEmailAccountAction, token, updateNodeData, convexClientAuth.isAuthenticated, convexClientAuth.isLoading],
@@ -495,7 +482,7 @@ export const EmailAccountProvider = ({
       lastError: "",
       accountId: undefined,
     });
-    toast.info("Authentication cancelled");
+    showInfo("Authentication cancelled");
   }, [updateNodeData]);
 
   const handleTestConnection = useCallback(
@@ -513,7 +500,7 @@ export const EmailAccountProvider = ({
           lastValidated: Date.now(),
           lastError: "",
         });
-        toast.success("Connection test successful!");
+        showSuccess("Connection test successful!");
       } catch (err) {
         const msg = toMessage(err);
         updateNodeData({
@@ -521,7 +508,7 @@ export const EmailAccountProvider = ({
           isConnected: false,
           lastError: msg,
         });
-        toast.error("Connection test failed", { description: msg });
+        showError("Connection test failed", msg);
       }
     },
     [token, updateNodeData, validateConnection],
@@ -542,12 +529,15 @@ export const EmailAccountProvider = ({
           isConfigured: false,
           lastValidated: undefined,
           accountId: undefined,
+          // Clear identity fields after logout, basically remove email and name from UI
+          email: "",
+          displayName: "",
           lastError: "",
         });
-        toast.success("Disconnected", { description: "Email account logged out" });
+        showInfo("Signed out", "Email account logged out");
       } catch (err) {
         const msg = toMessage(err);
-        toast.error("Failed to disconnect", { description: msg });
+        showError("Failed to disconnect", msg);
       }
     },
     [deactivateAccount, token, updateNodeData],

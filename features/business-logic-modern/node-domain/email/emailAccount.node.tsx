@@ -43,7 +43,7 @@ import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/n
 
 export const EmailAccountDataSchema = z
   .object({
-    provider: z.enum(["gmail", "outlook", "yahoo", "imap", "smtp"]),
+    provider: z.enum(["gmail", "outlook", "imap", "smtp"]),
     email: z.string().default(""),
     displayName: z.string().default(""),
 
@@ -165,12 +165,13 @@ const createDynamicSpec = (
         "lastError",
         "isConfigured",
         "isConnected",
+          // Hide email and displayName to avoid manual typing; these come from OAuth for oauth2 providers
+          "email",
+          "displayName",
       ],
       customFields: [
         { key: "isEnabled", type: "boolean", label: "Enable" },
         { key: "provider", type: "select", label: "Email Provider" },
-        { key: "email", type: "text", label: "Email Address", placeholder: "your.email@example.com" },
-        { key: "displayName", type: "text", label: "Display Name", placeholder: "Your Name" },
         { key: "isExpanded", type: "boolean", label: "Expand" },
       ],
     },
@@ -306,25 +307,30 @@ const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => 
 
   /* ----- render ----------------------------------------------------- */
   return (
-    <EmailAccountProvider nodeData={nodeData} updateNodeData={updateNodeData}>
+    <EmailAccountProvider nodeId={id} nodeData={nodeData} updateNodeData={updateNodeData}>
       <>
         {/* Handles are rendered by scaffold from spec */}
 
         <LabelNode nodeId={id} label={nodeData.label ?? spec.displayName} />
 
         {isExpanded ? (
+          <> 
           <EmailAccountExpanded
             nodeData={nodeData}
             updateNodeData={updateNodeData}
             isEnabled={isEnabled}
             isAuthenticating={nodeData.isAuthenticating}
           />
+          </>
         ) : (
+
+   
           <EmailAccountCollapsed
             nodeData={nodeData}
             categoryStyles={categoryStyles}
             onToggleExpand={toggleExpand}
           />
+
         )}
 
         <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />

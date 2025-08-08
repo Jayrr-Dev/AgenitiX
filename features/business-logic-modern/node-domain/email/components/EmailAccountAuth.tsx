@@ -22,6 +22,8 @@ export interface EmailNodeData {
   email?: string;
   displayName?: string;
   isAuthenticating?: boolean;
+  isConnected?: boolean;
+  accountId?: string;
 
   /* Manual config */
   imapHost?: string;
@@ -50,7 +52,6 @@ const PROVIDER_MAP: Record<
 > = {
   gmail: { name: "Gmail", mode: "oauth2" },
   outlook: { name: "Outlook", mode: "oauth2" },
-  yahoo: { name: "Yahoo", mode: "oauth2" },
   imap: { name: "IMAP", mode: "manual" },
   smtp: { name: "SMTP", mode: "manual" },
 };
@@ -123,7 +124,7 @@ export const EmailAccountAuth = memo(
 
     /** Launch OAuth2 redirect flow */
     const onOAuthClick = useCallback(() => {
-      if (isOAuth && email) {
+      if (isOAuth) {
         // Dispatch debug event for OAuth initiation
         window.dispatchEvent(new CustomEvent('email-debug', {
           detail: {
@@ -222,7 +223,7 @@ export const EmailAccountAuth = memo(
                   ? !isEnabled
                   : isAuthInProgress
                     ? !isEnabled
-                    : (!isEnabled || !email || isLocked)
+                    : (!isEnabled || isLocked)
               }
               onClick={() => {
                 if (nodeData.isConnected && nodeData.accountId) {

@@ -1,3 +1,4 @@
+"use client";
 /**
  * emailReader NODE – Email inbox parsing and message retrieval
  *
@@ -40,7 +41,9 @@ import {
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { Handle, Position, useReactFlow, useStore } from "@xyflow/react";
+import { useStore } from "@xyflow/react";
+import { findEdgesByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
+import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
@@ -48,6 +51,7 @@ import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
 import { toast } from "sonner";
 import { useFlowMetadataOptional } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
+import EnforceNumericInput from "@/components/EnforceNumericInput";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -183,7 +187,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
       },
       {
         id: "account-input",
-        code: "a",
+        code: "j",
         position: "left",
         type: "target",
         dataType: "JSON",
@@ -377,15 +381,32 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   // 4.4  Get connected email account nodes
   // -------------------------------------------------------------------------
-  const { getNodes, getEdges } = useReactFlow();
-
   const connectedAccountIds = useMemo(() => {
-    const edges = _edges.filter(
-      (e) => e.target === id && e.targetHandle === "account-input__a"
-    );
+    // [Extract account IDs from connected account-output handles], basically read from source node outputs
+    const incomingEdges = findEdgesByHandle(_edges, id, "account-input");
+    if (!incomingEdges || incomingEdges.length === 0) return [] as string[];
 
-    return edges.map((e) => e.source);
-  }, [_edges, id]);
+    const ids = new Set<string>();
+    for (const edge of incomingEdges) {
+      const sourceNode = _nodes.find((n) => n.id === edge.source);
+      const output = (sourceNode?.data?.output ?? {}) as Record<string, unknown>;
+      // Prefer explicit handle key from output map
+      const explicit = output["account-output"] as Record<string, unknown> | undefined;
+      if (explicit && typeof explicit === "object") {
+        const maybeId = (explicit as any).accountId;
+        if (typeof maybeId === "string" && maybeId.length > 0) ids.add(maybeId);
+        continue;
+      }
+      // Fallback: derive from source handle id if needed
+      if (edge.sourceHandle) {
+        const handleId = normalizeHandleId(edge.sourceHandle);
+        const val = output[handleId] as Record<string, unknown> | undefined;
+        const maybeId = (val as any)?.accountId;
+        if (typeof maybeId === "string" && maybeId.length > 0) ids.add(maybeId);
+      }
+    }
+    return Array.from(ids);
+  }, [_edges, _nodes, id]);
 
   // -------------------------------------------------------------------------
   // 4.5  Available accounts (filtered by connected nodes)
@@ -447,19 +468,21 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   );
 
   /** Handle batch size change */
-  const handleBatchSizeChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const value = Number.parseInt(e.target.value) || 10;
-      updateNodeData({ batchSize: Math.max(1, Math.min(100, value)) });
+  const handleBatchSizeChangeNumeric = useCallback(
+    (numericText: string) => {
+      const parsed = Number.parseInt(numericText || "1", 10);
+      const clamped = Math.max(1, Math.min(100, isNaN(parsed) ? 1 : parsed));
+      updateNodeData({ batchSize: clamped });
     },
     [updateNodeData]
   );
 
   /** Handle max messages change */
-  const handleMaxMessagesChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const value = Number.parseInt(e.target.value) || 50;
-      updateNodeData({ maxMessages: Math.max(1, Math.min(1000, value)) });
+  const handleMaxMessagesChangeNumeric = useCallback(
+    (numericText: string) => {
+      const parsed = Number.parseInt(numericText || "1", 10);
+      const clamped = Math.max(1, Math.min(1000, isNaN(parsed) ? 1 : parsed));
+      updateNodeData({ maxMessages: clamped });
     },
     [updateNodeData]
   );
@@ -624,19 +647,6 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   return (
     <>
-      {/* Input handle for email account connection */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="account-input"
-        style={{
-          background: "#555",
-          width: 8,
-          height: 8,
-          top: 20,
-        }}
-      />
-
       {/* Editable label */}
       <LabelNode
         nodeId={id}
@@ -647,31 +657,24 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
         <div
           className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
         >
-          <div className={CONTENT.header}>
-            <span className="font-medium text-sm">Email Reader</span>
-            <div
-              className={`text-xs ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}
-            >
-              {connectionStatus === "reading"
-                ? "📖"
-                : connectionStatus === "connected"
-                  ? "✓"
-                  : connectionStatus === "error"
-                    ? "✗"
-                    : "○"}{" "}
-              {connectionStatus}
-            </div>
-          </div>
+            
+       
+          
 
-          <div className={`${CONTENT.body} max-h-[400px] overflow-y-auto`}>
+            <div className={`${CONTENT.body} max-h-[400px] overflow-y-auto`}>
             {/* Account Selection */}
             <div>
+              <div className="flex justify-between flex-row w-full ">
+
               <label
                 htmlFor="email-account-select"
-                className="mb-1 block text-gray-600 text-xs"
-              >
-                Email Account:
+                className="block text-gray-600 text-xs"
+                >
+                Email Account
               </label>
+            <div className={`text-xs  ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}>{connectionStatus}</div>
+
+                </div>
               <select
                 id="email-account-select"
                 value={accountId}
@@ -686,7 +689,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
                     value={account.value}
                     disabled={!account.isActive}
                   >
-                    {account.label} {account.isActive ? "" : "(inactive)"}
+                      {account.label} {account.isActive ? "" : "(inactive)"}
                   </option>
                 ))}
               </select>
@@ -701,15 +704,14 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
                 >
                   Batch Size:
                 </label>
-                <input
+                <EnforceNumericInput
                   id="batch-size-input"
-                  type="number"
                   value={batchSize}
-                  onChange={handleBatchSizeChange}
-                  min="1"
-                  max="100"
+                  onValueChange={handleBatchSizeChangeNumeric}
                   className="w-full rounded border border-gray-300 p-2 text-xs"
                   disabled={!isEnabled || connectionStatus === "reading"}
+                  placeholder="10"
+                  aria-label="Batch Size"
                 />
               </div>
               <div>
@@ -719,15 +721,14 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
                 >
                   Max Messages:
                 </label>
-                <input
+                <EnforceNumericInput
                   id="max-messages-input"
-                  type="number"
                   value={maxMessages}
-                  onChange={handleMaxMessagesChange}
-                  min="1"
-                  max="1000"
+                  onValueChange={handleMaxMessagesChangeNumeric}
                   className="w-full rounded border border-gray-300 p-2 text-xs"
                   disabled={!isEnabled || connectionStatus === "reading"}
+                  placeholder="50"
+                  aria-label="Max Messages"
                 />
               </div>
             </div>
@@ -798,9 +799,7 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
                 className="flex-1 rounded bg-blue-500 p-2 text-white text-xs hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
                 type="button"
               >
-                {connectionStatus === "reading"
-                  ? "Reading..."
-                  : "Read Messages"}
+                {connectionStatus === "reading" ? "Reading..." : "Read Messages"}
               </button>
             </div>
 
@@ -822,25 +821,12 @@ const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
           </div>
         </div>
       ) : (
-        <div
-          className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
-        >
+        <div className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}>
           <div className="p-2 text-center">
             <div className={`font-mono text-xs ${categoryStyles.primary}`}>
               {accountId ? `${messageCount} messages` : "No account"}
             </div>
-            <div
-              className={`text-xs ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}
-            >
-              {connectionStatus === "reading"
-                ? "📖"
-                : connectionStatus === "connected"
-                  ? "✓"
-                  : connectionStatus === "error"
-                    ? "✗"
-                    : "○"}{" "}
-              {connectionStatus}
-            </div>
+            <div className={`text-xs ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}>{connectionStatus}</div>
           </div>
         </div>
       )}

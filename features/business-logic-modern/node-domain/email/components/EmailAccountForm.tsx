@@ -19,9 +19,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { memo, useCallback, useMemo } from "react";
-import { FaMicrosoft, FaYahoo } from "react-icons/fa";
+import { FaMicrosoft } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { MdEmail } from "react-icons/md";
+import RenderStatusDot from "@/components/RenderStatusDot";
 import type { EmailProviderType } from "../types";
 
 // Form styling constants
@@ -48,14 +49,34 @@ export const EmailAccountForm = memo(
     isEnabled,
     isAuthenticating,
   }: EmailAccountFormProps) => {
-    const { provider, email, displayName, isConnected } = nodeData;
+    const { provider, email, displayName, isConnected, connectionStatus, lastError } = nodeData;
+
+    // Compute status props for status dot beside Provider label
+    const providerStatusProps = useMemo(() => {
+      const isConnecting = connectionStatus === "connecting" || !!isAuthenticating;
+      const isError = connectionStatus === "error" || !!lastError;
+
+      return {
+        eventActive: !!isConnected,
+        isProcessing: isConnecting,
+        hasError: isError,
+        enableGlow: true,
+        size: "sm" as const,
+        titleText: isError
+          ? "error"
+          : isConnecting
+            ? "processing"
+            : isConnected
+              ? "active"
+              : "neutral",
+      };
+    }, [connectionStatus, isAuthenticating, lastError, isConnected]);
 
     // Available providers with icons
     const availableProviders = useMemo(() => {
       return [
         { value: "gmail", label: "Gmail", icon: FcGoogle },
         { value: "outlook", label: "Outlook", icon: FaMicrosoft },
-        { value: "yahoo", label: "Yahoo", icon: FaYahoo },
         { value: "imap", label: "IMAP", icon: MdEmail },
         { value: "smtp", label: "SMTP", icon: MdEmail },
       ];
@@ -76,27 +97,20 @@ export const EmailAccountForm = memo(
       [updateNodeData]
     );
 
-    /** Handle email change */
-    const handleEmailChange = useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        updateNodeData({ email: e.target.value });
-      },
-      [updateNodeData]
-    );
-
-    /** Handle display name change */
-    const handleDisplayNameChange = useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        updateNodeData({ displayName: e.target.value });
-      },
-      [updateNodeData]
-    );
+    // For OAuth providers, email/displayName are provided by the provider post-auth; no manual typing
+    const isOAuthProvider = provider === "gmail" || provider === "outlook";
 
     return (
       <div className="space-y-1">
         {/* Provider Selection */}
         <div className={FORM_STYLES.fieldGroup}>
-          <label className={FORM_STYLES.label}>Provider</label>
+          <label className={FORM_STYLES.label}>
+            <span className="inline-flex items-center gap-1">
+              Provider
+              {/* Status dot for provider connection, basically shows live status */}
+              <RenderStatusDot {...providerStatusProps} />
+            </span>
+          </label>
           <Select
             onValueChange={handleProviderChange}
             defaultValue={provider}
@@ -121,30 +135,42 @@ export const EmailAccountForm = memo(
           </Select>
         </div>
 
-        {/* Email Address */}
+        {/* Email (read-only for OAuth, editable for manual) */}
         <div className={FORM_STYLES.fieldGroup}>
-          {/* <label className={FORM_STYLES.label}>Email Address</label> */}
-          <Input
-            type="email"
-            value={email}
-            onChange={handleEmailChange}
-            placeholder="Email"
-            className={FORM_STYLES.input}
-            disabled={!isEnabled || isAuthenticating || isConnected}
-          />
+          {isOAuthProvider ? (
+            <div className="text-[10px] text-[--node-email-text-secondary] px-1 py-1 rounded-md bg-[--node-email-bg] border border-[--node-email-border]">
+              {/* OAuth-provided email, basically display-only */}
+                {email ? email : <span className="opacity-50">Email</span>}
+            </div>
+          ) : (
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => updateNodeData({ email: e.target.value })}
+              placeholder="Email"
+              className={FORM_STYLES.input}
+              disabled={!isEnabled || isAuthenticating || isConnected}
+            />
+          )}
         </div>
 
-        {/* Display Name */}
+        {/* Display Name (read-only for OAuth, editable for manual) */}
         <div className={FORM_STYLES.fieldGroup}>
-          {/* <label className={FORM_STYLES.label}>Display Name</label> */}
-          <Input
-            type="text"
-            value={displayName}
-            onChange={handleDisplayNameChange}
-            placeholder="Name"
-            className={FORM_STYLES.input}
-            disabled={!isEnabled || isAuthenticating}
-          />
+          {isOAuthProvider ? (
+            <div className="text-[10px] text-[--node-email-text-secondary] px-1 py-1 rounded-md bg-[--node-email-bg] border border-[--node-email-border]">
+              {/* OAuth-provided display name, basically display-only */}
+              {displayName ? displayName : <span className="opacity-50">Name</span>}
+            </div>
+          ) : (
+            <Input
+              type="text"
+              value={displayName}
+              onChange={(e) => updateNodeData({ displayName: e.target.value })}
+              placeholder="Name"
+              className={FORM_STYLES.input}
+              disabled={!isEnabled || isAuthenticating}
+            />
+          )}
         </div>
       </div>
     );
