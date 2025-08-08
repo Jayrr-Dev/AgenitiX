@@ -155,10 +155,10 @@ const LogicXnorNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) 
 	// Callbacks - following viewBoolean pattern
 	// -------------------------------------------------------------------------
 
-	/** Propagate boolean output ONLY when node is active AND enabled */
+	/** Propagate boolean output when node is enabled (false should still propagate) */
 	const propagate = useCallback(
 		(value: boolean | null) => {
-			const shouldSend = isActive && isEnabled;
+			const shouldSend = isEnabled;
 			const out = shouldSend ? value : null;
 			if (out !== lastOutputRef.current) {
 				lastOutputRef.current = out;
@@ -168,7 +168,7 @@ const LogicXnorNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) 
 				});
 			}
 		},
-		[isActive, isEnabled, updateNodeData]
+		[isEnabled, updateNodeData]
 	);
 
 	/**
@@ -246,27 +246,22 @@ const LogicXnorNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) 
 		}
 	}, [connectionStates, isEnabled, updateNodeData]);
 
-	/* 🔄 Update active state based on having valid input and being enabled */
+	/* 🔄 Update active state: active only when enabled and output is strictly true */
 	useEffect(() => {
-		const hasValidInput = output !== null;
-
+		const isTrue = output === true; // null treated as false
 		if (isEnabled) {
-			// If enabled, active when we have valid input
-			if (isActive !== hasValidInput) {
-				updateNodeData({ isActive: hasValidInput });
+			if (isActive !== isTrue) {
+				updateNodeData({ isActive: isTrue });
 			}
-		} else {
-			// If disabled, always set isActive to false
-			if (isActive) {
-				updateNodeData({ isActive: false });
-			}
+		} else if (isActive) {
+			updateNodeData({ isActive: false });
 		}
 	}, [output, isEnabled, isActive, updateNodeData]);
 
 	/* 🔄 Propagate output when state changes */
 	useEffect(() => {
 		propagate(output as boolean | null);
-	}, [isActive, isEnabled, output, propagate]);
+	}, [isEnabled, output, propagate]);
 
 	// -------------------------------------------------------------------------
 	// Render - simplified

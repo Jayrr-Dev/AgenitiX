@@ -57,6 +57,10 @@ const PROVIDERS: Record<
       "https://www.googleapis.com/auth/userinfo.profile", 
       "https://www.googleapis.com/auth/gmail.readonly",
       "https://www.googleapis.com/auth/gmail.send",
+      // Allow marking read, moving, and labeling without full delete rights
+      "https://www.googleapis.com/auth/gmail.modify",
+      // Manage and read labels for routing/organization features
+      "https://www.googleapis.com/auth/gmail.labels",
     ],
   },
   outlook: {
@@ -67,9 +71,15 @@ const PROVIDERS: Record<
       userInfoUrl: "https://graph.microsoft.com/v1.0/me",
     },
     defaultScopes: [
+      // Read and send mail
       "https://graph.microsoft.com/Mail.Read",
       "https://graph.microsoft.com/Mail.Send",
+      // Read/write for marking read, moving, and organizing
+      "https://graph.microsoft.com/Mail.ReadWrite",
+      // Basic profile
       "https://graph.microsoft.com/User.Read",
+      // Ensure refresh tokens are issued
+      "offline_access",
     ],
   },
 

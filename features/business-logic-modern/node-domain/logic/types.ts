@@ -14,7 +14,7 @@ export const BaseLogicDataSchema = z
 	.object({
 		output: z.boolean().nullable().default(null),
 		isEnabled: SafeSchemas.boolean(true),
-		isActive: SafeSchemas.boolean(true),
+        isActive: SafeSchemas.boolean(false),
 		isExpanded: SafeSchemas.boolean(false),
 		expandedSize: SafeSchemas.text("PRIMITIVE"),
 		collapsedSize: SafeSchemas.text("PRIMITIVE"),
