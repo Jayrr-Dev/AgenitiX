@@ -638,8 +638,98 @@ function ActionButton(props: {
 }
 
 // ------------------------------------------------------------------------------------
-// Sub-Menu Panel – lateral expandable panels for node categories
+// Sub-Menu Panel – SMART POSITIONING SYSTEM like Blender
 // ------------------------------------------------------------------------------------
+
+interface PanelLayout {
+  left: number;
+  top: number;
+  quadrant: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  width: number;
+  height: number;
+}
+
+function calculateSmartPanelPositions(
+  categories: string[], 
+  itemsByCategory: Record<string, PieMenuSubItem[]>,
+  centerPosition: PieMenuPosition
+): PanelLayout[] {
+  const PANEL_WIDTH = 160;  // Fixed width for consistency
+  const PANEL_SPACING = 20; // Space between panels
+  const DISTANCE_FROM_CENTER = 120; // Distance from pie menu center
+  
+  // Calculate panel dimensions based on content
+  const panelLayouts: PanelLayout[] = [];
+  
+  categories.forEach((category, index) => {
+    const itemCount = itemsByCategory[category].length;
+    const rows = Math.ceil(itemCount / 4); // 4 items per row
+    const panelHeight = Math.max(60, 32 + (rows * 44) + ((rows - 1) * 4)); // Header + rows + gaps
+    
+    // Smart quadrant assignment to avoid overlaps
+    let quadrant: PanelLayout['quadrant'];
+    let baseX: number;
+    let baseY: number;
+    
+    // Distribute panels in quadrants intelligently
+    switch (index % 4) {
+      case 0: // Top-right
+        quadrant = 'top-right';
+        baseX = centerPosition.x + DISTANCE_FROM_CENTER;
+        baseY = centerPosition.y - DISTANCE_FROM_CENTER - panelHeight;
+        break;
+      case 1: // Bottom-right  
+        quadrant = 'bottom-right';
+        baseX = centerPosition.x + DISTANCE_FROM_CENTER;
+        baseY = centerPosition.y + DISTANCE_FROM_CENTER;
+        break;
+      case 2: // Bottom-left
+        quadrant = 'bottom-left';
+        baseX = centerPosition.x - DISTANCE_FROM_CENTER - PANEL_WIDTH;
+        baseY = centerPosition.y + DISTANCE_FROM_CENTER;
+        break;
+      case 3: // Top-left
+        quadrant = 'top-left';
+        baseX = centerPosition.x - DISTANCE_FROM_CENTER - PANEL_WIDTH;
+        baseY = centerPosition.y - DISTANCE_FROM_CENTER - panelHeight;
+        break;
+      default:
+        quadrant = 'top-right';
+        baseX = centerPosition.x + DISTANCE_FROM_CENTER;
+        baseY = centerPosition.y - DISTANCE_FROM_CENTER - panelHeight;
+    }
+    
+    // Adjust for multiple panels in same quadrant
+    const panelsInQuadrant = Math.floor(index / 4);
+    if (panelsInQuadrant > 0) {
+      switch (quadrant) {
+        case 'top-right':
+        case 'top-left':
+          baseY -= panelsInQuadrant * (panelHeight + PANEL_SPACING);
+          break;
+        case 'bottom-right':
+        case 'bottom-left':
+          baseY += panelsInQuadrant * (panelHeight + PANEL_SPACING);
+          break;
+      }
+    }
+    
+    // Ensure panels stay within viewport bounds
+    const viewportPadding = 20;
+    baseX = Math.max(viewportPadding, Math.min(window.innerWidth - PANEL_WIDTH - viewportPadding, baseX));
+    baseY = Math.max(viewportPadding, Math.min(window.innerHeight - panelHeight - viewportPadding, baseY));
+    
+    panelLayouts.push({
+      left: baseX,
+      top: baseY,
+      quadrant,
+      width: PANEL_WIDTH,
+      height: panelHeight
+    });
+  });
+  
+  return panelLayouts;
+}
 
 function SubMenuPanel(props: {
   items: PieMenuSubItem[];
@@ -649,6 +739,8 @@ function SubMenuPanel(props: {
   onMouseLeave: () => void;
 }) {
   const { items, position, onItemClick, onMouseEnter, onMouseLeave } = props;
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [hoveredItemPosition, setHoveredItemPosition] = useState<{ x: number; y: number } | null>(null);
 
   // Group items by category
   const itemsByCategory = useMemo(() => {
@@ -661,52 +753,122 @@ function SubMenuPanel(props: {
     return groups;
   }, [items]);
 
-  // Position the panel to the right of the pie menu
-  const panelStyle = {
-    left: position.x + 120, // Offset from pie menu center
-    top: position.y - 100,  // Center vertically relative to pie menu
-  };
+  // Calculate smart panel positions
+  const categories = Object.keys(itemsByCategory);
+  const panelLayouts = useMemo(() => 
+    calculateSmartPanelPositions(categories, itemsByCategory, position),
+    [categories, itemsByCategory, position]
+  );
+
+  const handleItemHover = useCallback((item: PieMenuSubItem, event: React.MouseEvent) => {
+    setHoveredItem(item.id);
+    const rect = event.currentTarget.getBoundingClientRect();
+    setHoveredItemPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.top - 8
+    });
+  }, []);
+
+  const handleItemLeave = useCallback(() => {
+    setHoveredItem(null);
+    setHoveredItemPosition(null);
+  }, []);
 
   return (
-    <motion.div
-      className="absolute z-50 bg-background border border-border rounded-lg shadow-xl p-3 min-w-[200px] max-w-[300px]"
-      style={panelStyle}
-      initial={{ opacity: 0, scale: 0.9, x: -20 }}
-      animate={{ opacity: 1, scale: 1, x: 0 }}
-      exit={{ opacity: 0, scale: 0.9, x: -20 }}
-      transition={{ duration: 0.15, ease: "easeOut" }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
-      {Object.entries(itemsByCategory).map(([category, categoryItems]) => (
-        <div key={category} className="mb-3 last:mb-0">
-          {/* Category Header */}
-          <div className="text-xs font-medium text-muted-foreground mb-2 px-1">
-            {category}
-          </div>
-          
-          {/* Items Grid */}
-          <div className="grid grid-cols-2 gap-1">
-            {categoryItems.map((item) => (
-              <motion.button
-                key={item.id}
-                className="flex items-center gap-2 p-2 rounded hover:bg-accent hover:text-accent-foreground text-left text-xs transition-colors"
-                onClick={() => onItemClick(item)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {item.icon && (
-                  <span className="flex-shrink-0 w-4 h-4">
-                    {renderIcon(item.icon)}
-                  </span>
-                )}
-                <span className="truncate">{item.label}</span>
-              </motion.button>
-            ))}
-          </div>
-        </div>
-      ))}
-    </motion.div>
+    <>
+      {/* Smart Positioned Panels */}
+      {Object.entries(itemsByCategory).map(([category, categoryItems], index) => {
+        const layout = panelLayouts[index];
+        if (!layout) return null;
+        
+        return (
+          <motion.div
+            key={category}
+            className="absolute z-50 bg-gray-900/98 border border-gray-600/80 rounded-lg shadow-2xl backdrop-blur-sm"
+            style={{
+              left: layout.left,
+              top: layout.top,
+              width: layout.width,
+              minHeight: layout.height
+            }}
+            initial={{ opacity: 0, scale: 0.85, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.85, y: -10 }}
+            transition={{ 
+              duration: 0.2, 
+              delay: index * 0.08,
+              type: "spring",
+              stiffness: 400,
+              damping: 25
+            }}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+          >
+            {/* Category Header */}
+            <div className="px-3 py-2 border-b border-gray-700/60">
+              <div className="text-xs text-gray-300 font-semibold tracking-wide uppercase">
+                {category}
+              </div>
+            </div>
+            
+            {/* Items Grid - NO EMPTY SPACES */}
+            <div className="p-2">
+              <div className="grid grid-cols-4 gap-1.5">
+                {categoryItems.map((item) => (
+                  <motion.button
+                    key={item.id}
+                    className="w-9 h-9 bg-gray-800/90 hover:bg-blue-600/90 border border-gray-600/60 hover:border-blue-400/80 rounded-md flex items-center justify-center transition-all duration-150 group shadow-sm relative"
+                    onClick={() => onItemClick(item)}
+                    onMouseEnter={(e) => handleItemHover(item, e)}
+                    onMouseLeave={handleItemLeave}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    layout
+                  >
+                    {item.icon && (
+                      <span className="w-4 h-4 text-gray-300 group-hover:text-white transition-colors">
+                        {renderIcon(item.icon)}
+                      </span>
+                    )}
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        );
+      })}
+
+      {/* FIXED TOOLTIP POSITIONING */}
+      <AnimatePresence>
+        {hoveredItem && hoveredItemPosition && (
+          <motion.div
+            className="fixed z-[80] bg-gray-800/95 border border-gray-500/80 rounded-md px-2.5 py-1.5 pointer-events-none shadow-xl backdrop-blur-sm"
+            style={{
+              left: hoveredItemPosition.x,
+              top: hoveredItemPosition.y,
+              transform: 'translate(-50%, -100%)', // Center horizontally, position above
+            }}
+            initial={{ opacity: 0, scale: 0.9, y: 5 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 5 }}
+            transition={{ duration: 0.15 }}
+          >
+            <div className="text-xs text-white font-medium whitespace-nowrap">
+              {items.find(item => item.id === hoveredItem)?.label}
+            </div>
+            {/* Tooltip Arrow */}
+            <div 
+              className="absolute left-1/2 top-full w-0 h-0 -translate-x-1/2"
+              style={{
+                borderLeft: '4px solid transparent',
+                borderRight: '4px solid transparent',
+                borderTop: '4px solid rgb(31, 41, 55, 0.95)'
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 

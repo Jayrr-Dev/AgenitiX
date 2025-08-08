@@ -15,6 +15,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import AddNodeButton from "./AddNodeButton";
 import SimpleAddNodeButton from "./SimpleAddNodeButton";
+import BlenderStyleAddNodeGrid from "./BlenderStyleAddNodeGrid";
 
 interface AddNodeOverlayProps {
   className?: string;
@@ -144,7 +145,7 @@ export const AddNodeOverlay: React.FC<AddNodeOverlayProps> = ({
         top: `${position.y}px`,
       }}
     >
-      <SimpleAddNodeButton
+      <BlenderStyleAddNodeGrid
         position={position}
         onNodeCreated={handleNodeCreated}
         className="animate-in fade-in-0 zoom-in-95 duration-200 ease-out"
