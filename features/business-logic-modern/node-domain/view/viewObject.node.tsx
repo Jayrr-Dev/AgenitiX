@@ -361,16 +361,22 @@ const ViewObjectNode = memo(
 
     /* 🔁 Reset collapsed summary count when navigating levels */
     useEffect(() => {
-      const currentLimit = (nodeData as ViewObjectData).summaryLimit ?? 6;
-      if (currentLimit !== 6) {
-        updateNodeData({ summaryLimit: 6 });
-      }
-    }, [viewPath?.length, nodeData, updateNodeData]);
+      updateNodeData({ summaryLimit: 6 });
+    }, [viewPath?.length, updateNodeData]);
 
     /* 🔒 Force always-enabled state */
     useEffect(() => {
       if (!isEnabled) updateNodeData({ isEnabled: true });
     }, [isEnabled, updateNodeData]);
+
+    /* 🧭 Keep viewPath valid when inputs change (e.g., on disconnect) */
+    useEffect(() => {
+      const root = (nodeData as ViewObjectData).inputs;
+      const path = (nodeData as ViewObjectData).viewPath ?? [];
+      const current = resolveAtPath(root, path);
+      const invalid = path.length > 0 && (current === undefined || current === null || typeof current !== "object");
+      if (invalid) updateNodeData({ viewPath: [] });
+    }, [nodeData, resolveAtPath, updateNodeData]);
 
     // Monitor inputs and update active state
     useEffect(() => {
@@ -456,12 +462,6 @@ const ViewObjectNode = memo(
               {(() => {
                 const root = (validation.data as ViewObjectData).inputs;
                 const path = (validation.data as ViewObjectData).viewPath ?? [];
-
-                // Reset invalid paths gracefully
-                const current = resolveAtPath(root, path);
-                if (path.length > 0 && (current === undefined || current === null || typeof current !== 'object')) {
-                  updateNodeData({ viewPath: [] });
-                }
 
                 if (!root || (typeof root !== 'object' && !Array.isArray(root))) {
                   return <div className="text-muted-foreground">(no object)</div>;
