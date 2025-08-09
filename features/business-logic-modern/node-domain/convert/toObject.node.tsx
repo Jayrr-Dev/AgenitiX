@@ -550,7 +550,8 @@ const ToObjectNode = memo(
           <div
             className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}
           >
-            <div className="space-y-2">
+            {/* Scrollable content area, basically prevent long sections from overlapping the node */}
+            <div className="min-h-0 flex-1 overflow-auto space-y-2">
               {/* Input Display */}
               <div>
                 <label className="text-xs font-medium text-muted-foreground">

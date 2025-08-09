@@ -211,6 +211,8 @@ const ViewObjectNode = memo(
 
     // keep last emitted output to avoid redundant writes
     const lastOutputRef = useRef<unknown>(null);
+    // keep last handle-map to avoid redundant writes to output object (handle-based)
+    const lastHandleMapRef = useRef<Record<string, unknown> | null>(null);
 
     const categoryStyles = CATEGORY_TEXT.VIEW;
 
@@ -473,12 +475,32 @@ const ViewObjectNode = memo(
       if (isActive !== nextActive) updateNodeData({ isActive: nextActive });
     }, [nodeData, isEnabled, isActive, updateNodeData]);
 
-    // Sync output with active and enabled state
+    // Sync output with active and enabled state (legacy output used by some nodes)
     useEffect(() => {
       const inputVal = (nodeData as ViewObjectData).inputs;
       propagate(inputVal);
       blockJsonWhenInactive();
     }, [isActive, isEnabled, nodeData, propagate, blockJsonWhenInactive]);
+
+    // Generate handle-based output map { output: value } so downstream nodes (e.g., storeLocal)
+    // read the entire displayed object instead of only the first key.
+    useEffect(() => {
+      const value = (nodeData as ViewObjectData).inputs;
+      const mapped = isActive && isEnabled ? { output: value } : null;
+
+      // Only update when changed to prevent render churn
+      const prev = lastHandleMapRef.current;
+      const changed = JSON.stringify(prev) !== JSON.stringify(mapped);
+      if (changed) {
+        lastHandleMapRef.current = mapped as any;
+        updateNodeData({ output: mapped as any });
+      }
+    }, [
+      isActive,
+      isEnabled,
+      (nodeData as ViewObjectData).inputs,
+      updateNodeData,
+    ]);
 
     // -------------------------------------------------------------------------
     // 4.6  Validation
