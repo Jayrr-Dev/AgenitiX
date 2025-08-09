@@ -153,6 +153,9 @@ function createDynamicSpec(data: ViewBooleanData): NodeSpec {
       inputs: null,
       output: null,
       connectionStates: null,
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when enabled
+      isExpanded: false, // Default to collapsed
     }),
     dataSchema: ViewBooleanDataSchema,
     controls: {
@@ -272,17 +275,17 @@ const ViewBooleanNode = memo(
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
 
-    /** Propagate boolean output ONLY when node is active AND enabled */
+    /** Propagate boolean output when node is enabled (false should still propagate) */
     const propagate = useCallback(
       (value: boolean | null) => {
-        const shouldSend = isActive && isEnabled;
+        const shouldSend = isEnabled;
         const out = shouldSend ? value : null;
         if (out !== lastOutputRef.current) {
           lastOutputRef.current = out;
           updateNodeData({ output: out });
         }
       },
-      [isActive, isEnabled, updateNodeData]
+      [isEnabled, updateNodeData]
     );
 
     /**
@@ -410,33 +413,29 @@ const ViewBooleanNode = memo(
     /* 🔄 Auto-manage isEnabled based on input connections */
     useEffect(() => {
       const hasConnection =
-        connectionStates !== null && Object.keys(connectionStates).length > 0;
+        connectionStates !== null &&
+        Object.keys(connectionStates || {}).length > 0;
       if (hasConnection !== isEnabled) {
         updateNodeData({ isEnabled: hasConnection });
       }
     }, [connectionStates, isEnabled, updateNodeData]);
 
-    /* 🔄 Update active state based on having valid input and being enabled */
+    /* 🔄 Update active state: active only when enabled and booleanValue is strictly true */
     useEffect(() => {
-      const hasValidInput = booleanValue !== null;
-
+      const isTrue = booleanValue === true; // null treated as false
       if (isEnabled) {
-        // If enabled, active when we have valid input
-        if (isActive !== hasValidInput) {
-          updateNodeData({ isActive: hasValidInput });
+        if (isActive !== isTrue) {
+          updateNodeData({ isActive: isTrue });
         }
-      } else {
-        // If disabled, always set isActive to false
-        if (isActive) {
-          updateNodeData({ isActive: false });
-        }
+      } else if (isActive) {
+        updateNodeData({ isActive: false });
       }
     }, [booleanValue, isEnabled, isActive, updateNodeData]);
 
     /* 🔄 Propagate output when state changes */
     useEffect(() => {
       propagate(booleanValue as boolean | null);
-    }, [isActive, isEnabled, booleanValue, propagate]);
+    }, [isEnabled, booleanValue, propagate]);
 
     // -------------------------------------------------------------------------
     // 5.5  Validation
@@ -460,9 +459,10 @@ const ViewBooleanNode = memo(
     // 5.6  Visual state computation
     // -------------------------------------------------------------------------
     const hasConnection =
-      connectionStates !== null && Object.keys(connectionStates).length > 0;
+      connectionStates !== null &&
+      Object.keys(connectionStates || {}).length > 0;
     const connectionCount = connectionStates
-      ? Object.keys(connectionStates).length
+      ? Object.keys(connectionStates || {}).length
       : 0;
     const display = getBooleanDisplay(
       booleanValue as boolean | null,

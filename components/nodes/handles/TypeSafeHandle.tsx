@@ -9,13 +9,14 @@
  * • Uses optimized cached React Icons for perfect centering and consistency.
  * • Performance optimized with memoized icon components and caching.
  */
-import { Handle, type HandleProps, type IsValidConnection, useStore } from "@xyflow/react";
-import React, { useCallback, memo, useMemo } from "react";
+ import { Handle, type HandleProps, type IsValidConnection, useStore, useStoreApi } from "@xyflow/react";
+ import React, { useCallback, memo, useMemo } from "react";
 import type { IconType } from "react-icons";
 import { LuBraces, LuBrackets, LuCheck, LuCircle, LuHash, LuWrench, LuType, LuMail, LuFileText, LuSend } from "react-icons/lu";
 import { VscJson } from "react-icons/vsc";
 import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+ import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 // Auto-generated at build time (can be empty in dev before first build)
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore – file is generated post-install / build
@@ -91,8 +92,8 @@ const getCachedHandleIcon = (typeName: string): React.ComponentType<{ width?: nu
 /**
  * Handle visual configuration
  */
-const HANDLE_SIZE_PX = 10;
-const HANDLE_POSITION_OFFSET = 10; // pixels to move handles further out from nodes
+const HANDLE_SIZE_PX = 14;
+const HANDLE_POSITION_OFFSET = 12; // pixels to move handles further out from nodes
 const HANDLE_SPACING = 16; // pixels between multiple handles on the same side
 
 /**
@@ -116,7 +117,7 @@ const getInjectableClasses = (cssVar: string): string => {
  */
 const UNIFIED_HANDLE_STYLES = {
 	// Base styling classes with perfect centering
-	base: "flex items-center justify-center rounded-sm text-[6px] font-semibold uppercase select-none z-30 leading-none",
+	base: "flex items-center justify-center rounded-sm text-[8px] uppercase select-none z-30 leading-none",
 
 	// Background colors using semantic tokens
 	backgrounds: {
@@ -414,6 +415,37 @@ function getTooltipContent(
 	return `${direction}<br/>${typeCode}`;
 }
 
+/**
+ * Escape HTML entities for safe innerHTML usage
+ */
+function escapeHtml(input: string): string {
+  return input
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+/**
+ * Summarize a value for tooltip display
+ * [Summarize values for concise tooltip], basically shorten values per type
+ */
+function summarizeValueForTooltip(value: unknown): string {
+  if (value === null || value === undefined) return "empty";
+  if (Array.isArray(value)) return `${value.length} params`;
+  const typeOf = typeof value;
+  if (typeOf === "string") return `${(value as string).length} chars`;
+  if (typeOf === "boolean") return (value as boolean) ? "true" : "false";
+  if (typeOf === "number") return String(value as number);
+  if (typeOf === "object") return `${Object.keys(value as Record<string, unknown>).length} params`;
+  try {
+    return String(value);
+  } catch {
+    return "unknown";
+  }
+}
+
 function isTypeCompatible(sourceType: string, targetType: string): boolean {
 	if (sourceType === "x" || targetType === "x") {
 		return true;
@@ -528,12 +560,86 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
 				: getInjectableClasses("--core-handle-classes-target")
 	}), [isConnected, isSource]);
 
-	// Memoize tooltip content generation, basically prevent string recalculation on re-renders  
-	const tooltipContent = useMemo(() => {
-		const defaultTooltip = getTooltipContent(props.type || "target", dataType, code, tsSymbol);
-		// If custom tooltip is provided, replace the default tooltip
-		return customTooltip || defaultTooltip;
-	}, [props.type, dataType, code, tsSymbol, customTooltip]);
+	// Memoize font weight classes for output handles, basically make outputs bolder
+	const fontWeightClasses = useMemo(() => 
+		isSource ? "font-black" : "font-semibold", // Output handles get black font weight, inputs get semibold
+		[isSource]
+	);
+
+  // Avoid subscribing to the entire nodes/edges arrays which causes frequent re-renders.
+  // Instead, compute dynamic tooltip data only when the tooltip opens using store API.
+  const storeApi = useStoreApi();
+  const [isTooltipOpen, setIsTooltipOpen] = React.useState(false);
+  const [dynamicTooltipSuffix, setDynamicTooltipSuffix] = React.useState<string>("");
+
+  const baseTooltip = useMemo(
+    () => customTooltip || getTooltipContent(props.type || "target", dataType, code, tsSymbol),
+    [customTooltip, props.type, dataType, code, tsSymbol]
+  );
+
+  React.useEffect(() => {
+    if (!isTooltipOpen) {
+      // Clear when closed to avoid stale info and memory churn
+      setDynamicTooltipSuffix("");
+      return;
+    }
+    try {
+      const { nodes, edges } = storeApi.getState();
+      const cleanId = props.id ? normalizeHandleId(props.id) : "";
+      let suffix = "";
+      if (props.type === "source") {
+        const selfNode = nodes.find((n: any) => n.id === nodeId);
+        const rawOut = (selfNode?.data as any)?.output as unknown;
+        let value: unknown = undefined;
+        if (rawOut && typeof rawOut === "object" && !Array.isArray(rawOut)) {
+          const out = rawOut as Record<string, unknown>;
+          value = out[cleanId] ?? out["output"] ?? Object.values(out)[0];
+        } else if (rawOut !== undefined) {
+          value = rawOut;
+        } else {
+          value = (selfNode?.data as Record<string, unknown> | undefined)?.[cleanId]
+            ?? (selfNode?.data as Record<string, unknown> | undefined)?.[props.id as string];
+        }
+        const parts: string[] = [];
+        if (value !== undefined) {
+          parts.push(`value: ${escapeHtml(summarizeValueForTooltip(value))}`);
+        }
+        const outgoingCount = edges.filter((e: any) => e.source === nodeId && e.sourceHandle === props.id).length;
+        if (outgoingCount > 0) {
+          parts.push(`sending to ${outgoingCount}`);
+        }
+        if (parts.length > 0) suffix = `<br/>${escapeHtml(parts.join(", "))}`;
+      } else if (props.type === "target") {
+        const incoming = edges.filter((e: any) => e.target === nodeId && e.targetHandle === props.id);
+        if (incoming.length > 0) {
+          const first = incoming[0];
+          const src = nodes.find((n: any) => n.id === first.source);
+          const out = (src?.data as any)?.output as Record<string, unknown> | undefined;
+          let value: unknown;
+          if (out) {
+            const srcHandleId = first.sourceHandle ? normalizeHandleId(first.sourceHandle) : "output";
+            value = out[srcHandleId] ?? Object.values(out)[0];
+          }
+          if (value !== undefined) {
+            const prefix = incoming.length > 1 ? `${incoming.length} inputs, first: ` : "receiving: ";
+            suffix = `<br/>${escapeHtml(prefix)}${escapeHtml(summarizeValueForTooltip(value))}`;
+          } else if (incoming.length > 1) {
+            suffix = `<br/>${incoming.length} inputs`;
+          }
+        }
+      }
+      setDynamicTooltipSuffix(suffix);
+    } catch {
+      // Swallow errors; tooltip is best-effort
+      setDynamicTooltipSuffix("");
+    }
+  // Recompute only when opened or handle identity/context changes
+  }, [isTooltipOpen, nodeId, props.id, props.type, storeApi]);
+
+  const tooltipContent = useMemo(
+    () => `${baseTooltip}${dynamicTooltipSuffix}`,
+    [baseTooltip, dynamicTooltipSuffix]
+  );
 
 	// Memoize the icon component to prevent re-creation on re-renders, basically stable icon reference
 	const MemoizedIconComponent = useMemo(() => typeDisplay.iconComponent, [typeDisplay.iconComponent]);
@@ -548,9 +654,10 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
 	const handleStyles = useMemo(() => ({
 		width: HANDLE_SIZE_PX,
 		height: HANDLE_SIZE_PX,
-		borderWidth: UNIFIED_HANDLE_STYLES.border.width,
+		borderWidth: 0.5, // Set visible border width for dashed/solid styles
 		boxShadow: `${UNIFIED_HANDLE_STYLES.border.shadow} ${typeDisplay.color}`,
 		borderColor: typeDisplay.color,
+		borderStyle: isSource ? "solid" : "dashed", // Input handles get dashed border, outputs get solid
 		color: typeDisplay.color,
 		backgroundColor,
 		pointerEvents: "all" as const, // Ensure pointer events work for both input and output handles
@@ -558,27 +665,35 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(({
 		alignItems: "center" as const,
 		justifyContent: "center" as const,
 		lineHeight: "1",
+		fontWeight: isSource ? "900" : "600", // Make output handles bolder, basically thicker text for outputs
 		...positionOffset, // Apply smart positioning
 		...props.style,
-	}), [typeDisplay.color, backgroundColor, positionOffset, props.style]);
+	}), [typeDisplay.color, backgroundColor, positionOffset, props.style, isSource]);
 
-	return (
-		<Tooltip delayDuration={0}>
+    return (
+        <Tooltip delayDuration={700} open={isTooltipOpen} onOpenChange={setIsTooltipOpen}>
 			<TooltipTrigger asChild>
 				<Handle
 					{...(props as HandleProps)}
-					className={`${UNIFIED_HANDLE_STYLES.base} ${baseClasses} ${stateClasses}`}
+					className={`${UNIFIED_HANDLE_STYLES.base} ${baseClasses} ${stateClasses} ${fontWeightClasses}`}
 					style={handleStyles}
 					isValidConnection={isValidConnection}
 					isConnectableStart={connectableStart}
 					isConnectableEnd={connectableEnd}
 				>
 					{MemoizedIconComponent && (
-						<MemoizedIconComponent width={8} height={8} style={{ pointerEvents: "none" }} />
+						<MemoizedIconComponent 
+							width={8} 
+							height={8} 
+							style={{ 
+								pointerEvents: "none",
+								fontWeight: isSource ? "900" : "600" // Make output handle icons bolder too
+							}} 
+						/>
 					)}
 				</Handle>
 			</TooltipTrigger>
-			<TooltipContent side="top" className="max-w-xs">
+            <TooltipContent side="top" className="max-w-xs select-none">
 				<div dangerouslySetInnerHTML={{ __html: tooltipContent }} />
 			</TooltipContent>
 		</Tooltip>

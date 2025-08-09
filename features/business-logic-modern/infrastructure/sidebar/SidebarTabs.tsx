@@ -1,7 +1,17 @@
+/**
+ * INFRASTRUCTURE SIDEBAR TABS - Optimized tab rendering for performance
+ *
+ * • Renders only the active tab content to avoid mounting hidden tabs
+ * • Preserves keyboard shortcuts and search overlays
+ * • Uses stable top-level constants and memoization to minimize re-work
+ * • Single keydown listener with refs (prevents frequent detach/attach)
+ *
+ * Keywords: sidebar, tabs, performance, lazy-render, shadcn, radix
+ */
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type HoveredStencil, StencilInfoPanel } from "./StencilInfoPanel";
 import { NodeSearchModal } from "./components/NodeSearchModal";
 import { SearchBar } from "./components/SearchBar";
@@ -11,51 +21,102 @@ import type { NodeStencil, SidebarVariant } from "./types";
 
 // Top-level constants for better performance, basically prevent recreation on every render
 const KEY_REPEAT_COOLDOWN = 150; // 150ms cooldown between same key presses
-const SIDEBAR_STYLES = "absolute right-4 bottom-4 z-30 h-[200px] w-full rounded-lg border border-[var(--infra-sidebar-border)] bg-[var(--infra-sidebar-bg)] pt-2 pr-3 pl-3 shadow-lg transition-all duration-300 ease-in-out sm:h-[280px] sm:w-[400px] sm:pr-5 sm:pl-6 lg:w-[450px]";
-const TABS_LIST_STYLES = "scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent w-full flex-nowrap items-stretch justify-start gap-1 overflow-x-auto border-0 border-[var(--infra-sidebar-border)] bg-[var(--infra-sidebar-bg)]";
-const TAB_TRIGGER_STYLES = "rounded border border-transparent px-3 py-2 text-[var(--infra-sidebar-text)] transition-colors hover:border-[var(--infra-sidebar-border-hover)] hover:bg-[var(--infra-sidebar-bg-hover)] data-[state=active]:bg-[var(--infra-sidebar-bg-active)] data-[state=active]:text-[var(--infra-sidebar-text)]";
-const SEARCH_BUTTON_STYLES = "mr-1 flex items-center gap-1 rounded border border-transparent p-2 text-[var(--infra-sidebar-text)] transition-colors hover:border-[var(--infra-sidebar-border-hover)] hover:bg-[var(--infra-sidebar-bg-hover)]";
-const CONTENT_AREA_STYLES = "scrollbar max-h-[150px] overflow-y-auto border-0 bg-[var(--infra-sidebar-bg)] pb-2 sm:max-h-[230px]";
+const SIDEBAR_STYLES =
+  "absolute right-4 bottom-4 z-30 h-[200px] w-full rounded-lg border border-[var(--infra-sidebar-border)] bg-[var(--infra-sidebar-bg)] pt-2 pr-3 pl-3 shadow-lg transition-all duration-300 ease-in-out sm:h-[280px] sm:w-[400px] sm:pr-5 sm:pl-6 lg:w-[450px]";
+const TABS_LIST_STYLES =
+  "scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent w-full flex-nowrap items-stretch justify-start gap-1 overflow-x-auto border-0 border-[var(--infra-sidebar-border)] bg-[var(--infra-sidebar-bg)]";
+const TAB_TRIGGER_STYLES =
+  "rounded border border-transparent px-3 py-2 text-[var(--infra-sidebar-text)] transition-colors hover:border-[var(--infra-sidebar-border-hover)] hover:bg-[var(--infra-sidebar-bg-hover)] data-[state=active]:bg-[var(--infra-sidebar-bg-active)] data-[state=active]:text-[var(--infra-sidebar-text)]";
+const SEARCH_BUTTON_STYLES =
+  "mr-1 flex items-center gap-1 rounded border border-transparent p-2 text-[var(--infra-sidebar-text)] transition-colors hover:border-[var(--infra-sidebar-border-hover)] hover:bg-[var(--infra-sidebar-bg-hover)]";
+const CONTENT_AREA_STYLES =
+  "scrollbar max-h-[150px] overflow-y-auto border-0 bg-[var(--infra-sidebar-bg)] pb-2 sm:max-h-[230px]";
 
 // Pre-computed keyboard mappings for performance, basically avoid object recreation
 const VARIANT_MAP: Record<string, SidebarVariant> = {
 	"1": "A", "2": "B", "3": "C", "4": "D",
 } as const;
 
-const NODE_CREATION_KEYS = ["q", "w", "e", "r", "t", "a", "s", "d", "f", "g", "z", "x", "c", "v", "b"] as const;
+const NODE_CREATION_KEYS = [
+  "q",
+  "w",
+  "e",
+  "r",
+  "t",
+  "a",
+  "s",
+  "d",
+  "f",
+  "g",
+  "z",
+  "x",
+  "c",
+  "v",
+  "b",
+] as const;
 
 const CUSTOM_GRID_KEY_MAP: Record<string, number> = {
-	w: 0, e: 1, r: 2, t: 3, a: 4, s: 5, d: 6, f: 7, g: 8, z: 9, x: 10, c: 11, v: 12, b: 13,
+  w: 0,
+  e: 1,
+  r: 2,
+  t: 3,
+  a: 4,
+  s: 5,
+  d: 6,
+  f: 7,
+  g: 8,
+  z: 9,
+  x: 10,
+  c: 11,
+  v: 12,
+  b: 13,
 } as const;
 
 const REGULAR_GRID_KEY_MAP: Record<string, number> = {
-	q: 0, w: 1, e: 2, r: 3, t: 4, a: 5, s: 6, d: 7, f: 8, g: 9, z: 10, x: 11, c: 12, v: 13, b: 14,
+  q: 0,
+  w: 1,
+  e: 2,
+  r: 3,
+  t: 4,
+  a: 5,
+  s: 6,
+  d: 7,
+  f: 8,
+  g: 9,
+  z: 10,
+  x: 11,
+  c: 12,
+  v: 13,
+  b: 14,
 } as const;
 interface SidebarTabsProps {
-	variant: SidebarVariant;
-	activeTab: string;
-	onTabChange: (tab: string) => void;
-	onDoubleClickCreate: (nodeType: string) => void;
-	isHidden: boolean;
-	customNodes: NodeStencil[];
-	onAddCustomNode: (node: NodeStencil) => void;
-	onRemoveCustomNode: (nodeId: string) => void;
-	onReorderCustomNodes: (newOrder: NodeStencil[]) => void;
-	onVariantChange: (variant: SidebarVariant) => void;
-	onToggle: () => void;
+  variant: SidebarVariant;
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+  onDoubleClickCreate: (nodeType: string) => void;
+  isHidden: boolean;
+  customNodes: NodeStencil[];
+  onAddCustomNode: (node: NodeStencil) => void;
+  onRemoveCustomNode: (nodeId: string) => void;
+  onReorderCustomNodes: (newOrder: NodeStencil[]) => void;
+  onVariantChange: (variant: SidebarVariant) => void;
+  onToggle: () => void;
+  isReadOnly?: boolean;
 }
 
-export function SidebarTabs({
-	variant,
-	activeTab,
-	onTabChange,
-	onDoubleClickCreate,
-	isHidden,
-	customNodes,
-	onAddCustomNode,
-	onRemoveCustomNode,
-	onReorderCustomNodes,
-	onVariantChange,
+function SidebarTabsComponent({
+  variant,
+  activeTab,
+  onTabChange,
+  onDoubleClickCreate,
+  isHidden,
+  customNodes,
+  onAddCustomNode,
+  onRemoveCustomNode,
+  onReorderCustomNodes,
+  onVariantChange,
+  onToggle: _onToggle,
+  isReadOnly = false,
 }: SidebarTabsProps) {
 	// IMPROVED VARIANT HANDLING - More defensive programming
 	const normalizedVariant = (
@@ -347,3 +408,28 @@ export function SidebarTabs({
 		</Tabs>
 	);
 }
+
+// Precise memoization to avoid unnecessary re-renders from parent updates
+function areSidebarTabsEqual(prev: SidebarTabsProps, next: SidebarTabsProps): boolean {
+  if (
+    prev.variant !== next.variant ||
+    prev.activeTab !== next.activeTab ||
+    prev.isHidden !== next.isHidden ||
+    prev.isReadOnly !== next.isReadOnly
+  ) {
+    return false;
+  }
+
+  if (prev.customNodes.length !== next.customNodes.length) return false;
+  for (let i = 0; i < prev.customNodes.length; i++) {
+    const a = prev.customNodes[i];
+    const b = next.customNodes[i];
+    if (a.id !== b.id || a.nodeType !== b.nodeType) return false;
+  }
+
+  // Assume handlers are stable via useCallback from parent
+  return true;
+}
+
+export const SidebarTabs = memo(SidebarTabsComponent, areSidebarTabsEqual);
+SidebarTabs.displayName = "SidebarTabs";

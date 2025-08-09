@@ -14,7 +14,9 @@ export const COLLAPSED_SIZES = {
 	C1: { width: 60, height: 60 },
 	C1W: { width: 120, height: 60 },
 	C2: { width: 120, height: 120 },
+	C2W: { width: 180, height: 120 },
 	C3: { width: 180, height: 180 },
+	PRIMITIVE: { width: 60, height: 60 }, // For logic gates and other primitive nodes
 } as const;
 
 /**
@@ -49,6 +51,7 @@ export const EXPANDED_SIZES = {
 	FV2: { width: 180, minHeight: 180, maxHeight: 360 },
 	FE2: { width: 180, height: 180 },
 	FE3: { width: 240, height: 240 },
+	FE3H: { width: 240, height: 320 },
 	// Variable sizes
 	VE0: { width: 60, minHeight: 60 },
 	VE1: { width: 120, minHeight: 120 },

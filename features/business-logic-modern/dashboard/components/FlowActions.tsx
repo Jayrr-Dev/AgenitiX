@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -68,15 +68,15 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 	const [editIsPrivate, setEditIsPrivate] = useState(flow.private);
 
 	// Auth context
-	const { user } = useAuthContext();
+	  const { user, isAuthenticated } = useAuth();
 
 	// Convex mutations
 	const deleteFlow = useMutation(api.flows.deleteFlow);
 	const updateFlow = useMutation(api.flows.updateFlow);
 
 	const handleDelete = async () => {
-		if (!user?.id) {
-			toast.error("Authentication required");
+		if (!isAuthenticated || !user?.id) {
+			toast.error("Authentication required - please sign in again");
 			return;
 		}
 
@@ -85,7 +85,7 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 			// Use Convex to delete the flow
 			await deleteFlow({
 				flow_id: flow.id as Id<"flows">,
-				user_id: user.id,
+				user_id: user.id as any,
 			});
 
 			// Call the callback to update the UI immediately
@@ -101,8 +101,8 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 	};
 
 	const handleEdit = async () => {
-		if (!user?.id) {
-			toast.error("Authentication required");
+		if (!isAuthenticated || !user?.id) {
+			toast.error("Authentication required - please sign in again");
 			return;
 		}
 
@@ -111,7 +111,7 @@ export const FlowActions: React.FC<FlowActionsProps> = ({ flow, onDelete, onUpda
 			// Use Convex to update the flow
 			await updateFlow({
 				flow_id: flow.id as Id<"flows">,
-				user_id: user.id,
+				user_id: user.id as any,
 				name: editName.trim(),
 				description: editDescription.trim() || undefined,
 				is_private: editIsPrivate,

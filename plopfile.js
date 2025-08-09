@@ -100,13 +100,39 @@ module.exports = (plop) => {
 				type: "list",
 				name: "domain",
 				message: "What is the domain of the node?",
-				choices: ["create", "view", "trigger", "test", "cycle", "store", "ai", "custom"],
+				choices: [
+					"create",
+					"view",
+					"trigger",
+					"test",
+					"cycle",
+					"store",
+					"ai",
+					"email",
+					"logic",
+					"flow",
+					"time",
+					"custom",
+				],
 			},
 			{
 				type: "list",
 				name: "category",
 				message: "What is the functional category of the node?",
-				choices: ["CREATE", "VIEW", "TRIGGER", "TEST", "CYCLE", "STORE", "AI"],
+				choices: [
+					"CREATE",
+					"VIEW",
+					"TRIGGER",
+					"TEST",
+					"CYCLE",
+					"STORE",
+					"AI",
+					"EMAIL",
+					"LOGIC",
+					"FLOW",
+					"TIME",
+					"TOOLS",
+				],
 			},
 			{
 				type: "list",
@@ -182,6 +208,10 @@ module.exports = (plop) => {
 						cycle: "cycling",
 						store: "storage",
 						ai: "AI and machine learning",
+						email: "email operations",
+						logic: "logic and conditional operations",
+						flow: "flow orchestration",
+						time: "time-based operations",
 						custom: "custom operations",
 					};
 					const domainDesc = domainMap[answers.domain] || "operations";
@@ -552,7 +582,20 @@ module.exports = (plop) => {
 				message: "Which node would you like to delete?",
 				choices: () => {
 					const nodeBasePath = path.join(__dirname, "features/business-logic-modern/node-domain");
-					const domains = ["create", "view", "trigger", "test", "cycle", "store", "ai", "custom"];
+					const domains = [
+						"create",
+						"view",
+						"trigger",
+						"test",
+						"cycle",
+						"store",
+						"ai",
+						"email",
+						"logic",
+						"flow",
+						"time",
+						"custom",
+					];
 					let nodes = [];
 					domains.forEach((domain) => {
 						const domainPath = path.join(nodeBasePath, domain);

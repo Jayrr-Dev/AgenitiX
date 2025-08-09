@@ -35,7 +35,7 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
 
 // -----------------------------------------------------------------------------
@@ -340,7 +340,7 @@ export const spec: NodeSpec = createDynamicSpec({
 const EmailBulkNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   const { nodeData, updateNodeData } = useNodeData(id, {});
-  const { token } = useAuthContext();
+  	const { authToken: token } = useAuth();
 
   // -------------------------------------------------------------------------
   // STATE MANAGEMENT (grouped for clarity)

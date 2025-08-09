@@ -16,6 +16,7 @@ import {
 } from "@xyflow/react";
 import React, { useCallback, useEffect, useRef } from "react";
 import { type FlowMetadata, FlowProvider } from "./contexts/flow-context";
+import { useFlowMetadataOptional } from "./contexts/flow-metadata-context";
 
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/action-toolbar/ActionToolbar";
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
@@ -29,6 +30,7 @@ import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useMultiSelectionCopyPaste } from "./hooks/useMultiSelectionCopyPaste";
+import { usePieMenuIntegration } from "./hooks/usePieMenuIntegration";
 
 // Import the new NodeSpec registry
 import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
@@ -163,6 +165,11 @@ class FlowEditorErrorBoundary extends React.Component<
 const FlowEditorInternal = () => {
   const flowWrapperRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
+  const { flow } = useFlowMetadataOptional() || { flow: null };
+
+  // Determine if user can edit - defaults to true for owners or when no flow data
+  const canEdit = flow?.canEdit ?? true;
+  const isReadOnly = !canEdit;
 
   // Canvas loading is now handled at page level to prevent double loading screens
 
@@ -223,32 +230,37 @@ const FlowEditorInternal = () => {
   const { undo, redo, recordAction } = useUndoRedo();
 
   const handleUndo = useCallback(() => {
+    if (isReadOnly) return; // Disable in read-only mode
     const _success = undo();
-  }, [undo]);
+  }, [undo, isReadOnly]);
 
   const handleRedo = useCallback(() => {
+    if (isReadOnly) return; // Disable in read-only mode
     const _success = redo();
-  }, [redo]);
+  }, [redo, isReadOnly]);
 
   // ============================================================================
   // KEYBOARD SHORTCUTS INTEGRATION
   // ============================================================================
 
   const handleSelectAllNodes = useCallback(() => {
+    if (isReadOnly) return; // Disable in read-only mode
     // Select all nodes in the canvas
     const updatedNodes = nodes.map((node) => ({ ...node, selected: true }));
     useFlowStore.setState((state) => ({ ...state, nodes: updatedNodes }));
-  }, [nodes]);
+  }, [nodes, isReadOnly]);
 
   const handleClearSelection = useCallback(() => {
     clearSelection();
   }, [clearSelection]);
 
   const handleCopy = useCallback(() => {
+    // Copy is allowed in read-only mode - users can copy but not paste
     copySelectedElements();
   }, [copySelectedElements]);
 
   const handlePaste = useCallback(() => {
+    if (isReadOnly) return; // Disable in read-only mode
     const { copiedNodes } = useFlowStore.getState();
     pasteElements();
 
@@ -259,9 +271,10 @@ const FlowEditorInternal = () => {
         nodeTypes: copiedNodes.map((n) => n.type),
       });
     }
-  }, [pasteElements, recordAction]);
+  }, [pasteElements, recordAction, isReadOnly]);
 
   const handleMultiDelete = useCallback(() => {
+    if (isReadOnly) return; // Disable in read-only mode
     // Find selected nodes and edges
     const selectedNodes = nodes.filter((node) => node.selected);
     const selectedEdges = edges.filter((edge) => edge.selected);
@@ -293,18 +306,25 @@ const FlowEditorInternal = () => {
     for (const edge of selectedEdges) {
       removeEdge(edge.id);
     }
-  }, [nodes, edges, removeNode, removeEdge, recordAction]);
+  }, [nodes, edges, removeNode, removeEdge, recordAction, isReadOnly]);
 
   // Initialize keyboard shortcuts
+  // Pie Menu Integration, basically handle G key activation with full system
+  const { handleKeyboardActivation: handlePieMenuActivation } =
+    usePieMenuIntegration({
+      enabled: true,
+      includeDebugActions: process.env.NODE_ENV === "development",
+    });
+
   useKeyboardShortcuts({
     onCopy: handleCopy,
-    onPaste: handlePaste,
-    onUndo: handleUndo,
-    onRedo: handleRedo,
+    onPaste: isReadOnly ? () => {} : handlePaste, // Disable paste in read-only mode
+    onUndo: isReadOnly ? () => {} : handleUndo, // Disable undo in read-only mode
+    onRedo: isReadOnly ? () => {} : handleRedo, // Disable redo in read-only mode
     onToggleHistory: toggleHistoryPanel,
-    onSelectAll: handleSelectAllNodes,
-    onClearSelection: handleClearSelection,
-    onDelete: handleMultiDelete,
+    onSelectAll: isReadOnly ? () => {} : handleSelectAllNodes, // Disable select all in read-only mode
+    onClearSelection: handleClearSelection, // Allow clearing selection in read-only mode
+    onDelete: isReadOnly ? () => {} : handleMultiDelete, // Disable delete in read-only mode
     onToggleVibeMode: () => {
       // Vibe mode toggle - not implemented yet
     },
@@ -317,16 +337,29 @@ const FlowEditorInternal = () => {
     onToggleSidebar: () => {
       // Sidebar toggle - not implemented yet
     },
+    onPieMenu: isReadOnly ? () => {} : handlePieMenuActivation, // Disable pie menu in read-only mode
   });
 
-  const onDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-  }, []);
+  const onDragOver = useCallback(
+    (event: React.DragEvent) => {
+      if (isReadOnly) {
+        event.dataTransfer.dropEffect = "none";
+        return;
+      }
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+    },
+    [isReadOnly]
+  );
 
   const onDrop = useCallback(
     async (event: React.DragEvent) => {
       event.preventDefault();
+
+      if (isReadOnly) {
+        console.log("Drop disabled in read-only mode");
+        return;
+      }
 
       const nodeType = event.dataTransfer.getData("application/reactflow");
       if (!nodeType) {
@@ -374,8 +407,42 @@ const FlowEditorInternal = () => {
         console.error("❌ Failed to create node from drop:", error);
       }
     },
-    [screenToFlowPosition, addNode, recordAction]
+    [screenToFlowPosition, addNode, recordAction, isReadOnly]
   );
+
+  // Handle direct node creation from pie menu sub-menu
+  React.useEffect(() => {
+    const handleCreateNodeDirect = (event: CustomEvent) => {
+      if (isReadOnly) {
+        console.log("Direct node creation disabled in read-only mode");
+        return;
+      }
+
+      const { node } = event.detail;
+      console.log('🎯 FlowEditor: Creating node directly from pie menu', node);
+      
+      try {
+        addNode(node);
+        
+        // Record node creation for undo/redo
+        recordAction("node_add", {
+          nodeType: node.type,
+          nodeId: node.id,
+          position: node.position,
+        });
+        
+        console.log('✅ FlowEditor: Node created successfully');
+      } catch (error) {
+        console.error("❌ Failed to create node directly:", error);
+      }
+    };
+
+    window.addEventListener('create-node-direct', handleCreateNodeDirect as EventListener);
+    
+    return () => {
+      window.removeEventListener('create-node-direct', handleCreateNodeDirect as EventListener);
+    };
+  }, [addNode, recordAction, isReadOnly]);
 
   const selectedNode = React.useMemo(
     () => nodes.find((n) => n.id === selectedNodeId) || null,
@@ -393,6 +460,7 @@ const FlowEditorInternal = () => {
   };
 
   const handleReconnect = (oldEdge: AgenEdge, newConnection: Connection) => {
+    if (isReadOnly) return; // Disable in read-only mode
     edgeReconnectSuccessful.current = true;
     // Update edges array via store util
     removeEdge(oldEdge.id);
@@ -400,6 +468,7 @@ const FlowEditorInternal = () => {
   };
 
   const handleReconnectEnd = (_: MouseEvent | TouchEvent, edge: AgenEdge) => {
+    if (isReadOnly) return; // Disable in read-only mode
     if (!edgeReconnectSuccessful.current) {
       removeEdge(edge.id);
     }
@@ -494,8 +563,8 @@ const FlowEditorInternal = () => {
         nodeErrors={nodeErrors}
         showHistoryPanel={showHistoryPanel}
         wrapperRef={flowWrapperRef}
-        updateNodeData={updateNodeData}
-        updateNodeId={updateNodeId}
+        updateNodeData={isReadOnly ? () => {} : updateNodeData}
+        updateNodeId={isReadOnly ? () => {} : updateNodeId}
         logNodeError={
           logNodeError as (
             nodeId: string,
@@ -506,22 +575,27 @@ const FlowEditorInternal = () => {
         }
         clearNodeErrors={clearNodeErrors}
         onToggleHistory={toggleHistoryPanel}
-        onDeleteNode={removeNode}
+        onDeleteNode={isReadOnly ? () => {} : removeNode}
         onDuplicateNode={() => {}}
-        onDeleteEdge={removeEdge}
+        onDeleteEdge={isReadOnly ? () => {} : removeEdge}
         inspectorLocked={inspectorLocked}
         inspectorViewMode={inspectorViewMode}
         setInspectorLocked={setInspectorLocked}
         reactFlowHandlers={{
-          onNodesChange: onNodesChange as (changes: unknown[]) => void,
-          onEdgesChange: onEdgesChange as (changes: unknown[]) => void,
-          onConnect,
+          onNodesChange: isReadOnly
+            ? () => {}
+            : (onNodesChange as (changes: unknown[]) => void),
+          onEdgesChange: isReadOnly
+            ? () => {}
+            : (onEdgesChange as (changes: unknown[]) => void),
+          onConnect: isReadOnly ? () => {} : onConnect,
           onInit: () => {},
-          onSelectionChange: handleSelectionChange,
-          onReconnect: handleReconnect,
+          onSelectionChange: handleSelectionChange, // Allow selection in read-only mode
+          onReconnect: handleReconnect, // Already has read-only check inside
           onReconnectStart: handleReconnectStart,
-          onReconnectEnd: handleReconnectEnd,
+          onReconnectEnd: handleReconnectEnd, // Already has read-only check inside
         }}
+        isReadOnly={isReadOnly}
       />
       <Sidebar className="z-50" enableDebug={true} />
     </div>

@@ -77,6 +77,9 @@ export function useWorkflowKeyboardShortcuts({
 	useEffect(() => {
 		if (!enabled) return;
 
+		// Check if we're in a browser environment before accessing document
+		if (typeof document === "undefined") return;
+
 		document.addEventListener('keydown', handleKeyDown);
 		return () => document.removeEventListener('keydown', handleKeyDown);
 	}, [enabled, handleKeyDown]);

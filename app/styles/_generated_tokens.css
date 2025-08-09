@@ -7,12 +7,12 @@
   --core-spacing-xl: 1.5rem;
   --core-spacing-2xl: 2rem;
   --core-spacing-3xl: 3rem;
-  --core-typography-sizes-xs: 0.75rem;
-  --core-typography-sizes-sm: 0.875rem;
-  --core-typography-sizes-base: 1rem;
-  --core-typography-sizes-lg: 1.125rem;
-  --core-typography-sizes-xl: 1.25rem;
-  --core-typography-sizes-2xl: 1.5rem;
+  --core-typography-sizes-xs: 0.625rem;
+  --core-typography-sizes-sm: 0.75rem;
+  --core-typography-sizes-base: 0.875rem;
+  --core-typography-sizes-lg: 1rem;
+  --core-typography-sizes-xl: 1.125rem;
+  --core-typography-sizes-2xl: 1.375rem;
   --core-typography-weights-normal: 400;
   --core-typography-weights-medium: 500;
   --core-typography-weights-semibold: 600;
@@ -215,7 +215,7 @@
   --core-expandCollapseButton-bg: transparent;
   --core-expandCollapseButton-text: hsla(0, 0%, 0%, 1);
   --core-label-_comment: 📝 Node label styling - editable title at top of each node;
-  --core-label-top: 2px;
+  --core-label-top: -5px;
   --core-label-font-size: 10px;
   --core-label-font-weight: 600;
   --core-label-font-family: Inter, ui-sans-serif, sans-serif;

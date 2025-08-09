@@ -54,12 +54,12 @@ const OPACITY_MODERATE = "0.2"; // from old designTokens.ts
  * and the centralized design system tokens (CORE_TOKENS, NODE_INSPECTOR_TOKENS).
  */
 const DESIGN_SYSTEM_INTEGRATION = {
-	/** Core design tokens for foundational styling */
-	core: CORE_TOKENS,
-	/** Node inspector specific design configuration */
-	nodeInspector: NODE_INSPECTOR_TOKENS,
-	/** CSS custom properties prefix for infrastructure components */
-	cssPrefix: "--infra-",
+  /** Core design tokens for foundational styling */
+  core: CORE_TOKENS,
+  /** Node inspector specific design configuration */
+  nodeInspector: NODE_INSPECTOR_TOKENS,
+  /** CSS custom properties prefix for infrastructure components */
+  cssPrefix: "--infra-",
 } as const;
 
 // ============================================================================
@@ -76,64 +76,64 @@ const DESIGN_SYSTEM_INTEGRATION = {
  * @interface ComponentTheme
  */
 export interface ComponentTheme {
-	/** Background color variations for different component states */
-	background: {
-		/** Primary background color for default state */
-		primary: string;
-		/** Secondary background color for alternate elements */
-		secondary: string;
-		/** Background color on hover state */
-		hover: string;
-		/** Background color on active/pressed state */
-		active: string;
-	};
-	/** Border styling variations for different component states */
-	border: {
-		/** Default border styling */
-		default: string;
-		/** Border styling on hover state */
-		hover: string;
-		/** Border styling on active/pressed state */
-		active: string;
-	};
-	/** Text color variations for different content types */
-	text: {
-		/** Primary text color for main content */
-		primary: string;
-		/** Secondary text color for supporting content */
-		secondary: string;
-		/** Muted text color for less important content */
-		muted: string;
-	};
-	/** Glow effects for interactive states and focus indicators */
-	glow: {
-		/** Glow effect on hover state */
-		hover: string;
-		/** Glow effect on active/pressed state */
-		active: string;
-		/** Glow effect on focus state for accessibility */
-		focus: string;
-	};
-	/** Shadow variations for elevation and depth */
-	shadow: {
-		/** Default shadow for base elevation */
-		default: string;
-		/** Enhanced shadow on hover for elevation feedback */
-		hover: string;
-		/** Maximum shadow for elevated states */
-		elevated: string;
-	};
-	/** CSS transition properties for smooth state changes */
-	transition: string;
-	/** Border radius variations for different component parts */
-	borderRadius: {
-		/** Default border radius for general use */
-		default: string;
-		/** Border radius specifically for buttons */
-		button: string;
-		/** Border radius specifically for panels */
-		panel: string;
-	};
+  /** Background color variations for different component states */
+  background: {
+    /** Primary background color for default state */
+    primary: string;
+    /** Secondary background color for alternate elements */
+    secondary: string;
+    /** Background color on hover state */
+    hover: string;
+    /** Background color on active/pressed state */
+    active: string;
+  };
+  /** Border styling variations for different component states */
+  border: {
+    /** Default border styling */
+    default: string;
+    /** Border styling on hover state */
+    hover: string;
+    /** Border styling on active/pressed state */
+    active: string;
+  };
+  /** Text color variations for different content types */
+  text: {
+    /** Primary text color for main content */
+    primary: string;
+    /** Secondary text color for supporting content */
+    secondary: string;
+    /** Muted text color for less important content */
+    muted: string;
+  };
+  /** Glow effects for interactive states and focus indicators */
+  glow: {
+    /** Glow effect on hover state */
+    hover: string;
+    /** Glow effect on active/pressed state */
+    active: string;
+    /** Glow effect on focus state for accessibility */
+    focus: string;
+  };
+  /** Shadow variations for elevation and depth */
+  shadow: {
+    /** Default shadow for base elevation */
+    default: string;
+    /** Enhanced shadow on hover for elevation feedback */
+    hover: string;
+    /** Maximum shadow for elevated states */
+    elevated: string;
+  };
+  /** CSS transition properties for smooth state changes */
+  transition: string;
+  /** Border radius variations for different component parts */
+  borderRadius: {
+    /** Default border radius for general use */
+    default: string;
+    /** Border radius specifically for buttons */
+    button: string;
+    /** Border radius specifically for panels */
+    panel: string;
+  };
 }
 
 /**
@@ -145,15 +145,16 @@ export interface ComponentTheme {
  * @interface ComponentThemes
  */
 export interface ComponentThemes {
-	nodeInspector: typeof NODE_INSPECTOR_THEME;
-	sidePanel: typeof SIDE_PANEL_THEME;
-	sidebarIcons: typeof SIDEBAR_ICONS_THEME;
-	variantSelector: typeof VARIANT_SELECTOR_THEME;
-	actionToolbar: typeof ACTION_TOOLBAR_THEME;
-	historyPanel: typeof HISTORY_PANEL_THEME;
-	miniMap: typeof MINI_MAP_THEME;
-	flowCanvas: typeof FLOW_CANVAS_THEME;
-	workflowManager: typeof WORKFLOW_MANAGER_THEME;
+  nodeInspector: typeof NODE_INSPECTOR_THEME;
+  sidePanel: typeof SIDE_PANEL_THEME;
+  sidebarIcons: typeof SIDEBAR_ICONS_THEME;
+  variantSelector: typeof VARIANT_SELECTOR_THEME;
+  actionToolbar: typeof ACTION_TOOLBAR_THEME;
+  historyPanel: typeof HISTORY_PANEL_THEME;
+  miniMap: typeof MINI_MAP_THEME;
+  flowCanvas: typeof FLOW_CANVAS_THEME;
+  workflowManager: typeof WORKFLOW_MANAGER_THEME;
+  pieMenu: typeof PIE_MENU_THEME;
 }
 
 /**
@@ -162,14 +163,14 @@ export interface ComponentThemes {
  * @interface ComponentThemeState
  */
 export interface ComponentThemeState {
-	/** All component theme configurations */
-	themes: ComponentThemes;
-	/** Whether theming system is enabled globally */
-	enabled: boolean;
-	/** Custom theme overrides for specific components */
-	customOverrides: Partial<ComponentThemes>;
-	/** Debug mode for theme development */
-	debugMode: boolean;
+  /** All component theme configurations */
+  themes: ComponentThemes;
+  /** Whether theming system is enabled globally */
+  enabled: boolean;
+  /** Custom theme overrides for specific components */
+  customOverrides: Partial<ComponentThemes>;
+  /** Debug mode for theme development */
+  debugMode: boolean;
 }
 
 /**
@@ -178,23 +179,26 @@ export interface ComponentThemeState {
  * @interface ComponentThemeActions
  */
 export interface ComponentThemeActions {
-	/** Updates theme for a specific component */
-	updateComponentTheme: (component: keyof ComponentThemes, theme: Partial<ComponentTheme>) => void;
-	/** Resets theme for a specific component to default */
-	resetComponentTheme: (component: keyof ComponentThemes) => void;
-	/** Resets all themes to default configurations */
-	resetAllThemes: () => void;
-	/** Enables the theming system globally */
-	enableTheming: () => void;
-	/** Disables the theming system globally */
-	disableTheming: () => void;
-	/** Toggles debug mode for theme development */
-	toggleDebugMode: () => void;
-	/** Gets CSS classes for a component in a specific state */
-	getComponentClasses: (
-		component: keyof ComponentThemes,
-		state?: "default" | "hover" | "active"
-	) => string;
+  /** Updates theme for a specific component */
+  updateComponentTheme: (
+    component: keyof ComponentThemes,
+    theme: Partial<ComponentTheme>
+  ) => void;
+  /** Resets theme for a specific component to default */
+  resetComponentTheme: (component: keyof ComponentThemes) => void;
+  /** Resets all themes to default configurations */
+  resetAllThemes: () => void;
+  /** Enables the theming system globally */
+  enableTheming: () => void;
+  /** Disables the theming system globally */
+  disableTheming: () => void;
+  /** Toggles debug mode for theme development */
+  toggleDebugMode: () => void;
+  /** Gets CSS classes for a component in a specific state */
+  getComponentClasses: (
+    component: keyof ComponentThemes,
+    state?: "default" | "hover" | "active"
+  ) => string;
 }
 
 // ============================================================================
@@ -262,190 +266,190 @@ export interface ComponentThemeActions {
  * • All color combinations tested for accessibility
  */
 const _CSS_VARIABLE_COLOR_REFERENCE = {
-	light: {
-		backgrounds: {
-			"bg-background": {
-				hex: "#ffffff",
-				name: "Pure White",
-				usage: "Main app background",
-				contrast: "Base surface",
-			},
-			"bg-card": {
-				hex: "#ffffff",
-				name: "Pure White",
-				usage: "Card/panel backgrounds",
-				contrast: "Same as background for seamless integration",
-			},
-			"bg-muted": {
-				hex: "#f1f5f9",
-				name: "Very Light Gray",
-				usage: "Subtle backgrounds",
-				contrast: "Slightly darker than cards for layering",
-			},
-			"bg-accent": {
-				hex: "#f1f5f9",
-				name: "Very Light Gray",
-				usage: "Accent backgrounds",
-				contrast: "Subtle highlight without distraction",
-			},
-			"bg-primary": {
-				hex: "#0f172a",
-				name: "Very Dark Blue",
-				usage: "Primary buttons",
-				contrast: "High contrast for important actions",
-			},
-			"bg-secondary": {
-				hex: "#f1f5f9",
-				name: "Very Light Gray",
-				usage: "Secondary buttons",
-				contrast: "Subtle for less important actions",
-			},
-		},
-		text: {
-			"text-foreground": {
-				hex: "#0f172a",
-				name: "Very Dark Blue",
-				usage: "Primary text",
-				contrast: "21:1 on white background",
-			},
-			"text-card-foreground": {
-				hex: "#0f172a",
-				name: "Very Dark Blue",
-				usage: "Card text",
-				contrast: "21:1 on white cards",
-			},
-			"text-muted-foreground": {
-				hex: "#64748b",
-				name: "Medium Gray",
-				usage: "Secondary text",
-				contrast: "7:1 on white background",
-			},
-			"text-primary-foreground": {
-				hex: "#f8fafc",
-				name: "Almost White",
-				usage: "Text on primary",
-				contrast: "18:1 on dark blue primary",
-			},
-			"text-secondary-foreground": {
-				hex: "#0f172a",
-				name: "Very Dark Blue",
-				usage: "Text on secondary",
-				contrast: "21:1 on light gray secondary",
-			},
-		},
-		borders: {
-			"border-border": {
-				hex: "#e2e8f0",
-				name: "Light Gray",
-				usage: "Default borders",
-				contrast: "Subtle definition without harshness",
-			},
-			"border-accent": {
-				hex: "#e2e8f0",
-				name: "Light Gray",
-				usage: "Accent borders",
-				contrast: "Same as default for consistency",
-			},
-			"border-primary": {
-				hex: "#0f172a",
-				name: "Very Dark Blue",
-				usage: "Primary borders",
-				contrast: "Strong definition for emphasis",
-			},
-		},
-	},
-	dark: {
-		backgrounds: {
-			"bg-background": {
-				hex: "#0f172a",
-				name: "Very Dark Blue",
-				usage: "Main app background",
-				contrast: "Deep base for dark theme",
-			},
-			"bg-card": {
-				hex: "#1e293b",
-				name: "Dark Gray-Blue",
-				usage: "Card/panel backgrounds",
-				contrast: "Elevated from background",
-			},
-			"bg-muted": {
-				hex: "#1e293b",
-				name: "Dark Gray-Blue",
-				usage: "Subtle backgrounds",
-				contrast: "Same as cards for consistency",
-			},
-			"bg-accent": {
-				hex: "#1e293b",
-				name: "Dark Gray-Blue",
-				usage: "Accent backgrounds",
-				contrast: "Subtle highlight in dark theme",
-			},
-			"bg-primary": {
-				hex: "#f8fafc",
-				name: "Almost White",
-				usage: "Primary buttons",
-				contrast: "High contrast for visibility",
-			},
-			"bg-secondary": {
-				hex: "#1e293b",
-				name: "Dark Gray-Blue",
-				usage: "Secondary buttons",
-				contrast: "Subtle for less important actions",
-			},
-		},
-		text: {
-			"text-foreground": {
-				hex: "#f8fafc",
-				name: "Almost White",
-				usage: "Primary text",
-				contrast: "18:1 on dark background",
-			},
-			"text-card-foreground": {
-				hex: "#f8fafc",
-				name: "Almost White",
-				usage: "Card text",
-				contrast: "15:1 on dark cards",
-			},
-			"text-muted-foreground": {
-				hex: "#94a3b8",
-				name: "Medium Gray",
-				usage: "Secondary text",
-				contrast: "5.5:1 on dark background",
-			},
-			"text-primary-foreground": {
-				hex: "#0f172a",
-				name: "Very Dark Blue",
-				usage: "Text on primary",
-				contrast: "18:1 on white primary",
-			},
-			"text-secondary-foreground": {
-				hex: "#f8fafc",
-				name: "Almost White",
-				usage: "Text on secondary",
-				contrast: "15:1 on dark secondary",
-			},
-		},
-		borders: {
-			"border-border": {
-				hex: "#334155",
-				name: "Dark Gray",
-				usage: "Default borders",
-				contrast: "Visible definition in dark theme",
-			},
-			"border-accent": {
-				hex: "#334155",
-				name: "Dark Gray",
-				usage: "Accent borders",
-				contrast: "Same as default for consistency",
-			},
-			"border-primary": {
-				hex: "#f8fafc",
-				name: "Almost White",
-				usage: "Primary borders",
-				contrast: "Strong definition for emphasis",
-			},
-		},
-	},
+  light: {
+    backgrounds: {
+      "bg-background": {
+        hex: "#ffffff",
+        name: "Pure White",
+        usage: "Main app background",
+        contrast: "Base surface",
+      },
+      "bg-card": {
+        hex: "#ffffff",
+        name: "Pure White",
+        usage: "Card/panel backgrounds",
+        contrast: "Same as background for seamless integration",
+      },
+      "bg-muted": {
+        hex: "#f1f5f9",
+        name: "Very Light Gray",
+        usage: "Subtle backgrounds",
+        contrast: "Slightly darker than cards for layering",
+      },
+      "bg-accent": {
+        hex: "#f1f5f9",
+        name: "Very Light Gray",
+        usage: "Accent backgrounds",
+        contrast: "Subtle highlight without distraction",
+      },
+      "bg-primary": {
+        hex: "#0f172a",
+        name: "Very Dark Blue",
+        usage: "Primary buttons",
+        contrast: "High contrast for important actions",
+      },
+      "bg-secondary": {
+        hex: "#f1f5f9",
+        name: "Very Light Gray",
+        usage: "Secondary buttons",
+        contrast: "Subtle for less important actions",
+      },
+    },
+    text: {
+      "text-foreground": {
+        hex: "#0f172a",
+        name: "Very Dark Blue",
+        usage: "Primary text",
+        contrast: "21:1 on white background",
+      },
+      "text-card-foreground": {
+        hex: "#0f172a",
+        name: "Very Dark Blue",
+        usage: "Card text",
+        contrast: "21:1 on white cards",
+      },
+      "text-muted-foreground": {
+        hex: "#64748b",
+        name: "Medium Gray",
+        usage: "Secondary text",
+        contrast: "7:1 on white background",
+      },
+      "text-primary-foreground": {
+        hex: "#f8fafc",
+        name: "Almost White",
+        usage: "Text on primary",
+        contrast: "18:1 on dark blue primary",
+      },
+      "text-secondary-foreground": {
+        hex: "#0f172a",
+        name: "Very Dark Blue",
+        usage: "Text on secondary",
+        contrast: "21:1 on light gray secondary",
+      },
+    },
+    borders: {
+      "border-border": {
+        hex: "#e2e8f0",
+        name: "Light Gray",
+        usage: "Default borders",
+        contrast: "Subtle definition without harshness",
+      },
+      "border-accent": {
+        hex: "#e2e8f0",
+        name: "Light Gray",
+        usage: "Accent borders",
+        contrast: "Same as default for consistency",
+      },
+      "border-primary": {
+        hex: "#0f172a",
+        name: "Very Dark Blue",
+        usage: "Primary borders",
+        contrast: "Strong definition for emphasis",
+      },
+    },
+  },
+  dark: {
+    backgrounds: {
+      "bg-background": {
+        hex: "#0f172a",
+        name: "Very Dark Blue",
+        usage: "Main app background",
+        contrast: "Deep base for dark theme",
+      },
+      "bg-card": {
+        hex: "#1e293b",
+        name: "Dark Gray-Blue",
+        usage: "Card/panel backgrounds",
+        contrast: "Elevated from background",
+      },
+      "bg-muted": {
+        hex: "#1e293b",
+        name: "Dark Gray-Blue",
+        usage: "Subtle backgrounds",
+        contrast: "Same as cards for consistency",
+      },
+      "bg-accent": {
+        hex: "#1e293b",
+        name: "Dark Gray-Blue",
+        usage: "Accent backgrounds",
+        contrast: "Subtle highlight in dark theme",
+      },
+      "bg-primary": {
+        hex: "#f8fafc",
+        name: "Almost White",
+        usage: "Primary buttons",
+        contrast: "High contrast for visibility",
+      },
+      "bg-secondary": {
+        hex: "#1e293b",
+        name: "Dark Gray-Blue",
+        usage: "Secondary buttons",
+        contrast: "Subtle for less important actions",
+      },
+    },
+    text: {
+      "text-foreground": {
+        hex: "#f8fafc",
+        name: "Almost White",
+        usage: "Primary text",
+        contrast: "18:1 on dark background",
+      },
+      "text-card-foreground": {
+        hex: "#f8fafc",
+        name: "Almost White",
+        usage: "Card text",
+        contrast: "15:1 on dark cards",
+      },
+      "text-muted-foreground": {
+        hex: "#94a3b8",
+        name: "Medium Gray",
+        usage: "Secondary text",
+        contrast: "5.5:1 on dark background",
+      },
+      "text-primary-foreground": {
+        hex: "#0f172a",
+        name: "Very Dark Blue",
+        usage: "Text on primary",
+        contrast: "18:1 on white primary",
+      },
+      "text-secondary-foreground": {
+        hex: "#f8fafc",
+        name: "Almost White",
+        usage: "Text on secondary",
+        contrast: "15:1 on dark secondary",
+      },
+    },
+    borders: {
+      "border-border": {
+        hex: "#334155",
+        name: "Dark Gray",
+        usage: "Default borders",
+        contrast: "Visible definition in dark theme",
+      },
+      "border-accent": {
+        hex: "#334155",
+        name: "Dark Gray",
+        usage: "Accent borders",
+        contrast: "Same as default for consistency",
+      },
+      "border-primary": {
+        hex: "#f8fafc",
+        name: "Almost White",
+        usage: "Primary borders",
+        contrast: "Strong definition for emphasis",
+      },
+    },
+  },
 } as const;
 
 // ============================================================================
@@ -504,38 +508,38 @@ const _CSS_VARIABLE_COLOR_REFERENCE = {
  * Dark: Dark blue background (#0f172a) with white text (#f8fafc)
  */
 const ACTION_TOOLBAR_THEME: ComponentTheme = {
-	background: {
-		primary: "bg-background border border-border", // 🌞 White (#ffffff) 🌙 Dark blue (#0f172a)
-		secondary: "bg-muted", // 🌞 Very light gray (#f1f5f9) 🌙 Dark gray-blue (#1e293b)
-		hover: "hover:bg-muted/80", // Slightly transparent muted background
-		active: "bg-muted", // Same as secondary
-	},
-	border: {
-		default: "border-border", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
-		hover: "hover:border-border", // Same as default
-		active: "border-primary", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
-	},
-	text: {
-		primary: "text-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
-		secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
-		muted: "text-muted-foreground/70", // Secondary text with 70% opacity
-	},
-	glow: {
-		hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
-		active: ELEVATION_SYSTEM.surface.level2,
-		focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
-	},
-	shadow: {
-		default: ELEVATION_SYSTEM.surface.level1,
-		hover: ELEVATION_SYSTEM.surface.level2.replace("shadow-", "hover:shadow-"),
-		elevated: ELEVATION_SYSTEM.surface.level3,
-	},
-	transition: `transition-all duration-${TRANSITION_DURATION_NORMAL} ease-in-out`,
-	borderRadius: {
-		default: BORDER_RADIUS_LARGE,
-		button: BORDER_RADIUS_MEDIUM,
-		panel: BORDER_RADIUS_LARGE,
-	},
+  background: {
+    primary: "bg-background border border-border", // 🌞 White (#ffffff) 🌙 Dark blue (#0f172a)
+    secondary: "bg-muted", // 🌞 Very light gray (#f1f5f9) 🌙 Dark gray-blue (#1e293b)
+    hover: "hover:bg-muted/80", // Slightly transparent muted background
+    active: "bg-muted", // Same as secondary
+  },
+  border: {
+    default: "border-border", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
+    hover: "hover:border-border", // Same as default
+    active: "border-primary", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+  },
+  text: {
+    primary: "text-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+    secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
+    muted: "text-muted-foreground/70", // Secondary text with 70% opacity
+  },
+  glow: {
+    hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
+    active: ELEVATION_SYSTEM.surface.level2,
+    focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
+  },
+  shadow: {
+    default: ELEVATION_SYSTEM.surface.level1,
+    hover: ELEVATION_SYSTEM.surface.level2.replace("shadow-", "hover:shadow-"),
+    elevated: ELEVATION_SYSTEM.surface.level3,
+  },
+  transition: `transition-all duration-${TRANSITION_DURATION_NORMAL} ease-in-out`,
+  borderRadius: {
+    default: BORDER_RADIUS_LARGE,
+    button: BORDER_RADIUS_MEDIUM,
+    panel: BORDER_RADIUS_LARGE,
+  },
 };
 
 /**
@@ -549,38 +553,38 @@ const ACTION_TOOLBAR_THEME: ComponentTheme = {
  * Dark: Dark gray-blue card background (#1e293b) with white text (#f8fafc)
  */
 const WORKFLOW_MANAGER_THEME: ComponentTheme = {
-	background: {
-		primary: "bg-background/95 backdrop-blur-sm border border-border", // 🌞 White (#ffffff) 🌙 Dark blue (#0f172a)
-		secondary: "bg-muted", // 🌞 Very light gray (#f1f5f9) 🌙 Dark gray-blue (#1e293b)
-		hover: "hover:bg-muted/80", // Slightly transparent muted background
-		active: "bg-muted", // Same as secondary
-	},
-	border: {
-		default: "border-border", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
-		hover: "hover:border-border", // Same as default
-		active: "border-primary", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
-	},
-	text: {
-		primary: "text-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
-		secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
-		muted: "text-muted-foreground/70", // Secondary text with 70% opacity
-	},
-	glow: {
-		hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
-		active: ELEVATION_SYSTEM.surface.level2,
-		focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
-	},
-	shadow: {
-		default: ELEVATION_SYSTEM.surface.level1,
-		hover: ELEVATION_SYSTEM.surface.level2.replace("shadow-", "hover:shadow-"),
-		elevated: ELEVATION_SYSTEM.surface.level3,
-	},
-	transition: `transition-all duration-${TRANSITION_DURATION_NORMAL} ease-in-out`,
-	borderRadius: {
-		default: BORDER_RADIUS_LARGE,
-		button: BORDER_RADIUS_MEDIUM,
-		panel: BORDER_RADIUS_LARGE,
-	},
+  background: {
+    primary: "bg-background/95 backdrop-blur-sm border border-border", // 🌞 White (#ffffff) 🌙 Dark blue (#0f172a)
+    secondary: "bg-muted", // 🌞 Very light gray (#f1f5f9) 🌙 Dark gray-blue (#1e293b)
+    hover: "hover:bg-muted/80", // Slightly transparent muted background
+    active: "bg-muted", // Same as secondary
+  },
+  border: {
+    default: "border-border", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
+    hover: "hover:border-border", // Same as default
+    active: "border-primary", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+  },
+  text: {
+    primary: "text-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+    secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
+    muted: "text-muted-foreground/70", // Secondary text with 70% opacity
+  },
+  glow: {
+    hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
+    active: ELEVATION_SYSTEM.surface.level2,
+    focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
+  },
+  shadow: {
+    default: ELEVATION_SYSTEM.surface.level1,
+    hover: ELEVATION_SYSTEM.surface.level2.replace("shadow-", "hover:shadow-"),
+    elevated: ELEVATION_SYSTEM.surface.level3,
+  },
+  transition: `transition-all duration-${TRANSITION_DURATION_NORMAL} ease-in-out`,
+  borderRadius: {
+    default: BORDER_RADIUS_LARGE,
+    button: BORDER_RADIUS_MEDIUM,
+    panel: BORDER_RADIUS_LARGE,
+  },
 };
 
 /**
@@ -594,38 +598,38 @@ const WORKFLOW_MANAGER_THEME: ComponentTheme = {
  * Dark: Dark gray-blue card background (#1e293b) with white text (#f8fafc)
  */
 const HISTORY_PANEL_THEME: ComponentTheme = {
-	background: {
-		primary: "bg-card border border-border", // 🌞 White (#ffffff) 🌙 Dark gray-blue (#1e293b)
-		secondary: "bg-accent", // 🌞 Very light gray (#f1f5f9) 🌙 Dark gray-blue (#1e293b)
-		hover: "hover:bg-accent/80", // Slightly transparent accent background
-		active: "bg-accent", // Same as secondary
-	},
-	border: {
-		default: "border-border", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
-		hover: "hover:border-accent", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
-		active: "border-primary", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
-	},
-	text: {
-		primary: "text-card-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
-		secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
-		muted: "text-muted-foreground/70", // Secondary text with 70% opacity
-	},
-	glow: {
-		hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
-		active: ELEVATION_SYSTEM.surface.level2,
-		focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
-	},
-	shadow: {
-		default: ELEVATION_SYSTEM.surface.level1,
-		hover: ELEVATION_SYSTEM.surface.level2.replace("shadow-", "hover:shadow-"),
-		elevated: ELEVATION_SYSTEM.surface.level4,
-	},
-	transition: `transition-all duration-${TRANSITION_DURATION_NORMAL} ease-in-out`,
-	borderRadius: {
-		default: BORDER_RADIUS_LARGE,
-		button: BORDER_RADIUS_MEDIUM,
-		panel: BORDER_RADIUS_LARGE,
-	},
+  background: {
+    primary: "bg-card border border-border", // 🌞 White (#ffffff) 🌙 Dark gray-blue (#1e293b)
+    secondary: "bg-accent", // 🌞 Very light gray (#f1f5f9) 🌙 Dark gray-blue (#1e293b)
+    hover: "hover:bg-accent/80", // Slightly transparent accent background
+    active: "bg-accent", // Same as secondary
+  },
+  border: {
+    default: "border-border", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
+    hover: "hover:border-accent", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
+    active: "border-primary", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+  },
+  text: {
+    primary: "text-card-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+    secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
+    muted: "text-muted-foreground/70", // Secondary text with 70% opacity
+  },
+  glow: {
+    hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
+    active: ELEVATION_SYSTEM.surface.level2,
+    focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
+  },
+  shadow: {
+    default: ELEVATION_SYSTEM.surface.level1,
+    hover: ELEVATION_SYSTEM.surface.level2.replace("shadow-", "hover:shadow-"),
+    elevated: ELEVATION_SYSTEM.surface.level4,
+  },
+  transition: `transition-all duration-${TRANSITION_DURATION_NORMAL} ease-in-out`,
+  borderRadius: {
+    default: BORDER_RADIUS_LARGE,
+    button: BORDER_RADIUS_MEDIUM,
+    panel: BORDER_RADIUS_LARGE,
+  },
 };
 
 /**
@@ -640,38 +644,38 @@ const HISTORY_PANEL_THEME: ComponentTheme = {
  * Special: Uses custom hover-node-effect for theme-aware hover states
  */
 const SIDE_PANEL_THEME: ComponentTheme = {
-	background: {
-		primary: "bg-background border border-border", // 🌞 White (#ffffff) 🌙 Dark gray-blue (#1e293b)
-		secondary: "bg-accent border border-accent-foreground/20", // Accent with subtle border
-		hover: "hover-node-effect", // 🎨 Custom utility: brighter in dark, darker in light
-		active: "bg-accent/80", // Slightly transparent accent
-	},
-	border: {
-		default: "border-border", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
-		hover: "hover:border-accent-foreground/30", // Subtle accent border on hover
-		active: "border-primary/50", // Semi-transparent primary border
-	},
-	text: {
-		primary: "text-card-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
-		secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
-		muted: "text-muted-foreground/70", // Secondary text with 70% opacity
-	},
-	glow: {
-		hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
-		active: ELEVATION_SYSTEM.surface.level2,
-		focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
-	},
-	shadow: {
-		default: ELEVATION_SYSTEM.surface.level2,
-		hover: ELEVATION_SYSTEM.surface.level3.replace("shadow-", "hover:shadow-"),
-		elevated: ELEVATION_SYSTEM.surface.level4,
-	},
-	transition: `transition-all duration-${TRANSITION_DURATION_FAST} ease-in-out`,
-	borderRadius: {
-		default: BORDER_RADIUS_LARGE,
-		button: BORDER_RADIUS_MEDIUM,
-		panel: BORDER_RADIUS_LARGE,
-	},
+  background: {
+    primary: "bg-background border border-border", // 🌞 White (#ffffff) 🌙 Dark gray-blue (#1e293b)
+    secondary: "bg-accent border border-accent-foreground/20", // Accent with subtle border
+    hover: "hover-node-effect", // 🎨 Custom utility: brighter in dark, darker in light
+    active: "bg-accent/80", // Slightly transparent accent
+  },
+  border: {
+    default: "border-border", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
+    hover: "hover:border-accent-foreground/30", // Subtle accent border on hover
+    active: "border-primary/50", // Semi-transparent primary border
+  },
+  text: {
+    primary: "text-card-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+    secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
+    muted: "text-muted-foreground/70", // Secondary text with 70% opacity
+  },
+  glow: {
+    hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
+    active: ELEVATION_SYSTEM.surface.level2,
+    focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
+  },
+  shadow: {
+    default: ELEVATION_SYSTEM.surface.level2,
+    hover: ELEVATION_SYSTEM.surface.level3.replace("shadow-", "hover:shadow-"),
+    elevated: ELEVATION_SYSTEM.surface.level4,
+  },
+  transition: `transition-all duration-${TRANSITION_DURATION_FAST} ease-in-out`,
+  borderRadius: {
+    default: BORDER_RADIUS_LARGE,
+    button: BORDER_RADIUS_MEDIUM,
+    panel: BORDER_RADIUS_LARGE,
+  },
 };
 
 /**
@@ -685,38 +689,38 @@ const SIDE_PANEL_THEME: ComponentTheme = {
  * Dark: Semi-transparent dark gray-blue (#1e293b/80) with white text (#f8fafc)
  */
 const SIDEBAR_ICONS_THEME: ComponentTheme = {
-	background: {
-		primary: "bg-card/80", // 🌞 White 80% opacity 🌙 Dark gray-blue 80% opacity
-		secondary: "bg-accent/50", // 🌞 Light gray 50% opacity 🌙 Dark gray-blue 50% opacity
-		hover: "hover:bg-accent/30", // Very subtle accent hover
-		active: "bg-accent/60", // Slightly more opaque accent
-	},
-	border: {
-		default: "border-border/50", // Semi-transparent border
-		hover: "hover:border-accent-foreground/20", // Very subtle border hover
-		active: "border-primary/30", // Semi-transparent primary border
-	},
-	text: {
-		primary: "text-card-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
-		secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
-		muted: "text-muted-foreground/60", // Secondary text with 60% opacity
-	},
-	glow: {
-		hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
-		active: ELEVATION_SYSTEM.surface.level1,
-		focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
-	},
-	shadow: {
-		default: "shadow-none",
-		hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
-		elevated: ELEVATION_SYSTEM.surface.level2,
-	},
-	transition: `transition-all duration-${TRANSITION_DURATION_FAST} ease-in-out`,
-	borderRadius: {
-		default: BORDER_RADIUS_MEDIUM,
-		button: BORDER_RADIUS_MEDIUM,
-		panel: BORDER_RADIUS_MEDIUM,
-	},
+  background: {
+    primary: "bg-card/80", // 🌞 White 80% opacity 🌙 Dark gray-blue 80% opacity
+    secondary: "bg-accent/50", // 🌞 Light gray 50% opacity 🌙 Dark gray-blue 50% opacity
+    hover: "hover:bg-accent/30", // Very subtle accent hover
+    active: "bg-accent/60", // Slightly more opaque accent
+  },
+  border: {
+    default: "border-border/50", // Semi-transparent border
+    hover: "hover:border-accent-foreground/20", // Very subtle border hover
+    active: "border-primary/30", // Semi-transparent primary border
+  },
+  text: {
+    primary: "text-card-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+    secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
+    muted: "text-muted-foreground/60", // Secondary text with 60% opacity
+  },
+  glow: {
+    hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
+    active: ELEVATION_SYSTEM.surface.level1,
+    focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
+  },
+  shadow: {
+    default: "shadow-none",
+    hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
+    elevated: ELEVATION_SYSTEM.surface.level2,
+  },
+  transition: `transition-all duration-${TRANSITION_DURATION_FAST} ease-in-out`,
+  borderRadius: {
+    default: BORDER_RADIUS_MEDIUM,
+    button: BORDER_RADIUS_MEDIUM,
+    panel: BORDER_RADIUS_MEDIUM,
+  },
 };
 
 /**
@@ -736,38 +740,38 @@ const SIDEBAR_ICONS_THEME: ComponentTheme = {
  * • Uses text.muted (text-primary-foreground) for proper contrast on active buttons
  */
 const VARIANT_SELECTOR_THEME: ComponentTheme = {
-	background: {
-		primary: "bg-background", // 🌞 White (#ffffff) 🌙 Dark blue (#0f172a)
-		secondary: "bg-accent", // 🌞 Very light gray (#f1f5f9) 🌙 Dark gray-blue (#1e293b)
-		hover: "hover:bg-accent/80", // Slightly transparent accent hover
-		active: "bg-primary", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc) - Inverted!
-	},
-	border: {
-		default: "border-border", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
-		hover: "hover:border-accent-foreground/30", // Subtle accent border on hover
-		active: "border-primary", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
-	},
-	text: {
-		primary: "text-card-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
-		secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
-		muted: "text-primary-foreground", // 🌞 White (#f8fafc) 🌙 Dark blue (#0f172a) - For active state contrast!
-	},
-	glow: {
-		hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
-		active: ELEVATION_SYSTEM.surface.level2,
-		focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
-	},
-	shadow: {
-		default: ELEVATION_SYSTEM.surface.level1,
-		hover: ELEVATION_SYSTEM.surface.level2.replace("shadow-", "hover:shadow-"),
-		elevated: ELEVATION_SYSTEM.surface.level3,
-	},
-	transition: `transition-colors duration-${TRANSITION_DURATION_FAST}`,
-	borderRadius: {
-		default: BORDER_RADIUS_DEFAULT,
-		button: BORDER_RADIUS_DEFAULT,
-		panel: BORDER_RADIUS_DEFAULT,
-	},
+  background: {
+    primary: "bg-background", // 🌞 White (#ffffff) 🌙 Dark blue (#0f172a)
+    secondary: "bg-accent", // 🌞 Very light gray (#f1f5f9) 🌙 Dark gray-blue (#1e293b)
+    hover: "hover:bg-accent/80", // Slightly transparent accent hover
+    active: "bg-primary", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc) - Inverted!
+  },
+  border: {
+    default: "border-border", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
+    hover: "hover:border-accent-foreground/30", // Subtle accent border on hover
+    active: "border-primary", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+  },
+  text: {
+    primary: "text-card-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+    secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
+    muted: "text-primary-foreground", // 🌞 White (#f8fafc) 🌙 Dark blue (#0f172a) - For active state contrast!
+  },
+  glow: {
+    hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
+    active: ELEVATION_SYSTEM.surface.level2,
+    focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
+  },
+  shadow: {
+    default: ELEVATION_SYSTEM.surface.level1,
+    hover: ELEVATION_SYSTEM.surface.level2.replace("shadow-", "hover:shadow-"),
+    elevated: ELEVATION_SYSTEM.surface.level3,
+  },
+  transition: `transition-colors duration-${TRANSITION_DURATION_FAST}`,
+  borderRadius: {
+    default: BORDER_RADIUS_DEFAULT,
+    button: BORDER_RADIUS_DEFAULT,
+    panel: BORDER_RADIUS_DEFAULT,
+  },
 };
 
 /**
@@ -788,38 +792,39 @@ const VARIANT_SELECTOR_THEME: ComponentTheme = {
  * • Supports CSS custom properties (--infra-inspector-*)
  */
 const NODE_INSPECTOR_THEME: ComponentTheme = {
-	background: {
-		primary: `${DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.background} border ${DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.border}`,
-		secondary: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.data.background,
-		hover: "hover:bg-muted/80", // Fallback to shadcn for hover states
-		active: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.data.background,
-	},
-	border: {
-		default: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.border,
-		hover: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.borderHover,
-		active: "border-primary", // Fallback to shadcn for active states
-	},
-	text: {
-		primary: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.text,
-		secondary: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.textSecondary,
-		muted: "text-muted-foreground/70", // Fallback to shadcn with opacity
-	},
-	glow: {
-		hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
-		active: ELEVATION_SYSTEM.surface.level2,
-		focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
-	},
-	shadow: {
-		default: ELEVATION_SYSTEM.surface.level1,
-		hover: ELEVATION_SYSTEM.surface.level2.replace("shadow-", "hover:shadow-"),
-		elevated: ELEVATION_SYSTEM.surface.level3,
-	},
-	transition: DESIGN_SYSTEM_INTEGRATION.nodeInspector.effects.transition,
-	borderRadius: {
-		default: DESIGN_SYSTEM_INTEGRATION.nodeInspector.effects.rounded.md,
-		button: DESIGN_SYSTEM_INTEGRATION.nodeInspector.effects.rounded.default,
-		panel: DESIGN_SYSTEM_INTEGRATION.nodeInspector.effects.rounded.md,
-	},
+  background: {
+    primary: `${DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.background} border ${DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.border}`,
+    secondary: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.data.background,
+    hover: "hover:bg-muted/80", // Fallback to shadcn for hover states
+    active: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.data.background,
+  },
+  border: {
+    default: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.border,
+    hover: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.borderHover,
+    active: "border-primary", // Fallback to shadcn for active states
+  },
+  text: {
+    primary: DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.text,
+    secondary:
+      DESIGN_SYSTEM_INTEGRATION.nodeInspector.colors.inspector.textSecondary,
+    muted: "text-muted-foreground/70", // Fallback to shadcn with opacity
+  },
+  glow: {
+    hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
+    active: ELEVATION_SYSTEM.surface.level2,
+    focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
+  },
+  shadow: {
+    default: ELEVATION_SYSTEM.surface.level1,
+    hover: ELEVATION_SYSTEM.surface.level2.replace("shadow-", "hover:shadow-"),
+    elevated: ELEVATION_SYSTEM.surface.level3,
+  },
+  transition: DESIGN_SYSTEM_INTEGRATION.nodeInspector.effects.transition,
+  borderRadius: {
+    default: DESIGN_SYSTEM_INTEGRATION.nodeInspector.effects.rounded.md,
+    button: DESIGN_SYSTEM_INTEGRATION.nodeInspector.effects.rounded.default,
+    panel: DESIGN_SYSTEM_INTEGRATION.nodeInspector.effects.rounded.md,
+  },
 };
 
 /**
@@ -834,38 +839,38 @@ const NODE_INSPECTOR_THEME: ComponentTheme = {
  * Special: Node category colors for visual distinction in minimap
  */
 const MINI_MAP_THEME: ComponentTheme = {
-	background: {
-		primary: "bg-[var(--infra-minimap-bg)]", // 🌞 White background 🌙 Dark background
-		secondary: "bg-[var(--infra-minimap-bg)]", // Same as primary for consistency
-		hover: "hover:bg-[var(--infra-minimap-bg-hover)]", // Subtle hover state
-		active: "bg-[var(--infra-minimap-bg-active)]", // Active state
-	},
-	border: {
-		default: "border-[var(--infra-minimap-border)]", // Consistent border color
-		hover: "hover:border-[var(--infra-minimap-border-hover)]", // Enhanced border on hover
-		active: "border-[var(--infra-minimap-border-hover)]", // Active border state
-	},
-	text: {
-		primary: "text-[var(--infra-minimap-text)]", // Primary text color
-		secondary: "text-[var(--infra-minimap-text-secondary)]", // Secondary text color
-		muted: "text-[var(--infra-minimap-text-secondary)]", // Muted text same as secondary
-	},
-	glow: {
-		hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
-		active: ELEVATION_SYSTEM.surface.level2,
-		focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
-	},
-	shadow: {
-		default: ELEVATION_SYSTEM.surface.level1,
-		hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
-		elevated: ELEVATION_SYSTEM.surface.level2,
-	},
-	transition: `transition-all duration-${TRANSITION_DURATION_FAST} ease-in-out`,
-	borderRadius: {
-		default: BORDER_RADIUS_MEDIUM,
-		button: BORDER_RADIUS_SMALL,
-		panel: BORDER_RADIUS_MEDIUM,
-	},
+  background: {
+    primary: "bg-[var(--infra-minimap-bg)]", // 🌞 White background 🌙 Dark background
+    secondary: "bg-[var(--infra-minimap-bg)]", // Same as primary for consistency
+    hover: "hover:bg-[var(--infra-minimap-bg-hover)]", // Subtle hover state
+    active: "bg-[var(--infra-minimap-bg-active)]", // Active state
+  },
+  border: {
+    default: "border-[var(--infra-minimap-border)]", // Consistent border color
+    hover: "hover:border-[var(--infra-minimap-border-hover)]", // Enhanced border on hover
+    active: "border-[var(--infra-minimap-border-hover)]", // Active border state
+  },
+  text: {
+    primary: "text-[var(--infra-minimap-text)]", // Primary text color
+    secondary: "text-[var(--infra-minimap-text-secondary)]", // Secondary text color
+    muted: "text-[var(--infra-minimap-text-secondary)]", // Muted text same as secondary
+  },
+  glow: {
+    hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
+    active: ELEVATION_SYSTEM.surface.level2,
+    focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
+  },
+  shadow: {
+    default: ELEVATION_SYSTEM.surface.level1,
+    hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
+    elevated: ELEVATION_SYSTEM.surface.level2,
+  },
+  transition: `transition-all duration-${TRANSITION_DURATION_FAST} ease-in-out`,
+  borderRadius: {
+    default: BORDER_RADIUS_MEDIUM,
+    button: BORDER_RADIUS_SMALL,
+    panel: BORDER_RADIUS_MEDIUM,
+  },
 };
 
 /**
@@ -881,48 +886,95 @@ const MINI_MAP_THEME: ComponentTheme = {
  * Special: Status-based colors for delete buttons and interactive elements
  */
 const FLOW_CANVAS_THEME: ComponentTheme = {
-	background: {
-		primary: "bg-[var(--infra-canvas-bg)]", // 🌞 White canvas 🌙 Dark canvas
-		secondary: "bg-[var(--infra-canvas-bg)]", // Same as primary for consistency
-		hover: "hover:bg-[var(--infra-canvas-bg-hover)]", // Subtle hover state
-		active: "bg-[var(--infra-canvas-bg-active)]", // Active state
-	},
-	border: {
-		default: "border-[var(--infra-canvas-border)]", // Consistent border color
-		hover: "hover:border-[var(--infra-canvas-border-hover)]", // Enhanced border on hover
-		active: "border-[var(--infra-canvas-border-hover)]", // Active border state
-	},
-	text: {
-		primary: "text-[var(--infra-canvas-text)]", // Primary text color
-		secondary: "text-[var(--infra-canvas-text-secondary)]", // Secondary text color
-		muted: "text-[var(--infra-canvas-text-secondary)]", // Muted text same as secondary
-	},
-	glow: {
-		hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
-		active: ELEVATION_SYSTEM.surface.level2,
-		focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
-	},
-	shadow: {
-		default: ELEVATION_SYSTEM.surface.level1,
-		hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
-		elevated: ELEVATION_SYSTEM.surface.level2,
-	},
-	transition: `transition-all duration-${TRANSITION_DURATION_FAST} ease-in-out`,
-	borderRadius: {
-		default: BORDER_RADIUS_MEDIUM,
-		button: BORDER_RADIUS_SMALL,
-		panel: BORDER_RADIUS_MEDIUM,
-	},
+  background: {
+    primary: "bg-[var(--infra-canvas-bg)]", // 🌞 White canvas 🌙 Dark canvas
+    secondary: "bg-[var(--infra-canvas-bg)]", // Same as primary for consistency
+    hover: "hover:bg-[var(--infra-canvas-bg-hover)]", // Subtle hover state
+    active: "bg-[var(--infra-canvas-bg-active)]", // Active state
+  },
+  border: {
+    default: "border-[var(--infra-canvas-border)]", // Consistent border color
+    hover: "hover:border-[var(--infra-canvas-border-hover)]", // Enhanced border on hover
+    active: "border-[var(--infra-canvas-border-hover)]", // Active border state
+  },
+  text: {
+    primary: "text-[var(--infra-canvas-text)]", // Primary text color
+    secondary: "text-[var(--infra-canvas-text-secondary)]", // Secondary text color
+    muted: "text-[var(--infra-canvas-text-secondary)]", // Muted text same as secondary
+  },
+  glow: {
+    hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
+    active: ELEVATION_SYSTEM.surface.level2,
+    focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
+  },
+  shadow: {
+    default: ELEVATION_SYSTEM.surface.level1,
+    hover: ELEVATION_SYSTEM.surface.level1.replace("shadow-", "hover:shadow-"),
+    elevated: ELEVATION_SYSTEM.surface.level2,
+  },
+  transition: `transition-all duration-${TRANSITION_DURATION_FAST} ease-in-out`,
+  borderRadius: {
+    default: BORDER_RADIUS_MEDIUM,
+    button: BORDER_RADIUS_SMALL,
+    panel: BORDER_RADIUS_MEDIUM,
+  },
+};
+
+/**
+ * Pie Menu Theme - Radial menu styling for workflow operations
+ *
+ * Used for gesture-based pie menus with smooth animations and clear visual feedback.
+ * Optimized for quick recognition and selection of workflow actions.
+ *
+ * 🎨 COLOR BREAKDOWN:
+ * Light: Clean white buttons (#ffffff) with dark blue text (#0f172a)
+ * Dark: Dark gray buttons (#1e293b) with white text (#f8fafc)
+ *
+ * Features enhanced shadows and glow effects for better depth perception in radial layout.
+ */
+const PIE_MENU_THEME: ComponentTheme = {
+  background: {
+    primary: "bg-background", // 🌞 White (#ffffff) 🌙 Dark blue (#0f172a)
+    secondary: "bg-card", // 🌞 Card background 🌙 Slightly lighter than primary
+    hover: "hover:bg-accent", // 🌞 Light gray hover 🌙 Dark accent hover
+    active: "bg-primary text-primary-foreground", // Active state with primary colors
+  },
+  border: {
+    default: "border-border", // 🌞 Light gray (#e2e8f0) 🌙 Dark gray (#334155)
+    hover: "hover:border-primary/50", // Primary color border on hover
+    active: "border-primary", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+  },
+  text: {
+    primary: "text-foreground", // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+    secondary: "text-muted-foreground", // 🌞 Medium gray (#64748b) 🌙 Medium gray (#94a3b8)
+    muted: "text-muted-foreground/70", // Subtle text for shortcuts
+  },
+  glow: {
+    hover: ELEVATION_SYSTEM.surface.level2.replace("shadow-", "hover:shadow-"),
+    active: ELEVATION_SYSTEM.surface.level3,
+    focus: `focus:ring-2 focus:ring-primary/${OPACITY_MODERATE.replace("0.", "")}`,
+  },
+  shadow: {
+    default: ELEVATION_SYSTEM.surface.level1,
+    hover: ELEVATION_SYSTEM.surface.level2.replace("shadow-", "hover:shadow-"),
+    elevated: ELEVATION_SYSTEM.surface.level3,
+  },
+  transition: `transition-all duration-${TRANSITION_DURATION_FAST} ease-out`,
+  borderRadius: {
+    default: "rounded-full", // Circular buttons for pie menu
+    button: "rounded-full",
+    panel: BORDER_RADIUS_MEDIUM,
+  },
 };
 
 /**
  * Controls theme configuration using semantic tokens
  */
 export const CONTROLS_THEME = {
-	container:
-		"bg-[var(--infra-controls-bg)] border-[var(--infra-controls-border)] hover:bg-[var(--infra-controls-bg-hover)] hover:border-[var(--infra-controls-border-hover)] rounded-lg border shadow-lg transition-colors duration-200",
-	button:
-		"bg-[var(--infra-controls-button)] hover:bg-[var(--infra-controls-button-hover)] active:bg-[var(--infra-controls-button-active)] border-[var(--infra-controls-border)] hover:border-[var(--infra-controls-border-hover)] text-[var(--infra-controls-icon)] hover:text-[var(--infra-controls-icon-hover)] transition-all duration-200 rounded shadow-sm hover:shadow-md active:scale-95",
+  container:
+    "bg-[var(--infra-controls-bg)] border-[var(--infra-controls-border)] hover:bg-[var(--infra-controls-bg-hover)] hover:border-[var(--infra-controls-border-hover)] rounded-lg border shadow-lg transition-colors duration-200",
+  button:
+    "bg-[var(--infra-controls-button)] hover:bg-[var(--infra-controls-button-hover)] active:bg-[var(--infra-controls-button-active)] border-[var(--infra-controls-border)] hover:border-[var(--infra-controls-border-hover)] text-[var(--infra-controls-icon)] hover:text-[var(--infra-controls-icon-hover)] transition-all duration-200 rounded shadow-sm hover:shadow-md active:scale-95",
 } as const;
 
 // ============================================================================
@@ -936,20 +988,21 @@ export const CONTROLS_THEME = {
  * theme configurations and default settings.
  */
 const DEFAULT_THEME_STATE: ComponentThemeState = {
-	themes: {
-		nodeInspector: NODE_INSPECTOR_THEME,
-		sidePanel: SIDE_PANEL_THEME,
-		sidebarIcons: SIDEBAR_ICONS_THEME,
-		variantSelector: VARIANT_SELECTOR_THEME,
-		actionToolbar: ACTION_TOOLBAR_THEME,
-		historyPanel: HISTORY_PANEL_THEME,
-		miniMap: MINI_MAP_THEME,
-		flowCanvas: FLOW_CANVAS_THEME,
-		workflowManager: WORKFLOW_MANAGER_THEME,
-	},
-	enabled: true,
-	customOverrides: {},
-	debugMode: false,
+  themes: {
+    nodeInspector: NODE_INSPECTOR_THEME,
+    sidePanel: SIDE_PANEL_THEME,
+    sidebarIcons: SIDEBAR_ICONS_THEME,
+    variantSelector: VARIANT_SELECTOR_THEME,
+    actionToolbar: ACTION_TOOLBAR_THEME,
+    historyPanel: HISTORY_PANEL_THEME,
+    miniMap: MINI_MAP_THEME,
+    flowCanvas: FLOW_CANVAS_THEME,
+    workflowManager: WORKFLOW_MANAGER_THEME,
+    pieMenu: PIE_MENU_THEME,
+  },
+  enabled: true,
+  customOverrides: {},
+  debugMode: false,
 };
 
 // ============================================================================
@@ -965,102 +1018,106 @@ const DEFAULT_THEME_STATE: ComponentThemeState = {
  *
  * @returns {ComponentThemeState & ComponentThemeActions} Complete store interface
  */
-export const useComponentThemeStore = create<ComponentThemeState & ComponentThemeActions>(
-	(set, get) => ({
-		...DEFAULT_THEME_STATE,
+export const useComponentThemeStore = create<
+  ComponentThemeState & ComponentThemeActions
+>((set, get) => ({
+  ...DEFAULT_THEME_STATE,
 
-		/**
-		 * Updates theme configuration for a specific component
-		 * @param {keyof ComponentThemes} component - Component to update
-		 * @param {Partial<ComponentTheme>} theme - Theme properties to update
-		 */
-		updateComponentTheme: (component, theme) => {
-			set((state) => ({
-				customOverrides: {
-					...state.customOverrides,
-					[component]: {
-						...state.customOverrides[component],
-						...theme,
-					},
-				},
-			}));
-		},
+  /**
+   * Updates theme configuration for a specific component
+   * @param {keyof ComponentThemes} component - Component to update
+   * @param {Partial<ComponentTheme>} theme - Theme properties to update
+   */
+  updateComponentTheme: (component, theme) => {
+    set((state) => ({
+      customOverrides: {
+        ...state.customOverrides,
+        [component]: {
+          ...state.customOverrides[component],
+          ...theme,
+        },
+      },
+    }));
+  },
 
-		/**
-		 * Resets theme for a specific component to default configuration
-		 * @param {keyof ComponentThemes} component - Component to reset
-		 */
-		resetComponentTheme: (component) => {
-			set((state) => {
-				const newOverrides = { ...state.customOverrides };
-				delete newOverrides[component];
-				return { customOverrides: newOverrides };
-			});
-		},
+  /**
+   * Resets theme for a specific component to default configuration
+   * @param {keyof ComponentThemes} component - Component to reset
+   */
+  resetComponentTheme: (component) => {
+    set((state) => {
+      const newOverrides = { ...state.customOverrides };
+      delete newOverrides[component];
+      return { customOverrides: newOverrides };
+    });
+  },
 
-		/**
-		 * Resets all component themes to default configurations
-		 */
-		resetAllThemes: () => {
-			set({ customOverrides: {} });
-		},
+  /**
+   * Resets all component themes to default configurations
+   */
+  resetAllThemes: () => {
+    set({ customOverrides: {} });
+  },
 
-		/**
-		 * Enables the theming system globally
-		 */
-		enableTheming: () => {
-			set({ enabled: true });
-		},
+  /**
+   * Enables the theming system globally
+   */
+  enableTheming: () => {
+    set({ enabled: true });
+  },
 
-		/**
-		 * Disables the theming system globally
-		 */
-		disableTheming: () => {
-			set({ enabled: false });
-		},
+  /**
+   * Disables the theming system globally
+   */
+  disableTheming: () => {
+    set({ enabled: false });
+  },
 
-		/**
-		 * Toggles debug mode for theme development
-		 */
-		toggleDebugMode: () => {
-			set((state) => ({ debugMode: !state.debugMode }));
-		},
+  /**
+   * Toggles debug mode for theme development
+   */
+  toggleDebugMode: () => {
+    set((state) => ({ debugMode: !state.debugMode }));
+  },
 
-		/**
-		 * Gets CSS classes for a component in a specific state
-		 * @param {keyof ComponentThemes} component - Component to get classes for
-		 * @param {'default' | 'hover' | 'active'} state - Component state
-		 * @returns {string} Combined CSS classes
-		 */
-		getComponentClasses: (component, state = "default") => {
-			const { themes, customOverrides, enabled } = get();
+  /**
+   * Gets CSS classes for a component in a specific state
+   * @param {keyof ComponentThemes} component - Component to get classes for
+   * @param {'default' | 'hover' | 'active'} state - Component state
+   * @returns {string} Combined CSS classes
+   */
+  getComponentClasses: (component, state = "default") => {
+    const { themes, customOverrides, enabled } = get();
 
-			if (!enabled) {
-				return "";
-			}
+    if (!enabled) {
+      return "";
+    }
 
-			const theme = customOverrides[component]
-				? { ...themes[component], ...customOverrides[component] }
-				: themes[component];
+    const theme = customOverrides[component]
+      ? { ...themes[component], ...customOverrides[component] }
+      : themes[component];
 
-			const baseClasses = [theme.transition, theme.borderRadius.default, theme.shadow.default];
+    const baseClasses = [
+      theme.transition,
+      theme.borderRadius.default,
+      theme.shadow.default,
+    ];
 
-			// Add state-specific classes
-			switch (state) {
-				case "hover":
-					baseClasses.push(theme.glow.hover);
-					break;
-				case "active":
-					baseClasses.push(theme.glow.active, theme.shadow.elevated);
-					break;
-				default:
-					break;
-			}
+    // Add state-specific classes
+    switch (state) {
+      case "hover":
+        baseClasses.push(theme.glow.hover);
+        break;
+      case "active":
+        baseClasses.push(theme.glow.active, theme.shadow.elevated);
+        break;
+      default:
+        break;
+    }
 
-			return baseClasses.join(" ");
-		},
-	})
-);
+    return baseClasses.join(" ");
+  },
+}));
 
 // ============================================================================
 // DESIGN SYSTEM UTILITIES - Helper functions for design system integration
@@ -1082,23 +1139,26 @@ export const useComponentThemeStore = create<ComponentThemeState & ComponentThem
  * const spacing = getDesignSystemToken("spacing.containerPadding", "p-4");
  * ```
  */
-export function getDesignSystemToken(tokenPath: string, fallback: string): string {
-	try {
-		const pathParts = tokenPath.split(".");
-		let current: any = DESIGN_SYSTEM_INTEGRATION.nodeInspector;
+export function getDesignSystemToken(
+  tokenPath: string,
+  fallback: string
+): string {
+  try {
+    const pathParts = tokenPath.split(".");
+    let current: any = DESIGN_SYSTEM_INTEGRATION.nodeInspector;
 
-		for (const part of pathParts) {
-			if (current && typeof current === "object" && part in current) {
-				current = current[part];
-			} else {
-				return fallback;
-			}
-		}
+    for (const part of pathParts) {
+      if (current && typeof current === "object" && part in current) {
+        current = current[part];
+      } else {
+        return fallback;
+      }
+    }
 
-		return typeof current === "string" ? current : fallback;
-	} catch {
-		return fallback;
-	}
+    return typeof current === "string" ? current : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 /**
@@ -1122,12 +1182,12 @@ export function getDesignSystemToken(tokenPath: string, fallback: string): strin
  * ```
  */
 export function combineDesignSystemToken(
-	tokenPath: string,
-	additionalClasses = "",
-	fallback = ""
+  tokenPath: string,
+  additionalClasses = "",
+  fallback = ""
 ): string {
-	const token = getDesignSystemToken(tokenPath, fallback);
-	return additionalClasses ? `${token} ${additionalClasses}` : token;
+  const token = getDesignSystemToken(tokenPath, fallback);
+  return additionalClasses ? `${token} ${additionalClasses}` : token;
 }
 
 /**
@@ -1148,7 +1208,7 @@ export function combineDesignSystemToken(
  * ```
  */
 export function getInfraCSSProperty(propertyName: string): string {
-	return `${DESIGN_SYSTEM_INTEGRATION.cssPrefix}${propertyName}`;
+  return `${DESIGN_SYSTEM_INTEGRATION.cssPrefix}${propertyName}`;
 }
 
 // ============================================================================
@@ -1179,39 +1239,43 @@ export function getInfraCSSProperty(propertyName: string): string {
  * const buttonClass = `${theme.background.primary} ${theme.text.primary}`;
  * ```
  */
-export function useComponentTheme(component: keyof ComponentThemes): ComponentTheme {
-	const themes = useComponentThemeStore((state) => state.themes);
-	const customOverrides = useComponentThemeStore((state) => state.customOverrides);
-	const enabled = useComponentThemeStore((state) => state.enabled);
+export function useComponentTheme(
+  component: keyof ComponentThemes
+): ComponentTheme {
+  const themes = useComponentThemeStore((state) => state.themes);
+  const customOverrides = useComponentThemeStore(
+    (state) => state.customOverrides
+  );
+  const enabled = useComponentThemeStore((state) => state.enabled);
 
-	return useMemo(() => {
-		if (!enabled) {
-			return themes[component];
-		}
+  return useMemo(() => {
+    if (!enabled) {
+      return themes[component];
+    }
 
-		const override = customOverrides[component];
-		if (!override) {
-			return themes[component];
-		}
+    const override = customOverrides[component];
+    if (!override) {
+      return themes[component];
+    }
 
-		// Deep merge the override with the base theme
-		return {
-			...themes[component],
-			...override,
-			background: {
-				...themes[component].background,
-				...(override.background ?? {}),
-			},
-			border: { ...themes[component].border, ...(override.border ?? {}) },
-			text: { ...themes[component].text, ...(override.text ?? {}) },
-			glow: { ...themes[component].glow, ...(override.glow ?? {}) },
-			shadow: { ...themes[component].shadow, ...(override.shadow ?? {}) },
-			borderRadius: {
-				...themes[component].borderRadius,
-				...(override.borderRadius ?? {}),
-			},
-		};
-	}, [themes, customOverrides, enabled, component]);
+    // Deep merge the override with the base theme
+    return {
+      ...themes[component],
+      ...override,
+      background: {
+        ...themes[component].background,
+        ...(override.background ?? {}),
+      },
+      border: { ...themes[component].border, ...(override.border ?? {}) },
+      text: { ...themes[component].text, ...(override.text ?? {}) },
+      glow: { ...themes[component].glow, ...(override.glow ?? {}) },
+      shadow: { ...themes[component].shadow, ...(override.shadow ?? {}) },
+      borderRadius: {
+        ...themes[component].borderRadius,
+        ...(override.borderRadius ?? {}),
+      },
+    };
+  }, [themes, customOverrides, enabled, component]);
 }
 
 /**
@@ -1250,54 +1314,54 @@ export function useComponentTheme(component: keyof ComponentThemes): ComponentTh
  * ```
  */
 export function useComponentClasses(
-	component: keyof ComponentThemes,
-	state: "default" | "hover" | "active" = "default",
-	additionalClasses = ""
+  component: keyof ComponentThemes,
+  state: "default" | "hover" | "active" = "default",
+  additionalClasses = ""
 ): string {
-	const theme = useComponentTheme(component);
-	const enabled = useComponentThemeStore((state) => state.enabled);
+  const theme = useComponentTheme(component);
+  const enabled = useComponentThemeStore((state) => state.enabled);
 
-	return useMemo(() => {
-		if (!enabled) {
-			return additionalClasses;
-		}
+  return useMemo(() => {
+    if (!enabled) {
+      return additionalClasses;
+    }
 
-		const baseClasses = [
-			// Background and styling with actual colors:
-			theme.background.primary, // 🌞 White/card colors 🌙 Dark colors
-			theme.text.primary, // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
-			theme.transition,
-			theme.borderRadius.default,
-			theme.shadow.default,
-		];
+    const baseClasses = [
+      // Background and styling with actual colors:
+      theme.background.primary, // 🌞 White/card colors 🌙 Dark colors
+      theme.text.primary, // 🌞 Dark blue (#0f172a) 🌙 White (#f8fafc)
+      theme.transition,
+      theme.borderRadius.default,
+      theme.shadow.default,
+    ];
 
-		// Add state-specific classes with enhanced colors
-		switch (state) {
-			case "hover":
-				baseClasses.push(
-					theme.glow.hover, // Subtle glow effects
-					theme.shadow.hover, // Enhanced shadows
-					theme.background.hover, // 🌞 Lighter backgrounds 🌙 Brighter backgrounds
-					theme.border.hover // Enhanced border colors
-				);
-				break;
-			case "active":
-				baseClasses.push(
-					theme.glow.active, // Strong glow effects
-					theme.shadow.elevated, // Maximum elevation shadows
-					theme.background.active, // 🌞 Active backgrounds 🌙 Active backgrounds
-					theme.border.active // 🌞 Primary blue borders 🌙 White borders
-				);
-				break;
-		}
+    // Add state-specific classes with enhanced colors
+    switch (state) {
+      case "hover":
+        baseClasses.push(
+          theme.glow.hover, // Subtle glow effects
+          theme.shadow.hover, // Enhanced shadows
+          theme.background.hover, // 🌞 Lighter backgrounds 🌙 Brighter backgrounds
+          theme.border.hover // Enhanced border colors
+        );
+        break;
+      case "active":
+        baseClasses.push(
+          theme.glow.active, // Strong glow effects
+          theme.shadow.elevated, // Maximum elevation shadows
+          theme.background.active, // 🌞 Active backgrounds 🌙 Active backgrounds
+          theme.border.active // 🌞 Primary blue borders 🌙 White borders
+        );
+        break;
+    }
 
-		// Add additional classes
-		if (additionalClasses) {
-			baseClasses.push(additionalClasses);
-		}
+    // Add additional classes
+    if (additionalClasses) {
+      baseClasses.push(additionalClasses);
+    }
 
-		return baseClasses.join(" ");
-	}, [theme, enabled, state, additionalClasses]);
+    return baseClasses.join(" ");
+  }, [theme, enabled, state, additionalClasses]);
 }
 
 /**
@@ -1333,57 +1397,57 @@ export function useComponentClasses(
  * ```
  */
 export function useComponentButtonClasses(
-	component: keyof ComponentThemes,
-	variant: "primary" | "secondary" | "ghost" | "outline" = "secondary",
-	size: "sm" | "md" | "lg" = "md"
+  component: keyof ComponentThemes,
+  variant: "primary" | "secondary" | "ghost" | "outline" = "secondary",
+  size: "sm" | "md" | "lg" = "md"
 ): string {
-	const theme = useComponentTheme(component);
+  const theme = useComponentTheme(component);
 
-	return useMemo(() => {
-		const baseClasses = [
-			"inline-flex items-center justify-center whitespace-nowrap font-medium",
-			"disabled:pointer-events-none disabled:opacity-50",
-			theme.transition,
-			theme.glow.focus, // Focus ring for accessibility
-		];
+  return useMemo(() => {
+    const baseClasses = [
+      "inline-flex items-center justify-center whitespace-nowrap font-medium",
+      "disabled:pointer-events-none disabled:opacity-50",
+      theme.transition,
+      theme.glow.focus, // Focus ring for accessibility
+    ];
 
-		// Size classes with consistent spacing using design system tokens
-		const sizeClasses = {
-			sm: `h-8 px-3 text-xs ${getDesignSystemToken("effects.rounded.default", BORDER_RADIUS_MEDIUM)}`,
-			md: `h-9 px-4 py-2 text-sm ${getDesignSystemToken("effects.rounded.default", BORDER_RADIUS_MEDIUM)}`,
-			lg: `h-10 px-8 text-base ${getDesignSystemToken("effects.rounded.default", BORDER_RADIUS_MEDIUM)}`,
-		};
-		baseClasses.push(sizeClasses[size]);
+    // Size classes with consistent spacing using design system tokens
+    const sizeClasses = {
+      sm: `h-8 px-3 text-xs ${getDesignSystemToken("effects.rounded.default", BORDER_RADIUS_MEDIUM)}`,
+      md: `h-9 px-4 py-2 text-sm ${getDesignSystemToken("effects.rounded.default", BORDER_RADIUS_MEDIUM)}`,
+      lg: `h-10 px-8 text-base ${getDesignSystemToken("effects.rounded.default", BORDER_RADIUS_MEDIUM)}`,
+    };
+    baseClasses.push(sizeClasses[size]);
 
-		// Variant classes using shadcn patterns with design system integration
-		switch (variant) {
-			case "primary":
-				baseClasses.push(
-					"bg-primary text-primary-foreground shadow", // 🌞 Dark blue bg + white text 🌙 White bg + dark text
-					"hover:bg-primary/90" // Slightly transparent on hover
-				);
-				break;
-			case "secondary":
-				baseClasses.push(
-					"bg-secondary text-secondary-foreground shadow-sm", // 🌞 Light gray bg + dark text 🌙 Dark gray bg + white text
-					"hover:bg-secondary/80" // More transparent on hover
-				);
-				break;
-			case "ghost":
-				baseClasses.push(
-					"hover:bg-muted hover:text-foreground" // 🌞 Light gray hover 🌙 Dark gray hover
-				);
-				break;
-			case "outline":
-				baseClasses.push(
-					"border border-border bg-background shadow-sm", // 🌞 Light border + white bg 🌙 Dark border + dark bg
-					"hover:bg-muted hover:text-foreground" // Muted background on hover
-				);
-				break;
-		}
+    // Variant classes using shadcn patterns with design system integration
+    switch (variant) {
+      case "primary":
+        baseClasses.push(
+          "bg-primary text-primary-foreground shadow", // 🌞 Dark blue bg + white text 🌙 White bg + dark text
+          "hover:bg-primary/90" // Slightly transparent on hover
+        );
+        break;
+      case "secondary":
+        baseClasses.push(
+          "bg-secondary text-secondary-foreground shadow-sm", // 🌞 Light gray bg + dark text 🌙 Dark gray bg + white text
+          "hover:bg-secondary/80" // More transparent on hover
+        );
+        break;
+      case "ghost":
+        baseClasses.push(
+          "hover:bg-muted hover:text-foreground" // 🌞 Light gray hover 🌙 Dark gray hover
+        );
+        break;
+      case "outline":
+        baseClasses.push(
+          "border border-border bg-background shadow-sm", // 🌞 Light border + white bg 🌙 Dark border + dark bg
+          "hover:bg-muted hover:text-foreground" // Muted background on hover
+        );
+        break;
+    }
 
-		return baseClasses.join(" ");
-	}, [theme, variant, size]);
+    return baseClasses.join(" ");
+  }, [theme, variant, size]);
 }
 
 /**
@@ -1423,35 +1487,35 @@ export function useComponentButtonClasses(
  * ```
  */
 export function useDesignSystemClasses(
-	component: keyof ComponentThemes,
-	options: {
-		variant?: string;
-		state?: "default" | "hover" | "active";
-		additionalClasses?: string;
-	} = {}
+  component: keyof ComponentThemes,
+  options: {
+    variant?: string;
+    state?: "default" | "hover" | "active";
+    additionalClasses?: string;
+  } = {}
 ): string {
-	const { variant, state = "default", additionalClasses = "" } = options;
-	const _componentTheme = useComponentTheme(component);
-	const componentClasses = useComponentClasses(component, state);
+  const { variant, state = "default", additionalClasses = "" } = options;
+  const _componentTheme = useComponentTheme(component);
+  const componentClasses = useComponentClasses(component, state);
 
-	return useMemo(() => {
-		const classes = [componentClasses];
+  return useMemo(() => {
+    const classes = [componentClasses];
 
-		// Add design system variant if specified
-		if (variant) {
-			const designSystemClass = getDesignSystemToken(variant, "");
-			if (designSystemClass) {
-				classes.push(designSystemClass);
-			}
-		}
+    // Add design system variant if specified
+    if (variant) {
+      const designSystemClass = getDesignSystemToken(variant, "");
+      if (designSystemClass) {
+        classes.push(designSystemClass);
+      }
+    }
 
-		// Add additional classes
-		if (additionalClasses) {
-			classes.push(additionalClasses);
-		}
+    // Add additional classes
+    if (additionalClasses) {
+      classes.push(additionalClasses);
+    }
 
-		return classes.filter(Boolean).join(" ");
-	}, [componentClasses, variant, additionalClasses]);
+    return classes.filter(Boolean).join(" ");
+  }, [componentClasses, variant, additionalClasses]);
 }
 
 /**
@@ -1471,8 +1535,11 @@ export function useDesignSystemClasses(
  * const iconSize = useDesignSystemToken("icons.small", "w-4 h-4");
  * ```
  */
-export function useDesignSystemToken(tokenPath: string, fallback: string): string {
-	return useMemo(() => {
-		return getDesignSystemToken(tokenPath, fallback);
-	}, [tokenPath, fallback]);
+export function useDesignSystemToken(
+  tokenPath: string,
+  fallback: string
+): string {
+  return useMemo(() => {
+    return getDesignSystemToken(tokenPath, fallback);
+  }, [tokenPath, fallback]);
 }

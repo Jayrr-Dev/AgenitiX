@@ -60,11 +60,64 @@ export function extractSchemaDefaults<T extends z.ZodRawShape>(
 			emptyObject[key] = undefined;
 		});
 
-		// Parse with the schema - this will apply defaults
-		return schema.parse(emptyObject);
+		// Try to parse with the schema - this will apply defaults
+		try {
+			return schema.parse(emptyObject);
+		} catch (parseError) {
+			// If parsing fails, try to extract defaults from each field individually
+			const defaults: Record<string, any> = {};
+			
+			Object.keys(shape).forEach((key) => {
+				const fieldSchema = shape[key];
+				try {
+					// Try to get the default value for this field
+					if (fieldSchema._def.typeName === 'ZodDefault') {
+						defaults[key] = fieldSchema._def.defaultValue();
+					} else if (fieldSchema._def.typeName === 'ZodOptional') {
+						defaults[key] = undefined;
+					} else {
+						// For required fields without defaults, try to create a safe default
+						defaults[key] = getSafeDefaultForZodType(fieldSchema);
+					}
+				} catch (fieldError) {
+					// If we can't get a default for this field, use undefined
+					defaults[key] = undefined;
+				}
+			});
+			
+			return defaults as z.infer<z.ZodObject<T>>;
+		}
 	} catch (error) {
 		console.warn("Failed to extract schema defaults, using empty object:", error);
 		return {} as z.infer<z.ZodObject<T>>;
+	}
+}
+
+/**
+ * Helper function to get safe defaults for different Zod types
+ */
+function getSafeDefaultForZodType(schema: z.ZodTypeAny): any {
+	const typeName = schema._def.typeName;
+	
+	switch (typeName) {
+		case 'ZodString':
+			return '';
+		case 'ZodNumber':
+			return 0;
+		case 'ZodBoolean':
+			return false;
+		case 'ZodArray':
+			return [];
+		case 'ZodObject':
+			return {};
+		case 'ZodOptional':
+			return undefined;
+		case 'ZodNullable':
+			return null;
+		case 'ZodDefault':
+			return schema._def.defaultValue();
+		default:
+			return undefined;
 	}
 }
 

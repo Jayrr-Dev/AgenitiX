@@ -193,6 +193,11 @@ function scanNodeHandles(): NodeHandleAnalysis[] {
     "test",
     "cycle",
     "store",
+    "ai",
+    "email",
+    "logic",
+    "flow",
+    "time",
     "custom",
   ];
   const analyses: NodeHandleAnalysis[] = [];

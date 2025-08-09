@@ -9,7 +9,7 @@
  * Keywords: load-canvas, convex, flow-store, authentication
  */
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
@@ -27,7 +27,7 @@ interface UseLoadCanvasResult {
 }
 
 export function useLoadCanvas(): UseLoadCanvasResult {
-	const { user } = useAuthContext();
+	  const { user } = useAuth();
 	const { flow } = useFlowMetadataOptional() || { flow: null };
 	const { setNodes, setEdges } = useFlowStore();
 
@@ -40,7 +40,7 @@ export function useLoadCanvas(): UseLoadCanvasResult {
 		flow?.id
 			? {
 					flow_id: flow.id as Id<"flows">,
-					user_id: user?.id,
+					user_id: user?.id as any,
 				}
 			: "skip"
 	);

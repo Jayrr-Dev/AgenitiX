@@ -352,7 +352,14 @@ const TriggerPulseNode = memo(
           updateNodeData({ output: {} });
         }
       }
-    }, [spec.handles, nodeData, updateNodeData, id]);
+    }, [
+      spec.handles,
+      nodeData.isActive,
+      nodeData.store,
+      nodeData.isEnabled,
+      updateNodeData,
+      id,
+    ]);
 
     // Clean up timeout on unmount
     useEffect(() => {

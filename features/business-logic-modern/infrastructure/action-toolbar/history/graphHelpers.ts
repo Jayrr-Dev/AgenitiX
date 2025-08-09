@@ -126,6 +126,149 @@ export const getLeafNodes = (graph: HistoryGraph): HistoryNode[] => {
 // Persistence helpers
 const STORAGE_KEY_PREFIX = "workflow-history-graph-v5"; // bump version for flow-specific storage
 
+/**
+ * PERSISTENCE QUEUE - Dedupes and defers heavy persistence work
+ *
+ * [Explanation], basically batch multiple quick updates and run JSON/compression + localStorage writes in idle time
+ */
+const PERSIST_DEBOUNCE_MS = 400; // [Explanation], basically wait a bit to coalesce rapid changes
+const COMPRESSION_THRESHOLD = 500_000; // [Explanation], basically only compress very large payloads
+
+type PersistJob = { graph: HistoryGraph; flowId?: string };
+
+let pendingJob: PersistJob | null = null; // [Explanation], basically latest scheduled job
+let isPersisting = false; // [Explanation], basically avoid concurrent persists
+let debounceTimer: ReturnType<typeof setTimeout> | null = null; // [Explanation], basically debounce handle
+let idleHandle: number | null = null; // [Explanation], basically requestIdleCallback handle
+
+// Minimal runtime guards for requestIdleCallback
+const requestIdle: (cb: () => void) => void = (cb) => {
+  // [Explanation], basically prefer idle callback and fallback to setTimeout
+  const w = typeof window !== "undefined" ? (window as any) : undefined;
+  if (w && typeof w.requestIdleCallback === "function") {
+    idleHandle = w.requestIdleCallback(() => cb());
+  } else {
+    setTimeout(cb, 0);
+  }
+};
+const cancelIdle = (): void => {
+  const w = typeof window !== "undefined" ? (window as any) : undefined;
+  if (w && typeof w.cancelIdleCallback === "function" && idleHandle != null) {
+    w.cancelIdleCallback(idleHandle);
+  }
+  idleHandle = null;
+};
+
+/**
+ * Optimize graph for storage by stripping heavy/transient fields inside before/after snapshots.
+ *
+ * [Explanation], basically remove large nested data we don't need for history persistence
+ */
+function optimizeGraphForStorage(graph: HistoryGraph) {
+  return {
+    ...graph,
+    nodes: Object.fromEntries(
+      Object.values(graph.nodes).map((node) => [
+        node.id,
+        {
+          ...node,
+          // Remove unnecessary data for storage
+          before: {
+            ...node.before,
+            // Remove large objects that don't need persistence
+            nodes: node.before.nodes.map((n) => ({
+              ...n,
+              data: n.data
+                ? {
+                    ...n.data,
+                    // Remove large objects that don't need persistence
+                    inputs: undefined,
+                    output: undefined,
+                    // Keep only essential data
+                    label: (n as any).data?.label,
+                    type: (n as any).data?.type,
+                    isExpanded: (n as any).data?.isExpanded,
+                  }
+                : (n as any).data,
+            })),
+          },
+          after: {
+            ...node.after,
+            // Remove large objects that don't need persistence
+            nodes: node.after.nodes.map((n) => ({
+              ...n,
+              data: n.data
+                ? {
+                    ...n.data,
+                    // Remove large objects that don't need persistence
+                    inputs: undefined,
+                    output: undefined,
+                    // Keep only essential data
+                    label: (n as any).data?.label,
+                    type: (n as any).data?.type,
+                    isExpanded: (n as any).data?.isExpanded,
+                  }
+                : (n as any).data,
+            })),
+          },
+        },
+      ])
+    ),
+  } as HistoryGraph;
+}
+
+/**
+ * Perform the heavy JSON serialization, compression, and localStorage write.
+ * Runs outside the interaction path.
+ */
+function persistNow(job: PersistJob): void {
+  try {
+    const optimizedGraph = optimizeGraphForStorage(job.graph);
+    const json = JSON.stringify(optimizedGraph);
+    const payload = json.length > COMPRESSION_THRESHOLD ? `lz:${compressToUTF16(json)}` : json;
+    const storageKey = getStorageKey(job.flowId);
+    window.localStorage.setItem(storageKey, payload);
+  } catch (error) {
+    console.error("[GraphHelpers] Failed to save graph to localStorage:", error);
+  }
+}
+
+/**
+ * Schedule a persist; coalesces multiple calls and executes in idle time.
+ */
+function schedulePersist(job: PersistJob): void {
+  pendingJob = job; // keep latest
+
+  // Debounce burst of updates
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+
+  debounceTimer = setTimeout(() => {
+    // Cancel any scheduled idle work, we are going to enqueue the latest
+    cancelIdle();
+
+    const run = () => {
+      if (!pendingJob) return;
+      const toRun = pendingJob;
+      pendingJob = null;
+      isPersisting = true;
+      try {
+        persistNow(toRun);
+      } finally {
+        isPersisting = false;
+        // If another job came in while persisting, schedule again
+        if (pendingJob) {
+          schedulePersist(pendingJob);
+        }
+      }
+    };
+
+    requestIdle(run);
+  }, PERSIST_DEBOUNCE_MS);
+}
+
 const getStorageKey = (flowId?: string): string => {
   return flowId
     ? `${STORAGE_KEY_PREFIX}-${flowId}`
@@ -137,71 +280,8 @@ export const saveGraph = (graph: HistoryGraph, flowId?: string): void => {
   if (typeof window === "undefined") {
     return;
   }
-  try {
-    // Optimize graph data before serialization to reduce size
-    const optimizedGraph = {
-      ...graph,
-      nodes: Object.fromEntries(
-        Object.values(graph.nodes).map((node) => [
-          node.id,
-          {
-            ...node,
-            // Remove unnecessary data for storage
-            before: {
-              ...node.before,
-              // Remove large objects that don't need persistence
-              nodes: node.before.nodes.map((n) => ({
-                ...n,
-                data: n.data
-                  ? {
-                      ...n.data,
-                      // Remove large objects that don't need persistence
-                      inputs: undefined,
-                      output: undefined,
-                      // Keep only essential data
-                      label: n.data.label,
-                      type: n.data.type,
-                      isExpanded: n.data.isExpanded,
-                    }
-                  : n.data,
-              })),
-            },
-            after: {
-              ...node.after,
-              // Remove large objects that don't need persistence
-              nodes: node.after.nodes.map((n) => ({
-                ...n,
-                data: n.data
-                  ? {
-                      ...n.data,
-                      // Remove large objects that don't need persistence
-                      inputs: undefined,
-                      output: undefined,
-                      // Keep only essential data
-                      label: n.data.label,
-                      type: n.data.type,
-                      isExpanded: n.data.isExpanded,
-                    }
-                  : n.data,
-              })),
-            },
-          },
-        ])
-      ),
-    };
-
-    const json = JSON.stringify(optimizedGraph);
-    // Lower compression threshold to reduce large string serialization
-    const payload =
-      json.length > 500_000 ? `lz:${compressToUTF16(json)}` : json;
-    const storageKey = getStorageKey(flowId);
-    window.localStorage.setItem(storageKey, payload);
-  } catch (error) {
-    console.error(
-      "[GraphHelpers] Failed to save graph to localStorage:",
-      error
-    );
-  }
+  // Schedule persistence rather than doing heavy work synchronously
+  schedulePersist({ graph, flowId });
 };
 
 // Validate and fix graph data structure after loading

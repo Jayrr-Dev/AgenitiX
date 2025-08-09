@@ -34,7 +34,7 @@ import {
   applyNodeChanges,
 } from "@xyflow/react";
 import { create } from "zustand";
-import { devtools, persist } from "zustand/middleware";
+import { devtools, persist, createJSONStorage, type StateStorage } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { generateEdgeId, generateNodeId } from "../utils/nodeUtils";
 
@@ -270,9 +270,21 @@ export const useFlowStore = create<FlowStore>()(
         // REACT FLOW EVENT HANDLERS
         // ============================================================================
         onNodesChange: (changes) => {
+          // Avoid synchronous localStorage writes while dragging nodes (huge INP win)
+          const isDragging = changes.some(
+            // @ts-expect-error XYFlow NodeChange has optional `dragging` on position changes
+            (c) => c.type === "position" && Boolean((c as any).dragging)
+          );
+          setAllowPersistWrites(!isDragging);
+
           set((state) => {
             state.nodes = applyNodeChanges(changes, state.nodes) as AgenNode[];
           });
+
+          // Re-enable persistence when a non-dragging update occurs (e.g., final drop or selection)
+          if (!isDragging) {
+            setAllowPersistWrites(true);
+          }
         },
         onEdgesChange: (changes) => {
           set((state) => {
@@ -406,15 +418,7 @@ export const useFlowStore = create<FlowStore>()(
                 // Update node data
                 node.data = newData;
 
-                // Special logging for handle position changes
-                if (data.handleOverrides !== undefined) {
-                  console.log(
-                    `🔄 Handle positions updated for node ${nodeId}:`,
-                    {
-                      handleOverrides: data.handleOverrides,
-                    }
-                  );
-                }
+                // Handle position changes - silent in production
 
                 // Add debug logging for development
                 if (process.env.NODE_ENV === "development") {
@@ -799,12 +803,46 @@ export const useFlowStore = create<FlowStore>()(
 
         setNodes: (nodes: AgenNode[]) => {
           set((state) => {
+            // Skip update when nodes are referentially equal to prevent unnecessary re-renders (infinite loop guard)
+            if (state.nodes === nodes) return;
+
+            // QUICK DEEP CHECK – bail early if lengths & ids match and every shallow field is equal
+            const sameLength = state.nodes.length === nodes.length;
+            const shallowEqual =
+              sameLength &&
+              state.nodes.every((n, idx) => {
+                const other = nodes[idx];
+                return (
+                  n.id === other.id &&
+                  n.position.x === other.position.x &&
+                  n.position.y === other.position.y &&
+                  n.type === other.type &&
+                  n.selected === other.selected
+                );
+              });
+            if (shallowEqual) return;
+
             state.nodes = nodes;
           });
         },
 
         setEdges: (edges: AgenEdge[]) => {
           set((state) => {
+            if (state.edges === edges) return;
+            const sameLength = state.edges.length === edges.length;
+            const shallowEqual =
+              sameLength &&
+              state.edges.every((e, idx) => {
+                const other = edges[idx];
+                return (
+                  e.id === other.id &&
+                  e.source === other.source &&
+                  e.target === other.target &&
+                  e.selected === other.selected
+                );
+              });
+            if (shallowEqual) return;
+
             state.edges = edges;
           });
         },
@@ -849,36 +887,14 @@ export const useFlowStore = create<FlowStore>()(
       })),
       {
         name: "flow-editor-storage",
+        // Custom storage that skips writes while dragging to prevent INP regressions
+        storage: createJSONStorage(() => flowPersistStorage),
         partialize: (state) => ({
           // Only persist essential data, not UI state
           nodes: state.nodes,
           edges: state.edges,
         }),
-        serialize: (state) => {
-          // CIRCULAR REFERENCE FIX: Use safe serialization for localStorage
-          try {
-            const visited = new Set();
-            return JSON.stringify(state, (key, val) => {
-              if (typeof val === "object" && val !== null) {
-                if (visited.has(val)) {
-                  return "[Circular]";
-                }
-                visited.add(val);
-              }
-              return val;
-            });
-          } catch (error) {
-            console.error(
-              "Failed to serialize flow state for persistence:",
-              error
-            );
-            // Return a minimal safe state if serialization fails
-            return JSON.stringify({
-              nodes: [],
-              edges: [],
-            });
-          }
-        },
+
         onRehydrateStorage: () => (state) => {
           if (state) {
             state.setHasHydrated(true);
@@ -954,3 +970,44 @@ export const useNodeCount = () => useFlowStore((state) => state.nodes.length);
 export const useEdgeCount = () => useFlowStore((state) => state.edges.length);
 export const useErrorCount = () =>
   useFlowStore((state) => Object.values(state.nodeErrors || {}).flat().length);
+
+// ============================================================================
+// PERSISTENCE STORAGE GATE (performance)
+// ============================================================================
+
+/**
+ * Prevent synchronous localStorage writes during drag operations, basically remove main-thread stalls
+ */
+let persistWritesAllowed = true;
+
+export function setAllowPersistWrites(allowed: boolean) {
+  persistWritesAllowed = allowed;
+}
+
+const flowPersistStorage: StateStorage = {
+  getItem: (name) => {
+    if (typeof window === "undefined") return null;
+    try {
+      return window.localStorage.getItem(name);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (name, value) => {
+    if (typeof window === "undefined") return;
+    if (!persistWritesAllowed) return; // skip writes while dragging
+    try {
+      window.localStorage.setItem(name, value);
+    } catch {
+      // ignore quota or private mode errors
+    }
+  },
+  removeItem: (name) => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.removeItem(name);
+    } catch {
+      // ignore
+    }
+  },
+};
