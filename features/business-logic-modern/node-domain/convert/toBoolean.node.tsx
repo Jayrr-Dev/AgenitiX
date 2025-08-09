@@ -13,30 +13,29 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import React, {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import {
+  generateoutputField,
+  normalizeHandleId,
+} from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
 } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
 import {
   createNodeValidator,
   reportValidationError,
   useNodeDataValidation,
 } from "@/features/business-logic-modern/infrastructure/node-core/validation";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
-import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
   COLLAPSED_SIZES,
@@ -44,13 +43,9 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
-import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 
 // Import conversion utilities
-import {
-  toBooleanValue,
-  getBooleanDisplay
-} from "./utils";
+import { getBooleanDisplay, toBooleanValue } from "./utils";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -72,7 +67,7 @@ export const ToBooleanDataSchema = z
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
     expandedSize: SafeSchemas.text("VE3"),
-    collapsedSize: SafeSchemas.text("C2"),
+    collapsedSize: SafeSchemas.text("C1"),
 
     // Error handling
     hasError: z.boolean().default(false),
@@ -88,10 +83,7 @@ export const ToBooleanDataSchema = z
 
 export type ToBooleanData = z.infer<typeof ToBooleanDataSchema>;
 
-const validateNodeData = createNodeValidator(
-  ToBooleanDataSchema,
-  "ToBoolean",
-);
+const validateNodeData = createNodeValidator(ToBooleanDataSchema, "ToBoolean");
 
 // -----------------------------------------------------------------------------
 // 2️⃣  Constants
@@ -99,16 +91,17 @@ const validateNodeData = createNodeValidator(
 
 const CATEGORY_TEXT = {
   CONVERT: {
-    primary: "text-[--node--c-o-n-v-e-r-t-text]",
+    primary: "text-node-convert",
   },
 } as const;
 
 const CONTENT = {
   expanded: "p-3 w-full h-full flex flex-col",
-  collapsed: "flex items-center justify-center w-full h-full",
-  header: "flex items-center justify-between mb-3",
+  collapsed: "flex items-center justify-center w-full h-full pt-1",
+  header: "flex items-center justify-between mb-2",
   body: "flex-1 flex items-center justify-center",
-  disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+  disabled:
+    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -124,7 +117,7 @@ function createDynamicSpec(data: ToBooleanData): NodeSpec {
     EXPANDED_SIZES.VE3;
   const collapsed =
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
-    COLLAPSED_SIZES.C2;
+    COLLAPSED_SIZES.C1;
 
   return {
     kind: "toBoolean",
@@ -136,7 +129,7 @@ function createDynamicSpec(data: ToBooleanData): NodeSpec {
       {
         id: "any-input",
         code: "x",
-        position: "top",
+        position: "left",
         type: "target",
         dataType: "Any",
       },
@@ -177,14 +170,25 @@ function createDynamicSpec(data: ToBooleanData): NodeSpec {
       ],
       customFields: [
         { key: "isEnabled", type: "boolean", label: "Enable" },
-        { key: "strictMode", type: "boolean", label: "Strict Mode", description: "Use strict JavaScript falsy rules" },
-        { key: "customFalsyValues", type: "text", label: "Custom Falsy Values", description: "Additional values to treat as false (comma-separated)" },
+        {
+          key: "strictMode",
+          type: "boolean",
+          label: "Strict Mode",
+          description: "Use strict JavaScript falsy rules",
+        },
+        {
+          key: "customFalsyValues",
+          type: "text",
+          label: "Custom Falsy Values",
+          description: "Additional values to treat as false (comma-separated)",
+        },
         { key: "isExpanded", type: "boolean", label: "Expand" },
       ],
     },
     icon: "LuToggleLeft",
     author: "Agenitix Team",
-    description: "Converts any input to boolean value following JavaScript falsy rules",
+    description:
+      "Converts any input to boolean value following JavaScript falsy rules",
     feature: "base",
     tags: ["convert", "boolean", "falsy", "type-conversion"],
     featureFlag: {
@@ -226,7 +230,7 @@ const ToBooleanNode = memo(
       strictMode,
       customFalsyValues,
       hasError,
-      errorMessage
+      errorMessage,
     } = nodeData as ToBooleanData;
 
     // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
@@ -235,8 +239,7 @@ const ToBooleanNode = memo(
 
     // keep last emitted output to avoid redundant writes
     const lastOutputRef = useRef<boolean | null>(null);
-
-
+    const lastHandleMapRef = useRef<Map<string, any> | null>(null);
 
     // -------------------------------------------------------------------------
     // 4.3  Feature flag evaluation (after all hooks)
@@ -252,16 +255,21 @@ const ToBooleanNode = memo(
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
 
-    /** Propagate boolean output - simplified pattern like triggerToggle */
+    /** Propagate boolean output - write legacy fields and handle field */
     const propagate = useCallback(
       (value: boolean) => {
         if (value !== lastOutputRef.current) {
           lastOutputRef.current = value;
 
-          updateNodeData({ booleanOutput: value, booleanValue: value, output: value });
+          // [Explainantion] , basically keep legacy fields and add the source-handle field for the new system
+          updateNodeData({
+            booleanOutput: value,
+            booleanValue: value,
+            ["boolean-output"]: value,
+          });
         }
       },
-      [updateNodeData],
+      [updateNodeData]
     );
 
     /** Clear JSON‑ish fields when inactive or disabled */
@@ -289,11 +297,48 @@ const ToBooleanNode = memo(
       const src = nodes.find((n) => n.id === anyInputEdge.source);
       if (!src) return null;
 
-      // Get the raw input value for boolean conversion
-      return src.data?.output ?? src.data?.store ?? src.data;
+      const sourceData = src.data as Record<string, unknown> | undefined;
+      let inputValue: unknown = undefined;
+
+      // 1) New propagation system: handle-based output object
+      if (
+        sourceData &&
+        typeof sourceData.output === "object" &&
+        sourceData.output !== null
+      ) {
+        const outputObj = sourceData.output as Record<string, unknown>;
+        const cleanId = anyInputEdge.sourceHandle
+          ? normalizeHandleId(anyInputEdge.sourceHandle)
+          : "output";
+
+        if (outputObj[cleanId] !== undefined) {
+          inputValue = outputObj[cleanId];
+        } else if (outputObj.output !== undefined) {
+          inputValue = outputObj.output;
+        } else {
+          const first = Object.values(outputObj)[0];
+          if (first !== undefined) inputValue = first;
+        }
+      }
+
+      // 2) Legacy fallbacks for compatibility
+      if (inputValue === undefined) {
+        const legacyBoolean =
+          (sourceData as any)?.booleanOutput ??
+          (sourceData as any)?.booleanValue;
+        if (legacyBoolean !== undefined) {
+          inputValue = legacyBoolean;
+        } else {
+          inputValue =
+            (sourceData as any)?.output ??
+            (sourceData as any)?.store ??
+            (sourceData as any)?.data ??
+            sourceData;
+        }
+      }
+
+      return inputValue;
     }, [edges, nodes, id]);
-
-
 
     // -------------------------------------------------------------------------
     // 4.5  Effects
@@ -307,25 +352,32 @@ const ToBooleanNode = memo(
       }
     }, [computeInput, inputValue, updateNodeData]);
 
-    /* 🔄 Convert input to boolean when input changes - simplified */
+    /* 🔄 Convert input to boolean when input changes - supports object propagation */
     useEffect(() => {
       if (inputValue !== undefined && inputValue !== null) {
         try {
-          const converted = toBooleanValue(inputValue, strictMode, customFalsyValues);
+          const converted = toBooleanValue(
+            inputValue,
+            strictMode,
+            customFalsyValues
+          );
           updateNodeData({
             booleanOutput: converted,
             booleanValue: converted,
+            ["boolean-output"]: converted,
             hasError: false,
             errorMessage: undefined,
-            isActive: true
+            isActive: true,
           });
         } catch (error) {
           updateNodeData({
             booleanOutput: false,
             booleanValue: false,
+            ["boolean-output"]: false,
             hasError: true,
-            errorMessage: error instanceof Error ? error.message : 'Conversion error',
-            isActive: false
+            errorMessage:
+              error instanceof Error ? error.message : "Conversion error",
+            isActive: false,
           });
         }
       } else {
@@ -333,9 +385,10 @@ const ToBooleanNode = memo(
         updateNodeData({
           booleanOutput: false,
           booleanValue: false,
+          ["boolean-output"]: false,
           isActive: true,
           hasError: false,
-          errorMessage: undefined
+          errorMessage: undefined,
         });
       }
     }, [inputValue, strictMode, customFalsyValues, updateNodeData]);
@@ -347,6 +400,37 @@ const ToBooleanNode = memo(
       propagate(outputValue);
       blockJsonWhenInactive();
     }, [hasError, booleanOutput, propagate, blockJsonWhenInactive]);
+
+    /* 🔄 Generate handle-based output object for new propagation */
+    useEffect(() => {
+      try {
+        const outputMap = generateoutputField(spec, nodeData as any);
+        if (!(outputMap instanceof Map)) return;
+
+        let changed = true;
+        const prev = lastHandleMapRef.current;
+        if (prev && prev instanceof Map) {
+          changed =
+            prev.size !== outputMap.size ||
+            !Array.from(outputMap.entries()).every(
+              ([k, v]) => prev.get(k) === v
+            );
+        }
+
+        if (changed) {
+          lastHandleMapRef.current = outputMap;
+          updateNodeData({ output: Object.fromEntries(outputMap.entries()) });
+        }
+      } catch {
+        // Ignore errors; legacy fields still work
+      }
+    }, [
+      spec.handles,
+      (nodeData as any)["boolean-output"],
+      nodeData.isActive,
+      nodeData.isEnabled,
+      updateNodeData,
+    ]);
 
     // -------------------------------------------------------------------------
     // 4.6  Validation
@@ -363,7 +447,7 @@ const ToBooleanNode = memo(
       ToBooleanDataSchema,
       "ToBoolean",
       validation.data,
-      id,
+      id
     );
 
     // -------------------------------------------------------------------------
@@ -400,17 +484,22 @@ const ToBooleanNode = memo(
       <>
         {/* Editable label or icon */}
         {!isExpanded &&
-          spec.size.collapsed.width === 60 &&
-          spec.size.collapsed.height === 60 ? (
-          <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+        spec.size.collapsed.width === 60 &&
+        spec.size.collapsed.height === 60 ? (
+          <div className="absolute inset-0 flex justify-center text-lg p-0 text-foreground/80">
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (
-          <LabelNode nodeId={id} label={(nodeData as ToBooleanData).label || spec.displayName} />
+          <LabelNode
+            nodeId={id}
+            label={(nodeData as ToBooleanData).label || spec.displayName}
+          />
         )}
 
         {!isExpanded ? (
-          <div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ''}`}>
+          <div
+            className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ""}`}
+          >
             <div className="flex flex-col items-center justify-center text-xs">
               {hasError ? (
                 <div className="text-red-500 text-center">
@@ -418,54 +507,70 @@ const ToBooleanNode = memo(
                   <div className="text-[10px] opacity-75">{errorMessage}</div>
                 </div>
               ) : (
-                <div className={`font-mono text-sm font-medium ${booleanOutput ? 'text-green-500' : 'text-red-500'}`}>
+                <div
+                  className={`font-mono text-sm font-medium ${booleanOutput ? "text-green-500" : "text-red-500"}`}
+                >
                   {getBooleanDisplay(booleanOutput)}
                 </div>
               )}
               {inputValue !== null && inputValue !== undefined && (
                 <div className="text-[10px] opacity-60 mt-1 text-center max-w-full truncate">
-                  {String(inputValue).substring(0, 20)}
-                  {String(inputValue).length > 20 ? '...' : ''}
+                  {/* {String(inputValue).substring(0, 20)}
+                  {String(inputValue).length > 20 ? "..." : ""} */}
                 </div>
               )}
             </div>
           </div>
         ) : (
-          <div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ''}`}>
-            <div className="space-y-3">
+          <div
+            className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}
+          >
+            <div className="space-y-2">
               {/* Input Display */}
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Input:</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Input:
+                </label>
                 <div className="mt-1 p-2 bg-muted rounded text-xs font-mono">
                   {inputValue === null || inputValue === undefined
-                    ? 'No input connected'
-                    : JSON.stringify(inputValue, null, 2)
-                  }
+                    ? "No input connected"
+                    : JSON.stringify(inputValue, null, 2)}
                 </div>
               </div>
 
               {/* Output Display */}
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Boolean Output:</label>
-                <div className={`mt-1 p-2 rounded text-sm font-mono text-center ${hasError
-                  ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                  : booleanOutput
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                    : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                  }`}>
-                  {hasError ? `Error: ${errorMessage}` : getBooleanDisplay(booleanOutput)}
+                <label className="text-xs font-medium text-muted-foreground">
+                  Boolean Output:
+                </label>
+                <div
+                  className={`mt-1 p-2 rounded text-[11px] font-mono text-center ${
+                    hasError
+                      ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                      : booleanOutput
+                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                        : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                  }`}
+                >
+                  {hasError
+                    ? `Error: ${errorMessage}`
+                    : getBooleanDisplay(booleanOutput)}
                 </div>
               </div>
 
               {/* Conversion Info */}
               {!hasError && inputValue !== null && inputValue !== undefined && (
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">Conversion:</label>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Conversion:
+                  </label>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    {strictMode ? 'Strict mode: ' : 'Standard mode: '}
+                    {strictMode ? "Strict mode: " : "Standard mode: "}
                     <span className="font-mono">{String(inputValue)}</span>
-                    {' → '}
-                    <span className={`font-mono ${booleanOutput ? 'text-green-600' : 'text-red-600'}`}>
+                    {" → "}
+                    <span
+                      className={`font-mono ${booleanOutput ? "text-green-600" : "text-red-600"}`}
+                    >
                       {String(booleanOutput)}
                     </span>
                   </div>
@@ -482,7 +587,7 @@ const ToBooleanNode = memo(
         />
       </>
     );
-  },
+  }
 );
 
 // -----------------------------------------------------------------------------
@@ -506,7 +611,7 @@ const ToBooleanNodeWithDynamicSpec = (props: NodeProps) => {
     [
       (nodeData as ToBooleanData).expandedSize,
       (nodeData as ToBooleanData).collapsedSize,
-    ],
+    ]
   );
 
   // Memoise the scaffolded component to keep focus
@@ -515,7 +620,7 @@ const ToBooleanNodeWithDynamicSpec = (props: NodeProps) => {
       withNodeScaffold(dynamicSpec, (p) => (
         <ToBooleanNode {...p} spec={dynamicSpec} />
       )),
-    [dynamicSpec],
+    [dynamicSpec]
   );
 
   return <ScaffoldedNode {...props} />;

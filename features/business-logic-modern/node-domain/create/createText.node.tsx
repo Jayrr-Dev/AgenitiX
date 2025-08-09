@@ -26,10 +26,7 @@ import LabelNode from "@/components/nodes/labelNode";
 import { Textarea } from "@/components/ui/textarea";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import {
-  generateoutputField,
-  normalizeHandleId,
-} from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
+import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
@@ -55,7 +52,7 @@ import { useStore } from "@xyflow/react";
 
 export const CreateTextDataSchema = z
   .object({
-    store: z.string().default("Default text"),
+    store: z.string().default(""),
     isEnabled: SafeSchemas.boolean(true),
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
@@ -147,7 +144,7 @@ const createDynamicSpec = (() => {
       version: 1,
       runtime: { execute: "createText_execute_v1" },
       initialData: createSafeInitialData(CreateTextDataSchema, {
-        store: "Default text",
+        store: "",
         inputs: null,
         output: {}, // handle-based output object
         isEnabled: true, // Enable node by default
@@ -375,8 +372,7 @@ const CreateTextNode = memo(
     // Monitor store content and update active state
     useEffect(() => {
       const currentStore = store ?? "";
-      const hasValidStore =
-        currentStore.trim().length > 0 && currentStore !== "Default text";
+      const hasValidStore = currentStore.trim().length > 0;
 
       // If disabled, always set isActive to false
       if (isEnabled) {
@@ -421,7 +417,7 @@ const CreateTextNode = memo(
         <Textarea
           key={`collapsed-${id}`}
           ref={collapsedTextareaRef}
-          value={store === "Default text" ? "" : (store ?? "")}
+          value={store ?? ""}
           onChange={handleStoreChange}
           variant="barebones"
           placeholder="..."
@@ -438,7 +434,7 @@ const CreateTextNode = memo(
         <Textarea
           key={`expanded-${id}`}
           ref={expandedTextareaRef}
-          value={store === "Default text" ? "" : (store ?? "")}
+          value={store ?? ""}
           onChange={handleStoreChange}
           variant="barebones"
           placeholder="Enter your content here…"

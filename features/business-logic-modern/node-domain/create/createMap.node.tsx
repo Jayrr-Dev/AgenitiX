@@ -26,8 +26,12 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { Button } from "@/components/ui/button";
+import { CounterBoxContainer } from "@/components/ui/counter-box";
+import { Input } from "@/components/ui/input";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
@@ -39,7 +43,6 @@ import {
   reportValidationError,
   useNodeDataValidation,
 } from "@/features/business-logic-modern/infrastructure/node-core/validation";
-import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
@@ -48,9 +51,6 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { CounterBoxContainer } from "@/components/ui/counter-box";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -91,7 +91,6 @@ const validateNodeData = createNodeValidator(CreateMapDataSchema, "CreateMap");
 // 2️⃣  Constants
 // -----------------------------------------------------------------------------
 
-
 const CONTENT = {
   expanded: "p-4 w-full h-full flex flex-col",
   collapsed: "flex items-center justify-center w-full h-full",
@@ -123,7 +122,6 @@ function createDynamicSpec(data: CreateMapData): NodeSpec {
     category: CATEGORIES.CREATE,
     size: { expanded, collapsed },
     handles: [
-  
       {
         id: "output",
         code: "j",
@@ -217,8 +215,6 @@ const CreateMapNode = memo(
     // keep last emitted outputs string and handle-output Map to avoid redundant writes
     const lastOutputRef = useRef<string | null>(null);
     // Removed general output Map ref - we write handle map directly
-
-
 
     // -------------------------------------------------------------------------
     // 4.3  Feature flag evaluation (after all hooks)
@@ -340,7 +336,9 @@ const CreateMapNode = memo(
         const current = ((nodeData as CreateMapData).entries || []).slice();
         if (current.length === 0) return;
         current.splice(index, 1);
-        updateNodeData({ entries: current.length ? current : [{ key: "", value: "" }] });
+        updateNodeData({
+          entries: current.length ? current : [{ key: "", value: "" }],
+        });
       },
       [nodeData, updateNodeData]
     );
@@ -446,7 +444,7 @@ const CreateMapNode = memo(
         {!isExpanded &&
         spec.size.collapsed.width === 60 &&
         spec.size.collapsed.height === 60 ? (
-          <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+          <div className="absolute inset-0 flex justify-center text-lg p-0 text-foreground/80">
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (
@@ -469,78 +467,83 @@ const CreateMapNode = memo(
                   count: ((nodeData as CreateMapData).entries || []).filter(
                     (e) => e.key.trim().length > 0
                   ).length,
-          
                 },
                 {
                   label: "Value",
                   count: ((nodeData as CreateMapData).entries || []).filter(
                     (e) => e.value.trim().length > 0
                   ).length,
-            
-                }
+                },
               ]}
             />
           </div>
         ) : (
-          <div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}>
+          <div
+            className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}
+          >
             {/* Minimal excel-like two-column table */}
             <div className="w-full">
               <table className="w-full table-fixed border-collapse text-xs mt-2">
-             
                 <tbody>
-                  {((nodeData as CreateMapData).entries || []).map((row, idx) => (
-                    <tr key={idx}>
-                      <td className="border p-0 relative">
-                        {focusedRow === idx && (
-                          <Button
-                            type="button"
-                            variant="barebones"
-                            size="sm"
-                            aria-label="Remove row"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              removeEntry(idx);
-                              setFocusedRow(null);
-                            }}
-                            className="absolute hover:text-red-500 left-1 top-1/2 -translate-x-6.5 -translate-y-1/2 h-6 w-6 p-0 text-xs z-10 pointer-events-auto"
-                          >
-                            ×
-                          </Button>
-                        )}
-                        <Input
-                          className={`h-5 w-full rounded-none text-[10px] border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 ring-offset-0 px-2 `}
-                          placeholder="key"
-                          value={row.key}
-                          onChange={(e) => updateEntry(idx, "key", e.target.value)}
-                          onFocus={() => setFocusedRow(idx)}
-                          autoComplete="off"
-                          data-lpignore="true"
-                          data-1p-ignore
-                          data-bwignore="true"
-                          data-bitwarden-watching="false"
-                          name={`map-key-${idx}`}
-                          disabled={!isEnabled}
-                        />
-                      </td>
-                      <td className="border p-0">
-                        <Input
-                          className={`h-5 w-full rounded-none text-[10px] border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 ring-offset-0 px-2 `}
-                          placeholder="value"
-                          value={row.value}
-                          onChange={(e) => updateEntry(idx, "value", e.target.value)}
-                          onFocus={() => setFocusedRow(idx)}
-                          autoComplete="off"
-                          data-lpignore="true"
-                          data-1p-ignore
-                          data-bwignore="true"
-                          data-bitwarden-watching="false"
-                          name={`map-value-${idx}`}
-                          disabled={!isEnabled}
-                        />
-                      </td>
-                    </tr>
-                  ))}
+                  {((nodeData as CreateMapData).entries || []).map(
+                    (row, idx) => (
+                      <tr key={idx}>
+                        <td className="border p-0 relative">
+                          {focusedRow === idx && (
+                            <Button
+                              type="button"
+                              variant="barebones"
+                              size="sm"
+                              aria-label="Remove row"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                removeEntry(idx);
+                                setFocusedRow(null);
+                              }}
+                              className="absolute hover:text-red-500 left-1 top-1/2 -translate-x-6.5 -translate-y-1/2 h-6 w-6 p-0 text-xs z-10 pointer-events-auto"
+                            >
+                              ×
+                            </Button>
+                          )}
+                          <Input
+                            className={`h-5 w-full rounded-none text-[10px] border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 ring-offset-0 px-2 `}
+                            placeholder="key"
+                            value={row.key}
+                            onChange={(e) =>
+                              updateEntry(idx, "key", e.target.value)
+                            }
+                            onFocus={() => setFocusedRow(idx)}
+                            autoComplete="off"
+                            data-lpignore="true"
+                            data-1p-ignore
+                            data-bwignore="true"
+                            data-bitwarden-watching="false"
+                            name={`map-key-${idx}`}
+                            disabled={!isEnabled}
+                          />
+                        </td>
+                        <td className="border p-0">
+                          <Input
+                            className={`h-5 w-full rounded-none text-[10px] border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 ring-offset-0 px-2 `}
+                            placeholder="value"
+                            value={row.value}
+                            onChange={(e) =>
+                              updateEntry(idx, "value", e.target.value)
+                            }
+                            onFocus={() => setFocusedRow(idx)}
+                            autoComplete="off"
+                            data-lpignore="true"
+                            data-1p-ignore
+                            data-bwignore="true"
+                            data-bitwarden-watching="false"
+                            name={`map-value-${idx}`}
+                            disabled={!isEnabled}
+                          />
+                        </td>
+                      </tr>
+                    )
+                  )}
                   {/* Add row button as final full-width row */}
                   <tr>
                     <td className="border p-0" colSpan={2}>

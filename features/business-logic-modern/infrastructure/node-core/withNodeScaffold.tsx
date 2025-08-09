@@ -133,16 +133,22 @@ const NodeScaffoldWrapper = ({
   const completeStyle: React.CSSProperties = React.useMemo(
     () => ({
       ...style,
-      borderWidth: `var(--node-${categoryLower}-border-width)`,
+      borderWidth: `var(--node-${categoryLower}-border-width, var(--node-global-border-width))`,
       borderStyle: "solid",
       borderRadius: "var(--node-global-modern-radius)",
       borderColor:
         isDarkMode && customTheming?.borderDark
           ? customTheming.borderDark
-          : `var(--node-${categoryLower}-border)`,
+          : isDarkMode
+            ? `var(--node-${categoryLower}-border, hsl(240, 45%, 35%))` // Darker fallback for dark mode
+            : `var(--node-${categoryLower}-border, hsl(240, 60%, 50%))`, // Brighter fallback for light mode
       background: isDisabled
-        ? `var(--node-global-disabled-gradient), var(--node-${categoryLower}-bg-gradient)`
-        : `var(--node-${categoryLower}-bg-gradient)`,
+        ? isDarkMode
+          ? `var(--node-global-disabled-gradient), var(--node-${categoryLower}-bg-gradient, linear-gradient(135deg, hsl(240, 35%, 20%) 0%, hsl(240, 40%, 15%) 100%))`
+          : `var(--node-global-disabled-gradient), var(--node-${categoryLower}-bg-gradient, linear-gradient(135deg, hsl(240, 45%, 85%) 0%, hsl(240, 50%, 75%) 100%))`
+        : isDarkMode
+          ? `var(--node-${categoryLower}-bg-gradient, linear-gradient(135deg, hsl(240, 35%, 20%) 0%, hsl(240, 40%, 15%) 100%))` // Dark mode fallback
+          : `var(--node-${categoryLower}-bg-gradient, linear-gradient(135deg, hsl(240, 45%, 85%) 0%, hsl(240, 50%, 75%) 100%))`, // Light mode fallback
       position: "relative",
       // Limit to lightweight transitions to avoid jank during panning
       transition:

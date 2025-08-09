@@ -13,24 +13,26 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import React, { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
 } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
 import {
   createNodeValidator,
   reportValidationError,
   useNodeDataValidation,
 } from "@/features/business-logic-modern/infrastructure/node-core/validation";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
-import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
+import { JsonHighlighter } from "@/features/business-logic-modern/infrastructure/node-inspector/utils/JsonHighlighter";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
   COLLAPSED_SIZES,
@@ -38,8 +40,6 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
-import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
-import { JsonHighlighter } from "@/features/business-logic-modern/infrastructure/node-inspector/utils/JsonHighlighter";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -56,7 +56,7 @@ export const ViewObjectDataSchema = z
     // [Explanation], basically pass-through arbitrary JSON safely
     inputs: z.unknown().nullable().default(null),
     output: z.unknown().optional(),
-    expandedSize: SafeSchemas.text("FE3H"),
+    expandedSize: SafeSchemas.text("VE3"),
     collapsedSize: SafeSchemas.text("C2W"),
     label: z.string().optional(), // User-editable node label
     // [Explanation], basically path stack for collapsed-view drill navigation
@@ -70,7 +70,7 @@ export type ViewObjectData = z.infer<typeof ViewObjectDataSchema>;
 
 const validateNodeData = createNodeValidator(
   ViewObjectDataSchema,
-  "ViewObject",
+  "ViewObject"
 );
 
 // -----------------------------------------------------------------------------
@@ -88,7 +88,8 @@ const CONTENT = {
   collapsed: "flex items-center justify-center w-full h-full",
   header: "flex items-center justify-between mb-3",
   body: "flex-1 flex items-center justify-center",
-  disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+  disabled:
+    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
 
 // Display limits
@@ -130,7 +131,6 @@ function createDynamicSpec(data: ViewObjectData): NodeSpec {
         type: "source",
         dataType: "JSON",
       },
-    
     ],
     inspector: { key: "ViewObjectInspector" },
     version: 1,
@@ -200,7 +200,8 @@ const ViewObjectNode = memo(
     // -------------------------------------------------------------------------
     // 4.2  Derived state
     // -------------------------------------------------------------------------
-    const { isExpanded, isEnabled, isActive, viewPath } = nodeData as ViewObjectData;
+    const { isExpanded, isEnabled, isActive, viewPath } =
+      nodeData as ViewObjectData;
 
     // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
     const nodes = useStore((s) => s.nodes);
@@ -235,7 +236,7 @@ const ViewObjectNode = memo(
           updateNodeData({ output: out });
         }
       },
-      [isActive, isEnabled, updateNodeData],
+      [isActive, isEnabled, updateNodeData]
     );
 
     /** Clear JSON‑ish fields when inactive or disabled */
@@ -258,35 +259,41 @@ const ViewObjectNode = memo(
      * Resolve nested value at a given path of keys.
      * [Explanation], basically walk the object by keys to get nested value
      */
-    const resolveAtPath = useCallback((root: unknown, path: Array<string | number>): unknown => {
-      let current: unknown = root;
-      for (const segment of path) {
-        if (current && typeof current === "object") {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const asRecord = current as Record<string, unknown> | Array<unknown>;
-          // Support arrays and objects
-          if (Array.isArray(asRecord)) {
-            const index = typeof segment === "number" ? segment : Number(segment);
-            current = Number.isFinite(index) ? asRecord[index] : undefined;
+    const resolveAtPath = useCallback(
+      (root: unknown, path: Array<string | number>): unknown => {
+        let current: unknown = root;
+        for (const segment of path) {
+          if (current && typeof current === "object") {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const asRecord = current as
+              | Record<string, unknown>
+              | Array<unknown>;
+            // Support arrays and objects
+            if (Array.isArray(asRecord)) {
+              const index =
+                typeof segment === "number" ? segment : Number(segment);
+              current = Number.isFinite(index) ? asRecord[index] : undefined;
+            } else {
+              current = (asRecord as Record<string, unknown>)[String(segment)];
+            }
           } else {
-            current = (asRecord as Record<string, unknown>)[String(segment)];
+            return undefined;
           }
-        } else {
-          return undefined;
         }
-      }
-      return current;
-    }, []);
+        return current;
+      },
+      []
+    );
 
     /** Drill into a nested key if it is an object/array */
     const drillIntoKey = useCallback(
       (key: string | number, currentRoot: unknown) => {
         const target = resolveAtPath(currentRoot, [...(viewPath ?? []), key]);
-        if (target && (typeof target === "object")) {
+        if (target && typeof target === "object") {
           updateNodeData({ viewPath: [...(viewPath ?? []), key] });
         }
       },
-      [updateNodeData, viewPath, resolveAtPath],
+      [updateNodeData, viewPath, resolveAtPath]
     );
 
     /** Go back one level */
@@ -297,10 +304,13 @@ const ViewObjectNode = memo(
     }, [updateNodeData, viewPath]);
 
     /** Jump to a specific depth via breadcrumb */
-    const jumpToDepth = useCallback((depth: number) => {
-      const next = (viewPath ?? []).slice(0, depth);
-      updateNodeData({ viewPath: next });
-    }, [updateNodeData, viewPath]);
+    const jumpToDepth = useCallback(
+      (depth: number) => {
+        const next = (viewPath ?? []).slice(0, depth);
+        updateNodeData({ viewPath: next });
+      },
+      [updateNodeData, viewPath]
+    );
 
     /**
      * Compute the latest value coming from connected input handles.
@@ -332,7 +342,10 @@ const ViewObjectNode = memo(
             // Empty strings should not disable the node, treat as no value
             return null;
           }
-          if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+          if (
+            (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+            (trimmed.startsWith("[") && trimmed.endsWith("]"))
+          ) {
             return JSON.parse(trimmed);
           }
           return inputValue; // plain string
@@ -374,7 +387,11 @@ const ViewObjectNode = memo(
       const root = (nodeData as ViewObjectData).inputs;
       const path = (nodeData as ViewObjectData).viewPath ?? [];
       const current = resolveAtPath(root, path);
-      const invalid = path.length > 0 && (current === undefined || current === null || typeof current !== "object");
+      const invalid =
+        path.length > 0 &&
+        (current === undefined ||
+          current === null ||
+          typeof current !== "object");
       if (invalid) updateNodeData({ viewPath: [] });
     }, [nodeData, resolveAtPath, updateNodeData]);
 
@@ -382,7 +399,8 @@ const ViewObjectNode = memo(
     useEffect(() => {
       const inputVal = (nodeData as ViewObjectData).inputs;
       const hasValue =
-        inputVal !== null && (typeof inputVal !== "string" || inputVal.trim().length > 0);
+        inputVal !== null &&
+        (typeof inputVal !== "string" || inputVal.trim().length > 0);
       const nextActive = isEnabled && hasValue;
       if (isActive !== nextActive) updateNodeData({ isActive: nextActive });
     }, [nodeData, isEnabled, isActive, updateNodeData]);
@@ -409,7 +427,7 @@ const ViewObjectNode = memo(
       ViewObjectDataSchema,
       "ViewObject",
       validation.data,
-      id,
+      id
     );
 
     // -------------------------------------------------------------------------
@@ -448,27 +466,39 @@ const ViewObjectNode = memo(
         {!isExpanded &&
         spec.size.collapsed.width === 60 &&
         spec.size.collapsed.height === 60 ? (
-          <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+          <div className="absolute inset-0 flex justify-center text-lg p-0 text-foreground/80">
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (
-          <LabelNode nodeId={id} label={(nodeData as ViewObjectData).label || spec.displayName} />
+          <LabelNode
+            nodeId={id}
+            label={(nodeData as ViewObjectData).label || spec.displayName}
+          />
         )}
 
         {/* Collapsed: show a compact type summary of top-level properties */}
         {!isExpanded ? (
-          <div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ''}`}>
+          <div
+            className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ""}`}
+          >
             <div className="w-[92%] max-h-16 overflow-y-auto rounded-md border border-border/30 bg-muted/20 p-1 font-mono text-[10px] leading-tight text-foreground/90">
               {(() => {
                 const root = (validation.data as ViewObjectData).inputs;
                 const path = (validation.data as ViewObjectData).viewPath ?? [];
 
-                if (!root || (typeof root !== 'object' && !Array.isArray(root))) {
-                  return <div className="text-muted-foreground">(no object)</div>;
+                if (
+                  !root ||
+                  (typeof root !== "object" && !Array.isArray(root))
+                ) {
+                  return (
+                    <div className="text-muted-foreground">(no object)</div>
+                  );
                 }
 
                 const isAtRoot = path.length === 0;
-                const currentView: unknown = isAtRoot ? root : resolveAtPath(root, path);
+                const currentView: unknown = isAtRoot
+                  ? root
+                  : resolveAtPath(root, path);
 
                 // Header: Back + breadcrumb (compact)
                 const breadcrumb = (
@@ -476,7 +506,10 @@ const ViewObjectNode = memo(
                     {!isAtRoot && (
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); goBack(); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          goBack();
+                        }}
                         className="px-1 py-[1px] rounded border border-border/40 hover:bg-muted/40"
                         aria-label="Back"
                         title="Back"
@@ -487,19 +520,29 @@ const ViewObjectNode = memo(
                     <div className="truncate">
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); jumpToDepth(0); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          jumpToDepth(0);
+                        }}
                         className="hover:underline"
                         title="root"
-                      >root</button>
+                      >
+                        root
+                      </button>
                       {path.map((seg, i) => (
                         <span key={`crumb-${i}`}>
                           <span className="mx-1 text-foreground/40">/</span>
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); jumpToDepth(i + 1); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              jumpToDepth(i + 1);
+                            }}
                             className="hover:underline"
                             title={String(seg)}
-                          >{typeof seg === 'string' ? seg : `[${seg}]`}</button>
+                          >
+                            {typeof seg === "string" ? seg : `[${seg}]`}
+                          </button>
                         </span>
                       ))}
                     </div>
@@ -508,34 +551,59 @@ const ViewObjectNode = memo(
 
                 // Body: list keys at current level with types, double-click to drill
                 const renderLevel = (value: unknown) => {
-                  if (!value || typeof value !== 'object') {
-                    return <div className="text-muted-foreground">(not an object)</div>;
+                  if (!value || typeof value !== "object") {
+                    return (
+                      <div className="text-muted-foreground">
+                        (not an object)
+                      </div>
+                    );
                   }
                   const isArray = Array.isArray(value);
                   const entries = isArray
-                    ? (value as Array<unknown>).map((v, i) => [i, v] as [number, unknown])
+                    ? (value as Array<unknown>).map(
+                        (v, i) => [i, v] as [number, unknown]
+                      )
                     : Object.entries(value as Record<string, unknown>);
-                  const limit = (validation.data as ViewObjectData).summaryLimit ?? SUMMARY_MAX_KEYS;
+                  const limit =
+                    (validation.data as ViewObjectData).summaryLimit ??
+                    SUMMARY_MAX_KEYS;
                   const shown = entries.slice(0, limit);
                   return (
                     <div>
                       {shown.map(([k, v], idx) => {
-                        const isDrillable = v !== null && typeof v === 'object';
-                        const typeText = Array.isArray(v) ? 'array' : v === null ? 'null' : typeof v;
+                        const isDrillable = v !== null && typeof v === "object";
+                        const typeText = Array.isArray(v)
+                          ? "array"
+                          : v === null
+                            ? "null"
+                            : typeof v;
                         return (
                           <div
                             key={`summary-${String(k)}-${idx}`}
-                            className={`truncate select-text cursor-text nodrag nowheel ${isDrillable ? 'cursor-zoom-in' : ''}`}
+                            className={`truncate select-text cursor-text nodrag nowheel ${isDrillable ? "cursor-zoom-in" : ""}`}
                             onDoubleClick={(e) => {
                               e.stopPropagation();
-                              if (isDrillable) drillIntoKey(k as string | number, root);
+                              if (isDrillable)
+                                drillIntoKey(k as string | number, root);
                             }}
-                            title={isDrillable ? 'Double-click to open' : undefined}
+                            title={
+                              isDrillable ? "Double-click to open" : undefined
+                            }
                           >
-                            <span className="text-red-400">{typeof k === 'string' ? `"${k}"` : String(k)}</span>
+                            <span className="text-red-400">
+                              {typeof k === "string" ? `"${k}"` : String(k)}
+                            </span>
                             <span className="text-foreground/70">: </span>
-                            <span className={isDrillable ? 'text-blue-400' : 'text-blue-300'}>{typeText}</span>
-                            {idx < shown.length - 1 && <span className="text-foreground/50">,</span>}
+                            <span
+                              className={
+                                isDrillable ? "text-blue-400" : "text-blue-300"
+                              }
+                            >
+                              {typeText}
+                            </span>
+                            {idx < shown.length - 1 && (
+                              <span className="text-foreground/50">,</span>
+                            )}
                           </div>
                         );
                       })}
@@ -544,8 +612,13 @@ const ViewObjectNode = memo(
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            const currentLimit = (validation.data as ViewObjectData).summaryLimit ?? SUMMARY_MAX_KEYS;
-                            const nextLimit = Math.min(entries.length, currentLimit + 10);
+                            const currentLimit =
+                              (validation.data as ViewObjectData)
+                                .summaryLimit ?? SUMMARY_MAX_KEYS;
+                            const nextLimit = Math.min(
+                              entries.length,
+                              currentLimit + 10
+                            );
                             updateNodeData({ summaryLimit: nextLimit });
                           }}
                           className="text-foreground/50 hover:underline"
@@ -569,23 +642,29 @@ const ViewObjectNode = memo(
           </div>
         ) : (
           // Expanded: show the same nested view as collapsed using viewPath
-          <div className={`nowheel ${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ''}`}>
+          <div
+            className={`nowheel ${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}
+          >
             <div className="flex items-center gap-2  text-[10px] text-foreground/70 mb-2">
               <span className="text-foreground/50">Path:</span>
               <code className="px-1 py-0.5 rounded bg-muted/40">
-                {((validation.data as ViewObjectData).viewPath ?? []).length === 0
-                  ? 'root'
+                {((validation.data as ViewObjectData).viewPath ?? []).length ===
+                0
+                  ? "root"
                   : (validation.data as ViewObjectData).viewPath
-                      .map((seg) => (typeof seg === 'string' ? seg : `[${seg}]`))
-                      .join('.')}
+                      .map((seg) =>
+                        typeof seg === "string" ? seg : `[${seg}]`
+                      )
+                      .join(".")}
               </code>
             </div>
             <div className="flex-1  overflow-auto rounded-md bg-muted/10">
               <JsonHighlighter
                 data={(() => {
                   const root = (validation.data as ViewObjectData).inputs;
-                  const path = (validation.data as ViewObjectData).viewPath ?? [];
-                  return (path.length === 0 ? root : resolveAtPath(root, path));
+                  const path =
+                    (validation.data as ViewObjectData).viewPath ?? [];
+                  return path.length === 0 ? root : resolveAtPath(root, path);
                 })()}
                 maxDepth={3}
                 className="text-[10px] select-text cursor-text nodrag nowheel "
@@ -601,7 +680,7 @@ const ViewObjectNode = memo(
         />
       </>
     );
-  },
+  }
 );
 
 // -----------------------------------------------------------------------------
@@ -625,7 +704,7 @@ const ViewObjectNodeWithDynamicSpec = (props: NodeProps) => {
     [
       (nodeData as ViewObjectData).expandedSize,
       (nodeData as ViewObjectData).collapsedSize,
-    ],
+    ]
   );
 
   // Memoise the scaffolded component to keep focus
@@ -634,7 +713,7 @@ const ViewObjectNodeWithDynamicSpec = (props: NodeProps) => {
       withNodeScaffold(dynamicSpec, (p) => (
         <ViewObjectNode {...p} spec={dynamicSpec} />
       )),
-    [dynamicSpec],
+    [dynamicSpec]
   );
 
   return <ScaffoldedNode {...props} />;

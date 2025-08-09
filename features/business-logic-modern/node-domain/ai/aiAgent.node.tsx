@@ -34,6 +34,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import { createSafeInitialData } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
 import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
@@ -42,7 +43,6 @@ import {
   reportValidationError,
   useNodeDataValidation,
 } from "@/features/business-logic-modern/infrastructure/node-core/validation";
-import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
@@ -862,7 +862,8 @@ const AiAgentNode = memo(
 
       // 2) Legacy fallbacks for compatibility
       if (inputValue === undefined || inputValue === null) {
-        const legacyRaw = (sourceData?.output as unknown) ?? sourceData?.store ?? src.data;
+        const legacyRaw =
+          (sourceData?.output as unknown) ?? sourceData?.store ?? src.data;
         inputValue = legacyRaw;
       }
 
@@ -1696,7 +1697,7 @@ const AiAgentNode = memo(
         {!isExpanded &&
         spec.size.collapsed.width === 60 &&
         spec.size.collapsed.height === 60 ? (
-          <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+          <div className="absolute inset-0 flex justify-center text-lg p-0 text-foreground/80">
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (

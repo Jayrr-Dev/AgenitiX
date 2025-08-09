@@ -9,7 +9,6 @@ Route: app/(user-pages)/layout.tsx
  * Keywords: layout, auth, diagnostics, web-vitals, why-did-you-render
  */
 
-import { PerformanceOverlayClient } from "@/app/providers/performanceOverlayClient";
 import { SetupWebVitalsClient } from "@/app/providers/setupWebVitalsClient";
 import { SetupWhyDidYouRenderClient } from "@/app/providers/setupWhyDidYouRenderClient";
 // Import long task tracker (auto-starts)
@@ -36,7 +35,6 @@ export default function UserPagesLayout({ children }: UserPagesLayoutProps) {
           <>
             <SetupWebVitalsClient />
             <SetupWhyDidYouRenderClient />
-            <PerformanceOverlayClient />
           </>
         ) : null}
         {!shouldHideNavigation && <ProtectedNavigation />}

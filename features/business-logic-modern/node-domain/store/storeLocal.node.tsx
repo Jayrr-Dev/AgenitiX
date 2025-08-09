@@ -1669,7 +1669,8 @@ const StoreLocalNode = memo(
 
     // Compute collapsed counter values (keys/values) based on mode
     const collapsedCounts = useMemo(() => {
-      const safeInput: Record<string, unknown> | null = inputData && typeof inputData === "object" ? inputData : null;
+      const safeInput: Record<string, unknown> | null =
+        inputData && typeof inputData === "object" ? inputData : null;
       if (!safeInput || Object.keys(safeInput).length === 0) {
         return { keyCount: 0, valueCount: 0 };
       }
@@ -2376,7 +2377,7 @@ const StoreLocalNode = memo(
         {!isExpanded &&
         spec.size.collapsed.width === 60 &&
         spec.size.collapsed.height === 60 ? (
-          <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+          <div className="absolute inset-0 flex justify-center text-lg p-0 text-foreground/80">
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (

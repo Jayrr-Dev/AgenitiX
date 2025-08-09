@@ -302,11 +302,25 @@ const ViewArrayNode = memo(
       const src = nodes.find((n) => n.id === incoming.source);
       if (!src) return null;
 
-      // priority: output ➜ inputData ➜ store ➜ whole data
+      // Prefer handle-specific value from the source's output map so we don't wrap under labels
+      const dataRec = src.data as Record<string, unknown> | undefined;
+      if (dataRec && typeof dataRec.output === "object" && dataRec.output) {
+        const outMap = dataRec.output as Record<string, unknown>;
+        const cleanId = incoming.sourceHandle
+          ? incoming.sourceHandle.split("__")[0].split("-")[0]
+          : "output";
+        const byHandle =
+          outMap[cleanId] ?? outMap.output ?? Object.values(outMap)[0];
+        if (byHandle !== undefined) return byHandle as unknown;
+      }
+
+      // Legacy priority: output ➜ inputData ➜ store ➜ whole data
       const inputValue =
-        src.data?.output ?? src.data?.inputData ?? src.data?.store ?? src.data;
+        (src.data as any)?.output ??
+        (src.data as any)?.inputData ??
+        (src.data as any)?.store ??
+        src.data;
       if (typeof inputValue === "string") {
-        // Try to parse JSON-like strings (arrays or objects); otherwise return string
         try {
           const trimmed = inputValue.trim();
           if (trimmed.length === 0) return null;
@@ -315,9 +329,9 @@ const ViewArrayNode = memo(
           if (looksArray || looksObject) {
             return JSON.parse(trimmed);
           }
-          return inputValue; // plain string allowed
+          return inputValue;
         } catch {
-          return inputValue; // invalid JSON, treat as string
+          return inputValue;
         }
       }
       return inputValue as unknown;
@@ -509,7 +523,7 @@ const ViewArrayNode = memo(
         {!isExpanded &&
         spec.size.collapsed.width === 60 &&
         spec.size.collapsed.height === 60 ? (
-          <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+          <div className="absolute inset-0 flex justify-center text-lg p-0 text-foreground/80">
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (
