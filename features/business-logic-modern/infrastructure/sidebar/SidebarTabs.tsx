@@ -19,7 +19,7 @@ const CONTENT_AREA_STYLES = "scrollbar max-h-[150px] overflow-y-auto border-0 bg
 
 // Pre-computed keyboard mappings for performance, basically avoid object recreation
 const VARIANT_MAP: Record<string, SidebarVariant> = {
-	"1": "A", "2": "B", "3": "C", "4": "D", "5": "E",
+	"1": "A", "2": "B", "3": "C", "4": "D",
 } as const;
 
 const NODE_CREATION_KEYS = ["q", "w", "e", "r", "t", "a", "s", "d", "f", "g", "z", "x", "c", "v", "b"] as const;
@@ -75,7 +75,7 @@ export function SidebarTabs({
 		);
 
 		// Try fallback variants in order of preference
-		const fallbackVariants: SidebarVariant[] = ["A", "B", "C", "D", "E"];
+		const fallbackVariants: SidebarVariant[] = ["A", "B", "C", "D"];
 		for (const fallbackVariant of fallbackVariants) {
 			const fallbackConfig = VARIANT_CONFIG[fallbackVariant];
 			if (fallbackConfig?.tabs) {
@@ -225,32 +225,32 @@ export function SidebarTabs({
 			}
 
 			// Node grid shortcuts
-			const isCustomTab = variant === "E" && activeTab === "custom";
+			// const isCustomTab = variant === "E" && activeTab === "custom";
 
-			if (isCustomTab) {
-				// Custom tab: q = add node, w-b for positions - using pre-computed map
-				if (currentKey === "q") {
-					e.preventDefault();
-					setIsSearchModalOpen(true);
-					return;
-				}
+			// if (isCustomTab) {
+			// 	// Custom tab: q = add node, w-b for positions - using pre-computed map
+			// 	if (currentKey === "q") {
+			// 		e.preventDefault();
+			// 		setIsSearchModalOpen(true);
+			// 		return;
+			// 	}
 
-				const position = CUSTOM_GRID_KEY_MAP[currentKey];
-				if (position !== undefined && position < customNodes.length) {
-					e.preventDefault();
-					onDoubleClickCreate(customNodes[position].nodeType);
-				}
-			} else {
-				// Regular tabs: full QWERTY grid - using pre-computed map
-				const position = REGULAR_GRID_KEY_MAP[currentKey];
-				if (position !== undefined) {
-					const currentStencils = currentStencilsRef.current[activeTab] || [];
-					if (position < currentStencils.length) {
-						e.preventDefault();
-						onDoubleClickCreate(currentStencils[position].nodeType);
-					}
-				}
-			}
+			// 	const position = CUSTOM_GRID_KEY_MAP[currentKey];
+			// 	if (position !== undefined && position < customNodes.length) {
+			// 		e.preventDefault();
+			// 		onDoubleClickCreate(customNodes[position].nodeType);
+			// 	}
+			// } else {
+			// 	// Regular tabs: full QWERTY grid - using pre-computed map
+			// 	const position = REGULAR_GRID_KEY_MAP[currentKey];
+			// 	if (position !== undefined) {
+			// 		const currentStencils = currentStencilsRef.current[activeTab] || [];
+			// 		if (position < currentStencils.length) {
+			// 			e.preventDefault();
+			// 			onDoubleClickCreate(currentStencils[position].nodeType);
+			// 		}
+			// 	}
+			// }
 		};
 
 		document.addEventListener("keydown", handleKeyDown);
@@ -307,7 +307,7 @@ export function SidebarTabs({
 
 				<div className={CONTENT_AREA_STYLES}>
 					{tabs.map(({ key }) => {
-						const isCustomTab = variant === "E" && key === "custom";
+						const isCustomTab = false;
 
 						return (
 							<SidebarTabContent

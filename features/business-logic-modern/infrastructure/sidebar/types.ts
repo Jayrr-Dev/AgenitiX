@@ -8,15 +8,15 @@ export interface NodeStencil {
 	folder?: string;
 }
 
-export type SidebarVariant = "A" | "B" | "C" | "D" | "E";
+export type SidebarVariant = "A" | "B" | "C" | "D";
 
 // Variant display names
 export const VARIANT_NAMES: Record<SidebarVariant, string> = {
 	A: "Main",
-	B: "Media",
-	C: "Integration",
-	D: "Automation",
-	E: "Misc",
+	B: "Basic Nodes",
+	C: "All Nodes",
+	D: "Advanced Nodes",
+	// E: "Misc",
 };
 
 export interface TabConfig {
@@ -27,36 +27,40 @@ export interface TabConfig {
 // Tab configurations for each variant
 export const TAB_CONFIG_A: readonly TabConfig[] = [
 	{ key: "MAIN", label: "Main" },
-	{ key: "ADVANCED", label: "Advanced" },
-	{ key: "IO", label: "I/O" },
+	// { key: "ADVANCED", label: "Advanced" },
+	// { key: "IO", label: "I/O" },
 ];
 
 export const TAB_CONFIG_B: readonly TabConfig[] = [
 	{ key: "CREATE", label: "Create" },
 	{ key: "VIEW", label: "View" },
 	{ key: "TRIGGER", label: "Trigger" },
-	{ key: "TEST", label: "Test" },
-	{ key: "CYCLE", label: "Cycle" },
+	// { key: "TEST", label: "Test" },
+	// { key: "CYCLE", label: "Cycle" },
 	{ key: "STORE", label: "Store" },
-	{ key: "EMAIL", label: "Email" },
-	{ key: "FLOW", label: "Flow" },
-	{ key: "TIME", label: "Time" },
-	{ key: "AI", label: "AI Agents" },
+	// { key: "EMAIL", label: "Email" },
+	// { key: "FLOW", label: "Flow" },
+	// { key: "TIME", label: "Time" },
+	// { key: "AI", label: "AI Agents" },
 ];
 
 export const TAB_CONFIG_C: readonly TabConfig[] = [{ key: "ALL", label: "All Nodes" }];
 
-export const TAB_CONFIG_D: readonly TabConfig[] = [{ key: "TOP_NODES", label: "Top Nodes" }];
+export const TAB_CONFIG_D: readonly TabConfig[] = [
+	{ key: "EMAIL", label: "Email" },
+	{ key: "AI", label: "AI" },
+	{ key: "FLOW", label: "Flow" },
+];
 
-export const TAB_CONFIG_E: readonly TabConfig[] = [{ key: "ESSENTIALS", label: "Essentials" }];
+// export const TAB_CONFIG_E: readonly TabConfig[] = [{ key: "ESSENTIALS", label: "Essentials" }];
 
 export type TabKeyA = (typeof TAB_CONFIG_A)[number]["key"];
 export type TabKeyB = (typeof TAB_CONFIG_B)[number]["key"];
 export type TabKeyC = (typeof TAB_CONFIG_C)[number]["key"];
 export type TabKeyD = (typeof TAB_CONFIG_D)[number]["key"];
-export type TabKeyE = (typeof TAB_CONFIG_E)[number]["key"];
+// export type TabKeyE = (typeof TAB_CONFIG_E)[number]["key"];
 
-export type AnyTabKey = TabKeyA | TabKeyB | TabKeyC | TabKeyD | TabKeyE;
+export type AnyTabKey = TabKeyA | TabKeyB | TabKeyC | TabKeyD;
 
 // Generic TabKey type for specific variants
 export type TabKey<V extends SidebarVariant> = V extends "A"
@@ -67,8 +71,8 @@ export type TabKey<V extends SidebarVariant> = V extends "A"
 			? TabKeyC
 			: V extends "D"
 				? TabKeyD
-				: V extends "E"
-					? TabKeyE
+				// : V extends "E"
+				// 	? TabKeyE
 					: never;
 
 export interface VariantConfig {

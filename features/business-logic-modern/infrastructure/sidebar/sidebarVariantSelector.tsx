@@ -27,7 +27,7 @@ import { type SidebarVariant, VARIANT_NAMES } from "./types";
 // ============================================================================
 
 /** Available sidebar variants in order */
-const SIDEBAR_VARIANTS: SidebarVariant[] = ["A", "B", "C", "D", "E"];
+const SIDEBAR_VARIANTS: SidebarVariant[] = ["A", "B", "C", "D"];
 
 /** Duration to show variant name text after switching (in milliseconds) */
 const VARIANT_TEXT_DISPLAY_DURATION = 1500;
@@ -44,7 +44,7 @@ const VARIANT_ICONS = {
 	B: COMMON_LUCIDE_ICONS.VIDEO, // Media - Video for media content
 	C: COMMON_LUCIDE_ICONS.LINK, // Integration - Link for connections/integrations
 	D: COMMON_LUCIDE_ICONS.SETTINGS, // Automation - Settings gear for automation
-	E: COMMON_LUCIDE_ICONS.PACKAGE, // Misc - Package for miscellaneous items
+	// E: COMMON_LUCIDE_ICONS.PACKAGE, // Misc - Package for miscellaneous items
 } as const;
 
 // ============================================================================

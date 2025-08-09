@@ -18,7 +18,7 @@ import {
   TAB_CONFIG_B,
   TAB_CONFIG_C,
   TAB_CONFIG_D,
-  TAB_CONFIG_E,
+  // TAB_CONFIG_E,
   type VariantConfig,
 } from "./types";
 
@@ -277,15 +277,17 @@ export const VARIANT_CONFIG: VariantConfig = {
   D: {
     tabs: TAB_CONFIG_D,
     stencils: {
-      TOP_NODES: createStencilsByFilter({}, "variant-d"),
+      EMAIL: createStencilsByCategory("EMAIL", "variant-d"),
+      AI: createStencilsByCategory("AI", "variant-d"),
+      FLOW: createStencilsByCategory("FLOW", "variant-d"),
     },
   },
-  E: {
-    tabs: TAB_CONFIG_E,
-    stencils: {
-      ESSENTIALS: createStencilsByCategory("CYCLE", "variant-e"),
-    },
-  },
+  // E: {
+  //   tabs: TAB_CONFIG_E,
+  //   stencils: {
+  //     ESSENTIALS: createStencilsByCategory("CYCLE", "variant-e"),
+  //   },
+  // },
 };
 
 // ============================================================================
@@ -414,12 +416,12 @@ export function refreshStencils(): typeof VARIANT_CONFIG {
         TOP_NODES: createStencilsByFilter({}, "variant-d"),
       },
     },
-    E: {
-      tabs: TAB_CONFIG_E,
-      stencils: {
-        ESSENTIALS: createStencilsByCategory("CYCLE", "variant-e"),
-      },
-    },
+    // E: {
+    //   tabs: TAB_CONFIG_E,
+    //   stencils: {
+    //     ESSENTIALS: createStencilsByCategory("CYCLE", "variant-e"),
+    //   },
+    // },
   };
 }
 
