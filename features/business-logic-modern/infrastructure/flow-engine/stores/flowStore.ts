@@ -277,7 +277,6 @@ export const useFlowStore = create<FlowStore>()(
         onNodesChange: (changes) => {
           // Avoid synchronous localStorage writes while dragging nodes (huge INP win)
           const isDragging = changes.some(
-            // @ts-expect-error XYFlow NodeChange has optional `dragging` on position changes
             (c) => c.type === "position" && Boolean((c as any).dragging)
           );
           setAllowPersistWrites(!isDragging);

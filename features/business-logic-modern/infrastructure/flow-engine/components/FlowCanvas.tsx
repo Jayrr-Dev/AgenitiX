@@ -21,6 +21,7 @@ import {
   type ColorMode,
   type Connection,
   ConnectionMode,
+  type EdgeTypes,
   PanOnScrollMode,
   Panel,
   ReactFlow,
@@ -28,7 +29,7 @@ import {
 } from "@xyflow/react";
 import { useTheme } from "next-themes";
 import type React from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AgenEdge, AgenNode } from "../types/nodeData";
 
 // Import other components - Using clean aliases
@@ -157,6 +158,23 @@ const PANEL_STYLES = {
   mobileDeleteRight: "14px",
 } as const;
 
+/**
+ * Stable key codes passed to ReactFlow
+ */
+const DELETE_KEY_CODES: string[] = ["Delete"];
+
+/**
+ * Stable container style for the outer canvas wrapper
+ */
+const CANVAS_CONTAINER_STYLE: React.CSSProperties = {
+  // Let the browser handle panning/scrolling gestures natively for better INP
+  touchAction: "pan-x pan-y",
+  width: "100%",
+  height: "100%",
+  minHeight: "100vh",
+  minWidth: "100vw",
+};
+
 export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   nodes,
   edges,
@@ -202,6 +220,29 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   // ============================================================================
 
   const { isValidConnection } = useUltimateFlowConnectionPrevention();
+
+  // Ensure a stable callback reference for ReactFlow
+  const handleIsValidConnection: (
+    edgeOrConnection: AgenEdge | Connection
+  ) => boolean = useCallback(
+    (edgeOrConnection: AgenEdge | Connection) => {
+      // Normalize to Connection shape if an edge is provided
+      const normalized: Connection = {
+        source: edgeOrConnection.source,
+        target: edgeOrConnection.target,
+        sourceHandle:
+          (edgeOrConnection as AgenEdge).sourceHandle ??
+          (edgeOrConnection as Connection).sourceHandle ??
+          null,
+        targetHandle:
+          (edgeOrConnection as AgenEdge).targetHandle ??
+          (edgeOrConnection as Connection).targetHandle ??
+          null,
+      };
+      return isValidConnection(normalized);
+    },
+    [isValidConnection]
+  );
 
   // ============================================================================
   // STATE FOR MOBILE RESPONSIVENESS & ERROR TRACKING
@@ -350,6 +391,58 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     [isMac]
   );
 
+  // Stable wrappers for ReactFlow event handlers
+  const handleOnConnect = useCallback(
+    (connection: Connection) => reactFlowHandlers.onConnect(connection),
+    [reactFlowHandlers.onConnect]
+  );
+  const handleOnReconnect = useCallback(
+    (oldEdge: AgenEdge, newConn: Connection) =>
+      reactFlowHandlers.onReconnect(oldEdge, newConn),
+    [reactFlowHandlers.onReconnect]
+  );
+  const handleOnReconnectStart = useCallback(
+    () => reactFlowHandlers.onReconnectStart(),
+    [reactFlowHandlers.onReconnectStart]
+  );
+  const handleOnReconnectEnd = useCallback(
+    (event: MouseEvent | TouchEvent, edge: AgenEdge) =>
+      reactFlowHandlers.onReconnectEnd(event, edge),
+    [reactFlowHandlers.onReconnectEnd]
+  );
+  const handleOnNodesChange = useCallback(
+    (changes: unknown[]) => reactFlowHandlers.onNodesChange(changes),
+    [reactFlowHandlers.onNodesChange]
+  );
+  const handleOnEdgesChange = useCallback(
+    (changes: unknown[]) => reactFlowHandlers.onEdgesChange(changes),
+    [reactFlowHandlers.onEdgesChange]
+  );
+  const handleOnSelectionChange = useCallback(
+    (selection: { nodes: AgenNode[]; edges: AgenEdge[] }) =>
+      reactFlowHandlers.onSelectionChange(selection),
+    [reactFlowHandlers.onSelectionChange]
+  );
+  const handleOnInit = useCallback(
+    (instance: unknown) => reactFlowHandlers.onInit(instance),
+    [reactFlowHandlers.onInit]
+  );
+
+  // Memoized objects passed to ReactFlow to keep references stable
+  const reactFlowStyle = useMemo(() => ({ width: "100%", height: "100%" }), []);
+
+  const proOptions = useMemo(() => ({ hideAttribution: true }), []);
+
+  const defaultEdgeOptions = useMemo(
+    () => ({
+      type: "default" as const,
+      deletable: true,
+      focusable: true,
+      style: EDGE_STYLES,
+    }),
+    []
+  );
+
   // ============================================================================
   // RENDER
   // ============================================================================
@@ -360,14 +453,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       className="relative h-full w-full flex-1"
       onDragOver={onDragOver}
       onDrop={onDrop}
-      style={{
-        // Let the browser handle panning/scrolling gestures natively for better INP
-        touchAction: "pan-x pan-y",
-        width: "100%",
-        height: "100%",
-        minHeight: "100vh",
-        minWidth: "100vw",
-      }}
+      style={CANVAS_CONTAINER_STYLE}
     >
       <ReactFlow
         // Core Data
@@ -376,24 +462,24 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes as EdgeTypes}
         // Explicit dimensions to fix sizing issue
-        style={{ width: "100%", height: "100%" }}
+        style={reactFlowStyle}
         // Connection Handling
-        isValidConnection={isValidConnection}
+        isValidConnection={handleIsValidConnection}
         connectionMode={ConnectionMode.Loose}
-        onConnect={reactFlowHandlers.onConnect}
-        onReconnect={reactFlowHandlers.onReconnect}
-        onReconnectStart={reactFlowHandlers.onReconnectStart}
-        onReconnectEnd={reactFlowHandlers.onReconnectEnd}
+        onConnect={handleOnConnect}
+        onReconnect={handleOnReconnect}
+        onReconnectStart={handleOnReconnectStart}
+        onReconnectEnd={handleOnReconnectEnd}
         // Change Handlers
-        onNodesChange={reactFlowHandlers.onNodesChange}
-        onEdgesChange={reactFlowHandlers.onEdgesChange}
-        onSelectionChange={reactFlowHandlers.onSelectionChange}
-        onInit={reactFlowHandlers.onInit}
+        onNodesChange={handleOnNodesChange}
+        onEdgesChange={handleOnEdgesChange}
+        onSelectionChange={handleOnSelectionChange}
+        onInit={handleOnInit}
         // Selection Configuration
         selectionMode={SelectionMode.Partial}
         selectionKeyCode={selectionKeys.selectionKeyCode}
         multiSelectionKeyCode={selectionKeys.multiSelectionKeyCode}
-        deleteKeyCode={["Delete"]}
+        deleteKeyCode={DELETE_KEY_CODES}
         // Interaction Settings
         snapToGrid={true}
         snapGrid={SNAP_GRID}
@@ -411,13 +497,8 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         // Visual Settings
         fitView={true}
         colorMode={colorMode}
-        proOptions={{ hideAttribution: true }}
-        defaultEdgeOptions={{
-          type: "default",
-          deletable: true,
-          focusable: true,
-          style: EDGE_STYLES,
-        }}
+        proOptions={proOptions}
+        defaultEdgeOptions={defaultEdgeOptions}
       >
         {/* NODE INSPECTOR PANEL */}
         <Panel

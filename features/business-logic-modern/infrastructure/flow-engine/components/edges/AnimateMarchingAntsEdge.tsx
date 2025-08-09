@@ -10,7 +10,12 @@
  * Keywords: edges, animation, marching-ants, reactflow, selection-focus
  */
 
-import { BaseEdge, type EdgeProps, getBezierPath } from "@xyflow/react";
+import {
+  BaseEdge,
+  getBezierPath,
+  type Edge,
+  type EdgeProps,
+} from "@xyflow/react";
 import React, { useEffect } from "react";
 
 // Animation + styling constants, basically centralized for consistency
@@ -47,16 +52,15 @@ function ensureMarchingAntsStylesInjected(): void {
   areStylesInjected = true;
 }
 
-export type MarchingAntsEdgeData = {
-  /** If true, the animation plays from target to source (reverse) */
+export type MarchingAntsEdge = Edge<{
   reverse?: boolean;
-};
+}>;
 
 /**
  * Render an animated dashed edge that supports direction via data.reverse.
  */
 export function AnimateMarchingAntsEdge(
-  props: EdgeProps<unknown>
+  props: EdgeProps<MarchingAntsEdge>
 ): React.JSX.Element {
   const {
     id,
@@ -82,13 +86,11 @@ export function AnimateMarchingAntsEdge(
     targetPosition,
   });
 
-  const isReverse = Boolean(
-    (data as MarchingAntsEdgeData | undefined)?.reverse
-  );
+  const isReverse = Boolean(data?.reverse);
 
   return (
     <BaseEdge
-      id={id}
+      id={id as string}
       path={edgePath}
       className={`agenitix-edge--marching${isReverse ? " agenitix-edge--reverse" : ""}`}
     />

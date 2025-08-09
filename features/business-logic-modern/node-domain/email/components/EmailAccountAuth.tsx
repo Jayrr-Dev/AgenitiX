@@ -4,11 +4,11 @@
  * ----------------------------------------------------------------------
  */
 
-import { memo, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useEmailAccountContext } from "./EmailAccountProvider";
+import { memo, useCallback, useMemo } from "react";
 import type { EmailProviderType } from "../types";
+import { useEmailAccountContext } from "./EmailAccountProvider";
 
 /* -------------------------------------------------------------------- */
 /* Types                                                                */
@@ -52,6 +52,7 @@ const PROVIDER_MAP: Record<
 > = {
   gmail: { name: "Gmail", mode: "oauth2" },
   outlook: { name: "Outlook", mode: "oauth2" },
+  yahoo: { name: "Yahoo", mode: "oauth2" },
   imap: { name: "IMAP", mode: "manual" },
   smtp: { name: "SMTP", mode: "manual" },
 };
@@ -126,14 +127,16 @@ export const EmailAccountAuth = memo(
     const onOAuthClick = useCallback(() => {
       if (isOAuth) {
         // Dispatch debug event for OAuth initiation
-        window.dispatchEvent(new CustomEvent('email-debug', {
-          detail: {
-            type: 'OAUTH_INITIATED',
-            provider,
-            email,
-            timestamp: Date.now()
-          }
-        }));
+        window.dispatchEvent(
+          new CustomEvent("email-debug", {
+            detail: {
+              type: "OAUTH_INITIATED",
+              provider,
+              email,
+              timestamp: Date.now(),
+            },
+          })
+        );
         handleOAuth2Auth(provider);
       }
     }, [isOAuth, email, provider, handleOAuth2Auth]);
@@ -147,13 +150,13 @@ export const EmailAccountAuth = memo(
           const nextValue: EmailNodeData[K] =
             type === "checkbox"
               ? (checked as EmailNodeData[K])
-              : (["imapPort", "smtpPort"].includes(key as string)
+              : ((["imapPort", "smtpPort"].includes(key as string)
                   ? sanitizePort(value)
-                  : value) as EmailNodeData[K];
+                  : value) as EmailNodeData[K]);
 
           updateNodeData({ [key]: nextValue } as Partial<EmailNodeData>);
         },
-      [updateNodeData],
+      [updateNodeData]
     );
 
     /** Persist manual settings */
@@ -196,7 +199,8 @@ export const EmailAccountAuth = memo(
     ]);
 
     /* ---------------- Memo helpers ----------------------------------- */
-    const isAuthInProgress = !!nodeData.isAuthenticating || !!globalAuthenticating;
+    const isAuthInProgress =
+      !!nodeData.isAuthenticating || !!globalAuthenticating;
     const oauthBtnLabel = useMemo(() => {
       if (nodeData.isConnected && email) return `Logout ${meta.name}`;
       if (isAuthInProgress) return "Cancel";
@@ -223,7 +227,7 @@ export const EmailAccountAuth = memo(
                   ? !isEnabled
                   : isAuthInProgress
                     ? !isEnabled
-                    : (!isEnabled || isLocked)
+                    : !isEnabled || isLocked
               }
               onClick={() => {
                 if (nodeData.isConnected && nodeData.accountId) {
@@ -334,7 +338,9 @@ export const EmailAccountAuth = memo(
               <input
                 type="checkbox"
                 checked={provider === "imap" ? useSSL : useTLS}
-                onChange={updateField(provider === "imap" ? "useSSL" : "useTLS")}
+                onChange={updateField(
+                  provider === "imap" ? "useSSL" : "useTLS"
+                )}
                 className="scale-75"
                 disabled={!isEnabled}
                 aria-label={`Use ${provider === "imap" ? "SSL" : "TLS"} encryption`}
@@ -366,7 +372,7 @@ export const EmailAccountAuth = memo(
         )}
       </div>
     );
-  },
+  }
 );
 
 EmailAccountAuth.displayName = "EmailAccountAuth";

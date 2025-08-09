@@ -224,7 +224,7 @@ const CreateTextNode = memo(
     const edges = useStore((s) => s.edges);
 
     // keep last emitted output to avoid redundant writes
-    const lastGeneralOutputRef = useRef<string | null>(null);
+    const lastGeneralOutputRef = useRef<string | undefined>(undefined);
 
     // Ref for collapsed textarea to keep scroll at top
     const collapsedTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -317,7 +317,8 @@ const CreateTextNode = memo(
     useEffect(() => {
       try {
         // Direct output mapping - store the actual text value, not an object
-        const textValue = nodeData.store || "";
+        const textValue =
+          typeof nodeData.store === "string" ? nodeData.store : "";
 
         // Only update if changed
         const hasChanged = lastGeneralOutputRef.current !== textValue;
@@ -333,7 +334,7 @@ const CreateTextNode = memo(
         });
 
         // Fallback: set empty string to prevent crashes
-        if (lastGeneralOutputRef.current !== null) {
+        if (lastGeneralOutputRef.current !== undefined) {
           lastGeneralOutputRef.current = "";
           updateNodeData({ output: "" });
         }

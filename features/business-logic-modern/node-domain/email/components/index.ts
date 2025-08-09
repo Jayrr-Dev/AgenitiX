@@ -14,4 +14,3 @@ export { EmailAccountCollapsed } from "./EmailAccountCollapsed";
 export { EmailAccountExpanded } from "./EmailAccountExpanded";
 export { EmailAccountForm } from "./EmailAccountForm";
 export { EmailAccountProvider } from "./EmailAccountProvider";
-export { EmailAccountStatus } from "./EmailAccountStatus";

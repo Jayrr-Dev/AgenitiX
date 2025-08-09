@@ -6,7 +6,7 @@
  */
 
 // Email Provider Types
-export type EmailProviderType = "gmail" | "outlook" | "imap" | "smtp";
+export type EmailProviderType = "gmail" | "outlook" | "yahoo" | "imap" | "smtp";
 
 export type AuthType = "oauth2" | "manual";
 
