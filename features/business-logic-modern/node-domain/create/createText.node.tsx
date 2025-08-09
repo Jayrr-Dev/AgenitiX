@@ -227,7 +227,7 @@ const CreateTextNode = memo(
     const edges = useStore((s) => s.edges);
 
     // keep last emitted output to avoid redundant writes
-    const lastGeneralOutputRef = useRef<any>(null);
+    const lastGeneralOutputRef = useRef<string | null>(null);
 
     // Ref for collapsed textarea to keep scroll at top
     const collapsedTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -319,43 +319,15 @@ const CreateTextNode = memo(
     /* 🔄 Handle-based output field generation for multi-handle compatibility */
     useEffect(() => {
       try {
-        // Create a data object with proper handle field mapping, basically map store to output handle
-        const mappedData = {
-          ...nodeData,
-          output: nodeData.store, // Map store field to output handle
-        };
-
-        // Generate Map-based output with error handling
-        const outputValue = generateoutputField(spec, mappedData as any);
-
-        // Validate the result
-        if (!(outputValue instanceof Map)) {
-          console.error(
-            `CreateText ${id}: generateoutputField did not return a Map`,
-            outputValue
-          );
-          return;
-        }
-
-        // Convert Map to plain object for Convex compatibility, basically serialize for storage
-        const outputObject = Object.fromEntries(outputValue.entries());
+        // Direct output mapping - store the actual text value, not an object
+        const textValue = nodeData.store || "";
 
         // Only update if changed
-        const currentoutput = lastGeneralOutputRef.current;
-        let hasChanged = true;
-
-        if (currentoutput instanceof Map && outputValue instanceof Map) {
-          // Compare Map contents
-          hasChanged =
-            currentoutput.size !== outputValue.size ||
-            !Array.from(outputValue.entries()).every(
-              ([key, value]) => currentoutput.get(key) === value
-            );
-        }
+        const hasChanged = lastGeneralOutputRef.current !== textValue;
 
         if (hasChanged) {
-          lastGeneralOutputRef.current = outputValue;
-          updateNodeData({ output: outputObject });
+          lastGeneralOutputRef.current = textValue;
+          updateNodeData({ output: textValue });
         }
       } catch (error) {
         console.error(`CreateText ${id}: Error generating output`, error, {
@@ -363,10 +335,10 @@ const CreateTextNode = memo(
           nodeDataKeys: Object.keys(nodeData || {}),
         });
 
-        // Fallback: set empty object to prevent crashes, basically empty state for storage
+        // Fallback: set empty string to prevent crashes
         if (lastGeneralOutputRef.current !== null) {
-          lastGeneralOutputRef.current = new Map();
-          updateNodeData({ output: {} });
+          lastGeneralOutputRef.current = "";
+          updateNodeData({ output: "" });
         }
       }
     }, [

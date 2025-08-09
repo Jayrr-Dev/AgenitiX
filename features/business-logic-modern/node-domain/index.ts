@@ -10,7 +10,6 @@ export { default as createMap } from "./create/createMap.node";
 export { default as viewObject } from "./view/viewObject.node";
 export { default as viewArray } from "./view/viewArray.node";
 export { default as emailPreview } from "./email/emailPreview.node";
-// Node exports will be added here automatically by Plop
 export { default as createText } from "./create/createText.node";
 export { default as aiAgent } from "./ai/aiAgent.node";
 export { default as storeInMemory } from "./create/storeInMemory.node";
@@ -35,3 +34,10 @@ export { default as logicOr } from "./logic/logicOr.node";
 export { default as logicNot } from "./logic/logicNot.node";
 export { default as logicXor } from "./logic/logicXor.node";
 export { default as logicXnor } from "./logic/logicXnor.node";
+
+// Convert domain exports (will be added as nodes are created)
+export { default as toBoolean } from "./convert/toBoolean.node";
+export { default as toText } from "./convert/toText.node";
+export { default as toObject } from "./convert/toObject.node";
+export { default as toArray } from "./convert/toArray.node";
+export { default as toAny } from "./convert/toAny.node";
