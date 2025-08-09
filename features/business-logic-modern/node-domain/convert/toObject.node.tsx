@@ -15,7 +15,7 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
-import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
+import { findEdgesByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
   generateoutputField,
@@ -41,7 +41,7 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 
-// Import conversion utilities
+// Import conversion utilities (hash helper is locally defined below)
 import { getObjectDisplay, toObjectValue } from "./utils";
 
 // Local utility function for generating simple hash
@@ -276,41 +276,95 @@ const ToObjectNode = memo(
      * Compute the latest value coming from connected input handles.
      * Accepts any type of input for object conversion.
      */
-    const computeInput = useCallback((): any => {
-      const anyInputEdge = findEdgeByHandle(edges, id, "any-input");
-      if (!anyInputEdge) return null;
+    const computeInput = useCallback((): unknown => {
+      // Collect ALL edges connected to the 'any-input' handle
+      const incomingEdges = findEdgesByHandle(edges, id, "any-input");
+      if (!incomingEdges || incomingEdges.length === 0) return null;
 
-      const src = nodes.find((n) => n.id === anyInputEdge.source);
-      if (!src) return null;
+      const items: Array<{ edge: any; value: unknown; label?: string }> = [];
 
-      const sourceData = src.data as Record<string, unknown> | undefined;
-      let inputValue: unknown = undefined;
+      for (const e of incomingEdges) {
+        const src = nodes.find((n) => n.id === e.source);
+        if (!src) continue;
 
-      if (
-        sourceData &&
-        typeof sourceData.output === "object" &&
-        sourceData.output !== null
-      ) {
-        const outputObj = sourceData.output as Record<string, unknown>;
-        const cleanId = anyInputEdge.sourceHandle
-          ? normalizeHandleId(anyInputEdge.sourceHandle)
-          : "output";
-        if (outputObj[cleanId] !== undefined) {
-          inputValue = outputObj[cleanId];
-        } else if (outputObj.output !== undefined) {
-          inputValue = outputObj.output;
+        const sourceData = src.data as Record<string, unknown> | undefined;
+        let value: unknown = undefined;
+
+        // Prefer new handle-based output object
+        if (
+          sourceData &&
+          typeof sourceData.output === "object" &&
+          sourceData.output !== null
+        ) {
+          const outputObj = sourceData.output as Record<string, unknown>;
+          const cleanId = e.sourceHandle
+            ? normalizeHandleId(e.sourceHandle)
+            : "output";
+          if (outputObj[cleanId] !== undefined) {
+            value = outputObj[cleanId];
+          } else if (outputObj.output !== undefined) {
+            value = outputObj.output;
+          } else {
+            const first = Object.values(outputObj)[0];
+            if (first !== undefined) value = first;
+          }
+        }
+
+        // Legacy fallbacks
+        if (value === undefined) {
+          const raw = (sourceData as any)?.output;
+          value = raw ?? (sourceData as any)?.store ?? sourceData;
+        }
+
+        const customLabel =
+          typeof (sourceData as any)?.label === "string"
+            ? ((sourceData as any)?.label as string)
+            : undefined;
+        items.push({ edge: e, value, label: customLabel });
+      }
+
+      if (items.length === 0) return null;
+
+      // If single input, pass it through
+      if (items.length === 1) {
+        return items[0].value;
+      }
+
+      // Merge multiple inputs into a single object. Later inputs override earlier keys.
+      const merged: Record<string, unknown> = {};
+      const labelCounts: Record<string, number> = {};
+      for (const { edge: e, value: v, label } of items) {
+        if (v && typeof v === "object" && !Array.isArray(v)) {
+          Object.assign(merged, v as Record<string, unknown>);
+          continue;
+        }
+
+        if (label && label.trim().length > 0) {
+          const baseLabel = label.trim();
+          const next = (labelCounts[baseLabel] ?? 0) + 1;
+          labelCounts[baseLabel] = next;
+          let key = next === 1 ? baseLabel : `${baseLabel}${next - 1}`;
+          while (Object.prototype.hasOwnProperty.call(merged, key)) {
+            key = `${key}_`;
+          }
+          merged[key] = v;
         } else {
-          const first = Object.values(outputObj)[0];
-          if (first !== undefined) inputValue = first;
+          // Create a stable, collision-resistant key per source edge
+          const base =
+            typeof v === "string"
+              ? `s_${generateSimpleHash(v as string)}`
+              : Array.isArray(v)
+                ? "arr"
+                : typeof v;
+          const suffix = String(e.source || "").slice(-4) || "src";
+          let key = `${base}_${suffix}`;
+          while (Object.prototype.hasOwnProperty.call(merged, key)) {
+            key = `${key}_`;
+          }
+          merged[key] = v;
         }
       }
-
-      if (inputValue === undefined) {
-        const raw = (sourceData as any)?.output;
-        inputValue = raw ?? (sourceData as any)?.store ?? sourceData;
-      }
-
-      return inputValue;
+      return merged;
     }, [edges, nodes, id]);
 
     // -------------------------------------------------------------------------
@@ -340,11 +394,17 @@ const ToObjectNode = memo(
                 ? customKeys
                 : [];
 
+          // If the incoming value is already an object (including our merged multi-input object),
+          // prefer preserving its structure to avoid wrapping under a single key like "value".
+          const effectivePreserve =
+            preserveType ||
+            (typeof inputValue === "object" && !Array.isArray(inputValue));
+
           const converted = toObjectValue(
             inputValue,
             keyStrategy,
             parsedCustomKeys,
-            preserveType
+            effectivePreserve
           );
           updateNodeData({
             objectOutput: converted,

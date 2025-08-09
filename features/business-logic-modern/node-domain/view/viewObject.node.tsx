@@ -18,9 +18,10 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
-import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
-import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import { findEdgesByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
+import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
+import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
   SafeSchemas,
   createSafeInitialData,
@@ -38,6 +39,7 @@ import {
   COLLAPSED_SIZES,
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
+import { toObjectValue } from "@/features/business-logic-modern/node-domain/convert/utils";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 
@@ -321,39 +323,105 @@ const ViewObjectNode = memo(
      * Priority: json-input > input (modify based on your node's specific handles)
      */
     const computeInput = useCallback((): unknown => {
-      // Check json-input handle first, then input handle as fallback
-      const jsonInputEdge = findEdgeByHandle(edges, id, "json-input");
-      const inputEdge = findEdgeByHandle(edges, id, "input");
+      // Collect ALL edges connected to this node's object-capable inputs
+      const jsonEdges = findEdgesByHandle(edges, id, "json-input");
+      const genericEdges = findEdgesByHandle(edges, id, "input");
+      const allIncoming = [...jsonEdges, ...genericEdges];
+      if (allIncoming.length === 0) return null;
 
-      const incoming = jsonInputEdge || inputEdge;
-      if (!incoming) return null;
+      const items: Array<{ edge: any; value: unknown; label?: string }> = [];
+      for (const e of allIncoming) {
+        const src = nodes.find((n) => n.id === e.source);
+        if (!src) continue;
 
-      const src = nodes.find((n) => n.id === incoming.source);
-      if (!src) return null;
+        const dataRec = src.data as Record<string, unknown> | undefined;
+        let value: unknown = undefined;
 
-      // priority: output ➜ inputData ➜ store ➜ whole data
-      const inputValue =
-        src.data?.output ?? src.data?.inputData ?? src.data?.store ?? src.data;
-      if (typeof inputValue === "string") {
-        // Try to parse JSON-like strings
-        try {
-          const trimmed = inputValue.trim();
-          if (trimmed.length === 0) {
-            // Empty strings should not disable the node, treat as no value
-            return null;
+        // Prefer handle-specific value from the source output map to avoid extra wrapping
+        if (dataRec && typeof dataRec.output === "object" && dataRec.output) {
+          const outMap = dataRec.output as Record<string, unknown>;
+          const cleanId = e.sourceHandle
+            ? normalizeHandleId(e.sourceHandle)
+            : "output";
+          if (outMap[cleanId] !== undefined) {
+            value = outMap[cleanId];
+          } else if (outMap.output !== undefined) {
+            value = outMap.output;
+          } else {
+            const first = Object.values(outMap)[0];
+            if (first !== undefined) value = first;
           }
-          if (
-            (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
-            (trimmed.startsWith("[") && trimmed.endsWith("]"))
-          ) {
-            return JSON.parse(trimmed);
+        }
+
+        // Legacy priority: output ➜ inputData ➜ store ➜ whole data
+        if (value === undefined) {
+          value =
+            (src.data as any)?.output ??
+            (src.data as any)?.inputData ??
+            (src.data as any)?.store ??
+            src.data;
+        }
+
+        // Parse JSON-like strings for convenience
+        if (typeof value === "string") {
+          const trimmed = value.trim();
+          if (trimmed.length > 0) {
+            const looksJson =
+              (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+              (trimmed.startsWith("[") && trimmed.endsWith("]"));
+            if (looksJson) {
+              try {
+                value = JSON.parse(trimmed);
+              } catch {
+                // keep original string
+              }
+            }
           }
-          return inputValue; // plain string
-        } catch {
-          return inputValue; // invalid JSON, treat as string
+        }
+
+        const customLabel =
+          typeof (dataRec as any)?.label === "string"
+            ? ((dataRec as any)?.label as string)
+            : undefined;
+        items.push({ edge: e, value, label: customLabel });
+      }
+
+      if (items.length === 0) return null;
+
+      // If single input, ensure an object for consistent viewing
+      if (items.length === 1) {
+        const only = items[0].value;
+        if (only && typeof only === "object" && !Array.isArray(only))
+          return only;
+        return toObjectValue(only);
+      }
+
+      // Merge multiple inputs into one object. Later inputs override earlier keys.
+      const merged: Record<string, unknown> = {};
+      const labelCounts: Record<string, number> = {};
+      for (const { value: v, label } of items) {
+        if (v && typeof v === "object" && !Array.isArray(v)) {
+          Object.assign(merged, v as Record<string, unknown>);
+          continue;
+        }
+
+        if (label && label.trim().length > 0) {
+          const base = label.trim();
+          const nextCount = (labelCounts[base] ?? 0) + 1;
+          labelCounts[base] = nextCount;
+          // First occurrence uses the base label; duplicates append 1,2,...
+          let key = nextCount === 1 ? base : `${base}${nextCount - 1}`;
+          // Ensure uniqueness if some other object contributed same key
+          while (Object.prototype.hasOwnProperty.call(merged, key)) {
+            key = `${key}_`;
+          }
+          merged[key] = v as unknown;
+        } else {
+          // Fallback to default object conversion when no label is provided
+          Object.assign(merged, toObjectValue(v));
         }
       }
-      return inputValue as unknown; // object/array/number/boolean
+      return merged;
     }, [edges, nodes, id]);
 
     // isEnabled is forced true; connection presence is no longer used to toggle
