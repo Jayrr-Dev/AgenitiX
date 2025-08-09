@@ -23,7 +23,6 @@ import type React from "react";
 import { memo, useMemo } from "react";
 import { useFlowMetadataOptional } from "../flow-engine/contexts/flow-metadata-context";
 import { useAutoSaveCanvas } from "../flow-engine/hooks/useAutoSaveCanvas";
-import { useLoadCanvas } from "../flow-engine/hooks/useLoadCanvas";
 import { useEdgeCount, useNodeCount } from "../flow-engine/stores/flowStore";
 import {
   useComponentButtonClasses,
@@ -117,7 +116,6 @@ const WorkflowManagerComponent: React.FC<WorkflowManagerProps> = ({
     enabled: true,
     showNotifications: false, // Keep it subtle to avoid UI noise
   });
-  const _loadCanvas = useLoadCanvas();
 
   // Get themed classes - these hooks return stable values based on theme
   const rawContainerClasses = useComponentClasses(
@@ -188,7 +186,7 @@ const WorkflowManagerComponent: React.FC<WorkflowManagerProps> = ({
       icon: isPrivate ? Lock : Globe,
       label: isPrivate ? "Private" : "Public",
     };
-  }, [flow?.is_private]);
+  }, [flow]);
 
   // Stable permission badge computation, basically optimizes string operations
   const permissionBadge = useMemo<string | null>(() => {
@@ -205,7 +203,7 @@ const WorkflowManagerComponent: React.FC<WorkflowManagerProps> = ({
       default:
         return null;
     }
-  }, [flow?.isOwner, flow?.userPermission]);
+  }, [flow]);
 
   return (
     <div className={containerClasses}>

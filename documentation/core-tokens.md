@@ -9,12 +9,12 @@
 | spacing.xl | 1.5rem |
 | spacing.2xl | 2rem |
 | spacing.3xl | 3rem |
-| typography.sizes.xs | 0.75rem |
-| typography.sizes.sm | 0.875rem |
-| typography.sizes.base | 1rem |
-| typography.sizes.lg | 1.125rem |
-| typography.sizes.xl | 1.25rem |
-| typography.sizes.2xl | 1.5rem |
+| typography.sizes.xs | 0.625rem |
+| typography.sizes.sm | 0.75rem |
+| typography.sizes.base | 0.875rem |
+| typography.sizes.lg | 1rem |
+| typography.sizes.xl | 1.125rem |
+| typography.sizes.2xl | 1.375rem |
 | typography.weights.normal | 400 |
 | typography.weights.medium | 500 |
 | typography.weights.semibold | 600 |
@@ -303,7 +303,7 @@
 | expandCollapseButton.text | hsla(0, 0%, 0%, 1) |
 | expandCollapseButton.text-dark | hsla(0, 0%, 95%, 1) |
 | label._comment | 📝 Node label styling - editable title at top of each node |
-| label.top | 2px |
+| label.top | -5px |
 | label.font-size | 10px |
 | label.font-weight | 600 |
 | label.font-family | Inter, ui-sans-serif, sans-serif |

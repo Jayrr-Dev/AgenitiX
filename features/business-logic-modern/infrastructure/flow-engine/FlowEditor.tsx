@@ -35,18 +35,26 @@ import { usePieMenuIntegration } from "./hooks/usePieMenuIntegration";
 // Import the new NodeSpec registry
 import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 
-// Helper function to get node spec from the new NodeSpec registry system
+// Simple in-memory cache for node specs to avoid repeated lookups
+const __specCache = new Map<string, any>();
+
+// Helper function to get node spec from the new NodeSpec registry system (cached)
 const getNodeSpecForType = (nodeType: string) => {
   try {
+    if (__specCache.has(nodeType)) {
+      return __specCache.get(nodeType);
+    }
     // 1. Check the new NodeSpec registry first
     const registeredSpec = getNodeSpecMetadata(nodeType);
     if (registeredSpec) {
-      return {
+      const spec = {
         kind: registeredSpec.kind,
         displayName: registeredSpec.displayName,
         category: registeredSpec.category,
         initialData: registeredSpec.initialData,
       };
+      __specCache.set(nodeType, spec);
+      return spec;
     }
 
     // 2. Check the legacy NODESPECS for backward compatibility
@@ -54,15 +62,19 @@ const getNodeSpecForType = (nodeType: string) => {
     // The original code had NODESPECS defined elsewhere, but it's not imported here.
     // For now, we'll just return null if no registered spec is found.
 
-    console.warn(
-      `[getNodeSpecForType] No spec found for node type: ${nodeType}`
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        `[getNodeSpecForType] No spec found for node type: ${nodeType}`
+      );
+    }
     return null;
   } catch (error) {
-    console.error(
-      `[getNodeSpecForType] Error getting spec for ${nodeType}:`,
-      error
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.error(
+        `[getNodeSpecForType] Error getting spec for ${nodeType}:`,
+        error
+      );
+    }
     return null;
   }
 };
@@ -180,36 +192,36 @@ const FlowEditorInternal = () => {
       const store = useNodeStyleStore.getState();
       store.enableCategoryTheming();
     } catch (error) {
-      console.error("❌ Theme initialization failed:", error);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("❌ Theme initialization failed:", error);
+      }
     }
   }, []);
 
-  const {
-    nodes,
-    edges,
-    onNodesChange,
-    onEdgesChange: storeOnEdgesChange,
-    onConnect,
-    addNode,
-    // Pull all other necessary props from the store
-    selectedNodeId,
-    selectedEdgeId,
-    nodeErrors,
-    showHistoryPanel,
-    inspectorLocked,
-    inspectorViewMode,
-    updateNodeData,
-    updateNodeId,
-    logNodeError,
-    clearNodeErrors,
-    toggleHistoryPanel,
-    setInspectorLocked,
-    removeNode,
-    removeEdge,
-    selectNode,
-    selectEdge,
-    clearSelection,
-  } = useFlowStore();
+  // Select only the slices we actually need to minimize re-renders
+  const nodes = useFlowStore((s) => s.nodes);
+  const edges = useFlowStore((s) => s.edges);
+  const onNodesChange = useFlowStore((s) => s.onNodesChange);
+  const storeOnEdgesChange = useFlowStore((s) => s.onEdgesChange);
+  const onConnect = useFlowStore((s) => s.onConnect);
+  const addNode = useFlowStore((s) => s.addNode);
+  const selectedNodeId = useFlowStore((s) => s.selectedNodeId);
+  const selectedEdgeId = useFlowStore((s) => s.selectedEdgeId);
+  const nodeErrors = useFlowStore((s) => s.nodeErrors);
+  const showHistoryPanel = useFlowStore((s) => s.showHistoryPanel);
+  const inspectorLocked = useFlowStore((s) => s.inspectorLocked);
+  const inspectorViewMode = useFlowStore((s) => s.inspectorViewMode);
+  const updateNodeData = useFlowStore((s) => s.updateNodeData);
+  const updateNodeId = useFlowStore((s) => s.updateNodeId);
+  const logNodeError = useFlowStore((s) => s.logNodeError);
+  const clearNodeErrors = useFlowStore((s) => s.clearNodeErrors);
+  const toggleHistoryPanel = useFlowStore((s) => s.toggleHistoryPanel);
+  const setInspectorLocked = useFlowStore((s) => s.setInspectorLocked);
+  const removeNode = useFlowStore((s) => s.removeNode);
+  const removeEdge = useFlowStore((s) => s.removeEdge);
+  const selectNode = useFlowStore((s) => s.selectNode);
+  const selectEdge = useFlowStore((s) => s.selectEdge);
+  const clearSelection = useFlowStore((s) => s.clearSelection);
 
   // ============================================================================
   // COPY/PASTE FUNCTIONALITY WITH MOUSE TRACKING
@@ -357,13 +369,17 @@ const FlowEditorInternal = () => {
       event.preventDefault();
 
       if (isReadOnly) {
-        console.log("Drop disabled in read-only mode");
+        if (process.env.NODE_ENV !== "production") {
+          console.log("Drop disabled in read-only mode");
+        }
         return;
       }
 
       const nodeType = event.dataTransfer.getData("application/reactflow");
       if (!nodeType) {
-        console.warn("No node type found in drag data");
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("No node type found in drag data");
+        }
         return;
       }
 
@@ -377,7 +393,9 @@ const FlowEditorInternal = () => {
         // Get node spec from the new NodeSpec system
         const spec = await getNodeSpecForType(nodeType);
         if (!spec) {
-          console.error(`Invalid node type dropped: ${nodeType}`);
+          if (process.env.NODE_ENV !== "production") {
+            console.error(`Invalid node type dropped: ${nodeType}`);
+          }
           return;
         }
 
@@ -404,7 +422,9 @@ const FlowEditorInternal = () => {
           position: position,
         });
       } catch (error) {
-        console.error("❌ Failed to create node from drop:", error);
+        if (process.env.NODE_ENV !== "production") {
+          console.error("❌ Failed to create node from drop:", error);
+        }
       }
     },
     [screenToFlowPosition, addNode, recordAction, isReadOnly]
@@ -414,33 +434,50 @@ const FlowEditorInternal = () => {
   React.useEffect(() => {
     const handleCreateNodeDirect = (event: CustomEvent) => {
       if (isReadOnly) {
-        console.log("Direct node creation disabled in read-only mode");
+        if (process.env.NODE_ENV !== "production") {
+          console.log("Direct node creation disabled in read-only mode");
+        }
         return;
       }
 
       const { node } = event.detail;
-      console.log('🎯 FlowEditor: Creating node directly from pie menu', node);
-      
+      if (process.env.NODE_ENV !== "production") {
+        console.log(
+          "🎯 FlowEditor: Creating node directly from pie menu",
+          node
+        );
+      }
+
       try {
         addNode(node);
-        
+
         // Record node creation for undo/redo
         recordAction("node_add", {
           nodeType: node.type,
           nodeId: node.id,
           position: node.position,
         });
-        
-        console.log('✅ FlowEditor: Node created successfully');
+
+        if (process.env.NODE_ENV !== "production") {
+          console.log("✅ FlowEditor: Node created successfully");
+        }
       } catch (error) {
-        console.error("❌ Failed to create node directly:", error);
+        if (process.env.NODE_ENV !== "production") {
+          console.error("❌ Failed to create node directly:", error);
+        }
       }
     };
 
-    window.addEventListener('create-node-direct', handleCreateNodeDirect as EventListener);
-    
+    window.addEventListener(
+      "create-node-direct",
+      handleCreateNodeDirect as EventListener
+    );
+
     return () => {
-      window.removeEventListener('create-node-direct', handleCreateNodeDirect as EventListener);
+      window.removeEventListener(
+        "create-node-direct",
+        handleCreateNodeDirect as EventListener
+      );
     };
   }, [addNode, recordAction, isReadOnly]);
 
@@ -455,26 +492,33 @@ const FlowEditorInternal = () => {
 
   const edgeReconnectSuccessful = React.useRef(true);
 
-  const handleReconnectStart = () => {
+  const handleReconnectStart = useCallback(() => {
     edgeReconnectSuccessful.current = false;
-  };
+  }, []);
 
-  const handleReconnect = (oldEdge: AgenEdge, newConnection: Connection) => {
-    if (isReadOnly) return; // Disable in read-only mode
-    edgeReconnectSuccessful.current = true;
-    // Update edges array via store util
-    removeEdge(oldEdge.id);
-    onConnect(newConnection);
-  };
+  const handleReconnect = useCallback(
+    (oldEdge: AgenEdge, newConnection: Connection) => {
+      if (isReadOnly) return; // Disable in read-only mode
+      edgeReconnectSuccessful.current = true;
+      removeEdge(oldEdge.id);
+      onConnect(newConnection);
+    },
+    [isReadOnly, removeEdge, onConnect]
+  );
 
-  const handleReconnectEnd = (_: MouseEvent | TouchEvent, edge: AgenEdge) => {
-    if (isReadOnly) return; // Disable in read-only mode
-    if (!edgeReconnectSuccessful.current) {
-      removeEdge(edge.id);
-    }
-    edgeReconnectSuccessful.current = true;
-  };
+  const handleReconnectEnd = useCallback(
+    (_: MouseEvent | TouchEvent, edge: AgenEdge) => {
+      if (isReadOnly) return; // Disable in read-only mode
+      if (!edgeReconnectSuccessful.current) {
+        removeEdge(edge.id);
+      }
+      edgeReconnectSuccessful.current = true;
+    },
+    [isReadOnly, removeEdge]
+  );
 
+  const prevSelNodeRef = React.useRef<string | null>(null);
+  const prevSelEdgeRef = React.useRef<string | null>(null);
   const handleSelectionChange = useCallback(
     ({
       nodes: selectedNodes,
@@ -485,12 +529,18 @@ const FlowEditorInternal = () => {
     }) => {
       // Handle node selection first
       const nodeId = selectedNodes.length > 0 ? selectedNodes[0].id : null;
-      selectNode(nodeId);
+      if (prevSelNodeRef.current !== nodeId) {
+        prevSelNodeRef.current = nodeId;
+        selectNode(nodeId);
+      }
 
       // Only handle edge selection if NO nodes are selected
       if (selectedNodes.length === 0) {
         const edgeId = selectedEdges.length > 0 ? selectedEdges[0].id : null;
-        selectEdge(edgeId);
+        if (prevSelEdgeRef.current !== edgeId) {
+          prevSelEdgeRef.current = edgeId;
+          selectEdge(edgeId);
+        }
       }
     },
     [selectNode, selectEdge]
@@ -516,18 +566,12 @@ const FlowEditorInternal = () => {
         nodes={nodes}
         edges={edges}
         onNodesChange={(newNodes: ReactFlowNode[]) => {
-          // Actually update the flow state during undo/redo operations
-          useFlowStore.setState((state) => ({
-            ...state,
-            nodes: newNodes as AgenNode[],
-          }));
+          // During undo/redo, update only the changed slice
+          useFlowStore.setState({ nodes: newNodes as AgenNode[] });
         }}
         onEdgesChange={(newEdges: ReactFlowEdge[]) => {
-          // Actually update the flow state during undo/redo operations
-          useFlowStore.setState((state) => ({
-            ...state,
-            edges: newEdges as AgenEdge[],
-          }));
+          // During undo/redo, update only the changed slice
+          useFlowStore.setState({ edges: newEdges as AgenEdge[] });
         }}
         config={{
           maxHistorySize: 100,
@@ -581,20 +625,32 @@ const FlowEditorInternal = () => {
         inspectorLocked={inspectorLocked}
         inspectorViewMode={inspectorViewMode}
         setInspectorLocked={setInspectorLocked}
-        reactFlowHandlers={{
-          onNodesChange: isReadOnly
-            ? () => {}
-            : (onNodesChange as (changes: unknown[]) => void),
-          onEdgesChange: isReadOnly
-            ? () => {}
-            : (onEdgesChange as (changes: unknown[]) => void),
-          onConnect: isReadOnly ? () => {} : onConnect,
-          onInit: () => {},
-          onSelectionChange: handleSelectionChange, // Allow selection in read-only mode
-          onReconnect: handleReconnect, // Already has read-only check inside
-          onReconnectStart: handleReconnectStart,
-          onReconnectEnd: handleReconnectEnd, // Already has read-only check inside
-        }}
+        reactFlowHandlers={React.useMemo(() => {
+          const noop = () => {};
+          return {
+            onNodesChange: isReadOnly
+              ? noop
+              : (onNodesChange as (changes: unknown[]) => void),
+            onEdgesChange: isReadOnly
+              ? noop
+              : (onEdgesChange as (changes: unknown[]) => void),
+            onConnect: isReadOnly ? noop : onConnect,
+            onInit: noop,
+            onSelectionChange: handleSelectionChange,
+            onReconnect: handleReconnect,
+            onReconnectStart: handleReconnectStart,
+            onReconnectEnd: handleReconnectEnd,
+          };
+        }, [
+          isReadOnly,
+          onNodesChange,
+          onEdgesChange,
+          onConnect,
+          handleSelectionChange,
+          handleReconnect,
+          handleReconnectStart,
+          handleReconnectEnd,
+        ])}
         isReadOnly={isReadOnly}
       />
       <Sidebar className="z-50" enableDebug={true} />

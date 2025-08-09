@@ -13,33 +13,46 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import React, { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
 } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
 import {
   createNodeValidator,
   reportValidationError,
   useNodeDataValidation,
 } from "@/features/business-logic-modern/infrastructure/node-core/validation";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
-import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
+import { JsonHighlighter } from "@/features/business-logic-modern/infrastructure/node-inspector/utils/JsonHighlighter";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
   COLLAPSED_SIZES,
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { useStore } from "@xyflow/react";
-import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
-import { JsonHighlighter } from "@/features/business-logic-modern/infrastructure/node-inspector/utils/JsonHighlighter";
+import { trackNodeUpdate } from "@/lib/debug-node-updates";
+import {
+  timeOperation,
+  trackRender,
+  trackStateUpdate,
+} from "@/lib/performance-profiler";
+import { useReactFlow, useStore } from "@xyflow/react";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -68,10 +81,7 @@ export const ViewArrayDataSchema = z
 
 export type ViewArrayData = z.infer<typeof ViewArrayDataSchema>;
 
-const validateNodeData = createNodeValidator(
-  ViewArrayDataSchema,
-  "ViewArray",
-);
+const validateNodeData = createNodeValidator(ViewArrayDataSchema, "ViewArray");
 
 // -----------------------------------------------------------------------------
 // 2️⃣  Constants
@@ -88,7 +98,8 @@ const CONTENT = {
   collapsed: "flex items-center justify-center w-full h-full",
   header: "flex items-center justify-between mb-3",
   body: "flex-1 flex items-center justify-center",
-  disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+  disabled:
+    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
 
 // Display limits
@@ -191,6 +202,12 @@ export const spec: NodeSpec = createDynamicSpec({
 
 const ViewArrayNode = memo(
   ({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
+    // Track render performance
+    const endRenderTracking = trackRender("ViewArrayNode", {
+      id,
+      dataSize: JSON.stringify(data || {}).length,
+    });
+
     // -------------------------------------------------------------------------
     // 4.1  Sync with React‑Flow store
     // -------------------------------------------------------------------------
@@ -202,9 +219,23 @@ const ViewArrayNode = memo(
     const { isExpanded, isEnabled, isActive, viewPath } =
       nodeData as ViewArrayData;
 
-    // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
-    const nodes = useStore((s) => s.nodes);
-    const edges = useStore((s) => s.edges);
+    // 4.2  Global React‑Flow store – memoized edge filtering to avoid expensive recalculation
+    const edges = useStore(
+      useCallback(
+        (s) => s.edges.filter((e) => e.source === id || e.target === id),
+        [id]
+      ),
+      useCallback((a: any[], b: any[]) => {
+        if (a === b) return true;
+        if (a.length !== b.length) return false;
+        // Quick length check first, then detailed comparison
+        for (let i = 0; i < a.length; i++) {
+          if (a[i].id !== b[i].id) return false;
+        }
+        return true;
+      }, [])
+    );
+    const { getNodes } = useReactFlow();
 
     // keep last emitted output to avoid redundant writes
     const lastOutputRef = useRef<unknown>(null);
@@ -235,7 +266,7 @@ const ViewArrayNode = memo(
           updateNodeData({ output: out });
         }
       },
-      [isActive, isEnabled, updateNodeData],
+      [isActive, isEnabled, updateNodeData]
     );
 
     /** Clear JSON‑ish fields when inactive or disabled */
@@ -267,7 +298,7 @@ const ViewArrayNode = memo(
       const incoming = jsonInputEdge || inputEdge;
       if (!incoming) return null;
 
-      const src = nodes.find((n) => n.id === incoming.source);
+      const src = (getNodes() as any[]).find((n) => n.id === incoming.source);
       if (!src) return null;
 
       // priority: output ➜ inputData ➜ store ➜ whole data
@@ -289,7 +320,7 @@ const ViewArrayNode = memo(
         }
       }
       return inputValue as unknown;
-    }, [edges, nodes, id]);
+    }, [edges, id, getNodes]);
 
     // -------------------------------------------------------------------------
     // 4.4.1  Collapsed-view navigation helpers
@@ -298,24 +329,30 @@ const ViewArrayNode = memo(
      * Resolve nested value at a given path of keys.
      * [Explanation], basically walk the structure by keys/indexes to get nested value
      */
-    const resolveAtPath = useCallback((root: unknown, path: Array<string | number>): unknown => {
-      let current: unknown = root;
-      for (const segment of path) {
-        if (current && typeof current === "object") {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const asRecord = current as Record<string, unknown> | Array<unknown>;
-          if (Array.isArray(asRecord)) {
-            const index = typeof segment === "number" ? segment : Number(segment);
-            current = Number.isFinite(index) ? asRecord[index] : undefined;
+    const resolveAtPath = useCallback(
+      (root: unknown, path: Array<string | number>): unknown => {
+        let current: unknown = root;
+        for (const segment of path) {
+          if (current && typeof current === "object") {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const asRecord = current as
+              | Record<string, unknown>
+              | Array<unknown>;
+            if (Array.isArray(asRecord)) {
+              const index =
+                typeof segment === "number" ? segment : Number(segment);
+              current = Number.isFinite(index) ? asRecord[index] : undefined;
+            } else {
+              current = (asRecord as Record<string, unknown>)[String(segment)];
+            }
           } else {
-            current = (asRecord as Record<string, unknown>)[String(segment)];
+            return undefined;
           }
-        } else {
-          return undefined;
         }
-      }
-      return current;
-    }, []);
+        return current;
+      },
+      []
+    );
 
     /** Drill into a nested index if it is an object/array */
     const drillIntoKey = useCallback(
@@ -325,7 +362,7 @@ const ViewArrayNode = memo(
           updateNodeData({ viewPath: [...(viewPath ?? []), key] });
         }
       },
-      [updateNodeData, viewPath, resolveAtPath],
+      [updateNodeData, viewPath, resolveAtPath]
     );
 
     /** Go back one level */
@@ -336,10 +373,13 @@ const ViewArrayNode = memo(
     }, [updateNodeData, viewPath]);
 
     /** Jump to a specific depth via breadcrumb */
-    const jumpToDepth = useCallback((depth: number) => {
-      const next = (viewPath ?? []).slice(0, depth);
-      updateNodeData({ viewPath: next });
-    }, [updateNodeData, viewPath]);
+    const jumpToDepth = useCallback(
+      (depth: number) => {
+        const next = (viewPath ?? []).slice(0, depth);
+        updateNodeData({ viewPath: next });
+      },
+      [updateNodeData, viewPath]
+    );
 
     // -------------------------------------------------------------------------
     // 4.5  Effects
@@ -349,43 +389,64 @@ const ViewArrayNode = memo(
     useEffect(() => {
       const inputVal = computeInput();
       if (inputVal !== (nodeData as ViewArrayData).inputs) {
+        trackNodeUpdate(id, "inputs-changed");
         updateNodeData({ inputs: inputVal });
       }
-    }, [computeInput, nodeData, updateNodeData]);
+    }, [computeInput, nodeData, updateNodeData, id]);
 
-    /* 🔒 Force always-enabled state */
+    /* 🔄 Batch multiple state updates to reduce render cascades */
     useEffect(() => {
-      if (!isEnabled) updateNodeData({ isEnabled: true });
-    }, [isEnabled, updateNodeData]);
+      const updates: Partial<ViewArrayData> = {};
+      let hasUpdates = false;
 
-    /* 🧭 Keep viewPath valid when inputs change (e.g., on disconnect) */
-    useEffect(() => {
+      // Force always-enabled state
+      if (!isEnabled) {
+        updates.isEnabled = true;
+        hasUpdates = true;
+      }
+
+      // Keep viewPath valid when inputs change
       const root = (nodeData as ViewArrayData).inputs;
       const path = (nodeData as ViewArrayData).viewPath ?? [];
       const current = resolveAtPath(root, path);
-      const invalid = path.length > 0 && (current === undefined || current === null || typeof current !== "object");
-      if (invalid) updateNodeData({ viewPath: [] });
-    }, [nodeData, resolveAtPath, updateNodeData]);
+      const invalid =
+        path.length > 0 &&
+        (current === undefined ||
+          current === null ||
+          typeof current !== "object");
+      if (invalid) {
+        updates.viewPath = [];
+        hasUpdates = true;
+      }
 
-    /* 🔁 Reset collapsed summary count when navigating levels */
-    useEffect(() => {
-      updateNodeData({ summaryLimit: 6 });
-    }, [viewPath?.length, updateNodeData]);
-
-    // Monitor inputs and update active state (allow any value, prefer arrays)
-    useEffect(() => {
+      // Update active state based on inputs
       const inputVal = (nodeData as ViewArrayData).inputs;
       const hasValue = inputVal !== null && inputVal !== undefined;
       const nextActive = isEnabled && hasValue;
-      if (isActive !== nextActive) updateNodeData({ isActive: nextActive });
-    }, [nodeData, isEnabled, isActive, updateNodeData]);
+      if (isActive !== nextActive) {
+        updates.isActive = nextActive;
+        hasUpdates = true;
+      }
 
-    // Sync output with active and enabled state
-    useEffect(() => {
-      const inputVal = (nodeData as ViewArrayData).inputs;
+      if (hasUpdates) {
+        trackNodeUpdate(id, "batched-updates");
+        trackStateUpdate(`ViewArray-${id}-batch`);
+        timeOperation(`updateNodeData-${id}`, () => updateNodeData(updates));
+      }
+
+      // Handle output propagation (no state update needed)
       propagate(inputVal);
       blockJsonWhenInactive();
-    }, [isActive, isEnabled, nodeData, propagate, blockJsonWhenInactive]);
+    }, [
+      nodeData,
+      isEnabled,
+      isActive,
+      resolveAtPath,
+      updateNodeData,
+      id,
+      propagate,
+      blockJsonWhenInactive,
+    ]);
 
     // -------------------------------------------------------------------------
     // 4.6  Validation
@@ -402,7 +463,7 @@ const ViewArrayNode = memo(
       ViewArrayDataSchema,
       "ViewArray",
       validation.data,
-      id,
+      id
     );
 
     // -------------------------------------------------------------------------
@@ -435,6 +496,12 @@ const ViewArrayNode = memo(
     // -------------------------------------------------------------------------
     // 4.8  Render
     // -------------------------------------------------------------------------
+
+    // End render tracking
+    useLayoutEffect(() => {
+      endRenderTracking?.();
+    });
+
     return (
       <>
         {/* Editable label or icon */}
@@ -445,12 +512,17 @@ const ViewArrayNode = memo(
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (
-          <LabelNode nodeId={id} label={(nodeData as ViewArrayData).label || spec.displayName} />
+          <LabelNode
+            nodeId={id}
+            label={(nodeData as ViewArrayData).label || spec.displayName}
+          />
         )}
 
         {/* Collapsed: show a compact summary of top-level array items */}
         {!isExpanded ? (
-          <div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ''}`}>
+          <div
+            className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ""}`}
+          >
             <div className="w-[92%] max-h-16 overflow-y-auto rounded-md border border-border/30 bg-muted/20 p-1 font-mono text-[10px] leading-tight text-foreground/90">
               {(() => {
                 const root = (validation.data as ViewArrayData).inputs;
@@ -461,7 +533,9 @@ const ViewArrayNode = memo(
                 }
 
                 const isAtRoot = path.length === 0;
-                const currentView: unknown = isAtRoot ? root : resolveAtPath(root, path);
+                const currentView: unknown = isAtRoot
+                  ? root
+                  : resolveAtPath(root, path);
 
                 // Header: Back + breadcrumb (compact)
                 const breadcrumb = (
@@ -469,7 +543,10 @@ const ViewArrayNode = memo(
                     {!isAtRoot && (
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); goBack(); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          goBack();
+                        }}
                         className="px-1 py-[1px] rounded border border-border/40 hover:bg-muted/40"
                         aria-label="Back"
                         title="Back"
@@ -480,19 +557,29 @@ const ViewArrayNode = memo(
                     <div className="truncate">
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); jumpToDepth(0); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          jumpToDepth(0);
+                        }}
                         className="hover:underline"
                         title="root"
-                      >root</button>
+                      >
+                        root
+                      </button>
                       {path.map((seg, i) => (
                         <span key={`crumb-${i}`}>
                           <span className="mx-1 text-foreground/40">/</span>
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); jumpToDepth(i + 1); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              jumpToDepth(i + 1);
+                            }}
                             className="hover:underline"
                             title={String(seg)}
-                          >{typeof seg === 'string' ? seg : `[${seg}]`}</button>
+                          >
+                            {typeof seg === "string" ? seg : `[${seg}]`}
+                          </button>
                         </span>
                       ))}
                     </div>
@@ -502,41 +589,68 @@ const ViewArrayNode = memo(
                 // Body: list entries at current level with types, double-click to drill
                 const renderLevel = (value: unknown) => {
                   // Support arrays and plain objects; otherwise show a brief notice
-                  if (value === null || (typeof value !== 'object' && !Array.isArray(value))) {
-                    const typeText = value === null ? 'null' : typeof value;
+                  if (
+                    value === null ||
+                    (typeof value !== "object" && !Array.isArray(value))
+                  ) {
+                    const typeText = value === null ? "null" : typeof value;
                     return (
                       <div className="text-muted-foreground">
-                        (not a collection) <span className="text-foreground/60">{typeText}</span>
+                        (not a collection){" "}
+                        <span className="text-foreground/60">{typeText}</span>
                       </div>
                     );
                   }
                   const isArray = Array.isArray(value);
                   const entries = isArray
-                    ? (value as Array<unknown>).map((v, i) => [i, v] as [number, unknown])
+                    ? (value as Array<unknown>).map(
+                        (v, i) => [i, v] as [number, unknown]
+                      )
                     : Object.entries(value as Record<string, unknown>);
-                  const limit = (validation.data as ViewArrayData).summaryLimit ?? SUMMARY_MAX_ITEMS;
+                  const limit =
+                    (validation.data as ViewArrayData).summaryLimit ??
+                    SUMMARY_MAX_ITEMS;
                   const shown = entries.slice(0, limit);
                   return (
                     <div>
                       {shown.map(([k, v], idx) => {
-                        const isDrillable = v !== null && typeof v === 'object';
-                        const typeText = Array.isArray(v) ? 'array' : v === null ? 'null' : typeof v;
+                        const isDrillable = v !== null && typeof v === "object";
+                        const typeText = Array.isArray(v)
+                          ? "array"
+                          : v === null
+                            ? "null"
+                            : typeof v;
                         return (
                           <div
                             key={`summary-${String(k)}-${idx}`}
-                            className={`truncate select-text cursor-text nodrag nowheel ${isDrillable ? 'cursor-zoom-in' : ''}`}
+                            className={`truncate select-text cursor-text nodrag nowheel ${isDrillable ? "cursor-zoom-in" : ""}`}
                             onDoubleClick={(e) => {
                               e.stopPropagation();
-                              if (isDrillable) drillIntoKey(k as string | number, root);
+                              if (isDrillable)
+                                drillIntoKey(k as string | number, root);
                             }}
-                            title={isDrillable ? 'Double-click to open' : undefined}
+                            title={
+                              isDrillable ? "Double-click to open" : undefined
+                            }
                           >
-                            <span className="text-red-400">{isArray ? `[${String(k)}]` : `"${String(k)}"`}</span>
-                            <span className="text-foreground/70">: </span>
-                            <span className={isDrillable ? 'text-blue-400' : 'text-blue-300'}>
-                              {Array.isArray(v) ? 'array' : (typeof v === 'object' ? 'object' : typeText)}
+                            <span className="text-red-400">
+                              {isArray ? `[${String(k)}]` : `"${String(k)}"`}
                             </span>
-                            {idx < shown.length - 1 && <span className="text-foreground/50">,</span>}
+                            <span className="text-foreground/70">: </span>
+                            <span
+                              className={
+                                isDrillable ? "text-blue-400" : "text-blue-300"
+                              }
+                            >
+                              {Array.isArray(v)
+                                ? "array"
+                                : typeof v === "object"
+                                  ? "object"
+                                  : typeText}
+                            </span>
+                            {idx < shown.length - 1 && (
+                              <span className="text-foreground/50">,</span>
+                            )}
                           </div>
                         );
                       })}
@@ -545,8 +659,13 @@ const ViewArrayNode = memo(
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            const currentLimit = (validation.data as ViewArrayData).summaryLimit ?? SUMMARY_MAX_ITEMS;
-                            const nextLimit = Math.min(entries.length, currentLimit + 10);
+                            const currentLimit =
+                              (validation.data as ViewArrayData).summaryLimit ??
+                              SUMMARY_MAX_ITEMS;
+                            const nextLimit = Math.min(
+                              entries.length,
+                              currentLimit + 10
+                            );
                             updateNodeData({ summaryLimit: nextLimit });
                           }}
                           className="text-foreground/50 hover:underline"
@@ -570,23 +689,30 @@ const ViewArrayNode = memo(
           </div>
         ) : (
           // Expanded: show the same nested view as collapsed using viewPath
-          <div className={`nowheel ${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ''}`}>
+          <div
+            className={`nowheel ${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}
+          >
             <div className="flex items-center gap-2  text-[10px] text-foreground/70 mb-2">
               <span className="text-foreground/50">Path:</span>
               <code className="px-1 py-0.5 rounded bg-muted/40">
-                {((validation.data as ViewArrayData).viewPath ?? []).length === 0
-                  ? 'root'
+                {((validation.data as ViewArrayData).viewPath ?? []).length ===
+                0
+                  ? "root"
                   : (validation.data as ViewArrayData).viewPath
-                      .map((seg) => (typeof seg === 'string' ? seg : `[${seg}]`))
-                      .join('.')}
+                      .map((seg) =>
+                        typeof seg === "string" ? seg : `[${seg}]`
+                      )
+                      .join(".")}
               </code>
             </div>
             <div className="flex-1  overflow-auto rounded-md bg-muted/10">
               <JsonHighlighter
                 data={(() => {
                   const root = (validation.data as ViewArrayData).inputs;
-                  const path = (validation.data as ViewArrayData).viewPath ?? [];
-                  const value = path.length === 0 ? root : resolveAtPath(root, path);
+                  const path =
+                    (validation.data as ViewArrayData).viewPath ?? [];
+                  const value =
+                    path.length === 0 ? root : resolveAtPath(root, path);
                   return Array.isArray(value) ? value : value; // [Explanation], basically show current view even if not array after drill
                 })()}
                 maxDepth={3}
@@ -603,7 +729,7 @@ const ViewArrayNode = memo(
         />
       </>
     );
-  },
+  }
 );
 
 // -----------------------------------------------------------------------------
@@ -622,12 +748,10 @@ const ViewArrayNodeWithDynamicSpec = (props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, props.data);
 
   // Recompute spec only when the size keys change
+  const { expandedSize, collapsedSize } = nodeData as ViewArrayData;
   const dynamicSpec = useMemo(
-    () => createDynamicSpec(nodeData as ViewArrayData),
-    [
-      (nodeData as ViewArrayData).expandedSize,
-      (nodeData as ViewArrayData).collapsedSize,
-    ],
+    () => createDynamicSpec({ expandedSize, collapsedSize } as ViewArrayData),
+    [expandedSize, collapsedSize]
   );
 
   // Memoise the scaffolded component to keep focus
@@ -636,7 +760,7 @@ const ViewArrayNodeWithDynamicSpec = (props: NodeProps) => {
       withNodeScaffold(dynamicSpec, (p) => (
         <ViewArrayNode {...p} spec={dynamicSpec} />
       )),
-    [dynamicSpec],
+    [dynamicSpec]
   );
 
   return <ScaffoldedNode {...props} />;

@@ -11,33 +11,47 @@
  */
 
 import type React from "react";
-import { type ReactNode, createContext, useContext, useState } from "react";
+import {
+  type ReactNode,
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 
 interface NodeDisplayContextType {
-	showNodeIds: boolean;
-	setShowNodeIds: (show: boolean) => void;
+  showNodeIds: boolean;
+  setShowNodeIds: (show: boolean) => void;
 }
 
-const NodeDisplayContext = createContext<NodeDisplayContextType | undefined>(undefined);
+const NodeDisplayContext = createContext<NodeDisplayContextType | undefined>(
+  undefined
+);
 
 export const useNodeDisplay = () => {
-	const context = useContext(NodeDisplayContext);
-	if (context === undefined) {
-		throw new Error("useNodeDisplay must be used within a NodeDisplayProvider");
-	}
-	return context;
+  const context = useContext(NodeDisplayContext);
+  if (context === undefined) {
+    throw new Error("useNodeDisplay must be used within a NodeDisplayProvider");
+  }
+  return context;
 };
 
 interface NodeDisplayProviderProps {
-	children: ReactNode;
+  children: ReactNode;
 }
 
-export const NodeDisplayProvider: React.FC<NodeDisplayProviderProps> = ({ children }) => {
-	const [showNodeIds, setShowNodeIds] = useState(false); // Default to hiding IDs
+export const NodeDisplayProvider: React.FC<NodeDisplayProviderProps> = ({
+  children,
+}) => {
+  const [showNodeIds, setShowNodeIds] = useState(false); // Default to hiding IDs
 
-	return (
-		<NodeDisplayContext.Provider value={{ showNodeIds, setShowNodeIds }}>
-			{children}
-		</NodeDisplayContext.Provider>
-	);
+  // Memoize context value to prevent unnecessary re-renders of consumers
+  // [Explainantion] , basically avoid new object identity on every parent render
+  const value = useMemo(() => ({ showNodeIds, setShowNodeIds }), [showNodeIds]);
+
+  return (
+    <NodeDisplayContext.Provider value={value}>
+      {children}
+    </NodeDisplayContext.Provider>
+  );
 };

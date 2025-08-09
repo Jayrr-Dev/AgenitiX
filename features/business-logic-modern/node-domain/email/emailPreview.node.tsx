@@ -15,39 +15,40 @@
 
 import type { NodeProps } from "@xyflow/react";
 import React, {
+  ChangeEvent,
   memo,
   useCallback,
   useEffect,
   useMemo,
   useRef,
-  ChangeEvent,
   useState,
 } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
 } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
 import {
   createNodeValidator,
   reportValidationError,
   useNodeDataValidation,
 } from "@/features/business-logic-modern/infrastructure/node-core/validation";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
-import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
   COLLAPSED_SIZES,
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { useStore } from "@xyflow/react";
-import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
+import { useReactFlow, useStore } from "@xyflow/react";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -74,7 +75,7 @@ export type EmailPreviewData = z.infer<typeof EmailPreviewDataSchema>;
 
 const validateNodeData = createNodeValidator(
   EmailPreviewDataSchema,
-  "EmailPreview",
+  "EmailPreview"
 );
 
 // -----------------------------------------------------------------------------
@@ -92,7 +93,8 @@ const CONTENT = {
   collapsed: "flex items-center justify-center w-full h-full",
   header: "flex items-center justify-between mb-3",
   body: "flex-1 flex items-center justify-center",
-  disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+  disabled:
+    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
 } as const;
 
 // Centralized UI classes for maintainability
@@ -112,12 +114,16 @@ const UI_STYLES = {
 } as const;
 
 const VIEW_STYLES = {
-  panel: "flex-1 rounded-md border border-[--node-email-border] bg-white dark:bg-[--node-email-bg] p-3 overflow-auto min-h-28",
+  panel:
+    "flex-1 rounded-md border border-[--node-email-border] bg-white dark:bg-[--node-email-bg] p-3 overflow-auto min-h-28",
   subject: "text-[13px] font-semibold text-black dark:text-[--node-email-text]",
   meta: "text-[11px] text-zinc-600 dark:text-[--node-email-text-secondary]",
   divider: "my-3 h-px bg-zinc-200 dark:bg-[--node-email-border]",
   body: "text-[12px] whitespace-pre-wrap text-black dark:text-[--node-email-text] leading-[1.35]",
 } as const;
+
+// Immutable empty emails constant, basically to avoid re-creating arrays
+const EMPTY_EMAILS: ReadonlyArray<Record<string, unknown>> = Object.freeze([]);
 
 // -----------------------------------------------------------------------------
 // 3️⃣  Dynamic spec factory (pure)
@@ -228,9 +234,18 @@ const EmailPreviewNode = memo(
     const { isExpanded, isEnabled, isActive, store } =
       nodeData as EmailPreviewData;
 
-    // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
-    const nodes = useStore((s) => s.nodes);
-    const edges = useStore((s) => s.edges);
+    // 4.2  Global React‑Flow store – subscribe only to edges touching this node
+    const edges = useStore(
+      (s) => s.edges.filter((e) => e.source === id || e.target === id),
+      (a, b) => {
+        if (a === b) return true;
+        if (a.length !== b.length) return false;
+        const aIds = a.map((e) => e.id).join("|");
+        const bIds = b.map((e) => e.id).join("|");
+        return aIds === bIds;
+      }
+    );
+    const { getNodes } = useReactFlow();
 
     // keep last emitted output to avoid redundant writes
     const lastOutputRef = useRef<string | null>(null);
@@ -264,7 +279,7 @@ const EmailPreviewNode = memo(
           updateNodeData({ output: out });
         }
       },
-      [isActive, isEnabled, updateNodeData],
+      [isActive, isEnabled, updateNodeData]
     );
 
     /** Clear JSON‑ish fields when inactive or disabled */
@@ -291,71 +306,107 @@ const EmailPreviewNode = memo(
     const computeInput = useCallback((): string | null => {
       const inputEdge = findEdgeByHandle(edges, id, "input");
       if (!inputEdge) return null;
-      const src = nodes.find((n) => n.id === inputEdge.source);
+      const src = (getNodes() as any[]).find((n) => n.id === inputEdge.source);
       if (!src) return null;
       const inputValue = src.data?.output ?? src.data?.store ?? src.data;
-      return typeof inputValue === 'string' ? inputValue : String(inputValue || '');
-    }, [edges, nodes, id]);
+      return typeof inputValue === "string"
+        ? inputValue
+        : String(inputValue || "");
+    }, [edges, id, getNodes]);
 
     // Extract emails array from 'emails-input' when connected
-    const computeEmailsArray = useCallback((): Array<Record<string, unknown>> => {
+    const computeEmailsArray = useCallback((): Array<
+      Record<string, unknown>
+    > => {
       const edge = findEdgeByHandle(edges, id, "emails-input");
       if (!edge) return [];
-      const src = nodes.find((n) => n.id === edge.source);
+      const src = (getNodes() as any[]).find((n) => n.id === edge.source);
       if (!src) return [];
-      // Prefer explicit messages array, then emailsOutput string, then output
-      const data: any = src.data || {};
-      const value = data.messages ?? data.emailsOutput ?? data.output ?? data;
-      if (Array.isArray(value)) return value as Array<Record<string, unknown>>;
-      // If output is an object map, try common keys
-      if (value && typeof value === 'object') {
-        const maybeArray = (value["messages-output"] || value["a"] || value["messages"]) as unknown;
-        if (Array.isArray(maybeArray)) return maybeArray as Array<Record<string, unknown>>;
-        const firstArray = Object.values(value).find((v) => Array.isArray(v));
-        if (Array.isArray(firstArray)) return firstArray as Array<Record<string, unknown>>;
-        const firstJsonString = Object.values(value).find((v) => typeof v === 'string');
-        if (typeof firstJsonString === 'string') {
+      const srcData: any = src.data || {};
+
+      // Primary: handle-based outputs
+      if (srcData?.output && typeof srcData.output === "object") {
+        if (edge.sourceHandle) {
+          const h = normalizeHandleId(edge.sourceHandle);
+          const v = srcData.output[h];
+          if (Array.isArray(v)) return v as Array<Record<string, unknown>>;
+          if (typeof v === "string") {
+            try {
+              const parsed = JSON.parse(v);
+              if (Array.isArray(parsed))
+                return parsed as Array<Record<string, unknown>>;
+            } catch {}
+          }
+        }
+        // fallback: first array value within output map
+        const firstArray = Object.values(srcData.output).find((v: unknown) =>
+          Array.isArray(v)
+        );
+        if (Array.isArray(firstArray))
+          return firstArray as Array<Record<string, unknown>>;
+        const firstJson = Object.values(srcData.output).find(
+          (v: unknown) => typeof v === "string"
+        );
+        if (typeof firstJson === "string") {
           try {
-            const parsed = JSON.parse(firstJsonString);
-            if (Array.isArray(parsed)) return parsed as Array<Record<string, unknown>>;
+            const parsed = JSON.parse(firstJson);
+            if (Array.isArray(parsed))
+              return parsed as Array<Record<string, unknown>>;
           } catch {}
         }
       }
-      try {
-        const parsed = typeof value === 'string' ? JSON.parse(value) : null;
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
+
+      // Secondary: common fields exposed by upstream nodes
+      const value =
+        srcData.messages ?? srcData.emailsOutput ?? srcData.store ?? srcData;
+      if (Array.isArray(value)) return value as Array<Record<string, unknown>>;
+      if (typeof value === "string") {
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed))
+            return parsed as Array<Record<string, unknown>>;
+        } catch {}
       }
-    }, [edges, nodes, id]);
+      if (value && typeof value === "object") {
+        const firstArray = Object.values(value).find((v: unknown) =>
+          Array.isArray(v)
+        );
+        if (Array.isArray(firstArray))
+          return firstArray as Array<Record<string, unknown>>;
+      }
+      return [];
+    }, [edges, id, getNodes]);
 
     // Selected email normalization for display
     const getSelectedEmail = useCallback(() => {
       const dataRef = nodeData as EmailPreviewData;
       const emails = Array.isArray(dataRef.emails) ? dataRef.emails : [];
-      const idx = Math.min(Math.max(0, dataRef.selectedIndex ?? 0), Math.max(0, emails.length - 1));
+      const idx = Math.min(
+        Math.max(0, dataRef.selectedIndex ?? 0),
+        Math.max(0, emails.length - 1)
+      );
       const item = emails[idx] as Record<string, any> | undefined;
       if (!item) return null;
       let inner: any = item;
-      if (item && typeof item === 'object') {
+      if (item && typeof item === "object") {
         const keys = Object.keys(item);
         if (
           keys.length === 1 &&
           /^(Email\s*\d+|email\s*\d+)$/i.test(keys[0]) &&
-          typeof (item as any)[keys[0]] === 'object'
+          typeof (item as any)[keys[0]] === "object"
         ) {
           inner = (item as any)[keys[0]];
         }
       }
-      if (inner && typeof inner === 'object') {
+      if (inner && typeof inner === "object") {
         // Normalize from field
         let fromStr = "";
         const from = (inner as any).From ?? (inner as any).from;
-        if (typeof from === 'string') fromStr = from;
-        else if (from && typeof from === 'object') {
+        if (typeof from === "string") fromStr = from;
+        else if (from && typeof from === "object") {
           const nm = (from as any).name || "";
           const em = (from as any).email || "";
-          fromStr = `${nm}${nm && em ? ' ' : ''}${em ? `<${em}>` : ''}`.trim();
+          fromStr = `${nm}${nm && em ? " " : ""}${em ? `<${em}>` : ""}`.trim();
         }
         return {
           subject: inner.Subject || inner.subject || "",
@@ -363,24 +414,104 @@ const EmailPreviewNode = memo(
           date: inner.Date || inner.date || "",
           preview: inner.Preview || inner.snippet || "",
           content: inner.Content || inner.textContent || inner.snippet || "",
-        } as { subject: string; from: string; date: string; preview: string; content: string };
+        } as {
+          subject: string;
+          from: string;
+          date: string;
+          preview: string;
+          content: string;
+        };
       }
       return null;
     }, [nodeData]);
 
-    // Linkify content (basic)
-    const linkify = useCallback((text: string) => {
-      const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      const urlRegex = /(https?:\/\/[\w.-]+(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?)/g;
-      return escaped.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">$1</a>');
+    // Safe string conversion for mixed inputs
+    const toSafeString = useCallback((value: unknown): string => {
+      if (value === null || value === undefined) return "";
+      return typeof value === "string" ? value : String(value);
     }, []);
+
+    // Decode common HTML entities and numeric references
+    // [Explanation], basically convert things like &#39; &amp; &lt; into their characters
+    const decodeHtmlEntities = useCallback(
+      (raw: unknown): string => {
+        const text = toSafeString(raw);
+        if (!text) return "";
+        const named: Record<string, string> = {
+          "&quot;": '"',
+          "&apos;": "'",
+          "&#39;": "'",
+          "&amp;": "&",
+          "&lt;": "<",
+          "&gt;": ">",
+          "&nbsp;": " ",
+        };
+        let out = text.replace(
+          /&(quot|apos|amp|lt|gt|nbsp);|&#39;/g,
+          (m) => named[m] ?? m
+        );
+        out = out.replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) => {
+          try {
+            return String.fromCodePoint(parseInt(hex, 16));
+          } catch {
+            return _ as string;
+          }
+        });
+        out = out.replace(/&#([0-9]+);/g, (_, dec: string) => {
+          try {
+            return String.fromCodePoint(parseInt(dec, 10));
+          } catch {
+            return _ as string;
+          }
+        });
+        return out;
+      },
+      [toSafeString]
+    );
+
+    // Linkify content (safe – no dangerouslySetInnerHTML)
+    const linkify = useCallback(
+      (raw: unknown) => {
+        const text = toSafeString(raw);
+        const nodes: Array<string | React.ReactNode> = [];
+        if (!text) return nodes;
+        const urlRegex =
+          /(https?:\/\/[\w.-]+(?:\/[\w\-._~:\/?#[\]@!$&'()*+,;=%]*)?)/g;
+        let lastIndex = 0;
+        let match: RegExpExecArray | null;
+        while ((match = urlRegex.exec(text)) !== null) {
+          const [url] = match;
+          const start = match.index;
+          if (start > lastIndex) {
+            nodes.push(text.slice(lastIndex, start));
+          }
+          nodes.push(
+            <a
+              key={`${start}-${url}`}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 underline"
+            >
+              {url}
+            </a>
+          );
+          lastIndex = start + url.length;
+        }
+        if (lastIndex < text.length) {
+          nodes.push(text.slice(lastIndex));
+        }
+        return nodes;
+      },
+      [toSafeString]
+    );
 
     /** Handle textarea change (memoised for perf) */
     const handleStoreChange = useCallback(
       (e: ChangeEvent<HTMLTextAreaElement>) => {
         updateNodeData({ store: e.target.value });
       },
-      [updateNodeData],
+      [updateNodeData]
     );
 
     // No server render – this node only previews source emails
@@ -389,14 +520,26 @@ const EmailPreviewNode = memo(
     // 4.5  Effects
     // -------------------------------------------------------------------------
 
-    /* 🔄 Whenever nodes/edges change, recompute emails. */
+    /* 🔄 Whenever nodes/edges change, recompute emails with deep change detection. */
+    const lastEmailsJsonRef = useRef<string>("[]");
     useEffect(() => {
       const emails = computeEmailsArray();
-      const prev = (nodeData as EmailPreviewData).emails || [];
-      if (emails.length !== prev.length) {
-        updateNodeData({ emails });
+      const safeEmails = Array.isArray(emails) ? emails : EMPTY_EMAILS;
+      const nextJson = JSON.stringify(safeEmails);
+      if (nextJson !== lastEmailsJsonRef.current) {
+        lastEmailsJsonRef.current = nextJson;
+        updateNodeData({ emails: safeEmails as any });
       }
-    }, [computeEmailsArray, nodeData, updateNodeData]);
+    }, [computeEmailsArray, updateNodeData]);
+
+    /* 🧹 If the emails-input edge is removed, clear preview state */
+    useEffect(() => {
+      const stillConnected = !!findEdgeByHandle(edges, id, "emails-input");
+      if (!stillConnected) {
+        lastEmailsJsonRef.current = "[]";
+        updateNodeData({ emails: [], selectedIndex: 0 });
+      }
+    }, [edges, id, updateNodeData]);
 
     // Always enabled per request
     useEffect(() => {
@@ -406,25 +549,23 @@ const EmailPreviewNode = memo(
     // Monitor selected email content and update active state
     useEffect(() => {
       const selected = getSelectedEmail();
-      const content = selected?.content || '';
+      const content = selected?.content || "";
       const hasValidStore = content.trim().length > 0;
 
       // If disabled, always set isActive to false
       if (!isEnabled) {
         if (isActive) updateNodeData({ isActive: false });
-      } else {
-        if (isActive !== hasValidStore) {
-          updateNodeData({ isActive: hasValidStore });
-        }
+      } else if (isActive !== hasValidStore) {
+        updateNodeData({ isActive: hasValidStore });
       }
-    }, [nodeData, store, isEnabled, isActive, updateNodeData]);
+    }, [getSelectedEmail, isEnabled, isActive, updateNodeData]);
 
     // Sync output with active and enabled state – emit selected email JSON
     useEffect(() => {
       const selected = getSelectedEmail();
       if (selected) propagate(JSON.stringify(selected, null, 2));
       blockJsonWhenInactive();
-    }, [isActive, isEnabled, nodeData, propagate, blockJsonWhenInactive, getSelectedEmail]);
+    }, [propagate, blockJsonWhenInactive, getSelectedEmail]);
 
     // No template fetching needed – previews come only from connected emails
 
@@ -443,7 +584,7 @@ const EmailPreviewNode = memo(
       EmailPreviewDataSchema,
       "EmailPreview",
       validation.data,
-      id,
+      id
     );
 
     // -------------------------------------------------------------------------
@@ -487,16 +628,21 @@ const EmailPreviewNode = memo(
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (
-          <LabelNode nodeId={id} label={(nodeData as EmailPreviewData).label || spec.displayName} />
+          <LabelNode
+            nodeId={id}
+            label={(nodeData as EmailPreviewData).label || spec.displayName}
+          />
         )}
 
         {!isExpanded ? (
-          <div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ''}`}>
+          <div
+            className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ""}`}
+          >
             <textarea
               value={
                 validation.data.store === "Default text"
                   ? ""
-                  : validation.data.store ?? ""
+                  : (validation.data.store ?? "")
               }
               onChange={handleStoreChange}
               placeholder="..."
@@ -505,7 +651,9 @@ const EmailPreviewNode = memo(
             />
           </div>
         ) : (
-          <div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ''}`}>
+          <div
+            className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}
+          >
             <div className="flex flex-col gap-2">
               {(nodeData as EmailPreviewData).lastError && (
                 <div className="text-[10px] text-red-600">
@@ -521,20 +669,37 @@ const EmailPreviewNode = memo(
                   const raw = (nodeData as EmailPreviewData).emails;
                   return (
                     <div className={VIEW_STYLES.panel}>
-                      <div className={VIEW_STYLES.meta}>Connect an emails array to preview.</div>
+                      <div className={VIEW_STYLES.meta}>
+                        Connect an emails array to preview.
+                      </div>
                       {Array.isArray(raw) && raw.length > 0 && (
-                        <pre className="mt-2 text-[10px] text-zinc-500 whitespace-pre-wrap">{JSON.stringify(raw[0], null, 2)}</pre>
+                        <pre className="mt-2 text-[10px] text-zinc-500 whitespace-pre-wrap">
+                          {JSON.stringify(raw[0], null, 2)}
+                        </pre>
                       )}
                     </div>
                   );
                 }
                 return (
                   <div className={VIEW_STYLES.panel}>
-                    <div className={VIEW_STYLES.subject}>{sel.subject || "(No subject)"}</div>
-                    <div className={VIEW_STYLES.meta}>{sel.from}{sel.date ? ` · ${sel.date}` : ""}</div>
-                    {sel.preview && <div className={VIEW_STYLES.meta}>{sel.preview}</div>}
+                    <div className={VIEW_STYLES.subject}>
+                      {decodeHtmlEntities(sel.subject || "(No subject)")}
+                    </div>
+                    <div className={VIEW_STYLES.meta}>
+                      {decodeHtmlEntities(sel.from || "")}
+                      {sel.date ? ` · ${decodeHtmlEntities(sel.date)}` : ""}
+                    </div>
+                    {sel.preview && (
+                      <div className={VIEW_STYLES.meta}>
+                        {decodeHtmlEntities(sel.preview)}
+                      </div>
+                    )}
                     <div className={VIEW_STYLES.divider} />
-                    <div className={VIEW_STYLES.body} dangerouslySetInnerHTML={{ __html: linkify(sel.content || "(No content)") }} />
+                    <div className={VIEW_STYLES.body}>
+                      {linkify(
+                        decodeHtmlEntities(sel.content || "(No content)")
+                      )}
+                    </div>
                   </div>
                 );
               })()}
@@ -552,12 +717,15 @@ const EmailPreviewNode = memo(
                         updateNodeData({ selectedIndex: idx });
                       }}
                     >
-                      {((nodeData as EmailPreviewData).emails || []).map((_, i) => (
-                        <option key={i} value={i}>{`Email ${i + 1}`}</option>
-                      ))}
+                      {((nodeData as EmailPreviewData).emails || []).map(
+                        (_, i) => (
+                          <option key={i} value={i}>{`Email ${i + 1}`}</option>
+                        )
+                      )}
                     </select>
                     <span className={VIEW_STYLES.meta}>
-                      {((nodeData as EmailPreviewData).emails || []).length} total
+                      {((nodeData as EmailPreviewData).emails || []).length}{" "}
+                      total
                     </span>
                   </div>
                 </div>
@@ -573,7 +741,7 @@ const EmailPreviewNode = memo(
         />
       </>
     );
-  },
+  }
 );
 
 // -----------------------------------------------------------------------------
@@ -592,12 +760,11 @@ const EmailPreviewNodeWithDynamicSpec = (props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, props.data);
 
   // Recompute spec only when the size keys change
+  const { expandedSize, collapsedSize } = nodeData as EmailPreviewData;
   const dynamicSpec = useMemo(
-    () => createDynamicSpec(nodeData as EmailPreviewData),
-    [
-      (nodeData as EmailPreviewData).expandedSize,
-      (nodeData as EmailPreviewData).collapsedSize,
-    ],
+    () =>
+      createDynamicSpec({ expandedSize, collapsedSize } as EmailPreviewData),
+    [expandedSize, collapsedSize]
   );
 
   // Memoise the scaffolded component to keep focus
@@ -606,7 +773,7 @@ const EmailPreviewNodeWithDynamicSpec = (props: NodeProps) => {
       withNodeScaffold(dynamicSpec, (p) => (
         <EmailPreviewNode {...p} spec={dynamicSpec} />
       )),
-    [dynamicSpec],
+    [dynamicSpec]
   );
 
   return <ScaffoldedNode {...props} />;
