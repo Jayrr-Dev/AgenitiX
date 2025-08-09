@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+// Add new node imports here (Plop can auto-inject these)
 import triggerPulse from '../../../node-domain/trigger/triggerPulse.node';
 import timeScheduler from '../../../node-domain/trigger/timeScheduler.node';
 import aiTools from '../../../node-domain/ai/aiTools.node';
@@ -10,7 +11,11 @@ import createMap from '../../../node-domain/create/createMap.node';
 import viewObject from '../../../node-domain/view/viewObject.node';
 import viewArray from '../../../node-domain/view/viewArray.node';
 import emailPreview from '../../../node-domain/email/emailPreview.node';
-// Add new node imports here (Plop can auto-inject these)
+import toBoolean from '../../../node-domain/convert/toBoolean.node';
+import toText from '../../../node-domain/convert/toText.node';
+import toObject from '../../../node-domain/convert/toObject.node';
+import toArray from '../../../node-domain/convert/toArray.node';
+import toAny from '../../../node-domain/convert/toAny.node';
 import aiAgent from "../../../node-domain/ai/aiAgent.node";
 import createText from "../../../node-domain/create/createText.node";
 import storeInMemory from "../../../node-domain/create/storeInMemory.node";
@@ -50,6 +55,7 @@ import logicXnor from "../../../node-domain/logic/logicXnor.node";
 export function useDynamicNodeTypes() {
 	const nodeTypes = useMemo(
 		() => ({
+			// Add new node types here
 			flowConditional,
 			viewBoolean,
 			triggerPulse,
@@ -62,7 +68,11 @@ export function useDynamicNodeTypes() {
 			viewObject,
 			viewArray,
 			emailPreview,
-			// Add new node types here
+			toBoolean,
+			toText,
+			toObject,
+			toArray,
+			toAny,
 			aiAgent,
 			testNode,
 			testToast,

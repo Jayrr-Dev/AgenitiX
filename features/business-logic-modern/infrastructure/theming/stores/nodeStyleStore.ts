@@ -33,24 +33,6 @@ export interface CategoryTheme {
 export const CATEGORY_THEMES: Partial<Record<string, CategoryTheme>> = {
 	create: {
 		background: { light: "bg-node-create", dark: "bg-node-create" },
-	email: {
-		background: { light: "bg-node-email", dark: "bg-node-email" },
-		border: { light: "border-node-email", dark: "border-node-email" },
-		text: {
-			primary: { light: "text-node-email", dark: "text-node-email" },
-			secondary: {
-				light: "text-node-email-secondary",
-				dark: "text-node-email-secondary",
-			},
-		},
-		button: {
-			border: "border-node-email",
-			hover: {
-				light: "hover:bg-node-email-hover",
-				dark: "hover:bg-node-email-hover",
-			},
-		},
-	},
 		border: { light: "border-node-create", dark: "border-node-create" },
 		text: {
 			primary: { light: "text-node-create", dark: "text-node-create" },
@@ -64,6 +46,24 @@ export const CATEGORY_THEMES: Partial<Record<string, CategoryTheme>> = {
 			hover: {
 				light: "hover:bg-node-create-hover",
 				dark: "hover:bg-node-create-hover",
+			},
+		},
+	},
+	convert: {
+		background: { light: "bg-node-convert", dark: "bg-node-convert" },
+		border: { light: "border-node-convert", dark: "border-node-convert" },
+		text: {
+			primary: { light: "text-node-convert", dark: "text-node-convert" },
+			secondary: {
+				light: "text-node-convert-secondary",
+				dark: "text-node-convert-secondary",
+			},
+		},
+		button: {
+			border: "border-node-convert",
+			hover: {
+				light: "hover:bg-node-convert-hover",
+				dark: "hover:bg-node-convert-hover",
 			},
 		},
 	},

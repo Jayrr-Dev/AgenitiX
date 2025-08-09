@@ -39,7 +39,7 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { trackNodeUpdate } from "@/lib/debug-node-updates";
-import { useReactFlow, useStore } from "@xyflow/react";
+import { useStore } from "@xyflow/react";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -271,7 +271,19 @@ const ViewBooleanNode = memo(
         return aIds === bIds;
       }
     );
-    const { getNodes } = useReactFlow();
+
+    // Subscribe to connected nodes data changes
+    const connectedNodes = useStore(
+      useCallback(
+        (s) => {
+          const inputEdges = edges.filter((e) => e.target === id);
+          return s.nodes.filter((n) => 
+            inputEdges.some((e) => e.source === n.id)
+          );
+        },
+        [edges, id]
+      )
+    );
 
     // Keep last emitted output to avoid redundant writes
     const lastOutputRef = useRef<boolean | null>(null);
@@ -316,8 +328,8 @@ const ViewBooleanNode = memo(
       const values: boolean[] = [];
 
       for (const edge of connectedEdges) {
-        // Get the source node data
-        const sourceNode = (getNodes() as any[]).find(
+        // Get the source node data from connected nodes
+        const sourceNode = connectedNodes.find(
           (n) => n.id === edge.source
         );
         if (!sourceNode?.data) continue;
@@ -398,7 +410,7 @@ const ViewBooleanNode = memo(
         values.length > 0 ? values.some((v) => v === true) : null;
 
       return { connectionStates, primaryValue };
-    }, [id, edges, getNodes]);
+    }, [id, edges, connectedNodes]);
 
     // -------------------------------------------------------------------------
     // 5.4  Effects
