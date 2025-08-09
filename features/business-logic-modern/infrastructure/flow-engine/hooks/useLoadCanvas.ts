@@ -18,76 +18,96 @@ import { useFlowMetadataOptional } from "../contexts/flow-metadata-context";
 import { useFlowStore } from "../stores/flowStore";
 
 interface UseLoadCanvasResult {
-	/** Whether canvas data is currently loading */
-	isLoading: boolean;
-	/** Error message if loading failed */
-	error: string | null;
-	/** Whether canvas data has been loaded */
-	hasLoaded: boolean;
+  /** Whether canvas data is currently loading */
+  isLoading: boolean;
+  /** Error message if loading failed */
+  error: string | null;
+  /** Whether canvas data has been loaded */
+  hasLoaded: boolean;
 }
 
 export function useLoadCanvas(): UseLoadCanvasResult {
-	  const { user } = useAuth();
-	const { flow } = useFlowMetadataOptional() || { flow: null };
-	const { setNodes, setEdges } = useFlowStore();
+  const { user } = useAuth();
+  const { flow } = useFlowMetadataOptional() || { flow: null };
+  const { setNodes, setEdges } = useFlowStore();
+  const hasHydrated = useFlowStore((s) => s._hasHydrated);
 
-	const [hasLoaded, setHasLoaded] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-	// Query canvas data from Convex
-	const canvasData = useQuery(
-		api.flows.loadFlowCanvas,
-		flow?.id
-			? {
-					flow_id: flow.id as Id<"flows">,
-					user_id: user?.id as any,
-				}
-			: "skip"
-	);
+  // Query canvas data from Convex
+  const canvasData = useQuery(
+    api.flows.loadFlowCanvas,
+    flow?.id
+      ? {
+          flow_id: flow.id as Id<"flows">,
+          user_id: user?.id as any,
+        }
+      : "skip"
+  );
 
-	// Load canvas data into store when available
-	useEffect(() => {
-		if (!canvasData || hasLoaded) {
-			return;
-		}
+  // Load canvas data into store when available (after hydration)
+  useEffect(() => {
+    if (!canvasData || hasLoaded || !hasHydrated) {
+      return;
+    }
 
-		try {
-			// Clear localStorage persistence to prevent conflicts
-			localStorage.removeItem('flow-editor-storage');
-			
-			// Load nodes and edges into the flow store
-			if (canvasData.nodes && Array.isArray(canvasData.nodes)) {
-				setNodes(canvasData.nodes);
-			} else {
-				setNodes([]);
-			}
+    try {
+      // [Defensive load] , basically avoid wiping a non-empty local graph with empty server data
+      const serverHasNodesArray = Array.isArray((canvasData as any).nodes);
+      const serverHasEdgesArray = Array.isArray((canvasData as any).edges);
 
-			if (canvasData.edges && Array.isArray(canvasData.edges)) {
-				setEdges(canvasData.edges);
-			} else {
-				setEdges([]);
-			}
+      const serverNodesLen = serverHasNodesArray
+        ? ((canvasData as any).nodes as unknown[]).length
+        : 0;
+      const serverEdgesLen = serverHasEdgesArray
+        ? ((canvasData as any).edges as unknown[]).length
+        : 0;
 
-			setHasLoaded(true);
-			setError(null);
-		} catch (err) {
-			const errorMessage = err instanceof Error ? err.message : "Failed to load canvas data";
-			setError(errorMessage);
-			console.error("Failed to load canvas data:", err);
-		}
-	}, [canvasData, hasLoaded, setNodes, setEdges]);
+      // Only trust server when it has actual graph content
+      const serverHasGraphContent = serverNodesLen > 0 || serverEdgesLen > 0;
 
-	// Reset state when flow changes
-	useEffect(() => {
-		setHasLoaded(false);
-		setError(null);
-		// Clear localStorage when switching flows to prevent data contamination
-		localStorage.removeItem('flow-editor-storage');
-	}, [flow?.id]);
+      const current = (useFlowStore as any).getState() as {
+        nodes: unknown[];
+        edges: unknown[];
+      };
 
-	return {
-		isLoading: canvasData === undefined && !hasLoaded && !error,
-		error,
-		hasLoaded,
-	};
+      if (serverHasGraphContent) {
+        // [Server overwrite] , basically use server data only when it actually has nodes/edges
+        setNodes(serverHasNodesArray ? (canvasData as any).nodes : []);
+        setEdges(serverHasEdgesArray ? (canvasData as any).edges : []);
+      } else {
+        // [Preserve local] , basically do nothing when server has no canvas yet
+        // Avoid writing empty arrays which can wipe persisted local state during Fast Refresh
+        // eslint-disable-next-line no-console
+        if (
+          typeof window !== "undefined" &&
+          window.localStorage.getItem("DEBUG_FLOW_CLEAR") === "1"
+        ) {
+          console.log("[FlowDebug] useLoadCanvas: server returned empty graph; preserving local state");
+        }
+      }
+
+      setHasLoaded(true);
+      setError(null);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load canvas data";
+      setError(errorMessage);
+      console.error("Failed to load canvas data:", err);
+    }
+  }, [canvasData, hasLoaded, hasHydrated, setNodes, setEdges]);
+
+  // Reset state when flow changes
+  useEffect(() => {
+    setHasLoaded(false);
+    setError(null);
+    // Do not clear localStorage here; different flows should manage isolation via flow IDs
+  }, [flow?.id]);
+
+  return {
+    isLoading: canvasData === undefined && !hasLoaded && !error,
+    error,
+    hasLoaded,
+  };
 }

@@ -122,6 +122,38 @@ const VIEW_STYLES = {
   body: "text-[12px] whitespace-pre-wrap text-black dark:text-[--node-email-text] leading-[1.35]",
 } as const;
 
+// Collapsed summary view styles, basically compact, high-contrast rows
+const COLLAPSED_SUMMARY_STYLES = {
+  wrap: "w-full h-full px-2 py-1 flex flex-col justify-center gap-1 text-[10px] text-foreground/90",
+  navRow:
+    "w-full flex items-center justify-between gap-1 text-[11px] font-medium",
+  arrowBtn:
+    "h-5 w-5 inline-flex items-center justify-center rounded border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] hover:bg-[--node-email-bg-hover] disabled:opacity-40 disabled:cursor-not-allowed",
+  title: "px-1 text-[11px]",
+  row: "flex items-center gap-1",
+  key: "min-w-[54px] text-muted-foreground",
+  val: "truncate max-w-[120px]",
+} as const;
+
+/**
+ * Formats a date-like input to dd/mm/yy using the en-GB locale.
+ * [Explanation], basically normalize varied date strings to a compact UI-friendly form
+ */
+function formatDateToDDMMYY(input: unknown): string {
+  if (!input) return "";
+  try {
+    const d = new Date(String(input));
+    if (Number.isNaN(d.getTime())) return String(input);
+    return new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    }).format(d);
+  } catch {
+    return String(input);
+  }
+}
+
 // Immutable empty emails constant, basically to avoid re-creating arrays
 const EMPTY_EMAILS: ReadonlyArray<Record<string, unknown>> = Object.freeze([]);
 
@@ -246,6 +278,35 @@ const EmailPreviewNode = memo(
       }
     );
     const { getNodes } = useReactFlow();
+
+    // Subscribe to upstream value changes feeding into `emails-input`
+    // This creates a compact signature of the connected source node's relevant outputs
+    // so effects can react when inputs change (without subscribing to all nodes)
+    const inputSignature = useStore(
+      (s) => {
+        const edge = findEdgeByHandle(s.edges, id, "emails-input");
+        if (!edge) return "no-edge";
+        const src = (s.nodes as Array<{ id: string; data?: unknown }>).find(
+          (n) => n.id === edge.source
+        );
+        if (!src) return "no-src";
+        const data = (src.data ?? {}) as Record<string, unknown>;
+        // Only include keys that can influence the derived emails array
+        const compact = {
+          output: data.output,
+          messages: data.messages,
+          emailsOutput: data.emailsOutput,
+          store: data.store,
+        };
+        try {
+          return JSON.stringify(compact);
+        } catch {
+          // Fallback to a simple marker if serialization fails for any reason
+          return `sig-${src.id}`;
+        }
+      },
+      (a, b) => a === b
+    );
 
     // keep last emitted output to avoid redundant writes
     const lastOutputRef = useRef<string | null>(null);
@@ -408,18 +469,107 @@ const EmailPreviewNode = memo(
           const em = (from as any).email || "";
           fromStr = `${nm}${nm && em ? " " : ""}${em ? `<${em}>` : ""}`.trim();
         }
+
+        // Derive attachmentsCount from common fields
+        // [Explanation], basically count attachments across typical shapes
+        let attachmentsCount = 0;
+        const attachmentsRaw =
+          (inner as any).Attachments ??
+          (inner as any).attachments ??
+          (inner as any).files ??
+          (inner as any).attachmentsList;
+        if (Array.isArray(attachmentsRaw)) {
+          attachmentsCount = attachmentsRaw.length;
+        } else if (typeof attachmentsRaw === "string") {
+          try {
+            const parsed = JSON.parse(attachmentsRaw);
+            if (Array.isArray(parsed)) attachmentsCount = parsed.length;
+          } catch {
+            const maybeNum = Number.parseInt(attachmentsRaw, 10);
+            if (Number.isFinite(maybeNum))
+              attachmentsCount = Math.max(0, maybeNum);
+          }
+        } else if (attachmentsRaw && typeof attachmentsRaw === "object") {
+          const values = Object.values(
+            attachmentsRaw as Record<string, unknown>
+          );
+          const firstArray = values.find((v) => Array.isArray(v));
+          if (Array.isArray(firstArray))
+            attachmentsCount = firstArray.length as number;
+        }
+        const attachmentsCountAlt =
+          (inner as any).filesCount ??
+          (inner as any).attachmentCount ??
+          (inner as any).attachmentsCount;
+        if (typeof attachmentsCountAlt === "number") {
+          attachmentsCount = Math.max(attachmentsCount, attachmentsCountAlt);
+        } else if (typeof attachmentsCountAlt === "string") {
+          const n = Number.parseInt(attachmentsCountAlt, 10);
+          if (Number.isFinite(n))
+            attachmentsCount = Math.max(attachmentsCount, n);
+        }
+        const hasAttachments = (inner as any).hasAttachments;
+        if (attachmentsCount === 0 && typeof hasAttachments === "boolean") {
+          attachmentsCount = hasAttachments ? 1 : 0;
+        }
+
+        // Derive isRead from common flags/fields
+        // [Explanation], basically infer read/unread from booleans, labels, or status
+        let isRead = false;
+        const readField =
+          (inner as any).isRead ??
+          (inner as any).read ??
+          (inner as any).seen ??
+          (inner as any).isSeen ??
+          (inner as any).Read ??
+          (inner as any).Seen;
+        if (typeof readField === "boolean") {
+          isRead = readField;
+        } else if (typeof readField === "string") {
+          const s = readField.toLowerCase();
+          if (s === "true" || s === "read" || s === "seen") isRead = true;
+          if (s === "false" || s === "unread" || s === "unseen") isRead = false;
+        }
+        const labels =
+          (inner as any).flags ??
+          (inner as any).labelIds ??
+          (inner as any).Labels ??
+          (inner as any).labels;
+        if (Array.isArray(labels)) {
+          const tokens = labels
+            .map((v: unknown) => (typeof v === "string" ? v.toLowerCase() : ""))
+            .join(" ");
+          if (/(^|\s)unread(\s|$)/.test(tokens) || /(\\)?unseen/.test(tokens)) {
+            isRead = false;
+          } else if (
+            /(\\)?seen/.test(tokens) ||
+            /(^|\s)read(\s|$)/.test(tokens)
+          ) {
+            isRead = true;
+          }
+        }
+        const status = (inner as any).status;
+        if (typeof status === "string") {
+          const s = status.toLowerCase();
+          if (s.includes("unread")) isRead = false;
+          else if (s.includes("read")) isRead = true;
+        }
         return {
           subject: inner.Subject || inner.subject || "",
           from: fromStr,
           date: inner.Date || inner.date || "",
           preview: inner.Preview || inner.snippet || "",
           content: inner.Content || inner.textContent || inner.snippet || "",
+          attachmentsCount,
+          isRead,
         } as {
           subject: string;
           from: string;
           date: string;
           preview: string;
           content: string;
+          attachmentsCount: number;
+          isRead: boolean;
         };
       }
       return null;
@@ -530,7 +680,7 @@ const EmailPreviewNode = memo(
         lastEmailsJsonRef.current = nextJson;
         updateNodeData({ emails: safeEmails as any });
       }
-    }, [computeEmailsArray, updateNodeData]);
+    }, [computeEmailsArray, updateNodeData, inputSignature]);
 
     /* 🧹 If the emails-input edge is removed, clear preview state */
     useEffect(() => {
@@ -638,17 +788,109 @@ const EmailPreviewNode = memo(
           <div
             className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ""}`}
           >
-            <textarea
-              value={
-                validation.data.store === "Default text"
-                  ? ""
-                  : (validation.data.store ?? "")
-              }
-              onChange={handleStoreChange}
-              placeholder="..."
-              className={` resize-none text-center nowheel rounded-md h-8 m-4 translate-y-2 text-xs p-1 overflow-y-auto focus:outline-none focus:ring-1 focus:ring-white-500 ${categoryStyles.primary}`}
-              disabled={!isEnabled}
-            />
+            {(() => {
+              const emailsArr = (nodeData as EmailPreviewData).emails || [];
+              const count = emailsArr.length;
+              const currentIndex = Math.min(
+                Math.max(0, (nodeData as EmailPreviewData).selectedIndex || 0),
+                Math.max(0, count - 1)
+              );
+              const sel = getSelectedEmail();
+
+              // Handlers
+              // [Explanation], basically update the selected email index within bounds
+              const goPrev = () => {
+                if (currentIndex > 0)
+                  updateNodeData({ selectedIndex: currentIndex - 1 });
+              };
+              const goNext = () => {
+                if (currentIndex < count - 1)
+                  updateNodeData({ selectedIndex: currentIndex + 1 });
+              };
+
+              return (
+                <div className={COLLAPSED_SUMMARY_STYLES.wrap}>
+                  <div className={COLLAPSED_SUMMARY_STYLES.navRow}>
+                    <button
+                      type="button"
+                      className={COLLAPSED_SUMMARY_STYLES.arrowBtn}
+                      onClick={goPrev}
+                      disabled={!isEnabled || count <= 1 || currentIndex === 0}
+                      aria-label="Previous email"
+                    >
+                      {"<"}
+                    </button>
+                    <div className={COLLAPSED_SUMMARY_STYLES.title}>{`Email ${
+                      count > 0 ? currentIndex + 1 : 0
+                    }`}</div>
+                    <button
+                      type="button"
+                      className={COLLAPSED_SUMMARY_STYLES.arrowBtn}
+                      onClick={goNext}
+                      disabled={
+                        !isEnabled || count <= 1 || currentIndex >= count - 1
+                      }
+                      aria-label="Next email"
+                    >
+                      {">"}
+                    </button>
+                  </div>
+
+                  {count === 0 || !sel ? (
+                    <div className="text-[10px] text-muted-foreground text-center mt-1">
+                      Connect emails to preview
+                    </div>
+                  ) : (
+                    <div className="mt-1 flex flex-col gap-0">
+                      <div className={COLLAPSED_SUMMARY_STYLES.row}>
+                        {/* <span className={COLLAPSED_SUMMARY_STYLES.key}>
+                          Fr:
+                        </span> */}
+                        <span
+                          className={`${COLLAPSED_SUMMARY_STYLES.val} ${categoryStyles.primary}`}
+                        >
+                          {decodeHtmlEntities(sel.from || "")}
+                        </span>
+                      </div>
+                      <div className={COLLAPSED_SUMMARY_STYLES.row}>
+                        {/* <span className={COLLAPSED_SUMMARY_STYLES.key}>
+                          Sub:
+                        </span> */}
+                        <span
+                          className={`${COLLAPSED_SUMMARY_STYLES.val} ${categoryStyles.primary}`}
+                        >
+                          {decodeHtmlEntities(sel.subject || "")}
+                        </span>
+                      </div>
+                      <div className={COLLAPSED_SUMMARY_STYLES.row}>
+                        {/* <span className={COLLAPSED_SUMMARY_STYLES.key}>
+                          Date:
+                        </span> */}
+                        <span className={COLLAPSED_SUMMARY_STYLES.val}>
+                          {formatDateToDDMMYY(sel.date || "")}
+                        </span>
+                      </div>
+                      <div className={COLLAPSED_SUMMARY_STYLES.row}>
+                        {/* <span className={COLLAPSED_SUMMARY_STYLES.key}>
+                          Read:
+                        </span> */}
+                        <span className={COLLAPSED_SUMMARY_STYLES.val}>
+                          {sel.isRead ? "Yes" : "No"}
+                        </span>
+                      </div>
+                      <div className={COLLAPSED_SUMMARY_STYLES.row}>
+                        {/* <span className={COLLAPSED_SUMMARY_STYLES.key}>
+                          Attachment:
+                        </span> */}
+                        <span className={COLLAPSED_SUMMARY_STYLES.val}>
+                          {Math.max(0, sel.attachmentsCount ?? 0)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         ) : (
           <div
@@ -686,8 +928,13 @@ const EmailPreviewNode = memo(
                       {decodeHtmlEntities(sel.subject || "(No subject)")}
                     </div>
                     <div className={VIEW_STYLES.meta}>
-                      {decodeHtmlEntities(sel.from || "")}
-                      {sel.date ? ` · ${decodeHtmlEntities(sel.date)}` : ""}
+                      {`From: ${decodeHtmlEntities(sel.from || "(Unknown)")}`}
+                      {sel.date
+                        ? ` · Date: ${decodeHtmlEntities(sel.date)}`
+                        : ""}
+                    </div>
+                    <div className={VIEW_STYLES.meta}>
+                      {`Attachments#: ${Math.max(0, sel.attachmentsCount ?? 0)} · ${sel.isRead ? "Read" : "Unread"}`}
                     </div>
                     {sel.preview && (
                       <div className={VIEW_STYLES.meta}>

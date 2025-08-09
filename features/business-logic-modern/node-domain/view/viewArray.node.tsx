@@ -52,7 +52,7 @@ import {
   trackRender,
   trackStateUpdate,
 } from "@/lib/performance-profiler";
-import { useReactFlow, useStore } from "@xyflow/react";
+import { useStore } from "@xyflow/react";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -235,7 +235,8 @@ const ViewArrayNode = memo(
         return true;
       }, [])
     );
-    const { getNodes } = useReactFlow();
+    // Subscribe to nodes so upstream data changes trigger re-computation
+    const nodes = useStore((s) => s.nodes);
 
     // keep last emitted output to avoid redundant writes
     const lastOutputRef = useRef<unknown>(null);
@@ -298,7 +299,7 @@ const ViewArrayNode = memo(
       const incoming = jsonInputEdge || inputEdge;
       if (!incoming) return null;
 
-      const src = (getNodes() as any[]).find((n) => n.id === incoming.source);
+      const src = nodes.find((n) => n.id === incoming.source);
       if (!src) return null;
 
       // priority: output ➜ inputData ➜ store ➜ whole data
@@ -320,7 +321,7 @@ const ViewArrayNode = memo(
         }
       }
       return inputValue as unknown;
-    }, [edges, id, getNodes]);
+    }, [edges, nodes, id]);
 
     // -------------------------------------------------------------------------
     // 4.4.1  Collapsed-view navigation helpers

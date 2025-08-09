@@ -205,7 +205,7 @@ export type AgenNode =
 export type AgenEdge = Edge & {
   sourceHandle?: string | null;
   targetHandle?: string | null;
-  type: "custom" | "step" | "default";
+  type: "custom" | "step" | "default" | "marchingAnts";
   style?: { stroke: string; strokeWidth: number };
 };
 

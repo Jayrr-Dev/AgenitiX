@@ -41,6 +41,7 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/components";
 import { WorkflowManager } from "@/features/business-logic-modern/infrastructure/workflow-manager";
 import { NodeDisplayProvider } from "../contexts/node-display-context";
+import { AnimateMarchingAntsEdge } from "./edges/AnimateMarchingAntsEdge";
 
 // Node components are now loaded via useDynamicNodeTypes hook
 // No need for direct imports here
@@ -300,7 +301,31 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 
   const nodeTypes = useDynamicNodeTypes();
 
-  const edgeTypes = useMemo(() => ({}), []);
+  // Install custom edge types
+  const edgeTypes = useMemo(
+    () => ({ marchingAnts: AnimateMarchingAntsEdge }),
+    []
+  );
+
+  // Compute displayed edges: animate only edges connected to the selected node
+  const displayedEdges = useMemo(() => {
+    if (!selectedNode) return edges;
+    const selectedId = selectedNode.id;
+    return edges.map((edge) => {
+      const isConnected =
+        edge.source === selectedId || edge.target === selectedId;
+      if (!isConnected) return edge;
+      // Always animate along the edge orientation (source → target), basically input → output
+      return {
+        ...edge,
+        type: "marchingAnts",
+        data: {
+          ...(edge.data as Record<string, unknown> | undefined),
+          reverse: false,
+        },
+      } as AgenEdge;
+    });
+  }, [edges, selectedNode]);
 
   // ============================================================================
   // PLATFORM-SPECIFIC MULTI-SELECTION CONFIGURATION
@@ -347,9 +372,9 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       <ReactFlow
         // Core Data
         nodes={safeNodes}
-        edges={edges}
+        edges={displayedEdges}
         nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
+        edgeTypes={edgeTypes as EdgeTypes}
         // Explicit dimensions to fix sizing issue
         style={{ width: "100%", height: "100%" }}
         // Connection Handling
