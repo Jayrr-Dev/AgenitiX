@@ -26,15 +26,20 @@ import {
   emergencyCleanupAllTimers,
 } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/timerCleanup";
 import {
-  type OnConnect,
-  type OnEdgesChange,
-  type OnNodesChange,
   addEdge as addEdgeHelper,
   applyEdgeChanges,
   applyNodeChanges,
+  type OnConnect,
+  type OnEdgesChange,
+  type OnNodesChange,
 } from "@xyflow/react";
 import { create } from "zustand";
-import { devtools, persist, createJSONStorage, type StateStorage } from "zustand/middleware";
+import {
+  createJSONStorage,
+  devtools,
+  persist,
+  type StateStorage,
+} from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { generateEdgeId, generateNodeId } from "../utils/nodeUtils";
 
@@ -822,6 +827,30 @@ export const useFlowStore = create<FlowStore>()(
               });
             if (shallowEqual) return;
 
+            // [Debug setNodes] , basically log when node count shrinks or clears
+            try {
+              const debugEnabled =
+                typeof window !== "undefined" &&
+                window.localStorage.getItem("DEBUG_FLOW_CLEAR") === "1";
+              if (debugEnabled) {
+                const prevLen = state.nodes.length;
+                const nextLen = nodes.length;
+                if (nextLen < prevLen || nextLen === 0) {
+                  // Minimal trace to source the caller
+                  // eslint-disable-next-line no-console
+                  console.log(
+                    "[FlowDebug] setNodes: %o -> %o",
+                    prevLen,
+                    nextLen
+                  );
+                  if (nextLen === 0) {
+                    // eslint-disable-next-line no-console
+                    console.trace("[FlowDebug] nodes cleared stack");
+                  }
+                }
+              }
+            } catch {}
+
             state.nodes = nodes;
           });
         },
@@ -853,6 +882,18 @@ export const useFlowStore = create<FlowStore>()(
 
         resetFlow: () => {
           set((state) => {
+            // [Debug resetFlow] , basically record store reset
+            try {
+              const debugEnabled =
+                typeof window !== "undefined" &&
+                window.localStorage.getItem("DEBUG_FLOW_CLEAR") === "1";
+              if (debugEnabled) {
+                // eslint-disable-next-line no-console
+                console.log("[FlowDebug] resetFlow called");
+                // eslint-disable-next-line no-console
+                console.trace("[FlowDebug] resetFlow stack");
+              }
+            } catch {}
             Object.assign(state, initialState);
           });
         },
@@ -872,10 +913,24 @@ export const useFlowStore = create<FlowStore>()(
             emergencyCleanupAllTimers();
           }
 
-          set(() => ({
-            ...initialState,
-            _hasHydrated: true,
-          }));
+          set(() => {
+            // [Debug forceReset] , basically record force reset
+            try {
+              const debugEnabled =
+                typeof window !== "undefined" &&
+                window.localStorage.getItem("DEBUG_FLOW_CLEAR") === "1";
+              if (debugEnabled) {
+                // eslint-disable-next-line no-console
+                console.log("[FlowDebug] forceReset called");
+                // eslint-disable-next-line no-console
+                console.trace("[FlowDebug] forceReset stack");
+              }
+            } catch {}
+            return {
+              ...initialState,
+              _hasHydrated: true,
+            };
+          });
         },
 
         // Hydration
@@ -898,6 +953,11 @@ export const useFlowStore = create<FlowStore>()(
         onRehydrateStorage: () => (state) => {
           if (state) {
             state.setHasHydrated(true);
+            // Mark storage as rehydrated so we can allow persistence writes again
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-use-before-define
+              setStorageRehydrated(true);
+            } catch {}
           }
         },
       }
@@ -979,9 +1039,14 @@ export const useErrorCount = () =>
  * Prevent synchronous localStorage writes during drag operations, basically remove main-thread stalls
  */
 let persistWritesAllowed = true;
+let storageHasRehydrated = false;
 
 export function setAllowPersistWrites(allowed: boolean) {
   persistWritesAllowed = allowed;
+}
+
+export function setStorageRehydrated(rehydrated: boolean) {
+  storageHasRehydrated = rehydrated;
 }
 
 const flowPersistStorage: StateStorage = {
@@ -995,7 +1060,8 @@ const flowPersistStorage: StateStorage = {
   },
   setItem: (name, value) => {
     if (typeof window === "undefined") return;
-    if (!persistWritesAllowed) return; // skip writes while dragging
+    // Skip writes while dragging OR before initial rehydration completes (prevents empty overwrites during Fast Refresh)
+    if (!persistWritesAllowed || !storageHasRehydrated) return;
     try {
       window.localStorage.setItem(name, value);
     } catch {

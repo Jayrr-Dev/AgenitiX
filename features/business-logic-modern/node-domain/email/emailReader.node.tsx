@@ -49,8 +49,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
 import { useFlowMetadataOptional } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
 // Convex integration
+import { useNodeToast } from "@/hooks/useNodeToast";
 import { useQuery } from "convex/react";
-import { toast } from "sonner";
 import { EmailReaderCollapsed } from "./components/EmailReaderCollapsed";
 import { EmailReaderExpanded } from "./components/EmailReaderExpanded";
 
@@ -240,8 +240,8 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
         hasAttachments: false,
         contentSearch: "",
       },
-      batchSize: 10,
-      maxMessages: 50,
+      batchSize: 1,
+      maxMessages: 5,
       includeAttachments: false,
       markAsRead: false,
       enableRealTime: false,
@@ -290,13 +290,13 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
           key: "batchSize",
           type: "number",
           label: "Batch Size",
-          placeholder: "10",
+          placeholder: "1",
         },
         {
           key: "maxMessages",
           type: "number",
           label: "Max Messages",
-          placeholder: "50",
+          placeholder: "5",
         },
         {
           key: "includeAttachments",
@@ -383,6 +383,7 @@ const EmailReaderNode = memo(
       }
     );
     const { getNodes } = useReactFlow();
+    const { showSuccess, showError } = useNodeToast(id);
 
     // Keep last emitted output to avoid redundant writes
     const _lastOutputRef = useRef<string | null>(null);
@@ -572,7 +573,7 @@ const EmailReaderNode = memo(
     /** Handle read messages action */
     const handleReadMessages = useCallback(async () => {
       if (!(accountId && token)) {
-        toast.error("Please select an email account first");
+        showError("Please select an email account first");
         return;
       }
 
@@ -647,7 +648,7 @@ const EmailReaderNode = memo(
           statusOutput: true,
         });
 
-        toast.success(`Read ${emails.length} messages successfully`);
+        showSuccess(`Read ${emails.length} messages successfully`);
       } catch (error) {
         console.error("Message reading error:", error);
         updateNodeData({
@@ -656,9 +657,10 @@ const EmailReaderNode = memo(
             error instanceof Error ? error.message : "Failed to read messages",
           retryCount: retryCount + 1,
         });
-        toast.error("Failed to read messages", {
-          description: error instanceof Error ? error.message : "Unknown error",
-        });
+        showError(
+          "Failed to read messages",
+          error instanceof Error ? error.message : "Unknown error"
+        );
       }
     }, [
       accountId,
@@ -819,6 +821,7 @@ const EmailReaderNode = memo(
             nodeData={nodeData as EmailReaderData}
             categoryStyles={categoryStyles}
             onToggleExpand={toggleExpand}
+            onReadMessages={handleReadMessages}
           />
         )}
 

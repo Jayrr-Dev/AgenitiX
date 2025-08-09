@@ -177,10 +177,10 @@ class FlowEditorErrorBoundary extends React.Component<
 const FlowEditorInternal = () => {
   const flowWrapperRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
-  const { flow } = useFlowMetadataOptional() || { flow: null };
+  const { flow: _flowMeta } = useFlowMetadataOptional() || { flow: null };
 
   // Determine if user can edit - defaults to true for owners or when no flow data
-  const canEdit = flow?.canEdit ?? true;
+  const canEdit = _flowMeta?.canEdit ?? true;
   const isReadOnly = !canEdit;
 
   // Canvas loading is now handled at page level to prevent double loading screens
@@ -489,6 +489,97 @@ const FlowEditorInternal = () => {
     () => edges.find((e) => e.id === selectedEdgeId) || null,
     [edges, selectedEdgeId]
   );
+
+  // ---------------------------------------------------------------------------
+  // BACKUP/RESTORE: preserve graph across Fast Refresh hiccups
+  // ---------------------------------------------------------------------------
+  const { flow } = useFlowMetadataOptional() || { flow: null };
+  const setNodes = useFlowStore((s) => s.setNodes);
+  const setEdges = useFlowStore((s) => s.setEdges);
+  const hasHydrated = useFlowStore((s) => s._hasHydrated);
+  const restoreAttemptedRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!flow?.id || !hasHydrated) return;
+    const BACKUP_KEY = `flow-editor-backup:${flow.id}`;
+
+    // Restore if nodes are empty but backup has data
+    if (!restoreAttemptedRef.current && nodes.length === 0) {
+      try {
+        const raw = window.localStorage.getItem(BACKUP_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as {
+            nodes?: any[];
+            edges?: any[];
+            ts?: number;
+          };
+          if (Array.isArray(parsed.nodes) && parsed.nodes.length > 0) {
+            setNodes(parsed.nodes as any);
+            setEdges(Array.isArray(parsed.edges) ? (parsed.edges as any) : []);
+            if (
+              typeof window !== "undefined" &&
+              window.localStorage.getItem("DEBUG_FLOW_CLEAR") === "1"
+            ) {
+              // eslint-disable-next-line no-console
+              console.log("[FlowDebug] Restored graph from backup snapshot", {
+                nodeCount: parsed.nodes.length,
+                edgeCount: Array.isArray(parsed.edges)
+                  ? parsed.edges.length
+                  : 0,
+                ts: parsed.ts,
+              });
+            }
+          }
+        }
+      } catch {}
+      restoreAttemptedRef.current = true;
+    }
+  }, [flow?.id, hasHydrated, nodes.length, setNodes, setEdges]);
+
+  React.useEffect(() => {
+    if (!flow?.id) return;
+    const BACKUP_KEY = `flow-editor-backup:${flow.id}`;
+    try {
+      if (nodes.length > 0) {
+        const snapshot = JSON.stringify({ nodes, edges, ts: Date.now() });
+        window.localStorage.setItem(BACKUP_KEY, snapshot);
+      }
+    } catch {}
+  }, [flow?.id, nodes, edges]);
+
+  // DEV DIAGNOSTICS: trace node clearing and storage mutations when enabled
+  React.useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    const debugEnabled =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem("DEBUG_FLOW_CLEAR") === "1";
+    if (!debugEnabled) return;
+
+    // Log when nodes length drops to 0
+    if (nodes.length === 0) {
+      // eslint-disable-next-line no-console
+      console.log("[FlowDebug] nodes length is 0 in FlowEditor render");
+      // eslint-disable-next-line no-console
+      console.trace("[FlowDebug] FlowEditor zero-nodes stack");
+    }
+
+    // Listen to storage changes for the persisted store key
+    const onStorage = (ev: StorageEvent) => {
+      if (!ev.key) return;
+      if (ev.key.includes("flow-editor-storage")) {
+        // eslint-disable-next-line no-console
+        console.log("[FlowDebug] storage change:", {
+          key: ev.key,
+          oldLen: ev.oldValue?.length ?? 0,
+          newLen: ev.newValue?.length ?? 0,
+        });
+        // eslint-disable-next-line no-console
+        console.trace("[FlowDebug] storage change stack");
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [nodes.length]);
 
   const edgeReconnectSuccessful = React.useRef(true);
 
