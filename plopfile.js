@@ -112,6 +112,7 @@ module.exports = (plop) => {
 					"logic",
 					"flow",
 					"time",
+					"convert",
 					"custom",
 				],
 			},
@@ -131,6 +132,7 @@ module.exports = (plop) => {
 					"LOGIC",
 					"FLOW",
 					"TIME",
+					"CONVERT",
 					"TOOLS",
 				],
 			},
@@ -594,6 +596,7 @@ module.exports = (plop) => {
 						"logic",
 						"flow",
 						"time",
+						"convert",
 						"custom",
 					];
 					let nodes = [];

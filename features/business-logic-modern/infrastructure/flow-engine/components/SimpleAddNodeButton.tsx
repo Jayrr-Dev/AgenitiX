@@ -19,7 +19,8 @@ import {
   Mail, 
   Clock, 
   Workflow,
-  Wrench
+  Wrench,
+  ArrowRightLeft
 } from "lucide-react";
 import React, { useState, useCallback, useMemo } from "react";
 import { useReactFlow } from "@xyflow/react";
@@ -38,6 +39,7 @@ const CATEGORY_ICONS = {
   [CATEGORIES.TEST]: TestTube,
   [CATEGORIES.CYCLE]: RotateCcw,
   [CATEGORIES.STORE]: Database,
+  [CATEGORIES.CONVERT]: ArrowRightLeft,
   [CATEGORIES.LOGIC]: Zap,
   [CATEGORIES.AI]: Brain,
   [CATEGORIES.EMAIL]: Mail,
@@ -54,6 +56,7 @@ const CATEGORY_COLORS = {
   [CATEGORIES.TEST]: "text-purple-600 hover:text-purple-700",
   [CATEGORIES.CYCLE]: "text-orange-600 hover:text-orange-700",
   [CATEGORIES.STORE]: "text-gray-600 hover:text-gray-700",
+  [CATEGORIES.CONVERT]: "text-emerald-600 hover:text-emerald-700",
   [CATEGORIES.LOGIC]: "text-violet-600 hover:text-violet-700",
   [CATEGORIES.AI]: "text-pink-600 hover:text-pink-700",
   [CATEGORIES.EMAIL]: "text-red-600 hover:text-red-700",
@@ -70,6 +73,7 @@ const CATEGORY_NAMES = {
   [CATEGORIES.TEST]: "Test Nodes",
   [CATEGORIES.CYCLE]: "Loop Nodes",
   [CATEGORIES.STORE]: "Storage Nodes",
+  [CATEGORIES.CONVERT]: "Convert Nodes",
   [CATEGORIES.LOGIC]: "Logic Gates",
   [CATEGORIES.AI]: "AI Nodes",
   [CATEGORIES.EMAIL]: "Email Nodes",
@@ -104,6 +108,7 @@ export const SimpleAddNodeButton: React.FC<SimpleAddNodeButtonProps> = ({
       [CATEGORIES.TEST]: [],
       [CATEGORIES.CYCLE]: [],
       [CATEGORIES.STORE]: [],
+      [CATEGORIES.CONVERT]: [],
       [CATEGORIES.LOGIC]: [],
       [CATEGORIES.AI]: [],
       [CATEGORIES.EMAIL]: [],

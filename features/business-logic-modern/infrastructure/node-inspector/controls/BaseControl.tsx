@@ -148,6 +148,16 @@ function getSemanticClasses(nodeType?: string) {
 				text: "text-node-email-text",
 				textSecondary: "text-node-email-text-secondary",
 			};
+		case "convert":
+		case "convertnode":
+			return {
+				primary: "bg-node-convert text-node-convert-text",
+				primaryHover: "hover:bg-node-convert-hover",
+				border: "border-node-convert",
+				borderHover: "hover:border-node-convert-hover",
+				text: "text-node-convert-text",
+				textSecondary: "text-node-convert-text-secondary",
+			};
 		default:
 			// Default to view node styling for unknown types
 			return {
