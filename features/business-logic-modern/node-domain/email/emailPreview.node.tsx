@@ -65,8 +65,8 @@ export const EmailPreviewDataSchema = z
     lastError: z.string().default(""),
     emails: z.array(z.record(z.string(), z.unknown())).default([]),
     selectedIndex: z.number().int().min(0).default(0),
-    expandedSize: SafeSchemas.text("FE2"),
-    collapsedSize: SafeSchemas.text("C2"),
+    expandedSize: SafeSchemas.text("VE3W"),
+    collapsedSize: SafeSchemas.text("C2W"),
     label: z.string().optional(), // User-editable node label
   })
   .passthrough();
@@ -116,34 +116,61 @@ const UI_STYLES = {
 const VIEW_STYLES = {
   panel:
     "flex-1 rounded-md border border-[--node-email-border] bg-white dark:bg-[--node-email-bg] p-3 overflow-auto min-h-28",
-  subject: "text-[13px] font-semibold text-black dark:text-[--node-email-text]",
-  meta: "text-[11px] text-zinc-600 dark:text-[--node-email-text-secondary]",
+  subject:
+    "text-[10px] font-semibold text-black dark:text-[--node-email-text] break-words",
+  meta: "text-[10px] text-zinc-600 dark:text-[--node-email-text-secondary]",
   divider: "my-3 h-px bg-zinc-200 dark:bg-[--node-email-border]",
-  body: "text-[12px] whitespace-pre-wrap text-black dark:text-[--node-email-text] leading-[1.35]",
+  body: "text-[10px] whitespace-pre-wrap text-black dark:text-[--node-email-text] leading-[1.35]",
 } as const;
 
 // Collapsed summary view styles, basically compact, high-contrast rows
 const COLLAPSED_SUMMARY_STYLES = {
-  wrap: "w-full h-full px-2 py-1 flex flex-col justify-center gap-1 text-[10px] text-foreground/90",
+  wrap: "w-full h-full px-2 py-1 flex flex-col justify-center text-[10px] text-foreground/90",
   navRow:
-    "w-full flex items-center justify-between gap-1 text-[11px] font-medium",
+    "w-full flex items-center justify-between mt-2 text-[11px] font-medium",
   arrowBtn:
-    "h-5 w-5 inline-flex items-center justify-center rounded border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] hover:bg-[--node-email-bg-hover] disabled:opacity-40 disabled:cursor-not-allowed",
+    "h-4 w-4 inline-flex items-center justify-center rounded border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] hover:bg-[--node-email-bg-hover] disabled:opacity-40 disabled:cursor-not-allowed",
   title: "px-1 text-[11px]",
   row: "flex items-center gap-1",
-  key: "min-w-[54px] text-muted-foreground",
+  key: "min-w-[54px] text-foreground o",
   val: "truncate max-w-[120px]",
+  // Wrapped value for multiline subject in collapsed mode
+  valWrap:
+    "max-w-[140px] whitespace-normal break-words font-bold text-shadow-lg leading-tight",
 } as const;
+
+/**
+ * Parses assorted date inputs to a real Date.
+ * [Explanation], basically understand Gmail's `internalDate` (ms since epoch), seconds, ISO/RFC strings
+ */
+function parseFlexibleDate(input: unknown): Date | null {
+  if (input === null || input === undefined) return null;
+  // Numbers or numeric strings
+  const asNumber =
+    typeof input === "number"
+      ? input
+      : typeof input === "string" && /^\d+$/.test(input.trim())
+        ? Number.parseInt(input.trim(), 10)
+        : null;
+  if (asNumber !== null && Number.isFinite(asNumber)) {
+    // Heuristic: >= 10^12 -> milliseconds, >= 10^9 -> seconds
+    const ms = asNumber >= 1_000_000_000_000 ? asNumber : asNumber * 1000;
+    const d = new Date(ms);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  // Fallback to Date constructor for ISO/RFC formats
+  const d = new Date(String(input));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 
 /**
  * Formats a date-like input to dd/mm/yy using the en-GB locale.
  * [Explanation], basically normalize varied date strings to a compact UI-friendly form
  */
 function formatDateToDDMMYY(input: unknown): string {
-  if (!input) return "";
+  const d = parseFlexibleDate(input);
+  if (!d) return String(input ?? "");
   try {
-    const d = new Date(String(input));
-    if (Number.isNaN(d.getTime())) return String(input);
     return new Intl.DateTimeFormat("en-GB", {
       day: "2-digit",
       month: "2-digit",
@@ -151,6 +178,70 @@ function formatDateToDDMMYY(input: unknown): string {
     }).format(d);
   } catch {
     return String(input);
+  }
+}
+
+/**
+ * Extracts display-friendly sender parts from mixed inputs.
+ * [Explanation], basically pull a clean name and email from values like
+ * "Name <email@x.com>", objects { name, email }, or plain emails
+ */
+function parseSenderParts(input: unknown): {
+  name: string;
+  email: string;
+  display: string;
+} {
+  if (!input) return { name: "", email: "", display: "" };
+  try {
+    // Objects with { name, email }
+    if (typeof input === "object") {
+      const obj = input as Record<string, unknown>;
+      const name = typeof obj.name === "string" ? obj.name.trim() : "";
+      const email = typeof obj.email === "string" ? obj.email.trim() : "";
+      const display =
+        `${name}${name && email ? " " : ""}$${email ? `<${email}>` : ""}`.replace(
+          "$",
+          ""
+        );
+      return { name, email, display: display.trim() };
+    }
+
+    // Strings like: "Name <email@x.com>" or '"Name" <email@x.com>'
+    const text = String(input).trim();
+    const match = text.match(/^\s*"?([^"<]*)"?\s*<([^>]+)>\s*$/);
+    if (match) {
+      const name = match[1]?.trim() ?? "";
+      const email = match[2]?.trim() ?? "";
+      return {
+        name,
+        email,
+        display: `${name}${name && email ? " " : ""}<${email}>`.trim(),
+      };
+    }
+
+    // Plain email string
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) {
+      return { name: "", email: text, display: `<${text}>` };
+    }
+
+    // Fallback: treat everything before < as name if present
+    const ltIndex = text.indexOf("<");
+    if (ltIndex > 0) {
+      const name = text.slice(0, ltIndex).trim().replace(/^"|"$/g, "");
+      const email = text
+        .slice(ltIndex + 1, text.indexOf(">", ltIndex + 1))
+        .trim();
+      return {
+        name,
+        email,
+        display: `${name}${name && email ? " " : ""}<${email}>`.trim(),
+      };
+    }
+
+    // Unknown string: put in name for display
+    return { name: text, email: "", display: text };
+  } catch {
+    return { name: String(input), email: "", display: String(input) };
   }
 }
 
@@ -461,14 +552,12 @@ const EmailPreviewNode = memo(
       }
       if (inner && typeof inner === "object") {
         // Normalize from field
-        let fromStr = "";
-        const from = (inner as any).From ?? (inner as any).from;
-        if (typeof from === "string") fromStr = from;
-        else if (from && typeof from === "object") {
-          const nm = (from as any).name || "";
-          const em = (from as any).email || "";
-          fromStr = `${nm}${nm && em ? " " : ""}${em ? `<${em}>` : ""}`.trim();
-        }
+        const fromRaw = (inner as any).From ?? (inner as any).from;
+        const {
+          name: fromName,
+          email: fromEmail,
+          display: fromDisplay,
+        } = parseSenderParts(fromRaw);
 
         // Derive attachmentsCount from common fields
         // [Explanation], basically count attachments across typical shapes
@@ -556,7 +645,9 @@ const EmailPreviewNode = memo(
         }
         return {
           subject: inner.Subject || inner.subject || "",
-          from: fromStr,
+          from: fromDisplay,
+          fromName,
+          fromEmail,
           date: inner.Date || inner.date || "",
           preview: inner.Preview || inner.snippet || "",
           content: inner.Content || inner.textContent || inner.snippet || "",
@@ -565,6 +656,8 @@ const EmailPreviewNode = memo(
         } as {
           subject: string;
           from: string;
+          fromName: string;
+          fromEmail: string;
           date: string;
           preview: string;
           content: string;
@@ -820,9 +913,32 @@ const EmailPreviewNode = memo(
                     >
                       {"<"}
                     </button>
-                    <div className={COLLAPSED_SUMMARY_STYLES.title}>{`Email ${
-                      count > 0 ? currentIndex + 1 : 0
-                    }`}</div>
+                    <div className={COLLAPSED_SUMMARY_STYLES.title}>
+                      {`Email ${count > 0 ? currentIndex + 1 : 0}`}
+                      {sel?.attachmentsCount && sel.attachmentsCount > 0 ? (
+                        <span
+                          aria-label="Has attachments"
+                          title={`${sel.attachmentsCount} attachment${sel.attachmentsCount === 1 ? "" : "s"}`}
+                          className="ml-1 inline-flex items-center text-[10px]"
+                        >
+                          {/* Paperclip */}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="10"
+                            height="10"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="inline-block align-middle"
+                          >
+                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 1 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.88 17.25a2 2 0 1 1-2.83-2.83l8.49-8.49" />
+                          </svg>
+                        </span>
+                      ) : null}
+                    </div>
                     <button
                       type="button"
                       className={COLLAPSED_SUMMARY_STYLES.arrowBtn}
@@ -841,51 +957,44 @@ const EmailPreviewNode = memo(
                       Connect emails to preview
                     </div>
                   ) : (
-                    <div className="mt-1 flex flex-col gap-0">
+                    <div className=" flex flex-col gap-0">
                       <div className={COLLAPSED_SUMMARY_STYLES.row}>
-                        {/* <span className={COLLAPSED_SUMMARY_STYLES.key}>
-                          Fr:
-                        </span> */}
                         <span
-                          className={`${COLLAPSED_SUMMARY_STYLES.val} ${categoryStyles.primary}`}
-                        >
-                          {decodeHtmlEntities(sel.from || "")}
-                        </span>
-                      </div>
-                      <div className={COLLAPSED_SUMMARY_STYLES.row}>
-                        {/* <span className={COLLAPSED_SUMMARY_STYLES.key}>
-                          Sub:
-                        </span> */}
-                        <span
-                          className={`${COLLAPSED_SUMMARY_STYLES.val} ${categoryStyles.primary}`}
+                          className={`${COLLAPSED_SUMMARY_STYLES.valWrap} ${categoryStyles.primary}`}
+                          title={decodeHtmlEntities(sel.subject || "")}
                         >
                           {decodeHtmlEntities(sel.subject || "")}
                         </span>
                       </div>
                       <div className={COLLAPSED_SUMMARY_STYLES.row}>
-                        {/* <span className={COLLAPSED_SUMMARY_STYLES.key}>
+                        <span className={COLLAPSED_SUMMARY_STYLES.key}>
+                          From:
+                        </span>
+                        <span
+                          className={`${COLLAPSED_SUMMARY_STYLES.val} ${categoryStyles.primary}`}
+                          title={decodeHtmlEntities(sel.from || "")}
+                        >
+                          {decodeHtmlEntities(sel.fromName || sel.from || "")}
+                        </span>
+                      </div>
+
+                      <div className={COLLAPSED_SUMMARY_STYLES.row}>
+                        <span className={COLLAPSED_SUMMARY_STYLES.key}>
                           Date:
-                        </span> */}
+                        </span>
                         <span className={COLLAPSED_SUMMARY_STYLES.val}>
                           {formatDateToDDMMYY(sel.date || "")}
                         </span>
                       </div>
                       <div className={COLLAPSED_SUMMARY_STYLES.row}>
-                        {/* <span className={COLLAPSED_SUMMARY_STYLES.key}>
+                        <span className={COLLAPSED_SUMMARY_STYLES.key}>
                           Read:
-                        </span> */}
+                        </span>
                         <span className={COLLAPSED_SUMMARY_STYLES.val}>
                           {sel.isRead ? "Yes" : "No"}
                         </span>
                       </div>
-                      <div className={COLLAPSED_SUMMARY_STYLES.row}>
-                        {/* <span className={COLLAPSED_SUMMARY_STYLES.key}>
-                          Attachment:
-                        </span> */}
-                        <span className={COLLAPSED_SUMMARY_STYLES.val}>
-                          {Math.max(0, sel.attachmentsCount ?? 0)}
-                        </span>
-                      </div>
+                      {/* Attachment count row removed; indicated by icon in title */}
                     </div>
                   )}
                 </div>
@@ -924,13 +1033,18 @@ const EmailPreviewNode = memo(
                 }
                 return (
                   <div className={VIEW_STYLES.panel}>
-                    <div className={VIEW_STYLES.subject}>
+                    <div
+                      className={VIEW_STYLES.subject}
+                      title={decodeHtmlEntities(sel.subject || "(No subject)")}
+                    >
                       {decodeHtmlEntities(sel.subject || "(No subject)")}
                     </div>
                     <div className={VIEW_STYLES.meta}>
-                      {`From: ${decodeHtmlEntities(sel.from || "(Unknown)")}`}
+                      <span
+                        title={decodeHtmlEntities(sel.from || "(Unknown)")}
+                      >{`From: ${decodeHtmlEntities(sel.fromName || sel.from || "(Unknown)")}`}</span>
                       {sel.date
-                        ? ` · Date: ${decodeHtmlEntities(sel.date)}`
+                        ? ` · Date: ${formatDateToDDMMYY(sel.date)}`
                         : ""}
                     </div>
                     <div className={VIEW_STYLES.meta}>

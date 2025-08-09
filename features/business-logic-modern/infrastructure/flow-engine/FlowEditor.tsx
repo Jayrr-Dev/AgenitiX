@@ -537,14 +537,47 @@ const FlowEditorInternal = () => {
   }, [flow?.id, hasHydrated, nodes.length, setNodes, setEdges]);
 
   React.useEffect(() => {
+    // [Explanation], basically debounce backup writes and run them in idle time to avoid blocking pointer events
     if (!flow?.id) return;
     const BACKUP_KEY = `flow-editor-backup:${flow.id}`;
-    try {
-      if (nodes.length > 0) {
-        const snapshot = JSON.stringify({ nodes, edges, ts: Date.now() });
-        window.localStorage.setItem(BACKUP_KEY, snapshot);
+
+    const BACKUP_IDLE_DEBOUNCE_MS = 1200; // Wait for inactivity before writing backup
+
+    // Keep one timer per effect run
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    // Schedule the actual write during idle time (or next tick fallback)
+    const scheduleIdle = (fn: () => void) => {
+      const ric: unknown = (globalThis as any).requestIdleCallback;
+      if (typeof ric === "function") {
+        (ric as (cb: () => void) => void)(fn);
+      } else {
+        setTimeout(fn, 0);
       }
-    } catch {}
+    };
+
+    if (nodes.length > 0) {
+      // Clear any previous timer then set a fresh one
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+        debounceTimer = null;
+      }
+      debounceTimer = setTimeout(() => {
+        scheduleIdle(() => {
+          try {
+            const snapshot = JSON.stringify({ nodes, edges, ts: Date.now() });
+            window.localStorage.setItem(BACKUP_KEY, snapshot);
+          } catch {}
+        });
+      }, BACKUP_IDLE_DEBOUNCE_MS);
+    }
+
+    // Cleanup pending timer if dependencies change rapidly
+    return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+    };
   }, [flow?.id, nodes, edges]);
 
   // DEV DIAGNOSTICS: trace node clearing and storage mutations when enabled

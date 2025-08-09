@@ -112,7 +112,7 @@ const NodeScaffoldWrapper = ({
   const structuralClasses = React.useMemo(
     () =>
       [
-        "relative rounded-[12px] transition-all duration-300 ease-out",
+        "relative rounded-[12px] transition-colors duration-200 ease-out",
         !isDisabled && "shadow-lg",
         wrapperClasses,
         containerClasses,
@@ -144,8 +144,10 @@ const NodeScaffoldWrapper = ({
         ? `var(--node-global-disabled-gradient), var(--node-${categoryLower}-bg-gradient)`
         : `var(--node-${categoryLower}-bg-gradient)`,
       position: "relative",
-      transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1)",
-      backdropFilter: isDisabled ? "blur(4px)" : "blur(8px)",
+      // Limit to lightweight transitions to avoid jank during panning
+      transition:
+        "background 200ms ease-out, border-color 200ms ease-out, opacity 200ms ease-out, box-shadow 200ms ease-out",
+      // Remove backdrop-filter blur which is expensive during canvas transforms
       opacity: isDisabled ? "var(--node-global-disabled-opacity)" : "1",
       pointerEvents: isDisabled ? "none" : "auto",
     }),

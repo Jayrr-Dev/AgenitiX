@@ -321,20 +321,10 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
         ? reactFlowInstance.getViewport()
         : undefined;
       const state = createFlowStateOptimized(nodes, edges, viewport);
-      // [Keep last good] , basically remember a non-empty state and persist a tiny backup
-      try {
-        if (state.nodes.length > 0) {
-          lastNonEmptyStateRef.current = state;
-          if (BACKUP_KEY) {
-            const snapshot = JSON.stringify({
-              nodes: state.nodes,
-              edges: state.edges,
-              ts: Date.now(),
-            });
-            window.localStorage.setItem(BACKUP_KEY, snapshot);
-          }
-        }
-      } catch {}
+      // [Keep last good], basically remember a non-empty state (avoid synchronous backup writes here)
+      if (state.nodes.length > 0) {
+        lastNonEmptyStateRef.current = state;
+      }
       return state;
     });
   }, [
@@ -520,6 +510,30 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
       // Persist the updated graph
       saveGraph(graph, flowId);
+
+      // Schedule a lightweight backup snapshot in idle time (avoids blocking pointer events)
+      try {
+        if (BACKUP_KEY && nextState.nodes.length > 0) {
+          const scheduleIdle = (fn: () => void) => {
+            const ric: unknown = (globalThis as any).requestIdleCallback;
+            if (typeof ric === "function") {
+              (ric as (cb: () => void) => void)(fn);
+            } else {
+              setTimeout(fn, 0);
+            }
+          };
+          scheduleIdle(() => {
+            try {
+              const snapshot = JSON.stringify({
+                nodes: nextState.nodes,
+                edges: nextState.edges,
+                ts: Date.now(),
+              });
+              window.localStorage.setItem(BACKUP_KEY, snapshot);
+            } catch {}
+          });
+        }
+      } catch {}
 
       // Notify of history change
       const path = getPathToCursor(graph);

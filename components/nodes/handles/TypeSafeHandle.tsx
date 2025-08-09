@@ -621,18 +621,19 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
 
     const { isValidConnection } = useUltimateFlowConnectionPrevention();
 
-    // Check if this handle is connected by looking at edges but subscribe only to relevant boolean
-    const isConnected = useStore(
-      React.useCallback(
-        (state) =>
-          state.edges.some((edge) =>
-            props.type === "source"
-              ? edge.source === nodeId && edge.sourceHandle === props.id
-              : edge.target === nodeId && edge.targetHandle === props.id
-          ),
-        [nodeId, props.id, props.type]
-      )
-    );
+    // Subscribe only to edges reference; compute connection state when edges actually change
+    const edgesRef = useStore((state) => state.edges);
+    const isConnected = useMemo(() => {
+      try {
+        return edgesRef.some((edge: any) =>
+          props.type === "source"
+            ? edge.source === nodeId && edge.sourceHandle === props.id
+            : edge.target === nodeId && edge.targetHandle === props.id
+        );
+      } catch {
+        return false;
+      }
+    }, [edgesRef, nodeId, props.id, props.type]);
 
     const isSource = props.type === "source";
     const connectableStart = isSource; // only sources can start connections
